@@ -1,5 +1,5 @@
-import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Montserrat, Unbounded, Vina_Sans } from 'next/font/google';
 import Script from 'next/script';
 import '../globals.css';

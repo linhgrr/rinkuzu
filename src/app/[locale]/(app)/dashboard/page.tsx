@@ -1,9 +1,9 @@
+import { redirect } from '@/i18n/navigation';
 import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { defaultLocale } from '@/i18n/config';
 import { getDashboardBootstrapData } from '@/lib/dashboard-factory';
 import { DashboardPageShell } from '@/features/dashboard/components/DashboardPageShell';
+import { ROUTES } from '@/shared/constants/routes';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,14 +11,18 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const [{ locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
 
   if (!session?.user) {
-    const loginPath = locale === defaultLocale ? '/login' : `/${locale}/login`;
-    const callbackPath = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
-    redirect(`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`);
+    // callbackUrl is locale-unprefixed (matches ROUTES / next-intl hrefs).
+    return redirect({
+      href: {
+        pathname: ROUTES.LOGIN,
+        query: { callbackUrl: ROUTES.DASHBOARD },
+      },
+      locale,
+    });
   }
 
   const userId = session.user.id;
   const bootstrapData = await getDashboardBootstrapData(userId);
-
   const userEmail = session.user.email ?? '';
 
   return (

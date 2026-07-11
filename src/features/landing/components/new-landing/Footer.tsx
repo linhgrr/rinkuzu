@@ -1,5 +1,5 @@
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';

@@ -1,7 +1,7 @@
 'use client';
 
+import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import Pagination from '@/components/ui/Pagination';
 import { AdminQuizzesListSkeleton } from '@/components/admin/AdminLoadingSkeletons';

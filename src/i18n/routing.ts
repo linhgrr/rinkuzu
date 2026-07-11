@@ -4,5 +4,6 @@ import { locales, defaultLocale } from './config';
 export const routing = defineRouting({
   locales,
   defaultLocale,
-  localePrefix: 'as-needed', // Only show prefix for non-default locale
+  // Always show /vi/... and /en/... — simpler browser URLs, fewer bare-path edge cases.
+  localePrefix: 'always',
 });

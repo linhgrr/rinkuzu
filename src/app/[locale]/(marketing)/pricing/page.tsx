@@ -1,5 +1,6 @@
+import { Link } from '@/i18n/navigation';
+import { ROUTES } from '@/shared/constants/routes';
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { CircleCheck } from 'lucide-react';
 import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
@@ -41,8 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PricingPage({ params }: Props) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'pricing' });
-  const registerHref = locale === 'en' ? '/register' : `/${locale}/register`;
-  const subscriptionHref = locale === 'en' ? '/subscription' : `/${locale}/subscription`;
+  const registerHref = ROUTES.REGISTER;
+  const subscriptionHref = ROUTES.SUBSCRIPTION;
 
   const premiumPlans = (await loadPremiumPlans()).sort((a, b) => a.price - b.price);
   const lowestPrice = premiumPlans[0]?.price ?? null;

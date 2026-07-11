@@ -1,10 +1,13 @@
 'use client';
 
-import Link from 'next/link';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
+import { toBrowserPath } from '@/lib/routing/pathname';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -24,35 +27,28 @@ import { fetchQuizEditViewModel, updateQuizEditViewModel } from '@/features/quiz
 import { deleteQuizById } from '@/features/quiz/api/quiz-api';
 import type {
   QuizEditViewModel,
-  QuizEditorQuestionInputViewModel,
   QuizEditorQuestionViewModel,
 } from '@/features/quiz/types/quiz-editor-view-model';
-import { getCorrectAnswerIndexes } from '@/lib/quiz/answer-text';
+import {
+  addQuestion,
+  removeQuestionAt,
+  setSingleCorrect,
+  toQuestionInputs,
+  toggleMultipleCorrect,
+  toggleQuestionType,
+  updateOption,
+  updateOptionImage,
+  updateQuestionField,
+  updateQuestionImage,
+  type EditableQuestionField,
+} from '@/features/quiz/lib/question-editor-mutations';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 
 type EditPageStatus = 'loading' | 'ready' | 'error';
 type EditableQuizQuestion = QuizEditorQuestionViewModel;
-type EditableQuizQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
 
 function getQuizAuthorId(quiz: QuizEditViewModel): string | null {
   return quiz.author?.id ?? null;
-}
-
-function toQuizQuestionInput(question: EditableQuizQuestion): QuizEditorQuestionInputViewModel {
-  const base = {
-    question: question.question,
-    options: question.options,
-    ...(question.questionImage ? { questionImage: question.questionImage } : {}),
-    ...(question.optionImages && question.optionImages.some(Boolean)
-      ? { optionImages: question.optionImages }
-      : {}),
-  };
-
-  if (question.type === 'single') {
-    return { ...base, type: 'single', correctIndex: question.correctIndex };
-  }
-
-  return { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
 }
 
 interface EditQuizState {
@@ -87,8 +83,8 @@ type EditQuizAction =
   | {
       type: 'updateQuestionField';
       index: number;
-      field: EditableQuizQuestionField;
-      value: EditableQuizQuestion[EditableQuizQuestionField];
+      field: EditableQuestionField;
+      value: EditableQuizQuestion[EditableQuestionField];
     }
   | { type: 'updateOption'; questionIndex: number; optionIndex: number; value: string }
   | { type: 'updateQuestionImage'; questionIndex: number; value?: string }
@@ -158,120 +154,75 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
     case 'updateQuestionField':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) =>
-          index === action.index ? { ...question, [action.field]: action.value } : question,
+        editableQuestions: updateQuestionField(
+          state.editableQuestions,
+          action.index,
+          action.field,
+          action.value,
         ),
       };
     case 'updateOption':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) => {
-          if (index !== action.questionIndex) {
-            return question;
-          }
-
-          const options = [...question.options];
-          options[action.optionIndex] = action.value;
-          return { ...question, options };
-        }),
+        editableQuestions: updateOption(
+          state.editableQuestions,
+          action.questionIndex,
+          action.optionIndex,
+          action.value,
+        ),
       };
     case 'updateQuestionImage':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) =>
-          index === action.questionIndex ? { ...question, questionImage: action.value } : question,
+        editableQuestions: updateQuestionImage(
+          state.editableQuestions,
+          action.questionIndex,
+          action.value,
         ),
       };
     case 'updateOptionImage':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) => {
-          if (index !== action.questionIndex) {
-            return question;
-          }
-
-          const optionImages = question.optionImages
-            ? [...question.optionImages]
-            : new Array(question.options.length).fill(undefined);
-          optionImages[action.optionIndex] = action.value;
-          return { ...question, optionImages };
-        }),
+        editableQuestions: updateOptionImage(
+          state.editableQuestions,
+          action.questionIndex,
+          action.optionIndex,
+          action.value,
+        ),
       };
     case 'addQuestion':
       return {
         ...state,
-        editableQuestions: [...state.editableQuestions, action.question],
+        editableQuestions: addQuestion(state.editableQuestions, action.question),
       };
     case 'removeQuestion':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.filter((_, index) => index !== action.index),
+        editableQuestions: removeQuestionAt(state.editableQuestions, action.index),
       };
     case 'toggleQuestionType':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) => {
-          if (index !== action.index) {
-            return question;
-          }
-
-          const correctAnswerIndexes = getCorrectAnswerIndexes(question);
-          const base = {
-            id: question.id,
-            editorId: question.editorId,
-            question: question.question,
-            options: question.options,
-            questionImage: question.questionImage,
-            optionImages: question.optionImages,
-          };
-
-          return action.value === 'single'
-            ? { ...base, type: 'single', correctIndex: correctAnswerIndexes[0] ?? 0 }
-            : { ...base, type: 'multiple', correctIndexes: correctAnswerIndexes };
-        }),
+        editableQuestions: toggleQuestionType(state.editableQuestions, action.index, action.value),
       };
     case 'setSingleCorrect':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) => {
-          if (index !== action.questionIndex) {
-            return question;
-          }
-
-          const base = {
-            id: question.id,
-            editorId: question.editorId,
-            question: question.question,
-            options: question.options,
-            questionImage: question.questionImage,
-            optionImages: question.optionImages,
-          };
-
-          return { ...base, type: 'single', correctIndex: action.optionIndex };
-        }),
+        editableQuestions: setSingleCorrect(
+          state.editableQuestions,
+          action.questionIndex,
+          action.optionIndex,
+        ),
       };
     case 'toggleMultipleCorrect':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) => {
-          if (index !== action.questionIndex) {
-            return question;
-          }
-
-          const current = question.type === 'multiple' ? question.correctIndexes : [];
-          const correctIndexes = action.checked
-            ? [...current, action.optionIndex].sort()
-            : current.filter((value) => value !== action.optionIndex);
-          const base = {
-            id: question.id,
-            editorId: question.editorId,
-            question: question.question,
-            options: question.options,
-            questionImage: question.questionImage,
-            optionImages: question.optionImages,
-          };
-          return { ...base, type: 'multiple', correctIndexes };
-        }),
+        editableQuestions: toggleMultipleCorrect(
+          state.editableQuestions,
+          action.questionIndex,
+          action.optionIndex,
+          action.checked,
+        ),
       };
     default:
       return state;
@@ -428,6 +379,11 @@ function EditQuizActionBar({
 }
 
 function QuizLinkCard({ slug }: { slug: string }) {
+  const locale = useLocale();
+  const sharePath = toBrowserPath(ROUTES.QUIZ.VIEW(slug), locale);
+  const shareUrl =
+    typeof window !== 'undefined' ? `${window.location.origin}${sharePath}` : sharePath;
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -436,17 +392,16 @@ function QuizLinkCard({ slug }: { slug: string }) {
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-x-4">
-          <code className="flex-1 rounded bg-neutral-100 px-3 py-2 text-sm">
-            {`${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${slug}`}
-          </code>
+          <code className="flex-1 rounded bg-neutral-100 px-3 py-2 text-sm">{shareUrl}</code>
           <Button
             size="sm"
             variant="secondary"
             className="flex items-center gap-2"
             onClick={() => {
-              const url = `${window.location.origin}/quiz/${slug}`;
-              navigator.clipboard.writeText(url);
-              toast.success('Quiz link copied to clipboard!');
+              void copyToClipboard(shareUrl).then((ok) => {
+                if (ok) toast.success('Quiz link copied to clipboard!');
+                else toast.error('Failed to copy link');
+              });
             }}
           >
             <HiOutlineClipboardCopy className="size-4" />
@@ -507,7 +462,7 @@ export default function EditQuizPage() {
     dispatch({ type: 'patch', value: { saving: true, error: '', success: '' } });
 
     try {
-      const formattedQuestions = state.editableQuestions.map(toQuizQuestionInput);
+      const formattedQuestions = toQuestionInputs(state.editableQuestions);
 
       const updatedQuiz = await updateQuizEditViewModel(quizId, {
         title: state.title.trim(),

@@ -1,6 +1,6 @@
+import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
 import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 

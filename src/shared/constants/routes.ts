@@ -1,4 +1,8 @@
-// Frontend Routes - Navigation paths
+/**
+ * App route paths for next-intl `Link` / `useRouter` / server `redirect({ href })`.
+ * Always locale-unprefixed — next-intl (and middleware) apply the locale.
+ * For full-document / NextAuth URLs, wrap with `toBrowserPath(path, locale)`.
+ */
 export const ROUTES = {
   HOME: '/',
   DASHBOARD: '/dashboard',

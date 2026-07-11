@@ -1,8 +1,8 @@
 'use client';
 
+import { useRouter } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
 import {

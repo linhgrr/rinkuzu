@@ -2,15 +2,12 @@ import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { AuthShell } from '@/components/auth/AuthShell';
-import { defaultLocale } from '@/i18n/config';
 import { authOptions, isGoogleLoginEnabled } from '@/lib/auth';
+import { toBrowserPath } from '@/lib/routing/pathname';
+import { noIndexMetadata } from '@/lib/seo/no-index-metadata';
+import { ROUTES } from '@/shared/constants/routes';
 
-export const metadata: Metadata = {
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export const metadata: Metadata = noIndexMetadata;
 
 export default async function AuthLayout({
   children,
@@ -22,8 +19,7 @@ export default async function AuthLayout({
   const [{ locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
 
   if (session?.user) {
-    const dashboardPath = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
-    redirect(dashboardPath);
+    redirect(toBrowserPath(ROUTES.DASHBOARD, locale));
   }
 
   return (

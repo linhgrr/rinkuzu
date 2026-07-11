@@ -1,11 +1,12 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { HiOutlineDotsVertical, HiOutlineLockClosed } from 'react-icons/hi';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import type { UserIdentity } from '@/components/user/user-identity';
+import { ROUTES } from '@/shared/constants/routes';
 
 export interface QuizCardQuiz {
   title: string;
@@ -18,7 +19,6 @@ export interface QuizCardQuiz {
 interface QuizCardProps {
   quiz: QuizCardQuiz;
   quizId: string;
-  locale: string;
   onDelete?: (quiz: QuizCardQuiz, quizId: string) => void;
 }
 
@@ -27,7 +27,7 @@ function getAuthor(quiz: QuizCardQuiz): UserIdentity {
   return quiz.author;
 }
 
-export function QuizCard({ quiz, quizId, locale, onDelete }: QuizCardProps) {
+export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
   const t = useTranslations('profile');
   const author = getAuthor(quiz);
 
@@ -59,7 +59,7 @@ export function QuizCard({ quiz, quizId, locale, onDelete }: QuizCardProps) {
         ) : null}
       </div>
 
-      <Link href={`/${locale}/quiz/${quiz.slug}`} className="mt-2 flex flex-1 flex-col">
+      <Link href={ROUTES.QUIZ.VIEW(quiz.slug)} className="mt-2 flex flex-1 flex-col">
         <h3 className="line-clamp-2 font-home text-base font-semibold leading-[1.4] text-ink">
           {quiz.title}
         </h3>

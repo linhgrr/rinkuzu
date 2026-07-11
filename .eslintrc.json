@@ -5,6 +5,22 @@
   "rules": {
     "@next/next/no-img-element": "error",
     "import/no-duplicates": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "next/link",
+            "message": "Use Link from '@/i18n/navigation' so locale prefixes stay correct."
+          },
+          {
+            "name": "next/navigation",
+            "importNames": ["useRouter", "usePathname", "redirect", "Link"],
+            "message": "Use useRouter/usePathname/redirect/Link from '@/i18n/navigation' so locale prefixes stay correct. Keep notFound/useParams/useSearchParams from next/navigation."
+          }
+        ]
+      }
+    ],
     "no-console": [
       "error",
       {
@@ -27,7 +43,7 @@
       "error",
       {
         "selector": "TSAsExpression[typeAnnotation.type='TSAnyKeyword'][expression.type='Identifier'][expression.name='session']",
-        "message": "Do not cast 'session' to any. Session is fully typed via src/types/next-auth.d.ts — use session.user.id / session.user.role directly."
+        "message": "Do not cast 'session' to any. Session is fully typed via src/types/next-auth.d.ts \u2014 use session.user.id / session.user.role directly."
       },
       {
         "selector": "TSAsExpression[typeAnnotation.type='TSAnyKeyword'][expression.type='MemberExpression'][expression.object.name='session']",

@@ -13,13 +13,10 @@ function normalizeSeoPath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
-function localePrefix(locale: string): string {
-  return locale === defaultLocale ? '' : `/${locale}`;
-}
-
+/** Browser path under localePrefix: 'always' (e.g. /vi, /en/about). */
 function localizedPath(locale: string, path: string): string {
   const safePath = normalizeSeoPath(path);
-  return `${localePrefix(locale)}${safePath === '/' ? '' : safePath}` || '/';
+  return safePath === '/' ? `/${locale}` : `/${locale}${safePath}`;
 }
 
 export function canonicalFor(locale: string, path: string): string {

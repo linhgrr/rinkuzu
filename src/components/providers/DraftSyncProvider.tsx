@@ -1,4 +1,3 @@
-// src/components/providers/DraftSyncProvider.tsx
 'use client';
 
 import { useEffect, useRef, type MutableRefObject } from 'react';

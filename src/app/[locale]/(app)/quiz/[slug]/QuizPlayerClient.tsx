@@ -1,11 +1,10 @@
 'use client';
 
+import { useRouter, Link } from '@/i18n/navigation';
 import { useEffect, useReducer, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -24,7 +23,8 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useQuizAIExplain } from '@/features/quiz/hooks/useQuizAIExplain';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
-import { useQuizViewport } from '@/features/quiz/hooks/useQuizViewport';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { MEDIA_MAX_MD } from '@/shared/constants/breakpoints';
 import type {
   QuizAnswer,
   SavedQuizProgress,
@@ -682,7 +682,7 @@ export default function QuizPlayerClient({
   const encodedSlug = routePathSegment(slug);
   const [state, dispatch] = useReducer(quizPlayerReducer, initialQuizPlayerState);
 
-  const { isMobile } = useQuizViewport();
+  const isMobile = useMediaQuery(MEDIA_MAX_MD);
 
   const {
     showAIModal,

@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useReducer } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { Suspense, useEffect, useReducer } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';

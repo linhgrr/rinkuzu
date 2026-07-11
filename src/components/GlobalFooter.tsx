@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
 import { shouldHideGlobalFooter } from '@/lib/routing/pathname';
 import { Footer as FooterSection } from '@/features/landing/components/new-landing/Footer';
 

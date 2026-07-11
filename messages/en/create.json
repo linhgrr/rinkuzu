@@ -74,5 +74,15 @@
   "processingStarted": "Processing started",
   "failedToStartProcessing": "Failed to start processing",
   "confirmRemoveQuestionTitle": "Remove question?",
-  "confirmRemoveQuestionMessage": "Are you sure you want to remove question {number}?"
+  "confirmRemoveQuestionMessage": "Are you sure you want to remove question {number}?",
+  "editDraftTitle": "Edit draft quiz",
+  "questionsExtracted": "{count} questions extracted",
+  "desktopOnlyTitle": "Open on a computer",
+  "desktopOnlyDescription": "Detailed question editing works best on a larger screen. Please continue on desktop.",
+  "backHome": "Back to home",
+  "publishQuiz": "Publish quiz",
+  "publishingQuiz": "Publishing…",
+  "publishSuccess": "Quiz published!",
+  "publishFailed": "Could not publish quiz",
+  "folderLabel": "Folder"
 }

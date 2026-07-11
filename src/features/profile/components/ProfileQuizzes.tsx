@@ -1,8 +1,8 @@
 'use client';
 
+import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -235,7 +235,6 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                               key={quiz.id}
                               quiz={quiz}
                               quizId={quiz.id}
-                              locale={locale}
                               onDelete={
                                 quiz.ownedByMe
                                   ? () => dispatch({ type: 'delete:prompt', quiz })

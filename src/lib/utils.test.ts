@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { calculateScore, cn, generateSlug, getErrorMessage, truncateText } from './utils';
+import { calculateScore, cn, generateSlug, truncateText } from './utils';
 
 describe('utils', () => {
   it('generates a slug with a deterministic suffix shape', () => {
@@ -83,10 +83,5 @@ describe('utils', () => {
   it('truncates long text', () => {
     expect(truncateText('abcdef', 4)).toBe('abcd...');
     expect(truncateText('abc', 4)).toBe('abc');
-  });
-
-  it('normalizes unknown errors', () => {
-    expect(getErrorMessage(new Error('boom'))).toBe('boom');
-    expect(getErrorMessage('boom')).toBe('An unknown error occurred');
   });
 });

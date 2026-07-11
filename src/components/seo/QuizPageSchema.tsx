@@ -1,7 +1,10 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { toBrowserPath } from '@/lib/routing/pathname';
 import { siteUrl } from '@/lib/seo';
+import { ROUTES } from '@/shared/constants/routes';
 
 interface QuizPageSchemaProps {
   quizSlug: string;
@@ -20,7 +23,8 @@ export function QuizPageSchema({
   categoryName,
   questionCount,
 }: QuizPageSchemaProps) {
-  const quizUrl = `${siteUrl.origin}/quiz/${quizSlug}`;
+  const locale = useLocale();
+  const quizUrl = `${siteUrl.origin}${toBrowserPath(ROUTES.QUIZ.VIEW(quizSlug), locale)}`;
 
   // Primary: SoftwareApplication schema
   const softwareSchema = {

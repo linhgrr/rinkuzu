@@ -1,5 +1,3 @@
-// src/lib/gamification.ts
-
 /**
  * Calculate user level from XP (Linear: 100 XP = 1 level)
  * Level 1: 0-99 XP

@@ -1,4 +1,3 @@
-// /src/store/useDraftStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { StoreDraftStatus } from '@/lib/quiz/draftStatus';

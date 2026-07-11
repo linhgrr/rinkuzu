@@ -1,7 +1,7 @@
 'use client';
 
+import { useRouter } from '@/i18n/navigation';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import { useRouter } from 'next/navigation';
 import { getSubjectHistoryDetailFresh } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { getJobIdForSession, getSessionExerciseOutcome } from '../lib/session-storage';

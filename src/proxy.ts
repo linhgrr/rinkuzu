@@ -3,8 +3,8 @@ import createMiddleware from 'next-intl/middleware';
 import { getToken } from 'next-auth/jwt';
 import { randomUUID } from 'node:crypto';
 import { routing } from './i18n/routing';
-import { defaultLocale } from './i18n/config';
-import { getLocaleFromPath, matchesPrefix } from './lib/routing/pathname';
+import { getLocaleFromPath, matchesPrefix, toBrowserPath } from './lib/routing/pathname';
+import { ROUTES } from './shared/constants/routes';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -91,13 +91,6 @@ function isSameOrigin(request: NextRequest): boolean {
   return !origin && !referer && !fetchSite ? false : false;
 }
 
-function localizePath(pathname: string, locale: string): string {
-  if (locale === defaultLocale) {
-    return pathname;
-  }
-  return `/${locale}${pathname}`;
-}
-
 function applySecurityHeaders<T extends Response>(response: T, requestId: string): T {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
@@ -153,17 +146,14 @@ export default async function middleware(request: NextRequest) {
     });
 
     if ((isAdminRoute || isAuthRequiredRoute) && !token) {
-      const loginPath = localizePath('/login', locale);
-      const loginUrl = new URL(loginPath, request.url);
-      loginUrl.searchParams.set(
-        'callbackUrl',
-        `${request.nextUrl.pathname}${request.nextUrl.search}`,
-      );
+      const loginUrl = new URL(toBrowserPath(ROUTES.LOGIN, locale), request.url);
+      // Canonical callbackUrl is locale-unprefixed (same form as ROUTES / next-intl hrefs).
+      loginUrl.searchParams.set('callbackUrl', `${pathWithoutLocale}${request.nextUrl.search}`);
       return applySecurityHeaders(NextResponse.redirect(loginUrl), requestId);
     }
 
     if (isAdminRoute && token?.role !== 'admin') {
-      const homeUrl = new URL(localizePath('/', locale), request.url);
+      const homeUrl = new URL(toBrowserPath(ROUTES.HOME, locale), request.url);
       return applySecurityHeaders(NextResponse.redirect(homeUrl), requestId);
     }
   }

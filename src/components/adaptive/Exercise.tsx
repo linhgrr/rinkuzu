@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { hasCompleteExerciseAnswer } from '@/features/adaptive/lib/exercise-answer';

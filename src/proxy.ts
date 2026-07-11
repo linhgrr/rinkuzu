@@ -4,27 +4,13 @@ import { getToken } from 'next-auth/jwt';
 import { randomUUID } from 'node:crypto';
 import { routing } from './i18n/routing';
 import { getLocaleFromPath, matchesPrefix, toBrowserPath } from './lib/routing/pathname';
+import { AUTH_REQUIRED_PATH_PREFIXES } from './shared/constants/nav';
 import { ROUTES } from './shared/constants/routes';
 
 const intlMiddleware = createMiddleware(routing);
 
-const AUTH_REQUIRED_PREFIXES = [
-  '/dashboard',
-  '/adaptive/upload',
-  '/adaptive/processing',
-  '/adaptive/exercise',
-  '/adaptive/subject',
-  '/adaptive/result',
-  '/create',
-  '/profile',
-  '/review',
-  '/subscription',
-  '/history',
-  '/bookmarks',
-  '/my-quizzes',
-  '/draft',
-  '/edit',
-];
+// Guest-only login/register redirect is handled in auth layout (session check).
+const AUTH_REQUIRED_PREFIXES = AUTH_REQUIRED_PATH_PREFIXES;
 
 const ADMIN_PREFIX = '/admin';
 

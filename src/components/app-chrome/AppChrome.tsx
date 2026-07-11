@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { toBrowserPath } from '@/lib/routing/pathname';
+import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
 import { ROUTES } from '@/shared/constants/routes';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 
@@ -138,63 +139,30 @@ interface AppChromeProps {
   children: React.ReactNode;
 }
 
-const PRIMARY_NAV: NavEntry[] = [
-  { id: 'home', labelKey: 'home', icon: ICON.home, href: ROUTES.DASHBOARD },
-  {
-    id: 'quiz',
-    labelKey: 'groupQuizBuilder',
-    icon: ICON.quiz,
-    href: ROUTES.CREATE_QUIZ,
-    matchPrefix: '/create',
-    items: [
-      { href: '/my-quizzes', labelKey: 'myQuizzes' },
-      { href: '/review', labelKey: 'review' },
-      { href: '/history', labelKey: 'history', matchPrefix: '/history' },
-      { href: '/bookmarks', labelKey: 'bookmarks' },
-    ],
-  },
-  {
-    id: 'adaptive',
-    labelKey: 'groupAdaptiveLearning',
-    icon: ICON.ai,
-    href: '/adaptive',
-    matchPrefix: '/adaptive',
-    items: [
-      { href: '/adaptive', labelKey: 'adaptiveLibrary' },
-      { href: '/adaptive/upload', labelKey: 'adaptiveUpload' },
-    ],
-  },
-  {
-    id: 'admin',
-    labelKey: 'groupAdmin',
-    icon: ICON.admin,
-    requiredRole: 'admin',
-    items: [
-      { href: '/admin/quizzes', labelKey: 'quizManagement' },
-      { href: '/admin/users', labelKey: 'userManagement' },
-      { href: '/admin/subscriptions', labelKey: 'subscriptions' },
-      { href: '/admin/plans', labelKey: 'pricingPlans' },
-      { href: '/admin/stats', labelKey: 'statistics' },
-      { href: '/admin/reports', labelKey: 'quizReports' },
-      { href: '/admin/ocr-keys', labelKey: 'ocrKeys' },
-    ],
-  },
-  { id: 'explore', labelKey: 'explore', icon: ICON.explore, href: ROUTES.EXPLORE },
-];
+const NAV_ICON_BY_ID: Record<string, string> = {
+  home: ICON.home,
+  quiz: ICON.quiz,
+  adaptive: ICON.ai,
+  admin: ICON.admin,
+  explore: ICON.explore,
+  account: ICON.setting,
+  help: ICON.help,
+};
 
-const BOTTOM_NAV: NavEntry[] = [
-  {
-    id: 'account',
-    labelKey: 'settings',
-    icon: ICON.setting,
-    href: '/profile',
-    items: [
-      { href: '/profile', labelKey: 'profile' },
-      { href: '/subscription', labelKey: 'subscription' },
-    ],
-  },
-  { id: 'help', labelKey: 'helpSupport', icon: ICON.help, href: '/contact' },
-];
+function mapDesktopNav(defs: typeof DESKTOP_PRIMARY_NAV): NavEntry[] {
+  return defs.map((def) => ({
+    id: def.id,
+    labelKey: def.labelKey,
+    icon: NAV_ICON_BY_ID[def.id] ?? ICON.home,
+    href: def.href,
+    matchPrefix: def.matchPrefix,
+    requiredRole: def.requiredRole,
+    items: def.items,
+  }));
+}
+
+const PRIMARY_NAV: NavEntry[] = mapDesktopNav(DESKTOP_PRIMARY_NAV);
+const BOTTOM_NAV: NavEntry[] = mapDesktopNav(DESKTOP_BOTTOM_NAV);
 
 function isHrefActive(pathname: string, href?: string, matchPrefix?: string) {
   if (!href) return false;

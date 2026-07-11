@@ -20,12 +20,13 @@ const AUTH_REQUIRED_PREFIXES = [
   '/review',
   '/subscription',
   '/history',
+  '/bookmarks',
+  '/my-quizzes',
   '/draft',
   '/edit',
 ];
 
 const ADMIN_PREFIX = '/admin';
-const GUEST_ONLY_PREFIXES = ['/login', '/register'];
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -144,11 +145,8 @@ export default async function middleware(request: NextRequest) {
   const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
     matchesPrefix(pathWithoutLocale, prefix),
   );
-  const isGuestOnlyRoute = GUEST_ONLY_PREFIXES.some((prefix) =>
-    matchesPrefix(pathWithoutLocale, prefix),
-  );
 
-  if (isAdminRoute || isAuthRequiredRoute || isGuestOnlyRoute) {
+  if (isAdminRoute || isAuthRequiredRoute) {
     const token = await getToken({
       req: request,
       secret: process.env['NEXTAUTH_SECRET'],
@@ -167,11 +165,6 @@ export default async function middleware(request: NextRequest) {
     if (isAdminRoute && token?.role !== 'admin') {
       const homeUrl = new URL(localizePath('/', locale), request.url);
       return applySecurityHeaders(NextResponse.redirect(homeUrl), requestId);
-    }
-
-    if (isGuestOnlyRoute && token) {
-      const dashboardUrl = new URL(localizePath('/dashboard', locale), request.url);
-      return applySecurityHeaders(NextResponse.redirect(dashboardUrl), requestId);
     }
   }
 

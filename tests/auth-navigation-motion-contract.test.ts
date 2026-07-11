@@ -5,8 +5,8 @@ const loginFormSource = readFileSync('src/components/auth/LoginForm.tsx', 'utf8'
 const authShellSource = readFileSync('src/components/auth/AuthShell.tsx', 'utf8');
 
 describe('auth navigation and motion contracts', () => {
-  it('performs one client navigation after credentials login', () => {
-    expect(loginFormSource).toContain('replace(callbackUrl);');
+  it('uses the server-validated URL for one hard navigation after credentials login', () => {
+    expect(loginFormSource).toContain('window.location.replace(result.url);');
     expect(loginFormSource).not.toContain('prefetch(callbackUrl)');
     expect(loginFormSource).not.toContain('refresh();');
   });

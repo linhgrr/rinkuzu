@@ -195,11 +195,6 @@ const nextConfig = {
     // Set NEXT_IMAGE_UNOPTIMIZED=true only when debugging image delivery issues.
     unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',
   },
-  env: {
-    MONGODB_URI: process.env.MONGODB_URI,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
-  },
   compiler: {
     // Drop verbose logs from production bundles while keeping actionable errors/warnings.
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,

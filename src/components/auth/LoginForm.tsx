@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,8 +19,8 @@ import {
   HiOutlineEyeOff,
 } from 'react-icons/hi';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
-import { defaultLocale, locales } from '@/i18n/config';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
+import { resolveSafeAuthRedirect } from '@/lib/routing/auth-redirect';
 
 interface LoginFormProps {
   locale: string;
@@ -38,7 +38,8 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<ErrorState | null>(null);
   const [retrySeconds, setRetrySeconds] = useState(0);
-  const { replace } = useRouter();
+  const [navigationPending, setNavigationPending] = useState(false);
+  const submissionInFlight = useRef(false);
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
 
@@ -53,33 +54,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
     formState: { errors, isSubmitting },
   } = form;
 
-  const callbackUrl = (() => {
-    const defaultRedirect = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
-    const raw = get('callbackUrl');
-
-    if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
-      return defaultRedirect;
-    }
-
-    const pathOnly = raw.split('?')[0];
-    const normalizedPath =
-      pathOnly.length > 1 && pathOnly.endsWith('/') ? pathOnly.slice(0, -1) : pathOnly;
-    const localeRoot = locale === defaultLocale ? '/' : `/${locale}`;
-    const localeLoginPath = locale === defaultLocale ? '/login' : `/${locale}/login`;
-    const localeRegisterPath = locale === defaultLocale ? '/register' : `/${locale}/register`;
-    const localeRoots = locales.map((supportedLocale) => `/${supportedLocale}`);
-    const blockedCallbacks = new Set([
-      '/',
-      '/login',
-      '/register',
-      ...localeRoots,
-      localeRoot,
-      localeLoginPath,
-      localeRegisterPath,
-    ]);
-
-    return blockedCallbacks.has(normalizedPath) ? defaultRedirect : raw;
-  })();
+  const callbackUrl = resolveSafeAuthRedirect(get('callbackUrl'), locale);
 
   const startRetryCountdown = (seconds: number) => {
     setRetrySeconds(seconds);
@@ -95,7 +70,8 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
   }, [retrySeconds]);
 
   const onSubmit = handleSubmit(async (values) => {
-    if (retrySeconds > 0) return;
+    if (retrySeconds > 0 || submissionInFlight.current) return;
+    submissionInFlight.current = true;
     setServerError(null);
 
     try {
@@ -107,6 +83,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
       });
 
       if (result?.error) {
+        submissionInFlight.current = false;
         const code = result.error;
         if (code === 'account_locked') {
           startRetryCountdown(15 * 60);
@@ -120,18 +97,22 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         }
         return;
       }
-      if (result?.ok) {
-        replace(callbackUrl);
+      if (result?.ok && result.url) {
+        setNavigationPending(true);
+        window.location.replace(result.url);
         return;
       }
+      submissionInFlight.current = false;
       setServerError({ code: 'unknown', message: t('loginFailed') });
     } catch (caught) {
+      submissionInFlight.current = false;
       console.error('Login exception:', caught);
       setServerError({ code: 'network', message: t('loginError') });
     }
   });
 
-  const submitDisabled = isSubmitting || retrySeconds > 0;
+  const submitPending = isSubmitting || navigationPending;
+  const submitDisabled = submitPending || retrySeconds > 0;
   const lockoutCountdownLabel =
     retrySeconds > 0
       ? `${Math.floor(retrySeconds / 60)
@@ -142,7 +123,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
 
   return (
     <div>
-      {googleEnabled && <GoogleAuthButton callbackUrl={callbackUrl} disabled={isSubmitting} />}
+      {googleEnabled && <GoogleAuthButton callbackUrl={callbackUrl} disabled={submitPending} />}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>
         {serverError && (
           <Card
@@ -180,7 +161,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
           </Card>
         )}
 
-        <fieldset disabled={isSubmitting} className="space-y-6 disabled:opacity-60">
+        <fieldset disabled={submitPending} className="space-y-6 disabled:opacity-60">
           <div>
             <Input
               label={t('emailAddress')}
@@ -255,13 +236,13 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         <div className="pt-2">
           <Button
             type="submit"
-            loading={isSubmitting}
+            loading={submitPending}
             disabled={submitDisabled}
-            aria-busy={isSubmitting}
+            aria-busy={submitPending}
             size="lg"
             className="w-full rounded-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
           >
-            {isSubmitting ? t('signingIn') : t('signInButton')}
+            {submitPending ? t('signingIn') : t('signInButton')}
           </Button>
         </div>
       </form>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {
@@ -47,19 +47,29 @@ interface ChatSessionState {
   aiError: string;
 }
 
+function persistenceFromIdentity(identity: string | null): ChatHistoryPersistence | undefined {
+  if (!identity) return undefined;
+  if (identity.startsWith('attempt:')) {
+    return { scope: 'attempt', id: identity.slice('attempt:'.length) };
+  }
+  if (identity === 'bookmarks:') {
+    return { scope: 'bookmarks' };
+  }
+  return undefined;
+}
+
 export function useStreamingChatSession(options: UseStreamingChatSessionOptions = {}) {
   const { persistence } = options;
   const persistenceScope = persistence?.scope;
   const persistenceId = persistence?.scope === 'attempt' ? persistence.id : undefined;
-  const stablePersistence = useMemo<ChatHistoryPersistence | undefined>(() => {
-    if (persistenceScope === 'attempt' && persistenceId) {
-      return { scope: 'attempt', id: persistenceId };
-    }
-    return persistenceScope === 'bookmarks' ? { scope: 'bookmarks' } : undefined;
-  }, [persistenceId, persistenceScope]);
-  const persistenceIdentity = stablePersistence
-    ? `${stablePersistence.scope}:${stablePersistence.scope === 'attempt' ? stablePersistence.id : ''}`
-    : null;
+  // Derive a stable identity string; rebuild persistence objects inside effects only.
+  const persistenceIdentity =
+    persistenceScope === 'attempt' && persistenceId
+      ? `attempt:${persistenceId}`
+      : persistenceScope === 'bookmarks'
+        ? 'bookmarks:'
+        : null;
+
   const [hydratedPersistenceIdentity, setHydratedPersistenceIdentity] = useState<string | null>(
     null,
   );
@@ -72,6 +82,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
   });
 
   useEffect(() => {
+    const stablePersistence = persistenceFromIdentity(persistenceIdentity);
     if (!stablePersistence || typeof window === 'undefined') {
       return;
     }
@@ -81,7 +92,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       chatHistories: readChatHistories(stablePersistence),
     }));
     setHydratedPersistenceIdentity(persistenceIdentity);
-  }, [persistenceIdentity, stablePersistence]);
+  }, [persistenceIdentity]);
 
   const { aiError, chatHistories, loadingAI, userQuestion } = state;
 
@@ -101,6 +112,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
   };
 
   useEffect(() => {
+    const stablePersistence = persistenceFromIdentity(persistenceIdentity);
     if (
       !stablePersistence ||
       typeof window === 'undefined' ||
@@ -110,7 +122,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
     }
 
     writeChatHistories(stablePersistence, chatHistories);
-  }, [chatHistories, hydratedPersistenceIdentity, persistenceIdentity, stablePersistence]);
+  }, [chatHistories, hydratedPersistenceIdentity, persistenceIdentity]);
 
   const ensureHistory = (historyKey: string | number) => {
     const key = String(historyKey);
@@ -279,13 +291,9 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
     }
   };
 
-  const totalTurns = useMemo(
-    () =>
-      Object.values(chatHistories).reduce(
-        (sum, history) => sum + Math.floor(history.length / 2),
-        0,
-      ),
-    [chatHistories],
+  const totalTurns = Object.values(chatHistories).reduce(
+    (sum, history) => sum + Math.floor(history.length / 2),
+    0,
   );
 
   return {

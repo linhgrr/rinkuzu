@@ -161,70 +161,81 @@ function AttemptQuestionCard({
         <section>
           <h5 className="mb-2 text-sm font-semibold text-ink">{t('allOptions')}:</h5>
           <div className="space-y-3">
-            {question.options.map((option, optionIndex) => {
-              const isUserChoice =
-                question.type === 'single'
-                  ? question.userAnswer === optionIndex
-                  : Array.isArray(question.userAnswer) && question.userAnswer.includes(optionIndex);
+            {(() => {
+              const userAnswerSet =
+                question.type !== 'single' && Array.isArray(question.userAnswer)
+                  ? new Set(question.userAnswer)
+                  : null;
+              const correctIndexSet =
+                question.type !== 'single' && question.correctIndexes
+                  ? new Set(question.correctIndexes)
+                  : null;
 
-              const isCorrectChoice =
-                question.type === 'single'
-                  ? question.correctIndex === optionIndex
-                  : question.correctIndexes?.includes(optionIndex);
+              return question.options.map((option, optionIndex) => {
+                const isUserChoice =
+                  question.type === 'single'
+                    ? question.userAnswer === optionIndex
+                    : Boolean(userAnswerSet?.has(optionIndex));
 
-              return (
-                <div
-                  key={`${optionIndex}-${option}`}
-                  className={cn(
-                    'rounded-2xl border-2 p-3 sm:p-4',
-                    isCorrectChoice
-                      ? 'border-green-500 bg-green-50'
-                      : isUserChoice
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-line bg-surface-warm',
-                  )}
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 flex-1 break-words text-sm leading-6 text-ink sm:text-base">
-                      <span className="font-semibold">
-                        {String.fromCharCode(65 + optionIndex)}.
-                      </span>{' '}
-                      {option}
+                const isCorrectChoice =
+                  question.type === 'single'
+                    ? question.correctIndex === optionIndex
+                    : Boolean(correctIndexSet?.has(optionIndex));
+
+                return (
+                  <div
+                    key={`${optionIndex}-${option}`}
+                    className={cn(
+                      'rounded-2xl border-2 p-3 sm:p-4',
+                      isCorrectChoice
+                        ? 'border-green-500 bg-green-50'
+                        : isUserChoice
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-line bg-surface-warm',
+                    )}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1 break-words text-sm leading-6 text-ink sm:text-base">
+                        <span className="font-semibold">
+                          {String.fromCharCode(65 + optionIndex)}.
+                        </span>{' '}
+                        {option}
+                      </div>
+                      <div className="flex flex-wrap gap-2 sm:ml-4 sm:justify-end">
+                        {isCorrectChoice && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
+                            <HiOutlineCheck className="size-3" />
+                            {t('correctAnswer')}
+                          </span>
+                        )}
+                        {isUserChoice && !isCorrectChoice && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
+                            <HiOutlineX className="size-3" />
+                            {t('youChose')}
+                          </span>
+                        )}
+                        {isUserChoice && isCorrectChoice && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
+                            <HiOutlineCheck className="size-3" />
+                            {t('youChoseCorrectly')}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 sm:ml-4 sm:justify-end">
-                      {isCorrectChoice && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
-                          <HiOutlineCheck className="size-3" />
-                          {t('correctAnswer')}
-                        </span>
-                      )}
-                      {isUserChoice && !isCorrectChoice && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
-                          <HiOutlineX className="size-3" />
-                          {t('youChose')}
-                        </span>
-                      )}
-                      {isUserChoice && isCorrectChoice && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
-                          <HiOutlineCheck className="size-3" />
-                          {t('youChoseCorrectly')}
-                        </span>
-                      )}
-                    </div>
+                    {question.optionImages?.[optionIndex] && (
+                      <div className="mt-3 overflow-hidden rounded-xl">
+                        <ImageDisplay
+                          src={question.optionImages[optionIndex]}
+                          alt={t('optionImageAlt', {
+                            option: String.fromCharCode(65 + optionIndex),
+                          })}
+                        />
+                      </div>
+                    )}
                   </div>
-                  {question.optionImages?.[optionIndex] && (
-                    <div className="mt-3 overflow-hidden rounded-xl">
-                      <ImageDisplay
-                        src={question.optionImages[optionIndex]}
-                        alt={t('optionImageAlt', {
-                          option: String.fromCharCode(65 + optionIndex),
-                        })}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </section>
       </CardContent>

@@ -94,6 +94,7 @@ export class AdminBillingRepository implements IAdminBillingRepository {
           .lean<{ _id: string }>();
         if (!plan) return;
 
+        // Sequential on purpose: withTransaction forbids Promise.all (architecture check).
         const subscriptionExists = await Subscription.exists({ type: planId }).session(session);
         const assignedUserExists = await User.exists({ 'subscription.type': planId }).session(
           session,

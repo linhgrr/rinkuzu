@@ -21,10 +21,9 @@ function isCorrectAnswer(question: QuizQuestion, userAnswer: AttemptAnswer): boo
     return userAnswer === question.correctIndex;
   }
   if (!Array.isArray(userAnswer)) return false;
-  return (
-    question.correctIndexes.length === userAnswer.length &&
-    question.correctIndexes.every((index) => userAnswer.includes(index))
-  );
+  if (question.correctIndexes.length !== userAnswer.length) return false;
+  const userAnswerSet = new Set(userAnswer);
+  return question.correctIndexes.every((index) => userAnswerSet.has(index));
 }
 
 export class UserAttemptDtoMapper {

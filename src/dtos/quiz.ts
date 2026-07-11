@@ -11,49 +11,42 @@ import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
 const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
 
-export const quizIdRouteParamsSchema = z.object({ id: objectIdRouteParamSchema }).strict();
-export const quizSlugRouteParamsSchema = z.object({ slug: slugRouteParamSchema }).strict();
-export const quizDraftIdRouteParamsSchema = z.object({ id: routePathSegmentSchema }).strict();
+export const quizIdRouteParamsSchema = z.strictObject({ id: objectIdRouteParamSchema });
+export const quizSlugRouteParamsSchema = z.strictObject({ slug: slugRouteParamSchema });
+export const quizDraftIdRouteParamsSchema = z.strictObject({ id: routePathSegmentSchema });
 
-export const quizListQuerySchema = z
-  .object({
-    search: z.string().trim().min(1).max(200).optional(),
-    folder: z.union([z.literal(UNFILED_FOLDER_TARGET), objectIdSchema]).optional(),
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(10),
-    mine: queryBooleanSchema.default(false),
-    compact: queryBooleanSchema.default(false),
-    visibility: z.enum(['public', 'private']).optional(),
-  })
-  .strict();
+export const quizListQuerySchema = z.strictObject({
+  search: z.string().trim().min(1).max(200).optional(),
+  folder: z.union([z.literal(UNFILED_FOLDER_TARGET), objectIdSchema]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  mine: queryBooleanSchema.default(false),
+  compact: queryBooleanSchema.default(false),
+  visibility: z.enum(['public', 'private']).optional(),
+});
 
-export const reportQuizRequestSchema = z
-  .object({
-    content: z.string().trim().min(1, 'Report content is required').max(2000),
-  })
-  .strict();
+export const reportQuizRequestSchema = z.strictObject({
+  content: z.string().trim().min(1, 'Report content is required').max(2000),
+});
 
-export const createQuizRequestSchema = z
-  .object({
-    title: z.string().trim().min(1, 'Title is required').max(200),
-    description: z.string().trim().max(1000).optional(),
-    folderId: z.string().trim().min(1).nullable().optional(),
-    questions: questionListSchema,
-    isPrivate: z.boolean(),
-    pdfUrl: z.string().trim().url().optional(),
-  })
-  .strict();
+export const createQuizRequestSchema = z.strictObject({
+  title: z.string().trim().min(1, 'Title is required').max(200),
+  description: z.string().trim().max(1000).optional(),
+  folderId: z.string().trim().min(1).nullable().optional(),
+  questions: questionListSchema,
+  isPrivate: z.boolean(),
+  pdfUrl: z.url().optional(),
+});
 
 export const updateQuizRequestSchema = z
-  .object({
+  .strictObject({
     title: z.string().trim().min(1, 'Title is required').max(200).optional(),
     description: z.string().trim().max(1000).optional(),
     folder: z.string().trim().min(1).nullable().optional(),
     questions: questionListSchema.optional(),
     isPrivate: z.boolean().optional(),
-    pdfUrl: z.string().trim().url().optional(),
+    pdfUrl: z.url().optional(),
   })
-  .strict()
   .refine(
     (input) => Object.values(input).some((value) => value !== undefined),
     'No quiz fields provided',
@@ -174,22 +167,18 @@ export interface QuizAttemptResultDto {
 
 const quizProgressAnswerSchema = z.union([z.number(), z.array(z.number())]);
 
-export const submitQuizAttemptRequestSchema = z
-  .object({
-    answers: z.array(quizProgressAnswerSchema),
-    userEmail: z.string().trim().email().optional(),
-  })
-  .strict();
+export const submitQuizAttemptRequestSchema = z.strictObject({
+  answers: z.array(quizProgressAnswerSchema),
+  userEmail: z.string().trim().pipe(z.email()).optional(),
+});
 
-export const addDiscussionCommentRequestSchema = z
-  .object({
-    questionIndex: z.number().int().min(0),
-    content: z.string().trim().min(1, 'Comment content is required').max(2000),
-  })
-  .strict();
+export const addDiscussionCommentRequestSchema = z.strictObject({
+  questionIndex: z.number().int().min(0),
+  content: z.string().trim().min(1, 'Comment content is required').max(2000),
+});
 
 export const savedQuizProgressSchema = z
-  .object({
+  .strictObject({
     questionOrder: z.array(z.number()),
     optionOrders: z.array(z.array(z.number())),
     userAnswers: z.array(quizProgressAnswerSchema),
@@ -197,7 +186,6 @@ export const savedQuizProgressSchema = z
     answeredCount: z.number().int().min(0),
     totalQuestions: z.number().int().min(0),
   })
-  .strict()
   .refine(
     (progress) =>
       progress.questionOrder.length === progress.totalQuestions &&

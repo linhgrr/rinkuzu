@@ -579,10 +579,14 @@ function DesktopAIModal({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-neutral-700">
+          <label
+            htmlFor="desktop-quiz-ai-question"
+            className="mb-2 block text-sm font-medium text-neutral-700"
+          >
             {t('askSpecificQuestion')}
           </label>
           <Input
+            id="desktop-quiz-ai-question"
             value={userQuestion}
             onChange={(event) => onUserQuestionChange(event.target.value)}
             placeholder={t('questionPlaceholder')}

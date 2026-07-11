@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useReducer } from 'react';
+import { FormEvent, useEffect, useReducer } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   HiOutlineCheckCircle,
@@ -135,14 +135,20 @@ function reducer(state: State, action: Action): State {
   }
 }
 
+const OCR_KEY_DATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+const ocrKeyDateTimeOptions: Intl.DateTimeFormatOptions = {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: OCR_KEY_DATE_TIME_ZONE,
+};
+const ocrKeyDateFormatterEn = new Intl.DateTimeFormat('en', ocrKeyDateTimeOptions);
+const ocrKeyDateFormatterVi = new Intl.DateTimeFormat('vi', ocrKeyDateTimeOptions);
+
 function formatDate(value: string | null, locale: string) {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date);
+  return (locale.startsWith('vi') ? ocrKeyDateFormatterVi : ocrKeyDateFormatterEn).format(date);
 }
 
 export default function AdminOcrKeysPage() {
@@ -150,14 +156,8 @@ export default function AdminOcrKeysPage() {
   const locale = useLocale();
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const activeKeyCount = useMemo(
-    () => state.keys.filter((key) => key.enabled).length,
-    [state.keys],
-  );
-  const failedKeyCount = useMemo(
-    () => state.keys.filter((key) => key.status === 'failed').length,
-    [state.keys],
-  );
+  const activeKeyCount = state.keys.filter((key) => key.enabled).length;
+  const failedKeyCount = state.keys.filter((key) => key.status === 'failed').length;
 
   async function loadKeys(options?: { refreshing?: boolean }) {
     dispatch({

@@ -1,13 +1,5 @@
 import { useRouter } from '@/i18n/navigation';
-import {
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { useDeferredValue, useEffect, useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   checkApiHealth,
@@ -148,31 +140,28 @@ export const useAdaptiveDashboard = ({
   const refreshedCompletionKeysRef = useRef(new Set<string>());
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const refreshSubjects = useCallback(async () => {
+  const refreshSubjects = async () => {
     try {
       const data = await getSubjects();
       dispatch({ type: 'patch', value: { subjects: data } });
     } catch (e) {
       console.error('Failed to refresh subjects', e);
     }
-  }, []);
+  };
 
-  const handleGoUpload = useCallback(() => {
+  const handleGoUpload = () => {
     router.push(ADAPTIVE_ROUTES.upload);
-  }, [router]);
+  };
 
-  const handleOpenSubject = useCallback(
-    (jobId: string) => {
-      if (!deletingJobId) void startSubject(jobId);
-    },
-    [deletingJobId, startSubject],
-  );
+  const handleOpenSubject = (jobId: string) => {
+    if (!deletingJobId) void startSubject(jobId);
+  };
 
-  const handleDeleteClick = useCallback((subject: DashboardSubject) => {
+  const handleDeleteClick = (subject: DashboardSubject) => {
     setItemToDelete(subject);
-  }, []);
+  };
 
-  const handleConfirmDelete = useCallback(async () => {
+  const handleConfirmDelete = async () => {
     if (!itemToDelete || loadingJobId || deletingJobId) return;
 
     setDeletingJobId(itemToDelete.jobId);
@@ -189,31 +178,31 @@ export const useAdaptiveDashboard = ({
       setDeletingJobId(null);
       setItemToDelete(null);
     }
-  }, [deletingJobId, itemToDelete, jobLibrary, loadingJobId, refreshSubjects, t]);
+  };
 
-  const handleCancelDelete = useCallback(() => {
+  const handleCancelDelete = () => {
     if (!deletingJobId) setItemToDelete(null);
-  }, [deletingJobId]);
+  };
 
   // Map of completed + mastery-enriched subjects (from getSubjects), keyed by job_id,
   // so completed cards can show mastery %/labels via toDashboardSubject.
-  const enrichedByJobId = useMemo(() => {
+  const enrichedByJobId = (() => {
     const map = new Map<string, PipelineJobHistoryItem>();
     for (const subject of dashboardState.subjects) {
       map.set(subject.job_id, subject);
     }
     return map;
-  }, [dashboardState.subjects]);
+  })();
 
-  const completedJobsNeedingEnrichmentKey = useMemo(
-    () =>
-      jobLibrary.jobs
-        .filter((job) => job.status === 'completed' && !enrichedByJobId.has(job.job_id))
-        .map((job) => job.job_id)
-        .sort()
-        .join(','),
-    [enrichedByJobId, jobLibrary.jobs],
-  );
+  const completedJobsNeedingEnrichmentKey = (() => {
+    const jobIds: string[] = [];
+    for (const job of jobLibrary.jobs) {
+      if (job.status === 'completed' && !enrichedByJobId.has(job.job_id)) {
+        jobIds.push(job.job_id);
+      }
+    }
+    return jobIds.sort().join(',');
+  })();
 
   useEffect(() => {
     if (
@@ -237,7 +226,7 @@ export const useAdaptiveDashboard = ({
 
   // Exercise-history by job_id: drives the card status pill so a subject the
   // learner has practised shows "In progress"/"Completed" instead of mastery-only.
-  const exerciseByJobId = useMemo(() => {
+  const exerciseByJobId = (() => {
     const map = new Map<string, DashboardSubjectExercise>();
     for (const session of dashboardState.sessionHistory) {
       map.set(session.jobId, {
@@ -247,26 +236,22 @@ export const useAdaptiveDashboard = ({
       });
     }
     return map;
-  }, [dashboardState.sessionHistory]);
+  })();
 
   // Merge all-status jobs (live polling) with completed mastery enrichment.
-  const mergedSubjects = useMemo<DashboardSubject[]>(() => {
-    return jobLibrary.jobs.map((job) => {
-      const enriched = job.status === 'completed' ? enrichedByJobId.get(job.job_id) : undefined;
-      return enriched
-        ? toDashboardSubject(enriched, locale, t, exerciseByJobId.get(job.job_id) ?? null)
-        : buildDashboardSubjectFromJob(job, t, tAdaptive);
-    });
-  }, [enrichedByJobId, exerciseByJobId, jobLibrary.jobs, locale, t, tAdaptive]);
+  const mergedSubjects: DashboardSubject[] = jobLibrary.jobs.map((job) => {
+    const enriched = job.status === 'completed' ? enrichedByJobId.get(job.job_id) : undefined;
+    return enriched
+      ? toDashboardSubject(enriched, locale, t, exerciseByJobId.get(job.job_id) ?? null)
+      : buildDashboardSubjectFromJob(job, t, tAdaptive);
+  });
 
-  const normalizedSubjects = useMemo(() => {
-    return mergedSubjects.map((subject) => ({
-      subject,
-      normalizedDisplayName: subject.displayTitle.toLowerCase(),
-    }));
-  }, [mergedSubjects]);
+  const normalizedSubjects = mergedSubjects.map((subject) => ({
+    subject,
+    normalizedDisplayName: subject.displayTitle.toLowerCase(),
+  }));
 
-  const filteredSubjects = useMemo(() => {
+  const filteredSubjects = (() => {
     const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
     if (!normalizedQuery) return normalizedSubjects.map(({ subject }) => subject);
 
@@ -276,14 +261,11 @@ export const useAdaptiveDashboard = ({
       }
       return matches;
     }, []);
-  }, [deferredSearchQuery, normalizedSubjects]);
+  })();
 
-  const streakDays = useMemo(
-    () => calculateLearningStreak(dashboardState.sessionHistory),
-    [dashboardState.sessionHistory],
-  );
+  const streakDays = calculateLearningStreak(dashboardState.sessionHistory);
 
-  const dailyGoalProgress = useMemo(() => {
+  const dailyGoalProgress = (() => {
     if (todayStart === null) {
       return {
         current: 0,
@@ -303,7 +285,7 @@ export const useAdaptiveDashboard = ({
       total: DAILY_GOAL_TARGET,
       percent: Math.min(100, Math.round((current / DAILY_GOAL_TARGET) * 100)),
     };
-  }, [dashboardState.sessionHistory, todayStart]);
+  })();
 
   const upNextSubject = mergedSubjects.length > 0 ? mergedSubjects[0] : null;
 

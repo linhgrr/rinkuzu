@@ -3,11 +3,11 @@ import { objectIdRouteParamSchema, objectIdSchema } from '@/lib/validation/commo
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
 export const folderIdSchema = objectIdSchema;
-export const folderIdRouteParamsSchema = z.object({ id: objectIdRouteParamSchema }).strict();
+export const folderIdRouteParamsSchema = z.strictObject({ id: objectIdRouteParamSchema });
 export const folderTargetSchema = z
   .union([z.literal(UNFILED_FOLDER_TARGET), folderIdSchema])
   .transform((target) => (target === UNFILED_FOLDER_TARGET ? null : target));
-export const folderTargetRouteParamsSchema = z.object({ id: folderTargetSchema }).strict();
+export const folderTargetRouteParamsSchema = z.strictObject({ id: folderTargetSchema });
 
 export const createFolderRequestSchema = z.object({
   name: z.string().trim().min(1, 'Folder name is required').max(100),

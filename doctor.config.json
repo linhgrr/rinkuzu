@@ -26,6 +26,13 @@
       {
         "files": ["src/hooks/usePdfProcessor.ts"],
         "rules": ["react-doctor/async-await-in-loop"]
+      },
+      {
+        "files": [
+          "src/repositories/AdminBillingRepository.ts",
+          "src/repositories/SubscriptionRepository.ts"
+        ],
+        "rules": ["react-doctor/server-sequential-independent-await"]
       }
     ]
   }

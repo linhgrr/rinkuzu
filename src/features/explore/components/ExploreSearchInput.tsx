@@ -24,7 +24,7 @@ export function ExploreSearchInput({
   }, [initialQuery, onCommit, value]);
 
   return (
-    <div className="relative block max-w-3xl" role="search">
+    <search className="relative block max-w-3xl">
       <HiOutlineSearch
         className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-ink-muted"
         aria-hidden="true"
@@ -42,6 +42,6 @@ export function ExploreSearchInput({
         className="h-12 pl-12"
         aria-label={placeholder}
       />
-    </div>
+    </search>
   );
 }

@@ -10,6 +10,9 @@ const navigation = createNavigation(routing);
  * | API | Use for |
  * |-----|---------|
  * | `Link`, `useRouter`, `usePathname`, `redirect` | In-app navigation (locale applied for you) |
- * | `getPathname` | Build a final browser URL for a given locale (NextAuth, emails, middleware) |
+ *
+ * For building a final browser URL for a given locale (NextAuth, emails, middleware),
+ * use `toBrowserPath` / pure helpers in `@/lib/routing/pathname` instead of re-exporting
+ * next-intl `getPathname` here.
  */
-export const { Link, redirect, usePathname, useRouter, getPathname } = navigation;
+export const { Link, redirect, usePathname, useRouter } = navigation;

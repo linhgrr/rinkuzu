@@ -70,9 +70,10 @@ export function FloatingDraftProgress() {
             <button
               type="button"
               onClick={() => setIsExpanded(false)}
-              className="p-1 text-neutral-400 hover:text-neutral-600 transition-colors"
+              aria-label={t('collapse')}
+              className="p-1 text-neutral-400 transition-colors hover:text-neutral-600"
             >
-              <HiOutlineX className="size-4" />
+              <HiOutlineX className="size-4" aria-hidden="true" />
             </button>
           </div>
 
@@ -262,9 +263,10 @@ function DraftItem({
           <button
             type="button"
             onClick={onRemove}
-            className="p-1.5 text-neutral-400 hover:text-neutral-600 transition-colors"
+            aria-label={t('dismiss')}
+            className="p-1.5 text-neutral-400 transition-colors hover:text-neutral-600"
           >
-            <HiOutlineX className="size-4" />
+            <HiOutlineX className="size-4" aria-hidden="true" />
           </button>
         )}
       </div>

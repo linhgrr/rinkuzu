@@ -79,34 +79,6 @@ export function FlashcardPageSkeleton({ label }: PageSkeletonProps) {
   );
 }
 
-export function ProfileListPageSkeleton({ label }: PageSkeletonProps) {
-  return (
-    <div className="space-y-6" aria-busy="true" aria-label={label}>
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-56 rounded-md" />
-        <Skeleton className="h-5 w-80 max-w-full rounded-md" />
-      </div>
-      <div className="space-y-4">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div
-            key={`profile-list-row-skeleton-${index}`}
-            className="rounded-2xl border border-line-blue/30 bg-white p-5"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1 space-y-3">
-                <Skeleton className="h-6 w-3/5 rounded-md" />
-                <Skeleton className="h-4 w-4/5 rounded-md" />
-                <Skeleton className="h-4 w-2/5 rounded-md" />
-              </div>
-              <Skeleton className="h-9 w-24 shrink-0 rounded-full" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function ProfileSettingsPageSkeleton({ label }: PageSkeletonProps) {
   return (
     <div className="space-y-6" aria-busy="true" aria-label={label}>

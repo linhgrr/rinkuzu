@@ -12,9 +12,9 @@ const envSchema = z
       .string()
       .min(32, 'NEXTAUTH_SECRET must be at least 32 chars')
       .refine((v) => v !== 'replace-me', 'NEXTAUTH_SECRET must be changed from the default'),
-    NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
-    NEXT_PUBLIC_SITE_URL: z.string().url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
-    NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL must be a valid URL'),
+    NEXTAUTH_URL: z.url('NEXTAUTH_URL must be a valid URL'),
+    NEXT_PUBLIC_SITE_URL: z.url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
+    NEXT_PUBLIC_API_URL: z.url('NEXT_PUBLIC_API_URL must be a valid URL'),
 
     SESSION_MAX_AGE_SECONDS: z.coerce.number().int().positive(),
     SESSION_UPDATE_AGE_SECONDS: z.coerce.number().int().positive(),
@@ -25,9 +25,7 @@ const envSchema = z
     ADAPTIVE_PROXY_TIMEOUT_MS: z.coerce.number().int().positive(),
     INTERNAL_SERVICE_TOKEN: z.string().min(1, 'INTERNAL_SERVICE_TOKEN is required'),
 
-    OBJECT_STORAGE_ENDPOINT_EXTERNAL: z
-      .string()
-      .url('OBJECT_STORAGE_ENDPOINT_EXTERNAL must be a valid URL'),
+    OBJECT_STORAGE_ENDPOINT_EXTERNAL: z.url('OBJECT_STORAGE_ENDPOINT_EXTERNAL must be a valid URL'),
     OBJECT_STORAGE_REGION: z.string().refine(
       (value): value is (typeof OBJECT_STORAGE_REGIONS)[number] => {
         return OBJECT_STORAGE_REGIONS.includes(value as (typeof OBJECT_STORAGE_REGIONS)[number]);
@@ -39,7 +37,7 @@ const envSchema = z
     OBJECT_STORAGE_SECRET_KEY: z.string().min(1, 'OBJECT_STORAGE_SECRET_KEY is required'),
     OBJECT_STORAGE_BUCKET: z.string().min(1, 'OBJECT_STORAGE_BUCKET is required'),
 
-    MAIL_FROM: z.string().email('MAIL_FROM must be a valid email'),
+    MAIL_FROM: z.email('MAIL_FROM must be a valid email'),
     RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY is required'),
 
     PAYOS_CLIENT_ID: z.string().min(1, 'PAYOS_CLIENT_ID is required'),

@@ -1,6 +1,3 @@
-'use client';
-
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { isRetryableAdaptiveError } from '@/features/adaptive/lib/adaptive-api-error';
 import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types/pipeline';
 
@@ -13,15 +10,6 @@ const TERMINAL: ReadonlySet<PipelineStatus> = new Set(['completed', 'failed', 'c
 export type PollSnapshot = Pick<PipelineJobStatus, 'status' | 'progress'> & {
   retry_after_seconds?: number;
 } & Record<string, unknown>;
-
-export type UseJobPollingArgs<T extends PollSnapshot> = {
-  jobId: string | null;
-  enabled: boolean;
-  fetcher: (jobId: string, signal: AbortSignal) => Promise<T>;
-  onSnapshot?: (snap: T) => void;
-  onTerminal?: (snap: T) => void;
-  onError?: (err: unknown) => void;
-};
 
 // ---------------------------------------------------------------------------
 // Pure, testable core — no React; holds all scheduling / in-flight logic.
@@ -131,70 +119,4 @@ export function createJobPoller<T extends PollSnapshot>({
       abortController = null;
     },
   };
-}
-
-// ---------------------------------------------------------------------------
-// React hook — thin wrapper around createJobPoller
-// ---------------------------------------------------------------------------
-
-export function useJobPolling<T extends PollSnapshot>({
-  jobId,
-  enabled,
-  fetcher,
-  onSnapshot,
-  onTerminal,
-  onError,
-}: UseJobPollingArgs<T>) {
-  const [snapshot, setSnapshot] = useState<T | null>(null);
-
-  // Keep latest callbacks in refs so the effect doesn't re-run when they change.
-  const onSnapshotRef = useRef(onSnapshot);
-  const onTerminalRef = useRef(onTerminal);
-  const onErrorRef = useRef(onError);
-  useEffect(() => {
-    onSnapshotRef.current = onSnapshot;
-  }, [onSnapshot]);
-  useEffect(() => {
-    onTerminalRef.current = onTerminal;
-  }, [onTerminal]);
-  useEffect(() => {
-    onErrorRef.current = onError;
-  }, [onError]);
-
-  const fetcherRef = useRef(fetcher);
-  useEffect(() => {
-    fetcherRef.current = fetcher;
-  }, [fetcher]);
-
-  const stableHandlers = useCallback(
-    (): JobPollerHandlers<T> => ({
-      onSnapshot: (snap) => {
-        setSnapshot(snap);
-        onSnapshotRef.current?.(snap);
-      },
-      onTerminal: (snap) => {
-        setSnapshot(snap);
-        onTerminalRef.current?.(snap);
-      },
-      onError: (err) => onErrorRef.current?.(err),
-    }),
-    [],
-  );
-
-  useEffect(() => {
-    if (!enabled || !jobId) return;
-
-    const stableFetcher: JobPollerOptions<T>['fetcher'] = (id, sig) => fetcherRef.current(id, sig);
-
-    const poller = createJobPoller<T>({
-      jobId,
-      fetcher: stableFetcher,
-      handlers: stableHandlers(),
-    });
-
-    poller.start();
-    return () => poller.stop();
-  }, [enabled, jobId, stableHandlers]);
-
-  return { snapshot };
 }

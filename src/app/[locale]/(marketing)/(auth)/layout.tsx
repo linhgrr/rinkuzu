@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { authOptions, isGoogleLoginEnabled } from '@/lib/auth';
-import { toBrowserPath } from '@/lib/routing/pathname';
 import { noIndexMetadata } from '@/lib/seo/no-index-metadata';
 import { ROUTES } from '@/shared/constants/routes';
 
@@ -19,7 +18,8 @@ export default async function AuthLayout({
   const [{ locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
 
   if (session?.user) {
-    redirect(toBrowserPath(ROUTES.DASHBOARD, locale));
+    // Unprefixed href — next-intl applies localePrefix: always.
+    redirect({ href: ROUTES.DASHBOARD, locale });
   }
 
   return (

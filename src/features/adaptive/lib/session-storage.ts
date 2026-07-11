@@ -33,104 +33,90 @@ const correctAnswerSchema = z
   .union([z.string(), z.array(z.string()), z.boolean(), z.record(z.string(), z.string()), z.null()])
   .optional();
 
-const exerciseSchema = z
-  .object({
-    id: z.string().min(1),
-    exercise_id: z.string().min(1),
-    concept_name: z.string(),
-    concept_idx: z.number().int().min(0),
-    bloom_level: z.number().int().min(1).max(6),
-    bloom_label: bloomLabelSchema,
-    exercise_type: exerciseTypeSchema,
-    question: z.string(),
-    sentence: z.string().nullable().optional(),
-    options: z.record(z.string(), z.string()),
-    statement: z.string().nullable().optional(),
-    hint: z.string().nullable().optional(),
-    items: z.array(z.string()),
-    pairs: z.array(z.object({ left: z.string(), right: z.string() }).strict()),
-    right_items: z.array(z.string()),
-    rubric: z.array(z.string()).optional(),
-    correct_answer: correctAnswerSchema,
-    step: z.number().int().min(0),
-    max_steps: z.number().int().min(1),
-    theory: z
-      .object({
-        content: z.string(),
-        examples: z.array(z.string()),
-      })
-      .strict()
-      .nullable()
-      .optional(),
-    recommendation_reason: z
-      .object({
-        concept_name: z.string(),
-        bloom_level: z.number().int().min(1).max(6),
-        bloom_label: bloomLabelSchema,
-        satisfied_prereqs: z.array(z.object({ name: z.string(), mastery: z.number() }).strict()),
-        current_mastery: z.number(),
-        next_milestone: z.number(),
-      })
-      .strict()
-      .nullable()
-      .optional(),
-  })
-  .strict();
+const exerciseSchema = z.strictObject({
+  id: z.string().min(1),
+  exercise_id: z.string().min(1),
+  concept_name: z.string(),
+  concept_idx: z.number().int().min(0),
+  bloom_level: z.number().int().min(1).max(6),
+  bloom_label: bloomLabelSchema,
+  exercise_type: exerciseTypeSchema,
+  question: z.string(),
+  sentence: z.string().nullable().optional(),
+  options: z.record(z.string(), z.string()),
+  statement: z.string().nullable().optional(),
+  hint: z.string().nullable().optional(),
+  items: z.array(z.string()),
+  pairs: z.array(z.strictObject({ left: z.string(), right: z.string() })),
+  right_items: z.array(z.string()),
+  rubric: z.array(z.string()).optional(),
+  correct_answer: correctAnswerSchema,
+  step: z.number().int().min(0),
+  max_steps: z.number().int().min(1),
+  theory: z
+    .strictObject({
+      content: z.string(),
+      examples: z.array(z.string()),
+    })
+    .nullable()
+    .optional(),
+  recommendation_reason: z
+    .strictObject({
+      concept_name: z.string(),
+      bloom_level: z.number().int().min(1).max(6),
+      bloom_label: bloomLabelSchema,
+      satisfied_prereqs: z.array(z.strictObject({ name: z.string(), mastery: z.number() })),
+      current_mastery: z.number(),
+      next_milestone: z.number(),
+    })
+    .nullable()
+    .optional(),
+});
 
-const submitResultSchema = z
-  .object({
-    is_correct: z.boolean(),
-    correct_option: z.string(),
-    explanation: z.string(),
-    concept_name: z.string(),
-    bloom_level: z.number().int().min(1).max(6),
-    mastery_after: z.number(),
-    avg_mastery: z.number(),
-    step: z.number().int().min(0),
-    session_completed: z.boolean(),
-    stats: z
-      .object({
-        total_correct: z.number().int().min(0),
-        total_answered: z.number().int().min(0),
-        accuracy: z.number(),
-      })
-      .strict(),
-  })
-  .strict();
+const submitResultSchema = z.strictObject({
+  is_correct: z.boolean(),
+  correct_option: z.string(),
+  explanation: z.string(),
+  concept_name: z.string(),
+  bloom_level: z.number().int().min(1).max(6),
+  mastery_after: z.number(),
+  avg_mastery: z.number(),
+  step: z.number().int().min(0),
+  session_completed: z.boolean(),
+  stats: z.strictObject({
+    total_correct: z.number().int().min(0),
+    total_answered: z.number().int().min(0),
+    accuracy: z.number(),
+  }),
+});
 
-const sessionOutcomeSchema = z
-  .object({
-    version: z.literal(1),
-    result: submitResultSchema,
-    exercise: exerciseSchema,
-  })
-  .strict();
+const sessionOutcomeSchema = z.strictObject({
+  version: z.literal(1),
+  result: submitResultSchema,
+  exercise: exerciseSchema,
+});
 
 const exerciseAnswerDraftSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('mcq'), selection: z.string().nullable() }).strict(),
-  z.object({ type: z.literal('true_false'), value: z.boolean().nullable() }).strict(),
-  z.object({ type: z.literal('fill_blank'), values: z.tuple([z.string()]) }).strict(),
-  z.object({ type: z.literal('multi_correct'), selections: z.array(z.string()) }).strict(),
-  z.object({ type: z.literal('ordering'), items: z.array(z.string()) }).strict(),
-  z.object({ type: z.literal('matching'), matches: z.record(z.string(), z.string()) }).strict(),
-  z.object({ type: z.literal('short_answer'), text: z.string() }).strict(),
+  z.strictObject({ type: z.literal('mcq'), selection: z.string().nullable() }),
+  z.strictObject({ type: z.literal('true_false'), value: z.boolean().nullable() }),
+  z.strictObject({ type: z.literal('fill_blank'), values: z.tuple([z.string()]) }),
+  z.strictObject({ type: z.literal('multi_correct'), selections: z.array(z.string()) }),
+  z.strictObject({ type: z.literal('ordering'), items: z.array(z.string()) }),
+  z.strictObject({ type: z.literal('matching'), matches: z.record(z.string(), z.string()) }),
+  z.strictObject({ type: z.literal('short_answer'), text: z.string() }),
 ]);
 
-const sessionExerciseDraftSchema = z
-  .object({
-    version: z.literal(1),
-    draft: exerciseAnswerDraftSchema,
-  })
-  .strict();
+const sessionExerciseDraftSchema = z.strictObject({
+  version: z.literal(1),
+  draft: exerciseAnswerDraftSchema,
+});
 
 const sessionJobMapSchema = z.record(
   z.string().min(1),
-  z
-    .object({
-      jobId: z.string().min(1),
-      updatedAt: z.number().int().nonnegative(),
-    })
-    .strict(),
+  z.strictObject({
+    jobId: z.string().min(1),
+    updatedAt: z.number().int().nonnegative(),
+  }),
 );
 
 type SessionJobMap = z.infer<typeof sessionJobMapSchema>;

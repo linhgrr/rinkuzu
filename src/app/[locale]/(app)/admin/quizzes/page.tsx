@@ -243,6 +243,7 @@ export default function AdminQuizManagementPage() {
           </Button>
           <select
             value={state.visibility}
+            aria-label={t('allVisibility')}
             onChange={(event) =>
               dispatch({
                 type: 'patch',

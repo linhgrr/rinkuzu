@@ -16,19 +16,73 @@ export interface DateFormatOptions {
   options?: Intl.DateTimeFormatOptions;
 }
 
-const dateFormatterCache = new Map<string, Intl.DateTimeFormat>();
+const DEFAULT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+};
 
-function getDateFormatter(
-  locale: string,
-  options: Intl.DateTimeFormatOptions,
-): Intl.DateTimeFormat {
-  const cacheKey = `${locale}:${JSON.stringify(options)}`;
-  const cached = dateFormatterCache.get(cacheKey);
-  if (cached) return cached;
+const DEFAULT_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: DEFAULT_DATE_TIME_ZONE,
+};
 
-  const formatter = new Intl.DateTimeFormat(locale, options);
-  dateFormatterCache.set(cacheKey, formatter);
-  return formatter;
+const MONTH_YEAR_OPTIONS: Intl.DateTimeFormatOptions = {
+  month: 'long',
+  year: 'numeric',
+};
+
+const SHORT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+};
+
+const LONG_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+};
+
+const LONG_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+};
+
+const UTC_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'UTC',
+};
+
+// Module-scoped formatters only — never construct Intl.* inside hot call paths.
+const enDate = new Intl.DateTimeFormat('en-US', DEFAULT_DATE_OPTIONS);
+const viDate = new Intl.DateTimeFormat('vi-VN', DEFAULT_DATE_OPTIONS);
+const enDateTime = new Intl.DateTimeFormat('en-US', DEFAULT_DATE_TIME_OPTIONS);
+const viDateTime = new Intl.DateTimeFormat('vi-VN', DEFAULT_DATE_TIME_OPTIONS);
+const enMonthYear = new Intl.DateTimeFormat('en', MONTH_YEAR_OPTIONS);
+const viMonthYear = new Intl.DateTimeFormat('vi', MONTH_YEAR_OPTIONS);
+const enShortDate = new Intl.DateTimeFormat('en', SHORT_DATE_OPTIONS);
+const viShortDate = new Intl.DateTimeFormat('vi', SHORT_DATE_OPTIONS);
+const enLongDate = new Intl.DateTimeFormat('en', LONG_DATE_OPTIONS);
+const viLongDate = new Intl.DateTimeFormat('vi', LONG_DATE_OPTIONS);
+const enLongDateTime = new Intl.DateTimeFormat('en', LONG_DATE_TIME_OPTIONS);
+const viLongDateTime = new Intl.DateTimeFormat('vi', LONG_DATE_TIME_OPTIONS);
+const utcDateTime = new Intl.DateTimeFormat('en-US', UTC_DATE_TIME_OPTIONS);
+const viUtcDateTime = new Intl.DateTimeFormat('vi-VN', UTC_DATE_TIME_OPTIONS);
+
+function isVi(locale: string): boolean {
+  return locale.startsWith('vi');
 }
 
 function toValidDate(value: DateInput): Date | null {
@@ -38,6 +92,46 @@ function toValidDate(value: DateInput): Date | null {
   return Number.isFinite(date.getTime()) ? date : null;
 }
 
+function resolveDateFormatter(
+  locale: string,
+  options?: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  if (!options) return isVi(locale) ? viDate : enDate;
+
+  if (options.month === 'long' && options.year === 'numeric' && !options.day) {
+    return isVi(locale) ? viMonthYear : enMonthYear;
+  }
+  if (options.month === 'short' && options.day === 'numeric' && options.year === 'numeric') {
+    return isVi(locale) ? viShortDate : enShortDate;
+  }
+  if (options.month === 'long' && options.day === 'numeric' && options.year === 'numeric') {
+    return isVi(locale) ? viLongDate : enLongDate;
+  }
+
+  return isVi(locale) ? viDate : enDate;
+}
+
+function resolveDateTimeFormatter(
+  locale: string,
+  options?: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  if (!options) return isVi(locale) ? viDateTime : enDateTime;
+
+  if (options.timeZone === 'UTC') {
+    return isVi(locale) ? viUtcDateTime : utcDateTime;
+  }
+  if (
+    options.month === 'long' &&
+    options.day === 'numeric' &&
+    options.year === 'numeric' &&
+    options.hour === '2-digit'
+  ) {
+    return isVi(locale) ? viLongDateTime : enLongDateTime;
+  }
+
+  return isVi(locale) ? viDateTime : enDateTime;
+}
+
 export function formatDate(
   value: DateInput,
   { locale = 'en-US', emptyLabel = 'N/A', options }: DateFormatOptions = {},
@@ -45,14 +139,7 @@ export function formatDate(
   const date = toValidDate(value);
   if (!date) return emptyLabel;
 
-  return getDateFormatter(
-    locale,
-    options ?? {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    },
-  ).format(date);
+  return resolveDateFormatter(locale, options).format(date);
 }
 
 export function formatDateTime(
@@ -62,15 +149,5 @@ export function formatDateTime(
   const date = toValidDate(value);
   if (!date) return emptyLabel;
 
-  return getDateFormatter(
-    locale,
-    options ?? {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: DEFAULT_DATE_TIME_ZONE,
-    },
-  ).format(date);
+  return resolveDateTimeFormatter(locale, options).format(date);
 }

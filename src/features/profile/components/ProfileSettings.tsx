@@ -244,9 +244,10 @@ function PersonalInfoSection({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
+              aria-label={t('changeAvatar')}
               className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
             >
-              <HiOutlinePhotograph className="size-6 text-white" />
+              <HiOutlinePhotograph className="size-6 text-white" aria-hidden="true" />
             </button>
             <input
               ref={fileInputRef}
@@ -314,11 +315,9 @@ function PersonalInfoSection({
         />
 
         <div>
-          <label className="mb-1 block text-[12px] font-semibold text-neutral-700">
-            {t('joinDate')}
-          </label>
+          <p className="mb-1 block text-[12px] font-semibold text-neutral-700">{t('joinDate')}</p>
           <div className="flex items-center gap-2 text-sm text-neutral-600">
-            <HiOutlineCalendar className="size-4 text-neutral-400" />
+            <HiOutlineCalendar className="size-4 text-neutral-400" aria-hidden="true" />
             <JoinDateLabel value={profile.createdAtLabel} />
           </div>
         </div>

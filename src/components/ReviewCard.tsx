@@ -98,37 +98,42 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
 
               {/* Options / Answer */}
               <div className="space-y-2 md:space-y-3">
-                {question.options.map((opt, idx) => {
-                  const isCorrect = question.correctIndexes.includes(idx);
-                  const optionLabel = String.fromCharCode(65 + idx);
-                  return (
-                    <div
-                      key={`${optionLabel}-${opt}`}
-                      className={`p-3 md:p-4 rounded-xl border ${
-                        isCorrect
-                          ? 'bg-green-50 border-green-200 text-green-800'
-                          : 'bg-neutral-50 border-neutral-100 text-neutral-500'
-                      }`}
-                    >
-                      <div className="flex items-start">
-                        <div
-                          className={`mt-0.5 mr-3 flex size-5 flex-shrink-0 items-center justify-center rounded-full border ${
-                            isCorrect
-                              ? 'bg-green-500 border-green-500 text-white'
-                              : 'border-neutral-300'
-                          }`}
-                        >
-                          {isCorrect && (
-                            <HiCheck className="size-3" strokeWidth={3} aria-hidden="true" />
-                          )}
+                {(() => {
+                  const correctIndexSet = new Set(question.correctIndexes);
+                  return question.options.map((opt, idx) => {
+                    const isCorrect = correctIndexSet.has(idx);
+                    const optionLabel = String.fromCharCode(65 + idx);
+                    return (
+                      <div
+                        key={`${optionLabel}-${opt}`}
+                        className={`p-3 md:p-4 rounded-xl border ${
+                          isCorrect
+                            ? 'bg-green-50 border-green-200 text-green-800'
+                            : 'bg-neutral-50 border-neutral-100 text-neutral-500'
+                        }`}
+                      >
+                        <div className="flex items-start">
+                          <div
+                            className={`mt-0.5 mr-3 flex size-5 flex-shrink-0 items-center justify-center rounded-full border ${
+                              isCorrect
+                                ? 'bg-green-500 border-green-500 text-white'
+                                : 'border-neutral-300'
+                            }`}
+                          >
+                            {isCorrect && (
+                              <HiCheck className="size-3" strokeWidth={3} aria-hidden="true" />
+                            )}
+                          </div>
+                          <span
+                            className={`text-sm md:text-base ${isCorrect ? 'font-medium' : ''}`}
+                          >
+                            {opt}
+                          </span>
                         </div>
-                        <span className={`text-sm md:text-base ${isCorrect ? 'font-medium' : ''}`}>
-                          {opt}
-                        </span>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </div>
 

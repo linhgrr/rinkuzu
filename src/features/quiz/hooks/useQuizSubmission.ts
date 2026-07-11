@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction-api';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 
@@ -33,47 +33,41 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
 
-  const submitQuizAnswers = useCallback(
-    async (answersToSubmit: QuizAnswer[]) => {
-      if (!quiz) return;
+  const submitQuizAnswers = async (answersToSubmit: QuizAnswer[]) => {
+    if (!quiz) return;
 
-      const payload = {
-        answers: mapAnswersToOriginalOrder(quiz, answersToSubmit),
-        userEmail: sessionEmail || userEmail.trim(),
-      };
+    const payload = {
+      answers: mapAnswersToOriginalOrder(quiz, answersToSubmit),
+      userEmail: sessionEmail || userEmail.trim(),
+    };
 
-      const data = await submitQuizAttemptViewModel({
-        slug,
-        answers: payload.answers,
-        userEmail: payload.userEmail,
-      });
+    const data = await submitQuizAttemptViewModel({
+      slug,
+      answers: payload.answers,
+      userEmail: payload.userEmail,
+    });
 
-      onSubmitSuccess(data.attemptId, data.score);
-    },
-    [mapAnswersToOriginalOrder, onSubmitSuccess, quiz, sessionEmail, slug, userEmail],
-  );
+    onSubmitSuccess(data.attemptId, data.score);
+  };
 
-  const handleQuizComplete = useCallback(
-    async (answers: QuizAnswer[]): Promise<boolean> => {
-      if (!quiz || submitting) return false;
+  const handleQuizComplete = async (answers: QuizAnswer[]): Promise<boolean> => {
+    if (!quiz || submitting) return false;
 
-      onSubmitStart?.();
-      setSubmitting(true);
-      try {
-        await submitQuizAnswers(answers);
-        setSubmitting(false);
-        return true;
-      } catch (error) {
-        console.error('Quiz submission error:', error);
-        onSubmitError(error instanceof Error ? error.message : 'Failed to submit quiz');
-        setSubmitting(false);
-        return false;
-      }
-    },
-    [onSubmitError, onSubmitStart, quiz, submitQuizAnswers, submitting],
-  );
+    onSubmitStart?.();
+    setSubmitting(true);
+    try {
+      await submitQuizAnswers(answers);
+      setSubmitting(false);
+      return true;
+    } catch (error) {
+      console.error('Quiz submission error:', error);
+      onSubmitError(error instanceof Error ? error.message : 'Failed to submit quiz');
+      setSubmitting(false);
+      return false;
+    }
+  };
 
-  const completeSubmit = useCallback(async (): Promise<boolean> => {
+  const completeSubmit = async (): Promise<boolean> => {
     if (!quiz || submitting) return false;
 
     onSubmitStart?.();
@@ -89,9 +83,9 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
       setSubmitting(false);
       return false;
     }
-  }, [onSubmitError, onSubmitStart, quiz, submitQuizAnswers, submitting, userAnswers]);
+  };
 
-  const submitQuiz = useCallback(async (): Promise<boolean> => {
+  const submitQuiz = async (): Promise<boolean> => {
     if (!quiz || submitting) return false;
 
     const unanswered = userAnswers.filter((answer, index) => {
@@ -109,7 +103,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
     }
 
     return completeSubmit();
-  }, [completeSubmit, isQuestionAnswered, quiz, submitting, userAnswers]);
+  };
 
   return {
     submitting,

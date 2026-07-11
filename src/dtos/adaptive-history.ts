@@ -2,13 +2,12 @@ import { z } from 'zod';
 import { routePathSegmentSchema } from '@/lib/validation/common';
 
 export const adaptiveHistoryGetPathParamsSchema = z
-  .object({
+  .strictObject({
     path: z.union([
       z.tuple([z.literal('subjects'), z.literal('progress')]),
       z.tuple([z.literal('subjects'), routePathSegmentSchema]),
     ]),
   })
-  .strict()
   .transform(({ path }) =>
     path[1] === 'progress'
       ? { kind: 'progress' as const }
@@ -16,25 +15,20 @@ export const adaptiveHistoryGetPathParamsSchema = z
   );
 
 export const adaptiveHistoryDeletePathParamsSchema = z
-  .object({
+  .strictObject({
     path: z.tuple([z.literal('subjects'), routePathSegmentSchema]),
   })
-  .strict()
   .transform(({ path }) => ({ jobId: path[1] }));
 
-export const adaptiveHistoryProgressQuerySchema = z
-  .object({
-    limit: z.coerce.number().int().min(1).max(500).default(50),
-  })
-  .strict();
+export const adaptiveHistoryProgressQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+});
 
-export const adaptiveHistorySubjectQuerySchema = z.object({}).strict();
+export const adaptiveHistorySubjectQuerySchema = z.strictObject({});
 
-export const adaptiveHistoryDeleteQuerySchema = z
-  .object({
-    delete_sessions: z
-      .enum(['true', 'false'])
-      .default('true')
-      .transform((value) => value === 'true'),
-  })
-  .strict();
+export const adaptiveHistoryDeleteQuerySchema = z.strictObject({
+  delete_sessions: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+});

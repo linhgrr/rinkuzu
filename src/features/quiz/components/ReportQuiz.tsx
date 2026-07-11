@@ -107,10 +107,10 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
           ) : (
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <p className="mb-2 block text-sm font-medium text-neutral-700">
                   {t('quiz')}: <span className="font-semibold">{quizTitle}</span>
-                </label>
-                <p className="text-sm text-neutral-500 mb-4">{t('describeIssue')}</p>
+                </p>
+                <p className="mb-4 text-sm text-neutral-500">{t('describeIssue')}</p>
               </div>
 
               <div>

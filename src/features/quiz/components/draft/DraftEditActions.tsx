@@ -8,17 +8,22 @@ import {
   HiOutlineX,
 } from 'react-icons/hi';
 
+type PdfToggleConfig = {
+  visible: boolean;
+  onToggle: () => void;
+  labels: {
+    hide: string;
+    show: string;
+  };
+};
+
 interface DraftEditActionsProps {
-  hasPdf: boolean;
-  showPdfViewer: boolean;
+  pdfToggle?: PdfToggleConfig;
   isSubmitting: boolean;
   canSubmit: boolean;
-  onTogglePdf: () => void;
   onCancel: () => void;
   onSubmit: () => void;
   labels: {
-    hidePdf: string;
-    showPdf: string;
     cancel: string;
     submit: string;
     submitting: string;
@@ -26,33 +31,31 @@ interface DraftEditActionsProps {
 }
 
 export function DraftEditActions({
-  hasPdf,
-  showPdfViewer,
+  pdfToggle,
   isSubmitting,
   canSubmit,
-  onTogglePdf,
   onCancel,
   onSubmit,
   labels,
 }: DraftEditActionsProps) {
   return (
     <div className="flex items-center justify-between gap-3">
-      {hasPdf ? (
+      {pdfToggle ? (
         <Button
           type="button"
-          onClick={onTogglePdf}
+          onClick={pdfToggle.onToggle}
           variant="outline"
           className="flex items-center gap-2 border-green-200 text-brand-trust hover:bg-green-50"
         >
-          {showPdfViewer ? (
+          {pdfToggle.visible ? (
             <>
               <HiOutlineEyeOff className="size-4" />
-              {labels.hidePdf}
+              {pdfToggle.labels.hide}
             </>
           ) : (
             <>
               <HiOutlineDocumentText className="size-4" />
-              {labels.showPdf}
+              {pdfToggle.labels.show}
             </>
           )}
         </Button>

@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import { HiOutlineDocumentText, HiOutlinePlus, HiOutlineTrash } from 'react-icons/hi';
-import { QuestionImageManager } from './QuestionImageManager';
 import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 
 type EditorQuestion = QuizEditorQuestionViewModel;
@@ -99,21 +99,20 @@ export function QuestionEditor({
                     Remove
                   </Button>
                 </div>
+
                 <Textarea
                   value={q.question}
                   onChange={(e) => onUpdateField(index, 'question', e.target.value)}
                   className="min-h-[88px]"
                   rows={2}
                 />
-                <QuestionImageManager
-                  questionImage={q.questionImage}
-                  optionImages={q.optionImages}
-                  optionCount={q.options.length}
-                  onQuestionImageUploaded={(url) => onUpdateQuestionImage(index, url)}
-                  onQuestionImageRemoved={() => onRemoveQuestionImage(index)}
-                  onOptionImageUploaded={(optIdx, url) => onUpdateOptionImage(index, optIdx, url)}
-                  onOptionImageRemoved={(optIdx) => onRemoveOptionImage(index, optIdx)}
+
+                <QuestionImageUpload
+                  currentImage={q.questionImage}
+                  onImageUploaded={(url) => onUpdateQuestionImage(index, url)}
+                  onImageRemoved={() => onRemoveQuestionImage(index)}
                 />
+
                 <div>
                   <p className="text-sm font-medium mb-1">Question Type</p>
                   <div className="mt-1 flex gap-x-4">
@@ -135,33 +134,44 @@ export function QuestionEditor({
                     </label>
                   </div>
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-4">
                   {q.options.map((opt, optIdx) => (
-                    <div
-                      key={`${questionKey}:option:${optIdx}`}
-                      className="flex items-center gap-x-2"
-                    >
-                      {q.type === 'single' ? (
-                        <input
-                          type="radio"
-                          aria-label={`Mark option ${optIdx + 1} as correct`}
-                          name={`correct-${questionKey}`}
-                          checked={q.correctIndex === optIdx}
-                          onChange={() => onSetSingleCorrect(index, optIdx)}
+                    <div key={`${questionKey}:option:${optIdx}`} className="space-y-2">
+                      <div className="flex items-center gap-x-2">
+                        {q.type === 'single' ? (
+                          <input
+                            type="radio"
+                            aria-label={`Mark option ${optIdx + 1} as correct`}
+                            name={`correct-${questionKey}`}
+                            checked={q.correctIndex === optIdx}
+                            onChange={() => onSetSingleCorrect(index, optIdx)}
+                          />
+                        ) : (
+                          <input
+                            type="checkbox"
+                            aria-label={`Mark option ${optIdx + 1} as correct`}
+                            checked={q.correctIndexes.includes(optIdx)}
+                            onChange={(e) =>
+                              onToggleMultipleCorrect(index, optIdx, e.target.checked)
+                            }
+                          />
+                        )}
+                        <Input
+                          value={opt}
+                          onChange={(e) => onUpdateOption(index, optIdx, e.target.value)}
+                          className="flex-1"
+                          placeholder={`Option ${optIdx + 1}`}
                         />
-                      ) : (
-                        <input
-                          type="checkbox"
-                          aria-label={`Mark option ${optIdx + 1} as correct`}
-                          checked={q.correctIndexes.includes(optIdx)}
-                          onChange={(e) => onToggleMultipleCorrect(index, optIdx, e.target.checked)}
+                      </div>
+                      {/* Image for this option sits directly under its answer field */}
+                      <div className="pl-7">
+                        <OptionImageUpload
+                          currentImage={q.optionImages?.[optIdx]}
+                          onImageUploaded={(url) => onUpdateOptionImage(index, optIdx, url)}
+                          onImageRemoved={() => onRemoveOptionImage(index, optIdx)}
                         />
-                      )}
-                      <Input
-                        value={opt}
-                        onChange={(e) => onUpdateOption(index, optIdx, e.target.value)}
-                        className="flex-1"
-                      />
+                      </div>
                     </div>
                   ))}
                 </div>

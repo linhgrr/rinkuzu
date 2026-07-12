@@ -15,6 +15,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import {
   createAdminOcrKey,
   deleteAdminOcrKey,
@@ -42,6 +43,7 @@ interface State {
   priority: string;
   rowActionKeyId: string | null;
   replacementKeyById: Record<string, string>;
+  keyToDelete: AdminOcrKeyViewModel | null;
 }
 
 type Action =
@@ -65,6 +67,7 @@ const initialState: State = {
   priority: '100',
   rowActionKeyId: null,
   replacementKeyById: {},
+  keyToDelete: null,
 };
 
 const statusVariant: Record<AdminOcrKeyHealthStatus, 'default' | 'success' | 'warning' | 'danger'> =
@@ -119,6 +122,7 @@ function reducer(state: State, action: Action): State {
         ...state,
         keys: state.keys.filter((key) => key.id !== action.keyId),
         rowActionKeyId: null,
+        keyToDelete: null,
         success: action.success,
         error: '',
       };
@@ -266,8 +270,9 @@ export default function AdminOcrKeysPage() {
     }
   }
 
-  async function removeKey(key: AdminOcrKeyViewModel) {
-    if (!window.confirm(t('ocrKeysDeleteConfirm', { label: key.label }))) return;
+  async function confirmRemoveKey() {
+    const key = state.keyToDelete;
+    if (!key) return;
     dispatch({ type: 'patch', value: { rowActionKeyId: key.id, error: '', success: '' } });
     try {
       await deleteAdminOcrKey(key.id);
@@ -277,6 +282,7 @@ export default function AdminOcrKeysPage() {
         type: 'patch',
         value: {
           rowActionKeyId: null,
+          keyToDelete: null,
           error: extractUnknownErrorMessage(error, t('ocrKeysDeleteError')),
         },
       });
@@ -484,7 +490,7 @@ export default function AdminOcrKeysPage() {
                           size="sm"
                           variant="destructive"
                           loading={state.rowActionKeyId === key.id}
-                          onClick={() => void removeKey(key)}
+                          onClick={() => dispatch({ type: 'patch', value: { keyToDelete: key } })}
                         >
                           <HiOutlineTrash className="size-4" />
                           {t('delete')}
@@ -498,6 +504,20 @@ export default function AdminOcrKeysPage() {
           </div>
         )}
       </section>
+
+      <ConfirmModal
+        isOpen={!!state.keyToDelete}
+        title={t('delete')}
+        message={t('ocrKeysDeleteConfirm', { label: state.keyToDelete?.label ?? '' })}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
+        confirmVariant="destructive"
+        isLoading={!!state.keyToDelete && state.rowActionKeyId === state.keyToDelete.id}
+        onCancel={() => dispatch({ type: 'patch', value: { keyToDelete: null } })}
+        onConfirm={() => {
+          void confirmRemoveKey();
+        }}
+      />
     </AdminPageShell>
   );
 }

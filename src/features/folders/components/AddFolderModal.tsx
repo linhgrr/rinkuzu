@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
@@ -15,6 +16,8 @@ interface AddFolderModalProps {
 }
 
 export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalProps) {
+  const t = useTranslations('profile');
+  const tCommon = useTranslations('common');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +37,7 @@ export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalPro
     event.preventDefault();
     const normalizedName = name.trim();
     if (!normalizedName) {
-      setError('Folder name is required');
+      setError(t('folderNameRequired'));
       return;
     }
 
@@ -45,17 +48,17 @@ export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalPro
       onCreated(folder);
       handleClose();
     } catch (requestError) {
-      setError(extractUnknownErrorMessage(requestError, 'Failed to create folder'));
+      setError(extractUnknownErrorMessage(requestError, t('folderCreateError')));
       setSubmitting(false);
     }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add folder" size="small">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('addFolderTitle')} size="small">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           id="folder-name"
-          label="Folder name"
+          label={t('folderName')}
           value={name}
           onChange={(event) => setName(event.target.value)}
           maxLength={100}
@@ -64,8 +67,8 @@ export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalPro
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <ModalActions
-          cancelText="Cancel"
-          confirmText="Create"
+          cancelText={tCommon('cancel')}
+          confirmText={t('createFolder')}
           confirmType="submit"
           isDisabled={!name.trim()}
           isLoading={submitting}

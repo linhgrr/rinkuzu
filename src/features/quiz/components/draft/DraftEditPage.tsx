@@ -91,6 +91,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
           }}
           onCancel={() => push(ROUTES.DASHBOARD)}
           onSubmit={async (payload) => {
+            // BE: submitQuizDraftRequestSchema — questions min 1 via questionListSchema
             if (payload.questions.length === 0) {
               toast.error(t('oneQuestionRequired'));
               throw new Error('no_questions');
@@ -100,7 +101,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
                 title: payload.title,
                 folderId: payload.selectedFolderId,
                 description: payload.description,
-                questions: payload.questionInputs,
+                questions: payload.questions,
                 isPrivate: payload.isPrivate,
               });
               removeDraft(initialDraft.id);

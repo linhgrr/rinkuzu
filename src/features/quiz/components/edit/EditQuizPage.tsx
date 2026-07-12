@@ -3,7 +3,7 @@
 import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
 import { toBrowserPath } from '@/lib/routing/pathname';
@@ -19,9 +19,10 @@ import { deleteQuizById } from '@/features/quiz/api/quiz-api';
 import type { QuizEditViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { formatDate } from '@/lib/formatters';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 
-function EditQuizLoadingState() {
-  return <QuizWorkspacePageSkeleton label="Loading quiz…" />;
+function EditQuizLoadingState({ label }: { label: string }) {
+  return <QuizWorkspacePageSkeleton label={label} />;
 }
 
 function EditQuizMessageState({
@@ -50,7 +51,7 @@ function EditQuizMessageState({
   );
 }
 
-function ReadOnlyNotice() {
+function ReadOnlyNotice({ title, description }: { title: string; description: string }) {
   return (
     <Card className="mb-6">
       <CardContent className="p-6">
@@ -59,11 +60,8 @@ function ReadOnlyNotice() {
             <HiOutlineInformationCircle className="size-6" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-neutral-900">Read Only</h3>
-            <p className="text-sm text-neutral-600">
-              You do not have permission to edit this quiz. Only its author or an administrator can
-              make changes.
-            </p>
+            <h3 className="text-lg font-semibold text-neutral-900">{title}</h3>
+            <p className="text-sm text-neutral-600">{description}</p>
           </div>
         </div>
       </CardContent>
@@ -71,7 +69,21 @@ function ReadOnlyNotice() {
   );
 }
 
-function QuizLinkCard({ slug }: { slug: string }) {
+function QuizLinkCard({
+  slug,
+  title,
+  description,
+  copyLabel,
+  copiedLabel,
+  copyFailedLabel,
+}: {
+  slug: string;
+  title: string;
+  description: string;
+  copyLabel: string;
+  copiedLabel: string;
+  copyFailedLabel: string;
+}) {
   const locale = useLocale();
   const sharePath = toBrowserPath(ROUTES.QUIZ.VIEW(slug), locale);
   const shareUrl =
@@ -80,8 +92,8 @@ function QuizLinkCard({ slug }: { slug: string }) {
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle>Quiz Link</CardTitle>
-        <CardDescription>Share this link with your students</CardDescription>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-x-4">
@@ -92,13 +104,13 @@ function QuizLinkCard({ slug }: { slug: string }) {
             className="flex items-center gap-2"
             onClick={() => {
               void copyToClipboard(shareUrl).then((ok) => {
-                if (ok) toast.success('Quiz link copied to clipboard!');
-                else toast.error('Failed to copy link');
+                if (ok) toast.success(copiedLabel);
+                else toast.error(copyFailedLabel);
               });
             }}
           >
             <HiOutlineClipboardCopy className="size-4" />
-            Copy
+            {copyLabel}
           </Button>
         </div>
       </CardContent>
@@ -107,6 +119,9 @@ function QuizLinkCard({ slug }: { slug: string }) {
 }
 
 export function EditQuizPage() {
+  const t = useTranslations('create');
+  const tCommon = useTranslations('common');
+  const tQuiz = useTranslations('quiz');
   const { data: session } = useSession();
   const { push } = useRouter();
   const quizId = useRequiredRouteParam('id');
@@ -127,24 +142,24 @@ export function EditQuizPage() {
         setQuiz(data);
         setStatus('ready');
       } catch (error) {
-        setLoadError(error instanceof Error ? error.message : 'Failed to load quiz');
+        setLoadError(extractUnknownErrorMessage(error, t('loadFailed')));
         setStatus('error');
       }
     };
 
     void fetchQuiz();
-  }, [quizId]);
+  }, [quizId, t]);
 
   if (status === 'loading') {
-    return <EditQuizLoadingState />;
+    return <EditQuizLoadingState label={tCommon('loading')} />;
   }
 
   if (status === 'error' || (loadError && !quiz)) {
     return (
       <EditQuizMessageState
-        title="Error"
-        description={loadError || 'Failed to load quiz'}
-        actionLabel="Back to My Quizzes"
+        title={tCommon('error')}
+        description={loadError || t('loadFailed')}
+        actionLabel={t('backToMyQuizzes')}
       />
     );
   }
@@ -159,9 +174,9 @@ export function EditQuizPage() {
   if (!isAdmin && !isAuthor) {
     return (
       <EditQuizMessageState
-        title="Access Denied"
-        description="You do not have permission to edit this quiz."
-        actionLabel="Back to My Quizzes"
+        title={t('accessDenied')}
+        description={t('accessDeniedDescription')}
+        actionLabel={t('backToMyQuizzes')}
       />
     );
   }
@@ -188,38 +203,42 @@ export function EditQuizPage() {
           statusError={statusError}
           statusSuccess={statusSuccess}
           labels={{
-            pageTitle: 'Edit Quiz',
-            pageSubtitle: 'Make changes to your quiz information',
-            questionsCount: (count) => `${count} questions`,
-            metaTitle: 'Quiz Information',
-            metaDescription: 'Update the basic information about your quiz',
-            title: 'Quiz Title',
-            titlePlaceholder: 'Enter a descriptive title for your quiz',
-            description: 'Description (Optional)',
-            descriptionPlaceholder: 'Provide additional context about the quiz',
-            folder: 'Folder',
-            privateLabel: 'Private Quiz',
-            privateDescription: '(Only visible to you and admins)',
-            cancel: 'Cancel',
-            submit: 'Save Changes',
-            submitting: 'Saving...',
-            hidePdf: 'Hide PDF',
-            showPdf: 'Show PDF',
-            delete: 'Delete Quiz',
-            deleting: 'Deleting...',
+            pageTitle: t('editQuizTitle'),
+            pageSubtitle: t('editQuizSubtitle'),
+            questionsCount: (count) => tCommon('questionsCount', { count }),
+            metaTitle: t('quizInformation'),
+            metaDescription: t('quizInformationDescription'),
+            title: t('quizTitle'),
+            titlePlaceholder: t('titlePlaceholderEdit'),
+            description: t('descriptionOptional'),
+            descriptionPlaceholder: t('descriptionPlaceholderEdit'),
+            folder: t('folderLabel'),
+            privateLabel: t('privateQuiz'),
+            privateDescription: t('privateQuizDescription'),
+            cancel: tCommon('cancel'),
+            submit: t('saveChanges'),
+            submitting: t('savingChanges'),
+            hidePdf: t('hidePdfShort'),
+            showPdf: t('showPdfShort'),
+            delete: t('deleteQuiz'),
+            deleting: t('deletingQuiz'),
           }}
-          banner={!canEdit ? <ReadOnlyNotice /> : null}
+          banner={
+            !canEdit ? (
+              <ReadOnlyNotice title={t('readOnlyTitle')} description={t('readOnlyDescription')} />
+            ) : null
+          }
           metaExtra={
             quiz.questionCount > 0 || createdAtLabel ? (
               <div className="border-t border-neutral-200 pt-4">
-                <h4 className="mb-2 text-sm font-medium text-neutral-900">Quiz Content</h4>
+                <h4 className="mb-2 text-sm font-medium text-neutral-900">{t('quizContent')}</h4>
                 <div className="space-y-1 text-sm text-neutral-600">
                   <p>
-                    <span className="font-medium">Questions:</span> {quiz.questionCount}
+                    <span className="font-medium">{t('questionsLabel')}:</span> {quiz.questionCount}
                   </p>
                   {createdAtLabel ? (
                     <p>
-                      <span className="font-medium">Created:</span>{' '}
+                      <span className="font-medium">{t('createdLabel')}:</span>{' '}
                       <time dateTime={quiz.createdAt}>{createdAtLabel}</time>
                     </p>
                   ) : null}
@@ -227,13 +246,23 @@ export function EditQuizPage() {
               </div>
             ) : null
           }
-          footerExtra={<QuizLinkCard slug={quiz.slug} />}
+          footerExtra={
+            <QuizLinkCard
+              slug={quiz.slug}
+              title={t('quizLink')}
+              description={t('quizLinkDescription')}
+              copyLabel={t('copyLink')}
+              copiedLabel={t('linkCopied')}
+              copyFailedLabel={t('linkCopyFailed')}
+            />
+          }
           onCancel={() => push('/my-quizzes')}
           onDelete={canEdit ? () => setShowDeleteConfirm(true) : undefined}
           isDeleting={deleting}
           onSubmit={async (payload) => {
+            // BE: updateQuizRequestSchema — title min 1, questions via questionListSchema
             if (!payload.title.trim()) {
-              setStatusError('Title is required');
+              setStatusError(t('titleRequired'));
               throw new Error('title_required');
             }
             setStatusError('');
@@ -243,20 +272,16 @@ export function EditQuizPage() {
                 title: payload.title,
                 description: payload.description,
                 folder: payload.selectedFolderId,
-                questions: payload.questionInputs,
+                questions: payload.questions,
                 isPrivate: payload.isPrivate,
               });
               setQuiz(updatedQuiz);
-              setStatusSuccess('Quiz updated successfully!');
+              setStatusSuccess(t('updateSuccess'));
               window.setTimeout(() => {
                 push('/my-quizzes');
               }, 2000);
             } catch (error) {
-              setStatusError(
-                error instanceof Error
-                  ? error.message
-                  : 'An error occurred while updating the quiz',
-              );
+              setStatusError(extractUnknownErrorMessage(error, t('updateFailed')));
               throw error;
             }
           }}
@@ -264,9 +289,9 @@ export function EditQuizPage() {
 
         <ConfirmModal
           isOpen={showDeleteConfirm}
-          title="Delete quiz?"
-          message="Are you sure you want to delete this quiz? This action cannot be undone."
-          confirmText="Delete"
+          title={t('deleteQuizConfirmTitle')}
+          message={t('deleteQuizConfirmMessage')}
+          confirmText={tQuiz('delete')}
           confirmVariant="destructive"
           isLoading={deleting}
           onCancel={() => setShowDeleteConfirm(false)}
@@ -279,11 +304,7 @@ export function EditQuizPage() {
               push('/my-quizzes');
             } catch (error) {
               setDeleting(false);
-              setStatusError(
-                error instanceof Error
-                  ? error.message
-                  : 'An error occurred while deleting the quiz',
-              );
+              setStatusError(extractUnknownErrorMessage(error, t('deleteFailed')));
             }
           }}
         />

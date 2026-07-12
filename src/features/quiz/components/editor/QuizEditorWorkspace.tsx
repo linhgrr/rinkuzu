@@ -26,13 +26,19 @@ import type {
 
 const PDFViewer = dynamic(() => import('@/features/quiz/components/PDFViewer'), { ssr: false });
 
+/**
+ * Payload shape matches BE DTOs:
+ * - submit draft: submitQuizDraftRequestSchema.questions (questionListSchema)
+ * - update quiz: updateQuizRequestSchema.questions (questionListSchema)
+ * No editorId / client-only fields — see toQuestionInputs().
+ */
 export type QuizEditorWorkspaceSubmitPayload = {
   title: string;
   description: string;
   selectedFolderId: string | null;
   isPrivate: boolean;
-  questions: QuizEditorQuestionViewModel[];
-  questionInputs: QuizEditorQuestionInputViewModel[];
+  /** API-ready questions (single | multiple + optional images). */
+  questions: QuizEditorQuestionInputViewModel[];
 };
 
 export type QuizEditorWorkspaceLabels = {
@@ -81,9 +87,6 @@ type QuizEditorWorkspaceProps = {
   onCancel: () => void;
   onDelete?: () => void;
   isDeleting?: boolean;
-  showDeleteConfirm?: boolean;
-  onRequestDelete?: () => void;
-  onCancelDelete?: () => void;
   footerExtra?: ReactNode;
   metaExtra?: ReactNode;
   banner?: ReactNode;
@@ -171,8 +174,7 @@ export function QuizEditorWorkspace({
         description: state.description.trim(),
         selectedFolderId: state.selectedFolderId,
         isPrivate: state.isPrivate,
-        questions: state.questions,
-        questionInputs: toQuestionInputs(state.questions),
+        questions: toQuestionInputs(state.questions),
       });
     } catch {
       dispatch({ type: 'setSubmitting', value: false });

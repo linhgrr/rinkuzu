@@ -5,6 +5,8 @@ import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpl
 interface QuestionImageManagerProps {
   questionImage?: string;
   optionImages?: (string | undefined)[];
+  /** Always drive from options.length so new questions get answer-image slots. */
+  optionCount: number;
   onQuestionImageUploaded: (url: string) => void;
   onQuestionImageRemoved: () => void;
   onOptionImageUploaded: (optIdx: number, url: string) => void;
@@ -14,18 +16,17 @@ interface QuestionImageManagerProps {
 /**
  * Renders image upload controls for a single question:
  * - One question-level image upload
- * - One image upload per option
+ * - One image upload per option (single- and multi-answer MCQ)
  */
 export function QuestionImageManager({
   questionImage,
   optionImages,
+  optionCount,
   onQuestionImageUploaded,
   onQuestionImageRemoved,
   onOptionImageUploaded,
   onOptionImageRemoved,
 }: QuestionImageManagerProps) {
-  const optionCount = optionImages?.length ?? 0;
-
   return (
     <div className="space-y-3">
       <QuestionImageUpload

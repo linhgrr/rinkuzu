@@ -2,6 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import { useReducer } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -69,11 +70,19 @@ function foldersViewReducer(state: FoldersViewState, action: FoldersViewAction):
 function FolderCard({
   folder,
   href,
+  quizCountLabel,
+  renameLabel,
+  deleteLabel,
+  actionsLabel,
   onRename,
   onDelete,
 }: {
   folder: Pick<FolderSummaryViewModel, 'id' | 'name' | 'quizCount'>;
   href: string;
+  quizCountLabel: string;
+  renameLabel: string;
+  deleteLabel: string;
+  actionsLabel: string;
   onRename?: () => void;
   onDelete?: () => void;
 }) {
@@ -85,7 +94,7 @@ function FolderCard({
           <details className="relative">
             <summary
               className="flex size-8 cursor-pointer list-none items-center justify-center rounded-lg hover:bg-white/70"
-              aria-label="Folder actions"
+              aria-label={actionsLabel}
             >
               <HiOutlineDotsVertical className="size-5" />
             </summary>
@@ -95,14 +104,14 @@ function FolderCard({
                 onClick={onRename}
                 className="w-full px-3 py-2 text-left hover:bg-neutral-50"
               >
-                Rename
+                {renameLabel}
               </button>
               <button
                 type="button"
                 onClick={onDelete}
                 className="w-full px-3 py-2 text-left text-red-600 hover:bg-red-50"
               >
-                Delete
+                {deleteLabel}
               </button>
             </div>
           </details>
@@ -110,15 +119,15 @@ function FolderCard({
       </div>
       <Link href={href} className="mt-5 block">
         <h3 className="truncate font-semibold text-ink">{folder.name}</h3>
-        <p className="mt-1 text-sm text-ink/55">
-          {folder.quizCount} {folder.quizCount === 1 ? 'quiz' : 'quizzes'}
-        </p>
+        <p className="mt-1 text-sm text-ink/55">{quizCountLabel}</p>
       </Link>
     </article>
   );
 }
 
 export function FoldersView() {
+  const t = useTranslations('profile');
+  const tCommon = useTranslations('common');
   const { folders, unfiledCount, isLoading, error, mutate } = useFolders();
   const [state, dispatch] = useReducer(foldersViewReducer, initialFoldersViewState);
 
@@ -129,9 +138,9 @@ export function FoldersView() {
       await renameFolderViewModel(state.renaming.id, state.renameValue.trim());
       await mutate();
       dispatch({ type: 'closeRename' });
-      toast.success('Folder renamed');
+      toast.success(t('folderRenamed'));
     } catch (requestError) {
-      toast.error(extractUnknownErrorMessage(requestError, 'Failed to rename folder'));
+      toast.error(extractUnknownErrorMessage(requestError, t('folderRenameError')));
     }
     dispatch({ type: 'setSubmitting', value: false });
   }
@@ -143,41 +152,45 @@ export function FoldersView() {
       await deleteFolderViewModel(state.deleting.id);
       await mutate();
       dispatch({ type: 'closeDelete' });
-      toast.success('Folder deleted. Its quizzes were moved to My folder.');
+      toast.success(t('folderDeleted'));
     } catch (requestError) {
-      toast.error(extractUnknownErrorMessage(requestError, 'Failed to delete folder'));
+      toast.error(extractUnknownErrorMessage(requestError, t('folderDeleteError')));
     }
     dispatch({ type: 'setSubmitting', value: false });
   }
 
   if (error) {
-    return <ErrorState message="Failed to load folders." className="rounded-xl" />;
+    return <ErrorState message={t('foldersLoadError')} className="rounded-xl" />;
   }
 
   return (
     <>
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-ink">Folders</h2>
-          <p className="text-sm text-ink/55">Organize your quizzes into personal folders.</p>
-        </div>
+      <div className="mb-5 flex justify-end">
         <Button onClick={() => dispatch({ type: 'openAdd' })}>
-          <HiOutlinePlus className="size-4" /> New folder
+          <HiOutlinePlus className="size-4" /> {t('newFolder')}
         </Button>
       </div>
       {isLoading ? (
-        <FolderGridSkeleton label="Loading folders" />
+        <FolderGridSkeleton label={t('loadingFolders')} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <FolderCard
-            folder={{ id: UNFILED_FOLDER_TARGET, name: 'My folder', quizCount: unfiledCount }}
+            folder={{ id: UNFILED_FOLDER_TARGET, name: t('myFolder'), quizCount: unfiledCount }}
             href={`/my-quizzes/folder/${UNFILED_FOLDER_TARGET}`}
+            quizCountLabel={t('folderQuizCount', { count: unfiledCount })}
+            renameLabel={t('renameFolder')}
+            deleteLabel={t('deleteFolder')}
+            actionsLabel={t('folderActions')}
           />
           {folders.map((folder) => (
             <FolderCard
               key={folder.id}
               folder={folder}
               href={`/my-quizzes/folder/${folder.id}`}
+              quizCountLabel={t('folderQuizCount', { count: folder.quizCount })}
+              renameLabel={t('renameFolder')}
+              deleteLabel={t('deleteFolder')}
+              actionsLabel={t('folderActions')}
               onRename={() => dispatch({ type: 'startRename', folder })}
               onDelete={() => dispatch({ type: 'startDelete', folder })}
             />
@@ -193,35 +206,35 @@ export function FoldersView() {
       <Modal
         isOpen={!!state.renaming}
         onClose={() => dispatch({ type: 'closeRename' })}
-        title="Rename folder"
+        title={t('renameFolderTitle')}
         size="small"
       >
         <div className="space-y-4">
           <Input
-            label="Folder name"
+            label={t('folderName')}
             value={state.renameValue}
             onChange={(event) => dispatch({ type: 'setRenameValue', value: event.target.value })}
             maxLength={100}
           />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => dispatch({ type: 'closeRename' })}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button
               onClick={() => void renameFolder()}
               loading={state.submitting}
               disabled={!state.renameValue.trim()}
             >
-              Save
+              {tCommon('save')}
             </Button>
           </div>
         </div>
       </Modal>
       <ConfirmModal
         isOpen={!!state.deleting}
-        title="Delete folder"
-        message={`Delete “${state.deleting?.name ?? ''}”? Its quizzes will move to My folder.`}
-        confirmText="Delete"
+        title={t('deleteFolderTitle')}
+        message={t('deleteFolderConfirm', { name: state.deleting?.name ?? '' })}
+        confirmText={t('deleteFolder')}
         confirmVariant="destructive"
         isLoading={state.submitting}
         onCancel={() => dispatch({ type: 'closeDelete' })}

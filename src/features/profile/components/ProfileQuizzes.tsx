@@ -138,19 +138,19 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
       <div className="mx-auto max-w-[1340px]">
         <nav
           className="mb-5 mt-1 flex gap-6 border-b border-line sm:mt-2"
-          aria-label="My quizzes views"
+          aria-label={t('myQuizzes')}
         >
           <Link
             href="/my-quizzes"
             className={`border-b-2 px-1 pb-3 text-sm font-semibold ${tab === 'quizzes' ? 'border-brand-trust text-brand-trust' : 'border-transparent text-ink/55'}`}
           >
-            Quizzes
+            {t('tabQuizzes')}
           </Link>
           <Link
             href="/my-quizzes?tab=folders"
             className={`border-b-2 px-1 pb-3 text-sm font-semibold ${tab === 'folders' ? 'border-brand-trust text-brand-trust' : 'border-transparent text-ink/55'}`}
           >
-            Folders
+            {t('tabFolders')}
           </Link>
         </nav>
 
@@ -186,9 +186,9 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                     >
                       {
                         {
-                          all: 'All',
-                          in_progress: 'In progress',
-                          complete: 'Complete',
+                          all: t('filter_all'),
+                          in_progress: t('filter_in_progress'),
+                          complete: t('filter_complete'),
                         }[filter]
                       }
                     </button>

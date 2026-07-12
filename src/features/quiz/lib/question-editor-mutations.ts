@@ -12,6 +12,8 @@ export function createEmptyEditorQuestion(editorId: string): QuizEditorQuestionV
     editorId,
     question: '',
     options: ['', '', '', ''],
+    // Pre-size option image slots so the editor can upload per-answer images immediately.
+    optionImages: [undefined, undefined, undefined, undefined],
     type: 'single',
     correctIndex: 0,
   };

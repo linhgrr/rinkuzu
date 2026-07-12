@@ -108,6 +108,7 @@ export function QuestionEditor({
                 <QuestionImageManager
                   questionImage={q.questionImage}
                   optionImages={q.optionImages}
+                  optionCount={q.options.length}
                   onQuestionImageUploaded={(url) => onUpdateQuestionImage(index, url)}
                   onQuestionImageRemoved={() => onRemoveQuestionImage(index)}
                   onOptionImageUploaded={(optIdx, url) => onUpdateOptionImage(index, optIdx, url)}

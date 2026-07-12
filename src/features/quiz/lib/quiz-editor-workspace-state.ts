@@ -1,11 +1,9 @@
 import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
-import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import {
   addQuestion,
   createEmptyEditorQuestion,
   removeQuestionAt,
   setSingleCorrect,
-  toEditorQuestions,
   toggleMultipleCorrect,
   toggleQuestionType,
   updateOption,
@@ -15,7 +13,11 @@ import {
   type EditableQuestionField,
 } from '@/features/quiz/lib/question-editor-mutations';
 
-export interface DraftEditorState {
+/**
+ * Shared editable form state for draft publish + published quiz edit.
+ * Load/save/ACL stay in page adapters; mutations live here.
+ */
+export interface QuizEditorWorkspaceState {
   questions: QuizEditorQuestionViewModel[];
   title: string;
   description: string;
@@ -26,7 +28,7 @@ export interface DraftEditorState {
   isSubmitting: boolean;
 }
 
-export type DraftEditorAction =
+export type QuizEditorWorkspaceAction =
   | { type: 'setTitle'; value: string }
   | { type: 'setDescription'; value: string }
   | { type: 'setIsPrivate'; value: boolean }
@@ -50,23 +52,30 @@ export type DraftEditorAction =
   | { type: 'setSingleCorrect'; questionIndex: number; optionIndex: number }
   | { type: 'toggleMultipleCorrect'; questionIndex: number; optionIndex: number; checked: boolean };
 
-export function createInitialDraftEditorState(draft: QuizDraft): DraftEditorState {
+export function createQuizEditorWorkspaceState(input: {
+  questions: QuizEditorQuestionViewModel[];
+  title: string;
+  description?: string | null;
+  isPrivate?: boolean;
+  selectedFolderId?: string | null;
+  showPDFViewer?: boolean;
+}): QuizEditorWorkspaceState {
   return {
-    questions: toEditorQuestions(draft.questions, 'draft'),
-    title: draft.title,
-    description: draft.description ?? '',
-    isPrivate: false,
-    selectedFolderId: draft.folderId ?? null,
-    showPDFViewer: true,
+    questions: input.questions,
+    title: input.title,
+    description: input.description ?? '',
+    isPrivate: input.isPrivate ?? false,
+    selectedFolderId: input.selectedFolderId ?? null,
+    showPDFViewer: input.showPDFViewer ?? true,
     questionToRemove: null,
     isSubmitting: false,
   };
 }
 
-export function draftEditorReducer(
-  state: DraftEditorState,
-  action: DraftEditorAction,
-): DraftEditorState {
+export function quizEditorWorkspaceReducer(
+  state: QuizEditorWorkspaceState,
+  action: QuizEditorWorkspaceAction,
+): QuizEditorWorkspaceState {
   switch (action.type) {
     case 'setTitle':
       return { ...state, title: action.value };
@@ -119,7 +128,7 @@ export function draftEditorReducer(
         ...state,
         questions: addQuestion(
           state.questions,
-          createEmptyEditorQuestion(`draft-new-${Date.now()}`),
+          createEmptyEditorQuestion(`q-new-${crypto.randomUUID()}`),
         ),
       };
     case 'removeQuestion':

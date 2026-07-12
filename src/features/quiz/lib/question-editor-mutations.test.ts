@@ -7,7 +7,9 @@ import {
   toggleMultipleCorrect,
   toggleQuestionType,
   updateOption,
+  updateOptionImage,
   updateQuestionField,
+  updateQuestionImage,
 } from './question-editor-mutations';
 
 describe('question-editor-mutations', () => {
@@ -43,6 +45,32 @@ describe('question-editor-mutations', () => {
     expect(questions[0]).toMatchObject({
       type: 'multiple',
       correctIndexes: [0, 1],
+    });
+  });
+
+  it('supports question and option images for single and multiple choice', () => {
+    let questions = [createEmptyEditorQuestion('q-img')];
+    expect(questions[0]?.optionImages).toHaveLength(4);
+
+    questions = updateQuestionImage(questions, 0, 'https://cdn.example/q.png');
+    questions = updateOptionImage(questions, 0, 2, 'https://cdn.example/o2.png');
+    expect(questions[0]).toMatchObject({
+      questionImage: 'https://cdn.example/q.png',
+      optionImages: [undefined, undefined, 'https://cdn.example/o2.png', undefined],
+    });
+
+    questions = toggleQuestionType(questions, 0, 'multiple');
+    questions = updateOptionImage(questions, 0, 0, 'https://cdn.example/o0.png');
+    const inputs = toQuestionInputs(questions);
+    expect(inputs[0]).toMatchObject({
+      type: 'multiple',
+      questionImage: 'https://cdn.example/q.png',
+      optionImages: [
+        'https://cdn.example/o0.png',
+        undefined,
+        'https://cdn.example/o2.png',
+        undefined,
+      ],
     });
   });
 });

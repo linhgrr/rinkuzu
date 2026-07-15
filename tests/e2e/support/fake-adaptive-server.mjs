@@ -177,7 +177,8 @@ async function handleAdaptiveRequest(request, response, url) {
     if (
       typeof body.filename !== 'string' ||
       typeof body.subject_id !== 'string' ||
-      typeof body.s3Key !== 'string'
+      typeof body.source_s3_key !== 'string' ||
+      typeof body.file_url !== 'string'
     ) {
       sendError(response, 400, 'validation_error', 'Invalid pipeline process payload');
       return;

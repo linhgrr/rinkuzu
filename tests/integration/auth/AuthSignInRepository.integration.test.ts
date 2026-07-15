@@ -6,16 +6,23 @@ import { AuthAccountRepository } from '@/repositories/AuthAccountRepository';
 
 const uri = process.env['MONGODB_URI'];
 const databaseName = uri ? decodeURIComponent(new URL(uri).pathname.slice(1)) : '';
-const isSafeTestDb = /(^|[-_])(test|ci)($|[-_])/i.test(databaseName);
+const isSafeTestDb = /(^|[-_])(test|ci)($|[-_])/i.exec(databaseName) !== null;
 
-describe.skipIf(!uri || !isSafeTestDb)('AuthAccountRepository sign-in integration', () => {
+if (!uri) {
+  throw new Error('MONGODB_URI is required for auth repository integration tests');
+}
+if (!isSafeTestDb) {
+  throw new Error(
+    `Refusing integration tests against non-test database: ${databaseName || '<empty>'}`,
+  );
+}
+
+describe('AuthAccountRepository sign-in integration', () => {
   const repo = new AuthAccountRepository();
   const email = `auth-integ-${Date.now()}@example.test`;
   let userId = '';
-  let mongoReady = false;
 
   beforeAll(async () => {
-    if (!uri) return;
     try {
       await mongoose.connect(uri, { serverSelectionTimeoutMS: 2_000 });
       const password = await hashPassword('Integration-Pass-123!');
@@ -31,20 +38,18 @@ describe.skipIf(!uri || !isSafeTestDb)('AuthAccountRepository sign-in integratio
         updatedAt: new Date(),
       });
       userId = created.insertedId.toString();
-      mongoReady = true;
-    } catch {
-      mongoReady = false;
+    } catch (error) {
+      throw new Error('Auth repository integration database is unavailable', { cause: error });
     }
   }, 15_000);
 
   afterAll(async () => {
-    if (!mongoReady) return;
+    if (mongoose.connection.readyState !== 1) return;
     await mongoose.connection.collection('users').deleteOne({ email });
     await mongoose.disconnect();
   }, 10_000);
 
-  it('finds login account and session user', async ({ skip }) => {
-    if (!mongoReady) skip();
+  it('finds login account and session user', async () => {
     const login = await repo.findLoginAccount(email);
     expect(login?.id).toBe(userId);
     expect(login?.passwordHash).toBeTruthy();
@@ -53,8 +58,7 @@ describe.skipIf(!uri || !isSafeTestDb)('AuthAccountRepository sign-in integratio
     expect(sessionUser).toMatchObject({ id: userId, email, role: 'user' });
   });
 
-  it('atomically increments failed attempts toward lockout', async ({ skip }) => {
-    if (!mongoReady) skip();
+  it('atomically increments failed attempts toward lockout', async () => {
     const policy = { maxAttempts: 3, windowMs: 15 * 60_000, lockoutMs: 15 * 60_000 };
     const now = new Date();
 
@@ -71,8 +75,7 @@ describe.skipIf(!uri || !isSafeTestDb)('AuthAccountRepository sign-in integratio
     expect(lockedOrAttempted).toBe(true);
   });
 
-  it('upserts verified Google account idempotently', async ({ skip }) => {
-    if (!mongoReady) skip();
+  it('upserts verified Google account idempotently', async () => {
     const googleEmail = `google-integ-${Date.now()}@example.test`;
     const first = await repo.upsertVerifiedGoogleAccount({
       email: googleEmail,
@@ -91,8 +94,7 @@ describe.skipIf(!uri || !isSafeTestDb)('AuthAccountRepository sign-in integratio
     await mongoose.connection.collection('users').deleteOne({ email: googleEmail });
   });
 
-  it('records successful login and resets lock state', async ({ skip }) => {
-    if (!mongoReady) skip();
+  it('records successful login and resets lock state', async () => {
     const login = await repo.findLoginAccount(email);
     const passwordHash = login?.passwordHash;
     expect(passwordHash).toBeTruthy();

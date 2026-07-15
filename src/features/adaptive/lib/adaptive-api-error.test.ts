@@ -24,6 +24,13 @@ describe('adaptive api error guards', () => {
     expect(isAdaptiveApiError(null)).toBe(false);
   });
 
+  it('omits absent optional status and detail fields', () => {
+    const error = makeError('validation_error');
+
+    expect(error).not.toHaveProperty('status');
+    expect(error).not.toHaveProperty('detail');
+  });
+
   it('recognizes retryable adaptive errors', () => {
     expect(isRetryableAdaptiveError(makeError('service_unavailable', true))).toBe(true);
     expect(isRetryableAdaptiveError(makeError('service_unavailable', false))).toBe(false);

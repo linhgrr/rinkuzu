@@ -38,6 +38,17 @@ describe('UserAttemptDtoMapper', () => {
 
     expect(dto.takenAt).toBe('2026-07-02T00:00:00.000Z');
     expect(dto.quiz.questions.map((question) => question.isCorrect)).toEqual([true, true]);
+    expect(dto.quiz).not.toHaveProperty('description');
+    const [singleQuestion, multipleQuestion] = dto.quiz.questions;
+    if (!singleQuestion || !multipleQuestion) throw new Error('Expected two mapped questions');
+    expect(singleQuestion).not.toHaveProperty('correctIndexes');
+    expect(singleQuestion).not.toHaveProperty('questionImage');
+    expect(singleQuestion).not.toHaveProperty('optionImages');
+    expect(multipleQuestion).not.toHaveProperty('correctIndex');
+  });
+
+  it('omits an absent quiz description from summary DTOs', () => {
+    expect(UserAttemptDtoMapper.toSummaryDto(attempt).quiz).not.toHaveProperty('description');
   });
 
   it('rejects attempts whose answers do not match the quiz snapshot', () => {

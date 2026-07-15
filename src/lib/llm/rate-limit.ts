@@ -145,8 +145,8 @@ export async function checkLlmRateLimit(
   const exceeded = [minute, day].filter((item) => item.count > item.limit);
   const retryWindow =
     exceeded.length > 0
-      ? exceeded.reduce((soonest, item) =>
-          item.resetAt.getTime() < soonest.resetAt.getTime() ? item : soonest,
+      ? exceeded.reduce((latest, item) =>
+          item.resetAt.getTime() > latest.resetAt.getTime() ? item : latest,
         )
       : null;
 
@@ -156,7 +156,9 @@ export async function checkLlmRateLimit(
     action,
     minute,
     day,
-    retryAfterSeconds: retryWindow ? retryAfterSeconds(retryWindow.resetAt) : undefined,
+    ...(retryWindow !== null && {
+      retryAfterSeconds: retryAfterSeconds(retryWindow.resetAt),
+    }),
   };
 }
 

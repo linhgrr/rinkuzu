@@ -173,7 +173,7 @@ export type UseJobLibraryResult = {
 
 export function useJobLibrary({
   enabled,
-  initialJobs = /* v8 ignore next */ [],
+  initialJobs = [],
 }: UseJobLibraryArgs): UseJobLibraryResult {
   const [jobs, setJobs] = useState<PipelineJobListItem[]>(initialJobs);
   const [hasLoaded, setHasLoaded] = useState(initialJobs.length > 0);
@@ -190,7 +190,6 @@ export function useJobLibrary({
     }),
   );
 
-  /* v8 ignore next 5 */
   useEffect(() => {
     if (!enabled) return;
     poller.start();
@@ -198,7 +197,6 @@ export function useJobLibrary({
   }, [enabled, poller]);
 
   const retryWithToast = async (jobId: string): Promise<void> => {
-    /* v8 ignore next 3 */
     try {
       await poller.retry(jobId);
     } catch (err) {
@@ -207,7 +205,6 @@ export function useJobLibrary({
   };
 
   const cancelWithToast = async (jobId: string): Promise<void> => {
-    /* v8 ignore next 3 */
     try {
       await poller.cancel(jobId);
     } catch (err) {

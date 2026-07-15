@@ -185,8 +185,8 @@ function normalizeDebugArtifact(artifact: RawPipelineDebugArtifact): PipelineDeb
     kind: artifact.kind,
     label: artifact.label,
     index: artifact.index,
-    page_start: artifact.page_start,
-    page_end: artifact.page_end,
+    ...(artifact.page_start !== undefined ? { page_start: artifact.page_start } : {}),
+    ...(artifact.page_end !== undefined ? { page_end: artifact.page_end } : {}),
     input: compactJsonRecord(artifact.input),
     output: compactJsonRecord(artifact.output),
     content_type: artifact.content_type,
@@ -210,10 +210,9 @@ function buildDebugStages(job: DebugPipelineJobStatus): DebugStage[] {
         },
       ),
       artifacts: (entry.artifacts ?? []).map(normalizeDebugArtifact),
-      note:
-        entry.status === 'running'
-          ? 'Stage đang chạy; output sẽ được ghi khi wrapper hoàn tất hoặc fail.'
-          : undefined,
+      ...(entry.status === 'running'
+        ? { note: 'Stage đang chạy; output sẽ được ghi khi wrapper hoàn tất hoặc fail.' }
+        : {}),
     }));
   }
 
@@ -602,8 +601,6 @@ export default function PipelineDebugPage() {
     return () => {
       active = false;
     };
-    // Effect Events must not be listed as dependencies.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadJobs is useEffectEvent
   }, []);
 
   useEffect(() => {
@@ -615,7 +612,6 @@ export default function PipelineDebugPage() {
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadJob is useEffectEvent
   }, [selectedJobId]);
 
   useEffect(() => {
@@ -628,7 +624,6 @@ export default function PipelineDebugPage() {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadJob is useEffectEvent
   }, [autoRefresh, isTerminal, job]);
 
   const activeStage = stages.find((stage) => stage.status === 'active');

@@ -29,10 +29,14 @@ export class AdminBillingPersistenceMapper {
       currency: record.currency,
       status: record.status,
       payosOrderId: record.payosOrderId,
-      payosTransactionId: record.payosTransactionId,
-      payosPaymentUrl: record.payosPaymentUrl,
-      startDate: record.startDate,
-      endDate: record.endDate,
+      ...(record.payosTransactionId !== undefined && {
+        payosTransactionId: record.payosTransactionId,
+      }),
+      ...(record.payosPaymentUrl !== undefined && {
+        payosPaymentUrl: record.payosPaymentUrl,
+      }),
+      ...(record.startDate !== undefined && { startDate: record.startDate }),
+      ...(record.endDate !== undefined && { endDate: record.endDate }),
       isActive: record.isActive,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

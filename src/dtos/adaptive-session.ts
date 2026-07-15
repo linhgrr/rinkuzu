@@ -35,15 +35,25 @@ export const adaptiveSessionPostPathParamsSchema = z
     action: path[1],
   }));
 
-const submitAnswerPayloadSchema = z.strictObject({
-  choice: z.string().nullable().optional(),
-  choices: z.array(z.string()).optional(),
-  boolean: z.boolean().nullable().optional(),
-  blanks: z.array(z.string()).optional(),
-  ordering: z.array(z.string()).optional(),
-  matching: z.record(z.string(), z.string()).optional(),
-  text: z.string().nullable().optional(),
-});
+const submitAnswerPayloadSchema = z
+  .strictObject({
+    choice: z.string().nullable().optional(),
+    choices: z.array(z.string()).optional(),
+    boolean: z.boolean().nullable().optional(),
+    blanks: z.array(z.string()).optional(),
+    ordering: z.array(z.string()).optional(),
+    matching: z.record(z.string(), z.string()).optional(),
+    text: z.string().nullable().optional(),
+  })
+  .transform((answer): ApiSchemas['SubmitAnswerPayload'] => ({
+    ...(answer.choice !== undefined ? { choice: answer.choice } : {}),
+    ...(answer.choices !== undefined ? { choices: answer.choices } : {}),
+    ...(answer.boolean !== undefined ? { boolean: answer.boolean } : {}),
+    ...(answer.blanks !== undefined ? { blanks: answer.blanks } : {}),
+    ...(answer.ordering !== undefined ? { ordering: answer.ordering } : {}),
+    ...(answer.matching !== undefined ? { matching: answer.matching } : {}),
+    ...(answer.text !== undefined ? { text: answer.text } : {}),
+  }));
 
 export const adaptiveSubmitAnswerRequestSchema: z.ZodType<ApiSchemas['SubmitAnswerRequest']> =
   z.strictObject({
@@ -57,9 +67,14 @@ const tutorChatMessageSchema = z.strictObject({
   content: z.string().min(1).max(4000),
 });
 
-export const adaptiveTutorChatRequestSchema: z.ZodType<ApiSchemas['TutorChatRequest']> =
-  z.strictObject({
+export const adaptiveTutorChatRequestSchema: z.ZodType<ApiSchemas['TutorChatRequest']> = z
+  .strictObject({
     userQuestion: z.string().min(1).max(1000),
     chatHistory: z.array(tutorChatMessageSchema).optional(),
     stream: z.boolean().default(false),
-  });
+  })
+  .transform((request): ApiSchemas['TutorChatRequest'] => ({
+    userQuestion: request.userQuestion,
+    ...(request.chatHistory !== undefined ? { chatHistory: request.chatHistory } : {}),
+    stream: request.stream,
+  }));

@@ -81,5 +81,8 @@ BookmarkSchema.index({ userId: 1, 'quiz.slug': 1, questionIndex: 1 }, { unique: 
 BookmarkSchema.index({ userId: 1, createdAt: -1 });
 BookmarkSchema.index({ userId: 1, 'quiz.slug': 1, createdAt: -1 });
 
-export default mongoose.models['Bookmark'] ||
+const Bookmark =
+  (mongoose.models['Bookmark'] as mongoose.Model<BookmarkDocument> | undefined) ??
   mongoose.model<BookmarkDocument>('Bookmark', BookmarkSchema);
+
+export default Bookmark;

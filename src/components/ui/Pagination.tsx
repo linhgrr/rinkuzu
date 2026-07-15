@@ -21,24 +21,27 @@ function Pagination({
   className = '',
 }: PaginationProps) {
   if (totalPages <= 1) return null;
+  const safeMaxPageNumbers = Math.max(1, Math.floor(maxPageNumbers));
 
   const getVisiblePages = () => {
-    if (totalPages <= maxPageNumbers) {
+    if (totalPages <= safeMaxPageNumbers) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
 
-    const delta = Math.floor(maxPageNumbers / 2);
+    const delta = Math.floor(safeMaxPageNumbers / 2);
     let start = Math.max(1, currentPage - delta);
-    let end = Math.min(totalPages, start + maxPageNumbers - 1);
+    const end = Math.min(totalPages, start + safeMaxPageNumbers - 1);
 
-    if (end - start + 1 < maxPageNumbers) {
-      start = Math.max(1, end - maxPageNumbers + 1);
+    if (end - start + 1 < safeMaxPageNumbers) {
+      start = Math.max(1, end - safeMaxPageNumbers + 1);
     }
 
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
   const visiblePages = getVisiblePages();
+  const firstVisiblePage = visiblePages[0];
+  const lastVisiblePage = visiblePages[visiblePages.length - 1];
 
   return (
     <div className={`flex justify-center items-center space-x-2 ${className}`}>
@@ -56,7 +59,7 @@ function Pagination({
       {showPageNumbers && (
         <div className="flex items-center gap-x-1.5 mx-2">
           {/* First page if not visible */}
-          {visiblePages[0] > 1 && (
+          {firstVisiblePage !== undefined && firstVisiblePage > 1 && (
             <>
               <Button
                 variant="outline"
@@ -65,7 +68,7 @@ function Pagination({
               >
                 1
               </Button>
-              {visiblePages[0] > 2 && <span className="px-1 text-neutral-500">…</span>}
+              {firstVisiblePage > 2 && <span className="px-1 text-neutral-500">…</span>}
             </>
           )}
 
@@ -86,11 +89,9 @@ function Pagination({
           ))}
 
           {/* Last page if not visible */}
-          {visiblePages[visiblePages.length - 1] < totalPages && (
+          {lastVisiblePage !== undefined && lastVisiblePage < totalPages && (
             <>
-              {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
-                <span className="px-1 text-neutral-500">…</span>
-              )}
+              {lastVisiblePage < totalPages - 1 && <span className="px-1 text-neutral-500">…</span>}
               <Button
                 variant="outline"
                 onClick={() => onPageChange(totalPages)}

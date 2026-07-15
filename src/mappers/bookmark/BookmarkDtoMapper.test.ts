@@ -37,4 +37,13 @@ describe('BookmarkDtoMapper', () => {
       updatedAt: '2026-07-01T01:00:00.000Z',
     });
   });
+
+  it('omits an absent quiz description', () => {
+    const dto = BookmarkDtoMapper.toDto({
+      ...bookmark,
+      quiz: { slug: bookmark.quiz.slug, title: bookmark.quiz.title },
+    });
+
+    expect(dto.quiz).not.toHaveProperty('description');
+  });
 });

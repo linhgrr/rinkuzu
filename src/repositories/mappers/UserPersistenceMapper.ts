@@ -11,11 +11,13 @@ export function toUserSubscription(
 ): UserSubscriptionSnapshot {
   return {
     type: record.type,
-    startDate: record.startDate,
-    endDate: record.endDate,
     isActive: record.isActive,
-    payosOrderId: record.payosOrderId,
-    payosTransactionId: record.payosTransactionId,
+    ...(record.startDate === undefined ? {} : { startDate: record.startDate }),
+    ...(record.endDate === undefined ? {} : { endDate: record.endDate }),
+    ...(record.payosOrderId === undefined ? {} : { payosOrderId: record.payosOrderId }),
+    ...(record.payosTransactionId === undefined
+      ? {}
+      : { payosTransactionId: record.payosTransactionId }),
   };
 }
 
@@ -24,13 +26,15 @@ export class UserPersistenceMapper {
     return {
       id: serializeId(record._id, 'user._id'),
       email: record.email,
-      name: record.name,
-      displayName: record.displayName,
-      bio: record.bio,
-      avatar: record.avatar,
       role: record.role,
-      subscription: record.subscription ? toUserSubscription(record.subscription) : undefined,
       createdAt: record.createdAt,
+      ...(record.name === undefined ? {} : { name: record.name }),
+      ...(record.displayName === undefined ? {} : { displayName: record.displayName }),
+      ...(record.bio === undefined ? {} : { bio: record.bio }),
+      ...(record.avatar === undefined ? {} : { avatar: record.avatar }),
+      ...(record.subscription === undefined
+        ? {}
+        : { subscription: toUserSubscription(record.subscription) }),
     };
   }
 
@@ -38,11 +42,11 @@ export class UserPersistenceMapper {
     return {
       id: serializeId(record._id, 'user._id'),
       email: record.email,
-      name: record.name,
-      displayName: record.displayName,
-      bio: record.bio,
-      avatar: record.avatar,
       createdAt: record.createdAt,
+      ...(record.name === undefined ? {} : { name: record.name }),
+      ...(record.displayName === undefined ? {} : { displayName: record.displayName }),
+      ...(record.bio === undefined ? {} : { bio: record.bio }),
+      ...(record.avatar === undefined ? {} : { avatar: record.avatar }),
     };
   }
 }

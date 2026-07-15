@@ -23,7 +23,28 @@ function getRightItems(exercise: MatchingExercise): string[] {
 
 export function buildInitialMatchingAnswer(exercise: MatchingExercise): Record<string, string> {
   const rightItems = getRightItems(exercise);
-  return Object.fromEntries(exercise.pairs.map((pair, index) => [pair.left, rightItems[index]]));
+  const matching: Record<string, string> = {};
+
+  exercise.pairs.forEach((pair, index) => {
+    if (Object.hasOwn(matching, pair.left)) {
+      throw new TypeError(`Matching exercise contains duplicate left item: ${pair.left}`);
+    }
+    const rightItem = rightItems[index];
+    if (rightItem === undefined) {
+      throw new TypeError(`Matching exercise is missing right item at index ${index}`);
+    }
+    matching[pair.left] = rightItem;
+  });
+
+  return matching;
+}
+
+function getMatchingValue(matching: Record<string, string>, left: string): string {
+  const value = matching[left];
+  if (value === undefined) {
+    throw new TypeError(`Matching answer is missing value for left item: ${left}`);
+  }
+  return value;
 }
 
 export function getMatchingInteractionItems(
@@ -35,7 +56,7 @@ export function getMatchingInteractionItems(
   if (draftLeftItems.length > 0) {
     return {
       leftItems: draftLeftItems,
-      rightItems: draftLeftItems.map((left) => matching[left]),
+      rightItems: draftLeftItems.map((left) => getMatchingValue(matching, left)),
     };
   }
 
@@ -43,6 +64,6 @@ export function getMatchingInteractionItems(
   const leftItems = Object.keys(initialMatching);
   return {
     leftItems,
-    rightItems: leftItems.map((left) => initialMatching[left]),
+    rightItems: leftItems.map((left) => getMatchingValue(initialMatching, left)),
   };
 }

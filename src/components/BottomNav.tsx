@@ -203,13 +203,19 @@ export default function BottomNav() {
     adaptiveUpload: adaptiveUploadTab.icon,
     adaptiveProgress: adaptiveProgressTab.icon,
   };
-  const tabs: NavTab[] = MOBILE_TABS_BY_SCOPE[scope].map((def) => ({
-    href: def.href,
-    labelKey: def.labelKey,
-    matchPrefix: def.matchPrefix,
-    isCenter: def.isCenter,
-    icon: iconById[def.id],
-  }));
+  const tabs: NavTab[] = MOBILE_TABS_BY_SCOPE[scope].map((def) => {
+    const icon = iconById[def.id];
+    if (!icon) {
+      throw new Error(`Missing mobile navigation icon for ${def.id}`);
+    }
+    return {
+      href: def.href,
+      labelKey: def.labelKey,
+      ...(def.matchPrefix !== undefined ? { matchPrefix: def.matchPrefix } : {}),
+      ...(def.isCenter !== undefined ? { isCenter: def.isCenter } : {}),
+      icon,
+    };
+  });
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-neutral-200/60 shadow-[0_-4px_20px_rgb(0,0,0,0.04)] px-2 pt-2 z-50 safe-area-bottom">

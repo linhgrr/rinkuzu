@@ -75,7 +75,11 @@ export class LearningProgressService implements ILearningProgressService {
     options: LibraryListQueryDto,
   ): Promise<ServiceResult<LibraryListDto>> {
     try {
-      const library = await this.repository.listLibraryQuizzes(userId, options);
+      const library = await this.repository.listLibraryQuizzes(userId, {
+        page: options.page,
+        limit: options.limit,
+        ...(options.folder !== undefined && { folder: options.folder }),
+      });
 
       return {
         success: true,
@@ -118,65 +122,68 @@ export class LearningProgressService implements ILearningProgressService {
   ): Promise<ServiceResult<SubmitReviewResponseDto>> {
     try {
       const now = new Date();
-      const [existingQuestionProgress, existingUserProgress] = await Promise.all([
-        this.repository.findQuestionProgress(userId, input.quizSlug, input.questionId),
-        this.repository.findUserProgress(userId),
-      ]);
-
-      const questionProgress: QuestionReviewProgressDraft = existingQuestionProgress ?? {
-        userId,
-        quizSlug: input.quizSlug,
-        questionId: input.questionId,
-        questionRef: input.questionRef,
-        srsLevel: 0,
-        nextReviewDate: now,
-        lastReviewDate: null,
-        interval: 0,
-        easeFactor: 2.5,
-        correctStreak: 0,
-        totalReviews: 0,
-        totalCorrect: 0,
-        history: [],
-      };
-
-      if (input.questionRef) questionProgress.questionRef = input.questionRef;
-
-      const srsResult = calculateNextReview(
-        questionProgress.interval,
-        questionProgress.easeFactor,
-        input.rating,
-      );
-
-      questionProgress.interval = srsResult.interval;
-      questionProgress.easeFactor = srsResult.easeFactor;
-      questionProgress.nextReviewDate = srsResult.nextReviewDate;
-      questionProgress.srsLevel = srsResult.srsLevel;
-      questionProgress.lastReviewDate = now;
-      questionProgress.totalReviews += 1;
-
-      const answeredCorrectly = input.rating === 'good' || input.rating === 'easy';
-      if (answeredCorrectly) {
-        questionProgress.totalCorrect += 1;
-        questionProgress.correctStreak += 1;
-      } else {
-        questionProgress.correctStreak = 0;
-      }
-
-      questionProgress.history.push({ date: now, rating: input.rating });
-
       const xpGain = xpForRating(input.rating);
-      const userProgress =
-        existingUserProgress ?? this.repository.createDefaultUserProgress(userId);
-      const streakFreezeUsed = this.applyReviewActivity(userProgress, {
-        now,
-        xpGain,
-        answeredCorrectly,
-      });
+      const {
+        questionProgress: savedQuestionProgress,
+        userProgress: savedUserProgress,
+        streakFreezeUsed,
+      } = await this.repository.mutateReviewProgress(
+        userId,
+        input.quizSlug,
+        input.questionId,
+        (existingQuestionProgress, existingUserProgress) => {
+          const questionProgress: QuestionReviewProgressDraft = existingQuestionProgress ?? {
+            userId,
+            quizSlug: input.quizSlug,
+            questionId: input.questionId,
+            ...(input.questionRef !== undefined && { questionRef: input.questionRef }),
+            srsLevel: 0,
+            nextReviewDate: now,
+            lastReviewDate: null,
+            interval: 0,
+            easeFactor: 2.5,
+            correctStreak: 0,
+            totalReviews: 0,
+            totalCorrect: 0,
+            history: [],
+          };
 
-      const [savedQuestionProgress, savedUserProgress] = await Promise.all([
-        this.repository.saveQuestionProgress(questionProgress),
-        this.repository.saveUserProgress(userProgress),
-      ]);
+          if (input.questionRef !== undefined) questionProgress.questionRef = input.questionRef;
+
+          const srsResult = calculateNextReview(
+            questionProgress.interval,
+            questionProgress.easeFactor,
+            input.rating,
+          );
+
+          questionProgress.interval = srsResult.interval;
+          questionProgress.easeFactor = srsResult.easeFactor;
+          questionProgress.nextReviewDate = srsResult.nextReviewDate;
+          questionProgress.srsLevel = srsResult.srsLevel;
+          questionProgress.lastReviewDate = now;
+          questionProgress.totalReviews += 1;
+
+          const answeredCorrectly = input.rating === 'good' || input.rating === 'easy';
+          if (answeredCorrectly) {
+            questionProgress.totalCorrect += 1;
+            questionProgress.correctStreak += 1;
+          } else {
+            questionProgress.correctStreak = 0;
+          }
+
+          questionProgress.history.push({ date: now, rating: input.rating });
+
+          const userProgress =
+            existingUserProgress ?? this.repository.createDefaultUserProgress(userId);
+          const streakFreezeUsed = this.applyReviewActivity(userProgress, {
+            now,
+            xpGain,
+            answeredCorrectly,
+          });
+
+          return { questionProgress, userProgress, streakFreezeUsed };
+        },
+      );
 
       after(async () => {
         try {

@@ -234,8 +234,8 @@ export const LibrarySection = ({
                 busy={busyJobId === subject.jobId}
                 onOpenSubject={onOpenSubject}
                 onDelete={onDelete}
-                onRetry={onRetry}
-                onCancel={onCancel}
+                {...(onRetry !== undefined ? { onRetry } : {})}
+                {...(onCancel !== undefined ? { onCancel } : {})}
                 t={t}
               />
             ))}

@@ -235,11 +235,9 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                               key={quiz.id}
                               quiz={quiz}
                               quizId={quiz.id}
-                              onDelete={
-                                quiz.ownedByMe
-                                  ? () => dispatch({ type: 'delete:prompt', quiz })
-                                  : undefined
-                              }
+                              {...(quiz.ownedByMe
+                                ? { onDelete: () => dispatch({ type: 'delete:prompt', quiz }) }
+                                : {})}
                             />
                           ))}
                         </div>

@@ -16,7 +16,11 @@ import {
   BillingPlanUnavailableError,
   type AdminUserSubscriptionGrant,
 } from '@/entities/AdminBilling';
-import type { IAdminBillingRepository } from '@/interfaces/repositories/IAdminBillingRepository';
+import type {
+  AdminSubscriptionListOptions,
+  IAdminBillingRepository,
+  UpdateBillingPlanData,
+} from '@/interfaces/repositories/IAdminBillingRepository';
 import type { IAdminBillingService } from '@/interfaces/services/IAdminBillingService';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
@@ -67,7 +71,14 @@ export class AdminBillingService implements IAdminBillingService {
   async updatePlan(input: UpdatePlanRequestDto): Promise<ServiceResult<BillingPlanDto>> {
     try {
       const { id, ...update } = input;
-      const updated = await this.repository.updatePlan(id, update);
+      const updateData: UpdateBillingPlanData = {
+        ...(update.name !== undefined && { name: update.name }),
+        ...(update.price !== undefined && { price: update.price }),
+        ...(update.duration !== undefined && { duration: update.duration }),
+        ...(update.features !== undefined && { features: update.features }),
+        ...(update.isActive !== undefined && { isActive: update.isActive }),
+      };
+      const updated = await this.repository.updatePlan(id, updateData);
       if (!updated) return { success: false, error: 'Plan not found', statusCode: 404 };
       return { success: true, data: AdminBillingDtoMapper.toPlanDto(updated) };
     } catch (error) {
@@ -94,7 +105,13 @@ export class AdminBillingService implements IAdminBillingService {
     options: AdminSubscriptionListQueryDto,
   ): Promise<ServiceResult<AdminSubscriptionListDto>> {
     try {
-      const result = await this.repository.listSubscriptions(options);
+      const repositoryOptions: AdminSubscriptionListOptions = {
+        page: options.page,
+        limit: options.limit,
+        ...(options.status !== undefined && { status: options.status }),
+        ...(options.search !== undefined && { search: options.search }),
+      };
+      const result = await this.repository.listSubscriptions(repositoryOptions);
       return {
         success: true,
         data: AdminBillingDtoMapper.toSubscriptionListDto(result.items, result.pagination),
@@ -128,7 +145,7 @@ export class AdminBillingService implements IAdminBillingService {
         planName: plan.name,
         amount: plan.price,
         startDate,
-        endDate,
+        ...(endDate !== undefined && { endDate }),
       };
 
       await this.repository.addUserSubscriptionGrant({
@@ -137,7 +154,7 @@ export class AdminBillingService implements IAdminBillingService {
         planId: grant.planId,
         amount: grant.amount,
         startDate: grant.startDate,
-        endDate: grant.endDate,
+        ...(endDate !== undefined && { endDate }),
       });
       return { success: true, data: AdminBillingDtoMapper.toGrantDto(grant) };
     } catch (error) {

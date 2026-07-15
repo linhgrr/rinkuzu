@@ -48,4 +48,21 @@ describe('QuizProgressPersistenceMapper', () => {
       updatedAt,
     });
   });
+
+  it('omits absent populated quiz summary fields', () => {
+    const entity = QuizProgressPersistenceMapper.toEntity({
+      _id: 'progress-1',
+      userId: 'user-1',
+      quiz: { _id: 'quiz-1', title: 'Architecture' },
+      questionOrder: [],
+      optionOrders: [],
+      userAnswers: [],
+      currentQuestionIndex: 0,
+      answeredCount: 0,
+      totalQuestions: 0,
+      updatedAt: new Date('2026-07-01T10:00:00.000Z'),
+    });
+
+    expect(entity.quiz).toEqual({ id: 'quiz-1', title: 'Architecture' });
+  });
 });

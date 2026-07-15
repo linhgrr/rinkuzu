@@ -62,6 +62,7 @@ AttemptSchema.index({ user: 1, quiz: 1 });
 AttemptSchema.index({ takenAt: -1 });
 
 const Attempt =
-  mongoose.models['Attempt'] || mongoose.model<AttemptDocument>('Attempt', AttemptSchema);
+  (mongoose.models['Attempt'] as mongoose.Model<AttemptDocument> | undefined) ??
+  mongoose.model<AttemptDocument>('Attempt', AttemptSchema);
 
 export default Attempt;

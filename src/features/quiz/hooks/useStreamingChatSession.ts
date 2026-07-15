@@ -219,8 +219,8 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
           question: payload.question,
           options: payload.options,
           userQuestion: trimmedQuestion,
-          questionImage: payload.questionImage,
-          optionImages: payload.optionImages,
+          ...(payload.questionImage !== undefined ? { questionImage: payload.questionImage } : {}),
+          ...(payload.optionImages !== undefined ? { optionImages: payload.optionImages } : {}),
           chatHistory: currentHistory,
         },
         {
@@ -229,8 +229,9 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
             setState((prev) => {
               const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
               for (let i = history.length - 1; i >= 0; i -= 1) {
-                if (history[i]?.role === 'assistant') {
-                  history[i] = { ...history[i], content: fullContent };
+                const message = history[i];
+                if (message?.role === 'assistant') {
+                  history[i] = { ...message, content: fullContent };
                   break;
                 }
               }
@@ -246,8 +247,9 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       setState((prev) => {
         const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
         for (let i = history.length - 1; i >= 0; i -= 1) {
-          if (history[i]?.role === 'assistant') {
-            history[i] = { ...history[i], content: explanation };
+          const message = history[i];
+          if (message?.role === 'assistant') {
+            history[i] = { ...message, content: explanation };
             break;
           }
         }

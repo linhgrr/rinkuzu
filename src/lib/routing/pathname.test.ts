@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldHideGlobalFooter, toBrowserPath, toIntlHref } from './pathname';
+import { getLocaleFromPath, shouldHideGlobalFooter, toBrowserPath, toIntlHref } from './pathname';
 
 describe('toIntlHref / toBrowserPath', () => {
   it('strips locale prefixes for next-intl navigation', () => {
@@ -15,6 +15,14 @@ describe('toIntlHref / toBrowserPath', () => {
     expect(toBrowserPath('/dashboard', 'vi')).toBe('/vi/dashboard');
     expect(toBrowserPath('/', 'en')).toBe('/en');
     expect(toBrowserPath('/', 'vi')).toBe('/vi');
+  });
+
+  it('extracts supported locales and falls back on unprefixed root paths', () => {
+    expect(getLocaleFromPath('/vi/dashboard')).toEqual({
+      locale: 'vi',
+      pathWithoutLocale: '/dashboard',
+    });
+    expect(getLocaleFromPath('/')).toEqual({ locale: 'vi', pathWithoutLocale: '/' });
   });
 });
 

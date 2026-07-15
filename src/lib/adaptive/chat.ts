@@ -18,11 +18,11 @@ export async function streamAdaptiveTutorChat(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...payload, stream: true }),
-    signal: options.signal,
+    ...(options.signal !== undefined && { signal: options.signal }),
   });
 
   return consumeOpenAISseResponse(response, {
-    onContent: options.onContent,
+    ...(options.onContent !== undefined && { onContent: options.onContent }),
     extractErrorMessage: (body, status) => extractApiErrorMessage(body, `HTTP error ${status}`),
   });
 }

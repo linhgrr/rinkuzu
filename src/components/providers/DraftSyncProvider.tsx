@@ -54,7 +54,7 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
             chunksTotal: draft.progress.total,
             chunksProcessed: draft.progress.processed,
             questionsCount: draft.questions.length,
-            error: draft.error ?? undefined,
+            ...(draft.error !== null && draft.error !== undefined ? { error: draft.error } : {}),
             createdAt: draft.createdAt,
             expiresAt: draft.expiresAt,
           },
@@ -73,6 +73,7 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
   // Watch for new processing drafts and resume them
   useEffect(() => {
     if (!session?.user) return;
+    const resumeTimeouts = new Set<ReturnType<typeof setTimeout>>();
 
     const checkAndResume = async () => {
       // Read the latest store snapshot on demand instead of subscribing —
@@ -88,12 +89,14 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
           console.warn(`DraftSyncProvider: Resuming processing for ${draft.id}`);
 
           // Small delay to ensure navigation is complete
-          setTimeout(() => {
+          const resumeTimeout = setTimeout(() => {
+            resumeTimeouts.delete(resumeTimeout);
             resumeProcessing(draft.id).finally(() => {
               // Remove from tracking when done (success or error)
               processingDraftIds.delete(draft.id);
             });
           }, 500);
+          resumeTimeouts.add(resumeTimeout);
         }
       }
     };
@@ -106,6 +109,8 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       clearInterval(checkInterval);
+      for (const resumeTimeout of resumeTimeouts) clearTimeout(resumeTimeout);
+      resumeTimeouts.clear();
     };
   }, [session, resumeProcessing]);
 

@@ -10,29 +10,39 @@ import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
 function toSubscriptionDto(profile: AccountProfile): AccountSubscriptionDto | undefined {
   if (!profile.subscription) return undefined;
+  const startDate = serializeOptionalDate(
+    profile.subscription.startDate,
+    'profile.subscription.startDate',
+  );
+  const endDate = serializeOptionalDate(
+    profile.subscription.endDate,
+    'profile.subscription.endDate',
+  );
   return {
     type: profile.subscription.type,
-    startDate: serializeOptionalDate(
-      profile.subscription.startDate,
-      'profile.subscription.startDate',
-    ),
-    endDate: serializeOptionalDate(profile.subscription.endDate, 'profile.subscription.endDate'),
     isActive: profile.subscription.isActive,
-    payosOrderId: profile.subscription.payosOrderId,
-    payosTransactionId: profile.subscription.payosTransactionId,
+    ...(startDate === undefined ? {} : { startDate }),
+    ...(endDate === undefined ? {} : { endDate }),
+    ...(profile.subscription.payosOrderId === undefined
+      ? {}
+      : { payosOrderId: profile.subscription.payosOrderId }),
+    ...(profile.subscription.payosTransactionId === undefined
+      ? {}
+      : { payosTransactionId: profile.subscription.payosTransactionId }),
   };
 }
 
 export class AccountDtoMapper {
   static toProfile(profile: AccountProfile): AccountProfileDto {
+    const subscription = toSubscriptionDto(profile);
     return {
       email: profile.email,
-      displayName: profile.displayName,
-      bio: profile.bio,
-      avatar: profile.avatar,
       role: profile.role,
       createdAt: serializeDate(profile.createdAt, 'profile.createdAt'),
-      subscription: toSubscriptionDto(profile),
+      ...(profile.displayName === undefined ? {} : { displayName: profile.displayName }),
+      ...(profile.bio === undefined ? {} : { bio: profile.bio }),
+      ...(profile.avatar === undefined ? {} : { avatar: profile.avatar }),
+      ...(subscription === undefined ? {} : { subscription }),
     };
   }
 

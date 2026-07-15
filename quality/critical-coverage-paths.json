@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "globalBaseline": {
+    "sourceCommit": "2dce122f43139b68c3cad31b0e21879f01b7a29a",
+    "scope": "all executable src TypeScript files, including zero-covered files",
+    "metrics": {
+      "lines": { "covered": 2409, "total": 11508 },
+      "statements": { "covered": 2521, "total": 12170 },
+      "functions": { "covered": 668, "total": 3260 },
+      "branches": { "covered": 1291, "total": 7796 }
+    }
+  },
+  "thresholds": {
+    "lines": 75,
+    "statements": 75,
+    "functions": 75,
+    "branches": 60
+  },
+  "globs": [
+    "src/lib/auth-tokens.ts",
+    "src/lib/password.ts",
+    "src/lib/api/client.ts",
+    "src/lib/api/error.ts",
+    "src/lib/api/request.ts",
+    "src/lib/entitlements/**",
+    "src/lib/llm/**",
+    "src/lib/security/**",
+    "src/services/auth/**",
+    "src/services/subscription/**"
+  ],
+  "changedThresholds": {
+    "lines": 85,
+    "statements": 85,
+    "functions": 85,
+    "branches": 75
+  },
+  "changedGlobs": [
+    "src/lib/auth-tokens.ts",
+    "src/lib/password.ts",
+    "src/lib/api/client.ts",
+    "src/lib/api/error.ts",
+    "src/lib/api/request.ts",
+    "src/lib/entitlements/**",
+    "src/lib/llm/**",
+    "src/lib/security/**",
+    "src/services/auth/**",
+    "src/services/subscription/**"
+  ]
+}

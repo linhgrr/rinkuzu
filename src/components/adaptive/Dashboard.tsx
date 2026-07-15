@@ -86,7 +86,7 @@ export default function AdaptiveLearningDashboard({
       <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 min-[1684px]:grid-cols-[minmax(0,900px)_416px] min-[1684px]:gap-6">
         <div className="min-w-0 md:col-span-2 min-[1684px]:col-span-1 min-[1684px]:col-start-1 min-[1684px]:row-start-1">
           <HeroSection
-            subject={upNextSubject}
+            subject={upNextSubject ?? null}
             loading={loading}
             loadingJobId={loadingJobId}
             onGoUpload={handleGoUpload}

@@ -155,9 +155,11 @@ export function QuizEditorWorkspace({
       createQuizEditorWorkspaceState({
         questions: initial.questions,
         title: initial.title,
-        description: initial.description,
-        isPrivate: initial.isPrivate,
-        selectedFolderId: initial.selectedFolderId,
+        ...(initial.description !== undefined ? { description: initial.description } : {}),
+        ...(initial.isPrivate !== undefined ? { isPrivate: initial.isPrivate } : {}),
+        ...(initial.selectedFolderId !== undefined
+          ? { selectedFolderId: initial.selectedFolderId }
+          : {}),
         showPDFViewer: Boolean(pdfUrl),
       }),
   );
@@ -270,12 +272,13 @@ export function QuizEditorWorkspace({
                     privateLabel: labels.privateLabel,
                     privateDescription: labels.privateDescription,
                   }}
-                  isPrivate={showPrivateToggle ? state.isPrivate : undefined}
-                  onPrivateChange={
-                    showPrivateToggle
-                      ? (value) => dispatch({ type: 'setIsPrivate', value })
-                      : undefined
-                  }
+                  {...(showPrivateToggle ? { isPrivate: state.isPrivate } : {})}
+                  {...(showPrivateToggle
+                    ? {
+                        onPrivateChange: (value: boolean) =>
+                          dispatch({ type: 'setIsPrivate', value }),
+                      }
+                    : {})}
                   disabled={!canEdit || state.isSubmitting}
                 />
                 {metaExtra}
@@ -296,7 +299,7 @@ export function QuizEditorWorkspace({
                 dispatch({ type: 'updateQuestionImage', questionIndex, value: url })
               }
               onRemoveQuestionImage={(questionIndex) =>
-                dispatch({ type: 'updateQuestionImage', questionIndex, value: undefined })
+                dispatch({ type: 'updateQuestionImage', questionIndex })
               }
               onUpdateOptionImage={(questionIndex, optionIndex, url) =>
                 dispatch({
@@ -311,7 +314,6 @@ export function QuizEditorWorkspace({
                   type: 'updateOptionImage',
                   questionIndex,
                   optionIndex,
-                  value: undefined,
                 })
               }
               onAddQuestion={() => dispatch({ type: 'addQuestion' })}
@@ -390,7 +392,7 @@ export function QuizEditorWorkspace({
         <WorkspacePdfPanel
           layout={pdfLayout}
           pdfUrl={pdfUrl}
-          pdfDataUrl={pdfDataUrl}
+          {...(pdfDataUrl !== undefined ? { pdfDataUrl } : {})}
           onClose={() => dispatch({ type: 'setShowPDFViewer', value: false })}
         />
       ) : null}

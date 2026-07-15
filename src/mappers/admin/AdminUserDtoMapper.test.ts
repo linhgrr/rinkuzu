@@ -36,4 +36,25 @@ describe('AdminUserDtoMapper', () => {
   it('does not expose authentication fields', () => {
     expect(AdminUserDtoMapper.toDto(user)).not.toHaveProperty('password');
   });
+
+  it('omits absent optional profile and subscription fields', () => {
+    const dto = AdminUserDtoMapper.toDto({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    });
+
+    expect(dto).not.toHaveProperty('displayName');
+    expect(dto).not.toHaveProperty('subscription');
+  });
+
+  it('omits absent optional subscription dates', () => {
+    const dto = AdminUserDtoMapper.toDto({
+      ...user,
+      subscription: { type: 'lifetime', isActive: true },
+    });
+
+    expect(dto.subscription).toEqual({ type: 'lifetime', isActive: true });
+  });
 });

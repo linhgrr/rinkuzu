@@ -18,7 +18,9 @@ export async function fetchAdminReportViewModels(
     params.append('status', statusFilter);
   }
 
-  const data = await fetchApiData<AdminReportListDto>(`/api/admin/reports?${params}`, { signal });
+  const data = await fetchApiData<AdminReportListDto>(`/api/admin/reports?${params}`, {
+    ...(signal !== undefined ? { signal } : {}),
+  });
   return toAdminReportViewModels(data.reports);
 }
 

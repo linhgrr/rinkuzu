@@ -38,7 +38,6 @@ export default function TextureBackground() {
               sizes="100vw"
               className="object-cover opacity-30"
               src={imgImage2}
-              unoptimized
               aria-hidden="true"
             />
           </div>

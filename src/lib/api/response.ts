@@ -28,7 +28,7 @@ export function apiOk<T>(data: T, status = 200, extras?: ApiOkExtras): NextRespo
     },
     {
       status,
-      headers: extras?.headers,
+      ...(extras?.headers !== undefined ? { headers: extras.headers } : {}),
     },
   );
 }
@@ -40,7 +40,15 @@ export function apiErr(
   meta?: Record<string, unknown>,
   message: string = getDefaultApiErrorMessage(code),
 ): NextResponse {
-  return NextResponse.json(buildStandardErrorBody({ code, message, detail, meta }), { status });
+  return NextResponse.json(
+    buildStandardErrorBody({
+      code,
+      message,
+      detail,
+      ...(meta !== undefined ? { meta } : {}),
+    }),
+    { status },
+  );
 }
 
 function apiStatusErr(detail: string, status = 400, meta?: Record<string, unknown>): NextResponse {

@@ -44,8 +44,9 @@ export interface PayOSPaymentResponseData {
 export interface PayOSPaymentResponse {
   code: string;
   desc: string;
-  data?: PayOSPaymentResponseData | null;
-  signature?: string;
+  // Zod optional fields can preserve an explicitly undefined input value.
+  data?: PayOSPaymentResponseData | null | undefined;
+  signature?: string | undefined;
 }
 
 export type PayOSPaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'EXPIRED';
@@ -80,8 +81,8 @@ export interface PayOSPaymentLinkData {
 export interface PayOSVerifyResponse {
   code: string;
   desc: string;
-  data?: PayOSPaymentLinkData | null;
-  signature?: string;
+  data?: PayOSPaymentLinkData | null | undefined;
+  signature?: string | undefined;
 }
 
 export interface IPayOSService {

@@ -3,23 +3,33 @@ import type { ProfileSettingsViewModel } from '@/features/profile/types/profile-
 import { formatDate } from '@/lib/formatters';
 
 export function toProfileSettingsViewModel(profile: AccountProfileDto): ProfileSettingsViewModel {
+  const subscription = profile.subscription
+    ? {
+        type: profile.subscription.type,
+        ...(profile.subscription.startDate !== undefined && {
+          startDate: profile.subscription.startDate,
+        }),
+        ...(profile.subscription.endDate !== undefined && {
+          endDate: profile.subscription.endDate,
+        }),
+        isActive: profile.subscription.isActive,
+        ...(profile.subscription.payosOrderId !== undefined && {
+          payosOrderId: profile.subscription.payosOrderId,
+        }),
+        ...(profile.subscription.payosTransactionId !== undefined && {
+          payosTransactionId: profile.subscription.payosTransactionId,
+        }),
+      }
+    : undefined;
+
   return {
     email: profile.email,
-    displayName: profile.displayName,
-    bio: profile.bio,
-    avatar: profile.avatar,
+    ...(profile.displayName !== undefined && { displayName: profile.displayName }),
+    ...(profile.bio !== undefined && { bio: profile.bio }),
+    ...(profile.avatar !== undefined && { avatar: profile.avatar }),
     role: profile.role,
     createdAt: profile.createdAt,
     createdAtLabel: formatDate(profile.createdAt),
-    subscription: profile.subscription
-      ? {
-          type: profile.subscription.type,
-          startDate: profile.subscription.startDate,
-          endDate: profile.subscription.endDate,
-          isActive: profile.subscription.isActive,
-          payosOrderId: profile.subscription.payosOrderId,
-          payosTransactionId: profile.subscription.payosTransactionId,
-        }
-      : undefined,
+    ...(subscription !== undefined && { subscription }),
   };
 }

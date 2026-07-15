@@ -48,7 +48,9 @@ function toPatchPayload(input: UpdateAdminOcrKeyInput): AdminOcrKeyPatchPayload 
 export async function fetchAdminOcrKeysViewModel(
   signal?: AbortSignal,
 ): Promise<AdminOcrKeysViewModel> {
-  const data = await fetchApiData<AdminOcrKeysListDto>('/api/admin/ocr-keys', { signal });
+  const data = await fetchApiData<AdminOcrKeysListDto>('/api/admin/ocr-keys', {
+    ...(signal !== undefined ? { signal } : {}),
+  });
   return toAdminOcrKeysViewModel(data);
 }
 

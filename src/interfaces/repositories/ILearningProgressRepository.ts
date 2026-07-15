@@ -16,6 +16,18 @@ export interface LibraryQuizListOptions extends RepositoryPaginationOptions {
   folder?: string | null;
 }
 
+export interface ReviewProgressMutation {
+  questionProgress: QuestionReviewProgressDraft;
+  userProgress: UserLearningProgress;
+  streakFreezeUsed: boolean;
+}
+
+export interface ReviewProgressTransactionResult {
+  questionProgress: QuestionReviewProgress;
+  userProgress: UserLearningProgress;
+  streakFreezeUsed: boolean;
+}
+
 export interface ILearningProgressRepository {
   listLibraryQuizzes(
     userId: string,
@@ -37,6 +49,16 @@ export interface ILearningProgressRepository {
   createDefaultUserProgress(userId: string): UserLearningProgress;
 
   saveUserProgress(progress: UserLearningProgress): Promise<UserLearningProgress>;
+
+  mutateReviewProgress(
+    userId: string,
+    quizSlug: string,
+    questionId: string,
+    mutate: (
+      questionProgress: QuestionReviewProgress | null,
+      userProgress: UserLearningProgress | null,
+    ) => ReviewProgressMutation,
+  ): Promise<ReviewProgressTransactionResult>;
 
   buyStreakFreeze(
     userId: string,

@@ -113,7 +113,7 @@ export function QuestionEditor({
                 />
 
                 <QuestionImageUpload
-                  currentImage={q.questionImage}
+                  {...(q.questionImage !== undefined ? { currentImage: q.questionImage } : {})}
                   onImageUploaded={(url) => onUpdateQuestionImage(index, url)}
                   onImageRemoved={() => onRemoveQuestionImage(index)}
                 />
@@ -171,7 +171,9 @@ export function QuestionEditor({
                       </div>
                       <div className="pl-7">
                         <OptionImageUpload
-                          currentImage={q.optionImages?.[optIdx]}
+                          {...(q.optionImages?.[optIdx] !== undefined
+                            ? { currentImage: q.optionImages[optIdx] }
+                            : {})}
                           onImageUploaded={(url) => onUpdateOptionImage(index, optIdx, url)}
                           onImageRemoved={() => onRemoveOptionImage(index, optIdx)}
                         />

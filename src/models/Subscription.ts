@@ -85,14 +85,13 @@ SubscriptionSchema.index(
   { payosTransactionId: 1 },
   {
     unique: true,
-    sparse: true,
     partialFilterExpression: { payosTransactionId: { $type: 'string' } },
   },
 );
 
 // Prevent re-compilation in development
 const Subscription =
-  mongoose.models['Subscription'] ||
+  (mongoose.models['Subscription'] as mongoose.Model<SubscriptionDocument> | undefined) ??
   mongoose.model<SubscriptionDocument>('Subscription', SubscriptionSchema);
 
 export default Subscription;

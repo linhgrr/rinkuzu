@@ -182,7 +182,7 @@ function OptionPreview({ src, alt, className }: OptionPreviewProps) {
     return null;
   }
 
-  return <OptionImage src={src} alt={alt} className={className} />;
+  return <OptionImage src={src} alt={alt} {...(className !== undefined ? { className } : {})} />;
 }
 
 function DesktopQuizHeader({
@@ -360,7 +360,9 @@ function DesktopQuestionCard({
                   </div>
                   <div className="mt-2">
                     <OptionPreview
-                      src={currentQuestion.optionImages?.[index]}
+                      {...(currentQuestion.optionImages?.[index] !== undefined
+                        ? { src: currentQuestion.optionImages[index] }
+                        : {})}
                       alt={`Option ${String.fromCharCode(65 + index)} image`}
                     />
                   </div>
@@ -564,7 +566,9 @@ function DesktopAIModal({
                   <MarkdownRenderer content={option} />
                 </div>
                 <OptionPreview
-                  src={currentQuestion.optionImages?.[index]}
+                  {...(currentQuestion.optionImages?.[index] !== undefined
+                    ? { src: currentQuestion.optionImages[index] }
+                    : {})}
                   alt={`Option ${index} image`}
                   className="ml-1"
                 />
@@ -663,7 +667,7 @@ export function DesktopQuizLayout({
       <DesktopQuizHeader
         slug={slug}
         quizTitle={quizTitle}
-        sessionEmail={sessionEmail}
+        {...(sessionEmail !== undefined ? { sessionEmail } : {})}
         userEmail={userEmail}
         currentQuestionIndex={currentQuestionIndex}
         questionCount={questions.length}

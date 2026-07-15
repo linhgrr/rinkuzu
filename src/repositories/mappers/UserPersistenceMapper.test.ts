@@ -21,18 +21,13 @@ describe('UserPersistenceMapper', () => {
     expect(UserPersistenceMapper.toEntity(record)).toEqual({
       id: 'user-1',
       email: 'learner@example.com',
-      name: undefined,
       displayName: 'Learner',
-      bio: undefined,
-      avatar: undefined,
       role: 'user',
       subscription: {
         type: 'premium',
         startDate: new Date('2026-07-01T00:00:00.000Z'),
         endDate: new Date('2026-08-01T00:00:00.000Z'),
         isActive: true,
-        payosOrderId: undefined,
-        payosTransactionId: undefined,
       },
       createdAt: new Date('2026-07-01T00:00:00.000Z'),
     });

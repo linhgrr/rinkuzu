@@ -11,7 +11,6 @@ interface MongooseCache {
 // In production / hot-reload dev, cache the mongoose connection on the
 // global object so HMR doesn't open a fresh connection on every request.
 declare global {
-  // eslint-disable-next-line no-var -- intentional global cache slot
   var __rinkuzuMongoose: MongooseCache | undefined;
 }
 
@@ -25,6 +24,8 @@ async function connectDB(): Promise<typeof mongoose> {
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(env.MONGODB_URI, {
+      autoCreate: false,
+      autoIndex: false,
       bufferCommands: false,
     });
   }

@@ -28,8 +28,8 @@ export function toEditorQuestions(
       editorId: `${idPrefix}-${index}`,
       question: question.question,
       options: question.options,
-      questionImage: question.questionImage,
-      optionImages: question.optionImages,
+      ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
+      ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
     };
 
     return question.type === 'single'
@@ -57,12 +57,12 @@ export function toQuestionInputs(
 
 function withBase(question: QuizEditorQuestionViewModel) {
   return {
-    id: question.id,
+    ...(question.id !== undefined && { id: question.id }),
     editorId: question.editorId,
     question: question.question,
     options: question.options,
-    questionImage: question.questionImage,
-    optionImages: question.optionImages,
+    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
+    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
   };
 }
 
@@ -96,9 +96,14 @@ export function updateQuestionImage(
   questionIndex: number,
   value?: string,
 ): QuizEditorQuestionViewModel[] {
-  return questions.map((question, index) =>
-    index === questionIndex ? { ...question, questionImage: value } : question,
-  );
+  return questions.map((question, index) => {
+    if (index !== questionIndex) return question;
+    if (value !== undefined) return { ...question, questionImage: value };
+
+    const updatedQuestion = { ...question };
+    delete updatedQuestion.questionImage;
+    return updatedQuestion;
+  });
 }
 
 export function updateOptionImage(

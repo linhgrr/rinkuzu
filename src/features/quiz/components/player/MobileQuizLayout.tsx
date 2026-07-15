@@ -44,7 +44,7 @@ export function MobileQuizLayout({
     question: question.question,
     options: question.options,
     type: question.type,
-    questionImage: question.questionImage,
+    ...(question.questionImage !== undefined ? { questionImage: question.questionImage } : {}),
   }));
 
   const handleMobileComplete = (answers: Record<string, number | number[]>) => {
@@ -65,7 +65,7 @@ export function MobileQuizLayout({
       onComplete={handleMobileComplete}
       onExit={onExit}
       submitting={submitting}
-      submissionError={error}
+      {...(error !== undefined ? { submissionError: error } : {})}
     />
   );
 }

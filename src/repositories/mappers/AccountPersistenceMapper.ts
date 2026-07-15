@@ -6,17 +6,16 @@ import type {
   AccountSubscriptionPersistenceRecord,
 } from '@/repositories/types/AccountPersistence';
 
-function toSubscription(
-  subscription: AccountSubscriptionPersistenceRecord | undefined,
-): AccountSubscription | undefined {
-  if (!subscription) return undefined;
+function toSubscription(subscription: AccountSubscriptionPersistenceRecord): AccountSubscription {
   return {
     type: subscription.type,
-    startDate: subscription.startDate,
-    endDate: subscription.endDate,
     isActive: subscription.isActive,
-    payosOrderId: subscription.payosOrderId,
-    payosTransactionId: subscription.payosTransactionId,
+    ...(subscription.startDate === undefined ? {} : { startDate: subscription.startDate }),
+    ...(subscription.endDate === undefined ? {} : { endDate: subscription.endDate }),
+    ...(subscription.payosOrderId === undefined ? {} : { payosOrderId: subscription.payosOrderId }),
+    ...(subscription.payosTransactionId === undefined
+      ? {}
+      : { payosTransactionId: subscription.payosTransactionId }),
   };
 }
 
@@ -25,19 +24,21 @@ export class AccountPersistenceMapper {
     return {
       id: serializeId(record._id, 'account._id'),
       email: record.email,
-      displayName: record.displayName,
-      bio: record.bio,
-      avatar: record.avatar,
       role: record.role,
       createdAt: record.createdAt,
-      subscription: toSubscription(record.subscription),
+      ...(record.displayName === undefined ? {} : { displayName: record.displayName }),
+      ...(record.bio === undefined ? {} : { bio: record.bio }),
+      ...(record.avatar === undefined ? {} : { avatar: record.avatar }),
+      ...(record.subscription === undefined
+        ? {}
+        : { subscription: toSubscription(record.subscription) }),
     };
   }
 
   static toCredentials(record: AccountCredentialsPersistenceRecord): AccountCredentials {
     return {
       id: serializeId(record._id, 'account._id'),
-      passwordHash: record.password,
+      ...(record.password === undefined ? {} : { passwordHash: record.password }),
     };
   }
 }

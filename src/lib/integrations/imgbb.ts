@@ -54,7 +54,7 @@ export class ImgBbImageStorage implements IImageStorage {
       url: data.url,
       displayUrl: data.display_url,
       thumbnailUrl: data.thumb?.url ?? data.display_url,
-      mediumUrl: data.medium?.url,
+      ...(data.medium?.url !== undefined && { mediumUrl: data.medium.url }),
       deleteUrl: data.delete_url,
       width: data.width,
       height: data.height,

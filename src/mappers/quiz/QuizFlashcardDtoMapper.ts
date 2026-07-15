@@ -7,8 +7,8 @@ export class QuizFlashcardDtoMapper {
       id: quiz.id,
       title: quiz.title,
       slug: quiz.slug,
-      description: quiz.description,
       questions: quiz.questions.map(QuizFlashcardDtoMapper.toQuestionDto),
+      ...(quiz.description === undefined ? {} : { description: quiz.description }),
     };
   }
 
@@ -18,10 +18,10 @@ export class QuizFlashcardDtoMapper {
       question: question.question,
       options: question.options,
       type: question.type,
-      correctIndex: question.correctIndex,
-      correctIndexes: question.correctIndexes,
-      questionImage: question.questionImage,
-      optionImages: question.optionImages,
+      ...(question.correctIndex === undefined ? {} : { correctIndex: question.correctIndex }),
+      ...(question.correctIndexes === undefined ? {} : { correctIndexes: question.correctIndexes }),
+      ...(question.questionImage === undefined ? {} : { questionImage: question.questionImage }),
+      ...(question.optionImages === undefined ? {} : { optionImages: question.optionImages }),
     };
   }
 }

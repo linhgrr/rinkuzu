@@ -14,7 +14,9 @@ import type {
 export async function fetchAdminBillingPlanViewModels(
   signal?: AbortSignal,
 ): Promise<AdminBillingPlanViewModel[]> {
-  const plans = await fetchApiData<BillingPlanDto[]>('/api/admin/plans', { signal });
+  const plans = await fetchApiData<BillingPlanDto[]>('/api/admin/plans', {
+    ...(signal !== undefined ? { signal } : {}),
+  });
   return toAdminBillingPlanViewModels(plans);
 }
 

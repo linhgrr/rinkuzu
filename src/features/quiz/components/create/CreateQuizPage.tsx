@@ -408,8 +408,12 @@ function CreateQuizFormCard({
                 promptPlaceholder: t('aiPromptPlaceholder'),
                 promptHelper: t('aiPromptHelper'),
               }}
-              isPrivate={privacyControl?.isPrivate}
-              onPrivateChange={privacyControl?.onPrivateChange}
+              {...(privacyControl !== undefined
+                ? {
+                    isPrivate: privacyControl.isPrivate,
+                    onPrivateChange: privacyControl.onPrivateChange,
+                  }
+                : {})}
               privateCheckboxId="isPrivateUpload"
               aiPrompt={aiPrompt}
               onAiPromptChange={onAiPromptChange}
@@ -659,15 +663,15 @@ export function CreateQuizPage() {
                 dispatch({ type: 'patch', value: { showPDFViewer: !state.showPDFViewer } })
               }
               pdfFile={state.pdfFile}
-              privacyControl={
-                canCreatePrivateQuiz
-                  ? {
+              {...(canCreatePrivateQuiz
+                ? {
+                    privacyControl: {
                       isPrivate: state.isPrivate,
-                      onPrivateChange: (value) =>
+                      onPrivateChange: (value: boolean) =>
                         dispatch({ type: 'patch', value: { isPrivate: value } }),
-                    }
-                  : undefined
-              }
+                    },
+                  }
+                : {})}
               selectedFolderId={state.selectedFolderId}
               t={t}
               tCommon={tCommon}

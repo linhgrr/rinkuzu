@@ -66,7 +66,7 @@ DiscussionSchema.index({ quiz: 1, questionIndex: 1 }, { unique: true });
 
 // Prevent re-compilation in development
 const Discussion =
-  mongoose.models['Discussion'] ||
+  (mongoose.models['Discussion'] as mongoose.Model<DiscussionDocument> | undefined) ??
   mongoose.model<DiscussionDocument>('Discussion', DiscussionSchema);
 
 export default Discussion;

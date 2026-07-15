@@ -26,4 +26,8 @@ const FolderSchema = new Schema<IFolderDocument>(
 
 FolderSchema.index({ owner: 1, name: 1 }, { unique: true });
 
-export default mongoose.models['Folder'] || mongoose.model<IFolderDocument>('Folder', FolderSchema);
+const Folder =
+  (mongoose.models['Folder'] as mongoose.Model<IFolderDocument> | undefined) ??
+  mongoose.model<IFolderDocument>('Folder', FolderSchema);
+
+export default Folder;

@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
     await subscriptionService.activateVerifiedSubscription(orderCode, {
       orderCode: rawOrderCode,
       amount: rawAmount,
-      reference: data.reference,
-      code: data.code,
+      ...(data.reference !== undefined ? { reference: data.reference } : {}),
+      ...(data.code !== undefined ? { code: data.code } : {}),
     });
 
     return apiOk(null);

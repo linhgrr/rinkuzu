@@ -14,12 +14,20 @@ export class AuthAccountPersistenceMapper {
   static toSecurityState(record: AuthAccountPersistenceRecord): AuthAccountSecurityState {
     return {
       ...AuthAccountPersistenceMapper.toIdentity(record),
-      passwordHash: record.password,
-      emailVerified: record.emailVerified ?? undefined,
-      emailVerificationTokenHash: record.emailVerificationTokenHash ?? undefined,
-      emailVerificationExpires: record.emailVerificationExpires ?? undefined,
-      passwordResetTokenHash: record.passwordResetTokenHash ?? undefined,
-      passwordResetExpires: record.passwordResetExpires ?? undefined,
+      ...(record.password === undefined ? {} : { passwordHash: record.password }),
+      ...(record.emailVerified == null ? {} : { emailVerified: record.emailVerified }),
+      ...(record.emailVerificationTokenHash == null
+        ? {}
+        : { emailVerificationTokenHash: record.emailVerificationTokenHash }),
+      ...(record.emailVerificationExpires == null
+        ? {}
+        : { emailVerificationExpires: record.emailVerificationExpires }),
+      ...(record.passwordResetTokenHash == null
+        ? {}
+        : { passwordResetTokenHash: record.passwordResetTokenHash }),
+      ...(record.passwordResetExpires == null
+        ? {}
+        : { passwordResetExpires: record.passwordResetExpires }),
     };
   }
 }

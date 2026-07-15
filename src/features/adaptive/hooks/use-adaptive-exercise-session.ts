@@ -64,6 +64,7 @@ export const useAdaptiveExerciseSession = ({
   const [theory, setTheory] = useState<TheoryData | null>(null);
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [answerDraft, setAnswerDraft] = useState<ExerciseAnswerDraft | null>(null);
+  const answerDraftRef = useRef<ExerciseAnswerDraft | null>(null);
   const [loadingConcept, setLoadingConcept] = useState(true);
   const [loadingTheory, setLoadingTheory] = useState(false);
   const [loadingExercise, setLoadingExercise] = useState(false);
@@ -71,10 +72,12 @@ export const useAdaptiveExerciseSession = ({
   const [error, setError] = useState<string | null>(null);
   const [showTheory, setShowTheory] = useState(false);
 
-  const loadingRef = useRef(false);
   const isMountedRef = useRef(true);
   const activeRequestIdRef = useRef(0);
+  const activeLoadRequestIdRef = useRef(0);
+  const activeLoadSessionIdRef = useRef<string | null>(null);
   const submitIdempotencyRef = useRef<{ exerciseId: string; key: string } | null>(null);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -84,16 +87,18 @@ export const useAdaptiveExerciseSession = ({
   }, []);
 
   const loadData = async () => {
-    if (!isMountedRef.current || loadingRef.current) return;
+    if (!isMountedRef.current || activeLoadSessionIdRef.current === sessionId) return;
 
-    loadingRef.current = true;
     const requestId = activeRequestIdRef.current + 1;
     activeRequestIdRef.current = requestId;
+    activeLoadRequestIdRef.current = requestId;
+    activeLoadSessionIdRef.current = sessionId;
 
     setLoadingConcept(true);
     setLoadingTheory(false);
     setLoadingExercise(true);
     setError(null);
+    answerDraftRef.current = null;
     setAnswerDraft(null);
     setConcept(null);
     setTheory(null);
@@ -101,9 +106,12 @@ export const useAdaptiveExerciseSession = ({
     setShowTheory(false);
 
     const isLatestActiveRequest = () =>
-      isMountedRef.current && activeRequestIdRef.current === requestId;
+      isMountedRef.current && activeLoadRequestIdRef.current === requestId;
     const releaseLoadingLock = () => {
-      loadingRef.current = false;
+      if (activeLoadRequestIdRef.current === requestId) {
+        activeLoadRequestIdRef.current = 0;
+        activeLoadSessionIdRef.current = null;
+      }
     };
 
     try {
@@ -118,10 +126,11 @@ export const useAdaptiveExerciseSession = ({
       setTheory(step.theory);
       setShowTheory(Boolean(step.theory));
       setExercise(step.exercise);
-      setAnswerDraft(
+      const nextAnswerDraft =
         getSessionExerciseDraft(sessionId, step.exercise.exercise_id) ??
-          createInitialExerciseAnswer(step.exercise),
-      );
+        createInitialExerciseAnswer(step.exercise);
+      answerDraftRef.current = nextAnswerDraft;
+      setAnswerDraft(nextAnswerDraft);
       setLoadingTheory(false);
       setLoadingExercise(false);
       releaseLoadingLock();
@@ -149,6 +158,8 @@ export const useAdaptiveExerciseSession = ({
   };
 
   const setAndSaveAnswerDraft = (draft: ExerciseAnswerDraft) => {
+    submitIdempotencyRef.current = null;
+    answerDraftRef.current = draft;
     setAnswerDraft(draft);
     if (exercise) {
       saveSessionExerciseDraft(sessionId, exercise.exercise_id, draft);
@@ -167,7 +178,6 @@ export const useAdaptiveExerciseSession = ({
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadData is useEffectEvent
   }, [sessionId]);
 
   useEffect(() => {
@@ -176,8 +186,15 @@ export const useAdaptiveExerciseSession = ({
   }, [router, sessionId]);
 
   const handleSubmit = async () => {
-    if (!exercise || !answerDraft || !hasCompleteExerciseAnswer(exercise, answerDraft)) return;
+    if (
+      submittingRef.current ||
+      !exercise ||
+      !answerDraft ||
+      !hasCompleteExerciseAnswer(exercise, answerDraft)
+    )
+      return;
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
@@ -200,20 +217,24 @@ export const useAdaptiveExerciseSession = ({
       saveSessionExerciseOutcome(sessionId, { result, exercise });
       clearSessionExerciseDraft(sessionId, exercise.exercise_id);
       submitIdempotencyRef.current = null;
+      submittingRef.current = false;
       setSubmitting(false);
       router.push(ADAPTIVE_ROUTES.result(sessionId));
     } catch (err) {
       if (!isMountedRef.current) {
+        submittingRef.current = false;
         return;
       }
 
       if (isSessionNotFoundError(err)) {
         setError(t('exercise.failedToSubmitAnswer'));
+        submittingRef.current = false;
         setSubmitting(false);
         return;
       }
 
       setError(resolveExerciseFeedback(err, t, 'submit'));
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -223,19 +244,17 @@ export const useAdaptiveExerciseSession = ({
   };
 
   const toggleChoice = (choice: string) => {
-    setAnswerDraft((current) => {
-      if (current?.type !== 'multi_correct') {
-        throw new TypeError('Cannot toggle a choice outside a multi-correct exercise');
-      }
-      const existing = new Set(current.selections);
-      if (existing.has(choice)) existing.delete(choice);
-      else existing.add(choice);
+    const current = answerDraftRef.current;
+    if (current?.type !== 'multi_correct') {
+      throw new TypeError('Cannot toggle a choice outside a multi-correct exercise');
+    }
+    const existing = new Set(current.selections);
+    if (existing.has(choice)) existing.delete(choice);
+    else existing.add(choice);
 
-      const nextDraft = { type: current.type, selections: Array.from(existing).sort() };
-      if (exercise) {
-        saveSessionExerciseDraft(sessionId, exercise.exercise_id, nextDraft);
-      }
-      return nextDraft;
+    setAndSaveAnswerDraft({
+      type: current.type,
+      selections: Array.from(existing).sort(),
     });
   };
 
@@ -248,30 +267,20 @@ export const useAdaptiveExerciseSession = ({
   };
 
   const moveOrderingItem = (fromIndex: number, toIndex: number) => {
-    setAnswerDraft((current) => {
-      if (current?.type !== 'ordering') {
-        throw new TypeError('Cannot move an item outside an ordering exercise');
-      }
-      const ordering = [...current.items];
-      if (
-        fromIndex < 0 ||
-        toIndex < 0 ||
-        fromIndex >= ordering.length ||
-        toIndex >= ordering.length
-      )
-        return current;
+    const current = answerDraftRef.current;
+    if (current?.type !== 'ordering') {
+      throw new TypeError('Cannot move an item outside an ordering exercise');
+    }
+    const ordering = [...current.items];
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= ordering.length || toIndex >= ordering.length)
+      return;
 
-      const [moved] = ordering.splice(fromIndex, 1);
-      if (moved === undefined) {
-        throw new TypeError(`No ordering item exists at index ${fromIndex}`);
-      }
-      ordering.splice(toIndex, 0, moved);
-      const nextDraft = { type: current.type, items: ordering };
-      if (exercise) {
-        saveSessionExerciseDraft(sessionId, exercise.exercise_id, nextDraft);
-      }
-      return nextDraft;
-    });
+    const [moved] = ordering.splice(fromIndex, 1);
+    if (moved === undefined) {
+      throw new TypeError(`No ordering item exists at index ${fromIndex}`);
+    }
+    ordering.splice(toIndex, 0, moved);
+    setAndSaveAnswerDraft({ type: current.type, items: ordering });
   };
 
   const setTextAnswer = (value: string) => {
@@ -284,10 +293,19 @@ export const useAdaptiveExerciseSession = ({
         `Cannot pair ${leftItems.length} left item(s) with ${rightItems.length} right item(s)`,
       );
     }
-    setAndSaveAnswerDraft({
-      type: 'matching',
-      matches: Object.fromEntries(leftItems.map((left, index) => [left, rightItems[index]])),
-    });
+    const matches: Record<string, string> = {};
+    for (let index = 0; index < leftItems.length; index += 1) {
+      const left = leftItems[index];
+      const right = rightItems[index];
+      if (left === undefined || right === undefined) {
+        throw new TypeError(`Missing matching item at index ${index}`);
+      }
+      if (Object.hasOwn(matches, left)) {
+        throw new TypeError(`Duplicate matching item: ${left}`);
+      }
+      matches[left] = right;
+    }
+    setAndSaveAnswerDraft({ type: 'matching', matches });
   };
 
   const setOrderingAnswer = (ordering: string[]) => {

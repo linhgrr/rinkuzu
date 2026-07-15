@@ -12,10 +12,10 @@ function toAuthorDto(author: Quiz['author']): QuizListAuthorDto | null {
 
   return {
     id: author.id,
-    email: author.email,
-    name: author.name,
-    displayName: author.displayName,
-    avatar: author.avatar,
+    ...(author.email === undefined ? {} : { email: author.email }),
+    ...(author.name === undefined ? {} : { name: author.name }),
+    ...(author.displayName === undefined ? {} : { displayName: author.displayName }),
+    ...(author.avatar === undefined ? {} : { avatar: author.avatar }),
   };
 }
 
@@ -24,7 +24,6 @@ export class QuizListDtoMapper {
     return {
       id: quiz.id,
       title: quiz.title,
-      description: quiz.description,
       slug: quiz.slug,
       author: toAuthorDto(quiz.author),
       folder: quiz.folder ?? null,
@@ -32,6 +31,7 @@ export class QuizListDtoMapper {
       questionCount: quiz.questionCount ?? quiz.questions.length,
       createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),
       updatedAt: serializeDate(quiz.updatedAt, 'quiz.updatedAt'),
+      ...(quiz.description === undefined ? {} : { description: quiz.description }),
     };
   }
 }

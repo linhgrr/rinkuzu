@@ -9,9 +9,9 @@ function mapAuthor(author: DiscussionCommentPersistenceRecord['author']): Discus
   return {
     id: serializeId(author._id, 'discussion.comment.author._id'),
     email: author.email,
-    name: author.name,
-    displayName: author.displayName,
-    avatar: author.avatar,
+    ...(author.name === undefined ? {} : { name: author.name }),
+    ...(author.displayName === undefined ? {} : { displayName: author.displayName }),
+    ...(author.avatar === undefined ? {} : { avatar: author.avatar }),
   };
 }
 

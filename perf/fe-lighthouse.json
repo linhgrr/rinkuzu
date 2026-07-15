@@ -1,18 +1,56 @@
-[
-  {
-    "url": "http://127.0.0.1:3100/en",
-    "runs": 3,
-    "performanceScore": 0.79,
-    "lcpMs": 5656.0125,
-    "interactiveMs": 5981.978750000002,
-    "cls": 0
-  },
-  {
-    "url": "http://127.0.0.1:3100/en/login",
-    "runs": 3,
-    "performanceScore": 0.91,
-    "lcpMs": 3397.4763000000003,
-    "interactiveMs": 5139.211,
-    "cls": 0
-  }
-]
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-15T18:30:41.271Z",
+  "status": "failed",
+  "buildDigest": "5d19fc27c59e8b2e3ab0872e1514146ec185fe095e483252c2c97bbaf2623218",
+  "mode": "local",
+  "expectedRuns": 3,
+  "entries": [
+    {
+      "url": "http://127.0.0.1:38081/en",
+      "runs": 3,
+      "performanceScore": 0.91,
+      "accessibilityScore": 1,
+      "bestPracticesScore": 1,
+      "seoScore": 0.92,
+      "lcpMs": 3490.4579999999996,
+      "tbtMs": 37.5,
+      "cls": 0
+    },
+    {
+      "url": "http://127.0.0.1:38081/en/login",
+      "runs": 3,
+      "performanceScore": 0.96,
+      "accessibilityScore": 0.96,
+      "bestPracticesScore": 1,
+      "seoScore": 0.61,
+      "lcpMs": 2742.4392,
+      "tbtMs": 79.5,
+      "cls": 0
+    }
+  ],
+  "violations": [
+    {
+      "code": "lighthouse-lcp",
+      "url": "http://127.0.0.1:38081/en",
+      "actual": 3490.4579999999996,
+      "limit": 2500
+    },
+    {
+      "code": "lighthouse-lcp",
+      "url": "http://127.0.0.1:38081/en/login",
+      "actual": 2742.4392,
+      "limit": 2500
+    },
+    {
+      "code": "lighthouse-accessibility",
+      "url": "http://127.0.0.1:38081/en/login",
+      "actual": 0.96,
+      "limit": 1
+    },
+    {
+      "code": "lighthouse-ci-assertion-failed",
+      "exitCode": 1
+    }
+  ]
+}

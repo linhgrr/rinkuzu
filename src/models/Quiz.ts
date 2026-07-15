@@ -1,14 +1,18 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-interface QuizQuestionDocument {
+interface QuizQuestionDocumentBase {
+  _id: Types.ObjectId;
   question: string;
   options: string[];
-  correctIndex?: number;
-  correctIndexes?: number[];
-  type: 'single' | 'multiple';
   questionImage?: string;
   optionImages?: (string | undefined)[];
 }
+
+type QuizQuestionDocument = QuizQuestionDocumentBase &
+  (
+    | { type: 'single'; correctIndex: number; correctIndexes?: never }
+    | { type: 'multiple'; correctIndex?: never; correctIndexes: number[] }
+  );
 
 interface QuizDocument extends Document {
   title: string;
@@ -160,6 +164,8 @@ QuizSchema.index(
 // slug index is already created via unique: true in schema
 
 // Prevent re-compilation in development
-const Quiz = mongoose.models['Quiz'] || mongoose.model<QuizDocument>('Quiz', QuizSchema);
+const Quiz =
+  (mongoose.models['Quiz'] as mongoose.Model<QuizDocument> | undefined) ??
+  mongoose.model<QuizDocument>('Quiz', QuizSchema);
 
 export default Quiz;

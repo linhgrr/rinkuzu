@@ -1,0 +1,15 @@
+{
+  "path": ["src"],
+  "format": ["typescript", "javascript"],
+  "mode": "mild",
+  "minLines": 5,
+  "minTokens": 50,
+  "maxSize": "10mb",
+  "threshold": 2.2,
+  "reporters": ["json"],
+  "output": "reports/jscpd",
+  "ignore": ["**/*.test.*", "**/*.spec.*", "**/__tests__/**", "**/generated/**"],
+  "gitignore": true,
+  "skipLocal": false,
+  "absolute": false
+}

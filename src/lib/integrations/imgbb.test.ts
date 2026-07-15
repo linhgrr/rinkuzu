@@ -71,4 +71,25 @@ describe('ImgBbImageStorage', () => {
       }),
     ).rejects.toBeInstanceOf(ImageStorageUpstreamError);
   });
+
+  it('omits an absent optional medium image URL', async () => {
+    const withoutMedium = {
+      ...payload,
+      data: { ...payload.data, medium: undefined },
+    };
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(withoutMedium), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    const result = await new ImgBbImageStorage().upload({
+      bytes: new Uint8Array([1]),
+      contentType: 'image/png',
+      filename: 'image.png',
+    });
+
+    expect(result).not.toHaveProperty('mediumUrl');
+  });
 });

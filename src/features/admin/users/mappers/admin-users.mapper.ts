@@ -17,10 +17,14 @@ function toAdminUserSubscriptionViewModel(
 
   return {
     type: subscription.type,
-    startDate: subscription.startDate,
-    startDateLabel: subscription.startDate ? formatDate(subscription.startDate) : undefined,
-    endDate: subscription.endDate,
-    endDateLabel: subscription.endDate ? formatDate(subscription.endDate) : undefined,
+    ...(subscription.startDate !== undefined && {
+      startDate: subscription.startDate,
+      startDateLabel: formatDate(subscription.startDate),
+    }),
+    ...(subscription.endDate !== undefined && {
+      endDate: subscription.endDate,
+      endDateLabel: formatDate(subscription.endDate),
+    }),
     isActive: subscription.isActive,
     statusLabel,
     statusVariant,
@@ -28,14 +32,16 @@ function toAdminUserSubscriptionViewModel(
 }
 
 export function toAdminUserViewModel(user: AdminUserDto): AdminUserViewModel {
+  const subscription = toAdminUserSubscriptionViewModel(user.subscription);
+
   return {
     id: user.id,
     email: user.email,
-    displayName: user.displayName,
+    ...(user.displayName !== undefined && { displayName: user.displayName }),
     role: user.role,
     createdAt: user.createdAt,
     createdAtLabel: formatDate(user.createdAt),
-    subscription: toAdminUserSubscriptionViewModel(user.subscription),
+    ...(subscription !== undefined && { subscription }),
   };
 }
 

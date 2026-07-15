@@ -148,7 +148,7 @@ function normalizeAdaptiveError({
     message: trimmedMessage || trimmedDetail || `API Error ${status}`,
     code: normalizedCode || 'request_failed',
     status,
-    detail: trimmedDetail || undefined,
+    ...(trimmedDetail.length > 0 && { detail: trimmedDetail }),
   });
 }
 
@@ -241,12 +241,17 @@ async function executeRequest<T>(
     headers.set('Content-Type', 'application/json');
   }
 
+  const requestOptions = { ...options };
+  delete requestOptions.timeoutMs;
+  delete requestOptions.dedupeKey;
+  delete requestOptions.cacheTtlMs;
+
   const res = await timedFetch(`${API_BASE}${path}`, {
-    ...options,
+    ...requestOptions,
     method,
     cache: options?.cache ?? 'no-store',
     headers,
-    timeoutMs: options?.timeoutMs,
+    ...(options?.timeoutMs !== undefined && { timeoutMs: options.timeoutMs }),
   });
 
   if (!res.ok) {
@@ -254,9 +259,11 @@ async function executeRequest<T>(
     if (isStandardErrorEnvelope(payload)) {
       throw normalizeAdaptiveError({
         status: res.status,
-        code: payload.error.code,
-        message: payload.error.message,
-        detail: payload.error.detail || payload.error.message,
+        ...(payload.error.code !== undefined && { code: payload.error.code }),
+        ...(payload.error.message !== undefined && { message: payload.error.message }),
+        ...((payload.error.detail || payload.error.message) !== undefined && {
+          detail: payload.error.detail || payload.error.message,
+        }),
       });
     }
 
@@ -292,7 +299,7 @@ async function executeRequest<T>(
     message: 'Adaptive service returned an invalid response envelope',
     code: 'upstream_invalid_envelope',
     status: res.status,
-    detail: rawText || undefined,
+    ...(rawText.length > 0 && { detail: rawText }),
     retryable: true,
   });
 }

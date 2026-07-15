@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   deleteSavedQuizProgress,
   loadSavedQuizProgress,
@@ -23,7 +23,7 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     enabledRef.current = enabled;
   }, [enabled]);
 
-  const loadProgress = async (): Promise<SavedQuizProgress | null> => {
+  const loadProgress = useCallback(async (): Promise<SavedQuizProgress | null> => {
     if (!enabledRef.current) {
       return null;
     }
@@ -33,9 +33,9 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     } catch {
       return null;
     }
-  };
+  }, [slug]);
 
-  const flushSave = async () => {
+  const flushSave = useCallback(async () => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
@@ -52,24 +52,27 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     } catch {
       // Best-effort; progress save failures are non-blocking.
     }
-  };
+  }, [slug]);
 
-  const saveProgress = (payload: SavedQuizProgress) => {
-    if (!enabledRef.current) {
-      return;
-    }
+  const saveProgress = useCallback(
+    (payload: SavedQuizProgress) => {
+      if (!enabledRef.current) {
+        return;
+      }
 
-    pendingRef.current = payload;
+      pendingRef.current = payload;
 
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    debounceRef.current = setTimeout(() => {
-      void flushSave();
-    }, debounceMs);
-  };
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        void flushSave();
+      }, debounceMs);
+    },
+    [debounceMs, flushSave],
+  );
 
-  const clearProgress = async () => {
+  const clearProgress = useCallback(async () => {
     pendingRef.current = null;
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -85,7 +88,7 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     } catch {
       // Best-effort.
     }
-  };
+  }, [slug]);
 
   useEffect(() => {
     return () => {

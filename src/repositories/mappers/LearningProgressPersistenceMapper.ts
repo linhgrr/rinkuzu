@@ -23,10 +23,10 @@ function mapAuthor(
   if (typeof author === 'object' && '_id' in author) {
     return {
       id: serializeId(author._id, 'quiz.author._id'),
-      email: author.email,
-      name: author.name,
-      displayName: author.displayName,
-      avatar: author.avatar,
+      ...(author.email === undefined ? {} : { email: author.email }),
+      ...(author.name === undefined ? {} : { name: author.name }),
+      ...(author.displayName === undefined ? {} : { displayName: author.displayName }),
+      ...(author.avatar === undefined ? {} : { avatar: author.avatar }),
     };
   }
   return { id: serializeId(author, 'quiz.author') };
@@ -67,17 +67,17 @@ export class LearningProgressPersistenceMapper {
       id,
       title: record.title,
       slug: record.slug,
-      description: record.description,
       author,
       folder,
       isPrivate: record.isPrivate,
-      pdfUrl: record.pdfUrl,
       questionCount: record.questionCount ?? record.questions?.length ?? 0,
       ownedByMe,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       lastAttemptAt: context.lastAttemptAt,
       lastProgressAt: context.lastProgressAt,
+      ...(record.description === undefined ? {} : { description: record.description }),
+      ...(record.pdfUrl === undefined ? {} : { pdfUrl: record.pdfUrl }),
       ...activity,
     };
   }
@@ -88,7 +88,6 @@ export class LearningProgressPersistenceMapper {
       userId: record.userId,
       quizSlug: record.quizSlug,
       questionId: record.questionId,
-      questionRef: record.questionRef,
       srsLevel: record.srsLevel,
       nextReviewDate: record.nextReviewDate,
       lastReviewDate: record.lastReviewDate,
@@ -102,6 +101,7 @@ export class LearningProgressPersistenceMapper {
       notes: record.notes,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      ...(record.questionRef === undefined ? {} : { questionRef: record.questionRef }),
     };
   }
 

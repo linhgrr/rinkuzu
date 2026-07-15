@@ -13,6 +13,7 @@ vi.mock('resend', () => ({
 }));
 
 import { __resetMailClient, sendTransactionalMail } from '@/lib/mail';
+import { env } from '@/lib/env';
 
 describe('sendTransactionalMail', () => {
   beforeEach(() => {
@@ -33,7 +34,7 @@ describe('sendTransactionalMail', () => {
     expect(resendSendMock).toHaveBeenCalledTimes(1);
     expect(resendSendMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: 'noreply@example.com',
+        from: env.MAIL_FROM,
         to: ['a@b.com'],
         subject: 'hi',
         idempotencyKey: 'verify-email/abc',

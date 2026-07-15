@@ -1,6 +1,6 @@
 'use server';
 
-import { signOut } from '@/auth';
+import { auth, signOut } from '@/auth';
 import { defaultLocale, locales, type Locale } from '@/i18n/config';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { ROUTES } from '@/shared/constants/routes';
@@ -13,6 +13,9 @@ function readLocale(formData: FormData): Locale {
 }
 
 export async function logout(formData: FormData): Promise<void> {
+  const session = await auth();
+  if (!session?.user) return;
+
   const locale = readLocale(formData);
   await signOut({ redirectTo: toBrowserPath(ROUTES.HOME, locale) });
 }

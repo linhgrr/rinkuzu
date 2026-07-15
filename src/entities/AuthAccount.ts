@@ -1,4 +1,9 @@
 export type AuthAuditEvent =
+  | 'login_success'
+  | 'login_failed'
+  | 'login_locked'
+  | 'account_locked'
+  | 'logout'
   | 'register'
   | 'password_reset_requested'
   | 'password_reset_completed'
@@ -18,6 +23,28 @@ export interface AuthAccountSecurityState extends AuthAccountIdentity {
   emailVerificationExpires?: Date;
   passwordResetTokenHash?: string;
   passwordResetExpires?: Date;
+}
+
+export interface AuthLoginAccount extends AuthAccountIdentity {
+  passwordHash?: string;
+  emailVerified?: Date;
+  avatar?: string;
+  displayName?: string;
+  passwordChangedAt?: Date;
+  failedLoginAttempts: number;
+  failedLoginWindowStart?: Date;
+  lockedUntil?: Date;
+}
+
+export interface AuthenticatedUser extends AuthAccountIdentity {
+  avatar?: string;
+  displayName?: string;
+  passwordChangedAt: number | null;
+}
+
+export interface FailedLoginAttemptState {
+  attempts: number;
+  lockedUntil?: Date;
 }
 
 export interface AuthRequestContext {

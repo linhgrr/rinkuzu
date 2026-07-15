@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { getServerSession } from 'next-auth';
 import { getTranslations } from 'next-intl/server';
 import AdaptiveLearningGuest from '@/features/adaptive/components/AdaptiveLearningGuest';
 import { fetchAdaptiveDashboardData } from '@/features/adaptive/api/adaptive-dashboard-initial-api';
 import { AdaptiveDashboardRouteSkeleton } from './_components/AdaptiveDashboardRouteSkeleton';
 import AdaptiveLearningDashboard from '@/components/adaptive/Dashboard';
-import { authOptions } from '@/lib/auth';
+import { getCurrentSession } from '@/lib/auth/session';
 import { buildLocalizedMetadata } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { buildSoftwareApplicationSchema } from '@/lib/structured-data';
@@ -35,7 +34,7 @@ const softwareSchema = buildSoftwareApplicationSchema('vi');
 export default async function AdaptiveLearningPage({ params }: PageProps) {
   const { locale } = await params;
   const [session, t] = await Promise.all([
-    getServerSession(authOptions),
+    getCurrentSession(),
     getTranslations({ locale, namespace: 'adaptiveLearning' }),
   ]);
 

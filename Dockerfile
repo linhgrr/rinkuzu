@@ -21,8 +21,9 @@ ARG NEXT_PUBLIC_API_URL=https://api.rinkuzu.app
 # configuration.
 ENV NEXT_TELEMETRY_DISABLED=1 \
   MONGODB_URI=mongodb://127.0.0.1:27017/rinkuzu-build \
-  NEXTAUTH_SECRET=build-only-placeholder-at-least-32-characters \
-  NEXTAUTH_URL=${NEXT_PUBLIC_SITE_URL} \
+  AUTH_SECRET=build-only-placeholder-at-least-32-characters \
+  AUTH_URL=${NEXT_PUBLIC_SITE_URL} \
+  AUTH_TRUST_HOST=true \
   NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL} \
   NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
   SESSION_MAX_AGE_SECONDS=28800 \

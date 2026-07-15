@@ -1,0 +1,20 @@
+import { describe, expect, it } from 'vitest';
+
+import { getAuthRoutePolicy } from '@/lib/routing/auth-route-policy';
+
+describe('getAuthRoutePolicy', () => {
+  it.each([
+    ['/dashboard', 'authenticated'],
+    ['/dashboard/settings', 'authenticated'],
+    ['/bookmarks', 'authenticated'],
+    ['/my-quizzes/folder/123', 'authenticated'],
+    ['/adaptive/upload', 'authenticated'],
+    ['/admin', 'admin'],
+    ['/admin/users', 'admin'],
+    ['/login', 'public'],
+    ['/dashboard-preview', 'public'],
+    ['/explore', 'public'],
+  ])('classifies %s as %s', (pathname, expected) => {
+    expect(getAuthRoutePolicy(pathname)).toBe(expected);
+  });
+});

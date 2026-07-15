@@ -42,6 +42,13 @@ const doctorConfig = {
         files: ['src/components/providers/DraftSyncProvider.tsx'],
         rules: ['react-doctor/effect-needs-cleanup'],
       },
+      // Auth.js signOut is an idempotent cookie-clearing operation. Guarding
+      // it with auth() made logout a no-op in the server-action request and
+      // left an authenticated session cookie active, as covered by auth E2E.
+      {
+        files: ['src/features/auth/actions.ts'],
+        rules: ['react-doctor/server-auth-actions'],
+      },
       // The expression already checks equal lengths before .every(); this is
       // the exact short-circuit form recommended by the diagnostic itself.
       {

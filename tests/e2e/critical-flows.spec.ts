@@ -341,7 +341,7 @@ test.describe('production critical paths', () => {
         buffer: Buffer.from('%PDF-1.4\n%%EOF\n'),
       });
 
-      await page.waitForURL(/\/en\/adaptive(?:[/?#]|$)/);
+      await page.waitForURL(/\/en\/adaptive\/?(?:[?#]|$)/);
       expect(presignedPayload).toMatchObject({ purpose: 'adaptive' });
       expect(objectStorageUploadBytes).toBeGreaterThan(0);
       await expect(page.getByText('Processing progress', { exact: true }).first()).toBeVisible();

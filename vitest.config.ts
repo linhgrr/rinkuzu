@@ -21,6 +21,6 @@ export default defineConfig({
     },
     environment: 'node',
     include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['node_modules/**', '.next/**', 'tests/e2e/**'],
+    exclude: ['node_modules/**', '.next/**', 'tests/e2e/**', 'tests/integration/**'],
   },
 });

@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
-import { getToken } from 'next-auth/jwt';
+import type { NextAuthRequest } from 'next-auth';
+import NextAuth from 'next-auth';
+import type { NextFetchEvent } from 'next/server';
 import { randomUUID } from 'node:crypto';
+import authConfig from './auth.config';
 import { routing } from './i18n/routing';
-import { getLocaleFromPath, matchesPrefix, toBrowserPath } from './lib/routing/pathname';
-import { AUTH_REQUIRED_PATH_PREFIXES } from './shared/constants/nav';
+import { getLocaleFromPath, toBrowserPath } from './lib/routing/pathname';
+import { getAuthRoutePolicy } from './lib/routing/auth-route-policy';
 import { ROUTES } from './shared/constants/routes';
 
 const intlMiddleware = createMiddleware(routing);
-
-// Guest-only login/register redirect is handled in auth layout (session check).
-const AUTH_REQUIRED_PREFIXES = AUTH_REQUIRED_PATH_PREFIXES;
-
-const ADMIN_PREFIX = '/admin';
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -90,7 +88,32 @@ function applySecurityHeaders<T extends Response>(response: T, requestId: string
   return response;
 }
 
-export default async function middleware(request: NextRequest) {
+const { auth: withEdgeAuth } = NextAuth(authConfig);
+
+/**
+ * Coarse JWT gate for protected/admin routes. Auth.js v5 owns cookie parsing
+ * and secret handling here, keeping proxy and server auth on one contract.
+ */
+const guardedProxy = withEdgeAuth((request: NextAuthRequest, _event: NextFetchEvent) => {
+  const requestId = request.headers.get('x-request-id') || randomUUID();
+  const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
+  const policy = getAuthRoutePolicy(pathWithoutLocale);
+
+  if (!request.auth?.user) {
+    const loginUrl = new URL(toBrowserPath(ROUTES.LOGIN, locale), request.url);
+    loginUrl.searchParams.set('callbackUrl', `${pathWithoutLocale}${request.nextUrl.search}`);
+    return applySecurityHeaders(NextResponse.redirect(loginUrl), requestId);
+  }
+
+  if (policy === 'admin' && request.auth.user.role !== 'admin') {
+    const homeUrl = new URL(toBrowserPath(ROUTES.HOME, locale), request.url);
+    return applySecurityHeaders(NextResponse.redirect(homeUrl), requestId);
+  }
+
+  return applySecurityHeaders(intlMiddleware(request), requestId);
+});
+
+export default async function middleware(request: NextRequest, event: NextFetchEvent) {
   const requestId = request.headers.get('x-request-id') || randomUUID();
 
   // Same-origin / CSRF guard for state-changing API requests.
@@ -119,31 +142,9 @@ export default async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next(), requestId);
   }
 
-  const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
-  const isAdminRoute = matchesPrefix(pathWithoutLocale, ADMIN_PREFIX);
-  const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
-    matchesPrefix(pathWithoutLocale, prefix),
-  );
-
-  if (isAdminRoute || isAuthRequiredRoute) {
-    const token = await getToken({
-      req: request,
-      ...(process.env['NEXTAUTH_SECRET'] !== undefined
-        ? { secret: process.env['NEXTAUTH_SECRET'] }
-        : {}),
-    });
-
-    if ((isAdminRoute || isAuthRequiredRoute) && !token) {
-      const loginUrl = new URL(toBrowserPath(ROUTES.LOGIN, locale), request.url);
-      // Canonical callbackUrl is locale-unprefixed (same form as ROUTES / next-intl hrefs).
-      loginUrl.searchParams.set('callbackUrl', `${pathWithoutLocale}${request.nextUrl.search}`);
-      return applySecurityHeaders(NextResponse.redirect(loginUrl), requestId);
-    }
-
-    if (isAdminRoute && token?.role !== 'admin') {
-      const homeUrl = new URL(toBrowserPath(ROUTES.HOME, locale), request.url);
-      return applySecurityHeaders(NextResponse.redirect(homeUrl), requestId);
-    }
+  const { pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
+  if (getAuthRoutePolicy(pathWithoutLocale) !== 'public') {
+    return guardedProxy(request, event);
   }
 
   return applySecurityHeaders(intlMiddleware(request), requestId);

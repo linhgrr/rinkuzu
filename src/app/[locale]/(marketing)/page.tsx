@@ -1,7 +1,6 @@
 import { redirect } from '@/i18n/navigation';
-import { getServerSession } from 'next-auth';
 import { getTranslations } from 'next-intl/server';
-import { authOptions } from '@/lib/auth';
+import { getCurrentSession } from '@/lib/auth/session';
 import { GuestLanding } from '@/features/landing/components/GuestLanding';
 import type { Metadata } from 'next';
 import { buildLocalizedMetadata } from '@/lib/seo';
@@ -24,7 +23,7 @@ export async function generateMetadata({
 }
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  const [{ locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
+  const [{ locale }, session] = await Promise.all([params, getCurrentSession()]);
 
   if (session?.user) {
     return redirect({ href: ROUTES.DASHBOARD, locale });

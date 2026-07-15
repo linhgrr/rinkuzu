@@ -257,7 +257,9 @@ test.describe('production critical paths', () => {
       });
 
       await page.goto('/en/admin/users');
-      await expect(page).toHaveURL(/\/en\/?$/);
+      // The proxy sends non-admin users to localized home; an authenticated
+      // home page then canonicalizes to dashboard by design.
+      await expect(page).toHaveURL(/\/en\/dashboard(?:[/?#]|$)/);
 
       await page.goto('/en/dashboard');
       await page.getByRole('button', { name: 'Toggle user menu' }).click();
@@ -268,7 +270,7 @@ test.describe('production critical paths', () => {
       const loggedOutSession = await page.evaluate(async () =>
         fetch('/api/auth/session', { cache: 'no-store' }).then((response) => response.json()),
       );
-      expect(loggedOutSession).not.toHaveProperty('user');
+      expect(loggedOutSession).toBeNull();
     });
   });
 

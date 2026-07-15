@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Icon } from '@iconify/react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
 import { ROUTES } from '@/shared/constants/routes';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
+import { logout } from '@/features/auth/actions';
 
 const ICON = {
   home: 'material-symbols:home-outline-rounded',
@@ -478,17 +479,16 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
             <Icon icon={ICON.user} className="size-5" aria-hidden="true" />
             <span>{t('profile')}</span>
           </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              void signOut({ callbackUrl: toBrowserPath(ROUTES.HOME, locale) });
-            }}
-            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
-          >
-            <Icon icon={ICON.logout} className="size-5" aria-hidden="true" />
-            <span>{t('logout')}</span>
-          </button>
+          <form action={logout}>
+            <input type="hidden" name="locale" value={locale} />
+            <button
+              type="submit"
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
+            >
+              <Icon icon={ICON.logout} className="size-5" aria-hidden="true" />
+              <span>{t('logout')}</span>
+            </button>
+          </form>
         </div>
       ) : null}
     </div>

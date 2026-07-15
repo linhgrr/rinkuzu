@@ -1,6 +1,6 @@
-import { getServerSession } from 'next-auth';
 import type { Session } from 'next-auth';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { auth } from '@/auth';
 import { apiErr } from './response';
 
 type WithAuthOptions = {
@@ -29,21 +29,6 @@ interface RouteContextParams<TParams extends RouteParams = RouteParams> {
   params: Promise<TParams>;
 }
 
-let authOptionsPromise: Promise<Awaited<ReturnType<typeof loadAuthOptions>>> | null = null;
-
-async function loadAuthOptions() {
-  const mod = await import('@/lib/auth');
-  return mod.authOptions;
-}
-
-async function getAuthOptions() {
-  if (!authOptionsPromise) {
-    authOptionsPromise = loadAuthOptions();
-  }
-
-  return authOptionsPromise;
-}
-
 /**
  * Wraps an API route handler with authentication and optional role check.
  * Returns 401 if not authenticated, 403 if wrong role.
@@ -57,7 +42,7 @@ export function withAuth<TParams extends RouteParams = RouteParams>(
     request: NextRequest,
     routeContext: RouteContextParams<TParams>,
   ): Promise<Response> => {
-    const session = await getServerSession(await getAuthOptions());
+    const session = await auth();
 
     if (!session?.user) {
       return apiErr('unauthorized', 'Unauthorized', 401);
@@ -120,7 +105,7 @@ type OptionalAuthHandler<TParams extends RouteParams = RouteParams> = (
  *
  * Use this for endpoints where the response shape changes based on whether
  * a session exists (e.g. public quiz play, anonymous attempts) instead of
- * calling `getServerSession(authOptions)` inline. Keeps every route on the
+ * resolving the Auth.js session inline. Keeps every route on the
  * same auth boundary even when auth itself is optional.
  */
 export function withOptionalAuth<TParams extends RouteParams = RouteParams>(
@@ -130,10 +115,7 @@ export function withOptionalAuth<TParams extends RouteParams = RouteParams>(
     request: NextRequest,
     routeContext: RouteContextParams<TParams>,
   ): Promise<Response> => {
-    const [session, params] = await Promise.all([
-      getServerSession(await getAuthOptions()),
-      routeContext.params,
-    ]);
+    const [session, params] = await Promise.all([auth(), routeContext.params]);
 
     return handler(request, {
       userId: session?.user?.id ?? null,

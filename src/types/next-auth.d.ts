@@ -17,15 +17,18 @@ declare module 'next-auth' {
     role: UserRole;
     avatar?: string;
     displayName?: string;
+    /** Epoch milliseconds copied to JWT for password-reset revocation. */
+    passwordChangedAt?: number | null;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
-    role: UserRole;
+    role?: UserRole;
     avatar?: string;
     displayName?: string;
+    /** Password change epoch; session is revoked when the DB value is newer. */
     pwc?: number | null;
   }
 }

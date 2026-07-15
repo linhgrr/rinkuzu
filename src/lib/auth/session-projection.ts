@@ -4,8 +4,12 @@ import type { JWT } from 'next-auth/jwt';
 import type { AuthenticatedUser } from '@/entities/AuthAccount';
 
 function stripSessionUser(session: Session): Session {
-  return { ...session, user: undefined };
+  const { user: _ignored, ...sessionWithoutUser } = session;
+  void _ignored;
+  return sessionWithoutUser;
 }
+
+export const clearSessionUser = stripSessionUser;
 
 /** Edge-safe JWT to session projection. It never performs I/O. */
 export function projectTokenToSession(session: Session, token: JWT): Session {

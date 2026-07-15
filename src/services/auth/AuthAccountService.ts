@@ -50,7 +50,7 @@ export class AuthAccountService implements IAuthAccountService {
       const account = await this.repository.createPending({
         email: input.email,
         passwordHash,
-        displayName: input.displayName,
+        ...(input.displayName ? { displayName: input.displayName } : {}),
         verificationTokenHash: verification.hash,
         verificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
       });

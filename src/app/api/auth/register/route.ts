@@ -20,7 +20,14 @@ export async function POST(request: NextRequest) {
   const rate = await checkAuthRateLimit('register_ip', context.ip || 'unknown');
   if (!rate.allowed) return rateLimitResponse(rate);
 
-  const result = await authAccountService.register(input.data, context);
+  const result = await authAccountService.register(
+    {
+      email: input.data.email,
+      password: input.data.password,
+      ...(input.data.displayName ? { displayName: input.data.displayName } : {}),
+    },
+    context,
+  );
   return result.success
     ? apiOk(result.data, 201, { meta: { message: neutralMessage } })
     : apiServiceErr(result);

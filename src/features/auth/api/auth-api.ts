@@ -29,7 +29,8 @@ async function postAuthAction<TBody extends object>(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  return { message: response.meta?.message };
+  const message = response.meta?.message;
+  return message === undefined ? {} : { message };
 }
 
 export async function requestPasswordReset(email: string): Promise<AuthActionResult> {

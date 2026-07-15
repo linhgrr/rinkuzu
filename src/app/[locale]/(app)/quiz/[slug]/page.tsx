@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getCurrentSession } from '@/lib/auth/session';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
 import QuizPlayerClient from './QuizPlayerClient';
@@ -11,7 +10,7 @@ export default async function QuizPlayerPage({
 }: {
   params: Promise<{ locale: string; slug: string }>;
 }) {
-  const [{ slug }, session] = await Promise.all([params, getServerSession(authOptions)]);
+  const [{ slug }, session] = await Promise.all([params, getCurrentSession()]);
   const result = await serviceFactory
     .getQuizService()
     .getQuizForPlay(slug, session?.user?.role, session?.user?.id);

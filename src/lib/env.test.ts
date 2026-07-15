@@ -3,8 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const baseEnv: Record<string, string> = {
   NODE_ENV: 'test',
   MONGODB_URI: 'mongodb://127.0.0.1:27017/rinkuzu-test',
-  NEXTAUTH_SECRET: 'test-nextauth-secret-at-least-32-characters',
-  NEXTAUTH_URL: 'http://localhost:3000',
+  AUTH_SECRET: 'test-auth-secret-at-least-32-characters',
+  AUTH_URL: 'http://localhost:3000',
+  AUTH_TRUST_HOST: 'true',
   NEXT_PUBLIC_SITE_URL: 'http://localhost:3000',
   NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8000',
   SESSION_MAX_AGE_SECONDS: '28800',
@@ -53,7 +54,8 @@ describe('env validation', () => {
     const { env } = await import('@/lib/env');
 
     expect(env.OBJECT_STORAGE_REGION).toBe('auto');
-    expect(env.NEXTAUTH_URL).toBe('http://localhost:3000');
+    expect(env.AUTH_URL).toBe('http://localhost:3000');
+    expect(env.AUTH_SECRET).toBe('test-auth-secret-at-least-32-characters');
   });
 
   it('rejects invalid object storage regions', async () => {
@@ -63,10 +65,10 @@ describe('env validation', () => {
   });
 
   it('rejects partially configured Google OAuth env', async () => {
-    replaceProcessEnv({ ...baseEnv, GOOGLE_CLIENT_ID: 'google-client-id' });
+    replaceProcessEnv({ ...baseEnv, AUTH_GOOGLE_ID: 'google-client-id' });
 
     await expect(import('@/lib/env')).rejects.toThrow(
-      /GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set, or both omitted/,
+      /AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET must both be set, or both omitted/,
     );
   });
 });

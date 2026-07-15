@@ -1,0 +1,64 @@
+import type { Session } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
+
+import type { AuthenticatedUser } from '@/entities/AuthAccount';
+
+function stripSessionUser(session: Session): Session {
+  return { ...session, user: undefined };
+}
+
+/** Edge-safe JWT to session projection. It never performs I/O. */
+export function projectTokenToSession(session: Session, token: JWT): Session {
+  const role = token.role;
+  if (!token.sub || !session.user || (role !== 'admin' && role !== 'user')) {
+    return stripSessionUser(session);
+  }
+
+  return {
+    ...session,
+    user: {
+      id: token.sub,
+      role,
+      ...(session.user.name !== undefined ? { name: session.user.name } : {}),
+      ...(session.user.email !== undefined ? { email: session.user.email } : {}),
+      ...(session.user.image !== undefined ? { image: session.user.image } : {}),
+      ...(typeof token.avatar === 'string' ? { avatar: token.avatar } : {}),
+      ...(typeof token.displayName === 'string' ? { displayName: token.displayName } : {}),
+    },
+  };
+}
+
+/**
+ * Fail-closed session hydration after a DB lookup.
+ * A missing account or a password change newer than the JWT revokes the session.
+ */
+export function applySessionUser(
+  session: Session,
+  token: JWT,
+  dbUser: AuthenticatedUser | null,
+): Session {
+  if (!token.sub || !dbUser) return stripSessionUser(session);
+
+  const tokenPasswordChangedAt = typeof token.pwc === 'number' ? token.pwc : null;
+  if (
+    dbUser.passwordChangedAt &&
+    (!tokenPasswordChangedAt || dbUser.passwordChangedAt > tokenPasswordChangedAt)
+  ) {
+    return stripSessionUser(session);
+  }
+
+  if (!session.user) return stripSessionUser(session);
+
+  return {
+    ...session,
+    user: {
+      id: dbUser.id,
+      email: dbUser.email,
+      role: dbUser.role,
+      ...(session.user.name !== undefined ? { name: session.user.name } : {}),
+      ...(session.user.image !== undefined ? { image: session.user.image } : {}),
+      ...(dbUser.avatar ? { avatar: dbUser.avatar } : {}),
+      ...(dbUser.displayName ? { displayName: dbUser.displayName } : {}),
+    },
+  };
+}

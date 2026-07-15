@@ -82,8 +82,8 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         callbackUrl,
       });
 
-      if (result?.error) {
-        const code = result.error;
+      const code = result?.code ?? result?.error;
+      if (result?.error || result?.code) {
         if (code === 'account_locked') {
           startRetryCountdown(15 * 60);
           setServerError({ code, message: t('accountLocked') });

@@ -10,4 +10,10 @@ export interface AuthAccountPersistenceRecord {
   emailVerificationExpires?: Date | null;
   passwordResetTokenHash?: string | null;
   passwordResetExpires?: Date | null;
+  avatar?: string | null;
+  displayName?: string | null;
+  passwordChangedAt?: Date | null;
+  failedLoginAttempts?: number | null;
+  failedLoginWindowStart?: Date | null;
+  lockedUntil?: Date | null;
 }

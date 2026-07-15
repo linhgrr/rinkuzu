@@ -54,7 +54,7 @@ export class SubscriptionPaymentService {
     });
 
     // Create payment request with PayOS
-    const baseUrl = env.NEXTAUTH_URL;
+    const baseUrl = env.AUTH_URL;
     const returnUrl = `${baseUrl}/payment/success?orderCode=${orderCode}`;
     const cancelUrl = `${baseUrl}/payment/cancel?orderCode=${orderCode}`;
 

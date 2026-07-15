@@ -1,6 +1,5 @@
 import { redirect } from '@/i18n/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getCurrentSession } from '@/lib/auth/session';
 import { getDashboardBootstrapData } from '@/lib/dashboard-factory';
 import { DashboardPageShell } from '@/features/dashboard/components/DashboardPageShell';
 import { ROUTES } from '@/shared/constants/routes';
@@ -8,7 +7,7 @@ import { ROUTES } from '@/shared/constants/routes';
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
-  const [{ locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
+  const [{ locale }, session] = await Promise.all([params, getCurrentSession()]);
 
   if (!session?.user) {
     // callbackUrl is locale-unprefixed (matches ROUTES / next-intl hrefs).

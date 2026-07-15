@@ -6,7 +6,9 @@ import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
 import { apiErr } from '@/lib/api/response';
 
-type AuthRateLimitAction =
+export type AuthRateLimitAction =
+  | 'credentials_ip'
+  | 'credentials_identity'
   | 'register_ip'
   | 'forgot_password_email'
   | 'resend_verification_email'
@@ -19,6 +21,8 @@ type Limit = {
 };
 
 const DEFAULTS: Record<AuthRateLimitAction, Limit> = {
+  credentials_ip: { points: 20, durationSec: 60 * 15 },
+  credentials_identity: { points: 10, durationSec: 60 * 15 },
   register_ip: { points: 5, durationSec: 60 * 60 }, // 5 / hour / IP
   forgot_password_email: { points: 3, durationSec: 60 * 60 }, // 3 / hour / email
   resend_verification_email: { points: 3, durationSec: 60 * 60 }, // 3 / hour / email
@@ -63,7 +67,7 @@ function getLimiter(action: AuthRateLimitAction): RateLimiterMongo {
   return limiter;
 }
 
-type AuthRateLimitResult =
+export type AuthRateLimitResult =
   | { allowed: true; remaining: number; resetSeconds: number; limit: number }
   | { allowed: false; retryAfterSeconds: number; limit: number };
 

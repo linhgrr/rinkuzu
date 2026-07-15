@@ -33,14 +33,14 @@ export function toCurrentSubscriptionViewModel(
   const isLifetime = isLifetimeEndDate(endDate);
 
   return {
-    type: status.subscription.type,
-    endDate,
+    ...(status.subscription.type !== undefined && { type: status.subscription.type }),
+    ...(endDate !== undefined && { endDate }),
     isLifetime,
     // For lifetime, the label is rendered from i18n at the component (no raw
     // sentinel date). Otherwise a formatted date, or '-' when absent.
     endDateLabel: isLifetime ? '' : endDate ? formatDate(endDate, { locale: 'vi-VN' }) : '-',
     isActive: Boolean(status.subscription.isActive),
-    status: status.subscription.status,
+    ...(status.subscription.status !== undefined && { status: status.subscription.status }),
   };
 }
 

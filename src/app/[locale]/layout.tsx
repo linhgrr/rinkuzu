@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata, Viewport } from 'next';
-import { Inter, Montserrat, Unbounded, Vina_Sans } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import '../globals.css';
 import { routing } from '@/i18n/routing';
@@ -14,7 +14,7 @@ import {
   buildWebsiteSchema,
 } from '@/lib/structured-data';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { SerwistProvider } from '@serwist/turbopack/react';
 
 const inter = Inter({
   subsets: ['latin', 'vietnamese'],
@@ -22,32 +22,9 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
-const montserrat = Montserrat({
-  subsets: ['latin', 'vietnamese'],
-  display: 'swap',
-  variable: '--font-montserrat',
-  weight: ['400', '600', '700'],
-});
-
-const unbounded = Unbounded({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-unbounded',
-  weight: ['300', '400', '500', '600', '700', '800'],
-});
-
-const vinaSans = Vina_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-vina-sans',
-  weight: ['400'],
-});
-
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
   themeColor: '#ffffff',
 };
@@ -145,7 +122,6 @@ export default async function LocaleLayout({
   const websiteSchema = buildWebsiteSchema(locale);
   const webpageSchema = buildWebPageSchema(locale);
   const softwareApplicationSchema = buildSoftwareApplicationSchema(locale);
-  const messages = await getMessages();
 
   return (
     <html lang={locale} className="scroll-smooth">
@@ -168,16 +144,21 @@ export default async function LocaleLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
       </head>
-      <body
-        className={`${inter.className} ${montserrat.variable} ${unbounded.variable} ${vinaSans.variable} min-h-screen bg-neutral-50 antialiased`}
-      >
-        <NextIntlClientProvider messages={messages}>
-          <JsonLd id="org-schema" data={organizationSchema} />
-          <JsonLd id="website-schema" data={websiteSchema} />
-          <JsonLd id="webpage-schema" data={webpageSchema} />
-          <JsonLd id="software-app-schema" data={softwareApplicationSchema} />
-          {children}
-        </NextIntlClientProvider>
+      <body className={`${inter.className} min-h-screen bg-neutral-50 antialiased`}>
+        <SerwistProvider
+          swUrl="/serwist/sw.js"
+          disable={process.env.NODE_ENV !== 'production'}
+          cacheOnNavigation={false}
+          reloadOnOnline={false}
+        >
+          <NextIntlClientProvider messages={null}>
+            <JsonLd id="org-schema" data={organizationSchema} />
+            <JsonLd id="website-schema" data={websiteSchema} />
+            <JsonLd id="webpage-schema" data={webpageSchema} />
+            <JsonLd id="software-app-schema" data={softwareApplicationSchema} />
+            {children}
+          </NextIntlClientProvider>
+        </SerwistProvider>
         {process.env['NEXT_PUBLIC_GA_ID'] ? (
           <>
             <Script

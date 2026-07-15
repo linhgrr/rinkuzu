@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ILearningProgressRepository } from '@/interfaces/repositories/ILearningProgressRepository';
+import type {
+  ILearningProgressRepository,
+  ReviewProgressMutation,
+  ReviewProgressTransactionResult,
+} from '@/interfaces/repositories/ILearningProgressRepository';
 import type {
   LibraryQuiz,
   QuestionReviewProgress,
@@ -118,6 +122,18 @@ class LearningProgressRepositoryStub implements ILearningProgressRepository {
   findUserProgress = vi.fn<(userId: string) => Promise<UserLearningProgress | null>>();
   createDefaultUserProgress = vi.fn<(userId: string) => UserLearningProgress>();
   saveUserProgress = vi.fn<(progress: UserLearningProgress) => Promise<UserLearningProgress>>();
+  mutateReviewProgress =
+    vi.fn<
+      (
+        userId: string,
+        quizSlug: string,
+        questionId: string,
+        mutate: (
+          questionProgress: QuestionReviewProgress | null,
+          userProgress: UserLearningProgress | null,
+        ) => ReviewProgressMutation,
+      ) => Promise<ReviewProgressTransactionResult>
+    >();
   buyStreakFreeze =
     vi.fn<
       (
@@ -146,6 +162,20 @@ describe('LearningProgressService', () => {
     repository = new LearningProgressRepositoryStub();
     service = new LearningProgressService(repository);
     repository.createDefaultUserProgress.mockImplementation((id) => userProgress({ userId: id }));
+    repository.mutateReviewProgress.mockImplementation(async (id, quizSlug, questionId, mutate) => {
+      const existingQuestion = await repository.findQuestionProgress(id, quizSlug, questionId);
+      const existingUser = await repository.findUserProgress(id);
+      const mutation = mutate(existingQuestion, existingUser);
+      const [savedQuestion, savedUser] = await Promise.all([
+        repository.saveQuestionProgress(mutation.questionProgress),
+        repository.saveUserProgress(mutation.userProgress),
+      ]);
+      return {
+        questionProgress: savedQuestion,
+        userProgress: savedUser,
+        streakFreezeUsed: mutation.streakFreezeUsed,
+      };
+    });
     repository.countLearnedQuestions.mockResolvedValue(7);
     repository.updateTotalQuestionsLearned.mockResolvedValue();
   });
@@ -196,6 +226,27 @@ describe('LearningProgressService', () => {
       itemsPerPage: 1,
       hasNextPage: true,
       hasPrevPage: false,
+    });
+  });
+
+  it('omits an absent folder filter at the repository boundary', async () => {
+    repository.listLibraryQuizzes.mockResolvedValue({
+      items: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 0,
+        totalItems: 0,
+        itemsPerPage: 10,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    });
+
+    await service.listLibrary(userId, { folder: undefined, page: 1, limit: 10 });
+
+    expect(repository.listLibraryQuizzes).toHaveBeenCalledWith(userId, {
+      page: 1,
+      limit: 10,
     });
   });
 

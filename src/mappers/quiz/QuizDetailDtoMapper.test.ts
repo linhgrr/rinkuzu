@@ -54,8 +54,6 @@ describe('QuizDetailDtoMapper', () => {
           options: ['3', '4'],
           correctIndex: 1,
           type: 'single',
-          questionImage: undefined,
-          optionImages: undefined,
         },
       ],
       questionCount: 1,
@@ -82,10 +80,28 @@ describe('QuizDetailDtoMapper', () => {
       question: '2 + 2 = ?',
       options: ['3', '4'],
       type: 'single',
-      questionImage: undefined,
-      optionImages: undefined,
     });
     expect(dto.questions[0]).not.toHaveProperty('correctIndex');
     expect(dto.questions[0]).not.toHaveProperty('correctIndexes');
+  });
+
+  it('omits absent optional fields instead of serializing undefined values', () => {
+    const dto = QuizDetailDtoMapper.toDetail({
+      id: quiz.id,
+      title: quiz.title,
+      slug: quiz.slug,
+      author: { id: '507f191e810c19729de860eb' },
+      questions: quiz.questions,
+      isPrivate: quiz.isPrivate,
+      createdAt: quiz.createdAt,
+      updatedAt: quiz.updatedAt,
+    });
+
+    expect(dto).not.toHaveProperty('description');
+    expect(dto).not.toHaveProperty('pdfUrl');
+    expect(dto).not.toHaveProperty('tags');
+    expect(dto.author).toEqual({ id: '507f191e810c19729de860eb' });
+    expect(dto.questions[0]).not.toHaveProperty('questionImage');
+    expect(dto.questions[0]).not.toHaveProperty('optionImages');
   });
 });

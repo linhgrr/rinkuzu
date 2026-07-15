@@ -17,13 +17,17 @@ const record: ReportPersistenceRecord = {
 
 describe('ReportPersistenceMapper', () => {
   it('normalizes persistence identity and timestamps', () => {
-    expect(ReportPersistenceMapper.toEntity(record)).toMatchObject({
+    const entity = ReportPersistenceMapper.toEntity(record);
+    expect(entity).toMatchObject({
       id: 'report-1',
       quizId: 'quiz-1',
       status: 'pending',
       createdAt: new Date('2026-07-01T00:00:00.000Z'),
       updatedAt: new Date('2026-07-01T01:00:00.000Z'),
     });
+    expect(entity).not.toHaveProperty('resolvedAt');
+    expect(entity).not.toHaveProperty('resolvedBy');
+    expect(entity).not.toHaveProperty('adminNotes');
   });
 
   it('rejects a record without persistence identity', () => {

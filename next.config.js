@@ -1,16 +1,6 @@
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
-const runtimeCaching = require('./config/pwa-runtime-caching.cjs');
-
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-  buildExcludes: [/app-build-manifest\.json$/],
-  runtimeCaching,
-});
 
 const createNextIntlPlugin = require('next-intl/plugin');
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
@@ -201,4 +191,7 @@ const nextConfig = {
   },
 };
 
-module.exports = withBundleAnalyzer(withPWA(withNextIntl(nextConfig)));
+module.exports = async () => {
+  const { withSerwist } = await import('@serwist/turbopack');
+  return withBundleAnalyzer(withSerwist(withNextIntl(nextConfig)));
+};

@@ -1,5 +1,3 @@
-'use client';
-
 import Image from 'next/image';
 import { imgVector14 } from './constants';
 import { CountUp } from './CountUp';
@@ -37,7 +35,7 @@ export default function Metrics() {
       </div>
 
       {/* Mobile divider */}
-      <div className="md:hidden w-3/4 h-[1px] bg-gradient-to-r from-transparent via-[#fd761a] to-transparent opacity-50" />
+      <div className="md:hidden w-3/4 h-[1px] bg-gradient-to-r from-transparent via-accent to-transparent opacity-50" />
 
       <Reveal
         delay={0.12}
@@ -64,7 +62,7 @@ export default function Metrics() {
       </div>
 
       {/* Mobile divider */}
-      <div className="md:hidden w-3/4 h-[1px] bg-gradient-to-r from-transparent via-[#fd761a] to-transparent opacity-50" />
+      <div className="md:hidden w-3/4 h-[1px] bg-gradient-to-r from-transparent via-accent to-transparent opacity-50" />
 
       <Reveal
         delay={0.24}
@@ -80,7 +78,7 @@ export default function Metrics() {
         </div>
       </Reveal>
 
-      <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_-3px_-1px_13px_0px_#fd761a]" />
+      <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_-3px_-1px_13px_0px_var(--accent)]" />
     </div>
   );
 }

@@ -9,14 +9,18 @@ import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 function toSubscriptionStatusDto(
   subscription: UserSubscription,
 ): NonNullable<SubscriptionStatusResponseDto['subscription']> {
+  const startDate = serializeOptionalDate(subscription.startDate, 'subscription.startDate');
+  const endDate = serializeOptionalDate(subscription.endDate, 'subscription.endDate');
   return {
     type: subscription.type,
-    startDate: serializeOptionalDate(subscription.startDate, 'subscription.startDate'),
-    endDate: serializeOptionalDate(subscription.endDate, 'subscription.endDate'),
     isActive: subscription.isActive,
-    status: subscription.status,
-    payosOrderId: subscription.payosOrderId,
-    payosTransactionId: subscription.payosTransactionId,
+    ...(startDate === undefined ? {} : { startDate }),
+    ...(endDate === undefined ? {} : { endDate }),
+    ...(subscription.status === undefined ? {} : { status: subscription.status }),
+    ...(subscription.payosOrderId === undefined ? {} : { payosOrderId: subscription.payosOrderId }),
+    ...(subscription.payosTransactionId === undefined
+      ? {}
+      : { payosTransactionId: subscription.payosTransactionId }),
   };
 }
 
@@ -32,6 +36,8 @@ export class SubscriptionDtoMapper {
   }
 
   static toHistoryItem(subscription: SubscriptionRecord): SubscriptionHistoryItemDto {
+    const startDate = serializeOptionalDate(subscription.startDate, 'subscription.startDate');
+    const endDate = serializeOptionalDate(subscription.endDate, 'subscription.endDate');
     return {
       id: subscription.id,
       type: subscription.type,
@@ -39,16 +45,20 @@ export class SubscriptionDtoMapper {
       currency: subscription.currency,
       status: subscription.status,
       payosOrderId: subscription.payosOrderId,
-      payosTransactionId: subscription.payosTransactionId,
-      startDate: serializeOptionalDate(subscription.startDate, 'subscription.startDate'),
-      endDate: serializeOptionalDate(subscription.endDate, 'subscription.endDate'),
       isActive: subscription.isActive,
       createdAt: serializeDate(subscription.createdAt, 'subscription.createdAt'),
       updatedAt: serializeDate(subscription.updatedAt, 'subscription.updatedAt'),
+      ...(subscription.payosTransactionId === undefined
+        ? {}
+        : { payosTransactionId: subscription.payosTransactionId }),
+      ...(startDate === undefined ? {} : { startDate }),
+      ...(endDate === undefined ? {} : { endDate }),
     };
   }
 
   static toAdminSubscriptionDto(subscription: SubscriptionRecord): AdminSubscriptionDto {
+    const startDate = serializeOptionalDate(subscription.startDate, 'subscription.startDate');
+    const endDate = serializeOptionalDate(subscription.endDate, 'subscription.endDate');
     return {
       id: subscription.id,
       user: subscription.userId,
@@ -58,13 +68,17 @@ export class SubscriptionDtoMapper {
       currency: subscription.currency,
       status: subscription.status,
       payosOrderId: subscription.payosOrderId,
-      payosTransactionId: subscription.payosTransactionId,
-      payosPaymentUrl: subscription.payosPaymentUrl,
-      startDate: serializeOptionalDate(subscription.startDate, 'subscription.startDate'),
-      endDate: serializeOptionalDate(subscription.endDate, 'subscription.endDate'),
       isActive: subscription.isActive,
       createdAt: serializeDate(subscription.createdAt, 'subscription.createdAt'),
       updatedAt: serializeDate(subscription.updatedAt, 'subscription.updatedAt'),
+      ...(subscription.payosTransactionId === undefined
+        ? {}
+        : { payosTransactionId: subscription.payosTransactionId }),
+      ...(subscription.payosPaymentUrl === undefined
+        ? {}
+        : { payosPaymentUrl: subscription.payosPaymentUrl }),
+      ...(startDate === undefined ? {} : { startDate }),
+      ...(endDate === undefined ? {} : { endDate }),
     };
   }
 }

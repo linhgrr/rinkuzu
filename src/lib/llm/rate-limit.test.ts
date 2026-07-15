@@ -134,4 +134,29 @@ describe('LLM rate limiter', () => {
       }),
     );
   });
+
+  it('uses the latest exceeded reset so Retry-After cannot allow an early retry', async () => {
+    rateLimiterCtorMock
+      .mockImplementationOnce(() => ({
+        consume: vi.fn().mockRejectedValue({
+          consumedPoints: 6,
+          remainingPoints: 0,
+          msBeforeNext: 25_000,
+        }),
+      }))
+      .mockImplementationOnce(() => ({
+        consume: vi.fn().mockRejectedValue({
+          consumedPoints: 21,
+          remainingPoints: 0,
+          msBeforeNext: 80_000,
+        }),
+      }));
+    isUserPremiumMock.mockResolvedValue(false);
+
+    const { checkLlmRateLimit } = await import('./rate-limit');
+    const result = await checkLlmRateLimit('user-3', 'quiz_ask_ai');
+
+    expect(result.allowed).toBe(false);
+    expect(result.retryAfterSeconds).toBe(80);
+  });
 });

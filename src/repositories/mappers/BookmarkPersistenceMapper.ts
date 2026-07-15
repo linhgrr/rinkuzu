@@ -11,16 +11,24 @@ export class BookmarkPersistenceMapper {
       quiz: {
         slug: record.quiz.slug,
         title: record.quiz.title,
-        description: record.quiz.description,
+        ...(record.quiz.description === undefined ? {} : { description: record.quiz.description }),
       },
       question: {
         text: record.question.text,
         options: record.question.options,
         type: record.question.type,
-        correctIndex: record.question.correctIndex,
-        correctIndexes: record.question.correctIndexes,
-        questionImage: record.question.questionImage,
-        optionImages: record.question.optionImages,
+        ...(record.question.correctIndex === undefined
+          ? {}
+          : { correctIndex: record.question.correctIndex }),
+        ...(record.question.correctIndexes === undefined
+          ? {}
+          : { correctIndexes: record.question.correctIndexes }),
+        ...(record.question.questionImage === undefined
+          ? {}
+          : { questionImage: record.question.questionImage }),
+        ...(record.question.optionImages === undefined
+          ? {}
+          : { optionImages: record.question.optionImages }),
       },
       questionIndex: record.questionIndex,
       createdAt: record.createdAt,

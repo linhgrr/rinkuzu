@@ -38,10 +38,14 @@ function toQuiz(quiz: AttemptPersistenceRecord['quiz']): string | AttemptQuizSna
     id: serializeId(quiz._id, 'attempt.quiz._id'),
     title: quiz.title,
     slug: quiz.slug,
-    description: quiz.description,
-    questions: quiz.questions?.map((question, index) =>
-      QuizPersistenceMapper.toQuestionEntity(question, index),
-    ),
+    ...(quiz.description === undefined ? {} : { description: quiz.description }),
+    ...(quiz.questions === undefined
+      ? {}
+      : {
+          questions: quiz.questions.map((question, index) =>
+            QuizPersistenceMapper.toQuestionEntity(question, index),
+          ),
+        }),
   };
 }
 
@@ -50,12 +54,12 @@ export class AttemptPersistenceMapper {
     return {
       id: serializeId(record._id, 'attempt._id'),
       user: toUser(record.user),
-      guestEmail: record.guestEmail,
       quiz: toQuiz(record.quiz),
       answers: record.answers.map(AnswerPersistenceMapper.toEntity),
       score: record.score,
       totalQuestions: record.totalQuestions,
       takenAt: record.takenAt,
+      ...(record.guestEmail === undefined ? {} : { guestEmail: record.guestEmail }),
     };
   }
 }

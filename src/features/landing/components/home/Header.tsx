@@ -40,7 +40,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
             <Link
               key={link.label}
               href={link.href}
-              className="cursor-pointer hover:text-[#fd761a] transition-colors leading-[1.5]"
+              className="cursor-pointer hover:text-accent-hover transition-colors leading-[1.5]"
             >
               {link.label}
             </Link>
@@ -53,7 +53,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
             <>
               <Link
                 href="/login"
-                className="border border-[#ff541b] flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-[#ff541b]/10 transition-colors"
+                className="border border-accent flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-[rgba(255,124,35,0.1)] transition-colors"
               >
                 <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
                   Login
@@ -61,7 +61,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
               </Link>
               <Link
                 href="/register"
-                className="bg-[#ff541b] flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-[#fd761a] transition-colors"
+                className="bg-accent flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-accent-hover transition-colors"
               >
                 <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
                   Sign up
@@ -71,7 +71,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
           ) : (
             <Link
               href="/dashboard"
-              className="bg-[#ff541b] flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-[#fd761a] transition-colors"
+              className="bg-accent flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-accent-hover transition-colors"
             >
               <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
                 Dashboard
@@ -86,7 +86,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
             type="button"
             onClick={() => setIsMobileMenuOpen((v) => !v)}
             aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-            className="text-white hover:text-[#fd761a]"
+            className="text-white hover:text-accent-hover"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -126,14 +126,14 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                   <Link
                     href="/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="border border-[#ff541b] flex h-[48px] items-center justify-center rounded-[100px]"
+                    className="border border-accent flex h-[48px] items-center justify-center rounded-[100px]"
                   >
                     <span className="font-unbounded font-medium text-[16px] text-white">Login</span>
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="bg-[#ff541b] flex h-[48px] items-center justify-center rounded-[100px]"
+                    className="bg-accent flex h-[48px] items-center justify-center rounded-[100px]"
                   >
                     <span className="font-unbounded font-medium text-[16px] text-white">
                       Sign up
@@ -144,7 +144,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 <Link
                   href="/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="bg-[#ff541b] flex h-[48px] items-center justify-center rounded-[100px]"
+                  className="bg-accent flex h-[48px] items-center justify-center rounded-[100px]"
                 >
                   <span className="font-unbounded font-medium text-[16px] text-white">
                     Dashboard

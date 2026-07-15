@@ -37,9 +37,7 @@ describe('DiscussionPersistenceMapper', () => {
           author: {
             id: '507f191e810c19729de860ed',
             email: 'learner@example.com',
-            name: undefined,
             displayName: 'Learner',
-            avatar: undefined,
           },
           content: 'Why is B correct?',
           isEdited: false,

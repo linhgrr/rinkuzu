@@ -1,6 +1,6 @@
 export class AdaptiveApiError extends Error {
-  status?: number;
-  detail?: string;
+  declare status?: number;
+  declare detail?: string;
   code: string;
   retryable: boolean;
 
@@ -19,8 +19,8 @@ export class AdaptiveApiError extends Error {
   }) {
     super(message);
     this.name = 'AdaptiveApiError';
-    this.status = status;
-    this.detail = detail;
+    if (status !== undefined) this.status = status;
+    if (detail !== undefined) this.detail = detail;
     this.code = code;
     this.retryable = retryable;
   }

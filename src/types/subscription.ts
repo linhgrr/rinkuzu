@@ -39,7 +39,6 @@ export const PREDEFINED_DURATIONS: Record<SubscriptionDurationType, Duration> = 
   [SubscriptionDurationType.LIFETIME]: {
     iso8601: 'PT0S',
     displayName: 'Lifetime',
-    months: undefined,
   },
 };
 
@@ -54,13 +53,15 @@ export class DurationUtils {
 
     // Match patterns like P1M, P3M, P1Y, etc.
     const monthMatch = iso8601Duration.match(/^P(\d+)M$/);
-    if (monthMatch) {
-      return parseInt(monthMatch[1]);
+    const monthCount = monthMatch?.[1];
+    if (monthCount !== undefined) {
+      return Number.parseInt(monthCount, 10);
     }
 
     const yearMatch = iso8601Duration.match(/^P(\d+)Y$/);
-    if (yearMatch) {
-      return parseInt(yearMatch[1]) * 12;
+    const yearCount = yearMatch?.[1];
+    if (yearCount !== undefined) {
+      return Number.parseInt(yearCount, 10) * 12;
     }
 
     throw new Error(`Unsupported ISO 8601 duration format: ${iso8601Duration}`);
@@ -99,7 +100,7 @@ export class DurationUtils {
     return {
       iso8601: iso8601Duration,
       displayName: months ? `${months} Month${months > 1 ? 's' : ''}` : 'Custom Duration',
-      months,
+      ...(months === undefined ? {} : { months }),
     };
   }
 

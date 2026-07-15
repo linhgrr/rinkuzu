@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { MongoClient } from 'mongodb';
 import { config } from 'dotenv';
 
@@ -13,37 +12,49 @@ if (!uri) {
 
 const client = new MongoClient(uri);
 
+/**
+ * @typedef {object} BookmarkMigrationRecord
+ * @property {import('mongodb').ObjectId} _id
+ * @property {string=} userId
+ * @property {string} quizSlug
+ * @property {number} questionIndex
+ * @property {string[]} matchedUserIds
+ * @property {string=} targetUserId
+ */
+
 try {
   await client.connect();
   const db = client.db();
   const bookmarks = db.collection('bookmarks');
-  const records = await bookmarks
-    .aggregate([
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userEmail',
-          foreignField: 'email',
-          as: 'users',
+  const records = /** @type {BookmarkMigrationRecord[]} */ (
+    await bookmarks
+      .aggregate([
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userEmail',
+            foreignField: 'email',
+            as: 'users',
+          },
         },
-      },
-      {
-        $project: {
-          userId: 1,
-          userEmail: 1,
-          quizSlug: '$quiz.slug',
-          questionIndex: 1,
-          matchedUserIds: {
-            $map: {
-              input: '$users',
-              as: 'user',
-              in: { $toString: '$$user._id' },
+        {
+          $project: {
+            userId: 1,
+            userEmail: 1,
+            quizSlug: '$quiz.slug',
+            questionIndex: 1,
+            matchedUserIds: {
+              $map: {
+                input: '$users',
+                as: 'user',
+                in: { $toString: '$$user._id' },
+              },
             },
           },
         },
-      },
-    ])
-    .toArray();
+      ])
+      .toArray()
+  );
 
   const invalid = records.filter((record) => record.matchedUserIds.length !== 1);
   if (invalid.length > 0) {
@@ -80,12 +91,6 @@ try {
   const obsoleteIndexes = (await bookmarks.indexes()).filter(
     (index) => Object.keys(index.key)[0] === 'userEmail' || index.name === 'userId_1',
   );
-  if (shouldApply) {
-    await bookmarks.createIndex({ userId: 1, createdAt: -1 }, { name: 'userId_1_createdAt_-1' });
-    for (const index of obsoleteIndexes) {
-      await bookmarks.dropIndex(index.name);
-    }
-  }
 
   const canonicalCount = shouldApply
     ? await bookmarks
@@ -119,6 +124,8 @@ try {
         updatesRequired: updates.length,
         updated: shouldApply ? updates.length : 0,
         obsoleteIndexes: obsoleteIndexes.map((index) => index.name),
+        indexMigrationRequired: obsoleteIndexes.length > 0,
+        indexMigrationCommand: 'npm run migrate:performance-indexes',
         verifiedCanonical: shouldApply
           ? (canonicalCount[0]?.count ?? 0) === records.length
           : undefined,

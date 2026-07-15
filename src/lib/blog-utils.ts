@@ -23,10 +23,13 @@ export const extractHeadingsFromMarkdown = (content: string): TocItem[] => {
     const h2Match = line.match(/^## (.+)$/);
     const h3Match = line.match(/^### (.+)$/);
 
-    if (h2Match) {
-      headings.push({ id: slugify(h2Match[1]), text: h2Match[1] });
-    } else if (h3Match) {
-      headings.push({ id: slugify(h3Match[1]), text: h3Match[1] });
+    const h2Text = h2Match?.[1];
+    const h3Text = h3Match?.[1];
+
+    if (h2Text !== undefined) {
+      headings.push({ id: slugify(h2Text), text: h2Text });
+    } else if (h3Text !== undefined) {
+      headings.push({ id: slugify(h3Text), text: h3Text });
     }
   }
 

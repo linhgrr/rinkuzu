@@ -20,4 +20,14 @@ describe('QuizTutorRequestMapper', () => {
       stream: true,
     });
   });
+
+  it('omits optional collection fields when the UI did not provide them', () => {
+    const dto = QuizTutorRequestMapper.toApiRequest({
+      question: 'What is 2 + 2?',
+      options: ['3', '4'],
+    });
+
+    expect(dto).not.toHaveProperty('optionImages');
+    expect(dto).not.toHaveProperty('chatHistory');
+  });
 });

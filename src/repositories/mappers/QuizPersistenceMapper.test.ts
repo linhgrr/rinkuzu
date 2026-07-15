@@ -62,9 +62,11 @@ describe('QuizPersistenceMapper', () => {
   });
 
   it('rejects persisted questions without an identifier', () => {
+    const firstQuestion = record.questions[0];
+    if (!firstQuestion) throw new Error('Expected a persisted question fixture');
     const invalidRecord = {
       ...record,
-      questions: [{ ...record.questions[0], _id: '' }],
+      questions: [{ ...firstQuestion, _id: '' }],
     };
 
     expect(() => QuizPersistenceMapper.toEntity(invalidRecord)).toThrow(

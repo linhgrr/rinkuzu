@@ -157,14 +157,34 @@ describe('AdminService report and stats contracts', () => {
     );
 
     expect(result).toEqual({ success: true, data: { message: 'Report marked as resolved' } });
-    expect(reportRepository.update).toHaveBeenCalledWith(
-      '507f191e810c19729de860ea',
-      expect.objectContaining({
-        status: 'resolved',
-        adminNotes: 'fixed',
+    expect(reportRepository.update).toHaveBeenCalledWith('507f191e810c19729de860ea', {
+      status: 'resolved',
+      adminNotes: 'fixed',
+      resolution: {
+        resolvedAt: expect.any(Date),
         resolvedBy: 'admin@example.com',
-      }),
+      },
+    });
+  });
+
+  it('explicitly clears resolution audit fields when reopening a report', async () => {
+    const reportRepository = createReportRepository({
+      findById: vi.fn().mockResolvedValue({ id: 'report-1', status: 'resolved' }),
+      update: vi.fn().mockResolvedValue({ id: 'report-1', status: 'pending' }),
+    });
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      createQuizRepository(),
+      createAttemptRepository(),
     );
+
+    await service.updateReportStatus('report-1', { status: 'pending' }, 'admin@example.com');
+
+    expect(reportRepository.update).toHaveBeenCalledWith('report-1', {
+      status: 'pending',
+      resolution: null,
+    });
   });
 
   it('maps top creator aggregate records to creator DTOs', async () => {

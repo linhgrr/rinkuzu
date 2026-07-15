@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { useUpgradePrompt } from '@/features/subscription/components/UpgradePromptProvider';
 import { isPremiumLimitError } from '@/features/subscription/lib/limit-error';
-import { streamQuizAI } from '@/lib/quiz/ask-ai';
 
 interface ExplainableQuestion {
   question: string;
@@ -28,7 +27,9 @@ export function useQuizAIExplain() {
 
   useEffect(
     () => () => {
-      abortControllerRef.current?.abort();
+      const activeController = abortControllerRef.current;
+      abortControllerRef.current = null;
+      activeController?.abort();
     },
     [],
   );
@@ -37,50 +38,53 @@ export function useQuizAIExplain() {
     setLoadingAI(true);
     setAIError('');
     setAIExplanation('');
-    let abortController: AbortController | null = null;
+    abortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     try {
-      abortControllerRef.current?.abort();
-      abortController = new AbortController();
-      abortControllerRef.current = abortController;
-
+      const { streamQuizAI } = await import('@/lib/quiz/ask-ai');
       const explanation = await streamQuizAI(
         {
           question: currentQuestion.question,
           options: currentQuestion.options,
-          userQuestion: userQuestion.trim() || undefined,
-          questionImage: currentQuestion.questionImage,
-          optionImages: currentQuestion.optionImages,
+          ...(userQuestion.trim() ? { userQuestion: userQuestion.trim() } : {}),
+          ...(currentQuestion.questionImage !== undefined
+            ? { questionImage: currentQuestion.questionImage }
+            : {}),
+          ...(currentQuestion.optionImages !== undefined
+            ? { optionImages: currentQuestion.optionImages }
+            : {}),
         },
         {
           signal: abortController.signal,
           onContent: (_, fullContent) => {
-            setAIExplanation(fullContent);
+            if (abortControllerRef.current === abortController) {
+              setAIExplanation(fullContent);
+            }
           },
         },
       );
 
+      if (abortControllerRef.current !== abortController) return;
       setAIExplanation(explanation);
-      if (abortControllerRef.current === abortController) {
-        abortControllerRef.current = null;
-      }
+      abortControllerRef.current = null;
       setLoadingAI(false);
     } catch (error: unknown) {
       if (isAbortLikeError(error)) {
-        setAIError('');
         if (abortControllerRef.current === abortController) {
+          setAIError('');
           abortControllerRef.current = null;
+          setLoadingAI(false);
         }
-        setLoadingAI(false);
         return;
       }
+      if (abortControllerRef.current !== abortController) return;
       if (isPremiumLimitError(error)) {
         promptUpgrade('rate_limit');
       }
       setAIError(extractUnknownErrorMessage(error, 'Failed to connect to AI service'));
-      if (abortControllerRef.current === abortController) {
-        abortControllerRef.current = null;
-      }
+      abortControllerRef.current = null;
       setLoadingAI(false);
     }
   };

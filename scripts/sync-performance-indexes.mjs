@@ -1,256 +1,336 @@
-/* eslint-disable no-console */
-import { MongoClient } from 'mongodb';
+import { readFile } from 'node:fs/promises';
+
 import { config } from 'dotenv';
+import { MongoClient } from 'mongodb';
+
+import {
+  CliUsageError,
+  parseIndexCliArgs,
+  readModeExitCode,
+  validateSensitiveApproval,
+} from './database/index-cli.mjs';
+import { INDEX_CONTRACT, INDEX_CONTRACT_VERSION } from './database/index-contract.mjs';
+import { buildIndexPlan, isApplicableAction } from './database/index-planner.mjs';
 
 config({ path: '.env' });
 
+class MigrationSafetyError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'MigrationSafetyError';
+  }
+}
+
 const uri = process.env.MONGODB_URI || process.env.DATABASE_URL || process.env.MONGO_URL;
-const shouldApply = process.argv.includes('--apply');
-
-if (!uri) {
-  throw new Error('Missing MongoDB connection string');
-}
-
-const recentListIndexes = [
-  {
-    collection: 'reports',
-    key: { createdAt: -1 },
-    name: 'createdAt_-1',
-  },
-  {
-    collection: 'subscriptions',
-    key: { createdAt: -1 },
-    name: 'createdAt_-1',
-  },
-];
-const discussionKey = { quiz: 1, questionIndex: 1 };
-const questionProgressLearnedCountKey = { userId: 1, srsLevel: 1 };
-const bookmarkQuizLookupKey = { userId: 1, 'quiz.slug': 1, createdAt: -1 };
-const obsoleteQuizIndexes = [
-  { status: 1, createdAt: -1 },
-  { status: 1, isPublic: 1, category: 1 },
-  { createdBy: 1, status: 1 },
-  { category: 1, status: 1, isPrivate: 1, createdAt: -1 },
-  { category: 1, status: 1, createdAt: -1 },
-  { author: 1, status: 1, createdAt: -1 },
-  { status: 1, isPrivate: 1, createdAt: -1 },
-];
-
-function hasKey(index, key) {
-  const expected = Object.entries(key);
-  const actual = Object.entries(index.key);
-  return (
-    actual.length === expected.length &&
-    expected.every(([field, direction]) => index.key[field] === direction)
-  );
-}
-
-const client = new MongoClient(uri);
+let cli;
+let maxTimeMS = 120_000;
+let client;
 
 try {
+  cli = parseIndexCliArgs(process.argv.slice(2), process.env);
+  maxTimeMS = parsePositiveInteger(process.env.INDEX_MIGRATION_MAX_TIME_MS, 120_000);
+  if (!uri) throw new CliUsageError('Missing MongoDB connection string');
+
+  client = new MongoClient(uri, { serverSelectionTimeoutMS: 10_000 });
   await client.connect();
   const db = client.db();
-  const actions = [];
+  const plan = await createCurrentPlan(db);
 
-  for (const desired of recentListIndexes) {
-    const collection = db.collection(desired.collection);
-    const indexes = await collection.indexes();
-    const existing = indexes.find((index) => hasKey(index, desired.key));
-    actions.push({
-      collection: desired.collection,
-      index: desired.name,
-      action: existing ? 'unchanged' : shouldApply ? 'created' : 'create',
-    });
+  if (cli.mode !== 'apply') {
+    emit({ mode: cli.mode, ...plan });
+    process.exitCode = readModeExitCode(cli.mode, plan);
+  } else {
+    const result = await applyPlan(db, plan, cli);
+    emit(result);
+  }
+} catch (error) {
+  emitError(error, cli?.mode ?? 'unknown');
+  process.exitCode =
+    error instanceof CliUsageError ? 3 : error instanceof MigrationSafetyError ? 2 : 1;
+} finally {
+  await client?.close();
+}
 
-    if (shouldApply && !existing) {
-      await collection.createIndex(desired.key, { name: desired.name });
-    }
+async function createCurrentPlan(db) {
+  const actualIndexesByCollection = await readActualIndexes(db);
+  return buildIndexPlan({
+    contract: INDEX_CONTRACT,
+    contractVersion: INDEX_CONTRACT_VERSION,
+    actualIndexesByCollection,
+    databaseName: db.databaseName,
+  });
+}
+
+async function readActualIndexes(db) {
+  const managedCollections = [...new Set(INDEX_CONTRACT.map((entry) => entry.collection))].sort();
+  const existingCollections = new Set(
+    (await db.listCollections({}, { nameOnly: true }).toArray()).map((entry) => entry.name),
+  );
+  const snapshot = {};
+
+  for (const collectionName of managedCollections) {
+    snapshot[collectionName] = existingCollections.has(collectionName)
+      ? await db.collection(collectionName).listIndexes().toArray()
+      : [];
+  }
+  return snapshot;
+}
+
+async function applyPlan(db, plan, options) {
+  if (!options.planSha) {
+    throw new CliUsageError('Apply requires --plan-sha (or INDEX_PLAN_SHA) from a fresh plan');
+  }
+  if (options.planSha.toLowerCase() !== plan.planSha.toLowerCase()) {
+    throw new MigrationSafetyError(
+      `Plan SHA mismatch: expected ${options.planSha}, current database plan is ${plan.planSha}`,
+    );
+  }
+  if (plan.manualCount > 0) {
+    throw new MigrationSafetyError(
+      `Plan contains ${plan.manualCount} non-automatic action(s); resolve them before apply`,
+    );
   }
 
-  const quizzes = db.collection('quizzes');
-  const quizIndexes = await quizzes.indexes();
-  for (const obsoleteKey of obsoleteQuizIndexes) {
-    const existing = quizIndexes.find((index) => hasKey(index, obsoleteKey));
-    if (!existing) {
-      actions.push({
-        collection: 'quizzes',
-        index: JSON.stringify(obsoleteKey),
-        action: 'absent',
+  const approval = await loadApproval(options.approvalFile);
+  const approvalIssues = validateSensitiveApproval({ approval, plan });
+  if (approvalIssues.length > 0) {
+    throw new MigrationSafetyError(approvalIssues.join('; '));
+  }
+
+  const execution = [];
+  const approvedFingerprints = new Set(plan.actions.map((action) => action.fingerprint));
+  for (const plannedAction of plan.actions) {
+    if (!isApplicableAction(plannedAction)) {
+      throw new MigrationSafetyError(`Unsupported automatic action: ${plannedAction.type}`);
+    }
+
+    const currentPlan = await createCurrentPlan(db);
+    if (currentPlan.manualCount > 0) {
+      throw new MigrationSafetyError('Database state changed to require manual reconciliation');
+    }
+    const unapprovedDrift = currentPlan.actions.filter(
+      (candidate) => !approvedFingerprints.has(candidate.fingerprint),
+    );
+    if (unapprovedDrift.length > 0) {
+      throw new MigrationSafetyError(
+        'Database state changed after planning; generate and approve a new plan',
+      );
+    }
+    const currentAction = currentPlan.actions.find(
+      (candidate) => candidate.fingerprint === plannedAction.fingerprint,
+    );
+    if (!currentAction) {
+      const conflictingAction = currentPlan.actions.find(
+        (candidate) =>
+          candidate.collection === plannedAction.collection &&
+          candidate.indexId === plannedAction.indexId,
+      );
+      if (conflictingAction) {
+        throw new MigrationSafetyError(
+          `Precondition changed for ${plannedAction.indexId}; generate a new plan`,
+        );
+      }
+      execution.push({
+        fingerprint: plannedAction.fingerprint,
+        indexId: plannedAction.indexId,
+        action: plannedAction.type,
+        result: 'already_satisfied',
       });
       continue;
     }
 
-    actions.push({
-      collection: 'quizzes',
-      index: existing.name,
-      action: shouldApply ? 'dropped' : 'drop',
+    await executeAction(db, currentAction);
+    execution.push({
+      fingerprint: currentAction.fingerprint,
+      indexId: currentAction.indexId,
+      action: currentAction.type,
+      result: 'applied',
     });
-    if (shouldApply) {
-      await quizzes.dropIndex(existing.name);
-    }
   }
 
-  const discussions = db.collection('discussions');
-  const duplicateGroups = await discussions
-    .aggregate([
-      {
-        $group: {
-          _id: { quiz: '$quiz', questionIndex: '$questionIndex' },
-          count: { $sum: 1 },
-        },
-      },
-      { $match: { count: { $gt: 1 } } },
-      { $count: 'count' },
-    ])
-    .toArray();
-  const duplicateCount = duplicateGroups[0]?.count ?? 0;
-  const discussionIndexes = await discussions.indexes();
-  const discussionIndex = discussionIndexes.find((index) => hasKey(index, discussionKey));
-
-  if (duplicateCount > 0) {
-    throw new Error(
-      `Cannot enforce unique discussion index: found ${duplicateCount} duplicate quiz/question group(s)`,
+  const verification = await createCurrentPlan(db);
+  if (verification.blockingCount > 0) {
+    throw new MigrationSafetyError(
+      `Post-apply verification found ${verification.blockingCount} remaining drift action(s)`,
     );
   }
 
-  if (!discussionIndex) {
-    actions.push({
-      collection: 'discussions',
-      index: 'quiz_1_questionIndex_1',
-      action: shouldApply ? 'created_unique' : 'create_unique',
-    });
-    if (shouldApply) {
-      await discussions.createIndex(discussionKey, {
-        name: 'quiz_1_questionIndex_1',
-        unique: true,
-      });
-    }
-  } else if (!discussionIndex.unique) {
-    if (shouldApply) {
-      let action = 'converted_to_unique';
-      try {
-        await db.command({
-          collMod: 'discussions',
-          index: { keyPattern: discussionKey, prepareUnique: true },
-        });
-        await db.command({
-          collMod: 'discussions',
-          index: { keyPattern: discussionKey, unique: true },
-        });
-      } catch (error) {
-        const canFallback =
-          error &&
-          typeof error === 'object' &&
-          ('code' in error || 'codeName' in error) &&
-          (error.code === 13 ||
-            (error.code === 8000 &&
-              'message' in error &&
-              /not allowed.*collMod/i.test(String(error.message))) ||
-            error.codeName === 'Unauthorized' ||
-            error.codeName === 'Unauthorized');
-        if (!canFallback) throw error;
+  return {
+    mode: 'apply',
+    status: 'verified',
+    sourcePlanSha: plan.planSha,
+    verificationPlanSha: verification.planSha,
+    verified: true,
+    execution,
+    verification,
+  };
+}
 
-        action = 'rebuilt_as_unique';
-        await discussions.dropIndex(discussionIndex.name);
-        try {
-          await discussions.createIndex(discussionKey, {
-            name: discussionIndex.name,
-            unique: true,
-          });
-        } catch (createError) {
-          await discussions.createIndex(discussionKey, { name: discussionIndex.name });
-          throw createError;
-        }
+async function executeAction(db, plannedAction) {
+  const collection = db.collection(plannedAction.collection);
+
+  if (plannedAction.type === 'create') {
+    if (plannedAction.options?.unique === true) {
+      const duplicate = await findDuplicateForUniqueIndex(collection, plannedAction);
+      if (duplicate) {
+        throw new MigrationSafetyError(
+          `Cannot create unique index ${plannedAction.indexId}: duplicate key group exists`,
+        );
       }
-      actions.push({
-        collection: 'discussions',
-        index: discussionIndex.name,
-        action,
-      });
-    } else {
-      actions.push({
-        collection: 'discussions',
-        index: discussionIndex.name,
-        action: 'convert_to_unique',
-      });
     }
-  } else {
-    actions.push({
-      collection: 'discussions',
-      index: discussionIndex.name,
-      action: 'unchanged_unique',
-    });
+    await collection.createIndex(plannedAction.key, createIndexOptions(plannedAction));
+    return;
   }
 
-  const questionProgresses = db.collection('questionprogresses');
-  const questionProgressIndexes = await questionProgresses.indexes();
-  const learnedCountIndex = questionProgressIndexes.find((index) =>
-    hasKey(index, questionProgressLearnedCountKey),
+  if (plannedAction.type === 'hide' || plannedAction.type === 'unhide') {
+    if (!plannedAction.actualName) {
+      throw new MigrationSafetyError(`${plannedAction.type} requires an existing index name`);
+    }
+    await db.command({
+      collMod: plannedAction.collection,
+      index: {
+        name: plannedAction.actualName,
+        hidden: plannedAction.type === 'hide',
+      },
+    });
+    return;
+  }
+
+  if (plannedAction.type === 'update_ttl') {
+    const expireAfterSeconds = plannedAction.options?.expireAfterSeconds;
+    if (
+      !plannedAction.actualName ||
+      !Number.isFinite(expireAfterSeconds) ||
+      expireAfterSeconds < 0 ||
+      expireAfterSeconds > 2_147_483_647
+    ) {
+      throw new MigrationSafetyError(
+        'update_ttl requires an existing index name and a supported expireAfterSeconds',
+      );
+    }
+    await db.command({
+      collMod: plannedAction.collection,
+      index: {
+        name: plannedAction.actualName,
+        expireAfterSeconds,
+      },
+    });
+    return;
+  }
+
+  if (plannedAction.type === 'drop') {
+    if (!plannedAction.actualName) {
+      throw new MigrationSafetyError('drop requires an existing index name');
+    }
+    await collection.dropIndex(plannedAction.actualName);
+    return;
+  }
+
+  throw new MigrationSafetyError(`Unhandled action type: ${plannedAction.type}`);
+}
+
+async function findDuplicateForUniqueIndex(collection, plannedAction) {
+  const fields = Object.keys(plannedAction.key);
+  const matchClauses = [];
+  if (plannedAction.options?.partialFilterExpression) {
+    matchClauses.push(plannedAction.options.partialFilterExpression);
+  }
+  if (plannedAction.options?.sparse === true) {
+    matchClauses.push({ $or: fields.map((field) => ({ [field]: { $exists: true } })) });
+  }
+
+  const pipeline = [];
+  if (matchClauses.length === 1) pipeline.push({ $match: matchClauses[0] });
+  if (matchClauses.length > 1) pipeline.push({ $match: { $and: matchClauses } });
+  pipeline.push(
+    {
+      $group: {
+        _id: Object.fromEntries(fields.map((field, index) => [`field${index}`, `$${field}`])),
+        count: { $sum: 1 },
+      },
+    },
+    { $match: { count: { $gt: 1 } } },
+    { $limit: 1 },
   );
-  actions.push({
-    collection: 'questionprogresses',
-    index: 'userId_1_srsLevel_1',
-    action: learnedCountIndex ? 'unchanged' : shouldApply ? 'created' : 'create',
-  });
 
-  if (shouldApply && !learnedCountIndex) {
-    await questionProgresses.createIndex(questionProgressLearnedCountKey, {
-      name: 'userId_1_srsLevel_1',
-    });
+  const [duplicate] = await collection
+    .aggregate(pipeline, {
+      allowDiskUse: false,
+      maxTimeMS,
+      ...(plannedAction.options?.collation ? { collation: plannedAction.options.collation } : {}),
+    })
+    .toArray();
+  return duplicate ?? null;
+}
+
+function createIndexOptions(plannedAction) {
+  const source = plannedAction.options ?? {};
+  const options = {};
+  const supported = [
+    'collation',
+    'default_language',
+    'expireAfterSeconds',
+    'language_override',
+    'partialFilterExpression',
+    'sparse',
+    'unique',
+    'weights',
+    'wildcardProjection',
+  ];
+  for (const key of supported) {
+    if (source[key] !== undefined && source[key] !== false && source[key] !== null) {
+      options[key] = source[key];
+    }
   }
+  if (plannedAction.contractName) options.name = plannedAction.contractName;
+  return options;
+}
 
-  const bookmarks = db.collection('bookmarks');
-  const bookmarkIndexes = await bookmarks.indexes();
-  const bookmarkQuizLookupIndex = bookmarkIndexes.find((index) =>
-    hasKey(index, bookmarkQuizLookupKey),
-  );
-  actions.push({
-    collection: 'bookmarks',
-    index: 'userId_1_quiz.slug_1_createdAt_-1',
-    action: bookmarkQuizLookupIndex ? 'unchanged' : shouldApply ? 'created' : 'create',
-  });
-
-  if (shouldApply && !bookmarkQuizLookupIndex) {
-    await bookmarks.createIndex(bookmarkQuizLookupKey, {
-      name: 'userId_1_quiz.slug_1_createdAt_-1',
-    });
+async function loadApproval(approvalFile) {
+  if (!approvalFile) return null;
+  let source;
+  try {
+    source = await readFile(approvalFile, 'utf8');
+  } catch (error) {
+    throw new CliUsageError(
+      `Cannot read approval file ${approvalFile}: ${error instanceof Error ? error.message : error}`,
+    );
   }
+  try {
+    return JSON.parse(source);
+  } catch (error) {
+    throw new CliUsageError(
+      `Approval file is not valid JSON: ${error instanceof Error ? error.message : error}`,
+    );
+  }
+}
 
-  const verified = shouldApply
-    ? {
-        reportsCreatedAt: (await db.collection('reports').indexes()).some((index) =>
-          hasKey(index, { createdAt: -1 }),
-        ),
-        subscriptionsCreatedAt: (await db.collection('subscriptions').indexes()).some((index) =>
-          hasKey(index, { createdAt: -1 }),
-        ),
-        discussionsUnique: (await discussions.indexes()).some(
-          (index) => hasKey(index, discussionKey) && index.unique === true,
-        ),
-        questionProgressLearnedCount: (await questionProgresses.indexes()).some((index) =>
-          hasKey(index, questionProgressLearnedCountKey),
-        ),
-        bookmarkQuizLookup: (await bookmarks.indexes()).some((index) =>
-          hasKey(index, bookmarkQuizLookupKey),
-        ),
-        obsoleteQuizIndexesRemoved: !(await quizzes.indexes()).some((index) =>
-          obsoleteQuizIndexes.some((key) => hasKey(index, key)),
-        ),
-      }
-    : undefined;
+function parsePositiveInteger(value, fallback) {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new CliUsageError('INDEX_MIGRATION_MAX_TIME_MS must be a positive integer');
+  }
+  return parsed;
+}
 
-  console.log(
+function emit(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function emitError(error, mode) {
+  console.error(
     JSON.stringify(
       {
-        mode: shouldApply ? 'apply' : 'dry-run',
-        duplicateDiscussionGroups: duplicateCount,
-        actions,
-        verified,
+        mode,
+        status: 'error',
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : String(error),
+        },
       },
       null,
       2,
     ),
   );
-} finally {
-  await client.close();
 }

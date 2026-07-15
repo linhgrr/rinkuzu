@@ -128,7 +128,9 @@ export default async function middleware(request: NextRequest) {
   if (isAdminRoute || isAuthRequiredRoute) {
     const token = await getToken({
       req: request,
-      secret: process.env['NEXTAUTH_SECRET'],
+      ...(process.env['NEXTAUTH_SECRET'] !== undefined
+        ? { secret: process.env['NEXTAUTH_SECRET'] }
+        : {}),
     });
 
     if ((isAdminRoute || isAuthRequiredRoute) && !token) {

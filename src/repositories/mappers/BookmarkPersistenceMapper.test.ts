@@ -20,12 +20,17 @@ const record: BookmarkPersistenceRecord = {
 
 describe('BookmarkPersistenceMapper', () => {
   it('normalizes persistence identity and timestamps', () => {
-    expect(BookmarkPersistenceMapper.toEntity(record)).toMatchObject({
+    const entity = BookmarkPersistenceMapper.toEntity(record);
+    expect(entity).toMatchObject({
       id: 'bookmark-1',
       userId: 'user-1',
       createdAt: new Date('2026-07-01T00:00:00.000Z'),
       updatedAt: new Date('2026-07-01T01:00:00.000Z'),
     });
+    expect(entity.quiz).not.toHaveProperty('description');
+    expect(entity.question).not.toHaveProperty('correctIndexes');
+    expect(entity.question).not.toHaveProperty('questionImage');
+    expect(entity.question).not.toHaveProperty('optionImages');
   });
 
   it('rejects a record without persistence identity', () => {

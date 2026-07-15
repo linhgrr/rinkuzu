@@ -10,8 +10,8 @@ function toEditorQuestion(question: QuizQuestionDto, index: number): QuizEditorQ
     editorId: question.id || `loaded-question-${index}`,
     question: question.question,
     options: question.options,
-    questionImage: question.questionImage,
-    optionImages: question.optionImages,
+    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
+    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
   };
 
   return question.type === 'single'
@@ -31,7 +31,7 @@ export function toQuizEditViewModel(dto: QuizDetailDto): QuizEditViewModel {
   return {
     id: dto.id,
     title: dto.title,
-    description: dto.description,
+    ...(dto.description !== undefined && { description: dto.description }),
     slug: dto.slug,
     author: dto.author,
     folder: dto.folder,
@@ -39,8 +39,8 @@ export function toQuizEditViewModel(dto: QuizDetailDto): QuizEditViewModel {
     questionCount: dto.questionCount,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
-    pdfUrl: dto.pdfUrl,
-    tags: dto.tags,
+    ...(dto.pdfUrl !== undefined && { pdfUrl: dto.pdfUrl }),
+    ...(dto.tags !== undefined && { tags: dto.tags }),
     questions: dto.questions.map(toEditorQuestion),
   };
 }

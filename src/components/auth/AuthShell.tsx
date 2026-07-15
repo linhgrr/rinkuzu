@@ -3,7 +3,7 @@
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
@@ -51,84 +51,82 @@ export function AuthShell({ locale, googleEnabled }: AuthShellProps) {
   };
 
   return (
-    <LazyMotion features={domAnimation} strict>
-      <div className="flex min-h-screen w-full bg-surface-page">
-        {/* Visual panel — slides side to side via layout animation */}
-        <m.div
-          layout
-          transition={{ duration, ease: EASE }}
-          className={`relative hidden h-screen aspect-[3/4] shrink-0 overflow-hidden lg:block ${panelOrder} ${panelRounded}`}
-        >
-          <Image
-            src="/images/auth_panel.png"
-            alt=""
-            fill
-            priority
-            sizes="50vw"
-            className="object-contain"
-            aria-hidden="true"
-            unoptimized
-          />
-        </m.div>
+    <div className="auth-shell flex min-h-screen w-full bg-surface-page">
+      {/* Visual panel — slides side to side via layout animation */}
+      <motion.div
+        layout
+        transition={{ duration, ease: EASE }}
+        className={`relative hidden h-screen aspect-[3/4] shrink-0 overflow-hidden lg:block ${panelOrder} ${panelRounded}`}
+      >
+        <Image
+          src="/images/auth_panel.png"
+          alt=""
+          fill
+          priority
+          sizes="50vw"
+          className="object-contain"
+          aria-hidden="true"
+          unoptimized
+        />
+      </motion.div>
 
-        {/* Form panel */}
-        <div
-          className={`flex w-full flex-col items-center justify-center px-4 py-12 sm:px-6 lg:flex-1 lg:px-8 ${formOrder}`}
-        >
-          <div className="w-full max-w-md">
-            {/* Logo — mobile only (panel hidden) */}
-            <Link
-              href="/"
-              prefetch={false}
-              className="mb-8 inline-flex items-center justify-center lg:hidden"
+      {/* Form panel */}
+      <div
+        className={`flex w-full flex-col items-center justify-center px-4 py-12 sm:px-6 lg:flex-1 lg:px-8 ${formOrder}`}
+      >
+        <div className="w-full max-w-md">
+          {/* Logo — mobile only (panel hidden) */}
+          <Link
+            href="/"
+            prefetch={false}
+            className="mb-8 inline-flex items-center justify-center lg:hidden"
+          >
+            <Image
+              src="/images/auth_logo.png"
+              alt="RinKuzu Logo"
+              width={56}
+              height={56}
+              className="h-12 w-auto object-contain"
+              style={{ width: 'auto' }}
+              unoptimized
+            />
+          </Link>
+
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={mode}
+              variants={formVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration, ease: EASE }}
             >
-              <Image
-                src="/images/auth_logo.png"
-                alt="RinKuzu Logo"
-                width={56}
-                height={56}
-                className="h-12 w-auto object-contain"
-                style={{ width: 'auto' }}
-                unoptimized
-              />
-            </Link>
+              <div className="mb-8">
+                <h1 className="text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
+                  {isLogin ? t('signIn') : t('createAccount')}
+                </h1>
+                <p className="mt-3 text-body text-ink-muted">
+                  {isLogin ? t('enterCredentials') : t('enterDetails')}
+                </p>
+              </div>
 
-            <AnimatePresence mode="wait" initial={false}>
-              <m.div
-                key={mode}
-                variants={formVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{ duration, ease: EASE }}
-              >
-                <div className="mb-8">
-                  <h1 className="text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
-                    {isLogin ? t('signIn') : t('createAccount')}
-                  </h1>
-                  <p className="mt-3 text-body text-ink-muted">
-                    {isLogin ? t('enterCredentials') : t('enterDetails')}
-                  </p>
-                </div>
-
-                {isLogin ? (
-                  <LoginForm
-                    locale={locale}
-                    googleEnabled={googleEnabled}
-                    onSwitchMode={() => switchTo('signup')}
-                  />
-                ) : (
-                  <RegisterForm
-                    locale={locale}
-                    googleEnabled={googleEnabled}
-                    onSwitchMode={() => switchTo('login')}
-                  />
-                )}
-              </m.div>
-            </AnimatePresence>
-          </div>
+              {isLogin ? (
+                <LoginForm
+                  locale={locale}
+                  googleEnabled={googleEnabled}
+                  onSwitchMode={() => switchTo('signup')}
+                />
+              ) : (
+                <RegisterForm
+                  locale={locale}
+                  googleEnabled={googleEnabled}
+                  onSwitchMode={() => switchTo('login')}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
-    </LazyMotion>
+    </div>
   );
 }

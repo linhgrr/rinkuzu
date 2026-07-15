@@ -13,6 +13,7 @@ import {
 import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import {
   isAdminSubscriptionStatusTransitionAllowed,
+  SubscriptionActivationConflictError,
   type AdminMutableSubscriptionStatus,
   type SubscriptionRecord,
 } from '@/entities/Subscription';
@@ -323,36 +324,54 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
-        await Subscription.updateOne(
-          { payosOrderId: data.orderId },
+        const subscriptionResult = await Subscription.updateOne(
+          {
+            payosOrderId: data.orderId,
+            user: data.userId,
+            status: 'pending',
+          },
           {
             $set: {
               status: 'completed',
-              payosTransactionId: data.transactionReference,
+              ...(data.transactionReference !== undefined && {
+                payosTransactionId: data.transactionReference,
+              }),
               startDate: data.startDate,
-              endDate: data.endDate,
+              ...(data.endDate !== undefined && { endDate: data.endDate }),
               isActive: true,
             },
           },
           { session },
         );
+        if (subscriptionResult.matchedCount !== 1) {
+          throw new SubscriptionActivationConflictError(
+            'Pending subscription changed before activation',
+          );
+        }
 
-        await User.updateOne(
+        const userResult = await User.updateOne(
           { _id: data.userId },
           {
             $set: {
               subscription: {
                 type: data.type,
                 startDate: data.startDate,
-                endDate: data.endDate,
+                ...(data.endDate !== undefined && { endDate: data.endDate }),
                 isActive: true,
                 payosOrderId: data.orderId,
-                payosTransactionId: data.transactionReference,
+                ...(data.transactionReference !== undefined && {
+                  payosTransactionId: data.transactionReference,
+                }),
               },
             },
           },
           { session },
         );
+        if (userResult.matchedCount !== 1) {
+          throw new SubscriptionActivationConflictError(
+            'Subscription user changed before activation',
+          );
+        }
       });
     } finally {
       await session.endSession();

@@ -36,7 +36,6 @@ describe('toQuizListViewModel', () => {
         {
           id: 'quiz-1',
           title: 'Architecture',
-          description: undefined,
           slug: 'architecture',
           author: {
             id: 'user-1',
@@ -61,5 +60,6 @@ describe('toQuizListViewModel', () => {
         hasPrevPage: false,
       },
     });
+    expect(result.quizzes[0]).not.toHaveProperty('description');
   });
 });

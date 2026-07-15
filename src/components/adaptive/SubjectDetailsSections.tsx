@@ -210,7 +210,9 @@ export const SubjectDetailsTabs = ({ activeTab, onChange, t }: SubjectDetailsTab
     else if (e.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
     else return;
     e.preventDefault();
-    onChange(tabs[nextIndex].key);
+    const nextTab = tabs[nextIndex];
+    if (!nextTab) return;
+    onChange(nextTab.key);
     const nextButton = e.currentTarget.parentElement?.children[nextIndex] as HTMLElement;
     nextButton?.focus();
   };

@@ -1,14 +1,6 @@
 'use client';
 
-import { type ReactNode, useRef } from 'react';
-import {
-  LazyMotion,
-  domAnimation,
-  m,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-} from 'framer-motion';
+import { type PointerEvent, type ReactNode, useRef } from 'react';
 
 interface MagneticProps {
   children: ReactNode;
@@ -18,37 +10,37 @@ interface MagneticProps {
 
 /** Pulls its child toward the cursor on hover. Collapses to static under reduced motion. */
 export function Magnetic({ children, strength = 0.3, className }: MagneticProps) {
-  const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const sx = useSpring(x, { stiffness: 150, damping: 15, mass: 0.1 });
-  const sy = useSpring(y, { stiffness: 150, damping: 15, mass: 0.1 });
 
-  if (reduce) {
-    return <div className={className}>{children}</div>;
-  }
+  const resetTransform = () => {
+    ref.current?.style.removeProperty('transform');
+  };
+
+  const moveTowardPointer = (event: PointerEvent<HTMLDivElement>) => {
+    const element = ref.current;
+    if (
+      !element ||
+      event.pointerType !== 'mouse' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const x = (event.clientX - (rect.left + rect.width / 2)) * strength;
+    const y = (event.clientY - (rect.top + rect.height / 2)) * strength;
+    element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  };
 
   return (
-    <LazyMotion features={domAnimation}>
-      <m.div
-        ref={ref}
-        className={className}
-        style={{ x: sx, y: sy }}
-        onMouseMove={(e) => {
-          const el = ref.current;
-          if (!el) return;
-          const rect = el.getBoundingClientRect();
-          x.set((e.clientX - (rect.left + rect.width / 2)) * strength);
-          y.set((e.clientY - (rect.top + rect.height / 2)) * strength);
-        }}
-        onMouseLeave={() => {
-          x.set(0);
-          y.set(0);
-        }}
-      >
-        {children}
-      </m.div>
-    </LazyMotion>
+    <div
+      ref={ref}
+      className={`motion-safe:transition-transform motion-safe:duration-150 ${className ?? ''}`}
+      onPointerMove={moveTowardPointer}
+      onPointerLeave={resetTransform}
+      onPointerCancel={resetTransform}
+    >
+      {children}
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import { useSession, signOut } from 'next-auth/react';
@@ -154,10 +154,10 @@ function mapDesktopNav(defs: typeof DESKTOP_PRIMARY_NAV): NavEntry[] {
     id: def.id,
     labelKey: def.labelKey,
     icon: NAV_ICON_BY_ID[def.id] ?? ICON.home,
-    href: def.href,
-    matchPrefix: def.matchPrefix,
-    requiredRole: def.requiredRole,
-    items: def.items,
+    ...(def.href !== undefined ? { href: def.href } : {}),
+    ...(def.matchPrefix !== undefined ? { matchPrefix: def.matchPrefix } : {}),
+    ...(def.requiredRole !== undefined ? { requiredRole: def.requiredRole } : {}),
+    ...(def.items !== undefined ? { items: def.items } : {}),
   }));
 }
 
@@ -258,7 +258,7 @@ function NavSection({
   if (!hasChildren) {
     return (
       <SidebarItem
-        href={entry.href}
+        {...(entry.href !== undefined ? { href: entry.href } : {})}
         icon={entry.icon}
         label={t(entry.labelKey)}
         active={active}
@@ -423,7 +423,8 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  useDropdownOutside(containerRef, open, () => setOpen(false));
+  const closeMenu = useCallback(() => setOpen(false), []);
+  useDropdownOutside(containerRef, open, closeMenu);
 
   return (
     <div className="relative" ref={containerRef}>
@@ -668,10 +669,10 @@ function AppTopbar({
             <LanguageDropdown currentLocale={currentLocale} onSelect={onSelectLocale} />
 
             <UserMenuDropdown
-              avatar={avatar}
+              {...(avatar !== undefined ? { avatar } : {})}
               avatarInitial={avatarInitial}
-              displayName={displayName}
-              email={email}
+              {...(displayName !== undefined ? { displayName } : {})}
+              {...(email !== undefined ? { email } : {})}
               t={t}
             />
           </div>
@@ -832,10 +833,12 @@ export function AppChrome({ children }: AppChromeProps) {
         }
         currentLocale={currentLocale}
         onSelectLocale={selectLocale}
-        avatar={avatar}
+        {...(avatar !== undefined ? { avatar } : {})}
         avatarInitial={avatarInitial}
-        displayName={session?.user?.displayName}
-        email={session?.user?.email}
+        {...(session?.user?.displayName !== undefined
+          ? { displayName: session.user.displayName }
+          : {})}
+        {...(session?.user?.email !== undefined ? { email: session.user.email } : {})}
         t={t}
       />
       <MobileAppMenu

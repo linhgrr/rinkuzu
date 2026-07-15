@@ -141,18 +141,20 @@ export async function proxyAdaptiveRequest(
       !shouldAttachBody(method) &&
       cacheOptions.revalidateSeconds > 0 &&
       cacheOptions.tags.length > 0;
-
-    const response = await fetch(targetUrl.toString(), {
-      method,
-      headers,
-      body,
-      cache: allowCache ? 'force-cache' : 'no-store',
-      next: allowCache
+    const nextOptions =
+      allowCache && cacheOptions
         ? {
             revalidate: cacheOptions.revalidateSeconds,
             tags: cacheOptions.tags,
           }
-        : undefined,
+        : undefined;
+
+    const response = await fetch(targetUrl.toString(), {
+      method,
+      headers,
+      ...(body !== undefined && { body }),
+      cache: allowCache ? 'force-cache' : 'no-store',
+      ...(nextOptions !== undefined && { next: nextOptions }),
       signal: upstreamAbort,
     });
 

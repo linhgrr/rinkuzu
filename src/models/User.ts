@@ -96,11 +96,11 @@ UserSchema.index({ role: 1, createdAt: -1 });
 UserSchema.index({ createdAt: -1 });
 UserSchema.index(
   { passwordResetTokenHash: 1 },
-  { sparse: true, partialFilterExpression: { passwordResetTokenHash: { $type: 'string' } } },
+  { partialFilterExpression: { passwordResetTokenHash: { $type: 'string' } } },
 );
 UserSchema.index(
   { emailVerificationTokenHash: 1 },
-  { sparse: true, partialFilterExpression: { emailVerificationTokenHash: { $type: 'string' } } },
+  { partialFilterExpression: { emailVerificationTokenHash: { $type: 'string' } } },
 );
 UserSchema.index({ lockedUntil: 1 }, { sparse: true });
 UserSchema.index(
@@ -109,7 +109,7 @@ UserSchema.index(
 );
 UserSchema.index(
   { 'subscription.payosOrderId': 1 },
-  { sparse: true, partialFilterExpression: { 'subscription.payosOrderId': { $type: 'string' } } },
+  { partialFilterExpression: { 'subscription.payosOrderId': { $type: 'string' } } },
 );
 
 UserSchema.pre('save', function (next) {
@@ -119,6 +119,8 @@ UserSchema.pre('save', function (next) {
   next();
 });
 
-const User = mongoose.models['User'] || mongoose.model<UserDocument>('User', UserSchema);
+const User =
+  (mongoose.models['User'] as mongoose.Model<UserDocument> | undefined) ??
+  mongoose.model<UserDocument>('User', UserSchema);
 
 export default User;

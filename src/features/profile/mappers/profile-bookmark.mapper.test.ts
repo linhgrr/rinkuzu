@@ -49,7 +49,6 @@ describe('toProfileBookmarkListViewModel', () => {
             options: ['3', '4'],
             type: 'single',
             correctIndex: 1,
-            correctIndexes: undefined,
             questionImage: 'https://example.com/question.png',
             optionImages: [undefined, 'https://example.com/answer.png'],
           },

@@ -59,14 +59,6 @@ export class SubscriptionPaymentService {
     const cancelUrl = `${baseUrl}/payment/cancel?orderCode=${orderCode}`;
 
     try {
-      console.warn('Creating PayOS payment request:', {
-        orderCode,
-        amount: plan.price,
-        description: payosDescription,
-        returnUrl,
-        cancelUrl,
-      });
-
       const paymentResponse = await this.payosService.createPayment(
         orderCode,
         plan.price,

@@ -280,6 +280,7 @@ export function MobileQuizPlayer({
 }: MobileQuizPlayerProps) {
   const t = useTranslations('quiz');
   const [submitIntent, setSubmitIntent] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
   const touchCurrentXRef = useRef<number | null>(null);
   const isSubmitting = submitting || submitIntent;
@@ -287,6 +288,15 @@ export function MobileQuizPlayer({
   const currentQuestion = questions[currentIndex];
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === questions.length - 1;
+
+  if (!currentQuestion) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-50 p-6 text-center text-neutral-700">
+        {t('quizNotFound')}
+      </div>
+    );
+  }
+  const activeQuestion = currentQuestion;
 
   function goNext() {
     if (!isLast && !isSubmitting) {
@@ -337,9 +347,9 @@ export function MobileQuizPlayer({
       return;
     }
 
-    const qId = currentQuestion.id;
+    const qId = activeQuestion.id;
 
-    if (currentQuestion.type === 'single') {
+    if (activeQuestion.type === 'single') {
       onAnswersChange({ ...answers, [qId]: optionIndex });
       return;
     }
@@ -356,7 +366,7 @@ export function MobileQuizPlayer({
   }
 
   function isOptionSelected(optionIndex: number) {
-    const answer = answers[currentQuestion.id];
+    const answer = answers[activeQuestion.id];
     if (Array.isArray(answer)) {
       return answer.includes(optionIndex);
     }
@@ -364,7 +374,6 @@ export function MobileQuizPlayer({
   }
 
   const answeredCount = Object.keys(answers).length;
-  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   async function submitCurrentAnswers() {
     if (isSubmitting) {
@@ -411,7 +420,7 @@ export function MobileQuizPlayer({
 
       <MobileQuestionCard
         currentIndex={currentIndex}
-        currentQuestion={currentQuestion}
+        currentQuestion={activeQuestion}
         handleOptionSelect={handleOptionSelect}
         handleTouchEnd={handleTouchEnd}
         handleTouchMove={handleTouchMove}
@@ -426,7 +435,7 @@ export function MobileQuizPlayer({
         handleComplete={handleComplete}
         isSubmitting={isSubmitting}
         questionsLength={questions.length}
-        submissionError={submissionError}
+        {...(submissionError !== undefined ? { submissionError } : {})}
         t={t}
       />
 

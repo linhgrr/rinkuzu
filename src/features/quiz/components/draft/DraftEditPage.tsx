@@ -65,8 +65,8 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
             isPrivate: false,
             questions: toEditorQuestions(initialDraft.questions, 'draft'),
           }}
-          pdfUrl={pdfUrl}
-          pdfDataUrl={pdfDataUrl}
+          {...(pdfUrl !== undefined ? { pdfUrl } : {})}
+          {...(pdfDataUrl !== undefined ? { pdfDataUrl } : {})}
           pdfLayout="flush"
           canEdit
           showPrivateToggle={canCreatePrivateQuiz}

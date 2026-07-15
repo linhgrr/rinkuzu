@@ -43,8 +43,9 @@ describe('SubscriptionPersistenceMapper', () => {
   });
 
   it('rejects completed subscriptions without their activation date', () => {
-    expect(() =>
-      SubscriptionPersistenceMapper.toEntity({ ...record, startDate: undefined }),
-    ).toThrow('subscription.startDate must be a valid date');
+    const { startDate: _startDate, ...recordWithoutStartDate } = record;
+    expect(() => SubscriptionPersistenceMapper.toEntity(recordWithoutStartDate)).toThrow(
+      'subscription.startDate must be a valid date',
+    );
   });
 });

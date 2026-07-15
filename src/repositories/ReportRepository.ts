@@ -59,7 +59,19 @@ export class ReportRepository implements IReportRepository {
 
   async update(id: string, reportData: UpdateReportData): Promise<ReportEntity | null> {
     await connectDB();
-    const record = await Report.findByIdAndUpdate(id, reportData, {
+    const $set = {
+      status: reportData.status,
+      ...(reportData.resolution !== null && {
+        resolvedAt: reportData.resolution.resolvedAt,
+        resolvedBy: reportData.resolution.resolvedBy,
+      }),
+      ...(reportData.adminNotes !== undefined && { adminNotes: reportData.adminNotes }),
+    };
+    const update =
+      reportData.resolution === null
+        ? { $set, $unset: { resolvedAt: 1, resolvedBy: 1 } }
+        : { $set };
+    const record = await Report.findByIdAndUpdate(id, update, {
       new: true,
     }).lean<ReportPersistenceRecord>();
     return record ? ReportPersistenceMapper.toEntity(record) : null;

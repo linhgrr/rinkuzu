@@ -31,6 +31,7 @@ const dueQuestion: DueReviewQuestionDto = {
   createdAt: '2026-07-01T00:00:00.000Z',
   updatedAt: '2026-07-01T00:00:00.000Z',
 };
+const { questionRef: _questionRef, ...dueQuestionWithoutRef } = dueQuestion;
 
 describe('review-session.mapper', () => {
   it('maps due review DTOs with a question reference to the page view model', () => {
@@ -43,13 +44,13 @@ describe('review-session.mapper', () => {
   });
 
   it('drops due review DTOs without the required display question reference', () => {
-    expect(toReviewQuestionViewModel({ ...dueQuestion, questionRef: undefined })).toBeNull();
+    expect(toReviewQuestionViewModel(dueQuestionWithoutRef)).toBeNull();
   });
 
   it('maps due review lists to displayable view models only', () => {
     expect(
       toReviewQuestionViewModels({
-        questions: [dueQuestion, { ...dueQuestion, id: 'missing-ref', questionRef: undefined }],
+        questions: [dueQuestion, { ...dueQuestionWithoutRef, id: 'missing-ref' }],
         count: 2,
       }),
     ).toEqual([

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { MongoClient } from 'mongodb';
 import { config } from 'dotenv';
 import { normalizeSelectedAnswer } from './lib/normalize-selected-answer.mjs';

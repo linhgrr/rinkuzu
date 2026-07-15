@@ -37,6 +37,9 @@ export class AdminBillingDtoMapper {
   }
 
   static toSubscriptionDto(subscription: AdminSubscriptionRecord): AdminSubscriptionDto {
+    const startDate = serializeOptionalDate(subscription.startDate, 'subscription.startDate');
+    const endDate = serializeOptionalDate(subscription.endDate, 'subscription.endDate');
+
     return {
       id: subscription.id,
       user: subscription.user,
@@ -46,10 +49,14 @@ export class AdminBillingDtoMapper {
       currency: subscription.currency,
       status: subscription.status,
       payosOrderId: subscription.payosOrderId,
-      payosTransactionId: subscription.payosTransactionId,
-      payosPaymentUrl: subscription.payosPaymentUrl,
-      startDate: serializeOptionalDate(subscription.startDate, 'subscription.startDate'),
-      endDate: serializeOptionalDate(subscription.endDate, 'subscription.endDate'),
+      ...(subscription.payosTransactionId !== undefined && {
+        payosTransactionId: subscription.payosTransactionId,
+      }),
+      ...(subscription.payosPaymentUrl !== undefined && {
+        payosPaymentUrl: subscription.payosPaymentUrl,
+      }),
+      ...(startDate !== undefined && { startDate }),
+      ...(endDate !== undefined && { endDate }),
       isActive: subscription.isActive,
       createdAt: serializeDate(subscription.createdAt, 'subscription.createdAt'),
       updatedAt: serializeDate(subscription.updatedAt, 'subscription.updatedAt'),
@@ -57,11 +64,13 @@ export class AdminBillingDtoMapper {
   }
 
   static toGrantDto(grant: AdminUserSubscriptionGrant): AdminUserSubscriptionGrantDto {
+    const endDate = serializeOptionalDate(grant.endDate, 'grant.endDate');
+
     return {
       user: grant.userEmail,
       plan: grant.planName,
       startDate: serializeDate(grant.startDate, 'grant.startDate'),
-      endDate: serializeOptionalDate(grant.endDate, 'grant.endDate'),
+      ...(endDate !== undefined && { endDate }),
       isActive: true,
     };
   }

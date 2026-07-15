@@ -4,6 +4,13 @@ export type AdminMutableSubscriptionStatus = Extract<
   'failed' | 'cancelled' | 'expired'
 >;
 
+export class SubscriptionActivationConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SubscriptionActivationConflictError';
+  }
+}
+
 export function isAdminSubscriptionStatusTransitionAllowed(
   currentStatus: SubscriptionStatus,
   nextStatus: AdminMutableSubscriptionStatus,

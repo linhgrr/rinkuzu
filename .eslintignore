@@ -1,9 +1,0 @@
-node_modules/
-.next/
-out/
-build/
-dist/
-coverage/
-public/sw.js
-public/workbox-*.js
-public/worker-*.js

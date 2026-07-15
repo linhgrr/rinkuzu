@@ -204,6 +204,15 @@ export default function ReviewPage() {
   }
 
   const currentQuestion = questions[currentIndex];
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-surface-page">
+        <div className="mx-auto max-w-2xl px-4 py-8">
+          <ErrorState message={t('loadError')} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface-page flex flex-col">

@@ -88,4 +88,19 @@ describe('LearningProgressDtoMapper', () => {
     );
     expect(dto).not.toHaveProperty('_id');
   });
+
+  it('omits absent optional library and review fields', () => {
+    const quiz = libraryQuiz();
+    delete quiz.description;
+    delete quiz.pdfUrl;
+    const question = dueQuestion();
+    delete question.questionRef;
+
+    const quizDto = LearningProgressDtoMapper.toLibraryQuizDto(quiz);
+    const questionDto = LearningProgressDtoMapper.toDueQuestionDto(question);
+
+    expect(quizDto).not.toHaveProperty('description');
+    expect(quizDto).not.toHaveProperty('pdfUrl');
+    expect(questionDto).not.toHaveProperty('questionRef');
+  });
 });

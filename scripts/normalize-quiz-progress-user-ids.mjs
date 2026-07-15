@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { MongoClient, ObjectId } from 'mongodb';
 import { config } from 'dotenv';
 

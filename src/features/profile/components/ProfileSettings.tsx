@@ -373,9 +373,9 @@ function PasswordSection({
           placeholder={t('newPasswordPlaceholder')}
           autoComplete="new-password"
           icon={<HiOutlineLockClosed className="size-full" />}
-          error={
-            newPassword.length > 0 && newPassword.length < 6 ? t('passwordMinLength') : undefined
-          }
+          {...(newPassword.length > 0 && newPassword.length < 6
+            ? { error: t('passwordMinLength') }
+            : {})}
         />
         <button
           type="button"
@@ -398,11 +398,9 @@ function PasswordSection({
           placeholder={t('confirmNewPasswordPlaceholder')}
           autoComplete="new-password"
           icon={<HiOutlineLockClosed className="size-full" />}
-          error={
-            confirmPassword.length > 0 && confirmPassword !== newPassword
-              ? t('passwordsDoNotMatch')
-              : undefined
-          }
+          {...(confirmPassword.length > 0 && confirmPassword !== newPassword
+            ? { error: t('passwordsDoNotMatch') }
+            : {})}
         />
 
         <div className="flex justify-end pt-2">

@@ -15,9 +15,9 @@ export class ReportPersistenceMapper {
       status: record.status,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
-      resolvedAt: record.resolvedAt,
-      resolvedBy: record.resolvedBy,
-      adminNotes: record.adminNotes,
+      ...(record.resolvedAt === undefined ? {} : { resolvedAt: record.resolvedAt }),
+      ...(record.resolvedBy === undefined ? {} : { resolvedBy: record.resolvedBy }),
+      ...(record.adminNotes === undefined ? {} : { adminNotes: record.adminNotes }),
     };
   }
 }

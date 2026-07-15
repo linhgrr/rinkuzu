@@ -33,45 +33,73 @@ const correctAnswerSchema = z
   .union([z.string(), z.array(z.string()), z.boolean(), z.record(z.string(), z.string()), z.null()])
   .optional();
 
-const exerciseSchema = z.strictObject({
-  id: z.string().min(1),
-  exercise_id: z.string().min(1),
-  concept_name: z.string(),
-  concept_idx: z.number().int().min(0),
-  bloom_level: z.number().int().min(1).max(6),
-  bloom_label: bloomLabelSchema,
-  exercise_type: exerciseTypeSchema,
-  question: z.string(),
-  sentence: z.string().nullable().optional(),
-  options: z.record(z.string(), z.string()),
-  statement: z.string().nullable().optional(),
-  hint: z.string().nullable().optional(),
-  items: z.array(z.string()),
-  pairs: z.array(z.strictObject({ left: z.string(), right: z.string() })),
-  right_items: z.array(z.string()),
-  rubric: z.array(z.string()).optional(),
-  correct_answer: correctAnswerSchema,
-  step: z.number().int().min(0),
-  max_steps: z.number().int().min(1),
-  theory: z
-    .strictObject({
-      content: z.string(),
-      examples: z.array(z.string()),
-    })
-    .nullable()
-    .optional(),
-  recommendation_reason: z
-    .strictObject({
-      concept_name: z.string(),
-      bloom_level: z.number().int().min(1).max(6),
-      bloom_label: bloomLabelSchema,
-      satisfied_prereqs: z.array(z.strictObject({ name: z.string(), mastery: z.number() })),
-      current_mastery: z.number(),
-      next_milestone: z.number(),
-    })
-    .nullable()
-    .optional(),
-});
+const exerciseSchema: z.ZodType<Exercise> = z
+  .strictObject({
+    id: z.string().min(1),
+    exercise_id: z.string().min(1),
+    concept_name: z.string(),
+    concept_idx: z.number().int().min(0),
+    bloom_level: z.number().int().min(1).max(6),
+    bloom_label: bloomLabelSchema,
+    exercise_type: exerciseTypeSchema,
+    question: z.string(),
+    sentence: z.string().nullable().optional(),
+    options: z.record(z.string(), z.string()),
+    statement: z.string().nullable().optional(),
+    hint: z.string().nullable().optional(),
+    items: z.array(z.string()),
+    pairs: z.array(z.strictObject({ left: z.string(), right: z.string() })),
+    right_items: z.array(z.string()),
+    rubric: z.array(z.string()).optional(),
+    correct_answer: correctAnswerSchema,
+    step: z.number().int().min(0),
+    max_steps: z.number().int().min(1),
+    theory: z
+      .strictObject({
+        content: z.string(),
+        examples: z.array(z.string()),
+      })
+      .nullable()
+      .optional(),
+    recommendation_reason: z
+      .strictObject({
+        concept_name: z.string(),
+        bloom_level: z.number().int().min(1).max(6),
+        bloom_label: bloomLabelSchema,
+        satisfied_prereqs: z.array(z.strictObject({ name: z.string(), mastery: z.number() })),
+        current_mastery: z.number(),
+        next_milestone: z.number(),
+      })
+      .nullable()
+      .optional(),
+  })
+  .transform(
+    (exercise): Exercise => ({
+      id: exercise.id,
+      exercise_id: exercise.exercise_id,
+      concept_name: exercise.concept_name,
+      concept_idx: exercise.concept_idx,
+      bloom_level: exercise.bloom_level,
+      bloom_label: exercise.bloom_label,
+      exercise_type: exercise.exercise_type,
+      question: exercise.question,
+      options: exercise.options,
+      items: exercise.items,
+      pairs: exercise.pairs,
+      right_items: exercise.right_items,
+      step: exercise.step,
+      max_steps: exercise.max_steps,
+      ...(exercise.sentence !== undefined ? { sentence: exercise.sentence } : {}),
+      ...(exercise.statement !== undefined ? { statement: exercise.statement } : {}),
+      ...(exercise.hint !== undefined ? { hint: exercise.hint } : {}),
+      ...(exercise.rubric !== undefined ? { rubric: exercise.rubric } : {}),
+      ...(exercise.correct_answer !== undefined ? { correct_answer: exercise.correct_answer } : {}),
+      ...(exercise.theory !== undefined ? { theory: exercise.theory } : {}),
+      ...(exercise.recommendation_reason !== undefined
+        ? { recommendation_reason: exercise.recommendation_reason }
+        : {}),
+    }),
+  );
 
 const submitResultSchema = z.strictObject({
   is_correct: z.boolean(),

@@ -3,7 +3,6 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { defaultLocale, locales } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
-import { logger } from '@/lib/logger';
 import { serializeDate } from '@/lib/date-serialization';
 
 // Extended sitemap entry type that includes hreflang alternates.
@@ -63,25 +62,21 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
 
   const quizService = serviceFactory.getQuizService();
 
-  try {
-    const quizResult = await quizService.getQuizzes({
-      isPrivate: false,
-      page: 1,
-      limit: 5000,
-      compact: true,
-      onlyMine: false,
-    });
+  const quizResult = await quizService.getQuizzes({
+    isPrivate: false,
+    page: 1,
+    limit: 5000,
+    compact: true,
+    onlyMine: false,
+  });
 
-    for (const quiz of quizResult.quizzes) {
-      const path = `/quiz/${quiz.slug}`;
-      const quizUpdatedAt = quiz.updatedAt ?? quiz.createdAt;
+  for (const quiz of quizResult.quizzes) {
+    const path = `/quiz/${quiz.slug}`;
+    const quizUpdatedAt = quiz.updatedAt ?? quiz.createdAt;
 
-      for (const { locale } of localeVariants(path)) {
-        pushEntry(toEntry(locale, path, toRequiredSitemapDate(quizUpdatedAt, 'quiz.updatedAt')));
-      }
+    for (const { locale } of localeVariants(path)) {
+      pushEntry(toEntry(locale, path, toRequiredSitemapDate(quizUpdatedAt, 'quiz.updatedAt')));
     }
-  } catch (error) {
-    logger.error({ error }, 'sitemap quiz generation failed');
   }
 
   // Ensure default locale root is first for consistency.

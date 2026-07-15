@@ -77,5 +77,8 @@ const UserProgressSchema = new Schema<IUserProgress>(
   },
 );
 
-export default mongoose.models['UserProgress'] ||
+const UserProgress =
+  (mongoose.models['UserProgress'] as mongoose.Model<IUserProgress> | undefined) ??
   mongoose.model<IUserProgress>('UserProgress', UserProgressSchema);
+
+export default UserProgress;

@@ -71,8 +71,12 @@ export function AIExplainPanel({
         <QuestionOptionsPreview
           questionText={questionContent.questionText}
           options={questionContent.options}
-          questionImage={questionContent.questionImage}
-          optionImages={questionContent.optionImages}
+          {...(questionContent.questionImage !== undefined
+            ? { questionImage: questionContent.questionImage }
+            : {})}
+          {...(questionContent.optionImages !== undefined
+            ? { optionImages: questionContent.optionImages }
+            : {})}
         />
       }
       messages={messages}

@@ -36,7 +36,11 @@ async function checkExpiredSubscriptions() {
     throw new Error('MONGODB_URI is required');
   }
 
-  await mongoose.connect(mongoUrl, { bufferCommands: false });
+  await mongoose.connect(mongoUrl, {
+    autoCreate: false,
+    autoIndex: false,
+    bufferCommands: false,
+  });
 
   const now = new Date();
   const expiredSubscriptionFilter = {

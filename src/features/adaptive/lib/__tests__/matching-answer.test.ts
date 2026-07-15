@@ -34,6 +34,18 @@ describe('matching-answer', () => {
     );
   });
 
+  it('throws when left items are duplicated', () => {
+    expect(() =>
+      buildInitialMatchingAnswer({
+        pairs: [
+          { left: 'A', right: '1' },
+          { left: 'A', right: '2' },
+        ],
+        right_items: [],
+      }),
+    ).toThrow('Matching exercise contains duplicate left item: A');
+  });
+
   it('uses the current answer draft order for interaction rendering', () => {
     expect(
       getMatchingInteractionItems(matchingExercise, {

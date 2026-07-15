@@ -1,19 +1,25 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
-
-const require = createRequire(import.meta.url);
-const runtimeCaching = require('../config/pwa-runtime-caching.cjs') as Array<{
-  urlPattern: RegExp | ((context: { url: URL; sameOrigin: boolean }) => boolean);
-  handler: string;
-}>;
+import type { RuntimeCaching } from 'serwist';
+import { runtimeCaching } from '@/service-worker/runtime-caching';
 
 function matches(value: string) {
   const url = new URL(value);
-  return runtimeCaching.some(({ urlPattern }) =>
-    urlPattern instanceof RegExp
-      ? urlPattern.test(value)
-      : urlPattern({ url, sameOrigin: url.origin === 'https://rinkuzu.test' }),
-  );
+  const request = new Request(url);
+  const event = new Event('fetch') as ExtendableEvent;
+
+  return runtimeCaching.some(({ matcher }) => {
+    if (matcher instanceof RegExp) return matcher.test(value);
+    if (typeof matcher === 'string') return matcher === value;
+
+    return Boolean(
+      matcher({
+        url,
+        request,
+        event,
+        sameOrigin: url.origin === 'https://rinkuzu.test',
+      }),
+    );
+  });
 }
 
 describe('PWA runtime caching', () => {
@@ -38,6 +44,10 @@ describe('PWA runtime caching', () => {
   });
 
   it('does not use network-response caching for runtime routes', () => {
-    expect(runtimeCaching.map((entry) => entry.handler)).not.toContain('NetworkFirst');
+    const handlerNames = runtimeCaching.map(({ handler }: RuntimeCaching) =>
+      typeof handler === 'function' ? 'function' : handler.constructor.name,
+    );
+
+    expect(handlerNames).not.toContain('NetworkFirst');
   });
 });

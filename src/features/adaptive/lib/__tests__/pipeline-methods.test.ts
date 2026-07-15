@@ -295,7 +295,9 @@ describe('pipeline lifecycle methods', () => {
       ),
     );
 
-    await expect(getExercise('session-1')).resolves.toEqual(
+    const exercise = await getExercise('session-1');
+
+    expect(exercise).toEqual(
       expect.objectContaining({
         id: 'ex-1',
         exercise_type: 'mcq',
@@ -305,6 +307,9 @@ describe('pipeline lifecycle methods', () => {
         right_items: [],
       }),
     );
+    expect(exercise).not.toHaveProperty('theory');
+    expect(exercise).not.toHaveProperty('recommendation_reason');
+    expect(exercise).not.toHaveProperty('statement');
   });
 
   it('getExercise rejects an option-based exercise without options', async () => {

@@ -66,5 +66,9 @@ describe('admin quizzes mapper', () => {
 
     expect(result.visibilityLabelKey).toBe('public');
     expect(result.questions).toHaveLength(1);
+    expect(result).not.toHaveProperty('description');
+    expect(result).not.toHaveProperty('folder');
+    expect(result).not.toHaveProperty('pdfUrl');
+    expect(result.questions[0]).not.toHaveProperty('questionImage');
   });
 });

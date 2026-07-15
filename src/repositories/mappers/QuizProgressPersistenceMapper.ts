@@ -18,8 +18,8 @@ export class QuizProgressPersistenceMapper {
     const quiz = isPopulatedQuiz(record.quiz)
       ? {
           id: serializeId(record.quiz._id, 'quizProgress.quiz._id'),
-          title: record.quiz.title,
-          slug: record.quiz.slug,
+          ...(record.quiz.title !== undefined && { title: record.quiz.title }),
+          ...(record.quiz.slug !== undefined && { slug: record.quiz.slug }),
         }
       : serializeId(record.quiz, 'quizProgress.quiz');
 

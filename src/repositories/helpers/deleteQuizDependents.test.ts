@@ -59,7 +59,7 @@ describe('deleteQuizDependents', () => {
     const firstId = new Types.ObjectId();
     const secondId = new Types.ObjectId();
     const quizIds = [firstId, secondId];
-    const quizSlugs = ['first-quiz', 'second-quiz'];
+    const quizSlugs: [string, string] = ['first-quiz', 'second-quiz'];
 
     await deleteQuizDependents(
       [

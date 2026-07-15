@@ -1,26 +1,28 @@
-name: Frontend CI
+name: Production CI
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [master]
   pull_request:
+  merge_group:
+  workflow_dispatch:
+  schedule:
+    - cron: '19 3 * * 1'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
-  MONGODB_URI: mongodb://localhost:27017/test
+  CI: 'true'
+  MONGODB_URI: mongodb://127.0.0.1:27017/rinkuzu_ci
   NEXTAUTH_SECRET: test-nextauth-secret-at-least-32-characters
-  NEXTAUTH_URL: http://localhost:3000
-  NEXT_PUBLIC_SITE_URL: http://localhost:3000
-  NEXT_PUBLIC_API_URL: http://localhost:8000
+  NEXTAUTH_URL: http://127.0.0.1:3000
+  NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+  NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
   SESSION_MAX_AGE_SECONDS: '28800'
   SESSION_UPDATE_AGE_SECONDS: '3600'
   AUTH_LOCKOUT_MAX_ATTEMPTS: '5'
@@ -39,127 +41,612 @@ env:
   PAYOS_CLIENT_ID: test-payos-client-id
   PAYOS_API_KEY: test-payos-api-key
   PAYOS_CHECKSUM_KEY: test-payos-checksum-key
-  NEXT_IMAGE_UNOPTIMIZED: 'true'
+  NEXT_IMAGE_UNOPTIMIZED: 'false'
 
 jobs:
-  quality:
-    runs-on: ubuntu-latest
-    services:
-      mongodb:
-        image: mongo:7
-        ports:
-          - 27017:27017
-    defaults:
-      run:
-        working-directory: .
+  actionlint:
+    name: Workflow syntax
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
+      - name: Lint workflows
+        uses: devops-actions/actionlint@467e2ce19b2310e93c9ffa0b50fe31f86b5a7f23
 
-      - name: Pin npm version
-        run: npm i -g npm@10.9.8
-
-      - name: Show toolchain versions
-        run: |
-          node -v
-          npm -v
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Adaptive contract check
-        run: |
-          if [ -d ../rinkuzu-ai-api ]; then
-            npm run check:adaptive-contract
-          else
-            echo "Skipping adaptive contract check: sibling backend repo not present in this checkout."
-          fi
-
-      - name: Format check
-        run: npm run format:check
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests (coverage gate)
-        run: npm run test:unit
-
-      - name: Integration tests
-        run: npm run test:integration
-
-      - name: Build
-        run: npm run build
-
-      - name: Install Playwright browsers
-        run: npm run test:e2e:install
-
-      - name: E2E smoke tests
-        run: npm run test:e2e
-        env:
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
-
-  react-doctor:
-    needs: quality
-    runs-on: ubuntu-latest
+  policy:
+    name: Fail-closed policy
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
+          node-version-file: .nvmrc
+          cache: npm
 
-      - name: Pin npm version
-        run: npm i -g npm@10.9.8
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
 
-      - name: Install dependencies
+      - name: Install exact dependency graph
         run: npm ci
 
-      - name: React Doctor
-        run: npm run check:react-doctor
+      - name: Verify toolchain
+        run: npm run check:toolchain
 
-  perf-advisory:
-    needs: quality
-    continue-on-error: true
-    runs-on: ubuntu-latest
-    services:
-      mongodb:
-        image: mongo:7
-        ports:
-          - 27017:27017
+      - name: Verify CI security policy
+        run: npm run check:ci-security
+
+      - name: Verify live repository governance
+        run: npm run check:governance -- --live
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify vendored adaptive contract
+        run: npm run check:adaptive-contract
+
+      - name: Verify test integrity
+        run: npm run check:test-integrity
+
+      - name: Verify database DDL boundary
+        run: npm run check:database-ddl
+
+      - name: Verify runtime dependency cycles
+        run: npm run check:runtime-cycles
+
+      - name: Verify required E2E inventory
+        run: npm run check:required-e2e-flows
+
+  static-analysis:
+    name: Static analysis
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
+          node-version-file: .nvmrc
+          cache: npm
 
-      - name: Pin npm version
-        run: npm i -g npm@10.9.8
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
 
-      - name: Install dependencies
+      - name: Install exact dependency graph
         run: npm ci
 
-      - name: Perf advisory
-        run: npm run perf:fe
+      - name: Check formatting
+        run: npm run format:check
 
-      - name: Upload perf artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Lint application and architecture
+        if: ${{ !cancelled() }}
+        run: npm run lint
+
+      - name: Typecheck application
+        if: ${{ !cancelled() }}
+        run: npm run typecheck
+
+      - name: Typecheck declaration compatibility
+        if: ${{ !cancelled() }}
+        run: npm run typecheck:declarations
+
+      - name: Typecheck operational scripts
+        if: ${{ !cancelled() }}
+        run: npm run typecheck:scripts
+
+      - name: Enforce duplicate-code regression gate
+        if: ${{ !cancelled() }}
+        run: npm run check:duplication
+
+      - name: Upload duplicate-code evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: perf-fe
-          path: perf/fe-*.json
-          if-no-files-found: warn
+          name: duplication-${{ github.sha }}
+          path: reports/jscpd
+          if-no-files-found: error
+          retention-days: 7
+
+  unit-coverage:
+    name: Unit and coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Run unit tests with instrumentation
+        run: npm run test:unit
+
+      - name: Enforce global, critical, and changed-line coverage
+        if: ${{ !cancelled() }}
+        run: npm run check:coverage
+        env:
+          COVERAGE_BASE_REF: origin/master
+
+      - name: Upload immutable coverage evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+
+  mutation:
+    name: Critical mutation
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Resolve fail-closed mutation scope
+        id: mutation-scope
+        env:
+          MUTATION_MODE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'changed' }}
+          MUTATION_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || 'HEAD^' }}
+        run: node scripts/resolve-mutation-scope.mjs
+
+      - name: Validate mutation harness when no critical source changed
+        if: ${{ steps.mutation-scope.outputs.mode == 'changed' && steps.mutation-scope.outputs.count == '0' }}
+        run: npm run test:mutation -- --dryRunOnly
+
+      - name: Mutate changed critical source
+        if: ${{ steps.mutation-scope.outputs.mode == 'changed' && steps.mutation-scope.outputs.count != '0' }}
+        run: npm run test:mutation -- --mutate "${{ steps.mutation-scope.outputs.files }}"
+
+      - name: Mutate full critical scope
+        if: ${{ steps.mutation-scope.outputs.mode == 'full' }}
+        run: npm run test:mutation
+
+      - name: Verify fresh mutation evidence
+        if: ${{ !cancelled() && (steps.mutation-scope.outputs.mode == 'full' || steps.mutation-scope.outputs.count != '0') }}
+        env:
+          MUTATION_GATE_MODE: ${{ steps.mutation-scope.outputs.mode }}
+          MUTATION_SCOPE_PATH: reports/mutation/scope.json
+        run: npm run check:mutation-report
+
+      - name: Upload mutation evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mutation-${{ github.sha }}
+          path: reports/mutation
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+
+  architecture:
+    name: React architecture
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Run React Doctor
+        run: npm run check:react-doctor
+
+      - name: Detect production dead code
+        if: ${{ !cancelled() }}
+        run: npm run check:dead-code
+
+  integration:
+    name: Integration and index contract
+    runs-on: ubuntu-24.04
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/rinkuzu_ci?replicaSet=rs0&directConnection=true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Start pinned MongoDB replica set
+        run: bash scripts/ci-mongodb.sh start
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Generate fresh index plan
+        run: npm run --silent migrate:performance-indexes:plan > /tmp/index-plan.json
+        env:
+          DOTENV_CONFIG_QUIET: 'true'
+
+      - name: Create localhost-only CI approval
+        id: index-plan
+        run: |
+          plan_sha="$(node scripts/database/create-ephemeral-index-approval.mjs \
+            /tmp/index-plan.json /tmp/index-approval.json)"
+          printf 'sha=%s\n' "$plan_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Apply and verify the exact approved plan
+        run: >-
+          npm run migrate:performance-indexes:apply --
+          --plan-sha "${{ steps.index-plan.outputs.sha }}"
+          --approval-file /tmp/index-approval.json
+
+      - name: Verify idempotency twice
+        run: |
+          npm run migrate:performance-indexes:verify
+          npm run migrate:performance-indexes:verify
+
+      - name: Verify query shapes with executionStats
+        run: npm run check:database-query-plans
+
+      - name: Stop MongoDB
+        if: ${{ always() }}
+        run: bash scripts/ci-mongodb.sh stop
+
+  build:
+    name: Production build
+    runs-on: ubuntu-24.04
+    outputs:
+      digest: ${{ steps.build-identity.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Start pinned MongoDB replica set
+        run: bash scripts/ci-mongodb.sh start
+
+      - name: Build once
+        run: npm run build
+
+      - name: Compute production build identity
+        id: build-identity
+        run: |
+          digest="$(node --input-type=module -e \
+            "import { computeNextBuildDigest } from './scripts/run-lighthouse.mjs'; process.stdout.write(computeNextBuildDigest())")"
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Upload production build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: next-production-${{ github.sha }}
+          path: .next
+          if-no-files-found: error
+          retention-days: 3
+          include-hidden-files: true
+
+      - name: Stop MongoDB
+        if: ${{ always() }}
+        run: bash scripts/ci-mongodb.sh stop
+
+  e2e:
+    name: Production E2E
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Start pinned MongoDB replica set
+        run: bash scripts/ci-mongodb.sh start
+
+      - name: Download the production build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: next-production-${{ github.sha }}
+          path: .
+
+      - name: Verify build identity
+        run: |
+          actual="$(node --input-type=module -e \
+            "import { computeNextBuildDigest } from './scripts/run-lighthouse.mjs'; process.stdout.write(computeNextBuildDigest())")"
+          test "$actual" = "${{ needs.build.outputs.digest }}"
+
+      - name: Install pinned browser matrix
+        run: ./node_modules/.bin/playwright install --with-deps chromium webkit
+
+      - name: Run production E2E suite
+        run: npm run test:e2e
+
+      - name: Upload E2E evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: e2e-${{ github.sha }}
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+
+      - name: Stop MongoDB
+        if: ${{ always() }}
+        run: bash scripts/ci-mongodb.sh stop
+
+  performance:
+    name: Controlled performance
+    needs: build
+    runs-on: ubuntu-24.04
+    env:
+      PERF_MODE: ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group') && 'pr' || 'release' }}
+      PERF_RUNNER_CLASS: controlled
+      PERF_REUSE_BUILD: '1'
+      PERF_EXPECTED_BUILD_DIGEST: ${{ needs.build.outputs.digest }}
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Start pinned MongoDB replica set
+        run: bash scripts/ci-mongodb.sh start
+
+      - name: Resolve immutable performance baseline
+        id: performance-base
+        run: |
+          base_sha="$(git rev-parse "${GITHUB_SHA}^1")"
+          git cat-file -e "${base_sha}^{commit}"
+          printf 'sha=%s\n' "$base_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Build base commit and record route sizes
+        env:
+          PERF_BASE_SHA: ${{ steps.performance-base.outputs.sha }}
+        run: |
+          base_dir="${RUNNER_TEMP}/rinkuzu-performance-base"
+          git worktree add --detach "$base_dir" "$PERF_BASE_SHA"
+          npm ci --prefix "$base_dir"
+          npm run build --prefix "$base_dir"
+          npm run perf:size-baseline -- \
+            --root-dir "$base_dir" \
+            --config "$GITHUB_WORKSPACE/.size-limit.json" \
+            --output "$GITHUB_WORKSPACE/.performance-baseline/route-sizes.json" \
+            --commit-sha "$PERF_BASE_SHA"
+
+      - name: Download the production build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: next-production-${{ github.sha }}
+          path: .
+
+      - name: Verify build identity
+        run: |
+          actual="$(node --input-type=module -e \
+            "import { computeNextBuildDigest } from './scripts/run-lighthouse.mjs'; process.stdout.write(computeNextBuildDigest())")"
+          test "$actual" = "${{ needs.build.outputs.digest }}"
+
+      - name: Install pinned Chromium
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run median performance gate
+        run: npm run perf:fe
+        env:
+          PERF_BASE_SHA: ${{ steps.performance-base.outputs.sha }}
+          PERF_BASELINE_SIZE_REPORT: .performance-baseline/route-sizes.json
+
+      - name: Upload performance evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: performance-${{ github.sha }}
+          path: |
+            perf
+            .performance-baseline/route-sizes.json
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+
+      - name: Stop MongoDB
+        if: ${{ always() }}
+        run: bash scripts/ci-mongodb.sh stop
+
+  dependency-review:
+    name: Dependency policy
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+
+      - name: Review pull-request dependency changes
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
+        with:
+          config-file: ./.github/dependency-review-config.yml
+
+      - name: Record non-PR applicability
+        if: ${{ github.event_name != 'pull_request' }}
+        run: echo 'Dependency delta review is not applicable outside pull_request events.'
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.8
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Enforce scoped vulnerability policy
+        run: npm run check:security-audit
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository history
+        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: 'false'
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9
+        with:
+          category: /language:${{ matrix.language }}
+
+  production-gate:
+    name: Production Gate
+    if: ${{ always() }}
+    needs:
+      - actionlint
+      - policy
+      - static-analysis
+      - unit-coverage
+      - mutation
+      - architecture
+      - integration
+      - build
+      - e2e
+      - performance
+      - dependency-review
+      - audit
+      - secret-scan
+      - codeql
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every production signal
+        env:
+          REQUIRED_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node - <<'NODE'
+          const results = JSON.parse(process.env.REQUIRED_RESULTS);
+          const failures = Object.entries(results)
+            .filter(([, value]) => value.result !== 'success')
+            .map(([name, value]) => `${name}=${value.result}`);
+          if (Object.keys(results).length !== 14) {
+            failures.push(`expected 14 required jobs, received ${Object.keys(results).length}`);
+          }
+          if (failures.length > 0) {
+            throw new Error(`Production Gate failed closed: ${failures.join(', ')}`);
+          }
+          process.stdout.write('Production Gate passed with 14/14 required jobs.\n');
+          NODE

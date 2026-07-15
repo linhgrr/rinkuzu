@@ -28,5 +28,5 @@ export default async function DraftEditRoutePage({ params }: Props) {
       })
     : undefined;
 
-  return <DraftEditPage initialDraft={draft} pdfUrl={pdfUrl} />;
+  return <DraftEditPage initialDraft={draft} {...(pdfUrl !== undefined ? { pdfUrl } : {})} />;
 }

@@ -14,7 +14,8 @@ export function getUserDisplayName(user: UserIdentity): string {
   if (trimmedName) return trimmedName;
 
   if (user.email) {
-    return user.email.split('@')[0];
+    const emailLocalPart = user.email.split('@')[0]?.trim();
+    if (emailLocalPart) return emailLocalPart;
   }
 
   return 'User';

@@ -21,6 +21,7 @@ describe('critical mutation scope', () => {
     'src/features/quiz/components/QuizCard.tsx',
     'src/features/quiz/hooks/useQuizProgress.test.tsx',
     'src/models/User.test.ts',
+    'src/repositories/types/AuthAccountPersistence.ts',
     'messages/en/adaptiveLearning.json',
     'src/services/other/OtherService.ts',
     'src/services/quiz/$(unsafe).ts',

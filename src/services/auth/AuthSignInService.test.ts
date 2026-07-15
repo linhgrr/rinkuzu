@@ -193,7 +193,9 @@ describe('AuthSignInService', () => {
   });
 
   it('checks verification before success telemetry or password rehash', async () => {
-    repository.findLoginAccount.mockResolvedValue({ ...account, emailVerified: undefined });
+    const { emailVerified: _emailVerified, ...accountWithoutVerification } = account;
+    void _emailVerified;
+    repository.findLoginAccount.mockResolvedValue(accountWithoutVerification);
 
     await expect(
       service.authenticateCredentials({ email: account.email, password: 'correct' }, context),

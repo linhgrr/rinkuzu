@@ -5,7 +5,7 @@ import Google from 'next-auth/providers/google';
 import authConfig from '@/auth.config';
 import { extractRequestContext } from '@/lib/audit';
 import { getAuthSignInRepository, getAuthSignInService } from '@/lib/auth-sign-in-factory';
-import { applySessionUser } from '@/lib/auth/session-projection';
+import { applySessionUser, clearSessionUser } from '@/lib/auth/session-projection';
 import { env } from '@/lib/env';
 import { AuthAuditAdapter } from '@/lib/integrations/auth-audit';
 import { NextDeferredTaskScheduler } from '@/lib/integrations/next-deferred-task-scheduler';
@@ -156,26 +156,27 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (!token.sub) return { ...session, user: undefined };
+      if (!token.sub) return clearSessionUser(session);
 
       try {
         const dbUser = await getAuthSignInRepository().findSessionUser(token.sub);
         return applySessionUser(session, token, dbUser);
       } catch (error) {
         logger.error({ error }, 'session-callback failed');
-        return { ...session, user: undefined };
+        return clearSessionUser(session);
       }
     },
   },
   events: {
     async signOut(message) {
       const token = 'token' in message ? message.token : undefined;
-      if (!token?.sub) return;
+      const userId = token?.sub;
+      if (!userId) return;
 
       logoutScheduler.schedule(() =>
         logoutAudit.record({
           event: 'logout',
-          userId: token.sub,
+          userId,
           ...(typeof token.email === 'string' ? { email: token.email } : {}),
           ip: null,
           userAgent: null,

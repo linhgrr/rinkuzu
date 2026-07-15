@@ -18,7 +18,7 @@ interface AuthShellProps {
 
 const EASE = [0.25, 0.1, 0.25, 1] as const;
 
-export function AuthShell({ locale, googleEnabled }: AuthShellProps) {
+export function AuthShell({ locale, googleEnabled = false }: AuthShellProps) {
   const t = useTranslations('auth');
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();

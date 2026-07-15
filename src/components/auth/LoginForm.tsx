@@ -92,7 +92,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         } else if (code === 'invalid_credentials' || code === 'CredentialsSignin') {
           setServerError({ code: 'invalid_credentials', message: t('invalidEmailPassword') });
         } else {
-          setServerError({ code, message: t('loginFailed') });
+          setServerError({ ...(code ? { code } : {}), message: t('loginFailed') });
         }
         return;
       }
@@ -284,7 +284,7 @@ function LoginFormFallback() {
   );
 }
 
-export function LoginForm({ locale, googleEnabled }: LoginFormProps) {
+export function LoginForm({ locale, googleEnabled = false }: LoginFormProps) {
   return (
     <Suspense fallback={<LoginFormFallback />}>
       <LoginFormContent locale={locale} googleEnabled={googleEnabled} />

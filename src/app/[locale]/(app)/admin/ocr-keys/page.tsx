@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useReducer } from 'react';
+import { FormEvent, useEffect, useEffectEvent, useReducer } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   HiOutlineCheckCircle,
@@ -183,9 +183,12 @@ export default function AdminOcrKeysPage() {
     }
   }
 
-  useEffect(() => {
+  const onInitialLoad = useEffectEvent(() => {
     void loadKeys();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+
+  useEffect(() => {
+    onInitialLoad();
   }, []);
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {

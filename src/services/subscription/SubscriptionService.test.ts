@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
+import crypto from 'crypto';
 
 import { SubscriptionService } from './SubscriptionService';
 import type { BillingPlan } from '@/entities/AdminBilling';
-import type { SubscriptionRecord } from '@/entities/Subscription';
+import {
+  SubscriptionActivationConflictError,
+  type SubscriptionRecord,
+} from '@/entities/Subscription';
 import type { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISubscriptionPlanRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -258,13 +262,25 @@ describe('SubscriptionService billing hardening', () => {
 
     const result = await service.createPaymentRequest('user-1', 'premium');
 
-    expect(result.paymentUrl).toBe('https://pay.payos.vn/web/checkout');
-    expect(result.qrCode).toBe('qr-code');
+    expect(result).toEqual({
+      orderCode: expect.any(Number),
+      paymentUrl: 'https://pay.payos.vn/web/checkout',
+      qrCode: 'qr-code',
+      amount: 99000,
+      plan: {
+        id: 'premium',
+        name: 'Premium plan name that is longer than PayOS allows',
+        price: 99000,
+        duration: 'P1M',
+        features: [],
+      },
+    });
     expect(subscriptionRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         userEmail: 'user@example.com',
         type: 'premium',
         amount: 99000,
+        currency: 'VND',
         status: 'pending',
       }),
     );
@@ -731,7 +747,7 @@ describe('SubscriptionService billing hardening', () => {
     );
   });
 
-  it('returns active plans and handles plan fetch failures', async () => {
+  it('returns active plans and propagates plan fetch failures', async () => {
     const { service, planRepository } = createService({
       planRepository: {
         listActive: vi.fn().mockResolvedValue([billingPlan({ features: ['Feature'] })]),
@@ -749,7 +765,7 @@ describe('SubscriptionService billing hardening', () => {
     ]);
 
     planRepository.listActive.mockRejectedValue(new Error('db down'));
-    await expect(service.getSubscriptionPlans()).resolves.toEqual([]);
+    await expect(service.getSubscriptionPlans()).rejects.toThrow('db down');
   });
 
   it('delegates valid admin status transitions to the transactional repository method', async () => {
@@ -817,7 +833,7 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('fails order-code generation after repeated collisions', async () => {
-    const { service } = createService({
+    const { service, subscriptionRepository } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
           email: 'user@example.com',
@@ -832,6 +848,7 @@ describe('SubscriptionService billing hardening', () => {
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow(
       'Failed to generate unique payment order code',
     );
+    expect(subscriptionRepository.findByOrderId).toHaveBeenCalledTimes(5);
   });
 
   it('marks expired user subscriptions inactive when reading status', async () => {
@@ -979,8 +996,78 @@ describe('SubscriptionService billing hardening', () => {
     expect(result.subscription.endDate).toEqual(settledSnapshot.endDate);
   });
 
-  it('rethrows non-duplicate transaction failures during activation', async () => {
+  it('recovers when the order was settled by a concurrent activation', async () => {
+    const pending = subscriptionFixture({ status: 'pending' });
+    delete pending.startDate;
+    delete pending.endDate;
+    const settled = subscriptionFixture({
+      startDate: new Date('2099-05-01T00:00:00Z'),
+      endDate: new Date('2099-06-01T00:00:00Z'),
+    });
+    const { service, subscriptionRepository } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValueOnce(pending).mockResolvedValueOnce(settled),
+        activateSubscription: vi
+          .fn()
+          .mockRejectedValue(
+            new SubscriptionActivationConflictError('Pending subscription changed'),
+          ),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: pending.amount,
+        reference: 'concurrent-order-ref',
+      }),
+    ).resolves.toEqual({
+      success: true,
+      subscription: {
+        type: settled.type,
+        startDate: settled.startDate,
+        endDate: settled.endDate,
+        isActive: true,
+      },
+    });
+    expect(subscriptionRepository.findByOrderId).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails closed when an activation conflict did not settle the order', async () => {
+    const pending = subscriptionFixture({ status: 'pending' });
+    delete pending.startDate;
+    delete pending.endDate;
+    const conflict = new SubscriptionActivationConflictError('Subscription user changed');
     const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(pending),
+        activateSubscription: vi.fn().mockRejectedValue(conflict),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: pending.amount,
+        reference: 'unsettled-ref',
+      }),
+    ).rejects.toBe(conflict);
+  });
+
+  it('omits a missing optional end date from completed activation DTOs', async () => {
+    const completed = subscriptionFixture();
+    delete completed.endDate;
+    const { service } = createService({
+      subscriptionRepository: { findByOrderId: vi.fn().mockResolvedValue(completed) },
+    });
+
+    const result = await service.verifyAndActivateSubscription(123, completed.userId);
+
+    expect(result.subscription).not.toHaveProperty('endDate');
+  });
+
+  it('rethrows non-duplicate transaction failures during activation', async () => {
+    const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
@@ -1002,5 +1089,341 @@ describe('SubscriptionService billing hardening', () => {
         code: '00',
       }),
     ).rejects.toThrow('mongo unreachable');
+    expect(subscriptionRepository.findByOrderId).toHaveBeenCalledOnce();
+  });
+
+  it('fails closed when verification or webhook activation cannot find the order', async () => {
+    const { service, payosService, subscriptionRepository } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(null),
+      },
+    });
+
+    await expect(service.verifyAndActivateSubscription(123, 'user-1')).rejects.toThrow(
+      'Subscription not found',
+    );
+    await expect(
+      service.activateVerifiedSubscription(123, { orderCode: 123, amount: 99000 }),
+    ).rejects.toThrow('Subscription not found');
+
+    expect(subscriptionRepository.findByOrderId).toHaveBeenCalledTimes(2);
+    expect(payosService.verifyPayment).not.toHaveBeenCalled();
+  });
+
+  it('uses the stable verification error when PayOS omits its description', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          userId: 'user-1',
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+      payosService: {
+        verifyPayment: vi.fn().mockResolvedValue({ code: '99', desc: '' }),
+      },
+    });
+
+    await expect(service.verifyAndActivateSubscription(123, 'user-1')).rejects.toThrow(
+      'Failed to verify payment',
+    );
+  });
+
+  it('treats the exact completed-subscription expiry instant as expired', async () => {
+    const expiry = new Date('2026-08-01T00:00:00.000Z');
+    vi.useFakeTimers();
+    vi.setSystemTime(expiry);
+
+    try {
+      const { service } = createService({
+        subscriptionRepository: {
+          findByOrderId: vi.fn().mockResolvedValue({
+            userId: 'user-1',
+            type: 'premium',
+            status: 'completed',
+            startDate: new Date('2026-07-01T00:00:00.000Z'),
+            endDate: expiry,
+            isActive: true,
+          }),
+        },
+      });
+
+      await expect(service.verifyAndActivateSubscription(123, 'user-1')).rejects.toThrow(
+        'Subscription already expired',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('activates verification with the latest PayOS transaction reference', async () => {
+    const transaction = payosPaymentLinkData().transactions[0];
+    if (!transaction) throw new Error('PayOS transaction fixture is missing');
+    const { service, subscriptionRepository } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          userId: 'user-1',
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+      payosService: {
+        verifyPayment: vi.fn().mockResolvedValue({
+          code: '00',
+          desc: 'success',
+          data: payosPaymentLinkData({
+            transactions: [
+              { ...transaction, reference: 'older-reference' },
+              { ...transaction, reference: 'latest-reference' },
+            ],
+          }),
+        }),
+      },
+    });
+
+    await expect(service.verifyAndActivateSubscription(123, 'user-1')).resolves.toMatchObject({
+      success: true,
+      subscription: { type: 'premium', isActive: true },
+    });
+    expect(subscriptionRepository.findByTransactionReference).toHaveBeenCalledWith(
+      'latest-reference',
+    );
+    expect(subscriptionRepository.activateSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionReference: 'latest-reference' }),
+    );
+  });
+
+  it('reports a missing checkout URL without leaking a TypeError when data is absent', async () => {
+    const { service, subscriptionRepository } = createService({
+      userRepository: {
+        findById: vi.fn().mockResolvedValue({
+          email: 'user@example.com',
+          subscription: { isActive: false },
+        }),
+      },
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(null),
+      },
+      payosService: {
+        createPayment: vi.fn().mockResolvedValue({ code: '00', desc: 'success', data: undefined }),
+      },
+    });
+
+    await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow(
+      'Payment URL not received from PayOS',
+    );
+    expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledOnce();
+  });
+
+  it('preserves the original payment error when pending-record cleanup also fails', async () => {
+    const paymentError = new Error('PayOS transport failed');
+    const { service, subscriptionRepository } = createService({
+      userRepository: {
+        findById: vi.fn().mockResolvedValue({
+          email: 'user@example.com',
+          subscription: { isActive: false },
+        }),
+      },
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(null),
+        deletePendingByOrderId: vi.fn().mockRejectedValue(new Error('cleanup failed')),
+      },
+      payosService: {
+        createPayment: vi.fn().mockRejectedValue(paymentError),
+      },
+    });
+
+    await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toBe(paymentError);
+    expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledOnce();
+  });
+
+  it('allows an expired embedded premium subscription but rejects a future active one', async () => {
+    const successfulPayment = {
+      code: '00',
+      desc: 'success',
+      data: {
+        checkoutUrl: 'https://pay.payos.vn/web/checkout',
+        qrCode: 'qr-code',
+      },
+    };
+    const expired = createService({
+      userRepository: {
+        findById: vi.fn().mockResolvedValue({
+          email: 'user@example.com',
+          subscription: {
+            type: 'premium',
+            isActive: true,
+            endDate: new Date('2000-01-01T00:00:00.000Z'),
+          },
+        }),
+      },
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(null),
+      },
+      payosService: {
+        createPayment: vi.fn().mockResolvedValue(successfulPayment),
+      },
+    });
+    const active = createService({
+      userRepository: {
+        findById: vi.fn().mockResolvedValue({
+          email: 'user@example.com',
+          subscription: {
+            type: 'premium',
+            isActive: true,
+            endDate: new Date('2099-01-01T00:00:00.000Z'),
+          },
+        }),
+      },
+    });
+
+    await expect(expired.service.createPaymentRequest('user-1', 'premium')).resolves.toMatchObject({
+      paymentUrl: 'https://pay.payos.vn/web/checkout',
+    });
+    await expect(active.service.createPaymentRequest('user-1', 'premium')).rejects.toThrow(
+      'User already has an active subscription',
+    );
+    expect(expired.subscriptionRepository.create).toHaveBeenCalledOnce();
+    expect(active.subscriptionRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('uses the collision-resistant order-code formula in the persisted payment request', async () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    const randomSpy = vi.spyOn(crypto, 'randomInt');
+
+    try {
+      const { service, subscriptionRepository } = createService({
+        userRepository: {
+          findById: vi.fn().mockResolvedValue({
+            email: 'user@example.com',
+            subscription: { isActive: false },
+          }),
+        },
+        subscriptionRepository: {
+          findByOrderId: vi.fn().mockResolvedValue(null),
+        },
+        payosService: {
+          createPayment: vi.fn().mockResolvedValue({
+            code: '00',
+            desc: 'success',
+            data: { checkoutUrl: 'https://pay.payos.vn/web/checkout' },
+          }),
+        },
+      });
+
+      const result = await service.createPaymentRequest('user-1', 'premium');
+      const randomSuffix = randomSpy.mock.results[0]?.value;
+      if (typeof randomSuffix !== 'number') {
+        throw new TypeError('crypto.randomInt did not return a numeric order-code suffix');
+      }
+      const expectedOrderCode = 1_700_000_000_000 * 1000 + randomSuffix;
+
+      expect(result).toMatchObject({ orderCode: expectedOrderCode });
+      expect(randomSpy).toHaveBeenCalledWith(0, 1000);
+      expect(subscriptionRepository.findByOrderId).toHaveBeenCalledWith(
+        expectedOrderCode.toString(),
+      );
+      expect(subscriptionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ payosOrderId: expectedOrderCode.toString() }),
+      );
+    } finally {
+      nowSpy.mockRestore();
+      randomSpy.mockRestore();
+    }
+  });
+
+  it('maps subscription history records without dropping persisted fields', async () => {
+    const record = subscriptionFixture({
+      payosTransactionId: 'transaction-1',
+      payosPaymentUrl: 'https://pay.payos.vn/web/checkout',
+    });
+    const { service, subscriptionRepository } = createService({
+      subscriptionRepository: {
+        findByUser: vi.fn().mockResolvedValue([record]),
+      },
+    });
+
+    await expect(service.getSubscriptionHistory('user-1')).resolves.toEqual([
+      {
+        id: record.id,
+        type: record.type,
+        amount: record.amount,
+        currency: record.currency,
+        status: record.status,
+        payosOrderId: record.payosOrderId,
+        payosTransactionId: record.payosTransactionId,
+        startDate: record.startDate?.toISOString(),
+        endDate: record.endDate?.toISOString(),
+        isActive: record.isActive,
+        createdAt: record.createdAt.toISOString(),
+        updatedAt: record.updatedAt.toISOString(),
+      },
+    ]);
+    expect(subscriptionRepository.findByUser).toHaveBeenCalledWith('user-1');
+  });
+
+  it('returns stable admin errors for thrown Error and non-Error failures', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        updateAdminStatusById: vi
+          .fn()
+          .mockRejectedValueOnce(new Error('database unavailable'))
+          .mockRejectedValueOnce('connection aborted'),
+      },
+    });
+
+    await expect(service.updateSubscriptionById('sub-1', { status: 'cancelled' })).resolves.toEqual(
+      {
+        success: false,
+        error: 'database unavailable',
+        statusCode: 500,
+      },
+    );
+    await expect(service.updateSubscriptionById('sub-1', { status: 'cancelled' })).resolves.toEqual(
+      {
+        success: false,
+        error: 'Failed to update subscription',
+        statusCode: 500,
+      },
+    );
+  });
+
+  it('fails closed when an expired embedded subscription cannot be persisted consistently', async () => {
+    const missingOrder = createService({
+      userRepository: {
+        findSubscriptionById: vi.fn().mockResolvedValue({
+          type: 'premium',
+          isActive: true,
+          endDate: new Date('2000-01-01T00:00:00.000Z'),
+        }),
+      },
+    });
+    const missingRecord = createService({
+      userRepository: {
+        findSubscriptionById: vi.fn().mockResolvedValue({
+          type: 'premium',
+          isActive: true,
+          endDate: new Date('2000-01-01T00:00:00.000Z'),
+          payosOrderId: 'order-1',
+        }),
+      },
+      subscriptionRepository: {
+        expireCurrentForUser: vi.fn().mockResolvedValue(false),
+      },
+    });
+
+    await expect(missingOrder.service.getSubscriptionStatus('user-1')).rejects.toThrow(
+      'Expired subscription is missing payosOrderId',
+    );
+    await expect(missingRecord.service.getSubscriptionStatus('user-1')).rejects.toThrow(
+      'Current subscription record is inconsistent',
+    );
+    expect(missingOrder.subscriptionRepository.expireCurrentForUser).not.toHaveBeenCalled();
+    expect(missingRecord.subscriptionRepository.expireCurrentForUser).toHaveBeenCalledWith(
+      'user-1',
+      'order-1',
+    );
   });
 });

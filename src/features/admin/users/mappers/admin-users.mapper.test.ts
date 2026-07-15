@@ -42,5 +42,8 @@ describe('toAdminUserListViewModel', () => {
       total: 35,
       totalPages: 4,
     });
+    expect(result.users[0]).not.toHaveProperty('displayName');
+    expect(result.users[0]?.subscription).not.toHaveProperty('endDate');
+    expect(result.users[0]?.subscription).not.toHaveProperty('endDateLabel');
   });
 });

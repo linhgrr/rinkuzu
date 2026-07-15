@@ -45,7 +45,7 @@ export class AdminService implements IAdminService {
       const result = await this.userRepository.findAll({
         page,
         limit,
-        search,
+        ...(search !== undefined && { search }),
       });
 
       return {
@@ -151,10 +151,11 @@ export class AdminService implements IAdminService {
     searchParams: AdminReportListQueryDto,
   ): Promise<ServiceResult<AdminReportListDto>> {
     try {
+      const status = searchParams.status === 'all' ? undefined : searchParams.status;
       const result = await this.reportRepository.findAll({
         page: searchParams.page,
         limit: searchParams.limit,
-        status: searchParams.status === 'all' ? undefined : searchParams.status,
+        ...(status !== undefined && { status }),
       });
 
       return {
@@ -188,9 +189,9 @@ export class AdminService implements IAdminService {
 
       const updated = await this.reportRepository.update(reportId, {
         status: input.status,
-        adminNotes: input.adminNotes,
-        resolvedAt: input.status === 'pending' ? undefined : new Date(),
-        resolvedBy: input.status === 'pending' ? undefined : adminEmail,
+        resolution:
+          input.status === 'pending' ? null : { resolvedAt: new Date(), resolvedBy: adminEmail },
+        ...(input.adminNotes !== undefined && { adminNotes: input.adminNotes }),
       });
 
       if (!updated) {

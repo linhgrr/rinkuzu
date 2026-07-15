@@ -22,27 +22,29 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
 
     const onlyMine = !isGuest && query.data.mine;
     const isAdmin = session?.user?.role === 'admin';
+    const folder =
+      onlyMine && query.data.folder !== undefined
+        ? query.data.folder === UNFILED_FOLDER_TARGET
+          ? null
+          : query.data.folder
+        : undefined;
+    const isPrivate =
+      isGuest || (!onlyMine && !isAdmin)
+        ? false
+        : query.data.visibility === 'private'
+          ? true
+          : query.data.visibility === 'public'
+            ? false
+            : undefined;
 
     const result = await quizService.getQuizzes({
-      search: query.data.search,
-      folder:
-        onlyMine && query.data.folder !== undefined
-          ? query.data.folder === UNFILED_FOLDER_TARGET
-            ? null
-            : query.data.folder
-          : undefined,
+      ...(query.data.search !== undefined ? { search: query.data.search } : {}),
+      ...(folder !== undefined ? { folder } : {}),
       page: query.data.page,
       limit: query.data.limit,
-      isPrivate:
-        isGuest || (!onlyMine && !isAdmin)
-          ? false
-          : query.data.visibility === 'private'
-            ? true
-            : query.data.visibility === 'public'
-              ? false
-              : undefined,
-      userRole: session?.user?.role,
-      userId: userId ?? undefined,
+      ...(isPrivate !== undefined ? { isPrivate } : {}),
+      ...(session?.user?.role !== undefined ? { userRole: session.user.role } : {}),
+      ...(typeof userId === 'string' ? { userId } : {}),
       onlyMine,
       compact: query.data.compact,
     });

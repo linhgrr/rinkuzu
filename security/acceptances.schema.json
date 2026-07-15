@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rinkuzu security acceptance registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "acceptances"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "acceptances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "fingerprint",
+          "package",
+          "severity",
+          "scope",
+          "owner",
+          "reason",
+          "tool",
+          "toolVersion",
+          "createdAt"
+        ],
+        "properties": {
+          "kind": { "enum": ["risk_acceptance", "false_positive"] },
+          "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "package": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["low", "moderate", "high"] },
+          "scope": { "enum": ["runtime", "development"] },
+          "owner": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 20 },
+          "tool": { "const": "npm-audit" },
+          "toolVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+          "createdAt": { "type": "string", "format": "date" },
+          "expiresAt": { "type": "string", "format": "date" },
+          "reviewedAt": { "type": "string", "format": "date" },
+          "evidence": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

@@ -389,8 +389,12 @@ function FlashcardDeckView({
               key={`${currentIndex}-${currentQuestion.id}`}
               question={currentQuestion.question}
               options={currentQuestion.options}
-              correctIndex={currentQuestion.correctIndex}
-              correctIndexes={currentQuestion.correctIndexes}
+              {...(currentQuestion.correctIndex !== undefined
+                ? { correctIndex: currentQuestion.correctIndex }
+                : {})}
+              {...(currentQuestion.correctIndexes !== undefined
+                ? { correctIndexes: currentQuestion.correctIndexes }
+                : {})}
               type={currentQuestion.type}
               onSwipe={onSwipe}
               isLast={currentIndex === totalQuestions - 1}

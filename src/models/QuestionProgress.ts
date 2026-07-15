@@ -16,7 +16,7 @@ interface IQuestionProgress extends Document {
   // SRS Data
   srsLevel: number; // 0-5
   nextReviewDate: Date;
-  lastReviewDate: Date;
+  lastReviewDate: Date | null;
   interval: number; // Days until next review
   easeFactor: number; // Multiplier for interval (default 2.5)
 
@@ -84,5 +84,8 @@ QuestionProgressSchema.index({ userId: 1, nextReviewDate: 1 });
 // Index for learned question count refresh after review submissions
 QuestionProgressSchema.index({ userId: 1, srsLevel: 1 });
 
-export default mongoose.models['QuestionProgress'] ||
+const QuestionProgress =
+  (mongoose.models['QuestionProgress'] as mongoose.Model<IQuestionProgress> | undefined) ??
   mongoose.model<IQuestionProgress>('QuestionProgress', QuestionProgressSchema);
+
+export default QuestionProgress;

@@ -197,10 +197,16 @@ function formatAnswerValue(
   }
 
   if (type === 'single') {
-    return options[answer as number];
+    return typeof answer === 'number' ? (options[answer] ?? notAnsweredLabel) : notAnsweredLabel;
   }
 
-  return (answer as number[]).map((index) => options[index]).join(', ');
+  if (!Array.isArray(answer)) {
+    return notAnsweredLabel;
+  }
+  const selectedOptions = answer.map((index) => options[index]);
+  return selectedOptions.every((option): option is string => option !== undefined)
+    ? selectedOptions.join(', ')
+    : notAnsweredLabel;
 }
 
 function QuizResultErrorState({
@@ -489,9 +495,9 @@ function useQuizResultPageChat(
     cancelActiveStream,
     sendMessage,
     totalTurns,
-  } = useStreamingChatSession({
-    persistence: attemptId ? { scope: 'attempt', id: attemptId } : undefined,
-  });
+  } = useStreamingChatSession(
+    attemptId ? { persistence: { scope: 'attempt', id: attemptId } } : {},
+  );
 
   const openAIModal = (questionData: AIQuestionData, questionIndex: number) => {
     setUserQuestion('');
@@ -517,8 +523,12 @@ function useQuizResultPageChat(
       payload: {
         question: state.aiQuestionData.question,
         options: state.aiQuestionData.options,
-        questionImage: state.aiQuestionData.questionImage,
-        optionImages: state.aiQuestionData.optionImages,
+        ...(state.aiQuestionData.questionImage !== undefined
+          ? { questionImage: state.aiQuestionData.questionImage }
+          : {}),
+        ...(state.aiQuestionData.optionImages !== undefined
+          ? { optionImages: state.aiQuestionData.optionImages }
+          : {}),
       },
       emptyQuestionErrorMessage: 'Please enter a question to ask Rin-chan!',
       requestErrorMessage: 'Failed to connect to AI service. Please try again.',
@@ -666,8 +676,12 @@ function QuizResultReadyState({
             ? {
                 questionText: aiQuestionData.question,
                 options: aiQuestionData.options ?? [],
-                questionImage: aiQuestionData.questionImage,
-                optionImages: aiQuestionData.optionImages,
+                ...(aiQuestionData.questionImage !== undefined
+                  ? { questionImage: aiQuestionData.questionImage }
+                  : {}),
+                ...(aiQuestionData.optionImages !== undefined
+                  ? { optionImages: aiQuestionData.optionImages }
+                  : {}),
               }
             : null
         }

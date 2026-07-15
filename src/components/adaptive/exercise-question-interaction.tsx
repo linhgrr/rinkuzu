@@ -201,7 +201,7 @@ function MatchingInteraction({
                 key={entry.id}
                 value={entry}
                 data-matching-card="true"
-                style={sharedCardStyle}
+                {...(sharedCardStyle !== undefined ? { style: sharedCardStyle } : {})}
                 className="group flex cursor-grab items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm transition-colors hover:border-brand-trust/50 active:cursor-grabbing"
               >
                 <HiOutlineDotsVertical className="size-4 shrink-0 text-neutral-300" />

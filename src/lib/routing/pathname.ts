@@ -31,7 +31,7 @@ export function stripLocaleFromPath(pathname: string): string {
   const segments = normalized.split('/');
   const firstSegment = segments[1];
 
-  if (locales.includes(firstSegment as (typeof locales)[number])) {
+  if (firstSegment !== undefined && locales.includes(firstSegment as (typeof locales)[number])) {
     const restPath = `/${segments.slice(2).join('/')}`;
     return normalizePath(restPath === '/' ? '/' : restPath);
   }
@@ -83,7 +83,7 @@ export function getLocaleFromPath(pathname: string): LocalePathInfo {
   const segments = normalized.split('/');
   const firstSegment = segments[1];
 
-  if (locales.includes(firstSegment as (typeof locales)[number])) {
+  if (firstSegment !== undefined && locales.includes(firstSegment as (typeof locales)[number])) {
     const restPath = `/${segments.slice(2).join('/')}`;
     return {
       locale: firstSegment,

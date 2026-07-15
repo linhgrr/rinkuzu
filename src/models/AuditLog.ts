@@ -41,6 +41,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
 AuditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 180 * 24 * 60 * 60 });
 
 const AuditLog =
-  mongoose.models['AuditLog'] || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+  (mongoose.models['AuditLog'] as mongoose.Model<IAuditLog> | undefined) ??
+  mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
 
 export default AuditLog;

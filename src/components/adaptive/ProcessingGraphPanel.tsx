@@ -143,7 +143,7 @@ export default function ProcessingGraphPanel({
 }) {
   return (
     <ReactFlowProvider>
-      <PartialGraphFlow partialGraph={partialGraph} />
+      <PartialGraphFlow {...(partialGraph !== undefined ? { partialGraph } : {})} />
     </ReactFlowProvider>
   );
 }

@@ -55,7 +55,10 @@ describe('QuizDiscussionDtoMapper', () => {
     const dto = QuizDiscussionDtoMapper.toDto(discussion);
 
     expect(dto).not.toHaveProperty('_id');
-    expect(dto.comments[0]).not.toHaveProperty('_id');
-    expect(dto.comments[0].author).not.toHaveProperty('_id');
+    expect(dto.comments).toHaveLength(1);
+    const comment = dto.comments[0];
+    if (!comment) throw new Error('Expected one mapped discussion comment');
+    expect(comment).not.toHaveProperty('_id');
+    expect(comment.author).not.toHaveProperty('_id');
   });
 });

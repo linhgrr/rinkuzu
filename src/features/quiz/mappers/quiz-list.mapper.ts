@@ -8,7 +8,7 @@ export function toQuizListItemViewModel(quiz: QuizListItemDto): QuizListItemView
   return {
     id: quiz.id,
     title: quiz.title,
-    description: quiz.description,
+    ...(quiz.description !== undefined && { description: quiz.description }),
     slug: quiz.slug,
     author: quiz.author,
     folderId: quiz.folder,

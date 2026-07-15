@@ -14,7 +14,7 @@ interface ProvidersProps {
 export default function Providers({ children, session }: ProvidersProps) {
   return (
     <SessionProvider
-      session={session}
+      {...(session !== undefined ? { session } : {})}
       refetchInterval={0}
       refetchOnWindowFocus={false}
       refetchWhenOffline={false}

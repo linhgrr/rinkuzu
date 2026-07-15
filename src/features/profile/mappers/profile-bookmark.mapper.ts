@@ -11,22 +11,34 @@ export function toProfileBookmarkViewModel(bookmark: BookmarkDto): ProfileBookma
     quiz: {
       slug: bookmark.quiz.slug,
       title: bookmark.quiz.title,
-      description: bookmark.quiz.description,
+      ...(bookmark.quiz.description !== undefined && {
+        description: bookmark.quiz.description,
+      }),
     },
     question: {
       text: bookmark.question.text,
       options: bookmark.question.options,
       type: bookmark.question.type,
-      correctIndex: bookmark.question.correctIndex,
-      correctIndexes: bookmark.question.correctIndexes,
-      questionImage: bookmark.question.questionImage,
-      optionImages: bookmark.question.optionImages,
+      ...(bookmark.question.correctIndex !== undefined && {
+        correctIndex: bookmark.question.correctIndex,
+      }),
+      ...(bookmark.question.correctIndexes !== undefined && {
+        correctIndexes: bookmark.question.correctIndexes,
+      }),
+      ...(bookmark.question.questionImage !== undefined && {
+        questionImage: bookmark.question.questionImage,
+      }),
+      ...(bookmark.question.optionImages !== undefined && {
+        optionImages: bookmark.question.optionImages,
+      }),
     },
     questionIndex: bookmark.questionIndex,
     createdAt: bookmark.createdAt,
     createdAtLabel: formatDate(bookmark.createdAt),
-    updatedAt: bookmark.updatedAt,
-    updatedAtLabel: bookmark.updatedAt ? formatDate(bookmark.updatedAt) : undefined,
+    ...(bookmark.updatedAt !== undefined && {
+      updatedAt: bookmark.updatedAt,
+      updatedAtLabel: formatDate(bookmark.updatedAt),
+    }),
   };
 }
 

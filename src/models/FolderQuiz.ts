@@ -20,5 +20,8 @@ const FolderQuizSchema = new Schema<IFolderQuizDocument>(
 FolderQuizSchema.index({ owner: 1, quiz: 1 }, { unique: true });
 FolderQuizSchema.index({ owner: 1, folder: 1 });
 
-export default mongoose.models['FolderQuiz'] ||
+const FolderQuiz =
+  (mongoose.models['FolderQuiz'] as mongoose.Model<IFolderQuizDocument> | undefined) ??
   mongoose.model<IFolderQuizDocument>('FolderQuiz', FolderQuizSchema);
+
+export default FolderQuiz;

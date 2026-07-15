@@ -4,18 +4,21 @@ import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
 export class QuizDiscussionDtoMapper {
   static toCommentDto(comment: DiscussionComment): DiscussionCommentDto {
+    const name = comment.author.displayName ?? comment.author.name;
+    const updatedAt = serializeOptionalDate(comment.updatedAt, 'discussionComment.updatedAt');
+
     return {
       id: String(comment.id),
       author: {
         id: comment.author.id,
         email: comment.author.email,
-        name: comment.author.displayName ?? comment.author.name,
-        avatar: comment.author.avatar,
+        ...(name !== undefined && { name }),
+        ...(comment.author.avatar !== undefined && { avatar: comment.author.avatar }),
       },
       content: comment.content,
       isEdited: comment.isEdited,
       createdAt: serializeDate(comment.createdAt, 'discussionComment.createdAt'),
-      updatedAt: serializeOptionalDate(comment.updatedAt, 'discussionComment.updatedAt'),
+      ...(updatedAt !== undefined && { updatedAt }),
     };
   }
 

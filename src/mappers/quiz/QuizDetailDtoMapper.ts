@@ -18,10 +18,10 @@ function toAuthorDto(author: Quiz['author']): QuizListAuthorDto | null {
 
   return {
     id: author.id,
-    email: author.email,
-    name: author.name,
-    displayName: author.displayName,
-    avatar: author.avatar,
+    ...(author.email !== undefined && { email: author.email }),
+    ...(author.name !== undefined && { name: author.name }),
+    ...(author.displayName !== undefined && { displayName: author.displayName }),
+    ...(author.avatar !== undefined && { avatar: author.avatar }),
   };
 }
 
@@ -30,8 +30,8 @@ function toQuestionDto(question: QuizQuestion): QuizQuestionDto {
     id: question.id,
     question: question.question,
     options: question.options,
-    questionImage: question.questionImage,
-    optionImages: question.optionImages,
+    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
+    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
   };
 
   return question.type === 'single'
@@ -45,8 +45,8 @@ function toPlayableQuestionDto(question: QuizQuestion): PlayableQuizQuestionDto 
     question: question.question,
     options: question.options,
     type: question.type,
-    questionImage: question.questionImage,
-    optionImages: question.optionImages,
+    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
+    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
   };
 }
 
@@ -54,14 +54,14 @@ function toDetailBase(quiz: Quiz) {
   return {
     id: quiz.id,
     title: quiz.title,
-    description: quiz.description,
+    ...(quiz.description !== undefined && { description: quiz.description }),
     slug: quiz.slug,
     author: toAuthorDto(quiz.author),
     folder: quiz.folder ?? null,
     isPrivate: quiz.isPrivate,
     questionCount: quiz.questionCount ?? quiz.questions.length,
-    pdfUrl: quiz.pdfUrl,
-    tags: quiz.tags,
+    ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
+    ...(quiz.tags !== undefined && { tags: quiz.tags }),
     createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),
     updatedAt: serializeDate(quiz.updatedAt, 'quiz.updatedAt'),
   };

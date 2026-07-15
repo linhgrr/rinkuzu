@@ -20,6 +20,9 @@ export const PUT = withAuth(async (request: NextRequest, { email }) => {
   if (!input.success) {
     return apiErr('validation_error', input.error, 400, { fields: input.fields });
   }
-  const result = await accountService.updateProfile(email, input.data);
+  const result = await accountService.updateProfile(email, {
+    ...(input.data.displayName !== undefined ? { displayName: input.data.displayName } : {}),
+    ...(input.data.bio !== undefined ? { bio: input.data.bio } : {}),
+  });
   return result.success ? apiOk(result.data) : apiServiceErr(result);
 });

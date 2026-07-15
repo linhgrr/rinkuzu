@@ -16,7 +16,7 @@ async function requestQuizAI(payload: QuizTutorRequest, signal?: AbortSignal): P
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-    signal,
+    ...(signal !== undefined ? { signal } : {}),
   });
 }
 
@@ -33,7 +33,7 @@ export async function streamQuizAI(
     options.signal,
   );
   return consumeOpenAISseResponse(response, {
-    onContent: options.onContent,
+    ...(options.onContent !== undefined ? { onContent: options.onContent } : {}),
     extractErrorMessage: extractQuizAiErrorMessage,
   });
 }

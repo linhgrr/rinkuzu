@@ -18,7 +18,11 @@ export class BookmarkService implements IBookmarkService {
     userId: string,
     options: BookmarkListQueryDto,
   ): Promise<BookmarkListDto> {
-    const result = await this.bookmarkRepository.findByUserId(userId, options);
+    const result = await this.bookmarkRepository.findByUserId(userId, {
+      page: options.page,
+      limit: options.limit,
+      ...(options.quizSlug !== undefined && { quizSlug: options.quizSlug }),
+    });
     return {
       bookmarks: result.items.map(BookmarkDtoMapper.toDto),
       pagination: result.pagination,
@@ -35,8 +39,24 @@ export class BookmarkService implements IBookmarkService {
       const bookmark = await this.bookmarkRepository.create({
         userId: owner.userId,
         userEmail: owner.userEmail,
-        quiz,
-        question,
+        quiz: {
+          slug: quiz.slug,
+          title: quiz.title,
+          ...(quiz.description !== undefined && { description: quiz.description }),
+        },
+        question: {
+          text: question.text,
+          options: question.options,
+          type: question.type,
+          ...(question.correctIndex !== undefined && { correctIndex: question.correctIndex }),
+          ...(question.correctIndexes !== undefined && {
+            correctIndexes: question.correctIndexes,
+          }),
+          ...(question.questionImage !== undefined && {
+            questionImage: question.questionImage,
+          }),
+          ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
+        },
         questionIndex,
       });
       return BookmarkDtoMapper.toDto(bookmark);

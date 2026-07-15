@@ -38,4 +38,18 @@ describe('toProfileSettingsViewModel', () => {
       },
     });
   });
+
+  it('omits absent optional profile and subscription fields', () => {
+    const result = toProfileSettingsViewModel({
+      email: 'learner@example.com',
+      role: 'user',
+      createdAt: '2026-07-02T00:00:00.000Z',
+      subscription: { type: 'lifetime', isActive: true },
+    });
+
+    expect(result).not.toHaveProperty('displayName');
+    expect(result).not.toHaveProperty('bio');
+    expect(result).not.toHaveProperty('avatar');
+    expect(result.subscription).toEqual({ type: 'lifetime', isActive: true });
+  });
 });

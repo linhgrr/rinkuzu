@@ -97,9 +97,13 @@ export function QuizPreviewModal({
           <CardContent>
             <QuestionOptionsPreview
               key={currentQuestionKey}
-              questionImage={currentQuestion.questionImage}
+              {...(currentQuestion.questionImage !== undefined
+                ? { questionImage: currentQuestion.questionImage }
+                : {})}
               options={currentQuestion.options}
-              optionImages={currentQuestion.optionImages}
+              {...(currentQuestion.optionImages !== undefined
+                ? { optionImages: currentQuestion.optionImages }
+                : {})}
               correctIndexes={correctIndexes}
               correctLabel={t('correct')}
               showOptionImages

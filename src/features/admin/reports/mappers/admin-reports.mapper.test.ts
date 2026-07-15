@@ -25,5 +25,8 @@ describe('toAdminReportViewModel', () => {
     expect(result.createdAtLabel).not.toBe('—');
     expect(result.updatedAtLabel).not.toBe('—');
     expect(result.resolvedAtLabel).toBeUndefined();
+    expect(result).not.toHaveProperty('resolvedAt');
+    expect(result).not.toHaveProperty('resolvedBy');
+    expect(result).not.toHaveProperty('adminNotes');
   });
 });

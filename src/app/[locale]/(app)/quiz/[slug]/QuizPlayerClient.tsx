@@ -71,10 +71,10 @@ type QuizPlayerQuiz = Omit<QuizPlayViewModel, 'questions'> & {
 function toAuthorIdentity(author: QuizPlayAuthorViewModel): UserIdentity {
   return {
     id: author.id,
-    email: author.email,
-    name: author.name,
-    displayName: author.displayName,
-    avatar: author.avatar,
+    ...(author.email !== undefined ? { email: author.email } : {}),
+    ...(author.name !== undefined ? { name: author.name } : {}),
+    ...(author.displayName !== undefined ? { displayName: author.displayName } : {}),
+    ...(author.avatar !== undefined ? { avatar: author.avatar } : {}),
   };
 }
 
@@ -83,7 +83,13 @@ function shuffleArray<T>(array: T[]): T[] {
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
-    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+    const currentValue = shuffled[index];
+    const swapValue = shuffled[swapIndex];
+    if (currentValue === undefined || swapValue === undefined) {
+      throw new Error('Cannot shuffle an array containing missing entries');
+    }
+    shuffled[index] = swapValue;
+    shuffled[swapIndex] = currentValue;
   }
 
   return shuffled;
@@ -137,7 +143,7 @@ function createQuizPlayerData(rawQuiz: QuizPlayViewModel, log: (...args: unknown
     return {
       ...question,
       options: shuffledOptions,
-      optionImages,
+      ...(optionImages !== undefined ? { optionImages } : {}),
       optionIndexMap,
       originalQuestionIndex: item.originalIndex,
     };
@@ -189,7 +195,11 @@ function rebuildPlayerQuizFromLayout(
 ): QuizPlayerQuiz | null {
   if (
     questionOrder.length !== rawQuiz.questions.length ||
-    optionOrders.length !== rawQuiz.questions.length
+    optionOrders.length !== rawQuiz.questions.length ||
+    new Set(questionOrder).size !== questionOrder.length ||
+    !questionOrder.every(
+      (index) => Number.isInteger(index) && index >= 0 && index < rawQuiz.questions.length,
+    )
   ) {
     return null;
   }
@@ -202,10 +212,13 @@ function rebuildPlayerQuizFromLayout(
     const sourceQuestion =
       originalIndex !== undefined ? rawQuiz.questions[originalIndex] : undefined;
 
-    if (!sourceQuestion || !Array.isArray(optionIndexMap)) {
+    if (typeof originalIndex !== 'number' || !sourceQuestion || !Array.isArray(optionIndexMap)) {
       return null;
     }
-    if (optionIndexMap.length !== sourceQuestion.options.length) {
+    if (
+      optionIndexMap.length !== sourceQuestion.options.length ||
+      new Set(optionIndexMap).size !== optionIndexMap.length
+    ) {
       return null;
     }
 
@@ -229,9 +242,9 @@ function rebuildPlayerQuizFromLayout(
     questions.push({
       ...sourceQuestion,
       options,
-      optionImages,
+      ...(optionImages !== undefined ? { optionImages } : {}),
       optionIndexMap,
-      originalQuestionIndex: originalIndex as number,
+      originalQuestionIndex: originalIndex,
     });
   }
 
@@ -268,6 +281,9 @@ function mapAnswersToOriginalOrder(
 
   const convertedAnswers = answers.map((answer, index) => {
     const question = quiz.questions[index];
+    if (!question) {
+      throw new Error(`Quiz answer at index ${index} has no matching question`);
+    }
     const optionIndexMap = question.optionIndexMap;
 
     if (!Array.isArray(optionIndexMap) || optionIndexMap.length !== question.options.length) {
@@ -281,7 +297,14 @@ function mapAnswersToOriginalOrder(
       if (answer !== -1 && (answer < 0 || answer >= optionIndexMap.length)) {
         throw new Error(`Invalid answer for question ${index + 1}`);
       }
-      return answer === -1 ? -1 : optionIndexMap[answer];
+      if (answer === -1) {
+        return -1;
+      }
+      const originalOptionIndex = optionIndexMap[answer];
+      if (originalOptionIndex === undefined) {
+        throw new Error(`Option mapping is missing for question ${index + 1}`);
+      }
+      return originalOptionIndex;
     }
 
     if (!Array.isArray(answer)) {
@@ -298,7 +321,13 @@ function mapAnswersToOriginalOrder(
       }
     });
 
-    return answer.map((answerIndex) => optionIndexMap[answerIndex]);
+    return answer.map((answerIndex) => {
+      const originalOptionIndex = optionIndexMap[answerIndex];
+      if (originalOptionIndex === undefined) {
+        throw new Error(`Option mapping is missing for question ${index + 1}`);
+      }
+      return originalOptionIndex;
+    });
   });
 
   if (quiz.questionIndexMap.length !== convertedAnswers.length) {
@@ -306,11 +335,19 @@ function mapAnswersToOriginalOrder(
   }
 
   const originalOrderAnswers: QuizAnswer[] = new Array(convertedAnswers.length);
+  const assignedOriginalIndexes = new Set<number>();
   convertedAnswers.forEach((answer, shuffledIndex) => {
     const originalIndex = quiz.questionIndexMap[shuffledIndex];
-    if (originalIndex < 0 || originalIndex >= convertedAnswers.length) {
+    if (
+      originalIndex === undefined ||
+      !Number.isInteger(originalIndex) ||
+      originalIndex < 0 ||
+      originalIndex >= convertedAnswers.length ||
+      assignedOriginalIndexes.has(originalIndex)
+    ) {
       throw new Error(`Invalid question mapping for question ${shuffledIndex + 1}`);
     }
+    assignedOriginalIndexes.add(originalIndex);
     originalOrderAnswers[originalIndex] = answer;
   });
 
@@ -448,6 +485,9 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
       }
 
       const question = state.quiz.questions[state.currentQuestionIndex];
+      if (!question) {
+        return state;
+      }
       const nextAnswers = [...state.userAnswers];
 
       if (question.type === 'single') {
@@ -583,7 +623,10 @@ function QuizEmailGate({
           variant="glass"
           className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp"
         >
-          <QuizGateHeader title={quiz.title} subtitle={quiz.description || undefined} />
+          <QuizGateHeader
+            title={quiz.title}
+            {...(quiz.description ? { subtitle: quiz.description } : {})}
+          />
           <CardContent>
             <div className="space-y-6">
               <div className="flex justify-center gap-x-8 py-4 bg-surface-warm/50 rounded-xl">
@@ -787,14 +830,15 @@ export default function QuizPlayerClient({
     return () => {
       isActive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    clearProgress,
     encodedSlug,
     initialErrorCode,
     initialErrorMessage,
     initialQuiz,
     sessionStatus,
     progressEnabled,
+    loadProgress,
   ]);
 
   const startQuiz = () => {
@@ -808,10 +852,7 @@ export default function QuizPlayerClient({
 
   const quiz = state.quiz;
   const currentQuestion = quiz?.questions[state.currentQuestionIndex] || null;
-  const answeredQuestions = quiz
-    ? state.userAnswers.filter((answer, index) => isQuestionAnswered(quiz.questions[index], answer))
-        .length
-    : 0;
+  const answeredQuestions = quiz ? countAnswered(quiz, state.userAnswers) : 0;
   const progress = quiz
     ? Math.round(((state.currentQuestionIndex + 1) / quiz.questions.length) * 100)
     : 0;
@@ -829,7 +870,7 @@ export default function QuizPlayerClient({
     quiz,
     userAnswers: state.userAnswers,
     userEmail: state.userEmail,
-    sessionEmail,
+    ...(sessionEmail !== undefined ? { sessionEmail } : {}),
     onSubmitSuccess: (attemptId, score) => {
       push(`/quiz/${encodedSlug}/result?attemptId=${attemptId}&score=${score}`);
     },
@@ -962,7 +1003,7 @@ export default function QuizPlayerClient({
       <QuizPageSchema
         quizSlug={slug}
         quizTitle={quiz.title}
-        quizDescription={quiz.description}
+        {...(quiz.description !== undefined ? { quizDescription: quiz.description } : {})}
         authorName={authorName}
         questionCount={quiz.questions.length}
       />
@@ -993,7 +1034,7 @@ export default function QuizPlayerClient({
           slug={slug}
           quizTitle={quiz.title}
           questions={quiz.questions}
-          sessionEmail={sessionEmail}
+          {...(sessionEmail !== undefined ? { sessionEmail } : {})}
           userEmail={state.userEmail}
           currentQuestionIndex={state.currentQuestionIndex}
           setCurrentQuestionIndex={(index) =>
@@ -1033,8 +1074,12 @@ export default function QuizPlayerClient({
               askAI({
                 question: currentQuestion.question,
                 options: currentQuestion.options,
-                questionImage: currentQuestion.questionImage,
-                optionImages: currentQuestion.optionImages,
+                ...(currentQuestion.questionImage !== undefined
+                  ? { questionImage: currentQuestion.questionImage }
+                  : {}),
+                ...(currentQuestion.optionImages !== undefined
+                  ? { optionImages: currentQuestion.optionImages }
+                  : {}),
               }),
             loading: loadingAI,
             error: aiError,

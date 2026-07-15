@@ -9,14 +9,6 @@ out/
 build/
 dist/
 
-# PWA files
-**/public/sw.js
-**/public/workbox-*.js
-**/public/worker-*.js
-**/public/sw.js.map
-**/public/workbox-*.js.map
-**/public/worker-*.js.map
-
 # Environment variables
 .env
 .env.local
@@ -65,6 +57,7 @@ web_modules/
 
 # Optional npm cache directory
 .npm
+.npm/
 
 # Optional eslint cache
 .eslintcache
@@ -120,6 +113,20 @@ Thumbs.db
 # Temporary folders
 tmp/
 temp/
+.adaptive-contract-check-*/
+
+# Generated quality evidence. Keep ratchet baselines versioned while ignoring
+# transient measurements produced alongside them.
+/perf/*
+!/perf/fe-budget.json
+!/perf/fe-circular.json
+!/perf/fe-lighthouse.json
+!/perf/fe-size.json
+/.performance-baseline/
+/.lighthouseci/
+/reports/mutation/
+/reports/jscpd/
+/.stryker-tmp/
 
 # Upload directories (uncomment if you want to ignore uploaded files)
 # uploads/

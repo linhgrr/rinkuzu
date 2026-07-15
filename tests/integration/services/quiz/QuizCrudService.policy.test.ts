@@ -76,10 +76,10 @@ describe('QuizCrudService quiz publication policy', () => {
           id: `question-${index + 1}`,
         })),
         isPrivate: quizData.isPrivate,
-        description: quizData.description,
-        folder: quizData.folder,
-        pdfUrl: quizData.pdfUrl,
-        sourceDraftId: quizData.sourceDraftId,
+        ...(quizData.description !== undefined && { description: quizData.description }),
+        ...(quizData.folder !== undefined && { folder: quizData.folder }),
+        ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
+        ...(quizData.sourceDraftId !== undefined && { sourceDraftId: quizData.sourceDraftId }),
         createdAt: new Date('2026-07-01T00:00:00Z'),
         updatedAt: new Date('2026-07-01T00:00:00Z'),
       }),
@@ -104,6 +104,12 @@ describe('QuizCrudService quiz publication policy', () => {
         isPrivate: false,
       }),
     );
+    const createInput = vi.mocked(quizRepository.create).mock.calls[0]?.[0];
+    expect(createInput).not.toHaveProperty('description');
+    expect(createInput).not.toHaveProperty('pdfUrl');
+    expect(createInput).not.toHaveProperty('sourceDraftId');
+    expect(createInput?.questions[0]).not.toHaveProperty('questionImage');
+    expect(createInput?.questions[0]).not.toHaveProperty('optionImages');
   });
 
   it('rejects private quiz creation for a free user', async () => {
@@ -243,6 +249,9 @@ describe('QuizCrudService quiz publication policy', () => {
     expect(result.success).toBe(true);
     expect(quizRepository.findAccessById).toHaveBeenCalledWith('quiz-1');
     expect(quizRepository.findById).not.toHaveBeenCalled();
+    expect(quizRepository.update).toHaveBeenCalledWith('quiz-1', {
+      title: 'Updated title',
+    });
   });
 
   it('uses the access projection before deleting a quiz', async () => {

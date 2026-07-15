@@ -12,6 +12,8 @@ export class AdminReportDtoMapper {
   }
 
   static toDto(report: Report): AdminReportDto {
+    const resolvedAt = serializeOptionalDate(report.resolvedAt, 'report.resolvedAt');
+
     return {
       id: report.id,
       quizId: report.quizId,
@@ -23,9 +25,9 @@ export class AdminReportDtoMapper {
       status: report.status,
       createdAt: serializeDate(report.createdAt, 'report.createdAt'),
       updatedAt: serializeDate(report.updatedAt, 'report.updatedAt'),
-      resolvedAt: serializeOptionalDate(report.resolvedAt, 'report.resolvedAt'),
-      resolvedBy: report.resolvedBy,
-      adminNotes: report.adminNotes,
+      ...(resolvedAt !== undefined && { resolvedAt }),
+      ...(report.resolvedBy !== undefined && { resolvedBy: report.resolvedBy }),
+      ...(report.adminNotes !== undefined && { adminNotes: report.adminNotes }),
     };
   }
 }

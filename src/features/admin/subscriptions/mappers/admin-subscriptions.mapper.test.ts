@@ -15,7 +15,6 @@ describe('toAdminSubscriptionsListViewModel', () => {
           currency: 'VND',
           status: 'pending',
           payosOrderId: 'order-1',
-          startDate: undefined,
           endDate: LIFETIME_END_DATE.toISOString(),
           isActive: false,
           createdAt: '2026-07-02T00:00:00.000Z',
@@ -46,5 +45,8 @@ describe('toAdminSubscriptionsListViewModel', () => {
       total: 1,
       totalPages: 1,
     });
+    expect(result.subscriptions[0]).not.toHaveProperty('startDate');
+    expect(result.subscriptions[0]).not.toHaveProperty('payosTransactionId');
+    expect(result.subscriptions[0]).not.toHaveProperty('payosPaymentUrl');
   });
 });

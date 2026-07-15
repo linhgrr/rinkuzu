@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "incremental": false,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "noImplicitOverride": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "useUnknownInCatchVariables": false
+  },
+  "include": ["next.config.js", "lighthouserc.cjs", "config/**/*.cjs", "scripts/**/*.mjs"],
+  "exclude": ["node_modules", ".next", "coverage", "perf"]
+}

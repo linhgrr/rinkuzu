@@ -29,11 +29,13 @@ export class SubscriptionPersistenceMapper {
       amount: record.amount,
       currency: record.currency,
       payosOrderId: record.payosOrderId,
-      payosTransactionId: record.payosTransactionId,
-      payosPaymentUrl: record.payosPaymentUrl,
       isActive: record.isActive,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      ...(record.payosTransactionId === undefined
+        ? {}
+        : { payosTransactionId: record.payosTransactionId }),
+      ...(record.payosPaymentUrl === undefined ? {} : { payosPaymentUrl: record.payosPaymentUrl }),
     };
 
     if (record.status === 'completed') {
@@ -41,7 +43,7 @@ export class SubscriptionPersistenceMapper {
         ...base,
         status: record.status,
         startDate: requireDate(record.startDate, 'subscription.startDate'),
-        endDate: record.endDate,
+        ...(record.endDate === undefined ? {} : { endDate: record.endDate }),
       };
     }
 
@@ -57,8 +59,8 @@ export class SubscriptionPersistenceMapper {
     return {
       ...base,
       status: record.status,
-      startDate: record.startDate,
-      endDate: record.endDate,
+      ...(record.startDate === undefined ? {} : { startDate: record.startDate }),
+      ...(record.endDate === undefined ? {} : { endDate: record.endDate }),
     };
   }
 }

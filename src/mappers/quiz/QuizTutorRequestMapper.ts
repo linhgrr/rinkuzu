@@ -10,8 +10,12 @@ export class QuizTutorRequestMapper {
       options: input.options,
       userQuestion: input.userQuestion ?? null,
       questionImage: input.questionImage ?? null,
-      optionImages: input.optionImages?.map((image) => image ?? null),
-      chatHistory: input.chatHistory?.map(({ role, content }) => ({ role, content })),
+      ...(input.optionImages !== undefined && {
+        optionImages: input.optionImages.map((image) => image ?? null),
+      }),
+      ...(input.chatHistory !== undefined && {
+        chatHistory: input.chatHistory.map(({ role, content }) => ({ role, content })),
+      }),
       stream: true,
     };
   }

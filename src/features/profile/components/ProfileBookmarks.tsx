@@ -342,8 +342,12 @@ export default function ProfileBookmarks() {
       payload: {
         question: state.currentBookmark.question.text,
         options: state.currentBookmark.question.options,
-        questionImage: state.currentBookmark.question.questionImage,
-        optionImages: state.currentBookmark.question.optionImages,
+        ...(state.currentBookmark.question.questionImage !== undefined
+          ? { questionImage: state.currentBookmark.question.questionImage }
+          : {}),
+        ...(state.currentBookmark.question.optionImages !== undefined
+          ? { optionImages: state.currentBookmark.question.optionImages }
+          : {}),
       },
       emptyQuestionErrorMessage: 'Please enter a question!',
       requestErrorMessage: 'Failed to connect to AI service.',
@@ -411,8 +415,12 @@ export default function ProfileBookmarks() {
             <QuestionOptionsPreview
               questionText={state.currentBookmark.question.text}
               options={state.currentBookmark.question.options}
-              questionImage={state.currentBookmark.question.questionImage}
-              optionImages={state.currentBookmark.question.optionImages}
+              {...(state.currentBookmark.question.questionImage !== undefined
+                ? { questionImage: state.currentBookmark.question.questionImage }
+                : {})}
+              {...(state.currentBookmark.question.optionImages !== undefined
+                ? { optionImages: state.currentBookmark.question.optionImages }
+                : {})}
             />
           }
           messages={getHistory(state.currentBookmark.id)}

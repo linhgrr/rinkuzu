@@ -62,7 +62,7 @@ QuizProgressSchema.index({ userId: 1, quiz: 1 }, { unique: true });
 QuizProgressSchema.index({ userId: 1, updatedAt: -1 });
 
 const QuizProgress =
-  mongoose.models['QuizProgress'] ||
+  (mongoose.models['QuizProgress'] as mongoose.Model<QuizProgressDocument> | undefined) ??
   mongoose.model<QuizProgressDocument>('QuizProgress', QuizProgressSchema);
 
 export default QuizProgress;

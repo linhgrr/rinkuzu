@@ -7,6 +7,7 @@ export function buildMongoOrFilter<T>(filters: Array<MongoFilter<T> | null>): Mo
   if (activeFilters.length === 0) {
     throw new Error('buildMongoOrFilter requires at least one filter');
   }
-  if (activeFilters.length === 1) return activeFilters[0];
+  const firstFilter = activeFilters[0];
+  if (activeFilters.length === 1 && firstFilter !== undefined) return firstFilter;
   return { $or: activeFilters } as MongoFilter<T>;
 }

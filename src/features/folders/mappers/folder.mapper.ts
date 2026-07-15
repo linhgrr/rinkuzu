@@ -28,7 +28,7 @@ export function toFolderLibraryQuizViewModel(quiz: LibraryQuizDto): FolderLibrar
     id: quiz.id,
     title: quiz.title,
     slug: quiz.slug,
-    description: quiz.description,
+    ...(quiz.description !== undefined && { description: quiz.description }),
     author: quiz.author,
     folder: quiz.folder,
     isPrivate: quiz.isPrivate,

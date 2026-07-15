@@ -1,1 +1,13 @@
+# Production controls require an explicit owner review.
 * @linhgrr
+
+/.github/ @linhgrr
+/Dockerfile @linhgrr
+/package.json @linhgrr
+/package-lock.json @linhgrr
+/quality/ @linhgrr
+/scripts/check-coverage-gates.mjs @linhgrr
+/scripts/database/ @linhgrr
+/src/lib/mongoose.ts @linhgrr
+/src/models/ @linhgrr
+/vitest.config.ts @linhgrr

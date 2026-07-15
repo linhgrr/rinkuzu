@@ -1,0 +1,27 @@
+import { describe, expect, it } from 'vitest';
+import { CRITICAL_MUTATION_PATTERNS } from '../../scripts/mutation-scope.mjs';
+import config from '../../stryker.config.mjs';
+
+describe('Stryker production configuration', () => {
+  it('keeps tool metadata and runtime assets out of mutation sandboxes', () => {
+    expect(config.ignorePatterns).toEqual(
+      expect.arrayContaining(['.claude/**', '.gitnexus/**', '.npm/**', 'public/**', 'reports/**']),
+    );
+  });
+
+  it('does not carry stale mutation globs', () => {
+    expect(config.mutate).not.toContain('src/auth.ts');
+    expect(config.mutate).not.toContain('src/auth.config.ts');
+  });
+
+  it('keeps presentational TSX out of the critical logic mutation scope', () => {
+    expect(config.mutate).toEqual([
+      ...CRITICAL_MUTATION_PATTERNS,
+      '!src/**/*.{test,spec}.{ts,tsx}',
+    ]);
+    expect(CRITICAL_MUTATION_PATTERNS).toContain('src/features/{admin,adaptive,quiz}/**/*.ts');
+    expect(CRITICAL_MUTATION_PATTERNS).not.toContain(
+      'src/features/{admin,adaptive,quiz}/**/*.{ts,tsx}',
+    );
+  });
+});

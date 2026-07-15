@@ -20,10 +20,10 @@ function toAuthor(author: QuizPersistenceRecord['author']): string | QuizAuthorP
 
   return {
     id: serializeId(author._id, 'quiz.author._id'),
-    email: author.email,
-    name: author.name,
-    displayName: author.displayName,
-    avatar: author.avatar,
+    ...(author.email === undefined ? {} : { email: author.email }),
+    ...(author.name === undefined ? {} : { name: author.name }),
+    ...(author.displayName === undefined ? {} : { displayName: author.displayName }),
+    ...(author.avatar === undefined ? {} : { avatar: author.avatar }),
   };
 }
 
@@ -32,8 +32,8 @@ function toQuestion(question: QuizQuestionPersistenceRecord, index: number): Qui
     id: serializeId(question._id, `quiz.questions[${index}]._id`),
     question: question.question,
     options: question.options,
-    questionImage: question.questionImage,
-    optionImages: question.optionImages,
+    ...(question.questionImage === undefined ? {} : { questionImage: question.questionImage }),
+    ...(question.optionImages === undefined ? {} : { optionImages: question.optionImages }),
   };
 
   return question.type === 'single'
@@ -50,18 +50,18 @@ export class QuizPersistenceMapper {
     return {
       id: serializeId(record._id, 'quiz._id'),
       title: record.title,
-      description: record.description,
       slug: record.slug,
       author: toAuthor(record.author),
       folder: record.folder == null ? null : serializeId(record.folder, 'quiz.folder'),
       questions: record.questions.map(toQuestion),
       isPrivate: record.isPrivate,
-      pdfUrl: record.pdfUrl,
-      tags: record.tags,
-      sourceDraftId: record.sourceDraftId,
-      questionCount: record.questionCount,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      ...(record.description === undefined ? {} : { description: record.description }),
+      ...(record.pdfUrl === undefined ? {} : { pdfUrl: record.pdfUrl }),
+      ...(record.tags === undefined ? {} : { tags: record.tags }),
+      ...(record.sourceDraftId === undefined ? {} : { sourceDraftId: record.sourceDraftId }),
+      ...(record.questionCount === undefined ? {} : { questionCount: record.questionCount }),
     };
   }
 }

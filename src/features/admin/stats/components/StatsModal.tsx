@@ -186,7 +186,9 @@ function CreatorItem({ creator, index, currentPage, limit, t }: CreatorItemProps
           #{index + 1 + (currentPage - 1) * limit}
         </span>
         <div className="size-8 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center">
-          <span className="text-white text-sm font-medium">{creator.email[0].toUpperCase()}</span>
+          <span className="text-white text-sm font-medium">
+            {creator.email.charAt(0).toUpperCase() || '?'}
+          </span>
         </div>
         <div>
           <h4 className="font-medium text-neutral-900">{creator.email}</h4>

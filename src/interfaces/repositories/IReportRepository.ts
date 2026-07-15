@@ -18,10 +18,14 @@ export interface CreateReportData {
   status: ReportStatus;
 }
 
+export interface ReportResolution {
+  resolvedAt: Date;
+  resolvedBy: string;
+}
+
 export interface UpdateReportData {
   status: ReportStatus;
-  resolvedAt?: Date;
-  resolvedBy?: string;
+  resolution: ReportResolution | null;
   adminNotes?: string;
 }
 

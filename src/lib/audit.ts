@@ -46,7 +46,7 @@ export function extractRequestContext(
   const headers = request.headers;
   const forwarded = headers.get('x-forwarded-for');
   const realIp = headers.get('x-real-ip');
-  const candidateIp = forwarded ? forwarded.split(',')[0] : (realIp ?? '');
+  const candidateIp = forwarded ? (forwarded.split(',')[0] ?? '') : (realIp ?? '');
   const trimmedIp = candidateIp.trim();
   const ip = trimmedIp.length > 0 ? trimmedIp : null;
   const userAgent = headers.get('user-agent') ?? null;

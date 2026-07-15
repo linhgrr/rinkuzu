@@ -90,6 +90,8 @@ export default function Testimonials() {
     emblaApi.on('reInit', recalc);
     recalc();
     return () => {
+      emblaApi.off('scroll', onScroll);
+      emblaApi.off('reInit', recalc);
       cancelAnimationFrame(rafRef.current);
     };
   }, [emblaApi]);
@@ -99,9 +101,9 @@ export default function Testimonials() {
       {/* Header */}
       <div className="flex flex-col gap-6 md:gap-[44px] items-center text-center text-white w-full max-w-[1182px] mx-auto px-4">
         <h2 className="font-unbounded font-extrabold text-3xl sm:text-4xl md:text-[48px] leading-[1.2] md:leading-[1.4]">
-          <span className="text-[#fd761a]">TRUSTED</span>
+          <span className="text-accent">TRUSTED</span>
           <span>{` BY `}</span>
-          <span className="text-[#fd761a]">10.000+</span>
+          <span className="text-accent">10.000+</span>
           <span>{` `}</span>
           <span className="bg-clip-text text-transparent bg-[linear-gradient(177deg,#fff_1.3%,#999_98.7%)]">
             LEARNERS

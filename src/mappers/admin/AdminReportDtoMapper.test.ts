@@ -28,9 +28,9 @@ describe('AdminReportDtoMapper', () => {
       status: 'pending',
       createdAt: '2026-07-01T00:00:00.000Z',
       updatedAt: '2026-07-01T01:00:00.000Z',
-      resolvedAt: undefined,
-      resolvedBy: undefined,
-      adminNotes: undefined,
     });
+    expect(AdminReportDtoMapper.toDto(report)).not.toHaveProperty('resolvedAt');
+    expect(AdminReportDtoMapper.toDto(report)).not.toHaveProperty('resolvedBy');
+    expect(AdminReportDtoMapper.toDto(report)).not.toHaveProperty('adminNotes');
   });
 });

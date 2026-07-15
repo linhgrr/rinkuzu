@@ -122,9 +122,9 @@ export async function buildPasswordChangedMessage(
     subject: 'Your RinKuzu password was changed',
     html,
     text,
-    idempotencyKey: options.idempotencyKey
-      ? truncateIdempotency(options.idempotencyKey)
-      : undefined,
+    ...(options.idempotencyKey
+      ? { idempotencyKey: truncateIdempotency(options.idempotencyKey) }
+      : {}),
   };
 }
 

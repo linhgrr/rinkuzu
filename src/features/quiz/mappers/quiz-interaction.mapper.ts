@@ -37,7 +37,7 @@ export function toQuizDiscussionViewModel(dto: QuizDiscussionDto): QuizDiscussio
       content: comment.content,
       isEdited: comment.isEdited,
       createdAt: comment.createdAt,
-      updatedAt: comment.updatedAt,
+      ...(comment.updatedAt !== undefined && { updatedAt: comment.updatedAt }),
     })),
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,

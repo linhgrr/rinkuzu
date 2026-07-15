@@ -227,7 +227,12 @@ function FlashcardBack({
           <div className="space-y-2">
             <h4 className="font-medium text-neutral-900">{t('allAnswers')}</h4>
             {options.map((option, index) => {
-              const correct = isCorrectOption({ correctIndex, correctIndexes, index, type });
+              const correct = isCorrectOption({
+                ...(correctIndex !== undefined ? { correctIndex } : {}),
+                ...(correctIndexes !== undefined ? { correctIndexes } : {}),
+                index,
+                type,
+              });
 
               return (
                 <div
@@ -295,11 +300,20 @@ export function Flashcard({
   const t = useTranslations('flashcard');
   const [state, dispatch] = useReducer(flashcardReducer, initialFlashcardState);
   const correctAnswerText = formatCorrectAnswerText(
-    { correctIndex, correctIndexes, options, type },
+    {
+      ...(correctIndex !== undefined ? { correctIndex } : {}),
+      ...(correctIndexes !== undefined ? { correctIndexes } : {}),
+      options,
+      type,
+    },
     t('noCorrectAnswer'),
   );
   const correctAnswerLetters = formatCorrectAnswerLetters(
-    { correctIndex, correctIndexes, type },
+    {
+      ...(correctIndex !== undefined ? { correctIndex } : {}),
+      ...(correctIndexes !== undefined ? { correctIndexes } : {}),
+      type,
+    },
     'N/A',
   );
   const animatedCardStyle = getAnimatedCardStyle(state);
@@ -408,10 +422,12 @@ export function Flashcard({
         onMouseLeave={handleDragEnd}
         onTouchStart={(event) => {
           const touch = event.touches[0];
+          if (!touch) return;
           handleDragStart({ x: touch.clientX, y: touch.clientY });
         }}
         onTouchMove={(event) => {
           const touch = event.touches[0];
+          if (!touch) return;
           handleDragMove({ x: touch.clientX, y: touch.clientY });
         }}
         onTouchEnd={handleDragEnd}
@@ -438,8 +454,8 @@ export function Flashcard({
             <FlashcardBack
               correctAnswerLetters={correctAnswerLetters}
               correctAnswerText={correctAnswerText}
-              correctIndex={correctIndex}
-              correctIndexes={correctIndexes}
+              {...(correctIndex !== undefined ? { correctIndex } : {})}
+              {...(correctIndexes !== undefined ? { correctIndexes } : {})}
               options={options}
               t={t}
               type={type}

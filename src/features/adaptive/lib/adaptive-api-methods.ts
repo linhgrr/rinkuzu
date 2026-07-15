@@ -168,7 +168,14 @@ function normalizeExerciseResponse(response: ExerciseApiResponse): Exercise {
     : response.recommendation_reason;
 
   const common = {
-    ...response,
+    exercise_id: response.exercise_id,
+    concept_name: response.concept_name,
+    concept_idx: response.concept_idx,
+    question: response.question,
+    step: response.step,
+    max_steps: response.max_steps,
+    ...(response.theory !== undefined && { theory: response.theory }),
+    ...(recommendationReason !== undefined && { recommendation_reason: recommendationReason }),
     id: response.exercise_id,
     bloom_level: normalizeBloomLevel(response.bloom_level, context),
     bloom_label: normalizeBloomLabel(response.bloom_label, context),
@@ -177,7 +184,6 @@ function normalizeExerciseResponse(response: ExerciseApiResponse): Exercise {
     items: [],
     pairs: [],
     right_items: [],
-    recommendation_reason: recommendationReason,
   };
 
   switch (response.exercise_type) {

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "flows": [
+    {
+      "id": "auth-session-role",
+      "tag": "@critical-auth",
+      "description": "Authentication, session persistence, logout, and role enforcement"
+    },
+    {
+      "id": "quiz-lifecycle",
+      "tag": "@critical-quiz",
+      "description": "Create or select a quiz, answer it, submit it, and observe the result"
+    },
+    {
+      "id": "adaptive-learning",
+      "tag": "@critical-adaptive",
+      "description": "Upload learning material, observe processing, and open the generated result"
+    },
+    {
+      "id": "subscription-payment",
+      "tag": "@critical-subscription",
+      "description": "Start a subscription payment and verify success and cancellation outcomes"
+    },
+    {
+      "id": "admin-access",
+      "tag": "@critical-admin",
+      "description": "Enforce admin access and complete a representative administration action"
+    }
+  ]
+}

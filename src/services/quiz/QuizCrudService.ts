@@ -1,5 +1,5 @@
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import type { Quiz } from '@/entities/Quiz';
+import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
 import { can, resolveEntitlements } from '@/lib/entitlements';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
@@ -19,8 +19,24 @@ import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/li
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
+import type { UpdateQuizData } from '@/interfaces/repositories/IQuizRepository';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
+
+function toQuizQuestionContent(
+  question: CreateQuizRequestDto['questions'][number],
+): QuizQuestionContent {
+  const base = {
+    question: question.question,
+    options: question.options,
+    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
+    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
+  };
+
+  return question.type === 'single'
+    ? { ...base, type: 'single', correctIndex: question.correctIndex }
+    : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
+}
 
 export class QuizCrudService {
   constructor(
@@ -98,14 +114,14 @@ export class QuizCrudService {
       try {
         return await this.quizRepository.create({
           title,
-          description,
+          ...(description !== undefined && { description }),
           slug,
           author: userId,
           folder: folderId ?? null,
-          questions,
+          questions: questions.map(toQuizQuestionContent),
           isPrivate,
-          pdfUrl,
-          sourceDraftId,
+          ...(pdfUrl !== undefined && { pdfUrl }),
+          ...(sourceDraftId !== undefined && { sourceDraftId }),
         });
       } catch (error) {
         if (!isMongoDuplicateKeyErrorForField(error, 'slug')) {
@@ -204,7 +220,17 @@ export class QuizCrudService {
         }
       }
 
-      const updatedQuiz = await this.quizRepository.update(id, quizData);
+      const updateData: UpdateQuizData = {
+        ...(quizData.title !== undefined && { title: quizData.title }),
+        ...(quizData.description !== undefined && { description: quizData.description }),
+        ...(quizData.folder !== undefined && { folder: quizData.folder }),
+        ...(quizData.questions !== undefined && {
+          questions: quizData.questions.map(toQuizQuestionContent),
+        }),
+        ...(quizData.isPrivate !== undefined && { isPrivate: quizData.isPrivate }),
+        ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
+      };
+      const updatedQuiz = await this.quizRepository.update(id, updateData);
 
       if (!updatedQuiz) {
         return {

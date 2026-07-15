@@ -55,4 +55,20 @@ describe('toSubscriptionPageViewModel', () => {
       isPremium: true,
     });
   });
+
+  it('omits absent optional current subscription fields', () => {
+    const result = toSubscriptionPageViewModel(
+      {
+        plans: [],
+        meta: { durationFormat: 'ISO8601', supportedDurations: [] },
+      },
+      { isPremium: false, subscription: {} },
+    );
+
+    expect(result.currentSubscription).toEqual({
+      isLifetime: false,
+      endDateLabel: '-',
+      isActive: false,
+    });
+  });
 });

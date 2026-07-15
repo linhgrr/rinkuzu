@@ -44,7 +44,7 @@ export class UserAttemptDtoMapper {
       quiz: {
         title: quiz.title,
         slug: quiz.slug,
-        description: quiz.description,
+        ...(quiz.description !== undefined && { description: quiz.description }),
       },
     };
   }
@@ -66,7 +66,7 @@ export class UserAttemptDtoMapper {
       quiz: {
         title: quiz.title,
         slug: quiz.slug,
-        description: quiz.description,
+        ...(quiz.description !== undefined && { description: quiz.description }),
         questions: quiz.questions.map((question, index) =>
           UserAttemptDtoMapper.toQuestionDetailDto(question, attempt.answers[index]),
         ),
@@ -81,17 +81,18 @@ export class UserAttemptDtoMapper {
     if (userAnswer === undefined) {
       throw new TypeError(`attempt answer for question ${question.id} is required`);
     }
-    return {
+    const base = {
       id: question.id,
       question: question.question,
       options: question.options,
-      type: question.type,
-      correctIndex: question.correctIndex,
-      correctIndexes: question.correctIndexes,
-      questionImage: question.questionImage,
-      optionImages: question.optionImages,
+      ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
+      ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
       userAnswer,
       isCorrect: isCorrectAnswer(question, userAnswer),
     };
+
+    return question.type === 'single'
+      ? { ...base, type: 'single', correctIndex: question.correctIndex }
+      : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
   }
 }

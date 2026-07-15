@@ -65,7 +65,22 @@ describe('utils', () => {
   });
 
   it('handles unsorted multiple-choice selections correctly', () => {
-    expect(calculateScore([[2, 0]], [{ type: 'multiple', correctIndexes: [0, 2] }])).toBe(100);
+    const answer = [2, 0];
+    const correctIndexes = [0, 2];
+
+    expect(calculateScore([answer], [{ type: 'multiple', correctIndexes }])).toBe(100);
+    expect(answer).toEqual([2, 0]);
+    expect(correctIndexes).toEqual([0, 2]);
+  });
+
+  it('rejects duplicate multiple-choice selections', () => {
+    expect(calculateScore([[0, 0, 2]], [{ type: 'multiple', correctIndexes: [0, 2] }])).toBe(0);
+  });
+
+  it('rejects answers that do not have a matching question', () => {
+    expect(() => calculateScore([0], [])).toThrow(
+      'userAnswers cannot contain more entries than questions',
+    );
   });
 
   it('scores partial multiple-choice as wrong', () => {

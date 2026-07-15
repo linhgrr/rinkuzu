@@ -116,20 +116,14 @@ export class SubscriptionService implements ISubscriptionService {
   }
 
   async getSubscriptionPlans(): Promise<SubscriptionPlanDto[]> {
-    try {
-      const plans = await this.planRepository.listActive();
-      return plans.map((plan) => ({
-        id: plan.id,
-        name: plan.name,
-        price: plan.price,
-        duration: plan.duration,
-        features: plan.features,
-      }));
-    } catch (error) {
-      logger.error({ error }, 'Error fetching plans from database');
-      // Return empty array if database error
-      return [];
-    }
+    const plans = await this.planRepository.listActive();
+    return plans.map((plan) => ({
+      id: plan.id,
+      name: plan.name,
+      price: plan.price,
+      duration: plan.duration,
+      features: plan.features,
+    }));
   }
 
   async updateSubscriptionById(

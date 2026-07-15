@@ -153,8 +153,8 @@ export class PayOSService implements IPayOSService {
       description,
       cancelUrl,
       returnUrl,
-      buyerEmail,
-      buyerName,
+      ...(buyerEmail !== undefined && { buyerEmail }),
+      ...(buyerName !== undefined && { buyerName }),
     };
 
     // Generate signature according to PayOS rule

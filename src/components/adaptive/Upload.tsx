@@ -103,13 +103,14 @@ export default function AdaptiveLearningUpload() {
   };
 
   const onDrop = (acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
+    const file = acceptedFiles[0];
+    if (file) {
       if (!subjectName.trim()) {
         const message = t('uploadPage.subjectRequiredBeforeSelectFile');
         setError(message);
         return;
       }
-      void handleUpload(acceptedFiles[0]);
+      void handleUpload(file);
     }
   };
 

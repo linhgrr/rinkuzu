@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { apiOk } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 describe('apiOk', () => {
   it('preserves the standard success envelope', async () => {
@@ -23,6 +23,22 @@ describe('apiOk', () => {
     await expect(response.json()).resolves.toEqual({
       success: true,
       data: { isPremium: true },
+    });
+  });
+});
+
+describe('apiErr', () => {
+  it('omits absent optional metadata from the error contract', async () => {
+    const response = apiErr('NOT_FOUND', 'Plan not found', 404);
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Request failed',
+        detail: 'Plan not found',
+      },
     });
   });
 });

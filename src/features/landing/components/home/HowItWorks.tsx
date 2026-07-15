@@ -2,11 +2,8 @@
 
 import Image from 'next/image';
 import { useRef, useState, useEffect } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { imgGroup8 } from './constants';
 import { Reveal } from './Reveal';
-
-const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 const DESIGN_W = 1728;
 const LINE_H = 387;
@@ -43,7 +40,6 @@ interface HowItWorksCardProps {
 export default function HowItWorks() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const reduce = useReducedMotion();
 
   useEffect(() => {
     const el = containerRef.current;
@@ -63,7 +59,7 @@ export default function HowItWorks() {
       <Reveal className="flex flex-col font-unbounded font-extrabold justify-center leading-[0] relative shrink-0 text-4xl md:text-[48px] text-center text-white w-full">
         <p className="leading-[1.2] md:leading-[normal]">
           <span>{`LET `}</span>
-          <span className="text-[#fd761a]">AI DO HARD</span>
+          <span className="text-accent">AI DO HARD</span>
           <br className="md:hidden" />
           <span className="hidden md:inline">{` `}</span>
           <span className="bg-clip-text text-transparent bg-[linear-gradient(178deg,#fff_1.3%,#999_98.7%)]">
@@ -112,19 +108,11 @@ export default function HowItWorks() {
             </div>
 
             <div className="flex gap-[96px] items-start shrink-0">
-              <LazyMotion features={domAnimation}>
-                {cards.map((c, i) => (
-                  <m.div
-                    key={c.num}
-                    initial={reduce ? false : { opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.4 }}
-                    transition={{ duration: 0.6, delay: i * 0.2, ease: EASE_OUT }}
-                  >
-                    <Card {...c} />
-                  </m.div>
-                ))}
-              </LazyMotion>
+              {cards.map((card) => (
+                <div key={card.num}>
+                  <Card {...card} />
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -145,7 +133,7 @@ function Card({ num, title, desc, pb }: HowItWorksCardProps) {
       />
       <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_-4px_-4px_13px_0px_rgba(253,118,26,0.6)]" />
 
-      <div className="bg-[#ff541b] content-stretch flex items-center justify-center relative rounded-full shrink-0 size-[56px]">
+      <div className="bg-accent content-stretch flex items-center justify-center relative rounded-full shrink-0 size-[56px]">
         <div className="flex flex-col font-unbounded font-bold h-[24px] justify-center leading-[0] relative shrink-0 text-[22px] text-center text-white">
           <p className="leading-[1.4]">{num}</p>
         </div>

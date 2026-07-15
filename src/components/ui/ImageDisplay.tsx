@@ -31,7 +31,7 @@ export function ImageDisplay({
       className={className}
       maxWidth={maxWidth}
       maxHeight={maxHeight}
-      emptyState={emptyState}
+      {...(emptyState !== undefined ? { emptyState } : {})}
     />
   );
 }
@@ -93,7 +93,7 @@ interface QuestionImageProps {
 export function QuestionImage({ src, alt, className = '' }: QuestionImageProps) {
   return (
     <ImageDisplay
-      src={src}
+      {...(src !== undefined ? { src } : {})}
       alt={alt}
       className={`mb-4 ${className}`}
       maxWidth={600}
@@ -116,7 +116,7 @@ interface OptionImageProps {
 export function OptionImage({ src, alt, className = '' }: OptionImageProps) {
   return (
     <ImageDisplay
-      src={src}
+      {...(src !== undefined ? { src } : {})}
       alt={alt}
       className={`ml-2 ${className}`}
       maxWidth={200}

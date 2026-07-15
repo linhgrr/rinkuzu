@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "skipLibCheck": true
+  },
+  "include": ["src/types/**/*.d.ts", "tests/types/**/*.ts"],
+  "exclude": ["node_modules", ".next", "coverage"]
+}

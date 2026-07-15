@@ -1,19 +1,38 @@
 version: 2
 updates:
-  - package-ecosystem: 'npm'
-    directory: '/'
+  - package-ecosystem: npm
+    directory: /
     schedule:
-      interval: 'daily'
+      interval: weekly
+      day: monday
+      time: '03:00'
+      timezone: Asia/Ho_Chi_Minh
     open-pull-requests-limit: 10
-    labels:
-      - 'dependencies'
-      - 'frontend'
+    versioning-strategy: increase-if-necessary
+    groups:
+      production-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      development-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
 
-  - package-ecosystem: 'github-actions'
-    directory: '/'
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: 'daily'
-    open-pull-requests-limit: 10
-    labels:
-      - 'dependencies'
-      - 'github-actions'
+      interval: weekly
+      day: monday
+      time: '03:30'
+      timezone: Asia/Ho_Chi_Minh
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+      timezone: Asia/Ho_Chi_Minh

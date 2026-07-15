@@ -44,6 +44,26 @@ describe('adaptive Next API contracts', () => {
       answer: { choices: ['A', 'B'] },
     });
     expect(
+      adaptiveSubmitAnswerRequestSchema.parse({
+        exercise_id: 'exercise-1',
+        idempotency_key: 'submit-2',
+        answer: { choice: undefined, text: null },
+      }),
+    ).toEqual({
+      exercise_id: 'exercise-1',
+      idempotency_key: 'submit-2',
+      answer: { text: null },
+    });
+    expect(
+      adaptiveTutorChatRequestSchema.parse({
+        userQuestion: 'Explain this concept',
+        chatHistory: undefined,
+      }),
+    ).toEqual({
+      userQuestion: 'Explain this concept',
+      stream: false,
+    });
+    expect(
       adaptiveTutorChatRequestSchema.safeParse({
         userQuestion: '',
         stream: true,

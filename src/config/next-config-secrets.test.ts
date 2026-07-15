@@ -16,10 +16,11 @@ describe('Next.js configuration', () => {
     vi.unstubAllEnvs();
   });
 
-  it('does not expose server-only secrets through next.config env', () => {
-    const nextConfig = requireFromTest('../../next.config.js') as {
+  it('does not expose server-only secrets through next.config env', async () => {
+    const createNextConfig = requireFromTest('../../next.config.js') as () => Promise<{
       env?: Record<string, unknown>;
-    };
+    }>;
+    const nextConfig = await createNextConfig();
     const exposedEnv = nextConfig.env ?? {};
 
     for (const name of forbiddenServerEnv) {

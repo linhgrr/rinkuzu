@@ -1,7 +1,58 @@
-[
-  {
-    "type": "route-first-load-js-gzip",
-    "source": ".next/diagnostics/route-bundle-stats.json",
-    "limit": "350 kB"
+{
+  "schemaVersion": 2,
+  "metric": "route-first-load-js-gzip",
+  "source": ".next/diagnostics/route-bundle-stats.json",
+  "routeGroups": [
+    {
+      "name": "marketing-static",
+      "limit": "220 KiB",
+      "patterns": [
+        "^/_not-found$",
+        "^/\\[locale\\](?:/(?:about|blog(?:/.*)?|contact|cookies|faq|pricing|privacy|terms))?$"
+      ]
+    },
+    {
+      "name": "auth-entry",
+      "limit": "340 KiB",
+      "patterns": ["^/\\[locale\\]/(?:login|register)$"]
+    },
+    {
+      "name": "auth-recovery",
+      "limit": "290 KiB",
+      "patterns": ["^/\\[locale\\]/(?:check-email|forgot-password|reset-password|verify-email)$"]
+    },
+    {
+      "name": "public-discovery",
+      "limit": "340 KiB",
+      "patterns": ["^/\\[locale\\]/explore$"]
+    },
+    {
+      "name": "dashboard-admin",
+      "limit": "340 KiB",
+      "patterns": [
+        "^/\\[locale\\]/(?:admin(?:/.*)?|bookmarks|create(?:/.*)?|dashboard|draft(?:/.*)?|edit(?:/.*)?|history(?:/.*)?|my-quizzes(?:/.*)?|payment(?:/.*)?|profile|review|subscription|test-image-upload|users(?:/.*)?)$"
+      ]
+    },
+    {
+      "name": "quiz-adaptive",
+      "limit": "345 KiB",
+      "patterns": ["^/\\[locale\\]/(?:adaptive(?:/.*)?|quiz(?:/.*)?)$"]
+    }
+  ],
+  "regression": {
+    "maxIncrease": "8 KiB",
+    "maxPercent": 4,
+    "routeOverrides": {
+      "/[locale]/login": {
+        "maxIncrease": "16 KiB",
+        "maxPercent": 5,
+        "reason": "Preserve the reviewed full-motion auth transition while retaining the 340 KiB absolute cap."
+      },
+      "/[locale]/register": {
+        "maxIncrease": "16 KiB",
+        "maxPercent": 5,
+        "reason": "Preserve the reviewed full-motion auth transition while retaining the 340 KiB absolute cap."
+      }
+    }
   }
-]
+}

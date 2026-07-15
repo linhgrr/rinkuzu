@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import mongoose, { Types, type UpdateQuery } from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
@@ -6,6 +6,8 @@ import UserProgress from '@/models/UserProgress';
 import type {
   ILearningProgressRepository,
   LibraryQuizListOptions,
+  ReviewProgressMutation,
+  ReviewProgressTransactionResult,
 } from '@/interfaces/repositories/ILearningProgressRepository';
 import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import type {
@@ -35,6 +37,54 @@ type LibraryQuizFacetResult = {
   items: LibraryQuizAggregateRecord[];
   meta: LibraryQuizFacetMeta[];
 };
+
+function questionProgressUpdate(
+  progress: QuestionReviewProgressDraft,
+): UpdateQuery<QuestionProgressPersistenceRecord> {
+  return {
+    $set: {
+      ...(progress.questionRef !== undefined ? { questionRef: progress.questionRef } : {}),
+      srsLevel: progress.srsLevel,
+      nextReviewDate: progress.nextReviewDate,
+      lastReviewDate: progress.lastReviewDate,
+      interval: progress.interval,
+      easeFactor: progress.easeFactor,
+      correctStreak: progress.correctStreak,
+      totalReviews: progress.totalReviews,
+      totalCorrect: progress.totalCorrect,
+      history: progress.history,
+      ...(progress.isBookmarked !== undefined ? { isBookmarked: progress.isBookmarked } : {}),
+      ...(progress.notes !== undefined ? { notes: progress.notes } : {}),
+    },
+    $setOnInsert: {
+      userId: progress.userId,
+      quizSlug: progress.quizSlug,
+      questionId: progress.questionId,
+    },
+  };
+}
+
+function userProgressUpdate(
+  progress: UserLearningProgress,
+): UpdateQuery<UserProgressPersistenceRecord> {
+  return {
+    $set: {
+      currentStreak: progress.currentStreak,
+      longestStreak: progress.longestStreak,
+      lastActiveDate: progress.lastActiveDate,
+      streakFreezeCount: progress.streakFreezeCount,
+      totalXp: progress.totalXp,
+      totalQuestionsLearned: progress.totalQuestionsLearned,
+      totalQuizzesTaken: progress.totalQuizzesTaken,
+      totalReviewSessions: progress.totalReviewSessions,
+      ...(progress.lastSessionDate !== undefined
+        ? { lastSessionDate: progress.lastSessionDate }
+        : {}),
+      averageAccuracy: progress.averageAccuracy,
+      weeklyActivity: progress.weeklyActivity,
+    },
+  };
+}
 
 export class LearningProgressRepository implements ILearningProgressRepository {
   async listLibraryQuizzes(
@@ -283,27 +333,7 @@ export class LearningProgressRepository implements ILearningProgressRepository {
         quizSlug: progress.quizSlug,
         questionId: progress.questionId,
       },
-      {
-        $set: {
-          questionRef: progress.questionRef,
-          srsLevel: progress.srsLevel,
-          nextReviewDate: progress.nextReviewDate,
-          lastReviewDate: progress.lastReviewDate,
-          interval: progress.interval,
-          easeFactor: progress.easeFactor,
-          correctStreak: progress.correctStreak,
-          totalReviews: progress.totalReviews,
-          totalCorrect: progress.totalCorrect,
-          history: progress.history,
-          isBookmarked: progress.isBookmarked,
-          notes: progress.notes,
-        },
-        $setOnInsert: {
-          userId: progress.userId,
-          quizSlug: progress.quizSlug,
-          questionId: progress.questionId,
-        },
-      },
+      questionProgressUpdate(progress),
       { new: true, upsert: true, runValidators: true },
     ).lean<QuestionProgressPersistenceRecord>();
 
@@ -339,26 +369,74 @@ export class LearningProgressRepository implements ILearningProgressRepository {
     await connectDB();
     const saved = await UserProgress.findOneAndUpdate(
       { userId: progress.userId },
-      {
-        $set: {
-          currentStreak: progress.currentStreak,
-          longestStreak: progress.longestStreak,
-          lastActiveDate: progress.lastActiveDate,
-          streakFreezeCount: progress.streakFreezeCount,
-          totalXp: progress.totalXp,
-          totalQuestionsLearned: progress.totalQuestionsLearned,
-          totalQuizzesTaken: progress.totalQuizzesTaken,
-          totalReviewSessions: progress.totalReviewSessions,
-          lastSessionDate: progress.lastSessionDate,
-          averageAccuracy: progress.averageAccuracy,
-          weeklyActivity: progress.weeklyActivity,
-        },
-      },
+      userProgressUpdate(progress),
       { new: true, upsert: true, runValidators: true },
     ).lean<UserProgressPersistenceRecord>();
 
     if (!saved) throw new Error('Failed to save user progress');
     return LearningProgressPersistenceMapper.toUserProgress(saved);
+  }
+
+  async mutateReviewProgress(
+    userId: string,
+    quizSlug: string,
+    questionId: string,
+    mutate: (
+      questionProgress: QuestionReviewProgress | null,
+      userProgress: UserLearningProgress | null,
+    ) => ReviewProgressMutation,
+  ): Promise<ReviewProgressTransactionResult> {
+    await connectDB();
+    const session = await mongoose.startSession();
+    let result: ReviewProgressTransactionResult | null = null;
+
+    try {
+      await session.withTransaction(async () => {
+        // Sequential on purpose: withTransaction forbids Promise.all (architecture check).
+        const questionRecord = await QuestionProgress.findOne({ userId, quizSlug, questionId })
+          .session(session)
+          .lean<QuestionProgressPersistenceRecord>();
+        const userRecord = await UserProgress.findOne({ userId })
+          .session(session)
+          .lean<UserProgressPersistenceRecord>();
+
+        const mutation = mutate(
+          questionRecord
+            ? LearningProgressPersistenceMapper.toQuestionProgress(questionRecord)
+            : null,
+          userRecord ? LearningProgressPersistenceMapper.toUserProgress(userRecord) : null,
+        );
+
+        const savedQuestion = await QuestionProgress.findOneAndUpdate(
+          {
+            userId: mutation.questionProgress.userId,
+            quizSlug: mutation.questionProgress.quizSlug,
+            questionId: mutation.questionProgress.questionId,
+          },
+          questionProgressUpdate(mutation.questionProgress),
+          { new: true, upsert: true, runValidators: true, session },
+        ).lean<QuestionProgressPersistenceRecord>();
+        if (!savedQuestion) throw new Error('Failed to save question progress');
+
+        const savedUser = await UserProgress.findOneAndUpdate(
+          { userId: mutation.userProgress.userId },
+          userProgressUpdate(mutation.userProgress),
+          { new: true, upsert: true, runValidators: true, session },
+        ).lean<UserProgressPersistenceRecord>();
+        if (!savedUser) throw new Error('Failed to save user progress');
+
+        result = {
+          questionProgress: LearningProgressPersistenceMapper.toQuestionProgress(savedQuestion),
+          userProgress: LearningProgressPersistenceMapper.toUserProgress(savedUser),
+          streakFreezeUsed: mutation.streakFreezeUsed,
+        };
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    if (!result) throw new Error('Review progress transaction did not commit');
+    return result;
   }
 
   async buyStreakFreeze(

@@ -14,12 +14,19 @@ Playwright is configured in `playwright.config.ts`.
 - `smoke.spec.ts`
   - `/en/about` page load check
   - `/robots.txt` endpoint check
+- `critical-flows.spec.ts`
+  - `@critical-auth`: real credentials session, persistence, role guard, and logout
+  - `@critical-quiz`: seeded quiz, answer, persisted attempt, and result page
+  - `@critical-adaptive`: upload UI, processing state, and generated subject page
+  - `@critical-subscription`: checkout handoff plus success/cancel outcomes
+  - `@critical-admin`: admin route/API access and a persisted role mutation
 
-## Extend with critical paths
+Critical flows write only to a local MongoDB database named `rinkuzu_ci`. The
+suite fails closed for every other host or database name. Seeded rows and
+derived attempt/progress/audit rows are removed after each test, and cleanup
+postconditions are verified.
 
-Add these next:
-
-1. Auth flow: register -> login -> logout
-2. Quiz flow: create -> play -> result
-3. Subscription flow: start payment -> success/cancel redirects
-4. Adaptive learning flow: upload -> processing -> result
+The production app and Mongo-backed boundaries run for real. Playwright starts
+`support/fake-adaptive-server.mjs` for the unavailable adaptive service; object
+storage and PayOS are intercepted at their external boundaries so the suite
+cannot upload or create a real payment.

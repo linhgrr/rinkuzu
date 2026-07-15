@@ -17,7 +17,7 @@ export function toProfileHistoryAttemptViewModel(
     quiz: {
       title: attempt.quiz.title,
       slug: attempt.quiz.slug,
-      description: attempt.quiz.description,
+      ...(attempt.quiz.description !== undefined && { description: attempt.quiz.description }),
     },
   };
 }

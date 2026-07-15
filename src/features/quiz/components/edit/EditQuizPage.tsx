@@ -191,17 +191,17 @@ export function EditQuizPage() {
           key={quiz.id}
           initial={{
             title: quiz.title,
-            description: quiz.description,
+            ...(quiz.description !== undefined ? { description: quiz.description } : {}),
             selectedFolderId: quiz.folder,
             isPrivate: quiz.isPrivate,
             questions: quiz.questions,
           }}
-          pdfUrl={quiz.pdfUrl}
+          {...(quiz.pdfUrl !== undefined ? { pdfUrl: quiz.pdfUrl } : {})}
           pdfLayout="card"
           canEdit={canEdit}
           showPrivateToggle={canEdit}
-          statusError={statusError}
-          statusSuccess={statusSuccess}
+          {...(statusError ? { statusError } : {})}
+          {...(statusSuccess ? { statusSuccess } : {})}
           labels={{
             pageTitle: t('editQuizTitle'),
             pageSubtitle: t('editQuizSubtitle'),
@@ -257,7 +257,7 @@ export function EditQuizPage() {
             />
           }
           onCancel={() => push('/my-quizzes')}
-          onDelete={canEdit ? () => setShowDeleteConfirm(true) : undefined}
+          {...(canEdit ? { onDelete: () => setShowDeleteConfirm(true) } : {})}
           isDeleting={deleting}
           onSubmit={async (payload) => {
             // BE: updateQuizRequestSchema — title min 1, questions via questionListSchema

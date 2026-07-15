@@ -22,10 +22,12 @@ export function toAdminReportViewModel(report: AdminReportDto): AdminReportViewM
     createdAtLabel: formatReportDateLabel(report.createdAt),
     updatedAt: report.updatedAt,
     updatedAtLabel: formatReportDateLabel(report.updatedAt),
-    resolvedAt: report.resolvedAt,
-    resolvedAtLabel: report.resolvedAt ? formatReportDateLabel(report.resolvedAt) : undefined,
-    resolvedBy: report.resolvedBy,
-    adminNotes: report.adminNotes,
+    ...(report.resolvedAt !== undefined && {
+      resolvedAt: report.resolvedAt,
+      resolvedAtLabel: formatReportDateLabel(report.resolvedAt),
+    }),
+    ...(report.resolvedBy !== undefined && { resolvedBy: report.resolvedBy }),
+    ...(report.adminNotes !== undefined && { adminNotes: report.adminNotes }),
     adminNotesInput: report.adminNotes ?? '',
   };
 }

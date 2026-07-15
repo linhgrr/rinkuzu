@@ -422,7 +422,7 @@ function UsersTable({
                 <UserRow
                   key={user.id}
                   user={user}
-                  sessionEmail={sessionEmail}
+                  {...(sessionEmail !== undefined ? { sessionEmail } : {})}
                   actionLoading={actionLoading}
                   t={t}
                   onOpenSubscriptionModal={onOpenSubscriptionModal}
@@ -750,7 +750,7 @@ export default function AdminUsersPage() {
 
         <UsersTable
           users={users}
-          sessionEmail={session?.user?.email}
+          {...(session?.user?.email !== undefined ? { sessionEmail: session.user.email } : {})}
           actionLoading={state.actionLoading}
           searchTerm={state.searchTerm}
           t={t}

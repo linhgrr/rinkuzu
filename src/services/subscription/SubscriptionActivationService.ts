@@ -7,9 +7,29 @@ import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISubscriptionPlanRepository';
-import type { SubscriptionRecord } from '@/entities/Subscription';
+import {
+  SubscriptionActivationConflictError,
+  type SubscriptionRecord,
+} from '@/entities/Subscription';
 import { DurationUtils } from '@/types/subscription';
 import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
+
+function toActivationDto(
+  type: string,
+  startDate: Date,
+  endDate: Date | undefined,
+  isActive: boolean,
+): SubscriptionActivationDto {
+  return {
+    success: true,
+    subscription: {
+      type,
+      startDate,
+      ...(endDate !== undefined && { endDate }),
+      isActive,
+    },
+  };
+}
 
 export class SubscriptionActivationService {
   constructor(
@@ -38,15 +58,12 @@ export class SubscriptionActivationService {
         throw new Error('Subscription already expired');
       }
 
-      return {
-        success: true,
-        subscription: {
-          type: subscription.type,
-          startDate: subscription.startDate,
-          endDate: subscription.endDate,
-          isActive: subscription.isActive,
-        },
-      };
+      return toActivationDto(
+        subscription.type,
+        subscription.startDate,
+        subscription.endDate,
+        subscription.isActive,
+      );
     }
 
     if (subscription.status !== 'pending') {
@@ -95,15 +112,12 @@ export class SubscriptionActivationService {
     }
 
     if (subscription.status === 'completed') {
-      return {
-        success: true,
-        subscription: {
-          type: subscription.type,
-          startDate: subscription.startDate,
-          endDate: subscription.endDate,
-          isActive: subscription.isActive,
-        },
-      };
+      return toActivationDto(
+        subscription.type,
+        subscription.startDate,
+        subscription.endDate,
+        subscription.isActive,
+      );
     }
 
     if (subscription.status !== 'pending') {
@@ -153,15 +167,12 @@ export class SubscriptionActivationService {
       ? await this.subscriptionRepository.findByTransactionReference(transactionReference)
       : null;
     if (existing && existing.status === 'completed') {
-      return {
-        success: true,
-        subscription: {
-          type: existing.type,
-          startDate: existing.startDate,
-          endDate: existing.endDate,
-          isActive: existing.isActive,
-        },
-      };
+      return toActivationDto(
+        existing.type,
+        existing.startDate,
+        existing.endDate,
+        existing.isActive,
+      );
     }
 
     const plan = await this.planRepository.findById(subscription.type);
@@ -182,9 +193,21 @@ export class SubscriptionActivationService {
         type: subscription.type,
         startDate,
         endDate,
-        transactionReference,
+        ...(transactionReference !== undefined && { transactionReference }),
       });
     } catch (error: unknown) {
+      if (error instanceof SubscriptionActivationConflictError) {
+        const settled = await this.subscriptionRepository.findByOrderId(orderCode.toString());
+        if (settled?.status === 'completed') {
+          return toActivationDto(
+            settled.type,
+            settled.startDate,
+            settled.endDate,
+            settled.isActive,
+          );
+        }
+      }
+
       // Duplicate-key (E11000) on payosTransactionId means another concurrent
       // webhook delivery already activated this subscription. Treat as success
       // by returning the existing snapshot.
@@ -193,28 +216,17 @@ export class SubscriptionActivationService {
           ? await this.subscriptionRepository.findByTransactionReference(transactionReference)
           : null;
         if (settled?.status === 'completed') {
-          return {
-            success: true,
-            subscription: {
-              type: settled.type,
-              startDate: settled.startDate,
-              endDate: settled.endDate,
-              isActive: settled.isActive,
-            },
-          };
+          return toActivationDto(
+            settled.type,
+            settled.startDate,
+            settled.endDate,
+            settled.isActive,
+          );
         }
       }
       throw error;
     }
 
-    return {
-      success: true,
-      subscription: {
-        type: subscription.type,
-        startDate,
-        endDate,
-        isActive: true,
-      },
-    };
+    return toActivationDto(subscription.type, startDate, endDate, true);
   }
 }

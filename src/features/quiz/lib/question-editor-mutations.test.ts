@@ -72,5 +72,23 @@ describe('question-editor-mutations', () => {
         undefined,
       ],
     });
+
+    questions = updateQuestionImage(questions, 0);
+    expect(questions[0]).not.toHaveProperty('questionImage');
+  });
+
+  it('omits absent media fields when mapping draft inputs', () => {
+    const [question] = toEditorQuestions([
+      {
+        type: 'single',
+        question: 'Q1',
+        options: ['A', 'B'],
+        correctIndex: 1,
+      },
+    ]);
+    if (!question) throw new Error('Expected one mapped editor question');
+
+    expect(question).not.toHaveProperty('questionImage');
+    expect(question).not.toHaveProperty('optionImages');
   });
 });

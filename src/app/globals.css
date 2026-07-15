@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes landing-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.landing-marquee-track {
+  animation: landing-marquee 20s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-marquee-track {
+    animation: none;
+    will-change: auto;
+  }
+}
+
+/* Auth keeps the original orange palette without weakening global production contrast tokens. */
+.auth-shell {
+  --brand-trust: var(--accent);
+  --brand-trust-hover: var(--accent-hover);
+  --brand-trust-active: var(--primary-6);
+}
+
 @layer base {
   :root {
     /* Orange scale — focused action accent, energy, conversion */
@@ -112,7 +137,7 @@
     --hero: rgba(255, 214, 187, 0.6);
     --ink: var(--primary-8);
     --ink-strong: var(--primary-8);
-    --ink-muted: rgba(68, 31, 5, 0.5);
+    --ink-muted: rgba(68, 31, 5, 0.7);
     --accent: var(--primary);
     --accent-hover: var(--cta);
     --accent-soft: var(--primary-2);
@@ -671,6 +696,15 @@
     transform-style: preserve-3d;
     -webkit-transform-style: preserve-3d;
   }
+}
+
+.landing-deferred-section {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 720px;
+}
+
+.landing-deferred-section--tall {
+  contain-intrinsic-block-size: auto 1100px;
 }
 
 /* Animations */

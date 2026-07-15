@@ -52,4 +52,28 @@ describe('toProfileHistoryViewModel', () => {
       },
     });
   });
+
+  it('omits an absent quiz description', () => {
+    const result = toProfileHistoryViewModel({
+      attempts: [
+        {
+          id: 'attempt-1',
+          score: 88,
+          takenAt: '2026-07-02T00:00:00.000Z',
+          totalQuestions: 10,
+          quiz: { title: 'Algebra', slug: 'algebra' },
+        },
+      ],
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 1,
+        itemsPerPage: 10,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    });
+
+    expect(result.attempts[0]?.quiz).not.toHaveProperty('description');
+  });
 });

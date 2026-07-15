@@ -67,6 +67,8 @@ reportSchema.index({ status: 1, createdAt: -1 });
 reportSchema.index({ createdAt: -1 });
 reportSchema.index({ quizId: 1 });
 
-const Report = mongoose.models['Report'] || mongoose.model<ReportDocument>('Report', reportSchema);
+const Report =
+  (mongoose.models['Report'] as mongoose.Model<ReportDocument> | undefined) ??
+  mongoose.model<ReportDocument>('Report', reportSchema);
 
 export default Report;

@@ -3,7 +3,6 @@ import type {
   PaymentRequestDto,
   SubscriptionActivationDto,
   SubscriptionCancellationDto,
-  SubscriptionHistoryItemDto,
   SubscriptionPlanDto,
   SubscriptionStatusResponseDto,
   VerifiedPaymentDto,
@@ -100,11 +99,6 @@ export class SubscriptionService implements ISubscriptionService {
     paymentData: VerifiedPaymentDto,
   ): Promise<SubscriptionActivationDto> {
     return this.activationService.activateVerifiedSubscription(orderCode, paymentData);
-  }
-
-  async getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryItemDto[]> {
-    const subscriptions = await this.subscriptionRepository.findByUser(userId);
-    return subscriptions.map(SubscriptionDtoMapper.toHistoryItem);
   }
 
   async cancelSubscription(userId: string): Promise<SubscriptionCancellationDto> {

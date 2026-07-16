@@ -1,7 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import Subscription from '@/models/Subscription';
 import User from '@/models/User';
-import { buildPaginationMeta } from '@/lib/pagination';
 import {
   type AdminSubscriptionStatusUpdateResult,
   type ActivateSubscriptionData,
@@ -10,14 +9,13 @@ import {
   ISubscriptionRepository,
   type UpdateSubscriptionData,
 } from '@/interfaces/repositories/ISubscriptionRepository';
-import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import {
   isAdminSubscriptionStatusTransitionAllowed,
   SubscriptionActivationConflictError,
   type AdminMutableSubscriptionStatus,
   type SubscriptionRecord,
 } from '@/entities/Subscription';
-import mongoose, { type FilterQuery } from 'mongoose';
+import mongoose from 'mongoose';
 import { SubscriptionPersistenceMapper } from '@/repositories/mappers/SubscriptionPersistenceMapper';
 import type {
   CurrentUserSubscriptionPersistenceRecord,
@@ -63,18 +61,6 @@ export class SubscriptionRepository implements ISubscriptionRepository {
       payosTransactionId: transactionReference,
     }).lean<SubscriptionPersistenceRecord>();
     return record ? SubscriptionPersistenceMapper.toEntity(record) : null;
-  }
-
-  async findByUser(userId: string): Promise<SubscriptionRecord[]> {
-    await connectDB();
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return [];
-    }
-
-    const records = await Subscription.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .lean<SubscriptionPersistenceRecord[]>();
-    return records.map(SubscriptionPersistenceMapper.toEntity);
   }
 
   async expireDue(now: Date): Promise<number> {
@@ -385,28 +371,5 @@ export class SubscriptionRepository implements ISubscriptionRepository {
       status: 'pending',
     });
     return !!result;
-  }
-
-  async findWithPagination(
-    filter: FilterQuery<SubscriptionPersistenceRecord>,
-    page: number,
-    limit: number,
-  ): Promise<PaginatedRepositoryResult<SubscriptionRecord>> {
-    await connectDB();
-
-    const [records, total] = await Promise.all([
-      Subscription.find(filter)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .populate('user', 'email role')
-        .lean<SubscriptionPersistenceRecord[]>(),
-      Subscription.countDocuments(filter),
-    ]);
-
-    return {
-      items: records.map(SubscriptionPersistenceMapper.toEntity),
-      pagination: buildPaginationMeta(page, limit, total),
-    };
   }
 }

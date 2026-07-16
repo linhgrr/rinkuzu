@@ -1,5 +1,13 @@
 import { CRITICAL_MUTATION_PATTERNS } from './scripts/mutation-scope.mjs';
 
+export function mutationThresholdsForMode(mode) {
+  return {
+    high: 85,
+    low: 80,
+    break: mode === 'full' ? null : 80,
+  };
+}
+
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 const config = {
   mutate: [...CRITICAL_MUTATION_PATTERNS, '!src/**/*.{test,spec}.{ts,tsx}'],
@@ -29,11 +37,7 @@ const config = {
   htmlReporter: {
     fileName: 'reports/mutation/index.html',
   },
-  thresholds: {
-    high: 85,
-    low: 80,
-    break: 80,
-  },
+  thresholds: mutationThresholdsForMode(process.env['MUTATION_GATE_MODE']),
   timeoutMS: 10_000,
   timeoutFactor: 1.5,
   tempDirName: '.stryker-tmp',

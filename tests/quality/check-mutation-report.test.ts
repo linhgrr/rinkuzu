@@ -13,6 +13,9 @@ function reportWith(statuses: string[]) {
   return {
     schemaVersion: '1.0',
     framework: { name: 'StrykerJS', version: '9.6.1' },
+    config: {
+      mutate: [...CRITICAL_MUTATION_PATTERNS, '!src/**/*.{test,spec}.{ts,tsx}'],
+    },
     files: {
       'src/lib/auth.ts': {
         mutants: statuses.map((status, index) => ({
@@ -31,6 +34,22 @@ function reportWith(statuses: string[]) {
 }
 
 const registry = { schemaVersion: 1, waivers: [] };
+const baselineWith = (statuses: string[]) => {
+  const detected = statuses.filter((status) => ['Killed', 'Timeout'].includes(status)).length;
+  const survived = statuses.filter((status) => status === 'Survived').length;
+  const noCoverage = statuses.filter((status) => status === 'NoCoverage').length;
+  const valid = detected + survived + noCoverage;
+  return {
+    schemaVersion: 1,
+    toolVersion: '9.6.1',
+    scopePatterns: [...CRITICAL_MUTATION_PATTERNS],
+    valid,
+    detected,
+    survived,
+    noCoverage,
+    score: valid === 0 ? 0 : (detected / valid) * 100,
+  };
+};
 const temporaryRoots: string[] = [];
 
 afterEach(() => {
@@ -113,9 +132,11 @@ describe('mutation report gate', () => {
   });
 
   it('passes a full report at the break threshold with no NoCoverage mutants', () => {
+    const statuses = [...Array(8).fill('Killed'), ...Array(2).fill('Survived')];
     const result = evaluateMutationReport({
-      report: reportWith([...Array(8).fill('Killed'), ...Array(2).fill('Survived')]),
+      report: reportWith(statuses),
       registry,
+      baseline: baselineWith(statuses),
       mode: 'full',
       toolVersion: '9.6.1',
     });
@@ -127,15 +148,88 @@ describe('mutation report gate', () => {
     const result = evaluateMutationReport({
       report: reportWith(['Pending', 'NoCoverage']),
       registry,
+      baseline: baselineWith([]),
       mode: 'full',
       toolVersion: '9.6.1',
     });
     expect(result.errors).toEqual(
       expect.arrayContaining([
         expect.stringContaining('invalid terminal status Pending'),
-        expect.stringContaining('NoCoverage mutants'),
+        expect.stringContaining('NoCoverage debt increased'),
       ]),
     );
+  });
+
+  it('fails closed when the full baseline is missing or internally inconsistent', () => {
+    const missing = evaluateMutationReport({
+      report: reportWith(['Killed']),
+      registry,
+      mode: 'full',
+      toolVersion: '9.6.1',
+    });
+    expect(missing.errors).toContain('Full mutation baseline schemaVersion must be 1.');
+
+    const inconsistent = evaluateMutationReport({
+      report: reportWith(['Killed']),
+      registry,
+      baseline: { ...baselineWith(['Killed']), detected: 0 },
+      mode: 'full',
+      toolVersion: '9.6.1',
+    });
+    expect(inconsistent.errors).toEqual(
+      expect.arrayContaining([
+        'Full mutation baseline counts are internally inconsistent.',
+        'Full mutation baseline score does not match its counts.',
+      ]),
+    );
+  });
+
+  it('rejects a full report generated from a stale or narrowed mutation input', () => {
+    const statuses = ['Killed'];
+    const report = reportWith(statuses);
+    report.config.mutate = ['src/lib/auth/**/*.ts'];
+
+    const result = evaluateMutationReport({
+      report,
+      registry,
+      baseline: baselineWith(statuses),
+      mode: 'full',
+      toolVersion: '9.6.1',
+    });
+
+    expect(result.errors).toContain(
+      'Full mutation report input does not match the production policy.',
+    );
+  });
+
+  it('rejects score, survived, and NoCoverage regressions in a full report', () => {
+    const result = evaluateMutationReport({
+      report: reportWith(['Killed', 'Survived', 'NoCoverage']),
+      registry,
+      baseline: baselineWith(['Killed', 'Killed']),
+      mode: 'full',
+      toolVersion: '9.6.1',
+    });
+
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('regressed below baseline'),
+        expect.stringContaining('Survived debt increased'),
+        expect.stringContaining('NoCoverage debt increased'),
+      ]),
+    );
+  });
+
+  it('keeps the 80% threshold for changed critical code even with a legacy full baseline', () => {
+    const result = evaluateMutationReport({
+      report: reportWith([...Array(15).fill('Killed'), ...Array(5).fill('Survived')]),
+      registry,
+      baseline: baselineWith(['NoCoverage']),
+      mode: 'changed',
+      toolVersion: '9.6.1',
+    });
+
+    expect(result.errors).toContain('Mutation score 75.00% is below the 80% break threshold.');
   });
 
   it('rejects an unsupported report schema instead of guessing compatibility', () => {

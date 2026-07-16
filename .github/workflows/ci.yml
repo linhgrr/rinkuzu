@@ -233,6 +233,8 @@ jobs:
 
       - name: Mutate full critical scope
         if: ${{ steps.mutation-scope.outputs.mode == 'full' }}
+        env:
+          MUTATION_GATE_MODE: full
         run: npm run test:mutation
 
       - name: Verify fresh mutation evidence

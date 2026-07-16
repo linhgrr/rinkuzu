@@ -3,6 +3,7 @@ import type {
   QuizEditViewModel,
   QuizEditorQuestionViewModel,
 } from '@/features/quiz/types/quiz-editor-view-model';
+import { toQuizDetailBaseViewModel } from '@/features/quiz/mappers/quiz-detail-base.mapper';
 import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
 
 function toEditorQuestion(question: QuizQuestionDto, index: number): QuizEditorQuestionViewModel {
@@ -26,18 +27,7 @@ function toEditorQuestion(question: QuizQuestionDto, index: number): QuizEditorQ
 
 export function toQuizEditViewModel(dto: QuizDetailDto): QuizEditViewModel {
   return {
-    id: dto.id,
-    title: dto.title,
-    ...(dto.description !== undefined && { description: dto.description }),
-    slug: dto.slug,
-    author: dto.author,
-    folder: dto.folder,
-    isPrivate: dto.isPrivate,
-    questionCount: dto.questionCount,
-    createdAt: dto.createdAt,
-    updatedAt: dto.updatedAt,
-    ...(dto.pdfUrl !== undefined && { pdfUrl: dto.pdfUrl }),
-    ...(dto.tags !== undefined && { tags: dto.tags }),
+    ...toQuizDetailBaseViewModel(dto),
     questions: dto.questions.map(toEditorQuestion),
   };
 }

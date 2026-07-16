@@ -102,6 +102,10 @@ interface UserMenuDropdownProps {
   email?: string | null;
   t: NavTranslate;
 }
+interface LogoutButtonProps {
+  className: string;
+  t: NavTranslate;
+}
 
 interface AppTopbarProps extends UserMenuDropdownProps {
   collapsed: boolean;
@@ -420,7 +424,6 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
 }
 
 function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: UserMenuDropdownProps) {
-  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const closeMenu = useCallback(() => setOpen(false), []);
@@ -478,19 +481,27 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
             <Icon icon={ICON.user} className="size-5" aria-hidden="true" />
             <span>{t('profile')}</span>
           </Link>
-          <form action="/api/session/logout" method="post">
-            <input type="hidden" name="locale" value={locale} />
-            <button
-              type="submit"
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
-            >
-              <Icon icon={ICON.logout} className="size-5" aria-hidden="true" />
-              <span>{t('logout')}</span>
-            </button>
-          </form>
+          <LogoutButton
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
+            t={t}
+          />
         </div>
       ) : null}
     </div>
+  );
+}
+
+function LogoutButton({ className, t }: LogoutButtonProps) {
+  const locale = useLocale();
+
+  return (
+    <form action="/api/session/logout" method="post">
+      <input type="hidden" name="locale" value={locale} />
+      <button type="submit" className={className}>
+        <Icon icon={ICON.logout} className="size-5" aria-hidden="true" />
+        <span>{t('logout')}</span>
+      </button>
+    </form>
   );
 }
 
@@ -743,7 +754,7 @@ function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenu
   if (!open) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-16 z-40 lg:hidden">
+    <div className="fixed inset-x-0 bottom-0 top-16 z-[60] lg:hidden">
       <button
         type="button"
         className="absolute inset-0 bg-ink/20 backdrop-blur-[1px]"
@@ -778,6 +789,11 @@ function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenu
             />
           ))}
         </div>
+        <div className="my-3 h-px bg-line" />
+        <LogoutButton
+          className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 text-left font-home text-base font-semibold leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
+          t={t}
+        />
       </nav>
     </div>
   );

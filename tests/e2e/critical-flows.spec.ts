@@ -1,10 +1,15 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
 const E2E_CONTROL_TOKEN = 'rinkuzu-e2e-control';
+const E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS = [
+  'auth:credentials_ip:127.0.0.1',
+  'auth:credentials_ip:::1',
+  'auth:credentials_ip:unknown',
+] as const;
 const passwordHashPromise = hash(E2E_PASSWORD, 4);
 
 type SeededUser = {
@@ -31,6 +36,16 @@ type SessionPayload = {
     role?: string;
   };
 };
+
+function credentialsRateLimitKeys(emails: string[]): string[] {
+  return [
+    ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
+    ...emails.map(
+      (email) =>
+        `auth:credentials_identity:${createHash('sha256').update(email.toLowerCase()).digest('hex')}`,
+    ),
+  ];
+}
 
 function requireCiMongoUri(): { databaseName: string; uri: string } {
   const uri = process.env['MONGODB_URI'];
@@ -75,6 +90,10 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
     const questionId = new ObjectId();
     const quizSlug = `e2e-critical-${runId}`.toLowerCase();
     const planId = `e2e-plan-${runId}`;
+
+    await db.collection('auth_rate_limits').deleteMany({
+      key: { $in: credentialsRateLimitKeys([regular.email, admin.email, target.email]) },
+    });
 
     await db.collection('users').insertMany(
       [
@@ -149,6 +168,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
   const userIds = [fixture.regular.id, fixture.admin.id, fixture.target.id];
   const userIdStrings = userIds.map((id) => id.toHexString());
   const emails = [fixture.regular.email, fixture.admin.email, fixture.target.email];
+  const authRateLimitKeys = credentialsRateLimitKeys(emails);
 
   try {
     await Promise.all([
@@ -163,6 +183,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       db.collection('auditlogs').deleteMany({
         $or: [{ userId: { $in: userIds } }, { email: { $in: emails } }],
       }),
+      db.collection('auth_rate_limits').deleteMany({ key: { $in: authRateLimitKeys } }),
     ]);
     await db.collection('quizzes').deleteMany({ _e2eRun: runId });
     await db.collection('plans').deleteMany({ _e2eRun: runId });
@@ -174,6 +195,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       db.collection('plans').countDocuments({ _e2eRun: runId }),
       db.collection('attempts').countDocuments({ quiz: fixture.quizId }),
       db.collection('userprogresses').countDocuments({ userId: { $in: userIdStrings } }),
+      db.collection('auth_rate_limits').countDocuments({ key: { $in: authRateLimitKeys } }),
     ]);
     if (remaining.some((count) => count !== 0)) {
       throw new Error(`Critical E2E cleanup postcondition failed: ${remaining.join(',')}`);
@@ -215,6 +237,14 @@ async function withDatabaseFixture<T>(
   return outcome.value;
 }
 
+async function readSession(page: Page): Promise<SessionPayload> {
+  return page.evaluate(async () => {
+    const response = await fetch('/api/auth/session', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Session endpoint returned ${response.status}`);
+    return (await response.json()) as SessionPayload;
+  });
+}
+
 async function login(page: Page, user: SeededUser): Promise<SessionPayload> {
   await page.goto('/en/login?callbackUrl=%2Fdashboard');
   await page.getByLabel('Email Address').fill(user.email);
@@ -224,11 +254,7 @@ async function login(page: Page, user: SeededUser): Promise<SessionPayload> {
     page.getByRole('button', { name: 'Sign In', exact: true }).click(),
   ]);
 
-  const session = await page.evaluate(async () => {
-    const response = await fetch('/api/auth/session', { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Session endpoint returned ${response.status}`);
-    return (await response.json()) as SessionPayload;
-  });
+  const session = await readSession(page);
   expect(session.user).toMatchObject({
     email: user.email,
     id: user.id.toHexString(),
@@ -244,7 +270,9 @@ test.describe('production critical paths', () => {
 
       await page.reload();
       await expect(page).toHaveURL(/\/en\/dashboard(?:[/?#]|$)/);
-      await expect(page.getByRole('button', { name: 'Toggle user menu' })).toBeVisible();
+      expect(await readSession(page)).toMatchObject({
+        user: { email: fixture.regular.email, id: fixture.regular.id.toHexString() },
+      });
 
       const forbidden = await page.evaluate(async () => {
         const response = await fetch('/api/admin/users');
@@ -262,11 +290,15 @@ test.describe('production critical paths', () => {
       await expect(page).toHaveURL(/\/en\/dashboard(?:[/?#]|$)/);
 
       await page.goto('/en/dashboard');
-      await page.getByRole('button', { name: 'Toggle user menu' }).click();
-      await Promise.all([
-        page.waitForURL(/\/en\/?$/),
-        page.getByRole('button', { name: 'Logout', exact: true }).click(),
-      ]);
+      const desktopUserMenu = page.getByRole('button', { name: 'Toggle user menu' });
+      if (await desktopUserMenu.isVisible()) {
+        await desktopUserMenu.click();
+      } else {
+        await page.getByRole('button', { name: 'Open menu' }).click();
+      }
+      const logoutButton = page.getByRole('button', { name: 'Logout', exact: true });
+      await expect(logoutButton).toBeVisible();
+      await Promise.all([page.waitForURL(/\/en\/?$/), logoutButton.click()]);
       const loggedOutSession = await page.evaluate(async () =>
         fetch('/api/auth/session', { cache: 'no-store' }).then((response) => response.json()),
       );

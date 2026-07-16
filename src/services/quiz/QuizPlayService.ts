@@ -14,7 +14,7 @@ import type {
   SaveQuizProgressResponseDto,
 } from '@/dtos/quiz';
 import type { Session } from 'next-auth';
-import { checkPrivateQuizAccess } from './quiz-helpers';
+import { checkPrivateQuizAccess, requireQuizReadAccess } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { QuizProgressDtoMapper } from '@/mappers/quiz/QuizProgressDtoMapper';
@@ -26,6 +26,11 @@ import {
 } from '@/services/quiz/quiz-attempt-evaluation';
 import type { QuizAttemptAnswer } from '@/entities/QuizAttempt';
 
+interface FlashcardQuizFailureContext {
+  logMessage: string;
+  errorMessage: string;
+}
+
 export class QuizPlayService {
   constructor(
     private quizRepository: IQuizRepository,
@@ -36,6 +41,30 @@ export class QuizPlayService {
 
   private async resolveQuizId(slug: string): Promise<string | null> {
     return this.quizRepository.findIdBySlug(slug);
+  }
+
+  private async getFlashcardQuiz(
+    slug: string,
+    session: Session | null | undefined,
+    failureContext: FlashcardQuizFailureContext,
+  ): Promise<ServiceResult<FlashcardQuizDto>> {
+    try {
+      const quiz = await this.quizRepository.findForPlay(slug);
+      const access = await requireQuizReadAccess(quiz, session?.user?.id, session?.user?.role);
+      if (!access.success) return access;
+
+      return {
+        success: true,
+        data: QuizFlashcardDtoMapper.toDto(access.data),
+      };
+    } catch (error) {
+      logger.error({ error }, failureContext.logMessage);
+      return {
+        success: false,
+        error: failureContext.errorMessage,
+        statusCode: 500,
+      };
+    }
   }
 
   async getSavedQuizProgress(
@@ -234,71 +263,19 @@ export class QuizPlayService {
     slug: string,
     session?: Session | null,
   ): Promise<ServiceResult<FlashcardQuizDto>> {
-    try {
-      const quiz = await this.quizRepository.findForPlay(slug);
-
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const privateAccessError = await checkPrivateQuizAccess(
-        quiz,
-        session?.user?.id,
-        session?.user?.role,
-      );
-      if (privateAccessError) return privateAccessError;
-
-      return {
-        success: true,
-        data: QuizFlashcardDtoMapper.toDto(quiz),
-      };
-    } catch (error) {
-      logger.error({ error }, 'Get quiz flashcards error');
-      return {
-        success: false,
-        error: 'Failed to get quiz flashcards',
-        statusCode: 500,
-      };
-    }
+    return this.getFlashcardQuiz(slug, session, {
+      logMessage: 'Get quiz flashcards error',
+      errorMessage: 'Failed to get quiz flashcards',
+    });
   }
 
   async getQuizForFlashcards(
     slug: string,
     session: Session | null,
   ): Promise<ServiceResult<FlashcardQuizDto>> {
-    try {
-      const quiz = await this.quizRepository.findForPlay(slug);
-
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const privateAccessError = await checkPrivateQuizAccess(
-        quiz,
-        session?.user?.id,
-        session?.user?.role,
-      );
-      if (privateAccessError) return privateAccessError;
-
-      return {
-        success: true,
-        data: QuizFlashcardDtoMapper.toDto(quiz),
-      };
-    } catch (error) {
-      logger.error({ error }, 'Get quiz for flashcards error');
-      return {
-        success: false,
-        error: 'Failed to get quiz for flashcards',
-        statusCode: 500,
-      };
-    }
+    return this.getFlashcardQuiz(slug, session, {
+      logMessage: 'Get quiz for flashcards error',
+      errorMessage: 'Failed to get quiz for flashcards',
+    });
   }
 }

@@ -1,4 +1,4 @@
-import type { AdminSubscriptionRecord } from '@/entities/AdminBilling';
+import type { SubscriptionRecordFields } from '@/entities/Subscription';
 import type { MongoIdLike } from '@/types/mongo';
 
 export interface BillingPlanPersistenceRecord {
@@ -12,20 +12,7 @@ export interface BillingPlanPersistenceRecord {
   updatedAt: Date;
 }
 
-export interface AdminSubscriptionPersistenceRecord {
+export interface AdminSubscriptionPersistenceRecord extends SubscriptionRecordFields {
   _id: MongoIdLike;
   user: MongoIdLike;
-  userEmail: string;
-  type: string;
-  amount: number;
-  currency: string;
-  status: AdminSubscriptionRecord['status'];
-  payosOrderId: string;
-  payosTransactionId?: string;
-  payosPaymentUrl?: string;
-  startDate?: Date;
-  endDate?: Date;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
 }

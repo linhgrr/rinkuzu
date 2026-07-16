@@ -37,6 +37,8 @@ describe('UserAttemptDtoMapper', () => {
     const dto = UserAttemptDtoMapper.toDetailDto(attempt);
 
     expect(dto.takenAt).toBe('2026-07-02T00:00:00.000Z');
+    expect(dto.historyStatus).toBe('complete');
+    expect(dto.totalQuestions).toBe(2);
     expect(dto.quiz.questions.map((question) => question.isCorrect)).toEqual([true, true]);
     expect(dto.quiz).not.toHaveProperty('description');
     const [singleQuestion, multipleQuestion] = dto.quiz.questions;
@@ -51,9 +53,14 @@ describe('UserAttemptDtoMapper', () => {
     expect(UserAttemptDtoMapper.toSummaryDto(attempt).quiz).not.toHaveProperty('description');
   });
 
-  it('rejects attempts whose answers do not match the quiz snapshot', () => {
-    expect(() => UserAttemptDtoMapper.toDetailDto({ ...attempt, answers: [1] })).toThrow(
-      'attempt.answers must match quiz questions',
-    );
+  it('returns an explicit degraded history instead of misaligning changed quiz questions', () => {
+    const dto = UserAttemptDtoMapper.toDetailDto({ ...attempt, answers: [1] });
+
+    expect(dto).toMatchObject({
+      historyStatus: 'quiz_modified',
+      totalQuestions: 2,
+      answers: [],
+      quiz: { questions: [] },
+    });
   });
 });

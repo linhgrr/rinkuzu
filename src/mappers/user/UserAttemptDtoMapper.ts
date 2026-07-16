@@ -54,22 +54,27 @@ export class UserAttemptDtoMapper {
     if (!quiz.questions) {
       throw new TypeError('attempt.quiz.questions is required');
     }
-    if (attempt.answers.length !== quiz.questions.length) {
-      throw new TypeError('attempt.answers must match quiz questions');
-    }
+    const historyStatus =
+      attempt.answers.length === quiz.questions.length ? 'complete' : 'quiz_modified';
+    const questions =
+      historyStatus === 'complete'
+        ? quiz.questions.map((question, index) =>
+            UserAttemptDtoMapper.toQuestionDetailDto(question, attempt.answers[index]),
+          )
+        : [];
 
     return {
       id: attempt.id,
       score: attempt.score,
+      totalQuestions: attempt.totalQuestions,
       takenAt: serializeDate(attempt.takenAt, 'attempt.takenAt'),
-      answers: attempt.answers,
+      answers: historyStatus === 'complete' ? attempt.answers : [],
+      historyStatus,
       quiz: {
         title: quiz.title,
         slug: quiz.slug,
         ...(quiz.description !== undefined && { description: quiz.description }),
-        questions: quiz.questions.map((question, index) =>
-          UserAttemptDtoMapper.toQuestionDetailDto(question, attempt.answers[index]),
-        ),
+        questions,
       },
     };
   }

@@ -16,6 +16,8 @@
   "notAnswered": "Not answered",
   "history": "Quiz History",
   "loadError": "Failed to load attempt details",
+  "historyUnavailableTitle": "Question details are unavailable for this attempt",
+  "historyUnavailableDescription": "The quiz questions were changed after this attempt. The original score and question count are preserved, but showing the current questions as historical answers would be inaccurate.",
   "retryQuiz": "Retake Quiz",
   "backToHistory": "Back to history",
   "questionPrompt": "Question",

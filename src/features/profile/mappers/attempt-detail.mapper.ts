@@ -33,6 +33,7 @@ export function toAttemptDetailViewModel(
   return {
     id: dto.id,
     score: dto.score,
+    totalQuestions: dto.totalQuestions,
     takenAt: dto.takenAt,
     takenAtLabel: formatDateTime(dto.takenAt, {
       locale,
@@ -45,6 +46,7 @@ export function toAttemptDetailViewModel(
       },
     }),
     answers: dto.answers,
+    historyStatus: dto.historyStatus,
     quiz: {
       title: dto.quiz.title,
       slug: dto.quiz.slug,

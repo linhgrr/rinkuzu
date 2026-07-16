@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build --webpack",
-    "start": "next start",
+    "start": "node scripts/start-standalone.mjs",
     "lint": "npm run check:api-error-codes && npm run check:internal-api-fetch && npm run check:architecture && npm run check:no-nextauth-v4 && eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit --pretty false",
     "typecheck:hardening": "tsc --noEmit --pretty false -p tsconfig.hardening.json",

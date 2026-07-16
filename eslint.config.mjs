@@ -102,6 +102,28 @@ export default defineConfig(
     },
   },
   {
+    files: ['src/lib/routing/localized-redirect.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'next/link',
+              message: "Use Link from '@/i18n/navigation' so locale prefixes stay correct.",
+            },
+            {
+              name: 'next/navigation',
+              importNames: ['useRouter', 'usePathname', 'Link'],
+              message:
+                "This server-only boundary may import redirect only. Keep client navigation in '@/i18n/navigation'.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: apiRouteFiles,
     ignores: apiEnvelopeExceptions,
     rules: {

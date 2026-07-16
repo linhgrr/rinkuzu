@@ -1,8 +1,9 @@
-import { redirect } from '@/i18n/navigation';
-import { getTranslations } from 'next-intl/server';
-import { getCurrentSession } from '@/lib/auth/session';
-import { GuestLanding } from '@/features/landing/components/GuestLanding';
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+
+import { GuestLanding } from '@/features/landing/components/GuestLanding';
+import { getCurrentSession } from '@/lib/auth/session';
+import { redirectToLocalizedPath } from '@/lib/routing/localized-redirect';
 import { buildLocalizedMetadata } from '@/lib/seo';
 import { ROUTES } from '@/shared/constants/routes';
 
@@ -26,8 +27,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const [{ locale }, session] = await Promise.all([params, getCurrentSession()]);
 
   if (session?.user) {
-    return redirect({ href: ROUTES.DASHBOARD, locale });
+    return redirectToLocalizedPath(ROUTES.DASHBOARD, locale);
   }
 
-  return <GuestLanding isAuthenticated={Boolean(session?.user)} />;
+  return <GuestLanding locale={locale} isAuthenticated={Boolean(session?.user)} />;
 }

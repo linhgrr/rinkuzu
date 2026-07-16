@@ -26,17 +26,34 @@ function normalizePath(pathname: string): string {
   return pathname;
 }
 
-export function stripLocaleFromPath(pathname: string): string {
+/**
+ * Shared locale-prefix segment parse for stripLocaleFromPath / getLocaleFromPath.
+ * Returns locale only when the first path segment is a supported locale code.
+ */
+function parseLocalePath(pathname: string): {
+  locale: (typeof locales)[number] | null;
+  pathWithoutLocale: string;
+} {
   const normalized = normalizePath(pathname);
   const segments = normalized.split('/');
   const firstSegment = segments[1];
 
   if (firstSegment !== undefined && locales.includes(firstSegment as (typeof locales)[number])) {
     const restPath = `/${segments.slice(2).join('/')}`;
-    return normalizePath(restPath === '/' ? '/' : restPath);
+    return {
+      locale: firstSegment as (typeof locales)[number],
+      pathWithoutLocale: normalizePath(restPath === '/' ? '/' : restPath),
+    };
   }
 
-  return normalized;
+  return {
+    locale: null,
+    pathWithoutLocale: normalized,
+  };
+}
+
+export function stripLocaleFromPath(pathname: string): string {
+  return parseLocalePath(pathname).pathWithoutLocale;
 }
 
 /**
@@ -79,21 +96,10 @@ export function toBrowserPath(pathWithoutLocale: string, locale: string): string
 }
 
 export function getLocaleFromPath(pathname: string): LocalePathInfo {
-  const normalized = normalizePath(pathname);
-  const segments = normalized.split('/');
-  const firstSegment = segments[1];
-
-  if (firstSegment !== undefined && locales.includes(firstSegment as (typeof locales)[number])) {
-    const restPath = `/${segments.slice(2).join('/')}`;
-    return {
-      locale: firstSegment,
-      pathWithoutLocale: normalizePath(restPath === '/' ? '/' : restPath),
-    };
-  }
-
+  const { locale, pathWithoutLocale } = parseLocalePath(pathname);
   return {
-    locale: defaultLocale,
-    pathWithoutLocale: normalized,
+    locale: locale ?? defaultLocale,
+    pathWithoutLocale,
   };
 }
 

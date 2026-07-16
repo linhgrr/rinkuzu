@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getLocaleFromPath, shouldHideGlobalFooter, toBrowserPath, toIntlHref } from './pathname';
+import {
+  getLocaleFromPath,
+  shouldHideGlobalFooter,
+  stripLocaleFromPath,
+  toBrowserPath,
+  toIntlHref,
+} from './pathname';
 
 describe('toIntlHref / toBrowserPath', () => {
   it('strips locale prefixes for next-intl navigation', () => {
@@ -23,6 +29,48 @@ describe('toIntlHref / toBrowserPath', () => {
       pathWithoutLocale: '/dashboard',
     });
     expect(getLocaleFromPath('/')).toEqual({ locale: 'vi', pathWithoutLocale: '/' });
+  });
+});
+
+describe('stripLocaleFromPath / getLocaleFromPath', () => {
+  it('handles localized root paths', () => {
+    expect(stripLocaleFromPath('/en')).toBe('/');
+    expect(stripLocaleFromPath('/vi')).toBe('/');
+    expect(getLocaleFromPath('/en')).toEqual({ locale: 'en', pathWithoutLocale: '/' });
+    expect(getLocaleFromPath('/vi')).toEqual({ locale: 'vi', pathWithoutLocale: '/' });
+  });
+
+  it('handles localized nested paths', () => {
+    expect(stripLocaleFromPath('/en/dashboard')).toBe('/dashboard');
+    expect(stripLocaleFromPath('/vi/adaptive/exercise')).toBe('/adaptive/exercise');
+    expect(getLocaleFromPath('/en/dashboard')).toEqual({
+      locale: 'en',
+      pathWithoutLocale: '/dashboard',
+    });
+    expect(getLocaleFromPath('/vi/adaptive/exercise')).toEqual({
+      locale: 'vi',
+      pathWithoutLocale: '/adaptive/exercise',
+    });
+  });
+
+  it('uses default locale when path has no locale prefix', () => {
+    expect(stripLocaleFromPath('/dashboard')).toBe('/dashboard');
+    expect(stripLocaleFromPath('/')).toBe('/');
+    expect(getLocaleFromPath('/dashboard')).toEqual({
+      locale: 'vi',
+      pathWithoutLocale: '/dashboard',
+    });
+    expect(getLocaleFromPath('/')).toEqual({ locale: 'vi', pathWithoutLocale: '/' });
+  });
+
+  it('normalizes trailing slashes', () => {
+    expect(stripLocaleFromPath('/en/')).toBe('/');
+    expect(stripLocaleFromPath('/vi/dashboard/')).toBe('/dashboard');
+    expect(getLocaleFromPath('/en/')).toEqual({ locale: 'en', pathWithoutLocale: '/' });
+    expect(getLocaleFromPath('/vi/dashboard/')).toEqual({
+      locale: 'vi',
+      pathWithoutLocale: '/dashboard',
+    });
   });
 });
 

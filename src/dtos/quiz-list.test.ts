@@ -7,7 +7,6 @@ describe('quizListQuerySchema', () => {
       page: 1,
       limit: 10,
       mine: false,
-      compact: false,
     });
   });
 
@@ -16,7 +15,6 @@ describe('quizListQuerySchema', () => {
       quizListQuerySchema.parse({
         folder: 'unfiled',
         mine: 'true',
-        compact: 'false',
         visibility: 'private',
       }),
     ).toEqual({
@@ -24,7 +22,6 @@ describe('quizListQuerySchema', () => {
       page: 1,
       limit: 10,
       mine: true,
-      compact: false,
       visibility: 'private',
     });
   });
@@ -33,5 +30,6 @@ describe('quizListQuerySchema', () => {
     expect(quizListQuerySchema.safeParse({ folder: 'default' }).success).toBe(false);
     expect(quizListQuerySchema.safeParse({ folder: 'null' }).success).toBe(false);
     expect(quizListQuerySchema.safeParse({ page: 'NaN' }).success).toBe(false);
+    expect(quizListQuerySchema.safeParse({ compact: 'true' }).success).toBe(false);
   });
 });

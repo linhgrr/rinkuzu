@@ -9,8 +9,6 @@ import type {
 
 export interface QuizFindOptions extends RepositoryPaginationOptions {
   sort?: Record<string, 1 | -1>;
-  populate?: string[];
-  compact?: boolean;
 }
 
 type QuizTextSearchCondition = { title: RegExp } | { description: RegExp };

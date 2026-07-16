@@ -66,7 +66,6 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
     isPrivate: false,
     page: 1,
     limit: 5000,
-    compact: true,
     onlyMine: false,
   });
 

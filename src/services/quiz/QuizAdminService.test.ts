@@ -88,8 +88,6 @@ describe('QuizAdminService', () => {
         page: 1,
         limit: 12,
         sort: { createdAt: -1 },
-        populate: ['author'],
-        compact: true,
       },
     );
     expect(result.data.quizzes[0]).toMatchObject({
@@ -99,7 +97,7 @@ describe('QuizAdminService', () => {
     });
   });
 
-  it('uses compact repository reads for quiz list DTOs', async () => {
+  it('uses the canonical summary repository read for quiz list DTOs', async () => {
     const repository = createRepository({
       findAll: vi.fn().mockResolvedValue({
         items: [{ ...quiz, questionCount: 1, questions: [] }],
@@ -119,7 +117,6 @@ describe('QuizAdminService', () => {
       page: 1,
       limit: 10,
       onlyMine: false,
-      compact: false,
     });
 
     expect(result.quizzes[0]).toMatchObject({
@@ -132,8 +129,6 @@ describe('QuizAdminService', () => {
         page: 1,
         limit: 10,
         sort: { createdAt: -1 },
-        populate: ['author'],
-        compact: true,
       },
     );
   });

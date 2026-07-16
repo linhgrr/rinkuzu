@@ -254,13 +254,13 @@ describe('QuizRepository.findUserQuizzes', () => {
     expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
   });
 
-  it('normalizes excludeAuthor for compact public quiz queries', async () => {
+  it('normalizes excludeAuthor for indexed public quiz page and count queries', async () => {
     const repository = new QuizRepository();
     const userId = '507f191e810c19729de860eb';
 
     await repository.findAll(
       { isPrivate: false, excludeAuthor: userId },
-      { page: 1, limit: 4, compact: true, sort: { createdAt: -1 } },
+      { page: 1, limit: 4, sort: { createdAt: -1 } },
     );
 
     const expectedFilter = {

@@ -75,7 +75,6 @@ function createService() {
     findByUserAndQuiz: vi.fn(),
     upsert: vi.fn(),
     deleteByUserAndQuiz: vi.fn(),
-    findInProgressByUser: vi.fn(),
   };
 
   return {

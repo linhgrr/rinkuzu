@@ -105,7 +105,8 @@ async function applyPlan(db, plan, options) {
 
   const execution = [];
   const approvedFingerprints = new Set(plan.actions.map((action) => action.fingerprint));
-  const plannedActions = selectIndexActionsForMode(plan, options.mode);
+  const plannedActions = selectIndexActionsForMode(plan, options.mode, options.actionTypes);
+  const selectedFingerprints = plannedActions.map((action) => action.fingerprint);
   for (const plannedAction of plannedActions) {
     if (!isApplicableAction(plannedAction)) {
       throw new MigrationSafetyError(`Unsupported automatic action: ${plannedAction.type}`);
@@ -165,6 +166,7 @@ async function applyPlan(db, plan, options) {
     const verificationIssues = validateSafeOnlyRemainder({
       sourcePlan: plan,
       verificationPlan: verification,
+      selectedFingerprints,
     });
     if (verificationIssues.length > 0) {
       throw new MigrationSafetyError(verificationIssues.join('; '));
@@ -172,14 +174,20 @@ async function applyPlan(db, plan, options) {
   }
 
   const productionContractVerified = verification.blockingCount === 0;
+  const hasRemainingSafeActions = verification.actions.some((action) => action.sensitive !== true);
 
   return {
     mode: options.mode,
-    status: productionContractVerified ? 'verified' : 'sensitive_approval_required',
+    status: productionContractVerified
+      ? 'verified'
+      : hasRemainingSafeActions
+        ? 'additional_safe_actions_pending'
+        : 'sensitive_approval_required',
     sourcePlanSha: plan.planSha,
     verificationPlanSha: verification.planSha,
     safeActionsVerified: true,
     productionContractVerified,
+    actionTypeFilter: options.actionTypes,
     execution,
     verification,
   };

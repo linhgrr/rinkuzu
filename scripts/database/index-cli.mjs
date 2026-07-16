@@ -1,5 +1,6 @@
 const MODES = new Set(['plan', 'check', 'apply', 'apply-safe-only', 'verify']);
 const APPLY_MODES = new Set(['apply', 'apply-safe-only']);
+const ACTION_TYPES = new Set(['create', 'hide', 'unhide', 'update_ttl', 'drop']);
 const APPROVAL_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 
 export class CliUsageError extends Error {
@@ -14,6 +15,7 @@ export function parseIndexCliArgs(args, env = {}) {
   let verifyAfterApply = false;
   let planSha = env.INDEX_PLAN_SHA ?? null;
   let approvalFile = env.INDEX_APPROVAL_FILE ?? null;
+  let actionTypes = parseActionTypes(env.INDEX_ACTION_TYPES ?? null);
 
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
@@ -55,6 +57,14 @@ export function parseIndexCliArgs(args, env = {}) {
       approvalFile = argument.slice('--approval-file='.length);
       continue;
     }
+    if (argument === '--action-types') {
+      actionTypes = parseActionTypes(requireValue(args, ++index, '--action-types'));
+      continue;
+    }
+    if (argument.startsWith('--action-types=')) {
+      actionTypes = parseActionTypes(argument.slice('--action-types='.length));
+      continue;
+    }
 
     throw new CliUsageError(`Unknown argument: ${argument}`);
   }
@@ -66,25 +76,36 @@ export function parseIndexCliArgs(args, env = {}) {
   if (APPLY_MODES.has(mode) && planSha !== null && !/^[a-f0-9]{64}$/i.test(planSha)) {
     throw new CliUsageError('--plan-sha must be a 64-character SHA-256 digest');
   }
+  if (actionTypes !== null && mode !== 'apply-safe-only') {
+    throw new CliUsageError('--action-types is allowed only with --apply-safe-only');
+  }
 
-  return { mode, planSha, approvalFile, verifyAfterApply };
+  return { mode, planSha, approvalFile, verifyAfterApply, actionTypes };
 }
 
 export function isIndexApplyMode(mode) {
   return APPLY_MODES.has(mode);
 }
 
-export function selectIndexActionsForMode(plan, mode) {
+/**
+ * @param {{ actions: Array<{ fingerprint: string, sensitive?: boolean, type?: string }> }} plan
+ * @param {string} mode
+ * @param {string[] | null} actionTypes
+ */
+export function selectIndexActionsForMode(plan, mode, actionTypes = null) {
   if (mode === 'apply') return plan.actions;
   if (mode === 'apply-safe-only') {
-    return plan.actions.filter((action) => action.sensitive !== true);
+    return plan.actions.filter(
+      (action) =>
+        action.sensitive !== true && (actionTypes === null || actionTypes.includes(action.type)),
+    );
   }
   throw new CliUsageError(`Mode ${mode} is not an apply mode`);
 }
 
-export function validateSafeOnlyRemainder({ sourcePlan, verificationPlan }) {
+export function validateSafeOnlyRemainder({ sourcePlan, verificationPlan, selectedFingerprints }) {
   const expected = sourcePlan.actions
-    .filter((action) => action.sensitive === true)
+    .filter((action) => !selectedFingerprints.includes(action.fingerprint))
     .map((action) => action.fingerprint)
     .sort();
   const actual = verificationPlan.actions.map((action) => action.fingerprint).sort();
@@ -93,11 +114,8 @@ export function validateSafeOnlyRemainder({ sourcePlan, verificationPlan }) {
   if (verificationPlan.manualCount > 0) {
     issues.push('Post-apply verification contains manual index drift');
   }
-  if (verificationPlan.actions.some((action) => action.sensitive !== true)) {
-    issues.push('Post-apply verification contains non-sensitive index drift');
-  }
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    issues.push('Post-apply sensitive drift does not match the source plan');
+    issues.push('Post-apply drift does not exactly match the unselected source actions');
   }
   return issues;
 }
@@ -159,6 +177,23 @@ function requireValue(args, index, flag) {
   const value = args[index];
   if (!value || value.startsWith('--')) throw new CliUsageError(`${flag} requires a value`);
   return value;
+}
+
+function parseActionTypes(value) {
+  if (value === null) return null;
+  const parsed = [
+    ...new Set(
+      String(value)
+        .split(',')
+        .map((entry) => entry.trim()),
+    ),
+  ].filter(Boolean);
+  if (parsed.length === 0) throw new CliUsageError('--action-types requires at least one type');
+  const unsupported = parsed.filter((type) => !ACTION_TYPES.has(type));
+  if (unsupported.length > 0) {
+    throw new CliUsageError(`Unsupported index action type(s): ${unsupported.join(', ')}`);
+  }
+  return parsed.sort();
 }
 
 function nonEmpty(value) {

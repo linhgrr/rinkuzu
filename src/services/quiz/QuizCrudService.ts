@@ -16,7 +16,7 @@ import type {
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
-import { getAuthorId, checkPrivateQuizAccess, PREMIUM_REQUIRED_CODE } from './quiz-helpers';
+import { getAuthorId, PREMIUM_REQUIRED_CODE, requireQuizReadAccess } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/lib/mongoose-errors';
@@ -177,20 +177,14 @@ export class QuizCrudService {
     userId?: string,
   ): Promise<ServiceResult<QuizDetailDto>> {
     try {
-      const quiz = await this.quizRepository.findById(id);
+      const access = await requireQuizReadAccess(
+        await this.quizRepository.findById(id),
+        userId,
+        userRole,
+      );
+      if (!access.success) return access;
 
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
-      if (privateAccessError) return privateAccessError;
-
-      return { success: true, data: QuizDetailDtoMapper.toDetail(quiz) };
+      return { success: true, data: QuizDetailDtoMapper.toDetail(access.data) };
     } catch (error) {
       logger.error({ error }, 'Error in getQuizById');
       return {

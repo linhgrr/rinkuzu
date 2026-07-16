@@ -8,6 +8,16 @@ import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { FolderDtoMapper } from '@/mappers/folder/FolderDtoMapper';
 import { logger } from '@/lib/logger';
 
+function toFolderNameConflictFailure(error: unknown): ServiceResult<never> | null {
+  return error instanceof FolderNameConflictError
+    ? {
+        success: false,
+        error: error.message,
+        statusCode: 409,
+      }
+    : null;
+}
+
 export class FolderService implements IFolderService {
   constructor(private readonly folderRepository: IFolderRepository) {}
 
@@ -36,13 +46,9 @@ export class FolderService implements IFolderService {
         data: FolderDtoMapper.toSummary(folder),
       };
     } catch (error) {
-      if (error instanceof FolderNameConflictError) {
-        return {
-          success: false,
-          error: error.message,
-          statusCode: 409,
-        };
-      }
+      const conflictFailure = toFolderNameConflictFailure(error);
+      if (conflictFailure) return conflictFailure;
+
       logger.error({ error, ownerId }, 'Create folder error');
       return {
         success: false,
@@ -71,13 +77,9 @@ export class FolderService implements IFolderService {
         data: FolderDtoMapper.toSummary(folder),
       };
     } catch (error) {
-      if (error instanceof FolderNameConflictError) {
-        return {
-          success: false,
-          error: error.message,
-          statusCode: 409,
-        };
-      }
+      const conflictFailure = toFolderNameConflictFailure(error);
+      if (conflictFailure) return conflictFailure;
+
       logger.error({ error, folderId, ownerId }, 'Rename folder error');
       return {
         success: false,

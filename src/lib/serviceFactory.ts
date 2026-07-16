@@ -63,12 +63,11 @@ export class ServiceFactory {
       this.services.quiz = new QuizService(
         this.repositories.quiz,
         this.repositories.user,
-        this.repositories.attempt,
         this.repositories.discussion,
         this.repositories.report,
         this.repositories.quizProgress,
-        this.repositories.folder,
         this.repositories.quizAttemptProgress,
+        this.repositories.folder,
       );
     }
     return this.services.quiz;

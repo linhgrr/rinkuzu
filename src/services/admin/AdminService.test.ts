@@ -71,7 +71,6 @@ function createQuizRepository(
 function createAttemptRepository(): IAttemptRepository {
   return {
     findByUser: vi.fn(),
-    create: vi.fn(),
     countByUser: vi.fn(),
     countByQuiz: vi.fn(),
     findRecentActivity: vi.fn().mockResolvedValue([]),

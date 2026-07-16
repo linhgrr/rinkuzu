@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-16.3';
+export const INDEX_CONTRACT_VERSION = '2026-07-16.4';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -23,6 +23,24 @@ export const INDEX_CONTRACT = Object.freeze([
   required('attempts.quiz-recent', 'attempts', { quiz: 1, takenAt: -1 }),
   required('attempts.user-quiz', 'attempts', { user: 1, quiz: 1 }),
   required('attempts.recent', 'attempts', { takenAt: -1 }),
+  required(
+    'attempts.user-idempotency',
+    'attempts',
+    { user: 1, idempotencyKey: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { user: { $type: 'objectId' } },
+    },
+  ),
+  required(
+    'attempts.guest-idempotency',
+    'attempts',
+    { guestEmail: 1, idempotencyKey: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { guestEmail: { $type: 'string' } },
+    },
+  ),
 
   // auditlogs
   required('auditlogs.user', 'auditlogs', { userId: 1 }),

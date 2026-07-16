@@ -18,7 +18,7 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
       return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);
     }
 
-    if (!email && !parsedBody.data.userEmail) {
+    if (!session?.user?.id && !email && !parsedBody.data.userEmail) {
       return apiErr('validation_error', 'User email is required', 400);
     }
 
@@ -27,6 +27,7 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
     const result = await quizService.submitQuizAttempt(
       parsedParams.data.slug,
       parsedBody.data.answers,
+      parsedBody.data.idempotencyKey,
       session,
       parsedBody.data.userEmail,
     );

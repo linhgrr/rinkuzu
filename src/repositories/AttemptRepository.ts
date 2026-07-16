@@ -6,7 +6,6 @@ import type {
   AttemptCountFilter,
   AttemptOwnerIdentity,
   AttemptScoreStats,
-  CreateAttemptData,
   IAttemptRepository,
   RecentAttemptActivity,
 } from '@/interfaces/repositories/IAttemptRepository';
@@ -17,7 +16,6 @@ import type {
   RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 import { AttemptPersistenceMapper } from '@/repositories/mappers/AttemptPersistenceMapper';
-import { AnswerPersistenceMapper } from '@/repositories/mappers/AnswerPersistenceMapper';
 import type {
   AttemptPersistenceRecord,
   RecentAttemptActivityPersistenceRecord,
@@ -68,28 +66,6 @@ export class AttemptRepository implements IAttemptRepository {
       items: records.map(AttemptPersistenceMapper.toEntity),
       pagination: buildPaginationMeta(page, limit, totalItems),
     };
-  }
-
-  async create(data: CreateAttemptData): Promise<Attempt> {
-    await connectDB();
-    const identity = data.userId ? { user: data.userId } : { guestEmail: data.guestEmail };
-    const document = await AttemptModel.create({
-      ...identity,
-      quiz: data.quizId,
-      quizSnapshot: {
-        ...data.quizSnapshot,
-        questions: data.quizSnapshot.questions.map(({ id, ...question }) => ({
-          _id: id,
-          ...question,
-        })),
-      },
-      answers: data.answers.map(AnswerPersistenceMapper.toPersistence),
-      score: data.score,
-      totalQuestions: data.totalQuestions,
-      takenAt: data.takenAt,
-    });
-    const record: AttemptPersistenceRecord = document.toObject();
-    return AttemptPersistenceMapper.toEntity(record);
   }
 
   async countByUser(userId: string): Promise<number> {

@@ -38,6 +38,7 @@ export interface QuizDiscussionViewModel {
 export interface SubmitQuizAttemptInput {
   slug: string;
   answers: QuizAnswer[];
+  idempotencyKey: string;
   userEmail: string;
 }
 

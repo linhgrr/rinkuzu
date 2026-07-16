@@ -4,8 +4,8 @@ import { assertOk, assertFail } from '@/interfaces/services/types';
 import { QuizService } from '@/services/quiz/QuizService';
 import type { Discussion } from '@/entities/Discussion';
 import type { Quiz } from '@/entities/Quiz';
-import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import type { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
+import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IReportRepository } from '@/interfaces/repositories/IReportRepository';
@@ -56,17 +56,6 @@ function createQuizService(quiz: Quiz) {
     countByCreatedAtBuckets: vi.fn(),
     countByRole: vi.fn(),
   };
-  const attemptRepository: Mocked<IAttemptRepository> = {
-    findByUser: vi.fn(),
-    create: vi.fn(),
-    countByUser: vi.fn(),
-    countByQuiz: vi.fn(),
-    findRecentActivity: vi.fn(),
-    findByIdWithQuiz: vi.fn(),
-    count: vi.fn(),
-    countByTakenAtBuckets: vi.fn(),
-    scoreStats: vi.fn().mockResolvedValue({ averageScore: 0, highestScore: 0, lowestScore: 0 }),
-  };
   const discussionRepository: Mocked<IDiscussionRepository> = {
     findByQuiz: vi.fn().mockResolvedValue([]),
     addCommentForQuizQuestion: vi.fn(),
@@ -83,14 +72,17 @@ function createQuizService(quiz: Quiz) {
     findByUserAndQuiz: vi.fn(),
     deleteByUserAndQuiz: vi.fn(),
   };
+  const attemptProgressRepository: Mocked<IQuizAttemptProgressRepository> = {
+    recordSubmittedAttempt: vi.fn(),
+  };
 
   const service = new QuizService(
     quizRepository,
     userRepository,
-    attemptRepository,
     discussionRepository,
     reportRepository,
     progressRepository,
+    attemptProgressRepository,
   );
 
   return { service, quizRepository, discussionRepository };
@@ -123,7 +115,13 @@ describe('QuizService subscription access gates', () => {
   it('blocks anonymous attempts against private quizzes', async () => {
     const { service } = createQuizService(privateQuiz);
 
-    const result = await service.submitQuizAttempt('private-quiz', [0], null, 'anon@example.com');
+    const result = await service.submitQuizAttempt(
+      'private-quiz',
+      [0],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
+      null,
+      'anon@example.com',
+    );
 
     assertFail(result);
     expect(result.statusCode).toBe(401);

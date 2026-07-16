@@ -56,7 +56,6 @@ function createService(overrides: ServiceOverrides = {}) {
   };
   const attemptRepository: Mocked<IAttemptRepository> = {
     findByUser: vi.fn(),
-    create: vi.fn(),
     countByUser: vi.fn(),
     countByQuiz: vi.fn(),
     findRecentActivity: vi.fn(),

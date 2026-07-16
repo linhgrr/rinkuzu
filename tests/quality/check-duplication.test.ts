@@ -154,6 +154,23 @@ describe('duplicate-code quality gate', () => {
     ).toEqual(['New duplicate detected: src/a.ts:1-5 <-> src/b.ts:1-5.']);
   });
 
+  it('fails closed for parse-error fragments instead of treating them as import-only', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'rinkuzu-duplication-parse-'));
+    temporaryDirectories.push(root);
+    mkdirSync(path.join(root, 'src'));
+    // Incomplete import: runtime parseDiagnostics must be non-empty → not import-only.
+    const broken = ['import {', '  first,', '  second', "from './dependency'", ''].join('\n');
+    writeFileSync(path.join(root, 'src', 'a.ts'), broken);
+    writeFileSync(path.join(root, 'src', 'b.ts'), broken);
+    const duplicate = {
+      format: 'typescript',
+      firstFile: { name: 'a.ts', start: 1, end: 4 },
+      secondFile: { name: 'b.ts', start: 1, end: 4 },
+    };
+
+    expect(isImportOnlyDuplicate(root, duplicate)).toBe(false);
+  });
+
   it('keeps a fingerprint stable when unchanged fragments move to other lines', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'rinkuzu-duplication-'));
     temporaryDirectories.push(root);

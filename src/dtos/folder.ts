@@ -13,8 +13,6 @@ export const createFolderRequestSchema = z.object({
   name: z.string().trim().min(1, 'Folder name is required').max(100),
 });
 
-export const renameFolderRequestSchema = createFolderRequestSchema;
-
 export const assignQuizRequestSchema = z.object({
   quizId: objectIdSchema,
 });

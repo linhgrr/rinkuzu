@@ -43,4 +43,90 @@ describe('landing performance contract', () => {
     expect(styles).toMatch(/contain-intrinsic-block-size:\s*auto\s+720px;/);
     expect(styles).toMatch(/contain-intrinsic-block-size:\s*auto\s+1100px;/);
   });
+
+  it('renders the landing header without a hydrated mobile-menu state machine', () => {
+    const source = fs.readFileSync('src/features/landing/components/home/Header.tsx', 'utf8');
+
+    expect(source).not.toContain("'use client'");
+    expect(source).not.toMatch(/\buseState\b/);
+    expect(source).not.toMatch(/\bonClick=/);
+    expect(source).toContain('<details className="group md:hidden">');
+    expect(source).toContain('aria-label="Toggle navigation menu"');
+  });
+
+  it('keeps landing CTAs server-rendered without the pointer-tracking wrapper', () => {
+    const hero = fs.readFileSync('src/features/landing/components/home/Hero.tsx', 'utf8');
+    const bottomCta = fs.readFileSync('src/features/landing/components/home/BottomCta.tsx', 'utf8');
+
+    expect(hero).not.toContain('Magnetic');
+    expect(bottomCta).not.toContain('Magnetic');
+    expect(fs.existsSync('src/features/landing/components/home/Magnetic.tsx')).toBe(false);
+  });
+
+  it('server-renders an accessible testimonials marquee without Embla hydration', () => {
+    const source = fs.readFileSync('src/features/landing/components/home/Testimonials.tsx', 'utf8');
+    const styles = fs.readFileSync('src/app/globals.css', 'utf8');
+
+    expect(source).not.toContain("'use client'");
+    expect(source).not.toMatch(/\buse(?:Effect|Ref|EmblaCarousel)\b/);
+    expect(source).not.toContain('embla-carousel');
+    expect(source).toContain('[false, true].flatMap');
+    expect(source).toContain('aria-hidden={duplicate || undefined}');
+    expect(styles).toMatch(
+      /\.landing-testimonials-track\s*\{[^}]*animation:\s*landing-marquee\s+45s\s+linear\s+infinite;/s,
+    );
+    expect(styles).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.landing-testimonials-track\s*\{[^}]*animation:\s*none;/,
+    );
+  });
+
+  it('isolates the homepage from generic marketing client chrome', () => {
+    const landingRoute = 'src/app/[locale]/(landing)/page.tsx';
+
+    expect(fs.existsSync(landingRoute)).toBe(true);
+    expect(fs.existsSync('src/app/[locale]/(marketing)/page.tsx')).toBe(false);
+    const source = fs.readFileSync(landingRoute, 'utf8');
+    expect(source).toContain(
+      '<GuestLanding locale={locale} isAuthenticated={Boolean(session?.user)} />',
+    );
+    expect(source).not.toContain('@/i18n/navigation');
+    expect(source).toContain('redirectToLocalizedPath(ROUTES.DASHBOARD, locale)');
+
+    const redirectBoundary = fs.readFileSync('src/lib/routing/localized-redirect.ts', 'utf8');
+    expect(redirectBoundary).toContain("import 'server-only'");
+    expect(redirectBoundary).toContain('redirect(toBrowserPath(pathWithoutLocale, locale))');
+
+    const eslintConfig = fs.readFileSync('eslint.config.mjs', 'utf8');
+    expect(eslintConfig).toContain("files: ['src/lib/routing/localized-redirect.ts']");
+    expect(eslintConfig).toContain(
+      "This server-only boundary may import redirect only. Keep client navigation in '@/i18n/navigation'.",
+    );
+  });
+
+  it('server-renders locale-prefixed landing links without a client navigation layer', () => {
+    const componentPaths = [
+      'src/features/landing/components/home/Header.tsx',
+      'src/features/landing/components/home/Hero.tsx',
+      'src/features/landing/components/home/BottomCta.tsx',
+      'src/features/landing/components/home/Footer.tsx',
+    ];
+
+    for (const componentPath of componentPaths) {
+      const source = fs.readFileSync(componentPath, 'utf8');
+      expect(source).not.toContain('@/i18n/navigation');
+      expect(source).not.toContain("from 'next/link'");
+      expect(source).toContain('toBrowserPath(');
+      expect(source).toMatch(/<a\s[\s\S]*?href=\{?/);
+    }
+  });
+
+  it('server-renders the responsive how-it-works layout without ResizeObserver hydration', () => {
+    const source = fs.readFileSync('src/features/landing/components/home/HowItWorks.tsx', 'utf8');
+
+    expect(source).not.toContain("'use client'");
+    expect(source).not.toMatch(/\b(?:useEffect|useRef|useState|ResizeObserver)\b/);
+    expect(source).toContain('aspect-[1728/387]');
+    expect(source).toContain('grid grid-cols-3');
+    expect(source).toContain('gap-[clamp(24px,5vw,96px)]');
+  });
 });

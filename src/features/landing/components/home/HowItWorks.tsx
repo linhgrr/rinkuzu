@@ -1,13 +1,7 @@
-'use client';
-
 import Image from 'next/image';
-import { useRef, useState, useEffect } from 'react';
+
 import { imgGroup8 } from './constants';
 import { Reveal } from './Reveal';
-
-const DESIGN_W = 1728;
-const LINE_H = 387;
-const CONTENT_H = 900;
 
 const cards = [
   {
@@ -38,21 +32,6 @@ interface HowItWorksCardProps {
 }
 
 export default function HowItWorks() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      if (!entry) return;
-      const w = entry.contentRect.width;
-      setScale(Math.min(w / DESIGN_W, 1));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   return (
     <div className="flex flex-col gap-16 xl:gap-[128px] items-center w-full">
       {/* Title */}
@@ -68,8 +47,7 @@ export default function HowItWorks() {
         </p>
       </Reveal>
 
-      {/* Scaled container: line + cards scale together */}
-      <div ref={containerRef} className="w-full">
+      <div className="w-full">
         {/* Mobile layout */}
         <div className="flex flex-col gap-8 items-center px-4 xl:hidden">
           {cards.map((c, i) => (
@@ -79,41 +57,28 @@ export default function HowItWorks() {
           ))}
         </div>
 
-        {/* Desktop: wrapper whose height matches the visual (scaled) size */}
-        <div
-          className="hidden xl:block relative overflow-visible"
-          style={{ height: CONTENT_H * scale }}
-        >
-          <div
-            className="absolute top-0 left-0 flex flex-col items-center"
-            style={{
-              width: DESIGN_W,
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-            }}
-          >
-            <div className="relative shrink-0 w-full" style={{ height: LINE_H }}>
-              <div
-                className="absolute"
-                style={{ top: '-3.18%', right: '-1.23%', bottom: '-0.26%', left: '-1.23%' }}
-              >
-                <Image
-                  alt=""
-                  className="block max-w-none object-fill"
-                  fill
-                  sizes="1728px"
-                  src={imgGroup8}
-                />
-              </div>
+        <div className="relative hidden xl:block">
+          <div className="relative aspect-[1728/387] w-full shrink-0">
+            <div
+              className="absolute"
+              style={{ top: '-3.18%', right: '-1.23%', bottom: '-0.26%', left: '-1.23%' }}
+            >
+              <Image
+                alt=""
+                className="block max-w-none object-fill"
+                fill
+                sizes="(max-width: 1920px) calc(100vw - 192px), 1728px"
+                src={imgGroup8}
+              />
             </div>
+          </div>
 
-            <div className="flex gap-[96px] items-start shrink-0">
-              {cards.map((card) => (
-                <div key={card.num}>
-                  <Card {...card} />
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-3 items-start gap-[clamp(24px,5vw,96px)]">
+            {cards.map((card) => (
+              <div key={card.num} className="min-w-0">
+                <Card {...card} />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -124,7 +89,7 @@ export default function HowItWorks() {
 function Card({ num, title, desc, pb }: HowItWorksCardProps) {
   return (
     <div
-      className="content-stretch flex flex-col gap-[22px] items-start px-[32px] relative rounded-bl-[24px] rounded-br-[24px] rounded-tr-[24px] shadow-[0px_16px_28px_0px_rgba(0,0,0,0.05)] shrink-0 w-[461px]"
+      className="relative flex w-full min-w-0 shrink-0 flex-col content-stretch items-start gap-[22px] rounded-bl-[24px] rounded-br-[24px] rounded-tr-[24px] px-[32px] shadow-[0px_16px_28px_0px_rgba(0,0,0,0.05)]"
       style={{ paddingTop: 56, paddingBottom: pb }}
     >
       <div

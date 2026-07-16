@@ -1,15 +1,22 @@
 import Image from 'next/image';
-import { Link } from '@/i18n/navigation';
+
+import { toBrowserPath } from '@/lib/routing/pathname';
 import { imgCharacterImg, imgGroup } from './constants';
-import { Magnetic } from './Magnetic';
 
 interface HeroProps {
+  locale: string;
   isAuthenticated?: boolean;
 }
 
-export default function Hero({ isAuthenticated = false }: HeroProps) {
-  const uploadHref = isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload';
-  const demoHref = isAuthenticated ? '/adaptive' : '/register?next=/adaptive';
+export default function Hero({ locale, isAuthenticated = false }: HeroProps) {
+  const uploadHref = toBrowserPath(
+    isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload',
+    locale,
+  );
+  const demoHref = toBrowserPath(
+    isAuthenticated ? '/adaptive' : '/register?next=/adaptive',
+    locale,
+  );
 
   return (
     <div className="relative w-full max-w-[1920px] mx-auto min-h-[90vh] xl:h-[1080px] flex flex-col xl:flex-row items-center xl:items-start justify-between mt-4 xl:mt-0">
@@ -33,35 +40,31 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-[16px] items-start sm:items-center">
-            <Magnetic className="w-full sm:w-auto">
-              <Link
-                href={demoHref}
-                className="border border-accent flex h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[rgba(255,124,35,0.2)] transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto"
-              >
-                <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
-                  Try Demo
-                </span>
-              </Link>
-            </Magnetic>
-            <Magnetic className="w-full sm:w-auto">
-              <Link
-                href={uploadHref}
-                className="bg-accent flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-accent-hover transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto shadow-orange"
-              >
-                <span className="size-[28px] relative flex items-center justify-center overflow-hidden">
-                  <Image
-                    alt="Upload"
-                    className="absolute inset-[12.5%_20.83%_12.5%_20.84%] max-w-none w-[66.6%] h-[66.6%]"
-                    height={28}
-                    src={imgGroup}
-                    width={28}
-                  />
-                </span>
-                <span className="font-unbounded font-medium text-[18px] text-[#06090e] whitespace-nowrap">
-                  Upload PDF
-                </span>
-              </Link>
-            </Magnetic>
+            <a
+              href={demoHref}
+              className="border border-accent flex h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[rgba(255,124,35,0.2)] transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto"
+            >
+              <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
+                Try Demo
+              </span>
+            </a>
+            <a
+              href={uploadHref}
+              className="bg-accent flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-accent-hover transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto shadow-orange"
+            >
+              <span className="size-[28px] relative flex items-center justify-center overflow-hidden">
+                <Image
+                  alt="Upload"
+                  className="absolute inset-[12.5%_20.83%_12.5%_20.84%] max-w-none w-[66.6%] h-[66.6%]"
+                  height={28}
+                  src={imgGroup}
+                  width={28}
+                />
+              </span>
+              <span className="font-unbounded font-medium text-[18px] text-[#06090e] whitespace-nowrap">
+                Upload PDF
+              </span>
+            </a>
           </div>
         </div>
       </div>

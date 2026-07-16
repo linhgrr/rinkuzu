@@ -39,6 +39,87 @@ interface CompactQuizPipelineOptions {
   sort: Record<string, 1 | -1>;
 }
 
+interface QuizListAggregateMeta {
+  totalItems: number;
+}
+
+interface QuizListAggregateResult {
+  items: QuizPersistenceRecord[];
+  meta: QuizListAggregateMeta[];
+}
+
+interface PaginatedQuizListPipelineOptions {
+  limit: number;
+  projection: PipelineStage.Project['$project'];
+  skip: number;
+}
+
+interface PaginatedQuizListQueryOptions extends RepositoryPaginationOptions {
+  projection: PipelineStage.Project['$project'];
+}
+
+const QUIZ_LIST_PROJECTION = {
+  _id: 1,
+  title: 1,
+  description: 1,
+  slug: 1,
+  author: 1,
+  questions: { $literal: [] },
+  questionCount: { $size: { $ifNull: ['$questions', []] } },
+  isPrivate: 1,
+  createdAt: 1,
+  updatedAt: 1,
+};
+
+const USER_QUIZ_LIST_PROJECTION = {
+  ...QUIZ_LIST_PROJECTION,
+  folder: 1,
+  pdfUrl: 1,
+  tags: 1,
+  sourceDraftId: 1,
+};
+
+function buildPaginatedQuizListPipeline(
+  filter: FilterQuery<QuizPersistenceRecord>,
+  options: PaginatedQuizListPipelineOptions,
+): PipelineStage[] {
+  return [
+    { $match: filter },
+    { $sort: { createdAt: -1 } },
+    {
+      $facet: {
+        items: [
+          { $skip: options.skip },
+          { $limit: options.limit },
+          { $project: options.projection },
+        ],
+        meta: [{ $count: 'totalItems' }],
+      },
+    },
+  ];
+}
+
+async function findPaginatedQuizList(
+  filter: FilterQuery<QuizPersistenceRecord>,
+  options: PaginatedQuizListQueryOptions,
+): Promise<PaginatedRepositoryResult<Quiz>> {
+  const { page, limit, projection } = options;
+  const [result] = await QuizModel.aggregate<QuizListAggregateResult>(
+    buildPaginatedQuizListPipeline(filter, {
+      limit,
+      projection,
+      skip: (page - 1) * limit,
+    }),
+  );
+  const records = result?.items ?? [];
+  const total = result?.meta[0]?.totalItems ?? 0;
+
+  return {
+    items: records.map(QuizPersistenceMapper.toEntity),
+    pagination: buildPaginationMeta(page, limit, total),
+  };
+}
+
 function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenceRecord> {
   const { excludeAuthor, ...rest } = filter;
   const normalizedFilter: FilterQuery<QuizPersistenceRecord> = { ...rest };
@@ -361,44 +442,13 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
   ): Promise<PaginatedRepositoryResult<Quiz>> {
     await connectDB();
 
-    const { page, limit } = options;
-    const skip = (page - 1) * limit;
-
     const filter: FilterQuery<QuizPersistenceRecord> = {
       author: Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId,
     };
-    const [records, total] = await Promise.all([
-      QuizModel.aggregate<QuizPersistenceRecord>([
-        { $match: filter },
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
-        { $limit: limit },
-        {
-          $project: {
-            _id: 1,
-            title: 1,
-            description: 1,
-            slug: 1,
-            author: 1,
-            folder: 1,
-            questions: { $literal: [] },
-            questionCount: { $size: { $ifNull: ['$questions', []] } },
-            isPrivate: 1,
-            pdfUrl: 1,
-            tags: 1,
-            sourceDraftId: 1,
-            createdAt: 1,
-            updatedAt: 1,
-          },
-        },
-      ]),
-      QuizModel.countDocuments(filter),
-    ]);
-
-    return {
-      items: records.map(QuizPersistenceMapper.toEntity),
-      pagination: buildPaginationMeta(page, limit, total),
-    };
+    return findPaginatedQuizList(filter, {
+      ...options,
+      projection: USER_QUIZ_LIST_PROJECTION,
+    });
   }
 
   async findPublicByAuthor(
@@ -406,35 +456,11 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Quiz>> {
     await connectDB();
-    const { page, limit } = options;
     const filter = { author: new Types.ObjectId(userId), isPrivate: false };
-    const [records, total] = await Promise.all([
-      QuizModel.aggregate<QuizPersistenceRecord>([
-        { $match: filter },
-        { $sort: { createdAt: -1 } },
-        { $skip: (page - 1) * limit },
-        { $limit: limit },
-        {
-          $project: {
-            _id: 1,
-            title: 1,
-            description: 1,
-            slug: 1,
-            author: 1,
-            questions: { $literal: [] },
-            questionCount: { $size: { $ifNull: ['$questions', []] } },
-            isPrivate: 1,
-            createdAt: 1,
-            updatedAt: 1,
-          },
-        },
-      ]),
-      QuizModel.countDocuments(filter),
-    ]);
-    return {
-      items: records.map(QuizPersistenceMapper.toEntity),
-      pagination: buildPaginationMeta(page, limit, total),
-    };
+    return findPaginatedQuizList(filter, {
+      ...options,
+      projection: QUIZ_LIST_PROJECTION,
+    });
   }
 
   async count(filter: CreatedAtCountFilter = {}): Promise<number> {

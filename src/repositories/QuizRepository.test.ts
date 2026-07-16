@@ -13,6 +13,20 @@ const quizModelMocks = vi.hoisted(() => ({
   updateLean: vi.fn(),
 }));
 
+const quizListRecord = {
+  _id: new Types.ObjectId('507f191e810c19729de860ea'),
+  title: 'Algebra Basics',
+  description: 'Linear equations',
+  slug: 'algebra-basics',
+  author: new Types.ObjectId('507f191e810c19729de860eb'),
+  folder: null,
+  questions: [],
+  questionCount: 12,
+  isPrivate: false,
+  createdAt: new Date('2026-07-01T00:00:00.000Z'),
+  updatedAt: new Date('2026-07-01T01:00:00.000Z'),
+};
+
 vi.mock('@/lib/mongoose', () => ({
   default: vi.fn().mockResolvedValue(undefined),
 }));
@@ -37,21 +51,7 @@ describe('QuizRepository.findUserQuizzes', () => {
     quizModelMocks.findOne.mockReturnValue({ select: quizModelMocks.select });
     quizModelMocks.populate.mockReturnValue({ lean: quizModelMocks.updateLean });
     quizModelMocks.select.mockReturnValue({ lean: quizModelMocks.lean });
-    quizModelMocks.aggregate.mockResolvedValue([
-      {
-        _id: new Types.ObjectId('507f191e810c19729de860ea'),
-        title: 'Algebra Basics',
-        description: 'Linear equations',
-        slug: 'algebra-basics',
-        author: new Types.ObjectId('507f191e810c19729de860eb'),
-        folder: null,
-        questions: [],
-        questionCount: 12,
-        isPrivate: false,
-        createdAt: new Date('2026-07-01T00:00:00.000Z'),
-        updatedAt: new Date('2026-07-01T01:00:00.000Z'),
-      },
-    ]);
+    quizModelMocks.aggregate.mockResolvedValue([quizListRecord]);
     quizModelMocks.countDocuments.mockResolvedValue(1);
     quizModelMocks.updateLean.mockResolvedValue(null);
   });
@@ -172,6 +172,9 @@ describe('QuizRepository.findUserQuizzes', () => {
   });
 
   it('projects user quiz list rows without loading question payloads', async () => {
+    quizModelMocks.aggregate.mockResolvedValueOnce([
+      { items: [quizListRecord], meta: [{ totalItems: 1 }] },
+    ]);
     const repository = new QuizRepository();
     const userId = '507f191e810c19729de860eb';
 
@@ -191,21 +194,29 @@ describe('QuizRepository.findUserQuizzes', () => {
     expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
       { $match: { author: new Types.ObjectId(userId) } },
       { $sort: { createdAt: -1 } },
-      { $skip: 10 },
-      { $limit: 10 },
       {
-        $project: expect.objectContaining({
-          questions: { $literal: [] },
-          questionCount: { $size: { $ifNull: ['$questions', []] } },
-        }),
+        $facet: {
+          items: [
+            { $skip: 10 },
+            { $limit: 10 },
+            {
+              $project: expect.objectContaining({
+                questions: { $literal: [] },
+                questionCount: { $size: { $ifNull: ['$questions', []] } },
+              }),
+            },
+          ],
+          meta: [{ $count: 'totalItems' }],
+        },
       },
     ]);
-    expect(quizModelMocks.countDocuments).toHaveBeenCalledWith({
-      author: new Types.ObjectId(userId),
-    });
+    expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
   });
 
   it('paginates public profile quizzes and counts the full result set', async () => {
+    quizModelMocks.aggregate.mockResolvedValueOnce([
+      { items: [quizListRecord], meta: [{ totalItems: 1 }] },
+    ]);
     const repository = new QuizRepository();
     const userId = '507f191e810c19729de860eb';
 
@@ -224,19 +235,23 @@ describe('QuizRepository.findUserQuizzes', () => {
         },
       },
       { $sort: { createdAt: -1 } },
-      { $skip: 12 },
-      { $limit: 12 },
       {
-        $project: expect.objectContaining({
-          questions: { $literal: [] },
-          questionCount: { $size: { $ifNull: ['$questions', []] } },
-        }),
+        $facet: {
+          items: [
+            { $skip: 12 },
+            { $limit: 12 },
+            {
+              $project: expect.objectContaining({
+                questions: { $literal: [] },
+                questionCount: { $size: { $ifNull: ['$questions', []] } },
+              }),
+            },
+          ],
+          meta: [{ $count: 'totalItems' }],
+        },
       },
     ]);
-    expect(quizModelMocks.countDocuments).toHaveBeenCalledWith({
-      author: new Types.ObjectId(userId),
-      isPrivate: false,
-    });
+    expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
   });
 
   it('normalizes excludeAuthor for compact public quiz queries', async () => {

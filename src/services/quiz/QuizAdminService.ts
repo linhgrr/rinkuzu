@@ -16,6 +16,14 @@ function escapeRegexLiteral(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function applyQuizSearchFilter(filter: QuizFindFilter, search?: string): void {
+  const normalizedSearch = search?.trim();
+  if (!normalizedSearch) return;
+
+  const searchRegex = new RegExp(escapeRegexLiteral(normalizedSearch), 'i');
+  filter.$or = [{ title: searchRegex }, { description: searchRegex }];
+}
+
 export class QuizAdminService {
   constructor(private quizRepository: IQuizRepository) {}
 
@@ -30,17 +38,12 @@ export class QuizAdminService {
         filter.isPrivate = true;
       }
 
-      if (search) {
-        const searchRegex = new RegExp(escapeRegexLiteral(search), 'i');
-        filter.$or = [{ title: searchRegex }, { description: searchRegex }];
-      }
+      applyQuizSearchFilter(filter, search);
 
       const result = await this.quizRepository.findAll(filter, {
         page,
         limit,
         sort: { createdAt: -1 },
-        populate: ['author'],
-        compact: true,
       });
 
       return {
@@ -111,16 +114,7 @@ export class QuizAdminService {
   }
 
   async getQuizzes(options: QuizListOptionsDto): Promise<QuizListDto> {
-    const {
-      search,
-      folder,
-      page,
-      limit,
-      isPrivate,
-      userRole: _userRole,
-      userId,
-      onlyMine,
-    } = options;
+    const { search, folder, page, limit, isPrivate, userId, onlyMine } = options;
 
     const filter: QuizFindFilter = {};
 
@@ -135,18 +129,12 @@ export class QuizAdminService {
       filter.folder = folder;
     }
 
-    // Add search functionality
-    if (search && search.trim()) {
-      const searchRegex = new RegExp(escapeRegexLiteral(search.trim()), 'i');
-      filter.$or = [{ title: searchRegex }, { description: searchRegex }];
-    }
+    applyQuizSearchFilter(filter, search);
 
     const result = await this.quizRepository.findAll(filter, {
       page,
       limit,
       sort: { createdAt: -1 },
-      populate: ['author'],
-      compact: true,
     });
     return {
       quizzes: result.items.map(QuizListDtoMapper.toListItem),

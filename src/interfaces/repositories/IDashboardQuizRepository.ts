@@ -1,7 +1,11 @@
 import type { Quiz } from '@/entities/Quiz';
-import type { QuizFindFilter, QuizFindOptions } from '@/interfaces/repositories/IQuizRepository';
+import type { QuizFindFilter } from '@/interfaces/repositories/IQuizRepository';
 
-export type DashboardRecentQuizOptions = Pick<QuizFindOptions, 'limit' | 'populate' | 'sort'>;
+export interface DashboardRecentQuizOptions {
+  limit: number;
+  populate?: string[];
+  sort?: Record<string, 1 | -1>;
+}
 
 export interface IDashboardQuizRepository {
   findRecent(filter: QuizFindFilter, options: DashboardRecentQuizOptions): Promise<Quiz[]>;

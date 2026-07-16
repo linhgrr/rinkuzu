@@ -58,7 +58,6 @@ export async function GET(): Promise<Response> {
       isPrivate: false,
       page: 1,
       limit: 5000,
-      compact: true,
       onlyMine: false,
     });
     for (const quiz of quizResult.quizzes) {

@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-16.1';
+export const INDEX_CONTRACT_VERSION = '2026-07-16.2';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -155,13 +155,6 @@ export const INDEX_CONTRACT = Object.freeze([
     { 'subscription.isActive': 1, 'subscription.endDate': 1 },
     { partialFilterExpression: { 'subscription.isActive': true } },
   ),
-  required(
-    'users.subscription-payos-order',
-    'users',
-    { 'subscription.payosOrderId': 1 },
-    { partialFilterExpression: { 'subscription.payosOrderId': { $type: 'string' } } },
-  ),
-
   // userprogresses
   required('userprogresses.user', 'userprogresses', { userId: 1 }, { unique: true }),
 

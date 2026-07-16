@@ -4,6 +4,8 @@ import { SubscriptionActivationConflictError } from '@/entities/Subscription';
 const mocks = vi.hoisted(() => ({
   connectDB: vi.fn(),
   subscriptionUpdateOne: vi.fn(),
+  subscriptionFindOne: vi.fn(),
+  subscriptionLean: vi.fn(),
   userUpdateOne: vi.fn(),
   withTransaction: vi.fn(),
   endSession: vi.fn(),
@@ -12,7 +14,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/mongoose', () => ({ default: mocks.connectDB }));
 vi.mock('@/models/Subscription', () => ({
-  default: { updateOne: mocks.subscriptionUpdateOne },
+  default: {
+    updateOne: mocks.subscriptionUpdateOne,
+    findOne: mocks.subscriptionFindOne,
+  },
 }));
 vi.mock('@/models/User', () => ({ default: { updateOne: mocks.userUpdateOne } }));
 vi.mock('mongoose', () => ({
@@ -30,6 +35,22 @@ const activation = {
   type: 'premium',
   startDate: new Date('2026-07-01T00:00:00.000Z'),
 };
+
+describe('SubscriptionRepository.findByTransactionReference', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.subscriptionLean.mockResolvedValue(null);
+    mocks.subscriptionFindOne.mockReturnValue({ lean: mocks.subscriptionLean });
+  });
+
+  it('matches transaction references through the partial-index type contract', async () => {
+    await new SubscriptionRepository().findByTransactionReference('transaction-reference');
+
+    expect(mocks.subscriptionFindOne).toHaveBeenCalledWith({
+      payosTransactionId: { $eq: 'transaction-reference', $type: 'string' },
+    });
+  });
+});
 
 describe('SubscriptionRepository.activateSubscription', () => {
   beforeEach(() => {

@@ -107,11 +107,6 @@ UserSchema.index(
   { 'subscription.isActive': 1, 'subscription.endDate': 1 },
   { partialFilterExpression: { 'subscription.isActive': true } },
 );
-UserSchema.index(
-  { 'subscription.payosOrderId': 1 },
-  { partialFilterExpression: { 'subscription.payosOrderId': { $type: 'string' } } },
-);
-
 UserSchema.pre('save', function (next) {
   if (this.isModified('password') && this.password) {
     this.passwordChangedAt = new Date();

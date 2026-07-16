@@ -17,6 +17,7 @@ import {
 } from '@/entities/Subscription';
 import mongoose from 'mongoose';
 import { SubscriptionPersistenceMapper } from '@/repositories/mappers/SubscriptionPersistenceMapper';
+import { matchIndexedString } from '@/repositories/filters/indexed-string';
 import type {
   CurrentUserSubscriptionPersistenceRecord,
   ExpiredSubscriptionCandidatePersistenceRecord,
@@ -58,7 +59,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   ): Promise<SubscriptionRecord | null> {
     await connectDB();
     const record = await Subscription.findOne({
-      payosTransactionId: transactionReference,
+      payosTransactionId: matchIndexedString(transactionReference),
     }).lean<SubscriptionPersistenceRecord>();
     return record ? SubscriptionPersistenceMapper.toEntity(record) : null;
   }

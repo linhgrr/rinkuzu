@@ -92,5 +92,7 @@ export interface IQuizRepository {
 
   countByCreatedAtBuckets(thresholds: CountBucketThresholds): Promise<CountBuckets>;
 
-  findTopCreators(limit: number): Promise<QuizCreatorStatRecord[]>;
+  findTopCreators(
+    options: RepositoryPaginationOptions,
+  ): Promise<PaginatedRepositoryResult<QuizCreatorStatRecord>>;
 }

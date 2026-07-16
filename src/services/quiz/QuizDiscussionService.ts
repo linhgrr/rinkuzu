@@ -37,10 +37,7 @@ export class QuizDiscussionService {
       const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
       if (privateAccessError) return privateAccessError;
 
-      const allDiscussions = await this.discussionRepository.ensureForQuizQuestions(
-        quiz.id,
-        quiz.questionCount ?? 0,
-      );
+      const allDiscussions = await this.discussionRepository.findByQuiz(quiz.id);
 
       return {
         success: true,

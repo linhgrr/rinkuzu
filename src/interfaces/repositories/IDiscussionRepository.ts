@@ -6,11 +6,7 @@ export interface CreateDiscussionCommentData {
 }
 
 export interface IDiscussionRepository {
-  findById(id: string): Promise<Discussion | null>;
-
   findByQuiz(quizId: string): Promise<Discussion[]>;
-
-  ensureForQuizQuestions(quizId: string, questionCount: number): Promise<Discussion[]>;
 
   addCommentForQuizQuestion(
     quizId: string,

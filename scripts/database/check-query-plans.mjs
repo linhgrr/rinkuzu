@@ -78,10 +78,13 @@ try {
       endDate:
         index === 0 ? new Date('2026-07-14T00:00:00.000Z') : new Date('2026-08-01T00:00:00.000Z'),
       payosOrderId: `ci-plan-subscription-${index}`,
+      ...(index === 0 ? { payosTransactionId: 'ci-plan-transaction-reference' } : {}),
     }));
     const userRows = Array.from({ length: 400 }, (_, index) => ({
       ...marker,
       email: `ci-plan-user-${index}@example.com`,
+      ...(index === 0 ? { emailVerificationTokenHash: 'ci-plan-email-verification-token' } : {}),
+      ...(index === 1 ? { passwordResetTokenHash: 'ci-plan-password-reset-token' } : {}),
       subscription: {
         isActive: true,
         endDate:
@@ -227,6 +230,62 @@ try {
       if (row.keysExamined > 2 || row.documentsExamined > 2) {
         throw new Error(
           `${check.name} examined ${row.keysExamined} keys/${row.documentsExamined} documents for one row`,
+        );
+      }
+      evidence.push(row);
+    }
+
+    const indexedStringChecks = [
+      {
+        name: 'email-verification-token-lookup',
+        collection: users,
+        filter: {
+          emailVerificationTokenHash: {
+            $eq: 'ci-plan-email-verification-token',
+            $type: 'string',
+          },
+        },
+        expectedIndex: 'emailVerificationTokenHash_1',
+      },
+      {
+        name: 'password-reset-token-lookup',
+        collection: users,
+        filter: {
+          passwordResetTokenHash: { $eq: 'ci-plan-password-reset-token', $type: 'string' },
+        },
+        expectedIndex: 'passwordResetTokenHash_1',
+      },
+      {
+        name: 'subscription-transaction-reference-lookup',
+        collection: subscriptions,
+        filter: {
+          payosTransactionId: { $eq: 'ci-plan-transaction-reference', $type: 'string' },
+        },
+        expectedIndex: 'payosTransactionId_1',
+      },
+    ];
+
+    for (const check of indexedStringChecks) {
+      const explain = await check.collection.find(check.filter).limit(1).explain('executionStats');
+      const stats = explain.executionStats;
+      const stages = collectStageNames(stats.executionStages);
+      const indexes = collectIndexNames(stats.executionStages);
+      const row = {
+        name: check.name,
+        stages: [...stages].sort(),
+        indexes: [...indexes].sort(),
+        keysExamined: stats.totalKeysExamined,
+        documentsExamined: stats.totalDocsExamined,
+        returnedRows: stats.nReturned,
+      };
+      if (!stages.has('IXSCAN') || !indexes.has(check.expectedIndex)) {
+        throw new Error(
+          `${check.name} did not use ${check.expectedIndex}; stages=${row.stages.join(',')}; indexes=${row.indexes.join(',')}`,
+        );
+      }
+      if (row.returnedRows !== 1 || row.keysExamined > 1 || row.documentsExamined > 1) {
+        throw new Error(
+          `${check.name} examined ${row.keysExamined} keys/${row.documentsExamined} documents and returned ${row.returnedRows} rows; expected at most 1/1 for one row`,
         );
       }
       evidence.push(row);
@@ -572,6 +631,19 @@ function collectStageNames(stage, names = new Set()) {
       for (const entry of value) collectStageNames(entry, names);
     } else if (value && typeof value === 'object') {
       collectStageNames(value, names);
+    }
+  }
+  return names;
+}
+
+function collectIndexNames(stage, names = new Set()) {
+  if (!stage || typeof stage !== 'object') return names;
+  if (typeof stage.indexName === 'string') names.add(stage.indexName);
+  for (const value of Object.values(stage)) {
+    if (Array.isArray(value)) {
+      for (const entry of value) collectIndexNames(entry, names);
+    } else if (value && typeof value === 'object') {
+      collectIndexNames(value, names);
     }
   }
   return names;

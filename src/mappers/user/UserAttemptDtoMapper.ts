@@ -8,6 +8,7 @@ import type { PaginationMeta } from '@/dtos/common';
 import type { Attempt, AttemptAnswer, AttemptQuizSnapshot } from '@/entities/Attempt';
 import type { QuizQuestion } from '@/entities/Quiz';
 import { serializeDate } from '@/lib/date-serialization';
+import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
 
 function requireQuizSnapshot(attempt: Attempt): AttemptQuizSnapshot {
   if (typeof attempt.quiz !== 'object' || attempt.quiz === null) {
@@ -87,11 +88,7 @@ export class UserAttemptDtoMapper {
       throw new TypeError(`attempt answer for question ${question.id} is required`);
     }
     const base = {
-      id: question.id,
-      question: question.question,
-      options: question.options,
-      ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
-      ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
+      ...copyQuizQuestionFields(question),
       userAnswer,
       isCorrect: isCorrectAnswer(question, userAnswer),
     };

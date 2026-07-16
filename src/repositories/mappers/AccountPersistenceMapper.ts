@@ -1,5 +1,6 @@
 import type { AccountCredentials, AccountProfile, AccountSubscription } from '@/entities/Account';
 import { serializeId } from '@/lib/mongo-id';
+import { mapEmbeddedSubscription } from '@/repositories/mappers/SubscriptionPersistenceMapper';
 import type {
   AccountCredentialsPersistenceRecord,
   AccountProfilePersistenceRecord,
@@ -7,16 +8,7 @@ import type {
 } from '@/repositories/types/AccountPersistence';
 
 function toSubscription(subscription: AccountSubscriptionPersistenceRecord): AccountSubscription {
-  return {
-    type: subscription.type,
-    isActive: subscription.isActive,
-    ...(subscription.startDate === undefined ? {} : { startDate: subscription.startDate }),
-    ...(subscription.endDate === undefined ? {} : { endDate: subscription.endDate }),
-    ...(subscription.payosOrderId === undefined ? {} : { payosOrderId: subscription.payosOrderId }),
-    ...(subscription.payosTransactionId === undefined
-      ? {}
-      : { payosTransactionId: subscription.payosTransactionId }),
-  };
+  return mapEmbeddedSubscription(subscription);
 }
 
 export class AccountPersistenceMapper {

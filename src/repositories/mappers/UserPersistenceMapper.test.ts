@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { UserPersistenceMapper } from '@/repositories/mappers/UserPersistenceMapper';
+import {
+  toUserSubscription,
+  UserPersistenceMapper,
+} from '@/repositories/mappers/UserPersistenceMapper';
 import type { UserPersistenceRecord } from '@/repositories/types/UserPersistence';
 
 const record: UserPersistenceRecord = {
@@ -30,6 +33,20 @@ describe('UserPersistenceMapper', () => {
         isActive: true,
       },
       createdAt: new Date('2026-07-01T00:00:00.000Z'),
+    });
+  });
+
+  it('omits undefined subscription optionals via toUserSubscription', () => {
+    expect(
+      toUserSubscription({
+        type: 'premium',
+        isActive: true,
+        payosOrderId: 'order-1',
+      }),
+    ).toEqual({
+      type: 'premium',
+      isActive: true,
+      payosOrderId: 'order-1',
     });
   });
 

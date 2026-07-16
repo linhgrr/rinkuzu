@@ -34,6 +34,32 @@ describe('AccountPersistenceMapper', () => {
     });
   });
 
+  it('maps subscription payos and date fields when present', () => {
+    const startDate = new Date('2026-07-01T00:00:00.000Z');
+    const endDate = new Date('2026-08-01T00:00:00.000Z');
+
+    expect(
+      AccountPersistenceMapper.toProfile({
+        ...profile,
+        subscription: {
+          type: 'premium',
+          isActive: true,
+          startDate,
+          endDate,
+          payosOrderId: 'order-1',
+          payosTransactionId: 'txn-1',
+        },
+      }).subscription,
+    ).toEqual({
+      type: 'premium',
+      isActive: true,
+      startDate,
+      endDate,
+      payosOrderId: 'order-1',
+      payosTransactionId: 'txn-1',
+    });
+  });
+
   it('omits an absent password hash without changing identity validation', () => {
     expect(AccountPersistenceMapper.toCredentials({ _id: 'account-1' })).toEqual({
       id: 'account-1',

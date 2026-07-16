@@ -1,5 +1,6 @@
 import type { PublicProfileUser, User, UserSubscriptionSnapshot } from '@/entities/User';
 import { serializeId } from '@/lib/mongo-id';
+import { mapEmbeddedSubscription } from '@/repositories/mappers/SubscriptionPersistenceMapper';
 import type {
   PublicProfileUserPersistenceRecord,
   UserPersistenceRecord,
@@ -9,16 +10,7 @@ import type {
 export function toUserSubscription(
   record: UserSubscriptionPersistenceRecord,
 ): UserSubscriptionSnapshot {
-  return {
-    type: record.type,
-    isActive: record.isActive,
-    ...(record.startDate === undefined ? {} : { startDate: record.startDate }),
-    ...(record.endDate === undefined ? {} : { endDate: record.endDate }),
-    ...(record.payosOrderId === undefined ? {} : { payosOrderId: record.payosOrderId }),
-    ...(record.payosTransactionId === undefined
-      ? {}
-      : { payosTransactionId: record.payosTransactionId }),
-  };
+  return mapEmbeddedSubscription(record);
 }
 
 export class UserPersistenceMapper {

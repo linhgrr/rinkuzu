@@ -10,7 +10,6 @@ import { toBrowserPath } from '@/lib/routing/pathname';
 import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
 import { ROUTES } from '@/shared/constants/routes';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
-import { logout } from '@/features/auth/actions';
 
 const ICON = {
   home: 'material-symbols:home-outline-rounded',
@@ -479,7 +478,7 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
             <Icon icon={ICON.user} className="size-5" aria-hidden="true" />
             <span>{t('profile')}</span>
           </Link>
-          <form action={logout}>
+          <form action="/api/session/logout" method="post">
             <input type="hidden" name="locale" value={locale} />
             <button
               type="submit"

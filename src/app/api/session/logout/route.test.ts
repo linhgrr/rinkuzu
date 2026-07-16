@@ -1,0 +1,82 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { signOutMock } = vi.hoisted(() => ({ signOutMock: vi.fn() }));
+
+vi.mock('@/auth', () => ({ signOut: signOutMock }));
+
+import { POST } from '@/app/api/session/logout/route';
+
+function logoutRequest(locale: string): Request {
+  return new Request('http://localhost/api/session/logout', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ locale }),
+  });
+}
+
+describe('POST /api/session/logout', () => {
+  beforeEach(() => {
+    signOutMock.mockReset();
+    signOutMock.mockResolvedValue({
+      redirect: 'http://localhost/en',
+      cookies: [
+        {
+          name: 'authjs.callback-url',
+          value: 'http%3A%2F%2Flocalhost%2Fen',
+          options: { httpOnly: true, path: '/', sameSite: 'lax' },
+        },
+        {
+          name: 'authjs.session-token',
+          value: '',
+          options: { httpOnly: true, maxAge: 0, path: '/', sameSite: 'lax' },
+        },
+      ],
+    });
+  });
+
+  it('clears the Auth.js session and redirects to the localized home', async () => {
+    const response = await POST(logoutRequest('en'));
+
+    expect(signOutMock).toHaveBeenCalledWith({ redirect: false, redirectTo: '/en' });
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe('http://localhost/en');
+    expect(response.headers.getSetCookie()).toContain(
+      'authjs.session-token=; Path=/; Max-Age=0; HttpOnly; SameSite=lax',
+    );
+  });
+
+  it('fails closed to the default locale for malformed form input', async () => {
+    await POST(logoutRequest('malicious-locale'));
+
+    expect(signOutMock).toHaveBeenCalledWith({ redirect: false, redirectTo: '/vi' });
+  });
+
+  it('fails closed if Auth.js does not return a session deletion cookie', async () => {
+    signOutMock.mockResolvedValue({ redirect: 'http://localhost/en', cookies: [] });
+
+    const response = await POST(logoutRequest('en'));
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      success: false,
+      error: { code: 'internal_error' },
+    });
+  });
+
+  it('rejects an unexpected cross-origin redirect returned by Auth.js', async () => {
+    signOutMock.mockResolvedValue({
+      redirect: 'https://attacker.example',
+      cookies: [
+        {
+          name: 'authjs.session-token',
+          value: '',
+          options: { httpOnly: true, maxAge: 0, path: '/', sameSite: 'lax' },
+        },
+      ],
+    });
+
+    const response = await POST(logoutRequest('en'));
+
+    expect(response.headers.get('location')).toBe('http://localhost/en');
+  });
+});

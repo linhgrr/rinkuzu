@@ -1,5 +1,5 @@
-const MODES = new Set(['plan', 'check', 'apply', 'apply-safe-only', 'verify']);
-const APPLY_MODES = new Set(['apply', 'apply-safe-only']);
+const MODES = new Set(['plan', 'check', 'apply', 'apply-safe-only', 'apply-selected', 'verify']);
+const APPLY_MODES = new Set(['apply', 'apply-safe-only', 'apply-selected']);
 const ACTION_TYPES = new Set(['create', 'hide', 'unhide', 'update_ttl', 'drop']);
 const APPROVAL_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 
@@ -26,6 +26,10 @@ export function parseIndexCliArgs(args, env = {}) {
     }
     if (argument === '--apply-safe-only') {
       mode = chooseMode(mode, 'apply-safe-only');
+      continue;
+    }
+    if (argument === '--apply-selected') {
+      mode = chooseMode(mode, 'apply-selected');
       continue;
     }
     if (argument === '--verify') {
@@ -76,8 +80,13 @@ export function parseIndexCliArgs(args, env = {}) {
   if (APPLY_MODES.has(mode) && planSha !== null && !/^[a-f0-9]{64}$/i.test(planSha)) {
     throw new CliUsageError('--plan-sha must be a 64-character SHA-256 digest');
   }
-  if (actionTypes !== null && mode !== 'apply-safe-only') {
-    throw new CliUsageError('--action-types is allowed only with --apply-safe-only');
+  if (actionTypes !== null && !['apply-safe-only', 'apply-selected'].includes(mode)) {
+    throw new CliUsageError(
+      '--action-types is allowed only with --apply-safe-only or --apply-selected',
+    );
+  }
+  if (mode === 'apply-selected' && actionTypes === null) {
+    throw new CliUsageError('--apply-selected requires --action-types');
   }
 
   return { mode, planSha, approvalFile, verifyAfterApply, actionTypes };
@@ -100,10 +109,21 @@ export function selectIndexActionsForMode(plan, mode, actionTypes = null) {
         action.sensitive !== true && (actionTypes === null || actionTypes.includes(action.type)),
     );
   }
+  if (mode === 'apply-selected') {
+    const selected = plan.actions.filter((action) => actionTypes?.includes(action.type));
+    if (selected.length === 0) {
+      throw new CliUsageError('No current index actions match --action-types');
+    }
+    return selected;
+  }
   throw new CliUsageError(`Mode ${mode} is not an apply mode`);
 }
 
-export function validateSafeOnlyRemainder({ sourcePlan, verificationPlan, selectedFingerprints }) {
+export function validatePartialApplyRemainder({
+  sourcePlan,
+  verificationPlan,
+  selectedFingerprints,
+}) {
   const expected = sourcePlan.actions
     .filter((action) => !selectedFingerprints.includes(action.fingerprint))
     .map((action) => action.fingerprint)

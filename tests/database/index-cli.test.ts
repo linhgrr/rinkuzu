@@ -5,7 +5,7 @@ import {
   parseIndexCliArgs,
   readModeExitCode,
   selectIndexActionsForMode,
-  validateSafeOnlyRemainder,
+  validatePartialApplyRemainder,
   validateSensitiveApproval,
 } from '../../scripts/database/index-cli.mjs';
 
@@ -58,16 +58,31 @@ describe('database index CLI guardrails', () => {
     });
   });
 
-  it('restricts action-type filters to safe-only apply mode', () => {
+  it('restricts action-type filters to partial apply modes', () => {
     const sha = 'd'.repeat(64);
     expect(
       parseIndexCliArgs(['--apply-safe-only', `--plan-sha=${sha}`, '--action-types=create,hide']),
     ).toMatchObject({ actionTypes: ['create', 'hide'] });
     expect(() => parseIndexCliArgs(['--plan', '--action-types=create'])).toThrow(
-      /only with --apply-safe-only/,
+      /only with --apply-safe-only or --apply-selected/,
     );
     expect(() => parseIndexCliArgs(['--apply-safe-only', '--action-types=unknown'])).toThrow(
       /Unsupported index action type/,
+    );
+  });
+
+  it('requires an explicit action allowlist for selected apply mode', () => {
+    const sha = 'e'.repeat(64);
+    expect(
+      parseIndexCliArgs(['--apply-selected', `--plan-sha=${sha}`, '--action-types=create']),
+    ).toMatchObject({
+      mode: 'apply-selected',
+      planSha: sha,
+      actionTypes: ['create'],
+    });
+    expect(isIndexApplyMode('apply-selected')).toBe(true);
+    expect(() => parseIndexCliArgs(['--apply-selected', `--plan-sha=${sha}`])).toThrow(
+      /requires --action-types/,
     );
   });
 
@@ -121,14 +136,14 @@ describe('database index CLI guardrails', () => {
     const selected = selectIndexActionsForMode(sourcePlan, 'apply-safe-only');
     expect(selected).toEqual([{ fingerprint: 'safe', sensitive: false }]);
     expect(
-      validateSafeOnlyRemainder({
+      validatePartialApplyRemainder({
         sourcePlan,
         verificationPlan,
         selectedFingerprints: selected.map((action: { fingerprint: string }) => action.fingerprint),
       }),
     ).toEqual([]);
     expect(
-      validateSafeOnlyRemainder({
+      validatePartialApplyRemainder({
         sourcePlan,
         verificationPlan: {
           actions: [{ fingerprint: 'unexpected', sensitive: false }],
@@ -153,7 +168,7 @@ describe('database index CLI guardrails', () => {
       'create',
     ]);
     expect(
-      validateSafeOnlyRemainder({
+      validatePartialApplyRemainder({
         sourcePlan,
         verificationPlan: {
           actions: [sourcePlan.actions[1], sourcePlan.actions[2]],
@@ -162,5 +177,47 @@ describe('database index CLI guardrails', () => {
         selectedFingerprints: ['create'],
       }),
     ).toEqual([]);
+  });
+
+  it('applies an explicitly selected sensitive action with exact subset approval', () => {
+    const sourcePlan = {
+      planSha: 'f'.repeat(64),
+      actions: [
+        { fingerprint: 'ttl', sensitive: true, type: 'update_ttl' },
+        { fingerprint: 'unique-create', sensitive: true, type: 'create' },
+        { fingerprint: 'hide', sensitive: false, type: 'hide' },
+      ],
+    };
+    const selected = selectIndexActionsForMode(sourcePlan, 'apply-selected', ['create']);
+    const approvalPlan = { ...sourcePlan, actions: selected };
+    const approval = {
+      planSha: sourcePlan.planSha,
+      approvedBy: 'database-owner',
+      approvedAt: '2026-07-15T00:00:00.000Z',
+      ticket: 'DB-43',
+      actions: ['unique-create'],
+    };
+
+    expect(selected).toEqual([sourcePlan.actions[1]]);
+    expect(
+      validateSensitiveApproval({
+        approval,
+        plan: approvalPlan,
+        now: new Date('2026-07-16T00:00:00.000Z'),
+      }),
+    ).toEqual([]);
+    expect(
+      validatePartialApplyRemainder({
+        sourcePlan,
+        verificationPlan: {
+          actions: [sourcePlan.actions[0], sourcePlan.actions[2]],
+          manualCount: 0,
+        },
+        selectedFingerprints: ['unique-create'],
+      }),
+    ).toEqual([]);
+    expect(() => selectIndexActionsForMode(sourcePlan, 'apply-selected', ['drop'])).toThrow(
+      /No current index actions match/,
+    );
   });
 });

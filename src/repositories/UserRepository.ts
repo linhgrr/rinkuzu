@@ -46,10 +46,11 @@ import {
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
+import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUserRepository';
 
 const USER_ENTITY_PROJECTION = '_id email name displayName bio avatar role subscription createdAt';
 
-export class UserRepository implements IUserRepository {
+export class UserRepository implements IUserRepository, IRecentUserRepository {
   async findById(id: string): Promise<UserEntity | null> {
     await connectDB();
     const record = await User.findById(id)
@@ -80,6 +81,16 @@ export class UserRepository implements IUserRepository {
       .select('email name displayName bio avatar createdAt')
       .lean<PublicProfileUserPersistenceRecord>();
     return record ? UserPersistenceMapper.toPublicProfile(record) : null;
+  }
+
+  async findRecent(limit: number): Promise<UserEntity[]> {
+    await connectDB();
+    const records = await User.find({})
+      .select(USER_ENTITY_PROJECTION)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean<UserPersistenceRecord[]>();
+    return records.map(UserPersistenceMapper.toEntity);
   }
 
   async findAll(options: UserFindOptions): Promise<PaginatedRepositoryResult<UserEntity>> {

@@ -32,6 +32,10 @@ describe('query performance indexes', () => {
     expect(hasIndex(Quiz, { isPrivate: 1, createdAt: -1 })).toBe(true);
   });
 
+  it('indexes global recent quiz reads', () => {
+    expect(hasIndex(Quiz, { createdAt: -1 })).toBe(true);
+  });
+
   it('indexes public profile quizzes by author, visibility, and recency', () => {
     expect(hasIndex(Quiz, { author: 1, isPrivate: 1, createdAt: -1 })).toBe(true);
   });

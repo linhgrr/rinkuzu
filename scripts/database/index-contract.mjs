@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-16.2';
+export const INDEX_CONTRACT_VERSION = '2026-07-16.3';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -81,6 +81,7 @@ export const INDEX_CONTRACT = Object.freeze([
 
   // quizzes
   required('quizzes.slug', 'quizzes', { slug: 1 }, { unique: true }),
+  required('quizzes.recent', 'quizzes', { createdAt: -1 }),
   required('quizzes.visibility-recent', 'quizzes', { isPrivate: 1, createdAt: -1 }),
   required('quizzes.author-recent', 'quizzes', { author: 1, createdAt: -1 }),
   required('quizzes.author-visibility-recent', 'quizzes', {

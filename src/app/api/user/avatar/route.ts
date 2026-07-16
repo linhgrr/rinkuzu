@@ -4,6 +4,7 @@ import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import type { AvatarUploadDto } from '@/dtos/account';
 import { AVATAR_ALLOWED_MEDIA_TYPES, AVATAR_MAX_FILE_SIZE } from '@/shared/constants/avatar';
 import { getAccountService } from '@/lib/account-factory';
+import { imageUploadResponse } from '@/lib/api/image-response';
 
 const accountService = getAccountService();
 
@@ -25,14 +26,7 @@ export const PUT = withAuth(async (request: NextRequest, { email }) => {
     contentType: file.type as AvatarUploadDto['contentType'],
   };
   const result = await accountService.uploadAvatar(email, avatar);
-  if (
-    !result.success &&
-    result.statusCode === 500 &&
-    result.error === 'Image upload not configured'
-  ) {
-    return apiErr('configuration_error', result.error, 500);
-  }
-  return result.success ? apiOk(result.data) : apiServiceErr(result);
+  return imageUploadResponse(result);
 });
 
 export const DELETE = withAuth(async (_request, { email }) => {

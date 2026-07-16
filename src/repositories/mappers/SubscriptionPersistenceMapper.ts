@@ -2,6 +2,34 @@ import type { SubscriptionRecord } from '@/entities/Subscription';
 import { serializeId } from '@/lib/mongo-id';
 import type { SubscriptionPersistenceRecord } from '@/repositories/types/SubscriptionPersistence';
 
+/**
+ * Shared persistence → domain shape for embedded user/account subscription snapshots.
+ * Omits optional fields when undefined (exact structural match of prior dual mappers).
+ */
+export interface EmbeddedSubscriptionPersistenceFields {
+  type: string;
+  startDate?: Date;
+  endDate?: Date;
+  isActive: boolean;
+  payosOrderId?: string;
+  payosTransactionId?: string;
+}
+
+export function mapEmbeddedSubscription(
+  record: EmbeddedSubscriptionPersistenceFields,
+): EmbeddedSubscriptionPersistenceFields {
+  return {
+    type: record.type,
+    isActive: record.isActive,
+    ...(record.startDate === undefined ? {} : { startDate: record.startDate }),
+    ...(record.endDate === undefined ? {} : { endDate: record.endDate }),
+    ...(record.payosOrderId === undefined ? {} : { payosOrderId: record.payosOrderId }),
+    ...(record.payosTransactionId === undefined
+      ? {}
+      : { payosTransactionId: record.payosTransactionId }),
+  };
+}
+
 function requireDate(value: Date | undefined, field: string): Date {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
   throw new TypeError(`${field} must be a valid date`);

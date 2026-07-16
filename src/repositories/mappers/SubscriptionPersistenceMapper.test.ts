@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { SubscriptionPersistenceMapper } from '@/repositories/mappers/SubscriptionPersistenceMapper';
+import {
+  mapEmbeddedSubscription,
+  SubscriptionPersistenceMapper,
+} from '@/repositories/mappers/SubscriptionPersistenceMapper';
 import type { SubscriptionPersistenceRecord } from '@/repositories/types/SubscriptionPersistence';
 
 const record: SubscriptionPersistenceRecord = {
@@ -42,5 +45,57 @@ describe('SubscriptionPersistenceMapper', () => {
     expect(() => SubscriptionPersistenceMapper.toEntity(recordWithoutStartDate)).toThrow(
       'subscription.startDate must be a valid date',
     );
+  });
+});
+
+describe('mapEmbeddedSubscription', () => {
+  it('maps required fields and omits undefined optionals', () => {
+    expect(
+      mapEmbeddedSubscription({
+        type: 'premium',
+        isActive: true,
+      }),
+    ).toEqual({
+      type: 'premium',
+      isActive: true,
+    });
+  });
+
+  it('includes optional fields only when defined', () => {
+    const startDate = new Date('2026-07-01T00:00:00.000Z');
+    const endDate = new Date('2026-08-01T00:00:00.000Z');
+
+    expect(
+      mapEmbeddedSubscription({
+        type: 'premium',
+        isActive: true,
+        startDate,
+        endDate,
+        payosOrderId: 'order-1',
+        payosTransactionId: 'txn-1',
+      }),
+    ).toEqual({
+      type: 'premium',
+      isActive: true,
+      startDate,
+      endDate,
+      payosOrderId: 'order-1',
+      payosTransactionId: 'txn-1',
+    });
+  });
+
+  it('does not treat empty string as absent for payosOrderId', () => {
+    // undefined is the sole omit signal; empty string is still included
+    expect(
+      mapEmbeddedSubscription({
+        type: 'free',
+        isActive: false,
+        payosOrderId: '',
+      }),
+    ).toEqual({
+      type: 'free',
+      isActive: false,
+      payosOrderId: '',
+    });
   });
 });

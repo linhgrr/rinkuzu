@@ -14,9 +14,12 @@ interface AttemptQuizSnapshotDocument {
 interface AttemptDocument {
   user?: Types.ObjectId;
   guestEmail?: string;
+  idempotencyKey: string;
+  submissionDigest: string;
   quiz: Types.ObjectId;
   quizSnapshot: AttemptQuizSnapshotDocument;
   score: number;
+  correctAnswers: number;
   totalQuestions: number;
   answers: SelectedAnswerPersistenceRecord[];
   takenAt: Date;
@@ -68,6 +71,19 @@ const AttemptSchema = new Schema<AttemptDocument>({
     lowercase: true,
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Guest email is invalid'],
   },
+  idempotencyKey: {
+    type: String,
+    required: [true, 'Idempotency key is required'],
+    immutable: true,
+    minlength: 16,
+    maxlength: 128,
+  },
+  submissionDigest: {
+    type: String,
+    required: [true, 'Submission digest is required'],
+    immutable: true,
+    match: [/^[a-f0-9]{64}$/, 'Submission digest must be a SHA-256 hex digest'],
+  },
   quiz: {
     type: Schema.Types.ObjectId,
     ref: 'Quiz',
@@ -83,6 +99,11 @@ const AttemptSchema = new Schema<AttemptDocument>({
     required: [true, 'Score is required'],
     min: [0, 'Score cannot be negative'],
     max: [100, 'Score cannot exceed 100'],
+  },
+  correctAnswers: {
+    type: Number,
+    required: [true, 'Correct answer count is required'],
+    min: [0, 'Correct answer count cannot be negative'],
   },
   totalQuestions: {
     type: Number,
@@ -105,11 +126,42 @@ AttemptSchema.pre('validate', function validateIdentity() {
   }
 });
 
+AttemptSchema.pre('validate', function validateSubmissionContract() {
+  const questionCount = this.quizSnapshot?.questions.length;
+  if (questionCount !== this.totalQuestions) {
+    this.invalidate('totalQuestions', 'Total questions must match the immutable quiz snapshot');
+  }
+  if (this.answers.length !== this.totalQuestions) {
+    this.invalidate('answers', 'Answer count must match total questions');
+  }
+  if (this.correctAnswers > this.totalQuestions) {
+    this.invalidate('correctAnswers', 'Correct answer count cannot exceed total questions');
+  }
+  const expectedScore = Math.round((this.correctAnswers / this.totalQuestions) * 100);
+  if (Number.isFinite(expectedScore) && this.score !== expectedScore) {
+    this.invalidate('score', 'Score must match the correct answer count');
+  }
+});
+
 AttemptSchema.index({ user: 1, takenAt: -1 });
 AttemptSchema.index({ guestEmail: 1, takenAt: -1 });
 AttemptSchema.index({ quiz: 1, takenAt: -1 });
 AttemptSchema.index({ user: 1, quiz: 1 });
 AttemptSchema.index({ takenAt: -1 });
+AttemptSchema.index(
+  { user: 1, idempotencyKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { user: { $type: 'objectId' } },
+  },
+);
+AttemptSchema.index(
+  { guestEmail: 1, idempotencyKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { guestEmail: { $type: 'string' } },
+  },
+);
 
 const Attempt =
   (mongoose.models['Attempt'] as mongoose.Model<AttemptDocument> | undefined) ??

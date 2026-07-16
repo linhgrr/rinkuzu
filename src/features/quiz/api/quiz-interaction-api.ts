@@ -28,13 +28,18 @@ function quizProgressUrl(slug: string): string {
 export async function submitQuizAttemptViewModel({
   slug,
   answers,
+  idempotencyKey,
   userEmail,
 }: SubmitQuizAttemptInput): Promise<QuizAttemptResultViewModel> {
   const encodedSlug = routePathSegment(slug);
   const dto = await fetchApiData<QuizAttemptResultDto>(`/api/quiz/${encodedSlug}/attempt`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ answers, userEmail }),
+    body: JSON.stringify({
+      answers,
+      idempotencyKey,
+      ...(userEmail ? { userEmail } : {}),
+    }),
   });
   return toQuizAttemptResultViewModel(dto);
 }

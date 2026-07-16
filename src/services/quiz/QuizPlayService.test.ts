@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
-import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -60,33 +60,25 @@ function createService() {
     countByCreatedAtBuckets: vi.fn(),
     countByRole: vi.fn(),
   };
-  const attemptRepository: Mocked<IAttemptRepository> = {
-    findByUser: vi.fn(),
-    create: vi.fn(),
-    countByUser: vi.fn(),
-    countByQuiz: vi.fn(),
-    findRecentActivity: vi.fn(),
-    findByIdWithQuiz: vi.fn(),
-    count: vi.fn(),
-    countByTakenAtBuckets: vi.fn(),
-    scoreStats: vi.fn().mockResolvedValue({ averageScore: 0, highestScore: 0, lowestScore: 0 }),
-  };
   const progressRepository: Mocked<IQuizProgressRepository> = {
     findByUserAndQuiz: vi.fn(),
     upsert: vi.fn(),
     deleteByUserAndQuiz: vi.fn(),
   };
+  const attemptProgressRepository: Mocked<IQuizAttemptProgressRepository> = {
+    recordSubmittedAttempt: vi.fn(),
+  };
 
   return {
     quizRepository,
     userRepository,
-    attemptRepository,
     progressRepository,
+    attemptProgressRepository,
     service: new QuizPlayService(
       quizRepository,
       userRepository,
-      attemptRepository,
       progressRepository,
+      attemptProgressRepository,
     ),
   };
 }
@@ -176,8 +168,7 @@ describe('QuizPlayService progress operations', () => {
   });
 
   it('uses the authenticated session id when submitting attempts', async () => {
-    const { service, quizRepository, userRepository, attemptRepository, progressRepository } =
-      createService();
+    const { service, quizRepository, userRepository, attemptProgressRepository } = createService();
     vi.mocked(quizRepository.findForPlay).mockResolvedValue({
       id: quizId,
       title: 'Quiz',
@@ -196,19 +187,17 @@ describe('QuizPlayService progress operations', () => {
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     });
-    vi.mocked(attemptRepository.create).mockResolvedValue({
+    vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mockResolvedValue({
       id: 'attempt-1',
-      user: userId,
-      quiz: quizId,
-      answers: [1],
       score: 100,
+      correctAnswers: 1,
       totalQuestions: 1,
-      takenAt: new Date('2026-07-02T00:00:00Z'),
     });
 
     const result = await service.submitQuizAttempt(
       'quiz',
       [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       {
         user: {
           id: userId,
@@ -224,10 +213,12 @@ describe('QuizPlayService progress operations', () => {
     expect(quizRepository.findForPlay).toHaveBeenCalledWith('quiz');
     expect(quizRepository.findBySlug).not.toHaveBeenCalled();
     expect(userRepository.findByEmail).not.toHaveBeenCalled();
-    expect(attemptRepository.create).toHaveBeenCalledWith(
+    expect(attemptProgressRepository.recordSubmittedAttempt).toHaveBeenCalledWith(
       expect.objectContaining({
         userId,
+        idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
         quizId,
+        quizSlug: 'quiz',
         quizSnapshot: {
           integrity: 'complete',
           title: 'Quiz',
@@ -236,10 +227,46 @@ describe('QuizPlayService progress operations', () => {
         },
         answers: [1],
         score: 100,
+        correctAnswers: 1,
         totalQuestions: 1,
+        wrongQuestions: [],
       }),
     );
-    expect(progressRepository.deleteByUserAndQuiz).toHaveBeenCalledWith(userId, quizId);
+  });
+
+  it('rejects malformed answers instead of silently converting them to unanswered', async () => {
+    const { service, quizRepository, attemptProgressRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      isPrivate: false,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+
+    const result = await service.submitQuizAttempt(
+      'quiz',
+      [2],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
+      null,
+      'guest@example.com',
+    );
+
+    assertFail(result);
+    expect(result.statusCode).toBe(400);
+    expect(result.error).toContain('out of range');
+    expect(attemptProgressRepository.recordSubmittedAttempt).not.toHaveBeenCalled();
   });
 
   it('loads flashcards through the projected quiz read path', async () => {

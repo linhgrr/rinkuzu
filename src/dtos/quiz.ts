@@ -165,11 +165,15 @@ export interface QuizAttemptResultDto {
   attemptId: string;
 }
 
-const quizProgressAnswerSchema = z.union([z.number(), z.array(z.number())]);
+const quizProgressAnswerSchema = z.union([
+  z.number().int(),
+  z.array(z.number().int().min(0)).max(20),
+]);
 
 export const submitQuizAttemptRequestSchema = z.strictObject({
   answers: z.array(quizProgressAnswerSchema),
-  userEmail: z.string().trim().pipe(z.email()).optional(),
+  idempotencyKey: z.uuid(),
+  userEmail: z.string().trim().toLowerCase().pipe(z.email()).optional(),
 });
 
 export const addDiscussionCommentRequestSchema = z.strictObject({

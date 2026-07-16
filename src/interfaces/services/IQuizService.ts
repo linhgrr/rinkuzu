@@ -77,6 +77,7 @@ export interface IQuizService {
   submitQuizAttempt(
     slug: string,
     answers: (number | number[])[],
+    idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>>;

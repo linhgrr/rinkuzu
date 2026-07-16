@@ -19,7 +19,6 @@ import type { DeleteResultDto } from '@/dtos/common';
 import { IQuizService } from '@/interfaces/services/IQuizService';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
@@ -42,18 +41,16 @@ export class QuizService implements IQuizService {
   constructor(
     quizRepository: IQuizRepository,
     userRepository: IUserRepository,
-    attemptRepository: IAttemptRepository,
     discussionRepository: IDiscussionRepository,
     reportRepository: IReportRepository,
     quizProgressRepository: IQuizProgressRepository,
+    quizAttemptProgressRepository: IQuizAttemptProgressRepository,
     folderRepository?: IFolderRepository,
-    quizAttemptProgressRepository?: IQuizAttemptProgressRepository,
   ) {
     this.crudService = new QuizCrudService(quizRepository, userRepository, folderRepository);
     this.playService = new QuizPlayService(
       quizRepository,
       userRepository,
-      attemptRepository,
       quizProgressRepository,
       quizAttemptProgressRepository,
     );
@@ -154,10 +151,11 @@ export class QuizService implements IQuizService {
   async submitQuizAttempt(
     slug: string,
     answers: (number | number[])[],
+    idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
-    return this.playService.submitQuizAttempt(slug, answers, session, userEmail);
+    return this.playService.submitQuizAttempt(slug, answers, idempotencyKey, session, userEmail);
   }
 
   async getQuizDiscussions(

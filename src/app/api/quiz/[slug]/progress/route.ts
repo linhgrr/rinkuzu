@@ -1,66 +1,37 @@
-import { NextRequest } from 'next/server';
-import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
-import { logger } from '@/lib/logger';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
-import { quizSlugRouteParamsSchema, savedQuizProgressSchema } from '@/dtos/quiz';
+import { readAndValidateJson } from '@/lib/api/request';
+import { savedQuizProgressSchema } from '@/dtos/quiz';
+import { createQuizProgressRoute } from './progress-route';
 
 const quizService = serviceFactory.getQuizService();
 
-export const GET = withAuth(async (_request: NextRequest, { params, userId }) => {
-  try {
-    const parsedParams = readAndValidateRouteParams(params, quizSlugRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
-
-    const result = await quizService.getSavedQuizProgress(parsedParams.data.slug, userId);
-
+export const GET = createQuizProgressRoute({
+  logMessage: 'Get quiz progress error',
+  handle: async ({ slug, userId }) => {
+    const result = await quizService.getSavedQuizProgress(slug, userId);
     return result.success ? apiOk(result.data) : apiServiceErr(result);
-  } catch (error) {
-    logger.error({ error }, 'Get quiz progress error');
-    return apiErr('internal_error', 'Internal server error', 500);
-  }
+  },
 });
 
-export const PUT = withAuth(async (request: NextRequest, { params, userId }) => {
-  try {
-    const parsedParams = readAndValidateRouteParams(params, quizSlugRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
-
+export const PUT = createQuizProgressRoute({
+  logMessage: 'Save quiz progress error',
+  handle: async ({ request, slug, userId }) => {
     const parsedBody = await readAndValidateJson(request, savedQuizProgressSchema);
     if (!parsedBody.success) {
       return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);
     }
 
-    const result = await quizService.saveQuizProgress(
-      parsedParams.data.slug,
-      userId,
-      parsedBody.data,
-    );
+    const result = await quizService.saveQuizProgress(slug, userId, parsedBody.data);
 
     return result.success ? apiOk(result.data) : apiServiceErr(result);
-  } catch (error) {
-    logger.error({ error }, 'Save quiz progress error');
-    return apiErr('internal_error', 'Internal server error', 500);
-  }
+  },
 });
 
-export const DELETE = withAuth(async (_request: NextRequest, { params, userId }) => {
-  try {
-    const parsedParams = readAndValidateRouteParams(params, quizSlugRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
-
-    const result = await quizService.deleteSavedQuizProgress(parsedParams.data.slug, userId);
-
+export const DELETE = createQuizProgressRoute({
+  logMessage: 'Delete quiz progress error',
+  handle: async ({ slug, userId }) => {
+    const result = await quizService.deleteSavedQuizProgress(slug, userId);
     return result.success ? apiOk(result.data) : apiServiceErr(result);
-  } catch (error) {
-    logger.error({ error }, 'Delete quiz progress error');
-    return apiErr('internal_error', 'Internal server error', 500);
-  }
+  },
 });

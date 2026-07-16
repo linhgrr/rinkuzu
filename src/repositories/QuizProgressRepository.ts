@@ -69,17 +69,4 @@ export class QuizProgressRepository implements IQuizProgressRepository {
     });
     return result.deletedCount > 0;
   }
-
-  async findInProgressByUser(userId: string, limit: number): Promise<QuizProgress[]> {
-    await connectDB();
-    if (!Types.ObjectId.isValid(userId)) {
-      return [];
-    }
-    const records = await QuizProgressModel.find({ userId: new Types.ObjectId(userId) })
-      .sort({ updatedAt: -1 })
-      .limit(limit)
-      .populate({ path: 'quiz', select: 'title slug' })
-      .lean<QuizProgressPersistenceRecord[]>();
-    return records.map(QuizProgressPersistenceMapper.toEntity);
-  }
 }

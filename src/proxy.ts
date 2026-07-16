@@ -1,3 +1,4 @@
+import { getToken as readAuthToken } from '@auth/core/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import type { NextAuthRequest } from 'next-auth';
@@ -6,6 +7,7 @@ import type { NextFetchEvent } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import authConfig from './auth.config';
 import { routing } from './i18n/routing';
+import { isRscOrPrefetchRequest, usesSecureAuthCookie } from './lib/auth/session-cookie';
 import { getLocaleFromPath, toBrowserPath } from './lib/routing/pathname';
 import { getAuthRoutePolicy } from './lib/routing/auth-route-policy';
 import { ROUTES } from './shared/constants/routes';
@@ -90,27 +92,58 @@ function applySecurityHeaders<T extends Response>(response: T, requestId: string
 
 const { auth: withEdgeAuth } = NextAuth(authConfig);
 
+function resolveGuardedPageResponse(
+  request: NextRequest,
+  requestId: string,
+  principal: { authenticated: boolean; role: unknown },
+): Response {
+  const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
+  const policy = getAuthRoutePolicy(pathWithoutLocale);
+
+  if (!principal.authenticated) {
+    const loginUrl = new URL(toBrowserPath(ROUTES.LOGIN, locale), request.url);
+    loginUrl.searchParams.set('callbackUrl', `${pathWithoutLocale}${request.nextUrl.search}`);
+    return applySecurityHeaders(NextResponse.redirect(loginUrl), requestId);
+  }
+
+  if (policy === 'admin' && principal.role !== 'admin') {
+    const homeUrl = new URL(toBrowserPath(ROUTES.HOME, locale), request.url);
+    return applySecurityHeaders(NextResponse.redirect(homeUrl), requestId);
+  }
+
+  return applySecurityHeaders(intlMiddleware(request), requestId);
+}
+
+/**
+ * RSC/prefetch requests are frequently still in flight when a user submits
+ * logout. Decode the JWT for the coarse route gate without going through the
+ * Auth.js middleware wrapper, whose normal response refresh would be able to
+ * overwrite the logout deletion cookie after the request completes.
+ */
+async function guardedRscProxy(request: NextRequest): Promise<Response> {
+  const requestId = request.headers.get('x-request-id') || randomUUID();
+  const token = await readAuthToken({
+    req: request,
+    secret: process.env['AUTH_SECRET'],
+    secureCookie: usesSecureAuthCookie(request),
+  });
+
+  return resolveGuardedPageResponse(request, requestId, {
+    authenticated: Boolean(token?.sub),
+    role: token?.role,
+  });
+}
+
 /**
  * Coarse JWT gate for protected/admin routes. Auth.js v5 owns cookie parsing
  * and secret handling here, keeping proxy and server auth on one contract.
  */
 const guardedProxy = withEdgeAuth((request: NextAuthRequest, _event: NextFetchEvent) => {
   const requestId = request.headers.get('x-request-id') || randomUUID();
-  const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
-  const policy = getAuthRoutePolicy(pathWithoutLocale);
-
-  if (!request.auth?.user) {
-    const loginUrl = new URL(toBrowserPath(ROUTES.LOGIN, locale), request.url);
-    loginUrl.searchParams.set('callbackUrl', `${pathWithoutLocale}${request.nextUrl.search}`);
-    return applySecurityHeaders(NextResponse.redirect(loginUrl), requestId);
-  }
-
-  if (policy === 'admin' && request.auth.user.role !== 'admin') {
-    const homeUrl = new URL(toBrowserPath(ROUTES.HOME, locale), request.url);
-    return applySecurityHeaders(NextResponse.redirect(homeUrl), requestId);
-  }
-
-  return applySecurityHeaders(intlMiddleware(request), requestId);
+  return resolveGuardedPageResponse(request, requestId, {
+    authenticated: Boolean(request.auth?.user),
+    role: request.auth?.user?.role,
+  });
 });
 
 export default async function middleware(request: NextRequest, event: NextFetchEvent) {
@@ -133,6 +166,10 @@ export default async function middleware(request: NextRequest, event: NextFetchE
         requestId,
       );
     }
+    // Let the logout route own its Set-Cookie headers. Composing a
+    // NextResponse.next() here can drop the deletion cookie when the route
+    // response is merged with middleware under the production server.
+    if (request.nextUrl.pathname === '/api/session/logout') return;
     // For API routes, propagate the request id and skip the i18n middleware.
     return applySecurityHeaders(NextResponse.next(), requestId);
   }
@@ -144,7 +181,9 @@ export default async function middleware(request: NextRequest, event: NextFetchE
 
   const { pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
   if (getAuthRoutePolicy(pathWithoutLocale) !== 'public') {
-    return guardedProxy(request, event);
+    if (isRscOrPrefetchRequest(request)) return guardedRscProxy(request);
+    const response = await guardedProxy(request, event);
+    return response;
   }
 
   return applySecurityHeaders(intlMiddleware(request), requestId);

@@ -13,14 +13,14 @@ import TextureBackground from './TextureBackground';
 
 const unbounded = Unbounded({
   subsets: ['latin'],
-  display: 'swap',
+  display: 'optional',
   variable: '--font-unbounded',
-  weight: ['300', '400', '500', '600', '700', '800'],
 });
 
 const vinaSans = Vina_Sans({
   subsets: ['latin'],
-  display: 'swap',
+  display: 'optional',
+  preload: false,
   variable: '--font-vina-sans',
   weight: ['400'],
 });

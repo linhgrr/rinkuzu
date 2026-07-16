@@ -32,6 +32,7 @@ import {
 } from '@/lib/mongoose-count-buckets';
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
 import { buildCompactQuizPipeline } from '@/repositories/pipelines/quiz-list.mjs';
+import { buildPaginatedCreatorStatsPipeline } from '@/repositories/pipelines/creator-stats.mjs';
 
 interface QuizListAggregateMeta {
   totalItems: number;
@@ -39,6 +40,20 @@ interface QuizListAggregateMeta {
 
 interface QuizListAggregateResult {
   items: QuizPersistenceRecord[];
+  meta: QuizListAggregateMeta[];
+}
+
+interface QuizCreatorAggregateRecord {
+  _id: Types.ObjectId;
+  email: string;
+  role: 'admin' | 'user';
+  joinedAt: Date;
+  quizCount: number;
+  totalQuestions: number;
+}
+
+interface QuizCreatorAggregateResult {
+  items: QuizCreatorAggregateRecord[];
   meta: QuizListAggregateMeta[];
 }
 
@@ -380,60 +395,34 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     return resolveCountBuckets(records);
   }
 
-  async findTopCreators(limit: number): Promise<QuizCreatorStatRecord[]> {
+  async findTopCreators(
+    options: RepositoryPaginationOptions,
+  ): Promise<PaginatedRepositoryResult<QuizCreatorStatRecord>> {
     await connectDB();
 
-    const records = await QuizModel.aggregate<{
-      _id: Types.ObjectId;
-      email: string;
-      role: 'admin' | 'user';
-      joinedAt: Date;
-      quizCount: number;
-      totalQuestions: number;
-    }>([
-      {
-        $group: {
-          _id: '$author',
-          quizCount: { $sum: 1 },
-          totalQuestions: { $sum: { $size: { $ifNull: ['$questions', []] } } },
-        },
-      },
-      { $sort: { quizCount: -1, totalQuestions: -1 } },
-      { $limit: limit },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'author',
-        },
-      },
-      { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
-      {
-        $project: {
-          _id: 1,
-          email: '$author.email',
-          role: '$author.role',
-          joinedAt: '$author.createdAt',
-          quizCount: 1,
-          totalQuestions: 1,
-        },
-      },
-    ]);
+    const { page, limit } = options;
+    const [result] = await QuizModel.aggregate<QuizCreatorAggregateResult>(
+      buildPaginatedCreatorStatsPipeline({ page, limit }),
+    );
+    const records = result?.items ?? [];
+    const total = result?.meta[0]?.totalItems ?? 0;
 
-    return records.map((record) => {
-      if (!record.email || !record.role || !record.joinedAt) {
-        throw new TypeError(`Quiz creator ${String(record._id)} could not be resolved`);
-      }
+    return {
+      items: records.map((record) => {
+        if (!record.email || !record.role || !record.joinedAt) {
+          throw new TypeError(`Quiz creator ${String(record._id)} could not be resolved`);
+        }
 
-      return {
-        id: String(record._id),
-        email: record.email,
-        role: record.role,
-        joinedAt: record.joinedAt,
-        quizCount: record.quizCount,
-        totalQuestions: record.totalQuestions,
-      };
-    });
+        return {
+          id: String(record._id),
+          email: record.email,
+          role: record.role,
+          joinedAt: record.joinedAt,
+          quizCount: record.quizCount,
+          totalQuestions: record.totalQuestions,
+        };
+      }),
+      pagination: buildPaginationMeta(page, limit, total),
+    };
   }
 }

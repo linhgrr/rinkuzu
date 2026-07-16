@@ -13,7 +13,7 @@ export const GET = withAdmin(async () => {
     const [statsResult, activityResult, creatorResult, scoreResult] = await Promise.all([
       adminService.getStats(),
       adminService.getActivityStats(),
-      adminService.getCreatorStats(TOP_CREATORS_LIMIT),
+      adminService.getCreatorStats({ page: 1, limit: TOP_CREATORS_LIMIT }),
       adminService.getScoreStats(),
     ]);
 
@@ -29,7 +29,7 @@ export const GET = withAdmin(async () => {
     const combinedStats = {
       overview: statsResult.data,
       ...activityResult.data,
-      topCreators: creatorResult.data,
+      topCreators: creatorResult.data.creators,
       scoreStats: scoreResult.data,
       growthTrends: { users: [], quizzes: [], attempts: [] },
     };

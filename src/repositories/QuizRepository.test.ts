@@ -337,4 +337,54 @@ describe('QuizRepository.findUserQuizzes', () => {
     ]);
     expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
   });
+
+  it('paginates creator aggregates and preserves the total in one query', async () => {
+    quizModelMocks.aggregate.mockResolvedValueOnce([
+      {
+        items: [
+          {
+            _id: new Types.ObjectId('507f191e810c19729de860eb'),
+            email: 'teacher@example.com',
+            role: 'user',
+            joinedAt: new Date('2026-06-01T00:00:00.000Z'),
+            quizCount: 3,
+            totalQuestions: 30,
+          },
+        ],
+        meta: [{ totalItems: 13 }],
+      },
+    ]);
+    const repository = new QuizRepository();
+
+    const result = await repository.findTopCreators({ page: 2, limit: 5 });
+
+    expect(result.pagination).toEqual({
+      currentPage: 2,
+      totalPages: 3,
+      totalItems: 13,
+      itemsPerPage: 5,
+      hasNextPage: true,
+      hasPrevPage: true,
+    });
+    expect(result.items).toEqual([
+      expect.objectContaining({ id: '507f191e810c19729de860eb', email: 'teacher@example.com' }),
+    ]);
+    expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
+      expect.objectContaining({ $group: expect.any(Object) }),
+      { $sort: { quizCount: -1, totalQuestions: -1, _id: 1 } },
+      {
+        $facet: {
+          items: [
+            { $skip: 5 },
+            { $limit: 5 },
+            expect.objectContaining({ $lookup: expect.any(Object) }),
+            expect.objectContaining({ $unwind: expect.any(Object) }),
+            expect.objectContaining({ $project: expect.any(Object) }),
+          ],
+          meta: [{ $count: 'totalItems' }],
+        },
+      },
+    ]);
+    expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
+  });
 });

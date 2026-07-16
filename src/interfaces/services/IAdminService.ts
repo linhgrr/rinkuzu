@@ -13,8 +13,9 @@ import type {
 } from '@/dtos/admin-report';
 import type {
   AdminActivityStatsDto,
-  AdminCreatorStatDto,
+  AdminCreatorStatsListDto,
   AdminOverviewStatsDto,
+  AdminStatsListQueryDto,
 } from '@/dtos/admin-stats';
 
 export interface IAdminService {
@@ -39,5 +40,5 @@ export interface IAdminService {
   // Statistics
   getStats(): Promise<ServiceResult<AdminOverviewStatsDto>>;
   getActivityStats(): Promise<ServiceResult<AdminActivityStatsDto>>;
-  getCreatorStats(limit: number): Promise<ServiceResult<AdminCreatorStatDto[]>>;
+  getCreatorStats(query: AdminStatsListQueryDto): Promise<ServiceResult<AdminCreatorStatsListDto>>;
 }

@@ -63,7 +63,7 @@ function createQuizRepository(
     findPublicByAuthor: vi.fn(),
     count: vi.fn().mockResolvedValue(0),
     countByCreatedAtBuckets: vi.fn().mockResolvedValue({ today: 0, thisWeek: 0, thisMonth: 0 }),
-    findTopCreators: vi.fn().mockResolvedValue([]),
+    findTopCreators: vi.fn().mockResolvedValue({ items: [], pagination }),
     ...overrides,
   };
 }
@@ -194,16 +194,19 @@ describe('AdminService report and stats contracts', () => {
 
   it('maps top creator aggregate records to creator DTOs', async () => {
     const quizRepository = createQuizRepository({
-      findTopCreators: vi.fn().mockResolvedValue([
-        {
-          id: '507f191e810c19729de860eb',
-          email: 'teacher@example.com',
-          role: 'user',
-          joinedAt: new Date('2026-06-01T00:00:00Z'),
-          quizCount: 3,
-          totalQuestions: 30,
-        },
-      ]),
+      findTopCreators: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: '507f191e810c19729de860eb',
+            email: 'teacher@example.com',
+            role: 'user',
+            joinedAt: new Date('2026-06-01T00:00:00Z'),
+            quizCount: 3,
+            totalQuestions: 30,
+          },
+        ],
+        pagination: { ...pagination, currentPage: 2, itemsPerPage: 5 },
+      }),
     });
     const service = new AdminService(
       createUserRepository(),
@@ -212,21 +215,24 @@ describe('AdminService report and stats contracts', () => {
       createAttemptRepository(),
     );
 
-    const result = await service.getCreatorStats(5);
+    const result = await service.getCreatorStats({ page: 2, limit: 5 });
 
-    expect(quizRepository.findTopCreators).toHaveBeenCalledWith(5);
+    expect(quizRepository.findTopCreators).toHaveBeenCalledWith({ page: 2, limit: 5 });
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(result.data).toEqual([
-      {
-        id: '507f191e810c19729de860eb',
-        email: 'teacher@example.com',
-        quizCount: 3,
-        totalQuestions: 30,
-        joinedAt: '2026-06-01T00:00:00.000Z',
-        role: 'user',
-      },
-    ]);
+    expect(result.data).toEqual({
+      creators: [
+        {
+          id: '507f191e810c19729de860eb',
+          email: 'teacher@example.com',
+          quizCount: 3,
+          totalQuestions: 30,
+          joinedAt: '2026-06-01T00:00:00.000Z',
+          role: 'user',
+        },
+      ],
+      pagination: { ...pagination, currentPage: 2, itemsPerPage: 5 },
+    });
   });
 
   it('loads activity stats from repository bucket counts', async () => {

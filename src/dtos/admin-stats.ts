@@ -6,6 +6,8 @@ export const adminStatsListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export type AdminStatsListQueryDto = z.infer<typeof adminStatsListQuerySchema>;
+
 export interface AdminOverviewStatsDto {
   totalQuizzes: number;
   totalUsers: number;

@@ -38,3 +38,20 @@ export async function checkPrivateQuizAccess(
     code: PREMIUM_REQUIRED_CODE,
   };
 }
+
+export async function requireQuizReadAccess(
+  quiz: Quiz | null,
+  userId?: string,
+  userRole?: string,
+): Promise<ServiceResult<Quiz>> {
+  if (!quiz) {
+    return {
+      success: false,
+      error: 'Quiz not found',
+      statusCode: 404,
+    };
+  }
+
+  const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
+  return privateAccessError ?? { success: true, data: quiz };
+}

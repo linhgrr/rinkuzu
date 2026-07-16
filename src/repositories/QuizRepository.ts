@@ -73,6 +73,38 @@ const USER_QUIZ_LIST_PROJECTION = {
   sourceDraftId: 1,
 };
 
+const QUIZ_WITH_AUTHOR_PROJECTION = {
+  _id: 1,
+  title: 1,
+  description: 1,
+  slug: 1,
+  author: {
+    _id: { $ifNull: [{ $first: '$authorDoc._id' }, '$author'] },
+    email: { $first: '$authorDoc.email' },
+    name: { $first: '$authorDoc.name' },
+    displayName: { $first: '$authorDoc.displayName' },
+    avatar: { $first: '$authorDoc.avatar' },
+  },
+  folder: 1,
+  isPrivate: 1,
+  pdfUrl: 1,
+  tags: 1,
+  sourceDraftId: 1,
+  createdAt: 1,
+  updatedAt: 1,
+} satisfies PipelineStage.Project['$project'];
+
+const QUIZ_DETAIL_PROJECTION = {
+  ...QUIZ_WITH_AUTHOR_PROJECTION,
+  questions: 1,
+} satisfies PipelineStage.Project['$project'];
+
+const QUIZ_SUMMARY_PROJECTION = {
+  ...QUIZ_WITH_AUTHOR_PROJECTION,
+  questions: { $literal: [] },
+  questionCount: { $size: { $ifNull: ['$questions', []] } },
+} satisfies PipelineStage.Project['$project'];
+
 function buildPaginatedQuizListPipeline(
   filter: FilterQuery<QuizPersistenceRecord>,
   options: PaginatedQuizListPipelineOptions,
@@ -112,6 +144,28 @@ async function findPaginatedQuizList(
     items: records.map(QuizPersistenceMapper.toEntity),
     pagination: buildPaginationMeta(page, limit, total),
   };
+}
+
+async function findQuizBySlugWithProjection(
+  slug: string,
+  projection: PipelineStage.Project['$project'],
+): Promise<Quiz | null> {
+  await connectDB();
+  const [record] = await QuizModel.aggregate<QuizPersistenceRecord>([
+    { $match: { slug } },
+    { $limit: 1 },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'author',
+        foreignField: '_id',
+        as: 'authorDoc',
+      },
+    },
+    { $project: projection },
+  ]);
+
+  return record ? QuizPersistenceMapper.toEntity(record) : null;
 }
 
 function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenceRecord> {
@@ -166,84 +220,11 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
   }
 
   async findBySlug(slug: string): Promise<Quiz | null> {
-    await connectDB();
-    const [record] = await QuizModel.aggregate<QuizPersistenceRecord>([
-      { $match: { slug } },
-      { $limit: 1 },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'author',
-          foreignField: '_id',
-          as: 'authorDoc',
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          slug: 1,
-          author: {
-            _id: { $ifNull: [{ $first: '$authorDoc._id' }, '$author'] },
-            email: { $first: '$authorDoc.email' },
-            name: { $first: '$authorDoc.name' },
-            displayName: { $first: '$authorDoc.displayName' },
-            avatar: { $first: '$authorDoc.avatar' },
-          },
-          folder: 1,
-          questions: 1,
-          isPrivate: 1,
-          pdfUrl: 1,
-          tags: 1,
-          sourceDraftId: 1,
-          createdAt: 1,
-          updatedAt: 1,
-        },
-      },
-    ]);
-    return record ? QuizPersistenceMapper.toEntity(record) : null;
+    return findQuizBySlugWithProjection(slug, QUIZ_DETAIL_PROJECTION);
   }
 
   async findSummaryBySlug(slug: string): Promise<Quiz | null> {
-    await connectDB();
-    const [record] = await QuizModel.aggregate<QuizPersistenceRecord>([
-      { $match: { slug } },
-      { $limit: 1 },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'author',
-          foreignField: '_id',
-          as: 'authorDoc',
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          slug: 1,
-          author: {
-            _id: { $ifNull: [{ $first: '$authorDoc._id' }, '$author'] },
-            email: { $first: '$authorDoc.email' },
-            name: { $first: '$authorDoc.name' },
-            displayName: { $first: '$authorDoc.displayName' },
-            avatar: { $first: '$authorDoc.avatar' },
-          },
-          folder: 1,
-          questions: { $literal: [] },
-          questionCount: { $size: { $ifNull: ['$questions', []] } },
-          isPrivate: 1,
-          pdfUrl: 1,
-          tags: 1,
-          sourceDraftId: 1,
-          createdAt: 1,
-          updatedAt: 1,
-        },
-      },
-    ]);
-    return record ? QuizPersistenceMapper.toEntity(record) : null;
+    return findQuizBySlugWithProjection(slug, QUIZ_SUMMARY_PROJECTION);
   }
 
   async findIdBySlug(slug: string): Promise<string | null> {

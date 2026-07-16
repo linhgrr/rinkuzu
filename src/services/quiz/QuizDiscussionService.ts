@@ -4,9 +4,10 @@ import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepo
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { QuizDiscussionDto, ReportQuizResponseDto } from '@/dtos/quiz';
+import type { Quiz } from '@/entities/Quiz';
 import type { Session } from 'next-auth';
 import { logger } from '@/lib/logger';
-import { checkPrivateQuizAccess } from './quiz-helpers';
+import { requireQuizReadAccess } from './quiz-helpers';
 import { QuizDiscussionDtoMapper } from '@/mappers/quiz/QuizDiscussionDtoMapper';
 
 export class QuizDiscussionService {
@@ -17,27 +18,26 @@ export class QuizDiscussionService {
     private reportRepository: IReportRepository,
   ) {}
 
+  private async getAccessibleQuizSummary(
+    slug: string,
+    session?: Session | null,
+  ): Promise<ServiceResult<Quiz>> {
+    return requireQuizReadAccess(
+      await this.quizRepository.findSummaryBySlug(slug),
+      session?.user?.id,
+      session?.user?.role,
+    );
+  }
+
   async getQuizDiscussions(
     slug: string,
     session?: Session | null,
   ): Promise<ServiceResult<QuizDiscussionDto[]>> {
     try {
-      const quiz = await this.quizRepository.findSummaryBySlug(slug);
+      const access = await this.getAccessibleQuizSummary(slug, session);
+      if (!access.success) return access;
 
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const userId = session?.user?.id;
-      const userRole = session?.user?.role;
-      const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
-      if (privateAccessError) return privateAccessError;
-
-      const allDiscussions = await this.discussionRepository.findByQuiz(quiz.id);
+      const allDiscussions = await this.discussionRepository.findByQuiz(access.data.id);
 
       return {
         success: true,
@@ -61,20 +61,10 @@ export class QuizDiscussionService {
     session?: Session | null,
   ): Promise<ServiceResult<QuizDiscussionDto>> {
     try {
-      const quiz = await this.quizRepository.findSummaryBySlug(slug);
+      const access = await this.getAccessibleQuizSummary(slug, session);
+      if (!access.success) return access;
 
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const userId = session?.user?.id;
-      const userRole = session?.user?.role;
-      const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
-      if (privateAccessError) return privateAccessError;
+      const quiz = access.data;
 
       if (questionIndex < 0 || questionIndex >= (quiz.questionCount ?? 0)) {
         return {

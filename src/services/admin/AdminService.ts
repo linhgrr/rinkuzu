@@ -20,6 +20,8 @@ import type { DeleteResultDto } from '@/dtos/common';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
+import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
@@ -32,9 +34,9 @@ import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 export class AdminService implements IAdminService {
   constructor(
-    private userRepository: IUserRepository,
+    private userRepository: IUserRepository & IRecentUserRepository,
     private reportRepository: IReportRepository,
-    private quizRepository: IQuizRepository,
+    private quizRepository: IQuizRepository & IDashboardQuizRepository,
     private attemptRepository: IAttemptRepository,
   ) {}
 
@@ -258,10 +260,10 @@ export class AdminService implements IAdminService {
           this.userRepository.countByCreatedAtBuckets({ today, thisWeek, thisMonth }),
           this.quizRepository.countByCreatedAtBuckets({ today, thisWeek, thisMonth }),
           this.attemptRepository.countByTakenAtBuckets({ today, thisWeek, thisMonth }),
-          this.userRepository.findAll({ page: 1, limit: 5 }),
-          this.quizRepository.findAll(
+          this.userRepository.findRecent(5),
+          this.quizRepository.findRecent(
             {},
-            { page: 1, limit: 5, populate: ['author'], compact: true },
+            { limit: 5, populate: ['author'], sort: { createdAt: -1 } },
           ),
           this.attemptRepository.findRecentActivity(5),
         ]);
@@ -272,8 +274,8 @@ export class AdminService implements IAdminService {
           userBuckets,
           quizBuckets,
           attemptBuckets,
-          recentUsers.items,
-          recentQuizzes.items,
+          recentUsers,
+          recentQuizzes,
           recentAttempts,
         ),
       };

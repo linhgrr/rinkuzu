@@ -291,26 +291,74 @@ try {
       evidence.push(row);
     }
 
+    const recentUsersExplain = await users
+      .find({}, { projection: { email: 1, role: 1, createdAt: 1 } })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .explain('executionStats');
+    const recentUsersStats = recentUsersExplain.executionStats;
+    const recentUsersStages = collectStageNames(recentUsersStats.executionStages);
+    const recentUsersIndexes = collectIndexNames(recentUsersStats.executionStages);
+    const recentUsersRow = {
+      name: 'admin-recent-users',
+      stages: [...recentUsersStages].sort(),
+      indexes: [...recentUsersIndexes].sort(),
+      keysExamined: recentUsersStats.totalKeysExamined,
+      documentsExamined: recentUsersStats.totalDocsExamined,
+      returnedRows: recentUsersStats.nReturned,
+    };
+    if (
+      !recentUsersStages.has('IXSCAN') ||
+      recentUsersStages.has('SORT') ||
+      !recentUsersIndexes.has('createdAt_-1')
+    ) {
+      throw new Error(
+        `admin-recent-users did not use createdAt_-1 without a blocking sort; stages=${recentUsersRow.stages.join(',')}; indexes=${recentUsersRow.indexes.join(',')}`,
+      );
+    }
+    if (
+      recentUsersRow.returnedRows !== 5 ||
+      recentUsersRow.keysExamined > 5 ||
+      recentUsersRow.documentsExamined > 5
+    ) {
+      throw new Error(
+        `admin-recent-users examined ${recentUsersRow.keysExamined} keys/${recentUsersRow.documentsExamined} documents and returned ${recentUsersRow.returnedRows} rows; expected at most 5/5 for five rows`,
+      );
+    }
+    evidence.push(recentUsersRow);
+
     const dashboardChecks = [
       {
         name: 'dashboard-recent-owned-quizzes',
         match: { author: dashboardOwnerId },
+        limit: 4,
         maxKeysExamined: 4,
         maxDocumentsExamined: 4,
+        expectedIndex: 'author_1_createdAt_-1',
       },
       {
         name: 'dashboard-recent-public-quizzes',
         match: { isPrivate: false, author: { $ne: dashboardOwnerId } },
+        limit: 4,
         // The fixture deliberately interleaves recent public quizzes from the owner.
         // `$ne` is a range predicate, so the visibility/sort index must scan and reject them.
         maxKeysExamined: 8,
         maxDocumentsExamined: 8,
+        expectedIndex: 'isPrivate_1_createdAt_-1',
+      },
+      {
+        name: 'admin-recent-quizzes',
+        match: {},
+        limit: 5,
+        maxKeysExamined: 5,
+        maxDocumentsExamined: 5,
+        expectedIndex: 'createdAt_-1',
       },
     ];
 
     for (const check of dashboardChecks) {
       const explain = await quizzes
-        .aggregate(buildDashboardRecentQuizPipeline(check.match))
+        .aggregate(buildDashboardRecentQuizPipeline(check.match, check.limit))
         .explain('executionStats');
       const cursor = explain.stages?.find((stage) => stage.$cursor)?.$cursor;
       const stats = cursor?.executionStats;
@@ -318,9 +366,11 @@ try {
       if (!stats) throw new Error(`${check.name} did not return executionStats`);
 
       const stages = collectStageNames(stats.executionStages);
+      const indexes = collectIndexNames(stats.executionStages);
       const row = {
         name: check.name,
         stages: [...stages].sort(),
+        indexes: [...indexes].sort(),
         keysExamined: stats.totalKeysExamined,
         documentsExamined: stats.totalDocsExamined,
         returnedRows: stats.nReturned,
@@ -328,19 +378,23 @@ try {
         lookupIndexesUsed: lookup?.indexesUsed ?? [],
         projection: DASHBOARD_QUIZ_PROJECTION,
       };
-      if (!stages.has('IXSCAN')) throw new Error(`${check.name} did not use IXSCAN`);
-      if (row.returnedRows !== 4) {
-        throw new Error(`${check.name} returned ${row.returnedRows} rows; expected 4`);
+      if (!stages.has('IXSCAN') || stages.has('SORT') || !indexes.has(check.expectedIndex)) {
+        throw new Error(
+          `${check.name} did not use ${check.expectedIndex} without a blocking sort; stages=${row.stages.join(',')}; indexes=${row.indexes.join(',')}`,
+        );
+      }
+      if (row.returnedRows !== check.limit) {
+        throw new Error(`${check.name} returned ${row.returnedRows} rows; expected ${check.limit}`);
       }
       if (
         row.keysExamined > check.maxKeysExamined ||
         row.documentsExamined > check.maxDocumentsExamined
       ) {
         throw new Error(
-          `${check.name} examined ${row.keysExamined}/${check.maxKeysExamined} keys and ${row.documentsExamined}/${check.maxDocumentsExamined} documents for four rows`,
+          `${check.name} examined ${row.keysExamined}/${check.maxKeysExamined} keys and ${row.documentsExamined}/${check.maxDocumentsExamined} documents for ${check.limit} rows`,
         );
       }
-      if (row.lookupDocumentsExamined !== 4 || !row.lookupIndexesUsed.includes('_id_')) {
+      if (row.lookupDocumentsExamined !== check.limit || !row.lookupIndexesUsed.includes('_id_')) {
         throw new Error(
           `${check.name} author lookup examined ${String(row.lookupDocumentsExamined)} documents without the users _id_ index`,
         );
@@ -594,12 +648,12 @@ try {
   await client.close();
 }
 
-function buildDashboardRecentQuizPipeline(match) {
+function buildDashboardRecentQuizPipeline(match, limit) {
   return [
     { $match: match },
     { $sort: { createdAt: -1 } },
     { $skip: 0 },
-    { $limit: 4 },
+    { $limit: limit },
     {
       $lookup: {
         from: 'users',

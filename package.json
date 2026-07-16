@@ -54,6 +54,7 @@
     "migrate:performance-indexes:plan": "node scripts/sync-performance-indexes.mjs --plan",
     "migrate:performance-indexes:check": "node scripts/sync-performance-indexes.mjs --check",
     "migrate:performance-indexes:apply": "node scripts/sync-performance-indexes.mjs --apply --verify",
+    "migrate:performance-indexes:apply-safe": "node scripts/sync-performance-indexes.mjs --apply-safe-only",
     "migrate:performance-indexes:verify": "node scripts/sync-performance-indexes.mjs --verify",
     "check:database-query-plans": "node scripts/database/check-query-plans.mjs",
     "migrate:bookmark-user-ids": "node scripts/normalize-bookmark-user-ids.mjs",

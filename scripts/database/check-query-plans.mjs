@@ -2,6 +2,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import { withCleanProbeRows } from './query-plan-probe.mjs';
 import { buildRecentAttemptActivityPipeline } from '../../src/repositories/pipelines/recent-attempt-activity.mjs';
 import { buildDiscussionListPipeline } from '../../src/repositories/pipelines/discussion-list.mjs';
+import { buildUserAttemptListPipeline } from '../../src/repositories/pipelines/attempt-read.mjs';
 
 const DASHBOARD_QUIZ_PROJECTION = {
   _id: 1,
@@ -68,6 +69,7 @@ try {
     const dashboardPublicQuizIds = Array.from({ length: 400 }, () => new ObjectId());
     const discussionQuizId = new ObjectId();
     const discussionNoiseQuizId = new ObjectId();
+    const historyUserId = new ObjectId();
     const subscriptionRows = Array.from({ length: 400 }, (_, index) => ({
       ...marker,
       user: new ObjectId(),
@@ -130,6 +132,24 @@ try {
       ],
       takenAt: new Date(now.getTime() - index * 1_000),
     }));
+    const historyAttemptRows = dashboardPublicQuizIds.map((quiz, index) => ({
+      ...marker,
+      user: historyUserId,
+      quiz,
+      score: index % 101,
+      totalQuestions: 1,
+      answers: [{ kind: 'single', selectedIndex: 0 }],
+      takenAt: new Date(now.getTime() - 1_000_000 - index * 1_000),
+    }));
+    const historyNoiseAttemptRows = Array.from({ length: 1_600 }, (_, index) => ({
+      ...marker,
+      user: new ObjectId(),
+      quiz: dashboardPublicQuizIds[index % dashboardPublicQuizIds.length],
+      score: index % 101,
+      totalQuestions: 1,
+      answers: [{ kind: 'single', selectedIndex: 0 }],
+      takenAt: new Date(now.getTime() - 2_000_000 - index * 1_000),
+    }));
     const discussionRows = Array.from({ length: 8 }, (_, questionIndex) => ({
       ...marker,
       quiz: discussionQuizId,
@@ -157,7 +177,7 @@ try {
     }));
 
     await Promise.all([
-      attempts.insertMany(attemptRows),
+      attempts.insertMany([...attemptRows, ...historyAttemptRows, ...historyNoiseAttemptRows]),
       quizzes.insertMany([...ownedQuizRows, ...publicQuizRows]),
       subscriptions.insertMany(subscriptionRows),
       users.insertMany([...userRows, ...dashboardUserRows]),
@@ -238,7 +258,7 @@ try {
       const lookup = explain.stages?.find((stage) => stage.$lookup);
       if (!stats) throw new Error(`${check.name} did not return executionStats`);
 
-      const stages = collectStageNames(explain);
+      const stages = collectStageNames(stats.executionStages);
       const row = {
         name: check.name,
         stages: [...stages].sort(),
@@ -282,7 +302,7 @@ try {
       throw new Error('public-profile-quizzes did not return executionStats');
     }
 
-    const publicProfileQuizStages = collectStageNames(publicProfileQuizExplain);
+    const publicProfileQuizStages = collectStageNames(publicProfileQuizStats.executionStages);
     const publicProfileQuizRow = {
       name: 'public-profile-quizzes',
       stages: [...publicProfileQuizStages].sort(),
@@ -318,6 +338,71 @@ try {
     }
     evidence.push(publicProfileQuizRow);
 
+    const attemptHistoryPipeline = buildUserAttemptListPipeline(historyUserId, 0, 4);
+    const [attemptHistoryExplain, attemptHistoryResults] = await Promise.all([
+      attempts.aggregate(attemptHistoryPipeline).explain('executionStats'),
+      attempts.aggregate(attemptHistoryPipeline).toArray(),
+    ]);
+    const attemptHistoryCursor = attemptHistoryExplain.stages?.find(
+      (stage) => stage.$cursor,
+    )?.$cursor;
+    const attemptHistoryStats = attemptHistoryCursor?.executionStats;
+    const attemptHistoryLookup = findOperatorStages(attemptHistoryExplain.stages, '$lookup').find(
+      (lookup) => typeof lookup.totalDocsExamined === 'number',
+    );
+    if (!attemptHistoryStats) {
+      throw new Error('user-attempt-history did not return executionStats');
+    }
+
+    const attemptHistoryStages = collectStageNames(attemptHistoryStats.executionStages);
+    const attemptHistoryResult = attemptHistoryResults[0];
+    const attemptHistoryRow = {
+      name: 'user-attempt-history',
+      stages: [...attemptHistoryStages].sort(),
+      keysExamined: attemptHistoryStats.totalKeysExamined,
+      documentsExamined: attemptHistoryStats.totalDocsExamined,
+      returnedRows: attemptHistoryStats.nReturned,
+      lookupDocumentsExamined: attemptHistoryLookup?.totalDocsExamined ?? null,
+      lookupIndexesUsed: attemptHistoryLookup?.indexesUsed ?? [],
+      projection: attemptHistoryPipeline.at(-1)?.$facet?.items?.at(-1)?.$project,
+    };
+    if (!attemptHistoryStages.has('IXSCAN') || attemptHistoryStages.has('SORT')) {
+      throw new Error(
+        `user-attempt-history did not use its user/takenAt index; stages=${attemptHistoryRow.stages.join(',')}`,
+      );
+    }
+    if (
+      attemptHistoryRow.returnedRows !== 400 ||
+      attemptHistoryRow.keysExamined > 400 ||
+      attemptHistoryRow.documentsExamined > 400
+    ) {
+      throw new Error(
+        `user-attempt-history examined ${attemptHistoryRow.keysExamined} keys/${attemptHistoryRow.documentsExamined} documents and returned ${attemptHistoryRow.returnedRows} rows to the facet; expected at most 400/400`,
+      );
+    }
+    if (
+      attemptHistoryRow.lookupDocumentsExamined !== 4 ||
+      !attemptHistoryRow.lookupIndexesUsed.includes('_id_')
+    ) {
+      throw new Error(
+        `user-attempt-history quiz lookup examined ${String(attemptHistoryRow.lookupDocumentsExamined)} documents without the quizzes _id_ index`,
+      );
+    }
+    if (
+      attemptHistoryResult?.meta?.[0]?.totalItems !== 400 ||
+      attemptHistoryResult.items?.length !== 4 ||
+      !attemptHistoryResult.items.every(
+        (item) =>
+          Array.isArray(item.answers) &&
+          item.answers.length === 0 &&
+          !Object.hasOwn(item.quiz, 'questions') &&
+          !Object.hasOwn(item.quiz, '_ciQueryPlanProbe'),
+      )
+    ) {
+      throw new Error('user-attempt-history read model semantics changed');
+    }
+    evidence.push(attemptHistoryRow);
+
     const discussionPipeline = buildDiscussionListPipeline(discussionQuizId);
     const [discussionExplain, discussionResults] = await Promise.all([
       discussions.aggregate(discussionPipeline).explain('executionStats'),
@@ -330,7 +415,7 @@ try {
       throw new Error('quiz-discussions did not return executionStats');
     }
 
-    const discussionStages = collectStageNames(discussionExplain);
+    const discussionStages = collectStageNames(discussionStats.executionStages);
     const discussionRow = {
       name: 'quiz-discussions',
       stages: [...discussionStages].sort(),
@@ -391,7 +476,7 @@ try {
       throw new Error('admin-recent-attempts did not return executionStats');
     }
 
-    const recentAttemptStages = collectStageNames(recentAttemptExplain);
+    const recentAttemptStages = collectStageNames(recentAttemptStats.executionStages);
     const recentAttemptRow = {
       name: 'admin-recent-attempts',
       stages: [...recentAttemptStages].sort(),
@@ -490,4 +575,17 @@ function collectStageNames(stage, names = new Set()) {
     }
   }
   return names;
+}
+
+function findOperatorStages(stage, operator, matches = []) {
+  if (!stage || typeof stage !== 'object') return matches;
+  if (!Array.isArray(stage) && Object.hasOwn(stage, operator)) {
+    matches.push(stage);
+  }
+  for (const value of Object.values(stage)) {
+    if (value && typeof value === 'object') {
+      findOperatorStages(value, operator, matches);
+    }
+  }
+  return matches;
 }

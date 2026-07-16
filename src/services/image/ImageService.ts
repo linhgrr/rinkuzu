@@ -1,12 +1,9 @@
 import type { ImageAssetDto } from '@/dtos/image';
 import type { IImageService, UploadImageData } from '@/interfaces/services/IImageService';
-import {
-  ImageStorageConfigurationError,
-  ImageStorageUpstreamError,
-  type IImageStorage,
-} from '@/interfaces/services/IImageStorage';
+import type { IImageStorage } from '@/interfaces/services/IImageStorage';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { toImageStorageFailure } from '@/services/image-storage-error';
 
 export class ImageService implements IImageService {
   constructor(private readonly imageStorage: IImageStorage) {}
@@ -18,12 +15,8 @@ export class ImageService implements IImageService {
         data: await this.imageStorage.upload(image),
       };
     } catch (error) {
-      if (error instanceof ImageStorageConfigurationError) {
-        return { success: false, error: error.message, statusCode: 500 };
-      }
-      if (error instanceof ImageStorageUpstreamError) {
-        return { success: false, error: error.message, statusCode: 502 };
-      }
+      const storageFailure = toImageStorageFailure(error);
+      if (storageFailure) return storageFailure;
       logger.error({ error }, 'Image upload error');
       return { success: false, error: 'Internal server error', statusCode: 500 };
     }

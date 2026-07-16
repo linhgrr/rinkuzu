@@ -22,6 +22,19 @@ const DASHBOARD_QUIZ_PROJECTION = {
   questions: { $literal: [] },
 };
 
+const PUBLIC_PROFILE_QUIZ_PROJECTION = {
+  _id: 1,
+  title: 1,
+  description: 1,
+  slug: 1,
+  author: 1,
+  questions: { $literal: [] },
+  questionCount: { $size: { $ifNull: ['$questions', []] } },
+  isPrivate: 1,
+  createdAt: 1,
+  updatedAt: 1,
+};
+
 const uri = process.env.MONGODB_URI;
 if (process.env.CI !== 'true') {
   throw new Error('Database query-plan probes are restricted to CI=true');
@@ -225,6 +238,55 @@ try {
       evidence.push(row);
     }
 
+    const publicProfileQuizPipeline = buildPublicProfileQuizPipeline(dashboardOwnerId, 4);
+    const [publicProfileQuizExplain, publicProfileQuizRows] = await Promise.all([
+      quizzes.aggregate(publicProfileQuizPipeline).explain('executionStats'),
+      quizzes.aggregate(publicProfileQuizPipeline).toArray(),
+    ]);
+    const publicProfileQuizCursor = publicProfileQuizExplain.stages?.find(
+      (stage) => stage.$cursor,
+    )?.$cursor;
+    const publicProfileQuizStats = publicProfileQuizCursor?.executionStats;
+    if (!publicProfileQuizStats) {
+      throw new Error('public-profile-quizzes did not return executionStats');
+    }
+
+    const publicProfileQuizStages = collectStageNames(publicProfileQuizExplain);
+    const publicProfileQuizRow = {
+      name: 'public-profile-quizzes',
+      stages: [...publicProfileQuizStages].sort(),
+      keysExamined: publicProfileQuizStats.totalKeysExamined,
+      documentsExamined: publicProfileQuizStats.totalDocsExamined,
+      returnedRows: publicProfileQuizStats.nReturned,
+      projection: PUBLIC_PROFILE_QUIZ_PROJECTION,
+    };
+    if (!publicProfileQuizStages.has('IXSCAN')) {
+      throw new Error('public-profile-quizzes did not use IXSCAN');
+    }
+    if (
+      publicProfileQuizRow.returnedRows !== 4 ||
+      publicProfileQuizRow.keysExamined > 4 ||
+      publicProfileQuizRow.documentsExamined > 4
+    ) {
+      throw new Error(
+        `public-profile-quizzes examined ${publicProfileQuizRow.keysExamined} keys/${publicProfileQuizRow.documentsExamined} documents and returned ${publicProfileQuizRow.returnedRows} rows; expected at most 4/4 for 4 rows`,
+      );
+    }
+    if (
+      publicProfileQuizRows.length !== 4 ||
+      !publicProfileQuizRows.every(
+        (row) =>
+          String(row.author) === String(dashboardOwnerId) &&
+          row.isPrivate === false &&
+          row.questionCount === 0 &&
+          Array.isArray(row.questions) &&
+          row.questions.length === 0,
+      )
+    ) {
+      throw new Error('public-profile-quizzes read model semantics changed');
+    }
+    evidence.push(publicProfileQuizRow);
+
     const recentAttemptPipeline = buildRecentAttemptActivityPipeline(5);
     const [recentAttemptExplain, recentAttemptRows] = await Promise.all([
       attempts.aggregate(recentAttemptPipeline).explain('executionStats'),
@@ -315,6 +377,16 @@ function buildDashboardRecentQuizPipeline(match) {
     },
     { $unwind: { path: '$authorDoc', preserveNullAndEmptyArrays: true } },
     { $project: DASHBOARD_QUIZ_PROJECTION },
+  ];
+}
+
+function buildPublicProfileQuizPipeline(authorId, limit) {
+  return [
+    { $match: { author: authorId, isPrivate: false } },
+    { $sort: { createdAt: -1 } },
+    { $skip: 0 },
+    { $limit: limit },
+    { $project: PUBLIC_PROFILE_QUIZ_PROJECTION },
   ];
 }
 

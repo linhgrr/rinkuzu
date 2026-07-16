@@ -15,11 +15,21 @@ export interface AttemptQuizPersistenceRecord {
   questions?: QuizQuestionPersistenceRecord[];
 }
 
+export interface EmbeddedAttemptQuizSnapshotPersistenceRecord {
+  integrity: 'complete';
+  title: string;
+  slug: string;
+  description?: string;
+  questions: QuizQuestionPersistenceRecord[];
+}
+
 export interface AttemptPersistenceRecord {
   _id: MongoIdLike;
   user?: MongoIdLike | AttemptUserPersistenceRecord | null;
   guestEmail?: string;
   quiz: MongoIdLike | AttemptQuizPersistenceRecord;
+  /** Present on stored attempts; read pipelines project it into `quiz`. */
+  quizSnapshot?: EmbeddedAttemptQuizSnapshotPersistenceRecord;
   answers: SelectedAnswerPersistenceRecord[];
   score: number;
   totalQuestions: number;

@@ -3,6 +3,7 @@ import { existsSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -15,7 +16,7 @@ function assertSafeSourcePath(root, fileName) {
   return absolutePath;
 }
 
-function fragmentEndpoint(root, file) {
+function readCloneFragment(root, file) {
   if (
     typeof file?.name !== 'string' ||
     !Number.isInteger(file.start) ||
@@ -33,8 +34,35 @@ function fragmentEndpoint(root, file) {
     throw new Error(`jscpd clone range exceeds src/${file.name}.`);
   }
 
-  const fragment = lines.slice(file.start - 1, file.end).join('\n');
+  return lines.slice(file.start - 1, file.end).join('\n');
+}
+
+function fragmentEndpoint(root, file) {
+  const fragment = readCloneFragment(root, file);
   return `src/${file.name}\0${sha256(fragment)}`;
+}
+
+function isImportOnlyFragment(fragment) {
+  const sourceFile = ts.createSourceFile(
+    'clone-fragment.tsx',
+    fragment,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  return (
+    sourceFile.parseDiagnostics.length === 0 &&
+    sourceFile.statements.length > 0 &&
+    sourceFile.statements.every(
+      (statement) => ts.isImportDeclaration(statement) || ts.isImportEqualsDeclaration(statement),
+    )
+  );
+}
+
+export function isImportOnlyDuplicate(root, duplicate) {
+  return [duplicate?.firstFile, duplicate?.secondFile].every((file) =>
+    isImportOnlyFragment(readCloneFragment(root, file)),
+  );
 }
 
 export function fingerprintDuplicate(root, duplicate) {
@@ -80,7 +108,12 @@ export function validateDuplicationConfig(config, baseline) {
   return errors;
 }
 
-export function validateDuplicationReport(report, baseline, fingerprints) {
+export function validateDuplicationReport(
+  report,
+  baseline,
+  fingerprints,
+  fingerprintedDuplicates = report?.duplicates,
+) {
   const errors = [];
   if (
     baseline?.schemaVersion !== 1 ||
@@ -100,7 +133,12 @@ export function validateDuplicationReport(report, baseline, fingerprints) {
       `jscpd report is inconsistent: ${duplicates.length} clone records but total.clones=${total.clones}.`,
     );
   }
-  if (!Array.isArray(fingerprints) || fingerprints.length !== duplicates.length) {
+  if (
+    !Array.isArray(fingerprints) ||
+    !Array.isArray(fingerprintedDuplicates) ||
+    fingerprints.length !== fingerprintedDuplicates.length ||
+    fingerprintedDuplicates.some((duplicate) => !duplicates.includes(duplicate))
+  ) {
     errors.push('Clone fingerprints are missing or incomplete.');
     return errors;
   }
@@ -132,7 +170,7 @@ export function validateDuplicationReport(report, baseline, fingerprints) {
   const known = new Set(baseline.knownCloneFingerprints);
   fingerprints.forEach((fingerprint, index) => {
     if (!known.has(fingerprint)) {
-      errors.push(`New duplicate detected: ${duplicateLabel(duplicates[index])}.`);
+      errors.push(`New duplicate detected: ${duplicateLabel(fingerprintedDuplicates[index])}.`);
     }
   });
   return errors;
@@ -181,14 +219,25 @@ export function runDuplicationCheck(root = process.cwd()) {
     errors.push('Fresh jscpd JSON report was not produced.');
   } else {
     const report = JSON.parse(readFileSync(reportPath, 'utf8'));
-    const fingerprints = report.duplicates.map((duplicate) =>
+    const fingerprintedDuplicates = report.duplicates.filter(
+      (duplicate) => !isImportOnlyDuplicate(root, duplicate),
+    );
+    const fingerprints = fingerprintedDuplicates.map((duplicate) =>
       fingerprintDuplicate(root, duplicate),
     );
-    errors.push(...validateDuplicationReport(report, baseline, fingerprints));
+    errors.push(
+      ...validateDuplicationReport(report, baseline, fingerprints, fingerprintedDuplicates),
+    );
     const total = report.statistics.total;
+    const importOnlyClones = report.duplicates.length - fingerprintedDuplicates.length;
     process.stdout.write(
       `jscpd analyzed ${total.sources} files: ${total.clones} clones, ${total.duplicatedLines}/${total.lines} duplicated lines (${total.percentage.toFixed(4)}%).\n`,
     );
+    if (importOnlyClones > 0) {
+      process.stdout.write(
+        `${importOnlyClones} import-only clone(s) excluded from fingerprint regression; raw ceilings remain unchanged.\n`,
+      );
+    }
   }
   if (detector.error) errors.push(`jscpd failed to start: ${detector.error.message}`);
   if (detector.signal) errors.push(`jscpd was terminated by ${detector.signal}.`);

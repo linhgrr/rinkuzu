@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isIndexApplyMode,
   parseIndexCliArgs,
   readModeExitCode,
+  selectIndexActionsForMode,
+  validateSafeOnlyRemainder,
   validateSensitiveApproval,
 } from '../../scripts/database/index-cli.mjs';
 
@@ -22,6 +25,21 @@ describe('database index CLI guardrails', () => {
     expect(() => parseIndexCliArgs(['--plan', '--check'])).toThrow(/Conflicting modes/);
     expect(() => parseIndexCliArgs(['--unknown'])).toThrow(/Unknown argument/);
     expect(() => parseIndexCliArgs(['--apply', '--plan-sha', 'short'])).toThrow(/SHA-256/);
+    expect(() => parseIndexCliArgs(['--apply-safe-only', '--plan-sha', 'short'])).toThrow(
+      /SHA-256/,
+    );
+  });
+
+  it('parses safe-only apply as a write mode with an exact plan SHA', () => {
+    const sha = 'c'.repeat(64);
+    expect(parseIndexCliArgs(['--apply-safe-only', `--plan-sha=${sha}`])).toMatchObject({
+      mode: 'apply-safe-only',
+      planSha: sha,
+    });
+    expect(isIndexApplyMode('apply-safe-only')).toBe(true);
+    expect(() => readModeExitCode('apply-safe-only', { blockingCount: 0 })).toThrow(
+      /not read-only/,
+    );
   });
 
   it('accepts environment-backed apply inputs and mandatory post verification', () => {
@@ -72,5 +90,35 @@ describe('database index CLI guardrails', () => {
         now,
       }),
     ).toContain('Approval is older than 7 days');
+  });
+
+  it('applies only ordinary actions and keeps the exact sensitive remainder red', () => {
+    const sourcePlan = {
+      actions: [
+        { fingerprint: 'safe', sensitive: false },
+        { fingerprint: 'sensitive', sensitive: true },
+      ],
+    };
+    const verificationPlan = {
+      actions: [{ fingerprint: 'sensitive', sensitive: true }],
+      manualCount: 0,
+    };
+
+    expect(selectIndexActionsForMode(sourcePlan, 'apply-safe-only')).toEqual([
+      { fingerprint: 'safe', sensitive: false },
+    ]);
+    expect(validateSafeOnlyRemainder({ sourcePlan, verificationPlan })).toEqual([]);
+    expect(
+      validateSafeOnlyRemainder({
+        sourcePlan,
+        verificationPlan: {
+          actions: [{ fingerprint: 'unexpected', sensitive: false }],
+          manualCount: 0,
+        },
+      }),
+    ).toEqual([
+      'Post-apply verification contains non-sensitive index drift',
+      'Post-apply sensitive drift does not match the source plan',
+    ]);
   });
 });

@@ -1,4 +1,5 @@
-const MODES = new Set(['plan', 'check', 'apply', 'verify']);
+const MODES = new Set(['plan', 'check', 'apply', 'apply-safe-only', 'verify']);
+const APPLY_MODES = new Set(['apply', 'apply-safe-only']);
 const APPROVAL_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 
 export class CliUsageError extends Error {
@@ -19,6 +20,10 @@ export function parseIndexCliArgs(args, env = {}) {
 
     if (argument === '--plan' || argument === '--check' || argument === '--apply') {
       mode = chooseMode(mode, argument.slice(2));
+      continue;
+    }
+    if (argument === '--apply-safe-only') {
+      mode = chooseMode(mode, 'apply-safe-only');
       continue;
     }
     if (argument === '--verify') {
@@ -58,11 +63,43 @@ export function parseIndexCliArgs(args, env = {}) {
   if (!MODES.has(mode)) {
     throw new CliUsageError(`Unsupported mode: ${mode}`);
   }
-  if (mode === 'apply' && planSha !== null && !/^[a-f0-9]{64}$/i.test(planSha)) {
+  if (APPLY_MODES.has(mode) && planSha !== null && !/^[a-f0-9]{64}$/i.test(planSha)) {
     throw new CliUsageError('--plan-sha must be a 64-character SHA-256 digest');
   }
 
   return { mode, planSha, approvalFile, verifyAfterApply };
+}
+
+export function isIndexApplyMode(mode) {
+  return APPLY_MODES.has(mode);
+}
+
+export function selectIndexActionsForMode(plan, mode) {
+  if (mode === 'apply') return plan.actions;
+  if (mode === 'apply-safe-only') {
+    return plan.actions.filter((action) => action.sensitive !== true);
+  }
+  throw new CliUsageError(`Mode ${mode} is not an apply mode`);
+}
+
+export function validateSafeOnlyRemainder({ sourcePlan, verificationPlan }) {
+  const expected = sourcePlan.actions
+    .filter((action) => action.sensitive === true)
+    .map((action) => action.fingerprint)
+    .sort();
+  const actual = verificationPlan.actions.map((action) => action.fingerprint).sort();
+  const issues = [];
+
+  if (verificationPlan.manualCount > 0) {
+    issues.push('Post-apply verification contains manual index drift');
+  }
+  if (verificationPlan.actions.some((action) => action.sensitive !== true)) {
+    issues.push('Post-apply verification contains non-sensitive index drift');
+  }
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    issues.push('Post-apply sensitive drift does not match the source plan');
+  }
+  return issues;
 }
 
 export function readModeExitCode(mode, plan) {

@@ -5,8 +5,11 @@ import { MongoClient } from 'mongodb';
 
 import {
   CliUsageError,
+  isIndexApplyMode,
   parseIndexCliArgs,
   readModeExitCode,
+  selectIndexActionsForMode,
+  validateSafeOnlyRemainder,
   validateSensitiveApproval,
 } from './database/index-cli.mjs';
 import { INDEX_CONTRACT, INDEX_CONTRACT_VERSION } from './database/index-contract.mjs';
@@ -36,12 +39,13 @@ try {
   const db = client.db();
   const plan = await createCurrentPlan(db);
 
-  if (cli.mode !== 'apply') {
+  if (!isIndexApplyMode(cli.mode)) {
     emit({ mode: cli.mode, ...plan });
     process.exitCode = readModeExitCode(cli.mode, plan);
   } else {
     const result = await applyPlan(db, plan, cli);
     emit(result);
+    if (result.productionContractVerified !== true) process.exitCode = 2;
   }
 } catch (error) {
   emitError(error, cli?.mode ?? 'unknown');
@@ -91,15 +95,18 @@ async function applyPlan(db, plan, options) {
     );
   }
 
-  const approval = await loadApproval(options.approvalFile);
-  const approvalIssues = validateSensitiveApproval({ approval, plan });
-  if (approvalIssues.length > 0) {
-    throw new MigrationSafetyError(approvalIssues.join('; '));
+  if (options.mode === 'apply') {
+    const approval = await loadApproval(options.approvalFile);
+    const approvalIssues = validateSensitiveApproval({ approval, plan });
+    if (approvalIssues.length > 0) {
+      throw new MigrationSafetyError(approvalIssues.join('; '));
+    }
   }
 
   const execution = [];
   const approvedFingerprints = new Set(plan.actions.map((action) => action.fingerprint));
-  for (const plannedAction of plan.actions) {
+  const plannedActions = selectIndexActionsForMode(plan, options.mode);
+  for (const plannedAction of plannedActions) {
     if (!isApplicableAction(plannedAction)) {
       throw new MigrationSafetyError(`Unsupported automatic action: ${plannedAction.type}`);
     }
@@ -149,18 +156,30 @@ async function applyPlan(db, plan, options) {
   }
 
   const verification = await createCurrentPlan(db);
-  if (verification.blockingCount > 0) {
+  if (options.mode === 'apply' && verification.blockingCount > 0) {
     throw new MigrationSafetyError(
       `Post-apply verification found ${verification.blockingCount} remaining drift action(s)`,
     );
   }
+  if (options.mode === 'apply-safe-only') {
+    const verificationIssues = validateSafeOnlyRemainder({
+      sourcePlan: plan,
+      verificationPlan: verification,
+    });
+    if (verificationIssues.length > 0) {
+      throw new MigrationSafetyError(verificationIssues.join('; '));
+    }
+  }
+
+  const productionContractVerified = verification.blockingCount === 0;
 
   return {
-    mode: 'apply',
-    status: 'verified',
+    mode: options.mode,
+    status: productionContractVerified ? 'verified' : 'sensitive_approval_required',
     sourcePlanSha: plan.planSha,
     verificationPlanSha: verification.planSha,
-    verified: true,
+    safeActionsVerified: true,
+    productionContractVerified,
     execution,
     verification,
   };

@@ -49,6 +49,16 @@ describe('AttemptRepository.findByUser', () => {
                 from: 'quizzes',
                 localField: 'quiz',
                 foreignField: '_id',
+                pipeline: [
+                  {
+                    $project: {
+                      _id: 1,
+                      title: 1,
+                      slug: 1,
+                      description: 1,
+                    },
+                  },
+                ],
                 as: 'quizDoc',
               },
             },
@@ -95,6 +105,17 @@ describe('AttemptRepository.findByUser', () => {
           from: 'quizzes',
           localField: 'quiz',
           foreignField: '_id',
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+                slug: 1,
+                description: 1,
+                questions: 1,
+              },
+            },
+          ],
           as: 'quizDoc',
         },
       },

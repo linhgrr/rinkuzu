@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   fingerprintDuplicate,
+  isImportOnlyDuplicate,
   validateDuplicationConfig,
   validateDuplicationReport,
 } from '../../scripts/check-duplication.mjs';
@@ -102,6 +103,55 @@ describe('duplicate-code quality gate', () => {
       'jscpd report is inconsistent: 1 clone records but total.clones=0.',
       'Only 12 source files were analyzed; minimum is 400.',
     ]);
+  });
+
+  it('excludes only complete import-only fragments from fingerprint regression', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'rinkuzu-duplication-imports-'));
+    temporaryDirectories.push(root);
+    mkdirSync(path.join(root, 'src'));
+    const imports = [
+      'import {',
+      '  first,',
+      '  second,',
+      "} from './dependency';",
+      "import type { Contract } from './contract';",
+    ].join('\n');
+    writeFileSync(path.join(root, 'src', 'a.ts'), `${imports}\n`);
+    writeFileSync(path.join(root, 'src', 'b.ts'), `${imports}\n`);
+    const duplicate = {
+      format: 'typescript',
+      firstFile: { name: 'a.ts', start: 1, end: 5 },
+      secondFile: { name: 'b.ts', start: 1, end: 5 },
+    };
+
+    expect(isImportOnlyDuplicate(root, duplicate)).toBe(true);
+    expect(validateDuplicationReport(report(), baseline(), [], [])).toEqual([]);
+  });
+
+  it('keeps executable and mixed import fragments actionable', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'rinkuzu-duplication-logic-'));
+    temporaryDirectories.push(root);
+    mkdirSync(path.join(root, 'src'));
+    const executable = [
+      "import { dependency } from './dependency';",
+      'export function execute() {',
+      '  return dependency();',
+      '}',
+      '',
+    ].join('\n');
+    writeFileSync(path.join(root, 'src', 'a.ts'), executable);
+    writeFileSync(path.join(root, 'src', 'b.ts'), executable);
+    const duplicate = {
+      format: 'typescript',
+      firstFile: { name: 'a.ts', start: 1, end: 4 },
+      secondFile: { name: 'b.ts', start: 1, end: 4 },
+    };
+
+    expect(isImportOnlyDuplicate(root, duplicate)).toBe(false);
+    const evidence = report();
+    expect(
+      validateDuplicationReport(evidence, baseline(), ['new-clone'], evidence.duplicates),
+    ).toEqual(['New duplicate detected: src/a.ts:1-5 <-> src/b.ts:1-5.']);
   });
 
   it('keeps a fingerprint stable when unchanged fragments move to other lines', () => {

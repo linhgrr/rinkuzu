@@ -10,6 +10,10 @@ import {
   type UpdateQuizData,
 } from '@/interfaces/repositories/IQuizRepository';
 import type {
+  DashboardRecentQuizOptions,
+  IDashboardQuizRepository,
+} from '@/interfaces/repositories/IDashboardQuizRepository';
+import type {
   CountBuckets,
   CountBucketThresholds,
   CreatedAtCountFilter,
@@ -17,7 +21,7 @@ import type {
   RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 import { buildPaginationMeta } from '@/lib/pagination';
-import mongoose, { Types, type FilterQuery } from 'mongoose';
+import mongoose, { Types, type FilterQuery, type PipelineStage } from 'mongoose';
 import { QuizPersistenceMapper } from '@/repositories/mappers/QuizPersistenceMapper';
 import type { QuizPersistenceRecord } from '@/repositories/types/QuizPersistence';
 import { serializeId } from '@/lib/mongo-id';
@@ -27,6 +31,13 @@ import {
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
+
+interface CompactQuizPipelineOptions {
+  limit: number;
+  populateAuthor: boolean;
+  skip: number;
+  sort: Record<string, 1 | -1>;
+}
 
 function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenceRecord> {
   const { excludeAuthor, ...rest } = filter;
@@ -55,7 +66,64 @@ function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenc
   return normalizedFilter;
 }
 
-export class QuizRepository implements IQuizRepository {
+function buildCompactQuizPipeline(
+  filter: FilterQuery<QuizPersistenceRecord>,
+  options: CompactQuizPipelineOptions,
+): PipelineStage[] {
+  const pipeline: PipelineStage[] = [
+    { $match: filter },
+    { $sort: options.sort },
+    { $skip: options.skip },
+    { $limit: options.limit },
+  ];
+
+  if (options.populateAuthor) {
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'authorDoc',
+        },
+      },
+      {
+        $unwind: {
+          path: '$authorDoc',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    );
+  }
+
+  pipeline.push({
+    $project: {
+      _id: 1,
+      title: 1,
+      description: 1,
+      slug: 1,
+      isPrivate: 1,
+      author: options.populateAuthor
+        ? {
+            _id: { $ifNull: ['$authorDoc._id', '$author'] },
+            email: '$authorDoc.email',
+            name: '$authorDoc.name',
+            displayName: '$authorDoc.displayName',
+            avatar: '$authorDoc.avatar',
+          }
+        : 1,
+      createdAt: 1,
+      updatedAt: 1,
+      folder: 1,
+      questionCount: { $size: { $ifNull: ['$questions', []] } },
+      questions: { $literal: [] },
+    },
+  });
+
+  return pipeline;
+}
+
+export class QuizRepository implements IQuizRepository, IDashboardQuizRepository {
   async findById(id: string): Promise<Quiz | null> {
     await connectDB();
     const record = await QuizModel.findById(id)
@@ -228,47 +296,14 @@ export class QuizRepository implements IQuizRepository {
 
     if (options.compact) {
       const [records, total] = await Promise.all([
-        QuizModel.aggregate<QuizPersistenceRecord>([
-          { $match: normalizedFilter },
-          { $sort: sort },
-          { $skip: skip },
-          { $limit: limit },
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'author',
-              foreignField: '_id',
-              as: 'authorDoc',
-            },
-          },
-          {
-            $unwind: {
-              path: '$authorDoc',
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $project: {
-              _id: 1,
-              title: 1,
-              description: 1,
-              slug: 1,
-              isPrivate: 1,
-              author: {
-                _id: { $ifNull: ['$authorDoc._id', '$author'] },
-                email: '$authorDoc.email',
-                name: '$authorDoc.name',
-                displayName: '$authorDoc.displayName',
-                avatar: '$authorDoc.avatar',
-              },
-              createdAt: 1,
-              updatedAt: 1,
-              folder: 1,
-              questionCount: { $size: { $ifNull: ['$questions', []] } },
-              questions: { $literal: [] },
-            },
-          },
-        ]),
+        QuizModel.aggregate<QuizPersistenceRecord>(
+          buildCompactQuizPipeline(normalizedFilter, {
+            limit,
+            populateAuthor: true,
+            skip,
+            sort,
+          }),
+        ),
         QuizModel.countDocuments(normalizedFilter),
       ]);
 
@@ -292,6 +327,19 @@ export class QuizRepository implements IQuizRepository {
       items: records.map(QuizPersistenceMapper.toEntity),
       pagination: buildPaginationMeta(page, limit, total),
     };
+  }
+
+  async findRecent(filter: QuizFindFilter, options: DashboardRecentQuizOptions): Promise<Quiz[]> {
+    await connectDB();
+    const records = await QuizModel.aggregate<QuizPersistenceRecord>(
+      buildCompactQuizPipeline(toPersistenceFilter(filter), {
+        limit: options.limit,
+        populateAuthor: options.populate?.includes('author') ?? false,
+        skip: 0,
+        sort: options.sort ?? { createdAt: -1 },
+      }),
+    );
+    return records.map(QuizPersistenceMapper.toEntity);
   }
 
   async findForPlay(slug: string): Promise<Quiz | null> {

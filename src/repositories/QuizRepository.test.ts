@@ -242,4 +242,55 @@ describe('QuizRepository.findUserQuizzes', () => {
     ]);
     expect(quizModelMocks.countDocuments).toHaveBeenCalledWith(expectedFilter);
   });
+
+  it('loads recent quizzes without a count query', async () => {
+    const repository = new QuizRepository();
+    const userId = '507f191e810c19729de860eb';
+
+    await repository.findRecent({ author: userId }, { limit: 4, sort: { createdAt: -1 } });
+
+    const pipeline = quizModelMocks.aggregate.mock.calls[0]?.[0];
+    expect(pipeline).toEqual([
+      { $match: { author: new Types.ObjectId(userId) } },
+      { $sort: { createdAt: -1 } },
+      { $skip: 0 },
+      { $limit: 4 },
+      expect.objectContaining({
+        $project: expect.objectContaining({ author: 1, questions: { $literal: [] } }),
+      }),
+    ]);
+    expect(pipeline).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ $lookup: expect.any(Object) })]),
+    );
+    expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
+  });
+
+  it('loads recent public quizzes with the requested author snapshot and no count query', async () => {
+    const repository = new QuizRepository();
+    const userId = '507f191e810c19729de860eb';
+
+    await repository.findRecent(
+      { isPrivate: false, excludeAuthor: userId },
+      { limit: 4, populate: ['author'] },
+    );
+
+    const pipeline = quizModelMocks.aggregate.mock.calls[0]?.[0];
+    expect(pipeline).toEqual([
+      {
+        $match: {
+          isPrivate: false,
+          author: { $ne: new Types.ObjectId(userId) },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      { $skip: 0 },
+      { $limit: 4 },
+      expect.objectContaining({ $lookup: expect.any(Object) }),
+      expect.objectContaining({ $unwind: expect.any(Object) }),
+      expect.objectContaining({
+        $project: expect.objectContaining({ author: expect.any(Object) }),
+      }),
+    ]);
+    expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
+  });
 });

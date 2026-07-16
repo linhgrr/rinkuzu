@@ -1,4 +1,8 @@
-import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import {
+  IQuizRepository,
+  type QuizAccessRecord,
+  type UpdateQuizData,
+} from '@/interfaces/repositories/IQuizRepository';
 import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
 import { can, resolveEntitlements } from '@/lib/entitlements';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -19,7 +23,6 @@ import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/li
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
-import type { UpdateQuizData } from '@/interfaces/repositories/IQuizRepository';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
@@ -133,6 +136,35 @@ export class QuizCrudService {
     throw new QuizCreationError('slug_conflict', 'Could not generate a unique quiz slug');
   }
 
+  private async authorizeQuizMutation(
+    id: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<ServiceResult<QuizAccessRecord>> {
+    const quiz = await this.quizRepository.findAccessById(id);
+
+    if (!quiz) {
+      return {
+        success: false,
+        error: 'Quiz not found',
+        statusCode: 404,
+      };
+    }
+
+    const isAdmin = userRole === 'admin';
+    const isAuthor = getAuthorId(quiz.author) === userId;
+
+    if (!isAdmin && !isAuthor) {
+      return {
+        success: false,
+        error: 'Access denied',
+        statusCode: 403,
+      };
+    }
+
+    return { success: true, data: quiz };
+  }
+
   async getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null> {
     const quiz = await this.quizRepository.findSummaryBySlug(slug);
     return quiz ? QuizListDtoMapper.toListItem(quiz) : null;
@@ -176,27 +208,11 @@ export class QuizCrudService {
     userRole?: string,
   ): Promise<ServiceResult<QuizDetailDto>> {
     try {
-      const quiz = await this.quizRepository.findAccessById(id);
+      const authorization = await this.authorizeQuizMutation(id, userId, userRole);
+      if (!authorization.success) return authorization;
 
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      // Check permissions
+      const quiz = authorization.data;
       const isAdmin = userRole === 'admin';
-      const isAuthor = getAuthorId(quiz.author) === userId;
-
-      if (!isAdmin && !isAuthor) {
-        return {
-          success: false,
-          error: 'Access denied',
-          statusCode: 403,
-        };
-      }
 
       if (quizData.isPrivate && !quiz.isPrivate && !isAdmin) {
         if (!can(await resolveEntitlements(userId), 'private_quiz')) {
@@ -260,27 +276,8 @@ export class QuizCrudService {
     userRole?: string,
   ): Promise<ServiceResult<DeleteResultDto>> {
     try {
-      const quiz = await this.quizRepository.findAccessById(id);
-
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      // Check permissions
-      const isAdmin = userRole === 'admin';
-      const isAuthor = getAuthorId(quiz.author) === userId;
-
-      if (!isAdmin && !isAuthor) {
-        return {
-          success: false,
-          error: 'Access denied',
-          statusCode: 403,
-        };
-      }
+      const authorization = await this.authorizeQuizMutation(id, userId, userRole);
+      if (!authorization.success) return authorization;
 
       const result = await this.quizRepository.delete(id);
       if (!result) {

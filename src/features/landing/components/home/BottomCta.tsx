@@ -1,14 +1,18 @@
 import Image from 'next/image';
-import { Link } from '@/i18n/navigation';
+
+import { toBrowserPath } from '@/lib/routing/pathname';
 import { imgGroup11 } from './constants';
-import { Magnetic } from './Magnetic';
 
 interface BottomCtaProps {
+  locale: string;
   isAuthenticated?: boolean;
 }
 
-export default function BottomCta({ isAuthenticated = false }: BottomCtaProps) {
-  const uploadHref = isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload';
+export default function BottomCta({ locale, isAuthenticated = false }: BottomCtaProps) {
+  const uploadHref = toBrowserPath(
+    isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload',
+    locale,
+  );
 
   return (
     <div className="relative w-full bg-accent flex flex-col gap-[32px] items-center py-[86px] px-4 md:px-8">
@@ -28,25 +32,23 @@ export default function BottomCta({ isAuthenticated = false }: BottomCtaProps) {
         </p>
       </div>
 
-      <Magnetic>
-        <Link
-          href={uploadHref}
-          className="bg-white flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-gray-50 transition-[colors,transform] active:scale-[0.97]"
-        >
-          <span className="relative shrink-0 size-[28px] overflow-hidden">
-            <Image
-              alt="Upload"
-              className="block w-full h-full object-contain"
-              height={28}
-              src={imgGroup11}
-              width={28}
-            />
-          </span>
-          <span className="font-unbounded font-medium text-[18px] text-[#06090e] whitespace-nowrap leading-[1.5]">
-            Upload PDF
-          </span>
-        </Link>
-      </Magnetic>
+      <a
+        href={uploadHref}
+        className="bg-white flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-gray-50 transition-[colors,transform] active:scale-[0.97]"
+      >
+        <span className="relative shrink-0 size-[28px] overflow-hidden">
+          <Image
+            alt="Upload"
+            className="block w-full h-full object-contain"
+            height={28}
+            src={imgGroup11}
+            width={28}
+          />
+        </span>
+        <span className="font-unbounded font-medium text-[18px] text-[#06090e] whitespace-nowrap leading-[1.5]">
+          Upload PDF
+        </span>
+      </a>
     </div>
   );
 }

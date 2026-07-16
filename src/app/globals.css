@@ -13,8 +13,18 @@
   will-change: transform;
 }
 
+.landing-testimonials-track {
+  animation: landing-marquee 45s linear infinite;
+  will-change: transform;
+}
+
+.landing-testimonials-track:hover {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .landing-marquee-track {
+  .landing-marquee-track,
+  .landing-testimonials-track {
     animation: none;
     will-change: auto;
   }

@@ -28,21 +28,22 @@ const vinaSans = Vina_Sans({
 const MARQUEE_ITEMS = ['AI POWERED', 'STUDY FLOW', 'LEARNING PATH', 'DIGITAL BRAIN'] as const;
 
 interface LandingPageProps {
+  locale: string;
   isAuthenticated?: boolean;
 }
 
-export default function LandingPage({ isAuthenticated = false }: LandingPageProps) {
+export default function LandingPage({ locale, isAuthenticated = false }: LandingPageProps) {
   return (
     <div
       className={`${unbounded.variable} ${vinaSans.variable} relative w-full overflow-clip bg-[#06090e] min-h-screen text-white font-unbounded`}
     >
       <TextureBackground />
-      <Header isAuthenticated={isAuthenticated} />
+      <Header locale={locale} isAuthenticated={isAuthenticated} />
 
       <main className="relative z-10 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 lg:px-[96px]">
         {/* Hero */}
         <section className="relative w-full flex flex-col">
-          <Hero isAuthenticated={isAuthenticated} />
+          <Hero locale={locale} isAuthenticated={isAuthenticated} />
         </section>
 
         {/* Metrics — overlaps hero */}
@@ -91,11 +92,11 @@ export default function LandingPage({ isAuthenticated = false }: LandingPageProp
 
         {/* Bottom CTA — full viewport width */}
         <div className="landing-deferred-section w-[100vw] relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mt-[40px] md:mt-[92px] z-20">
-          <BottomCta isAuthenticated={isAuthenticated} />
+          <BottomCta locale={locale} isAuthenticated={isAuthenticated} />
         </div>
       </main>
 
-      <Footer />
+      <Footer locale={locale} />
     </div>
   );
 }

@@ -3,7 +3,6 @@ import type {
   PaymentRequestDto,
   SubscriptionActivationDto,
   SubscriptionCancellationDto,
-  SubscriptionHistoryItemDto,
   SubscriptionPlanDto,
   SubscriptionStatusResponseDto,
   VerifiedPaymentDto,
@@ -22,7 +21,6 @@ export interface ISubscriptionService {
     orderCode: number,
     paymentData: VerifiedPaymentDto,
   ): Promise<SubscriptionActivationDto>;
-  getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryItemDto[]>;
   cancelSubscription(userId: string): Promise<SubscriptionCancellationDto>;
   getSubscriptionPlans(): Promise<SubscriptionPlanDto[]>;
   checkAndUpdateExpiredSubscriptions(): Promise<number>;

@@ -89,7 +89,6 @@ function createService(overrides: ServiceOverrides = {}) {
     create: vi.fn(),
     findById: vi.fn(),
     findByOrderId: vi.fn(),
-    findByUser: vi.fn(),
     findByTransactionReference: vi.fn().mockResolvedValue(null),
     expireDue: vi.fn().mockResolvedValue(0),
     updateAdminStatusById: vi.fn(),
@@ -99,7 +98,6 @@ function createService(overrides: ServiceOverrides = {}) {
     updateByOrderId: vi.fn(),
     activateSubscription: vi.fn().mockResolvedValue(undefined),
     deletePendingByOrderId: vi.fn(),
-    findWithPagination: vi.fn(),
     ...overrides.subscriptionRepository,
   };
   const userRepository: Mocked<IUserRepository> = {
@@ -1332,36 +1330,6 @@ describe('SubscriptionService billing hardening', () => {
       nowSpy.mockRestore();
       randomSpy.mockRestore();
     }
-  });
-
-  it('maps subscription history records without dropping persisted fields', async () => {
-    const record = subscriptionFixture({
-      payosTransactionId: 'transaction-1',
-      payosPaymentUrl: 'https://pay.payos.vn/web/checkout',
-    });
-    const { service, subscriptionRepository } = createService({
-      subscriptionRepository: {
-        findByUser: vi.fn().mockResolvedValue([record]),
-      },
-    });
-
-    await expect(service.getSubscriptionHistory('user-1')).resolves.toEqual([
-      {
-        id: record.id,
-        type: record.type,
-        amount: record.amount,
-        currency: record.currency,
-        status: record.status,
-        payosOrderId: record.payosOrderId,
-        payosTransactionId: record.payosTransactionId,
-        startDate: record.startDate?.toISOString(),
-        endDate: record.endDate?.toISOString(),
-        isActive: record.isActive,
-        createdAt: record.createdAt.toISOString(),
-        updatedAt: record.updatedAt.toISOString(),
-      },
-    ]);
-    expect(subscriptionRepository.findByUser).toHaveBeenCalledWith('user-1');
   });
 
   it('returns stable admin errors for thrown Error and non-Error failures', async () => {

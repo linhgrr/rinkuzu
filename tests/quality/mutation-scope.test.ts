@@ -25,6 +25,7 @@ describe('critical mutation scope', () => {
     'messages/en/adaptiveLearning.json',
     'src/services/other/OtherService.ts',
     'src/services/quiz/$(unsafe).ts',
+    'src/lib/auth.ts',
   ])('excludes non-critical, test, presentation, or unsafe paths: %s', (file) => {
     expect(isCriticalMutationFile(file)).toBe(false);
   });

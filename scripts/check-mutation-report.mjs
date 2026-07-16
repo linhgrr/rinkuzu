@@ -50,6 +50,10 @@ function equalStringArrays(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function expectedFullMutationInput() {
+  return [...CRITICAL_MUTATION_PATTERNS, '!src/**/*.{test,spec}.{ts,tsx}'];
+}
+
 export function validateMutationScopeEvidence({ report, scope, mode, headSha }) {
   const errors = [];
   if (scope?.schemaVersion !== 1) errors.push('Mutation scope schemaVersion must be 1.');
@@ -82,7 +86,7 @@ export function validateMutationScopeEvidence({ report, scope, mode, headSha }) 
     if (!equalStringArrays(scopePatterns, CRITICAL_MUTATION_PATTERNS)) {
       errors.push('Full mutation scope patterns do not match the production policy.');
     }
-    const expectedMutate = [...CRITICAL_MUTATION_PATTERNS, '!src/**/*.{test,spec}.{ts,tsx}'];
+    const expectedMutate = expectedFullMutationInput();
     if (!equalStringArrays(reportMutate, expectedMutate)) {
       errors.push('Stryker full mutate input does not match the production policy.');
     }
@@ -124,9 +128,46 @@ function activeWaivers(registry, toolVersion, now, errors) {
   return waivers;
 }
 
+function validateFullBaseline(baseline, toolVersion, errors) {
+  if (baseline?.schemaVersion !== 1) {
+    errors.push('Full mutation baseline schemaVersion must be 1.');
+    return false;
+  }
+  if (baseline.toolVersion !== toolVersion) {
+    errors.push('Full mutation baseline toolVersion does not match the report.');
+  }
+  if (!equalStringArrays(baseline.scopePatterns ?? [], CRITICAL_MUTATION_PATTERNS)) {
+    errors.push('Full mutation baseline scope does not match the production policy.');
+  }
+
+  const metrics = ['valid', 'detected', 'survived', 'noCoverage'];
+  for (const metric of metrics) {
+    if (!Number.isInteger(baseline[metric]) || baseline[metric] < 0) {
+      errors.push(`Full mutation baseline ${metric} must be a non-negative integer.`);
+    }
+  }
+  if (
+    metrics.every((metric) => Number.isInteger(baseline[metric])) &&
+    baseline.detected + baseline.survived + baseline.noCoverage !== baseline.valid
+  ) {
+    errors.push('Full mutation baseline counts are internally inconsistent.');
+  }
+
+  const expectedScore = baseline.valid === 0 ? 0 : (baseline.detected / baseline.valid) * 100;
+  if (
+    typeof baseline.score !== 'number' ||
+    !Number.isFinite(baseline.score) ||
+    Math.abs(baseline.score - expectedScore) > 1e-6
+  ) {
+    errors.push('Full mutation baseline score does not match its counts.');
+  }
+  return errors.length === 0;
+}
+
 export function evaluateMutationReport({
   report,
   registry,
+  baseline = /** @type {any} */ (undefined),
   mode = 'full',
   now = new Date(),
   toolVersion,
@@ -174,11 +215,38 @@ export function evaluateMutationReport({
         `Changed critical scope has ${valid.length} mutants; all must be detected when fewer than 20 exist.`,
       );
     }
-  } else if (score + Number.EPSILON < 80) {
+  } else if (mode === 'changed' && score + Number.EPSILON < 80) {
     errors.push(`Mutation score ${score.toFixed(2)}% is below the 80% break threshold.`);
   }
-  if (mode === 'full' && noCoverage.length > 0) {
-    errors.push(`Full critical report contains ${noCoverage.length} NoCoverage mutants.`);
+
+  if (mode === 'full') {
+    const reportMutate = Array.isArray(report?.config?.mutate)
+      ? report.config.mutate.map(normalizeMutationPath)
+      : [];
+    if (!equalStringArrays(reportMutate, expectedFullMutationInput())) {
+      errors.push('Full mutation report input does not match the production policy.');
+    }
+
+    const baselineErrors = [];
+    if (validateFullBaseline(baseline, toolVersion, baselineErrors)) {
+      if (score + Number.EPSILON < baseline.score) {
+        errors.push(
+          `Full mutation score ${score.toFixed(6)}% regressed below baseline ${baseline.score.toFixed(6)}%.`,
+        );
+      }
+      if (survived.length > baseline.survived) {
+        errors.push(
+          `Full mutation Survived debt increased from ${baseline.survived} to ${survived.length}.`,
+        );
+      }
+      if (noCoverage.length > baseline.noCoverage) {
+        errors.push(
+          `Full mutation NoCoverage debt increased from ${baseline.noCoverage} to ${noCoverage.length}.`,
+        );
+      }
+    } else {
+      errors.push(...baselineErrors);
+    }
   }
 
   return {
@@ -203,12 +271,20 @@ export function runMutationGate(root = process.cwd()) {
   const registry = JSON.parse(
     readFileSync(path.join(root, 'quality', 'mutation-waivers.json'), 'utf8'),
   );
+  const baselinePath = path.resolve(
+    root,
+    process.env['MUTATION_BASELINE_PATH'] ?? 'quality/mutation-baseline.json',
+  );
+  const baseline = existsSync(baselinePath)
+    ? JSON.parse(readFileSync(baselinePath, 'utf8'))
+    : undefined;
 
   const toolVersion = process.env['STRYKER_VERSION'];
   const mode = process.env['MUTATION_GATE_MODE'] ?? 'full';
   const result = evaluateMutationReport({
     report,
     registry,
+    baseline,
     mode,
     toolVersion,
   });

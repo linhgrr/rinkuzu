@@ -1,6 +1,5 @@
 export const CRITICAL_MUTATION_PATTERNS = [
   'src/app/api/**/route.ts',
-  'src/lib/auth.ts',
   'src/lib/auth/**/*.ts',
   'src/lib/api/auth.ts',
   'src/lib/entitlements/**/*.ts',
@@ -14,7 +13,6 @@ export const CRITICAL_MUTATION_PATTERNS = [
 
 const CRITICAL_MUTATION_PATHS = [
   /^src\/app\/api\/.+\/route\.ts$/,
-  /^src\/lib\/auth\.ts$/,
   /^src\/lib\/auth\/.+\.ts$/,
   /^src\/lib\/api\/auth\.ts$/,
   /^src\/lib\/entitlements\/.+\.ts$/,

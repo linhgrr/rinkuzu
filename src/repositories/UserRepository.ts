@@ -47,16 +47,22 @@ import {
 } from '@/lib/mongoose-count-buckets';
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
 
+const USER_ENTITY_PROJECTION = '_id email name displayName bio avatar role subscription createdAt';
+
 export class UserRepository implements IUserRepository {
   async findById(id: string): Promise<UserEntity | null> {
     await connectDB();
-    const record = await User.findById(id).lean<UserPersistenceRecord>();
+    const record = await User.findById(id)
+      .select(USER_ENTITY_PROJECTION)
+      .lean<UserPersistenceRecord>();
     return record ? UserPersistenceMapper.toEntity(record) : null;
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
     await connectDB();
-    const record = await User.findOne({ email }).lean<UserPersistenceRecord>();
+    const record = await User.findOne({ email })
+      .select(USER_ENTITY_PROJECTION)
+      .lean<UserPersistenceRecord>();
     return record ? UserPersistenceMapper.toEntity(record) : null;
   }
 
@@ -93,7 +99,7 @@ export class UserRepository implements IUserRepository {
 
     const [records, totalItems] = await Promise.all([
       User.find(query)
-        .select('-password')
+        .select(USER_ENTITY_PROJECTION)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -142,7 +148,9 @@ export class UserRepository implements IUserRepository {
       {
         new: true,
       },
-    ).lean<UserPersistenceRecord>();
+    )
+      .select(USER_ENTITY_PROJECTION)
+      .lean<UserPersistenceRecord>();
     return record ? UserPersistenceMapper.toEntity(record) : null;
   }
 

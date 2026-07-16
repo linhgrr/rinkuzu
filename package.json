@@ -32,6 +32,8 @@
     "migrate:durations:dry-run": "node src/scripts/migratePlanDurations.js dry-run",
     "cleanup:orphaned-quiz-data": "node scripts/cleanup-orphaned-quiz-data.mjs",
     "cleanup:orphaned-quiz-data:apply": "node scripts/cleanup-orphaned-quiz-data.mjs --apply",
+    "cleanup:invalid-attempt-identities": "node scripts/cleanup-invalid-attempt-identities.mjs",
+    "cleanup:invalid-attempt-identities:apply": "node scripts/cleanup-invalid-attempt-identities.mjs --apply",
     "migrate:remove-quiz-approval": "node scripts/remove-quiz-approval-fields.mjs",
     "migrate:remove-quiz-approval:apply": "node scripts/remove-quiz-approval-fields.mjs --apply",
     "migrate:attempt-identities": "node scripts/migrate-attempt-identities.mjs",

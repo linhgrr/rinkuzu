@@ -1,6 +1,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { withCleanProbeRows } from './query-plan-probe.mjs';
 import { buildRecentAttemptActivityPipeline } from '../../src/repositories/pipelines/recent-attempt-activity.mjs';
+import { buildDiscussionListPipeline } from '../../src/repositories/pipelines/discussion-list.mjs';
 
 const DASHBOARD_QUIZ_PROJECTION = {
   _id: 1,
@@ -57,12 +58,16 @@ try {
   const subscriptions = db.collection('subscriptions');
   const users = db.collection('users');
   const quizzes = db.collection('quizzes');
+  const discussions = db.collection('discussions');
   const marker = { _ciQueryPlanProbe: true };
+  const probeCollections = [attempts, quizzes, subscriptions, users, discussions];
 
-  await withCleanProbeRows([attempts, quizzes, subscriptions, users], marker, async () => {
+  await withCleanProbeRows(probeCollections, marker, async () => {
     const dashboardOwnerId = new ObjectId();
     const dashboardPublicAuthorIds = Array.from({ length: 400 }, () => new ObjectId());
     const dashboardPublicQuizIds = Array.from({ length: 400 }, () => new ObjectId());
+    const discussionQuizId = new ObjectId();
+    const discussionNoiseQuizId = new ObjectId();
     const subscriptionRows = Array.from({ length: 400 }, (_, index) => ({
       ...marker,
       user: new ObjectId(),
@@ -125,12 +130,38 @@ try {
       ],
       takenAt: new Date(now.getTime() - index * 1_000),
     }));
+    const discussionRows = Array.from({ length: 8 }, (_, questionIndex) => ({
+      ...marker,
+      quiz: discussionQuizId,
+      questionIndex,
+      comments: [
+        {
+          _id: new ObjectId(),
+          author: dashboardPublicAuthorIds[questionIndex],
+          content: `Discussion ${questionIndex}`,
+          isEdited: false,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+      createdAt: now,
+      updatedAt: now,
+    }));
+    const discussionNoiseRows = Array.from({ length: 400 }, (_, questionIndex) => ({
+      ...marker,
+      quiz: discussionNoiseQuizId,
+      questionIndex,
+      comments: [],
+      createdAt: now,
+      updatedAt: now,
+    }));
 
     await Promise.all([
       attempts.insertMany(attemptRows),
       quizzes.insertMany([...ownedQuizRows, ...publicQuizRows]),
       subscriptions.insertMany(subscriptionRows),
       users.insertMany([...userRows, ...dashboardUserRows]),
+      discussions.insertMany([...discussionRows, ...discussionNoiseRows]),
     ]);
 
     const checks = [
@@ -286,6 +317,64 @@ try {
       throw new Error('public-profile-quizzes read model semantics changed');
     }
     evidence.push(publicProfileQuizRow);
+
+    const discussionPipeline = buildDiscussionListPipeline(discussionQuizId);
+    const [discussionExplain, discussionResults] = await Promise.all([
+      discussions.aggregate(discussionPipeline).explain('executionStats'),
+      discussions.aggregate(discussionPipeline).toArray(),
+    ]);
+    const discussionCursor = discussionExplain.stages?.find((stage) => stage.$cursor)?.$cursor;
+    const discussionStats = discussionCursor?.executionStats;
+    const discussionLookup = discussionExplain.stages?.find((stage) => stage.$lookup);
+    if (!discussionStats) {
+      throw new Error('quiz-discussions did not return executionStats');
+    }
+
+    const discussionStages = collectStageNames(discussionExplain);
+    const discussionRow = {
+      name: 'quiz-discussions',
+      stages: [...discussionStages].sort(),
+      keysExamined: discussionStats.totalKeysExamined,
+      documentsExamined: discussionStats.totalDocsExamined,
+      returnedRows: discussionStats.nReturned,
+      lookupDocumentsExamined: discussionLookup?.totalDocsExamined ?? null,
+      lookupIndexesUsed: discussionLookup?.indexesUsed ?? [],
+      projection: discussionPipeline.at(-1)?.$project,
+    };
+    if (!discussionStages.has('IXSCAN') || discussionStages.has('SORT')) {
+      throw new Error('quiz-discussions did not use its quiz/question index for ordered reads');
+    }
+    if (
+      discussionRow.returnedRows !== 8 ||
+      discussionRow.keysExamined > 8 ||
+      discussionRow.documentsExamined > 8
+    ) {
+      throw new Error(
+        `quiz-discussions examined ${discussionRow.keysExamined} keys/${discussionRow.documentsExamined} documents and returned ${discussionRow.returnedRows} rows; expected at most 8/8 for 8 rows`,
+      );
+    }
+    if (
+      discussionRow.lookupDocumentsExamined !== 8 ||
+      !discussionRow.lookupIndexesUsed.includes('_id_')
+    ) {
+      throw new Error(
+        `quiz-discussions author lookup examined ${String(discussionRow.lookupDocumentsExamined)} documents without the users _id_ index`,
+      );
+    }
+    if (
+      discussionResults.length !== 8 ||
+      !discussionResults.every(
+        (row, questionIndex) =>
+          row.questionIndex === questionIndex &&
+          row.comments.length === 1 &&
+          row.comments[0].author.email === `ci-dashboard-author-${questionIndex + 1}@example.com` &&
+          !Object.hasOwn(row, '_ciQueryPlanProbe') &&
+          !Object.hasOwn(row.comments[0].author, '_ciQueryPlanProbe'),
+      )
+    ) {
+      throw new Error('quiz-discussions read model semantics changed');
+    }
+    evidence.push(discussionRow);
 
     const recentAttemptPipeline = buildRecentAttemptActivityPipeline(5);
     const [recentAttemptExplain, recentAttemptRows] = await Promise.all([

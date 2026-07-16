@@ -10,8 +10,8 @@ import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
 const quizService = serviceFactory.getQuizService();
 
-// GET /api/quizzes - List quizzes with filtering.
-// Public + authenticated dual path: anonymous callers see only public quizzes.
+// GET /api/quizzes - List compact quiz metadata with filtering.
+// Private question content remains protected by the play/attempt service guard.
 export const GET = withOptionalAuth(async (request: NextRequest, { session, userId }) => {
   try {
     const isGuest = !session?.user;
@@ -21,7 +21,6 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
     }
 
     const onlyMine = !isGuest && query.data.mine;
-    const isAdmin = session?.user?.role === 'admin';
     const folder =
       onlyMine && query.data.folder !== undefined
         ? query.data.folder === UNFILED_FOLDER_TARGET
@@ -29,13 +28,11 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
           : query.data.folder
         : undefined;
     const isPrivate =
-      isGuest || (!onlyMine && !isAdmin)
-        ? false
-        : query.data.visibility === 'private'
-          ? true
-          : query.data.visibility === 'public'
-            ? false
-            : undefined;
+      query.data.visibility === 'private'
+        ? true
+        : query.data.visibility === 'public'
+          ? false
+          : undefined;
 
     const result = await quizService.getQuizzes({
       ...(query.data.search !== undefined ? { search: query.data.search } : {}),

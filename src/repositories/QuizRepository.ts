@@ -314,6 +314,10 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const skip = (page - 1) * limit;
     const sort = options.sort || { createdAt: -1 };
     const normalizedFilter = toPersistenceFilter(filter);
+    const totalPromise =
+      Object.keys(normalizedFilter).length === 0
+        ? QuizModel.countDocuments(normalizedFilter, { hint: '_id_' })
+        : QuizModel.countDocuments(normalizedFilter);
     const [records, total] = await Promise.all([
       QuizModel.aggregate<QuizPersistenceRecord>(
         buildCompactQuizPipeline(normalizedFilter, {
@@ -323,7 +327,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
           sort,
         }),
       ),
-      QuizModel.countDocuments(normalizedFilter),
+      totalPromise,
     ]);
 
     return {

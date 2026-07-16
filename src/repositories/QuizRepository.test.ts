@@ -279,6 +279,14 @@ describe('QuizRepository.findUserQuizzes', () => {
     expect(quizModelMocks.countDocuments).toHaveBeenCalledWith(expectedFilter);
   });
 
+  it('uses the _id index for an exact unfiltered quiz count', async () => {
+    const repository = new QuizRepository();
+
+    await repository.findAll({}, { page: 1, limit: 12, sort: { createdAt: -1 } });
+
+    expect(quizModelMocks.countDocuments).toHaveBeenCalledWith({}, { hint: '_id_' });
+  });
+
   it('loads recent quizzes without a count query', async () => {
     const repository = new QuizRepository();
     const userId = '507f191e810c19729de860eb';

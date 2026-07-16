@@ -15,7 +15,13 @@
     "all": "All",
     "mine": "My quizzes",
     "adaptive": "AI lessons",
-    "public": "Public quizzes"
+    "quizzes": "Quizzes"
+  },
+  "visibility": {
+    "label": "Filter quiz visibility",
+    "all": "All",
+    "public": "Public",
+    "private": "Private"
   },
   "sections": {
     "mine": {
@@ -28,10 +34,10 @@
       "subtitle": "Documents processed into personalized learning paths",
       "empty": "No AI lessons match your search."
     },
-    "public": {
-      "title": "Public quizzes",
-      "subtitle": "New learning content from the RinKuzu community",
-      "empty": "No public quizzes match your search."
+    "quizzes": {
+      "title": "Quizzes",
+      "subtitle": "Explore public and Premium quiz content from the RinKuzu community",
+      "empty": "No quizzes match your search and visibility filter."
     }
   }
 }

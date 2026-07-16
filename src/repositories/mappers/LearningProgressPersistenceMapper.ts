@@ -14,6 +14,7 @@ import type {
   QuestionProgressPersistenceRecord,
   UserProgressPersistenceRecord,
 } from '@/repositories/types/LearningProgressPersistence';
+import { mapOptionalUserProfileFields } from '@/repositories/mappers/mapOptionalUserProfileFields';
 import type { MongoIdLike } from '@/types/mongo';
 
 function mapAuthor(
@@ -24,9 +25,7 @@ function mapAuthor(
     return {
       id: serializeId(author._id, 'quiz.author._id'),
       ...(author.email === undefined ? {} : { email: author.email }),
-      ...(author.name === undefined ? {} : { name: author.name }),
-      ...(author.displayName === undefined ? {} : { displayName: author.displayName }),
-      ...(author.avatar === undefined ? {} : { avatar: author.avatar }),
+      ...mapOptionalUserProfileFields(author),
     };
   }
   return { id: serializeId(author, 'quiz.author') };

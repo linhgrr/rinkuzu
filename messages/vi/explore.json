@@ -15,7 +15,13 @@
     "all": "Tất cả",
     "mine": "Quiz của tôi",
     "adaptive": "Bài học AI",
-    "public": "Quiz công khai"
+    "quizzes": "Quiz"
+  },
+  "visibility": {
+    "label": "Lọc quyền truy cập quiz",
+    "all": "Tất cả",
+    "public": "Công khai",
+    "private": "Riêng tư"
   },
   "sections": {
     "mine": {
@@ -28,10 +34,10 @@
       "subtitle": "Tài liệu đã được xử lý thành lộ trình học cá nhân hóa",
       "empty": "Không có bài học AI phù hợp."
     },
-    "public": {
-      "title": "Quiz công khai",
-      "subtitle": "Nội dung mới từ cộng đồng RinKuzu",
-      "empty": "Không có quiz công khai phù hợp."
+    "quizzes": {
+      "title": "Quiz",
+      "subtitle": "Khám phá quiz công khai và nội dung Premium từ cộng đồng RinKuzu",
+      "empty": "Không có quiz phù hợp với tìm kiếm và bộ lọc quyền truy cập."
     }
   }
 }

@@ -1,5 +1,6 @@
 import type {
   AdminActivityStatsDto,
+  AdminCreatorStatsListDto,
   AdminCreatorStatDto,
   AdminOverviewStatsDto,
   AdminRecentUserDto,
@@ -12,7 +13,7 @@ import type {
 import type { Quiz } from '@/entities/Quiz';
 import type { User } from '@/entities/User';
 import type { QuizCreatorStatRecord } from '@/interfaces/repositories/IQuizRepository';
-import type { CountBuckets } from '@/interfaces/repositories/types';
+import type { CountBuckets, PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import { serializeDate } from '@/lib/date-serialization';
 import { AdminActivityDtoMapper } from '@/mappers/admin/AdminActivityDtoMapper';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
@@ -82,6 +83,15 @@ export class AdminStatsDtoMapper {
       totalQuestions: creator.totalQuestions,
       joinedAt: serializeDate(creator.joinedAt, 'creator.joinedAt'),
       role: creator.role,
+    };
+  }
+
+  static toCreatorListDto(
+    creators: PaginatedRepositoryResult<QuizCreatorStatRecord>,
+  ): AdminCreatorStatsListDto {
+    return {
+      creators: creators.items.map(AdminStatsDtoMapper.toCreatorDto),
+      pagination: creators.pagination,
     };
   }
 

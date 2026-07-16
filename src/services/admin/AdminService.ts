@@ -12,9 +12,10 @@ import type {
 } from '@/dtos/admin-report';
 import type {
   AdminActivityStatsDto,
-  AdminCreatorStatDto,
+  AdminCreatorStatsListDto,
   AdminOverviewStatsDto,
   AdminScoreStatsDto,
+  AdminStatsListQueryDto,
 } from '@/dtos/admin-stats';
 import type { DeleteResultDto } from '@/dtos/common';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -295,13 +296,15 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getCreatorStats(limit: number): Promise<ServiceResult<AdminCreatorStatDto[]>> {
+  async getCreatorStats(
+    query: AdminStatsListQueryDto,
+  ): Promise<ServiceResult<AdminCreatorStatsListDto>> {
     try {
-      const creators = await this.quizRepository.findTopCreators(limit);
+      const creators = await this.quizRepository.findTopCreators(query);
 
       return {
         success: true,
-        data: creators.map(AdminStatsDtoMapper.toCreatorDto),
+        data: AdminStatsDtoMapper.toCreatorListDto(creators),
       };
     } catch (error) {
       logger.error({ error }, 'Get creator stats error');

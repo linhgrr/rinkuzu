@@ -50,8 +50,14 @@ function isImportOnlyFragment(fragment) {
     true,
     ts.ScriptKind.TSX,
   );
+  // Runtime still attaches parseDiagnostics; public SourceFile types no longer expose it.
+  // Fail closed when diagnostics are missing or not an array — never treat unknown state as import-only.
+  const parseDiagnostics = /** @type {{ parseDiagnostics?: unknown }} */ (sourceFile)
+    .parseDiagnostics;
+  if (!Array.isArray(parseDiagnostics) || parseDiagnostics.length !== 0) {
+    return false;
+  }
   return (
-    sourceFile.parseDiagnostics.length === 0 &&
     sourceFile.statements.length > 0 &&
     sourceFile.statements.every(
       (statement) => ts.isImportDeclaration(statement) || ts.isImportEqualsDeclaration(statement),

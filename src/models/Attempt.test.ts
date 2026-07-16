@@ -3,6 +3,19 @@ import Attempt from '@/models/Attempt';
 
 const submission = {
   quiz: '507f191e810c19729de860ea',
+  quizSnapshot: {
+    integrity: 'complete',
+    title: 'Quiz',
+    slug: 'quiz',
+    questions: [
+      {
+        question: 'Question?',
+        options: ['A', 'B'],
+        type: 'single',
+        correctIndex: 0,
+      },
+    ],
+  },
   score: 100,
   totalQuestions: 1,
   answers: [{ kind: 'single', selectedIndex: 0 }],
@@ -44,6 +57,101 @@ describe('Attempt model identity', () => {
     );
     await expect(conflictingIdentity.validate()).rejects.toThrow(
       'Exactly one attempt identity is required',
+    );
+  });
+
+  it('requires a valid immutable quiz snapshot for new attempts', async () => {
+    const missingSnapshot = new Attempt({
+      ...submission,
+      quizSnapshot: undefined,
+      user: '507f191e810c19729de860eb',
+    });
+    const falseCompleteSnapshot = new Attempt({
+      ...submission,
+      quizSnapshot: { integrity: 'complete', title: 'Quiz', slug: 'quiz', questions: [] },
+      user: '507f191e810c19729de860eb',
+    });
+
+    await expect(missingSnapshot.validate()).rejects.toThrow('Quiz snapshot is required');
+    await expect(falseCompleteSnapshot.validate()).rejects.toThrow(
+      'Quiz snapshots require at least one question',
+    );
+  });
+
+  it('accepts image-only options but rejects options without text or an image', async () => {
+    const imageOnly = new Attempt({
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      quizSnapshot: {
+        ...submission.quizSnapshot,
+        questions: [
+          {
+            question: 'Choose an image',
+            options: ['', ''],
+            optionImages: ['https://example.com/a.png', 'https://example.com/b.png'],
+            type: 'single',
+            correctIndex: 0,
+          },
+        ],
+      },
+    });
+    const contentlessOption = new Attempt({
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      quizSnapshot: {
+        ...submission.quizSnapshot,
+        questions: [
+          {
+            question: 'Invalid option',
+            options: ['', 'B'],
+            type: 'single',
+            correctIndex: 0,
+          },
+        ],
+      },
+    });
+
+    await expect(imageOnly.validate()).resolves.toBeUndefined();
+    await expect(contentlessOption.validate()).rejects.toThrow('Option requires text or an image');
+  });
+
+  it('enforces the discriminated correct-answer contract in persistence', async () => {
+    const fractionalSingle = new Attempt({
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      quizSnapshot: {
+        ...submission.quizSnapshot,
+        questions: [
+          {
+            question: 'Question',
+            options: ['A', 'B'],
+            type: 'single',
+            correctIndex: 0.5,
+          },
+        ],
+      },
+    });
+    const duplicateMultiple = new Attempt({
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      quizSnapshot: {
+        ...submission.quizSnapshot,
+        questions: [
+          {
+            question: 'Question',
+            options: ['A', 'B'],
+            type: 'multiple',
+            correctIndexes: [0, 0],
+          },
+        ],
+      },
+    });
+
+    await expect(fractionalSingle.validate()).rejects.toThrow(
+      'Single choice questions must have a valid correct index',
+    );
+    await expect(duplicateMultiple.validate()).rejects.toThrow(
+      'Multiple choice questions must have at least one valid correct index',
     );
   });
 });

@@ -1,18 +1,5 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
-
-interface QuizQuestionDocumentBase {
-  _id: Types.ObjectId;
-  question: string;
-  options: string[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-}
-
-type QuizQuestionDocument = QuizQuestionDocumentBase &
-  (
-    | { type: 'single'; correctIndex: number; correctIndexes?: never }
-    | { type: 'multiple'; correctIndex?: never; correctIndexes: number[] }
-  );
+import { QuizQuestionSchema, type QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
 
 interface QuizDocument extends Document {
   title: string;
@@ -27,71 +14,6 @@ interface QuizDocument extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
-
-const QuestionSchema = new Schema<QuizQuestionDocument>({
-  question: {
-    type: String,
-    required: [true, 'Question text is required'],
-    trim: true,
-  },
-  options: {
-    type: [String],
-    required: [true, 'Options are required'],
-    validate: {
-      validator: function (options: string[]) {
-        return options.length >= 2 && options.length <= 10;
-      },
-      message: 'Each question must have between 2 and 10 options',
-    },
-  },
-  type: {
-    type: String,
-    enum: ['single', 'multiple'],
-    default: 'single',
-    required: [true, 'Question type is required'],
-  },
-  correctIndex: {
-    type: Number,
-    validate: {
-      validator: function (this: QuizQuestionDocument, value: number) {
-        if (this.type === 'single') {
-          return value !== undefined && value >= 0 && value < this.options.length;
-        }
-        return true;
-      },
-      message: 'Single choice questions must have a valid correct index within options range',
-    },
-  },
-  correctIndexes: {
-    type: [Number],
-    validate: {
-      validator: function (this: QuizQuestionDocument, value: number[]) {
-        if (this.type === 'multiple') {
-          return value && value.length > 0 && value.every((i) => i >= 0 && i < this.options.length);
-        }
-        return true;
-      },
-      message:
-        'Multiple choice questions must have at least one valid correct index within options range',
-    },
-  },
-  questionImage: {
-    type: String,
-    trim: true,
-  },
-  optionImages: {
-    type: [String],
-    validate: {
-      validator: function (this: QuizQuestionDocument, optionImages: (string | undefined)[]) {
-        // If optionImages exists, it should have same length as options
-        return (
-          !optionImages || optionImages.length === 0 || optionImages.length === this.options.length
-        );
-      },
-      message: 'Option images array length must match options array length',
-    },
-  },
-});
 
 const QuizSchema = new Schema<QuizDocument>(
   {
@@ -123,7 +45,7 @@ const QuizSchema = new Schema<QuizDocument>(
       lowercase: true,
     },
     questions: {
-      type: [QuestionSchema],
+      type: [QuizQuestionSchema],
       required: [true, 'Questions are required'],
       validate: {
         validator: function (questions: QuizQuestionDocument[]) {

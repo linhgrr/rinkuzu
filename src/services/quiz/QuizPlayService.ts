@@ -241,6 +241,13 @@ export class QuizPlayService {
       const attempt = await this.attemptRepository.create({
         ...attemptIdentity,
         quizId: quiz.id,
+        quizSnapshot: {
+          integrity: 'complete',
+          title: quiz.title,
+          slug: quiz.slug,
+          ...(quiz.description === undefined ? {} : { description: quiz.description }),
+          questions: quiz.questions,
+        },
         answers: formattedAnswers,
         score,
         totalQuestions,

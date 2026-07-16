@@ -228,6 +228,12 @@ describe('QuizPlayService progress operations', () => {
       expect.objectContaining({
         userId,
         quizId,
+        quizSnapshot: {
+          integrity: 'complete',
+          title: 'Quiz',
+          slug: 'quiz',
+          questions: [expect.objectContaining({ id: 'question-1', question: '2 + 2 = ?' })],
+        },
         answers: [1],
         score: 100,
         totalQuestions: 1,

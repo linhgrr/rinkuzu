@@ -5,9 +5,12 @@ const quizModelMocks = vi.hoisted(() => ({
   aggregate: vi.fn(),
   countDocuments: vi.fn(),
   findById: vi.fn(),
+  findByIdAndUpdate: vi.fn(),
   findOne: vi.fn(),
+  populate: vi.fn(),
   select: vi.fn(),
   lean: vi.fn(),
+  updateLean: vi.fn(),
 }));
 
 vi.mock('@/lib/mongoose', () => ({
@@ -19,6 +22,7 @@ vi.mock('@/models/Quiz', () => ({
     aggregate: quizModelMocks.aggregate,
     countDocuments: quizModelMocks.countDocuments,
     findById: quizModelMocks.findById,
+    findByIdAndUpdate: quizModelMocks.findByIdAndUpdate,
     findOne: quizModelMocks.findOne,
   },
 }));
@@ -29,7 +33,9 @@ describe('QuizRepository.findUserQuizzes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     quizModelMocks.findById.mockReturnValue({ select: quizModelMocks.select });
+    quizModelMocks.findByIdAndUpdate.mockReturnValue({ populate: quizModelMocks.populate });
     quizModelMocks.findOne.mockReturnValue({ select: quizModelMocks.select });
+    quizModelMocks.populate.mockReturnValue({ lean: quizModelMocks.updateLean });
     quizModelMocks.select.mockReturnValue({ lean: quizModelMocks.lean });
     quizModelMocks.aggregate.mockResolvedValue([
       {
@@ -47,6 +53,7 @@ describe('QuizRepository.findUserQuizzes', () => {
       },
     ]);
     quizModelMocks.countDocuments.mockResolvedValue(1);
+    quizModelMocks.updateLean.mockResolvedValue(null);
   });
 
   it('projects only fields required for quiz access checks', async () => {
@@ -65,6 +72,20 @@ describe('QuizRepository.findUserQuizzes', () => {
     expect(quizModelMocks.findById).toHaveBeenCalledWith('507f191e810c19729de860ea');
     expect(quizModelMocks.select).toHaveBeenCalledWith('_id author isPrivate');
     expect(quizModelMocks.lean).toHaveBeenCalledOnce();
+  });
+
+  it('runs persistence validators when updating a quiz', async () => {
+    const repository = new QuizRepository();
+
+    await expect(repository.update('507f191e810c19729de860ea', { title: 'Updated' })).resolves.toBe(
+      null,
+    );
+
+    expect(quizModelMocks.findByIdAndUpdate).toHaveBeenCalledWith(
+      '507f191e810c19729de860ea',
+      { title: 'Updated' },
+      { new: true, runValidators: true },
+    );
   });
 
   it('projects only fields needed to play or submit a quiz', async () => {

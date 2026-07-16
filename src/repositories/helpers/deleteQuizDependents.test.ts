@@ -3,7 +3,6 @@ import { Types } from 'mongoose';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const modelMocks = vi.hoisted(() => ({
-  attemptDeleteMany: vi.fn(),
   bookmarkDeleteMany: vi.fn(),
   discussionDeleteMany: vi.fn(),
   folderQuizDeleteMany: vi.fn(),
@@ -12,9 +11,6 @@ const modelMocks = vi.hoisted(() => ({
   reportDeleteMany: vi.fn(),
 }));
 
-vi.mock('@/models/Attempt', () => ({
-  default: { deleteMany: modelMocks.attemptDeleteMany },
-}));
 vi.mock('@/models/Bookmark', () => ({
   default: { deleteMany: modelMocks.bookmarkDeleteMany },
 }));
@@ -69,7 +65,6 @@ describe('deleteQuizDependents', () => {
       session,
     );
 
-    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledWith({ quiz: { $in: quizIds } });
     expect(modelMocks.discussionDeleteMany).toHaveBeenCalledWith({ quiz: { $in: quizIds } });
     expect(modelMocks.reportDeleteMany).toHaveBeenCalledWith({
       quizId: { $in: quizIds.map(String) },

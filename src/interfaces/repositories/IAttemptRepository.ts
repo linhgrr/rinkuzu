@@ -42,6 +42,16 @@ export interface AttemptScoreStats {
   lowestScore: number;
 }
 
+export interface RecentAttemptActivity {
+  id: string;
+  userEmail?: string;
+  guestEmail?: string;
+  quizTitle?: string;
+  score: number;
+  answeredQuestions: number;
+  takenAt: Date;
+}
+
 export interface IAttemptRepository {
   findByUser(
     userId: string,
@@ -54,7 +64,7 @@ export interface IAttemptRepository {
 
   countByQuiz(quizId: string): Promise<number>;
 
-  findRecentActivity(limit: number): Promise<Attempt[]>;
+  findRecentActivity(limit: number): Promise<RecentAttemptActivity[]>;
 
   findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null>;
 

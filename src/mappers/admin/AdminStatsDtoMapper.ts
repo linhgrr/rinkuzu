@@ -5,8 +5,10 @@ import type {
   AdminRecentUserDto,
   AdminScoreStatsDto,
 } from '@/dtos/admin-stats';
-import type { AttemptScoreStats } from '@/interfaces/repositories/IAttemptRepository';
-import type { Attempt } from '@/entities/Attempt';
+import type {
+  AttemptScoreStats,
+  RecentAttemptActivity,
+} from '@/interfaces/repositories/IAttemptRepository';
 import type { Quiz } from '@/entities/Quiz';
 import type { User } from '@/entities/User';
 import type { QuizCreatorStatRecord } from '@/interfaces/repositories/IQuizRepository';
@@ -36,7 +38,7 @@ export class AdminStatsDtoMapper {
     attemptBuckets: CountBuckets,
     recentUsers: User[],
     recentQuizzes: Quiz[],
-    recentAttempts: Attempt[],
+    recentAttempts: RecentAttemptActivity[],
   ): AdminActivityStatsDto {
     return {
       timeBasedStats: {

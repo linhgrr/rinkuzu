@@ -2,16 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { AdminActivityDtoMapper } from '@/mappers/admin/AdminActivityDtoMapper';
 
 describe('AdminActivityDtoMapper', () => {
-  it('maps a registered user attempt and counts answered questions', () => {
+  it('maps a registered user attempt read model', () => {
     expect(
       AdminActivityDtoMapper.toRecentAttempt({
         id: 'attempt-1',
         score: 80,
         takenAt: new Date('2026-06-28T00:00:00.000Z'),
-        user: { id: 'user-1', email: 'learner@example.com' },
-        quiz: { id: 'quiz-1', title: 'Algebra', slug: 'algebra' },
-        answers: [1, -1, [0, 2], []],
-        totalQuestions: 4,
+        userEmail: 'learner@example.com',
+        quizTitle: 'Algebra',
+        answeredQuestions: 2,
       }),
     ).toEqual({
       id: 'attempt-1',
@@ -28,11 +27,9 @@ describe('AdminActivityDtoMapper', () => {
       id: 'attempt-2',
       score: 0,
       takenAt: new Date('2026-06-27T00:00:00.000Z'),
-      user: null,
       guestEmail: 'guest@example.com',
-      quiz: { id: 'quiz-2', title: 'Guest Quiz', slug: 'guest-quiz' },
-      answers: [-1],
-      totalQuestions: 1,
+      quizTitle: 'Guest Quiz',
+      answeredQuestions: 0,
     });
 
     expect(dto.actor).toEqual({
@@ -49,10 +46,8 @@ describe('AdminActivityDtoMapper', () => {
         id: 'attempt-3',
         score: 0,
         takenAt: new Date('2026-06-27T00:00:00.000Z'),
-        user: null,
-        quiz: { id: 'quiz-3', title: 'Quiz', slug: 'quiz' },
-        answers: [-1],
-        totalQuestions: 1,
+        quizTitle: 'Quiz',
+        answeredQuestions: 0,
       }),
     ).toThrow('recentAttempt.actor is required');
   });
@@ -63,10 +58,8 @@ describe('AdminActivityDtoMapper', () => {
         id: 'attempt-4',
         score: 0,
         takenAt: new Date('2026-06-27T00:00:00.000Z'),
-        user: { id: 'user-1', email: 'learner@example.com' },
-        quiz: 'quiz-1',
-        answers: [-1],
-        totalQuestions: 1,
+        userEmail: 'learner@example.com',
+        answeredQuestions: 0,
       }),
     ).toThrow('recentAttempt.quiz is required');
   });

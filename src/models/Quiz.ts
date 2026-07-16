@@ -153,6 +153,7 @@ const QuizSchema = new Schema<QuizDocument>(
 // Indexes for better performance
 QuizSchema.index({ isPrivate: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, createdAt: -1 });
+QuizSchema.index({ author: 1, isPrivate: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, folder: 1, createdAt: -1 });
 QuizSchema.index(
   { sourceDraftId: 1 },

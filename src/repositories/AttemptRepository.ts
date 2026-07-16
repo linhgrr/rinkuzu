@@ -30,6 +30,10 @@ import {
 import { Types } from 'mongoose';
 import { serializeId } from '@/lib/mongo-id';
 import { buildRecentAttemptActivityPipeline } from '@/repositories/pipelines/recent-attempt-activity.mjs';
+import {
+  buildAttemptDetailPipeline,
+  buildUserAttemptListPipeline,
+} from '@/repositories/pipelines/attempt-read.mjs';
 
 type AttemptListFacetMeta = {
   totalItems: number;
@@ -54,49 +58,9 @@ export class AttemptRepository implements IAttemptRepository {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
 
-    const [result] = await AttemptModel.aggregate<AttemptListFacetResult>([
-      { $match: { user: toObjectIdIfValid(userId) } },
-      { $sort: { takenAt: -1 } },
-      {
-        $facet: {
-          items: [
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $lookup: {
-                from: 'quizzes',
-                localField: 'quiz',
-                foreignField: '_id',
-                as: 'quizDoc',
-              },
-            },
-            {
-              $project: {
-                _id: 1,
-                user: 1,
-                guestEmail: 1,
-                score: 1,
-                totalQuestions: 1,
-                takenAt: 1,
-                answers: { $literal: [] },
-                quiz: {
-                  $let: {
-                    vars: { quiz: { $first: '$quizDoc' } },
-                    in: {
-                      _id: '$$quiz._id',
-                      title: '$$quiz.title',
-                      slug: '$$quiz.slug',
-                      description: '$$quiz.description',
-                    },
-                  },
-                },
-              },
-            },
-          ],
-          meta: [{ $count: 'totalItems' }],
-        },
-      },
-    ]);
+    const [result] = await AttemptModel.aggregate<AttemptListFacetResult>(
+      buildUserAttemptListPipeline(toObjectIdIfValid(userId), skip, limit),
+    );
     const records = result?.items ?? [];
     const totalItems = result?.meta[0]?.totalItems ?? 0;
 
@@ -152,46 +116,9 @@ export class AttemptRepository implements IAttemptRepository {
     const identityFilter = owner.userId
       ? { user: toObjectIdIfValid(owner.userId) }
       : { guestEmail: owner.guestEmail };
-    const [record] = await AttemptModel.aggregate<AttemptPersistenceRecord>([
-      {
-        $match: {
-          _id: toObjectIdIfValid(attemptId),
-          ...identityFilter,
-        },
-      },
-      { $limit: 1 },
-      {
-        $lookup: {
-          from: 'quizzes',
-          localField: 'quiz',
-          foreignField: '_id',
-          as: 'quizDoc',
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          user: 1,
-          guestEmail: 1,
-          score: 1,
-          totalQuestions: 1,
-          answers: 1,
-          takenAt: 1,
-          quiz: {
-            $let: {
-              vars: { quiz: { $first: '$quizDoc' } },
-              in: {
-                _id: '$$quiz._id',
-                title: '$$quiz.title',
-                slug: '$$quiz.slug',
-                description: '$$quiz.description',
-                questions: '$$quiz.questions',
-              },
-            },
-          },
-        },
-      },
-    ]);
+    const [record] = await AttemptModel.aggregate<AttemptPersistenceRecord>(
+      buildAttemptDetailPipeline(toObjectIdIfValid(attemptId), identityFilter),
+    );
     return record ? AttemptPersistenceMapper.toEntity(record) : null;
   }
 

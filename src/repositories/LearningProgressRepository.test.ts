@@ -37,6 +37,10 @@ vi.mock('@/models/UserProgress', () => ({
 }));
 
 import mongoose, { type ClientSession } from 'mongoose';
+import {
+  QUESTION_REVIEW_HISTORY_LIMIT,
+  WEEKLY_ACTIVITY_RETENTION_DAYS,
+} from '@/lib/learning-progress-retention.mjs';
 import { LearningProgressRepository } from '@/repositories/LearningProgressRepository';
 
 describe('LearningProgressRepository.listLibraryQuizzes', () => {
@@ -182,5 +186,47 @@ describe('LearningProgressRepository.mutateReviewProgress', () => {
       userProgress: { totalXp: 20 },
       streakFreezeUsed: false,
     });
+  });
+
+  it('bounds embedded progress history before writing the transaction', async () => {
+    const repository = new LearningProgressRepository();
+    const history = Array.from({ length: QUESTION_REVIEW_HISTORY_LIMIT + 5 }, (_, index) => ({
+      date: new Date(Date.UTC(2026, 0, index + 1)),
+      rating: 'good' as const,
+    }));
+    const weeklyActivity = new Map(
+      Array.from({ length: WEEKLY_ACTIVITY_RETENTION_DAYS + 3 }, (_, index) => {
+        const date = new Date('2026-07-15T12:00:00.000Z');
+        date.setUTCDate(date.getUTCDate() - index);
+        return [
+          date.toISOString().slice(0, 10),
+          { questionsReviewed: 1, xpEarned: 10, correctCount: 1, totalCount: 1 },
+        ] as const;
+      }),
+    );
+
+    await repository.mutateReviewProgress(
+      'user-1',
+      'architecture',
+      'question-1',
+      (questionProgress, userProgress) => {
+        if (!questionProgress || !userProgress) throw new Error('Expected existing progress');
+        return {
+          questionProgress: { ...questionProgress, history },
+          userProgress: { ...userProgress, weeklyActivity },
+          streakFreezeUsed: false,
+        };
+      },
+    );
+
+    const questionUpdate = modelMocks.questionFindOneAndUpdate.mock.calls[0]?.[1] as {
+      $set: { history: typeof history };
+    };
+    const userUpdate = modelMocks.userFindOneAndUpdate.mock.calls[0]?.[1] as {
+      $set: { weeklyActivity: Map<string, unknown> };
+    };
+    expect(questionUpdate.$set.history).toEqual(history.slice(-QUESTION_REVIEW_HISTORY_LIMIT));
+    expect([...userUpdate.$set.weeklyActivity.keys()]).toHaveLength(WEEKLY_ACTIVITY_RETENTION_DAYS);
+    expect(userUpdate.$set.weeklyActivity.has('2026-07-01')).toBe(false);
   });
 });

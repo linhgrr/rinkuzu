@@ -31,6 +31,7 @@ import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
 import { AdminStatsDtoMapper } from '@/mappers/admin/AdminStatsDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import type { User } from '@/entities/User';
 
 export class AdminService implements IAdminService {
   constructor(
@@ -39,6 +40,31 @@ export class AdminService implements IAdminService {
     private quizRepository: IQuizRepository & IDashboardQuizRepository,
     private attemptRepository: IAttemptRepository,
   ) {}
+
+  private async authorizeUserMutation(
+    userId: string,
+    adminEmail: string,
+    selfActionError: string,
+  ): Promise<ServiceResult<User>> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        error: 'User not found',
+        statusCode: 404,
+      };
+    }
+
+    if (user.email === adminEmail) {
+      return {
+        success: false,
+        error: selfActionError,
+        statusCode: 400,
+      };
+    }
+
+    return { success: true, data: user };
+  }
 
   async getUsers(searchParams: AdminUserListQueryDto): Promise<ServiceResult<AdminUserListDto>> {
     try {
@@ -78,22 +104,12 @@ export class AdminService implements IAdminService {
         };
       }
 
-      const user = await this.userRepository.findById(userId);
-      if (!user) {
-        return {
-          success: false,
-          error: 'User not found',
-          statusCode: 404,
-        };
-      }
-
-      if (user.email === adminEmail) {
-        return {
-          success: false,
-          error: 'Cannot change your own role',
-          statusCode: 400,
-        };
-      }
+      const authorization = await this.authorizeUserMutation(
+        userId,
+        adminEmail,
+        'Cannot change your own role',
+      );
+      if (!authorization.success) return authorization;
 
       await this.userRepository.updateRole(userId, role);
 
@@ -113,22 +129,12 @@ export class AdminService implements IAdminService {
 
   async deleteUser(userId: string, adminEmail: string): Promise<ServiceResult<DeleteResultDto>> {
     try {
-      const user = await this.userRepository.findById(userId);
-      if (!user) {
-        return {
-          success: false,
-          error: 'User not found',
-          statusCode: 404,
-        };
-      }
-
-      if (user.email === adminEmail) {
-        return {
-          success: false,
-          error: 'Cannot delete your own account',
-          statusCode: 400,
-        };
-      }
+      const authorization = await this.authorizeUserMutation(
+        userId,
+        adminEmail,
+        'Cannot delete your own account',
+      );
+      if (!authorization.success) return authorization;
 
       const deleted = await this.userRepository.delete(userId);
       if (!deleted) {

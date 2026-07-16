@@ -131,20 +131,14 @@ export class QuizPlayService {
     userId?: string,
   ): Promise<ServiceResult<QuizPlayDetailDto>> {
     try {
-      const quiz = await this.quizRepository.findBySlug(slug);
+      const access = await requireQuizReadAccess(
+        await this.quizRepository.findBySlug(slug),
+        userId,
+        userRole,
+      );
+      if (!access.success) return access;
 
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
-      if (privateAccessError) return privateAccessError;
-
-      return { success: true, data: QuizDetailDtoMapper.toPlayDetail(quiz) };
+      return { success: true, data: QuizDetailDtoMapper.toPlayDetail(access.data) };
     } catch (error) {
       logger.error({ error }, 'Error in getQuizForPlay');
       return {

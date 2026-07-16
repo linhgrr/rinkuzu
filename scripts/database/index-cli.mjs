@@ -97,7 +97,13 @@ export function isIndexApplyMode(mode) {
 }
 
 /**
- * @param {{ actions: Array<{ fingerprint: string, sensitive?: boolean, type?: string }> }} plan
+ * @param {{ actions: Array<{
+ *   fingerprint: string,
+ *   collection?: string,
+ *   indexId?: string,
+ *   sensitive?: boolean,
+ *   type?: string
+ * }> }} plan
  * @param {string} mode
  * @param {string[] | null} actionTypes
  */

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "toolVersion": "9.6.1",
+  "scopePatterns": [
+    "src/app/api/**/route.ts",
+    "src/lib/auth/**/*.ts",
+    "src/lib/api/auth.ts",
+    "src/lib/entitlements/**/*.ts",
+    "src/lib/integrations/payos.ts",
+    "src/models/**/*.ts",
+    "src/repositories/**/*.ts",
+    "src/services/{auth,admin,payment,quiz,subscription}/**/*.ts",
+    "src/features/{admin,adaptive,quiz}/**/*.ts",
+    "src/lib/{adaptive,adaptive-learning}/**/*.ts"
+  ],
+  "valid": 11541,
+  "detected": 3203,
+  "survived": 2087,
+  "noCoverage": 6251,
+  "score": 27.753227623256215
+}

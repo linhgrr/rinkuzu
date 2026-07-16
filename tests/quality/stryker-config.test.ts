@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CRITICAL_MUTATION_PATTERNS } from '../../scripts/mutation-scope.mjs';
-import config from '../../stryker.config.mjs';
+import config, { mutationThresholdsForMode } from '../../stryker.config.mjs';
 
 describe('Stryker production configuration', () => {
   it('keeps tool metadata and runtime assets out of mutation sandboxes', () => {
@@ -12,6 +12,7 @@ describe('Stryker production configuration', () => {
   it('does not carry stale mutation globs', () => {
     expect(config.mutate).not.toContain('src/auth.ts');
     expect(config.mutate).not.toContain('src/auth.config.ts');
+    expect(config.mutate).not.toContain('src/lib/auth.ts');
   });
 
   it('keeps presentational TSX out of the critical logic mutation scope', () => {
@@ -23,5 +24,11 @@ describe('Stryker production configuration', () => {
     expect(CRITICAL_MUTATION_PATTERNS).not.toContain(
       'src/features/{admin,adaptive,quiz}/**/*.{ts,tsx}',
     );
+  });
+
+  it('blocks changed critical regressions but lets the full report reach the debt ratchet', () => {
+    expect(mutationThresholdsForMode('changed').break).toBe(80);
+    expect(mutationThresholdsForMode(undefined).break).toBe(80);
+    expect(mutationThresholdsForMode('full').break).toBeNull();
   });
 });

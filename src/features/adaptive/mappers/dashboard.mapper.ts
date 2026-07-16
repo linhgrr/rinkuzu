@@ -23,6 +23,41 @@ const clampPercent = (value: number): number => {
   return Math.max(0, Math.min(100, Math.round(value)));
 };
 
+type DashboardSubjectSource = Pick<
+  DashboardPipelineJobListItem,
+  | 'job_id'
+  | 'filename'
+  | 'subject_id'
+  | 'status'
+  | 'concepts_extracted'
+  | 'concepts_after_merge'
+  | 'relations_verified'
+  | 'completed_at'
+>;
+
+type DashboardSubjectCore = Pick<
+  DashboardSubject,
+  | 'jobId'
+  | 'filename'
+  | 'subjectId'
+  | 'status'
+  | 'conceptsExtracted'
+  | 'conceptsAfterMerge'
+  | 'relationsVerified'
+  | 'completedAt'
+>;
+
+const toDashboardSubjectCore = (job: DashboardSubjectSource): DashboardSubjectCore => ({
+  jobId: job.job_id,
+  filename: job.filename,
+  subjectId: job.subject_id,
+  status: job.status,
+  conceptsExtracted: job.concepts_extracted,
+  conceptsAfterMerge: job.concepts_after_merge,
+  relationsVerified: job.relations_verified,
+  completedAt: job.completed_at ?? null,
+});
+
 const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics => {
   const masteredConcepts = Math.max(0, job.mastered_concept);
   const allConcepts = Math.max(0, job.all_concept);
@@ -48,14 +83,12 @@ const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics
   };
 };
 
-const getDisplayTitle = (job: PipelineJobHistoryItem): string => {
+const getDashboardSubjectTitle = (
+  job: Pick<DashboardSubjectSource, 'job_id' | 'filename' | 'subject_id'>,
+  context: string,
+): string => {
   const filenameTitle = job.filename.replace(/\.[^.]+$/, '');
-  return requireFirstNonEmptyString(
-    'adaptive dashboard subject title',
-    job.subject_id,
-    filenameTitle,
-    job.job_id,
-  );
+  return requireFirstNonEmptyString(context, job.subject_id, filenameTitle, job.job_id);
 };
 
 const formatLastOpenedLabel = (
@@ -89,18 +122,11 @@ export const toDashboardSubject = (
   const metrics = getSubjectMetrics(job);
 
   return {
-    jobId: job.job_id,
-    filename: job.filename,
-    subjectId: job.subject_id,
-    status: job.status,
-    conceptsExtracted: job.concepts_extracted,
-    conceptsAfterMerge: job.concepts_after_merge,
-    relationsVerified: job.relations_verified,
-    completedAt: job.completed_at ?? null,
+    ...toDashboardSubjectCore(job),
     masteredConcept: job.mastered_concept,
     allConcept: job.all_concept,
     progressPercent: job.progress_percent,
-    displayTitle: getDisplayTitle(job),
+    displayTitle: getDashboardSubjectTitle(job, 'adaptive dashboard subject title'),
     lastOpenedLabel: formatLastOpenedLabel(job.completed_at, locale, t),
     progressLabel: t('progressLabel'),
     ctaLabel: metrics.progressPercent > 0 ? t('continueLearning') : t('startLearning'),
@@ -128,16 +154,6 @@ const getPipelineStatusLabelKey = (status: PipelineStatus): string => {
   return STATUS_LABEL_KEYS[status];
 };
 
-const getJobDisplayTitle = (job: DashboardPipelineJobListItem): string => {
-  const filenameTitle = job.filename.replace(/\.[^.]+$/, '');
-  return requireFirstNonEmptyString(
-    'adaptive dashboard job title',
-    job.subject_id,
-    filenameTitle,
-    job.job_id,
-  );
-};
-
 const getJobProgressPercent = (job: DashboardPipelineJobListItem): number => {
   return clampPercent(job.progress * 100);
 };
@@ -147,7 +163,7 @@ export const buildDashboardSubjectFromJob = (
   t: TranslateFn,
   tProcessing: TranslateFn = t,
 ): DashboardSubject => {
-  const displayTitle = getJobDisplayTitle(job);
+  const displayTitle = getDashboardSubjectTitle(job, 'adaptive dashboard job title');
 
   let runtime: SubjectRuntime;
 
@@ -179,14 +195,7 @@ export const buildDashboardSubjectFromJob = (
   };
 
   return {
-    jobId: job.job_id,
-    filename: job.filename,
-    subjectId: job.subject_id,
-    status: job.status,
-    conceptsExtracted: job.concepts_extracted,
-    conceptsAfterMerge: job.concepts_after_merge,
-    relationsVerified: job.relations_verified,
-    completedAt: job.completed_at ?? null,
+    ...toDashboardSubjectCore(job),
     masteredConcept: 0,
     allConcept: 0,
     progressPercent,

@@ -1,38 +1,10 @@
-import type { Attempt, AttemptAnswer } from '@/entities/Attempt';
-import type { QuizQuestion } from '@/entities/Quiz';
+import type { Attempt } from '@/entities/Attempt';
 import type {
   CountBuckets,
   CountBucketThresholds,
   PaginatedRepositoryResult,
   RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
-
-interface AttemptQuizSnapshotData {
-  integrity: 'complete';
-  title: string;
-  slug: string;
-  description?: string;
-  questions: QuizQuestion[];
-}
-
-interface AttemptSubmissionData {
-  quizId: string;
-  quizSnapshot: AttemptQuizSnapshotData;
-  answers: AttemptAnswer[];
-  score: number;
-  totalQuestions: number;
-  takenAt: Date;
-}
-
-export type CreateAttemptData =
-  | (AttemptSubmissionData & {
-      userId: string;
-      guestEmail?: never;
-    })
-  | (AttemptSubmissionData & {
-      userId?: never;
-      guestEmail: string;
-    });
 
 export type AttemptOwnerIdentity =
   | { userId: string; guestEmail?: never }
@@ -67,8 +39,6 @@ export interface IAttemptRepository {
     userId: string,
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Attempt>>;
-
-  create(data: CreateAttemptData): Promise<Attempt>;
 
   countByUser(userId: string): Promise<number>;
 

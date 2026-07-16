@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import Attempt from '@/models/Attempt';
 
 const submission = {
+  idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
+  submissionDigest: 'a'.repeat(64),
   quiz: '507f191e810c19729de860ea',
   quizSnapshot: {
     integrity: 'complete',
@@ -17,6 +19,7 @@ const submission = {
     ],
   },
   score: 100,
+  correctAnswers: 1,
   totalQuestions: 1,
   answers: [{ kind: 'single', selectedIndex: 0 }],
 };
@@ -76,6 +79,26 @@ describe('Attempt model identity', () => {
     await expect(falseCompleteSnapshot.validate()).rejects.toThrow(
       'Quiz snapshots require at least one question',
     );
+  });
+
+  it('enforces a complete and internally consistent submission contract', async () => {
+    const inconsistent = new Attempt({
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      answers: [],
+      correctAnswers: 0,
+    });
+
+    await expect(inconsistent.validate()).rejects.toThrow(
+      'Answer count must match total questions',
+    );
+    await expect(
+      new Attempt({
+        ...submission,
+        user: '507f191e810c19729de860eb',
+        score: 0,
+      }).validate(),
+    ).rejects.toThrow('Score must match the correct answer count');
   });
 
   it('accepts image-only options but rejects options without text or an image', async () => {

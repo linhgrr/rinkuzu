@@ -712,6 +712,7 @@ function QuizResultReadyState({
 
 function QuizResultPageClient() {
   const t = useTranslations('quiz');
+  const tCommon = useTranslations('common');
   const tProfile = useTranslations('profile');
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -747,7 +748,7 @@ function QuizResultPageClient() {
       <QuizResultErrorState
         actionLabel={t('backHome')}
         error={state.error}
-        title={t('error', { ns: 'common' })}
+        title={tCommon('error')}
       />
     );
   }

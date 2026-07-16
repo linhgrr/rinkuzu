@@ -1,11 +1,8 @@
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
-import type {
-  IQuizAttemptProgressRepository,
-  WrongQuizAttemptQuestion,
-} from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import { type IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import { QuizAttemptIdempotencyConflictError } from '@/errors/quiz-attempt';
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
   DeleteQuizProgressResponseDto,
@@ -23,16 +20,18 @@ import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { QuizProgressDtoMapper } from '@/mappers/quiz/QuizProgressDtoMapper';
 import { QuizAttemptDtoMapper } from '@/mappers/quiz/QuizAttemptDtoMapper';
 import { QuizFlashcardDtoMapper } from '@/mappers/quiz/QuizFlashcardDtoMapper';
-
-type Answer = number | number[];
+import {
+  evaluateQuizAttempt,
+  InvalidQuizAttemptAnswersError,
+} from '@/services/quiz/quiz-attempt-evaluation';
+import type { QuizAttemptAnswer } from '@/entities/QuizAttempt';
 
 export class QuizPlayService {
   constructor(
     private quizRepository: IQuizRepository,
     private userRepository: IUserRepository,
-    private attemptRepository: IAttemptRepository,
     private quizProgressRepository: IQuizProgressRepository,
-    private quizAttemptProgressRepository?: IQuizAttemptProgressRepository,
+    private quizAttemptProgressRepository: IQuizAttemptProgressRepository,
   ) {}
 
   private async resolveQuizId(slug: string): Promise<string | null> {
@@ -129,7 +128,8 @@ export class QuizPlayService {
 
   async submitQuizAttempt(
     slug: string,
-    answers: Answer[],
+    answers: QuizAttemptAnswer[],
+    idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
@@ -165,7 +165,7 @@ export class QuizPlayService {
         }
         authenticatedUserId = user.id;
       } else if (userEmail) {
-        guestEmail = userEmail;
+        guestEmail = userEmail.trim().toLowerCase();
       } else {
         return {
           success: false,
@@ -174,60 +174,7 @@ export class QuizPlayService {
         };
       }
 
-      // Validate answers format
-      if (!Array.isArray(answers) || answers.length !== quiz.questions.length) {
-        return {
-          success: false,
-          error: 'Invalid answers format',
-          statusCode: 400,
-        };
-      }
-
-      // Format answers according to validation rules
-      const formattedAnswers: Answer[] = answers.map((answer, index) => {
-        const question = quiz.questions[index];
-        if (!question) return -1;
-
-        if (question.type === 'single') {
-          // Single choice: -1 for unanswered, >= 0 for answered
-          if (answer === -1) return -1;
-          return typeof answer === 'number' && answer >= 0 ? answer : -1;
-        } else if (question.type === 'multiple') {
-          // Multiple choice: empty array for unanswered, array of >= 0 for answered
-          if (!Array.isArray(answer) || answer.length === 0) {
-            return [];
-          }
-          return answer.filter((a): a is number => typeof a === 'number' && a >= 0);
-        }
-        return answer;
-      });
-
-      // Calculate score
-      let correctAnswers = 0;
-      const totalQuestions = quiz.questions.length;
-
-      for (let i = 0; i < totalQuestions; i++) {
-        const question = quiz.questions[i];
-        if (!question) continue;
-        const userAnswer = formattedAnswers[i];
-
-        if (question.type === 'single') {
-          if (userAnswer === question.correctIndex) {
-            correctAnswers++;
-          }
-        } else if (question.type === 'multiple') {
-          const userAnswers = Array.isArray(userAnswer) ? userAnswer.toSorted() : [];
-          const correctAnswers_q = Array.isArray(question.correctIndexes)
-            ? question.correctIndexes.toSorted()
-            : [];
-
-          if (JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q)) {
-            correctAnswers++;
-          }
-        }
-      }
-
-      const score = Math.round((correctAnswers / totalQuestions) * 100);
+      const evaluation = evaluateQuizAttempt(quiz.questions, answers);
 
       const attemptIdentity = authenticatedUserId
         ? { userId: authenticatedUserId }
@@ -238,9 +185,11 @@ export class QuizPlayService {
         throw new TypeError('Attempt identity is required');
       }
 
-      const attempt = await this.attemptRepository.create({
+      const attempt = await this.quizAttemptProgressRepository.recordSubmittedAttempt({
         ...attemptIdentity,
+        idempotencyKey,
         quizId: quiz.id,
+        quizSlug: quiz.slug,
         quizSnapshot: {
           integrity: 'complete',
           title: quiz.title,
@@ -248,58 +197,30 @@ export class QuizPlayService {
           ...(quiz.description === undefined ? {} : { description: quiz.description }),
           questions: quiz.questions,
         },
-        answers: formattedAnswers,
-        score,
-        totalQuestions,
+        answers: evaluation.answers,
+        score: evaluation.score,
+        correctAnswers: evaluation.correctAnswers,
+        totalQuestions: evaluation.totalQuestions,
+        wrongQuestions: evaluation.wrongQuestions,
         takenAt: new Date(),
       });
 
-      // === Update gamification stats (logged-in users only) ===
-      if (authenticatedUserId) {
-        const wrongQuestions: WrongQuizAttemptQuestion[] = [];
-
-        for (let i = 0; i < totalQuestions; i++) {
-          const question = quiz.questions[i];
-          if (!question) continue;
-          const userAnswer = formattedAnswers[i] ?? -1;
-          let isCorrect = false;
-
-          if (question.type === 'single') {
-            isCorrect = userAnswer === question.correctIndex;
-          } else if (question.type === 'multiple') {
-            const userAnswers = Array.isArray(userAnswer) ? userAnswer.toSorted() : [];
-            const correctAnswers_q = Array.isArray(question.correctIndexes)
-              ? question.correctIndexes.toSorted()
-              : [];
-            isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q);
-          }
-
-          if (!isCorrect) {
-            wrongQuestions.push({ index: i, questionId: question.id, question, userAnswer });
-          }
-        }
-
-        await this.quizAttemptProgressRepository?.recordSubmittedAttempt({
-          userId: authenticatedUserId,
-          quizSlug: slug,
-          totalQuestions,
-          correctAnswers,
-          wrongQuestions,
-        });
-
-        // Clear any saved in-progress state now that the attempt is submitted.
-        try {
-          await this.quizProgressRepository.deleteByUserAndQuiz(authenticatedUserId, quiz.id);
-        } catch (error) {
-          logger.warn({ error }, 'Failed to clear quiz progress after submit');
-        }
-      }
-
       return {
         success: true,
-        data: QuizAttemptDtoMapper.toResultDto(attempt.id, score, correctAnswers, totalQuestions),
+        data: QuizAttemptDtoMapper.toResultDto(
+          attempt.id,
+          attempt.score,
+          attempt.correctAnswers,
+          attempt.totalQuestions,
+        ),
       };
     } catch (error) {
+      if (error instanceof InvalidQuizAttemptAnswersError) {
+        return { success: false, error: error.message, statusCode: 400 };
+      }
+      if (error instanceof QuizAttemptIdempotencyConflictError) {
+        return { success: false, error: error.message, statusCode: 409 };
+      }
       logger.error({ error }, 'Submit quiz attempt error');
       return {
         success: false,

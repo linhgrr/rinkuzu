@@ -50,6 +50,7 @@ export default defineConfig({
           {
             command: `npm run start -- --port ${port}`,
             url: baseURL,
+            env: { HOSTNAME: '127.0.0.1' },
             reuseExistingServer: false,
             timeout: 120 * 1000,
             stdout: 'pipe',

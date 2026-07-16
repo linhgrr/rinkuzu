@@ -3,8 +3,6 @@ import type {
   SubscriptionRecord,
   SubscriptionStatus,
 } from '@/entities/Subscription';
-import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
-
 export interface ActivateSubscriptionData {
   orderId: string;
   userId: string;
@@ -50,7 +48,6 @@ export interface ISubscriptionRepository {
   findById(id: string): Promise<SubscriptionRecord | null>;
   findByOrderId(orderId: string): Promise<SubscriptionRecord | null>;
   findByTransactionReference(transactionReference: string): Promise<SubscriptionRecord | null>;
-  findByUser(userId: string): Promise<SubscriptionRecord[]>;
   expireDue(now: Date): Promise<number>;
   updateById(id: string, updateData: UpdateSubscriptionData): Promise<SubscriptionRecord | null>;
   updateByOrderId(
@@ -65,9 +62,4 @@ export interface ISubscriptionRepository {
   cancelCurrentForUser(userId: string): Promise<CancelCurrentSubscriptionResult>;
   activateSubscription(data: ActivateSubscriptionData): Promise<void>;
   deletePendingByOrderId(orderId: string): Promise<boolean>;
-  findWithPagination(
-    filter: Record<string, unknown>,
-    page: number,
-    limit: number,
-  ): Promise<PaginatedRepositoryResult<SubscriptionRecord>>;
 }

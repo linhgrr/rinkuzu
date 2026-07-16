@@ -8,12 +8,9 @@ import {
   writeChatHistories,
   type ChatHistoryPersistence,
 } from '@/features/quiz/lib/chat-history-storage';
+import { replaceLastAssistantMessage, type ChatMessage } from '@/features/quiz/lib/chat-history';
 
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-}
+export type { ChatMessage } from '@/features/quiz/lib/chat-history';
 
 type ChatHistories = Record<string, ChatMessage[]>;
 
@@ -227,14 +224,10 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
           signal: abortController.signal,
           onContent: (_, fullContent) => {
             setState((prev) => {
-              const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
-              for (let i = history.length - 1; i >= 0; i -= 1) {
-                const message = history[i];
-                if (message?.role === 'assistant') {
-                  history[i] = { ...message, content: fullContent };
-                  break;
-                }
-              }
+              const history = replaceLastAssistantMessage(
+                prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES,
+                fullContent,
+              );
               return {
                 ...prev,
                 chatHistories: { ...prev.chatHistories, [key]: history },
@@ -245,14 +238,10 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       );
 
       setState((prev) => {
-        const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
-        for (let i = history.length - 1; i >= 0; i -= 1) {
-          const message = history[i];
-          if (message?.role === 'assistant') {
-            history[i] = { ...message, content: explanation };
-            break;
-          }
-        }
+        const history = replaceLastAssistantMessage(
+          prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES,
+          explanation,
+        );
         return {
           ...prev,
           chatHistories: { ...prev.chatHistories, [key]: history },

@@ -1,4 +1,6 @@
-export type SubscriptionStatus = 'pending' | 'completed' | 'failed' | 'cancelled' | 'expired';
+import type { SubscriptionRecordFields } from '@/entities/Subscription';
+
+export type { SubscriptionStatus } from '@/entities/Subscription';
 
 export interface BillingPlan {
   id: string;
@@ -11,22 +13,9 @@ export interface BillingPlan {
   updatedAt: Date;
 }
 
-export interface AdminSubscriptionRecord {
+export interface AdminSubscriptionRecord extends SubscriptionRecordFields {
   id: string;
   user: string;
-  userEmail: string;
-  type: string;
-  amount: number;
-  currency: string;
-  status: SubscriptionStatus;
-  payosOrderId: string;
-  payosTransactionId?: string;
-  payosPaymentUrl?: string;
-  startDate?: Date;
-  endDate?: Date;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface AdminUserSubscriptionGrant {

@@ -4,6 +4,22 @@ export type AdminMutableSubscriptionStatus = Extract<
   'failed' | 'cancelled' | 'expired'
 >;
 
+export interface SubscriptionRecordFields {
+  userEmail: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: SubscriptionStatus;
+  payosOrderId: string;
+  payosTransactionId?: string;
+  payosPaymentUrl?: string;
+  startDate?: Date;
+  endDate?: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class SubscriptionActivationConflictError extends Error {
   constructor(message: string) {
     super(message);
@@ -24,19 +40,12 @@ export function isAdminSubscriptionStatusTransitionAllowed(
   return false;
 }
 
-interface SubscriptionRecordBase {
+interface SubscriptionRecordBase extends Omit<
+  SubscriptionRecordFields,
+  'status' | 'startDate' | 'endDate'
+> {
   id: string;
   userId: string;
-  userEmail: string;
-  type: string;
-  amount: number;
-  currency: string;
-  payosOrderId: string;
-  payosTransactionId?: string;
-  payosPaymentUrl?: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export type SubscriptionRecord =

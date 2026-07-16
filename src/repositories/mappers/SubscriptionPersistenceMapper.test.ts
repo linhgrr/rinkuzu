@@ -19,12 +19,7 @@ const record: SubscriptionPersistenceRecord = {
 
 describe('SubscriptionPersistenceMapper', () => {
   it('normalizes subscription and user persistence identities', () => {
-    expect(
-      SubscriptionPersistenceMapper.toEntity({
-        ...record,
-        user: { _id: 'user-1', email: 'learner@example.com', role: 'user' },
-      }),
-    ).toMatchObject({
+    expect(SubscriptionPersistenceMapper.toEntity(record)).toMatchObject({
       id: 'subscription-1',
       userId: 'user-1',
       status: 'completed',

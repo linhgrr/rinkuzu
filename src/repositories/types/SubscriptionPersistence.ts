@@ -1,11 +1,5 @@
-import type { SubscriptionStatus } from '@/entities/Subscription';
+import type { SubscriptionRecordFields } from '@/entities/Subscription';
 import type { MongoIdLike } from '@/types/mongo';
-
-export interface SubscriptionUserPersistenceRecord {
-  _id: MongoIdLike;
-  email?: string;
-  role?: 'admin' | 'user';
-}
 
 export interface CurrentSubscriptionSnapshotPersistenceRecord {
   endDate?: Date;
@@ -24,20 +18,7 @@ export interface ExpiredSubscriptionCandidatePersistenceRecord {
   payosOrderId: string;
 }
 
-export interface SubscriptionPersistenceRecord {
+export interface SubscriptionPersistenceRecord extends SubscriptionRecordFields {
   _id: MongoIdLike;
-  user: MongoIdLike | SubscriptionUserPersistenceRecord;
-  userEmail: string;
-  type: string;
-  amount: number;
-  currency: string;
-  status: SubscriptionStatus;
-  payosOrderId: string;
-  payosTransactionId?: string;
-  payosPaymentUrl?: string;
-  startDate?: Date;
-  endDate?: Date;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  user: MongoIdLike;
 }

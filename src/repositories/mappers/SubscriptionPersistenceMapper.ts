@@ -1,15 +1,6 @@
 import type { SubscriptionRecord } from '@/entities/Subscription';
 import { serializeId } from '@/lib/mongo-id';
-import type {
-  SubscriptionPersistenceRecord,
-  SubscriptionUserPersistenceRecord,
-} from '@/repositories/types/SubscriptionPersistence';
-
-function isPopulatedUser(
-  user: SubscriptionPersistenceRecord['user'],
-): user is SubscriptionUserPersistenceRecord {
-  return typeof user === 'object' && user !== null && '_id' in user;
-}
+import type { SubscriptionPersistenceRecord } from '@/repositories/types/SubscriptionPersistence';
 
 function requireDate(value: Date | undefined, field: string): Date {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
@@ -20,10 +11,7 @@ export class SubscriptionPersistenceMapper {
   static toEntity(record: SubscriptionPersistenceRecord): SubscriptionRecord {
     const base = {
       id: serializeId(record._id, 'subscription._id'),
-      userId: serializeId(
-        isPopulatedUser(record.user) ? record.user._id : record.user,
-        'subscription.user',
-      ),
+      userId: serializeId(record.user, 'subscription.user'),
       userEmail: record.userEmail,
       type: record.type,
       amount: record.amount,

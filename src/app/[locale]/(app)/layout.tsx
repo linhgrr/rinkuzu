@@ -1,4 +1,4 @@
-import { Montserrat } from 'next/font/google';
+import { Inter, Montserrat } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import Providers from '@/app/providers';
 import { getScopedMessages } from '@/i18n/messages';
@@ -8,6 +8,12 @@ import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { ClientOnlyAppAddons } from '@/components/ClientOnlyAppAddons';
 import { AppChrome } from '@/components/app-chrome/AppChrome';
 import { getCurrentSession } from '@/lib/auth/session';
+
+const inter = Inter({
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 const montserrat = Montserrat({
   subsets: ['latin', 'vietnamese'],
@@ -30,7 +36,7 @@ export default async function AppLayout({
   ]);
 
   return (
-    <div className={montserrat.variable}>
+    <div className={`${inter.className} ${montserrat.variable}`}>
       <NextIntlClientProvider messages={messages}>
         <Providers session={session}>
           <AppChrome>

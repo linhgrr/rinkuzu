@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import '../globals.css';
 import { routing } from '@/i18n/routing';
@@ -15,12 +14,6 @@ import {
 } from '@/lib/structured-data';
 import { NextIntlClientProvider } from 'next-intl';
 import { SerwistProvider } from '@serwist/turbopack/react';
-
-const inter = Inter({
-  subsets: ['latin', 'vietnamese'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -144,7 +137,7 @@ export default async function LocaleLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
       </head>
-      <body className={`${inter.className} min-h-screen bg-neutral-50 antialiased`}>
+      <body className="min-h-screen bg-neutral-50 antialiased">
         <SerwistProvider
           swUrl="/serwist/sw.js"
           disable={process.env.NODE_ENV !== 'production'}

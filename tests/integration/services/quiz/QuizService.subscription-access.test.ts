@@ -84,7 +84,6 @@ function createQuizService(quiz: Quiz) {
     upsert: vi.fn(),
     findByUserAndQuiz: vi.fn(),
     deleteByUserAndQuiz: vi.fn(),
-    findInProgressByUser: vi.fn(),
   };
 
   const service = new QuizService(

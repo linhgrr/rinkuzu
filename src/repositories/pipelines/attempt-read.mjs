@@ -1,24 +1,10 @@
-const ATTEMPT_LIST_QUIZ_PROJECTION = {
-  _id: 1,
-  title: 1,
-  slug: 1,
-  description: 1,
-};
-
-const ATTEMPT_DETAIL_QUIZ_PROJECTION = {
-  ...ATTEMPT_LIST_QUIZ_PROJECTION,
-  questions: 1,
-};
-
-function buildQuizLookup(projection) {
+function buildQuizProjection({ includeQuestions }) {
   return {
-    $lookup: {
-      from: 'quizzes',
-      localField: 'quiz',
-      foreignField: '_id',
-      pipeline: [{ $project: projection }],
-      as: 'quizDoc',
-    },
+    _id: '$quiz',
+    title: '$quizSnapshot.title',
+    slug: '$quizSnapshot.slug',
+    description: '$quizSnapshot.description',
+    ...(includeQuestions ? { questions: '$quizSnapshot.questions' } : {}),
   };
 }
 
@@ -39,7 +25,6 @@ export function buildUserAttemptListPipeline(userId, skip, limit) {
         items: [
           { $skip: skip },
           { $limit: limit },
-          buildQuizLookup(ATTEMPT_LIST_QUIZ_PROJECTION),
           {
             $project: {
               _id: 1,
@@ -49,17 +34,7 @@ export function buildUserAttemptListPipeline(userId, skip, limit) {
               totalQuestions: 1,
               takenAt: 1,
               answers: { $literal: [] },
-              quiz: {
-                $let: {
-                  vars: { quiz: { $first: '$quizDoc' } },
-                  in: {
-                    _id: '$$quiz._id',
-                    title: '$$quiz.title',
-                    slug: '$$quiz.slug',
-                    description: '$$quiz.description',
-                  },
-                },
-              },
+              quiz: buildQuizProjection({ includeQuestions: false }),
             },
           },
         ],
@@ -85,7 +60,6 @@ export function buildAttemptDetailPipeline(attemptId, identityFilter) {
       },
     },
     { $limit: 1 },
-    buildQuizLookup(ATTEMPT_DETAIL_QUIZ_PROJECTION),
     {
       $project: {
         _id: 1,
@@ -95,18 +69,7 @@ export function buildAttemptDetailPipeline(attemptId, identityFilter) {
         totalQuestions: 1,
         answers: 1,
         takenAt: 1,
-        quiz: {
-          $let: {
-            vars: { quiz: { $first: '$quizDoc' } },
-            in: {
-              _id: '$$quiz._id',
-              title: '$$quiz.title',
-              slug: '$$quiz.slug',
-              description: '$$quiz.description',
-              questions: '$$quiz.questions',
-            },
-          },
-        },
+        quiz: buildQuizProjection({ includeQuestions: true }),
       },
     },
   ];

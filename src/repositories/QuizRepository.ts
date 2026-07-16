@@ -252,7 +252,10 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
 
   async update(id: string, quizData: UpdateQuizData): Promise<Quiz | null> {
     await connectDB();
-    const record = await QuizModel.findByIdAndUpdate(id, quizData, { new: true })
+    const record = await QuizModel.findByIdAndUpdate(id, quizData, {
+      new: true,
+      runValidators: true,
+    })
       .populate('author', 'email name displayName avatar')
       .lean<QuizPersistenceRecord>();
     return record ? QuizPersistenceMapper.toEntity(record) : null;

@@ -1,4 +1,5 @@
 import type { Attempt, AttemptAnswer } from '@/entities/Attempt';
+import type { QuizQuestion } from '@/entities/Quiz';
 import type {
   CountBuckets,
   CountBucketThresholds,
@@ -6,8 +7,17 @@ import type {
   RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
+interface AttemptQuizSnapshotData {
+  integrity: 'complete';
+  title: string;
+  slug: string;
+  description?: string;
+  questions: QuizQuestion[];
+}
+
 interface AttemptSubmissionData {
   quizId: string;
+  quizSnapshot: AttemptQuizSnapshotData;
   answers: AttemptAnswer[];
   score: number;
   totalQuestions: number;

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Types } from 'mongoose';
 
 const attemptMocks = vi.hoisted(() => ({
   aggregate: vi.fn(),
@@ -36,49 +37,22 @@ describe('AttemptRepository.findByUser', () => {
       },
     });
 
-    expect(attemptMocks.aggregate).toHaveBeenCalledWith([
-      { $match: { user: expect.any(Object) } },
-      { $sort: { takenAt: -1 } },
+    const [pipeline] = attemptMocks.aggregate.mock.calls[0] ?? [];
+    expect(pipeline?.[0]).toEqual({ $match: { user: expect.any(Types.ObjectId) } });
+    expect(pipeline?.[1]).toEqual({ $sort: { takenAt: -1 } });
+    const facet = pipeline?.[2]?.$facet;
+    expect(facet?.meta).toEqual([{ $count: 'totalItems' }]);
+    expect(facet?.items).toEqual([
+      { $skip: 10 },
+      { $limit: 10 },
       {
-        $facet: {
-          items: [
-            { $skip: 10 },
-            { $limit: 10 },
-            {
-              $lookup: {
-                from: 'quizzes',
-                localField: 'quiz',
-                foreignField: '_id',
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 1,
-                      title: 1,
-                      slug: 1,
-                      description: 1,
-                    },
-                  },
-                ],
-                as: 'quizDoc',
-              },
-            },
-            {
-              $project: expect.objectContaining({
-                answers: { $literal: [] },
-                quiz: expect.objectContaining({
-                  $let: expect.objectContaining({
-                    in: expect.objectContaining({
-                      title: '$$quiz.title',
-                      slug: '$$quiz.slug',
-                      description: '$$quiz.description',
-                    }),
-                  }),
-                }),
-              }),
-            },
-          ],
-          meta: [{ $count: 'totalItems' }],
-        },
+        $project: expect.objectContaining({
+          answers: { $literal: [] },
+          quiz: expect.objectContaining({
+            title: '$quizSnapshot.title',
+            slug: '$quizSnapshot.slug',
+          }),
+        }),
       },
     ]);
     expect(attemptMocks.populate).not.toHaveBeenCalledWith('quiz', 'title slug description');
@@ -92,47 +66,23 @@ describe('AttemptRepository.findByUser', () => {
 
     await expect(repository.findByIdWithQuiz(attemptId, { userId })).resolves.toBeNull();
 
-    expect(attemptMocks.aggregate).toHaveBeenCalledWith([
-      {
-        $match: {
-          _id: expect.any(Object),
-          user: expect.any(Object),
-        },
+    const [pipeline] = attemptMocks.aggregate.mock.calls[0] ?? [];
+    expect(pipeline?.[0]).toEqual({
+      $match: {
+        _id: expect.any(Types.ObjectId),
+        user: expect.any(Types.ObjectId),
       },
-      { $limit: 1 },
-      {
-        $lookup: {
-          from: 'quizzes',
-          localField: 'quiz',
-          foreignField: '_id',
-          pipeline: [
-            {
-              $project: {
-                _id: 1,
-                title: 1,
-                slug: 1,
-                description: 1,
-                questions: 1,
-              },
-            },
-          ],
-          as: 'quizDoc',
-        },
-      },
-      {
-        $project: expect.objectContaining({
-          answers: 1,
-          quiz: expect.objectContaining({
-            $let: expect.objectContaining({
-              in: expect.objectContaining({
-                title: '$$quiz.title',
-                questions: '$$quiz.questions',
-              }),
-            }),
-          }),
+    });
+    expect(pipeline?.[1]).toEqual({ $limit: 1 });
+    expect(pipeline?.[2]?.$project).toEqual(
+      expect.objectContaining({
+        answers: 1,
+        quiz: expect.objectContaining({
+          title: '$quizSnapshot.title',
+          questions: '$quizSnapshot.questions',
         }),
-      },
-    ]);
+      }),
+    );
     expect(attemptMocks.populate).not.toHaveBeenCalledWith(
       'quiz',
       'title slug description questions',
@@ -176,24 +126,14 @@ describe('AttemptRepository.findByUser', () => {
         },
       },
       {
-        $lookup: {
-          from: 'quizzes',
-          localField: 'quiz',
-          foreignField: '_id',
-          pipeline: [{ $project: { _id: 0, title: 1 } }],
-          as: 'quizDoc',
-        },
-      },
-      {
         $set: {
           userDoc: { $first: '$userDoc' },
-          quizDoc: { $first: '$quizDoc' },
         },
       },
       {
         $project: expect.objectContaining({
           userEmail: '$userDoc.email',
-          quizTitle: '$quizDoc.title',
+          quizTitle: '$quizSnapshot.title',
           answeredQuestions: expect.objectContaining({
             $size: expect.objectContaining({
               $filter: expect.objectContaining({

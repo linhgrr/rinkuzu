@@ -40,6 +40,8 @@
     "migrate:attempt-identities:apply": "node scripts/migrate-attempt-identities.mjs --apply",
     "migrate:attempt-answer-contracts": "node scripts/normalize-attempt-answer-contracts.mjs",
     "migrate:attempt-answer-contracts:apply": "node scripts/normalize-attempt-answer-contracts.mjs --apply",
+    "migrate:attempt-quiz-snapshots": "node scripts/migrate-attempt-quiz-snapshots.mjs",
+    "migrate:attempt-quiz-snapshots:apply": "node scripts/migrate-attempt-quiz-snapshots.mjs --apply",
     "migrate:remove-user-progress-level": "node scripts/remove-user-progress-level.mjs",
     "migrate:remove-user-progress-level:apply": "node scripts/remove-user-progress-level.mjs --apply",
     "migrate:learning-progress-contracts": "node scripts/normalize-learning-progress-contracts.mjs",

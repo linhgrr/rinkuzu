@@ -5,7 +5,7 @@ import { z } from 'zod';
  *
  * Mirrors `QuizQuestion` in src/entities/Quiz.ts — keep them in sync.
  * Validation rules:
- *   - 2..20 options, each non-empty after trim
+ *   - 2..20 options; every option has text or a corresponding image
  *   - `single`: `correctIndex` is a valid index of `options`
  *   - `multiple`: `correctIndexes` non-empty, all valid + unique
  */
@@ -15,10 +15,7 @@ const trimmedString = z
   .transform((value) => value.trim())
   .refine((value) => value.length > 0, 'Cannot be blank');
 
-export const optionSchema = z
-  .string()
-  .transform((value) => value.trim())
-  .refine((value) => value.length > 0, 'Option cannot be empty');
+export const optionSchema = z.string().transform((value) => value.trim());
 
 const baseQuestion = z.object({
   question: trimmedString,
@@ -55,10 +52,34 @@ const multipleChoiceQuestionSchema = baseQuestion
     path: ['correctIndexes'],
   });
 
-const questionSchema = z.discriminatedUnion('type', [
-  singleChoiceQuestionSchema,
-  multipleChoiceQuestionSchema,
-]);
+const questionSchema = z
+  .discriminatedUnion('type', [singleChoiceQuestionSchema, multipleChoiceQuestionSchema])
+  .superRefine((question, context) => {
+    const optionImages = question.optionImages;
+    if (
+      optionImages &&
+      optionImages.length !== 0 &&
+      optionImages.length !== question.options.length
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Option images array length must match options array length',
+        path: ['optionImages'],
+      });
+      return;
+    }
+
+    question.options.forEach((option, index) => {
+      const image = optionImages?.[index];
+      if (option.length === 0 && !(typeof image === 'string' && image.trim().length > 0)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Option requires text or an image',
+          path: ['options', index],
+        });
+      }
+    });
+  });
 
 export const questionListSchema = z
   .array(questionSchema)

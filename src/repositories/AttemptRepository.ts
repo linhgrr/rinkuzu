@@ -76,6 +76,13 @@ export class AttemptRepository implements IAttemptRepository {
     const document = await AttemptModel.create({
       ...identity,
       quiz: data.quizId,
+      quizSnapshot: {
+        ...data.quizSnapshot,
+        questions: data.quizSnapshot.questions.map(({ id, ...question }) => ({
+          _id: id,
+          ...question,
+        })),
+      },
       answers: data.answers.map(AnswerPersistenceMapper.toPersistence),
       score: data.score,
       totalQuestions: data.totalQuestions,

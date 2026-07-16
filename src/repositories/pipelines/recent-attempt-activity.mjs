@@ -18,18 +18,8 @@ export function buildRecentAttemptActivityPipeline(limit) {
       },
     },
     {
-      $lookup: {
-        from: 'quizzes',
-        localField: 'quiz',
-        foreignField: '_id',
-        pipeline: [{ $project: { _id: 0, title: 1 } }],
-        as: 'quizDoc',
-      },
-    },
-    {
       $set: {
         userDoc: { $first: '$userDoc' },
-        quizDoc: { $first: '$quizDoc' },
       },
     },
     {
@@ -39,7 +29,7 @@ export function buildRecentAttemptActivityPipeline(limit) {
         score: 1,
         takenAt: 1,
         userEmail: '$userDoc.email',
-        quizTitle: '$quizDoc.title',
+        quizTitle: '$quizSnapshot.title',
         answeredQuestions: {
           $size: {
             $filter: {

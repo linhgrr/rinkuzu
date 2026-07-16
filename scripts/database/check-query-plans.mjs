@@ -123,6 +123,7 @@ try {
       ...marker,
       ...(index % 2 === 0 ? { user } : { guestEmail: `ci-plan-guest-${index}@example.com` }),
       quiz: dashboardPublicQuizIds[index],
+      quizSnapshot: buildAttemptSnapshot(index, 2),
       score: index % 101,
       totalQuestions: 2,
       answers: [
@@ -130,7 +131,6 @@ try {
         {
           kind: 'multiple',
           selectedIndexes: index % 3 === 0 ? [0] : [],
-          selectedIndex: null,
         },
       ],
       takenAt: new Date(now.getTime() - index * 1_000),
@@ -139,6 +139,7 @@ try {
       ...marker,
       user: historyUserId,
       quiz,
+      quizSnapshot: buildAttemptSnapshot(index, 1),
       score: index % 101,
       totalQuestions: 1,
       answers: [{ kind: 'single', selectedIndex: 0 }],
@@ -148,6 +149,7 @@ try {
       ...marker,
       user: new ObjectId(),
       quiz: dashboardPublicQuizIds[index % dashboardPublicQuizIds.length],
+      quizSnapshot: buildAttemptSnapshot(index % dashboardPublicQuizIds.length, 1),
       score: index % 101,
       totalQuestions: 1,
       answers: [{ kind: 'single', selectedIndex: 0 }],
@@ -460,9 +462,7 @@ try {
       (stage) => stage.$cursor,
     )?.$cursor;
     const attemptHistoryStats = attemptHistoryCursor?.executionStats;
-    const attemptHistoryLookup = findOperatorStages(attemptHistoryExplain.stages, '$lookup').find(
-      (lookup) => typeof lookup.totalDocsExamined === 'number',
-    );
+    const attemptHistoryLookups = findOperatorStages(attemptHistoryExplain.stages, '$lookup');
     if (!attemptHistoryStats) {
       throw new Error('user-attempt-history did not return executionStats');
     }
@@ -475,8 +475,11 @@ try {
       keysExamined: attemptHistoryStats.totalKeysExamined,
       documentsExamined: attemptHistoryStats.totalDocsExamined,
       returnedRows: attemptHistoryStats.nReturned,
-      lookupDocumentsExamined: attemptHistoryLookup?.totalDocsExamined ?? null,
-      lookupIndexesUsed: attemptHistoryLookup?.indexesUsed ?? [],
+      lookupDocumentsExamined: attemptHistoryLookups.reduce(
+        (total, lookup) => total + (lookup.totalDocsExamined ?? 0),
+        0,
+      ),
+      lookupIndexesUsed: attemptHistoryLookups.flatMap((lookup) => lookup.indexesUsed ?? []),
       projection: attemptHistoryPipeline.at(-1)?.$facet?.items?.at(-1)?.$project,
     };
     if (!attemptHistoryStages.has('IXSCAN') || attemptHistoryStages.has('SORT')) {
@@ -493,12 +496,9 @@ try {
         `user-attempt-history examined ${attemptHistoryRow.keysExamined} keys/${attemptHistoryRow.documentsExamined} documents and returned ${attemptHistoryRow.returnedRows} rows to the facet; expected at most 400/400`,
       );
     }
-    if (
-      attemptHistoryRow.lookupDocumentsExamined !== 4 ||
-      !attemptHistoryRow.lookupIndexesUsed.includes('_id_')
-    ) {
+    if (attemptHistoryLookups.length !== 0) {
       throw new Error(
-        `user-attempt-history quiz lookup examined ${String(attemptHistoryRow.lookupDocumentsExamined)} documents without the quizzes _id_ index`,
+        `user-attempt-history performed ${attemptHistoryLookups.length} unexpected lookups`,
       );
     }
     if (
@@ -614,7 +614,7 @@ try {
         `admin-recent-attempts examined ${recentAttemptRow.keysExamined} keys/${recentAttemptRow.documentsExamined} documents and returned ${recentAttemptRow.returnedRows} rows; expected at most 5/5 for 5 rows`,
       );
     }
-    const expectedLookupDocuments = [3, 5];
+    const expectedLookupDocuments = [3];
     for (const [index, lookup] of recentAttemptLookups.entries()) {
       if (
         lookup.totalDocsExamined !== expectedLookupDocuments[index] ||
@@ -625,9 +625,9 @@ try {
         );
       }
     }
-    if (recentAttemptLookups.length !== 2) {
+    if (recentAttemptLookups.length !== 1) {
       throw new Error(
-        `admin-recent-attempts used ${recentAttemptLookups.length} lookups; expected users and quizzes`,
+        `admin-recent-attempts used ${recentAttemptLookups.length} lookups; expected users only`,
       );
     }
     if (
@@ -646,6 +646,21 @@ try {
   });
 } finally {
   await client.close();
+}
+
+function buildAttemptSnapshot(index, questionCount) {
+  return {
+    integrity: 'complete',
+    title: `Public quiz ${index}`,
+    slug: `ci-dashboard-public-${index}`,
+    questions: Array.from({ length: questionCount }, (_, questionIndex) => ({
+      _id: new ObjectId(),
+      question: `Question ${questionIndex}`,
+      options: ['A', 'B'],
+      type: questionIndex === 0 ? 'single' : 'multiple',
+      ...(questionIndex === 0 ? { correctIndex: 0 } : { correctIndexes: [0] }),
+    })),
+  };
 }
 
 function buildDashboardRecentQuizPipeline(match, limit) {

@@ -19,6 +19,13 @@ Implement one narrowly scoped production refactor in the assigned repository.
 - Prefer existing project utilities and typed manual mappers over new
   dependencies.
 - Never treat a skipped, unavailable, or partially run check as passing.
+- The repository toolchain is authoritative. Before running any Node command,
+  verify `.nvmrc`, `packageManager`, `node --version`, and `npm --version`.
+  When the active shell does not match, run npm scripts through
+  `npx --yes -p node@22.23.1 -p npm@10.9.8 npm ...` and local binaries through
+  `npx --yes -p node@22.23.1 -p npm@10.9.8 npm exec -- ...`. Never run a
+  production gate with an unpinned Node/npm and never retry it unchanged after
+  a toolchain mismatch.
 
 ## Required workflow
 

@@ -6,6 +6,7 @@ import type {
   PasswordChangeResultDto,
   UpdateAccountProfileDto,
 } from '@/dtos/account';
+import type { AccountProfile } from '@/entities/Account';
 import type { IAccountRepository } from '@/interfaces/repositories/IAccountRepository';
 import type { IAccountService } from '@/interfaces/services/IAccountService';
 import {
@@ -24,31 +25,39 @@ export class AccountService implements IAccountService {
     private readonly imageStorage: IImageStorage,
   ) {}
 
-  async getProfile(email: string): Promise<ServiceResult<AccountProfileDto>> {
+  private async executeProfileOperation(
+    email: string,
+    operation: () => Promise<AccountProfile | null>,
+    logMessage: string,
+  ): Promise<ServiceResult<AccountProfileDto>> {
     try {
-      const profile = await this.accountRepository.findProfileByEmail(email);
+      const profile = await operation();
       return profile
         ? { success: true, data: AccountDtoMapper.toProfile(profile) }
         : { success: false, error: 'User not found', statusCode: 404 };
     } catch (error) {
-      logger.error({ error, email }, 'Get profile error');
+      logger.error({ error, email }, logMessage);
       return { success: false, error: 'Internal server error', statusCode: 500 };
     }
+  }
+
+  async getProfile(email: string): Promise<ServiceResult<AccountProfileDto>> {
+    return this.executeProfileOperation(
+      email,
+      () => this.accountRepository.findProfileByEmail(email),
+      'Get profile error',
+    );
   }
 
   async updateProfile(
     email: string,
     update: UpdateAccountProfileDto,
   ): Promise<ServiceResult<AccountProfileDto>> {
-    try {
-      const profile = await this.accountRepository.updateProfileByEmail(email, update);
-      return profile
-        ? { success: true, data: AccountDtoMapper.toProfile(profile) }
-        : { success: false, error: 'User not found', statusCode: 404 };
-    } catch (error) {
-      logger.error({ error, email }, 'Update profile error');
-      return { success: false, error: 'Internal server error', statusCode: 500 };
-    }
+    return this.executeProfileOperation(
+      email,
+      () => this.accountRepository.updateProfileByEmail(email, update),
+      'Update profile error',
+    );
   }
 
   async changePassword(

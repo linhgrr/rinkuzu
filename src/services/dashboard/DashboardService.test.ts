@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IDashboardRepository } from '@/interfaces/repositories/IDashboardRepository';
-import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
 import { fetchApiData } from '@/lib/api/client';
 import { DashboardService } from '@/services/dashboard/DashboardService';
 
@@ -33,34 +33,9 @@ function createRepository(): IDashboardRepository {
   };
 }
 
-function createQuizRepository(): IQuizRepository {
+function createQuizRepository(): IDashboardQuizRepository {
   return {
-    findById: vi.fn(),
-    findAccessById: vi.fn(),
-    findBySlug: vi.fn(),
-    findSummaryBySlug: vi.fn(),
-    findIdBySlug: vi.fn(),
-    findBySourceDraftId: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    findAll: vi.fn().mockResolvedValue({
-      items: [],
-      pagination: {
-        currentPage: 1,
-        totalPages: 0,
-        totalItems: 0,
-        itemsPerPage: 4,
-        hasNextPage: false,
-        hasPrevPage: false,
-      },
-    }),
-    findForPlay: vi.fn(),
-    findUserQuizzes: vi.fn(),
-    findPublicByAuthor: vi.fn(),
-    count: vi.fn(),
-    countByCreatedAtBuckets: vi.fn(),
-    findTopCreators: vi.fn(),
+    findRecent: vi.fn().mockResolvedValue([]),
   };
 }
 
@@ -86,15 +61,15 @@ describe('DashboardService', () => {
     ]);
     expect(result.recentOwnedQuizzes).toEqual([]);
     expect(result.recentPublicQuizzes).toEqual([]);
-    expect(quizRepository.findAll).toHaveBeenNthCalledWith(
+    expect(quizRepository.findRecent).toHaveBeenNthCalledWith(
       1,
       { author: 'user-1' },
-      expect.objectContaining({ page: 1, limit: 4, compact: true }),
+      expect.objectContaining({ limit: 4, populate: ['author'] }),
     );
-    expect(quizRepository.findAll).toHaveBeenNthCalledWith(
+    expect(quizRepository.findRecent).toHaveBeenNthCalledWith(
       2,
       { isPrivate: false, excludeAuthor: 'user-1' },
-      expect.objectContaining({ page: 1, limit: 4, compact: true }),
+      expect.objectContaining({ limit: 4, populate: ['author'] }),
     );
   });
 });

@@ -9,7 +9,8 @@ import type {
   IDashboardRepository,
   DashboardUserProgressRecord,
 } from '@/interfaces/repositories/IDashboardRepository';
-import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
+import type { QuizFindFilter } from '@/interfaces/repositories/IQuizRepository';
 import type { IDashboardService } from '@/interfaces/services/IDashboardService';
 import {
   buildAdaptiveServiceHeaders,
@@ -29,6 +30,11 @@ const HOME_ADAPTIVE_SUBJECT_TIMEOUT_MS = 1_500;
 const HOME_IN_PROGRESS_QUIZ_LIMIT = 6;
 const HOME_QUIZ_SECTION_LIMIT = 4;
 
+interface DashboardRecentQuizQuery {
+  filter: QuizFindFilter;
+  warningMessage: string;
+}
+
 const EMPTY_DASHBOARD_USER_PROGRESS: DashboardUserProgressRecord = {
   currentStreak: 0,
   longestStreak: 0,
@@ -43,7 +49,7 @@ const EMPTY_DASHBOARD_USER_PROGRESS: DashboardUserProgressRecord = {
 export class DashboardService implements IDashboardService {
   constructor(
     private readonly repository: IDashboardRepository,
-    private readonly quizRepository: IQuizRepository,
+    private readonly quizRepository: IDashboardQuizRepository,
   ) {}
 
   async getStats(userId: string): Promise<DashboardStatsDto> {
@@ -86,39 +92,19 @@ export class DashboardService implements IDashboardService {
     }
   }
 
-  private async getRecentOwnedQuizzes(userId: string): Promise<QuizListItemDto[]> {
+  private async getRecentQuizzes({
+    filter,
+    warningMessage,
+  }: DashboardRecentQuizQuery): Promise<QuizListItemDto[]> {
     try {
-      const result = await this.quizRepository.findAll(
-        { author: userId },
-        {
-          page: 1,
-          limit: HOME_QUIZ_SECTION_LIMIT,
-          sort: { createdAt: -1 },
-          compact: true,
-        },
-      );
-      return result.items.map(QuizListDtoMapper.toListItem);
+      const quizzes = await this.quizRepository.findRecent(filter, {
+        limit: HOME_QUIZ_SECTION_LIMIT,
+        sort: { createdAt: -1 },
+        populate: ['author'],
+      });
+      return quizzes.map(QuizListDtoMapper.toListItem);
     } catch (error) {
-      logger.warn({ error }, 'Failed fetching recent owned quizzes for home dashboard');
-      return [];
-    }
-  }
-
-  private async getRecentPublicQuizzes(userId: string): Promise<QuizListItemDto[]> {
-    try {
-      const result = await this.quizRepository.findAll(
-        { isPrivate: false, excludeAuthor: userId },
-        {
-          page: 1,
-          limit: HOME_QUIZ_SECTION_LIMIT,
-          sort: { createdAt: -1 },
-          populate: ['author'],
-          compact: true,
-        },
-      );
-      return result.items.map(QuizListDtoMapper.toListItem);
-    } catch (error) {
-      logger.warn({ error }, 'Failed fetching recent public quizzes for home dashboard');
+      logger.warn({ error }, warningMessage);
       return [];
     }
   }
@@ -129,8 +115,14 @@ export class DashboardService implements IDashboardService {
         this.getStats(userId),
         this.getAdaptiveSubjects(userId),
         this.getInProgressQuizzes(userId),
-        this.getRecentOwnedQuizzes(userId),
-        this.getRecentPublicQuizzes(userId),
+        this.getRecentQuizzes({
+          filter: { author: userId },
+          warningMessage: 'Failed fetching recent owned quizzes for home dashboard',
+        }),
+        this.getRecentQuizzes({
+          filter: { isPrivate: false, excludeAuthor: userId },
+          warningMessage: 'Failed fetching recent public quizzes for home dashboard',
+        }),
       ]);
 
     return {

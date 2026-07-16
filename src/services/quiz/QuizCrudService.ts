@@ -23,18 +23,14 @@ import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/li
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
+import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
 function toQuizQuestionContent(
   question: CreateQuizRequestDto['questions'][number],
 ): QuizQuestionContent {
-  const base = {
-    question: question.question,
-    options: question.options,
-    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
-    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
-  };
+  const base = copyQuizQuestionContentFields(question);
 
   return question.type === 'single'
     ? { ...base, type: 'single', correctIndex: question.correctIndex }

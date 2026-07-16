@@ -8,6 +8,7 @@ import type {
   AttemptScoreStats,
   CreateAttemptData,
   IAttemptRepository,
+  RecentAttemptActivity,
 } from '@/interfaces/repositories/IAttemptRepository';
 import type {
   CountBuckets,
@@ -17,13 +18,18 @@ import type {
 } from '@/interfaces/repositories/types';
 import { AttemptPersistenceMapper } from '@/repositories/mappers/AttemptPersistenceMapper';
 import { AnswerPersistenceMapper } from '@/repositories/mappers/AnswerPersistenceMapper';
-import type { AttemptPersistenceRecord } from '@/repositories/types/AttemptPersistence';
+import type {
+  AttemptPersistenceRecord,
+  RecentAttemptActivityPersistenceRecord,
+} from '@/repositories/types/AttemptPersistence';
 import {
   buildCountBucketsPipeline,
   resolveCountBuckets,
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
 import { Types } from 'mongoose';
+import { serializeId } from '@/lib/mongo-id';
+import { buildRecentAttemptActivityPipeline } from '@/repositories/pipelines/recent-attempt-activity.mjs';
 
 type AttemptListFacetMeta = {
   totalItems: number;
@@ -125,15 +131,20 @@ export class AttemptRepository implements IAttemptRepository {
     return AttemptModel.countDocuments({ quiz: quizId });
   }
 
-  async findRecentActivity(limit: number): Promise<Attempt[]> {
+  async findRecentActivity(limit: number): Promise<RecentAttemptActivity[]> {
     await connectDB();
-    const records = await AttemptModel.find()
-      .populate('user', 'email')
-      .populate('quiz', 'title slug')
-      .sort({ takenAt: -1 })
-      .limit(limit)
-      .lean<AttemptPersistenceRecord[]>();
-    return records.map(AttemptPersistenceMapper.toEntity);
+    const records = await AttemptModel.aggregate<RecentAttemptActivityPersistenceRecord>(
+      buildRecentAttemptActivityPipeline(limit),
+    );
+    return records.map((record) => ({
+      id: serializeId(record._id, 'recentAttempt._id'),
+      ...(record.userEmail === undefined ? {} : { userEmail: record.userEmail }),
+      ...(record.guestEmail === undefined ? {} : { guestEmail: record.guestEmail }),
+      ...(record.quizTitle === undefined ? {} : { quizTitle: record.quizTitle }),
+      score: record.score,
+      answeredQuestions: record.answeredQuestions,
+      takenAt: record.takenAt,
+    }));
   }
 
   async findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null> {

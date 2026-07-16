@@ -117,4 +117,76 @@ describe('AttemptRepository.findByUser', () => {
       'title slug description questions',
     );
   });
+
+  it('loads recent activity and its previews in one bounded aggregation', async () => {
+    const repository = new AttemptRepository();
+    attemptMocks.aggregate.mockResolvedValueOnce([
+      {
+        _id: 'attempt-1',
+        userEmail: 'learner@example.com',
+        quizTitle: 'Algebra',
+        score: 80,
+        answeredQuestions: 2,
+        takenAt: new Date('2026-06-28T00:00:00.000Z'),
+      },
+    ]);
+
+    await expect(repository.findRecentActivity(5)).resolves.toEqual([
+      {
+        id: 'attempt-1',
+        userEmail: 'learner@example.com',
+        quizTitle: 'Algebra',
+        score: 80,
+        answeredQuestions: 2,
+        takenAt: new Date('2026-06-28T00:00:00.000Z'),
+      },
+    ]);
+
+    expect(attemptMocks.aggregate).toHaveBeenCalledWith([
+      { $sort: { takenAt: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          pipeline: [{ $project: { _id: 0, email: 1 } }],
+          as: 'userDoc',
+        },
+      },
+      {
+        $lookup: {
+          from: 'quizzes',
+          localField: 'quiz',
+          foreignField: '_id',
+          pipeline: [{ $project: { _id: 0, title: 1 } }],
+          as: 'quizDoc',
+        },
+      },
+      {
+        $set: {
+          userDoc: { $first: '$userDoc' },
+          quizDoc: { $first: '$quizDoc' },
+        },
+      },
+      {
+        $project: expect.objectContaining({
+          userEmail: '$userDoc.email',
+          quizTitle: '$quizDoc.title',
+          answeredQuestions: expect.objectContaining({
+            $size: expect.objectContaining({
+              $filter: expect.objectContaining({
+                input: '$answers',
+              }),
+            }),
+          }),
+        }),
+      },
+    ]);
+
+    const pipeline = attemptMocks.aggregate.mock.calls[0]?.[0];
+    const projection = pipeline?.at(-1)?.$project;
+    expect(projection).not.toHaveProperty('answers');
+    expect(projection).not.toHaveProperty('totalQuestions');
+  });
 });

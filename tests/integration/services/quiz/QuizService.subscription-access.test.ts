@@ -68,9 +68,7 @@ function createQuizService(quiz: Quiz) {
     scoreStats: vi.fn().mockResolvedValue({ averageScore: 0, highestScore: 0, lowestScore: 0 }),
   };
   const discussionRepository: Mocked<IDiscussionRepository> = {
-    findById: vi.fn(),
     findByQuiz: vi.fn().mockResolvedValue([]),
-    ensureForQuizQuestions: vi.fn(),
     addCommentForQuizQuestion: vi.fn(),
   };
   const reportRepository: Mocked<IReportRepository> = {
@@ -158,7 +156,7 @@ describe('QuizService subscription access gates', () => {
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     };
-    discussionRepository.ensureForQuizQuestions.mockResolvedValue([createdDiscussion]);
+    discussionRepository.findByQuiz.mockResolvedValue([createdDiscussion]);
 
     const result = await service.getQuizDiscussions('private-quiz', {
       user: { id: 'user-1', role: 'user' },
@@ -166,7 +164,7 @@ describe('QuizService subscription access gates', () => {
     });
 
     assertOk(result);
-    expect(discussionRepository.ensureForQuizQuestions).toHaveBeenCalledWith('quiz-1', 1);
+    expect(discussionRepository.findByQuiz).toHaveBeenCalledWith('quiz-1');
     expect(discussionRepository.addCommentForQuizQuestion).not.toHaveBeenCalled();
   });
 });

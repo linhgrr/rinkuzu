@@ -78,9 +78,7 @@ function createService() {
     countByCreatedAtBuckets: vi.fn(),
   };
   const discussionRepository: Mocked<IDiscussionRepository> = {
-    findById: vi.fn(),
-    findByQuiz: vi.fn(),
-    ensureForQuizQuestions: vi.fn().mockResolvedValue([discussion()]),
+    findByQuiz: vi.fn().mockResolvedValue([discussion()]),
     addCommentForQuizQuestion: vi.fn().mockResolvedValue(discussion()),
   };
   const reportRepository: Mocked<IReportRepository> = {
@@ -129,7 +127,7 @@ describe('QuizDiscussionService', () => {
     expect(result.success).toBe(true);
     expect(quizRepository.findSummaryBySlug).toHaveBeenCalledWith('algorithms');
     expect(quizRepository.findBySlug).not.toHaveBeenCalled();
-    expect(discussionRepository.ensureForQuizQuestions).toHaveBeenCalledWith(quizId, 3);
+    expect(discussionRepository.findByQuiz).toHaveBeenCalledWith(quizId);
   });
 
   it('uses quiz questionCount to validate comment question index', async () => {

@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
-import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { apiErr } from '@/lib/api/response';
 import { IMAGE_UPLOAD_MAX_FILE_SIZE } from '@/dtos/image';
 import { getImageService } from '@/lib/image-factory';
+import { imageUploadResponse } from '@/lib/api/image-response';
 
 const imageService = getImageService();
 
@@ -28,12 +29,5 @@ export const POST = withAuth(async (request: NextRequest) => {
     contentType: file.type,
     filename: typeof name === 'string' && name ? name : file.name,
   });
-  if (
-    !result.success &&
-    result.statusCode === 500 &&
-    result.error === 'Image upload not configured'
-  ) {
-    return apiErr('configuration_error', result.error, 500);
-  }
-  return result.success ? apiOk(result.data) : apiServiceErr(result);
+  return imageUploadResponse(result);
 });

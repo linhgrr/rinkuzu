@@ -11,6 +11,15 @@ import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types'
 import { BookmarkPersistenceMapper } from '@/repositories/mappers/BookmarkPersistenceMapper';
 import type { BookmarkPersistenceRecord } from '@/repositories/types/BookmarkPersistence';
 
+interface BookmarkListAggregateMeta {
+  totalItems: number;
+}
+
+interface BookmarkListAggregateResult {
+  items: BookmarkPersistenceRecord[];
+  meta: BookmarkListAggregateMeta[];
+}
+
 export class BookmarkRepository implements IBookmarkRepository {
   async findByUserId(
     userId: string,
@@ -22,14 +31,18 @@ export class BookmarkRepository implements IBookmarkRepository {
     const skip = (page - 1) * limit;
     const filter = options.quizSlug ? { userId, 'quiz.slug': options.quizSlug } : { userId };
 
-    const [records, totalItems] = await Promise.all([
-      Bookmark.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean<BookmarkPersistenceRecord[]>(),
-      Bookmark.countDocuments(filter),
+    const [result] = await Bookmark.aggregate<BookmarkListAggregateResult>([
+      { $match: filter },
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          items: [{ $skip: skip }, { $limit: limit }],
+          meta: [{ $count: 'totalItems' }],
+        },
+      },
     ]);
+    const records = result?.items ?? [];
+    const totalItems = result?.meta[0]?.totalItems ?? 0;
 
     return {
       items: records.map(BookmarkPersistenceMapper.toEntity),

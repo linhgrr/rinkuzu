@@ -4,14 +4,13 @@ import type {
   DiscussionCommentPersistenceRecord,
   DiscussionPersistenceRecord,
 } from '@/repositories/types/DiscussionPersistence';
+import { mapOptionalUserProfileFields } from '@/repositories/mappers/mapOptionalUserProfileFields';
 
 function mapAuthor(author: DiscussionCommentPersistenceRecord['author']): DiscussionAuthor {
   return {
     id: serializeId(author._id, 'discussion.comment.author._id'),
     email: author.email,
-    ...(author.name === undefined ? {} : { name: author.name }),
-    ...(author.displayName === undefined ? {} : { displayName: author.displayName }),
-    ...(author.avatar === undefined ? {} : { avatar: author.avatar }),
+    ...mapOptionalUserProfileFields(author),
   };
 }
 

@@ -330,6 +330,39 @@ try {
     }
     evidence.push(recentUsersRow);
 
+    const [allQuizCountExplain, allQuizCountRows] = await Promise.all([
+      quizzes.aggregate([{ $count: 'totalItems' }], { hint: '_id_' }).explain('executionStats'),
+      quizzes.aggregate([{ $count: 'totalItems' }], { hint: '_id_' }).toArray(),
+    ]);
+    const allQuizCountStats =
+      allQuizCountExplain.executionStats ??
+      allQuizCountExplain.stages?.find((stage) => stage.$cursor)?.$cursor?.executionStats;
+    if (!allQuizCountStats) {
+      throw new Error('all-quiz-count did not return executionStats');
+    }
+    const allQuizCountStages = collectStageNames(allQuizCountStats.executionStages);
+    const allQuizCountIndexes = collectIndexNames(allQuizCountStats.executionStages);
+    const allQuizCountRow = {
+      name: 'all-quiz-count',
+      stages: [...allQuizCountStages].sort(),
+      indexes: [...allQuizCountIndexes].sort(),
+      keysExamined: allQuizCountStats.totalKeysExamined,
+      documentsExamined: allQuizCountStats.totalDocsExamined,
+      returnedRows: allQuizCountStats.nReturned,
+    };
+    if (
+      !allQuizCountIndexes.has('_id_') ||
+      allQuizCountRow.keysExamined !== 800 ||
+      allQuizCountRow.documentsExamined !== 0 ||
+      allQuizCountRow.returnedRows !== 1 ||
+      allQuizCountRows[0]?.totalItems !== 800
+    ) {
+      throw new Error(
+        `all-quiz-count did not use the _id_ index for an exact covered count; stages=${allQuizCountRow.stages.join(',')}; indexes=${allQuizCountRow.indexes.join(',')}; keys=${allQuizCountRow.keysExamined}; documents=${allQuizCountRow.documentsExamined}; total=${String(allQuizCountRows[0]?.totalItems)}`,
+      );
+    }
+    evidence.push(allQuizCountRow);
+
     const publicQuizFilter = { isPrivate: false };
     const publicQuizListPipeline = buildCompactQuizPipeline(publicQuizFilter, {
       limit: 4,

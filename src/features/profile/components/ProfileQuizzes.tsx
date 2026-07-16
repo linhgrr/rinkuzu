@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { QuizUploadDropzone } from '@/features/dashboard/components/QuizUploadDropzone';
 import { FoldersView } from '@/features/folders/components/FoldersView';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
@@ -118,6 +119,11 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
     quizzes: visibleQuizzes,
     locale,
   });
+  const filterOptions = [
+    { value: 'all', label: t('filter_all') },
+    { value: 'in_progress', label: t('filter_in_progress') },
+    { value: 'complete', label: t('filter_complete') },
+  ] as const;
 
   async function deleteQuiz(quizId: string) {
     dispatch({ type: 'delete:start', quizId });
@@ -172,28 +178,12 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
 
               <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-lg font-semibold text-ink">{t('myQuizzes')}</h2>
-                <div className="inline-flex w-fit rounded-[10px] bg-[#d9d5d040] p-1">
-                  {(['all', 'in_progress', 'complete'] as const).map((filter) => (
-                    <button
-                      key={filter}
-                      type="button"
-                      onClick={() => dispatch({ type: 'filter:set', filter })}
-                      className={`rounded-md px-3.5 py-1 text-sm transition-colors ${
-                        state.filter === filter
-                          ? 'bg-white font-semibold text-[#2a0b00] shadow-[1px_1px_2px_rgba(0,0,0,0.03)]'
-                          : 'text-ink'
-                      }`}
-                    >
-                      {
-                        {
-                          all: t('filter_all'),
-                          in_progress: t('filter_in_progress'),
-                          complete: t('filter_complete'),
-                        }[filter]
-                      }
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  ariaLabel={t('myQuizzes')}
+                  value={state.filter}
+                  options={filterOptions}
+                  onChange={(filter) => dispatch({ type: 'filter:set', filter })}
+                />
               </div>
 
               {state.error ? (

@@ -9,6 +9,7 @@ import { HiOutlineSearch } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import Pagination from '@/components/ui/Pagination';
 import { SectionHeading } from '@/components/ui/SectionHeading';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { LibraryCardSkeleton, SubjectCard } from '@/components/adaptive/sections/Library';
 import { fetchQuizListViewModel } from '@/features/quiz/api/quiz-list-api';
@@ -25,12 +26,14 @@ import { ExploreSearchInput } from '@/features/explore/components/ExploreSearchI
 import {
   buildQuizSearchKey,
   filterAdaptiveSubjects,
+  parseQuizVisibility,
   parseSearchPage,
   parseSearchType,
+  type QuizVisibilityFilter,
   type SearchType,
 } from '@/features/explore/lib/search';
 
-const SEARCH_TYPES: SearchType[] = ['all', 'mine', 'adaptive', 'public'];
+const SEARCH_TYPES: SearchType[] = ['all', 'mine', 'adaptive', 'quizzes'];
 const ALL_SECTION_LIMIT = 4;
 const PAGE_SIZE = 12;
 const EMPTY_QUIZZES: QuizListItemViewModel[] = [];
@@ -131,17 +134,24 @@ function ExploreContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q')?.trim() ?? '';
   const activeType = parseSearchType(searchParams.get('type'));
+  const activeVisibility = parseQuizVisibility(searchParams.get('visibility'));
   const page = parseSearchPage(searchParams.get('page'));
   const { loadingJobId, startSubject } = useStartAdaptiveSubject({
     t: tAdaptiveDashboard,
     tAdaptive,
   });
 
-  const updateUrl = (next: { q?: string; type?: SearchType; page?: number }) => {
+  const updateUrl = (next: {
+    q?: string;
+    type?: SearchType;
+    page?: number;
+    visibility?: QuizVisibilityFilter;
+  }) => {
     const params = new URLSearchParams(searchParams.toString());
     const nextQuery = next.q ?? query;
     const nextType = next.type ?? activeType;
     const nextPage = next.page ?? page;
+    const nextVisibility = next.visibility ?? activeVisibility;
 
     if (nextQuery.trim()) params.set('q', nextQuery.trim());
     else params.delete('q');
@@ -149,6 +159,11 @@ function ExploreContent() {
     else params.set('type', nextType);
     if (nextPage > 1) params.set('page', String(nextPage));
     else params.delete('page');
+    if (nextType === 'quizzes' && nextVisibility !== 'all') {
+      params.set('visibility', nextVisibility);
+    } else {
+      params.delete('visibility');
+    }
 
     const queryString = params.toString();
     replace(queryString ? `?${queryString}` : '?', { scroll: false });
@@ -157,14 +172,20 @@ function ExploreContent() {
   const quizLimit = activeType === 'all' ? ALL_SECTION_LIMIT : PAGE_SIZE;
   const quizPage = activeType === 'all' ? 1 : page;
   const needsOwned = activeType === 'all' || activeType === 'mine';
-  const needsPublic = activeType === 'all' || activeType === 'public';
+  const needsCommunity = activeType === 'all' || activeType === 'quizzes';
   const needsAdaptive = activeType === 'all' || activeType === 'adaptive';
 
   const ownedKey = needsOwned
     ? buildQuizSearchKey({ query, page: quizPage, mine: true, limit: quizLimit })
     : null;
-  const publicKey = needsPublic
-    ? buildQuizSearchKey({ query, page: quizPage, mine: false, limit: quizLimit })
+  const communityKey = needsCommunity
+    ? buildQuizSearchKey({
+        query,
+        page: quizPage,
+        mine: false,
+        limit: quizLimit,
+        visibility: activeType === 'quizzes' ? activeVisibility : 'all',
+      })
     : null;
 
   const {
@@ -174,11 +195,13 @@ function ExploreContent() {
     mutate: retryOwned,
   } = useSWR<QuizListViewModel>(ownedKey, fetchQuizListViewModel, { keepPreviousData: true });
   const {
-    data: publicData,
-    error: publicError,
-    isLoading: publicLoading,
-    mutate: retryPublic,
-  } = useSWR<QuizListViewModel>(publicKey, fetchQuizListViewModel, { keepPreviousData: true });
+    data: communityData,
+    error: communityError,
+    isLoading: communityLoading,
+    mutate: retryCommunity,
+  } = useSWR<QuizListViewModel>(communityKey, fetchQuizListViewModel, {
+    keepPreviousData: true,
+  });
   const {
     data: subjectData,
     error: adaptiveError,
@@ -190,11 +213,11 @@ function ExploreContent() {
 
   const ownedQuizzes = ownedData?.quizzes ?? EMPTY_QUIZZES;
   const ownedIds = new Set(ownedQuizzes.map((quiz) => quiz.id));
-  const rawPublicQuizzes = publicData?.quizzes ?? EMPTY_QUIZZES;
-  const publicQuizzes =
+  const rawCommunityQuizzes = communityData?.quizzes ?? EMPTY_QUIZZES;
+  const communityQuizzes =
     activeType === 'all'
-      ? rawPublicQuizzes.filter((quiz) => !ownedIds.has(quiz.id))
-      : rawPublicQuizzes;
+      ? rawCommunityQuizzes.filter((quiz) => !ownedIds.has(quiz.id))
+      : rawCommunityQuizzes;
 
   const subjects = (subjectData ?? []).map((subject) =>
     toDashboardSubject(subject, locale, tAdaptiveDashboard),
@@ -210,8 +233,8 @@ function ExploreContent() {
   const activePagination =
     activeType === 'mine'
       ? ownedData?.pagination
-      : activeType === 'public'
-        ? publicData?.pagination
+      : activeType === 'quizzes'
+        ? communityData?.pagination
         : activeType === 'adaptive'
           ? {
               currentPage: page,
@@ -223,6 +246,11 @@ function ExploreContent() {
     type,
     label: t(`tabs.${type}`),
   }));
+  const visibilityOptions = [
+    { value: 'all', label: t('visibility.all') },
+    { value: 'public', label: t('visibility.public') },
+    { value: 'private', label: t('visibility.private') },
+  ] as const;
 
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 pb-24 pt-6 sm:px-6 lg:px-8">
@@ -241,7 +269,7 @@ function ExploreContent() {
             <button
               key={tab.type}
               type="button"
-              onClick={() => updateUrl({ type: tab.type, page: 1 })}
+              onClick={() => updateUrl({ type: tab.type, page: 1, visibility: 'all' })}
               className={`min-h-10 shrink-0 rounded-full px-4 font-home text-sm font-semibold transition-colors ${
                 activeType === tab.type
                   ? 'bg-accent text-accent-text'
@@ -299,28 +327,38 @@ function ExploreContent() {
 
               <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
                 <SectionHeading
-                  title={t('sections.public.title')}
-                  subtitle={t('sections.public.subtitle')}
-                  href={query ? `?q=${encodeURIComponent(query)}&type=public` : '?type=public'}
+                  title={t('sections.quizzes.title')}
+                  subtitle={t('sections.quizzes.subtitle')}
+                  href={query ? `?q=${encodeURIComponent(query)}&type=quizzes` : '?type=quizzes'}
                   viewAllLabel={t('viewAll')}
                 />
-                {publicLoading ? (
+                {communityLoading ? (
                   <QuizGridSkeleton />
-                ) : publicError ? (
-                  <SectionError onRetry={() => void retryPublic()} />
-                ) : publicQuizzes.length > 0 ? (
-                  <QuizResults quizzes={publicQuizzes} />
+                ) : communityError ? (
+                  <SectionError onRetry={() => void retryCommunity()} />
+                ) : communityQuizzes.length > 0 ? (
+                  <QuizResults quizzes={communityQuizzes} />
                 ) : (
-                  <p className="font-home text-sm text-ink-muted">{t('sections.public.empty')}</p>
+                  <p className="font-home text-sm text-ink-muted">{t('sections.quizzes.empty')}</p>
                 )}
               </SurfaceCard>
             </>
           ) : (
             <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
-              <SectionHeading
-                title={t(`sections.${activeType}.title`)}
-                subtitle={t(`sections.${activeType}.subtitle`)}
-              />
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <SectionHeading
+                  title={t(`sections.${activeType}.title`)}
+                  subtitle={t(`sections.${activeType}.subtitle`)}
+                />
+                {activeType === 'quizzes' ? (
+                  <SegmentedControl
+                    ariaLabel={t('visibility.label')}
+                    value={activeVisibility}
+                    options={visibilityOptions}
+                    onChange={(visibility) => updateUrl({ visibility, page: 1 })}
+                  />
+                ) : null}
+              </div>
               {activeType === 'mine' ? (
                 ownedLoading ? (
                   <QuizGridSkeleton count={6} />
@@ -331,13 +369,13 @@ function ExploreContent() {
                 ) : (
                   <EmptyState hasQuery={Boolean(query)} />
                 )
-              ) : activeType === 'public' ? (
-                publicLoading ? (
+              ) : activeType === 'quizzes' ? (
+                communityLoading ? (
                   <QuizGridSkeleton count={6} />
-                ) : publicError ? (
-                  <SectionError onRetry={() => void retryPublic()} />
-                ) : publicQuizzes.length > 0 ? (
-                  <QuizResults quizzes={publicQuizzes} />
+                ) : communityError ? (
+                  <SectionError onRetry={() => void retryCommunity()} />
+                ) : communityQuizzes.length > 0 ? (
+                  <QuizResults quizzes={communityQuizzes} />
                 ) : (
                   <EmptyState hasQuery={Boolean(query)} />
                 )

@@ -335,4 +335,151 @@ describe('QuizPlayService progress operations', () => {
     expect(quizRepository.findForPlay).toHaveBeenCalledWith('quiz');
     expect(quizRepository.findBySlug).not.toHaveBeenCalled();
   });
+
+  it('resolves guest email identities and rejects missing identification', async () => {
+    const { service, quizRepository, attemptProgressRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      isPrivate: false,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mockResolvedValue({
+      id: 'attempt-2',
+      score: 0,
+      correctAnswers: 0,
+      totalQuestions: 1,
+    });
+
+    const guest = await service.submitQuizAttempt(
+      'quiz',
+      [0],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a2',
+      null,
+      '  Guest@Example.com ',
+    );
+    assertOk(guest);
+    expect(attemptProgressRepository.recordSubmittedAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({ guestEmail: 'guest@example.com' }),
+    );
+
+    const missing = await service.submitQuizAttempt(
+      'quiz',
+      [0],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a3',
+      null,
+      undefined,
+    );
+    assertFail(missing);
+    expect(missing).toMatchObject({ statusCode: 400, error: 'User identification required' });
+  });
+
+  it('resolves session email to a user id and returns 404 when unknown', async () => {
+    const { service, quizRepository, userRepository, attemptProgressRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      isPrivate: false,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    vi.mocked(userRepository.findByEmail)
+      .mockResolvedValueOnce({
+        id: userId,
+        email: 'learner@example.com',
+        role: 'user',
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+      })
+      .mockResolvedValueOnce(null);
+    vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mockResolvedValue({
+      id: 'attempt-3',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+
+    const resolved = await service.submitQuizAttempt(
+      'quiz',
+      [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a4',
+      {
+        user: { id: '', email: 'learner@example.com', role: 'user' },
+        expires: '2026-08-01T00:00:00.000Z',
+      },
+      undefined,
+    );
+    assertOk(resolved);
+    expect(attemptProgressRepository.recordSubmittedAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({ userId }),
+    );
+
+    const missingUser = await service.submitQuizAttempt(
+      'quiz',
+      [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a5',
+      {
+        user: { id: '', email: 'missing@example.com', role: 'user' },
+        expires: '2026-08-01T00:00:00.000Z',
+      },
+      undefined,
+    );
+    assertFail(missingUser);
+    expect(missingUser).toMatchObject({ statusCode: 404, error: 'User not found' });
+  });
+
+  it('maps progress and flashcard unexpected failures to 500 responses', async () => {
+    const { service, quizRepository, progressRepository } = createService();
+    vi.mocked(quizRepository.findIdBySlug).mockRejectedValueOnce(new Error('db down'));
+    await expect(service.getSavedQuizProgress('quiz', userId)).resolves.toMatchObject({
+      success: false,
+      statusCode: 500,
+    });
+
+    vi.mocked(quizRepository.findIdBySlug).mockResolvedValue(quizId);
+    vi.mocked(progressRepository.upsert).mockRejectedValue(new Error('db down'));
+    vi.mocked(progressRepository.deleteByUserAndQuiz).mockRejectedValue(new Error('db down'));
+    vi.mocked(quizRepository.findForPlay).mockRejectedValue(new Error('db down'));
+
+    await expect(service.saveQuizProgress('quiz', userId, savedProgress)).resolves.toMatchObject({
+      success: false,
+      statusCode: 500,
+    });
+    await expect(service.deleteSavedQuizProgress('quiz', userId)).resolves.toMatchObject({
+      success: false,
+      statusCode: 500,
+    });
+    await expect(service.getQuizForFlashcards('quiz', null)).resolves.toMatchObject({
+      success: false,
+      statusCode: 500,
+      error: 'Failed to get quiz for flashcards',
+    });
+    await expect(service.getQuizFlashcards('quiz', null)).resolves.toMatchObject({
+      success: false,
+      statusCode: 500,
+      error: 'Failed to get quiz flashcards',
+    });
+  });
 });

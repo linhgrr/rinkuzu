@@ -33,6 +33,8 @@ const userModelMocks = vi.hoisted(() => {
     findOneSelect,
     listLean,
     limit,
+    skip,
+    sort,
     listSelect,
     updateLean,
     updateSelect,
@@ -112,5 +114,51 @@ describe('UserRepository entity projections', () => {
     expect(userModelMocks.listSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
     expect(userModelMocks.limit).toHaveBeenCalledWith(5);
     expect(userModelMocks.countDocuments).not.toHaveBeenCalled();
+  });
+
+  it('applies search and role filters with page offsets for admin lists', async () => {
+    const repository = new UserRepository();
+
+    await repository.findAll({ page: 2, limit: 10, search: 'learner', role: 'admin' });
+
+    expect(userModelMocks.find).toHaveBeenCalledWith({
+      email: { $regex: 'learner', $options: 'i' },
+      role: 'admin',
+    });
+    expect(userModelMocks.skip).toHaveBeenCalledWith(10);
+    expect(userModelMocks.limit).toHaveBeenCalledWith(10);
+  });
+
+  it('maps subscription snapshots and public profiles while omitting missing data', async () => {
+    userModelMocks.findByIdLean
+      .mockResolvedValueOnce({
+        subscription: {
+          type: 'premium',
+          isActive: true,
+          startDate: new Date('2026-07-01T00:00:00.000Z'),
+        },
+      })
+      .mockResolvedValueOnce({ subscription: undefined })
+      .mockResolvedValueOnce({
+        _id: userRecord._id,
+        email: userRecord.email,
+        displayName: 'Learner',
+        bio: 'Hello',
+        avatar: 'https://example.com/a.png',
+        createdAt: userRecord.createdAt,
+      })
+      .mockResolvedValueOnce(null);
+
+    const repository = new UserRepository();
+    await expect(repository.findSubscriptionById(String(userRecord._id))).resolves.toMatchObject({
+      type: 'premium',
+      isActive: true,
+    });
+    await expect(repository.findSubscriptionById(String(userRecord._id))).resolves.toBeNull();
+    await expect(repository.findPublicProfileById(String(userRecord._id))).resolves.toMatchObject({
+      displayName: 'Learner',
+      bio: 'Hello',
+    });
+    await expect(repository.findPublicProfileById(String(userRecord._id))).resolves.toBeNull();
   });
 });

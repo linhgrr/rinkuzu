@@ -18,6 +18,7 @@ import type {
   VerifiedGoogleAccountData,
 } from '@/interfaces/repositories/IAuthAccountRepository';
 import { AuthAccountPersistenceMapper } from '@/repositories/mappers/AuthAccountPersistenceMapper';
+import { matchIndexedString } from '@/repositories/filters/indexed-string';
 import type { AuthAccountPersistenceRecord } from '@/repositories/types/AuthAccountPersistence';
 
 const SECURITY_FIELDS =
@@ -65,7 +66,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     await connectDB();
     const record = await User.findOneAndUpdate(
       {
-        emailVerificationTokenHash: tokenHash,
+        emailVerificationTokenHash: matchIndexedString(tokenHash),
         emailVerificationExpires: { $gt: now },
       },
       {
@@ -124,7 +125,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
   ): Promise<AuthAccountIdentity | null> {
     await connectDB();
     const record = await User.findOne({
-      passwordResetTokenHash: tokenHash,
+      passwordResetTokenHash: matchIndexedString(tokenHash),
       passwordResetExpires: { $gt: now },
     })
       .select('email role')
@@ -142,7 +143,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     const record = await User.findOneAndUpdate(
       {
         _id: new Types.ObjectId(accountId),
-        passwordResetTokenHash: tokenHash,
+        passwordResetTokenHash: matchIndexedString(tokenHash),
         passwordResetExpires: { $gt: now },
       },
       {

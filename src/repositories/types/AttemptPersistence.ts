@@ -25,3 +25,13 @@ export interface AttemptPersistenceRecord {
   totalQuestions: number;
   takenAt: Date;
 }
+
+export interface RecentAttemptActivityPersistenceRecord {
+  _id: MongoIdLike;
+  userEmail?: string;
+  guestEmail?: string;
+  quizTitle?: string;
+  score: number;
+  answeredQuestions: number;
+  takenAt: Date;
+}

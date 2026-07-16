@@ -1,5 +1,6 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { withCleanProbeRows } from './query-plan-probe.mjs';
+import { buildRecentAttemptActivityPipeline } from '../../src/repositories/pipelines/recent-attempt-activity.mjs';
 
 const DASHBOARD_QUIZ_PROJECTION = {
   _id: 1,
@@ -39,14 +40,16 @@ await client.connect();
 try {
   const db = client.db();
   const now = new Date('2026-07-15T00:00:00.000Z');
+  const attempts = db.collection('attempts');
   const subscriptions = db.collection('subscriptions');
   const users = db.collection('users');
   const quizzes = db.collection('quizzes');
   const marker = { _ciQueryPlanProbe: true };
 
-  await withCleanProbeRows([quizzes, subscriptions, users], marker, async () => {
+  await withCleanProbeRows([attempts, quizzes, subscriptions, users], marker, async () => {
     const dashboardOwnerId = new ObjectId();
     const dashboardPublicAuthorIds = Array.from({ length: 400 }, () => new ObjectId());
+    const dashboardPublicQuizIds = Array.from({ length: 400 }, () => new ObjectId());
     const subscriptionRows = Array.from({ length: 400 }, (_, index) => ({
       ...marker,
       user: new ObjectId(),
@@ -84,6 +87,7 @@ try {
     }));
     const publicQuizRows = dashboardPublicAuthorIds.map((author, index) => ({
       ...marker,
+      _id: dashboardPublicQuizIds[index],
       author,
       slug: `ci-dashboard-public-${index}`,
       title: `Public quiz ${index}`,
@@ -92,8 +96,25 @@ try {
       createdAt: new Date(now.getTime() - index * 1_000),
       updatedAt: now,
     }));
+    const attemptRows = dashboardPublicAuthorIds.map((user, index) => ({
+      ...marker,
+      ...(index % 2 === 0 ? { user } : { guestEmail: `ci-plan-guest-${index}@example.com` }),
+      quiz: dashboardPublicQuizIds[index],
+      score: index % 101,
+      totalQuestions: 2,
+      answers: [
+        { kind: 'single', selectedIndex: index % 2 === 0 ? 0 : null },
+        {
+          kind: 'multiple',
+          selectedIndexes: index % 3 === 0 ? [0] : [],
+          selectedIndex: null,
+        },
+      ],
+      takenAt: new Date(now.getTime() - index * 1_000),
+    }));
 
     await Promise.all([
+      attempts.insertMany(attemptRows),
       quizzes.insertMany([...ownedQuizRows, ...publicQuizRows]),
       subscriptions.insertMany(subscriptionRows),
       users.insertMany([...userRows, ...dashboardUserRows]),
@@ -203,6 +224,74 @@ try {
       }
       evidence.push(row);
     }
+
+    const recentAttemptPipeline = buildRecentAttemptActivityPipeline(5);
+    const [recentAttemptExplain, recentAttemptRows] = await Promise.all([
+      attempts.aggregate(recentAttemptPipeline).explain('executionStats'),
+      attempts.aggregate(recentAttemptPipeline).toArray(),
+    ]);
+    const recentAttemptCursor = recentAttemptExplain.stages?.find(
+      (stage) => stage.$cursor,
+    )?.$cursor;
+    const recentAttemptStats = recentAttemptCursor?.executionStats;
+    const recentAttemptLookups =
+      recentAttemptExplain.stages?.filter((stage) => stage.$lookup) ?? [];
+    if (!recentAttemptStats) {
+      throw new Error('admin-recent-attempts did not return executionStats');
+    }
+
+    const recentAttemptStages = collectStageNames(recentAttemptExplain);
+    const recentAttemptRow = {
+      name: 'admin-recent-attempts',
+      stages: [...recentAttemptStages].sort(),
+      keysExamined: recentAttemptStats.totalKeysExamined,
+      documentsExamined: recentAttemptStats.totalDocsExamined,
+      returnedRows: recentAttemptStats.nReturned,
+      lookupDocumentsExamined: recentAttemptLookups.map(
+        (lookup) => lookup.totalDocsExamined ?? null,
+      ),
+      lookupIndexesUsed: recentAttemptLookups.map((lookup) => lookup.indexesUsed ?? []),
+      projection: recentAttemptPipeline.at(-1)?.$project,
+    };
+    if (!recentAttemptStages.has('IXSCAN')) {
+      throw new Error('admin-recent-attempts did not use IXSCAN');
+    }
+    if (
+      recentAttemptRow.returnedRows !== 5 ||
+      recentAttemptRow.keysExamined > 5 ||
+      recentAttemptRow.documentsExamined > 5
+    ) {
+      throw new Error(
+        `admin-recent-attempts examined ${recentAttemptRow.keysExamined} keys/${recentAttemptRow.documentsExamined} documents and returned ${recentAttemptRow.returnedRows} rows; expected at most 5/5 for 5 rows`,
+      );
+    }
+    const expectedLookupDocuments = [3, 5];
+    for (const [index, lookup] of recentAttemptLookups.entries()) {
+      if (
+        lookup.totalDocsExamined !== expectedLookupDocuments[index] ||
+        !lookup.indexesUsed?.includes('_id_')
+      ) {
+        throw new Error(
+          `admin-recent-attempts lookup ${index} examined ${String(lookup.totalDocsExamined)} documents without the expected _id_ plan`,
+        );
+      }
+    }
+    if (recentAttemptLookups.length !== 2) {
+      throw new Error(
+        `admin-recent-attempts used ${recentAttemptLookups.length} lookups; expected users and quizzes`,
+      );
+    }
+    if (
+      JSON.stringify(recentAttemptRows.map((row) => row.answeredQuestions)) !==
+        JSON.stringify([2, 0, 1, 1, 1]) ||
+      !recentAttemptRows.every(
+        (row) =>
+          Boolean(row.userEmail) !== Boolean(row.guestEmail) && typeof row.quizTitle === 'string',
+      )
+    ) {
+      throw new Error('admin-recent-attempts read model semantics changed');
+    }
+    evidence.push(recentAttemptRow);
 
     process.stdout.write(`${JSON.stringify({ databaseName, evidence }, null, 2)}\n`);
   });

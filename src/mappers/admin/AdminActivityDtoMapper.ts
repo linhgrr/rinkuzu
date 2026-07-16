@@ -1,24 +1,16 @@
-import type { Attempt, AttemptQuizSnapshot, AttemptUserPreview } from '@/entities/Attempt';
 import type { AdminRecentAttemptDto } from '@/dtos/admin-stats';
+import type { RecentAttemptActivity } from '@/interfaces/repositories/IAttemptRepository';
 import { serializeDate } from '@/lib/date-serialization';
-import { countAnsweredAttemptQuestions } from '@/lib/attempt/answers';
-
-function isUserPreview(user: Attempt['user']): user is AttemptUserPreview {
-  return typeof user === 'object' && user !== null;
-}
-
-function isQuizSnapshot(quiz: Attempt['quiz']): quiz is AttemptQuizSnapshot {
-  return typeof quiz === 'object' && quiz !== null;
-}
 
 export class AdminActivityDtoMapper {
-  static toRecentAttempt(attempt: Attempt): AdminRecentAttemptDto {
-    const actor = isUserPreview(attempt.user)
-      ? { email: attempt.user.email, type: 'user' as const }
-      : attempt.guestEmail
-        ? { email: attempt.guestEmail, type: 'guest' as const }
-        : null;
-    const quiz = isQuizSnapshot(attempt.quiz) ? { title: attempt.quiz.title } : null;
+  static toRecentAttempt(attempt: RecentAttemptActivity): AdminRecentAttemptDto {
+    const actor =
+      attempt.userEmail !== undefined
+        ? { email: attempt.userEmail, type: 'user' as const }
+        : attempt.guestEmail !== undefined
+          ? { email: attempt.guestEmail, type: 'guest' as const }
+          : null;
+    const quiz = attempt.quizTitle === undefined ? null : { title: attempt.quizTitle };
 
     if (!actor) {
       throw new TypeError('recentAttempt.actor is required');
@@ -31,7 +23,7 @@ export class AdminActivityDtoMapper {
       id: attempt.id,
       score: attempt.score,
       takenAt: serializeDate(attempt.takenAt, 'recentAttempt.takenAt'),
-      answeredQuestions: countAnsweredAttemptQuestions(attempt.answers),
+      answeredQuestions: attempt.answeredQuestions,
       actor,
       quiz,
     };

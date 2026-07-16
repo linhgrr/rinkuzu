@@ -78,8 +78,10 @@ export interface AttemptQuestionDetailDto {
 export interface AttemptDetailDto {
   id: string;
   score: number;
+  totalQuestions: number;
   takenAt: string;
   answers: (number | number[])[];
+  historyStatus: 'complete' | 'quiz_modified';
   quiz: {
     title: string;
     slug: string;

@@ -31,13 +31,7 @@ import {
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
-
-interface CompactQuizPipelineOptions {
-  limit: number;
-  populateAuthor: boolean;
-  skip: number;
-  sort: Record<string, 1 | -1>;
-}
+import { buildCompactQuizPipeline } from '@/repositories/pipelines/quiz-list.mjs';
 
 interface QuizListAggregateMeta {
   totalItems: number;
@@ -145,63 +139,6 @@ function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenc
   }
 
   return normalizedFilter;
-}
-
-function buildCompactQuizPipeline(
-  filter: FilterQuery<QuizPersistenceRecord>,
-  options: CompactQuizPipelineOptions,
-): PipelineStage[] {
-  const pipeline: PipelineStage[] = [
-    { $match: filter },
-    { $sort: options.sort },
-    { $skip: options.skip },
-    { $limit: options.limit },
-  ];
-
-  if (options.populateAuthor) {
-    pipeline.push(
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'author',
-          foreignField: '_id',
-          as: 'authorDoc',
-        },
-      },
-      {
-        $unwind: {
-          path: '$authorDoc',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-    );
-  }
-
-  pipeline.push({
-    $project: {
-      _id: 1,
-      title: 1,
-      description: 1,
-      slug: 1,
-      isPrivate: 1,
-      author: options.populateAuthor
-        ? {
-            _id: { $ifNull: ['$authorDoc._id', '$author'] },
-            email: '$authorDoc.email',
-            name: '$authorDoc.name',
-            displayName: '$authorDoc.displayName',
-            avatar: '$authorDoc.avatar',
-          }
-        : 1,
-      createdAt: 1,
-      updatedAt: 1,
-      folder: 1,
-      questionCount: { $size: { $ifNull: ['$questions', []] } },
-      questions: { $literal: [] },
-    },
-  });
-
-  return pipeline;
 }
 
 export class QuizRepository implements IQuizRepository, IDashboardQuizRepository {
@@ -377,33 +314,15 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const skip = (page - 1) * limit;
     const sort = options.sort || { createdAt: -1 };
     const normalizedFilter = toPersistenceFilter(filter);
-
-    if (options.compact) {
-      const [records, total] = await Promise.all([
-        QuizModel.aggregate<QuizPersistenceRecord>(
-          buildCompactQuizPipeline(normalizedFilter, {
-            limit,
-            populateAuthor: true,
-            skip,
-            sort,
-          }),
-        ),
-        QuizModel.countDocuments(normalizedFilter),
-      ]);
-
-      return {
-        items: records.map(QuizPersistenceMapper.toEntity),
-        pagination: buildPaginationMeta(page, limit, total),
-      };
-    }
-
-    let query = QuizModel.find(normalizedFilter);
-
-    if (options.populate?.includes('author')) {
-      query = query.populate('author', 'email name displayName avatar');
-    }
     const [records, total] = await Promise.all([
-      query.sort(sort).skip(skip).limit(limit).lean<QuizPersistenceRecord[]>(),
+      QuizModel.aggregate<QuizPersistenceRecord>(
+        buildCompactQuizPipeline(normalizedFilter, {
+          limit,
+          populateAuthor: true,
+          skip,
+          sort,
+        }),
+      ),
       QuizModel.countDocuments(normalizedFilter),
     ]);
 

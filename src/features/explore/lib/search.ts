@@ -27,7 +27,6 @@ export function buildQuizSearchKey({
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
-    compact: 'true',
   });
   if (query) params.set('search', query);
   if (mine) params.set('mine', 'true');

@@ -23,10 +23,10 @@ describe('explore search helpers', () => {
 
   it('builds quiz API keys without empty search parameters', () => {
     expect(buildQuizSearchKey({ query: '', page: 1, mine: false, limit: 12 })).toBe(
-      '/api/quizzes?page=1&limit=12&compact=true',
+      '/api/quizzes?page=1&limit=12',
     );
     expect(buildQuizSearchKey({ query: 'linear algebra', page: 2, mine: true, limit: 12 })).toBe(
-      '/api/quizzes?page=2&limit=12&compact=true&search=linear+algebra&mine=true',
+      '/api/quizzes?page=2&limit=12&search=linear+algebra&mine=true',
     );
   });
 

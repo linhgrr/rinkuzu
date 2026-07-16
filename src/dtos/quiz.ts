@@ -21,7 +21,6 @@ export const quizListQuerySchema = z.strictObject({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   mine: queryBooleanSchema.default(false),
-  compact: queryBooleanSchema.default(false),
   visibility: z.enum(['public', 'private']).optional(),
 });
 
@@ -62,10 +61,8 @@ export interface QuizListOptionsDto {
   page: number;
   limit: number;
   isPrivate?: boolean;
-  userRole?: string;
   userId?: string;
   onlyMine: boolean;
-  compact: boolean;
 }
 
 export interface QuizListAuthorDto {

@@ -3,6 +3,7 @@ import { withCleanProbeRows } from './query-plan-probe.mjs';
 import { buildRecentAttemptActivityPipeline } from '../../src/repositories/pipelines/recent-attempt-activity.mjs';
 import { buildDiscussionListPipeline } from '../../src/repositories/pipelines/discussion-list.mjs';
 import { buildUserAttemptListPipeline } from '../../src/repositories/pipelines/attempt-read.mjs';
+import { buildCompactQuizPipeline } from '../../src/repositories/pipelines/quiz-list.mjs';
 
 const DASHBOARD_QUIZ_PROJECTION = {
   _id: 1,
@@ -328,6 +329,104 @@ try {
       );
     }
     evidence.push(recentUsersRow);
+
+    const publicQuizFilter = { isPrivate: false };
+    const publicQuizListPipeline = buildCompactQuizPipeline(publicQuizFilter, {
+      limit: 4,
+      populateAuthor: true,
+      skip: 0,
+      sort: { createdAt: -1 },
+    });
+    const publicQuizCountPipeline = [{ $match: publicQuizFilter }, { $count: 'totalItems' }];
+    const [publicQuizListExplain, publicQuizCountExplain, publicQuizListRows, publicQuizCountRows] =
+      await Promise.all([
+        quizzes.aggregate(publicQuizListPipeline).explain('executionStats'),
+        quizzes.aggregate(publicQuizCountPipeline).explain('executionStats'),
+        quizzes.aggregate(publicQuizListPipeline).toArray(),
+        quizzes.aggregate(publicQuizCountPipeline).toArray(),
+      ]);
+    const publicQuizListCursor = publicQuizListExplain.stages?.find(
+      (stage) => stage.$cursor,
+    )?.$cursor;
+    const publicQuizListStats = publicQuizListCursor?.executionStats;
+    const publicQuizCountStats =
+      publicQuizCountExplain.executionStats ??
+      publicQuizCountExplain.stages?.find((stage) => stage.$cursor)?.$cursor?.executionStats;
+    const publicQuizListLookup = publicQuizListExplain.stages?.find((stage) => stage.$lookup);
+    if (!publicQuizListStats || !publicQuizCountStats) {
+      throw new Error('public-quiz-list did not return item and count executionStats');
+    }
+
+    const publicQuizListStages = collectStageNames(publicQuizListStats.executionStages);
+    const publicQuizListIndexes = collectIndexNames(publicQuizListStats.executionStages);
+    const publicQuizCountStages = collectStageNames(publicQuizCountStats.executionStages);
+    const publicQuizCountIndexes = collectIndexNames(publicQuizCountStats.executionStages);
+    const publicQuizListRow = {
+      name: 'public-quiz-list',
+      roundTrips: 2,
+      stages: [...publicQuizListStages].sort(),
+      indexes: [...publicQuizListIndexes].sort(),
+      keysExamined: publicQuizListStats.totalKeysExamined,
+      documentsExamined: publicQuizListStats.totalDocsExamined,
+      returnedRows: publicQuizListStats.nReturned,
+      countStages: [...publicQuizCountStages].sort(),
+      countIndexes: [...publicQuizCountIndexes].sort(),
+      countKeysExamined: publicQuizCountStats.totalKeysExamined,
+      countDocumentsExamined: publicQuizCountStats.totalDocsExamined,
+      lookupDocumentsExamined: publicQuizListLookup?.totalDocsExamined ?? null,
+      lookupIndexesUsed: publicQuizListLookup?.indexesUsed ?? [],
+    };
+    if (
+      !publicQuizListStages.has('IXSCAN') ||
+      publicQuizListStages.has('SORT') ||
+      !publicQuizListIndexes.has('isPrivate_1_createdAt_-1')
+    ) {
+      throw new Error(
+        `public-quiz-list did not use isPrivate_1_createdAt_-1 without a blocking sort; stages=${publicQuizListRow.stages.join(',')}; indexes=${publicQuizListRow.indexes.join(',')}`,
+      );
+    }
+    if (
+      publicQuizListRow.returnedRows !== 4 ||
+      publicQuizListRow.keysExamined > 4 ||
+      publicQuizListRow.documentsExamined > 4
+    ) {
+      throw new Error(
+        `public-quiz-list examined ${publicQuizListRow.keysExamined} keys/${publicQuizListRow.documentsExamined} documents and returned ${publicQuizListRow.returnedRows} rows; expected at most 4/4`,
+      );
+    }
+    if (
+      !publicQuizCountStages.has('COUNT_SCAN') ||
+      !publicQuizCountIndexes.has('isPrivate_1_createdAt_-1') ||
+      publicQuizListRow.countKeysExamined !== 600 ||
+      publicQuizListRow.countDocumentsExamined !== 0
+    ) {
+      throw new Error(
+        `public-quiz-list count did not use a covered COUNT_SCAN; stages=${publicQuizListRow.countStages.join(',')}; indexes=${publicQuizListRow.countIndexes.join(',')}; keys=${publicQuizListRow.countKeysExamined}; documents=${publicQuizListRow.countDocumentsExamined}`,
+      );
+    }
+    if (
+      publicQuizListRow.lookupDocumentsExamined !== 4 ||
+      !publicQuizListRow.lookupIndexesUsed.includes('_id_')
+    ) {
+      throw new Error(
+        `public-quiz-list author lookup examined ${String(publicQuizListRow.lookupDocumentsExamined)} documents without the users _id_ index`,
+      );
+    }
+    if (
+      publicQuizCountRows[0]?.totalItems !== 600 ||
+      publicQuizListRows.length !== 4 ||
+      !publicQuizListRows.every(
+        (item) =>
+          item.isPrivate === false &&
+          item.questionCount === 0 &&
+          Array.isArray(item.questions) &&
+          item.questions.length === 0 &&
+          !Object.hasOwn(item, '_ciQueryPlanProbe'),
+      )
+    ) {
+      throw new Error('public-quiz-list read model semantics changed');
+    }
+    evidence.push(publicQuizListRow);
 
     const dashboardChecks = [
       {

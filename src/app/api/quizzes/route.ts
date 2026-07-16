@@ -43,10 +43,8 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
       page: query.data.page,
       limit: query.data.limit,
       ...(isPrivate !== undefined ? { isPrivate } : {}),
-      ...(session?.user?.role !== undefined ? { userRole: session.user.role } : {}),
       ...(typeof userId === 'string' ? { userId } : {}),
       onlyMine,
-      compact: query.data.compact,
     });
 
     return apiOk({

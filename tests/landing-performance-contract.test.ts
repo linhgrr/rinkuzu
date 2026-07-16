@@ -3,6 +3,19 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 describe('landing performance contract', () => {
+  it('prioritizes stable first paint over a late display-font swap', () => {
+    const source = fs.readFileSync('src/features/landing/components/home/LandingPage.tsx', 'utf8');
+    const unbounded = source.match(/const unbounded = Unbounded\(\{[\s\S]*?\}\);/)?.[0];
+    const vinaSans = source.match(/const vinaSans = Vina_Sans\(\{[\s\S]*?\}\);/)?.[0];
+
+    expect(unbounded).toBeDefined();
+    expect(unbounded).toContain("display: 'optional'");
+    expect(unbounded).not.toContain('weight:');
+    expect(vinaSans).toBeDefined();
+    expect(vinaSans).toContain("display: 'optional'");
+    expect(vinaSans).toContain('preload: false');
+  });
+
   it('does not eagerly load the desktop-only hero character', () => {
     const source = fs.readFileSync('src/features/landing/components/home/Hero.tsx', 'utf8');
     const image = source.match(/<Image\s+alt="AI Character"[\s\S]*?\/>/)?.[0];

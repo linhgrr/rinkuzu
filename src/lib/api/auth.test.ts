@@ -6,7 +6,7 @@ const { authMock } = vi.hoisted(() => ({ authMock: vi.fn() }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 
-import { withAuth, withOptionalAuth } from '@/lib/api/auth';
+import { withAdmin, withAuth, withOptionalAuth } from '@/lib/api/auth';
 
 function createSession(role: 'admin' | 'user' = 'user'): Session {
   return {
@@ -33,6 +33,28 @@ describe('API auth wrappers', () => {
     const response = await withAuth(handler)(request, { params: Promise.resolve({}) });
 
     expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'unauthorized', message: 'Unauthorized' },
+    });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 when the session user is missing id or email', async () => {
+    const handler = vi.fn(async () => new Response(null, { status: 204 }));
+
+    authMock.mockResolvedValue({
+      expires: new Date(Date.now() + 60_000).toISOString(),
+      user: { email: 'user@example.com', role: 'user' },
+    } as Session);
+    const missingId = await withAuth(handler)(request, { params: Promise.resolve({}) });
+    expect(missingId.status).toBe(401);
+
+    authMock.mockResolvedValue({
+      expires: new Date(Date.now() + 60_000).toISOString(),
+      user: { id: 'user-1', role: 'user' },
+    } as Session);
+    const missingEmail = await withAuth(handler)(request, { params: Promise.resolve({}) });
+    expect(missingEmail.status).toBe(401);
     expect(handler).not.toHaveBeenCalled();
   });
 
@@ -63,7 +85,39 @@ describe('API auth wrappers', () => {
     });
 
     expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'forbidden', detail: 'Admin access required' },
+    });
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('uses the raw role label for non-admin role requirements', async () => {
+    authMock.mockResolvedValue(createSession('user'));
+    const handler = vi.fn(async () => new Response(null, { status: 204 }));
+
+    const response = await withAuth(handler, { role: 'moderator' })(request, {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { detail: 'moderator access required' },
+    });
+  });
+
+  it('allows matching roles and withAdmin convenience wrapper', async () => {
+    authMock.mockResolvedValue(createSession('admin'));
+    const handler = vi.fn(async () => new Response(null, { status: 204 }));
+
+    await expect(
+      withAuth(handler, { role: 'admin' })(request, { params: Promise.resolve({}) }),
+    ).resolves.toMatchObject({ status: 204 });
+    await expect(
+      withAdmin(handler)(request, { params: Promise.resolve({}) }),
+    ).resolves.toMatchObject({
+      status: 204,
+    });
+    expect(handler).toHaveBeenCalledTimes(2);
   });
 
   it('passes null identity fields to an optional-auth handler for anonymous requests', async () => {
@@ -80,6 +134,21 @@ describe('API auth wrappers', () => {
       email: null,
       session: null,
       params: { slug: 'public-quiz' },
+    });
+  });
+
+  it('projects optional-auth identity from a partial session user', async () => {
+    const session = createSession('user');
+    authMock.mockResolvedValue(session);
+    const handler = vi.fn(async () => new Response(null, { status: 204 }));
+
+    await withOptionalAuth(handler)(request, { params: Promise.resolve({}) });
+
+    expect(handler).toHaveBeenCalledWith(request, {
+      userId: 'user-1',
+      email: 'user@example.com',
+      session,
+      params: {},
     });
   });
 });

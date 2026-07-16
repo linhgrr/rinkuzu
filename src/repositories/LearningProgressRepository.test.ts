@@ -4,10 +4,17 @@ const modelMocks = vi.hoisted(() => ({
   attemptAggregate: vi.fn(),
   quizAggregate: vi.fn(),
   quizProgressAggregate: vi.fn(),
+  questionFind: vi.fn(),
   questionFindOne: vi.fn(),
   questionFindOneAndUpdate: vi.fn(),
+  questionCountDocuments: vi.fn(),
+  questionSort: vi.fn(),
+  questionLimit: vi.fn(),
+  questionLean: vi.fn(),
   userFindOne: vi.fn(),
   userFindOneAndUpdate: vi.fn(),
+  userUpdateOne: vi.fn(),
+  userSelect: vi.fn(),
 }));
 
 vi.mock('@/lib/mongoose', () => ({
@@ -19,8 +26,10 @@ vi.mock('@/models/Attempt', () => ({
 }));
 vi.mock('@/models/QuestionProgress', () => ({
   default: {
+    find: modelMocks.questionFind,
     findOne: modelMocks.questionFindOne,
     findOneAndUpdate: modelMocks.questionFindOneAndUpdate,
+    countDocuments: modelMocks.questionCountDocuments,
   },
 }));
 vi.mock('@/models/Quiz', () => ({
@@ -33,6 +42,7 @@ vi.mock('@/models/UserProgress', () => ({
   default: {
     findOne: modelMocks.userFindOne,
     findOneAndUpdate: modelMocks.userFindOneAndUpdate,
+    updateOne: modelMocks.userUpdateOne,
   },
 }));
 
@@ -228,5 +238,192 @@ describe('LearningProgressRepository.mutateReviewProgress', () => {
     expect(questionUpdate.$set.history).toEqual(history.slice(-QUESTION_REVIEW_HISTORY_LIMIT));
     expect([...userUpdate.$set.weeklyActivity.keys()]).toHaveLength(WEEKLY_ACTIVITY_RETENTION_DAYS);
     expect(userUpdate.$set.weeklyActivity.has('2026-07-01')).toBe(false);
+  });
+});
+
+describe('LearningProgressRepository progress CRUD helpers', () => {
+  const now = new Date('2026-07-15T12:00:00.000Z');
+  const questionRecord = {
+    _id: '507f1f77bcf86cd799439012',
+    userId: 'user-1',
+    quizSlug: 'architecture',
+    questionId: 'question-1',
+    srsLevel: 1,
+    nextReviewDate: now,
+    lastReviewDate: null,
+    interval: 1,
+    easeFactor: 2.5,
+    correctStreak: 1,
+    totalReviews: 1,
+    totalCorrect: 1,
+    history: [],
+    isBookmarked: false,
+    notes: '',
+    createdAt: now,
+    updatedAt: now,
+  };
+  const userRecord = {
+    userId: 'user-1',
+    currentStreak: 1,
+    longestStreak: 2,
+    lastActiveDate: now,
+    streakFreezeCount: 0,
+    totalXp: 100,
+    totalQuestionsLearned: 3,
+    totalQuizzesTaken: 1,
+    totalReviewSessions: 1,
+    lastSessionDate: now,
+    averageAccuracy: 80,
+    weeklyActivity: {},
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    modelMocks.questionLean.mockResolvedValue([questionRecord]);
+    modelMocks.questionLimit.mockReturnValue({ lean: modelMocks.questionLean });
+    modelMocks.questionSort.mockReturnValue({ limit: modelMocks.questionLimit });
+    modelMocks.questionFind.mockReturnValue({ sort: modelMocks.questionSort });
+    modelMocks.questionFindOne.mockReturnValue({
+      lean: vi.fn().mockResolvedValue(questionRecord),
+    });
+    modelMocks.questionFindOneAndUpdate.mockReturnValue({
+      lean: vi.fn().mockResolvedValue(questionRecord),
+    });
+    modelMocks.userFindOne.mockReturnValue({
+      lean: vi.fn().mockResolvedValue(userRecord),
+      select: modelMocks.userSelect,
+    });
+    modelMocks.userFindOneAndUpdate.mockReturnValue({
+      lean: vi.fn().mockResolvedValue(userRecord),
+    });
+    modelMocks.questionCountDocuments.mockResolvedValue(4);
+    modelMocks.userUpdateOne.mockResolvedValue({ matchedCount: 1 });
+  });
+
+  it('lists due questions ordered by next review date', async () => {
+    const repository = new LearningProgressRepository();
+    await expect(repository.listDueQuestions('user-1', now, 10)).resolves.toMatchObject([
+      { questionId: 'question-1', srsLevel: 1 },
+    ]);
+    expect(modelMocks.questionFind).toHaveBeenCalledWith({
+      userId: 'user-1',
+      nextReviewDate: { $lte: now },
+    });
+    expect(modelMocks.questionSort).toHaveBeenCalledWith({ nextReviewDate: 1 });
+    expect(modelMocks.questionLimit).toHaveBeenCalledWith(10);
+  });
+
+  it('finds and saves question and user progress documents', async () => {
+    const repository = new LearningProgressRepository();
+
+    await expect(
+      repository.findQuestionProgress('user-1', 'architecture', 'question-1'),
+    ).resolves.toMatchObject({ questionId: 'question-1' });
+    await expect(repository.findUserProgress('user-1')).resolves.toMatchObject({
+      userId: 'user-1',
+      totalXp: 100,
+    });
+
+    const defaults = repository.createDefaultUserProgress('user-2');
+    expect(defaults).toMatchObject({
+      userId: 'user-2',
+      currentStreak: 0,
+      totalXp: 0,
+      lastSessionDate: null,
+    });
+    expect(defaults.weeklyActivity).toBeInstanceOf(Map);
+
+    await expect(
+      repository.saveQuestionProgress({
+        userId: 'user-1',
+        quizSlug: 'architecture',
+        questionId: 'question-1',
+        srsLevel: 1,
+        nextReviewDate: now,
+        lastReviewDate: null,
+        interval: 1,
+        easeFactor: 2.5,
+        correctStreak: 1,
+        totalReviews: 1,
+        totalCorrect: 1,
+        history: [],
+        isBookmarked: false,
+        notes: '',
+      }),
+    ).resolves.toMatchObject({ questionId: 'question-1' });
+
+    await expect(
+      repository.saveUserProgress({
+        userId: 'user-1',
+        currentStreak: 1,
+        longestStreak: 2,
+        lastActiveDate: now,
+        streakFreezeCount: 0,
+        totalXp: 100,
+        totalQuestionsLearned: 3,
+        totalQuizzesTaken: 1,
+        totalReviewSessions: 1,
+        lastSessionDate: now,
+        averageAccuracy: 80,
+        weeklyActivity: new Map(),
+      }),
+    ).resolves.toMatchObject({ userId: 'user-1' });
+  });
+
+  it('maps streak-freeze purchase guard outcomes and successful purchases', async () => {
+    const repository = new LearningProgressRepository();
+    const options = { cost: 50, maxFreezes: 2 };
+
+    modelMocks.userSelect.mockReturnValueOnce(null);
+    await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
+      status: 'not_found',
+    });
+
+    modelMocks.userSelect.mockReturnValueOnce({
+      totalXp: 100,
+      streakFreezeCount: 2,
+      save: vi.fn(),
+    });
+    await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
+      status: 'max_freezes',
+    });
+
+    modelMocks.userSelect.mockReturnValueOnce({
+      totalXp: 10,
+      streakFreezeCount: 0,
+      save: vi.fn(),
+    });
+    await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
+      status: 'not_enough_xp',
+    });
+
+    const progress = {
+      totalXp: 100,
+      streakFreezeCount: 0,
+      save: vi.fn().mockResolvedValue(undefined),
+    };
+    modelMocks.userSelect.mockReturnValueOnce(progress);
+    await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
+      status: 'purchased',
+      xp: 50,
+      streakFreezeCount: 1,
+    });
+    expect(progress.save).toHaveBeenCalledOnce();
+  });
+
+  it('counts learned questions and updates the denormalized total', async () => {
+    const repository = new LearningProgressRepository();
+
+    await expect(repository.countLearnedQuestions('user-1')).resolves.toBe(4);
+    expect(modelMocks.questionCountDocuments).toHaveBeenCalledWith({
+      userId: 'user-1',
+      srsLevel: { $gt: 0 },
+    });
+
+    await repository.updateTotalQuestionsLearned('user-1', 9);
+    expect(modelMocks.userUpdateOne).toHaveBeenCalledWith(
+      { userId: 'user-1' },
+      { totalQuestionsLearned: 9 },
+    );
   });
 });

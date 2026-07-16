@@ -13,7 +13,7 @@ const userModelMocks = vi.hoisted(() => {
   const listLean = vi.fn();
   const limit = vi.fn(() => ({ lean: listLean }));
   const skip = vi.fn(() => ({ limit }));
-  const sort = vi.fn(() => ({ skip }));
+  const sort = vi.fn(() => ({ skip, limit }));
   const listSelect = vi.fn(() => ({ sort }));
   const find = vi.fn(() => ({ select: listSelect }));
 
@@ -32,6 +32,7 @@ const userModelMocks = vi.hoisted(() => {
     findOneLean,
     findOneSelect,
     listLean,
+    limit,
     listSelect,
     updateLean,
     updateSelect,
@@ -101,5 +102,15 @@ describe('UserRepository entity projections', () => {
     expect(userModelMocks.listSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
     expect(userModelMocks.updateSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
     expect(USER_ENTITY_PROJECTION).not.toMatch(/password|token|failedLogin|lockedUntil|lastLogin/i);
+  });
+
+  it('loads recent users without a count query', async () => {
+    const repository = new UserRepository();
+
+    await expect(repository.findRecent(5)).resolves.toMatchObject([{ email: userRecord.email }]);
+
+    expect(userModelMocks.listSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
+    expect(userModelMocks.limit).toHaveBeenCalledWith(5);
+    expect(userModelMocks.countDocuments).not.toHaveBeenCalled();
   });
 });

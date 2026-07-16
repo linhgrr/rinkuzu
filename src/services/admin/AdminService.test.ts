@@ -4,6 +4,8 @@ import type { IUserRepository } from '@/interfaces/repositories/IUserRepository'
 import type { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUserRepository';
+import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
 
 const pagination = {
   currentPage: 1,
@@ -14,7 +16,7 @@ const pagination = {
   hasPrevPage: false,
 };
 
-function createUserRepository(): IUserRepository {
+function createUserRepository(): IUserRepository & IRecentUserRepository {
   return {
     findByEmail: vi.fn(),
     findById: vi.fn(),
@@ -23,6 +25,7 @@ function createUserRepository(): IUserRepository {
     updateRole: vi.fn(),
     delete: vi.fn(),
     findAll: vi.fn().mockResolvedValue({ items: [], pagination }),
+    findRecent: vi.fn().mockResolvedValue([]),
     count: vi.fn().mockResolvedValue(0),
     countByCreatedAtBuckets: vi.fn().mockResolvedValue({ today: 0, thisWeek: 0, thisMonth: 0 }),
     countByRole: vi.fn().mockResolvedValue([]),
@@ -40,7 +43,9 @@ function createReportRepository(overrides: Partial<IReportRepository> = {}): IRe
   };
 }
 
-function createQuizRepository(overrides: Partial<IQuizRepository> = {}): IQuizRepository {
+function createQuizRepository(
+  overrides: Partial<IQuizRepository & IDashboardQuizRepository> = {},
+): IQuizRepository & IDashboardQuizRepository {
   return {
     findById: vi.fn(),
     findAccessById: vi.fn(),
@@ -52,6 +57,7 @@ function createQuizRepository(overrides: Partial<IQuizRepository> = {}): IQuizRe
     update: vi.fn(),
     delete: vi.fn(),
     findAll: vi.fn().mockResolvedValue({ items: [], pagination }),
+    findRecent: vi.fn().mockResolvedValue([]),
     findForPlay: vi.fn(),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
@@ -263,9 +269,12 @@ describe('AdminService report and stats contracts', () => {
     expect(userRepository.count).not.toHaveBeenCalled();
     expect(quizRepository.count).not.toHaveBeenCalled();
     expect(attemptRepository.count).not.toHaveBeenCalled();
-    expect(quizRepository.findAll).toHaveBeenCalledWith(
+    expect(userRepository.findRecent).toHaveBeenCalledWith(5);
+    expect(userRepository.findAll).not.toHaveBeenCalled();
+    expect(quizRepository.findRecent).toHaveBeenCalledWith(
       {},
-      { page: 1, limit: 5, populate: ['author'], compact: true },
+      { limit: 5, populate: ['author'], sort: { createdAt: -1 } },
     );
+    expect(quizRepository.findAll).not.toHaveBeenCalled();
   });
 });

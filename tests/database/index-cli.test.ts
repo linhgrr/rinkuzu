@@ -54,7 +54,21 @@ describe('database index CLI guardrails', () => {
       planSha: sha,
       approvalFile: '/tmp/approval.json',
       verifyAfterApply: true,
+      actionTypes: null,
     });
+  });
+
+  it('restricts action-type filters to safe-only apply mode', () => {
+    const sha = 'd'.repeat(64);
+    expect(
+      parseIndexCliArgs(['--apply-safe-only', `--plan-sha=${sha}`, '--action-types=create,hide']),
+    ).toMatchObject({ actionTypes: ['create', 'hide'] });
+    expect(() => parseIndexCliArgs(['--plan', '--action-types=create'])).toThrow(
+      /only with --apply-safe-only/,
+    );
+    expect(() => parseIndexCliArgs(['--apply-safe-only', '--action-types=unknown'])).toThrow(
+      /Unsupported index action type/,
+    );
   });
 
   it('requires exact, current approval for every sensitive fingerprint', () => {
@@ -104,10 +118,15 @@ describe('database index CLI guardrails', () => {
       manualCount: 0,
     };
 
-    expect(selectIndexActionsForMode(sourcePlan, 'apply-safe-only')).toEqual([
-      { fingerprint: 'safe', sensitive: false },
-    ]);
-    expect(validateSafeOnlyRemainder({ sourcePlan, verificationPlan })).toEqual([]);
+    const selected = selectIndexActionsForMode(sourcePlan, 'apply-safe-only');
+    expect(selected).toEqual([{ fingerprint: 'safe', sensitive: false }]);
+    expect(
+      validateSafeOnlyRemainder({
+        sourcePlan,
+        verificationPlan,
+        selectedFingerprints: selected.map((action: { fingerprint: string }) => action.fingerprint),
+      }),
+    ).toEqual([]);
     expect(
       validateSafeOnlyRemainder({
         sourcePlan,
@@ -115,10 +134,33 @@ describe('database index CLI guardrails', () => {
           actions: [{ fingerprint: 'unexpected', sensitive: false }],
           manualCount: 0,
         },
+        selectedFingerprints: ['safe'],
       }),
-    ).toEqual([
-      'Post-apply verification contains non-sensitive index drift',
-      'Post-apply sensitive drift does not match the source plan',
+    ).toEqual(['Post-apply drift does not exactly match the unselected source actions']);
+  });
+
+  it('keeps safe actions outside an explicit type allowlist in the verified remainder', () => {
+    const sourcePlan = {
+      actions: [
+        { fingerprint: 'create', sensitive: false, type: 'create' },
+        { fingerprint: 'hide', sensitive: false, type: 'hide' },
+        { fingerprint: 'ttl', sensitive: true, type: 'update_ttl' },
+      ],
+    };
+    const selected = selectIndexActionsForMode(sourcePlan, 'apply-safe-only', ['create']);
+
+    expect(selected.map((action: { fingerprint: string }) => action.fingerprint)).toEqual([
+      'create',
     ]);
+    expect(
+      validateSafeOnlyRemainder({
+        sourcePlan,
+        verificationPlan: {
+          actions: [sourcePlan.actions[1], sourcePlan.actions[2]],
+          manualCount: 0,
+        },
+        selectedFingerprints: ['create'],
+      }),
+    ).toEqual([]);
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildQuizSearchKey,
   filterAdaptiveSubjects,
+  parseQuizVisibility,
   parseSearchPage,
   parseSearchType,
 } from '@/features/explore/lib/search';
@@ -17,6 +18,10 @@ const subject = {
 describe('explore search helpers', () => {
   it('normalizes unsupported URL state', () => {
     expect(parseSearchType('unknown')).toBe('all');
+    expect(parseSearchType('public')).toBe('all');
+    expect(parseSearchType('quizzes')).toBe('quizzes');
+    expect(parseQuizVisibility('private')).toBe('private');
+    expect(parseQuizVisibility('unknown')).toBe('all');
     expect(parseSearchPage('-2')).toBe(1);
     expect(parseSearchPage('3')).toBe(3);
   });
@@ -28,6 +33,15 @@ describe('explore search helpers', () => {
     expect(buildQuizSearchKey({ query: 'linear algebra', page: 2, mine: true, limit: 12 })).toBe(
       '/api/quizzes?page=2&limit=12&search=linear+algebra&mine=true',
     );
+    expect(
+      buildQuizSearchKey({
+        query: '',
+        page: 1,
+        mine: false,
+        limit: 12,
+        visibility: 'private',
+      }),
+    ).toBe('/api/quizzes?page=1&limit=12&visibility=private');
   });
 
   it('matches adaptive lessons by title, subject, or filename', () => {

@@ -6,6 +6,15 @@ import type { IUserRepository } from '@/interfaces/repositories/IUserRepository'
 import { assertFail, assertOk } from '@/interfaces/services/types';
 import { QuizPlayService } from '@/services/quiz/QuizPlayService';
 
+const entitlementMocks = vi.hoisted(() => ({
+  resolveEntitlements: vi.fn(),
+}));
+
+vi.mock('@/lib/entitlements', () => ({
+  can: (entitlements: { tier: string }) => entitlements.tier === 'premium',
+  resolveEntitlements: entitlementMocks.resolveEntitlements,
+}));
+
 const quizId = '507f191e810c19729de860ea';
 const userId = '507f191e810c19729de860eb';
 const savedProgress = {
@@ -86,6 +95,7 @@ function createService() {
 describe('QuizPlayService progress operations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
   });
 
   it('maps saved progress to the response DTO', async () => {
@@ -165,6 +175,34 @@ describe('QuizPlayService progress operations', () => {
     assertOk(result);
     expect(result.data.questions[0]).not.toHaveProperty('correctIndex');
     expect(result.data.questions[0]).not.toHaveProperty('correctIndexes');
+  });
+
+  it('blocks private quiz content for a free non-owner', async () => {
+    const { service, quizRepository } = createService();
+    vi.mocked(quizRepository.findBySlug).mockResolvedValue({
+      id: quizId,
+      title: 'Private quiz',
+      slug: 'private-quiz',
+      author: '507f191e810c19729de860ec',
+      isPrivate: true,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+
+    const result = await service.getQuizForPlay('private-quiz', 'user', userId);
+
+    assertFail(result);
+    expect(result).toMatchObject({ statusCode: 403, code: 'premium_required' });
+    expect(entitlementMocks.resolveEntitlements).toHaveBeenCalledWith(userId);
   });
 
   it('uses the authenticated session id when submitting attempts', async () => {

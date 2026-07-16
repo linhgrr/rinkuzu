@@ -1,29 +1,12 @@
-import type { Quiz, QuizAuthorPreview, QuizQuestion } from '@/entities/Quiz';
+import type { Quiz, QuizQuestion } from '@/entities/Quiz';
 import type {
   PlayableQuizQuestionDto,
   QuizDetailDto,
-  QuizListAuthorDto,
   QuizPlayDetailDto,
   QuizQuestionDto,
 } from '@/dtos/quiz';
 import { serializeDate } from '@/lib/date-serialization';
-
-function isAuthorPreview(author: Quiz['author']): author is QuizAuthorPreview {
-  return typeof author === 'object' && author !== null;
-}
-
-function toAuthorDto(author: Quiz['author']): QuizListAuthorDto | null {
-  if (!author) return null;
-  if (!isAuthorPreview(author)) return { id: author };
-
-  return {
-    id: author.id,
-    ...(author.email !== undefined && { email: author.email }),
-    ...(author.name !== undefined && { name: author.name }),
-    ...(author.displayName !== undefined && { displayName: author.displayName }),
-    ...(author.avatar !== undefined && { avatar: author.avatar }),
-  };
-}
+import { toQuizAuthorDto } from '@/mappers/quiz/QuizAuthorDtoMapper';
 
 function toQuestionDto(question: QuizQuestion): QuizQuestionDto {
   const base = {
@@ -56,7 +39,7 @@ function toDetailBase(quiz: Quiz) {
     title: quiz.title,
     ...(quiz.description !== undefined && { description: quiz.description }),
     slug: quiz.slug,
-    author: toAuthorDto(quiz.author),
+    author: toQuizAuthorDto(quiz.author, { includeEmail: true }),
     folder: quiz.folder ?? null,
     isPrivate: quiz.isPrivate,
     questionCount: quiz.questionCount ?? quiz.questions.length,

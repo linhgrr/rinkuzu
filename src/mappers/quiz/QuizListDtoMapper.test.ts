@@ -38,7 +38,6 @@ describe('QuizListDtoMapper', () => {
       slug: 'algebra-basics',
       author: {
         id: '507f191e810c19729de860eb',
-        email: 'teacher@example.com',
         name: 'Teacher',
         displayName: 'Math Teacher',
         avatar: 'https://example.com/avatar.png',
@@ -56,5 +55,11 @@ describe('QuizListDtoMapper', () => {
 
     expect(dto).not.toHaveProperty('_id');
     expect(typeof dto.author === 'object' ? dto.author : null).not.toHaveProperty('_id');
+  });
+
+  it('does not expose author email in catalog metadata', () => {
+    const dto = QuizListDtoMapper.toListItem(quiz);
+
+    expect(dto.author).not.toHaveProperty('email');
   });
 });

@@ -16,6 +16,8 @@
   "notAnswered": "Không trả lời",
   "history": "Lịch sử Quiz",
   "loadError": "Không thể tải chi tiết lượt làm",
+  "historyUnavailableTitle": "Không thể hiển thị chi tiết câu hỏi của lượt làm này",
+  "historyUnavailableDescription": "Bộ câu hỏi đã được thay đổi sau khi bạn làm bài. Điểm và số câu ban đầu vẫn được giữ, nhưng ghép câu hỏi hiện tại vào câu trả lời cũ sẽ cho kết quả sai.",
   "retryQuiz": "Làm lại Quiz",
   "backToHistory": "Quay lại lịch sử",
   "questionPrompt": "Câu hỏi",

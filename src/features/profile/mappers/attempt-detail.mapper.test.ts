@@ -7,8 +7,10 @@ describe('toAttemptDetailViewModel', () => {
       {
         id: 'attempt-1',
         score: 100,
+        totalQuestions: 2,
         takenAt: '2026-07-02T00:00:00.000Z',
         answers: [1, [0, 1]],
+        historyStatus: 'complete',
         quiz: {
           title: 'Algebra',
           slug: 'algebra',
@@ -41,5 +43,6 @@ describe('toAttemptDetailViewModel', () => {
     expect(result.quiz.questions[0]).not.toHaveProperty('correctIndexes');
     expect(result.quiz.questions[0]).not.toHaveProperty('questionImage');
     expect(result.quiz.questions[1]).not.toHaveProperty('correctIndex');
+    expect(result).toMatchObject({ totalQuestions: 2, historyStatus: 'complete' });
   });
 });

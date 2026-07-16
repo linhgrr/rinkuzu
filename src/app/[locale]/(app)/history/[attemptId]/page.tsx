@@ -254,27 +254,54 @@ function AttemptSummary({
 }) {
   const correctCount = attempt.quiz.questions.filter((question) => question.isCorrect).length;
   const wrongCount = attempt.quiz.questions.length - correctCount;
+  const historyUnavailable = attempt.historyStatus === 'quiz_modified';
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        {[
-          {
-            value: correctCount,
-            label: t('correctAnswers'),
-            className: 'text-green-600 bg-green-50',
-          },
-          {
-            value: wrongCount,
-            label: t('incorrectAnswers'),
-            className: 'text-red-600 bg-red-50',
-          },
-          {
-            value: `${attempt.score}%`,
-            label: t('totalScore'),
-            className: 'text-accent bg-emerald-50',
-          },
-        ].map((stat) => (
+      {historyUnavailable && (
+        <div
+          role="status"
+          className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900"
+        >
+          <p className="font-semibold">{t('historyUnavailableTitle')}</p>
+          <p>{t('historyUnavailableDescription')}</p>
+        </div>
+      )}
+
+      <div
+        className={cn('grid gap-2 sm:gap-4', historyUnavailable ? 'grid-cols-2' : 'grid-cols-3')}
+      >
+        {(historyUnavailable
+          ? [
+              {
+                value: attempt.totalQuestions,
+                label: t('questions'),
+                className: 'text-blue-700 bg-blue-50',
+              },
+              {
+                value: `${attempt.score}%`,
+                label: t('totalScore'),
+                className: 'text-accent bg-emerald-50',
+              },
+            ]
+          : [
+              {
+                value: correctCount,
+                label: t('correctAnswers'),
+                className: 'text-green-600 bg-green-50',
+              },
+              {
+                value: wrongCount,
+                label: t('incorrectAnswers'),
+                className: 'text-red-600 bg-red-50',
+              },
+              {
+                value: `${attempt.score}%`,
+                label: t('totalScore'),
+                className: 'text-accent bg-emerald-50',
+              },
+            ]
+        ).map((stat) => (
           <Card key={stat.label} className="overflow-hidden">
             <CardContent className="p-3 text-center sm:p-6">
               <div
@@ -291,11 +318,13 @@ function AttemptSummary({
         ))}
       </div>
 
-      <div className="space-y-4 sm:space-y-6">
-        {attempt.quiz.questions.map((question, index) => (
-          <AttemptQuestionCard key={question.id} index={index} question={question} t={t} />
-        ))}
-      </div>
+      {!historyUnavailable && (
+        <div className="space-y-4 sm:space-y-6">
+          {attempt.quiz.questions.map((question, index) => (
+            <AttemptQuestionCard key={question.id} index={index} question={question} t={t} />
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3 border-t border-line pt-6 sm:flex sm:justify-center sm:gap-4">
         <Link href={historyLink}>
@@ -391,7 +420,7 @@ export default function AttemptDetailPage() {
                       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-blue-50 px-3 py-2 text-blue-800">
                         <HiOutlineDocumentText className="size-4 shrink-0" />
                         <span className="truncate">
-                          {state.attempt.quiz.questions.length} {t('questions')}
+                          {state.attempt.totalQuestions} {t('questions')}
                         </span>
                       </span>
                       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-surface-warm px-3 py-2 text-ink">

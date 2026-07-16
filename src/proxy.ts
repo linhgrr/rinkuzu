@@ -122,10 +122,11 @@ function resolveGuardedPageResponse(
  */
 async function guardedRscProxy(request: NextRequest): Promise<Response> {
   const requestId = request.headers.get('x-request-id') || randomUUID();
+  const secret = process.env['AUTH_SECRET'];
   const token = await readAuthToken({
     req: request,
-    secret: process.env['AUTH_SECRET'],
     secureCookie: usesSecureAuthCookie(request),
+    ...(secret === undefined ? {} : { secret }),
   });
 
   return resolveGuardedPageResponse(request, requestId, {

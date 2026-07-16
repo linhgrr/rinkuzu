@@ -612,7 +612,7 @@ try {
         0,
       ),
       lookupIndexesUsed: attemptHistoryLookups.flatMap((lookup) => lookup.indexesUsed ?? []),
-      projection: attemptHistoryPipeline.at(-1)?.$facet?.items?.at(-1)?.$project,
+      projection: getFacetProjection(attemptHistoryPipeline, 'items'),
     };
     if (!attemptHistoryStages.has('IXSCAN') || attemptHistoryStages.has('SORT')) {
       throw new Error(
@@ -669,7 +669,7 @@ try {
       returnedRows: discussionStats.nReturned,
       lookupDocumentsExamined: discussionLookup?.totalDocsExamined ?? null,
       lookupIndexesUsed: discussionLookup?.indexesUsed ?? [],
-      projection: discussionPipeline.at(-1)?.$project,
+      projection: getFinalProjection(discussionPipeline),
     };
     if (!discussionStages.has('IXSCAN') || discussionStages.has('SORT')) {
       throw new Error('quiz-discussions did not use its quiz/question index for ordered reads');
@@ -732,7 +732,7 @@ try {
         (lookup) => lookup.totalDocsExamined ?? null,
       ),
       lookupIndexesUsed: recentAttemptLookups.map((lookup) => lookup.indexesUsed ?? []),
-      projection: recentAttemptPipeline.at(-1)?.$project,
+      projection: getFinalProjection(recentAttemptPipeline),
     };
     if (!recentAttemptStages.has('IXSCAN')) {
       throw new Error('admin-recent-attempts did not use IXSCAN');
@@ -822,6 +822,26 @@ function buildPublicProfileQuizPipeline(authorId, limit) {
     { $limit: limit },
     { $project: PUBLIC_PROFILE_QUIZ_PROJECTION },
   ];
+}
+
+/**
+ * @param {import('mongoose').PipelineStage[]} pipeline
+ * @returns {import('mongodb').Document | undefined}
+ */
+function getFinalProjection(pipeline) {
+  const finalStage = pipeline.at(-1);
+  return finalStage && '$project' in finalStage ? finalStage.$project : undefined;
+}
+
+/**
+ * @param {import('mongoose').PipelineStage[]} pipeline
+ * @param {string} facetName
+ * @returns {import('mongodb').Document | undefined}
+ */
+function getFacetProjection(pipeline, facetName) {
+  const finalStage = pipeline.at(-1);
+  if (!finalStage || !('$facet' in finalStage)) return undefined;
+  return getFinalProjection(finalStage.$facet[facetName] ?? []);
 }
 
 function collectStageNames(stage, names = new Set()) {

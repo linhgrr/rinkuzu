@@ -1,26 +1,8 @@
 import type { Quiz, QuizQuestion } from '@/entities/Quiz';
-import type {
-  PlayableQuizQuestionDto,
-  QuizDetailDto,
-  QuizPlayDetailDto,
-  QuizQuestionDto,
-} from '@/dtos/quiz';
+import type { PlayableQuizQuestionDto, QuizDetailDto, QuizPlayDetailDto } from '@/dtos/quiz';
 import { serializeDate } from '@/lib/date-serialization';
 import { toQuizAuthorDto } from '@/mappers/quiz/QuizAuthorDtoMapper';
-
-function toQuestionDto(question: QuizQuestion): QuizQuestionDto {
-  const base = {
-    id: question.id,
-    question: question.question,
-    options: question.options,
-    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
-    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
-  };
-
-  return question.type === 'single'
-    ? { ...base, type: 'single', correctIndex: question.correctIndex }
-    : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
-}
+import { toQuizQuestionDto } from '@/mappers/quiz/QuizQuestionDtoMapper';
 
 function toPlayableQuestionDto(question: QuizQuestion): PlayableQuizQuestionDto {
   return {
@@ -52,7 +34,7 @@ function toDetailBase(quiz: Quiz) {
 
 export class QuizDetailDtoMapper {
   static toDetail(quiz: Quiz): QuizDetailDto {
-    return { ...toDetailBase(quiz), questions: quiz.questions.map(toQuestionDto) };
+    return { ...toDetailBase(quiz), questions: quiz.questions.map(toQuizQuestionDto) };
   }
 
   static toPlayDetail(quiz: Quiz): QuizPlayDetailDto {

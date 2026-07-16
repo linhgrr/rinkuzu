@@ -1,14 +1,11 @@
 import type { AttemptDetailDto } from '@/dtos/user';
 import type { AttemptDetailViewModel } from '@/features/profile/types/attempt-detail-view-model';
 import { formatDateTime } from '@/lib/formatters';
+import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
 
 function toAttemptQuestionViewModel(question: AttemptDetailDto['quiz']['questions'][number]) {
   const base = {
-    id: question.id,
-    question: question.question,
-    options: question.options,
-    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
-    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
+    ...copyQuizQuestionFields(question),
     userAnswer: question.userAnswer,
     isCorrect: question.isCorrect,
   };

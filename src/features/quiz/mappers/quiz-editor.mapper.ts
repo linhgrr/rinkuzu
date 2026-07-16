@@ -3,15 +3,12 @@ import type {
   QuizEditViewModel,
   QuizEditorQuestionViewModel,
 } from '@/features/quiz/types/quiz-editor-view-model';
+import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
 
 function toEditorQuestion(question: QuizQuestionDto, index: number): QuizEditorQuestionViewModel {
   const base = {
-    id: question.id,
+    ...copyQuizQuestionFields(question),
     editorId: question.id || `loaded-question-${index}`,
-    question: question.question,
-    options: question.options,
-    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
-    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
   };
 
   return question.type === 'single'

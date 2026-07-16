@@ -4,6 +4,7 @@ import type {
   QuizEditorQuestionViewModel,
 } from '@/features/quiz/types/quiz-editor-view-model';
 import type { QuizQuestionInputViewModel } from '@/features/quiz/types/quiz-question';
+import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
 
 export type EditableQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
 
@@ -26,10 +27,7 @@ export function toEditorQuestions(
   return questions.map((question, index) => {
     const base = {
       editorId: `${idPrefix}-${index}`,
-      question: question.question,
-      options: question.options,
-      ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
-      ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
+      ...copyQuizQuestionContentFields(question),
     };
 
     return question.type === 'single'
@@ -59,10 +57,7 @@ function withBase(question: QuizEditorQuestionViewModel) {
   return {
     ...(question.id !== undefined && { id: question.id }),
     editorId: question.editorId,
-    question: question.question,
-    options: question.options,
-    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
-    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
+    ...copyQuizQuestionContentFields(question),
   };
 }
 

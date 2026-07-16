@@ -9,13 +9,13 @@ import {
   parseIndexCliArgs,
   readModeExitCode,
   selectIndexActionsForMode,
-  validateSafeOnlyRemainder,
+  validatePartialApplyRemainder,
   validateSensitiveApproval,
 } from './database/index-cli.mjs';
 import { INDEX_CONTRACT, INDEX_CONTRACT_VERSION } from './database/index-contract.mjs';
 import { buildIndexPlan, isApplicableAction } from './database/index-planner.mjs';
 
-config({ path: '.env' });
+config({ path: '.env', quiet: true });
 
 class MigrationSafetyError extends Error {
   constructor(message) {
@@ -95,17 +95,21 @@ async function applyPlan(db, plan, options) {
     );
   }
 
-  if (options.mode === 'apply') {
+  const plannedActions = selectIndexActionsForMode(plan, options.mode, options.actionTypes);
+
+  if (options.mode === 'apply' || options.mode === 'apply-selected') {
     const approval = await loadApproval(options.approvalFile);
-    const approvalIssues = validateSensitiveApproval({ approval, plan });
+    const approvalIssues = validateSensitiveApproval({
+      approval,
+      plan: options.mode === 'apply' ? plan : { ...plan, actions: plannedActions },
+    });
     if (approvalIssues.length > 0) {
       throw new MigrationSafetyError(approvalIssues.join('; '));
     }
   }
 
   const execution = [];
-  const approvedFingerprints = new Set(plan.actions.map((action) => action.fingerprint));
-  const plannedActions = selectIndexActionsForMode(plan, options.mode, options.actionTypes);
+  const sourceFingerprints = new Set(plan.actions.map((action) => action.fingerprint));
   const selectedFingerprints = plannedActions.map((action) => action.fingerprint);
   for (const plannedAction of plannedActions) {
     if (!isApplicableAction(plannedAction)) {
@@ -117,7 +121,7 @@ async function applyPlan(db, plan, options) {
       throw new MigrationSafetyError('Database state changed to require manual reconciliation');
     }
     const unapprovedDrift = currentPlan.actions.filter(
-      (candidate) => !approvedFingerprints.has(candidate.fingerprint),
+      (candidate) => !sourceFingerprints.has(candidate.fingerprint),
     );
     if (unapprovedDrift.length > 0) {
       throw new MigrationSafetyError(
@@ -162,8 +166,8 @@ async function applyPlan(db, plan, options) {
       `Post-apply verification found ${verification.blockingCount} remaining drift action(s)`,
     );
   }
-  if (options.mode === 'apply-safe-only') {
-    const verificationIssues = validateSafeOnlyRemainder({
+  if (options.mode === 'apply-safe-only' || options.mode === 'apply-selected') {
+    const verificationIssues = validatePartialApplyRemainder({
       sourcePlan: plan,
       verificationPlan: verification,
       selectedFingerprints,
@@ -185,7 +189,8 @@ async function applyPlan(db, plan, options) {
         : 'sensitive_approval_required',
     sourcePlanSha: plan.planSha,
     verificationPlanSha: verification.planSha,
-    safeActionsVerified: true,
+    selectedActionsVerified: true,
+    allSafeActionsVerified: !hasRemainingSafeActions,
     productionContractVerified,
     actionTypeFilter: options.actionTypes,
     execution,

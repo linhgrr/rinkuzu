@@ -25,6 +25,10 @@ import type {
   UserProgressPersistenceRecord,
 } from '@/repositories/types/LearningProgressPersistence';
 import { buildPaginationMeta } from '@/lib/pagination';
+import {
+  retainRecentReviewHistory,
+  retainRecentWeeklyActivity,
+} from '@/lib/learning-progress-retention.mjs';
 
 type LibraryQuizAggregateRecord = LibraryQuizPersistenceRecord & {
   lastAttemptAt?: Date;
@@ -52,7 +56,7 @@ function questionProgressUpdate(
       correctStreak: progress.correctStreak,
       totalReviews: progress.totalReviews,
       totalCorrect: progress.totalCorrect,
-      history: progress.history,
+      history: retainRecentReviewHistory(progress.history),
       ...(progress.isBookmarked !== undefined ? { isBookmarked: progress.isBookmarked } : {}),
       ...(progress.notes !== undefined ? { notes: progress.notes } : {}),
     },
@@ -81,7 +85,7 @@ function userProgressUpdate(
         ? { lastSessionDate: progress.lastSessionDate }
         : {}),
       averageAccuracy: progress.averageAccuracy,
-      weeklyActivity: progress.weeklyActivity,
+      weeklyActivity: retainRecentWeeklyActivity(progress.weeklyActivity, progress.lastActiveDate),
     },
   };
 }

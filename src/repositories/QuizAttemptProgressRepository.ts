@@ -6,6 +6,7 @@ import type {
   RecordQuizAttemptProgressData,
 } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import { toUtcDateKey } from '@/lib/date-serialization';
+import { retainRecentWeeklyActivity } from '@/lib/learning-progress-retention.mjs';
 
 function questionIdFrom(data: RecordQuizAttemptProgressData['wrongQuestions'][number]): string {
   return data.questionId;
@@ -160,6 +161,10 @@ export class QuizAttemptProgressRepository implements IQuizAttemptProgressReposi
 
     userProgress.averageAccuracy =
       totalQuestionsWeek > 0 ? Math.round((totalCorrectWeek / totalQuestionsWeek) * 100) : 0;
+    userProgress.weeklyActivity = retainRecentWeeklyActivity(
+      userProgress.weeklyActivity,
+      userProgress.lastActiveDate,
+    );
 
     await userProgress.save();
   }

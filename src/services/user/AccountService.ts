@@ -9,15 +9,12 @@ import type {
 import type { AccountProfile } from '@/entities/Account';
 import type { IAccountRepository } from '@/interfaces/repositories/IAccountRepository';
 import type { IAccountService } from '@/interfaces/services/IAccountService';
-import {
-  ImageStorageConfigurationError,
-  ImageStorageUpstreamError,
-  type IImageStorage,
-} from '@/interfaces/services/IImageStorage';
+import type { IImageStorage } from '@/interfaces/services/IImageStorage';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { logger } from '@/lib/logger';
 import { AccountDtoMapper } from '@/mappers/user/AccountDtoMapper';
+import { toImageStorageFailure } from '@/services/image-storage-error';
 
 export class AccountService implements IAccountService {
   constructor(
@@ -112,12 +109,8 @@ export class AccountService implements IAccountService {
         ? { success: true, data: AccountDtoMapper.toAvatarResponse(upload.displayUrl) }
         : { success: false, error: 'User not found', statusCode: 404 };
     } catch (error) {
-      if (error instanceof ImageStorageConfigurationError) {
-        return { success: false, error: error.message, statusCode: 500 };
-      }
-      if (error instanceof ImageStorageUpstreamError) {
-        return { success: false, error: error.message, statusCode: 502 };
-      }
+      const storageFailure = toImageStorageFailure(error);
+      if (storageFailure) return storageFailure;
       logger.error({ error, email }, 'Upload avatar error');
       return { success: false, error: 'Internal server error', statusCode: 500 };
     }

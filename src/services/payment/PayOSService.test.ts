@@ -158,6 +158,7 @@ describe('PayOSService', () => {
 
   it('verifies and loads payment info through GET payment-link endpoints', async () => {
     mockFetch(paymentLinkResponse());
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const service = new PayOSService();
 
     await expect(service.verifyPayment(123)).resolves.toMatchObject({
@@ -177,6 +178,16 @@ describe('PayOSService', () => {
       'https://api-merchant.payos.vn/v2/payment-requests/456',
     );
     expect(vi.mocked(fetch).mock.calls[1]?.[1]).toMatchObject({ method: 'GET' });
+
+    const getRequestLogs = warn.mock.calls.filter((call) => call[0] === 'PayOS API Request:');
+    expect(getRequestLogs).toHaveLength(2);
+    for (const [, payload] of getRequestLogs) {
+      expect(payload).toEqual({
+        url: expect.stringContaining('/v2/payment-requests/'),
+        method: 'GET',
+        body: undefined,
+      });
+    }
   });
 
   it('surfaces PayOS API error envelopes and invalid JSON bodies', async () => {
@@ -229,6 +240,7 @@ describe('PayOSService', () => {
 
   it('returns true from testConnection when credentials are present', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const createHmacSpy = vi.spyOn(crypto, 'createHmac');
     await expect(new PayOSService().testConnection()).resolves.toBe(true);
     expect(warn).toHaveBeenCalledWith('Testing PayOS API connection...');
     expect(warn).toHaveBeenCalledWith(
@@ -239,6 +251,22 @@ describe('PayOSService', () => {
         checksumKey: 'Set',
         baseUrl: 'https://api-merchant.payos.vn',
       }),
+    );
+    expect(createHmacSpy).toHaveBeenCalledWith('sha256', 'checksum-key');
+    const hmac = createHmacSpy.mock.results[0]?.value as { update: (data: string) => unknown };
+    expect(typeof hmac.update).toBe('function');
+  });
+
+  it('returns false from testConnection when signature generation throws', async () => {
+    const { logger } = await import('@/lib/logger');
+    vi.spyOn(crypto, 'createHmac').mockImplementation(() => {
+      throw new Error('hmac unavailable');
+    });
+
+    await expect(new PayOSService().testConnection()).resolves.toBe(false);
+    expect(logger.error).toHaveBeenCalledWith(
+      { error: expect.any(Error) },
+      'PayOS connection test failed',
     );
   });
 

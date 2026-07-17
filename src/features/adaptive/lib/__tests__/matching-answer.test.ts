@@ -64,4 +64,28 @@ describe('matching-answer', () => {
       rightItems: ['2', '1'],
     });
   });
+
+  it('throws when a sparse right_items list claims matching length but misses an index', () => {
+    const sparseRightItems = ['only-first'] as string[];
+    sparseRightItems.length = 2;
+
+    expect(() =>
+      buildInitialMatchingAnswer({
+        pairs: [
+          { left: 'A', right: '1' },
+          { left: 'B', right: '2' },
+        ],
+        right_items: sparseRightItems,
+      }),
+    ).toThrow('Matching exercise is missing right item at index 1');
+  });
+
+  it('throws when a draft omits a left item required by the current matching map', () => {
+    const draft = { A: '1' } as Record<string, string>;
+    Object.defineProperty(draft, 'B', { enumerable: true, value: undefined });
+
+    expect(() => getMatchingInteractionItems(matchingExercise, draft)).toThrow(
+      'Matching answer is missing value for left item: B',
+    );
+  });
 });

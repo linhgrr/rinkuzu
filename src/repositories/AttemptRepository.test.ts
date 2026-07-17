@@ -68,6 +68,25 @@ describe('AttemptRepository', () => {
       ).rejects.toThrow(ZodError);
       expect(attemptMocks.aggregate).not.toHaveBeenCalled();
     });
+
+    it('treats an empty aggregate facet result as zero items and zero total', async () => {
+      // Pins result?.items ?? [] and result?.meta optional chaining when facet is missing.
+      attemptMocks.aggregate.mockResolvedValueOnce([]);
+      const repository = new AttemptRepository();
+      const userId = '507f191e810c19729de860ea';
+
+      await expect(repository.findByUser(userId, { page: 1, limit: 10 })).resolves.toEqual({
+        items: [],
+        pagination: {
+          currentPage: 1,
+          itemsPerPage: 10,
+          totalItems: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      });
+    });
   });
 
   describe('findByIdWithQuiz', () => {
@@ -200,6 +219,97 @@ describe('AttemptRepository', () => {
       const projection = pipeline?.at(-1)?.$project;
       expect(projection).not.toHaveProperty('answers');
       expect(projection).not.toHaveProperty('totalQuestions');
+    });
+
+    it('omits optional identity/title fields only when undefined and keeps score fields', async () => {
+      // Pins conditional spreads for userEmail/guestEmail/quizTitle and serializeId field name.
+      const repository = new AttemptRepository();
+      attemptMocks.aggregate.mockResolvedValueOnce([
+        {
+          _id: 'attempt-guest',
+          guestEmail: 'guest@example.com',
+          score: 40,
+          answeredQuestions: 1,
+          takenAt: new Date('2026-06-27T00:00:00.000Z'),
+        },
+        {
+          _id: 'attempt-user',
+          userEmail: 'user@example.com',
+          quizTitle: 'Geometry',
+          score: 90,
+          answeredQuestions: 5,
+          takenAt: new Date('2026-06-26T00:00:00.000Z'),
+        },
+      ]);
+
+      await expect(repository.findRecentActivity(2)).resolves.toEqual([
+        {
+          id: 'attempt-guest',
+          guestEmail: 'guest@example.com',
+          score: 40,
+          answeredQuestions: 1,
+          takenAt: new Date('2026-06-27T00:00:00.000Z'),
+        },
+        {
+          id: 'attempt-user',
+          userEmail: 'user@example.com',
+          quizTitle: 'Geometry',
+          score: 90,
+          answeredQuestions: 5,
+          takenAt: new Date('2026-06-26T00:00:00.000Z'),
+        },
+      ]);
+    });
+
+    it('rejects activity rows with missing ids via serializeId', async () => {
+      const repository = new AttemptRepository();
+      attemptMocks.aggregate.mockResolvedValueOnce([
+        {
+          score: 10,
+          answeredQuestions: 0,
+          takenAt: new Date('2026-06-25T00:00:00.000Z'),
+        },
+      ]);
+
+      await expect(repository.findRecentActivity(1)).rejects.toThrow(
+        /recentAttempt\._id is required/,
+      );
+    });
+  });
+
+  describe('scoreStats', () => {
+    it('returns zeros when no attempts exist', async () => {
+      attemptMocks.aggregate.mockResolvedValueOnce([]);
+      const repository = new AttemptRepository();
+
+      await expect(repository.scoreStats()).resolves.toEqual({
+        averageScore: 0,
+        highestScore: 0,
+        lowestScore: 0,
+      });
+    });
+
+    it('returns aggregated score stats when records exist', async () => {
+      attemptMocks.aggregate.mockResolvedValueOnce([
+        { averageScore: 72.5, highestScore: 100, lowestScore: 20 },
+      ]);
+      const repository = new AttemptRepository();
+
+      await expect(repository.scoreStats()).resolves.toEqual({
+        averageScore: 72.5,
+        highestScore: 100,
+        lowestScore: 20,
+      });
+
+      const [pipeline] = attemptMocks.aggregate.mock.calls[0] ?? [];
+      expect(pipeline?.[0]).toEqual({
+        $group: {
+          _id: null,
+          averageScore: { $avg: '$score' },
+          highestScore: { $max: '$score' },
+          lowestScore: { $min: '$score' },
+        },
+      });
     });
   });
 });

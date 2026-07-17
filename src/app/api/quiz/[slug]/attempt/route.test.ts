@@ -50,9 +50,17 @@ describe('POST /api/quiz/[slug]/attempt', () => {
     );
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
+    const body = await response.json();
+    expect(body).toMatchObject({
       error: { code: 'validation_error' },
     });
+    // pins non-empty fields meta (kills ObjectLiteral -> {} on param validation)
+    expect(body.error.meta?.fields).toEqual(
+      expect.objectContaining({
+        slug: expect.any(String),
+      }),
+    );
+    expect(Object.keys(body.error.meta?.fields ?? {}).length).toBeGreaterThan(0);
     expect(submitQuizAttemptMock).not.toHaveBeenCalled();
   });
 
@@ -77,6 +85,42 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       error: { code: 'validation_error', detail: 'User email is required' },
     });
     expect(submitQuizAttemptMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts guest body email even when a session exists without a user id', async () => {
+    // Pins identity gate: missing session.user.id must still allow body userEmail
+    // (kills LogicalOperator mutant that forces email/session conjunction incorrectly).
+    authMock.mockResolvedValue({ user: { email: 'orphan@example.com', role: 'user' } });
+
+    const response = await POST(
+      request({ answers: [0], idempotencyKey, userEmail: 'guest@example.com' }),
+      routeContext,
+    );
+
+    expect(response.status).toBe(200);
+    expect(submitQuizAttemptMock).toHaveBeenCalledWith(
+      slug,
+      [0],
+      idempotencyKey,
+      { user: { email: 'orphan@example.com', role: 'user' } },
+      'guest@example.com',
+    );
+  });
+
+  it('accepts session email identity when user id is absent and body omits userEmail', async () => {
+    // Pins optional-chaining on session.user and the AND identity gate.
+    authMock.mockResolvedValue({ user: { email: 'session-only@example.com', role: 'user' } });
+
+    const response = await POST(request({ answers: [1], idempotencyKey }), routeContext);
+
+    expect(response.status).toBe(200);
+    expect(submitQuizAttemptMock).toHaveBeenCalledWith(
+      slug,
+      [1],
+      idempotencyKey,
+      { user: { email: 'session-only@example.com', role: 'user' } },
+      undefined,
+    );
   });
 
   it('accepts guest attempts with body userEmail and maps the DTO payload', async () => {

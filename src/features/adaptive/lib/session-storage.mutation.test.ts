@@ -133,6 +133,12 @@ describe('session-storage mutation coverage', () => {
       expect(localStorage.getItem('al_session_job_map:v1')).toBeNull();
     });
 
+    it('does not call removeItem when the session job map key is absent', () => {
+      const removeItem = vi.spyOn(localStorage, 'removeItem');
+      expect(getJobIdForSession('missing')).toBeNull();
+      expect(removeItem).not.toHaveBeenCalled();
+    });
+
     it('keeps the 30 most recently updated mappings in descending updatedAt order', () => {
       const now = 2_000_000;
       vi.spyOn(Date, 'now').mockImplementation(() => now);
@@ -357,6 +363,12 @@ describe('session-storage mutation coverage', () => {
       expect(localStorage.getItem('al_session_outcome:v1:broken')).toBeNull();
     });
 
+    it('does not remove storage when an outcome key is simply missing', () => {
+      const removeItem = vi.spyOn(localStorage, 'removeItem');
+      expect(getSessionExerciseOutcome('absent-key')).toBeNull();
+      expect(removeItem).not.toHaveBeenCalled();
+    });
+
     it('rejects invalid submit result bloom levels and negative stats', () => {
       localStorage.setItem(
         'al_session_outcome:v1:bad-result',
@@ -428,6 +440,12 @@ describe('session-storage mutation coverage', () => {
       clearSessionExerciseDraft('session-1', 'exercise-1');
       expect(sessionStorage.getItem('al_exercise_draft:v1:session-1:exercise-1')).toBeNull();
       expect(getSessionExerciseDraft('session-1', 'exercise-1')).toBeNull();
+    });
+
+    it('does not remove sessionStorage when a draft key is simply missing', () => {
+      const removeItem = vi.spyOn(sessionStorage, 'removeItem');
+      expect(getSessionExerciseDraft('session-1', 'no-draft')).toBeNull();
+      expect(removeItem).not.toHaveBeenCalled();
     });
 
     it('removes non-JSON draft caches', () => {

@@ -69,9 +69,17 @@ describe('GET /api/user/attempts', () => {
     });
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
+    const body = await response.json();
+    expect(body).toMatchObject({
       error: { code: 'validation_error' },
     });
+    // pins fields meta object (kills ObjectLiteral -> {} on validation branch)
+    expect(body.error.meta?.fields).toEqual(
+      expect.objectContaining({
+        page: expect.any(String),
+      }),
+    );
+    expect(Object.keys(body.error.meta?.fields ?? {}).length).toBeGreaterThan(0);
     expect(getUserAttemptsMock).not.toHaveBeenCalled();
   });
 
@@ -105,6 +113,24 @@ describe('GET /api/user/attempts', () => {
     await expect(failed.json()).resolves.toMatchObject({
       error: { code: 'internal_error', detail: 'Internal server error' },
     });
-    expect(loggerErrorMock).toHaveBeenCalled();
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.any(Error) }),
+      'Get user attempts error',
+    );
+  });
+
+  it('maps non-Error throws to 500 without treating empty messages as User not found', async () => {
+    getUserAttemptsMock.mockRejectedValueOnce('unexpected');
+
+    const response = await GET(request(), routeContext);
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'internal_error', detail: 'Internal server error' },
+    });
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'unexpected' }),
+      'Get user attempts error',
+    );
   });
 });

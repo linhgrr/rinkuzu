@@ -13,6 +13,15 @@ import type {
   UpdateBillingPlanData,
 } from '@/interfaces/repositories/IAdminBillingRepository';
 import { AdminBillingService } from '@/services/admin/AdminBillingService';
+import { LIFETIME_END_DATE } from '@/lib/subscription-date';
+
+const { loggerErrorMock } = vi.hoisted(() => ({
+  loggerErrorMock: vi.fn(),
+}));
+
+vi.mock('@/lib/logger', () => ({
+  logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
 
 const now = new Date('2026-06-30T10:00:00.000Z');
 
@@ -82,8 +91,30 @@ describe('AdminBillingService', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
+    vi.clearAllMocks();
     repository = new AdminBillingRepositoryStub();
     service = new AdminBillingService(repository);
+  });
+
+  it('lists plans and maps unexpected failures to 500', async () => {
+    repository.listPlans
+      .mockResolvedValueOnce([plan()])
+      .mockRejectedValueOnce(new Error('db down'));
+
+    await expect(service.listPlans()).resolves.toEqual({
+      success: true,
+      data: [expect.objectContaining({ id: 'premium-p1m', name: 'Premium' })],
+    });
+
+    await expect(service.listPlans()).resolves.toEqual({
+      success: false,
+      error: 'Internal server error',
+      statusCode: 500,
+    });
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      { error: expect.any(Error) },
+      'Admin get plans error',
+    );
   });
 
   it('creates an immutable plan id and maps plan DTOs', async () => {
@@ -132,6 +163,75 @@ describe('AdminBillingService', () => {
     });
   });
 
+  it('maps unexpected create failures to 500', async () => {
+    repository.createPlan.mockRejectedValue(new Error('write failed'));
+
+    await expect(
+      service.createPlan({
+        name: 'Premium',
+        price: 99000,
+        duration: 'P1M',
+        features: [],
+        isActive: true,
+      }),
+    ).resolves.toEqual({
+      success: false,
+      error: 'Internal server error',
+      statusCode: 500,
+    });
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      { error: expect.any(Error) },
+      'Admin create plan error',
+    );
+  });
+
+  it('forwards only defined update fields to the repository', async () => {
+    repository.updatePlan.mockResolvedValue(plan({ name: 'Pro', price: 120000, isActive: false }));
+
+    await service.updatePlan({
+      id: 'premium-p1m',
+      name: 'Pro',
+      price: 120000,
+      duration: 'P3M',
+      features: ['AI', 'OCR'],
+      isActive: false,
+    });
+
+    expect(repository.updatePlan).toHaveBeenCalledWith('premium-p1m', {
+      name: 'Pro',
+      price: 120000,
+      duration: 'P3M',
+      features: ['AI', 'OCR'],
+      isActive: false,
+    });
+
+    repository.updatePlan.mockClear();
+    repository.updatePlan.mockResolvedValue(plan({ name: 'Solo' }));
+
+    await service.updatePlan({ id: 'premium-p1m', name: 'Solo' });
+    expect(repository.updatePlan).toHaveBeenCalledWith('premium-p1m', { name: 'Solo' });
+
+    repository.updatePlan.mockClear();
+    repository.updatePlan.mockResolvedValue(plan({ price: 1 }));
+    await service.updatePlan({ id: 'premium-p1m', price: 1 });
+    expect(repository.updatePlan).toHaveBeenCalledWith('premium-p1m', { price: 1 });
+
+    repository.updatePlan.mockClear();
+    repository.updatePlan.mockResolvedValue(plan({ duration: 'P1Y' }));
+    await service.updatePlan({ id: 'premium-p1m', duration: 'P1Y' });
+    expect(repository.updatePlan).toHaveBeenCalledWith('premium-p1m', { duration: 'P1Y' });
+
+    repository.updatePlan.mockClear();
+    repository.updatePlan.mockResolvedValue(plan({ features: [] }));
+    await service.updatePlan({ id: 'premium-p1m', features: [] });
+    expect(repository.updatePlan).toHaveBeenCalledWith('premium-p1m', { features: [] });
+
+    repository.updatePlan.mockClear();
+    repository.updatePlan.mockResolvedValue(plan({ isActive: false }));
+    await service.updatePlan({ id: 'premium-p1m', isActive: false });
+    expect(repository.updatePlan).toHaveBeenCalledWith('premium-p1m', { isActive: false });
+  });
+
   it('updates and deletes plans through repository ports', async () => {
     repository.updatePlan.mockResolvedValueOnce(null).mockResolvedValueOnce(plan({ name: 'Pro' }));
     repository.deletePlan.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
@@ -154,6 +254,31 @@ describe('AdminBillingService', () => {
       success: true,
       data: { id: 'premium-p1m', deleted: true },
     });
+  });
+
+  it('maps unexpected update and delete failures to 500', async () => {
+    repository.updatePlan.mockRejectedValueOnce(new Error('update failed'));
+    repository.deletePlan.mockRejectedValueOnce(new Error('delete failed'));
+
+    await expect(service.updatePlan({ id: 'premium-p1m', name: 'Pro' })).resolves.toEqual({
+      success: false,
+      error: 'Internal server error',
+      statusCode: 500,
+    });
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      { error: expect.any(Error) },
+      'Admin update plan error',
+    );
+
+    await expect(service.deletePlan('premium-p1m')).resolves.toEqual({
+      success: false,
+      error: 'Internal server error',
+      statusCode: 500,
+    });
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      { error: expect.any(Error) },
+      'Admin delete plan error',
+    );
   });
 
   it('preserves subscription history when an assigned plan is deleted', async () => {
@@ -210,6 +335,35 @@ describe('AdminBillingService', () => {
         },
       },
     });
+  });
+
+  it('omits undefined list filters and maps list failures to 500', async () => {
+    repository.listSubscriptions
+      .mockResolvedValueOnce({
+        items: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: 20,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      })
+      .mockRejectedValueOnce(new Error('list failed'));
+
+    await service.listSubscriptions({ page: 1, limit: 20 });
+    expect(repository.listSubscriptions).toHaveBeenCalledWith({ page: 1, limit: 20 });
+
+    await expect(service.listSubscriptions({ page: 1, limit: 20 })).resolves.toEqual({
+      success: false,
+      error: 'Internal server error',
+      statusCode: 500,
+    });
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      { error: expect.any(Error) },
+      'Admin subscriptions list error',
+    );
   });
 
   it('grants a user subscription using the selected plan duration', async () => {
@@ -311,5 +465,50 @@ describe('AdminBillingService', () => {
         planId: 'premium-p1m',
       }),
     ).resolves.toEqual({ success: false, error: 'Plan is unavailable', statusCode: 409 });
+  });
+
+  it('grants lifetime plans with the far-future end date sentinel', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: '507f191e810c19729de860ea',
+      email: 'user@example.com',
+    });
+    repository.findPlanById.mockResolvedValue(plan({ duration: 'PT0S' }));
+    repository.addUserSubscriptionGrant.mockResolvedValue();
+
+    const result = await service.grantUserSubscription({
+      userId: '507f191e810c19729de860ea',
+      planId: 'premium-p1m',
+    });
+
+    expect(result.success).toBe(true);
+    expect(repository.addUserSubscriptionGrant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endDate: LIFETIME_END_DATE,
+      }),
+    );
+  });
+
+  it('maps unexpected grant failures to 500', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: '507f191e810c19729de860ea',
+      email: 'user@example.com',
+    });
+    repository.findPlanById.mockResolvedValue(plan());
+    repository.addUserSubscriptionGrant.mockRejectedValue(new Error('grant failed'));
+
+    await expect(
+      service.grantUserSubscription({
+        userId: '507f191e810c19729de860ea',
+        planId: 'premium-p1m',
+      }),
+    ).resolves.toEqual({
+      success: false,
+      error: 'Internal server error',
+      statusCode: 500,
+    });
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      { error: expect.any(Error) },
+      'Add subscription error',
+    );
   });
 });

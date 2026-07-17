@@ -7,6 +7,7 @@ import {
   isAdaptiveRequestAbortedError,
   isAdaptiveServiceUnavailableError,
   isRetryableAdaptiveError,
+  isSessionNotFoundError,
 } from '@/features/adaptive/lib/adaptive-api-error';
 
 function makeError(code: string, retryable = false) {
@@ -65,5 +66,16 @@ describe('adaptive api error guards', () => {
     expect(isAdaptivePipelineNotReadyError(makeError('pipeline_not_completed'))).toBe(true);
     expect(isAdaptivePipelineNotReadyError(makeError('pipeline_not_found'))).toBe(false);
     expect(isAdaptivePipelineNotReadyError('pipeline_not_completed')).toBe(false);
+  });
+
+  it('detects session-not-found phrasing case-insensitively on Error messages only', () => {
+    expect(isSessionNotFoundError(new Error('Session not found for id'))).toBe(true);
+    expect(isSessionNotFoundError(new Error('code=session_not_found'))).toBe(true);
+    expect(isSessionNotFoundError(new Error('SESSION NOT FOUND'))).toBe(true);
+    expect(isSessionNotFoundError(new Error('session missing'))).toBe(false);
+    expect(isSessionNotFoundError(makeError('not_found'))).toBe(false);
+    expect(isSessionNotFoundError('session not found')).toBe(false);
+    expect(isSessionNotFoundError(null)).toBe(false);
+    expect(isSessionNotFoundError({ message: 'session not found' })).toBe(false);
   });
 });

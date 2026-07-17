@@ -137,7 +137,7 @@ function createQuizPlayerData(rawQuiz: QuizPlayViewModel, log: (...args: unknown
     log(
       'Was actually shuffled:',
       question.options.length === shuffledOptions.length &&
-        !question.options.every((option, index) => option === shuffledOptions[index]),
+        question.options.some((option, index) => option !== shuffledOptions[index]),
     );
 
     return {

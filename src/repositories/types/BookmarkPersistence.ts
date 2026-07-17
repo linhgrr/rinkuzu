@@ -1,6 +1,6 @@
 import type { MongoIdLike } from '@/types/mongo';
 
-export interface BookmarkQuestionPersistenceRecord {
+interface BookmarkQuestionPersistenceRecord {
   text: string;
   options: string[];
   type: 'single' | 'multiple';
@@ -10,7 +10,7 @@ export interface BookmarkQuestionPersistenceRecord {
   optionImages?: (string | undefined)[];
 }
 
-export interface BookmarkQuizPersistenceRecord {
+interface BookmarkQuizPersistenceRecord {
   slug: string;
   title: string;
   description?: string;

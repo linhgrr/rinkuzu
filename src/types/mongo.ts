@@ -1,4 +1,4 @@
-export interface StringifiableId {
+interface StringifiableId {
   toString(): string;
 }
 

@@ -9,7 +9,7 @@ export const verifySubscriptionRequestSchema = z.strictObject({
 
 const payosWebhookScalarSchema = z.union([z.string(), z.number()]);
 
-export const payosWebhookDataSchema = z
+const payosWebhookDataSchema = z
   .object({
     orderCode: payosWebhookScalarSchema.optional(),
     amount: payosWebhookScalarSchema.optional(),
@@ -63,7 +63,7 @@ export interface SubscriptionCancellationDto {
   success: boolean;
 }
 
-export interface SubscriptionPlanViewDto extends SubscriptionPlanDto {
+interface SubscriptionPlanViewDto extends SubscriptionPlanDto {
   durationDisplay: string;
   isLifetime: boolean;
   calculatedMonths?: number;
@@ -89,6 +89,3 @@ export interface SubscriptionStatusResponseDto {
   } | null;
   isPremium: boolean;
 }
-
-export type VerifySubscriptionRequestDto = z.infer<typeof verifySubscriptionRequestSchema>;
-export type PayOSWebhookRequestDto = z.infer<typeof payosWebhookRequestSchema>;

@@ -3,7 +3,7 @@ import argon2 from 'argon2';
 import * as bcrypt from 'bcryptjs';
 import { logger } from '@/lib/logger';
 
-export type PasswordHashAlgorithm = 'argon2id' | 'bcrypt' | 'unknown';
+type PasswordHashAlgorithm = 'argon2id' | 'bcrypt' | 'unknown';
 
 export interface PasswordVerificationResult {
   valid: boolean;

@@ -367,31 +367,6 @@ function normalizeSubjectHistoryDetail(
   };
 }
 
-export async function getNextConcept(sessionId: string): Promise<NextConcept> {
-  const response = await apiFetch<ApiSchemas['NextConceptResponse']>(
-    `/api/adaptive/session/${sessionId}/next-concept`,
-    {
-      method: 'POST',
-    },
-  );
-  const context = `next concept for session ${sessionId}`;
-  return {
-    ...response,
-    bloom_level: normalizeBloomLevel(response.bloom_level, context),
-    bloom_label: normalizeBloomLabel(response.bloom_label, context),
-  };
-}
-
-export async function getExercise(sessionId: string): Promise<Exercise> {
-  const response = await apiFetch<ExerciseApiResponse>(
-    `/api/adaptive/session/${sessionId}/exercise`,
-    {
-      method: 'POST',
-    },
-  );
-  return normalizeExerciseResponse(response);
-}
-
 export async function getLearningStep(sessionId: string): Promise<{
   concept: NextConcept;
   theory: TheoryData | null;

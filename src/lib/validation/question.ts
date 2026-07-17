@@ -15,7 +15,7 @@ const trimmedString = z
   .transform((value) => value.trim())
   .refine((value) => value.length > 0, 'Cannot be blank');
 
-export const optionSchema = z.string().transform((value) => value.trim());
+const optionSchema = z.string().transform((value) => value.trim());
 
 const baseQuestion = z.object({
   question: trimmedString,

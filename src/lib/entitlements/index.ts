@@ -13,7 +13,7 @@
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { getCachedTier, setCachedTier } from './cache';
 
-export { invalidateEntitlements, resetEntitlementsCache } from './cache';
+export { invalidateEntitlements } from './cache';
 
 export type Tier = 'free' | 'premium';
 
@@ -28,7 +28,7 @@ export type MeteredCapability =
 
 export type RateWindow = 'minute' | 'day';
 
-export type MeteredLimit = Record<RateWindow, number>;
+type MeteredLimit = Record<RateWindow, number>;
 
 interface TierEntitlements {
   boolean: Record<BooleanCapability, boolean>;

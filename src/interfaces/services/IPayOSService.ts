@@ -1,4 +1,4 @@
-export interface PayOSPaymentItem {
+interface PayOSPaymentItem {
   name: string;
   quantity: number;
   price: number;
@@ -27,7 +27,7 @@ export interface PayOSPaymentSignatureData {
   returnUrl: string;
 }
 
-export interface PayOSPaymentResponseData {
+interface PayOSPaymentResponseData {
   bin: string;
   accountNumber: string;
   accountName: string;
@@ -49,9 +49,9 @@ export interface PayOSPaymentResponse {
   signature?: string | undefined;
 }
 
-export type PayOSPaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'EXPIRED';
+type PayOSPaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'EXPIRED';
 
-export interface PayOSTransaction {
+interface PayOSTransaction {
   reference: string;
   amount: number;
   accountNumber: string;
@@ -65,7 +65,7 @@ export interface PayOSTransaction {
   counterAccountNumber: string | null;
 }
 
-export interface PayOSPaymentLinkData {
+interface PayOSPaymentLinkData {
   id: string;
   orderCode: number;
   amount: number;

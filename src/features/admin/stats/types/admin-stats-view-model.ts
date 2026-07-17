@@ -1,23 +1,23 @@
-export interface AdminOverviewStatsViewModel {
+interface AdminOverviewStatsViewModel {
   totalQuizzes: number;
   totalUsers: number;
   totalAdmins: number;
   totalAttempts: number;
 }
 
-export interface AdminTimeBucketViewModel {
+interface AdminTimeBucketViewModel {
   newUsers: number;
   newQuizzes: number;
   attempts: number;
 }
 
-export interface AdminRecentUserViewModel {
+interface AdminRecentUserViewModel {
   email: string;
   createdAt: string;
   createdAtLabel: string;
 }
 
-export interface AdminRecentQuizViewModel {
+interface AdminRecentQuizViewModel {
   title: string;
   createdAt: string;
   createdAtLabel: string;
@@ -39,7 +39,7 @@ export interface AdminRecentAttemptViewModel {
   };
 }
 
-export interface AdminCreatorStatsViewModel {
+interface AdminCreatorStatsViewModel {
   id: string;
   email: string;
   quizCount: number;

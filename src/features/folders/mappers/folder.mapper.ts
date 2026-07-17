@@ -23,24 +23,9 @@ export function toFolderListViewModel(dto: FolderListDto): FolderListViewModel {
   };
 }
 
-export function toFolderLibraryQuizViewModel(quiz: LibraryQuizDto): FolderLibraryQuizViewModel {
-  return {
-    id: quiz.id,
-    title: quiz.title,
-    slug: quiz.slug,
-    ...(quiz.description !== undefined && { description: quiz.description }),
-    author: quiz.author,
-    folder: quiz.folder,
-    isPrivate: quiz.isPrivate,
-    questionCount: quiz.questionCount,
-    ownedByMe: quiz.ownedByMe,
-    createdAt: quiz.createdAt,
-    updatedAt: quiz.updatedAt,
-    lastAttemptAt: quiz.lastAttemptAt,
-    lastProgressAt: quiz.lastProgressAt,
-    libraryStatus: quiz.libraryStatus,
-    displayDate: quiz.displayDate,
-  };
+function toFolderLibraryQuizViewModel(quiz: LibraryQuizDto): FolderLibraryQuizViewModel {
+  const { questions: _questions, pdfUrl: _pdfUrl, ...viewModel } = quiz;
+  return viewModel;
 }
 
 export function toFolderLibraryQuizViewModels(dto: LibraryListDto): FolderLibraryQuizViewModel[] {

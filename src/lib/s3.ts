@@ -1,4 +1,4 @@
-import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '@/lib/env';
 
@@ -35,17 +35,4 @@ export async function getSignedPDFUrl(key: string, expiresIn: number = 3600): Pr
   return getSignedUrl(s3Client, command, { expiresIn });
 }
 
-/**
- * Delete a PDF from S3
- * @param key - The S3 object key to delete
- */
-export async function deletePDF(key: string): Promise<void> {
-  const command = new DeleteObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: key,
-  });
-
-  await s3Client.send(command);
-}
-
-export { s3Client, BUCKET_NAME, OBJECT_STORAGE_PUBLIC_BASE_URL };
+export { s3Client, BUCKET_NAME };

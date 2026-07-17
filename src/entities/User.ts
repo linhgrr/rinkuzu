@@ -1,11 +1,3 @@
-export interface UserPreview {
-  id: string;
-  email?: string;
-  name?: string;
-  displayName?: string;
-  avatar?: string;
-}
-
 export interface UserSubscriptionSnapshot {
   type: string;
   startDate?: Date;

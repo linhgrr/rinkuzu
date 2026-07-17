@@ -32,7 +32,7 @@ interface Services {
   admin?: AdminService;
 }
 
-export class ServiceFactory {
+class ServiceFactory {
   private static instance: ServiceFactory;
   private repositories: Repositories;
   private services: Services = {};

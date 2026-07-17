@@ -10,7 +10,7 @@ export interface PaginatedRepositoryResult<T> {
   pagination: PaginationMeta;
 }
 
-export interface CreatedAtRangeFilter {
+interface CreatedAtRangeFilter {
   $gte: Date;
 }
 

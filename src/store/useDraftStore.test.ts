@@ -3,7 +3,7 @@ import {
   reconcileDraftsWithServer,
   type DraftProgress,
   type DraftServerSyncItem,
-} from './useDraftStore';
+} from './reconcile-drafts';
 
 const NOW_MS = Date.parse('2026-07-06T03:03:00.000Z');
 

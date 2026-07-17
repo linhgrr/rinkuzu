@@ -1,5 +1,5 @@
 import 'server-only';
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 type TokenPair = {
   raw: string;
@@ -15,14 +15,6 @@ export function createSecureToken(byteLength = 32): TokenPair {
 
 export function hashToken(rawToken: string): string {
   return createHash('sha256').update(rawToken, 'utf8').digest('hex');
-}
-
-export function constantTimeEqual(a: string, b: string): boolean {
-  if (typeof a !== 'string' || typeof b !== 'string') return false;
-  const aBuf = Buffer.from(a, 'utf8');
-  const bBuf = Buffer.from(b, 'utf8');
-  if (aBuf.length !== bBuf.length) return false;
-  return timingSafeEqual(aBuf, bBuf);
 }
 
 /**

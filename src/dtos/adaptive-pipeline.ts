@@ -15,10 +15,6 @@ export const adaptivePipelineProcessRequestSchema = z.strictObject({
   page_batch_size: z.number().int().min(1).max(50).default(10),
 });
 
-export type AdaptivePipelineProcessRequestDto = z.infer<
-  typeof adaptivePipelineProcessRequestSchema
->;
-
 export const adaptivePipelineJobsQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });

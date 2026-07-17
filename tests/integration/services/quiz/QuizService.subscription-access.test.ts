@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
-import { assertOk, assertFail } from '@/interfaces/services/types';
+import { assertOk, assertFail } from '../../../helpers/service-result-assert';
 
 import { QuizService } from '@/services/quiz/QuizService';
 import type { Discussion } from '@/entities/Discussion';

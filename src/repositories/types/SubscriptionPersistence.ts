@@ -1,7 +1,7 @@
 import type { SubscriptionRecordFields } from '@/entities/Subscription';
 import type { MongoIdLike } from '@/types/mongo';
 
-export interface CurrentSubscriptionSnapshotPersistenceRecord {
+interface CurrentSubscriptionSnapshotPersistenceRecord {
   endDate?: Date;
   isActive: boolean;
   payosOrderId?: string;

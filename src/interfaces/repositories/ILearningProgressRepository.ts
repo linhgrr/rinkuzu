@@ -1,6 +1,5 @@
 import type {
   LibraryQuiz,
-  QuestionReference,
   QuestionReviewProgress,
   QuestionReviewProgressDraft,
   StreakFreezePurchaseOptions,
@@ -68,11 +67,4 @@ export interface ILearningProgressRepository {
   countLearnedQuestions(userId: string): Promise<number>;
 
   updateTotalQuestionsLearned(userId: string, totalQuestionsLearned: number): Promise<void>;
-}
-
-export interface CreateQuestionProgressData {
-  userId: string;
-  quizSlug: string;
-  questionId: string;
-  questionRef?: QuestionReference;
 }

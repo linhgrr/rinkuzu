@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   changePasswordSchema,
   emailSchema,
-  flattenZodError,
   forgotPasswordSchema,
   loginSchema,
   passwordSchema,
@@ -11,8 +10,6 @@ import {
   resendVerificationSchema,
   resetPasswordSchema,
   verifyEmailSchema,
-  EMAIL_MAX_LENGTH,
-  PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from '@/lib/validation/auth';
 
@@ -24,7 +21,8 @@ describe('emailSchema', () => {
   it('rejects malformed addresses', () => {
     expect(emailSchema.safeParse('foo').success).toBe(false);
     expect(emailSchema.safeParse('foo@bar').success).toBe(false);
-    expect(emailSchema.safeParse(`${'a'.repeat(EMAIL_MAX_LENGTH)}@b.co`).success).toBe(false);
+    // Longer than EMAIL_MAX_LENGTH (254) local+domain still must fail
+    expect(emailSchema.safeParse(`${'a'.repeat(254)}@b.co`).success).toBe(false);
   });
 });
 
@@ -32,8 +30,9 @@ describe('passwordSchema', () => {
   it('enforces min/max length', () => {
     expect(passwordSchema.safeParse('a'.repeat(PASSWORD_MIN_LENGTH - 1)).success).toBe(false);
     expect(passwordSchema.safeParse('a'.repeat(PASSWORD_MIN_LENGTH)).success).toBe(true);
-    expect(passwordSchema.safeParse('a'.repeat(PASSWORD_MAX_LENGTH)).success).toBe(true);
-    expect(passwordSchema.safeParse('a'.repeat(PASSWORD_MAX_LENGTH + 1)).success).toBe(false);
+    // PASSWORD_MAX_LENGTH is 72
+    expect(passwordSchema.safeParse('a'.repeat(72)).success).toBe(true);
+    expect(passwordSchema.safeParse('a'.repeat(73)).success).toBe(false);
   });
 });
 
@@ -104,18 +103,5 @@ describe('changePasswordSchema', () => {
       newPassword: 'newpass12',
     });
     expect(ok.success).toBe(true);
-  });
-});
-
-describe('flattenZodError', () => {
-  it('returns the first issue as detail and per-field map', () => {
-    const result = registerSchema.safeParse({ email: 'no', password: '1' });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const flat = flattenZodError(result.error);
-      expect(flat.detail).toBeTypeOf('string');
-      expect(flat.detail.length).toBeGreaterThan(0);
-      expect(Object.keys(flat.fields).sort()).toEqual(['email', 'password']);
-    }
   });
 });

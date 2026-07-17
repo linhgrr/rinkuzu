@@ -7,7 +7,7 @@ import type { UserRole } from '@/types/next-auth';
 // change here. NEXT_PUBLIC_API_URL stays the bare host (no /api).
 const ADAPTIVE_API_BASE_PATH = '/api/v1';
 
-export function resolveAdaptiveApiUrl(): string {
+function resolveAdaptiveApiUrl(): string {
   return publicEnv.NEXT_PUBLIC_API_URL;
 }
 

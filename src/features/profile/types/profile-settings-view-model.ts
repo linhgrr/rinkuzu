@@ -1,4 +1,4 @@
-export interface ProfileSettingsSubscriptionViewModel {
+interface ProfileSettingsSubscriptionViewModel {
   type: string;
   startDate?: string;
   endDate?: string;

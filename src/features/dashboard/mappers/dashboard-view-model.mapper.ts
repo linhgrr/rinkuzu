@@ -11,7 +11,7 @@ import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
 import type { DashboardViewModel } from '@/features/dashboard/types/dashboard-view-model';
 import { toQuizListItemViewModel } from '@/features/quiz/mappers/quiz-list.mapper';
 
-export interface DashboardViewModelCopy {
+interface DashboardViewModelCopy {
   aiLearning: string;
   inProgress: string;
   quizBuilderTitle: string;

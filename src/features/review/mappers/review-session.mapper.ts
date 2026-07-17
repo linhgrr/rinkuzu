@@ -12,7 +12,7 @@ import type {
   ReviewSubmitResultViewModel,
 } from '@/features/review/types/review-session';
 
-export function toReviewQuestionReferenceViewModel(
+function toReviewQuestionReferenceViewModel(
   questionRef: QuestionReferenceDto,
 ): ReviewQuestionReferenceViewModel {
   return {
@@ -22,9 +22,7 @@ export function toReviewQuestionReferenceViewModel(
   };
 }
 
-export function toReviewQuestionViewModel(
-  question: DueReviewQuestionDto,
-): ReviewQuestionViewModel | null {
+function toReviewQuestionViewModel(question: DueReviewQuestionDto): ReviewQuestionViewModel | null {
   if (!question.questionRef) return null;
 
   return {

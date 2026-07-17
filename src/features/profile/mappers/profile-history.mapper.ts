@@ -5,7 +5,7 @@ import type {
 } from '@/features/profile/types/profile-history-view-model';
 import { formatDate } from '@/lib/formatters';
 
-export function toProfileHistoryAttemptViewModel(
+function toProfileHistoryAttemptViewModel(
   attempt: UserAttemptSummaryDto,
 ): ProfileHistoryAttemptViewModel {
   return {

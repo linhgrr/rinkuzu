@@ -1,9 +1,9 @@
 import type { ZodIssue, ZodType } from 'zod';
 
-export type RouteParamValue = string | string[] | undefined;
+type RouteParamValue = string | string[] | undefined;
 export type RouteParams = Record<string, RouteParamValue>;
 
-export type JsonBodyResult =
+type JsonBodyResult =
   | { success: true; data: unknown }
   | { success: false; error: 'Request body must be valid JSON' };
 
@@ -11,7 +11,7 @@ export type ValidationResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; fields: Record<string, string> };
 
-export type ValidationFailure = Extract<ValidationResult<never>, { success: false }>;
+type ValidationFailure = Extract<ValidationResult<never>, { success: false }>;
 
 function toValidationFailure(issues: ZodIssue[]): ValidationFailure {
   const fields: Record<string, string> = {};
@@ -26,7 +26,7 @@ function toValidationFailure(issues: ZodIssue[]): ValidationFailure {
   };
 }
 
-export async function readJsonBody(request: Request): Promise<JsonBodyResult> {
+async function readJsonBody(request: Request): Promise<JsonBodyResult> {
   try {
     return { success: true, data: await request.json() };
   } catch {

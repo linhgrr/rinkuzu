@@ -20,6 +20,7 @@ export const APP_MESSAGE_NAMESPACES = [
   'pwa',
   'quiz',
   'quizPreview',
+  'quizzes',
   'report',
   'review',
   'statsModal',

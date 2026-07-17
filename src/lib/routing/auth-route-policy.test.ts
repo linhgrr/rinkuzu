@@ -14,6 +14,7 @@ describe('getAuthRoutePolicy', () => {
     ['/login', 'public'],
     ['/dashboard-preview', 'public'],
     ['/explore', 'public'],
+    ['/quizzes', 'public'],
   ])('classifies %s as %s', (pathname, expected) => {
     expect(getAuthRoutePolicy(pathname)).toBe(expected);
   });

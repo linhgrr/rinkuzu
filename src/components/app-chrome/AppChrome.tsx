@@ -647,7 +647,7 @@ function AppTopbar({
         <div className="mx-auto flex w-full max-w-[1404px] items-center justify-between gap-6 px-8">
           <form
             className="w-full max-w-[486px]"
-            action={toBrowserPath(ROUTES.EXPLORE, currentLocale)}
+            action={toBrowserPath(ROUTES.QUIZZES, currentLocale)}
             method="get"
             role="search"
           >

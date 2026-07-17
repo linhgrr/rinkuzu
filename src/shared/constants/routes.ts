@@ -12,6 +12,7 @@ export const ROUTES = {
   BOOKMARKS: '/profile', // Consolidated
   HISTORY: '/profile', // Consolidated
   EXPLORE: '/explore',
+  QUIZZES: '/quizzes',
   SUBSCRIPTION: '/subscription',
 
   // Dynamic routes

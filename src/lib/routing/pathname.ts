@@ -130,6 +130,7 @@ const QUIZ_SCOPE_PREFIXES = [
   '/history',
   '/bookmarks',
   '/explore',
+  '/quizzes',
   '/quiz',
 ];
 

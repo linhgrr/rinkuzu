@@ -118,8 +118,8 @@ export default function BottomNav() {
   };
 
   const exploreTab: NavTab = {
-    href: '/explore',
-    labelKey: 'tabExplore',
+    href: '/quizzes',
+    labelKey: 'tabQuizzes',
     icon: (isActive) =>
       isActive ? (
         <HiSearch className="size-6 text-brand-trust" />

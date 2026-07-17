@@ -19,7 +19,6 @@ interface QuizSlugMutationContext<TInput> {
 
 interface QuizSlugMutationRouteOptions<TInput, TData> {
   schema: ZodType<TInput>;
-  missingEmailError: { code: string; detail: string; status: number };
   execute: (context: QuizSlugMutationContext<TInput>) => Promise<ServiceResult<TData>>;
   successMeta?: Record<string, unknown>;
   logMessage: string;
@@ -37,14 +36,6 @@ export function createQuizSlugMutationRoute<TInput, TData>(
           fields: parsedParams.fields,
         });
       }
-      if (!email) {
-        return apiErr(
-          options.missingEmailError.code,
-          options.missingEmailError.detail,
-          options.missingEmailError.status,
-        );
-      }
-
       const parsedBody = await readAndValidateJson(request, options.schema);
       if (!parsedBody.success) {
         return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);

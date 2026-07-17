@@ -188,7 +188,9 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
         const authoredQuizIds = authoredQuizzes.map((quiz) => quiz._id);
         const normalizedEmail = user.email.toLowerCase();
 
-        await Attempt.deleteMany({ user: userObjectId }).session(session);
+        await Attempt.deleteMany(
+          buildMongoOrFilter([{ user: userObjectId }, { guestEmail: normalizedEmail }]),
+        ).session(session);
         await Subscription.deleteMany(
           buildMongoOrFilter([{ user: userObjectId }, { userEmail: normalizedEmail }]),
         ).session(session);

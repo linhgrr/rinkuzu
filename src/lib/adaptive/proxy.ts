@@ -45,13 +45,14 @@ export type ProxyAuthContext = {
   userRole?: UserRole | null;
 };
 
+// End-to-end headers only. Hop-by-hop headers (e.g. connection) must not be
+// forwarded from upstream through this proxy.
 const UPSTREAM_RESPONSE_HEADERS = [
   'content-type',
   'cache-control',
   'etag',
   'last-modified',
   'vary',
-  'connection',
   'x-accel-buffering',
 ] as const;
 
@@ -187,10 +188,12 @@ export async function proxyAdaptiveRequest(
       }
 
       if (!isStandardErrorEnvelope(payload)) {
+        // Never reflect or log raw upstream error bodies — they may contain
+        // stack traces, internal paths, or other sensitive detail.
         return applyResponseHeaders(
           apiErr(
             'upstream_invalid_envelope',
-            upstreamText || 'Adaptive service returned a non-standard error envelope',
+            'Adaptive service returned a non-standard error envelope',
             502,
             { targetPath, upstreamStatus: response.status },
           ),
@@ -247,7 +250,10 @@ export async function proxyAdaptiveRequest(
       headers: responseHeaders,
     });
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    // AbortSignal.timeout() rejects with DOMException name TimeoutError (Node 22+).
+    // Client cancellation and AbortSignal.any composition typically use AbortError.
+    // Both are abort-like; distinguish client cancel vs upstream timeout via req.signal.
+    if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
       if (req.signal.aborted) {
         return apiErr('request_aborted', 'Request was cancelled by the client', 499);
       }

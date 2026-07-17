@@ -31,7 +31,6 @@ export const QuizQuestionSchema = new Schema<QuizQuestionDocument>({
   type: {
     type: String,
     enum: ['single', 'multiple'],
-    default: 'single',
     required: [true, 'Question type is required'],
   },
   correctIndex: {

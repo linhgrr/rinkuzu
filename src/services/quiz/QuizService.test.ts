@@ -161,13 +161,8 @@ describe('QuizService facade', () => {
     await service.createQuizFromDraft('user-1', 'draft-1', createData);
     expect(crudMocks.createQuizFromDraft).toHaveBeenCalledWith('user-1', 'draft-1', createData);
 
-    await service.getQuizById('id-1', 'user@example.com', 'user', 'user-1');
-    expect(crudMocks.getQuizById).toHaveBeenCalledWith(
-      'id-1',
-      'user@example.com',
-      'user',
-      'user-1',
-    );
+    await service.getQuizById('id-1', 'user-1', 'user');
+    expect(crudMocks.getQuizById).toHaveBeenCalledWith('id-1', 'user-1', 'user');
 
     await service.getQuizMetadataBySlug('algebra');
     expect(crudMocks.getQuizMetadataBySlug).toHaveBeenCalledWith('algebra');
@@ -261,12 +256,11 @@ describe('QuizService facade', () => {
     await service.getQuizDiscussions('algebra', session);
     expect(discussionMocks.getQuizDiscussions).toHaveBeenCalledWith('algebra', session);
 
-    await service.addDiscussionComment('algebra', 2, 'hello', 'user@example.com', session);
+    await service.addDiscussionComment('algebra', 2, 'hello', session);
     expect(discussionMocks.addDiscussionComment).toHaveBeenCalledWith(
       'algebra',
       2,
       'hello',
-      'user@example.com',
       session,
     );
   });

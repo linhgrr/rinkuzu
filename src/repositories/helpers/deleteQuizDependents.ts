@@ -1,4 +1,5 @@
 import type { ClientSession, Types } from 'mongoose';
+import Attempt from '@/models/Attempt';
 import Bookmark from '@/models/Bookmark';
 import Discussion from '@/models/Discussion';
 import FolderQuiz from '@/models/FolderQuiz';
@@ -27,4 +28,5 @@ export async function deleteQuizDependents(
   await QuestionProgress.deleteMany({ quizSlug: { $in: quizSlugs } }).session(session);
   await FolderQuiz.deleteMany({ quiz: { $in: quizIds } }).session(session);
   await QuizProgress.deleteMany({ quiz: { $in: quizIds } }).session(session);
+  await Attempt.deleteMany({ quiz: { $in: quizIds } }).session(session);
 }

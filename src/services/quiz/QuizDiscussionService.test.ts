@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
+import type { Session } from 'next-auth';
 import type { Quiz } from '@/entities/Quiz';
 import type { Discussion } from '@/entities/Discussion';
 import type { Report } from '@/entities/Report';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import type { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { QuizDiscussionService } from '@/services/quiz/QuizDiscussionService';
@@ -39,6 +39,49 @@ function discussion(overrides: Partial<Discussion> = {}): Discussion {
   };
 }
 
+function authenticatedSession(overrides: Partial<NonNullable<Session['user']>> = {}): Session {
+  return {
+    user: {
+      id: userId,
+      email: 'learner@example.com',
+      role: 'user',
+      ...overrides,
+    },
+    expires: '2026-07-04T00:00:00.000Z',
+  };
+}
+
+/** Runtime session with no user id, built via unknown validation (no unsafe cast). */
+function sessionMissingUserId(input: unknown): Session | null {
+  if (input === null) {
+    return null;
+  }
+  if (typeof input !== 'object') {
+    throw new Error('session input must be an object or null');
+  }
+  if (!('expires' in input)) {
+    throw new Error('session input must include expires');
+  }
+  const expires = Reflect.get(input, 'expires');
+  if (typeof expires !== 'string') {
+    throw new Error('session expires must be a string');
+  }
+  if (!('user' in input)) {
+    return { expires };
+  }
+  const user = Reflect.get(input, 'user');
+  if (user === undefined || user === null) {
+    return { expires };
+  }
+  if (typeof user !== 'object') {
+    throw new Error('session user must be an object when present');
+  }
+  if ('id' in user && Reflect.get(user, 'id') !== undefined) {
+    throw new Error('sessionMissingUserId helper rejects inputs that include a user id');
+  }
+  return { expires };
+}
+
 function createService() {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
@@ -57,25 +100,6 @@ function createService() {
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
     findTopCreators: vi.fn(),
-  };
-  const userRepository: Mocked<IUserRepository> = {
-    findByEmail: vi.fn().mockResolvedValue({
-      id: userId,
-      email: 'learner@example.com',
-      role: 'user',
-      isEmailVerified: true,
-      createdAt: now,
-      updatedAt: now,
-    }),
-    findById: vi.fn(),
-    findSubscriptionById: vi.fn(),
-    findPublicProfileById: vi.fn(),
-    updateRole: vi.fn(),
-    delete: vi.fn(),
-    findAll: vi.fn(),
-    count: vi.fn(),
-    countByRole: vi.fn(),
-    countByCreatedAtBuckets: vi.fn(),
   };
   const discussionRepository: Mocked<IDiscussionRepository> = {
     findByQuiz: vi.fn().mockResolvedValue([discussion()]),
@@ -101,14 +125,8 @@ function createService() {
   };
 
   return {
-    service: new QuizDiscussionService(
-      quizRepository,
-      userRepository,
-      discussionRepository,
-      reportRepository,
-    ),
+    service: new QuizDiscussionService(quizRepository, discussionRepository, reportRepository),
     quizRepository,
-    userRepository,
     discussionRepository,
     reportRepository,
   };
@@ -137,7 +155,7 @@ describe('QuizDiscussionService', () => {
       'algorithms',
       3,
       'Needs explanation',
-      'learner@example.com',
+      authenticatedSession(),
     );
 
     expect(result).toEqual({
@@ -149,29 +167,40 @@ describe('QuizDiscussionService', () => {
   });
 
   it('uses the authenticated user id and one atomic repository write when adding comments', async () => {
-    const { service, userRepository, discussionRepository } = createService();
+    const { service, discussionRepository } = createService();
 
     const result = await service.addDiscussionComment(
       'algorithms',
       0,
       'Needs explanation',
-      'learner@example.com',
-      {
-        user: {
-          id: userId,
-          email: 'learner@example.com',
-          role: 'user',
-        },
-        expires: '2026-07-04T00:00:00.000Z',
-      },
+      authenticatedSession(),
     );
 
     expect(result.success).toBe(true);
-    expect(userRepository.findByEmail).not.toHaveBeenCalled();
     expect(discussionRepository.addCommentForQuizQuestion).toHaveBeenCalledWith(quizId, 0, {
       authorId: userId,
       content: 'Needs explanation',
     });
+  });
+
+  it('rejects a missing user id with 401 and never writes a comment', async () => {
+    const { service, discussionRepository, quizRepository } = createService();
+    const session = sessionMissingUserId({ expires: '2026-07-04T00:00:00.000Z' });
+
+    const result = await service.addDiscussionComment(
+      'algorithms',
+      0,
+      'Needs explanation',
+      session,
+    );
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Authentication required',
+      statusCode: 401,
+    });
+    expect(quizRepository.findSummaryBySlug).not.toHaveBeenCalled();
+    expect(discussionRepository.addCommentForQuizQuestion).not.toHaveBeenCalled();
   });
 
   it('creates reports from quiz metadata without loading questions', async () => {

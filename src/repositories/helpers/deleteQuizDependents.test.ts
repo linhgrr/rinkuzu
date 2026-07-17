@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const modelMocks = vi.hoisted(() => ({
+  attemptDeleteMany: vi.fn(),
   bookmarkDeleteMany: vi.fn(),
   discussionDeleteMany: vi.fn(),
   folderQuizDeleteMany: vi.fn(),
@@ -11,6 +12,9 @@ const modelMocks = vi.hoisted(() => ({
   reportDeleteMany: vi.fn(),
 }));
 
+vi.mock('@/models/Attempt', () => ({
+  default: { deleteMany: modelMocks.attemptDeleteMany },
+}));
 vi.mock('@/models/Bookmark', () => ({
   default: { deleteMany: modelMocks.bookmarkDeleteMany },
 }));
@@ -51,6 +55,33 @@ describe('deleteQuizDependents', () => {
     }
   });
 
+  it('deletes Attempt and every quiz-dependent record for a single quiz id', async () => {
+    const quizId = new Types.ObjectId();
+    const quizSlug = 'single-quiz';
+
+    await deleteQuizDependents([{ id: quizId, slug: quizSlug }], session);
+
+    expect(modelMocks.discussionDeleteMany).toHaveBeenCalledWith({ quiz: { $in: [quizId] } });
+    expect(modelMocks.reportDeleteMany).toHaveBeenCalledWith({
+      quizId: { $in: [String(quizId)] },
+    });
+    expect(modelMocks.bookmarkDeleteMany).toHaveBeenCalledWith({
+      'quiz.slug': { $in: [quizSlug] },
+    });
+    expect(modelMocks.questionProgressDeleteMany).toHaveBeenCalledWith({
+      quizSlug: { $in: [quizSlug] },
+    });
+    expect(modelMocks.folderQuizDeleteMany).toHaveBeenCalledWith({ quiz: { $in: [quizId] } });
+    expect(modelMocks.quizProgressDeleteMany).toHaveBeenCalledWith({ quiz: { $in: [quizId] } });
+    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledWith({ quiz: { $in: [quizId] } });
+    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledTimes(1);
+
+    for (const sessionCall of sessionCalls) {
+      expect(sessionCall).toHaveBeenCalledWith(session);
+      expect(sessionCall).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it('deletes every quiz-dependent record using the shared identifiers', async () => {
     const firstId = new Types.ObjectId();
     const secondId = new Types.ObjectId();
@@ -77,9 +108,12 @@ describe('deleteQuizDependents', () => {
     });
     expect(modelMocks.folderQuizDeleteMany).toHaveBeenCalledWith({ quiz: { $in: quizIds } });
     expect(modelMocks.quizProgressDeleteMany).toHaveBeenCalledWith({ quiz: { $in: quizIds } });
+    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledWith({ quiz: { $in: quizIds } });
+    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledTimes(1);
 
     for (const sessionCall of sessionCalls) {
       expect(sessionCall).toHaveBeenCalledWith(session);
+      expect(sessionCall).toHaveBeenCalledTimes(1);
     }
   });
 });

@@ -60,6 +60,27 @@ const AttemptQuizSnapshotSchema = new Schema<AttemptQuizSnapshotDocument>(
   { _id: false },
 );
 
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1;
+}
+
+function sameIndexSet(left: number[], right: number[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  const sortedLeft = left.toSorted((a, b) => a - b);
+  const sortedRight = right.toSorted((a, b) => a - b);
+  return sortedLeft.every((value, index) => value === sortedRight[index]);
+}
+
+function isIndexWithinOptions(index: number, optionCount: number): boolean {
+  return Number.isInteger(index) && index >= 0 && index < optionCount;
+}
+
 const AttemptSchema = new Schema<AttemptDocument>({
   user: {
     type: Schema.Types.ObjectId,
@@ -104,11 +125,19 @@ const AttemptSchema = new Schema<AttemptDocument>({
     type: Number,
     required: [true, 'Correct answer count is required'],
     min: [0, 'Correct answer count cannot be negative'],
+    validate: {
+      validator: Number.isInteger,
+      message: 'Correct answer count must be an integer',
+    },
   },
   totalQuestions: {
     type: Number,
     required: [true, 'Total questions is required'],
     min: [1, 'Total questions must be positive'],
+    validate: {
+      validator: Number.isInteger,
+      message: 'Total questions must be an integer',
+    },
   },
   answers: {
     type: [SelectedAnswerSchema],
@@ -127,18 +156,123 @@ AttemptSchema.pre('validate', function validateIdentity() {
 });
 
 AttemptSchema.pre('validate', function validateSubmissionContract() {
-  const questionCount = this.quizSnapshot?.questions.length;
-  if (questionCount !== this.totalQuestions) {
+  const questions = this.quizSnapshot?.questions;
+  const questionCount = questions?.length;
+  const totalQuestionsValid = isPositiveInteger(this.totalQuestions);
+  const correctAnswersValid = isNonNegativeInteger(this.correctAnswers);
+
+  if (totalQuestionsValid && questionCount !== this.totalQuestions) {
     this.invalidate('totalQuestions', 'Total questions must match the immutable quiz snapshot');
   }
-  if (this.answers.length !== this.totalQuestions) {
+
+  if (totalQuestionsValid && this.answers.length !== this.totalQuestions) {
     this.invalidate('answers', 'Answer count must match total questions');
   }
-  if (this.correctAnswers > this.totalQuestions) {
+
+  if (correctAnswersValid && totalQuestionsValid && this.correctAnswers > this.totalQuestions) {
     this.invalidate('correctAnswers', 'Correct answer count cannot exceed total questions');
   }
-  const expectedScore = Math.round((this.correctAnswers / this.totalQuestions) * 100);
-  if (Number.isFinite(expectedScore) && this.score !== expectedScore) {
+
+  const canEvaluateAnswers =
+    Array.isArray(questions) &&
+    questions.length > 0 &&
+    totalQuestionsValid &&
+    this.totalQuestions === questions.length &&
+    this.answers.length === questions.length;
+
+  if (!canEvaluateAnswers) {
+    return;
+  }
+
+  let computedCorrect = 0;
+  let answersValid = true;
+
+  for (let questionIndex = 0; questionIndex < questions.length; questionIndex += 1) {
+    const question = questions[questionIndex];
+    const answer = this.answers[questionIndex];
+    if (question === undefined || answer === undefined) {
+      answersValid = false;
+      this.invalidate(`answers.${questionIndex}`, 'Answer is missing for quiz snapshot question');
+      continue;
+    }
+
+    const optionCount = question.options.length;
+
+    if (answer.kind !== question.type) {
+      answersValid = false;
+      this.invalidate(
+        `answers.${questionIndex}.kind`,
+        'Answer kind must match the quiz snapshot question type',
+      );
+      continue;
+    }
+
+    if (question.type === 'single' && answer.kind === 'single') {
+      const selectedIndex = answer.selectedIndex;
+      if (selectedIndex !== null) {
+        if (!isIndexWithinOptions(selectedIndex, optionCount)) {
+          answersValid = false;
+          this.invalidate(
+            `answers.${questionIndex}.selectedIndex`,
+            'Single-choice selectedIndex must be null or an integer within options range',
+          );
+          continue;
+        }
+      }
+
+      if (selectedIndex !== null && selectedIndex === question.correctIndex) {
+        computedCorrect += 1;
+      }
+      continue;
+    }
+
+    if (question.type === 'multiple' && answer.kind === 'multiple') {
+      const selectedIndexes = answer.selectedIndexes;
+      if (!Array.isArray(selectedIndexes)) {
+        answersValid = false;
+        this.invalidate(
+          `answers.${questionIndex}.selectedIndexes`,
+          'Multiple-choice selectedIndexes must be unique integers within options range',
+        );
+        continue;
+      }
+
+      const hasInvalidIndex = selectedIndexes.some(
+        (index) => !isIndexWithinOptions(index, optionCount),
+      );
+      const hasDuplicates = new Set(selectedIndexes).size !== selectedIndexes.length;
+      if (hasInvalidIndex || hasDuplicates) {
+        answersValid = false;
+        this.invalidate(
+          `answers.${questionIndex}.selectedIndexes`,
+          'Multiple-choice selectedIndexes must be unique integers within options range',
+        );
+        continue;
+      }
+
+      if (sameIndexSet(selectedIndexes, question.correctIndexes)) {
+        computedCorrect += 1;
+      }
+      continue;
+    }
+
+    answersValid = false;
+    this.invalidate(
+      `answers.${questionIndex}`,
+      'Persisted answer shape must match the quiz snapshot question',
+    );
+  }
+
+  if (!answersValid || !correctAnswersValid) {
+    return;
+  }
+
+  if (this.correctAnswers !== computedCorrect) {
+    this.invalidate('correctAnswers', 'Correct answer count must match evaluated answers');
+  }
+
+  const expectedScore = Math.round((computedCorrect / this.totalQuestions) * 100);
+  if (this.score !== expectedScore) {
     this.invalidate('score', 'Score must match the correct answer count');
   }
 });

@@ -16,7 +16,7 @@ import type {
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
-import { getAuthorId, PREMIUM_REQUIRED_CODE, requireQuizReadAccess } from './quiz-helpers';
+import { getAuthorId, PREMIUM_REQUIRED_CODE } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/lib/mongoose-errors';
@@ -168,19 +168,34 @@ export class QuizCrudService {
 
   async getQuizById(
     id: string,
-    userEmail?: string,
-    userRole?: string,
     userId?: string,
+    userRole?: string,
   ): Promise<ServiceResult<QuizDetailDto>> {
     try {
-      const access = await requireQuizReadAccess(
-        await this.quizRepository.findById(id),
-        userId,
-        userRole,
-      );
-      if (!access.success) return access;
+      // Author/admin only: QuizDetailDto includes answer keys (correctIndex/correctIndexes).
+      // Read access for play uses a different path that strips answers.
+      const quiz = await this.quizRepository.findById(id);
 
-      return { success: true, data: QuizDetailDtoMapper.toDetail(access.data) };
+      if (!quiz) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404,
+        };
+      }
+
+      const isAdmin = userRole === 'admin';
+      const isAuthor = userId !== undefined && getAuthorId(quiz.author) === userId;
+
+      if (!isAdmin && !isAuthor) {
+        return {
+          success: false,
+          error: 'Access denied',
+          statusCode: 403,
+        };
+      }
+
+      return { success: true, data: QuizDetailDtoMapper.toDetail(quiz) };
     } catch (error) {
       logger.error({ error }, 'Error in getQuizById');
       return {

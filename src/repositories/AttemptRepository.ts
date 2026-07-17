@@ -27,6 +27,7 @@ import {
 } from '@/lib/mongoose-count-buckets';
 import { Types } from 'mongoose';
 import { serializeId } from '@/lib/mongo-id';
+import { objectIdSchema } from '@/lib/validation/common';
 import { buildRecentAttemptActivityPipeline } from '@/repositories/pipelines/recent-attempt-activity.mjs';
 import {
   buildAttemptDetailPipeline,
@@ -42,8 +43,9 @@ type AttemptListFacetResult = {
   meta: AttemptListFacetMeta[];
 };
 
-function toObjectIdIfValid(value: string): string | Types.ObjectId {
-  return Types.ObjectId.isValid(value) ? new Types.ObjectId(value) : value;
+/** Strict 24-hex ObjectId; invalid values fail before any Mongo query. */
+function toStrictObjectId(value: string): Types.ObjectId {
+  return new Types.ObjectId(objectIdSchema.parse(value));
 }
 
 export class AttemptRepository implements IAttemptRepository {
@@ -51,13 +53,14 @@ export class AttemptRepository implements IAttemptRepository {
     userId: string,
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Attempt>> {
+    const userObjectId = toStrictObjectId(userId);
     await connectDB();
 
     const { page, limit } = options;
     const skip = (page - 1) * limit;
 
     const [result] = await AttemptModel.aggregate<AttemptListFacetResult>(
-      buildUserAttemptListPipeline(toObjectIdIfValid(userId), skip, limit),
+      buildUserAttemptListPipeline(userObjectId, skip, limit),
     );
     const records = result?.items ?? [];
     const totalItems = result?.meta[0]?.totalItems ?? 0;
@@ -66,16 +69,6 @@ export class AttemptRepository implements IAttemptRepository {
       items: records.map(AttemptPersistenceMapper.toEntity),
       pagination: buildPaginationMeta(page, limit, totalItems),
     };
-  }
-
-  async countByUser(userId: string): Promise<number> {
-    await connectDB();
-    return AttemptModel.countDocuments({ user: userId });
-  }
-
-  async countByQuiz(quizId: string): Promise<number> {
-    await connectDB();
-    return AttemptModel.countDocuments({ quiz: quizId });
   }
 
   async findRecentActivity(limit: number): Promise<RecentAttemptActivity[]> {
@@ -95,12 +88,13 @@ export class AttemptRepository implements IAttemptRepository {
   }
 
   async findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null> {
-    await connectDB();
+    const attemptObjectId = toStrictObjectId(attemptId);
     const identityFilter = owner.userId
-      ? { user: toObjectIdIfValid(owner.userId) }
+      ? { user: toStrictObjectId(owner.userId) }
       : { guestEmail: owner.guestEmail };
+    await connectDB();
     const [record] = await AttemptModel.aggregate<AttemptPersistenceRecord>(
-      buildAttemptDetailPipeline(toObjectIdIfValid(attemptId), identityFilter),
+      buildAttemptDetailPipeline(attemptObjectId, identityFilter),
     );
     return record ? AttemptPersistenceMapper.toEntity(record) : null;
   }

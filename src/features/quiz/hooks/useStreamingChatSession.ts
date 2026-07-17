@@ -206,11 +206,12 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       },
     }));
 
-    try {
-      abortControllerRef.current?.abort();
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
+    abortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    const ownsActiveStream = () => abortControllerRef.current === abortController;
 
+    try {
       const explanation = await streamQuizAI(
         {
           question: payload.question,
@@ -223,6 +224,9 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
         {
           signal: abortController.signal,
           onContent: (_, fullContent) => {
+            if (!ownsActiveStream()) {
+              return;
+            }
             setState((prev) => {
               const history = replaceLastAssistantMessage(
                 prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES,
@@ -237,6 +241,10 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
         },
       );
 
+      if (!ownsActiveStream()) {
+        return false;
+      }
+
       setState((prev) => {
         const history = replaceLastAssistantMessage(
           prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES,
@@ -248,17 +256,21 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
           userQuestion: '',
         };
       });
-      if (abortControllerRef.current === abortController) {
-        abortControllerRef.current = null;
-      }
       return true;
     } catch (error: unknown) {
+      const isOwner = ownsActiveStream();
       setState((prev) => {
         const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
-        const lastMessage = history[history.length - 1];
-        if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
-          history.pop();
+        // Only remove this request's empty assistant — never the newer stream's placeholder.
+        // Identity match: onContent/success replace the message object, so a still-empty
+        // placeholder remains the same reference we appended for this request.
+        const ownedEmptyIdx = history.findIndex(
+          (message) => message === assistantPlaceholder && !message.content.trim(),
+        );
+        if (ownedEmptyIdx >= 0) {
+          history.splice(ownedEmptyIdx, 1);
         }
+
         if (isAbortLikeError(error)) {
           return {
             ...prev,
@@ -266,6 +278,15 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
             chatHistories: { ...prev.chatHistories, [key]: history },
           };
         }
+
+        if (!isOwner) {
+          // Superseded/cancelled request: keep the active stream's error/loading untouched.
+          return {
+            ...prev,
+            chatHistories: { ...prev.chatHistories, [key]: history },
+          };
+        }
+
         return {
           ...prev,
           aiError:
@@ -277,8 +298,10 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       });
       return false;
     } finally {
-      abortControllerRef.current = null;
-      setState((prev) => ({ ...prev, loadingAI: false }));
+      if (ownsActiveStream()) {
+        abortControllerRef.current = null;
+        setState((prev) => ({ ...prev, loadingAI: false }));
+      }
     }
   };
 

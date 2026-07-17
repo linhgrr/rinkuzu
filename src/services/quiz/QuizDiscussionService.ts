@@ -1,5 +1,4 @@
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { ServiceResult } from '@/interfaces/services/types';
@@ -13,7 +12,6 @@ import { QuizDiscussionDtoMapper } from '@/mappers/quiz/QuizDiscussionDtoMapper'
 export class QuizDiscussionService {
   constructor(
     private quizRepository: IQuizRepository,
-    private userRepository: IUserRepository,
     private discussionRepository: IDiscussionRepository,
     private reportRepository: IReportRepository,
   ) {}
@@ -57,10 +55,18 @@ export class QuizDiscussionService {
     slug: string,
     questionIndex: number,
     content: string,
-    userEmail: string,
-    session?: Session | null,
+    session: Session | null,
   ): Promise<ServiceResult<QuizDiscussionDto>> {
     try {
+      const authorId = session?.user?.id;
+      if (!authorId) {
+        return {
+          success: false,
+          error: 'Authentication required',
+          statusCode: 401,
+        };
+      }
+
       const access = await this.getAccessibleQuizSummary(slug, session);
       if (!access.success) return access;
 
@@ -72,19 +78,6 @@ export class QuizDiscussionService {
           error: 'Invalid question index',
           statusCode: 400,
         };
-      }
-
-      let authorId = session?.user?.id;
-      if (!authorId) {
-        const user = await this.userRepository.findByEmail(userEmail);
-        if (!user) {
-          return {
-            success: false,
-            error: 'User not found',
-            statusCode: 404,
-          };
-        }
-        authorId = user.id;
       }
 
       const updatedDiscussion = await this.discussionRepository.addCommentForQuizQuestion(
@@ -152,14 +145,6 @@ export class QuizDiscussionService {
         content: content.trim(),
         status: 'pending',
       });
-
-      if (!report) {
-        return {
-          success: false,
-          error: 'Report not created',
-          statusCode: 500,
-        };
-      }
 
       return {
         success: true,

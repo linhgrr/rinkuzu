@@ -4,6 +4,8 @@ import type {
   AdminQuizListItemViewModel,
   AdminQuizListViewModel,
 } from '@/features/admin/quizzes/types/admin-quizzes-view-model';
+import type { QuizPreviewQuestionViewModel } from '@/features/quiz/types/quiz-preview-view-model';
+import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
 
 function toAdminQuizListItemViewModel(quiz: AdminQuizListItemDto): AdminQuizListItemViewModel {
   return {
@@ -21,10 +23,27 @@ function toAdminQuizListItemViewModel(quiz: AdminQuizListItemDto): AdminQuizList
   };
 }
 
+function toAdminQuizQuestionViewModel(
+  question: AdminQuizDetailDto['questions'][number],
+): QuizPreviewQuestionViewModel {
+  const base = copyQuizQuestionFields(question);
+  return question.type === 'single'
+    ? {
+        ...base,
+        type: 'single',
+        correctIndex: question.correctIndex,
+      }
+    : {
+        ...base,
+        type: 'multiple',
+        correctIndexes: question.correctIndexes,
+      };
+}
+
 export function toAdminQuizDetailViewModel(quiz: AdminQuizDetailDto): AdminQuizDetailViewModel {
   return {
     ...toAdminQuizListItemViewModel(quiz),
-    questions: quiz.questions.map((question) => ({ ...question })),
+    questions: quiz.questions.map(toAdminQuizQuestionViewModel),
     ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
     ...(quiz.tags !== undefined && { tags: quiz.tags }),
   };

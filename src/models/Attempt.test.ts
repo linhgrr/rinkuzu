@@ -87,6 +87,7 @@ describe('Attempt model identity', () => {
       user: '507f191e810c19729de860eb',
       answers: [],
       correctAnswers: 0,
+      score: 0,
     });
 
     await expect(inconsistent.validate()).rejects.toThrow(
@@ -168,6 +169,9 @@ describe('Attempt model identity', () => {
           },
         ],
       },
+      answers: [{ kind: 'multiple', selectedIndexes: [0] }],
+      correctAnswers: 0,
+      score: 0,
     });
 
     await expect(fractionalSingle.validate()).rejects.toThrow(
@@ -176,5 +180,75 @@ describe('Attempt model identity', () => {
     await expect(duplicateMultiple.validate()).rejects.toThrow(
       'Multiple choice questions must have at least one valid correct index',
     );
+  });
+
+  it('accepts valid single, multiple, and unanswered selections', async () => {
+    const singleCorrect = new Attempt({
+      ...submission,
+      user: '507f191e810c19729de860eb',
+    });
+    await expect(singleCorrect.validate()).resolves.toBeUndefined();
+
+    const multipleCorrect = new Attempt({
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      quizSnapshot: {
+        ...submission.quizSnapshot,
+        questions: [
+          {
+            question: 'Pick all',
+            options: ['A', 'B', 'C'],
+            type: 'multiple',
+            correctIndexes: [0, 2],
+          },
+        ],
+      },
+      answers: [{ kind: 'multiple', selectedIndexes: [2, 0] }],
+      correctAnswers: 1,
+      score: 100,
+    });
+    await expect(multipleCorrect.validate()).resolves.toBeUndefined();
+
+    const unanswered = new Attempt({
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      answers: [{ kind: 'single', selectedIndex: null }],
+      correctAnswers: 0,
+      score: 0,
+    });
+    await expect(unanswered.validate()).resolves.toBeUndefined();
+  });
+
+  it('rejects forged score or correctAnswers when the selected answer is wrong', async () => {
+    await expect(
+      new Attempt({
+        ...submission,
+        user: '507f191e810c19729de860eb',
+        answers: [{ kind: 'single', selectedIndex: 1 }],
+        correctAnswers: 1,
+        score: 100,
+      }).validate(),
+    ).rejects.toThrow('Correct answer count must match evaluated answers');
+  });
+
+  it('rejects fractional correctAnswers', async () => {
+    await expect(
+      new Attempt({
+        ...submission,
+        user: '507f191e810c19729de860eb',
+        correctAnswers: 0.5,
+        score: 50,
+      }).validate(),
+    ).rejects.toThrow('Correct answer count must be an integer');
+  });
+
+  it('rejects fractional totalQuestions', async () => {
+    await expect(
+      new Attempt({
+        ...submission,
+        user: '507f191e810c19729de860eb',
+        totalQuestions: 1.5,
+      }).validate(),
+    ).rejects.toThrow('Total questions must be an integer');
   });
 });

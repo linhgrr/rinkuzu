@@ -5,16 +5,12 @@ import { readAndValidateJson } from '@/lib/api/request';
 import { updateQuizRequestSchema } from '@/dtos/quiz';
 import { createQuizIdRoute } from './quiz-id-route';
 
-// GET /api/quizzes/[id] - Get specific quiz
+// GET /api/quizzes/[id] - Get answer-bearing quiz detail for author/admin editing
 export const GET = createQuizIdRoute({
-  handle: async ({ quizId, email, userId, session }) => {
+  handle: async ({ quizId, userId, session }) => {
     try {
-      if (!email) {
-        return apiErr('validation_error', 'User email is required', 400);
-      }
-
       const quizService = serviceFactory.getQuizService();
-      const result = await quizService.getQuizById(quizId, email, session.user.role, userId);
+      const result = await quizService.getQuizById(quizId, userId, session.user.role);
 
       if (!result.success) {
         return apiServiceErr(result);

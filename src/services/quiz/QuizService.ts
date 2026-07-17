@@ -57,7 +57,6 @@ export class QuizService implements IQuizService {
     this.adminService = new QuizAdminService(quizRepository);
     this.discussionService = new QuizDiscussionService(
       quizRepository,
-      userRepository,
       discussionRepository,
       reportRepository,
     );
@@ -81,11 +80,10 @@ export class QuizService implements IQuizService {
 
   async getQuizById(
     id: string,
-    userEmail?: string,
-    userRole?: string,
     userId?: string,
+    userRole?: string,
   ): Promise<ServiceResult<QuizDetailDto>> {
-    return this.crudService.getQuizById(id, userEmail, userRole, userId);
+    return this.crudService.getQuizById(id, userId, userRole);
   }
 
   async getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null> {
@@ -169,16 +167,9 @@ export class QuizService implements IQuizService {
     slug: string,
     questionIndex: number,
     content: string,
-    userEmail: string,
-    session?: Session | null,
+    session: Session | null,
   ): Promise<ServiceResult<QuizDiscussionDto>> {
-    return this.discussionService.addDiscussionComment(
-      slug,
-      questionIndex,
-      content,
-      userEmail,
-      session,
-    );
+    return this.discussionService.addDiscussionComment(slug, questionIndex, content, session);
   }
 
   async getQuizFlashcards(

@@ -36,9 +36,18 @@ function toQuestion(question: QuizQuestionPersistenceRecord, index: number): Qui
     ...(question.optionImages === undefined ? {} : { optionImages: question.optionImages }),
   };
 
-  return question.type === 'single'
-    ? { ...base, type: 'single', correctIndex: question.correctIndex }
-    : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
+  const { type } = question;
+
+  if (type === 'single') {
+    return { ...base, type: 'single', correctIndex: question.correctIndex };
+  }
+
+  if (type === 'multiple') {
+    return { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
+  }
+
+  // Corrupt DB rows can violate the typed union at runtime; fail closed.
+  throw new TypeError(`quiz.questions[${index}].type has invalid discriminator: ${String(type)}`);
 }
 
 export class QuizPersistenceMapper {

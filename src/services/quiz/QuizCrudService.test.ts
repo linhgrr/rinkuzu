@@ -347,20 +347,65 @@ describe('QuizCrudService', () => {
   });
 
   describe('getQuizById', () => {
-    it('returns detail for readable quizzes and access failures otherwise', async () => {
+    it('returns full detail for author and admin only; denies non-authors without answer keys', async () => {
+      const publicQuiz = createQuizEntity({ isPrivate: false });
+      const privateQuiz = createQuizEntity({ isPrivate: true });
       const quizRepository = createQuizRepository({
         findById: vi
           .fn()
-          .mockResolvedValueOnce(createQuizEntity())
+          // author success
+          .mockResolvedValueOnce(publicQuiz)
+          // admin success
+          .mockResolvedValueOnce(publicQuiz)
+          // public non-author denied
+          .mockResolvedValueOnce(publicQuiz)
+          // premium private non-author denied
+          .mockResolvedValueOnce(privateQuiz)
+          // missing
           .mockResolvedValueOnce(null)
+          // error path
           .mockRejectedValueOnce(new Error('db down')),
       });
       const service = new QuizCrudService(quizRepository, createUserRepository());
 
-      await expect(service.getQuizById(quizId, undefined, undefined, authorId)).resolves.toEqual({
+      const authorResult = await service.getQuizById(quizId, authorId, 'user');
+      expect(authorResult).toEqual({
         success: true,
-        data: expect.objectContaining({ id: quizId }),
+        data: expect.objectContaining({
+          id: quizId,
+          questions: [expect.objectContaining({ type: 'single', correctIndex: 1 })],
+        }),
       });
+
+      const adminResult = await service.getQuizById(quizId, otherUserId, 'admin');
+      expect(adminResult).toEqual({
+        success: true,
+        data: expect.objectContaining({
+          id: quizId,
+          questions: [expect.objectContaining({ type: 'single', correctIndex: 1 })],
+        }),
+      });
+
+      entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'premium' });
+
+      const publicNonAuthor = await service.getQuizById(quizId, otherUserId, 'user');
+      expect(publicNonAuthor).toMatchObject({
+        success: false,
+        statusCode: 403,
+        error: 'Access denied',
+      });
+      expect(publicNonAuthor).not.toHaveProperty('data');
+
+      const privatePremiumNonAuthor = await service.getQuizById(quizId, otherUserId, 'user');
+      expect(privatePremiumNonAuthor).toMatchObject({
+        success: false,
+        statusCode: 403,
+        error: 'Access denied',
+      });
+      expect(privatePremiumNonAuthor).not.toHaveProperty('data');
+      // Denial must not consult entitlements — answer keys are never for non-authors.
+      expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
+
       await expect(service.getQuizById(quizId)).resolves.toMatchObject({
         success: false,
         statusCode: 404,

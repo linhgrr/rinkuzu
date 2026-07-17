@@ -72,7 +72,11 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
     // which Quiz it produced.
     const existingDraft = await fetchQuizDraftServer(id, userId);
     if (existingDraft?.status === 'submitted' && existingDraft.submittedQuizId) {
-      const existing = await quizService.getQuizById(existingDraft.submittedQuizId);
+      const existing = await quizService.getQuizById(
+        existingDraft.submittedQuizId,
+        userId,
+        session.user.role,
+      );
       if (existing.success && existing.data) {
         return apiOk({
           quizId: existingDraft.submittedQuizId,

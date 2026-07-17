@@ -8,6 +8,16 @@ import type { IReportRepository } from '@/interfaces/repositories/IReportReposit
 import { QuizDiscussionService } from '@/services/quiz/QuizDiscussionService';
 import { logger } from '@/lib/logger';
 import type { Session } from 'next-auth';
+import { PREMIUM_REQUIRED_CODE } from '@/services/quiz/quiz-helpers';
+
+const entitlementMocks = vi.hoisted(() => ({
+  resolveEntitlements: vi.fn(),
+}));
+
+vi.mock('@/lib/entitlements', () => ({
+  can: (entitlements: { tier: string }) => entitlements.tier === 'premium',
+  resolveEntitlements: entitlementMocks.resolveEntitlements,
+}));
 
 vi.mock('@/lib/logger', () => ({
   logger: {
@@ -435,6 +445,58 @@ describe('QuizDiscussionService mutation coverage', () => {
         content: 'spoiler',
         status: 'pending',
       });
+    });
+
+    it('denies free non-owners reporting private quizzes', async () => {
+      const { service, quizRepository, reportRepository } = createService();
+      quizRepository.findSummaryBySlug.mockResolvedValue(
+        quizSummary({ isPrivate: true, author: authorId }),
+      );
+      entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
+
+      await expect(
+        service.reportQuiz(
+          'algorithms',
+          'broken',
+          'r@example.com',
+          'R',
+          sessionUser({ id: userId, role: 'user' }),
+        ),
+      ).resolves.toEqual({
+        success: false,
+        error: 'Premium subscription required to access private quizzes',
+        statusCode: 403,
+        code: PREMIUM_REQUIRED_CODE,
+      });
+      expect(reportRepository.create).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['author', authorId, 'user' as const, undefined],
+      ['admin', userId, 'admin' as const, undefined],
+      ['premium non-owner', userId, 'user' as const, { tier: 'premium' }],
+    ])('allows %s to report a private quiz', async (_label, reporterId, role, entitlements) => {
+      const { service, quizRepository, reportRepository } = createService();
+      quizRepository.findSummaryBySlug.mockResolvedValue(
+        quizSummary({ isPrivate: true, author: authorId }),
+      );
+      if (entitlements) {
+        entitlementMocks.resolveEntitlements.mockResolvedValue(entitlements);
+      }
+
+      await expect(
+        service.reportQuiz(
+          'algorithms',
+          'broken',
+          'r@example.com',
+          'R',
+          sessionUser({ id: reporterId, role }),
+        ),
+      ).resolves.toEqual({
+        success: true,
+        data: { reportId: 'report-1' },
+      });
+      expect(reportRepository.create).toHaveBeenCalled();
     });
 
     it('returns a 500 when report creation throws', async () => {

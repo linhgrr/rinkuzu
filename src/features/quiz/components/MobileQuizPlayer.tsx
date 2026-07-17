@@ -167,34 +167,50 @@ function MobileQuestionCard({
           </div>
 
           <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
-            {currentQuestion.options.map((option, optionIndex) => (
-              <button
-                type="button"
-                key={`${optionIndex}-${option}`}
-                onClick={() => handleOptionSelect(optionIndex)}
-                disabled={isSubmitting}
-                className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-150 disabled:pointer-events-none disabled:opacity-70 ${
-                  isOptionSelected(optionIndex)
-                    ? 'border-brand-action bg-orange-50'
-                    : 'border-neutral-100 bg-neutral-50 active:border-neutral-200 active:bg-neutral-100'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-150 ${
-                      isOptionSelected(optionIndex)
-                        ? 'border-brand-action bg-brand-action'
-                        : 'border-neutral-300 bg-white'
-                    }`}
-                  >
-                    {isOptionSelected(optionIndex) && (
-                      <HiOutlineCheck className="size-4 text-white" />
-                    )}
+            {currentQuestion.options.map((option, optionIndex) => {
+              const optionImage = currentQuestion.optionImages?.[optionIndex];
+              return (
+                <button
+                  type="button"
+                  key={`${optionIndex}-${option}`}
+                  onClick={() => handleOptionSelect(optionIndex)}
+                  disabled={isSubmitting}
+                  className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-150 disabled:pointer-events-none disabled:opacity-70 ${
+                    isOptionSelected(optionIndex)
+                      ? 'border-brand-action bg-orange-50'
+                      : 'border-neutral-100 bg-neutral-50 active:border-neutral-200 active:bg-neutral-100'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-150 ${
+                        isOptionSelected(optionIndex)
+                          ? 'border-brand-action bg-brand-action'
+                          : 'border-neutral-300 bg-white'
+                      }`}
+                    >
+                      {isOptionSelected(optionIndex) && (
+                        <HiOutlineCheck className="size-4 text-white" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm text-neutral-800">{option}</span>
+                      {optionImage ? (
+                        <div className="mt-2 overflow-hidden rounded-lg bg-neutral-100">
+                          <Image
+                            src={optionImage}
+                            alt={`Option ${String.fromCharCode(65 + optionIndex)} image`}
+                            width={320}
+                            height={120}
+                            className="h-auto max-h-28 w-full object-contain"
+                          />
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                  <span className="flex-1 text-sm text-neutral-800">{option}</span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

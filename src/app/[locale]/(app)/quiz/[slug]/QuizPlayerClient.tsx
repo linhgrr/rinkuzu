@@ -871,8 +871,19 @@ export default function QuizPlayerClient({
     userAnswers: state.userAnswers,
     userEmail: state.userEmail,
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
-    onSubmitSuccess: (attemptId, score) => {
-      push(`/quiz/${encodedSlug}/result?attemptId=${attemptId}&score=${score}`);
+    onSubmitSuccess: async (attemptId, score) => {
+      // Cancel pending/in-flight autosaves and wait for the DELETE before
+      // navigation. This prevents the submit flow from racing the progress
+      // cleanup and avoids resurrecting a just-completed attempt.
+      await clearProgress();
+      const params = new URLSearchParams({
+        attemptId,
+        score: String(score),
+      });
+      if (!sessionEmail && state.userEmail.trim()) {
+        params.set('userEmail', state.userEmail.trim().toLowerCase());
+      }
+      push(`/quiz/${encodedSlug}/result?${params.toString()}`);
     },
     onSubmitStart: () => dispatch({ type: 'patch', value: { error: '' } }),
     onSubmitError: (message) => dispatch({ type: 'patch', value: { error: message } }),

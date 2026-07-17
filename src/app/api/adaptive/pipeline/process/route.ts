@@ -1,5 +1,6 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
 import { invalidateAdaptiveServiceCache } from '@/lib/adaptive/cache-policy';
+import { resolveOwnedAdaptivePipelineS3Key } from '@/lib/adaptive/storage-key';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
@@ -19,7 +20,14 @@ export const POST = withAuth(async (req, { userId, session }) => {
     if (!body.success) {
       return apiErr('validation_error', body.error, 400, { issues: body.fields });
     }
-    const { s3Key, filename, subject_id, page_batch_size } = body.data;
+    const { s3Key: clientS3Key, filename, subject_id, page_batch_size } = body.data;
+
+    // Fail closed: never sign or forward a client key outside the auth user's namespace.
+    const ownedKey = resolveOwnedAdaptivePipelineS3Key(clientS3Key, userId);
+    if (!ownedKey.ok) {
+      return apiErr('validation_error', ownedKey.error, 400);
+    }
+    const s3Key = ownedKey.key;
 
     const getCommand = new GetObjectCommand({
       Bucket: BUCKET_NAME,

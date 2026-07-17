@@ -10,7 +10,7 @@ interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestio
   userAnswers: QuizAnswer[];
   userEmail: string;
   sessionEmail?: string;
-  onSubmitSuccess: (attemptId: string, score: number) => void;
+  onSubmitSuccess: (attemptId: string, score: number) => void | Promise<void>;
   onSubmitStart?: () => void;
   onSubmitError: (message: string) => void;
   mapAnswersToOriginalOrder: (quiz: TQuiz, answers: QuizAnswer[]) => QuizAnswer[];
@@ -60,7 +60,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
     });
 
     idempotencyRef.current = null;
-    onSubmitSuccess(data.attemptId, data.score);
+    await onSubmitSuccess(data.attemptId, data.score);
   };
 
   const runSubmission = async (

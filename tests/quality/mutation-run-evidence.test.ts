@@ -35,6 +35,7 @@ import {
   isMutationTestSupportPath,
   isUnitTestPath,
   resolveMutationCampaignPolicy,
+  resolveSafeRepoPath,
   sha256File,
   validateMutationRunEvidence,
   writeGateRunMeta,
@@ -714,6 +715,16 @@ describe('mutation run evidence helpers', () => {
     expect(manifest.entryCount).toBe(2);
     expect(() => buildRelevantManifest(root, ['/etc/passwd'])).toThrow(/absolute/);
     expect(() => buildRelevantManifest(root, ['../outside.ts'])).toThrow(/unsafe|escapes/);
+  });
+
+  it('accepts Next.js route-group parentheses in safe repository paths', () => {
+    const root = seedMinimalMutationRepo();
+    const resolved = resolveSafeRepoPath(root, 'src/app/[locale]/(app)/quizzes/page.tsx');
+
+    expect(resolved).toMatchObject({
+      ok: true,
+      normalized: 'src/app/[locale]/(app)/quizzes/page.tsx',
+    });
   });
 
   it.each(EXIT_CASES)('exit disposition: $name', ({ statuses, exitCode, mode, expected }) => {

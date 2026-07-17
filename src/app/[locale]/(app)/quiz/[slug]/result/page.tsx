@@ -362,7 +362,11 @@ function getQuizResultScoreMessage(score: number, tProfile: (key: string) => str
   return tProfile('needsWork');
 }
 
-function useQuizResultPageData(attemptId: string | null, locale: string) {
+function useQuizResultPageData(
+  attemptId: string | null,
+  locale: string,
+  guestUserEmail: string | null,
+) {
   const [state, dispatch] = useReducer(quizResultPageReducer, initialQuizResultPageState);
 
   useEffect(() => {
@@ -375,7 +379,11 @@ function useQuizResultPageData(attemptId: string | null, locale: string) {
       }
 
       try {
-        const pageData = await fetchQuizResultPageData(attemptId, locale);
+        const pageData = await fetchQuizResultPageData(
+          attemptId,
+          locale,
+          guestUserEmail ? { userEmail: guestUserEmail } : undefined,
+        );
 
         if (isActive) {
           dispatch({
@@ -399,7 +407,7 @@ function useQuizResultPageData(attemptId: string | null, locale: string) {
     return () => {
       isActive = false;
     };
-  }, [attemptId, locale]);
+  }, [attemptId, guestUserEmail, locale]);
 
   const showBookmarkMessage = (tone: BookmarkMessageTone, message: string) => {
     dispatch({ type: 'setBookmarkMessage', message, tone });
@@ -718,10 +726,12 @@ function QuizResultPageClient() {
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const attemptId = get('attemptId');
+  const guestUserEmail = get('userEmail');
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
   const { state, dispatch, stats, toggleBookmark, removeBookmark } = useQuizResultPageData(
     attemptId,
     locale,
+    guestUserEmail,
   );
   const {
     chatHistories,

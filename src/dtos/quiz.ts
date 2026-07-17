@@ -163,7 +163,7 @@ export interface QuizAttemptResultDto {
 }
 
 const quizProgressAnswerSchema = z.union([
-  z.number().int(),
+  z.number().int().min(-1),
   z.array(z.number().int().min(0)).max(20),
 ]);
 
@@ -178,22 +178,110 @@ export const addDiscussionCommentRequestSchema = z.strictObject({
   content: z.string().trim().min(1, 'Comment content is required').max(2000),
 });
 
+function isDenseIndexPermutation(order: readonly number[], size: number): boolean {
+  if (order.length !== size) {
+    return false;
+  }
+  const seen = new Set<number>();
+  for (const value of order) {
+    if (!Number.isInteger(value) || value < 0 || value >= size || seen.has(value)) {
+      return false;
+    }
+    seen.add(value);
+  }
+  return seen.size === size;
+}
+
 export const savedQuizProgressSchema = z
   .strictObject({
-    questionOrder: z.array(z.number()),
-    optionOrders: z.array(z.array(z.number())),
+    questionOrder: z.array(z.number().int().min(0)),
+    optionOrders: z.array(z.array(z.number().int().min(0))),
     userAnswers: z.array(quizProgressAnswerSchema),
     currentQuestionIndex: z.number().int().min(0),
     answeredCount: z.number().int().min(0),
     totalQuestions: z.number().int().min(0),
   })
-  .refine(
-    (progress) =>
-      progress.questionOrder.length === progress.totalQuestions &&
-      progress.optionOrders.length === progress.totalQuestions &&
-      progress.userAnswers.length === progress.totalQuestions,
-    'Progress payload length mismatch',
-  );
+  .superRefine((progress, ctx) => {
+    const { totalQuestions } = progress;
+
+    if (
+      progress.questionOrder.length !== totalQuestions ||
+      progress.optionOrders.length !== totalQuestions ||
+      progress.userAnswers.length !== totalQuestions
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Progress payload length mismatch',
+      });
+      return;
+    }
+
+    if (totalQuestions === 0) {
+      if (progress.currentQuestionIndex !== 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Invalid current question index',
+          path: ['currentQuestionIndex'],
+        });
+      }
+      if (progress.answeredCount !== 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Invalid answered count',
+          path: ['answeredCount'],
+        });
+      }
+      return;
+    }
+
+    if (progress.currentQuestionIndex >= totalQuestions) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Invalid current question index',
+        path: ['currentQuestionIndex'],
+      });
+    }
+
+    if (progress.answeredCount > totalQuestions) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Invalid answered count',
+        path: ['answeredCount'],
+      });
+    }
+
+    const derivedAnsweredCount = progress.userAnswers.reduce<number>((count, answer) => {
+      if (Array.isArray(answer)) {
+        return count + (answer.length > 0 ? 1 : 0);
+      }
+      return count + (answer >= 0 ? 1 : 0);
+    }, 0);
+    if (progress.answeredCount !== derivedAnsweredCount) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Answered count does not match user answers',
+        path: ['answeredCount'],
+      });
+    }
+
+    if (!isDenseIndexPermutation(progress.questionOrder, totalQuestions)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Invalid question order',
+        path: ['questionOrder'],
+      });
+    }
+
+    progress.optionOrders.forEach((optionOrder, index) => {
+      if (optionOrder.length === 0 || !isDenseIndexPermutation(optionOrder, optionOrder.length)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Invalid option order',
+          path: ['optionOrders', index],
+        });
+      }
+    });
+  });
 
 export type SavedQuizProgressDto = z.infer<typeof savedQuizProgressSchema>;
 

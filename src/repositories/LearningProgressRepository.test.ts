@@ -86,11 +86,157 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
         .filter((stage) => '$unionWith' in stage)
         .map((stage) => (stage['$unionWith'] as { coll: string }).coll),
     ).toEqual(['attempts', 'quizprogresses']);
+    expect(pipeline[0]).toEqual({
+      $match: { author: expect.any(mongoose.Types.ObjectId) },
+    });
+    expect(pipeline[1]).toEqual({
+      $project: {
+        _id: 1,
+        lastAttemptAt: { $literal: null },
+        lastProgressAt: { $literal: null },
+      },
+    });
+    expect(pipeline[2]).toEqual({
+      $unionWith: {
+        coll: 'attempts',
+        pipeline: [
+          { $match: { user: expect.any(mongoose.Types.ObjectId) } },
+          { $group: { _id: '$quiz', lastAttemptAt: { $max: '$takenAt' } } },
+          {
+            $project: {
+              lastAttemptAt: 1,
+              lastProgressAt: { $literal: null },
+            },
+          },
+        ],
+      },
+    });
+    expect(pipeline[3]).toEqual({
+      $unionWith: {
+        coll: 'quizprogresses',
+        pipeline: [
+          { $match: { userId: expect.any(mongoose.Types.ObjectId) } },
+          { $group: { _id: '$quiz', lastProgressAt: { $max: '$updatedAt' } } },
+          {
+            $project: {
+              lastAttemptAt: { $literal: null },
+              lastProgressAt: 1,
+            },
+          },
+        ],
+      },
+    });
+    expect(pipeline[4]).toEqual({
+      $group: {
+        _id: '$_id',
+        lastAttemptAt: { $max: '$lastAttemptAt' },
+        lastProgressAt: { $max: '$lastProgressAt' },
+      },
+    });
+    expect(pipeline[5]).toEqual({
+      $lookup: {
+        from: 'quizzes',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'quiz',
+      },
+    });
+    expect(pipeline[6]).toEqual({ $unwind: '$quiz' });
+    expect(pipeline[7]).toEqual({
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: [
+            '$quiz',
+            {
+              lastAttemptAt: '$lastAttemptAt',
+              lastProgressAt: '$lastProgressAt',
+            },
+          ],
+        },
+      },
+    });
     expect(pipeline).toContainEqual({
-      $facet: expect.objectContaining({
-        items: expect.arrayContaining([{ $skip: 0 }, { $limit: 20 }]),
+      $lookup: {
+        from: 'folderquizzes',
+        let: { quizId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$quiz', '$$quizId'] },
+                  { $eq: ['$owner', expect.any(mongoose.Types.ObjectId)] },
+                ],
+              },
+            },
+          },
+          { $project: { _id: 0, folder: 1 } },
+          { $limit: 1 },
+        ],
+        as: 'folderLinks',
+      },
+    });
+    expect(pipeline).toContainEqual({
+      $lookup: {
+        from: 'users',
+        localField: 'author',
+        foreignField: '_id',
+        as: 'authorDoc',
+      },
+    });
+    expect(pipeline).toContainEqual({
+      $addFields: {
+        authorDoc: { $first: '$authorDoc' },
+        ownedByMe: { $eq: ['$author', expect.any(mongoose.Types.ObjectId)] },
+        externalFolder: { $first: '$folderLinks.folder' },
+      },
+    });
+    expect(pipeline).toContainEqual({
+      $addFields: {
+        effectiveFolder: {
+          $cond: [
+            '$ownedByMe',
+            { $ifNull: ['$folder', null] },
+            { $ifNull: ['$externalFolder', null] },
+          ],
+        },
+        displayDateSort: {
+          $ifNull: ['$lastProgressAt', { $ifNull: ['$lastAttemptAt', '$createdAt'] }],
+        },
+      },
+    });
+    expect(pipeline).toContainEqual({ $sort: { displayDateSort: -1, _id: -1 } });
+    expect(pipeline).toContainEqual({
+      $facet: {
+        items: [
+          { $skip: 0 },
+          { $limit: 20 },
+          {
+            $project: {
+              _id: 1,
+              title: 1,
+              slug: 1,
+              description: 1,
+              author: {
+                _id: { $ifNull: ['$authorDoc._id', '$author'] },
+                email: '$authorDoc.email',
+                name: '$authorDoc.name',
+                displayName: '$authorDoc.displayName',
+                avatar: '$authorDoc.avatar',
+              },
+              folder: '$effectiveFolder',
+              isPrivate: 1,
+              pdfUrl: 1,
+              questionCount: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              lastAttemptAt: 1,
+              lastProgressAt: 1,
+            },
+          },
+        ],
         meta: [{ $count: 'totalItems' }],
-      }),
+      },
     });
 
     const replaceRootIndex = pipeline.findIndex((stage) => '$replaceRoot' in stage);
@@ -102,6 +248,99 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
       { $addFields: { questionCount: { $size: { $ifNull: ['$questions', []] } } } },
       { $project: { questions: 0 } },
     ]);
+  });
+
+  it('returns empty pagination for invalid user ids without aggregating', async () => {
+    const repository = new LearningProgressRepository();
+    await expect(
+      repository.listLibraryQuizzes('not-an-object-id', { page: 2, limit: 10 }),
+    ).resolves.toEqual({
+      items: [],
+      pagination: {
+        currentPage: 2,
+        totalPages: 0,
+        totalItems: 0,
+        itemsPerPage: 10,
+        hasNextPage: false,
+        hasPrevPage: true,
+      },
+    });
+    expect(modelMocks.quizAggregate).not.toHaveBeenCalled();
+  });
+
+  it('applies folder filters and page offsets, and maps null activity timestamps', async () => {
+    const folderId = '507f191e810c19729de860eb';
+    const quizId = '507f191e810c19729de860ec';
+    modelMocks.quizAggregate.mockResolvedValueOnce([
+      {
+        items: [
+          {
+            _id: quizId,
+            title: 'Owned quiz',
+            slug: 'owned-quiz',
+            author: { _id: '507f191e810c19729de860ea', email: 'author@example.com' },
+            folder: folderId,
+            isPrivate: false,
+            questionCount: 2,
+            createdAt: new Date('2026-07-01T00:00:00.000Z'),
+            updatedAt: new Date('2026-07-02T00:00:00.000Z'),
+            lastAttemptAt: undefined,
+            lastProgressAt: undefined,
+          },
+        ],
+        meta: [{ totalItems: 1 }],
+      },
+    ]);
+
+    const result = await new LearningProgressRepository().listLibraryQuizzes(
+      '507f191e810c19729de860ea',
+      { page: 3, limit: 5, folder: folderId },
+    );
+
+    expect(result.pagination).toMatchObject({
+      currentPage: 3,
+      totalItems: 1,
+      itemsPerPage: 5,
+    });
+    expect(result.items[0]).toMatchObject({
+      slug: 'owned-quiz',
+      lastAttemptAt: null,
+      lastProgressAt: null,
+      folder: folderId,
+    });
+
+    const pipeline = modelMocks.quizAggregate.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    expect(pipeline).toContainEqual({
+      $match: { effectiveFolder: expect.any(mongoose.Types.ObjectId) },
+    });
+    expect(pipeline).toContainEqual({
+      $facet: expect.objectContaining({
+        items: expect.arrayContaining([{ $skip: 10 }, { $limit: 5 }]),
+      }),
+    });
+  });
+
+  it('matches unfiled quizzes when folder is an empty string', async () => {
+    await new LearningProgressRepository().listLibraryQuizzes('507f191e810c19729de860ea', {
+      page: 1,
+      limit: 10,
+      folder: '',
+    });
+    const pipeline = modelMocks.quizAggregate.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    expect(pipeline).toContainEqual({ $match: { effectiveFolder: null } });
+  });
+
+  it('treats missing aggregate facets as empty library results', async () => {
+    modelMocks.quizAggregate.mockResolvedValueOnce([undefined]);
+    await expect(
+      new LearningProgressRepository().listLibraryQuizzes('507f191e810c19729de860ea', {
+        page: 1,
+        limit: 10,
+      }),
+    ).resolves.toMatchObject({
+      items: [],
+      pagination: { totalItems: 0 },
+    });
   });
 });
 
@@ -319,17 +558,36 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
     await expect(
       repository.findQuestionProgress('user-1', 'architecture', 'question-1'),
     ).resolves.toMatchObject({ questionId: 'question-1' });
+    expect(modelMocks.questionFindOne).toHaveBeenCalledWith({
+      userId: 'user-1',
+      quizSlug: 'architecture',
+      questionId: 'question-1',
+    });
     await expect(repository.findUserProgress('user-1')).resolves.toMatchObject({
       userId: 'user-1',
       totalXp: 100,
     });
+    expect(modelMocks.userFindOne).toHaveBeenCalledWith({ userId: 'user-1' });
+
+    modelMocks.questionFindOne.mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(null) });
+    modelMocks.userFindOne.mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(null) });
+    await expect(
+      repository.findQuestionProgress('user-1', 'architecture', 'missing'),
+    ).resolves.toBeNull();
+    await expect(repository.findUserProgress('missing')).resolves.toBeNull();
 
     const defaults = repository.createDefaultUserProgress('user-2');
     expect(defaults).toMatchObject({
       userId: 'user-2',
       currentStreak: 0,
+      longestStreak: 0,
+      streakFreezeCount: 0,
       totalXp: 0,
+      totalQuestionsLearned: 0,
+      totalQuizzesTaken: 0,
+      totalReviewSessions: 0,
       lastSessionDate: null,
+      averageAccuracy: 0,
     });
     expect(defaults.weeklyActivity).toBeInstanceOf(Map);
 
@@ -338,6 +596,11 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
         userId: 'user-1',
         quizSlug: 'architecture',
         questionId: 'question-1',
+        questionRef: {
+          text: 'What is 2+2?',
+          options: ['3', '4'],
+          correctIndexes: [1],
+        },
         srsLevel: 1,
         nextReviewDate: now,
         lastReviewDate: null,
@@ -347,10 +610,59 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
         totalReviews: 1,
         totalCorrect: 1,
         history: [],
-        isBookmarked: false,
-        notes: '',
+        isBookmarked: true,
+        notes: 'keep',
       }),
     ).resolves.toMatchObject({ questionId: 'question-1' });
+
+    expect(modelMocks.questionFindOneAndUpdate).toHaveBeenCalledWith(
+      {
+        userId: 'user-1',
+        quizSlug: 'architecture',
+        questionId: 'question-1',
+      },
+      {
+        $set: expect.objectContaining({
+          questionRef: {
+            text: 'What is 2+2?',
+            options: ['3', '4'],
+            correctIndexes: [1],
+          },
+          srsLevel: 1,
+          isBookmarked: true,
+          notes: 'keep',
+        }),
+        $setOnInsert: {
+          userId: 'user-1',
+          quizSlug: 'architecture',
+          questionId: 'question-1',
+        },
+      },
+      { new: true, upsert: true, runValidators: true },
+    );
+
+    await expect(
+      repository.saveQuestionProgress({
+        userId: 'user-1',
+        quizSlug: 'architecture',
+        questionId: 'question-2',
+        srsLevel: 0,
+        nextReviewDate: now,
+        lastReviewDate: null,
+        interval: 0,
+        easeFactor: 2.5,
+        correctStreak: 0,
+        totalReviews: 0,
+        totalCorrect: 0,
+        history: [],
+      }),
+    ).resolves.toMatchObject({ questionId: 'question-1' });
+    const omittedOptionalUpdate = modelMocks.questionFindOneAndUpdate.mock.calls.at(-1)?.[1] as {
+      $set: Record<string, unknown>;
+    };
+    expect(omittedOptionalUpdate.$set).not.toHaveProperty('questionRef');
+    expect(omittedOptionalUpdate.$set).not.toHaveProperty('isBookmarked');
+    expect(omittedOptionalUpdate.$set).not.toHaveProperty('notes');
 
     await expect(
       repository.saveUserProgress({
@@ -368,6 +680,102 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
         weeklyActivity: new Map(),
       }),
     ).resolves.toMatchObject({ userId: 'user-1' });
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenCalledWith(
+      { userId: 'user-1' },
+      {
+        $set: expect.objectContaining({
+          currentStreak: 1,
+          lastSessionDate: now,
+          totalXp: 100,
+        }),
+      },
+      { new: true, upsert: true, runValidators: true },
+    );
+
+    await expect(
+      repository.saveUserProgress({
+        userId: 'user-1',
+        currentStreak: 0,
+        longestStreak: 0,
+        lastActiveDate: now,
+        streakFreezeCount: 0,
+        totalXp: 0,
+        totalQuestionsLearned: 0,
+        totalQuizzesTaken: 0,
+        totalReviewSessions: 0,
+        averageAccuracy: 0,
+        weeklyActivity: new Map(),
+      }),
+    ).resolves.toMatchObject({ userId: 'user-1' });
+    const omittedSessionUpdate = modelMocks.userFindOneAndUpdate.mock.calls.at(-1)?.[1] as {
+      $set: Record<string, unknown>;
+    };
+    expect(omittedSessionUpdate.$set).not.toHaveProperty('lastSessionDate');
+  });
+
+  it('ends the review-progress session and fails closed when the transaction does not commit', async () => {
+    const withTransaction = vi.fn().mockResolvedValue(undefined);
+    const endSession = vi.fn();
+    const session: ClientSession = Object.assign(Object.create(null), {
+      withTransaction,
+      endSession,
+    });
+    vi.spyOn(mongoose, 'startSession').mockResolvedValue(session);
+
+    await expect(
+      new LearningProgressRepository().mutateReviewProgress(
+        'user-1',
+        'architecture',
+        'question-1',
+        () => {
+          throw new Error('should not run');
+        },
+      ),
+    ).rejects.toThrow('Review progress transaction did not commit');
+    expect(endSession).toHaveBeenCalledOnce();
+  });
+
+  it('throws when save operations do not return a persisted document', async () => {
+    modelMocks.questionFindOneAndUpdate.mockReturnValueOnce({
+      lean: vi.fn().mockResolvedValue(null),
+    });
+    modelMocks.userFindOneAndUpdate.mockReturnValueOnce({
+      lean: vi.fn().mockResolvedValue(null),
+    });
+    const repository = new LearningProgressRepository();
+
+    await expect(
+      repository.saveQuestionProgress({
+        userId: 'user-1',
+        quizSlug: 'architecture',
+        questionId: 'question-1',
+        srsLevel: 1,
+        nextReviewDate: now,
+        lastReviewDate: null,
+        interval: 1,
+        easeFactor: 2.5,
+        correctStreak: 1,
+        totalReviews: 1,
+        totalCorrect: 1,
+        history: [],
+      }),
+    ).rejects.toThrow('Failed to save question progress');
+
+    await expect(
+      repository.saveUserProgress({
+        userId: 'user-1',
+        currentStreak: 1,
+        longestStreak: 1,
+        lastActiveDate: now,
+        streakFreezeCount: 0,
+        totalXp: 1,
+        totalQuestionsLearned: 0,
+        totalQuizzesTaken: 0,
+        totalReviewSessions: 0,
+        averageAccuracy: 0,
+        weeklyActivity: new Map(),
+      }),
+    ).rejects.toThrow('Failed to save user progress');
   });
 
   it('maps streak-freeze purchase guard outcomes and successful purchases', async () => {

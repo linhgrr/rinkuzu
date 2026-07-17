@@ -175,10 +175,20 @@ describe('SubscriptionRepository lookups and simple writes', () => {
     await expect(
       repository.updateById(subscriptionId, { status: 'completed' }),
     ).resolves.toMatchObject({ amount: 120_000 });
+    expect(mocks.subscriptionFindByIdAndUpdate).toHaveBeenCalledWith(
+      subscriptionId,
+      { status: 'completed' },
+      { new: true },
+    );
     await expect(repository.updateById(subscriptionId, { status: 'pending' })).resolves.toBeNull();
     await expect(
       repository.updateByOrderId(orderId, { status: 'completed' }),
     ).resolves.toMatchObject({ amount: 80_000 });
+    expect(mocks.subscriptionFindOneAndUpdate).toHaveBeenCalledWith(
+      { payosOrderId: orderId },
+      { status: 'completed' },
+      { new: true },
+    );
     await expect(repository.updateByOrderId(orderId, { status: 'pending' })).resolves.toBeNull();
   });
 
@@ -353,8 +363,32 @@ describe('SubscriptionRepository transactional lifecycle', () => {
     const expired = await new SubscriptionRepository().expireDue(now);
 
     expect(expired).toBe(1);
-    expect(mocks.subscriptionUpdateMany).toHaveBeenCalled();
-    expect(mocks.userUpdateMany).toHaveBeenCalled();
+    expect(mocks.subscriptionFind).toHaveBeenCalledWith({
+      isActive: true,
+      endDate: { $exists: true, $lte: now },
+      status: 'completed',
+    });
+    expect(mocks.subscriptionSelect).toHaveBeenCalledWith('_id user payosOrderId');
+    expect(mocks.userFind).toHaveBeenCalledWith({
+      'subscription.isActive': true,
+      'subscription.endDate': { $exists: true, $lte: now },
+    });
+    expect(mocks.userSelect).toHaveBeenCalledWith('_id subscription');
+    expect(mocks.subscriptionUpdateMany).toHaveBeenCalledWith(
+      {
+        $or: [{ _id: { $in: [subId] } }, { payosOrderId: { $in: [orderId] } }],
+        status: 'completed',
+        isActive: true,
+      },
+      { $set: { status: 'expired', isActive: false } },
+    );
+    expect(mocks.userUpdateMany).toHaveBeenCalledWith(
+      {
+        _id: { $in: [userObjectId] },
+        'subscription.isActive': true,
+      },
+      { $set: { 'subscription.isActive': false } },
+    );
     expect(mocks.endSession).toHaveBeenCalledOnce();
   });
 
@@ -402,12 +436,38 @@ describe('SubscriptionRepository transactional lifecycle', () => {
   it('expires the current user subscription only when both records match', async () => {
     mocks.subscriptionUpdateOne
       .mockResolvedValueOnce({ matchedCount: 0 })
+      .mockResolvedValueOnce({ matchedCount: 1 })
       .mockResolvedValueOnce({ matchedCount: 1 });
-    mocks.userUpdateOne.mockResolvedValueOnce({ matchedCount: 1 });
+    mocks.userUpdateOne
+      .mockResolvedValueOnce({ matchedCount: 1 })
+      .mockResolvedValueOnce({ matchedCount: 0 });
 
     const repository = new SubscriptionRepository();
     await expect(repository.expireCurrentForUser(userId, orderId)).resolves.toBe(false);
     await expect(repository.expireCurrentForUser(userId, orderId)).resolves.toBe(true);
+    expect(mocks.subscriptionUpdateOne).toHaveBeenCalledWith(
+      {
+        user: userId,
+        payosOrderId: orderId,
+        status: 'completed',
+        isActive: true,
+      },
+      { $set: { status: 'expired', isActive: false } },
+      expect.objectContaining({ session: expect.any(Object) }),
+    );
+    expect(mocks.userUpdateOne).toHaveBeenCalledWith(
+      {
+        _id: userId,
+        'subscription.payosOrderId': orderId,
+        'subscription.isActive': true,
+      },
+      { $set: { 'subscription.isActive': false } },
+      expect.objectContaining({ session: expect.any(Object) }),
+    );
+
+    await expect(repository.expireCurrentForUser(userId, orderId)).rejects.toThrow(
+      'Current user subscription changed during expiry',
+    );
   });
 
   it('cancels the current time-limited subscription and maps guard outcomes', async () => {
@@ -489,5 +549,75 @@ describe('SubscriptionRepository transactional lifecycle', () => {
     await expect(repository.cancelCurrentForUser(userId)).resolves.toEqual({
       outcome: 'cancelled',
     });
+    expect(mocks.subscriptionUpdateOne).toHaveBeenCalledWith(
+      {
+        user: expect.any(Types.ObjectId),
+        payosOrderId: orderId,
+        status: 'completed',
+        isActive: true,
+      },
+      {
+        $set: {
+          status: 'cancelled',
+          isActive: false,
+        },
+      },
+      expect.objectContaining({ session: expect.any(Object) }),
+    );
+    expect(mocks.userUpdateOne).toHaveBeenCalledWith(
+      {
+        _id: expect.any(Types.ObjectId),
+        'subscription.payosOrderId': orderId,
+        'subscription.isActive': true,
+      },
+      { $set: { 'subscription.isActive': false } },
+      expect.objectContaining({ session: expect.any(Object) }),
+    );
+  });
+
+  it('maps cancel inconsistency when the active subscription row no longer matches', async () => {
+    mocks.userFindById.mockReturnValueOnce({
+      select: () => ({
+        session: () => ({
+          lean: vi.fn().mockResolvedValue({
+            _id: new Types.ObjectId(userId),
+            subscription: {
+              isActive: true,
+              endDate: new Date('2026-08-01T00:00:00.000Z'),
+              payosOrderId: orderId,
+            },
+          }),
+        }),
+      }),
+    });
+    mocks.subscriptionUpdateOne.mockResolvedValueOnce({ matchedCount: 0 });
+
+    await expect(new SubscriptionRepository().cancelCurrentForUser(userId)).resolves.toEqual({
+      outcome: 'inconsistent_record',
+    });
+    expect(mocks.userUpdateOne).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when the user snapshot changes mid-cancellation', async () => {
+    mocks.userFindById.mockReturnValueOnce({
+      select: () => ({
+        session: () => ({
+          lean: vi.fn().mockResolvedValue({
+            _id: new Types.ObjectId(userId),
+            subscription: {
+              isActive: true,
+              endDate: new Date('2026-08-01T00:00:00.000Z'),
+              payosOrderId: orderId,
+            },
+          }),
+        }),
+      }),
+    });
+    mocks.subscriptionUpdateOne.mockResolvedValueOnce({ matchedCount: 1 });
+    mocks.userUpdateOne.mockResolvedValueOnce({ matchedCount: 0 });
+
+    await expect(new SubscriptionRepository().cancelCurrentForUser(userId)).rejects.toThrow(
+      'Current user subscription changed during cancellation',
+    );
   });
 });

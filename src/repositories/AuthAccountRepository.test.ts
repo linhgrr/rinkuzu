@@ -76,6 +76,7 @@ describe('AuthAccountRepository', () => {
       }),
       { new: true },
     );
+    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith('email role');
   });
 
   it('matches password-reset tokens through the partial-index type contract', async () => {
@@ -92,6 +93,7 @@ describe('AuthAccountRepository', () => {
         passwordResetExpires: { $gt: now },
       }),
     );
+    expect(mocks.findOne.mock.results[0]?.value.select).toHaveBeenCalledWith('email role');
   });
 
   it('keeps the password-reset type guard in the atomic update', async () => {
@@ -134,6 +136,14 @@ describe('AuthAccountRepository', () => {
         displayName: 'User',
       }),
     ).resolves.toMatchObject({ email: 'user@example.com' });
+    expect(mocks.create).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      password: 'hash',
+      role: 'user',
+      displayName: 'User',
+      emailVerificationTokenHash: 'verify-hash',
+      emailVerificationExpires: now,
+    });
 
     await expect(
       repository.createPending({
@@ -189,6 +199,14 @@ describe('AuthAccountRepository', () => {
   });
 
   it('loads security, login, and session projections', async () => {
+    const securitySelect =
+      'email role password emailVerified emailVerificationTokenHash ' +
+      'emailVerificationExpires passwordResetTokenHash passwordResetExpires';
+    const loginSelect =
+      'email role password emailVerified avatar displayName passwordChangedAt ' +
+      'failedLoginAttempts failedLoginWindowStart lockedUntil';
+    const sessionSelect = 'email role avatar displayName passwordChangedAt';
+
     mocks.findOne
       .mockReturnValueOnce(
         queryChain(
@@ -222,28 +240,101 @@ describe('AuthAccountRepository', () => {
       passwordHash: 'hash',
       emailVerified: now,
     });
+    expect(mocks.findOne).toHaveBeenNthCalledWith(1, { email: 'user@example.com' });
+    expect(mocks.findOne.mock.results[0]?.value.select).toHaveBeenCalledWith(securitySelect);
+
     await expect(repository.findLoginAccount('user@example.com')).resolves.toMatchObject({
       failedLoginAttempts: 2,
     });
+    expect(mocks.findOne).toHaveBeenNthCalledWith(2, { email: 'user@example.com' });
+    expect(mocks.findOne.mock.results[1]?.value.select).toHaveBeenCalledWith(loginSelect);
+
     await expect(repository.findSessionUser(accountId)).resolves.toMatchObject({
       id: accountId,
       displayName: 'User',
       passwordChangedAt: now.getTime(),
     });
+    expect(mocks.findById.mock.results[0]?.value.select).toHaveBeenCalledWith(sessionSelect);
     await expect(repository.findSessionUser('not-an-object-id')).resolves.toBeNull();
+    expect(mocks.findById).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns null when security or login accounts are missing', async () => {
+    mocks.findOne.mockReturnValue(queryChain(null));
+    const repository = new AuthAccountRepository();
+    await expect(repository.findByEmail('missing@example.com')).resolves.toBeNull();
+    await expect(repository.findLoginAccount('missing@example.com')).resolves.toBeNull();
+  });
+
+  it('creates pending accounts without optional displayName and rethrows non-duplicate errors', async () => {
+    mocks.create
+      .mockResolvedValueOnce(identityRecord({ password: 'hash' }))
+      .mockRejectedValueOnce(new Error('write concern failed'));
+
+    const repository = new AuthAccountRepository();
+    await repository.createPending({
+      email: 'user@example.com',
+      passwordHash: 'hash',
+      verificationTokenHash: 'verify-hash',
+      verificationExpires: now,
+    });
+    expect(mocks.create).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      password: 'hash',
+      role: 'user',
+      emailVerificationTokenHash: 'verify-hash',
+      emailVerificationExpires: now,
+    });
+    expect(mocks.create.mock.calls[0]?.[0]).not.toHaveProperty('displayName');
+
+    await expect(
+      repository.createPending({
+        email: 'user@example.com',
+        passwordHash: 'hash',
+        verificationTokenHash: 'verify-hash',
+        verificationExpires: now,
+      }),
+    ).rejects.toThrow('write concern failed');
+  });
+
+  it('unsets every password-reset and verification field on successful reset', async () => {
+    mocks.findOneAndUpdate.mockReturnValue(queryChain(identityRecord()));
+
+    await new AuthAccountRepository().resetPassword(accountId, 'reset-hash', 'password-hash', now);
+
+    expect(mocks.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        $unset: {
+          passwordResetTokenHash: 1,
+          passwordResetExpires: 1,
+          failedLoginWindowStart: 1,
+          lockedUntil: 1,
+          emailVerificationTokenHash: 1,
+          emailVerificationExpires: 1,
+        },
+      }),
+      { new: true },
+    );
+    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith('email role');
   });
 
   it('records successful logins and google upserts with optional profile fields', async () => {
-    mocks.updateOne.mockResolvedValue({ matchedCount: 1 });
-    mocks.findOneAndUpdate.mockReturnValue(
-      queryChain(
-        identityRecord({
-          displayName: 'Google User',
-          avatar: 'https://example.com/g.png',
-          passwordChangedAt: null,
-        }),
-      ),
-    );
+    mocks.updateOne
+      .mockResolvedValueOnce({ matchedCount: 1 })
+      .mockResolvedValueOnce({ matchedCount: 0 })
+      .mockResolvedValueOnce({ matchedCount: 1 });
+    mocks.findOneAndUpdate
+      .mockReturnValueOnce(
+        queryChain(
+          identityRecord({
+            displayName: 'Google User',
+            avatar: 'https://example.com/g.png',
+            passwordChangedAt: null,
+          }),
+        ),
+      )
+      .mockReturnValueOnce(queryChain(null));
     const repository = new AuthAccountRepository();
 
     await expect(
@@ -268,6 +359,23 @@ describe('AuthAccountRepository', () => {
     );
 
     await expect(
+      repository.recordSuccessfulLogin(accountId, 'wrong-hash', { now, ip: '127.0.0.1' }),
+    ).resolves.toBe(false);
+
+    await expect(
+      repository.recordSuccessfulLogin(accountId, 'hash', { now, ip: '10.0.0.1' }),
+    ).resolves.toBe(true);
+    expect(mocks.updateOne.mock.calls[2]?.[1]).toEqual({
+      $set: {
+        failedLoginAttempts: 0,
+        failedLoginWindowStart: null,
+        lockedUntil: null,
+        lastLoginAt: now,
+        lastLoginIp: '10.0.0.1',
+      },
+    });
+
+    await expect(
       repository.upsertVerifiedGoogleAccount({
         email: 'user@example.com',
         now,
@@ -285,11 +393,22 @@ describe('AuthAccountRepository', () => {
         $set: expect.objectContaining({
           displayName: 'Google User',
           avatar: 'https://example.com/g.png',
+          emailVerified: now,
+          lastLoginAt: now,
+          lastLoginIp: '127.0.0.1',
         }),
         $setOnInsert: { role: 'user' },
       }),
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
+
+    await expect(
+      repository.upsertVerifiedGoogleAccount({
+        email: 'user@example.com',
+        now,
+        ip: '127.0.0.1',
+      }),
+    ).rejects.toThrow('Google account upsert did not return a user');
   });
 
   it('maps failed-login lockouts and open attempt windows', async () => {
@@ -319,5 +438,58 @@ describe('AuthAccountRepository', () => {
       attempts: 2,
     });
     await expect(repository.recordFailedLogin(accountId, now, policy)).resolves.toBeNull();
+  });
+
+  it('builds the failed-login window floor and lockout pipeline from policy timings', async () => {
+    mocks.findOneAndUpdate.mockReturnValue(
+      queryChain({ failedLoginAttempts: 1, lockedUntil: null }),
+    );
+    const policy = { maxAttempts: 5, windowMs: 15 * 60_000, lockoutMs: 30 * 60_000 };
+    const windowFloor = new Date(now.getTime() - policy.windowMs);
+    const lockoutUntil = new Date(now.getTime() + policy.lockoutMs);
+    const inWindow = {
+      $and: [
+        { $ne: [{ $ifNull: ['$failedLoginWindowStart', null] }, null] },
+        { $gte: ['$failedLoginWindowStart', windowFloor] },
+      ],
+    };
+    const nextAttempts = {
+      $add: [
+        {
+          $cond: [inWindow, { $ifNull: ['$failedLoginAttempts', 0] }, 0],
+        },
+        1,
+      ],
+    };
+    const shouldLock = { $gte: [nextAttempts, policy.maxAttempts] };
+
+    await new AuthAccountRepository().recordFailedLogin(accountId, now, policy);
+
+    expect(mocks.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: expect.any(Types.ObjectId) },
+      [
+        {
+          $set: {
+            failedLoginAttempts: { $cond: [shouldLock, 0, nextAttempts] },
+            failedLoginWindowStart: {
+              $cond: [
+                shouldLock,
+                null,
+                {
+                  $cond: [inWindow, '$failedLoginWindowStart', now],
+                },
+              ],
+            },
+            lockedUntil: {
+              $cond: [shouldLock, lockoutUntil, null],
+            },
+          },
+        },
+      ],
+      { new: true },
+    );
+    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith(
+      'failedLoginAttempts lockedUntil',
+    );
   });
 });

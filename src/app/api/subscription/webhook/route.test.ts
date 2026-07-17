@@ -70,18 +70,22 @@ describe('POST /api/subscription/webhook', () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toMatchObject({
-      error: { code: 'configuration_error' },
+      error: { code: 'configuration_error', detail: 'Webhook is not configured' },
     });
     expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
   });
 
   it('rejects invalid request bodies before signature checks', async () => {
     const response = await POST(webhookRequest({ signature: '' }));
+    const body = await response.json();
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      error: { code: 'validation_error' },
+    expect(body).toMatchObject({
+      error: {
+        code: 'validation_error',
+      },
     });
+    expect(body.error.detail?.length ?? body.error.message?.length).toBeGreaterThan(0);
   });
 
   it('rejects invalid signatures with timing-safe comparison', async () => {
@@ -104,17 +108,29 @@ describe('POST /api/subscription/webhook', () => {
 
   it('ignores non-successful payment notifications after signature validation', async () => {
     const data = { orderCode: 123, amount: 99_000 };
-    const response = await POST(
+    const failedSuccess = await POST(
       webhookRequest({
-        code: '01',
+        code: '00',
         success: false,
         data,
         signature: sign(data),
       }),
     );
+    const failedCode = await POST(
+      webhookRequest({
+        code: '01',
+        success: true,
+        data,
+        signature: sign(data),
+      }),
+    );
 
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
+    expect(failedSuccess.status).toBe(200);
+    expect(failedCode.status).toBe(200);
+    await expect(failedSuccess.json()).resolves.toMatchObject({
+      meta: { message: 'Webhook ignored' },
+    });
+    await expect(failedCode.json()).resolves.toMatchObject({
       meta: { message: 'Webhook ignored' },
     });
     expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
@@ -122,6 +138,7 @@ describe('POST /api/subscription/webhook', () => {
 
   it('rejects unsafe or missing order codes and amounts', async () => {
     const invalidOrder = { orderCode: 0, amount: 1000 };
+    const negativeOrder = { orderCode: -5, amount: 1000 };
     const missingAmount = { orderCode: 42 };
     const invalidOrderResponse = await POST(
       webhookRequest({
@@ -129,6 +146,14 @@ describe('POST /api/subscription/webhook', () => {
         success: true,
         data: invalidOrder,
         signature: sign(invalidOrder),
+      }),
+    );
+    const negativeOrderResponse = await POST(
+      webhookRequest({
+        code: '00',
+        success: true,
+        data: negativeOrder,
+        signature: sign(negativeOrder),
       }),
     );
     const missingAmountResponse = await POST(
@@ -141,8 +166,41 @@ describe('POST /api/subscription/webhook', () => {
     );
 
     expect(invalidOrderResponse.status).toBe(400);
+    await expect(invalidOrderResponse.json()).resolves.toMatchObject({
+      error: { detail: 'Invalid order code' },
+    });
+    expect(negativeOrderResponse.status).toBe(400);
+    await expect(negativeOrderResponse.json()).resolves.toMatchObject({
+      error: { detail: 'Invalid order code' },
+    });
     expect(missingAmountResponse.status).toBe(400);
+    await expect(missingAmountResponse.json()).resolves.toMatchObject({
+      error: { detail: 'Invalid payment amount' },
+    });
     expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
+  });
+
+  it('includes empty optional webhook fields in the signed payload', async () => {
+    const data = { orderCode: 321, amount: 10_000, reference: '', extra: undefined };
+    const signedData = { orderCode: 321, amount: 10_000, reference: '' };
+    const response = await POST(
+      webhookRequest({
+        code: '00',
+        success: true,
+        data: signedData,
+        signature: sign(signedData),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(activateVerifiedSubscriptionMock).toHaveBeenCalledWith(321, {
+      orderCode: 321,
+      amount: 10_000,
+      reference: '',
+    });
+    // Empty optional values still participate in HMAC material via `${value ?? ''}`.
+    expect(sign({ ...signedData, reference: 'x' })).not.toBe(sign(signedData));
+    void data;
   });
 
   it('activates verified subscriptions with optional reference and code fields', async () => {
@@ -203,8 +261,11 @@ describe('POST /api/subscription/webhook', () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toMatchObject({
-      error: { code: 'internal_error' },
+      error: { code: 'internal_error', detail: 'Webhook processing failed' },
     });
-    expect(loggerErrorMock).toHaveBeenCalled();
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.any(Error) }),
+      'PayOS webhook error',
+    );
   });
 });

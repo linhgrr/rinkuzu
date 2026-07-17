@@ -1,13 +1,21 @@
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CRITICAL_MUTATION_PATTERNS, normalizeMutationPath } from './mutation-scope.mjs';
+import {
+  CHANGED_MUTATION_BREAK_THRESHOLD,
+  EXPECTED_STRYKER_VERSION,
+  MUTATION_RERUN_MESSAGE,
+  mutationEvidencePaths,
+  validateMutationRunEvidence,
+} from './mutation-run-evidence.mjs';
 
 const VALID_STATUSES = new Set(['Killed', 'Survived', 'NoCoverage', 'Timeout']);
 const DETECTED_STATUSES = new Set(['Killed', 'Timeout']);
 const ERROR_STATUSES = new Set(['Pending', 'RuntimeError', 'CompileError']);
+const CANONICAL_BASELINE_RELATIVE = 'quality/mutation-baseline.json';
+const CANONICAL_WAIVERS_RELATIVE = 'quality/mutation-waivers.json';
 
 export function mutationFingerprint(file, mutant) {
   const payload = JSON.stringify({
@@ -52,47 +60,6 @@ function equalStringArrays(left, right) {
 
 function expectedFullMutationInput() {
   return [...CRITICAL_MUTATION_PATTERNS, '!src/**/*.{test,spec}.{ts,tsx}'];
-}
-
-export function validateMutationScopeEvidence({ report, scope, mode, headSha }) {
-  const errors = [];
-  if (scope?.schemaVersion !== 1) errors.push('Mutation scope schemaVersion must be 1.');
-  if (scope?.mode !== mode) errors.push('Mutation scope mode does not match the gate mode.');
-  if (scope?.headSha !== headSha)
-    errors.push('Mutation scope HEAD does not match the checked commit.');
-
-  const reportFiles = Object.keys(report?.files ?? {})
-    .map(normalizeMutationPath)
-    .sort();
-  const reportMutate = Array.isArray(report?.config?.mutate)
-    ? report.config.mutate.map(normalizeMutationPath)
-    : [];
-
-  if (mode === 'changed') {
-    const expectedFiles = Array.isArray(scope?.files)
-      ? [...new Set(scope.files.map(normalizeMutationPath))].sort()
-      : [];
-    if (expectedFiles.length === 0) {
-      errors.push('Changed mutation scope must contain at least one critical source file.');
-    }
-    if (!equalStringArrays(reportFiles, expectedFiles)) {
-      errors.push('Mutation report files do not exactly match the changed critical scope.');
-    }
-    if (!equalStringArrays(reportMutate, expectedFiles)) {
-      errors.push('Stryker mutate input does not exactly match the changed critical scope.');
-    }
-  } else if (mode === 'full') {
-    const scopePatterns = Array.isArray(scope?.fullPatterns) ? scope.fullPatterns : [];
-    if (!equalStringArrays(scopePatterns, CRITICAL_MUTATION_PATTERNS)) {
-      errors.push('Full mutation scope patterns do not match the production policy.');
-    }
-    const expectedMutate = expectedFullMutationInput();
-    if (!equalStringArrays(reportMutate, expectedMutate)) {
-      errors.push('Stryker full mutate input does not match the production policy.');
-    }
-  }
-
-  return errors;
 }
 
 function activeWaivers(registry, toolVersion, now, errors) {
@@ -220,6 +187,12 @@ export function evaluateMutationReport({
   }
 
   if (mode === 'full') {
+    if (score + Number.EPSILON < CHANGED_MUTATION_BREAK_THRESHOLD) {
+      errors.push(
+        `Full mutation score ${score.toFixed(2)}% is below the ${CHANGED_MUTATION_BREAK_THRESHOLD}% production threshold.`,
+      );
+    }
+
     const reportMutate = Array.isArray(report?.config?.mutate)
       ? report.config.mutate.map(normalizeMutationPath)
       : [];
@@ -260,48 +233,73 @@ export function evaluateMutationReport({
   };
 }
 
-export function runMutationGate(root = process.cwd()) {
-  const reportPath = path.resolve(
-    root,
-    process.env['MUTATION_REPORT_PATH'] ?? 'reports/mutation/mutation.json',
-  );
-  if (!existsSync(reportPath)) throw new Error(`Mutation report is missing: ${reportPath}`);
+/**
+ * Authoritative gate evaluation: require completed gate-run-meta.json, then score/waiver checks.
+ * Always loads the canonical repository baseline and live waiver paths (no env path steering).
+ * Production default for env is process.env; tests may pass a hermetic env bag.
+ *
+ * @param {string} [root]
+ * @param {{ env?: NodeJS.ProcessEnv, actualNodeVersion?: string }} [options]
+ */
+export function runMutationGate(root = process.cwd(), options = {}) {
+  const env = options.env ?? process.env;
+  const evidenceOptions =
+    options.actualNodeVersion === undefined
+      ? { env }
+      : { env, actualNodeVersion: options.actualNodeVersion };
+  const evidenceErrors = validateMutationRunEvidence(root, evidenceOptions);
+  if (evidenceErrors.length > 0) {
+    return {
+      errors: evidenceErrors,
+      score: 0,
+      valid: 0,
+      detected: 0,
+      survived: 0,
+      noCoverage: 0,
+      belowHighWatermark: true,
+      outcome: null,
+    };
+  }
+
+  const { metaPath, reportPath } = mutationEvidencePaths(root);
+  const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
+
+  if (meta.outcome === 'not_applicable') {
+    return {
+      errors: [],
+      score: 0,
+      valid: 0,
+      detected: 0,
+      survived: 0,
+      noCoverage: 0,
+      belowHighWatermark: false,
+      outcome: 'not_applicable',
+    };
+  }
+
+  if (!existsSync(reportPath)) {
+    throw new Error(`Mutation report is missing: ${reportPath}. ${MUTATION_RERUN_MESSAGE}`);
+  }
 
   const report = JSON.parse(readFileSync(reportPath, 'utf8'));
-  const registry = JSON.parse(
-    readFileSync(path.join(root, 'quality', 'mutation-waivers.json'), 'utf8'),
-  );
-  const baselinePath = path.resolve(
-    root,
-    process.env['MUTATION_BASELINE_PATH'] ?? 'quality/mutation-baseline.json',
-  );
+  const registry = JSON.parse(readFileSync(path.join(root, CANONICAL_WAIVERS_RELATIVE), 'utf8'));
+  const baselinePath = path.join(root, CANONICAL_BASELINE_RELATIVE);
   const baseline = existsSync(baselinePath)
     ? JSON.parse(readFileSync(baselinePath, 'utf8'))
     : undefined;
 
-  const toolVersion = process.env['STRYKER_VERSION'];
-  const mode = process.env['MUTATION_GATE_MODE'] ?? 'full';
+  // Repository Stryker contract only — never process.env.STRYKER_VERSION.
+  // Structural scope/report binding already ran inside validateMutationRunEvidence.
+  const mode = meta.mode;
   const result = evaluateMutationReport({
     report,
     registry,
     baseline,
     mode,
-    toolVersion,
+    toolVersion: EXPECTED_STRYKER_VERSION,
   });
   result.errors.unshift(...validateMutationSourceEvidence({ report, root }));
-
-  const scopePathValue = process.env['MUTATION_SCOPE_PATH'];
-  if (scopePathValue) {
-    const scopePath = path.resolve(root, scopePathValue);
-    if (!existsSync(scopePath)) throw new Error(`Mutation scope is missing: ${scopePath}`);
-    const scope = JSON.parse(readFileSync(scopePath, 'utf8'));
-    const headSha = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: root,
-      encoding: 'utf8',
-    }).trim();
-    result.errors.unshift(...validateMutationScopeEvidence({ report, scope, mode, headSha }));
-  }
-
+  result.outcome = meta.outcome;
   return result;
 }
 
@@ -315,6 +313,10 @@ if (isMainModule) {
       console.error('Mutation gate failed:');
       for (const error of result.errors) console.error(`- ${error}`);
       process.exitCode = 1;
+    } else if (result.outcome === 'not_applicable') {
+      process.stdout.write(
+        'Mutation gate passed: not_applicable (no critical production mutation score claimed).\n',
+      );
     } else {
       process.stdout.write(
         `Mutation gate passed: ${result.score.toFixed(2)}% (${result.detected}/${result.valid}).\n`,

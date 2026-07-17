@@ -38,7 +38,12 @@ describe('createQuizProgressRoute', () => {
 
     await route(request, routeContext);
 
-    expect(handle).toHaveBeenCalledWith({ request, slug: 'algebra', userId: 'user-1' });
+    expect(handle).toHaveBeenCalledWith({
+      request,
+      slug: 'algebra',
+      userId: 'user-1',
+      userRole: 'user',
+    });
   });
 
   it('logs handler failures and returns a safe error response', async () => {

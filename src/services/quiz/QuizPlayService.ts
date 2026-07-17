@@ -25,6 +25,7 @@ import {
   InvalidQuizAttemptAnswersError,
 } from '@/services/quiz/quiz-attempt-evaluation';
 import type { QuizAttemptAnswer } from '@/entities/QuizAttempt';
+import type { Quiz } from '@/entities/Quiz';
 
 interface FlashcardQuizFailureContext {
   logMessage: string;
@@ -39,8 +40,16 @@ export class QuizPlayService {
     private quizAttemptProgressRepository: IQuizAttemptProgressRepository,
   ) {}
 
-  private async resolveQuizId(slug: string): Promise<string | null> {
-    return this.quizRepository.findIdBySlug(slug);
+  private async resolveQuizForRead(
+    slug: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<ServiceResult<Quiz>> {
+    return requireQuizReadAccess(
+      await this.quizRepository.findSummaryBySlug(slug),
+      userId,
+      userRole,
+    );
   }
 
   private async getFlashcardQuiz(
@@ -70,14 +79,13 @@ export class QuizPlayService {
   async getSavedQuizProgress(
     slug: string,
     userId: string,
+    userRole?: string,
   ): Promise<ServiceResult<QuizProgressResponseDto>> {
     try {
-      const quizId = await this.resolveQuizId(slug);
-      if (!quizId) {
-        return { success: false, error: 'Quiz not found', statusCode: 404 };
-      }
+      const access = await this.resolveQuizForRead(slug, userId, userRole);
+      if (!access.success) return access;
 
-      const progress = await this.quizProgressRepository.findByUserAndQuiz(userId, quizId);
+      const progress = await this.quizProgressRepository.findByUserAndQuiz(userId, access.data.id);
       return {
         success: true,
         data: QuizProgressDtoMapper.toGetResponse(progress),
@@ -92,14 +100,13 @@ export class QuizPlayService {
     slug: string,
     userId: string,
     progress: SavedQuizProgressDto,
+    userRole?: string,
   ): Promise<ServiceResult<SaveQuizProgressResponseDto>> {
     try {
-      const quizId = await this.resolveQuizId(slug);
-      if (!quizId) {
-        return { success: false, error: 'Quiz not found', statusCode: 404 };
-      }
+      const access = await this.resolveQuizForRead(slug, userId, userRole);
+      if (!access.success) return access;
 
-      await this.quizProgressRepository.upsert(userId, quizId, progress);
+      await this.quizProgressRepository.upsert(userId, access.data.id, progress);
       return { success: true, data: QuizProgressDtoMapper.toSaveResponse() };
     } catch (error) {
       logger.error({ error, slug, userId }, 'Save quiz progress error');
@@ -110,14 +117,13 @@ export class QuizPlayService {
   async deleteSavedQuizProgress(
     slug: string,
     userId: string,
+    userRole?: string,
   ): Promise<ServiceResult<DeleteQuizProgressResponseDto>> {
     try {
-      const quizId = await this.resolveQuizId(slug);
-      if (!quizId) {
-        return { success: false, error: 'Quiz not found', statusCode: 404 };
-      }
+      const access = await this.resolveQuizForRead(slug, userId, userRole);
+      if (!access.success) return access;
 
-      await this.quizProgressRepository.deleteByUserAndQuiz(userId, quizId);
+      await this.quizProgressRepository.deleteByUserAndQuiz(userId, access.data.id);
       return { success: true, data: QuizProgressDtoMapper.toDeleteResponse() };
     } catch (error) {
       logger.error({ error, slug, userId }, 'Delete quiz progress error');

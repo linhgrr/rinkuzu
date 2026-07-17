@@ -9,6 +9,10 @@ describe('Stryker production configuration', () => {
     );
   });
 
+  it('materializes unreferenced candidates instead of relying on Vitest related selection', () => {
+    expect(config['vitest']).toMatchObject({ related: false });
+  });
+
   it('does not carry stale mutation globs', () => {
     expect(config.mutate).not.toContain('src/auth.ts');
     expect(config.mutate).not.toContain('src/auth.config.ts');

@@ -26,15 +26,16 @@ describe('adaptive query DTOs', () => {
   });
 
   it('validates pipeline process body at the route boundary', () => {
+    const s3Key = 'uploads/adaptive_pipeline/507f191e810c19729de860ea/1710000000000-source.pdf';
     expect(
       adaptivePipelineProcessRequestSchema.parse({
-        s3Key: 'users/user-1/source.pdf',
+        s3Key,
         filename: 'source.pdf',
         subject_id: 'algebra',
         page_batch_size: 8,
       }),
     ).toEqual({
-      s3Key: 'users/user-1/source.pdf',
+      s3Key,
       filename: 'source.pdf',
       subject_id: 'algebra',
       page_batch_size: 8,
@@ -45,16 +46,22 @@ describe('adaptive query DTOs', () => {
     );
     expect(
       adaptivePipelineProcessRequestSchema.safeParse({
-        s3Key: 'users/user-1/source.pdf',
+        s3Key,
         filename: 'source.pdf',
         page_batch_size: 0,
+      }).success,
+    ).toBe(false);
+    expect(
+      adaptivePipelineProcessRequestSchema.safeParse({
+        s3Key: 'x'.repeat(1025),
+        filename: 'source.pdf',
       }).success,
     ).toBe(false);
   });
 
   it('normalizes and constrains adaptive subject ids', () => {
     const base = {
-      s3Key: 'users/user-1/source.pdf',
+      s3Key: 'uploads/adaptive_pipeline/507f191e810c19729de860ea/1710000000000-source.pdf',
       filename: 'source.pdf',
     };
 

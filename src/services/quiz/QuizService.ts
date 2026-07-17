@@ -145,8 +145,9 @@ export class QuizService implements IQuizService {
     content: string,
     reporterEmail: string,
     reporterName: string,
+    session?: Session | null,
   ): Promise<ServiceResult<ReportQuizResponseDto>> {
-    return this.discussionService.reportQuiz(slug, content, reporterEmail, reporterName);
+    return this.discussionService.reportQuiz(slug, content, reporterEmail, reporterName, session);
   }
 
   async submitQuizAttempt(

@@ -76,7 +76,11 @@ describe('useQuizProgress', () => {
 
     await act(async () => vi.advanceTimersByTimeAsync(1));
     expect(mocks.saveQuizProgress).toHaveBeenCalledTimes(1);
-    expect(mocks.saveQuizProgress).toHaveBeenCalledWith('quiz-1', latest);
+    expect(mocks.saveQuizProgress).toHaveBeenCalledWith(
+      'quiz-1',
+      latest,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it('flushes immediately and clears a pending save before deleting', async () => {
@@ -88,7 +92,11 @@ describe('useQuizProgress', () => {
 
     act(() => result.current.saveProgress(progress));
     await act(async () => result.current.flushSave());
-    expect(mocks.saveQuizProgress).toHaveBeenCalledWith('quiz-1', progress);
+    expect(mocks.saveQuizProgress).toHaveBeenCalledWith(
+      'quiz-1',
+      progress,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
 
     act(() => result.current.saveProgress(progress));
     await act(async () => result.current.clearProgress());
@@ -120,16 +128,69 @@ describe('useQuizProgress', () => {
     expect(mocks.saveQuizProgress).not.toHaveBeenCalled();
   });
 
-  it('clears the debounce timer on unmount', async () => {
+  it('flushes pending progress with keepalive on unmount', async () => {
+    mocks.saveQuizProgress.mockResolvedValue(undefined);
     const { result, unmount } = renderHook(() =>
       useQuizProgress({ slug: 'quiz-1', enabled: true, debounceMs: 50 }),
     );
 
     act(() => result.current.saveProgress(progress));
     unmount();
+    await act(async () => vi.advanceTimersByTimeAsync(0));
+
+    expect(mocks.saveQuizProgress).toHaveBeenCalledWith('quiz-1', progress, { keepalive: true });
+  });
+
+  it('does not flush on unmount after clearProgress invalidates pending work', async () => {
+    mocks.deleteSavedQuizProgress.mockResolvedValue(undefined);
+    const { result, unmount } = renderHook(() =>
+      useQuizProgress({ slug: 'quiz-1', enabled: true, debounceMs: 50 }),
+    );
+
+    act(() => result.current.saveProgress(progress));
+    await act(async () => result.current.clearProgress());
+    unmount();
     await act(async () => vi.advanceTimersByTimeAsync(50));
 
     expect(mocks.saveQuizProgress).not.toHaveBeenCalled();
+    expect(mocks.deleteSavedQuizProgress).toHaveBeenCalledWith('quiz-1');
+  });
+
+  it('aborts an in-flight save when clearProgress runs (submit race guard)', async () => {
+    let resolveSave: ((value: unknown) => void) | undefined;
+    const signals: AbortSignal[] = [];
+    mocks.saveQuizProgress.mockImplementation(
+      (_slug: string, _payload: SavedQuizProgress, options?: { signal?: AbortSignal }) => {
+        if (options?.signal) {
+          signals.push(options.signal);
+        }
+        return new Promise((resolve) => {
+          resolveSave = resolve;
+        });
+      },
+    );
+    mocks.deleteSavedQuizProgress.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() =>
+      useQuizProgress({ slug: 'quiz-1', enabled: true, debounceMs: 50 }),
+    );
+
+    act(() => result.current.saveProgress(progress));
+    await act(async () => vi.advanceTimersByTimeAsync(50));
+    expect(mocks.saveQuizProgress).toHaveBeenCalledTimes(1);
+    expect(signals[0]?.aborted).toBe(false);
+
+    await act(async () => result.current.clearProgress());
+    expect(signals[0]?.aborted).toBe(true);
+
+    resolveSave?.({ saved: true });
+    await act(async () => undefined);
+
+    // clearProgress must not allow a second write after invalidation.
+    act(() => result.current.saveProgress(progress));
+    await act(async () => result.current.clearProgress());
+    await act(async () => vi.advanceTimersByTimeAsync(50));
+    expect(mocks.saveQuizProgress).toHaveBeenCalledTimes(1);
   });
 
   it('returns without writing when there is no pending payload', async () => {
@@ -156,7 +217,11 @@ describe('useQuizProgress', () => {
     await act(async () => result.current.clearProgress());
 
     expect(mocks.loadSavedQuizProgress).toHaveBeenCalledWith('quiz-new');
-    expect(mocks.saveQuizProgress).toHaveBeenCalledWith('quiz-new', progress);
+    expect(mocks.saveQuizProgress).toHaveBeenCalledWith(
+      'quiz-new',
+      progress,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     expect(mocks.deleteSavedQuizProgress).toHaveBeenCalledWith('quiz-new');
   });
 

@@ -116,17 +116,14 @@ export class QuizDiscussionService {
     content: string,
     reporterEmail: string,
     reporterName: string,
+    session?: Session | null,
   ): Promise<ServiceResult<ReportQuizResponseDto>> {
     try {
-      const quiz = await this.quizRepository.findSummaryBySlug(slug);
-
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
+      const access = await this.getAccessibleQuizSummary(slug, session);
+      if (!access.success) {
+        return access;
       }
+      const quiz = access.data;
 
       if (!content || content.trim().length === 0) {
         return {

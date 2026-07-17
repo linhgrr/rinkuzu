@@ -60,6 +60,59 @@ describe('quiz DTO schemas', () => {
     ).toThrow('Progress payload length mismatch');
   });
 
+  it('rejects corrupt saved quiz progress ordering and indexes', () => {
+    const base = {
+      optionOrders: [
+        [0, 1],
+        [1, 0],
+      ],
+      userAnswers: [0, [0, 1]],
+      currentQuestionIndex: 0,
+      answeredCount: 1,
+      totalQuestions: 2,
+    };
+
+    expect(() =>
+      savedQuizProgressSchema.parse({
+        ...base,
+        questionOrder: [0, 0],
+      }),
+    ).toThrow('Invalid question order');
+
+    expect(() =>
+      savedQuizProgressSchema.parse({
+        ...base,
+        questionOrder: [0, 2],
+      }),
+    ).toThrow('Invalid question order');
+
+    expect(() =>
+      savedQuizProgressSchema.parse({
+        ...base,
+        questionOrder: [0.5, 1],
+      }),
+    ).toThrow();
+
+    expect(() =>
+      savedQuizProgressSchema.parse({
+        ...base,
+        questionOrder: [1, 0],
+        currentQuestionIndex: 2,
+      }),
+    ).toThrow('Invalid current question index');
+
+    expect(() =>
+      savedQuizProgressSchema.parse({
+        ...base,
+        questionOrder: [1, 0],
+        optionOrders: [
+          [0, 0],
+          [1, 0],
+        ],
+      }),
+    ).toThrow('Invalid option order');
+  });
+
   it('validates quiz attempt request payloads', () => {
     expect(
       submitQuizAttemptRequestSchema.parse({

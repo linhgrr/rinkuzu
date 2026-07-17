@@ -49,15 +49,24 @@ export async function loadSavedQuizProgress(slug: string): Promise<SavedQuizProg
   return dto.progress ? toSavedQuizProgressViewModel(dto.progress) : null;
 }
 
+export type SaveQuizProgressRequestOptions = {
+  signal?: AbortSignal;
+  keepalive?: boolean;
+};
+
 export async function saveQuizProgress(
   slug: string,
   progress: SavedQuizProgress,
+  options?: SaveQuizProgressRequestOptions,
 ): Promise<SaveQuizProgressResponseDto> {
+  // keepalive and AbortSignal are mutually exclusive in the Fetch API.
+  const useKeepalive = options?.signal ? false : (options?.keepalive ?? true);
   return fetchApiData<SaveQuizProgressResponseDto>(quizProgressUrl(slug), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(progress),
-    keepalive: true,
+    ...(options?.signal ? { signal: options.signal } : {}),
+    ...(useKeepalive ? { keepalive: true } : {}),
   });
 }
 

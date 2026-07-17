@@ -45,6 +45,7 @@ export function MobileQuizLayout({
     options: question.options,
     type: question.type,
     ...(question.questionImage !== undefined ? { questionImage: question.questionImage } : {}),
+    ...(question.optionImages !== undefined ? { optionImages: question.optionImages } : {}),
   }));
 
   const handleMobileComplete = (answers: Record<string, number | number[]>) => {

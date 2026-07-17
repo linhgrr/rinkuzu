@@ -191,9 +191,32 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
         await Attempt.deleteMany(
           buildMongoOrFilter([{ user: userObjectId }, { guestEmail: normalizedEmail }]),
         ).session(session);
-        await Subscription.deleteMany(
-          buildMongoOrFilter([{ user: userObjectId }, { userEmail: normalizedEmail }]),
+
+        // Billing retention: hard-delete only incomplete pending rows. Completed /
+        // failed / cancelled / expired history is scrubbed of direct identifiers
+        // but kept for financial audit (user ObjectId retained; email pseudonymized).
+        const subscriptionOwnerFilter = buildMongoOrFilter([
+          { user: userObjectId },
+          { userEmail: normalizedEmail },
+        ]);
+        await Subscription.deleteMany({
+          ...subscriptionOwnerFilter,
+          status: 'pending',
+        }).session(session);
+        await Subscription.updateMany(
+          {
+            ...subscriptionOwnerFilter,
+            status: { $in: ['completed', 'failed', 'cancelled', 'expired'] },
+          },
+          {
+            $set: {
+              userEmail: `deleted+${id}@retained.local`,
+              isActive: false,
+            },
+            $unset: { payosPaymentUrl: 1 },
+          },
         ).session(session);
+
         await Bookmark.deleteMany(
           buildMongoOrFilter([{ userId: id }, { userEmail: normalizedEmail }]),
         ).session(session);

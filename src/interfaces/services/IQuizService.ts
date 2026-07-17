@@ -106,5 +106,6 @@ export interface IQuizService {
     content: string,
     reporterEmail: string,
     reporterName: string,
+    session?: Session | null,
   ): Promise<ServiceResult<ReportQuizResponseDto>>;
 }

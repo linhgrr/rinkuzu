@@ -89,4 +89,46 @@ describe('useQuizSubmission', () => {
     pending.resolve({ attemptId: 'attempt-1', score: 100, correctAnswers: 1, totalQuestions: 1 });
     await act(async () => expect(await first).toBe(true));
   });
+
+  it('waits for async success cleanup before resolving submission', async () => {
+    const cleanup = deferred<void>();
+    submitAttemptMock.mockResolvedValueOnce({
+      attemptId: 'attempt-1',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+    const { result } = renderHook(
+      ({ onSubmitSuccess }) =>
+        useQuizSubmission({
+          slug: 'architecture',
+          quiz: { questions: [{ type: 'single' }] },
+          userAnswers: [1],
+          userEmail: 'guest@example.com',
+          onSubmitSuccess,
+          onSubmitError: vi.fn(),
+          mapAnswersToOriginalOrder: (_quiz, answers) => answers,
+          isQuestionAnswered: (_question, answer) => answer !== -1,
+        }),
+      { initialProps: { onSubmitSuccess: vi.fn(() => cleanup.promise) } },
+    );
+
+    let submission!: Promise<boolean>;
+    await act(async () => {
+      submission = result.current.completeSubmit();
+      await Promise.resolve();
+    });
+    expect(submission).toBeInstanceOf(Promise);
+
+    let settled = false;
+    void submission.then(() => {
+      settled = true;
+    });
+    await act(async () => Promise.resolve());
+    expect(settled).toBe(false);
+
+    cleanup.resolve();
+    await act(async () => expect(await submission).toBe(true));
+    expect(settled).toBe(true);
+  });
 });

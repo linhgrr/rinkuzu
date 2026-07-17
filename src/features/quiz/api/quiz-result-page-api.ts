@@ -10,6 +10,11 @@ import type {
 } from '@/features/quiz/types/quiz-result-page-view-model';
 import { fetchApiData } from '@/lib/api/client';
 
+const EMPTY_BOOKMARK_LOOKUP: QuizResultBookmarkLookup = {
+  bookmarkedQuestions: new Set<number>(),
+  bookmarkIdsByQuestion: {},
+};
+
 async function fetchBookmarkLookup(result: QuizResultViewModel): Promise<QuizResultBookmarkLookup> {
   const lookupLimit = Math.min(Math.max(result.quiz.questions.length, 1), 100);
   const params = new URLSearchParams({
@@ -32,11 +37,27 @@ async function fetchBookmarkLookup(result: QuizResultViewModel): Promise<QuizRes
   };
 }
 
+export type FetchQuizResultPageDataOptions = {
+  userEmail?: string;
+};
+
 export async function fetchQuizResultPageData(
   attemptId: string,
   locale: string,
+  options?: FetchQuizResultPageDataOptions,
 ): Promise<QuizResultPageDataViewModel> {
-  const result = await fetchAttemptDetailViewModel(attemptId, locale);
+  const result = await fetchAttemptDetailViewModel(
+    attemptId,
+    locale,
+    options?.userEmail ? { userEmail: options.userEmail } : undefined,
+  );
+
+  // Bookmarks require an authenticated session. Guests identify via userEmail
+  // and must not hit the protected bookmark list endpoint.
+  if (options?.userEmail) {
+    return { result, bookmarks: EMPTY_BOOKMARK_LOOKUP };
+  }
+
   const bookmarks = await fetchBookmarkLookup(result);
   return { result, bookmarks };
 }

@@ -50,6 +50,7 @@ const userModelMocks = vi.hoisted(() => {
 const cascadeMocks = vi.hoisted(() => ({
   attemptDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
   subscriptionDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
+  subscriptionUpdateMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
   bookmarkDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
   questionProgressDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
   userProgressDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
@@ -87,7 +88,10 @@ vi.mock('@/models/Attempt', () => ({
   default: { deleteMany: cascadeMocks.attemptDeleteMany },
 }));
 vi.mock('@/models/Subscription', () => ({
-  default: { deleteMany: cascadeMocks.subscriptionDeleteMany },
+  default: {
+    deleteMany: cascadeMocks.subscriptionDeleteMany,
+    updateMany: cascadeMocks.subscriptionUpdateMany,
+  },
 }));
 vi.mock('@/models/Bookmark', () => ({
   default: { deleteMany: cascadeMocks.bookmarkDeleteMany },
@@ -412,9 +416,24 @@ describe('UserRepository.delete cascade', () => {
       $or: [{ user: expect.any(Types.ObjectId) }, { guestEmail: 'learner@example.com' }],
     });
     expect(attemptSession).toHaveBeenCalledWith(session);
+    // Pending/incomplete billing rows are hard-deleted; financially relevant history is retained.
     expect(cascadeMocks.subscriptionDeleteMany).toHaveBeenCalledWith({
       $or: [{ user: expect.any(Types.ObjectId) }, { userEmail: 'learner@example.com' }],
+      status: 'pending',
     });
+    expect(cascadeMocks.subscriptionUpdateMany).toHaveBeenCalledWith(
+      {
+        $or: [{ user: expect.any(Types.ObjectId) }, { userEmail: 'learner@example.com' }],
+        status: { $in: ['completed', 'failed', 'cancelled', 'expired'] },
+      },
+      {
+        $set: {
+          userEmail: `deleted+${userId}@retained.local`,
+          isActive: false,
+        },
+        $unset: { payosPaymentUrl: 1 },
+      },
+    );
     expect(cascadeMocks.bookmarkDeleteMany).toHaveBeenCalledWith({
       $or: [{ userId }, { userEmail: 'learner@example.com' }],
     });
@@ -448,6 +467,38 @@ describe('UserRepository.delete cascade', () => {
       { $set: { userId: null } },
     );
     expect(userModelMocks.deleteOne).toHaveBeenCalledWith({ _id: expect.any(Types.ObjectId) });
+    expect(cascadeMocks.endSession).toHaveBeenCalledOnce();
+  });
+
+  it('retains scrubbed completed billing history and only hard-deletes pending rows', async () => {
+    await expect(new UserRepository().delete(userId)).resolves.toBe(true);
+
+    expect(cascadeMocks.subscriptionDeleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'pending' }),
+    );
+    expect(cascadeMocks.subscriptionUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: { $in: ['completed', 'failed', 'cancelled', 'expired'] },
+      }),
+      {
+        $set: {
+          userEmail: `deleted+${userId}@retained.local`,
+          isActive: false,
+        },
+        $unset: { payosPaymentUrl: 1 },
+      },
+    );
+    // Audit logs are nullified, never deleted.
+    expect(cascadeMocks.auditLogUpdateMany).toHaveBeenCalled();
+  });
+
+  it('is idempotent when the user is already gone (repeated deletion)', async () => {
+    userModelMocks.findByIdSessionLean.mockResolvedValueOnce(null);
+
+    await expect(new UserRepository().delete(userId)).resolves.toBe(false);
+    expect(cascadeMocks.subscriptionDeleteMany).not.toHaveBeenCalled();
+    expect(cascadeMocks.subscriptionUpdateMany).not.toHaveBeenCalled();
+    expect(userModelMocks.deleteOne).not.toHaveBeenCalled();
     expect(cascadeMocks.endSession).toHaveBeenCalledOnce();
   });
 

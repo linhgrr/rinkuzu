@@ -119,6 +119,18 @@ describe('quiz-interaction-api', () => {
       keepalive: true,
     });
 
+    const controller = new AbortController();
+    fetchApiDataMock.mockResolvedValueOnce({ saved: true });
+    await expect(
+      saveQuizProgress('quiz', progress, { signal: controller.signal }),
+    ).resolves.toEqual({ saved: true });
+    expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/quiz/quiz/progress', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(progress),
+      signal: controller.signal,
+    });
+
     fetchApiDataMock.mockResolvedValueOnce({ deleted: true });
     await expect(deleteSavedQuizProgress('quiz')).resolves.toEqual({ deleted: true });
     expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/quiz/quiz/progress', {

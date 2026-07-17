@@ -18,10 +18,30 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingRef = useRef<SavedQuizProgress | null>(null);
   const enabledRef = useRef(enabled);
+  const slugRef = useRef(slug);
+  const inFlightAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
+
+  useEffect(() => {
+    slugRef.current = slug;
+  }, [slug]);
+
+  const clearDebounceTimer = useCallback(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+  }, []);
+
+  const invalidateSaves = useCallback(() => {
+    pendingRef.current = null;
+    clearDebounceTimer();
+    inFlightAbortRef.current?.abort();
+    inFlightAbortRef.current = null;
+  }, [clearDebounceTimer]);
 
   const loadProgress = useCallback(async (): Promise<SavedQuizProgress | null> => {
     if (!enabledRef.current) {
@@ -29,17 +49,14 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     }
 
     try {
-      return await loadSavedQuizProgress(slug);
+      return await loadSavedQuizProgress(slugRef.current);
     } catch {
       return null;
     }
-  }, [slug]);
+  }, []);
 
   const flushSave = useCallback(async () => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-      debounceRef.current = null;
-    }
+    clearDebounceTimer();
 
     const payload = pendingRef.current;
     if (!payload || !enabledRef.current) {
@@ -47,12 +64,19 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     }
     pendingRef.current = null;
 
+    const controller = new AbortController();
+    inFlightAbortRef.current = controller;
+
     try {
-      await saveQuizProgress(slug, payload);
+      await saveQuizProgress(slugRef.current, payload, { signal: controller.signal });
     } catch {
       // Best-effort; progress save failures are non-blocking.
+    } finally {
+      if (inFlightAbortRef.current === controller) {
+        inFlightAbortRef.current = null;
+      }
     }
-  }, [slug]);
+  }, [clearDebounceTimer]);
 
   const saveProgress = useCallback(
     (payload: SavedQuizProgress) => {
@@ -62,41 +86,46 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
 
       pendingRef.current = payload;
 
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
+      clearDebounceTimer();
       debounceRef.current = setTimeout(() => {
         void flushSave();
       }, debounceMs);
     },
-    [debounceMs, flushSave],
+    [clearDebounceTimer, debounceMs, flushSave],
   );
 
   const clearProgress = useCallback(async () => {
-    pendingRef.current = null;
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-      debounceRef.current = null;
-    }
+    invalidateSaves();
 
     if (!enabledRef.current) {
       return;
     }
 
     try {
-      await deleteSavedQuizProgress(slug);
+      await deleteSavedQuizProgress(slugRef.current);
     } catch {
       // Best-effort.
     }
-  }, [slug]);
+  }, [invalidateSaves]);
 
+  // Flush pending progress on unmount so a mid-quiz navigation does not drop
+  // answers. Uses keepalive (no AbortSignal) so the write can finish after
+  // teardown without keeping a React-owned promise alive. clearProgress /
+  // invalidateSaves null pending first, so submit/clear cannot resurrect.
   useEffect(() => {
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+      clearDebounceTimer();
+      const payload = pendingRef.current;
+      pendingRef.current = null;
+      if (!payload || !enabledRef.current) {
+        return;
       }
+
+      void saveQuizProgress(slugRef.current, payload, { keepalive: true }).catch(() => {
+        // Best-effort unmount flush.
+      });
     };
-  }, []);
+  }, [clearDebounceTimer]);
 
   return { loadProgress, saveProgress, flushSave, clearProgress };
 }

@@ -9,7 +9,9 @@ const adaptiveSubjectIdSchema = z
   .regex(/^[\p{L}\p{N}\p{M}_ .,:;()\-\/+&']+$/u);
 
 export const adaptivePipelineProcessRequestSchema = z.strictObject({
-  s3Key: z.string().min(1),
+  // Ownership is enforced server-side against the authenticated userId
+  // (see resolveOwnedAdaptivePipelineS3Key). DTO only bounds length/emptiness.
+  s3Key: z.string().min(1).max(1024),
   filename: z.string().min(1),
   subject_id: adaptiveSubjectIdSchema.optional(),
   page_batch_size: z.number().int().min(1).max(50).default(10),

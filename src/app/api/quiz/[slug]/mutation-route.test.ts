@@ -27,7 +27,6 @@ function createRoute(
     execute,
     route: createQuizSlugMutationRoute({
       schema: z.object({ content: z.string().min(1) }),
-      missingEmailError: { code: 'unauthorized', detail: 'Authentication required', status: 401 },
       execute,
       successMeta: { message: 'Saved' },
       logMessage: 'mutation failed',
@@ -72,7 +71,7 @@ describe('createQuizSlugMutationRoute', () => {
     await expect(response.json()).resolves.toMatchObject({ meta: { message: 'Saved' } });
   });
 
-  it('uses the configured email guard without executing the service', async () => {
+  it('uses the shared auth boundary when the session email is missing', async () => {
     authMock.mockResolvedValue({ user: { id: 'user-1', role: 'user' } });
     const { execute, route } = createRoute();
 

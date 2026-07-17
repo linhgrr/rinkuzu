@@ -32,9 +32,8 @@ export interface IQuizService {
 
   getQuizById(
     id: string,
-    userEmail?: string,
-    userRole?: string,
     userId?: string,
+    userRole?: string,
   ): Promise<ServiceResult<QuizDetailDto>>;
 
   getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null>;
@@ -91,8 +90,7 @@ export interface IQuizService {
     slug: string,
     questionIndex: number,
     content: string,
-    userEmail: string,
-    session?: Session | null,
+    session: Session | null,
   ): Promise<ServiceResult<QuizDiscussionDto>>;
 
   getQuizForFlashcards(

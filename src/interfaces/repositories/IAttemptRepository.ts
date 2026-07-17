@@ -40,10 +40,6 @@ export interface IAttemptRepository {
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Attempt>>;
 
-  countByUser(userId: string): Promise<number>;
-
-  countByQuiz(quizId: string): Promise<number>;
-
   findRecentActivity(limit: number): Promise<RecentAttemptActivity[]>;
 
   findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null>;

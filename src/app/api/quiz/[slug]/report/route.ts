@@ -4,7 +4,6 @@ import { createQuizSlugMutationRoute } from '@/app/api/quiz/[slug]/mutation-rout
 
 export const POST = createQuizSlugMutationRoute({
   schema: reportQuizRequestSchema,
-  missingEmailError: { code: 'validation_error', detail: 'User email is required', status: 400 },
   execute: ({ slug, input, email, session }) =>
     serviceFactory
       .getQuizService()

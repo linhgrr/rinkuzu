@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { QuizPersistenceMapper } from '@/repositories/mappers/QuizPersistenceMapper';
-import type { QuizPersistenceRecord } from '@/repositories/types/QuizPersistence';
+import type {
+  QuizPersistenceRecord,
+  QuizQuestionPersistenceRecord,
+} from '@/repositories/types/QuizPersistence';
+
+const singleQuestion: QuizQuestionPersistenceRecord = {
+  _id: 'question-1',
+  question: '2 + 2 = ?',
+  options: ['3', '4'],
+  correctIndex: 1,
+  type: 'single',
+};
+
+const multipleQuestion: QuizQuestionPersistenceRecord = {
+  _id: 'question-2',
+  question: 'Select primes',
+  options: ['2', '3', '4'],
+  correctIndexes: [0, 1],
+  type: 'multiple',
+};
 
 const record: QuizPersistenceRecord = {
   _id: 'quiz-1',
@@ -11,15 +30,7 @@ const record: QuizPersistenceRecord = {
     email: 'owner@example.com',
   },
   folder: 'folder-1',
-  questions: [
-    {
-      _id: 'question-1',
-      question: '2 + 2 = ?',
-      options: ['3', '4'],
-      correctIndex: 1,
-      type: 'single',
-    },
-  ],
+  questions: [singleQuestion],
   isPrivate: false,
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
   updatedAt: new Date('2026-07-01T01:00:00.000Z'),
@@ -59,6 +70,39 @@ describe('QuizPersistenceMapper', () => {
       createdAt: new Date('2026-07-01T00:00:00.000Z'),
       updatedAt: new Date('2026-07-01T01:00:00.000Z'),
     });
+  });
+
+  it('maps canonical single-choice questions with correctIndex only', () => {
+    expect(QuizPersistenceMapper.toQuestionEntity(singleQuestion, 0)).toEqual({
+      id: 'question-1',
+      question: '2 + 2 = ?',
+      options: ['3', '4'],
+      type: 'single',
+      correctIndex: 1,
+    });
+  });
+
+  it('maps canonical multiple-choice questions with correctIndexes only', () => {
+    expect(QuizPersistenceMapper.toQuestionEntity(multipleQuestion, 1)).toEqual({
+      id: 'question-2',
+      question: 'Select primes',
+      options: ['2', '3', '4'],
+      type: 'multiple',
+      correctIndexes: [0, 1],
+    });
+  });
+
+  it('throws a deterministic TypeError for an unknown runtime discriminator', () => {
+    // Simulate a corrupt persistence row that violates the typed union at runtime.
+    const malformedQuestion: QuizQuestionPersistenceRecord = Object.assign(Object.create(null), {
+      ...singleQuestion,
+      type: 'boolean',
+    });
+
+    expect(() => QuizPersistenceMapper.toQuestionEntity(malformedQuestion, 0)).toThrow(TypeError);
+    expect(() => QuizPersistenceMapper.toQuestionEntity(malformedQuestion, 0)).toThrow(
+      'quiz.questions[0].type has invalid discriminator: boolean',
+    );
   });
 
   it('rejects persisted questions without an identifier', () => {

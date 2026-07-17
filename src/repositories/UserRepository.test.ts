@@ -404,9 +404,14 @@ describe('UserRepository.delete cascade', () => {
   it('cascades ownership cleanup, lowercases email matches, and deletes authored quizzes', async () => {
     await expect(new UserRepository().delete(userId)).resolves.toBe(true);
 
+    const session = await cascadeMocks.startSession.mock.results[0]?.value;
+    const attemptSession = cascadeMocks.attemptDeleteMany.mock.results[0]?.value
+      .session as ReturnType<typeof vi.fn>;
+
     expect(cascadeMocks.attemptDeleteMany).toHaveBeenCalledWith({
-      user: expect.any(Types.ObjectId),
+      $or: [{ user: expect.any(Types.ObjectId) }, { guestEmail: 'learner@example.com' }],
     });
+    expect(attemptSession).toHaveBeenCalledWith(session);
     expect(cascadeMocks.subscriptionDeleteMany).toHaveBeenCalledWith({
       $or: [{ user: expect.any(Types.ObjectId) }, { userEmail: 'learner@example.com' }],
     });

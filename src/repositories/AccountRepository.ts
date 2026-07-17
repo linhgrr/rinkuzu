@@ -43,7 +43,13 @@ export class AccountRepository implements IAccountRepository {
 
   async updatePasswordHash(email: string, passwordHash: string): Promise<boolean> {
     await connectDB();
-    const result = await User.updateOne({ email }, { $set: { password: passwordHash } });
+    // updateOne bypasses User pre-save middleware, so passwordChangedAt must be
+    // written in the same Mongo update as password for JWT session revocation (token.pwc).
+    const passwordChangedAt = new Date();
+    const result = await User.updateOne(
+      { email },
+      { $set: { password: passwordHash, passwordChangedAt } },
+    );
     return result.matchedCount === 1;
   }
 

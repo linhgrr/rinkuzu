@@ -107,7 +107,7 @@ describe('/api/quizzes/[id] handlers', () => {
     const response = await GET(request, routeContext);
 
     expect(response.status).toBe(200);
-    expect(getQuizByIdMock).toHaveBeenCalledWith(QUIZ_ID, 'user@example.com', 'user', 'user-1');
+    expect(getQuizByIdMock).toHaveBeenCalledWith(QUIZ_ID, 'user-1', 'user');
     await expect(response.json()).resolves.toMatchObject({
       success: true,
       data: { id: QUIZ_ID, title: 'Algebra' },

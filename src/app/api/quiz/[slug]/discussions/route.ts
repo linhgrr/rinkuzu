@@ -15,11 +15,10 @@ export const GET = createOptionalQuizSlugReadRoute({
 // POST /api/quiz/[slug]/discussions - Add a new comment to a question
 export const POST = createQuizSlugMutationRoute({
   schema: addDiscussionCommentRequestSchema,
-  missingEmailError: { code: 'unauthorized', detail: 'Authentication required', status: 401 },
-  execute: ({ slug, input, email, session }) =>
+  execute: ({ slug, input, session }) =>
     serviceFactory
       .getQuizService()
-      .addDiscussionComment(slug, input.questionIndex, input.content, email, session),
+      .addDiscussionComment(slug, input.questionIndex, input.content, session),
   logMessage: 'Error adding comment',
   publicErrorMessage: 'Failed to add comment',
 });

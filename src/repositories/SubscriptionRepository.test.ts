@@ -135,6 +135,15 @@ describe('SubscriptionRepository lookups and simple writes', () => {
       payosOrderId: orderId,
     });
 
+    expect(mocks.subscriptionCreate).toHaveBeenCalledWith({
+      user: userId,
+      userEmail: 'user@example.com',
+      type: 'premium',
+      amount: 99_000,
+      currency: 'VND',
+      status: 'pending',
+      payosOrderId: orderId,
+    });
     expect(created).toMatchObject({
       id: subscriptionId,
       userId,
@@ -334,6 +343,7 @@ describe('SubscriptionRepository transactional lifecycle', () => {
     const now = new Date('2026-07-15T00:00:00.000Z');
     const subId = new Types.ObjectId();
     const userObjectId = new Types.ObjectId(userId);
+    const userWithoutOrder = new Types.ObjectId();
     mocks.subscriptionSession.mockReturnValue({
       lean: vi.fn().mockResolvedValue([{ _id: subId, user: userObjectId, payosOrderId: orderId }]),
     });
@@ -349,6 +359,13 @@ describe('SubscriptionRepository transactional lifecycle', () => {
             payosOrderId: orderId,
           },
         },
+        {
+          _id: userWithoutOrder,
+          subscription: {
+            isActive: true,
+            endDate: now,
+          },
+        },
       ]),
     });
     mocks.userSelect.mockReturnValue({ session: mocks.userSession });
@@ -362,7 +379,7 @@ describe('SubscriptionRepository transactional lifecycle', () => {
 
     const expired = await new SubscriptionRepository().expireDue(now);
 
-    expect(expired).toBe(1);
+    expect(expired).toBe(2);
     expect(mocks.subscriptionFind).toHaveBeenCalledWith({
       isActive: true,
       endDate: { $exists: true, $lte: now },
@@ -384,7 +401,7 @@ describe('SubscriptionRepository transactional lifecycle', () => {
     );
     expect(mocks.userUpdateMany).toHaveBeenCalledWith(
       {
-        _id: { $in: [userObjectId] },
+        _id: { $in: [userObjectId, userWithoutOrder] },
         'subscription.isActive': true,
       },
       { $set: { 'subscription.isActive': false } },
@@ -396,8 +413,10 @@ describe('SubscriptionRepository transactional lifecycle', () => {
     const cancelledRecord = completedRecord({ status: 'cancelled', isActive: false });
     const mutableDoc = {
       ...completedRecord(),
-      status: 'completed' as const,
+      status: 'completed' as 'completed' | 'cancelled',
       endDate: new Date('2026-08-01T00:00:00.000Z'),
+      payosOrderId: orderId,
+      user: new Types.ObjectId(userId),
       save: mocks.subscriptionSave,
       toObject: () => cancelledRecord,
     };
@@ -408,12 +427,22 @@ describe('SubscriptionRepository transactional lifecycle', () => {
       save: mocks.subscriptionSave,
       toObject: () => completedRecord(),
     };
+    const alreadyCancelledDoc = {
+      ...completedRecord(),
+      status: 'cancelled' as const,
+      endDate: new Date('2026-08-01T00:00:00.000Z'),
+      save: mocks.subscriptionSave,
+      toObject: () => completedRecord({ status: 'cancelled' }),
+    };
     mocks.subscriptionSave.mockImplementation(async function save(this: typeof mutableDoc) {
+      this.status = 'cancelled';
+      this.isActive = false;
       return this;
     });
     mocks.subscriptionFindById
       .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(null) })
       .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(lifetimeDoc) })
+      .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(alreadyCancelledDoc) })
       .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(mutableDoc) });
     mocks.userUpdateOne.mockResolvedValue({ matchedCount: 1 });
 
@@ -425,12 +454,25 @@ describe('SubscriptionRepository transactional lifecycle', () => {
       outcome: 'invalid_transition',
       currentStatus: 'completed',
     });
+    await expect(repository.updateAdminStatusById(subscriptionId, 'cancelled')).resolves.toEqual({
+      outcome: 'invalid_transition',
+      currentStatus: 'cancelled',
+    });
     await expect(
       repository.updateAdminStatusById(subscriptionId, 'cancelled'),
     ).resolves.toMatchObject({
       outcome: 'updated',
       subscription: expect.objectContaining({ status: 'cancelled' }),
     });
+    expect(mutableDoc.isActive).toBe(false);
+    expect(mocks.userUpdateOne).toHaveBeenCalledWith(
+      {
+        _id: mutableDoc.user,
+        'subscription.payosOrderId': orderId,
+      },
+      { $set: { 'subscription.isActive': false } },
+      expect.objectContaining({ session: expect.any(Object) }),
+    );
   });
 
   it('expires the current user subscription only when both records match', async () => {

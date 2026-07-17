@@ -97,9 +97,11 @@ describe('POST /api/adaptive/pipeline/process', () => {
     const response = await POST(request({ filename: 'source.pdf' }), routeContext);
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      error: { code: 'validation_error' },
-    });
+    const body = await response.json();
+    expect(body.error.code).toBe('validation_error');
+    expect(body.error.meta?.issues).toBeDefined();
+    expect(typeof body.error.meta.issues).toBe('object');
+    expect(Object.keys(body.error.meta.issues as Record<string, string>).length).toBeGreaterThan(0);
     expect(getSignedUrlMock).not.toHaveBeenCalled();
     expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
     expect(invalidateCacheMock).not.toHaveBeenCalled();

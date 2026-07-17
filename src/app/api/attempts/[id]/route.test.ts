@@ -64,9 +64,17 @@ describe('GET /api/attempts/[id]', () => {
     });
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
+    const body = await response.json();
+    expect(body).toMatchObject({
       error: { code: 'validation_error' },
     });
+    // pins non-empty fields meta (kills ObjectLiteral -> {} on param validation)
+    expect(body.error.meta?.fields).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+      }),
+    );
+    expect(Object.keys(body.error.meta?.fields ?? {}).length).toBeGreaterThan(0);
     expect(getAttemptDetailsMock).not.toHaveBeenCalled();
   });
 
@@ -79,9 +87,17 @@ describe('GET /api/attempts/[id]', () => {
     );
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
+    const body = await response.json();
+    expect(body).toMatchObject({
       error: { code: 'validation_error' },
     });
+    // pins non-empty fields meta (kills ObjectLiteral -> {} on query validation)
+    expect(body.error.meta?.fields).toEqual(
+      expect.objectContaining({
+        userEmail: expect.any(String),
+      }),
+    );
+    expect(Object.keys(body.error.meta?.fields ?? {}).length).toBeGreaterThan(0);
     expect(getAttemptDetailsMock).not.toHaveBeenCalled();
   });
 

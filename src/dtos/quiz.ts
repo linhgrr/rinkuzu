@@ -53,7 +53,7 @@ export const updateQuizRequestSchema = z
 
 export type CreateQuizRequestDto = z.infer<typeof createQuizRequestSchema>;
 export type UpdateQuizRequestDto = z.infer<typeof updateQuizRequestSchema>;
-export type QuizQuestionInputDto = z.infer<typeof questionListSchema>[number];
+type QuizQuestionInputDto = z.infer<typeof questionListSchema>[number];
 
 export interface QuizListOptionsDto {
   search?: string;
@@ -196,8 +196,6 @@ export const savedQuizProgressSchema = z
   );
 
 export type SavedQuizProgressDto = z.infer<typeof savedQuizProgressSchema>;
-export type SubmitQuizAttemptRequestDto = z.infer<typeof submitQuizAttemptRequestSchema>;
-export type AddDiscussionCommentRequestDto = z.infer<typeof addDiscussionCommentRequestSchema>;
 
 export interface QuizProgressResponseDto {
   progress: SavedQuizProgressDto | null;
@@ -214,5 +212,3 @@ export interface DeleteQuizProgressResponseDto {
 export interface ReportQuizResponseDto {
   reportId: string;
 }
-
-export type ReportQuizRequestDto = z.infer<typeof reportQuizRequestSchema>;

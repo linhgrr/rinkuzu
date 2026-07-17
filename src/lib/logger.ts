@@ -53,4 +53,3 @@ function buildLogger(): PinoLogger {
 }
 
 export const logger: PinoLogger = buildLogger();
-export type Logger = PinoLogger;

@@ -1,6 +1,6 @@
 import type { MongoIdLike } from '@/types/mongo';
 
-export interface DiscussionAuthorPersistenceRecord {
+interface DiscussionAuthorPersistenceRecord {
   _id: MongoIdLike;
   email: string;
   name?: string;

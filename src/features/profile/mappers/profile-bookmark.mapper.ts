@@ -5,7 +5,7 @@ import type {
 } from '@/features/profile/types/profile-bookmark-view-model';
 import { formatDate } from '@/lib/formatters';
 
-export function toProfileBookmarkViewModel(bookmark: BookmarkDto): ProfileBookmarkViewModel {
+function toProfileBookmarkViewModel(bookmark: BookmarkDto): ProfileBookmarkViewModel {
   return {
     id: bookmark.id,
     quiz: bookmark.quiz,

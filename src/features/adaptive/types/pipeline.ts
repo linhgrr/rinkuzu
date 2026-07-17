@@ -10,7 +10,6 @@ export type PipelineJobHistoryItem = ApiSchemas['SubjectHistoryResponse'];
 export type PipelineJobListItem = ApiSchemas['PipelineJobListItemResponse'];
 export type PipelineJobRetryResponse = ApiSchemas['PipelineJobRetryResponse'];
 export type PipelineJobCancelResponse = ApiSchemas['PipelineJobCancelResponse'];
-export type PipelineRuntimeStatusResponse = ApiSchemas['PipelineRuntimeStatusResponse'];
 export type ReadinessResponse = ApiSchemas['ReadinessResponse'];
 export type DeleteSubjectResponse = ApiSchemas['DeleteSubjectResponse'];
 export type PipelinePartialGraph = NonNullable<PipelineJobStatus['partial_graph']>;

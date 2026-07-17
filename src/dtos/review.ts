@@ -4,9 +4,9 @@ import type { PaginationMeta } from '@/dtos/common';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 import { objectIdSchema } from '@/lib/validation/common';
 
-export const srsRatingSchema = z.enum(['fail', 'hard', 'good', 'easy']);
+const srsRatingSchema = z.enum(['fail', 'hard', 'good', 'easy']);
 
-export const questionReferenceSchema = z.object({
+const questionReferenceSchema = z.object({
   text: z.string(),
   options: z.array(z.string()),
   correctIndexes: z.array(z.number().int().min(0)),
@@ -30,7 +30,7 @@ export const libraryListQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(100).default(100),
 });
 
-export interface LibraryQuizAuthorDto {
+interface LibraryQuizAuthorDto {
   id: string;
   email?: string;
   name?: string;

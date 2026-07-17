@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export interface IFolderDocument extends Document {
+interface IFolderDocument extends Document {
   name: string;
   owner: Types.ObjectId;
   createdAt: Date;

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  toReviewQuestionViewModel,
   toReviewQuestionViewModels,
   toReviewSubmitPayload,
   toReviewSubmitResultViewModel,
@@ -34,19 +33,6 @@ const dueQuestion: DueReviewQuestionDto = {
 const { questionRef: _questionRef, ...dueQuestionWithoutRef } = dueQuestion;
 
 describe('review-session.mapper', () => {
-  it('maps due review DTOs with a question reference to the page view model', () => {
-    expect(toReviewQuestionViewModel(dueQuestion)).toEqual({
-      id: 'progress-1',
-      quizSlug: 'intro-quiz',
-      questionId: 'q1',
-      questionRef: dueQuestion.questionRef,
-    });
-  });
-
-  it('drops due review DTOs without the required display question reference', () => {
-    expect(toReviewQuestionViewModel(dueQuestionWithoutRef)).toBeNull();
-  });
-
   it('maps due review lists to displayable view models only', () => {
     expect(
       toReviewQuestionViewModels({
@@ -68,7 +54,10 @@ describe('review-session.mapper', () => {
   });
 
   it('builds the submit request DTO from the view model and rating', () => {
-    const viewModel = toReviewQuestionViewModel(dueQuestion);
+    const [viewModel] = toReviewQuestionViewModels({
+      questions: [dueQuestion],
+      count: 1,
+    });
     if (!viewModel) throw new Error('Expected mapper to return a review question view model');
 
     expect(toReviewSubmitPayload(viewModel, 'good')).toEqual({

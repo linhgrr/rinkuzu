@@ -127,7 +127,3 @@ export async function buildPasswordChangedMessage(
       : {}),
   };
 }
-
-export function __resetMailClient(): void {
-  cachedResend = null;
-}

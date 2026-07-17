@@ -24,7 +24,7 @@ export const AUTH_REQUIRED_PATH_PREFIXES = [
   '/edit',
 ] as const;
 
-export type NavItemDef = {
+type NavItemDef = {
   href: string;
   labelKey: string;
   matchPrefix?: string;
@@ -95,7 +95,7 @@ export const DESKTOP_BOTTOM_NAV: DesktopNavGroupDef[] = [
 ];
 
 /** Mobile bottom-tab hrefs by product scope (icons stay in BottomNav). */
-export type MobileTabId =
+type MobileTabId =
   | 'home'
   | 'explore'
   | 'review'

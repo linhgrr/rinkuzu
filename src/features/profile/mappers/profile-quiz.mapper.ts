@@ -12,7 +12,7 @@ interface ProfileQuizMonthGroupsInput {
   locale: string;
 }
 
-export function toProfileQuizViewModel(quiz: LibraryQuizDto): ProfileQuizViewModel {
+function toProfileQuizViewModel(quiz: LibraryQuizDto): ProfileQuizViewModel {
   return {
     id: quiz.id,
     title: quiz.title,

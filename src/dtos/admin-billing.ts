@@ -7,7 +7,7 @@ export const adminSubscriptionIdRouteParamsSchema = z.strictObject({
   id: objectIdRouteParamSchema,
 });
 
-export const planIdSchema = z.string().trim().min(1, 'Plan ID is required').max(120);
+const planIdSchema = z.string().trim().min(1, 'Plan ID is required').max(120);
 
 const durationSchema = z
   .string()
@@ -58,15 +58,9 @@ export const grantUserSubscriptionRequestSchema = z.object({
   planId: planIdSchema,
 });
 
-export const subscriptionStatusSchema = z.enum([
-  'pending',
-  'completed',
-  'failed',
-  'cancelled',
-  'expired',
-]);
+const subscriptionStatusSchema = z.enum(['pending', 'completed', 'failed', 'cancelled', 'expired']);
 
-export type SubscriptionStatusDto = z.infer<typeof subscriptionStatusSchema>;
+type SubscriptionStatusDto = z.infer<typeof subscriptionStatusSchema>;
 
 export const adminSubscriptionListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

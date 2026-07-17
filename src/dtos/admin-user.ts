@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { PaginationMeta } from '@/dtos/common';
 import { objectIdSchema } from '@/lib/validation/common';
 
-export const userRoleSchema = z.enum(['admin', 'user']);
+const userRoleSchema = z.enum(['admin', 'user']);
 
 export const adminUserListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

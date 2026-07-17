@@ -1,4 +1,4 @@
-import { isRecord, type StandardErrorEnvelope } from '@/lib/api/envelope';
+import { isRecord } from '@/lib/api/envelope';
 
 type ApiErrorObject = {
   code?: unknown;
@@ -6,8 +6,6 @@ type ApiErrorObject = {
   detail?: unknown;
   meta?: unknown;
 };
-
-export type ApiErrorPayload = StandardErrorEnvelope;
 
 type StandardErrorBody = {
   success: false;

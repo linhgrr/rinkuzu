@@ -78,10 +78,3 @@ export const calculateNextReview = (
     srsLevel,
   };
 };
-
-export const getReviewStatus = (nextReviewDate: Date): 'due' | 'early' | 'late' => {
-  const now = new Date();
-  if (now >= nextReviewDate) return 'due';
-  // Logic for simple return
-  return 'early';
-};

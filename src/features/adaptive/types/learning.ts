@@ -5,9 +5,9 @@ type ApiSchemas = components['schemas'];
 
 export type BloomLevel = ApiSchemas['BloomLabel'];
 
-export type TranslationValues = Record<string, string | number | Date>;
+type TranslationValues = Record<string, string | number | Date>;
 export type TranslateFn = (key: string, values?: TranslationValues) => string;
-export type RichTranslationValues = Record<
+type RichTranslationValues = Record<
   string,
   string | number | Date | ((chunks: ReactNode) => ReactNode)
 >;

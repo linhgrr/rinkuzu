@@ -1,4 +1,4 @@
-export interface QuizProgressQuizSnapshot {
+interface QuizProgressQuizSnapshot {
   id: string;
   title?: string;
   slug?: string;

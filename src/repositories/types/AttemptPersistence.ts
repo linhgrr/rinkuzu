@@ -15,7 +15,7 @@ export interface AttemptQuizPersistenceRecord {
   questions?: QuizQuestionPersistenceRecord[];
 }
 
-export interface EmbeddedAttemptQuizSnapshotPersistenceRecord {
+interface EmbeddedAttemptQuizSnapshotPersistenceRecord {
   integrity: 'complete';
   title: string;
   slug: string;

@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   createLibraryPoller,
   type LibraryPollerOptions,
-} from '@/features/adaptive/hooks/use-job-library';
+} from '@/features/adaptive/hooks/library-poller';
 import type { PipelineJobListItem } from '@/features/adaptive/types/pipeline';
 
 // ---------------------------------------------------------------------------

@@ -8,8 +8,7 @@ import {
   getSubjectProgressHistory,
   getSubjectHistoryDetail,
   getPipelineJobStatus,
-  getExercise,
-  getNextConcept,
+  getLearningStep,
   getKnowledgeGraph,
   getConceptDetail,
   submitAnswer,
@@ -276,28 +275,40 @@ describe('pipeline lifecycle methods', () => {
     );
   });
 
-  it('getExercise normalizes optional fields only when they are not required by the exercise type', async () => {
+  it('getLearningStep normalizes exercise optional fields for mcq', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
         okJson({
-          exercise_id: 'ex-1',
-          concept_name: 'Concept 1',
-          concept_idx: 0,
-          bloom_level: 1,
-          bloom_label: 'Remember',
-          exercise_type: 'mcq',
-          question: 'Question?',
-          options: { A: 'Answer A' },
-          step: 0,
-          max_steps: 5,
+          concept: {
+            concept_name: 'Concept 1',
+            concept_idx: 0,
+            bloom_level: 1,
+            bloom_label: 'Remember',
+            step: 0,
+            max_steps: 5,
+          },
+          theory: null,
+          exercise: {
+            exercise_id: 'ex-1',
+            concept_name: 'Concept 1',
+            concept_idx: 0,
+            bloom_level: 1,
+            bloom_label: 'Remember',
+            exercise_type: 'mcq',
+            question: 'Question?',
+            options: { A: 'Answer A' },
+            step: 0,
+            max_steps: 5,
+          },
+          cache_status: 'hit',
         }),
       ),
     );
 
-    const exercise = await getExercise('session-1');
+    const step = await getLearningStep('session-1');
 
-    expect(exercise).toEqual(
+    expect(step.exercise).toEqual(
       expect.objectContaining({
         id: 'ex-1',
         exercise_type: 'mcq',
@@ -307,69 +318,111 @@ describe('pipeline lifecycle methods', () => {
         right_items: [],
       }),
     );
-    expect(exercise).not.toHaveProperty('theory');
-    expect(exercise).not.toHaveProperty('recommendation_reason');
-    expect(exercise).not.toHaveProperty('statement');
+    expect(step.exercise).not.toHaveProperty('theory');
+    expect(step.exercise).not.toHaveProperty('recommendation_reason');
+    expect(step.exercise).not.toHaveProperty('statement');
   });
 
-  it('getExercise rejects an option-based exercise without options', async () => {
+  it('getLearningStep rejects an option-based exercise without options', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
         okJson({
-          exercise_id: 'ex-1',
-          concept_name: 'Concept 1',
-          concept_idx: 0,
-          bloom_level: 1,
-          bloom_label: 'Remember',
-          exercise_type: 'mcq',
-          question: 'Question?',
-          step: 0,
-          max_steps: 5,
+          concept: {
+            concept_name: 'Concept 1',
+            concept_idx: 0,
+            bloom_level: 1,
+            bloom_label: 'Remember',
+            step: 0,
+            max_steps: 5,
+          },
+          theory: null,
+          exercise: {
+            exercise_id: 'ex-1',
+            concept_name: 'Concept 1',
+            concept_idx: 0,
+            bloom_level: 1,
+            bloom_label: 'Remember',
+            exercise_type: 'mcq',
+            question: 'Question?',
+            step: 0,
+            max_steps: 5,
+          },
+          cache_status: 'hit',
         }),
       ),
     );
 
-    await expect(getExercise('session-1')).rejects.toThrow('Missing options for mcq exercise');
+    await expect(getLearningStep('session-1')).rejects.toThrow('Missing options for mcq exercise');
   });
 
-  it('getExercise rejects an ordering exercise without items', async () => {
+  it('getLearningStep rejects an ordering exercise without items', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
         okJson({
-          exercise_id: 'ex-1',
-          concept_name: 'Concept 1',
-          concept_idx: 0,
-          bloom_level: 3,
-          bloom_label: 'Apply',
-          exercise_type: 'ordering',
-          question: 'Order these',
-          step: 0,
-          max_steps: 5,
+          concept: {
+            concept_name: 'Concept 1',
+            concept_idx: 0,
+            bloom_level: 3,
+            bloom_label: 'Apply',
+            step: 0,
+            max_steps: 5,
+          },
+          theory: null,
+          exercise: {
+            exercise_id: 'ex-1',
+            concept_name: 'Concept 1',
+            concept_idx: 0,
+            bloom_level: 3,
+            bloom_label: 'Apply',
+            exercise_type: 'ordering',
+            question: 'Order these',
+            step: 0,
+            max_steps: 5,
+          },
+          cache_status: 'hit',
         }),
       ),
     );
 
-    await expect(getExercise('session-1')).rejects.toThrow('Missing items for ordering exercise');
+    await expect(getLearningStep('session-1')).rejects.toThrow(
+      'Missing items for ordering exercise',
+    );
   });
 
-  it('getNextConcept rejects unsupported Bloom metadata', async () => {
+  it('getLearningStep rejects unsupported Bloom metadata on concept', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
         okJson({
-          concept_name: 'Concept 1',
-          concept_idx: 0,
-          bloom_level: 7,
-          bloom_label: 'Unknown',
-          step: 0,
-          max_steps: 5,
+          concept: {
+            concept_name: 'Concept 1',
+            concept_idx: 0,
+            bloom_level: 7,
+            bloom_label: 'Unknown',
+            step: 0,
+            max_steps: 5,
+          },
+          theory: null,
+          exercise: {
+            exercise_id: 'ex-1',
+            concept_name: 'Concept 1',
+            concept_idx: 0,
+            bloom_level: 1,
+            bloom_label: 'Remember',
+            exercise_type: 'mcq',
+            question: 'Question?',
+            options: { A: 'Answer A' },
+            step: 0,
+            max_steps: 5,
+          },
+          cache_status: 'hit',
         }),
       ),
     );
 
-    await expect(getNextConcept('session-1')).rejects.toThrow('Unsupported Bloom level: 7');
+    await expect(getLearningStep('session-1')).rejects.toThrow('Unsupported Bloom level: 7');
   });
 
   it('getKnowledgeGraph maps generated DTOs to strict concept statuses', async () => {

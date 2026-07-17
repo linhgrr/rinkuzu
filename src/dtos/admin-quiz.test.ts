@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  adminQuizIdParamsSchema,
-  adminQuizListQuerySchema,
-  adminQuizVisibilitySchema,
-} from '@/dtos/admin-quiz';
+import { adminQuizIdParamsSchema, adminQuizListQuerySchema } from '@/dtos/admin-quiz';
 
 const quizId = '507f191e810c19729de860ea';
 
@@ -34,7 +30,7 @@ describe('admin quiz controller schemas', () => {
 
   it('rejects invalid list and route inputs', () => {
     expect(adminQuizListQuerySchema.safeParse({ limit: '101' }).success).toBe(false);
-    expect(adminQuizVisibilitySchema.safeParse('archived').success).toBe(false);
+    expect(adminQuizListQuerySchema.safeParse({ visibility: 'archived' }).success).toBe(false);
     expect(adminQuizIdParamsSchema.safeParse({ id: 'not-an-id' }).success).toBe(false);
   });
 

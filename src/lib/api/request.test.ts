@@ -4,34 +4,9 @@ import {
   readAndValidateJson,
   readAndValidateRouteParams,
   readAndValidateSearchParams,
-  readJsonBody,
 } from '@/lib/api/request';
 
-describe('readJsonBody', () => {
-  it('returns parsed JSON without prescribing a DTO', async () => {
-    const request = new Request('http://localhost/api', {
-      method: 'POST',
-      body: JSON.stringify({ name: 'Rin' }),
-    });
-
-    await expect(readJsonBody(request)).resolves.toEqual({
-      success: true,
-      data: { name: 'Rin' },
-    });
-  });
-
-  it('returns a stable validation error for malformed JSON', async () => {
-    const request = new Request('http://localhost/api', {
-      method: 'POST',
-      body: '{',
-    });
-
-    await expect(readJsonBody(request)).resolves.toEqual({
-      success: false,
-      error: 'Request body must be valid JSON',
-    });
-  });
-
+describe('request validation', () => {
   it('validates parsed JSON and returns field errors', async () => {
     const validRequest = new Request('http://localhost/api', {
       method: 'POST',

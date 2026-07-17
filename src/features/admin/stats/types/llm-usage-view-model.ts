@@ -5,7 +5,7 @@ export interface LlmUsageBreakdownRow {
   calls: number;
 }
 
-export interface LlmUsageAnalysis {
+interface LlmUsageAnalysis {
   activeUsers: number;
   averageTokensPerCall: number;
   averageCostUsdPerCall: number;

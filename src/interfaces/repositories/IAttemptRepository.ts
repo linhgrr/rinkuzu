@@ -10,7 +10,7 @@ export type AttemptOwnerIdentity =
   | { userId: string; guestEmail?: never }
   | { userId?: never; guestEmail: string };
 
-export interface AttemptTakenAtFilter {
+interface AttemptTakenAtFilter {
   $gte: Date;
 }
 

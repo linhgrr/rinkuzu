@@ -3,7 +3,7 @@ import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/I
 import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import { assertFail, assertOk } from '@/interfaces/services/types';
+import { assertFail, assertOk } from '../../../tests/helpers/service-result-assert';
 import { QuizPlayService } from '@/services/quiz/QuizPlayService';
 
 const entitlementMocks = vi.hoisted(() => ({

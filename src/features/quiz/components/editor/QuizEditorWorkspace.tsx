@@ -32,7 +32,7 @@ const PDFViewer = dynamic(() => import('@/features/quiz/components/PDFViewer'), 
  * - update quiz: updateQuizRequestSchema.questions (questionListSchema)
  * No editorId / client-only fields — see toQuestionInputs().
  */
-export type QuizEditorWorkspaceSubmitPayload = {
+type QuizEditorWorkspaceSubmitPayload = {
   title: string;
   description: string;
   selectedFolderId: string | null;
@@ -41,7 +41,7 @@ export type QuizEditorWorkspaceSubmitPayload = {
   questions: QuizEditorQuestionInputViewModel[];
 };
 
-export type QuizEditorWorkspaceLabels = {
+type QuizEditorWorkspaceLabels = {
   pageTitle: string;
   pageSubtitle?: string;
   questionsCount: (count: number) => string;

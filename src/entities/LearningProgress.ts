@@ -28,13 +28,13 @@ export interface LibraryQuiz {
   displayDate: string;
 }
 
-export interface QuestionReference {
+interface QuestionReference {
   text: string;
   options: string[];
   correctIndexes: number[];
 }
 
-export interface ReviewHistoryEntry {
+interface ReviewHistoryEntry {
   date: Date;
   rating: SRSRating;
 }
@@ -90,14 +90,6 @@ export interface UserLearningProgress {
   weeklyActivity: Map<string, DailyLearningActivity>;
 }
 
-export interface SubmitReviewInput {
-  userId: string;
-  questionId: string;
-  quizSlug: string;
-  rating: SRSRating;
-  questionRef?: QuestionReference;
-}
-
 export interface SubmitReviewOutcome {
   questionProgress: QuestionReviewProgress;
   xpGained: number;
@@ -110,7 +102,7 @@ export interface SubmitReviewOutcome {
   };
 }
 
-export interface StreakFreezePurchase {
+interface StreakFreezePurchase {
   xp: number;
   streakFreezeCount: number;
 }

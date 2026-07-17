@@ -1,5 +1,5 @@
 /** Shared layout breakpoints (px). Prefer `useMediaQuery` over `window.innerWidth`. */
-export const BREAKPOINTS = {
+const BREAKPOINTS = {
   md: 768,
   lg: 1024,
 } as const;

@@ -10,7 +10,9 @@ import {
 import type { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISubscriptionPlanRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import type { IPayOSService, PayOSPaymentLinkData } from '@/interfaces/services/IPayOSService';
+import type { IPayOSService, PayOSVerifyResponse } from '@/interfaces/services/IPayOSService';
+
+type PayOSPaymentLinkData = NonNullable<PayOSVerifyResponse['data']>;
 
 interface ServiceOverrides {
   subscriptionRepository?: Partial<Mocked<ISubscriptionRepository>>;

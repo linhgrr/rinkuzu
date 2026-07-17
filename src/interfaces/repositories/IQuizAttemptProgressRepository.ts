@@ -2,7 +2,7 @@ import type { AttemptAnswer } from '@/entities/Attempt';
 import type { QuizQuestion } from '@/entities/Quiz';
 import type { WrongQuizAttemptQuestion } from '@/entities/QuizAttempt';
 
-export interface AttemptQuizSnapshotData {
+interface AttemptQuizSnapshotData {
   integrity: 'complete';
   title: string;
   slug: string;

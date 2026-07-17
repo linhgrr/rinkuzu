@@ -86,6 +86,7 @@ describe('POST /api/subscription/webhook', () => {
       },
     });
     expect(body.error.detail?.length ?? body.error.message?.length).toBeGreaterThan(0);
+    expect(body.error.issues ?? body.error.fields ?? body.error.meta?.issues).toBeDefined();
   });
 
   it('rejects invalid signatures with timing-safe comparison', async () => {
@@ -96,6 +97,25 @@ describe('POST /api/subscription/webhook', () => {
         success: true,
         data,
         signature: sign(data, 'wrong-key'),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'validation_error', detail: 'Invalid signature' },
+    });
+    expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects signatures with mismatched digests even when length differs', async () => {
+    const data = { orderCode: 55, amount: 1000 };
+    const shortSignature = sign(data).slice(0, 16);
+    const response = await POST(
+      webhookRequest({
+        code: '00',
+        success: true,
+        data,
+        signature: shortSignature,
       }),
     );
 
@@ -140,6 +160,7 @@ describe('POST /api/subscription/webhook', () => {
     const invalidOrder = { orderCode: 0, amount: 1000 };
     const negativeOrder = { orderCode: -5, amount: 1000 };
     const missingAmount = { orderCode: 42 };
+    const missingOrder = { amount: 1000 };
     const invalidOrderResponse = await POST(
       webhookRequest({
         code: '00',
@@ -164,18 +185,30 @@ describe('POST /api/subscription/webhook', () => {
         signature: sign(missingAmount),
       }),
     );
+    const missingOrderResponse = await POST(
+      webhookRequest({
+        code: '00',
+        success: true,
+        data: missingOrder,
+        signature: sign(missingOrder),
+      }),
+    );
 
     expect(invalidOrderResponse.status).toBe(400);
     await expect(invalidOrderResponse.json()).resolves.toMatchObject({
-      error: { detail: 'Invalid order code' },
+      error: { code: 'validation_error', detail: 'Invalid order code' },
     });
     expect(negativeOrderResponse.status).toBe(400);
     await expect(negativeOrderResponse.json()).resolves.toMatchObject({
-      error: { detail: 'Invalid order code' },
+      error: { code: 'validation_error', detail: 'Invalid order code' },
     });
     expect(missingAmountResponse.status).toBe(400);
     await expect(missingAmountResponse.json()).resolves.toMatchObject({
-      error: { detail: 'Invalid payment amount' },
+      error: { code: 'validation_error', detail: 'Invalid payment amount' },
+    });
+    expect(missingOrderResponse.status).toBe(400);
+    await expect(missingOrderResponse.json()).resolves.toMatchObject({
+      error: { code: 'validation_error' },
     });
     expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
   });
@@ -244,6 +277,12 @@ describe('POST /api/subscription/webhook', () => {
       orderCode: 789,
       amount: 50_000,
     });
+    const activationPayload = activateVerifiedSubscriptionMock.mock.calls.at(-1)?.[1] as Record<
+      string,
+      unknown
+    >;
+    expect(activationPayload).not.toHaveProperty('reference');
+    expect(activationPayload).not.toHaveProperty('code');
   });
 
   it('maps unexpected activation failures to a 500 response', async () => {

@@ -1,15 +1,15 @@
 import type { NextRequest } from 'next/server';
 
-import { quizSlugRouteParamsSchema } from '@/dtos/quiz';
 import { withAuth } from '@/lib/api/auth';
-import { readAndValidateRouteParams } from '@/lib/api/request';
 import { apiErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { parseQuizSlugRouteParams } from '../quiz-slug-route-params';
 
 interface QuizProgressRouteContext {
   request: NextRequest;
   slug: string;
   userId: string;
+  userRole?: string;
 }
 
 interface QuizProgressRouteOptions {
@@ -18,16 +18,17 @@ interface QuizProgressRouteOptions {
 }
 
 export function createQuizProgressRoute(options: QuizProgressRouteOptions) {
-  return withAuth(async (request: NextRequest, { params, userId }) => {
+  return withAuth(async (request: NextRequest, { params, userId, session }) => {
     try {
-      const parsedParams = readAndValidateRouteParams(params, quizSlugRouteParamsSchema);
-      if (!parsedParams.success) {
-        return apiErr('validation_error', parsedParams.error, 400, {
-          fields: parsedParams.fields,
-        });
-      }
+      const parsedParams = parseQuizSlugRouteParams(params);
+      if (!parsedParams.success) return parsedParams.response;
 
-      return await options.handle({ request, slug: parsedParams.data.slug, userId });
+      return await options.handle({
+        request,
+        slug: parsedParams.slug,
+        userId,
+        userRole: session.user.role,
+      });
     } catch (error) {
       logger.error({ error }, options.logMessage);
       return apiErr('internal_error', 'Internal server error', 500);

@@ -47,17 +47,20 @@ export interface IQuizService {
   getSavedQuizProgress(
     slug: string,
     userId: string,
+    userRole?: string,
   ): Promise<ServiceResult<QuizProgressResponseDto>>;
 
   saveQuizProgress(
     slug: string,
     userId: string,
     progress: SavedQuizProgressDto,
+    userRole?: string,
   ): Promise<ServiceResult<SaveQuizProgressResponseDto>>;
 
   deleteSavedQuizProgress(
     slug: string,
     userId: string,
+    userRole?: string,
   ): Promise<ServiceResult<DeleteQuizProgressResponseDto>>;
 
   updateQuiz(

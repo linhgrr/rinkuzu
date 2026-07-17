@@ -1,11 +1,10 @@
 import type { Session } from 'next-auth';
 
-import { quizSlugRouteParamsSchema } from '@/dtos/quiz';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { withOptionalAuth } from '@/lib/api/auth';
-import { readAndValidateRouteParams } from '@/lib/api/request';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { parseQuizSlugRouteParams } from './quiz-slug-route-params';
 
 interface OptionalQuizSlugReadContext {
   slug: string;
@@ -24,15 +23,11 @@ export function createOptionalQuizSlugReadRoute<TData>(
 ) {
   return withOptionalAuth(async (_request, { params, userId, session }) => {
     try {
-      const parsedParams = readAndValidateRouteParams(params, quizSlugRouteParamsSchema);
-      if (!parsedParams.success) {
-        return apiErr('validation_error', parsedParams.error, 400, {
-          fields: parsedParams.fields,
-        });
-      }
+      const parsedParams = parseQuizSlugRouteParams(params);
+      if (!parsedParams.success) return parsedParams.response;
 
       const result = await options.load({
-        slug: parsedParams.data.slug,
+        slug: parsedParams.slug,
         userId,
         session,
       });

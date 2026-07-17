@@ -43,8 +43,17 @@ function createService() {
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     }),
-    findSummaryBySlug: vi.fn(),
-    findIdBySlug: vi.fn().mockResolvedValue(quizId),
+    findSummaryBySlug: vi.fn().mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      questions: [],
+      isPrivate: false,
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    }),
+    findIdBySlug: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -139,7 +148,7 @@ describe('QuizPlayService progress operations', () => {
 
   it('returns 404 without touching progress storage when the quiz is missing', async () => {
     const { service, quizRepository, progressRepository } = createService();
-    vi.mocked(quizRepository.findIdBySlug).mockResolvedValue(null);
+    vi.mocked(quizRepository.findSummaryBySlug).mockResolvedValue(null);
 
     const getResult = await service.getSavedQuizProgress('missing', userId);
     const saveResult = await service.saveQuizProgress('missing', userId, savedProgress);
@@ -151,10 +160,65 @@ describe('QuizPlayService progress operations', () => {
     expect(getResult).toMatchObject({ statusCode: 404, error: 'Quiz not found' });
     expect(saveResult).toMatchObject({ statusCode: 404, error: 'Quiz not found' });
     expect(deleteResult).toMatchObject({ statusCode: 404, error: 'Quiz not found' });
+    expect(quizRepository.findSummaryBySlug).toHaveBeenCalledTimes(3);
+    expect(quizRepository.findIdBySlug).not.toHaveBeenCalled();
     expect(quizRepository.findBySlug).not.toHaveBeenCalled();
     expect(progressRepository.findByUserAndQuiz).not.toHaveBeenCalled();
     expect(progressRepository.upsert).not.toHaveBeenCalled();
     expect(progressRepository.deleteByUserAndQuiz).not.toHaveBeenCalled();
+  });
+
+  it('blocks free users from all progress operations on private quizzes', async () => {
+    const { service, quizRepository, progressRepository } = createService();
+    vi.mocked(quizRepository.findSummaryBySlug).mockResolvedValue({
+      id: quizId,
+      title: 'Private quiz',
+      slug: 'private-quiz',
+      author: 'another-user',
+      questions: [],
+      isPrivate: true,
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+
+    const [getResult, saveResult, deleteResult] = await Promise.all([
+      service.getSavedQuizProgress('private-quiz', userId, 'user'),
+      service.saveQuizProgress('private-quiz', userId, savedProgress, 'user'),
+      service.deleteSavedQuizProgress('private-quiz', userId, 'user'),
+    ]);
+
+    assertFail(getResult);
+    assertFail(saveResult);
+    assertFail(deleteResult);
+    expect(getResult).toMatchObject({ statusCode: 403, code: 'premium_required' });
+    expect(saveResult).toMatchObject({ statusCode: 403, code: 'premium_required' });
+    expect(deleteResult).toMatchObject({ statusCode: 403, code: 'premium_required' });
+    expect(entitlementMocks.resolveEntitlements).toHaveBeenCalledTimes(3);
+    expect(progressRepository.findByUserAndQuiz).not.toHaveBeenCalled();
+    expect(progressRepository.upsert).not.toHaveBeenCalled();
+    expect(progressRepository.deleteByUserAndQuiz).not.toHaveBeenCalled();
+  });
+
+  it('allows admins to manage private quiz progress without premium entitlement lookup', async () => {
+    const { service, quizRepository, progressRepository } = createService();
+    vi.mocked(quizRepository.findSummaryBySlug).mockResolvedValue({
+      id: quizId,
+      title: 'Private quiz',
+      slug: 'private-quiz',
+      author: 'another-user',
+      questions: [],
+      isPrivate: true,
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    vi.mocked(progressRepository.findByUserAndQuiz).mockResolvedValue(null);
+
+    const result = await service.getSavedQuizProgress('private-quiz', userId, 'admin');
+
+    assertOk(result);
+    expect(result.data).toEqual({ progress: null });
+    expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
+    expect(progressRepository.findByUserAndQuiz).toHaveBeenCalledWith(userId, quizId);
   });
 
   it('never exposes correct answers when a private quiz author starts playing', async () => {
@@ -460,14 +524,23 @@ describe('QuizPlayService progress operations', () => {
 
   it('maps progress and flashcard unexpected failures to 500 responses', async () => {
     const { service, quizRepository, progressRepository } = createService();
-    vi.mocked(quizRepository.findIdBySlug).mockRejectedValueOnce(new Error('db down'));
+    vi.mocked(quizRepository.findSummaryBySlug).mockRejectedValueOnce(new Error('db down'));
     await expect(service.getSavedQuizProgress('quiz', userId)).resolves.toMatchObject({
       success: false,
       statusCode: 500,
       error: 'Failed to get quiz progress',
     });
 
-    vi.mocked(quizRepository.findIdBySlug).mockResolvedValue(quizId);
+    vi.mocked(quizRepository.findSummaryBySlug).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      questions: [],
+      isPrivate: false,
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
     vi.mocked(progressRepository.upsert).mockRejectedValue(new Error('db down'));
     vi.mocked(progressRepository.deleteByUserAndQuiz).mockRejectedValue(new Error('db down'));
     vi.mocked(quizRepository.findForPlay).mockRejectedValue(new Error('db down'));

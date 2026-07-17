@@ -202,14 +202,14 @@ describe('QuizService facade', () => {
     await service.getQuizForPlay('algebra', 'user', 'user-1');
     expect(playMocks.getQuizForPlay).toHaveBeenCalledWith('algebra', 'user', 'user-1');
 
-    await service.getSavedQuizProgress('algebra', 'user-1');
-    expect(playMocks.getSavedQuizProgress).toHaveBeenCalledWith('algebra', 'user-1');
+    await service.getSavedQuizProgress('algebra', 'user-1', 'user');
+    expect(playMocks.getSavedQuizProgress).toHaveBeenCalledWith('algebra', 'user-1', 'user');
 
-    await service.saveQuizProgress('algebra', 'user-1', progress);
-    expect(playMocks.saveQuizProgress).toHaveBeenCalledWith('algebra', 'user-1', progress);
+    await service.saveQuizProgress('algebra', 'user-1', progress, 'user');
+    expect(playMocks.saveQuizProgress).toHaveBeenCalledWith('algebra', 'user-1', progress, 'user');
 
-    await service.deleteSavedQuizProgress('algebra', 'user-1');
-    expect(playMocks.deleteSavedQuizProgress).toHaveBeenCalledWith('algebra', 'user-1');
+    await service.deleteSavedQuizProgress('algebra', 'user-1', 'user');
+    expect(playMocks.deleteSavedQuizProgress).toHaveBeenCalledWith('algebra', 'user-1', 'user');
 
     const session: Session = {
       user: { id: 'user-1', role: 'user' },

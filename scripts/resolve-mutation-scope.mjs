@@ -1,71 +1,89 @@
-import { execFileSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync } from 'node:fs';
 import path from 'node:path';
-import { CRITICAL_MUTATION_PATTERNS, selectCriticalMutationFiles } from './mutation-scope.mjs';
+import { fileURLToPath } from 'node:url';
+import { CRITICAL_MUTATION_PATTERNS, formatStrykerMutateOutput } from './mutation-scope.mjs';
+import {
+  mutationEvidencePaths,
+  resolveMutationCampaignScope,
+  writeJsonAtomic,
+} from './mutation-run-evidence.mjs';
 
-const root = process.cwd();
-const mode = process.env['MUTATION_MODE'] ?? 'changed';
-
-function git(...args) {
-  return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
-}
-
-function fail(message) {
-  throw new Error(`Mutation scope resolution failed: ${message}`);
-}
-
-function writeOutput(name, value) {
-  const outputPath = process.env['GITHUB_OUTPUT'];
+/**
+ * Append a single-line GitHub Actions output. The `files` value is the
+ * FileMatcher-safe Stryker mutate handoff (see formatStrykerMutateOutput:
+ * literal `[` → `[[]`); scope.json keeps literal paths.
+ */
+export function writeOutput(name, value, outputPath = process.env['GITHUB_OUTPUT']) {
   if (outputPath) appendFileSync(outputPath, `${name}=${value}\n`, 'utf8');
 }
 
-if (!['changed', 'full'].includes(mode)) fail(`unsupported mode ${JSON.stringify(mode)}`);
+/**
+ * Thin CLI adapter over resolveMutationCampaignScope.
+ * @param {string} root
+ * @param {{
+ *   mode?: 'changed' | 'full',
+ *   baseRef?: string | null,
+ *   env?: NodeJS.ProcessEnv,
+ * }} [options]
+ */
+export function resolveMutationScope(root = process.cwd(), options = {}) {
+  const env = options.env ?? process.env;
+  const requestedMode = options.mode ?? env['MUTATION_MODE'] ?? 'changed';
+  if (requestedMode !== 'changed' && requestedMode !== 'full') {
+    throw new Error(
+      `Mutation scope resolution failed: unsupported mode ${JSON.stringify(requestedMode)}`,
+    );
+  }
+  /** @type {'changed' | 'full'} */
+  const mode = requestedMode;
+  const baseRef = mode === 'changed' ? (options.baseRef ?? env['MUTATION_BASE_REF'] ?? null) : null;
+  if (mode === 'changed' && !baseRef) {
+    throw new Error(
+      'Mutation scope resolution failed: MUTATION_BASE_REF is required in changed mode',
+    );
+  }
 
-const headSha = git('rev-parse', 'HEAD');
-let baseSha = null;
-let files = [];
+  const { scope } = resolveMutationCampaignScope(root, {
+    requestedMode: mode,
+    baseRef,
+  });
 
-if (mode === 'changed') {
-  const baseRef = process.env['MUTATION_BASE_REF'];
-  if (!baseRef) fail('MUTATION_BASE_REF is required in changed mode');
-  baseSha = git('rev-parse', `${baseRef}^{commit}`);
-  const changedPaths = git(
-    'diff',
-    '--name-only',
-    '--diff-filter=ACMRTUXB',
-    `${baseSha}...${headSha}`,
-    '--',
-  )
-    .split(/\r?\n/)
-    .filter(Boolean);
-  files = selectCriticalMutationFiles(changedPaths).filter((file) =>
-    existsSync(path.join(root, file)),
-  );
+  const { scopePath } = mutationEvidencePaths(root);
+  writeJsonAtomic(scopePath, scope);
+
+  return {
+    evidence: scope,
+    outputs: {
+      mode: scope.mode,
+      count: String(scope.files.length),
+      files: formatStrykerMutateOutput(scope.files),
+      outcome: scope.outcome,
+    },
+  };
 }
 
-const evidenceDirectory = path.join(root, 'reports', 'mutation');
-mkdirSync(evidenceDirectory, { recursive: true });
-const evidence = {
-  schemaVersion: 1,
-  generatedAt: new Date().toISOString(),
-  mode,
-  baseSha,
-  headSha,
-  files,
-  fullPatterns: mode === 'full' ? CRITICAL_MUTATION_PATTERNS : null,
-  outcome: mode === 'changed' && files.length === 0 ? 'not_applicable' : 'mutation_required',
-};
-writeFileSync(
-  path.join(evidenceDirectory, 'scope.json'),
-  `${JSON.stringify(evidence, null, 2)}\n`,
-  'utf8',
-);
+const isMainModule =
+  process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
-writeOutput('mode', mode);
-writeOutput('count', String(files.length));
-writeOutput('files', files.join(','));
-process.stdout.write(
-  mode === 'full'
-    ? `Full critical mutation scope selected (${CRITICAL_MUTATION_PATTERNS.length} patterns).\n`
-    : `Changed critical mutation scope selected (${files.length} file(s)).\n`,
-);
+if (isMainModule) {
+  try {
+    const root = process.cwd();
+    const { evidence, outputs } = resolveMutationScope(root);
+    writeOutput('mode', outputs.mode);
+    writeOutput('count', outputs.count);
+    writeOutput('files', outputs.files);
+    writeOutput('outcome', outputs.outcome);
+    process.stdout.write(
+      evidence.mode === 'full'
+        ? `Full critical mutation scope selected (${CRITICAL_MUTATION_PATTERNS.length} patterns${
+            evidence.upgradeReason ? `, upgraded: ${evidence.upgradeReason}` : ''
+          }).\n`
+        : evidence.outcome === 'not_applicable'
+          ? 'Changed critical mutation scope selected (0 file(s); not_applicable).\n'
+          : `Changed critical mutation scope selected (${evidence.files.length} file(s)).\n`,
+    );
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  }
+}

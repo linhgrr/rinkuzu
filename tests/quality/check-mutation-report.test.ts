@@ -1,13 +1,33 @@
-import { mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   evaluateMutationReport,
+  runMutationGate,
   validateMutationSourceEvidence,
-  validateMutationScopeEvidence,
 } from '../../scripts/check-mutation-report.mjs';
-import { CRITICAL_MUTATION_PATTERNS } from '../../scripts/mutation-scope.mjs';
+import {
+  CRITICAL_MUTATION_PATTERNS,
+  formatStrykerMutateOutput,
+  toStrykerMutatePatterns,
+} from '../../scripts/mutation-scope.mjs';
+import {
+  MUTATION_RERUN_MESSAGE,
+  validateBoundMutationReport,
+} from '../../scripts/mutation-run-evidence.mjs';
+
+type BoundMutationReportInput = {
+  report: unknown;
+  scope: unknown;
+  mode: 'changed' | 'full';
+  headSha?: string;
+  expectedFullInventory?: string[];
+};
+
+const validateBoundReport = (input: BoundMutationReportInput): { errors: string[] } =>
+  validateBoundMutationReport(input);
+const TEST_ENV = { NODE_ENV: 'test' } satisfies NodeJS.ProcessEnv;
 
 function reportWith(statuses: string[]) {
   return {
@@ -144,6 +164,21 @@ describe('mutation report gate', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it('fails a full report below the production mutation threshold', () => {
+    const statuses = [...Array(7).fill('Killed'), ...Array(3).fill('Survived')];
+    const result = evaluateMutationReport({
+      report: reportWith(statuses),
+      registry,
+      baseline: baselineWith(statuses),
+      mode: 'full',
+      toolVersion: '9.6.1',
+    });
+
+    expect(result.errors).toContain(
+      'Full mutation score 70.00% is below the 80% production threshold.',
+    );
+  });
+
   it('fails invalid terminal and NoCoverage states', () => {
     const result = evaluateMutationReport({
       report: reportWith(['Pending', 'NoCoverage']),
@@ -262,60 +297,181 @@ describe('mutation report gate', () => {
     );
   });
 
-  it('binds changed-mode evidence to the exact selected files and commit', () => {
-    const report = {
+  it('binds changed and full evidence via shared structural binder', () => {
+    const changedReport = {
       ...reportWith(['Killed']),
       config: { mutate: ['src/lib/auth.ts'] },
     };
-    const scope = {
+    const changedScope = {
       schemaVersion: 1,
       mode: 'changed',
       headSha: 'abc123',
       files: ['src/lib/auth.ts'],
     };
-
     expect(
-      validateMutationScopeEvidence({ report, scope, mode: 'changed', headSha: 'abc123' }),
-    ).toEqual([]);
-    expect(
-      validateMutationScopeEvidence({
-        report,
-        scope: { ...scope, files: ['src/models/User.ts'] },
+      validateBoundReport({
+        report: changedReport,
+        scope: changedScope,
         mode: 'changed',
         headSha: 'abc123',
-      }),
+      }).errors,
+    ).toEqual([]);
+    expect(
+      validateBoundReport({
+        report: changedReport,
+        scope: { ...changedScope, files: ['src/models/User.ts'] },
+        mode: 'changed',
+        headSha: 'abc123',
+      }).errors,
     ).toEqual(
       expect.arrayContaining([
         'Mutation report files do not exactly match the changed critical scope.',
         'Stryker mutate input does not exactly match the changed critical scope.',
       ]),
     );
-  });
 
-  it('binds full-mode evidence to the centralized production patterns', () => {
-    const report = {
+    const fullReport = {
       ...reportWith(['Killed']),
       config: {
         mutate: [...CRITICAL_MUTATION_PATTERNS, '!src/**/*.{test,spec}.{ts,tsx}'],
       },
     };
-    const scope = {
+    const fullScope = {
       schemaVersion: 1,
       mode: 'full',
       headSha: 'abc123',
       fullPatterns: [...CRITICAL_MUTATION_PATTERNS],
     };
-
     expect(
-      validateMutationScopeEvidence({ report, scope, mode: 'full', headSha: 'abc123' }),
-    ).toEqual([]);
-    expect(
-      validateMutationScopeEvidence({
-        report,
-        scope: { ...scope, headSha: 'stale' },
+      validateBoundReport({
+        report: fullReport,
+        scope: fullScope,
         mode: 'full',
         headSha: 'abc123',
-      }),
+      }).errors,
+    ).toEqual([]);
+    expect(
+      validateBoundReport({
+        report: fullReport,
+        scope: { ...fullScope, headSha: 'stale' },
+        mode: 'full',
+        headSha: 'abc123',
+      }).errors,
     ).toContain('Mutation scope HEAD does not match the checked commit.');
+  });
+
+  it('accepts resolver → FileMatcher-safe escaped mutate → report evidence round trip', () => {
+    const scopeFiles = [
+      'src/app/api/folders/[id]/route.ts',
+      'src/app/api/auth/[...nextauth]/route.ts',
+      'src/app/api/quiz/[[...optional]]/route.ts',
+    ];
+    expect(formatStrykerMutateOutput(scopeFiles)).toBe(
+      [
+        'src/app/api/folders/[[]id]/route.ts',
+        'src/app/api/auth/[[]...nextauth]/route.ts',
+        'src/app/api/quiz/[[][[]...optional]]/route.ts',
+      ].join(','),
+    );
+    const mutatePatterns = toStrykerMutatePatterns(scopeFiles);
+    const report = {
+      schemaVersion: '1.0',
+      framework: { name: 'StrykerJS', version: '9.6.1' },
+      config: { mutate: mutatePatterns },
+      files: Object.fromEntries(
+        scopeFiles.map((file) => [file, { mutants: [], source: 'export {};\n' }]),
+      ),
+    };
+    const scope = {
+      schemaVersion: 1,
+      mode: 'changed',
+      headSha: 'abc123',
+      files: scopeFiles,
+    };
+    expect(
+      validateBoundReport({ report, scope, mode: 'changed', headSha: 'abc123' }).errors,
+    ).toEqual([]);
+  });
+
+  it('runMutationGate fails closed without authoritative gate-run-meta', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'rinkuzu-mutation-gate-root-'));
+    temporaryRoots.push(root);
+    mkdirSync(path.join(root, 'reports/mutation'), { recursive: true });
+    mkdirSync(path.join(root, 'quality'), { recursive: true });
+    writeFileSync(
+      path.join(root, 'reports/mutation/mutation.json'),
+      `${JSON.stringify(reportWith(['Killed']))}\n`,
+    );
+    writeFileSync(
+      path.join(root, 'quality/mutation-waivers.json'),
+      `${JSON.stringify(registry)}\n`,
+    );
+    const result = runMutationGate(root, { env: TEST_ENV });
+    if (!result.errors) throw new Error('Expected fail-closed mutation gate errors.');
+    expect(result.errors.join('\n')).toContain(MUTATION_RERUN_MESSAGE);
+    expect(result.errors.join('\n')).toMatch(/missing|Legacy|schemaVersion|Authoritative/);
+  });
+
+  it.each([
+    {
+      name: 'unescaped brackets',
+      mutate: [
+        'src/app/api/folders/[id]/route.ts',
+        'src/app/api/auth/[...nextauth]/route.ts',
+        'src/app/api/quiz/[[...optional]]/route.ts',
+      ],
+    },
+    {
+      name: 'extra escaped path',
+      mutate: [
+        'src/app/api/folders/[[]id]/route.ts',
+        'src/app/api/auth/[[]...nextauth]/route.ts',
+        'src/app/api/quiz/[[][[]...optional]]/route.ts',
+        'src/models/User.ts',
+      ],
+    },
+    {
+      name: 'missing escaped path',
+      mutate: ['src/app/api/folders/[[]id]/route.ts', 'src/app/api/auth/[[]...nextauth]/route.ts'],
+    },
+    {
+      name: 'wrong escaped path',
+      mutate: [
+        'src/app/api/folders/[[]id]/route.ts',
+        'src/app/api/auth/[[]...nextauth]/route.ts',
+        'src/app/api/quiz/[[]slug]/route.ts',
+      ],
+    },
+    {
+      name: 'legacy backslash escapes',
+      mutate: [
+        'src/app/api/folders/\\[id\\]/route.ts',
+        'src/app/api/auth/\\[...nextauth\\]/route.ts',
+        'src/app/api/quiz/\\[\\[...optional\\]\\]/route.ts',
+      ],
+    },
+  ])('fails closed on mutate mismatch: $name', ({ mutate }) => {
+    const scopeFiles = [
+      'src/app/api/folders/[id]/route.ts',
+      'src/app/api/auth/[...nextauth]/route.ts',
+      'src/app/api/quiz/[[...optional]]/route.ts',
+    ];
+    const filesPayload = Object.fromEntries(
+      scopeFiles.map((file) => [file, { mutants: [], source: 'export {};\n' }]),
+    );
+    const scope = {
+      schemaVersion: 1,
+      mode: 'changed',
+      headSha: 'abc123',
+      files: scopeFiles,
+    };
+    expect(
+      validateBoundReport({
+        report: { files: filesPayload, config: { mutate } },
+        scope,
+        mode: 'changed',
+        headSha: 'abc123',
+      }).errors,
+    ).toContain('Stryker mutate input does not exactly match the changed critical scope.');
   });
 });

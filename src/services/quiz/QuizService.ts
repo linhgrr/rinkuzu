@@ -101,23 +101,26 @@ export class QuizService implements IQuizService {
   async getSavedQuizProgress(
     slug: string,
     userId: string,
+    userRole?: string,
   ): Promise<ServiceResult<QuizProgressResponseDto>> {
-    return this.playService.getSavedQuizProgress(slug, userId);
+    return this.playService.getSavedQuizProgress(slug, userId, userRole);
   }
 
   async saveQuizProgress(
     slug: string,
     userId: string,
     progress: SavedQuizProgressDto,
+    userRole?: string,
   ): Promise<ServiceResult<SaveQuizProgressResponseDto>> {
-    return this.playService.saveQuizProgress(slug, userId, progress);
+    return this.playService.saveQuizProgress(slug, userId, progress, userRole);
   }
 
   async deleteSavedQuizProgress(
     slug: string,
     userId: string,
+    userRole?: string,
   ): Promise<ServiceResult<DeleteQuizProgressResponseDto>> {
-    return this.playService.deleteSavedQuizProgress(slug, userId);
+    return this.playService.deleteSavedQuizProgress(slug, userId, userRole);
   }
 
   async updateQuiz(

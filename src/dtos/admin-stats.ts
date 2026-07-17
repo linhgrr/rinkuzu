@@ -21,7 +21,7 @@ export interface AdminScoreStatsDto {
   lowestScore: number;
 }
 
-export interface AdminTimeBucketDto {
+interface AdminTimeBucketDto {
   newUsers: number;
   newQuizzes: number;
   attempts: number;
@@ -32,7 +32,7 @@ export interface AdminRecentUserDto {
   createdAt: string;
 }
 
-export interface AdminRecentQuizDto {
+interface AdminRecentQuizDto {
   title: string;
   createdAt: string;
   author: {

@@ -27,14 +27,6 @@ export function resolveQuizLibraryActivity(
   return { libraryStatus: 'not_started', displayDate: serializeDate(createdAt, 'quiz.createdAt') };
 }
 
-export function matchesLibraryFolder(
-  quizFolder: string | null,
-  folderFilter: string | null | undefined,
-): boolean {
-  if (folderFilter === undefined) return true;
-  return quizFolder === folderFilter;
-}
-
 export function matchesLibraryStatus(
   status: QuizLibraryStatus | undefined,
   filter: QuizLibraryFilter,

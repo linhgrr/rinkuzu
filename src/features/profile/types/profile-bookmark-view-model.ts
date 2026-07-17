@@ -1,4 +1,4 @@
-export interface ProfileBookmarkQuestionViewModel {
+interface ProfileBookmarkQuestionViewModel {
   text: string;
   options: string[];
   type: 'single' | 'multiple';
@@ -23,7 +23,7 @@ export interface ProfileBookmarkViewModel {
   updatedAtLabel?: string;
 }
 
-export interface ProfileBookmarkPaginationViewModel {
+interface ProfileBookmarkPaginationViewModel {
   currentPage: number;
   totalPages: number;
   totalItems: number;

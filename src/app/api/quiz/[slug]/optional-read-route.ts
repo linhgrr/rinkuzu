@@ -7,7 +7,7 @@ import { readAndValidateRouteParams } from '@/lib/api/request';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 
-export interface OptionalQuizSlugReadContext {
+interface OptionalQuizSlugReadContext {
   slug: string;
   userId: string | null;
   session: Session | null;

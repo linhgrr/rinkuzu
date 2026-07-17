@@ -8,7 +8,7 @@ function parseUrl(rawUrl: string): URL | null {
   }
 }
 
-export function isTrustedPayosCheckoutUrl(rawUrl: string): boolean {
+function isTrustedPayosCheckoutUrl(rawUrl: string): boolean {
   const parsedUrl = parseUrl(rawUrl);
 
   return (

@@ -2,15 +2,15 @@ import { CredentialsSignin } from 'next-auth';
 
 import type { CredentialsSignInFailure } from '@/services/auth/AuthSignInService';
 
-export class InvalidCredentialsError extends CredentialsSignin {
+class InvalidCredentialsError extends CredentialsSignin {
   override code = 'invalid_credentials';
 }
 
-export class EmailNotVerifiedError extends CredentialsSignin {
+class EmailNotVerifiedError extends CredentialsSignin {
   override code = 'email_not_verified';
 }
 
-export class AccountLockedError extends CredentialsSignin {
+class AccountLockedError extends CredentialsSignin {
   override code = 'account_locked';
 
   constructor(readonly retryAfterSeconds: number) {
@@ -18,7 +18,7 @@ export class AccountLockedError extends CredentialsSignin {
   }
 }
 
-export class CredentialsRateLimitError extends CredentialsSignin {
+class CredentialsRateLimitError extends CredentialsSignin {
   override code = 'rate_limit_exceeded';
 
   constructor(readonly retryAfterSeconds: number) {

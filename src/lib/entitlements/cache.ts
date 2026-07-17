@@ -16,12 +16,11 @@ export function setCachedTier(userId: string, tier: Tier, now: number): void {
   tierCache.set(userId, { tier, expiresAt: now + TIER_TTL_MS });
 }
 
-export function invalidateEntitlements(userId: string): void {
+export function invalidateEntitlements(userId?: string): void {
+  if (userId === undefined) {
+    // Full clear — used by test isolation; production callers pass a user id.
+    tierCache.clear();
+    return;
+  }
   tierCache.delete(userId);
-}
-
-// Test-only: drop every cached tier so per-test premium mocks don't leak across
-// cases via the module-level cache.
-export function resetEntitlementsCache(): void {
-  tierCache.clear();
 }

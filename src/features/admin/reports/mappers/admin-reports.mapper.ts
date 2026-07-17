@@ -8,7 +8,7 @@ function formatReportDateLabel(value: string | undefined): string {
   return value ? formatDateTime(value, { emptyLabel: EMPTY_DATE_LABEL }) : EMPTY_DATE_LABEL;
 }
 
-export function toAdminReportViewModel(report: AdminReportDto): AdminReportViewModel {
+function toAdminReportViewModel(report: AdminReportDto): AdminReportViewModel {
   return {
     id: report.id,
     quizId: report.quizId,

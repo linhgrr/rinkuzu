@@ -12,14 +12,13 @@ vi.mock('resend', () => ({
   Resend: ResendCtor,
 }));
 
-import { __resetMailClient, sendTransactionalMail } from '@/lib/mail';
+import { sendTransactionalMail } from '@/lib/mail';
 import { env } from '@/lib/env';
 
 describe('sendTransactionalMail', () => {
   beforeEach(() => {
     resendSendMock.mockReset();
     resendSendMock.mockResolvedValue({ data: { id: 're_123' }, error: null });
-    __resetMailClient();
   });
 
   it('sends via Resend SDK with idempotency key', async () => {

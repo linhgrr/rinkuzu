@@ -15,7 +15,7 @@ function toPercent(value: number): number {
   return clampPercent(value * 100);
 }
 
-export function toSessionHistoryViewModel(item: SessionHistoryItem): SessionHistoryViewModel {
+function toSessionHistoryViewModel(item: SessionHistoryItem): SessionHistoryViewModel {
   const displayTitle = requireFirstNonEmptyString(
     'adaptive session history title',
     item.subject_id,

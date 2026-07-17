@@ -3,7 +3,7 @@ import type { PaginationMeta } from '@/dtos/common';
 import type { QuizQuestionDto } from '@/dtos/quiz';
 import { objectIdSchema } from '@/lib/validation/common';
 
-export const adminQuizVisibilitySchema = z.enum(['all', 'public', 'private']);
+const adminQuizVisibilitySchema = z.enum(['all', 'public', 'private']);
 
 export const adminQuizListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -24,7 +24,7 @@ export interface AdminQuizAuthorDto {
   avatar?: string;
 }
 
-export type AdminQuizQuestionDto = QuizQuestionDto;
+type AdminQuizQuestionDto = QuizQuestionDto;
 
 export interface AdminQuizListItemDto {
   id: string;

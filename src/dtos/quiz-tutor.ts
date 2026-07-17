@@ -1,4 +1,4 @@
-export interface QuizTutorChatMessageDto {
+interface QuizTutorChatMessageDto {
   role: 'user' | 'assistant';
   content: string;
 }

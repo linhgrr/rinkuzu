@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { objectIdRouteParamSchema, objectIdSchema } from '@/lib/validation/common';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
-export const folderIdSchema = objectIdSchema;
+const folderIdSchema = objectIdSchema;
 export const folderIdRouteParamsSchema = z.strictObject({ id: objectIdRouteParamSchema });
-export const folderTargetSchema = z
+const folderTargetSchema = z
   .union([z.literal(UNFILED_FOLDER_TARGET), folderIdSchema])
   .transform((target) => (target === UNFILED_FOLDER_TARGET ? null : target));
 export const folderTargetRouteParamsSchema = z.strictObject({ id: folderTargetSchema });

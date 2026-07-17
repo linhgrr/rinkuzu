@@ -1,4 +1,4 @@
-export interface QuizAuthorViewModel {
+interface QuizAuthorViewModel {
   id: string;
   email?: string;
   name?: string;
@@ -19,7 +19,7 @@ export interface QuizListItemViewModel {
   updatedAt: string;
 }
 
-export interface QuizListPaginationViewModel {
+interface QuizListPaginationViewModel {
   currentPage: number;
   totalPages: number;
   totalItems: number;

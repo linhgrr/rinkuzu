@@ -9,7 +9,7 @@ export interface DashboardLearningCardViewModel {
   timeLabel: string;
 }
 
-export interface DashboardWeekDayViewModel {
+interface DashboardWeekDayViewModel {
   label: string;
   active: boolean;
 }
@@ -22,7 +22,7 @@ export interface DashboardProgressViewModel {
   weekDays: DashboardWeekDayViewModel[];
 }
 
-export interface DashboardContinueLearningViewModel {
+interface DashboardContinueLearningViewModel {
   items: DashboardLearningCardViewModel[];
   viewAllHref: string;
 }

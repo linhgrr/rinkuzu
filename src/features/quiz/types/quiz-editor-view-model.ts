@@ -1,4 +1,4 @@
-export interface QuizEditorAuthorViewModel {
+interface QuizEditorAuthorViewModel {
   id: string;
   email?: string;
   name?: string;

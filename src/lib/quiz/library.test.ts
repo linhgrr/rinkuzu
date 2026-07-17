@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchesLibraryFolder, matchesLibraryStatus, resolveQuizLibraryActivity } from './library';
+import { matchesLibraryStatus, resolveQuizLibraryActivity } from './library';
 
 describe('quiz library activity', () => {
   const createdAt = new Date('2026-01-01T00:00:00.000Z');
@@ -25,22 +25,6 @@ describe('quiz library activity', () => {
       libraryStatus: 'not_started',
       displayDate: createdAt.toISOString(),
     });
-  });
-});
-
-describe('quiz library folder filtering', () => {
-  it('includes every folder when no filter is provided', () => {
-    expect(matchesLibraryFolder('folder-1', undefined)).toBe(true);
-  });
-
-  it('matches only unfiled quizzes for the null domain filter', () => {
-    expect(matchesLibraryFolder(null, null)).toBe(true);
-    expect(matchesLibraryFolder('folder-1', null)).toBe(false);
-  });
-
-  it('matches a concrete folder id', () => {
-    expect(matchesLibraryFolder('folder-1', 'folder-1')).toBe(true);
-    expect(matchesLibraryFolder('folder-2', 'folder-1')).toBe(false);
   });
 });
 

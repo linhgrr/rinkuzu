@@ -18,7 +18,7 @@ export interface CreateReportData {
   status: ReportStatus;
 }
 
-export interface ReportResolution {
+interface ReportResolution {
   resolvedAt: Date;
   resolvedBy: string;
 }

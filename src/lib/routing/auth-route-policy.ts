@@ -1,7 +1,7 @@
 import { matchesPrefix } from '@/lib/routing/pathname';
 import { AUTH_REQUIRED_PATH_PREFIXES } from '@/shared/constants/nav';
 
-export const ADMIN_PREFIX = '/admin';
+const ADMIN_PREFIX = '/admin';
 
 export type AuthRoutePolicy = 'admin' | 'authenticated' | 'public';
 

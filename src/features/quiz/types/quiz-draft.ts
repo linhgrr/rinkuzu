@@ -3,14 +3,14 @@ import type { components } from '@/generated/adaptive-api';
 
 type QuizDraftTransportContract = components['schemas']['QuizDraftResponseData'];
 
-export interface QuizDraftPdf {
+interface QuizDraftPdf {
   s3Key: QuizDraftTransportContract['pdf']['s3_key'];
   fileName: QuizDraftTransportContract['pdf']['file_name'];
   fileSize: QuizDraftTransportContract['pdf']['file_size'];
   pageCount: QuizDraftTransportContract['pdf']['page_count'];
 }
 
-export interface QuizDraftProgress {
+interface QuizDraftProgress {
   processed: QuizDraftTransportContract['progress']['processed'];
   total: QuizDraftTransportContract['progress']['total'];
   percent: QuizDraftTransportContract['progress']['percent'];

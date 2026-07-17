@@ -91,15 +91,6 @@ function CardContent({ className, ref, ...props }: CardContentProps) {
 }
 CardContent.displayName = 'CardContent';
 
-type CardFooterProps = React.HTMLAttributes<HTMLDivElement> & {
-  ref?: React.Ref<HTMLDivElement>;
-};
-
-function CardFooter({ className, ref, ...props }: CardFooterProps) {
-  return <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />;
-}
-CardFooter.displayName = 'CardFooter';
-
 type BadgeProps = React.HTMLAttributes<HTMLDivElement> & {
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'ai';
   size?: 'sm' | 'md' | 'lg';
@@ -138,4 +129,4 @@ function Badge({
 }
 Badge.displayName = 'Badge';
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, Badge };
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge };

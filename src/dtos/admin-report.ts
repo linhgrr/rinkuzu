@@ -2,10 +2,9 @@ import { z } from 'zod';
 import type { PaginationMeta } from '@/dtos/common';
 import { objectIdSchema } from '@/lib/validation/common';
 
-export const adminReportStatusSchema = z.enum(['pending', 'resolved', 'dismissed']);
-export const adminReportFilterSchema = z.enum(['all', 'pending', 'resolved', 'dismissed']);
+const adminReportStatusSchema = z.enum(['pending', 'resolved', 'dismissed']);
+const adminReportFilterSchema = z.enum(['all', 'pending', 'resolved', 'dismissed']);
 export type AdminReportStatusDto = z.infer<typeof adminReportStatusSchema>;
-export type AdminReportFilterDto = z.infer<typeof adminReportFilterSchema>;
 
 export const adminReportListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

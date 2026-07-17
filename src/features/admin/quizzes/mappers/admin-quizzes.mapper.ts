@@ -5,9 +5,7 @@ import type {
   AdminQuizListViewModel,
 } from '@/features/admin/quizzes/types/admin-quizzes-view-model';
 
-export function toAdminQuizListItemViewModel(
-  quiz: AdminQuizListItemDto,
-): AdminQuizListItemViewModel {
+function toAdminQuizListItemViewModel(quiz: AdminQuizListItemDto): AdminQuizListItemViewModel {
   return {
     id: quiz.id,
     title: quiz.title,

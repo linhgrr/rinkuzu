@@ -16,7 +16,3 @@ export interface PresignedUploadUrlResponseDto {
   s3Key: string;
   expiresIn: number;
 }
-
-export type CreatePresignedUploadUrlRequestDto = z.infer<
-  typeof createPresignedUploadUrlRequestSchema
->;

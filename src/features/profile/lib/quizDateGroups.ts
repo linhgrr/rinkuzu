@@ -3,7 +3,7 @@ export interface QuizDateGroupInput {
   displayDate?: Date | string | null;
 }
 
-export interface QuizWeekGroup<T> {
+interface QuizWeekGroup<T> {
   key: string;
   startDate: Date;
   endDate: Date;

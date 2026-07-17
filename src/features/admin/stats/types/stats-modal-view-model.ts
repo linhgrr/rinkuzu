@@ -17,12 +17,12 @@ export interface StatsModalCreatorItemViewModel {
   role: 'admin' | 'user';
 }
 
-export interface StatsModalRecentUserViewModel {
+interface StatsModalRecentUserViewModel {
   email: string;
   createdAt: string;
 }
 
-export interface StatsModalRecentQuizViewModel {
+interface StatsModalRecentQuizViewModel {
   title: string;
   createdAt: string;
   author: {
@@ -35,7 +35,7 @@ export interface StatsModalRecentQuizViewModel {
   questionCount: number;
 }
 
-export interface StatsModalRecentAttemptViewModel {
+interface StatsModalRecentAttemptViewModel {
   id: string;
   score: number;
   takenAt: string;

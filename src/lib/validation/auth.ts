@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const PASSWORD_MIN_LENGTH = 8;
-export const PASSWORD_MAX_LENGTH = 72;
-export const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_MAX_LENGTH = 72;
+const EMAIL_MAX_LENGTH = 254;
 
 export type PasswordStrength = 0 | 1 | 2 | 3 | 4;
 
@@ -74,18 +74,3 @@ export const changePasswordSchema = z
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
-
-export interface FlattenedZodError {
-  detail: string;
-  fields: Record<string, string>;
-}
-
-export function flattenZodError(err: z.ZodError): FlattenedZodError {
-  const fields: Record<string, string> = {};
-  for (const issue of err.issues) {
-    const path = issue.path.join('.') || '_';
-    if (!fields[path]) fields[path] = issue.message;
-  }
-  const detail = err.issues[0]?.message ?? 'Validation failed';
-  return { detail, fields };
-}

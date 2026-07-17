@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
-import { assertOk, assertFail } from '@/interfaces/services/types';
+import { assertOk, assertFail } from '../../../tests/helpers/service-result-assert';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';

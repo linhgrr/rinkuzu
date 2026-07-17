@@ -31,7 +31,7 @@ function toAdminUserSubscriptionViewModel(
   };
 }
 
-export function toAdminUserViewModel(user: AdminUserDto): AdminUserViewModel {
+function toAdminUserViewModel(user: AdminUserDto): AdminUserViewModel {
   const subscription = toAdminUserSubscriptionViewModel(user.subscription);
 
   return {

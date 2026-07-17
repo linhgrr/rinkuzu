@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateNextReview, getReviewStatus } from './srs.service';
+import { calculateNextReview } from './srs.service';
 
 describe('calculateNextReview (SM-2)', () => {
   it('schedules the first review for 1 day later on "good"', () => {
@@ -77,22 +77,5 @@ describe('calculateNextReview (SM-2)', () => {
 
     expect(hard.interval).toBe(1);
     expect(fail.interval).toBe(1);
-  });
-});
-
-describe('getReviewStatus', () => {
-  it('returns "due" when the review date is in the past', () => {
-    const past = new Date('2020-01-01');
-    expect(getReviewStatus(past)).toBe('due');
-  });
-
-  it('returns "due" when the review date is exactly now', () => {
-    const now = new Date();
-    expect(getReviewStatus(now)).toBe('due');
-  });
-
-  it('returns "early" when the review date is in the future', () => {
-    const future = new Date('2099-01-01');
-    expect(getReviewStatus(future)).toBe('early');
   });
 });

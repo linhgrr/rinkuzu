@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toSessionHistoryViewModel } from './session-history.mapper';
+import { toSessionHistoryViewModels } from './session-history.mapper';
 import type { SessionHistoryItem } from '@/features/adaptive/types/history';
 
 const baseSession: SessionHistoryItem = {
@@ -24,7 +24,7 @@ const baseSession: SessionHistoryItem = {
 
 describe('session-history.mapper', () => {
   it('maps adaptive service progress DTO to a camelCase UI model', () => {
-    const viewModel = toSessionHistoryViewModel(baseSession);
+    const [viewModel] = toSessionHistoryViewModels([baseSession]);
 
     expect(viewModel).toEqual({
       jobId: 'job-123456789',
@@ -50,19 +50,20 @@ describe('session-history.mapper', () => {
   });
 
   it('uses filename stem when subject id is empty', () => {
-    expect(toSessionHistoryViewModel({ ...baseSession, subject_id: '' }).displayTitle).toBe(
-      'linear-algebra',
-    );
+    const [viewModel] = toSessionHistoryViewModels([{ ...baseSession, subject_id: '' }]);
+    expect(viewModel?.displayTitle).toBe('linear-algebra');
   });
 
   it('clamps invalid percentage ratios to display-safe percent values', () => {
-    const viewModel = toSessionHistoryViewModel({
-      ...baseSession,
-      accuracy: 1.5,
-      avg_mastery: Number.NaN,
-    });
+    const [viewModel] = toSessionHistoryViewModels([
+      {
+        ...baseSession,
+        accuracy: 1.5,
+        avg_mastery: Number.NaN,
+      },
+    ]);
 
-    expect(viewModel.accuracyPercent).toBe(100);
-    expect(viewModel.averageMasteryPercent).toBe(0);
+    expect(viewModel?.accuracyPercent).toBe(100);
+    expect(viewModel?.averageMasteryPercent).toBe(0);
   });
 });

@@ -14,7 +14,7 @@ export interface DashboardUserProgressPersistenceRecord {
   averageAccuracy: number;
 }
 
-export interface DashboardProgressQuizPersistenceRecord {
+interface DashboardProgressQuizPersistenceRecord {
   _id: MongoIdLike;
   title: string;
   slug: string;

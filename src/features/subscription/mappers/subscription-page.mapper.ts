@@ -11,7 +11,7 @@ import type {
 import { formatDate, formatVndCurrency } from '@/lib/formatters';
 import { isLifetimeEndDate } from '@/lib/subscription-date';
 
-export function toSubscriptionPlanViewModel(
+function toSubscriptionPlanViewModel(
   plan: SubscriptionPlansResponseDto['plans'][number],
 ): SubscriptionPlanViewModel {
   return {
@@ -24,7 +24,7 @@ export function toSubscriptionPlanViewModel(
   };
 }
 
-export function toCurrentSubscriptionViewModel(
+function toCurrentSubscriptionViewModel(
   status: SubscriptionStatusResponseDto,
 ): CurrentSubscriptionViewModel | null {
   if (!status.subscription) return null;

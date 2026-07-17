@@ -6,37 +6,35 @@ vi.mock('next-auth', () => ({
   },
 }));
 
-import {
-  AccountLockedError,
-  CredentialsRateLimitError,
-  EmailNotVerifiedError,
-  InvalidCredentialsError,
-  toCredentialsSignInError,
-} from '@/services/auth/CredentialsSignInErrors';
+import { CredentialsSignin } from 'next-auth';
+import { toCredentialsSignInError } from '@/services/auth/CredentialsSignInErrors';
 
 describe('CredentialsSignInErrors', () => {
   it('maps public result codes to Auth.js CredentialsSignin errors', () => {
-    expect(
-      toCredentialsSignInError({ success: false, code: 'invalid_credentials' }),
-    ).toBeInstanceOf(InvalidCredentialsError);
-    expect(toCredentialsSignInError({ success: false, code: 'email_not_verified' })).toBeInstanceOf(
-      EmailNotVerifiedError,
-    );
+    const invalid = toCredentialsSignInError({ success: false, code: 'invalid_credentials' });
+    expect(invalid).toBeInstanceOf(CredentialsSignin);
+    expect(invalid.code).toBe('invalid_credentials');
+
+    const unverified = toCredentialsSignInError({ success: false, code: 'email_not_verified' });
+    expect(unverified).toBeInstanceOf(CredentialsSignin);
+    expect(unverified.code).toBe('email_not_verified');
 
     const locked = toCredentialsSignInError({
       success: false,
       code: 'account_locked',
       retryAfterSeconds: 120,
     });
-    expect(locked).toBeInstanceOf(AccountLockedError);
-    expect((locked as AccountLockedError).retryAfterSeconds).toBe(120);
+    expect(locked).toBeInstanceOf(CredentialsSignin);
+    expect(locked.code).toBe('account_locked');
+    expect((locked as { retryAfterSeconds?: number }).retryAfterSeconds).toBe(120);
 
     const limited = toCredentialsSignInError({
       success: false,
       code: 'rate_limit_exceeded',
       retryAfterSeconds: 60,
     });
-    expect(limited).toBeInstanceOf(CredentialsRateLimitError);
-    expect((limited as CredentialsRateLimitError).retryAfterSeconds).toBe(60);
+    expect(limited).toBeInstanceOf(CredentialsSignin);
+    expect(limited.code).toBe('rate_limit_exceeded');
+    expect((limited as { retryAfterSeconds?: number }).retryAfterSeconds).toBe(60);
   });
 });

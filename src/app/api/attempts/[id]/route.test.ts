@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, getAttemptDetailsMock } = vi.hoisted(() => ({
+const { authMock, getAttemptDetailsMock, loggerErrorMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   getAttemptDetailsMock: vi.fn(),
+  loggerErrorMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
@@ -15,7 +16,7 @@ vi.mock('@/lib/serviceFactory', () => ({
   },
 }));
 vi.mock('@/lib/logger', () => ({
-  logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+  logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
 import { GET } from './route';
@@ -49,7 +50,37 @@ describe('GET /api/attempts/[id]', () => {
     await expect(response.json()).resolves.toMatchObject({
       error: {
         code: 'unauthorized',
+        detail: 'Authentication required or userEmail parameter',
       },
+    });
+    expect(getAttemptDetailsMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid attempt ids before ownership resolution', async () => {
+    authMock.mockResolvedValue(null);
+
+    const response = await GET(request('http://localhost/api/attempts/not-an-object-id'), {
+      params: Promise.resolve({ id: 'not-an-object-id' }),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'validation_error' },
+    });
+    expect(getAttemptDetailsMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid userEmail query values', async () => {
+    authMock.mockResolvedValue(null);
+
+    const response = await GET(
+      request(`http://localhost/api/attempts/${attemptId}?userEmail=not-an-email`),
+      { params: Promise.resolve({ id: attemptId }) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'validation_error' },
     });
     expect(getAttemptDetailsMock).not.toHaveBeenCalled();
   });
@@ -66,6 +97,10 @@ describe('GET /api/attempts/[id]', () => {
     expect(getAttemptDetailsMock).toHaveBeenCalledWith(attemptId, {
       guestEmail: 'Guest@Example.com',
     });
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      data: detail,
+    });
   });
 
   it('uses the authenticated user id without requiring userEmail', async () => {
@@ -79,5 +114,46 @@ describe('GET /api/attempts/[id]', () => {
 
     expect(response.status).toBe(200);
     expect(getAttemptDetailsMock).toHaveBeenCalledWith(attemptId, { userId: 'user-1' });
+  });
+
+  it('maps ownership and not-found service failures', async () => {
+    authMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'user@example.com', role: 'user' },
+    });
+    getAttemptDetailsMock.mockResolvedValueOnce({
+      success: false,
+      code: 'forbidden',
+      error: 'Not allowed to view this attempt',
+      statusCode: 403,
+    });
+
+    const response = await GET(request(`http://localhost/api/attempts/${attemptId}`), {
+      params: Promise.resolve({ id: attemptId }),
+    });
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'forbidden', detail: 'Not allowed to view this attempt' },
+    });
+  });
+
+  it('maps unexpected exceptions to a safe 500', async () => {
+    authMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'user@example.com', role: 'user' },
+    });
+    getAttemptDetailsMock.mockRejectedValueOnce(new Error('db fail'));
+
+    const response = await GET(request(`http://localhost/api/attempts/${attemptId}`), {
+      params: Promise.resolve({ id: attemptId }),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'internal_error', detail: 'Internal server error' },
+    });
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.any(Error) }),
+      'Get attempt details error',
+    );
   });
 });

@@ -141,12 +141,20 @@ describe('QuizPlayService progress operations', () => {
     const { service, quizRepository, progressRepository } = createService();
     vi.mocked(quizRepository.findIdBySlug).mockResolvedValue(null);
 
-    const result = await service.getSavedQuizProgress('missing', userId);
+    const getResult = await service.getSavedQuizProgress('missing', userId);
+    const saveResult = await service.saveQuizProgress('missing', userId, savedProgress);
+    const deleteResult = await service.deleteSavedQuizProgress('missing', userId);
 
-    assertFail(result);
-    expect(result.statusCode).toBe(404);
+    assertFail(getResult);
+    assertFail(saveResult);
+    assertFail(deleteResult);
+    expect(getResult).toMatchObject({ statusCode: 404, error: 'Quiz not found' });
+    expect(saveResult).toMatchObject({ statusCode: 404, error: 'Quiz not found' });
+    expect(deleteResult).toMatchObject({ statusCode: 404, error: 'Quiz not found' });
     expect(quizRepository.findBySlug).not.toHaveBeenCalled();
     expect(progressRepository.findByUserAndQuiz).not.toHaveBeenCalled();
+    expect(progressRepository.upsert).not.toHaveBeenCalled();
+    expect(progressRepository.deleteByUserAndQuiz).not.toHaveBeenCalled();
   });
 
   it('never exposes correct answers when a private quiz author starts playing', async () => {
@@ -456,20 +464,24 @@ describe('QuizPlayService progress operations', () => {
     await expect(service.getSavedQuizProgress('quiz', userId)).resolves.toMatchObject({
       success: false,
       statusCode: 500,
+      error: 'Failed to get quiz progress',
     });
 
     vi.mocked(quizRepository.findIdBySlug).mockResolvedValue(quizId);
     vi.mocked(progressRepository.upsert).mockRejectedValue(new Error('db down'));
     vi.mocked(progressRepository.deleteByUserAndQuiz).mockRejectedValue(new Error('db down'));
     vi.mocked(quizRepository.findForPlay).mockRejectedValue(new Error('db down'));
+    vi.mocked(quizRepository.findBySlug).mockRejectedValue(new Error('db down'));
 
     await expect(service.saveQuizProgress('quiz', userId, savedProgress)).resolves.toMatchObject({
       success: false,
       statusCode: 500,
+      error: 'Failed to save quiz progress',
     });
     await expect(service.deleteSavedQuizProgress('quiz', userId)).resolves.toMatchObject({
       success: false,
       statusCode: 500,
+      error: 'Failed to delete quiz progress',
     });
     await expect(service.getQuizForFlashcards('quiz', null)).resolves.toMatchObject({
       success: false,
@@ -481,5 +493,195 @@ describe('QuizPlayService progress operations', () => {
       statusCode: 500,
       error: 'Failed to get quiz flashcards',
     });
+    await expect(service.getQuizForPlay('quiz', 'user', userId)).resolves.toMatchObject({
+      success: false,
+      statusCode: 500,
+      error: 'Internal server error',
+    });
+  });
+
+  it('returns 404 when submit cannot load a playable quiz', async () => {
+    const { service, quizRepository, attemptProgressRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue(null);
+
+    const result = await service.submitQuizAttempt(
+      'missing',
+      [0],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a6',
+      null,
+      'guest@example.com',
+    );
+
+    assertFail(result);
+    expect(result).toMatchObject({ statusCode: 404, error: 'Quiz not found' });
+    expect(attemptProgressRepository.recordSubmittedAttempt).not.toHaveBeenCalled();
+  });
+
+  it('blocks private quiz submissions for non-owners and includes optional description snapshots', async () => {
+    const { service, quizRepository, attemptProgressRepository } = createService();
+    vi.mocked(quizRepository.findForPlay)
+      .mockResolvedValueOnce({
+        id: quizId,
+        title: 'Private quiz',
+        slug: 'private-quiz',
+        author: '507f191e810c19729de860ec',
+        isPrivate: true,
+        questions: [
+          {
+            id: 'question-1',
+            question: '2 + 2 = ?',
+            options: ['3', '4'],
+            correctIndex: 1,
+            type: 'single',
+          },
+        ],
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      })
+      .mockResolvedValueOnce({
+        id: quizId,
+        title: 'Public quiz',
+        slug: 'public-quiz',
+        description: 'Snapshot me',
+        author: userId,
+        isPrivate: false,
+        questions: [
+          {
+            id: 'question-1',
+            question: '2 + 2 = ?',
+            options: ['3', '4'],
+            correctIndex: 1,
+            type: 'single',
+          },
+        ],
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      });
+    vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mockResolvedValue({
+      id: 'attempt-4',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+
+    const blocked = await service.submitQuizAttempt(
+      'private-quiz',
+      [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a7',
+      {
+        user: { id: userId, email: 'learner@example.com', role: 'user' },
+        expires: '2026-08-01T00:00:00.000Z',
+      },
+    );
+    assertFail(blocked);
+    expect(blocked).toMatchObject({ statusCode: 403, code: 'premium_required' });
+    expect(attemptProgressRepository.recordSubmittedAttempt).not.toHaveBeenCalled();
+
+    const withDescription = await service.submitQuizAttempt(
+      'public-quiz',
+      [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a8',
+      {
+        user: { id: userId, email: 'learner@example.com', role: 'user' },
+        expires: '2026-08-01T00:00:00.000Z',
+      },
+    );
+    assertOk(withDescription);
+    expect(attemptProgressRepository.recordSubmittedAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        quizSnapshot: expect.objectContaining({
+          description: 'Snapshot me',
+          integrity: 'complete',
+        }),
+      }),
+    );
+  });
+
+  it('maps idempotency conflicts to 409 and unexpected submit failures to 500', async () => {
+    const { service, quizRepository, attemptProgressRepository } = createService();
+    const playable = {
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      isPrivate: false,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single' as const,
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    };
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue(playable);
+
+    const { QuizAttemptIdempotencyConflictError } = await import('@/errors/quiz-attempt');
+    vi.mocked(attemptProgressRepository.recordSubmittedAttempt)
+      .mockRejectedValueOnce(new QuizAttemptIdempotencyConflictError())
+      .mockRejectedValueOnce(new Error('write failed'));
+
+    const conflict = await service.submitQuizAttempt(
+      'quiz',
+      [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a9',
+      {
+        user: { id: userId, email: 'learner@example.com', role: 'user' },
+        expires: '2026-08-01T00:00:00.000Z',
+      },
+    );
+    assertFail(conflict);
+    expect(conflict).toMatchObject({
+      statusCode: 409,
+      error: 'Idempotency key was already used for a different quiz submission',
+    });
+
+    const unexpected = await service.submitQuizAttempt(
+      'quiz',
+      [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22aa',
+      {
+        user: { id: userId, email: 'learner@example.com', role: 'user' },
+        expires: '2026-08-01T00:00:00.000Z',
+      },
+    );
+    assertFail(unexpected);
+    expect(unexpected).toMatchObject({
+      statusCode: 500,
+      error: 'Failed to submit quiz attempt',
+    });
+  });
+
+  it('returns access failures from flashcard reads without rewriting the message', async () => {
+    const { service, quizRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
+      id: quizId,
+      title: 'Private quiz',
+      slug: 'private-quiz',
+      author: '507f191e810c19729de860ec',
+      isPrivate: true,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+
+    const result = await service.getQuizFlashcards('private-quiz', {
+      user: { id: userId, email: 'learner@example.com', role: 'user' },
+      expires: '2026-08-01T00:00:00.000Z',
+    });
+
+    assertFail(result);
+    expect(result).toMatchObject({ statusCode: 403, code: 'premium_required' });
   });
 });

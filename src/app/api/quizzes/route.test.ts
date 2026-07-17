@@ -83,6 +83,32 @@ describe('GET /api/quizzes', () => {
     });
   });
 
+  it('maps community visibility filters without requiring authentication', async () => {
+    authMock.mockResolvedValue(null);
+
+    await GET(listRequest('?page=1&limit=12&visibility=private'), {
+      params: Promise.resolve({}),
+    });
+    await GET(listRequest('?page=1&limit=12&visibility=public'), {
+      params: Promise.resolve({}),
+    });
+
+    expect(getQuizzesMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        onlyMine: false,
+        isPrivate: true,
+      }),
+    );
+    expect(getQuizzesMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        onlyMine: false,
+        isPrivate: false,
+      }),
+    );
+  });
+
   it('applies mine, unfiled folder, and private visibility for authenticated users', async () => {
     authMock.mockResolvedValue(session());
 

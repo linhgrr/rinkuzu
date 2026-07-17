@@ -78,7 +78,7 @@ export const DESKTOP_PRIMARY_NAV: DesktopNavGroupDef[] = [
       { href: '/admin/ocr-keys', labelKey: 'ocrKeys' },
     ],
   },
-  { id: 'explore', labelKey: 'explore', href: ROUTES.EXPLORE },
+  { id: 'explore', labelKey: 'quizzes', href: ROUTES.QUIZZES },
 ];
 
 export const DESKTOP_BOTTOM_NAV: DesktopNavGroupDef[] = [
@@ -120,8 +120,8 @@ const mobileHome: MobileTabDef = {
 };
 const mobileExplore: MobileTabDef = {
   id: 'explore',
-  href: ROUTES.EXPLORE,
-  labelKey: 'tabExplore',
+  href: ROUTES.QUIZZES,
+  labelKey: 'tabQuizzes',
 };
 const mobileReview: MobileTabDef = {
   id: 'review',

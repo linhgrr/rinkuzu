@@ -216,33 +216,24 @@ jobs:
       - name: Install exact dependency graph
         run: npm ci
 
-      - name: Resolve fail-closed mutation scope
-        id: mutation-scope
+      - name: Run authoritative mutation gate
         env:
-          MUTATION_MODE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'changed' }}
-          MUTATION_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || 'HEAD^' }}
-        run: node scripts/resolve-mutation-scope.mjs
-
-      - name: Validate mutation harness when no critical source changed
-        if: ${{ steps.mutation-scope.outputs.mode == 'changed' && steps.mutation-scope.outputs.count == '0' }}
-        run: npm run test:mutation -- --dryRunOnly
-
-      - name: Mutate changed critical source
-        if: ${{ steps.mutation-scope.outputs.mode == 'changed' && steps.mutation-scope.outputs.count != '0' }}
-        run: npm run test:mutation -- --mutate "${{ steps.mutation-scope.outputs.files }}"
-
-      - name: Mutate full critical scope
-        if: ${{ steps.mutation-scope.outputs.mode == 'full' }}
-        env:
-          MUTATION_GATE_MODE: full
-        run: npm run test:mutation
-
-      - name: Verify fresh mutation evidence
-        if: ${{ !cancelled() && (steps.mutation-scope.outputs.mode == 'full' || steps.mutation-scope.outputs.count != '0') }}
-        env:
-          MUTATION_GATE_MODE: ${{ steps.mutation-scope.outputs.mode }}
-          MUTATION_SCOPE_PATH: reports/mutation/scope.json
-        run: npm run check:mutation-report
+          CI: 'true'
+          GITHUB_ACTIONS: 'true'
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          # Invoke the wrapper script directly (not `npm run`) so package-script hijack cannot redirect CI.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            node scripts/run-mutation-gate.mjs --mode full
+          else
+            BASE_REF="${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}"
+            if [ -z "$BASE_REF" ] || [ "$BASE_REF" = "0000000000000000000000000000000000000000" ] || ! git rev-parse --verify "${BASE_REF}^{commit}" >/dev/null 2>&1; then
+              # Empty/all-zero/unresolvable push base: run full rather than under-scoping via HEAD^.
+              node scripts/run-mutation-gate.mjs --mode full
+            else
+              node scripts/run-mutation-gate.mjs --mode changed --base-ref "$BASE_REF"
+            fi
+          fi
 
       - name: Upload mutation evidence
         if: ${{ !cancelled() }}

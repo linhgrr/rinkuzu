@@ -28,11 +28,92 @@ const CRITICAL_MUTATION_PATHS = [
   /^src\/lib\/(?:adaptive|adaptive-learning)\/.+\.ts$/,
 ];
 
-const SAFE_SOURCE_PATH = /^[A-Za-z0-9_./-]+$/;
+// Allow literal [ ] for Next.js dynamic route segments (e.g. [id], [...nextauth]).
+// Still rejects whitespace, shell metacharacters, backslashes, and other unsafe chars.
+const SAFE_SOURCE_PATH = /^[A-Za-z0-9_./[\]-]+$/;
 const TEST_SOURCE_PATH = /(?:^|\/)__tests__\/|\.(?:test|spec)\.[cm]?[jt]sx?$/;
 
 export function normalizeMutationPath(filePath) {
   return filePath.replaceAll('\\', '/').replace(/^\.\//, '');
+}
+
+// Stryker FileMatcher runs normalizeFileName (\\ → /) on mutate patterns before
+// minimatch. Backslash escapes like \[id\] are destroyed (become /[id/). Use a
+// backslash-free minimatch character-class escape instead: literal [ → [[]
+// (and leave ] as a literal closer). Critical scope paths only allow
+// [A-Za-z0-9_./[\]-], so [ is the only glob metachar that needs escaping.
+// Keep scope.files as unescaped normalized repo paths for evidence binding.
+const STRYKER_LITERAL_OPEN_BRACKET = '[[]';
+
+/**
+ * Escape a repo-relative source path for Stryker `--mutate` (minimatch).
+ * Produces patterns that survive Stryker's normalizeFileName. Does not alter
+ * scope.files evidence; use only at the mutate command handoff.
+ *
+ * @param {string} filePath
+ * @returns {string}
+ */
+export function escapeStrykerMutatePattern(filePath) {
+  return normalizeMutationPath(filePath).replaceAll('[', STRYKER_LITERAL_OPEN_BRACKET);
+}
+
+/**
+ * Map literal scope files to Stryker mutate patterns (escaped globs).
+ *
+ * @param {string[]} filePaths
+ * @returns {string[]}
+ */
+export function toStrykerMutatePatterns(filePaths) {
+  return filePaths.map((filePath) => escapeStrykerMutatePattern(filePath));
+}
+
+/**
+ * Comma-separated escaped mutate patterns for GITHUB_OUTPUT `files` / `--mutate`.
+ * Callers must keep scope.json `files` as the original literal paths.
+ *
+ * @param {string[]} filePaths
+ * @returns {string}
+ */
+export function formatStrykerMutateOutput(filePaths) {
+  return toStrykerMutatePatterns(filePaths).join(',');
+}
+
+/**
+ * Recover a literal repo path from a Stryker mutate pattern that may contain
+ * FileMatcher-safe `[` → `[[]` escapes. Used to relate report.config.mutate
+ * back to scope.files without weakening exact binding.
+ *
+ * @param {string} pattern
+ * @returns {string}
+ */
+export function literalPathFromStrykerMutatePattern(pattern) {
+  return normalizeMutationPath(pattern.replaceAll(STRYKER_LITERAL_OPEN_BRACKET, '['));
+}
+
+/**
+ * True when report mutate input is exactly the escaped form of the changed scope files.
+ * Compares sorted unique sets so evidence binding stays fail-closed.
+ *
+ * @param {string[] | undefined} reportMutate
+ * @param {string[] | undefined} scopeFiles
+ * @returns {boolean}
+ */
+export function strykerMutateInputMatchesScopeFiles(reportMutate, scopeFiles) {
+  const expectedLiterals = [
+    ...new Set((scopeFiles ?? []).map((file) => normalizeMutationPath(file))),
+  ].sort();
+  const expectedPatterns = expectedLiterals.map((file) => escapeStrykerMutatePattern(file)).sort();
+  const actualPatterns = [...(reportMutate ?? []).map((pattern) => String(pattern))].sort();
+  const actualLiterals = [
+    ...new Set(actualPatterns.map((pattern) => literalPathFromStrykerMutatePattern(pattern))),
+  ].sort();
+
+  return (
+    actualPatterns.length === expectedPatterns.length &&
+    actualPatterns.every((value, index) => value === expectedPatterns[index]) &&
+    actualLiterals.length === expectedLiterals.length &&
+    actualLiterals.every((value, index) => value === expectedLiterals[index])
+  );
 }
 
 /**

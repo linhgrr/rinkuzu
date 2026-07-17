@@ -28,6 +28,10 @@ const config = {
   testRunner: 'vitest',
   vitest: {
     configFile: 'vitest.config.ts',
+    // Vitest related-test selection can omit unreferenced mutation candidates
+    // from the JSON inventory. Run the full unit corpus so missing files fail
+    // as NoCoverage instead of disappearing from evidence.
+    related: false,
   },
   coverageAnalysis: 'perTest',
   reporters: ['progress', 'clear-text', 'json', 'html'],

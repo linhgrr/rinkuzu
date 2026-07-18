@@ -1,6 +1,28 @@
 import { z } from 'zod';
 
 /**
+ * Production input-size ceilings for quiz question payloads.
+ * Shared by request validation (`questionListSchema`) and
+ * `QuizQuestionSchema` so create/update/import/submit reject the same
+ * oversized inputs before they reach BSON or downstream services.
+ *
+ * Rationale:
+ * - Question count 200: allows large exam/PDF extractions while bounding
+ *   request body and Mongo document growth under the 16MB BSON limit when
+ *   combined with per-field caps below.
+ * - Question text 2000: matches product comment/report content caps.
+ * - Option text 500: generous for multi-sentence choices; options stay short.
+ * - Option count 2..20: existing product rule (keep unchanged).
+ * - Image URLs 2048: practical URL length safety (CDN/imgbb URLs are short).
+ */
+export const MAX_QUESTIONS_PER_QUIZ = 200;
+export const MAX_QUESTION_TEXT_LENGTH = 2000;
+export const MAX_OPTION_TEXT_LENGTH = 500;
+export const MIN_OPTION_COUNT = 2;
+export const MAX_OPTION_COUNT = 20;
+export const MAX_QUESTION_IMAGE_URL_LENGTH = 2048;
+
+/**
  * Question shape used by draft / quiz submission flows.
  *
  * Mirrors `QuizQuestion` in src/entities/Quiz.ts — keep them in sync.
@@ -12,16 +34,33 @@ import { z } from 'zod';
 const trimmedString = z
   .string()
   .min(1, 'Required')
+  .max(
+    MAX_QUESTION_TEXT_LENGTH,
+    `Question text must be at most ${MAX_QUESTION_TEXT_LENGTH} characters`,
+  )
   .transform((value) => value.trim())
   .refine((value) => value.length > 0, 'Cannot be blank');
 
-const optionSchema = z.string().transform((value) => value.trim());
+const optionSchema = z
+  .string()
+  .max(MAX_OPTION_TEXT_LENGTH, `Option text must be at most ${MAX_OPTION_TEXT_LENGTH} characters`)
+  .transform((value) => value.trim());
+
+const imageUrlSchema = z
+  .string()
+  .max(
+    MAX_QUESTION_IMAGE_URL_LENGTH,
+    `Image URL must be at most ${MAX_QUESTION_IMAGE_URL_LENGTH} characters`,
+  );
 
 const baseQuestion = z.object({
   question: trimmedString,
-  options: z.array(optionSchema).min(2, 'Need at least 2 options').max(20, 'Too many options'),
-  questionImage: z.string().optional(),
-  optionImages: z.array(z.string().optional()).optional(),
+  options: z
+    .array(optionSchema)
+    .min(MIN_OPTION_COUNT, 'Need at least 2 options')
+    .max(MAX_OPTION_COUNT, 'Too many options'),
+  questionImage: imageUrlSchema.optional(),
+  optionImages: z.array(imageUrlSchema.optional()).optional(),
 });
 
 const singleChoiceQuestionSchema = baseQuestion
@@ -83,7 +122,8 @@ const questionSchema = z
 
 export const questionListSchema = z
   .array(questionSchema)
-  .min(1, 'At least one question is required');
+  .min(1, 'At least one question is required')
+  .max(MAX_QUESTIONS_PER_QUIZ, 'Too many questions');
 
 export function getQuestionListWarnings(questionCount: number): string[] {
   return questionCount < 5 ? ['Quiz nên có ít nhất 5 câu hỏi'] : [];

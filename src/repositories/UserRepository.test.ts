@@ -63,6 +63,7 @@ const cascadeMocks = vi.hoisted(() => ({
   quizDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
   auditLogUpdateMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
   deleteQuizDependents: vi.fn().mockResolvedValue(undefined),
+  deleteOwnedPdfUrlsBestEffort: vi.fn().mockResolvedValue(undefined),
   withTransaction: vi.fn(),
   endSession: vi.fn(),
   startSession: vi.fn(),
@@ -128,6 +129,9 @@ vi.mock('@/models/AuditLog', () => ({
 }));
 vi.mock('@/repositories/helpers/deleteQuizDependents', () => ({
   deleteQuizDependents: cascadeMocks.deleteQuizDependents,
+}));
+vi.mock('@/lib/s3', () => ({
+  deleteOwnedPdfUrlsBestEffort: cascadeMocks.deleteOwnedPdfUrlsBestEffort,
 }));
 vi.mock('mongoose', async (importOriginal) => {
   const actual = await importOriginal<typeof import('mongoose')>();
@@ -383,7 +387,13 @@ describe('UserRepository.delete cascade', () => {
     cascadeMocks.quizFind.mockReturnValue({
       select: vi.fn(() => ({
         session: vi.fn(() => ({
-          lean: vi.fn().mockResolvedValue([{ _id: authoredQuizId, slug: 'authored-quiz' }]),
+          lean: vi.fn().mockResolvedValue([
+            {
+              _id: authoredQuizId,
+              slug: 'authored-quiz',
+              pdfUrl: 'https://cdn.example.com/test-bucket/uploads/quiz_extract/authored.pdf',
+            },
+          ]),
         })),
       })),
     });
@@ -402,6 +412,7 @@ describe('UserRepository.delete cascade', () => {
 
     await expect(new UserRepository().delete(userId)).resolves.toBe(false);
     expect(cascadeMocks.attemptDeleteMany).not.toHaveBeenCalled();
+    expect(cascadeMocks.deleteOwnedPdfUrlsBestEffort).not.toHaveBeenCalled();
     expect(cascadeMocks.endSession).toHaveBeenCalledOnce();
   });
 
@@ -467,6 +478,9 @@ describe('UserRepository.delete cascade', () => {
       { $set: { userId: null } },
     );
     expect(userModelMocks.deleteOne).toHaveBeenCalledWith({ _id: expect.any(Types.ObjectId) });
+    expect(cascadeMocks.deleteOwnedPdfUrlsBestEffort).toHaveBeenCalledWith([
+      'https://cdn.example.com/test-bucket/uploads/quiz_extract/authored.pdf',
+    ]);
     expect(cascadeMocks.endSession).toHaveBeenCalledOnce();
   });
 
@@ -517,5 +531,6 @@ describe('UserRepository.delete cascade', () => {
     await expect(new UserRepository().delete(userId)).resolves.toBe(false);
     expect(cascadeMocks.quizDeleteMany).not.toHaveBeenCalled();
     expect(cascadeMocks.deleteQuizDependents).toHaveBeenCalledWith([], expect.any(Object));
+    expect(cascadeMocks.deleteOwnedPdfUrlsBestEffort).not.toHaveBeenCalled();
   });
 });

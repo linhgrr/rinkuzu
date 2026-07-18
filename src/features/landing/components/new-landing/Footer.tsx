@@ -8,7 +8,7 @@ export function Footer() {
   const t = useTranslations('landing.footer');
 
   return (
-    <footer className="border-t border-white/10 bg-[#07121a] text-white/70">
+    <footer className="border-t border-white/10 bg-black text-white/70">
       <div className="max-w-7xl mx-auto px-6 py-16 md:py-20">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-12 lg:grid-cols-4 lg:gap-14 mb-14 md:mb-16">
           {/* Brand */}

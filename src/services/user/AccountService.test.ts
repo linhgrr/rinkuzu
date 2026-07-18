@@ -49,6 +49,7 @@ class AccountRepositoryStub implements IAccountRepository {
 
 class ImageStorageStub implements IImageStorage {
   upload = vi.fn<(image: ImageUpload) => Promise<ImageUploadResult>>();
+  // Optional provider delete is intentionally absent: avatar rows only store display URLs.
 }
 
 function uploadedImage(displayUrl = 'https://images.example/avatar.webp'): ImageUploadResult {
@@ -252,5 +253,8 @@ describe('AccountService', () => {
       data: { email: 'user@example.com', avatar: null, deleted: true },
     });
     expect(repository.clearAvatar).toHaveBeenCalledTimes(1);
+    // ImgBB remote delete is intentionally not attempted: only display URLs are
+    // persisted on the user profile, not provider deleteUrl tokens.
+    expect('deleteByUrl' in imageStorage).toBe(false);
   });
 });

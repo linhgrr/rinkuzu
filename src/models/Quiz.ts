@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { QuizQuestionSchema, type QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
+import { MAX_QUESTIONS_PER_QUIZ } from '@/lib/validation/question';
 
 interface QuizDocument extends Document {
   title: string;
@@ -49,9 +50,9 @@ const QuizSchema = new Schema<QuizDocument>(
       required: [true, 'Questions are required'],
       validate: {
         validator: function (questions: QuizQuestionDocument[]) {
-          return questions.length > 0;
+          return questions.length >= 1 && questions.length <= MAX_QUESTIONS_PER_QUIZ;
         },
-        message: 'At least one question is required',
+        message: `Quiz must contain between 1 and ${MAX_QUESTIONS_PER_QUIZ} questions`,
       },
     },
     isPrivate: {

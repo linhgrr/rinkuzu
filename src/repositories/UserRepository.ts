@@ -46,6 +46,7 @@ import {
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
+import { deleteOwnedPdfUrlsBestEffort } from '@/lib/s3';
 import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUserRepository';
 
 const USER_ENTITY_PROJECTION = '_id email name displayName bio avatar role subscription createdAt';
@@ -172,6 +173,7 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
     const userObjectId = new Types.ObjectId(id);
     const session = await mongoose.startSession();
     let deleted = false;
+    let authoredPdfUrls: string[] = [];
 
     try {
       await session.withTransaction(async () => {
@@ -182,10 +184,13 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
         if (!user) return;
 
         const authoredQuizzes = await Quiz.find({ author: userObjectId })
-          .select('_id slug')
+          .select('_id slug pdfUrl')
           .session(session)
-          .lean<Array<{ _id: Types.ObjectId; slug: string }>>();
+          .lean<Array<{ _id: Types.ObjectId; slug: string; pdfUrl?: string }>>();
         const authoredQuizIds = authoredQuizzes.map((quiz) => quiz._id);
+        authoredPdfUrls = authoredQuizzes
+          .map((quiz) => quiz.pdfUrl)
+          .filter((url): url is string => typeof url === 'string' && url.length > 0);
         const normalizedEmail = user.email.toLowerCase();
 
         await Attempt.deleteMany(
@@ -244,6 +249,12 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
         const result = await User.deleteOne({ _id: userObjectId }).session(session);
         deleted = result.deletedCount === 1;
       });
+
+      // External object storage cleanup is best-effort and runs only after a
+      // successful Mongo transaction commit (never inside the transaction).
+      if (deleted) {
+        await deleteOwnedPdfUrlsBestEffort(authoredPdfUrls);
+      }
 
       return deleted;
     } finally {

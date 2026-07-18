@@ -7,7 +7,6 @@ import HowItWorks from './HowItWorks';
 import CoreIntelligence from './CoreIntelligence';
 import Testimonials from './Testimonials';
 import BottomCta from './BottomCta';
-import Footer from './Footer';
 import TextureBackground from './TextureBackground';
 
 interface LandingPageProps {
@@ -76,8 +75,6 @@ export default function LandingPage({ isAuthenticated = false }: LandingPageProp
           <BottomCta isAuthenticated={isAuthenticated} />
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

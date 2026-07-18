@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import mongoose from 'mongoose';
+import {
+  MAX_OPTION_COUNT,
+  MAX_OPTION_TEXT_LENGTH,
+  MAX_QUESTION_IMAGE_URL_LENGTH,
+  MAX_QUESTION_TEXT_LENGTH,
+} from '@/lib/validation/question';
 import { QuizQuestionSchema } from '@/models/schemas/QuizQuestionSchema';
 
 const QuizQuestionModel =
@@ -251,6 +257,59 @@ describe('QuizQuestionSchema mutation coverage', () => {
           correctIndex: 0,
         }),
         'Option requires text or an image',
+      );
+    });
+  });
+
+  describe('input-size ceilings', () => {
+    it('accepts text and image fields at production max lengths', async () => {
+      const atMax = new QuizQuestionModel(
+        singleQuestion({
+          question: 'q'.repeat(MAX_QUESTION_TEXT_LENGTH),
+          options: [
+            'a'.repeat(MAX_OPTION_TEXT_LENGTH),
+            'b'.repeat(MAX_OPTION_TEXT_LENGTH),
+            ...Array.from({ length: MAX_OPTION_COUNT - 2 }, (_, index) => `opt-${index}`),
+          ],
+          questionImage: 'u'.repeat(MAX_QUESTION_IMAGE_URL_LENGTH),
+          optionImages: Array.from({ length: MAX_OPTION_COUNT }, () =>
+            'i'.repeat(MAX_QUESTION_IMAGE_URL_LENGTH),
+          ),
+          correctIndex: 0,
+        }),
+      );
+      await expect(atMax.validate()).resolves.toBeUndefined();
+    });
+
+    it('rejects oversized question text, option text, and image URLs', async () => {
+      await expectValidationError(
+        singleQuestion({ question: 'q'.repeat(MAX_QUESTION_TEXT_LENGTH + 1) }),
+        `Question text cannot exceed ${MAX_QUESTION_TEXT_LENGTH} characters`,
+      );
+
+      await expectValidationError(
+        singleQuestion({
+          options: ['o'.repeat(MAX_OPTION_TEXT_LENGTH + 1), 'B'],
+        }),
+        `Option text cannot exceed ${MAX_OPTION_TEXT_LENGTH} characters`,
+      );
+
+      await expectValidationError(
+        singleQuestion({
+          questionImage: 'u'.repeat(MAX_QUESTION_IMAGE_URL_LENGTH + 1),
+        }),
+        `Question image URL cannot exceed ${MAX_QUESTION_IMAGE_URL_LENGTH} characters`,
+      );
+
+      await expectValidationError(
+        singleQuestion({
+          optionImages: [
+            'u'.repeat(MAX_QUESTION_IMAGE_URL_LENGTH + 1),
+            'https://cdn.example/b.png',
+            'https://cdn.example/c.png',
+          ],
+        }),
+        `Option image URL cannot exceed ${MAX_QUESTION_IMAGE_URL_LENGTH} characters`,
       );
     });
   });

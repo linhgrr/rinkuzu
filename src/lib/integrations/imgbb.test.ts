@@ -92,4 +92,36 @@ describe('ImgBbImageStorage', () => {
 
     expect(result).not.toHaveProperty('mediumUrl');
   });
+
+  it('deleteByUrl is idempotent for empty, non-HTTPS, OK, and 404 responses', async () => {
+    const storage = new ImgBbImageStorage();
+
+    await expect(storage.deleteByUrl('')).resolves.toBeUndefined();
+    await expect(storage.deleteByUrl('http://insecure.example/delete')).resolves.toBeUndefined();
+    expect(fetch).not.toHaveBeenCalled();
+
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 200 }));
+    await expect(
+      storage.deleteByUrl('https://images.example/delete/image-id'),
+    ).resolves.toBeUndefined();
+    expect(fetch).toHaveBeenCalledWith('https://images.example/delete/image-id', {
+      method: 'GET',
+      cache: 'no-store',
+      signal: expect.any(AbortSignal),
+    });
+
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }));
+    await expect(
+      storage.deleteByUrl('https://images.example/delete/already-gone'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('deleteByUrl surfaces non-success upstream statuses', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 500 }));
+    const storage = new ImgBbImageStorage();
+
+    await expect(
+      storage.deleteByUrl('https://images.example/delete/image-id'),
+    ).rejects.toBeInstanceOf(ImageStorageUpstreamError);
+  });
 });

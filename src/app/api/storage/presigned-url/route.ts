@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { withAuth } from '@/lib/api/auth';
-import { s3Client, BUCKET_NAME } from '@/lib/s3';
+import { getQuizPdfObjectPrefix, s3Client, BUCKET_NAME } from '@/lib/s3';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
@@ -26,15 +26,15 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
 
     let prefix = '';
     if (input.data.purpose === 'quiz') {
-      prefix = 'uploads/quiz_extract';
+      prefix = getQuizPdfObjectPrefix(userId);
     } else if (input.data.purpose === 'adaptive') {
-      prefix = 'uploads/adaptive_pipeline';
+      prefix = `uploads/adaptive_pipeline/${userId}/`;
     } else {
       return apiErr('validation_error', 'Invalid purpose specified', 400);
     }
 
     const safeName = sanitizeFileName(input.data.fileName);
-    const key = `${prefix}/${userId}/${Date.now()}-${safeName}`;
+    const key = `${prefix}${Date.now()}-${safeName}`;
 
     const command = new PutObjectCommand({
       Bucket: BUCKET_NAME,

@@ -466,20 +466,51 @@ export class LearningProgressRepository implements ILearningProgressRepository {
     options: StreakFreezePurchaseOptions,
   ): Promise<StreakFreezePurchaseResult> {
     await connectDB();
-    const progress = await UserProgress.findOne({ userId }).select('totalXp streakFreezeCount');
-    if (!progress) return { status: 'not_found' as const };
-    if (progress.streakFreezeCount >= options.maxFreezes) return { status: 'max_freezes' as const };
-    if (progress.totalXp < options.cost) return { status: 'not_enough_xp' as const };
 
-    progress.totalXp -= options.cost;
-    progress.streakFreezeCount += 1;
-    await progress.save();
-
-    return {
-      status: 'purchased' as const,
-      xp: progress.totalXp,
-      streakFreezeCount: progress.streakFreezeCount,
+    const filter = {
+      userId,
+      totalXp: { $gte: options.cost },
+      streakFreezeCount: { $lt: options.maxFreezes },
     };
+    const update = {
+      $inc: { totalXp: -options.cost, streakFreezeCount: 1 },
+    };
+    const updateOptions = { new: true, runValidators: true };
+
+    // Atomic eligibility + spend so concurrent purchases cannot overspend XP or exceed max freezes.
+    // At most two attempts: on miss, classify; retry once only if still eligible (transient race).
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const updated = await UserProgress.findOneAndUpdate(filter, update, updateOptions).select(
+        'totalXp streakFreezeCount',
+      );
+
+      if (updated) {
+        return {
+          status: 'purchased' as const,
+          xp: updated.totalXp,
+          streakFreezeCount: updated.streakFreezeCount,
+        };
+      }
+
+      // Read-only classification when the atomic filter misses (no write on failure paths).
+      const progress = await UserProgress.findOne({ userId }).select('totalXp streakFreezeCount');
+      if (!progress) return { status: 'not_found' as const };
+      if (progress.streakFreezeCount >= options.maxFreezes) {
+        return { status: 'max_freezes' as const };
+      }
+      if (progress.totalXp < options.cost) return { status: 'not_enough_xp' as const };
+
+      // Still eligible after miss — retry once; after second miss, fail closed (no false status).
+      if (attempt === 2) {
+        throw new Error(
+          'Streak freeze purchase conflict: still eligible after repeated atomic update misses',
+        );
+      }
+    }
+
+    throw new Error(
+      'Streak freeze purchase conflict: still eligible after repeated atomic update misses',
+    );
   }
 
   async countLearnedQuestions(userId: string): Promise<number> {

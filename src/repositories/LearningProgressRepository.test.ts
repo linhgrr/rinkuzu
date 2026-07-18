@@ -894,9 +894,40 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
     ).rejects.toThrow('Failed to save user progress');
   });
 
-  it('maps streak-freeze purchase guard outcomes and successful purchases', async () => {
+  const streakFreezeAtomicArgs = [
+    {
+      userId: 'user-1',
+      totalXp: { $gte: 50 },
+      streakFreezeCount: { $lt: 2 },
+    },
+    { $inc: { totalXp: -50, streakFreezeCount: 1 } },
+    { new: true, runValidators: true },
+  ] as const;
+
+  it('atomically purchases a streak freeze with eligibility predicates', async () => {
     const repository = new LearningProgressRepository();
     const options = { cost: 50, maxFreezes: 2 };
+    const select = vi.fn().mockResolvedValue({ totalXp: 50, streakFreezeCount: 1 });
+    modelMocks.userFindOneAndUpdate.mockReturnValueOnce({ select });
+
+    await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
+      status: 'purchased',
+      xp: 50,
+      streakFreezeCount: 1,
+    });
+
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenCalledTimes(1);
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenCalledWith(...streakFreezeAtomicArgs);
+    expect(select).toHaveBeenCalledWith('totalXp streakFreezeCount');
+    expect(modelMocks.userFindOne).not.toHaveBeenCalled();
+  });
+
+  it('classifies atomic purchase misses without writing', async () => {
+    const repository = new LearningProgressRepository();
+    const options = { cost: 50, maxFreezes: 2 };
+
+    const missSelect = vi.fn().mockResolvedValue(null);
+    modelMocks.userFindOneAndUpdate.mockReturnValue({ select: missSelect });
 
     modelMocks.userSelect.mockReturnValueOnce(null);
     await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
@@ -906,7 +937,6 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
     modelMocks.userSelect.mockReturnValueOnce({
       totalXp: 100,
       streakFreezeCount: 2,
-      save: vi.fn(),
     });
     await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
       status: 'max_freezes',
@@ -915,24 +945,71 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
     modelMocks.userSelect.mockReturnValueOnce({
       totalXp: 10,
       streakFreezeCount: 0,
-      save: vi.fn(),
     });
     await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
       status: 'not_enough_xp',
     });
 
-    const progress = {
+    // Real guard misses classify on the first miss — no second atomic attempt.
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenCalledTimes(3);
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenCalledWith(...streakFreezeAtomicArgs);
+    expect(modelMocks.userFindOne).toHaveBeenCalledTimes(3);
+    expect(modelMocks.userFindOne).toHaveBeenCalledWith({ userId: 'user-1' });
+    expect(modelMocks.userSelect).toHaveBeenCalledWith('totalXp streakFreezeCount');
+  });
+
+  it('retries once when the first atomic miss still looks eligible and purchases on second hit', async () => {
+    const repository = new LearningProgressRepository();
+    const options = { cost: 50, maxFreezes: 2 };
+    const firstSelect = vi.fn().mockResolvedValue(null);
+    const secondSelect = vi.fn().mockResolvedValue({ totalXp: 50, streakFreezeCount: 1 });
+
+    modelMocks.userFindOneAndUpdate
+      .mockReturnValueOnce({ select: firstSelect })
+      .mockReturnValueOnce({ select: secondSelect });
+    modelMocks.userSelect.mockReturnValueOnce({
       totalXp: 100,
       streakFreezeCount: 0,
-      save: vi.fn().mockResolvedValue(undefined),
-    };
-    modelMocks.userSelect.mockReturnValueOnce(progress);
+    });
+
     await expect(repository.buyStreakFreeze('user-1', options)).resolves.toEqual({
       status: 'purchased',
       xp: 50,
       streakFreezeCount: 1,
     });
-    expect(progress.save).toHaveBeenCalledOnce();
+
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenCalledTimes(2);
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenNthCalledWith(1, ...streakFreezeAtomicArgs);
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenNthCalledWith(2, ...streakFreezeAtomicArgs);
+    expect(modelMocks.userFindOne).toHaveBeenCalledTimes(1);
+    expect(modelMocks.userFindOne).toHaveBeenCalledWith({ userId: 'user-1' });
+    expect(modelMocks.userSelect).toHaveBeenCalledWith('totalXp streakFreezeCount');
+    expect(firstSelect).toHaveBeenCalledWith('totalXp streakFreezeCount');
+    expect(secondSelect).toHaveBeenCalledWith('totalXp streakFreezeCount');
+  });
+
+  it('throws conflict when two atomic misses still look eligible', async () => {
+    const repository = new LearningProgressRepository();
+    const options = { cost: 50, maxFreezes: 2 };
+    const missSelect = vi.fn().mockResolvedValue(null);
+    modelMocks.userFindOneAndUpdate.mockReturnValue({ select: missSelect });
+    modelMocks.userSelect
+      .mockReturnValueOnce({ totalXp: 100, streakFreezeCount: 0 })
+      .mockReturnValueOnce({ totalXp: 100, streakFreezeCount: 0 });
+
+    await expect(repository.buyStreakFreeze('user-1', options)).rejects.toThrow(
+      'Streak freeze purchase conflict: still eligible after repeated atomic update misses',
+    );
+
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenCalledTimes(2);
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenNthCalledWith(1, ...streakFreezeAtomicArgs);
+    expect(modelMocks.userFindOneAndUpdate).toHaveBeenNthCalledWith(2, ...streakFreezeAtomicArgs);
+    expect(modelMocks.userFindOne).toHaveBeenCalledTimes(2);
+    expect(modelMocks.userFindOne).toHaveBeenCalledWith({ userId: 'user-1' });
+    expect(modelMocks.userSelect).toHaveBeenCalledTimes(2);
+    expect(modelMocks.userSelect).toHaveBeenCalledWith('totalXp streakFreezeCount');
+    // Never claim purchased without a findOneAndUpdate document.
+    expect(missSelect).toHaveBeenCalledTimes(2);
   });
 
   it('counts learned questions and updates the denormalized total', async () => {

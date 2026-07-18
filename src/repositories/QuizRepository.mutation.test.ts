@@ -21,6 +21,7 @@ const quizModelMocks = vi.hoisted(() => ({
 }));
 
 const deleteQuizDependentsMock = vi.hoisted(() => vi.fn());
+const deleteOwnedPdfUrlsBestEffortMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const connectDBMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const startSessionMock = vi.hoisted(() => vi.fn());
 
@@ -30,6 +31,10 @@ vi.mock('@/lib/mongoose', () => ({
 
 vi.mock('@/repositories/helpers/deleteQuizDependents', () => ({
   deleteQuizDependents: deleteQuizDependentsMock,
+}));
+
+vi.mock('@/lib/s3', () => ({
+  deleteOwnedPdfUrlsBestEffort: deleteOwnedPdfUrlsBestEffortMock,
 }));
 
 vi.mock('@/models/Quiz', () => {
@@ -295,6 +300,7 @@ describe('QuizRepository mutation coverage', () => {
       const leanSession = vi.fn().mockResolvedValue({
         _id: new Types.ObjectId(QUIZ_ID),
         slug: 'algebra-basics',
+        pdfUrl: 'https://cdn.example.com/test-bucket/uploads/quiz_extract/doc.pdf',
       });
       quizModelMocks.session.mockReturnValue({ lean: leanSession });
       quizModelMocks.select.mockReturnValue({ session: quizModelMocks.session });
@@ -307,28 +313,35 @@ describe('QuizRepository mutation coverage', () => {
         [{ id: expect.any(Types.ObjectId), slug: 'algebra-basics' }],
         session,
       );
-      expect(quizModelMocks.select).toHaveBeenCalledWith('_id slug');
+      expect(quizModelMocks.select).toHaveBeenCalledWith('_id slug pdfUrl');
       expect(deleteSession).toHaveBeenCalledWith(session);
+      expect(deleteOwnedPdfUrlsBestEffortMock).toHaveBeenCalledWith([
+        'https://cdn.example.com/test-bucket/uploads/quiz_extract/doc.pdf',
+      ]);
       expect(session.endSession).toHaveBeenCalledOnce();
 
-      // missing quiz short-circuits without dependents cleanup
+      // missing quiz short-circuits without dependents cleanup or S3 work
       const leanMissing = vi.fn().mockResolvedValue(null);
       quizModelMocks.session.mockReturnValue({ lean: leanMissing });
       deleteQuizDependentsMock.mockClear();
+      deleteOwnedPdfUrlsBestEffortMock.mockClear();
       await expect(repository.delete(QUIZ_ID)).resolves.toBe(false);
       expect(deleteQuizDependentsMock).not.toHaveBeenCalled();
+      expect(deleteOwnedPdfUrlsBestEffortMock).not.toHaveBeenCalled();
       expect(session.endSession).toHaveBeenCalledTimes(2);
 
-      // deletedCount !== 1 reports false
+      // deletedCount !== 1 reports false and skips external cleanup
       const leanPresent = vi.fn().mockResolvedValue({
         _id: new Types.ObjectId(QUIZ_ID),
         slug: 'algebra-basics',
+        pdfUrl: 'https://cdn.example.com/test-bucket/uploads/quiz_extract/doc.pdf',
       });
       quizModelMocks.session.mockReturnValue({ lean: leanPresent });
       quizModelMocks.deleteOne.mockReturnValue({
         session: vi.fn().mockResolvedValue({ deletedCount: 0 }),
       });
       await expect(repository.delete(QUIZ_ID)).resolves.toBe(false);
+      expect(deleteOwnedPdfUrlsBestEffortMock).not.toHaveBeenCalled();
     });
   });
 

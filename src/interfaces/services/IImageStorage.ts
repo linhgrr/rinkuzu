@@ -32,4 +32,10 @@ export class ImageStorageUpstreamError extends Error {
 
 export interface IImageStorage {
   upload(image: ImageUpload): Promise<ImageUploadResult>;
+  /**
+   * Optional best-effort remote delete when the provider delete URL is known.
+   * Implementations must be idempotent for already-deleted resources when possible
+   * and must not require Mongo transaction participation.
+   */
+  deleteByUrl?(deleteUrl: string): Promise<void>;
 }

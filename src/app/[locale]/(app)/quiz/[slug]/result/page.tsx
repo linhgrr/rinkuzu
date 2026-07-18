@@ -29,6 +29,7 @@ import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { AIExplainPanel } from '@/features/quiz/components/result/AIExplainPanel';
+import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 
 type QuizResultQuestion = QuizResultQuestionViewModel;
 type QuizResult = QuizResultViewModel;
@@ -316,12 +317,6 @@ interface QuizResultChatSummary {
   questionsWithChat: number;
 }
 
-function isQuestionAnswered(question: QuizResultQuestion) {
-  return question.type === 'single'
-    ? question.userAnswer !== -1
-    : Array.isArray(question.userAnswer) && question.userAnswer.length > 0;
-}
-
 function buildQuizResultStats(result: QuizResult | null): QuizResultStatsSummary {
   if (!result) {
     return {
@@ -334,10 +329,10 @@ function buildQuizResultStats(result: QuizResult | null): QuizResultStatsSummary
 
   const correctCount = result.quiz.questions.filter((question) => question.isCorrect).length;
   const incorrectCount = result.quiz.questions.filter(
-    (question) => !question.isCorrect && isQuestionAnswered(question),
+    (question) => !question.isCorrect && isQuestionAnswered(question, question.userAnswer),
   ).length;
   const unansweredCount = result.quiz.questions.filter(
-    (question) => !isQuestionAnswered(question),
+    (question) => !isQuestionAnswered(question, question.userAnswer),
   ).length;
 
   return {

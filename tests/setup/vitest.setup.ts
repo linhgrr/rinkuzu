@@ -23,7 +23,8 @@ const testEnvDefaults: Record<string, string> = {
   AUTH_LOCKOUT_WINDOW_MINUTES: '15',
   AUTH_LOCKOUT_DURATION_MINUTES: '15',
   ADAPTIVE_PROXY_TIMEOUT_MS: '60000',
-  INTERNAL_SERVICE_TOKEN: 'test-internal-token',
+  // Non-secret CI/test fixture; must match CI/e2e/perf/Docker fallbacks.
+  INTERNAL_SERVICE_TOKEN: 'rinkuzu-ci-fixture-0123456789abcdef-token',
   OBJECT_STORAGE_ENDPOINT_EXTERNAL: 'https://example.r2.cloudflarestorage.com',
   OBJECT_STORAGE_REGION: 'auto',
   OBJECT_STORAGE_ADDRESSING_STYLE: 'path',

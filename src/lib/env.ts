@@ -3,6 +3,50 @@ import { z } from 'zod';
 
 const OBJECT_STORAGE_REGIONS = ['auto', 'wnam', 'enam', 'weur', 'eeur', 'apac', 'oc'] as const;
 
+/** Reject common default/placeholder secrets without a shared secret library. */
+function isObviousSecretPlaceholder(value: string): boolean {
+  const lower = value.toLowerCase();
+  if (/^(.)\1+$/.test(value)) return true;
+  if (
+    lower === 'replace-me' ||
+    lower === 'changeme' ||
+    lower === 'change-me' ||
+    lower === 'secret' ||
+    lower === 'password' ||
+    lower === 'placeholder' ||
+    lower.includes('replace-me') ||
+    lower.includes('changeme') ||
+    lower.includes('change-me') ||
+    lower.includes('your-secret') ||
+    lower.includes('your-token') ||
+    lower.includes('placeholder') ||
+    lower.includes('example-secret') ||
+    lower.includes('example-token')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+const internalServiceTokenSchema = z
+  .string()
+  .trim()
+  .min(32, 'INTERNAL_SERVICE_TOKEN must be at least 32 chars')
+  .refine(
+    (value) => !isObviousSecretPlaceholder(value),
+    'INTERNAL_SERVICE_TOKEN must not use a placeholder or default value',
+  );
+
+const subscriptionCronSecretSchema = z
+  .string()
+  .trim()
+  .min(32, 'SUBSCRIPTION_CRON_SECRET must be at least 32 chars')
+  .refine(
+    (value) => !isObviousSecretPlaceholder(value),
+    'SUBSCRIPTION_CRON_SECRET must not use a placeholder or default value',
+  )
+  .optional();
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -24,7 +68,7 @@ const envSchema = z
     AUTH_LOCKOUT_DURATION_MINUTES: z.coerce.number().int().positive(),
 
     ADAPTIVE_PROXY_TIMEOUT_MS: z.coerce.number().int().positive(),
-    INTERNAL_SERVICE_TOKEN: z.string().min(1, 'INTERNAL_SERVICE_TOKEN is required'),
+    INTERNAL_SERVICE_TOKEN: internalServiceTokenSchema,
 
     OBJECT_STORAGE_ENDPOINT_EXTERNAL: z.url('OBJECT_STORAGE_ENDPOINT_EXTERNAL must be a valid URL'),
     OBJECT_STORAGE_REGION: z.string().refine(
@@ -47,7 +91,7 @@ const envSchema = z
 
     AUTH_GOOGLE_ID: z.string().optional(),
     AUTH_GOOGLE_SECRET: z.string().optional(),
-    SUBSCRIPTION_CRON_SECRET: z.string().optional(),
+    SUBSCRIPTION_CRON_SECRET: subscriptionCronSecretSchema,
     IMGBB_API_KEY: z.string().optional(),
     NEXT_PUBLIC_GA_ID: z.string().optional(),
     NEXT_IMAGE_UNOPTIMIZED: z.enum(['true', 'false']).optional(),

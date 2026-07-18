@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+// Non-secret CI/test fixture; must match vitest/CI/e2e/perf/Docker fallbacks.
+const VALID_INTERNAL_SERVICE_TOKEN = 'rinkuzu-ci-fixture-0123456789abcdef-token';
+const VALID_CRON_SECRET = 'valid-subscription-cron-secret-32';
+
 const baseEnv: Record<string, string> = {
   NODE_ENV: 'test',
   MONGODB_URI: 'mongodb://127.0.0.1:27017/rinkuzu-test',
@@ -14,7 +18,7 @@ const baseEnv: Record<string, string> = {
   AUTH_LOCKOUT_WINDOW_MINUTES: '15',
   AUTH_LOCKOUT_DURATION_MINUTES: '15',
   ADAPTIVE_PROXY_TIMEOUT_MS: '60000',
-  INTERNAL_SERVICE_TOKEN: 'test-internal-token',
+  INTERNAL_SERVICE_TOKEN: VALID_INTERNAL_SERVICE_TOKEN,
   OBJECT_STORAGE_ENDPOINT_EXTERNAL: 'https://example.r2.cloudflarestorage.com',
   OBJECT_STORAGE_REGION: 'auto',
   OBJECT_STORAGE_ADDRESSING_STYLE: 'path',
@@ -56,6 +60,8 @@ describe('env validation', () => {
     expect(env.OBJECT_STORAGE_REGION).toBe('auto');
     expect(env.AUTH_URL).toBe('http://localhost:3000');
     expect(env.AUTH_SECRET).toBe('test-auth-secret-at-least-32-characters');
+    expect(env.INTERNAL_SERVICE_TOKEN).toBe(VALID_INTERNAL_SERVICE_TOKEN);
+    expect(env.SUBSCRIPTION_CRON_SECRET).toBeUndefined();
   });
 
   it('rejects invalid object storage regions', async () => {
@@ -70,6 +76,95 @@ describe('env validation', () => {
     await expect(import('@/lib/env')).rejects.toThrow(
       /AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET must both be set, or both omitted/,
     );
+  });
+});
+
+describe('INTERNAL_SERVICE_TOKEN validation', () => {
+  it('rejects missing INTERNAL_SERVICE_TOKEN', async () => {
+    const { INTERNAL_SERVICE_TOKEN: _removed, ...withoutToken } = baseEnv;
+    void _removed;
+    replaceProcessEnv(withoutToken);
+
+    await expect(import('@/lib/env')).rejects.toThrow(/INTERNAL_SERVICE_TOKEN/);
+  });
+
+  it('rejects blank or whitespace-only INTERNAL_SERVICE_TOKEN', async () => {
+    replaceProcessEnv({ ...baseEnv, INTERNAL_SERVICE_TOKEN: '   ' });
+
+    await expect(import('@/lib/env')).rejects.toThrow(/INTERNAL_SERVICE_TOKEN/);
+  });
+
+  it('rejects short INTERNAL_SERVICE_TOKEN', async () => {
+    replaceProcessEnv({ ...baseEnv, INTERNAL_SERVICE_TOKEN: 'too-short-token' });
+
+    await expect(import('@/lib/env')).rejects.toThrow(
+      /INTERNAL_SERVICE_TOKEN must be at least 32 chars/,
+    );
+  });
+
+  it('rejects long obvious placeholder INTERNAL_SERVICE_TOKEN', async () => {
+    replaceProcessEnv({
+      ...baseEnv,
+      INTERNAL_SERVICE_TOKEN: 'replace-me-replace-me-replace-me-xx',
+    });
+
+    await expect(import('@/lib/env')).rejects.toThrow(
+      /INTERNAL_SERVICE_TOKEN must not use a placeholder or default value/,
+    );
+  });
+
+  it('accepts a trimmed valid INTERNAL_SERVICE_TOKEN', async () => {
+    replaceProcessEnv({
+      ...baseEnv,
+      INTERNAL_SERVICE_TOKEN: `  ${VALID_INTERNAL_SERVICE_TOKEN}  `,
+    });
+
+    const { env } = await import('@/lib/env');
+    expect(env.INTERNAL_SERVICE_TOKEN).toBe(VALID_INTERNAL_SERVICE_TOKEN);
+  });
+});
+
+describe('SUBSCRIPTION_CRON_SECRET validation', () => {
+  it('allows absent SUBSCRIPTION_CRON_SECRET', async () => {
+    replaceProcessEnv(baseEnv);
+
+    const { env } = await import('@/lib/env');
+    expect(env.SUBSCRIPTION_CRON_SECRET).toBeUndefined();
+  });
+
+  it('rejects blank or whitespace-only SUBSCRIPTION_CRON_SECRET', async () => {
+    replaceProcessEnv({ ...baseEnv, SUBSCRIPTION_CRON_SECRET: '   ' });
+
+    await expect(import('@/lib/env')).rejects.toThrow(/SUBSCRIPTION_CRON_SECRET/);
+  });
+
+  it('rejects short SUBSCRIPTION_CRON_SECRET', async () => {
+    replaceProcessEnv({ ...baseEnv, SUBSCRIPTION_CRON_SECRET: 'short-cron-secret' });
+
+    await expect(import('@/lib/env')).rejects.toThrow(
+      /SUBSCRIPTION_CRON_SECRET must be at least 32 chars/,
+    );
+  });
+
+  it('rejects long obvious placeholder SUBSCRIPTION_CRON_SECRET', async () => {
+    replaceProcessEnv({
+      ...baseEnv,
+      SUBSCRIPTION_CRON_SECRET: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    });
+
+    await expect(import('@/lib/env')).rejects.toThrow(
+      /SUBSCRIPTION_CRON_SECRET must not use a placeholder or default value/,
+    );
+  });
+
+  it('accepts a trimmed valid SUBSCRIPTION_CRON_SECRET', async () => {
+    replaceProcessEnv({
+      ...baseEnv,
+      SUBSCRIPTION_CRON_SECRET: `  ${VALID_CRON_SECRET}  `,
+    });
+
+    const { env } = await import('@/lib/env');
+    expect(env.SUBSCRIPTION_CRON_SECRET).toBe(VALID_CRON_SECRET);
   });
 });
 

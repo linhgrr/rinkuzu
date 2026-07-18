@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { createSubscriptionService } from '@/lib/subscription-factory';
-import { invalidateEntitlements } from '@/lib/entitlements';
 import { withAuth } from '@/lib/api/auth';
 import { apiOk, apiErr } from '@/lib/api/response';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -21,13 +20,12 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
         ? Number.parseInt(input.data.orderCode, 10)
         : input.data.orderCode;
 
+    // Entitlement cache invalidation happens inside the activation service so
+    // verify and webhook paths share one boundary after durable success.
     const result = await subscriptionService.verifyAndActivateSubscription(
       numericOrderCode,
       userId,
     );
-
-    // Drop the cached free-tier entitlement so premium takes effect immediately.
-    invalidateEntitlements(userId);
 
     return apiOk(result);
   } catch (error: unknown) {

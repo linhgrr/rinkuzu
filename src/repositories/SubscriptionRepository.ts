@@ -6,6 +6,7 @@ import {
   type ActivateSubscriptionData,
   type CancelCurrentSubscriptionResult,
   type CreateSubscriptionData,
+  type ExpireDueResult,
   ISubscriptionRepository,
   type UpdateSubscriptionData,
 } from '@/interfaces/repositories/ISubscriptionRepository';
@@ -64,10 +65,10 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     return record ? SubscriptionPersistenceMapper.toEntity(record) : null;
   }
 
-  async expireDue(now: Date): Promise<number> {
+  async expireDue(now: Date): Promise<ExpireDueResult> {
     await connectDB();
     const session = await mongoose.startSession();
-    let expiredUserCount = 0;
+    let result: ExpireDueResult = { count: 0, userIds: [] };
 
     try {
       await session.withTransaction(async () => {
@@ -88,40 +89,58 @@ export class SubscriptionRepository implements ISubscriptionRepository {
           .session(session)
           .lean<CurrentUserSubscriptionPersistenceRecord[]>();
 
+        // Candidate identifiers only — never re-open the date predicate on update.
         const subscriptionIds = subscriptions.map((subscription) => subscription._id);
         const orderIds = users
           .map((user) => user.subscription?.payosOrderId)
           .filter((orderId): orderId is string => orderId !== undefined);
-        const userIds = new Map(
+        const userIdByKey = new Map(
           [
             ...subscriptions.map((subscription) => subscription.user),
             ...users.map((user) => user._id),
           ].map((userId) => [String(userId), userId]),
         );
 
-        await Subscription.updateMany(
-          {
-            $or: [{ _id: { $in: subscriptionIds } }, { payosOrderId: { $in: orderIds } }],
-            status: 'completed',
-            isActive: true,
-          },
-          { $set: { status: 'expired', isActive: false } },
-        ).session(session);
-        await User.updateMany(
-          {
-            _id: { $in: [...userIds.values()] },
-            'subscription.isActive': true,
-          },
-          { $set: { 'subscription.isActive': false } },
-        ).session(session);
+        if (subscriptionIds.length === 0 && userIdByKey.size === 0) {
+          return;
+        }
 
-        expiredUserCount = userIds.size;
+        // Constrain mutations to the projected candidate set:
+        // - subscription docs by captured _id
+        // - plus subscription docs whose payosOrderId was captured from a due user row
+        //   (embedded/user lag; orderIds never come from a live re-query)
+        if (subscriptionIds.length > 0 || orderIds.length > 0) {
+          await Subscription.updateMany(
+            {
+              $or: [
+                ...(subscriptionIds.length > 0 ? [{ _id: { $in: subscriptionIds } }] : []),
+                ...(orderIds.length > 0 ? [{ payosOrderId: { $in: orderIds } }] : []),
+              ],
+              status: 'completed',
+              isActive: true,
+            },
+            { $set: { status: 'expired', isActive: false } },
+          ).session(session);
+        }
+
+        if (userIdByKey.size > 0) {
+          await User.updateMany(
+            {
+              _id: { $in: [...userIdByKey.values()] },
+              'subscription.isActive': true,
+            },
+            { $set: { 'subscription.isActive': false } },
+          ).session(session);
+        }
+
+        const userIds = [...userIdByKey.keys()];
+        result = { count: userIds.length, userIds };
       });
     } finally {
       await session.endSession();
     }
 
-    return expiredUserCount;
+    return result;
   }
 
   async updateById(

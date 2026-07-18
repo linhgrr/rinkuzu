@@ -13,6 +13,9 @@ import {
 } from '@/entities/Subscription';
 import { DurationUtils } from '@/types/subscription';
 import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
+// Import cache module directly — entitlements barrel pulls subscription-factory
+// and would create a runtime cycle with this service.
+import { invalidateEntitlements } from '@/lib/entitlements/cache';
 
 function toActivationDto(
   type: string,
@@ -29,6 +32,18 @@ function toActivationDto(
       isActive,
     },
   };
+}
+
+/** Successful activation result: drop process-local tier cache for this user. */
+function settledActivation(
+  userId: string,
+  type: string,
+  startDate: Date,
+  endDate: Date | undefined,
+  isActive: boolean,
+): SubscriptionActivationDto {
+  invalidateEntitlements(userId);
+  return toActivationDto(type, startDate, endDate, isActive);
 }
 
 export class SubscriptionActivationService {
@@ -58,7 +73,9 @@ export class SubscriptionActivationService {
         throw new Error('Subscription already expired');
       }
 
-      return toActivationDto(
+      // Idempotent success: authoritative completed state — clear stale free tier.
+      return settledActivation(
+        subscription.userId,
         subscription.type,
         subscription.startDate,
         subscription.endDate,
@@ -112,7 +129,9 @@ export class SubscriptionActivationService {
     }
 
     if (subscription.status === 'completed') {
-      return toActivationDto(
+      // Idempotent success: authoritative completed state — clear stale free tier.
+      return settledActivation(
+        subscription.userId,
         subscription.type,
         subscription.startDate,
         subscription.endDate,
@@ -153,6 +172,9 @@ export class SubscriptionActivationService {
       throw new Error('Current subscription record is inconsistent');
     }
 
+    // `cancelled` mutated state; `already_inactive` is idempotent success.
+    // Both mean the user is not entitled to premium — drop a possibly stale tier.
+    invalidateEntitlements(userId);
     return { success: true };
   }
 
@@ -167,7 +189,9 @@ export class SubscriptionActivationService {
       ? await this.subscriptionRepository.findByTransactionReference(transactionReference)
       : null;
     if (existing && existing.status === 'completed') {
-      return toActivationDto(
+      // Same order/user as the pending activation — always invalidate that user.
+      return settledActivation(
+        subscription.userId,
         existing.type,
         existing.startDate,
         existing.endDate,
@@ -199,7 +223,9 @@ export class SubscriptionActivationService {
       if (error instanceof SubscriptionActivationConflictError) {
         const settled = await this.subscriptionRepository.findByOrderId(orderCode.toString());
         if (settled?.status === 'completed') {
-          return toActivationDto(
+          // Concurrent writer already committed — invalidate after durable settle.
+          return settledActivation(
+            subscription.userId,
             settled.type,
             settled.startDate,
             settled.endDate,
@@ -216,7 +242,8 @@ export class SubscriptionActivationService {
           ? await this.subscriptionRepository.findByTransactionReference(transactionReference)
           : null;
         if (settled?.status === 'completed') {
-          return toActivationDto(
+          return settledActivation(
+            subscription.userId,
             settled.type,
             settled.startDate,
             settled.endDate,
@@ -227,6 +254,7 @@ export class SubscriptionActivationService {
       throw error;
     }
 
-    return toActivationDto(subscription.type, startDate, endDate, true);
+    // Invalidate only after the durable activation commit succeeded.
+    return settledActivation(subscription.userId, subscription.type, startDate, endDate, true);
   }
 }

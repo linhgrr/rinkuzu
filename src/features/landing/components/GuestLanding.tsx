@@ -1,10 +1,9 @@
 import LandingPage from './home/LandingPage';
 
 interface GuestLandingProps {
-  locale: string;
   isAuthenticated?: boolean;
 }
 
-export function GuestLanding({ locale, isAuthenticated = false }: GuestLandingProps) {
-  return <LandingPage locale={locale} isAuthenticated={isAuthenticated} />;
+export function GuestLanding({ isAuthenticated = false }: GuestLandingProps) {
+  return <LandingPage isAuthenticated={isAuthenticated} />;
 }

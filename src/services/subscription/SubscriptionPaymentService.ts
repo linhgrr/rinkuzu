@@ -7,7 +7,7 @@ import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISub
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
-import { isSubscriptionExpired } from '@/lib/subscription-date';
+import { isActiveSubscriptionPremium } from '@/lib/subscription-date';
 import type { UserSubscriptionSnapshot } from '@/entities/User';
 
 export class SubscriptionPaymentService {
@@ -127,12 +127,7 @@ export class SubscriptionPaymentService {
   }
 
   private hasActivePremium(subscription: UserSubscriptionSnapshot | undefined): boolean {
-    if (!subscription) return false;
-    if (!subscription.isActive) return false;
-    if (subscription.endDate) {
-      return !isSubscriptionExpired(subscription);
-    }
-    return true;
+    return isActiveSubscriptionPremium(subscription);
   }
 
   private async generateUniqueOrderCode(): Promise<number> {

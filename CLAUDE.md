@@ -53,3 +53,14 @@ This project is indexed by GitNexus as **rinkuzu** (7790 symbols, 18686 relation
 - Treat Mongoose schema indexes as the desired runtime contract, but use `npm run migrate:performance-indexes` to detect Atlas index drift.
 - Run the dry-run first, then `npm run migrate:performance-indexes:apply`; the migration must remain idempotent and verify its postconditions.
 - Validate changed read paths with `explain("executionStats")`; compare keys examined, documents examined, returned rows, and payload projection.
+
+# Production quality workflow
+
+- Before editing any function, class, or method, run GitNexus upstream impact analysis. Record direct callers, affected flows, modules, and risk; stop and warn before HIGH or CRITICAL changes.
+- Before every commit, run `detect_changes({scope: "staged"})` and confirm only intended symbols/files are affected. Before handoff, run `detect_changes({scope: "compare", base_ref: "master"})`.
+- Use the external-agent supervisor for parallel Grok audits and long gates. Keep read-only audits parallel, serialize writers, and have the root agent review every edit and final result. Never let an external agent touch protected user files, Gradle/cache, `.env`, live data, or Git history.
+- Treat every quality artifact as evidence-bound: pin Node/npm, record commit SHA and source/config fingerprints, and fail closed when coverage, mutation, Lighthouse, contracts, or generated reports are stale, missing, or internally inconsistent. A warning threshold must remain visibly distinct from a passing gate.
+- Run targeted tests for each changed boundary, then the full pre-commit gate. Never use `--no-verify`, skip a failing check, or mark an unrun gate green. Commit small validated waves frequently.
+- For database changes, keep one DDL writer, run index migration dry-run before any apply, require approval for destructive/unique/TTL changes, and validate changed reads with real `executionStats` when the environment is available. Report unavailable live validation separately.
+- Preserve unrelated worktree changes and the protected files listed in the task scope. Do not modify login/signup visuals, landing visuals, Android/Gradle files, or user-owned generated evidence unless explicitly requested.
+- For production handoff, report passing gates, intentional blockers, stale/external evidence, unverified live checks, changed files, and exact commands. Never claim production-ready while a required guard is externally missing or red.

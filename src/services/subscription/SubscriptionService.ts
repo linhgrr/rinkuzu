@@ -16,7 +16,11 @@ import type { UserSubscription } from '@/entities/Subscription';
 import type { UpdateSubscriptionStatusInput } from '@/interfaces/services/ISubscriptionService';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
-import { isSubscriptionExpired, type SubscriptionExpiryInput } from '@/lib/subscription-date';
+import {
+  isActiveSubscriptionPremium,
+  isSubscriptionExpired,
+  type SubscriptionExpiryInput,
+} from '@/lib/subscription-date';
 import { SubscriptionDtoMapper } from '@/mappers/subscription/SubscriptionDtoMapper';
 
 import { SubscriptionPaymentService } from './SubscriptionPaymentService';
@@ -148,20 +152,18 @@ export class SubscriptionService implements ISubscriptionService {
 
   private isSubscriptionSnapshotPremium(subscription: UserSubscription | null): boolean {
     if (!subscription) return false;
-    if (!subscription.isActive) return false;
 
-    // A missing endDate is now always anomalous: lifetime plans carry a
-    // far-future sentinel endDate (see DurationUtils.calculateEndDate). Fail
-    // closed so a record that lost its endDate never grants permanent premium.
-    if (!subscription.endDate) {
+    // A missing endDate is always anomalous: lifetime plans carry a far-future
+    // sentinel (see DurationUtils.calculateEndDate). Warn for ops visibility;
+    // the shared helper fails closed so the record never grants permanent premium.
+    if (subscription.isActive === true && subscription.endDate == null) {
       logger.warn(
         { subscriptionType: subscription.type, payosOrderId: subscription.payosOrderId },
         'Active subscription missing endDate — denying premium (data anomaly)',
       );
-      return false;
     }
 
-    return !isSubscriptionExpired(subscription);
+    return isActiveSubscriptionPremium(subscription);
   }
 
   private async markUserSubscriptionExpired(

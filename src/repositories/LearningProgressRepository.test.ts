@@ -138,6 +138,23 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
         from: 'quizzes',
         localField: '_id',
         foreignField: '_id',
+        pipeline: [
+          {
+            $project: {
+              _id: 1,
+              title: 1,
+              slug: 1,
+              description: 1,
+              author: 1,
+              folder: 1,
+              isPrivate: 1,
+              pdfUrl: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              questionCount: { $size: { $ifNull: ['$questions', []] } },
+            },
+          },
+        ],
         as: 'quiz',
       },
     });
@@ -181,6 +198,17 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
         from: 'users',
         localField: 'author',
         foreignField: '_id',
+        pipeline: [
+          {
+            $project: {
+              _id: 1,
+              email: 1,
+              name: 1,
+              displayName: 1,
+              avatar: 1,
+            },
+          },
+        ],
         as: 'authorDoc',
       },
     });
@@ -239,15 +267,103 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
       },
     });
 
+    // Early projection: questionCount is computed inside the quizzes lookup before unwind/merge.
+    // No later stage may load, size, or strip a questions array.
+    const quizzesLookupStage = pipeline[5];
+    expect(quizzesLookupStage).toBeDefined();
+    const quizzesLookup = quizzesLookupStage?.['$lookup'] as {
+      from: string;
+      pipeline: Array<Record<string, unknown>>;
+    };
+    const quizLookupProjection = quizzesLookup.pipeline.find((stage) => '$project' in stage)?.[
+      '$project'
+    ] as Record<string, unknown> | undefined;
+    expect(quizLookupProjection).toMatchObject({
+      questionCount: { $size: { $ifNull: ['$questions', []] } },
+    });
+    expect(quizLookupProjection).not.toHaveProperty('questions');
+
+    const stagesAfterQuizLookup = pipeline.slice(6);
+    expect(stagesAfterQuizLookup.some((stage) => JSON.stringify(stage).includes('questions'))).toBe(
+      false,
+    );
+    expect(
+      stagesAfterQuizLookup.some(
+        (stage) => stage['$project'] && 'questions' in (stage['$project'] as object),
+      ),
+    ).toBe(false);
+    expect(
+      stagesAfterQuizLookup.some(
+        (stage) =>
+          stage['$addFields'] &&
+          typeof stage['$addFields'] === 'object' &&
+          stage['$addFields'] !== null &&
+          'questionCount' in (stage['$addFields'] as object),
+      ),
+    ).toBe(false);
+
     const replaceRootIndex = pipeline.findIndex((stage) => '$replaceRoot' in stage);
     const folderLookupIndex = pipeline.findIndex(
       (stage) => (stage['$lookup'] as { from?: string } | undefined)?.from === 'folderquizzes',
     );
+    // Nothing between merge and folder lookup — questions never ride the pipeline.
+    expect(pipeline.slice(replaceRootIndex + 1, folderLookupIndex)).toEqual([]);
+  });
 
-    expect(pipeline.slice(replaceRootIndex + 1, folderLookupIndex)).toEqual([
-      { $addFields: { questionCount: { $size: { $ifNull: ['$questions', []] } } } },
-      { $project: { questions: 0 } },
-    ]);
+  it('projects only DTO quiz fields and required author fields in nested lookups', async () => {
+    await new LearningProgressRepository().listLibraryQuizzes('507f191e810c19729de860ea', {
+      page: 1,
+      limit: 20,
+    });
+
+    const pipeline = modelMocks.quizAggregate.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const quizzesLookup = pipeline.find(
+      (stage) => (stage['$lookup'] as { from?: string } | undefined)?.from === 'quizzes',
+    )?.['$lookup'] as { pipeline: Array<Record<string, unknown>> } | undefined;
+    const usersLookup = pipeline.find(
+      (stage) => (stage['$lookup'] as { from?: string } | undefined)?.from === 'users',
+    )?.['$lookup'] as { pipeline: Array<Record<string, unknown>> } | undefined;
+    expect(quizzesLookup).toBeDefined();
+    expect(usersLookup).toBeDefined();
+
+    const quizProjection = quizzesLookup?.pipeline.find((stage) => '$project' in stage)?.[
+      '$project'
+    ] as Record<string, unknown> | undefined;
+    expect(quizProjection).toBeDefined();
+    expect(Object.keys(quizProjection ?? {}).sort()).toEqual(
+      [
+        '_id',
+        'author',
+        'createdAt',
+        'description',
+        'folder',
+        'isPrivate',
+        'pdfUrl',
+        'questionCount',
+        'slug',
+        'title',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(quizProjection?.['questions']).toBeUndefined();
+    expect(quizProjection?.['questionCount']).toEqual({
+      $size: { $ifNull: ['$questions', []] },
+    });
+
+    const authorProjection = usersLookup?.pipeline.find((stage) => '$project' in stage)?.[
+      '$project'
+    ] as Record<string, unknown> | undefined;
+    expect(authorProjection).toBeDefined();
+    expect(Object.keys(authorProjection ?? {}).sort()).toEqual(
+      ['_id', 'avatar', 'displayName', 'email', 'name'].sort(),
+    );
+
+    // Post-lookup stages reference questionCount only as a pass-through field, never questions.
+    const replaceRootIndex = pipeline.findIndex((stage) => '$replaceRoot' in stage);
+    expect(replaceRootIndex).toBeGreaterThanOrEqual(0);
+    const serializedAfterLookups = JSON.stringify(pipeline.slice(replaceRootIndex));
+    expect(serializedAfterLookups).toContain('"questionCount":1');
+    expect(serializedAfterLookups).not.toMatch(/"questions"/);
   });
 
   it('returns empty pagination for invalid user ids without aggregating', async () => {

@@ -26,8 +26,10 @@ export class SubscriptionDtoMapper {
     subscription: UserSubscription | null,
     isPremium: boolean,
   ): SubscriptionStatusResponseDto {
+    // Keep inactive/expired snapshots in the payload; isPremium alone gates entitlements.
+    // Only users with no subscription record get subscription: null.
     return {
-      subscription: isPremium && subscription ? toSubscriptionStatusDto(subscription) : null,
+      subscription: subscription ? toSubscriptionStatusDto(subscription) : null,
       isPremium,
     };
   }

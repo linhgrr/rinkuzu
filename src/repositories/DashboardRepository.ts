@@ -51,6 +51,7 @@ export class DashboardRepository implements IDashboardRepository {
           from: 'quizzes',
           localField: 'quiz',
           foreignField: '_id',
+          pipeline: [{ $project: { _id: 1, title: 1, slug: 1 } }],
           as: 'quizDoc',
         },
       },

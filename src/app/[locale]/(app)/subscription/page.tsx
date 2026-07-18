@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
+import { type Dispatch, useEffect, useReducer } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
@@ -18,8 +18,8 @@ import {
   fetchSubscriptionPageViewModel,
 } from '@/features/subscription/api/subscription-page-api';
 
-interface SubscriptionPageState {
-  status: 'loading' | 'ready';
+export interface SubscriptionPageState {
+  status: 'loading' | 'ready' | 'error';
   plans: SubscriptionPlanViewModel[];
   currentSubscription: SubscriptionPageViewModel['currentSubscription'];
   isPremium: boolean;
@@ -27,14 +27,16 @@ interface SubscriptionPageState {
   paymentLoading: boolean;
 }
 
-type SubscriptionPageAction =
+export type SubscriptionPageAction =
   | { type: 'patch'; value: Partial<SubscriptionPageState> }
+  | { type: 'loadStart' }
   | {
       type: 'loadSuccess';
       value: SubscriptionPageViewModel;
-    };
+    }
+  | { type: 'loadError' };
 
-const initialState: SubscriptionPageState = {
+export const initialSubscriptionPageState: SubscriptionPageState = {
   status: 'loading',
   plans: [],
   currentSubscription: null,
@@ -43,13 +45,15 @@ const initialState: SubscriptionPageState = {
   paymentLoading: false,
 };
 
-function subscriptionPageReducer(
+export function subscriptionPageReducer(
   state: SubscriptionPageState,
   action: SubscriptionPageAction,
 ): SubscriptionPageState {
   switch (action.type) {
     case 'patch':
       return { ...state, ...action.value };
+    case 'loadStart':
+      return { ...state, status: 'loading' };
     case 'loadSuccess':
       return {
         ...state,
@@ -58,27 +62,31 @@ function subscriptionPageReducer(
         currentSubscription: action.value.currentSubscription,
         isPremium: action.value.isPremium,
       };
+    case 'loadError':
+      // Explicit error — never fall through to ready/free on failed loads.
+      return { ...state, status: 'error' };
     default:
       return state;
   }
 }
 
+async function loadSubscriptionPage(dispatch: Dispatch<SubscriptionPageAction>): Promise<void> {
+  dispatch({ type: 'loadStart' });
+  try {
+    const viewModel = await fetchSubscriptionPageViewModel();
+    dispatch({ type: 'loadSuccess', value: viewModel });
+  } catch (error) {
+    console.error('Error loading subscription data:', error);
+    dispatch({ type: 'loadError' });
+  }
+}
+
 export default function SubscriptionPage() {
   const t = useTranslations('subscription');
-  const [state, dispatch] = useReducer(subscriptionPageReducer, initialState);
+  const [state, dispatch] = useReducer(subscriptionPageReducer, initialSubscriptionPageState);
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        const viewModel = await fetchSubscriptionPageViewModel();
-        dispatch({ type: 'loadSuccess', value: viewModel });
-      } catch (error) {
-        console.error('Error loading subscription data:', error);
-        dispatch({ type: 'patch', value: { status: 'ready' } });
-      }
-    };
-
-    void loadInitialData();
+    void loadSubscriptionPage(dispatch);
   }, []);
 
   const handlePurchase = (plan: SubscriptionPlanViewModel): void => {
@@ -104,6 +112,22 @@ export default function SubscriptionPage() {
 
   if (state.status === 'loading') {
     return <SubscriptionPageSkeleton label={t('loading')} />;
+  }
+
+  if (state.status === 'error') {
+    return (
+      <div className="min-h-screen bg-surface-page pb-24 md:pb-8">
+        <div className="py-6 md:py-8">
+          <div className="max-w-6xl mx-auto px-4">
+            <Card className="p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-semibold text-ink mb-2">{t('errorTitle')}</h2>
+              <p className="text-sm md:text-base text-ink-muted mb-4 md:mb-6">{t('loadError')}</p>
+              <Button onClick={() => void loadSubscriptionPage(dispatch)}>{t('retry')}</Button>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

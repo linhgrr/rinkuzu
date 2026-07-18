@@ -35,6 +35,8 @@
   "paymentSuccessMessage": "Your Premium subscription has been activated.",
   "viewPremium": "View Premium",
   "errorTitle": "An Error Occurred",
+  "loadError": "Subscription details could not be loaded right now.",
+  "retry": "Try again",
   "retryPayment": "Retry Payment",
   "paymentCancelledTitle": "Payment Cancelled",
   "paymentCancelledMessage": "You cancelled the payment process. Premium subscription has not been activated.",

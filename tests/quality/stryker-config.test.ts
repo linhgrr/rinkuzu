@@ -13,9 +13,27 @@ describe('Stryker production configuration', () => {
     expect(config['vitest']).toMatchObject({ related: false });
   });
 
-  it('does not carry stale mutation globs', () => {
-    expect(config.mutate).not.toContain('src/auth.ts');
-    expect(config.mutate).not.toContain('src/auth.config.ts');
+  it('includes runtime auth and security entrypoints previously missed by critical globs', () => {
+    expect(CRITICAL_MUTATION_PATTERNS).toEqual(
+      expect.arrayContaining([
+        'src/auth.ts',
+        'src/auth.config.ts',
+        'src/lib/security/**/*.ts',
+        'src/lib/password.ts',
+        'src/lib/auth-tokens.ts',
+        'src/lib/auth/**/*.ts',
+      ]),
+    );
+    expect(config.mutate).toEqual(
+      expect.arrayContaining([
+        'src/auth.ts',
+        'src/auth.config.ts',
+        'src/lib/security/**/*.ts',
+        'src/lib/password.ts',
+        'src/lib/auth-tokens.ts',
+      ]),
+    );
+    // Directory-shaped path is not a mutate pattern (files live under src/lib/auth/**).
     expect(config.mutate).not.toContain('src/lib/auth.ts');
   });
 

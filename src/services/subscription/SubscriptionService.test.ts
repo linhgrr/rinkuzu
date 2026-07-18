@@ -869,8 +869,15 @@ describe('SubscriptionService billing hardening', () => {
 
     const subscription = await service.getSubscriptionStatus('user-1');
 
+    // Expired snapshots stay in the DTO; isPremium alone controls entitlements.
     expect(subscription).toEqual({
-      subscription: null,
+      subscription: {
+        type: 'premium_6months',
+        isActive: false,
+        endDate: expiredEndDate.toISOString(),
+        status: 'expired',
+        payosOrderId: 'order-1',
+      },
       isPremium: false,
     });
     expect(userRepository.findById).not.toHaveBeenCalled();
@@ -880,12 +887,13 @@ describe('SubscriptionService billing hardening', () => {
   it('reads an already-inactive expired subscription without re-expiring it', async () => {
     // Regression: an embedded subscription that is already isActive:false has no
     // active row to expire; the read must be a no-op, not throw "inconsistent".
+    const inactiveEndDate = new Date('2025-12-28T00:00:00Z');
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findSubscriptionById: vi.fn().mockResolvedValue({
           type: 'premium_6months',
           isActive: false,
-          endDate: new Date('2025-12-28T00:00:00Z'),
+          endDate: inactiveEndDate,
           payosOrderId: 'order-1',
         }),
       },
@@ -895,7 +903,13 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     await expect(service.getSubscriptionStatus('user-1')).resolves.toEqual({
-      subscription: null,
+      subscription: {
+        type: 'premium_6months',
+        isActive: false,
+        endDate: inactiveEndDate.toISOString(),
+        status: 'expired',
+        payosOrderId: 'order-1',
+      },
       isPremium: false,
     });
     expect(subscriptionRepository.expireCurrentForUser).not.toHaveBeenCalled();

@@ -40,7 +40,12 @@ describe('critical mutation scope', () => {
     'src/app/api/auth/register/route.ts',
     'src/app/api/folders/[id]/route.ts',
     'src/app/api/auth/[...nextauth]/route.ts',
+    'src/auth.ts',
+    'src/auth.config.ts',
     'src/lib/auth/session.ts',
+    'src/lib/password.ts',
+    'src/lib/auth-tokens.ts',
+    'src/lib/security/trusted-navigation.ts',
     'src/models/User.ts',
     'src/repositories/UserRepository.ts',
     'src/services/subscription/SubscriptionService.ts',
@@ -53,11 +58,15 @@ describe('critical mutation scope', () => {
     'src/features/quiz/components/QuizCard.tsx',
     'src/features/quiz/hooks/useQuizProgress.test.tsx',
     'src/models/User.test.ts',
+    'src/lib/password.test.ts',
+    'src/lib/auth-tokens.test.ts',
+    'src/lib/security/trusted-navigation.test.ts',
     'src/repositories/types/AuthAccountPersistence.ts',
     'src/features/quiz/types/quiz-interaction-view-model.ts',
     'messages/en/adaptiveLearning.json',
     'src/services/other/OtherService.ts',
     'src/services/quiz/$(unsafe).ts',
+    // Directory-shaped path is not a runtime module; covered by src/lib/auth/**/*.ts.
     'src/lib/auth.ts',
     'src/app/api/auth/[id]/route.ts with spaces',
     'src/app/api/auth/`id`/route.ts',
@@ -67,6 +76,29 @@ describe('critical mutation scope', () => {
     '../src/app/api/auth/[id]/route.ts',
   ])('excludes non-critical, test, presentation, type-only, or unsafe paths: %s', (file) => {
     expect(isCriticalMutationFile(file)).toBe(false);
+  });
+
+  it('selects auth/security runtime entrypoints and drops co-located tests', () => {
+    const selected = selectCriticalMutationFiles([
+      'src/auth.ts',
+      'src/auth.config.ts',
+      'src/lib/password.ts',
+      'src/lib/password.test.ts',
+      'src/lib/auth-tokens.ts',
+      'src/lib/auth-tokens.test.ts',
+      'src/lib/security/trusted-navigation.ts',
+      'src/lib/security/trusted-navigation.test.ts',
+      'src/lib/auth.ts',
+      'messages/en/common.json',
+    ]);
+
+    expect(selected).toEqual([
+      'src/auth.config.ts',
+      'src/auth.ts',
+      'src/lib/auth-tokens.ts',
+      'src/lib/password.ts',
+      'src/lib/security/trusted-navigation.ts',
+    ]);
   });
 
   it('selects bracketed Next.js API route files as critical', () => {

@@ -22,6 +22,11 @@ const PRETTIER_BIN = resolve(FRONTEND_ROOT, `node_modules/.bin/prettier${BIN_EXT
 const PRETTIER_CONFIG = resolve(FRONTEND_ROOT, '.prettierrc');
 const BACKEND_VENV_PYTHON = resolve(BACKEND_ROOT, '.venv/bin/python');
 const UV_BIN = process.env.UV_BIN ?? 'uv';
+const CONTRACT_EXPORT_ENV = Object.freeze({
+  ENVIRONMENT: 'dev',
+  // Deterministic non-secret fixture: contract export must not depend on a local backend .env.
+  INTERNAL_SERVICE_TOKEN: 'rinkuzu-ci-fixture-0123456789abcdef-token',
+});
 
 function run(command, args, options = {}) {
   const pretty = [command, ...args].join(' ');
@@ -92,6 +97,7 @@ export function exportOpenApi(schemaPath) {
   const runner = resolveBackendPythonRunner();
   run(runner.command, [...runner.argsPrefix, 'scripts/export_openapi.py', '--output', schemaPath], {
     cwd: BACKEND_ROOT,
+    env: CONTRACT_EXPORT_ENV,
   });
 }
 

@@ -3132,9 +3132,9 @@ export interface operations {
   start_session_api_v1_session_start_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -3168,9 +3168,9 @@ export interface operations {
   next_concept_api_v1_session__session_id__next_concept_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3203,9 +3203,9 @@ export interface operations {
   theory_api_v1_session__session_id__theory_get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3238,9 +3238,9 @@ export interface operations {
   generate_exercise_api_v1_session__session_id__exercise_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3273,9 +3273,9 @@ export interface operations {
   learning_step_api_v1_session__session_id__step_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3308,9 +3308,9 @@ export interface operations {
   submit_answer_api_v1_session__session_id__submit_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3347,9 +3347,9 @@ export interface operations {
   chat_about_exercise_api_v1_session__session_id__chat_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3386,9 +3386,9 @@ export interface operations {
   session_status_api_v1_session__session_id__status_get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3421,9 +3421,9 @@ export interface operations {
   get_knowledge_graph_api_v1_session__session_id__graph_get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3456,9 +3456,9 @@ export interface operations {
   get_mastery_matrix_api_v1_session__session_id__mastery_matrix_get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3491,9 +3491,9 @@ export interface operations {
   get_concept_detail_api_v1_session__session_id__concept__concept_id__get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3548,9 +3548,9 @@ export interface operations {
   process_document_api_v1_pipeline_process_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -3586,9 +3586,9 @@ export interface operations {
       query?: {
         limit?: number;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -3620,9 +3620,9 @@ export interface operations {
       query?: {
         include_debug?: boolean;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3657,9 +3657,9 @@ export interface operations {
       query?: {
         max_steps?: number;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3692,9 +3692,9 @@ export interface operations {
   cancel_job_api_v1_pipeline_jobs__job_id__cancel_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3727,9 +3727,9 @@ export interface operations {
   retry_job_endpoint_api_v1_pipeline_jobs__job_id__retry_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3764,9 +3764,9 @@ export interface operations {
       query?: {
         limit?: number;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -3798,9 +3798,9 @@ export interface operations {
       query?: {
         limit?: number;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -3830,9 +3830,9 @@ export interface operations {
   get_subject_history_api_v1_history_subjects__job_id__get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3867,9 +3867,9 @@ export interface operations {
       query?: {
         delete_sessions?: boolean;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3904,9 +3904,9 @@ export interface operations {
       query?: {
         limit?: number;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -3936,9 +3936,9 @@ export interface operations {
   get_pipeline_job_api_v1_history_pipeline_jobs__job_id__get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -3973,9 +3973,9 @@ export interface operations {
       query?: {
         limit?: number;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -4005,9 +4005,9 @@ export interface operations {
   create_quiz_draft_api_v1_quiz_drafts_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -4041,9 +4041,9 @@ export interface operations {
   get_quiz_draft_api_v1_quiz_drafts__draft_id__get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -4076,9 +4076,9 @@ export interface operations {
   delete_quiz_draft_api_v1_quiz_drafts__draft_id__delete: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -4111,9 +4111,9 @@ export interface operations {
   patch_quiz_draft_api_v1_quiz_drafts__draft_id__patch: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -4150,9 +4150,9 @@ export interface operations {
   submit_quiz_draft_api_v1_quiz_drafts__draft_id__submit_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path: {
         /** @description Resource identifier (alphanumeric, hyphens, underscores) */
@@ -4189,9 +4189,9 @@ export interface operations {
   ask_ai_about_quiz_api_v1_quiz_ask_ai_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -4225,10 +4225,10 @@ export interface operations {
   list_admin_ocr_keys_api_v1_admin_ocr_keys_get: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-user-role'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -4258,10 +4258,10 @@ export interface operations {
   create_admin_ocr_key_api_v1_admin_ocr_keys_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-user-role'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;
@@ -4295,10 +4295,10 @@ export interface operations {
   delete_admin_ocr_key_api_v1_admin_ocr_keys__key_id__delete: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-user-role'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
       };
       path: {
         key_id: string;
@@ -4330,10 +4330,10 @@ export interface operations {
   update_admin_ocr_key_api_v1_admin_ocr_keys__key_id__patch: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-user-role'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
       };
       path: {
         key_id: string;
@@ -4369,10 +4369,10 @@ export interface operations {
   run_admin_ocr_key_test_api_v1_admin_ocr_keys__key_id__test_post: {
     parameters: {
       query?: never;
-      header?: {
-        'x-user-id'?: string | null;
-        'x-user-role'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
       };
       path: {
         key_id: string;
@@ -4406,9 +4406,9 @@ export interface operations {
       query?: {
         window?: string;
       };
-      header?: {
-        'x-user-id'?: string | null;
-        'x-service-token'?: string | null;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
       };
       path?: never;
       cookie?: never;

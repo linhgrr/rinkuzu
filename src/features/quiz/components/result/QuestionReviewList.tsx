@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import type { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession';
+import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 
 type TranslateParams = Record<string, string | number | Date>;
 
@@ -74,11 +75,7 @@ export function QuestionReviewList({
       <CardContent>
         <div className="space-y-6">
           {questions.map((questionResult, index) => {
-            // Calculate if answered based on user answer
-            const isAnswered =
-              questionResult.type === 'single'
-                ? questionResult.userAnswer !== -1
-                : Array.isArray(questionResult.userAnswer) && questionResult.userAnswer.length > 0;
+            const isAnswered = isQuestionAnswered(questionResult, questionResult.userAnswer);
 
             return (
               <div

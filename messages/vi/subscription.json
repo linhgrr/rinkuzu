@@ -35,6 +35,8 @@
   "paymentSuccessMessage": "Gói Premium của bạn đã được kích hoạt.",
   "viewPremium": "Xem gói Premium",
   "errorTitle": "Có lỗi xảy ra",
+  "loadError": "Không thể tải thông tin gói đăng ký lúc này.",
+  "retry": "Thử lại",
   "retryPayment": "Thử lại thanh toán",
   "paymentCancelledTitle": "Thanh toán đã bị hủy",
   "paymentCancelledMessage": "Bạn đã hủy quá trình thanh toán. Gói Premium chưa được kích hoạt.",

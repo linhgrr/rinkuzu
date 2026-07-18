@@ -4,8 +4,16 @@ import { isTypeOnlySource } from './check-coverage-gates.mjs';
 
 export const CRITICAL_MUTATION_PATTERNS = [
   'src/app/api/**/route.ts',
+  // NextAuth runtime entrypoints (missed by src/lib/auth/**).
+  'src/auth.ts',
+  'src/auth.config.ts',
   'src/lib/auth/**/*.ts',
   'src/lib/api/auth.ts',
+  // Password hashing / verification and secure token minting (runtime security).
+  'src/lib/password.ts',
+  'src/lib/auth-tokens.ts',
+  // Trusted URL / navigation guards and other security helpers.
+  'src/lib/security/**/*.ts',
   'src/lib/entitlements/**/*.ts',
   'src/lib/integrations/payos.ts',
   'src/models/**/*.ts',
@@ -17,8 +25,13 @@ export const CRITICAL_MUTATION_PATTERNS = [
 
 const CRITICAL_MUTATION_PATHS = [
   /^src\/app\/api\/.+\/route\.ts$/,
+  /^src\/auth\.ts$/,
+  /^src\/auth\.config\.ts$/,
   /^src\/lib\/auth\/.+\.ts$/,
   /^src\/lib\/api\/auth\.ts$/,
+  /^src\/lib\/password\.ts$/,
+  /^src\/lib\/auth-tokens\.ts$/,
+  /^src\/lib\/security\/.+\.ts$/,
   /^src\/lib\/entitlements\/.+\.ts$/,
   /^src\/lib\/integrations\/payos\.ts$/,
   /^src\/models\/.+\.ts$/,

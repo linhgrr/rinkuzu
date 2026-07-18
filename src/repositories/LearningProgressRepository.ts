@@ -168,6 +168,23 @@ export class LearningProgressRepository implements ILearningProgressRepository {
           from: 'quizzes',
           localField: '_id',
           foreignField: '_id',
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+                slug: 1,
+                description: 1,
+                author: 1,
+                folder: 1,
+                isPrivate: 1,
+                pdfUrl: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                questionCount: { $size: { $ifNull: ['$questions', []] } },
+              },
+            },
+          ],
           as: 'quiz',
         },
       },
@@ -183,16 +200,6 @@ export class LearningProgressRepository implements ILearningProgressRepository {
               },
             ],
           },
-        },
-      },
-      {
-        $addFields: {
-          questionCount: { $size: { $ifNull: ['$questions', []] } },
-        },
-      },
-      {
-        $project: {
-          questions: 0,
         },
       },
       {
@@ -218,6 +225,17 @@ export class LearningProgressRepository implements ILearningProgressRepository {
           from: 'users',
           localField: 'author',
           foreignField: '_id',
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                email: 1,
+                name: 1,
+                displayName: 1,
+                avatar: 1,
+              },
+            },
+          ],
           as: 'authorDoc',
         },
       },

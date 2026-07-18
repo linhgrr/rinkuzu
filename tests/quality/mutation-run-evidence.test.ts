@@ -299,7 +299,14 @@ function patchMeta(root: string, patch: (meta: Record<string, unknown>) => void)
 
 const CLASSIFY_CASES = [
   ['src/app/api/folders/[id]/route.ts', 'critical_source'],
+  ['src/auth.ts', 'critical_source'],
+  ['src/auth.config.ts', 'critical_source'],
+  ['src/lib/security/trusted-navigation.ts', 'critical_source'],
+  ['src/lib/password.ts', 'critical_source'],
+  ['src/lib/auth-tokens.ts', 'critical_source'],
   ['src/models/User.test.ts', 'unit_test'],
+  ['src/lib/password.test.ts', 'unit_test'],
+  ['src/lib/security/trusted-navigation.test.ts', 'unit_test'],
   ['scripts/run-mutation-gate.mjs', 'gate_script'],
   ['scripts/check-coverage-gates.mjs', 'toolchain'],
   ['quality/mutation-baseline.json', 'policy_only'],
@@ -308,6 +315,36 @@ const CLASSIFY_CASES = [
 ] as const;
 
 const POLICY_CASES = [
+  {
+    name: 'auth-only critical requires changed campaign',
+    paths: ['src/auth.ts'],
+    mode: 'changed',
+    outcome: 'mutation_required',
+  },
+  {
+    name: 'auth-config-only critical requires changed campaign',
+    paths: ['src/auth.config.ts'],
+    mode: 'changed',
+    outcome: 'mutation_required',
+  },
+  {
+    name: 'security-helper-only critical requires changed campaign',
+    paths: ['src/lib/security/trusted-navigation.ts'],
+    mode: 'changed',
+    outcome: 'mutation_required',
+  },
+  {
+    name: 'password-helper-only critical requires changed campaign',
+    paths: ['src/lib/password.ts'],
+    mode: 'changed',
+    outcome: 'mutation_required',
+  },
+  {
+    name: 'token-helper-only critical requires changed campaign',
+    paths: ['src/lib/auth-tokens.ts'],
+    mode: 'changed',
+    outcome: 'mutation_required',
+  },
   {
     name: 'unit-test-only upgrades full',
     paths: ['src/models/User.test.ts'],

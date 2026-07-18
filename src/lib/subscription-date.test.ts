@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isSubscriptionExpired } from '@/lib/subscription-date';
+import {
+  isActiveSubscriptionPremium,
+  isSubscriptionExpired,
+  LIFETIME_END_DATE,
+} from '@/lib/subscription-date';
 
 const now = new Date('2026-07-01T00:00:00.000Z');
 
@@ -22,5 +26,70 @@ describe('isSubscriptionExpired', () => {
 
   it('fails closed for malformed persisted end dates', () => {
     expect(isSubscriptionExpired({ endDate: 'not-a-date' }, now)).toBe(true);
+  });
+});
+
+describe('isActiveSubscriptionPremium', () => {
+  it('returns true only for active subscriptions with a valid future endDate', () => {
+    expect(
+      isActiveSubscriptionPremium({ isActive: true, endDate: '2026-07-01T00:00:00.001Z' }, now),
+    ).toBe(true);
+    expect(
+      isActiveSubscriptionPremium(
+        { isActive: true, endDate: new Date('2099-01-01T00:00:00.000Z') },
+        now,
+      ),
+    ).toBe(true);
+  });
+
+  it('returns false when inactive even if endDate is in the future', () => {
+    expect(
+      isActiveSubscriptionPremium({ isActive: false, endDate: '2099-01-01T00:00:00.000Z' }, now),
+    ).toBe(false);
+    expect(
+      isActiveSubscriptionPremium({ isActive: null, endDate: '2099-01-01T00:00:00.000Z' }, now),
+    ).toBe(false);
+    expect(
+      isActiveSubscriptionPremium(
+        { isActive: undefined, endDate: '2099-01-01T00:00:00.000Z' },
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it('returns false at the exact end instant and after expiry', () => {
+    expect(
+      isActiveSubscriptionPremium({ isActive: true, endDate: '2026-07-01T00:00:00.000Z' }, now),
+    ).toBe(false);
+    expect(
+      isActiveSubscriptionPremium(
+        { isActive: true, endDate: new Date('2026-06-30T23:59:59.999Z') },
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it('fails closed for missing, null, or invalid endDate', () => {
+    expect(isActiveSubscriptionPremium({ isActive: true }, now)).toBe(false);
+    expect(isActiveSubscriptionPremium({ isActive: true, endDate: null }, now)).toBe(false);
+    expect(isActiveSubscriptionPremium({ isActive: true, endDate: undefined }, now)).toBe(false);
+    expect(isActiveSubscriptionPremium({ isActive: true, endDate: 'not-a-date' }, now)).toBe(false);
+    expect(isActiveSubscriptionPremium(null, now)).toBe(false);
+    expect(isActiveSubscriptionPremium(undefined, now)).toBe(false);
+  });
+
+  it('treats the lifetime sentinel endDate as premium while active', () => {
+    expect(isActiveSubscriptionPremium({ isActive: true, endDate: LIFETIME_END_DATE }, now)).toBe(
+      true,
+    );
+    expect(
+      isActiveSubscriptionPremium(
+        { isActive: true, endDate: LIFETIME_END_DATE.toISOString() },
+        now,
+      ),
+    ).toBe(true);
+    expect(isActiveSubscriptionPremium({ isActive: false, endDate: LIFETIME_END_DATE }, now)).toBe(
+      false,
+    );
   });
 });

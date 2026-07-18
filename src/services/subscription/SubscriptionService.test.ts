@@ -327,7 +327,11 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('detects free, inactive, active, lifetime, and anomalous premium states', async () => {
-    const { service, userRepository } = createService();
+    const { service, userRepository, subscriptionRepository } = createService({
+      subscriptionRepository: {
+        expireCurrentForUser: vi.fn().mockResolvedValue(true),
+      },
+    });
 
     // No subscription → free
     userRepository.findSubscriptionById.mockResolvedValueOnce(null);
@@ -364,7 +368,26 @@ describe('SubscriptionService billing hardening', () => {
     });
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
-    expect(userRepository.findSubscriptionById).toHaveBeenCalledTimes(5);
+    // Active with invalid endDate → expire path then not premium
+    userRepository.findSubscriptionById.mockResolvedValueOnce({
+      type: 'premium',
+      isActive: true,
+      endDate: new Date(Number.NaN),
+      payosOrderId: 'order-invalid-end',
+    });
+    await expect(service.isUserPremium('user-1')).resolves.toBe(false);
+
+    // Active with past endDate → expire path then not premium
+    userRepository.findSubscriptionById.mockResolvedValueOnce({
+      type: 'premium',
+      isActive: true,
+      endDate: new Date('2000-01-01T00:00:00.000Z'),
+      payosOrderId: 'order-expired',
+    });
+    await expect(service.isUserPremium('user-1')).resolves.toBe(false);
+
+    expect(userRepository.findSubscriptionById).toHaveBeenCalledTimes(7);
+    expect(subscriptionRepository.expireCurrentForUser).toHaveBeenCalledTimes(2);
   });
 
   it('rejects payment creation for missing users and existing premium users', async () => {
@@ -375,11 +398,10 @@ describe('SubscriptionService billing hardening', () => {
           .mockResolvedValueOnce(null)
           .mockResolvedValueOnce({
             email: 'user@example.com',
-            subscription: { isActive: true },
-          })
-          .mockResolvedValueOnce({
-            email: 'user@example.com',
-            subscription: { isActive: true },
+            subscription: {
+              isActive: true,
+              endDate: new Date('2099-01-01T00:00:00.000Z'),
+            },
           }),
       },
     });
@@ -392,6 +414,39 @@ describe('SubscriptionService billing hardening', () => {
       'User already has an active subscription',
     );
     expect(subscriptionRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('does not treat active subscription missing endDate as premium for payment creation', async () => {
+    const successfulPayment = {
+      code: '00',
+      desc: 'success',
+      data: {
+        checkoutUrl: 'https://pay.payos.vn/web/checkout',
+        qrCode: 'qr-code',
+      },
+    };
+    const { service, subscriptionRepository } = createService({
+      userRepository: {
+        findById: vi.fn().mockResolvedValue({
+          email: 'user@example.com',
+          name: 'User',
+          // Active flag without endDate is anomalous: shared fail-closed helper
+          // rejects premium, so payment creation is not blocked as "already active".
+          subscription: { type: 'premium', isActive: true },
+        }),
+      },
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(null),
+      },
+      payosService: {
+        createPayment: vi.fn().mockResolvedValue(successfulPayment),
+      },
+    });
+
+    await expect(service.createPaymentRequest('user-1', 'premium')).resolves.toMatchObject({
+      paymentUrl: 'https://pay.payos.vn/web/checkout',
+    });
+    expect(subscriptionRepository.create).toHaveBeenCalledOnce();
   });
 
   it('rejects PayOS responses without checkout URLs', async () => {

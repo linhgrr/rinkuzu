@@ -33,7 +33,7 @@ import {
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
 import { buildCompactQuizPipeline } from '@/repositories/pipelines/quiz-list.mjs';
 import { buildPaginatedCreatorStatsPipeline } from '@/repositories/pipelines/creator-stats.mjs';
-import { deleteOwnedPdfUrlsBestEffort } from '@/lib/s3';
+import { deleteOwnedPdfUrlsBestEffort, getQuizPdfObjectPrefix } from '@/lib/s3';
 
 interface QuizListAggregateMeta {
   totalItems: number;
@@ -281,16 +281,23 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const session = await mongoose.startSession();
     let deleted = false;
     let pdfUrl: string | undefined;
+    let quizAuthorId = '';
 
     try {
       await session.withTransaction(async () => {
         const quiz = await QuizModel.findById(id)
-          .select('_id slug pdfUrl')
+          .select('_id slug author pdfUrl')
           .session(session)
-          .lean<{ _id: Types.ObjectId; slug: string; pdfUrl?: string } | null>();
+          .lean<{
+            _id: Types.ObjectId;
+            slug: string;
+            author: Types.ObjectId;
+            pdfUrl?: string;
+          } | null>();
         if (!quiz) return;
 
         pdfUrl = quiz.pdfUrl;
+        quizAuthorId = quiz.author.toString();
         await deleteQuizDependents([{ id: quiz._id, slug: quiz.slug }], session);
 
         const result = await QuizModel.deleteOne({ _id: quiz._id }).session(session);
@@ -300,7 +307,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
       // External object storage cleanup is best-effort and runs only after a
       // successful Mongo transaction commit (never inside the transaction).
       if (deleted) {
-        await deleteOwnedPdfUrlsBestEffort([pdfUrl]);
+        await deleteOwnedPdfUrlsBestEffort([pdfUrl], getQuizPdfObjectPrefix(quizAuthorId));
       }
 
       return deleted;

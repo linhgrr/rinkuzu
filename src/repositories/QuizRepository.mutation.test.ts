@@ -35,6 +35,7 @@ vi.mock('@/repositories/helpers/deleteQuizDependents', () => ({
 
 vi.mock('@/lib/s3', () => ({
   deleteOwnedPdfUrlsBestEffort: deleteOwnedPdfUrlsBestEffortMock,
+  getQuizPdfObjectPrefix: (userId: string) => `uploads/quiz_extract/${userId}/`,
 }));
 
 vi.mock('@/models/Quiz', () => {
@@ -300,6 +301,7 @@ describe('QuizRepository mutation coverage', () => {
       const leanSession = vi.fn().mockResolvedValue({
         _id: new Types.ObjectId(QUIZ_ID),
         slug: 'algebra-basics',
+        author: new Types.ObjectId(AUTHOR_ID),
         pdfUrl: 'https://cdn.example.com/test-bucket/uploads/quiz_extract/doc.pdf',
       });
       quizModelMocks.session.mockReturnValue({ lean: leanSession });
@@ -313,11 +315,12 @@ describe('QuizRepository mutation coverage', () => {
         [{ id: expect.any(Types.ObjectId), slug: 'algebra-basics' }],
         session,
       );
-      expect(quizModelMocks.select).toHaveBeenCalledWith('_id slug pdfUrl');
+      expect(quizModelMocks.select).toHaveBeenCalledWith('_id slug author pdfUrl');
       expect(deleteSession).toHaveBeenCalledWith(session);
-      expect(deleteOwnedPdfUrlsBestEffortMock).toHaveBeenCalledWith([
-        'https://cdn.example.com/test-bucket/uploads/quiz_extract/doc.pdf',
-      ]);
+      expect(deleteOwnedPdfUrlsBestEffortMock).toHaveBeenCalledWith(
+        ['https://cdn.example.com/test-bucket/uploads/quiz_extract/doc.pdf'],
+        `uploads/quiz_extract/${AUTHOR_ID}/`,
+      );
       expect(session.endSession).toHaveBeenCalledOnce();
 
       // missing quiz short-circuits without dependents cleanup or S3 work
@@ -334,6 +337,7 @@ describe('QuizRepository mutation coverage', () => {
       const leanPresent = vi.fn().mockResolvedValue({
         _id: new Types.ObjectId(QUIZ_ID),
         slug: 'algebra-basics',
+        author: new Types.ObjectId(AUTHOR_ID),
         pdfUrl: 'https://cdn.example.com/test-bucket/uploads/quiz_extract/doc.pdf',
       });
       quizModelMocks.session.mockReturnValue({ lean: leanPresent });

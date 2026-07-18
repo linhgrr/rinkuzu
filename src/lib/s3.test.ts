@@ -45,6 +45,7 @@ import {
   deleteOwnedPdfUrlsBestEffort,
   deletePDF,
   extractOwnedObjectKeyFromUrl,
+  getQuizPdfObjectPrefix,
   getSignedPDFUrl,
 } from '@/lib/s3';
 
@@ -59,6 +60,11 @@ describe('s3 object storage helpers', () => {
 
   it('exports the configured bucket name', () => {
     expect(BUCKET_NAME).toBe('test-bucket');
+  });
+
+  it('builds a bounded quiz PDF namespace and rejects unsafe owner ids', () => {
+    expect(getQuizPdfObjectPrefix('user-1')).toBe('uploads/quiz_extract/user-1/');
+    expect(() => getQuizPdfObjectPrefix('../victim')).toThrow('Invalid quiz PDF owner id');
   });
 
   it('signs a PDF get URL with inline disposition', async () => {
@@ -128,21 +134,34 @@ describe('s3 object storage helpers', () => {
     sendMock.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('upstream unavailable'));
 
     await expect(
-      deleteOwnedPdfUrlsBestEffort([
-        'https://cdn.example.com/test-bucket/uploads/a.pdf',
-        'https://cdn.example.com/test-bucket/uploads/a.pdf?sig=1',
-        'https://cdn.example.com/foreign-bucket/uploads/b.pdf',
-        'https://cdn.example.com/test-bucket/uploads/c.pdf',
-        null,
-        undefined,
-        '',
-      ]),
+      deleteOwnedPdfUrlsBestEffort(
+        [
+          'https://cdn.example.com/test-bucket/uploads/quiz_extract/user-1/a.pdf',
+          'https://cdn.example.com/test-bucket/uploads/quiz_extract/user-1/a.pdf?sig=1',
+          'https://cdn.example.com/test-bucket/uploads/quiz_extract/user-2/b.pdf',
+          'https://cdn.example.com/test-bucket/uploads/quiz_extract/user-1/c.pdf',
+          null,
+          undefined,
+          '',
+        ],
+        getQuizPdfObjectPrefix('user-1'),
+      ),
     ).resolves.toBeUndefined();
 
     expect(sendMock).toHaveBeenCalledTimes(2);
     expect(deleteObjectInputs).toEqual([
-      { Bucket: 'test-bucket', Key: 'uploads/a.pdf' },
-      { Bucket: 'test-bucket', Key: 'uploads/c.pdf' },
+      { Bucket: 'test-bucket', Key: 'uploads/quiz_extract/user-1/a.pdf' },
+      { Bucket: 'test-bucket', Key: 'uploads/quiz_extract/user-1/c.pdf' },
     ]);
+  });
+
+  it('does not delete same-bucket URLs outside the required owner namespace', async () => {
+    await deleteOwnedPdfUrlsBestEffort(
+      ['https://cdn.example.com/test-bucket/uploads/quiz_extract/user-2/victim.pdf'],
+      getQuizPdfObjectPrefix('user-1'),
+    );
+
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(deleteObjectInputs).toEqual([]);
   });
 });

@@ -55,7 +55,8 @@ export PAYOS_API_KEY="${PAYOS_API_KEY:-test-payos-api-key}"
 export PAYOS_CHECKSUM_KEY="${PAYOS_CHECKSUM_KEY:-test-payos-checksum-key}"
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8000}"
 export ADAPTIVE_PROXY_TIMEOUT_MS="${ADAPTIVE_PROXY_TIMEOUT_MS:-60000}"
-export INTERNAL_SERVICE_TOKEN="${INTERNAL_SERVICE_TOKEN:-test-token}"
+# Non-secret CI/test fixture; must match vitest/CI/e2e/Docker fallbacks.
+export INTERNAL_SERVICE_TOKEN="${INTERNAL_SERVICE_TOKEN:-rinkuzu-ci-fixture-0123456789abcdef-token}"
 export NEXT_IMAGE_UNOPTIMIZED="${NEXT_IMAGE_UNOPTIMIZED:-false}"
 
 if [[ "${PERF_REUSE_BUILD:-0}" == "1" ]]; then

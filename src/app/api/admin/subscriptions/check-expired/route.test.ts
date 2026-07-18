@@ -1,11 +1,14 @@
 import { NextRequest } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, checkAndUpdateExpiredSubscriptionsMock, loggerErrorMock } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  checkAndUpdateExpiredSubscriptionsMock: vi.fn(),
-  loggerErrorMock: vi.fn(),
-}));
+const { authMock, checkAndUpdateExpiredSubscriptionsMock, loggerErrorMock, envMock } = vi.hoisted(
+  () => ({
+    authMock: vi.fn(),
+    checkAndUpdateExpiredSubscriptionsMock: vi.fn(),
+    loggerErrorMock: vi.fn(),
+    envMock: { SUBSCRIPTION_CRON_SECRET: undefined as string | undefined },
+  }),
+);
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
@@ -16,8 +19,15 @@ vi.mock('@/lib/subscription-factory', () => ({
     checkAndUpdateExpiredSubscriptions: checkAndUpdateExpiredSubscriptionsMock,
   }),
 }));
+vi.mock('@/lib/env', () => ({
+  env: envMock,
+}));
 
 import { POST } from '@/app/api/admin/subscriptions/check-expired/route';
+
+const CRON_SECRET_32 = 'cron-secret-token-at-least-32-chars';
+const CRON_SECRET_MISMATCH_SAME_LEN = 'cron-secret-token-at-least-32-XXXXX';
+const CRON_SECRET_MISMATCH_SHORT = 'wrong';
 
 function adminSession() {
   return { user: { id: 'admin-1', email: 'admin@example.com', role: 'admin' } };
@@ -37,10 +47,12 @@ describe('POST /api/admin/subscriptions/check-expired', () => {
     vi.clearAllMocks();
     authMock.mockResolvedValue(adminSession());
     checkAndUpdateExpiredSubscriptionsMock.mockResolvedValue(3);
+    envMock.SUBSCRIPTION_CRON_SECRET = undefined;
     delete process.env['SUBSCRIPTION_CRON_SECRET'];
   });
 
   afterEach(() => {
+    envMock.SUBSCRIPTION_CRON_SECRET = undefined;
     if (originalSecret === undefined) {
       delete process.env['SUBSCRIPTION_CRON_SECRET'];
     } else {
@@ -63,10 +75,36 @@ describe('POST /api/admin/subscriptions/check-expired', () => {
   });
 
   it('accepts a matching bearer cron secret without requiring admin session', async () => {
-    process.env['SUBSCRIPTION_CRON_SECRET'] = 'cron-secret';
+    envMock.SUBSCRIPTION_CRON_SECRET = CRON_SECRET_32;
     authMock.mockResolvedValue(null);
 
-    const response = await POST(request({ authorization: 'Bearer cron-secret' }));
+    const response = await POST(request({ authorization: `Bearer ${CRON_SECRET_32}` }));
+
+    expect(response.status).toBe(200);
+    expect(authMock).not.toHaveBeenCalled();
+    expect(checkAndUpdateExpiredSubscriptionsMock).toHaveBeenCalledOnce();
+  });
+
+  it('consumes padded process env as the trimmed validated env.SUBSCRIPTION_CRON_SECRET', async () => {
+    // Real @/lib/env trims process.env; route must compare against that export.
+    // If the route still read raw process.env, the padded value would length-mismatch
+    // the trimmed bearer and fall back to admin (401 with no session).
+    process.env['SUBSCRIPTION_CRON_SECRET'] = `  ${CRON_SECRET_32}  `;
+    envMock.SUBSCRIPTION_CRON_SECRET = CRON_SECRET_32;
+    authMock.mockResolvedValue(null);
+
+    const response = await POST(request({ authorization: `Bearer ${CRON_SECRET_32}` }));
+
+    expect(response.status).toBe(200);
+    expect(authMock).not.toHaveBeenCalled();
+    expect(checkAndUpdateExpiredSubscriptionsMock).toHaveBeenCalledOnce();
+  });
+
+  it('accepts equal 32+ char cron bearer via timing-safe compare', async () => {
+    envMock.SUBSCRIPTION_CRON_SECRET = CRON_SECRET_32;
+    authMock.mockResolvedValue(null);
+
+    const response = await POST(request({ authorization: `Bearer ${CRON_SECRET_32}` }));
 
     expect(response.status).toBe(200);
     expect(authMock).not.toHaveBeenCalled();
@@ -74,7 +112,7 @@ describe('POST /api/admin/subscriptions/check-expired', () => {
   });
 
   it('falls back to admin auth when bearer token does not match the cron secret', async () => {
-    process.env['SUBSCRIPTION_CRON_SECRET'] = 'cron-secret';
+    envMock.SUBSCRIPTION_CRON_SECRET = CRON_SECRET_32;
 
     const unauthorized = await POST(request({ authorization: 'Bearer wrong' }));
     // withAdmin still runs; admin session is present
@@ -85,11 +123,45 @@ describe('POST /api/admin/subscriptions/check-expired', () => {
     expect((await POST(request({ authorization: 'Bearer wrong' }))).status).toBe(401);
   });
 
+  it('falls back to admin auth on same-byte-length token mismatch', async () => {
+    envMock.SUBSCRIPTION_CRON_SECRET = CRON_SECRET_32;
+    expect(CRON_SECRET_MISMATCH_SAME_LEN.length).toBe(CRON_SECRET_32.length);
+
+    const withAdmin = await POST(
+      request({ authorization: `Bearer ${CRON_SECRET_MISMATCH_SAME_LEN}` }),
+    );
+    expect(withAdmin.status).toBe(200);
+    expect(authMock).toHaveBeenCalled();
+
+    authMock.mockResolvedValueOnce(null);
+    const withoutAdmin = await POST(
+      request({ authorization: `Bearer ${CRON_SECRET_MISMATCH_SAME_LEN}` }),
+    );
+    expect(withoutAdmin.status).toBe(401);
+  });
+
+  it('falls back to admin auth on unequal-byte-length token mismatch', async () => {
+    envMock.SUBSCRIPTION_CRON_SECRET = CRON_SECRET_32;
+    expect(CRON_SECRET_MISMATCH_SHORT.length).not.toBe(CRON_SECRET_32.length);
+
+    const withAdmin = await POST(
+      request({ authorization: `Bearer ${CRON_SECRET_MISMATCH_SHORT}` }),
+    );
+    expect(withAdmin.status).toBe(200);
+    expect(authMock).toHaveBeenCalled();
+
+    authMock.mockResolvedValueOnce(null);
+    const withoutAdmin = await POST(
+      request({ authorization: `Bearer ${CRON_SECRET_MISMATCH_SHORT}` }),
+    );
+    expect(withoutAdmin.status).toBe(401);
+  });
+
   it('strips Bearer prefix case-insensitively and supports no-space variants via regex', async () => {
-    process.env['SUBSCRIPTION_CRON_SECRET'] = 'cron-secret';
+    envMock.SUBSCRIPTION_CRON_SECRET = CRON_SECRET_32;
     authMock.mockResolvedValue(null);
 
-    const response = await POST(request({ authorization: 'bearer cron-secret' }));
+    const response = await POST(request({ authorization: `bearer ${CRON_SECRET_32}` }));
     expect(response.status).toBe(200);
     expect(authMock).not.toHaveBeenCalled();
   });

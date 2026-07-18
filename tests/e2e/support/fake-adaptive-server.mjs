@@ -38,7 +38,9 @@ async function readJsonBody(request) {
 }
 
 function requireServiceAuth(request, response) {
-  const expectedToken = process.env['INTERNAL_SERVICE_TOKEN'] ?? 'test-token';
+  // Non-secret CI/test fixture; must match vitest/CI/perf/Docker fallbacks.
+  const expectedToken =
+    process.env['INTERNAL_SERVICE_TOKEN'] ?? 'rinkuzu-ci-fixture-0123456789abcdef-token';
   if (request.headers['x-service-token'] !== expectedToken) {
     sendError(response, 401, 'unauthorized', 'Missing or invalid service token');
     return null;

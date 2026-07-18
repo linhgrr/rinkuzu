@@ -24,14 +24,4 @@ describe('route-scoped font loading contract', () => {
     expect(marketingLayout).toContain('className={inter.className}');
     expect(marketingLayout).not.toMatch(/\b(?:Montserrat|Unbounded|Vina_Sans)\b/);
   });
-
-  it('owns landing-only display fonts at the landing route boundary', () => {
-    const landingPage = fs.readFileSync(
-      'src/features/landing/components/home/LandingPage.tsx',
-      'utf8',
-    );
-
-    expect(landingPage).toContain("import { Unbounded, Vina_Sans } from 'next/font/google'");
-    expect(landingPage).toContain('${unbounded.variable} ${vinaSans.variable}');
-  });
 });

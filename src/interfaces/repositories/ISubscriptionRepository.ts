@@ -43,12 +43,18 @@ export type CancelCurrentSubscriptionResult =
   | { outcome: 'not_time_limited' }
   | { outcome: 'inconsistent_record' };
 
+/** Minimal batch-expiry metadata: unique users touched after a successful commit. */
+export interface ExpireDueResult {
+  count: number;
+  userIds: string[];
+}
+
 export interface ISubscriptionRepository {
   create(subscriptionData: CreateSubscriptionData): Promise<SubscriptionRecord>;
   findById(id: string): Promise<SubscriptionRecord | null>;
   findByOrderId(orderId: string): Promise<SubscriptionRecord | null>;
   findByTransactionReference(transactionReference: string): Promise<SubscriptionRecord | null>;
-  expireDue(now: Date): Promise<number>;
+  expireDue(now: Date): Promise<ExpireDueResult>;
   updateById(id: string, updateData: UpdateSubscriptionData): Promise<SubscriptionRecord | null>;
   updateByOrderId(
     orderId: string,

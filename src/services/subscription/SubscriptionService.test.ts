@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import crypto from 'crypto';
 
+const { invalidateEntitlementsMock } = vi.hoisted(() => ({
+  invalidateEntitlementsMock: vi.fn(),
+}));
+
+vi.mock('@/lib/entitlements/cache', () => ({
+  invalidateEntitlements: invalidateEntitlementsMock,
+}));
+
 import { SubscriptionService } from './SubscriptionService';
 import type { BillingPlan } from '@/entities/AdminBilling';
 import {
@@ -92,7 +100,7 @@ function createService(overrides: ServiceOverrides = {}) {
     findById: vi.fn(),
     findByOrderId: vi.fn(),
     findByTransactionReference: vi.fn().mockResolvedValue(null),
-    expireDue: vi.fn().mockResolvedValue(0),
+    expireDue: vi.fn().mockResolvedValue({ count: 0, userIds: [] }),
     updateAdminStatusById: vi.fn(),
     expireCurrentForUser: vi.fn(),
     cancelCurrentForUser: vi.fn(),
@@ -146,6 +154,7 @@ function createService(overrides: ServiceOverrides = {}) {
 describe('SubscriptionService billing hardening', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    invalidateEntitlementsMock.mockReset();
   });
 
   it('rejects verification when the order does not belong to the current user', async () => {
@@ -186,6 +195,8 @@ describe('SubscriptionService billing hardening', () => {
     expect(result.subscription.endDate).toBe(endDate);
     expect(payosService.verifyPayment).not.toHaveBeenCalled();
     expect(subscriptionRepository.updateByOrderId).not.toHaveBeenCalled();
+    // Idempotent successful state: still drop a possibly stale free-tier cache.
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-1');
   });
 
   it('rejects PayOS amount mismatches before activation', async () => {
@@ -212,6 +223,7 @@ describe('SubscriptionService billing hardening', () => {
     );
     expect(subscriptionRepository.updateByOrderId).not.toHaveBeenCalled();
     expect(payosService.verifyPayment).toHaveBeenCalledWith(123);
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('does not create payments for inactive plans', async () => {
@@ -524,6 +536,7 @@ describe('SubscriptionService billing hardening', () => {
         transactionReference: 'payos-ref',
       }),
     );
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-1');
   });
 
   it('rejects completed verification if the stored subscription is expired', async () => {
@@ -766,6 +779,19 @@ describe('SubscriptionService billing hardening', () => {
 
     await expect(service.cancelSubscription('user-1')).resolves.toEqual({ success: true });
     expect(subscriptionRepository.cancelCurrentForUser).toHaveBeenCalledWith('user-1');
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-1');
+  });
+
+  it('invalidates entitlements on idempotent already-inactive cancellation', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        cancelCurrentForUser: vi.fn().mockResolvedValue({ outcome: 'already_inactive' }),
+      },
+    });
+
+    await expect(service.cancelSubscription('user-1')).resolves.toEqual({ success: true });
+    // Authoritative state is inactive; clear a possibly stale premium tier cache.
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-1');
   });
 
   it('rejects cancellation when there is no time-limited subscription', async () => {
@@ -778,6 +804,7 @@ describe('SubscriptionService billing hardening', () => {
     await expect(service.cancelSubscription('user-1')).rejects.toThrow(
       'Only time-limited subscriptions can be cancelled',
     );
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('rejects cancellation for missing users', async () => {
@@ -788,6 +815,7 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     await expect(service.cancelSubscription('missing-user')).rejects.toThrow('User not found');
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('rejects cancellation when embedded and persisted subscriptions diverge', async () => {
@@ -800,6 +828,7 @@ describe('SubscriptionService billing hardening', () => {
     await expect(service.cancelSubscription('user-1')).rejects.toThrow(
       'Current subscription record is inconsistent',
     );
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('returns active plans and propagates plan fetch failures', async () => {
@@ -857,6 +886,7 @@ describe('SubscriptionService billing hardening', () => {
       },
     );
     expect(subscriptionRepository.updateAdminStatusById).toHaveBeenCalledWith('sub-1', 'cancelled');
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith(updated.userId);
   });
 
   it('returns explicit errors for missing and invalid admin subscription transitions', async () => {
@@ -885,6 +915,7 @@ describe('SubscriptionService billing hardening', () => {
       statusCode: 409,
     });
     expect(subscriptionRepository.updateAdminStatusById).toHaveBeenCalledTimes(2);
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('fails order-code generation after repeated collisions', async () => {
@@ -937,6 +968,7 @@ describe('SubscriptionService billing hardening', () => {
     });
     expect(userRepository.findById).not.toHaveBeenCalled();
     expect(subscriptionRepository.expireCurrentForUser).toHaveBeenCalledWith('user-1', 'order-1');
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-1');
   });
 
   it('reads an already-inactive expired subscription without re-expiring it', async () => {
@@ -968,12 +1000,17 @@ describe('SubscriptionService billing hardening', () => {
       isPremium: false,
     });
     expect(subscriptionRepository.expireCurrentForUser).not.toHaveBeenCalled();
+    // No durable mutation → no entitlement invalidation.
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('expires both subscription records and stale embedded user subscriptions in cron checks', async () => {
     const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
-        expireDue: vi.fn().mockResolvedValue(2),
+        expireDue: vi.fn().mockResolvedValue({
+          count: 2,
+          userIds: ['user-a', 'user-b'],
+        }),
       },
     });
 
@@ -981,6 +1018,9 @@ describe('SubscriptionService billing hardening', () => {
 
     expect(updatedCount).toBe(2);
     expect(subscriptionRepository.expireDue).toHaveBeenCalledWith(expect.any(Date));
+    expect(invalidateEntitlementsMock).toHaveBeenCalledTimes(2);
+    expect(invalidateEntitlementsMock).toHaveBeenCalledWith('user-a');
+    expect(invalidateEntitlementsMock).toHaveBeenCalledWith('user-b');
   });
 
   it('returns the stored snapshot when the PayOS transaction was already activated', async () => {
@@ -1121,6 +1161,7 @@ describe('SubscriptionService billing hardening', () => {
         reference: 'unsettled-ref',
       }),
     ).rejects.toBe(conflict);
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('omits a missing optional end date from completed activation DTOs', async () => {
@@ -1427,6 +1468,7 @@ describe('SubscriptionService billing hardening', () => {
         statusCode: 500,
       },
     );
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('fails closed when an expired embedded subscription cannot be persisted consistently', async () => {
@@ -1464,5 +1506,282 @@ describe('SubscriptionService billing hardening', () => {
       'user-1',
       'order-1',
     );
+    // false/missing payosOrderId must not clear entitlement cache
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('SubscriptionService entitlement cache invalidation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    invalidateEntitlementsMock.mockReset();
+  });
+
+  it('invalidates the exact user after successful verify activation', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          userId: 'user-verify',
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+      payosService: {
+        verifyPayment: vi.fn().mockResolvedValue({
+          code: '00',
+          desc: 'success',
+          data: payosPaymentLinkData({ orderCode: 123, amount: 99000 }),
+        }),
+      },
+    });
+
+    await expect(service.verifyAndActivateSubscription(123, 'user-verify')).resolves.toMatchObject({
+      success: true,
+    });
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-verify');
+  });
+
+  it('invalidates the exact user after successful webhook activation', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          userId: 'user-webhook',
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(456, {
+        orderCode: 456,
+        amount: 99000,
+        reference: 'webhook-ref',
+      }),
+    ).resolves.toMatchObject({ success: true });
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-webhook');
+  });
+
+  it('invalidates after concurrent conflict recovery that settled completed', async () => {
+    const pending = subscriptionFixture({ userId: 'user-race', status: 'pending' });
+    delete pending.startDate;
+    delete pending.endDate;
+    const settled = subscriptionFixture({
+      userId: 'user-race',
+      startDate: new Date('2099-05-01T00:00:00Z'),
+      endDate: new Date('2099-06-01T00:00:00Z'),
+    });
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValueOnce(pending).mockResolvedValueOnce(settled),
+        activateSubscription: vi
+          .fn()
+          .mockRejectedValue(
+            new SubscriptionActivationConflictError('Pending subscription changed'),
+          ),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: pending.amount,
+        reference: 'race-ref',
+      }),
+    ).resolves.toMatchObject({ success: true });
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-race');
+  });
+
+  it('invalidates after duplicate-key recovery that settled completed', async () => {
+    const settledSnapshot = {
+      userId: 'user-dup',
+      type: 'premium',
+      status: 'completed' as const,
+      startDate: new Date('2099-03-01T00:00:00Z'),
+      endDate: new Date('2099-04-01T00:00:00Z'),
+      isActive: true,
+    };
+    const dupError = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          userId: 'user-dup',
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+        findByTransactionReference: vi
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(settledSnapshot),
+        activateSubscription: vi.fn().mockRejectedValue(dupError),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(456, {
+        orderCode: '456',
+        amount: 99000,
+        reference: 'dup-ref',
+        status: 'PAID',
+        code: '00',
+      }),
+    ).resolves.toMatchObject({ success: true });
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-dup');
+  });
+
+  it('does not invalidate when activation throws before commit', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          userId: 'user-fail',
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+        activateSubscription: vi.fn().mockRejectedValue(new Error('mongo unreachable')),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(789, {
+        orderCode: '789',
+        amount: 99000,
+        reference: 'fail-ref',
+        status: 'PAID',
+        code: '00',
+      }),
+    ).rejects.toThrow('mongo unreachable');
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+  });
+
+  it('does not invalidate when an activation conflict remains unsettled', async () => {
+    const pending = subscriptionFixture({ status: 'pending' });
+    delete pending.startDate;
+    delete pending.endDate;
+    const conflict = new SubscriptionActivationConflictError('Subscription user changed');
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(pending),
+        activateSubscription: vi.fn().mockRejectedValue(conflict),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: pending.amount,
+        reference: 'unsettled-cache-ref',
+      }),
+    ).rejects.toBe(conflict);
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+  });
+
+  it('invalidates exact user after confirmed lazy expiry mutation', async () => {
+    const { service, subscriptionRepository } = createService({
+      userRepository: {
+        findSubscriptionById: vi.fn().mockResolvedValue({
+          type: 'premium',
+          isActive: true,
+          endDate: new Date('2000-01-01T00:00:00.000Z'),
+          payosOrderId: 'order-lazy',
+        }),
+      },
+      subscriptionRepository: {
+        expireCurrentForUser: vi.fn().mockResolvedValue(true),
+      },
+    });
+
+    await expect(service.isUserPremium('user-lazy')).resolves.toBe(false);
+    expect(subscriptionRepository.expireCurrentForUser).toHaveBeenCalledWith(
+      'user-lazy',
+      'order-lazy',
+    );
+    expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-lazy');
+  });
+
+  it('does not invalidate when lazy expiry returns false', async () => {
+    const { service } = createService({
+      userRepository: {
+        findSubscriptionById: vi.fn().mockResolvedValue({
+          type: 'premium',
+          isActive: true,
+          endDate: new Date('2000-01-01T00:00:00.000Z'),
+          payosOrderId: 'order-false',
+        }),
+      },
+      subscriptionRepository: {
+        expireCurrentForUser: vi.fn().mockResolvedValue(false),
+      },
+    });
+
+    await expect(service.getSubscriptionStatus('user-false')).rejects.toThrow(
+      'Current subscription record is inconsistent',
+    );
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+  });
+
+  it('does not invalidate when lazy expiry throws', async () => {
+    const { service } = createService({
+      userRepository: {
+        findSubscriptionById: vi.fn().mockResolvedValue({
+          type: 'premium',
+          isActive: true,
+          endDate: new Date('2000-01-01T00:00:00.000Z'),
+          payosOrderId: 'order-throw',
+        }),
+      },
+      subscriptionRepository: {
+        expireCurrentForUser: vi.fn().mockRejectedValue(new Error('txn aborted')),
+      },
+    });
+
+    await expect(service.getSubscriptionStatus('user-throw')).rejects.toThrow('txn aborted');
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+  });
+
+  it('batch success invalidates each unique user and still returns count', async () => {
+    const { service, subscriptionRepository } = createService({
+      subscriptionRepository: {
+        expireDue: vi.fn().mockResolvedValue({
+          count: 3,
+          // repository already dedupes; include a duplicate to prove service loops the list as-is
+          userIds: ['u1', 'u2', 'u3'],
+        }),
+      },
+    });
+
+    await expect(service.checkAndUpdateExpiredSubscriptions()).resolves.toBe(3);
+    expect(subscriptionRepository.expireDue).toHaveBeenCalledWith(expect.any(Date));
+    expect(invalidateEntitlementsMock).toHaveBeenCalledTimes(3);
+    expect(invalidateEntitlementsMock).toHaveBeenNthCalledWith(1, 'u1');
+    expect(invalidateEntitlementsMock).toHaveBeenNthCalledWith(2, 'u2');
+    expect(invalidateEntitlementsMock).toHaveBeenNthCalledWith(3, 'u3');
+  });
+
+  it('batch zero candidates does not invalidate', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        expireDue: vi.fn().mockResolvedValue({ count: 0, userIds: [] }),
+      },
+    });
+
+    await expect(service.checkAndUpdateExpiredSubscriptions()).resolves.toBe(0);
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+  });
+
+  it('batch failure does not invalidate', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        expireDue: vi.fn().mockRejectedValue(new Error('batch expire failed')),
+      },
+    });
+
+    await expect(service.checkAndUpdateExpiredSubscriptions()).rejects.toThrow(
+      'batch expire failed',
+    );
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 });

@@ -143,13 +143,15 @@ export async function deleteOwnedPdfUrlsBestEffort(
     if (key?.startsWith(requiredPrefix)) keys.add(key);
   }
 
-  for (const key of keys) {
-    try {
-      await deletePDF(key);
-    } catch {
-      // Intentionally swallow: Mongo remains the source of truth after commit.
-    }
-  }
+  await Promise.all(
+    [...keys].map(async (key) => {
+      try {
+        await deletePDF(key);
+      } catch {
+        // Intentionally swallow: Mongo remains the source of truth after commit.
+      }
+    }),
+  );
 }
 
 export { s3Client, BUCKET_NAME };

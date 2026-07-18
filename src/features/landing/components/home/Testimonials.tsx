@@ -90,6 +90,8 @@ export default function Testimonials() {
     emblaApi.on('reInit', recalc);
     recalc();
     return () => {
+      emblaApi.off('scroll', onScroll);
+      emblaApi.off('reInit', recalc);
       cancelAnimationFrame(rafRef.current);
     };
   }, [emblaApi]);

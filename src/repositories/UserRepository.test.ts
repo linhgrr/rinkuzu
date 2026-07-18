@@ -132,6 +132,7 @@ vi.mock('@/repositories/helpers/deleteQuizDependents', () => ({
 }));
 vi.mock('@/lib/s3', () => ({
   deleteOwnedPdfUrlsBestEffort: cascadeMocks.deleteOwnedPdfUrlsBestEffort,
+  getQuizPdfObjectPrefix: (userId: string) => `uploads/quiz_extract/${userId}/`,
 }));
 vi.mock('mongoose', async (importOriginal) => {
   const actual = await importOriginal<typeof import('mongoose')>();
@@ -478,9 +479,10 @@ describe('UserRepository.delete cascade', () => {
       { $set: { userId: null } },
     );
     expect(userModelMocks.deleteOne).toHaveBeenCalledWith({ _id: expect.any(Types.ObjectId) });
-    expect(cascadeMocks.deleteOwnedPdfUrlsBestEffort).toHaveBeenCalledWith([
-      'https://cdn.example.com/test-bucket/uploads/quiz_extract/authored.pdf',
-    ]);
+    expect(cascadeMocks.deleteOwnedPdfUrlsBestEffort).toHaveBeenCalledWith(
+      ['https://cdn.example.com/test-bucket/uploads/quiz_extract/authored.pdf'],
+      `uploads/quiz_extract/${userId}/`,
+    );
     expect(cascadeMocks.endSession).toHaveBeenCalledOnce();
   });
 

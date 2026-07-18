@@ -46,7 +46,7 @@ import {
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
-import { deleteOwnedPdfUrlsBestEffort } from '@/lib/s3';
+import { deleteOwnedPdfUrlsBestEffort, getQuizPdfObjectPrefix } from '@/lib/s3';
 import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUserRepository';
 
 const USER_ENTITY_PROJECTION = '_id email name displayName bio avatar role subscription createdAt';
@@ -253,7 +253,10 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
       // External object storage cleanup is best-effort and runs only after a
       // successful Mongo transaction commit (never inside the transaction).
       if (deleted) {
-        await deleteOwnedPdfUrlsBestEffort(authoredPdfUrls);
+        await deleteOwnedPdfUrlsBestEffort(
+          authoredPdfUrls,
+          getQuizPdfObjectPrefix(userObjectId.toString()),
+        );
       }
 
       return deleted;

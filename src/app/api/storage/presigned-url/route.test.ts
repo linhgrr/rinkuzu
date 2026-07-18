@@ -27,6 +27,7 @@ vi.mock('@aws-sdk/client-s3', () => ({
 vi.mock('@/lib/s3', () => ({
   s3Client: { region: 'test' },
   BUCKET_NAME: 'test-bucket',
+  getQuizPdfObjectPrefix: (userId: string) => `uploads/quiz_extract/${userId}/`,
 }));
 
 import { dynamic, POST } from '@/app/api/storage/presigned-url/route';

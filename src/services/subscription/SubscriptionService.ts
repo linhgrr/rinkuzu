@@ -16,6 +16,9 @@ import type { UserSubscription } from '@/entities/Subscription';
 import type { UpdateSubscriptionStatusInput } from '@/interfaces/services/ISubscriptionService';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+// Import cache module directly — entitlements barrel pulls subscription-factory
+// and would create a runtime cycle with this service.
+import { invalidateEntitlements } from '@/lib/entitlements/cache';
 import {
   isActiveSubscriptionPremium,
   isSubscriptionExpired,
@@ -110,7 +113,13 @@ export class SubscriptionService implements ISubscriptionService {
   }
 
   async checkAndUpdateExpiredSubscriptions(): Promise<number> {
-    return this.subscriptionRepository.expireDue(new Date());
+    const { count, userIds } = await this.subscriptionRepository.expireDue(new Date());
+    // Precise per-user invalidation after successful batch commit only.
+    // Zero candidates / empty userIds → no cache touch; throw before this point skips it.
+    for (const userId of userIds) {
+      invalidateEntitlements(userId);
+    }
+    return count;
   }
 
   async getSubscriptionPlans(): Promise<SubscriptionPlanDto[]> {
@@ -140,6 +149,8 @@ export class SubscriptionService implements ISubscriptionService {
           statusCode: 409,
         };
       }
+      // Durable admin mutation succeeded — clear process-local tier for that user.
+      invalidateEntitlements(result.subscription.userId);
       return {
         success: true,
         data: SubscriptionDtoMapper.toAdminSubscriptionDto(result.subscription),
@@ -180,5 +191,7 @@ export class SubscriptionService implements ISubscriptionService {
     if (!expired) {
       throw new Error('Current subscription record is inconsistent');
     }
+    // Lazy expiry mutated durable state — drop process-local premium tier for this user only.
+    invalidateEntitlements(userId);
   }
 }

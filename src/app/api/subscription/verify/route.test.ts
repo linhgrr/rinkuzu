@@ -1,22 +1,17 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, invalidateEntitlementsMock, loggerErrorMock, verifyAndActivateSubscriptionMock } =
-  vi.hoisted(() => ({
-    authMock: vi.fn(),
-    invalidateEntitlementsMock: vi.fn(),
-    loggerErrorMock: vi.fn(),
-    verifyAndActivateSubscriptionMock: vi.fn(),
-  }));
+const { authMock, loggerErrorMock, verifyAndActivateSubscriptionMock } = vi.hoisted(() => ({
+  authMock: vi.fn(),
+  loggerErrorMock: vi.fn(),
+  verifyAndActivateSubscriptionMock: vi.fn(),
+}));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/subscription-factory', () => ({
   createSubscriptionService: () => ({
     verifyAndActivateSubscription: verifyAndActivateSubscriptionMock,
   }),
-}));
-vi.mock('@/lib/entitlements', () => ({
-  invalidateEntitlements: invalidateEntitlementsMock,
 }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
@@ -57,7 +52,6 @@ describe('POST /api/subscription/verify', () => {
 
     expect(response.status).toBe(401);
     expect(verifyAndActivateSubscriptionMock).not.toHaveBeenCalled();
-    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
   });
 
   it('rejects invalid order codes at the request boundary', async () => {
@@ -69,11 +63,10 @@ describe('POST /api/subscription/verify', () => {
     expect(verifyAndActivateSubscriptionMock).not.toHaveBeenCalled();
   });
 
-  it('parses string order codes and invalidates entitlements after activation', async () => {
+  it('parses string order codes and delegates activation to the service', async () => {
     const response = await POST(request({ orderCode: '456' }), routeContext);
 
     expect(verifyAndActivateSubscriptionMock).toHaveBeenCalledWith(456, 'user-1');
-    expect(invalidateEntitlementsMock).toHaveBeenCalledWith('user-1');
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       success: true,
@@ -99,7 +92,6 @@ describe('POST /api/subscription/verify', () => {
     await expect(response.json()).resolves.toMatchObject({
       error: { code: 'internal_error', detail: 'verify failed' },
     });
-    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
     expect(loggerErrorMock).toHaveBeenCalledWith(
       expect.objectContaining({ error: expect.any(Error) }),
       'Error verifying payment',

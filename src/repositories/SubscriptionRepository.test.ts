@@ -379,7 +379,11 @@ describe('SubscriptionRepository transactional lifecycle', () => {
 
     const expired = await new SubscriptionRepository().expireDue(now);
 
-    expect(expired).toBe(2);
+    expect(expired).toEqual({
+      count: 2,
+      userIds: expect.arrayContaining([userId, String(userWithoutOrder)]),
+    });
+    expect(expired.userIds).toHaveLength(2);
     expect(mocks.subscriptionFind).toHaveBeenCalledWith({
       isActive: true,
       endDate: { $exists: true, $lte: now },
@@ -391,6 +395,7 @@ describe('SubscriptionRepository transactional lifecycle', () => {
       'subscription.endDate': { $exists: true, $lte: now },
     });
     expect(mocks.userSelect).toHaveBeenCalledWith('_id subscription');
+    // Update is constrained to projected candidate ids (no open date re-match).
     expect(mocks.subscriptionUpdateMany).toHaveBeenCalledWith(
       {
         $or: [{ _id: { $in: [subId] } }, { payosOrderId: { $in: [orderId] } }],
@@ -406,6 +411,28 @@ describe('SubscriptionRepository transactional lifecycle', () => {
       },
       { $set: { 'subscription.isActive': false } },
     );
+    expect(mocks.endSession).toHaveBeenCalledOnce();
+  });
+
+  it('returns zero metadata and skips updates when no expiry candidates exist', async () => {
+    const now = new Date('2026-07-15T00:00:00.000Z');
+    mocks.subscriptionSession.mockReturnValue({
+      lean: vi.fn().mockResolvedValue([]),
+    });
+    mocks.subscriptionSelect.mockReturnValue({ session: mocks.subscriptionSession });
+    mocks.subscriptionFind.mockReturnValue({ select: mocks.subscriptionSelect });
+    mocks.userSession.mockReturnValue({
+      lean: vi.fn().mockResolvedValue([]),
+    });
+    mocks.userSelect.mockReturnValue({ session: mocks.userSession });
+    mocks.userFind.mockReturnValue({ select: mocks.userSelect });
+
+    await expect(new SubscriptionRepository().expireDue(now)).resolves.toEqual({
+      count: 0,
+      userIds: [],
+    });
+    expect(mocks.subscriptionUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.userUpdateMany).not.toHaveBeenCalled();
     expect(mocks.endSession).toHaveBeenCalledOnce();
   });
 

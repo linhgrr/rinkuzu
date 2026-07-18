@@ -23,6 +23,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useQuizAIExplain } from '@/features/quiz/hooks/useQuizAIExplain';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
+import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { MEDIA_MAX_MD } from '@/shared/constants/breakpoints';
 import type {
@@ -253,14 +254,6 @@ function rebuildPlayerQuizFromLayout(
     questions,
     questionIndexMap: questionOrder,
   } satisfies QuizPlayerQuiz;
-}
-
-function isQuestionAnswered(question: ShuffledQuizQuestion, answer: QuizAnswer): boolean {
-  if (question.type === 'single') {
-    return answer !== -1;
-  }
-
-  return Array.isArray(answer) && answer.length > 0;
 }
 
 function countAnswered(quiz: QuizPlayerQuiz, answers: QuizAnswer[]): number {

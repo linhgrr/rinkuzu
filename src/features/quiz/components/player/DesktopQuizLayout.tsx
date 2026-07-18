@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
 import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from 'react-icons/hi';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
+import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
@@ -161,10 +162,6 @@ interface DesktopAIModalProps {
   error: string;
   explanation: string;
   t: TranslateFn;
-}
-
-function isQuestionAnswered(question: QuizPlayQuestionViewModel, answer: QuizAnswer | undefined) {
-  return question.type === 'single' ? answer !== -1 : Array.isArray(answer) && answer.length > 0;
 }
 
 function isSelectedOption(

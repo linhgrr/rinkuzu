@@ -1,4 +1,4 @@
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '@/lib/env';
 
@@ -33,6 +33,93 @@ export async function getSignedPDFUrl(key: string, expiresIn: number = 3600): Pr
   });
 
   return getSignedUrl(s3Client, command, { expiresIn });
+}
+
+/**
+ * Extract an object key owned by this app's bucket from a stored URL.
+ * Returns null when the URL does not reference this bucket or the key is unsafe.
+ * Query/hash suffixes from signed URLs are stripped.
+ */
+export function extractOwnedObjectKeyFromUrl(url: string): string | null {
+  if (typeof url !== 'string' || url.length === 0) return null;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+
+  const rawPath = url.match(/^[a-z][a-z\d+\-.]*:\/\/[^/]*(\/[^?#]*)?/i)?.[1] ?? '';
+  for (const segment of rawPath.split('/')) {
+    try {
+      const decodedSegment = decodeURIComponent(segment);
+      if (decodedSegment === '.' || decodedSegment === '..') return null;
+    } catch {
+      return null;
+    }
+  }
+
+  const endpoint = new URL(OBJECT_STORAGE_PUBLIC_BASE_URL);
+  const endpointHost = endpoint.hostname.toLowerCase();
+  const host = parsed.hostname.toLowerCase();
+  const isPathStyle = host === endpointHost && parsed.pathname.startsWith(`/${BUCKET_NAME}/`);
+  const isVirtualHostedStyle =
+    host === `${BUCKET_NAME.toLowerCase()}.${endpointHost}` && parsed.pathname.startsWith('/');
+  if (!isPathStyle && !isVirtualHostedStyle) return null;
+
+  const rawKey = isPathStyle
+    ? parsed.pathname.slice(`/${BUCKET_NAME}/`.length)
+    : parsed.pathname.slice(1);
+  const key = rawKey.split(/[?#]/, 1)[0] ?? '';
+  if (key.length === 0) return null;
+  if (key.startsWith('/') || key.includes('\\') || key.includes('\0')) return null;
+  if (
+    key.split('/').some((segment) => segment.length === 0 || segment === '.' || segment === '..')
+  ) {
+    return null;
+  }
+
+  return key;
+}
+
+/**
+ * Delete an object from object storage.
+ * S3 DeleteObject is idempotent for missing keys (no error when the object is gone).
+ */
+export async function deletePDF(key: string): Promise<void> {
+  if (typeof key !== 'string' || key.length === 0) return;
+
+  const command = new DeleteObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
+
+  await s3Client.send(command);
+}
+
+/**
+ * Best-effort cleanup of owned PDF/object URLs after an authoritative Mongo commit.
+ * Never throws: external storage failures must not reverse committed DB deletes.
+ * Non-owned / non-bucket URLs are skipped.
+ */
+export async function deleteOwnedPdfUrlsBestEffort(
+  urls: readonly (string | null | undefined)[],
+): Promise<void> {
+  const keys = new Set<string>();
+  for (const url of urls) {
+    if (typeof url !== 'string') continue;
+    const key = extractOwnedObjectKeyFromUrl(url);
+    if (key) keys.add(key);
+  }
+
+  for (const key of keys) {
+    try {
+      await deletePDF(key);
+    } catch {
+      // Intentionally swallow: Mongo remains the source of truth after commit.
+    }
+  }
 }
 
 export { s3Client, BUCKET_NAME };

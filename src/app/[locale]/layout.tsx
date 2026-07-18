@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata, Viewport } from 'next';
+import { Inter, Montserrat, Unbounded, Vina_Sans } from 'next/font/google';
 import Script from 'next/script';
 import '../globals.css';
 import { routing } from '@/i18n/routing';
@@ -14,6 +15,33 @@ import {
 } from '@/lib/structured-data';
 import { NextIntlClientProvider } from 'next-intl';
 import { SerwistProvider } from '@serwist/turbopack/react';
+
+const inter = Inter({
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const montserrat = Montserrat({
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  variable: '--font-montserrat',
+  weight: ['400', '600', '700'],
+});
+
+const unbounded = Unbounded({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-unbounded',
+  weight: ['300', '400', '500', '600', '700', '800'],
+});
+
+const vinaSans = Vina_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-vina-sans',
+  weight: ['400'],
+});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -137,7 +165,9 @@ export default async function LocaleLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
       </head>
-      <body className="min-h-screen bg-neutral-50 antialiased">
+      <body
+        className={`${inter.className} ${montserrat.variable} ${unbounded.variable} ${vinaSans.variable} min-h-screen bg-neutral-50 antialiased`}
+      >
         <SerwistProvider
           swUrl="/serwist/sw.js"
           disable={process.env.NODE_ENV !== 'production'}

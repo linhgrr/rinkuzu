@@ -25,6 +25,15 @@ const imgbbResponseSchema = z.object({
   }),
 });
 
+function isHttpsUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export class ImgBbImageStorage implements IImageStorage {
   async upload(image: ImageUpload): Promise<ImageUploadResult> {
     if (!env.IMGBB_API_KEY) {
@@ -60,5 +69,22 @@ export class ImgBbImageStorage implements IImageStorage {
       height: data.height,
       size: data.size,
     };
+  }
+
+  /**
+   * Best-effort ImgBB delete via the provider-issued delete URL.
+   * Empty / non-HTTPS URLs are no-ops. HTTP 404 is treated as already-deleted (idempotent).
+   */
+  async deleteByUrl(deleteUrl: string): Promise<void> {
+    if (typeof deleteUrl !== 'string' || deleteUrl.length === 0) return;
+    if (!isHttpsUrl(deleteUrl)) return;
+
+    const response = await fetch(deleteUrl, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (response.ok || response.status === 404) return;
+    throw new ImageStorageUpstreamError('Image delete failed');
   }
 }

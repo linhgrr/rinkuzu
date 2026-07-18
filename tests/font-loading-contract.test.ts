@@ -3,11 +3,16 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 describe('route-scoped font loading contract', () => {
-  it('keeps route fonts out of the locale root layout', () => {
+  it('keeps the remote landing fonts at the locale root boundary', () => {
     const rootLayout = fs.readFileSync('src/app/[locale]/layout.tsx', 'utf8');
 
-    expect(rootLayout).not.toContain("from 'next/font/google'");
-    expect(rootLayout).not.toMatch(/\b(?:Inter|Montserrat|Unbounded|Vina_Sans)\b/);
+    expect(rootLayout).toContain(
+      "import { Inter, Montserrat, Unbounded, Vina_Sans } from 'next/font/google'",
+    );
+    expect(rootLayout).toMatch(/\b(?:Inter|Montserrat|Unbounded|Vina_Sans)\b/);
+    expect(rootLayout).toContain(
+      '${inter.className} ${montserrat.variable} ${unbounded.variable} ${vinaSans.variable}',
+    );
   });
 
   it('loads Inter and Montserrat only inside authenticated application routes', () => {
@@ -17,11 +22,10 @@ describe('route-scoped font loading contract', () => {
     expect(appLayout).toContain('${inter.className} ${montserrat.variable}');
   });
 
-  it('loads Inter only inside generic marketing routes', () => {
+  it('does not add a second font boundary inside generic marketing routes', () => {
     const marketingLayout = fs.readFileSync('src/app/[locale]/(marketing)/layout.tsx', 'utf8');
 
-    expect(marketingLayout).toContain("import { Inter } from 'next/font/google'");
-    expect(marketingLayout).toContain('className={inter.className}');
-    expect(marketingLayout).not.toMatch(/\b(?:Montserrat|Unbounded|Vina_Sans)\b/);
+    expect(marketingLayout).not.toContain("from 'next/font/google'");
+    expect(marketingLayout).not.toMatch(/\b(?:Inter|Montserrat|Unbounded|Vina_Sans)\b/);
   });
 });

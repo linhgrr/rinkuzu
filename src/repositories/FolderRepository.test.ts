@@ -300,6 +300,75 @@ describe('FolderRepository.saveQuizPlacement ownership paths', () => {
   });
 });
 
+describe('FolderRepository.deleteOwned cascade', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    modelMocks.withTransaction.mockImplementation(async (callback: () => Promise<void>) =>
+      callback(),
+    );
+    modelMocks.startSession.mockResolvedValue({
+      withTransaction: modelMocks.withTransaction,
+      endSession: modelMocks.endSession,
+    });
+    modelMocks.quizUpdateMany.mockReturnValue({
+      session: vi.fn().mockResolvedValue({ acknowledged: true }),
+    });
+    modelMocks.folderQuizDeleteMany.mockReturnValue({
+      session: vi.fn().mockResolvedValue({ acknowledged: true }),
+    });
+    modelMocks.folderDeleteOne.mockReturnValue({
+      session: vi.fn().mockResolvedValue({ deletedCount: 1 }),
+    });
+  });
+
+  it('unfiles owned quizzes, drops FolderQuiz links, and deletes the folder in one transaction', async () => {
+    const folderObjectId = new Types.ObjectId(folderId);
+    const ownerObjectId = new Types.ObjectId(ownerId);
+    modelMocks.folderFindOne.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        session: vi.fn(() => ({
+          lean: vi.fn().mockResolvedValue({ _id: folderObjectId }),
+        })),
+      })),
+    });
+    const repository = new FolderRepository();
+
+    await expect(repository.deleteOwned(folderId, ownerId)).resolves.toBe(true);
+
+    const session = await modelMocks.startSession.mock.results[0]?.value;
+    expect(modelMocks.quizUpdateMany).toHaveBeenCalledWith(
+      { author: ownerObjectId, folder: folderObjectId },
+      { $set: { folder: null } },
+    );
+    expect(modelMocks.folderQuizDeleteMany).toHaveBeenCalledWith({
+      owner: ownerObjectId,
+      folder: folderObjectId,
+    });
+    expect(modelMocks.folderDeleteOne).toHaveBeenCalledWith({
+      _id: folderObjectId,
+      owner: ownerObjectId,
+    });
+    expect(session.endSession).toHaveBeenCalledOnce();
+  });
+
+  it('returns false without mutating when the owned folder is missing', async () => {
+    modelMocks.folderFindOne.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        session: vi.fn(() => ({
+          lean: vi.fn().mockResolvedValue(null),
+        })),
+      })),
+    });
+    const repository = new FolderRepository();
+
+    await expect(repository.deleteOwned(folderId, ownerId)).resolves.toBe(false);
+    expect(modelMocks.quizUpdateMany).not.toHaveBeenCalled();
+    expect(modelMocks.folderQuizDeleteMany).not.toHaveBeenCalled();
+    expect(modelMocks.folderDeleteOne).not.toHaveBeenCalled();
+    expect(modelMocks.endSession).toHaveBeenCalledOnce();
+  });
+});
+
 describe('FolderRepository.findQuizAccess', () => {
   beforeEach(() => {
     vi.clearAllMocks();

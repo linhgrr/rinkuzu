@@ -9,6 +9,8 @@
     "src/lib/api/auth.ts",
     "src/lib/password.ts",
     "src/lib/auth-tokens.ts",
+    "src/shared/constants/account-disable.ts",
+    "src/shared/constants/admin-invariant.ts",
     "src/lib/security/**/*.ts",
     "src/lib/entitlements/**/*.ts",
     "src/lib/integrations/payos.ts",
@@ -18,9 +20,9 @@
     "src/features/{admin,adaptive,quiz}/**/*.ts",
     "src/lib/{adaptive,adaptive-learning}/**/*.ts"
   ],
-  "valid": 11848,
-  "detected": 9645,
-  "survived": 1402,
-  "noCoverage": 801,
-  "score": 81.4061444969615
+  "valid": 12276,
+  "detected": 10054,
+  "survived": 1573,
+  "noCoverage": 649,
+  "score": 81.89964157706093
 }

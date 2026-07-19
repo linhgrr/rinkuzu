@@ -6,7 +6,8 @@ vi.mock('@/lib/subscription-factory', () => ({
   createSubscriptionService: () => ({ isUserPremium }),
 }));
 
-import { can, getLimit, invalidateEntitlements, resolveEntitlements } from './index';
+import { invalidateEntitlements } from './cache';
+import { can, getLimit, resolveEntitlements } from './index';
 
 describe('entitlements registry', () => {
   it('grants private_quiz + advanced_stats to premium only', () => {

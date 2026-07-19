@@ -74,4 +74,3 @@ export interface AdminUserStatusDto {
 export type AdminUserListQueryDto = z.infer<typeof adminUserListQuerySchema>;
 export type UpdateAdminUserRoleRequestDto = z.infer<typeof updateAdminUserRoleRequestSchema>;
 export type UpdateAdminUserStatusRequestDto = z.infer<typeof updateAdminUserStatusRequestSchema>;
-export type AdminUserIdRouteParamsDto = z.infer<typeof adminUserIdRouteParamsSchema>;

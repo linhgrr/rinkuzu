@@ -9,7 +9,7 @@ import { ACTIVE_ADMIN_FENCE_ID } from '@/shared/constants/admin-invariant';
  *
  * Uses string document id (not ObjectId) so the singleton key is stable.
  */
-export interface AdminMutationFenceDocument {
+interface AdminMutationFenceDocument {
   _id: typeof ACTIVE_ADMIN_FENCE_ID | string;
   revision: number;
   updatedAt: Date;

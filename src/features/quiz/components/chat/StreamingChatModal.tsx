@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
-import { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession';
+import type { ChatMessage } from '@/features/quiz/lib/chat-history';
 import { formatDateTime } from '@/lib/formatters';
 
 interface StreamingChatModalProps {

@@ -10,8 +10,6 @@ import {
 } from '@/features/quiz/lib/chat-history-storage';
 import { replaceLastAssistantMessage, type ChatMessage } from '@/features/quiz/lib/chat-history';
 
-export type { ChatMessage } from '@/features/quiz/lib/chat-history';
-
 type ChatHistories = Record<string, ChatMessage[]>;
 
 const EMPTY_CHAT_MESSAGES: ChatMessage[] = [];

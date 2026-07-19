@@ -6,14 +6,14 @@ export type AdminMutationActor = {
   email: string;
 };
 
-export type AdminRoleMutationInput = {
+type AdminRoleMutationInput = {
   kind: 'role';
   targetUserId: string;
   role: User['role'];
   actor: AdminMutationActor;
 };
 
-export type AdminDisableMutationInput = {
+type AdminDisableMutationInput = {
   kind: 'disable';
   targetUserId: string;
   disable: AccountDisableState;
@@ -24,14 +24,14 @@ export type AdminDisableMutationInput = {
 /** Discriminated admin role/status mutation executed inside one transaction. */
 export type AdminMutationInput = AdminRoleMutationInput | AdminDisableMutationInput;
 
-export type AdminRoleMutationResult = {
+type AdminRoleMutationResult = {
   kind: 'role';
   user: User;
   changed: boolean;
   role: User['role'];
 };
 
-export type AdminDisableMutationResult = {
+type AdminDisableMutationResult = {
   kind: 'disable';
   user: User;
   changed: boolean;

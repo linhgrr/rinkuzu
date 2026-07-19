@@ -13,8 +13,6 @@
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { getCachedTier, setCachedTier } from './cache';
 
-export { invalidateEntitlements } from './cache';
-
 export type Tier = 'free' | 'premium';
 
 export type BooleanCapability = 'private_quiz' | 'advanced_stats';

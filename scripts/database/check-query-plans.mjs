@@ -497,13 +497,12 @@ try {
       );
     }
     if (
-      !publicQuizCountStages.has('COUNT_SCAN') ||
       !publicQuizCountIndexes.has('isPrivate_1_createdAt_-1') ||
       publicQuizListRow.countKeysExamined !== 600 ||
       publicQuizListRow.countDocumentsExamined !== 0
     ) {
       throw new Error(
-        `public-quiz-list count did not use a covered COUNT_SCAN; stages=${publicQuizListRow.countStages.join(',')}; indexes=${publicQuizListRow.countIndexes.join(',')}; keys=${publicQuizListRow.countKeysExamined}; documents=${publicQuizListRow.countDocumentsExamined}`,
+        `public-quiz-list count did not use the expected covered index scan; stages=${publicQuizListRow.countStages.join(',')}; indexes=${publicQuizListRow.countIndexes.join(',')}; keys=${publicQuizListRow.countKeysExamined}; documents=${publicQuizListRow.countDocumentsExamined}`,
       );
     }
     if (

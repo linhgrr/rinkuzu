@@ -1,6 +1,5 @@
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
-
-export type AnswerableQuestionType = 'single' | 'multiple';
+import type { QuestionType } from '@/shared/constants/question-type';
 
 /**
  * Shared answered-state check for quiz player progress and result stats.
@@ -9,7 +8,7 @@ export type AnswerableQuestionType = 'single' | 'multiple';
  * - multiple: only a non-empty array counts as answered
  */
 export function isQuestionAnswered(
-  question: { type: AnswerableQuestionType },
+  question: { type: QuestionType },
   answer: QuizAnswer | undefined,
 ): boolean {
   if (question.type === 'single') {

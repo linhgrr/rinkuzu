@@ -1,4 +1,5 @@
 import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
+import type { QuestionType } from '@/shared/constants/question-type';
 import {
   addQuestion,
   createEmptyEditorQuestion,
@@ -48,7 +49,7 @@ export type QuizEditorWorkspaceAction =
   | { type: 'updateOptionImage'; questionIndex: number; optionIndex: number; value?: string }
   | { type: 'addQuestion' }
   | { type: 'removeQuestion'; index: number }
-  | { type: 'toggleQuestionType'; index: number; value: 'single' | 'multiple' }
+  | { type: 'toggleQuestionType'; index: number; value: QuestionType }
   | { type: 'setSingleCorrect'; questionIndex: number; optionIndex: number }
   | { type: 'toggleMultipleCorrect'; questionIndex: number; optionIndex: number; checked: boolean };
 

@@ -1,6 +1,8 @@
+import type { QuestionType } from '@/shared/constants/question-type';
+
 export interface CorrectAnswerSource {
   options: string[];
-  type: 'single' | 'multiple';
+  type: QuestionType;
   correctIndex?: number;
   correctIndexes?: number[];
 }

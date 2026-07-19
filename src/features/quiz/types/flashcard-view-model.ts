@@ -1,13 +1,6 @@
-export interface FlashcardQuestionViewModel {
-  id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-}
+import type { QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';
+
+export type FlashcardQuestionViewModel = QuizQuestionWithAnswerKey;
 
 export interface FlashcardQuizViewModel {
   id: string;

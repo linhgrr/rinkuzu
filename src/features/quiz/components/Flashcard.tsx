@@ -6,9 +6,9 @@ import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatCorrectAnswerLetters, formatCorrectAnswerText } from '@/lib/quiz/answer-text';
+import type { QuestionType } from '@/shared/constants/question-type';
 
 type SwipeDirection = 'left' | 'right';
-type QuestionType = 'single' | 'multiple';
 
 interface FlashcardProps {
   question: string;

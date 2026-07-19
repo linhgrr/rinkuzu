@@ -29,6 +29,9 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   use: {
     baseURL,
+    // Production PWA requests can otherwise bypass page.route() through the
+    // service worker and reach real external services during mocked E2E flows.
+    serviceWorkers: 'block',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

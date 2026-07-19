@@ -510,17 +510,4 @@ export class LearningProgressRepository implements ILearningProgressRepository {
       'Streak freeze purchase conflict: still eligible after repeated atomic update misses',
     );
   }
-
-  async countLearnedQuestions(userId: string): Promise<number> {
-    await connectDB();
-    return QuestionProgress.countDocuments({
-      userId,
-      srsLevel: { $gt: 0 },
-    });
-  }
-
-  async updateTotalQuestionsLearned(userId: string, totalQuestionsLearned: number): Promise<void> {
-    await connectDB();
-    await UserProgress.updateOne({ userId }, { totalQuestionsLearned });
-  }
 }

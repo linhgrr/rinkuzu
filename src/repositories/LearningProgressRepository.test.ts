@@ -7,13 +7,11 @@ const modelMocks = vi.hoisted(() => ({
   questionFind: vi.fn(),
   questionFindOne: vi.fn(),
   questionFindOneAndUpdate: vi.fn(),
-  questionCountDocuments: vi.fn(),
   questionSort: vi.fn(),
   questionLimit: vi.fn(),
   questionLean: vi.fn(),
   userFindOne: vi.fn(),
   userFindOneAndUpdate: vi.fn(),
-  userUpdateOne: vi.fn(),
   userSelect: vi.fn(),
 }));
 
@@ -29,7 +27,6 @@ vi.mock('@/models/QuestionProgress', () => ({
     find: modelMocks.questionFind,
     findOne: modelMocks.questionFindOne,
     findOneAndUpdate: modelMocks.questionFindOneAndUpdate,
-    countDocuments: modelMocks.questionCountDocuments,
   },
 }));
 vi.mock('@/models/Quiz', () => ({
@@ -42,7 +39,6 @@ vi.mock('@/models/UserProgress', () => ({
   default: {
     findOne: modelMocks.userFindOne,
     findOneAndUpdate: modelMocks.userFindOneAndUpdate,
-    updateOne: modelMocks.userUpdateOne,
   },
 }));
 
@@ -650,8 +646,6 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
     modelMocks.userFindOneAndUpdate.mockReturnValue({
       lean: vi.fn().mockResolvedValue(userRecord),
     });
-    modelMocks.questionCountDocuments.mockResolvedValue(4);
-    modelMocks.userUpdateOne.mockResolvedValue({ matchedCount: 1 });
   });
 
   it('lists due questions ordered by next review date', async () => {
@@ -1009,21 +1003,5 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
     expect(modelMocks.userSelect).toHaveBeenCalledWith('totalXp streakFreezeCount');
     // Never claim purchased without a findOneAndUpdate document.
     expect(missSelect).toHaveBeenCalledTimes(2);
-  });
-
-  it('counts learned questions and updates the denormalized total', async () => {
-    const repository = new LearningProgressRepository();
-
-    await expect(repository.countLearnedQuestions('user-1')).resolves.toBe(4);
-    expect(modelMocks.questionCountDocuments).toHaveBeenCalledWith({
-      userId: 'user-1',
-      srsLevel: { $gt: 0 },
-    });
-
-    await repository.updateTotalQuestionsLearned('user-1', 9);
-    expect(modelMocks.userUpdateOne).toHaveBeenCalledWith(
-      { userId: 'user-1' },
-      { totalQuestionsLearned: 9 },
-    );
   });
 });

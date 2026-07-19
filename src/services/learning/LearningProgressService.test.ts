@@ -12,14 +12,6 @@ import type {
 } from '@/entities/LearningProgress';
 import { LearningProgressService } from '@/services/learning/LearningProgressService';
 
-const deferredTasks: Array<() => Promise<void>> = [];
-
-vi.mock('next/server', () => ({
-  after: vi.fn((task: () => Promise<void>) => {
-    deferredTasks.push(task);
-  }),
-}));
-
 const now = new Date('2026-06-30T10:00:00.000Z');
 const userId = '507f191e810c19729de860ea';
 
@@ -146,9 +138,6 @@ class LearningProgressRepositoryStub implements ILearningProgressRepository {
         | { status: 'purchased'; xp: number; streakFreezeCount: number }
       >
     >();
-  countLearnedQuestions = vi.fn<(userId: string) => Promise<number>>();
-  updateTotalQuestionsLearned =
-    vi.fn<(userId: string, totalQuestionsLearned: number) => Promise<void>>();
 }
 
 describe('LearningProgressService', () => {
@@ -158,7 +147,6 @@ describe('LearningProgressService', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
-    deferredTasks.length = 0;
     repository = new LearningProgressRepositoryStub();
     service = new LearningProgressService(repository);
     repository.createDefaultUserProgress.mockImplementation((id) => userProgress({ userId: id }));
@@ -176,8 +164,6 @@ describe('LearningProgressService', () => {
         streakFreezeUsed: mutation.streakFreezeUsed,
       };
     });
-    repository.countLearnedQuestions.mockResolvedValue(7);
-    repository.updateTotalQuestionsLearned.mockResolvedValue();
   });
 
   it('filters, sorts, paginates and maps library quizzes without leaking questions', async () => {
@@ -271,7 +257,7 @@ describe('LearningProgressService', () => {
     });
   });
 
-  it('submits a good review, updates learning progress and defers learned count recompute', async () => {
+  it('submits a good review and increments the learned count in the transaction', async () => {
     repository.findQuestionProgress.mockResolvedValue(questionProgress());
     repository.findUserProgress.mockResolvedValue(userProgress());
     repository.saveQuestionProgress.mockImplementation(async (progress) => ({
@@ -312,6 +298,7 @@ describe('LearningProgressService', () => {
         currentStreak: 1,
         longestStreak: 1,
         totalXp: 110,
+        totalQuestionsLearned: 1,
         totalReviewSessions: 1,
         averageAccuracy: 100,
       }),
@@ -322,10 +309,33 @@ describe('LearningProgressService', () => {
       xpGained: 10,
       streakFreezeUsed: false,
     });
+  });
 
-    expect(deferredTasks).toHaveLength(1);
-    await deferredTasks[0]?.();
-    expect(repository.updateTotalQuestionsLearned).toHaveBeenCalledWith(userId, 7);
+  it('does not increment the learned count when reviewing an already learned question', async () => {
+    repository.findQuestionProgress.mockResolvedValue(
+      questionProgress({ srsLevel: 2, interval: 6, totalReviews: 3 }),
+    );
+    repository.findUserProgress.mockResolvedValue(userProgress({ totalQuestionsLearned: 5 }));
+    repository.saveQuestionProgress.mockImplementation(async (progress) => ({
+      ...progress,
+      id: '507f1f77bcf86cd799439012',
+      isBookmarked: progress.isBookmarked ?? false,
+      notes: progress.notes ?? '',
+      createdAt: now,
+      updatedAt: now,
+    }));
+    repository.saveUserProgress.mockImplementation(async (progress) => progress);
+
+    const result = await service.submitReview(userId, {
+      questionId: 'q1',
+      quizSlug: 'algorithms',
+      rating: 'good',
+    });
+
+    expect(result.success).toBe(true);
+    expect(repository.saveUserProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ totalQuestionsLearned: 5 }),
+    );
   });
 
   it('uses streak freeze when the user missed exactly one day', async () => {

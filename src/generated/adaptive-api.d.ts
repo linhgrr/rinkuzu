@@ -338,7 +338,8 @@ export interface paths {
      * @description Request cancellation of a pipeline job.
      *
      *     Works regardless of pipeline runtime availability so a stuck job can always
-     *     be cancelled. No-ops when the job has already reached a terminal state.
+     *     be cancelled. Uses an owner-scoped atomic Mongo transition (not load-full-save).
+     *     Terminal jobs are idempotent no-ops.
      */
     post: operations['cancel_job_api_v1_pipeline_jobs__job_id__cancel_post'];
     delete?: never;
@@ -494,6 +495,9 @@ export interface paths {
     /**
      * Delete Quiz Draft
      * @description Delete a quiz draft owned by the authenticated user.
+     *
+     *     Observed delete is 200; genuine absence is 404; infrastructure errors are
+     *     503. Not universally idempotent after metadata removal.
      */
     delete: operations['delete_quiz_draft_api_v1_quiz_drafts__draft_id__delete'];
     options?: never;

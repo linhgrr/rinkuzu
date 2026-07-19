@@ -1036,7 +1036,7 @@
       "post": {
         "tags": ["pipeline"],
         "summary": "Cancel Job",
-        "description": "Request cancellation of a pipeline job.\n\nWorks regardless of pipeline runtime availability so a stuck job can always\nbe cancelled. No-ops when the job has already reached a terminal state.",
+        "description": "Request cancellation of a pipeline job.\n\nWorks regardless of pipeline runtime availability so a stuck job can always\nbe cancelled. Uses an owner-scoped atomic Mongo transition (not load-full-save).\nTerminal jobs are idempotent no-ops.",
         "operationId": "cancel_job_api_v1_pipeline_jobs__job_id__cancel_post",
         "parameters": [
           {
@@ -1798,7 +1798,7 @@
       "delete": {
         "tags": ["quiz-drafts"],
         "summary": "Delete Quiz Draft",
-        "description": "Delete a quiz draft owned by the authenticated user.",
+        "description": "Delete a quiz draft owned by the authenticated user.\n\nObserved delete is 200; genuine absence is 404; infrastructure errors are\n503. Not universally idempotent after metadata removal.",
         "operationId": "delete_quiz_draft_api_v1_quiz_drafts__draft_id__delete",
         "parameters": [
           {

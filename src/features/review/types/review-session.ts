@@ -1,4 +1,6 @@
-export type ReviewRating = 'fail' | 'hard' | 'good' | 'easy';
+import type { SRSRating } from '@/shared/constants/srs-rating';
+
+export type ReviewRating = SRSRating;
 
 export interface ReviewQuestionReferenceViewModel {
   text: string;

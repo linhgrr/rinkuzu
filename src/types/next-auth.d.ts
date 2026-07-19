@@ -1,6 +1,7 @@
 import { DefaultSession } from 'next-auth';
+import type { UserRole as SharedUserRole } from '@/shared/constants/user-role';
 
-export type UserRole = 'admin' | 'user';
+export type UserRole = SharedUserRole;
 
 declare module 'next-auth' {
   interface Session {

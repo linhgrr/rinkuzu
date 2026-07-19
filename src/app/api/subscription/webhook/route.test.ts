@@ -22,8 +22,28 @@ const CHECKSUM_KEY = 'test-checksum-key';
 
 function sign(data: Record<string, unknown>, key = CHECKSUM_KEY): string {
   const payload = Object.keys(data)
+    .filter((field) => data[field] !== undefined)
     .sort()
-    .map((field) => `${field}=${data[field] ?? ''}`)
+    .map((field) => {
+      const rawValue = data[field];
+      const value = Array.isArray(rawValue)
+        ? JSON.stringify(
+            rawValue.map((item) =>
+              typeof item === 'object' && item !== null && !Array.isArray(item)
+                ? Object.fromEntries(
+                    Object.entries(item).sort(([left], [right]) => left.localeCompare(right)),
+                  )
+                : item,
+            ),
+          )
+        : rawValue === null ||
+            rawValue === undefined ||
+            rawValue === 'null' ||
+            rawValue === 'undefined'
+          ? ''
+          : String(rawValue);
+      return `${field}=${value}`;
+    })
     .join('&');
   return crypto.createHmac('sha256', key).update(payload).digest('hex');
 }
@@ -62,6 +82,7 @@ describe('POST /api/subscription/webhook', () => {
     const response = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data: { orderCode: 1, amount: 1000 },
         signature: 'deadbeef',
@@ -94,6 +115,7 @@ describe('POST /api/subscription/webhook', () => {
     const response = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data,
         signature: sign(data, 'wrong-key'),
@@ -107,12 +129,13 @@ describe('POST /api/subscription/webhook', () => {
     expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
   });
 
-  it('rejects signatures with mismatched digests even when length differs', async () => {
+  it('rejects signatures that are not SHA-256 hex digests', async () => {
     const data = { orderCode: 55, amount: 1000 };
     const shortSignature = sign(data).slice(0, 16);
     const response = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data,
         signature: shortSignature,
@@ -121,7 +144,7 @@ describe('POST /api/subscription/webhook', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
-      error: { code: 'validation_error', detail: 'Invalid signature' },
+      error: { code: 'validation_error' },
     });
     expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
   });
@@ -131,6 +154,7 @@ describe('POST /api/subscription/webhook', () => {
     const failedSuccess = await POST(
       webhookRequest({
         code: '00',
+        desc: 'failed',
         success: false,
         data,
         signature: sign(data),
@@ -139,6 +163,7 @@ describe('POST /api/subscription/webhook', () => {
     const failedCode = await POST(
       webhookRequest({
         code: '01',
+        desc: 'failed',
         success: true,
         data,
         signature: sign(data),
@@ -164,6 +189,7 @@ describe('POST /api/subscription/webhook', () => {
     const invalidOrderResponse = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data: invalidOrder,
         signature: sign(invalidOrder),
@@ -172,6 +198,7 @@ describe('POST /api/subscription/webhook', () => {
     const negativeOrderResponse = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data: negativeOrder,
         signature: sign(negativeOrder),
@@ -180,6 +207,7 @@ describe('POST /api/subscription/webhook', () => {
     const missingAmountResponse = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data: missingAmount,
         signature: sign(missingAmount),
@@ -188,6 +216,7 @@ describe('POST /api/subscription/webhook', () => {
     const missingOrderResponse = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data: missingOrder,
         signature: sign(missingOrder),
@@ -213,39 +242,39 @@ describe('POST /api/subscription/webhook', () => {
     expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
   });
 
-  it('includes empty optional webhook fields in the signed payload', async () => {
+  it('rejects an empty transaction reference after validating its signature', async () => {
     const data = { orderCode: 321, amount: 10_000, reference: '', extra: undefined };
     const signedData = { orderCode: 321, amount: 10_000, reference: '' };
     const response = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data: signedData,
         signature: sign(signedData),
       }),
     );
 
-    expect(response.status).toBe(200);
-    expect(activateVerifiedSubscriptionMock).toHaveBeenCalledWith(321, {
-      orderCode: 321,
-      amount: 10_000,
-      reference: '',
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'validation_error', detail: 'Invalid payment reference' },
     });
-    // Empty optional values still participate in HMAC material via `${value ?? ''}`.
     expect(sign({ ...signedData, reference: 'x' })).not.toBe(sign(signedData));
     void data;
   });
 
-  it('activates verified subscriptions with optional reference and code fields', async () => {
+  it('activates a fully verified PayOS webhook', async () => {
     const data = {
       orderCode: 456,
       amount: 120_000,
       reference: 'payos-ref',
       code: '00',
+      items: [{ name: 'Premium', price: 120_000 }],
     };
     const response = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data,
         signature: sign(data),
@@ -257,41 +286,55 @@ describe('POST /api/subscription/webhook', () => {
       orderCode: 456,
       amount: 120_000,
       reference: 'payos-ref',
-      code: '00',
     });
   });
 
-  it('activates without optional fields when they are omitted', async () => {
+  it('rejects missing required PayOS transaction identifiers', async () => {
     const data = { orderCode: 789, amount: 50_000 };
     const response = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data,
         signature: sign(data),
       }),
     );
 
-    expect(response.status).toBe(200);
-    expect(activateVerifiedSubscriptionMock).toHaveBeenCalledWith(789, {
-      orderCode: 789,
-      amount: 50_000,
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'validation_error', detail: 'Invalid payment reference' },
     });
-    const activationPayload = activateVerifiedSubscriptionMock.mock.calls.at(-1)?.[1] as Record<
-      string,
-      unknown
-    >;
-    expect(activationPayload).not.toHaveProperty('reference');
-    expect(activationPayload).not.toHaveProperty('code');
+    expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-success payment code inside signed data', async () => {
+    const data = { orderCode: 790, amount: 50_000, reference: 'ref-790', code: '01' };
+    const response = await POST(
+      webhookRequest({
+        code: '00',
+        desc: 'success',
+        success: true,
+        data,
+        signature: sign(data),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'validation_error', detail: 'Invalid payment code' },
+    });
+    expect(activateVerifiedSubscriptionMock).not.toHaveBeenCalled();
   });
 
   it('maps unexpected activation failures to a 500 response', async () => {
     activateVerifiedSubscriptionMock.mockRejectedValue(new Error('activation failed'));
-    const data = { orderCode: 999, amount: 10_000 };
+    const data = { orderCode: 999, amount: 10_000, reference: 'ref-999', code: '00' };
 
     const response = await POST(
       webhookRequest({
         code: '00',
+        desc: 'success',
         success: true,
         data,
         signature: sign(data),

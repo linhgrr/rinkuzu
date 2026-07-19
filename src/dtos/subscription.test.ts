@@ -20,8 +20,9 @@ describe('subscription DTO validation', () => {
     expect(
       payosWebhookRequestSchema.parse({
         code: '00',
+        desc: 'success',
         success: true,
-        signature: 'abc123',
+        signature: 'a'.repeat(64),
         data: {
           orderCode: 123,
           amount: '99000',
@@ -32,8 +33,9 @@ describe('subscription DTO validation', () => {
       }),
     ).toEqual({
       code: '00',
+      desc: 'success',
       success: true,
-      signature: 'abc123',
+      signature: 'a'.repeat(64),
       data: {
         orderCode: 123,
         amount: '99000',
@@ -45,8 +47,19 @@ describe('subscription DTO validation', () => {
 
     expect(
       payosWebhookRequestSchema.safeParse({
+        code: '00',
+        desc: 'success',
         success: true,
         signature: '',
+        data: {},
+      }).success,
+    ).toBe(false);
+
+    expect(
+      payosWebhookRequestSchema.safeParse({
+        code: '00',
+        success: true,
+        signature: 'a'.repeat(64),
         data: {},
       }).success,
     ).toBe(false);

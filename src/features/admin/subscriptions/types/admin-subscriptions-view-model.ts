@@ -1,13 +1,10 @@
-export type AdminSubscriptionStatusViewModel =
-  | 'pending'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
-  | 'expired';
-export type AdminMutableSubscriptionStatusViewModel = Extract<
-  AdminSubscriptionStatusViewModel,
-  'failed' | 'cancelled' | 'expired'
->;
+import type {
+  AdminMutableSubscriptionStatus,
+  SubscriptionStatus,
+} from '@/shared/constants/subscription-status';
+
+export type AdminSubscriptionStatusViewModel = SubscriptionStatus;
+export type AdminMutableSubscriptionStatusViewModel = AdminMutableSubscriptionStatus;
 
 export interface AdminSubscriptionsPaginationViewModel {
   page: number;

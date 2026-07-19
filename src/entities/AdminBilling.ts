@@ -1,6 +1,4 @@
-import type { SubscriptionRecordFields } from '@/entities/Subscription';
-
-export type { SubscriptionStatus } from '@/entities/Subscription';
+import type { SubscriptionRecordFields } from '@/shared/types/subscription';
 
 export interface BillingPlan {
   id: string;

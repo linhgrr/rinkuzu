@@ -5,8 +5,9 @@ import {
   ACCOUNT_DISABLE_ACTIVE,
   ACCOUNT_DISABLE_DISABLED,
 } from '@/shared/constants/account-disable';
+import { USER_ROLES } from '@/shared/constants/user-role';
 
-const userRoleSchema = z.enum(['admin', 'user']);
+const userRoleSchema = z.enum(USER_ROLES);
 
 const accountDisableSchema = z.union([
   z.literal(ACCOUNT_DISABLE_ACTIVE),

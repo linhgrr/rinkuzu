@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { SRS_RATINGS, type SRSRating } from '@/shared/constants/srs-rating';
 
 interface IQuestionProgress extends Document {
   userId: string;
@@ -26,7 +27,7 @@ interface IQuestionProgress extends Document {
   totalCorrect: number;
   history: Array<{
     date: Date;
-    rating: 'fail' | 'hard' | 'good' | 'easy';
+    rating: SRSRating;
   }>;
 
   isBookmarked: boolean;
@@ -61,7 +62,7 @@ const QuestionProgressSchema = new Schema<IQuestionProgress>(
         date: { type: Date, default: Date.now },
         rating: {
           type: String,
-          enum: ['fail', 'hard', 'good', 'easy'],
+          enum: SRS_RATINGS,
           required: true,
         },
       },

@@ -1,4 +1,4 @@
-import type { ReportStatus } from '@/entities/Report';
+import type { ReportStatus } from '@/shared/constants/report-status';
 import type { MongoIdLike } from '@/types/mongo';
 
 export interface ReportPersistenceRecord {

@@ -51,7 +51,6 @@ export class SubscriptionService implements ISubscriptionService {
     );
     this.activationService = new SubscriptionActivationService(
       subscriptionRepository,
-      userRepository,
       payosService,
       planRepository,
     );

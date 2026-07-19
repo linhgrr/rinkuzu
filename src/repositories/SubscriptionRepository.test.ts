@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   subscriptionUpdateOne: vi.fn(),
   subscriptionFindByIdAndUpdate: vi.fn(),
   subscriptionFindOneAndUpdate: vi.fn(),
-  subscriptionFindOneAndDelete: vi.fn(),
   subscriptionLean: vi.fn(),
   subscriptionSelect: vi.fn(),
   subscriptionSession: vi.fn(),
@@ -40,7 +39,6 @@ vi.mock('@/models/Subscription', () => ({
     updateOne: mocks.subscriptionUpdateOne,
     findByIdAndUpdate: mocks.subscriptionFindByIdAndUpdate,
     findOneAndUpdate: mocks.subscriptionFindOneAndUpdate,
-    findOneAndDelete: mocks.subscriptionFindOneAndDelete,
   },
 }));
 vi.mock('@/models/User', () => ({
@@ -199,20 +197,6 @@ describe('SubscriptionRepository lookups and simple writes', () => {
       { new: true },
     );
     await expect(repository.updateByOrderId(orderId, { status: 'pending' })).resolves.toBeNull();
-  });
-
-  it('deletes only pending orders', async () => {
-    mocks.subscriptionFindOneAndDelete
-      .mockResolvedValueOnce(pendingRecord())
-      .mockResolvedValueOnce(null);
-
-    const repository = new SubscriptionRepository();
-    await expect(repository.deletePendingByOrderId(orderId)).resolves.toBe(true);
-    await expect(repository.deletePendingByOrderId(orderId)).resolves.toBe(false);
-    expect(mocks.subscriptionFindOneAndDelete).toHaveBeenCalledWith({
-      payosOrderId: orderId,
-      status: 'pending',
-    });
   });
 });
 

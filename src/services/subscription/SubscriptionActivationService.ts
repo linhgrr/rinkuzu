@@ -5,7 +5,6 @@ import type {
 } from '@/dtos/subscription';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
-import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISubscriptionPlanRepository';
 import {
   SubscriptionActivationConflictError,
@@ -46,10 +45,36 @@ function settledActivation(
   return toActivationDto(type, startDate, endDate, isActive);
 }
 
+function assertVerifiedPaymentMatches(
+  subscription: SubscriptionRecord,
+  orderCode: number,
+  paymentData: VerifiedPaymentDto,
+): void {
+  if (paymentData.orderCode !== orderCode) {
+    throw new Error('Payment order code mismatch');
+  }
+
+  if (paymentData.amount !== subscription.amount) {
+    throw new Error('Payment amount mismatch');
+  }
+
+  if (paymentData.reference.trim().length === 0) {
+    throw new Error('Payment transaction reference is missing');
+  }
+}
+
+function isSameActivation(existing: SubscriptionRecord, pending: SubscriptionRecord): boolean {
+  return (
+    existing.payosOrderId === pending.payosOrderId &&
+    existing.userId === pending.userId &&
+    existing.type === pending.type &&
+    existing.amount === pending.amount
+  );
+}
+
 export class SubscriptionActivationService {
   constructor(
     private subscriptionRepository: ISubscriptionRepository,
-    private userRepository: IUserRepository,
     private payosService: IPayOSService,
     private planRepository: ISubscriptionPlanRepository,
   ) {}
@@ -128,6 +153,10 @@ export class SubscriptionActivationService {
       throw new Error('Subscription not found');
     }
 
+    // Validate the signed event against the durable order before accepting an
+    // idempotent replay. A completed row must not turn a malformed event green.
+    assertVerifiedPaymentMatches(subscription, orderCode, paymentData);
+
     if (subscription.status === 'completed') {
       // Idempotent success: authoritative completed state — clear stale free tier.
       return settledActivation(
@@ -141,22 +170,6 @@ export class SubscriptionActivationService {
 
     if (subscription.status !== 'pending') {
       throw new Error(`Cannot activate subscription with status ${subscription.status}`);
-    }
-
-    if (String(paymentData.orderCode) !== orderCode.toString()) {
-      throw new Error('Payment order code mismatch');
-    }
-
-    if (Number(paymentData.amount) !== subscription.amount) {
-      throw new Error('Payment amount mismatch');
-    }
-
-    if (paymentData.status && paymentData.status !== 'PAID') {
-      throw new Error('Payment not completed');
-    }
-
-    if (paymentData.code && paymentData.code !== '00') {
-      throw new Error('Payment not successful');
     }
 
     return this.activateSubscription(subscription, orderCode, paymentData.reference);
@@ -189,7 +202,11 @@ export class SubscriptionActivationService {
       ? await this.subscriptionRepository.findByTransactionReference(transactionReference)
       : null;
     if (existing && existing.status === 'completed') {
-      // Same order/user as the pending activation — always invalidate that user.
+      if (!isSameActivation(existing, subscription)) {
+        throw new SubscriptionActivationConflictError(
+          'PayOS transaction reference belongs to a different subscription',
+        );
+      }
       return settledActivation(
         subscription.userId,
         existing.type,
@@ -242,6 +259,11 @@ export class SubscriptionActivationService {
           ? await this.subscriptionRepository.findByTransactionReference(transactionReference)
           : null;
         if (settled?.status === 'completed') {
+          if (!isSameActivation(settled, subscription)) {
+            throw new SubscriptionActivationConflictError(
+              'PayOS transaction reference belongs to a different subscription',
+            );
+          }
           return settledActivation(
             subscription.userId,
             settled.type,

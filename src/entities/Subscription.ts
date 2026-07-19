@@ -1,24 +1,8 @@
-export type SubscriptionStatus = 'pending' | 'completed' | 'failed' | 'cancelled' | 'expired';
-export type AdminMutableSubscriptionStatus = Extract<
+import type {
+  AdminMutableSubscriptionStatus,
   SubscriptionStatus,
-  'failed' | 'cancelled' | 'expired'
->;
-
-export interface SubscriptionRecordFields {
-  userEmail: string;
-  type: string;
-  amount: number;
-  currency: string;
-  status: SubscriptionStatus;
-  payosOrderId: string;
-  payosTransactionId?: string;
-  payosPaymentUrl?: string;
-  startDate?: Date;
-  endDate?: Date;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+} from '@/shared/constants/subscription-status';
+import type { SubscriptionRecordFields } from '@/shared/types/subscription';
 
 export class SubscriptionActivationConflictError extends Error {
   constructor(message: string) {

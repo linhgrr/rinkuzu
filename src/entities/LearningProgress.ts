@@ -1,5 +1,5 @@
 import type { QuizLibraryStatus } from '@/shared/types/quiz-library';
-import type { SRSRating } from '@/entities/SpacedRepetition';
+import type { SRSRating } from '@/shared/constants/srs-rating';
 
 /** Library author identity — stable non-PII fields only (no email). */
 export interface LibraryQuizAuthor {

@@ -1,3 +1,5 @@
+import type { PayOSPaymentStatus } from '@/shared/constants/payment-status';
+
 interface PayOSPaymentItem {
   name: string;
   quantity: number;
@@ -49,8 +51,6 @@ export interface PayOSPaymentResponse {
   signature?: string | undefined;
 }
 
-type PayOSPaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'EXPIRED';
-
 interface PayOSTransaction {
   reference: string;
   amount: number;
@@ -98,5 +98,4 @@ export interface IPayOSService {
 
   verifyPayment(orderCode: number): Promise<PayOSVerifyResponse>;
   getPaymentInfo(orderCode: number): Promise<PayOSVerifyResponse>;
-  testConnection(): Promise<boolean>;
 }

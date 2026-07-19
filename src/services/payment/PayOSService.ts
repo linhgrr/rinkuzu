@@ -15,6 +15,8 @@ import {
 } from '@/lib/integrations/payos';
 import type { ZodType } from 'zod';
 
+const PAYOS_REQUEST_TIMEOUT_MS = 15_000;
+
 export class PayOSService implements IPayOSService {
   private clientId: string;
   private apiKey: string;
@@ -36,19 +38,6 @@ export class PayOSService implements IPayOSService {
     // PayOS requires the data string in alphabetical order of the keys
     const rawSignature = `amount=${data.amount}&cancelUrl=${data.cancelUrl}&description=${data.description}&orderCode=${data.orderCode}&returnUrl=${data.returnUrl}`;
     return this.generateSignature(rawSignature);
-  }
-
-  private redactRequestBody(
-    body?: PayOSPaymentRequest | Record<string, unknown> | null,
-  ): Record<string, unknown> | undefined {
-    if (!body) return undefined;
-    const record: Record<string, unknown> = { ...body };
-    return {
-      ...record,
-      signature: record['signature'] ? '***' : undefined,
-      buyerEmail: record['buyerEmail'] ? '***' : undefined,
-      buyerName: record['buyerName'] ? '***' : undefined,
-    };
   }
 
   private async makeRequest<T>(
@@ -74,22 +63,22 @@ export class PayOSService implements IPayOSService {
     }
 
     try {
-      console.warn('PayOS API Request:', {
-        url,
-        method,
-        body: this.redactRequestBody(body),
-      });
+      logger.debug({ endpoint, method }, 'PayOS API request');
 
       const response = await fetch(url, {
         // EXTERNAL: PayOS
         ...options,
+        signal: AbortSignal.timeout(PAYOS_REQUEST_TIMEOUT_MS),
       });
       const responseText = await response.text();
 
-      console.warn('PayOS API Response:', {
-        status: response.status,
-        statusText: response.statusText,
-      });
+      logger.debug(
+        {
+          endpoint,
+          status: response.status,
+        },
+        'PayOS API response',
+      );
 
       let data: unknown;
       try {
@@ -131,6 +120,9 @@ export class PayOSService implements IPayOSService {
       return parsedResponse.data;
     } catch (error) {
       logger.error({ error }, 'PayOS API request failed');
+      if (error instanceof DOMException && error.name === 'TimeoutError') {
+        throw new Error('Payment service is temporarily unavailable');
+      }
       if (error instanceof Error) {
         throw error;
       }
@@ -171,8 +163,6 @@ export class PayOSService implements IPayOSService {
       signature,
     };
 
-    console.warn('PayOS createPayment request body:', this.redactRequestBody(requestBody));
-
     return this.makeRequest<PayOSPaymentResponse>(
       '/v2/payment-requests',
       payosCreatePaymentResponseSchema,
@@ -195,26 +185,5 @@ export class PayOSService implements IPayOSService {
       payosPaymentLinkResponseSchema,
       'GET',
     );
-  }
-
-  async testConnection(): Promise<boolean> {
-    try {
-      console.warn('Testing PayOS API connection...');
-      console.warn('Environment variables:', {
-        clientId: this.clientId ? 'Set' : 'Missing',
-        apiKey: this.apiKey ? 'Set' : 'Missing',
-        checksumKey: this.checksumKey ? 'Set' : 'Missing',
-        baseUrl: this.baseUrl,
-      });
-
-      // Try to make a simple request to test the connection
-      const testData = { test: 'connection' };
-      const dataStr = JSON.stringify(testData);
-      this.generateSignature(dataStr);
-      return true;
-    } catch (error) {
-      logger.error({ error }, 'PayOS connection test failed');
-      return false;
-    }
   }
 }

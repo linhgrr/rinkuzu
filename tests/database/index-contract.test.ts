@@ -81,6 +81,25 @@ describe('database index contract registry', () => {
     }
   });
 
+  it('keeps auth rate-limit indexes outside the request path', () => {
+    expect(INDEX_CONTRACT).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'auth-rate-limits.expiration',
+          collection: 'auth_rate_limits',
+          key: { expire: -1 },
+          options: { expireAfterSeconds: 0 },
+        }),
+        expect.objectContaining({
+          id: 'auth-rate-limits.key',
+          collection: 'auth_rate_limits',
+          key: { key: 1 },
+          options: { unique: true },
+        }),
+      ]),
+    );
+  });
+
   it('keeps every legacy removal in hide-before-drop lifecycle', () => {
     const deprecated = INDEX_CONTRACT.filter((entry) => entry.lifecycle === 'deprecated_hidden');
 

@@ -26,22 +26,24 @@ function assertRuleset(ruleset, source) {
   const includes = ruleset.conditions?.ref_name?.include ?? [];
   if (!includes.includes('refs/heads/master')) fail(`${source}: master is not protected`);
 
-  for (const type of [
-    'deletion',
-    'non_fast_forward',
-    'required_linear_history',
-    'required_signatures',
-  ]) {
+  for (const type of ['deletion', 'non_fast_forward', 'required_linear_history']) {
     if (!getRule(ruleset, type)) fail(`${source}: missing ${type} rule`);
+  }
+  if (getRule(ruleset, 'required_signatures')) {
+    fail(`${source}: signed commits require a separate verified-history cutover`);
   }
 
   const pullRequest = getRule(ruleset, 'pull_request')?.parameters;
   if (!pullRequest) fail(`${source}: missing pull_request rule`);
-  if (pullRequest.required_approving_review_count < 1) {
-    fail(`${source}: at least one approval is required`);
+  if (pullRequest.required_approving_review_count !== 0) {
+    fail(`${source}: unavailable human approvals must not deadlock this solo repository`);
   }
-  if (!pullRequest.require_code_owner_review) fail(`${source}: CODEOWNER review is required`);
-  if (!pullRequest.require_last_push_approval) fail(`${source}: latest push approval is required`);
+  if (pullRequest.require_code_owner_review) {
+    fail(`${source}: the sole CODEOWNER cannot approve their own pull request`);
+  }
+  if (pullRequest.require_last_push_approval) {
+    fail(`${source}: latest-push approval requires a second maintainer`);
+  }
   if (!pullRequest.required_review_thread_resolution) {
     fail(`${source}: review conversations must be resolved`);
   }

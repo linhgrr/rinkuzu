@@ -54,7 +54,7 @@ export async function getSignedPDFUrl(key: string, expiresIn: number = 3600): Pr
  * Returns null when the URL does not reference this bucket or the key is unsafe.
  * Query/hash suffixes from signed URLs are stripped.
  */
-export function extractOwnedObjectKeyFromUrl(url: string): string | null {
+function extractOwnedObjectKeyFromUrl(url: string): string | null {
   if (typeof url !== 'string' || url.length === 0) return null;
 
   let parsed: URL;
@@ -101,9 +101,7 @@ export function extractOwnedObjectKeyFromUrl(url: string): string | null {
  * Delete an object from object storage.
  * S3 DeleteObject is idempotent for missing keys (no error when the object is gone).
  */
-export async function deletePDF(key: string): Promise<void> {
-  if (typeof key !== 'string' || key.length === 0) return;
-
+async function deletePDF(key: string): Promise<void> {
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,

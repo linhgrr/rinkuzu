@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import type { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession';
+import type { ChatMessage } from '@/features/quiz/lib/chat-history';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 
 type TranslateParams = Record<string, string | number | Date>;

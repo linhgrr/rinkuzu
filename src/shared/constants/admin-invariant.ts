@@ -22,6 +22,3 @@ export const ADMIN_INVARIANT_ERROR_CODE = {
   LAST_ACTIVE_ADMIN: 'last_active_admin',
   ADMIN_INVARIANT_UNAVAILABLE: 'admin_invariant_unavailable',
 } as const;
-
-export type AdminInvariantErrorCode =
-  (typeof ADMIN_INVARIANT_ERROR_CODE)[keyof typeof ADMIN_INVARIANT_ERROR_CODE];

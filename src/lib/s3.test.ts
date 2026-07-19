@@ -43,8 +43,6 @@ vi.mock('@/lib/env', () => ({
 import {
   BUCKET_NAME,
   deleteOwnedPdfUrlsBestEffort,
-  deletePDF,
-  extractOwnedObjectKeyFromUrl,
   getQuizPdfObjectPrefix,
   getSignedPDFUrl,
 } from '@/lib/s3';
@@ -86,50 +84,6 @@ describe('s3 object storage helpers', () => {
     );
   });
 
-  it('extracts owned keys and rejects foreign or unsafe URLs', () => {
-    expect(
-      extractOwnedObjectKeyFromUrl(
-        'https://cdn.example.com/test-bucket/uploads/quiz_extract/user-1/file.pdf?sig=abc',
-      ),
-    ).toBe('uploads/quiz_extract/user-1/file.pdf');
-    expect(
-      extractOwnedObjectKeyFromUrl('https://cdn.example.com/other-bucket/uploads/file.pdf'),
-    ).toBeNull();
-    expect(extractOwnedObjectKeyFromUrl('https://cdn.example.com/test-bucket/')).toBeNull();
-    expect(
-      extractOwnedObjectKeyFromUrl('https://cdn.example.com/test-bucket/uploads/../escape.pdf'),
-    ).toBeNull();
-    expect(
-      extractOwnedObjectKeyFromUrl('https://evil.example.com/test-bucket/uploads/file.pdf'),
-    ).toBeNull();
-    expect(
-      extractOwnedObjectKeyFromUrl('https://cdn.example.com/test-bucket/uploads/%2e%2e/escape.pdf'),
-    ).toBeNull();
-    expect(extractOwnedObjectKeyFromUrl('')).toBeNull();
-  });
-
-  it('deletes by key via DeleteObject and treats empty keys as no-ops', async () => {
-    await deletePDF('uploads/quiz_extract/user-1/file.pdf');
-    expect(deleteObjectInputs).toEqual([
-      {
-        Bucket: 'test-bucket',
-        Key: 'uploads/quiz_extract/user-1/file.pdf',
-      },
-    ]);
-    expect(sendMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        Bucket: 'test-bucket',
-        Key: 'uploads/quiz_extract/user-1/file.pdf',
-      }),
-    );
-
-    deleteObjectInputs.length = 0;
-    sendMock.mockClear();
-    await deletePDF('');
-    expect(deleteObjectInputs).toEqual([]);
-    expect(sendMock).not.toHaveBeenCalled();
-  });
-
   it('best-effort deletes owned URLs only, dedupes keys, and never throws on upstream failure', async () => {
     sendMock.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('upstream unavailable'));
 
@@ -160,6 +114,22 @@ describe('s3 object storage helpers', () => {
       ['https://cdn.example.com/test-bucket/uploads/quiz_extract/user-2/victim.pdf'],
       getQuizPdfObjectPrefix('user-1'),
     );
+
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(deleteObjectInputs).toEqual([]);
+  });
+
+  it('rejects foreign and unsafe URLs before deletion', async () => {
+    const unsafeUrls = [
+      'https://cdn.example.com/other-bucket/uploads/file.pdf',
+      'https://cdn.example.com/test-bucket/',
+      'https://cdn.example.com/test-bucket/uploads/../escape.pdf',
+      'https://evil.example.com/test-bucket/uploads/quiz_extract/user-1/file.pdf',
+      'https://cdn.example.com/test-bucket/uploads/%2e%2e/escape.pdf',
+      '',
+    ];
+
+    await deleteOwnedPdfUrlsBestEffort(unsafeUrls, getQuizPdfObjectPrefix('user-1'));
 
     expect(sendMock).not.toHaveBeenCalled();
     expect(deleteObjectInputs).toEqual([]);

@@ -8,7 +8,7 @@
  * expected namespace from the authenticated userId and fail closed.
  */
 
-export const ADAPTIVE_PIPELINE_UPLOAD_PREFIX = 'uploads/adaptive_pipeline';
+const ADAPTIVE_PIPELINE_UPLOAD_PREFIX = 'uploads/adaptive_pipeline';
 
 const MAX_S3_KEY_LENGTH = 1024;
 
@@ -16,7 +16,7 @@ export type OwnedAdaptivePipelineS3KeyResult =
   | { ok: true; key: string }
   | { ok: false; error: string };
 
-export function buildAdaptivePipelineObjectKeyPrefix(userId: string): string {
+function buildAdaptivePipelineObjectKeyPrefix(userId: string): string {
   return `${ADAPTIVE_PIPELINE_UPLOAD_PREFIX}/${userId}/`;
 }
 

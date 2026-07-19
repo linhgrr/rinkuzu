@@ -7,10 +7,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import {
-  useStreamingChatSession,
-  type ChatMessage,
-} from '@/features/quiz/hooks/useStreamingChatSession';
+import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
+import type { ChatMessage } from '@/features/quiz/lib/chat-history';
 import {
   createQuizResultBookmark,
   deleteQuizResultBookmark,

@@ -296,6 +296,16 @@ describe('production performance workflow contract', () => {
     expect(workflow).toContain('npm run perf:size-baseline --');
     expect(workflow).toContain('PERF_BASELINE_SIZE_REPORT: .performance-baseline/route-sizes.json');
     expect(workflow).toContain('PERF_BASE_SHA: ${{ steps.performance-base.outputs.sha }}');
+    const productionBuildDownloads = [
+      ...workflow.matchAll(
+        /uses: actions\/download-artifact@[^\n]+\n\s+with:\n\s+name: next-production-\$\{\{ github\.sha \}\}\n\s+path: ([^\n]+)/g,
+      ),
+    ];
+    expect(productionBuildDownloads).toHaveLength(2);
+    expect(productionBuildDownloads.map((match) => match[1]?.trim())).toEqual(['.next', '.next']);
+    expect(workflow).toContain("steps.production_e2e.outcome != 'skipped'");
+    expect(workflow).toContain("steps.performance_gate.outcome != 'skipped'");
+    expect(workflow).toContain('if-no-files-found: error');
     expect(workflow.match(/bash scripts\/ci-mongodb\.sh start/g)).toHaveLength(4);
     expect(workflow.match(/bash scripts\/ci-mongodb\.sh stop/g)).toHaveLength(4);
   });

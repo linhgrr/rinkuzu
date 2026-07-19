@@ -4,6 +4,28 @@ import { formatZodIssues } from '@/lib/validation/zod-issues';
 
 const OBJECT_STORAGE_REGIONS = ['auto', 'wnam', 'enam', 'weur', 'eeur', 'apac', 'oc'] as const;
 
+function readMongoDatabaseName(uri: string): string | null {
+  const scheme = uri.startsWith('mongodb://')
+    ? 'mongodb://'
+    : uri.startsWith('mongodb+srv://')
+      ? 'mongodb+srv://'
+      : null;
+  if (!scheme) return null;
+
+  const authorityAndPath = uri.slice(scheme.length).split('?', 1)[0] ?? '';
+  const pathStart = authorityAndPath.indexOf('/');
+  if (pathStart < 0) return null;
+  const encodedDatabaseName = authorityAndPath.slice(pathStart + 1);
+  if (!encodedDatabaseName) return null;
+
+  try {
+    const databaseName = decodeURIComponent(encodedDatabaseName).trim();
+    return databaseName.length > 0 ? databaseName : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Reject common default/placeholder secrets without a shared secret library. */
 function isObviousSecretPlaceholder(value: string): boolean {
   const lower = value.toLowerCase();
@@ -51,7 +73,13 @@ const subscriptionCronSecretSchema = z
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
+    MONGODB_URI: z
+      .string()
+      .min(1, 'MONGODB_URI is required')
+      .refine(
+        (value) => value.startsWith('mongodb://') || value.startsWith('mongodb+srv://'),
+        'MONGODB_URI must use mongodb:// or mongodb+srv://',
+      ),
 
     AUTH_SECRET: z
       .string()
@@ -98,6 +126,18 @@ const envSchema = z
     NEXT_IMAGE_UNOPTIMIZED: z.enum(['true', 'false']).optional(),
   })
   .superRefine((data, ctx) => {
+    const mongoDatabaseName = readMongoDatabaseName(data.MONGODB_URI);
+    if (
+      data.NODE_ENV === 'production' &&
+      (mongoDatabaseName === null || mongoDatabaseName.toLowerCase() === 'test')
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['MONGODB_URI'],
+        message: 'Production MONGODB_URI must select an explicit non-test database',
+      });
+    }
+
     if (
       (data.AUTH_GOOGLE_ID && !data.AUTH_GOOGLE_SECRET) ||
       (!data.AUTH_GOOGLE_ID && data.AUTH_GOOGLE_SECRET)

@@ -28,7 +28,7 @@ const ACTIVE = 0;
  *     filter: Record<string, unknown>,
  *     options: Record<string, unknown>,
  *   ): { toArray(): Promise<Array<{
- *     _id?: unknown,
+ *     _id: unknown,
  *     disable?: unknown,
  *     authVersion?: unknown,
  *     disabledAt?: unknown,
@@ -141,6 +141,9 @@ export function createActiveAdminFencePlanSha(input) {
  * @returns {ActiveAdminFencePlan}
  */
 export function buildActiveAdminFencePlan(activeAdmins, fenceDoc) {
+  if (activeAdmins.some((doc) => doc._id == null)) {
+    throw new Error('Active-admin fence migration failed: active admin is missing _id');
+  }
   const activeAdminIds = activeAdmins.map((doc) => String(doc._id));
   const activeAdminCount = activeAdminIds.length;
 

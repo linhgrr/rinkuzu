@@ -404,7 +404,7 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: next-production-${{ github.sha }}
-          path: .
+          path: .next
 
       - name: Verify build identity
         run: |
@@ -416,10 +416,11 @@ jobs:
         run: ./node_modules/.bin/playwright install --with-deps chromium webkit
 
       - name: Run production E2E suite
+        id: production_e2e
         run: npm run test:e2e
 
       - name: Upload E2E evidence
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.production_e2e.outcome != 'skipped' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: e2e-${{ github.sha }}
@@ -489,7 +490,7 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: next-production-${{ github.sha }}
-          path: .
+          path: .next
 
       - name: Verify build identity
         run: |
@@ -501,13 +502,14 @@ jobs:
         run: ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Run median performance gate
+        id: performance_gate
         run: npm run perf:fe
         env:
           PERF_BASE_SHA: ${{ steps.performance-base.outputs.sha }}
           PERF_BASELINE_SIZE_REPORT: .performance-baseline/route-sizes.json
 
       - name: Upload performance evidence
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.performance_gate.outcome != 'skipped' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: performance-${{ github.sha }}

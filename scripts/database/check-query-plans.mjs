@@ -4,6 +4,7 @@ import { buildRecentAttemptActivityPipeline } from '../../src/repositories/pipel
 import { buildDiscussionListPipeline } from '../../src/repositories/pipelines/discussion-list.mjs';
 import { buildUserAttemptListPipeline } from '../../src/repositories/pipelines/attempt-read.mjs';
 import { buildCompactQuizPipeline } from '../../src/repositories/pipelines/quiz-list.mjs';
+import { assertCoveredExactCountPlan } from './query-plan-contracts.mjs';
 
 const DASHBOARD_QUIZ_PROJECTION = {
   _id: 1,
@@ -419,17 +420,14 @@ try {
       documentsExamined: allQuizCountStats.totalDocsExamined,
       returnedRows: allQuizCountStats.nReturned,
     };
-    if (
-      !allQuizCountIndexes.has('_id_') ||
-      allQuizCountRow.keysExamined !== 800 ||
-      allQuizCountRow.documentsExamined !== 0 ||
-      allQuizCountRow.returnedRows !== 1 ||
-      allQuizCountRows[0]?.totalItems !== 800
-    ) {
-      throw new Error(
-        `all-quiz-count did not use the _id_ index for an exact covered count; stages=${allQuizCountRow.stages.join(',')}; indexes=${allQuizCountRow.indexes.join(',')}; keys=${allQuizCountRow.keysExamined}; documents=${allQuizCountRow.documentsExamined}; total=${String(allQuizCountRows[0]?.totalItems)}`,
-      );
+    const allQuizTotal = allQuizCountRows[0]?.totalItems;
+    if (allQuizTotal !== 800) {
+      throw new Error(`all-quiz-count returned ${String(allQuizTotal)}; expected 800`);
     }
+    assertCoveredExactCountPlan(allQuizCountRow, {
+      totalItems: allQuizTotal,
+      expectedIndex: '_id_',
+    });
     evidence.push(allQuizCountRow);
 
     const publicQuizFilter = { isPrivate: false };

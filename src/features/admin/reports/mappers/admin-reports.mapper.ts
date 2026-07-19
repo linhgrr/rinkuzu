@@ -1,5 +1,6 @@
 import type { AdminReportDto } from '@/dtos/admin-report';
 import { formatDateTime } from '@/lib/formatters';
+import { copyReportCoreFields } from '@/lib/report-fields';
 import type { AdminReportViewModel } from '@/features/admin/reports/types/admin-reports-view-model';
 
 const EMPTY_DATE_LABEL = '—';
@@ -10,14 +11,7 @@ function formatReportDateLabel(value: string | undefined): string {
 
 function toAdminReportViewModel(report: AdminReportDto): AdminReportViewModel {
   return {
-    id: report.id,
-    quizId: report.quizId,
-    quizTitle: report.quizTitle,
-    quizSlug: report.quizSlug,
-    reporterEmail: report.reporterEmail,
-    reporterName: report.reporterName,
-    content: report.content,
-    status: report.status,
+    ...copyReportCoreFields(report),
     createdAt: report.createdAt,
     createdAtLabel: formatReportDateLabel(report.createdAt),
     updatedAt: report.updatedAt,

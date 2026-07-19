@@ -1,17 +1,5 @@
-import type { ReportStatus } from '@/shared/constants/report-status';
+import type { ReportFields } from '@/shared/types/report';
 
-export interface Report {
+export interface Report extends ReportFields {
   id: string;
-  quizId: string;
-  quizTitle: string;
-  quizSlug: string;
-  reporterEmail: string;
-  reporterName: string;
-  content: string;
-  status: ReportStatus;
-  createdAt: Date;
-  updatedAt: Date;
-  resolvedAt?: Date;
-  resolvedBy?: string;
-  adminNotes?: string;
 }

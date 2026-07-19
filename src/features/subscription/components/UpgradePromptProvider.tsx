@@ -1,11 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { UpgradePromptContext } from '@/features/subscription/lib/upgrade-prompt-context';
 
 /**
  * Escalation upgrade prompt: the first time a user hits a premium limit we show
@@ -17,22 +18,6 @@ import { Button } from '@/components/ui/Button';
  * if a real need appears.
  */
 const DISMISS_KEY = 'rinkuzu-upgrade-prompt-dismissed';
-
-type UpgradeReason = 'rate_limit' | 'private_quiz';
-
-interface UpgradePromptContextValue {
-  promptUpgrade: (reason?: UpgradeReason) => void;
-}
-
-const UpgradePromptContext = createContext<UpgradePromptContextValue | null>(null);
-
-export function useUpgradePrompt(): UpgradePromptContextValue {
-  const ctx = useContext(UpgradePromptContext);
-  if (!ctx) {
-    throw new Error('useUpgradePrompt must be used within UpgradePromptProvider');
-  }
-  return ctx;
-}
 
 function isDismissed(): boolean {
   if (typeof window === 'undefined') return false;

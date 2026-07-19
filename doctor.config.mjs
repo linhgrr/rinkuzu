@@ -17,7 +17,10 @@ const doctorConfig = {
   },
   ignore: {
     rules: [],
-    files: ['.gitnexus/**'],
+    // Generated analysis sandboxes are not application source. In particular,
+    // Stryker intentionally writes insecure mutants under .stryker-tmp while a
+    // campaign is running; scanning them creates non-deterministic false reds.
+    files: ['.gitnexus/**', '.stryker-tmp/**'],
     overrides: [
       // Portal's server snapshot is false; document is reached only after the
       // client snapshot changes. Rewriting this CRITICAL shared primitive to

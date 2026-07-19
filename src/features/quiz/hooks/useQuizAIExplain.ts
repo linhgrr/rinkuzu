@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { useUpgradePrompt } from '@/features/subscription/components/UpgradePromptProvider';
+import { useUpgradePrompt } from '@/features/subscription/lib/upgrade-prompt-context';
 import { isPremiumLimitError } from '@/features/subscription/lib/limit-error';
 
 interface ExplainableQuestion {

@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   streamQuizAI: vi.fn(),
 }));
 
-vi.mock('@/features/subscription/components/UpgradePromptProvider', () => ({
+vi.mock('@/features/subscription/lib/upgrade-prompt-context', () => ({
   useUpgradePrompt: () => ({ promptUpgrade: mocks.promptUpgrade }),
 }));
 

@@ -29,7 +29,7 @@ export function assertCoveredExactCountPlan(evidence, { totalItems, expectedInde
     !usesOnlyExpectedIndex ||
     !keysWithinCoveredRange ||
     evidence.documentsExamined !== 0 ||
-    evidence.returnedRows !== 1
+    evidence.returnedRows !== totalItems
   ) {
     throw new Error(
       `${evidence.name} did not use ${expectedIndex} for an exact covered count; ` +

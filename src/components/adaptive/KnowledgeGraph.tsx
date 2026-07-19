@@ -17,7 +17,8 @@ import {
 } from '@xyflow/react';
 
 import dagre from 'dagre';
-import { Lock } from 'lucide-react';
+import { Lock, Maximize2 } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { getConceptDetail } from '@/features/adaptive/lib/adaptive-api-methods';
 import { useKnowledgeGraph } from '@/hooks/useAdaptive';
@@ -36,6 +37,8 @@ interface SelectedConceptState {
   sessionId: string;
   detail: ConceptDetail;
 }
+
+type GraphDirection = 'TB' | 'LR';
 
 function getNodeColor(status: KnowledgeNode['status']) {
   if (status === 'mastered') return 'var(--brand-trust)';
@@ -87,6 +90,7 @@ interface ConceptNodeData extends Record<string, unknown> {
   label: string;
   status: KnowledgeNode['status'];
   mastery: number;
+  direction: GraphDirection;
 }
 
 function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
@@ -95,6 +99,8 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   const isLocked = data.status === 'locked';
   const isFilled = data.status === 'mastered' || data.status === 'in_progress';
   const showDot = data.status === 'in_progress';
+  const targetPosition = data.direction === 'LR' ? Position.Left : Position.Top;
+  const sourcePosition = data.direction === 'LR' ? Position.Right : Position.Bottom;
 
   return (
     <div
@@ -105,7 +111,7 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
         color: isFilled ? 'white' : undefined,
       }}
     >
-      <Handle type="target" position={Position.Top} className="!h-1.5 !w-1.5 !bg-neutral-400" />
+      <Handle type="target" position={targetPosition} className="!h-1.5 !w-1.5 !bg-neutral-400" />
 
       <div className="flex flex-col items-center justify-center gap-1.5">
         <div
@@ -132,7 +138,7 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
         <div className="pointer-events-none absolute -inset-[1px] animate-pulse rounded-xl border border-orange-300/60" />
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!h-1.5 !w-1.5 !bg-neutral-400" />
+      <Handle type="source" position={sourcePosition} className="!h-1.5 !w-1.5 !bg-neutral-400" />
     </div>
   );
 }
@@ -153,7 +159,11 @@ function getConceptDetailCacheKey(sessionId: string, nodeId: string) {
   return `${sessionId}:${nodeId}`;
 }
 
-const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], direction = 'TB') => {
+const getLayoutedElements = (
+  nodes: Node<ConceptNodeData>[],
+  edges: Edge[],
+  direction: GraphDirection,
+) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   dagreGraph.setGraph({ rankdir: direction, nodesep: 80, ranksep: 100 });
@@ -186,10 +196,14 @@ const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], dire
 
 function GraphFlow({
   graphData,
+  direction,
   onNodeClick,
+  preventPageScroll,
 }: {
   graphData: KnowledgeGraphData | null;
+  direction: GraphDirection;
   onNodeClick: (nodeId: string) => void;
+  preventPageScroll: boolean;
 }) {
   const { fitView } = useReactFlow();
 
@@ -203,6 +217,7 @@ function GraphFlow({
         label: n.name,
         status: n.status,
         mastery: n.mastery,
+        direction,
       },
     }));
   })();
@@ -238,16 +253,18 @@ function GraphFlow({
 
   const { nodes, edges } = (() => {
     if (initialNodes.length === 0) return { nodes: [], edges: [] };
-    return getLayoutedElements(initialNodes, initialEdges);
+    return getLayoutedElements(initialNodes, initialEdges, direction);
   })();
   const nodeCount = nodes.length;
 
   // Fit view when nodes change
   useEffect(() => {
     if (nodeCount > 0) {
-      window.setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 100);
+      const fitViewTimer = window.setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 100);
+      return () => window.clearTimeout(fitViewTimer);
     }
-  }, [graphData, nodeCount, fitView]);
+    return undefined;
+  }, [direction, graphData, nodeCount, fitView]);
 
   const handleNodeClick = (_: React.MouseEvent, node: Node) => {
     onNodeClick(node.id);
@@ -264,13 +281,108 @@ function GraphFlow({
       minZoom={0.2}
       maxZoom={2}
       panOnScroll={false}
-      preventScrolling={false}
+      preventScrolling={preventPageScroll}
       proOptions={{ hideAttribution: true }}
       className="bg-neutral-50/50"
     >
       <Background color="#ececea" gap={20} size={1} />
       <Controls showInteractive={false} className="border-neutral-200 fill-neutral-600" />
     </ReactFlow>
+  );
+}
+
+interface KnowledgeGraphViewportProps {
+  graphData: KnowledgeGraphData;
+  graphError: string | null;
+  legendItems: Array<{ color: string; label: string }>;
+  mode: 'embedded' | 'expanded';
+  onExpand?: () => void;
+  onNodeSelect: (nodeId: string) => void;
+  renderGraph?: boolean;
+  expandButtonRef?: React.Ref<HTMLButtonElement>;
+  title: string;
+  clickNodeHint: string;
+  expandLabel: string;
+}
+
+function KnowledgeGraphViewport({
+  graphData,
+  graphError,
+  legendItems,
+  mode,
+  onExpand,
+  onNodeSelect,
+  renderGraph = true,
+  expandButtonRef,
+  title,
+  clickNodeHint,
+  expandLabel,
+}: KnowledgeGraphViewportProps) {
+  const isExpanded = mode === 'expanded';
+
+  return (
+    <div
+      className={`relative w-full overflow-hidden rounded-xl border border-neutral-200 bg-white ${isExpanded ? 'h-full' : 'h-[600px]'}`}
+    >
+      {!isExpanded ? (
+        <div className="pointer-events-none absolute left-5 top-4 z-10 max-w-[calc(100%-6rem)]">
+          <h3 className="text-base font-medium tracking-tight text-neutral-900">{title}</h3>
+          <p className="mt-1 text-xs text-neutral-500">{clickNodeHint}</p>
+          {graphError ? (
+            <p
+              role="alert"
+              className="pointer-events-auto mt-2 max-w-md rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs text-red-700"
+            >
+              {graphError}
+            </p>
+          ) : null}
+        </div>
+      ) : graphError ? (
+        <p
+          role="alert"
+          className="absolute left-5 top-4 z-10 max-w-md rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs text-red-700"
+        >
+          {graphError}
+        </p>
+      ) : null}
+
+      {!isExpanded && onExpand ? (
+        <button
+          ref={expandButtonRef}
+          type="button"
+          onClick={onExpand}
+          aria-haspopup="dialog"
+          aria-expanded={!renderGraph}
+          aria-label={expandLabel}
+          title={expandLabel}
+          className="absolute right-4 top-4 z-20 flex size-11 items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-600 shadow-sm backdrop-blur-sm transition-[background-color,border-color,color,transform] hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+        >
+          <Maximize2 className="size-5" aria-hidden="true" />
+        </button>
+      ) : null}
+
+      <div className="pointer-events-none absolute bottom-4 right-4 z-10 flex max-w-[calc(100%-5rem)] flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg border border-neutral-200 bg-white/90 px-3 py-2 text-[10px] font-mono shadow-sm backdrop-blur-sm sm:right-5">
+        {legendItems.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            <div className={`h-2 w-2 rounded-full ${item.color}`} />
+            <span className="uppercase tracking-widest text-neutral-700">{item.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="h-full w-full">
+        {renderGraph ? (
+          <ReactFlowProvider>
+            <GraphFlow
+              graphData={graphData}
+              direction={isExpanded ? 'LR' : 'TB'}
+              onNodeClick={onNodeSelect}
+              preventPageScroll={isExpanded}
+            />
+          </ReactFlowProvider>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -284,8 +396,11 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   const [selectedConceptState, setSelectedConceptState] = useState<SelectedConceptState | null>(
     null,
   );
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [graphError, setGraphError] = useState<string | null>(null);
   const conceptDetailCacheRef = useRef<Map<string, ConceptDetail> | null>(null);
+  const expandButtonRef = useRef<HTMLButtonElement>(null);
+  const isExpanded = Boolean(sessionId && expandedSessionId === sessionId);
   const selectedConcept =
     selectedConceptState && selectedConceptState.sessionId === sessionId
       ? selectedConceptState.detail
@@ -322,6 +437,11 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     { color: 'bg-neutral-200', label: t('knowledgeGraph.legend.locked') },
   ];
 
+  const closeExpandedGraph = () => {
+    setExpandedSessionId(null);
+    window.requestAnimationFrame(() => expandButtonRef.current?.focus());
+  };
+
   if (!sessionId) {
     return (
       <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50">
@@ -354,37 +474,41 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   return (
     <>
-      <div className="relative h-[600px] w-full overflow-hidden rounded-xl border border-neutral-200 bg-white">
-        <div className="pointer-events-none absolute left-5 top-4 z-10">
-          <h3 className="text-base font-medium tracking-tight text-neutral-900">
-            {t('knowledgeGraph.title')}
-          </h3>
-          <p className="text-xs text-neutral-500 mt-1">{t('knowledgeGraph.clickNodeHint')}</p>
-          {graphError ? (
-            <p
-              role="alert"
-              className="pointer-events-auto mt-2 max-w-md rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs text-red-700"
-            >
-              {graphError}
-            </p>
-          ) : null}
-        </div>
+      <KnowledgeGraphViewport
+        graphData={graphData}
+        graphError={graphError}
+        legendItems={legendItems}
+        mode="embedded"
+        onExpand={() => setExpandedSessionId(sessionId)}
+        onNodeSelect={handleNodeSelect}
+        renderGraph={!isExpanded}
+        expandButtonRef={expandButtonRef}
+        title={t('knowledgeGraph.title')}
+        clickNodeHint={t('knowledgeGraph.clickNodeHint')}
+        expandLabel={t('knowledgeGraph.expand')}
+      />
 
-        <div className="pointer-events-none absolute bottom-4 right-5 z-10 flex gap-4 rounded-lg border border-neutral-200 bg-white/90 px-3 py-2 text-[10px] font-mono shadow-sm backdrop-blur-sm">
-          {legendItems.map((item) => (
-            <div key={item.label} className="flex items-center gap-1.5">
-              <div className={`h-2 w-2 rounded-full ${item.color}`} />
-              <span className="text-neutral-700 uppercase tracking-widest">{item.label}</span>
-            </div>
-          ))}
+      <Modal
+        isOpen={isExpanded}
+        onClose={closeExpandedGraph}
+        title={t('knowledgeGraph.title')}
+        description={t('knowledgeGraph.expandedDescription')}
+        size="wide"
+        className="h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] max-w-[calc(100dvw-2rem)] overflow-hidden sm:h-[92dvh] sm:max-h-[92dvh] sm:max-w-[94vw]"
+      >
+        <div className="h-[calc(100dvh-11rem)] min-h-0 sm:h-[calc(92dvh-11rem)]">
+          <KnowledgeGraphViewport
+            graphData={graphData}
+            graphError={graphError}
+            legendItems={legendItems}
+            mode="expanded"
+            onNodeSelect={handleNodeSelect}
+            title={t('knowledgeGraph.title')}
+            clickNodeHint={t('knowledgeGraph.clickNodeHint')}
+            expandLabel={t('knowledgeGraph.expand')}
+          />
         </div>
-
-        <div className="h-full w-full">
-          <ReactFlowProvider>
-            <GraphFlow graphData={graphData} onNodeClick={handleNodeSelect} />
-          </ReactFlowProvider>
-        </div>
-      </div>
+      </Modal>
 
       {selectedConcept ? (
         <ConceptDetailPanel

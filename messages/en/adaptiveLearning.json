@@ -269,6 +269,8 @@
     "clickNodeHint": "Click a node to see concept details",
     "startSessionHint": "Start a session to see the knowledge graph",
     "noData": "No graph data available",
+    "expand": "Expand knowledge graph",
+    "expandedDescription": "Explore prerequisite relationships from left to right.",
     "legend": {
       "completed": "Completed",
       "current": "Current",

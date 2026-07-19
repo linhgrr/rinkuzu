@@ -269,6 +269,8 @@
     "clickNodeHint": "Nhấn vào một nút để xem chi tiết khái niệm",
     "startSessionHint": "Bắt đầu một phiên học để xem sơ đồ kiến thức",
     "noData": "Không có dữ liệu sơ đồ",
+    "expand": "Mở rộng sơ đồ kiến thức",
+    "expandedDescription": "Khám phá các mối quan hệ tiên quyết từ trái sang phải.",
     "legend": {
       "completed": "Đã hoàn thành",
       "current": "Hiện tại",

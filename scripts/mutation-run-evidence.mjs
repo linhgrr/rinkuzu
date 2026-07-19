@@ -55,7 +55,6 @@ const FINGERPRINT_CONFIG_SET = new Set(MUTATION_FINGERPRINT_CONFIG_PATHS);
 const STRYKER_CORE_PACKAGE_RELATIVE = 'node_modules/@stryker-mutator/core/package.json';
 const GATE_SCRIPT_PATHS = new Set([
   'scripts/check-mutation-report.mjs',
-  'scripts/resolve-mutation-scope.mjs',
   'scripts/run-mutation-gate.mjs',
   'scripts/mutation-run-evidence.mjs',
 ]);

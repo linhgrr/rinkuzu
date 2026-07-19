@@ -119,6 +119,16 @@ function createFakeDb(options: {
 }
 
 describe('migrate-active-admin-fence pure helpers', () => {
+  it('fails closed when an active-admin projection violates the required _id contract', () => {
+    expect(() =>
+      buildActiveAdminFencePlan(
+        // Runtime guard protects against malformed adapters despite the stricter JSDoc boundary.
+        [{ _id: undefined }],
+        null,
+      ),
+    ).toThrow(/active admin is missing _id/);
+  });
+
   it('validates nonnegative integers and canonical fence shape', () => {
     expect(isNonNegativeInteger(0)).toBe(true);
     expect(isNonNegativeInteger(3)).toBe(true);

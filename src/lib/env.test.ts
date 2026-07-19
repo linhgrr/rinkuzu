@@ -77,6 +77,28 @@ describe('env validation', () => {
       /AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET must both be set, or both omitted/,
     );
   });
+
+  it.each(['mongodb://127.0.0.1:27017', 'mongodb://127.0.0.1:27017/test'])(
+    'rejects production MongoDB URI without an explicit application database: %s',
+    async (mongodbUri) => {
+      replaceProcessEnv({ ...baseEnv, NODE_ENV: 'production', MONGODB_URI: mongodbUri });
+
+      await expect(import('@/lib/env')).rejects.toThrow(
+        /Production MONGODB_URI must select an explicit non-test database/,
+      );
+    },
+  );
+
+  it('accepts an explicit production MongoDB database', async () => {
+    replaceProcessEnv({
+      ...baseEnv,
+      NODE_ENV: 'production',
+      MONGODB_URI: 'mongodb+srv://user:password@example.mongodb.net/rinkuzu?retryWrites=true',
+    });
+
+    const { env } = await import('@/lib/env');
+    expect(env.MONGODB_URI).toContain('/rinkuzu?');
+  });
 });
 
 describe('INTERNAL_SERVICE_TOKEN validation', () => {

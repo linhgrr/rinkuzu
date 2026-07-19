@@ -1,22 +1,27 @@
 ---
 name: Improvement
 about: Suggest an improvement to existing functionality
-title: "[IMPROVEMENT] "
+title: '[IMPROVEMENT] '
 labels: improvement
 assignees: ''
 ---
 
 ## Description
+
 Describe what needs to be improved and why.
 
 ## Current Behavior
+
 Explain the current behavior or implementation.
 
 ## Proposed Improvement
+
 Describe how this should be improved.
 
 ## Benefits
+
 Explain the benefits of this improvement:
+
 - Performance improvement
 - Better UX/UI
 - Code quality
@@ -24,12 +29,15 @@ Explain the benefits of this improvement:
 - Other
 
 ## Acceptance Criteria
+
 - [ ] Criterion 1
 - [ ] Criterion 2
 - [ ] Criterion 3
 
 ## Affected Areas
+
 What parts of the application would be affected?
+
 - Frontend components
 - Backend services
 - Database
@@ -37,4 +45,5 @@ What parts of the application would be affected?
 - UI/UX
 
 ## Additional Context
+
 Add any mockups, diagrams, or other context here.

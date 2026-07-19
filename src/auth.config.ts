@@ -10,6 +10,17 @@ function positiveSeconds(value: string | undefined, fallback: number): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+type AuthHostEnvironment = Readonly<{
+  [key: string]: string | undefined;
+  AUTH_TRUST_HOST?: string;
+  VERCEL?: string;
+}>;
+
+/** Trust only Vercel's managed host header or an explicit operator opt-in. */
+export function shouldTrustAuthHost(environment: AuthHostEnvironment): boolean {
+  return environment.VERCEL === '1' || environment.AUTH_TRUST_HOST === 'true';
+}
+
 function localizedAuthTarget(url: string | null, locale: string): string {
   return resolveAuthCallback(url, locale).browserUrl;
 }
@@ -57,7 +68,7 @@ export function resolveAuthRedirectTarget(url: string, baseUrl: string): string 
  */
 const authConfig = {
   providers: [],
-  trustHost: process.env['AUTH_TRUST_HOST'] === 'true',
+  trustHost: shouldTrustAuthHost(process.env),
   session: {
     strategy: 'jwt',
     maxAge: positiveSeconds(process.env['SESSION_MAX_AGE_SECONDS'], 28_800),

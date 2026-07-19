@@ -63,8 +63,4 @@ export interface ILearningProgressRepository {
     userId: string,
     options: StreakFreezePurchaseOptions,
   ): Promise<StreakFreezePurchaseResult>;
-
-  countLearnedQuestions(userId: string): Promise<number>;
-
-  updateTotalQuestionsLearned(userId: string, totalQuestionsLearned: number): Promise<void>;
 }

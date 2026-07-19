@@ -1,4 +1,3 @@
-import { after } from 'next/server';
 import type {
   BuyStreakFreezeResponseDto,
   DueReviewListDto,
@@ -147,6 +146,7 @@ export class LearningProgressService implements ILearningProgressService {
             totalCorrect: 0,
             history: [],
           };
+          const wasLearned = questionProgress.srsLevel > 0;
 
           if (input.questionRef !== undefined) questionProgress.questionRef = input.questionRef;
 
@@ -175,6 +175,11 @@ export class LearningProgressService implements ILearningProgressService {
 
           const userProgress =
             existingUserProgress ?? this.repository.createDefaultUserProgress(userId);
+          const isLearned = questionProgress.srsLevel > 0;
+          userProgress.totalQuestionsLearned = Math.max(
+            0,
+            userProgress.totalQuestionsLearned + Number(isLearned) - Number(wasLearned),
+          );
           const streakFreezeUsed = this.applyReviewActivity(userProgress, {
             now,
             xpGain,
@@ -184,15 +189,6 @@ export class LearningProgressService implements ILearningProgressService {
           return { questionProgress, userProgress, streakFreezeUsed };
         },
       );
-
-      after(async () => {
-        try {
-          const totalQuestionsLearned = await this.repository.countLearnedQuestions(userId);
-          await this.repository.updateTotalQuestionsLearned(userId, totalQuestionsLearned);
-        } catch (error) {
-          logger.error({ error, userId }, 'Recompute learned question count error');
-        }
-      });
 
       const outcome: SubmitReviewOutcome = {
         questionProgress: savedQuestionProgress,

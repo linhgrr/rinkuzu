@@ -3,7 +3,7 @@ import {
   initialSubscriptionPageState,
   subscriptionPageReducer,
   type SubscriptionPageState,
-} from './page';
+} from '@/features/subscription/lib/subscription-page-state';
 
 const sampleViewModel = {
   plans: [

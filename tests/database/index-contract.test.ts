@@ -62,6 +62,25 @@ describe('database index contract registry', () => {
     }
   });
 
+  it('enforces attempt idempotency only for persisted string keys', () => {
+    const expectedFilters = {
+      'attempts.user-idempotency': {
+        user: { $type: 'objectId' },
+        idempotencyKey: { $type: 'string' },
+      },
+      'attempts.guest-idempotency': {
+        guestEmail: { $type: 'string' },
+        idempotencyKey: { $type: 'string' },
+      },
+    };
+
+    for (const [indexId, partialFilterExpression] of Object.entries(expectedFilters)) {
+      const entry = INDEX_CONTRACT.find(({ id }) => id === indexId);
+      expect(entry, `${indexId} must remain in the runtime index contract`).toBeDefined();
+      expect(entry?.options).toMatchObject({ unique: true, partialFilterExpression });
+    }
+  });
+
   it('keeps every legacy removal in hide-before-drop lifecycle', () => {
     const deprecated = INDEX_CONTRACT.filter((entry) => entry.lifecycle === 'deprecated_hidden');
 

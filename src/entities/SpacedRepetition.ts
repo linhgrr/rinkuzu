@@ -1,5 +1,3 @@
-export type SRSRating = 'fail' | 'hard' | 'good' | 'easy';
-
 export interface SRSReviewResult {
   /** Days until the next review. */
   interval: number;

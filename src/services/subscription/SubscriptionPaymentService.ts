@@ -114,14 +114,9 @@ export class SubscriptionPaymentService {
       };
     } catch (error) {
       logger.error({ error }, 'Error in createPaymentRequest');
-
-      // Clean up the subscription record if payment creation failed
-      try {
-        await this.subscriptionRepository.deletePendingByOrderId(orderCode.toString());
-      } catch (cleanupError) {
-        logger.error({ cleanupError }, 'Failed to cleanup subscription record');
-      }
-
+      // Keep the pending row. A timeout or lost response can happen after PayOS
+      // durably created the payment link; deleting here would make a later,
+      // correctly signed webhook impossible to reconcile.
       throw error;
     }
   }

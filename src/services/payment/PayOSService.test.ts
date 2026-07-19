@@ -10,7 +10,7 @@ vi.mock('@/lib/env', () => ({
 }));
 
 vi.mock('@/lib/logger', () => ({
-  logger: { error: vi.fn() },
+  logger: { debug: vi.fn(), error: vi.fn() },
 }));
 
 import { PayOSService } from '@/services/payment/PayOSService';
@@ -85,12 +85,10 @@ function mockFetch(body: unknown, init: Partial<Response> = {}) {
 describe('PayOSService', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
 
   it('omits absent optional buyer fields from the signed payment request', async () => {
     mockFetch(paymentCreateResponse());
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     await new PayOSService().createPayment(
       123,
@@ -128,11 +126,7 @@ describe('PayOSService', () => {
       'x-client-id': 'client-id',
       'x-api-key': 'api-key',
     });
-
-    const redactedBodies = warn.mock.calls
-      .map((call) => call[1])
-      .filter((value): value is Record<string, unknown> => !!value && typeof value === 'object');
-    expect(redactedBodies.some((value) => value['signature'] === '***')).toBe(true);
+    expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
   it('includes optional buyer fields when provided', async () => {
@@ -158,7 +152,6 @@ describe('PayOSService', () => {
 
   it('verifies and loads payment info through GET payment-link endpoints', async () => {
     mockFetch(paymentLinkResponse());
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const service = new PayOSService();
 
     await expect(service.verifyPayment(123)).resolves.toMatchObject({
@@ -178,16 +171,6 @@ describe('PayOSService', () => {
       'https://api-merchant.payos.vn/v2/payment-requests/456',
     );
     expect(vi.mocked(fetch).mock.calls[1]?.[1]).toMatchObject({ method: 'GET' });
-
-    const getRequestLogs = warn.mock.calls.filter((call) => call[0] === 'PayOS API Request:');
-    expect(getRequestLogs).toHaveLength(2);
-    for (const [, payload] of getRequestLogs) {
-      expect(payload).toEqual({
-        url: expect.stringContaining('/v2/payment-requests/'),
-        method: 'GET',
-        body: undefined,
-      });
-    }
   });
 
   it('surfaces PayOS API error envelopes and invalid JSON bodies', async () => {
@@ -238,41 +221,9 @@ describe('PayOSService', () => {
     );
   });
 
-  it('returns true from testConnection when credentials are present', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const createHmacSpy = vi.spyOn(crypto, 'createHmac');
-    await expect(new PayOSService().testConnection()).resolves.toBe(true);
-    expect(warn).toHaveBeenCalledWith('Testing PayOS API connection...');
-    expect(warn).toHaveBeenCalledWith(
-      'Environment variables:',
-      expect.objectContaining({
-        clientId: 'Set',
-        apiKey: 'Set',
-        checksumKey: 'Set',
-        baseUrl: 'https://api-merchant.payos.vn',
-      }),
-    );
-    expect(createHmacSpy).toHaveBeenCalledWith('sha256', 'checksum-key');
-    const hmac = createHmacSpy.mock.results[0]?.value as { update: (data: string) => unknown };
-    expect(typeof hmac.update).toBe('function');
-  });
-
-  it('returns false from testConnection when signature generation throws', async () => {
+  it('logs request metadata without payment payloads or buyer data', async () => {
     const { logger } = await import('@/lib/logger');
-    vi.spyOn(crypto, 'createHmac').mockImplementation(() => {
-      throw new Error('hmac unavailable');
-    });
-
-    await expect(new PayOSService().testConnection()).resolves.toBe(false);
-    expect(logger.error).toHaveBeenCalledWith(
-      { error: expect.any(Error) },
-      'PayOS connection test failed',
-    );
-  });
-
-  it('redacts buyer fields in request logs and logs request/response metadata', async () => {
     mockFetch(paymentCreateResponse());
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     await new PayOSService().createPayment(
       123,
@@ -284,29 +235,40 @@ describe('PayOSService', () => {
       'Buyer Name',
     );
 
-    const redactedCreateLog = warn.mock.calls.find(
-      (call) => call[0] === 'PayOS createPayment request body:',
-    )?.[1] as Record<string, unknown> | undefined;
-    expect(redactedCreateLog).toMatchObject({
-      signature: '***',
-      buyerEmail: '***',
-      buyerName: '***',
-      orderCode: 123,
-    });
+    expect(logger.debug).toHaveBeenCalledWith(
+      {
+        endpoint: '/v2/payment-requests',
+        method: 'POST',
+      },
+      'PayOS API request',
+    );
+    expect(logger.debug).toHaveBeenCalledWith(
+      {
+        endpoint: '/v2/payment-requests',
+        status: 200,
+      },
+      'PayOS API response',
+    );
+    const serializedLogs = JSON.stringify(vi.mocked(logger.debug).mock.calls);
+    expect(serializedLogs).not.toContain('buyer@example.com');
+    expect(serializedLogs).not.toContain('Buyer Name');
+    expect(serializedLogs).not.toContain('signature');
+  });
 
-    const requestLog = warn.mock.calls.find((call) => call[0] === 'PayOS API Request:')?.[1] as
-      | Record<string, unknown>
-      | undefined;
-    expect(requestLog).toMatchObject({
-      url: 'https://api-merchant.payos.vn/v2/payment-requests',
-      method: 'POST',
-      body: expect.objectContaining({ signature: '***', buyerEmail: '***' }),
-    });
+  it('maps provider timeouts to a stable availability error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new DOMException('request timed out', 'TimeoutError')),
+    );
 
-    const responseLog = warn.mock.calls.find((call) => call[0] === 'PayOS API Response:')?.[1] as
-      | Record<string, unknown>
-      | undefined;
-    expect(responseLog).toMatchObject({ status: 200, statusText: 'OK' });
+    await expect(new PayOSService().verifyPayment(123)).rejects.toThrow(
+      'Payment service is temporarily unavailable',
+    );
+    const [, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(init).toMatchObject({
+      method: 'GET',
+    });
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it('rethrows Error instances from fetch failures and wraps unknown failures', async () => {

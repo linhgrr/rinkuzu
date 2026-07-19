@@ -19,10 +19,11 @@ const payosWebhookDataSchema = z
   .catchall(z.unknown());
 
 export const payosWebhookRequestSchema = z.strictObject({
-  code: z.string().optional(),
-  success: z.boolean().optional(),
+  code: z.string(),
+  desc: z.string(),
+  success: z.boolean(),
   data: payosWebhookDataSchema,
-  signature: z.string().min(1),
+  signature: z.string().regex(/^[a-fA-F0-9]{64}$/, 'Signature must be a SHA-256 hex digest'),
 });
 
 export interface SubscriptionPlanDto {
@@ -42,11 +43,9 @@ export interface PaymentRequestDto {
 }
 
 export interface VerifiedPaymentDto {
-  orderCode: string | number;
-  amount: string | number;
-  reference?: string;
-  status?: string;
-  code?: string;
+  orderCode: number;
+  amount: number;
+  reference: string;
 }
 
 export interface SubscriptionActivationDto {

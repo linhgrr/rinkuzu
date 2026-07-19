@@ -1,8 +1,8 @@
+import type { SubscriptionRecord } from '@/entities/Subscription';
 import type {
   AdminMutableSubscriptionStatus,
-  SubscriptionRecord,
   SubscriptionStatus,
-} from '@/entities/Subscription';
+} from '@/shared/constants/subscription-status';
 export interface ActivateSubscriptionData {
   orderId: string;
   userId: string;
@@ -67,5 +67,4 @@ export interface ISubscriptionRepository {
   expireCurrentForUser(userId: string, orderId: string): Promise<boolean>;
   cancelCurrentForUser(userId: string): Promise<CancelCurrentSubscriptionResult>;
   activateSubscription(data: ActivateSubscriptionData): Promise<void>;
-  deletePendingByOrderId(orderId: string): Promise<boolean>;
 }

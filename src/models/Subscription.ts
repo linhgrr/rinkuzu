@@ -1,20 +1,9 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
+import { SUBSCRIPTION_STATUSES } from '@/shared/constants/subscription-status';
+import type { SubscriptionRecordFields } from '@/shared/types/subscription';
 
-interface SubscriptionDocument extends Document {
+interface SubscriptionDocument extends Document, SubscriptionRecordFields {
   user: Types.ObjectId;
-  userEmail: string;
-  type: string;
-  amount: number;
-  currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'expired';
-  payosOrderId: string;
-  payosTransactionId?: string;
-  payosPaymentUrl?: string;
-  startDate?: Date;
-  endDate?: Date;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 const SubscriptionSchema = new Schema<SubscriptionDocument>(
@@ -43,7 +32,7 @@ const SubscriptionSchema = new Schema<SubscriptionDocument>(
     },
     status: {
       type: String,
-      enum: ['pending', 'completed', 'failed', 'cancelled', 'expired'],
+      enum: SUBSCRIPTION_STATUSES,
       default: 'pending',
     },
     payosOrderId: {

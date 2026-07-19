@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { PAYOS_PAYMENT_STATUSES } from '@/shared/constants/payment-status';
 
-const payosStatusSchema = z.enum(['PENDING', 'PAID', 'CANCELLED', 'EXPIRED']);
+const payosStatusSchema = z.enum(PAYOS_PAYMENT_STATUSES);
 
 const payosTransactionSchema = z.object({
   reference: z.string().min(1),

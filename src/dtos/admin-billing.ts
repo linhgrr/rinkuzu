@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { DurationUtils } from '@/types/subscription';
 import { objectIdRouteParamSchema, objectIdSchema } from '@/lib/validation/common';
 import type { PaginationMeta } from '@/dtos/common';
+import {
+  ADMIN_MUTABLE_SUBSCRIPTION_STATUSES,
+  SUBSCRIPTION_STATUSES,
+} from '@/shared/constants/subscription-status';
 
 export const adminSubscriptionIdRouteParamsSchema = z.strictObject({
   id: objectIdRouteParamSchema,
@@ -58,7 +62,7 @@ export const grantUserSubscriptionRequestSchema = z.object({
   planId: planIdSchema,
 });
 
-const subscriptionStatusSchema = z.enum(['pending', 'completed', 'failed', 'cancelled', 'expired']);
+const subscriptionStatusSchema = z.enum(SUBSCRIPTION_STATUSES);
 
 type SubscriptionStatusDto = z.infer<typeof subscriptionStatusSchema>;
 
@@ -70,7 +74,7 @@ export const adminSubscriptionListQuerySchema = z.object({
 });
 
 export const updateSubscriptionRequestSchema = z.strictObject({
-  status: z.enum(['failed', 'cancelled', 'expired']),
+  status: z.enum(ADMIN_MUTABLE_SUBSCRIPTION_STATUSES),
 });
 
 export interface BillingPlanDto {

@@ -1,8 +1,5 @@
-import type {
-  AdminSubscriptionRecord,
-  BillingPlan,
-  SubscriptionStatus,
-} from '@/entities/AdminBilling';
+import type { AdminSubscriptionRecord, BillingPlan } from '@/entities/AdminBilling';
+import type { SubscriptionStatus } from '@/shared/constants/subscription-status';
 import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 
 export interface CreateBillingPlanData {

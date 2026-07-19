@@ -1,4 +1,4 @@
-export type ReportStatus = 'pending' | 'resolved' | 'dismissed';
+import type { ReportStatus } from '@/shared/constants/report-status';
 
 export interface Report {
   id: string;

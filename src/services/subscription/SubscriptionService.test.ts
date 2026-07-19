@@ -107,7 +107,6 @@ function createService(overrides: ServiceOverrides = {}) {
     updateById: vi.fn(),
     updateByOrderId: vi.fn(),
     activateSubscription: vi.fn().mockResolvedValue(undefined),
-    deletePendingByOrderId: vi.fn(),
     ...overrides.subscriptionRepository,
   };
   const userRepository: Mocked<IUserRepository> = {
@@ -127,7 +126,6 @@ function createService(overrides: ServiceOverrides = {}) {
     createPayment: vi.fn(),
     verifyPayment: vi.fn(),
     getPaymentInfo: vi.fn(),
-    testConnection: vi.fn(),
     ...overrides.payosService,
   };
   const planRepository: Mocked<ISubscriptionPlanRepository> = {
@@ -310,7 +308,7 @@ describe('SubscriptionService billing hardening', () => {
     });
   });
 
-  it('rejects untrusted PayOS checkout URLs and cleans up pending subscriptions', async () => {
+  it('rejects untrusted PayOS checkout URLs while preserving the pending order', async () => {
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
@@ -335,7 +333,7 @@ describe('SubscriptionService billing hardening', () => {
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow(
       'Received an invalid payment redirect URL',
     );
-    expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledWith(expect.any(String));
+    expect(subscriptionRepository.create).toHaveBeenCalledOnce();
   });
 
   it('detects free, inactive, active, lifetime, and anomalous premium states', async () => {
@@ -482,7 +480,7 @@ describe('SubscriptionService billing hardening', () => {
     );
   });
 
-  it('cleans up pending subscriptions when PayOS creation fails', async () => {
+  it('preserves pending subscriptions when PayOS creation fails ambiguously', async () => {
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
@@ -503,7 +501,6 @@ describe('SubscriptionService billing hardening', () => {
 
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow('PayOS down');
     expect(subscriptionRepository.create).toHaveBeenCalledOnce();
-    expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('activates webhook-verified payments with the stored plan duration', async () => {
@@ -519,10 +516,9 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     const result = await service.activateVerifiedSubscription(123, {
-      orderCode: '123',
+      orderCode: 123,
       amount: 99000,
       reference: 'payos-ref',
-      code: '00',
     });
 
     expect(result.success).toBe(true);
@@ -679,48 +675,60 @@ describe('SubscriptionService billing hardening', () => {
     expect(payosService.verifyPayment).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps completed webhook activation idempotent and rejects invalid webhook states', async () => {
+  it('keeps completed webhook activation idempotent and rejects invalid event invariants', async () => {
     const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
         findByOrderId: vi
           .fn()
-          .mockResolvedValueOnce({
-            type: 'premium',
-            status: 'completed',
-            startDate: new Date('2026-01-01T00:00:00Z'),
-            endDate: new Date('2026-02-01T00:00:00Z'),
-            isActive: true,
-          })
-          .mockResolvedValueOnce({ status: 'cancelled' })
-          .mockResolvedValueOnce({ status: 'pending', amount: 99000 })
-          .mockResolvedValueOnce({ status: 'pending', amount: 99000 })
-          .mockResolvedValueOnce({ status: 'pending', amount: 99000 })
-          .mockResolvedValueOnce({ status: 'pending', amount: 99000 }),
+          .mockResolvedValueOnce(
+            subscriptionFixture({
+              payosOrderId: '123',
+              startDate: new Date('2026-01-01T00:00:00Z'),
+              endDate: new Date('2026-02-01T00:00:00Z'),
+            }),
+          )
+          .mockResolvedValueOnce(subscriptionFixture({ status: 'cancelled' }))
+          .mockResolvedValueOnce(subscriptionFixture({ status: 'pending' }))
+          .mockResolvedValueOnce(subscriptionFixture({ status: 'pending' }))
+          .mockResolvedValueOnce(subscriptionFixture({ status: 'pending' })),
       },
     });
 
     await expect(
-      service.activateVerifiedSubscription(123, { orderCode: 123, amount: 99000 }),
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: 99000,
+        reference: 'completed-ref',
+      }),
     ).resolves.toMatchObject({ success: true, subscription: { isActive: true } });
     await expect(
-      service.activateVerifiedSubscription(123, { orderCode: 123, amount: 99000 }),
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: 99000,
+        reference: 'cancelled-ref',
+      }),
     ).rejects.toThrow('Cannot activate subscription with status cancelled');
     await expect(
-      service.activateVerifiedSubscription(123, { orderCode: 999, amount: 99000 }),
+      service.activateVerifiedSubscription(123, {
+        orderCode: 999,
+        amount: 99000,
+        reference: 'wrong-order-ref',
+      }),
     ).rejects.toThrow('Payment order code mismatch');
     await expect(
-      service.activateVerifiedSubscription(123, { orderCode: 123, amount: 1 }),
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: 1,
+        reference: 'wrong-amount-ref',
+      }),
     ).rejects.toThrow('Payment amount mismatch');
     await expect(
       service.activateVerifiedSubscription(123, {
         orderCode: 123,
         amount: 99000,
-        status: 'PENDING',
+        reference: '   ',
       }),
-    ).rejects.toThrow('Payment not completed');
-    await expect(
-      service.activateVerifiedSubscription(123, { orderCode: 123, amount: 99000, code: '99' }),
-    ).rejects.toThrow('Payment not successful');
+    ).rejects.toThrow('Payment transaction reference is missing');
     expect(subscriptionRepository.updateByOrderId).not.toHaveBeenCalled();
   });
 
@@ -740,7 +748,11 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     await expect(
-      service.activateVerifiedSubscription(123, { orderCode: 123, amount: 99000 }),
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: 99000,
+        reference: 'missing-plan-ref',
+      }),
     ).rejects.toThrow('Plan not found');
   });
 
@@ -765,7 +777,7 @@ describe('SubscriptionService billing hardening', () => {
       service.activateVerifiedSubscription(123, {
         orderCode: 123,
         amount: 99000,
-        status: 'PAID',
+        reference: 'invalid-duration-ref',
       }),
     ).rejects.toThrow('Unsupported ISO 8601 duration format');
   });
@@ -1024,33 +1036,31 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('returns the stored snapshot when the PayOS transaction was already activated', async () => {
-    const existingSnapshot = {
-      type: 'premium',
-      status: 'completed',
+    const existingSnapshot = subscriptionFixture({
+      userId: 'user-1',
+      payosOrderId: '123',
       startDate: new Date('2099-01-01T00:00:00Z'),
       endDate: new Date('2099-02-01T00:00:00Z'),
-      isActive: true,
       createdAt: new Date('2099-01-01T00:00:00Z'),
-    };
+    });
 
     const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
-        findByOrderId: vi.fn().mockResolvedValue({
-          userId: 'user-1',
-          type: 'premium',
-          amount: 99000,
-          status: 'pending',
-        }),
+        findByOrderId: vi.fn().mockResolvedValue(
+          subscriptionFixture({
+            userId: 'user-1',
+            payosOrderId: '123',
+            status: 'pending',
+          }),
+        ),
         findByTransactionReference: vi.fn().mockResolvedValue(existingSnapshot),
       },
     });
 
     const result = await service.activateVerifiedSubscription(123, {
-      orderCode: '123',
+      orderCode: 123,
       amount: 99000,
       reference: 'duplicate-ref',
-      status: 'PAID',
-      code: '00',
     });
 
     expect(result).toEqual({
@@ -1065,26 +1075,70 @@ describe('SubscriptionService billing hardening', () => {
     expect(subscriptionRepository.activateSubscription).not.toHaveBeenCalled();
   });
 
+  it('rejects a transaction reference already owned by a different subscription', async () => {
+    const pending = subscriptionFixture({
+      userId: 'user-1',
+      payosOrderId: '123',
+      status: 'pending',
+    });
+    const otherSubscription = subscriptionFixture({
+      userId: 'user-2',
+      payosOrderId: '999',
+      payosTransactionId: 'replayed-ref',
+    });
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(pending),
+        findByTransactionReference: vi.fn().mockResolvedValue(otherSubscription),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: pending.amount,
+        reference: 'replayed-ref',
+      }),
+    ).rejects.toBeInstanceOf(SubscriptionActivationConflictError);
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+  });
+
+  it('validates a signed event before returning completed idempotent success', async () => {
+    const completed = subscriptionFixture({ payosOrderId: '123' });
+    const { service } = createService({
+      subscriptionRepository: { findByOrderId: vi.fn().mockResolvedValue(completed) },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: completed.amount + 1,
+        reference: 'malformed-replay-ref',
+      }),
+    ).rejects.toThrow('Payment amount mismatch');
+    expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+  });
+
   it('recovers from concurrent activation duplicate-key errors', async () => {
-    const settledSnapshot = {
-      type: 'premium',
-      status: 'completed',
+    const settledSnapshot = subscriptionFixture({
+      userId: 'user-1',
+      payosOrderId: '456',
       startDate: new Date('2099-03-01T00:00:00Z'),
       endDate: new Date('2099-04-01T00:00:00Z'),
-      isActive: true,
       createdAt: new Date('2099-03-01T00:00:00Z'),
-    };
+    });
 
     const dupError = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
 
     const { service } = createService({
       subscriptionRepository: {
-        findByOrderId: vi.fn().mockResolvedValue({
-          userId: 'user-1',
-          type: 'premium',
-          amount: 99000,
-          status: 'pending',
-        }),
+        findByOrderId: vi.fn().mockResolvedValue(
+          subscriptionFixture({
+            userId: 'user-1',
+            payosOrderId: '456',
+            status: 'pending',
+          }),
+        ),
         findByTransactionReference: vi
           .fn()
           .mockResolvedValueOnce(null)
@@ -1094,11 +1148,9 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     const result = await service.activateVerifiedSubscription(456, {
-      orderCode: '456',
+      orderCode: 456,
       amount: 99000,
       reference: 'concurrent-ref',
-      status: 'PAID',
-      code: '00',
     });
 
     expect(result.success).toBe(true);
@@ -1192,11 +1244,9 @@ describe('SubscriptionService billing hardening', () => {
 
     await expect(
       service.activateVerifiedSubscription(789, {
-        orderCode: '789',
+        orderCode: 789,
         amount: 99000,
         reference: 'failure-ref',
-        status: 'PAID',
-        code: '00',
       }),
     ).rejects.toThrow('mongo unreachable');
     expect(subscriptionRepository.findByOrderId).toHaveBeenCalledOnce();
@@ -1213,7 +1263,11 @@ describe('SubscriptionService billing hardening', () => {
       'Subscription not found',
     );
     await expect(
-      service.activateVerifiedSubscription(123, { orderCode: 123, amount: 99000 }),
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: 99000,
+        reference: 'missing-order-ref',
+      }),
     ).rejects.toThrow('Subscription not found');
 
     expect(subscriptionRepository.findByOrderId).toHaveBeenCalledTimes(2);
@@ -1324,10 +1378,10 @@ describe('SubscriptionService billing hardening', () => {
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow(
       'Payment URL not received from PayOS',
     );
-    expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledOnce();
+    expect(subscriptionRepository.create).toHaveBeenCalledOnce();
   });
 
-  it('preserves the original payment error when pending-record cleanup also fails', async () => {
+  it('preserves the original payment transport error and pending record', async () => {
     const paymentError = new Error('PayOS transport failed');
     const { service, subscriptionRepository } = createService({
       userRepository: {
@@ -1338,7 +1392,6 @@ describe('SubscriptionService billing hardening', () => {
       },
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue(null),
-        deletePendingByOrderId: vi.fn().mockRejectedValue(new Error('cleanup failed')),
       },
       payosService: {
         createPayment: vi.fn().mockRejectedValue(paymentError),
@@ -1346,7 +1399,7 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toBe(paymentError);
-    expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledOnce();
+    expect(subscriptionRepository.create).toHaveBeenCalledOnce();
   });
 
   it('allows an expired embedded premium subscription but rejects a future active one', async () => {
@@ -1595,23 +1648,22 @@ describe('SubscriptionService entitlement cache invalidation', () => {
   });
 
   it('invalidates after duplicate-key recovery that settled completed', async () => {
-    const settledSnapshot = {
+    const settledSnapshot = subscriptionFixture({
       userId: 'user-dup',
-      type: 'premium',
-      status: 'completed' as const,
+      payosOrderId: '456',
       startDate: new Date('2099-03-01T00:00:00Z'),
       endDate: new Date('2099-04-01T00:00:00Z'),
-      isActive: true,
-    };
+    });
     const dupError = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
     const { service } = createService({
       subscriptionRepository: {
-        findByOrderId: vi.fn().mockResolvedValue({
-          userId: 'user-dup',
-          type: 'premium',
-          amount: 99000,
-          status: 'pending',
-        }),
+        findByOrderId: vi.fn().mockResolvedValue(
+          subscriptionFixture({
+            userId: 'user-dup',
+            payosOrderId: '456',
+            status: 'pending',
+          }),
+        ),
         findByTransactionReference: vi
           .fn()
           .mockResolvedValueOnce(null)
@@ -1622,11 +1674,9 @@ describe('SubscriptionService entitlement cache invalidation', () => {
 
     await expect(
       service.activateVerifiedSubscription(456, {
-        orderCode: '456',
+        orderCode: 456,
         amount: 99000,
         reference: 'dup-ref',
-        status: 'PAID',
-        code: '00',
       }),
     ).resolves.toMatchObject({ success: true });
     expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith('user-dup');
@@ -1647,11 +1697,9 @@ describe('SubscriptionService entitlement cache invalidation', () => {
 
     await expect(
       service.activateVerifiedSubscription(789, {
-        orderCode: '789',
+        orderCode: 789,
         amount: 99000,
         reference: 'fail-ref',
-        status: 'PAID',
-        code: '00',
       }),
     ).rejects.toThrow('mongo unreachable');
     expect(invalidateEntitlementsMock).not.toHaveBeenCalled();

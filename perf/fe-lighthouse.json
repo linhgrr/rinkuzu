@@ -1,56 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-16T04:11:21.151Z",
-  "status": "failed",
-  "buildDigest": "efe2edcd66d6f0313140b54845d33263ba9e0612df1a127d78cae4c7405c09d7",
+  "generatedAt": "2026-07-19T18:17:30.153Z",
+  "status": "invalid",
+  "buildDigest": null,
   "mode": "local",
-  "expectedRuns": 3,
-  "entries": [
-    {
-      "url": "http://127.0.0.1:38471/en",
-      "runs": 3,
-      "performanceScore": 0.93,
-      "accessibilityScore": 1,
-      "bestPracticesScore": 1,
-      "seoScore": 0.92,
-      "lcpMs": 3177.178,
-      "tbtMs": 38.5,
-      "cls": 0
-    },
-    {
-      "url": "http://127.0.0.1:38471/en/login",
-      "runs": 3,
-      "performanceScore": 0.97,
-      "accessibilityScore": 0.96,
-      "bestPracticesScore": 1,
-      "seoScore": 0.61,
-      "lcpMs": 2566.9512,
-      "tbtMs": 74.99999999999909,
-      "cls": 0
-    }
-  ],
-  "violations": [
-    {
-      "code": "lighthouse-lcp",
-      "url": "http://127.0.0.1:38471/en",
-      "actual": 3177.178,
-      "limit": 2500
-    },
-    {
-      "code": "lighthouse-lcp",
-      "url": "http://127.0.0.1:38471/en/login",
-      "actual": 2566.9512,
-      "limit": 2500
-    },
-    {
-      "code": "lighthouse-accessibility",
-      "url": "http://127.0.0.1:38471/en/login",
-      "actual": 0.96,
-      "limit": 1
-    },
-    {
-      "code": "lighthouse-ci-assertion-failed",
-      "exitCode": 1
-    }
-  ]
+  "entries": [],
+  "violations": []
 }

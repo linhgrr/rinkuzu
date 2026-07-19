@@ -5,21 +5,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import type { ChatMessage } from '@/features/quiz/lib/chat-history';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
+import type { QuestionType } from '@/shared/constants/question-type';
+import type { QuizQuestionReview } from '@/shared/types/quiz-question';
 
 type TranslateParams = Record<string, string | number | Date>;
 
-interface QuestionData {
-  id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-  userAnswer: number | number[];
-  isCorrect: boolean;
-}
+type QuestionData = QuizQuestionReview;
 
 interface QuestionReviewListProps {
   questions: QuestionData[];
@@ -31,7 +22,7 @@ interface QuestionReviewListProps {
   formatAnswer: (
     answer: number | number[],
     options: string[],
-    type: 'single' | 'multiple',
+    type: QuestionType,
     isAnswered?: boolean,
   ) => string;
   formatCorrectAnswer: (question: QuestionData) => string;

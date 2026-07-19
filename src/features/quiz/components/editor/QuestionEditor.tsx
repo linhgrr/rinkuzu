@@ -8,6 +8,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import { HiOutlineDocumentText, HiOutlinePlus, HiOutlineTrash } from 'react-icons/hi';
 import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
+import type { QuestionType } from '@/shared/constants/question-type';
 
 type EditorQuestion = QuizEditorQuestionViewModel;
 type EditableQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
@@ -28,7 +29,7 @@ interface QuestionEditorProps {
   onRemoveOptionImage: (qIdx: number, optIdx: number) => void;
   onAddQuestion: () => void;
   onRemoveQuestion: (idx: number) => void;
-  onToggleType: (idx: number, type: 'single' | 'multiple') => void;
+  onToggleType: (idx: number, type: QuestionType) => void;
   onSetSingleCorrect: (qIdx: number, optIdx: number) => void;
   onToggleMultipleCorrect: (qIdx: number, optIdx: number, checked: boolean) => void;
   onSetQuestionToRemove: (idx: number | null) => void;

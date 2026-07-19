@@ -63,15 +63,50 @@ function isTestFile(filePath) {
 }
 
 function isReexportOnlyFile(filePath) {
-  const withoutBlockComments = fs.readFileSync(filePath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    fs.readFileSync(filePath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const importedNames = new Set();
+  let hasReexport = false;
 
-  const lines = withoutBlockComments
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('//'))
-    .filter((line) => !/^['"]use (?:client|server)['"];?$/.test(line));
+  for (const statement of sourceFile.statements) {
+    if (ts.isImportDeclaration(statement)) {
+      const clause = statement.importClause;
+      if (clause?.name) importedNames.add(clause.name.text);
+      const bindings = clause?.namedBindings;
+      if (bindings && ts.isNamespaceImport(bindings)) importedNames.add(bindings.name.text);
+      if (bindings && ts.isNamedImports(bindings)) {
+        for (const element of bindings.elements) importedNames.add(element.name.text);
+      }
+      continue;
+    }
 
-  return lines.length > 0 && lines.every((line) => /^export\s+(?:\*|\{).*\sfrom\s/.test(line));
+    if (ts.isExportDeclaration(statement)) {
+      hasReexport = true;
+      continue;
+    }
+
+    const isDirective =
+      ts.isExpressionStatement(statement) && ts.isStringLiteral(statement.expression);
+    if (isDirective) continue;
+
+    const isImportedDefaultReexport =
+      ts.isExportAssignment(statement) &&
+      ts.isIdentifier(statement.expression) &&
+      importedNames.has(statement.expression.text);
+    if (isImportedDefaultReexport) {
+      hasReexport = true;
+      continue;
+    }
+
+    return false;
+  }
+
+  return hasReexport;
 }
 
 function checkRatchet(label, actual, allowed, errors) {

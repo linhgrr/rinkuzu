@@ -1,7 +1,8 @@
 import { Schema } from 'mongoose';
+import { QUESTION_TYPES, type QuestionType } from '@/shared/constants/question-type';
 
 export interface SelectedAnswerSchemaRecord {
-  kind: 'single' | 'multiple';
+  kind: QuestionType;
   selectedIndex?: number | null;
   selectedIndexes?: number[];
 }
@@ -10,7 +11,7 @@ export const SelectedAnswerSchema = new Schema<SelectedAnswerSchemaRecord>(
   {
     kind: {
       type: String,
-      enum: ['single', 'multiple'],
+      enum: QUESTION_TYPES,
       required: true,
     },
     selectedIndex: {

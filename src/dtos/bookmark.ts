@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { PaginationMeta } from '@/dtos/common';
 import { objectIdRouteParamSchema } from '@/lib/validation/common';
+import { QUESTION_TYPES } from '@/shared/constants/question-type';
 
 export const bookmarkIdRouteParamsSchema = z.strictObject({ id: objectIdRouteParamSchema });
 
@@ -13,7 +14,7 @@ export const bookmarkListQuerySchema = z.object({
 const bookmarkQuestionSchema = z.strictObject({
   text: z.string().trim().min(1),
   options: z.array(z.string()).min(2),
-  type: z.enum(['single', 'multiple']),
+  type: z.enum(QUESTION_TYPES),
   correctIndex: z.number().int().min(0).optional(),
   correctIndexes: z.array(z.number().int().min(0)).optional(),
   questionImage: z.url().optional(),

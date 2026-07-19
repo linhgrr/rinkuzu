@@ -1,9 +1,10 @@
 import type { MongoIdLike } from '@/types/mongo';
+import type { QuestionType } from '@/shared/constants/question-type';
 
 interface BookmarkQuestionPersistenceRecord {
   text: string;
   options: string[];
-  type: 'single' | 'multiple';
+  type: QuestionType;
   correctIndex?: number;
   correctIndexes?: number[];
   questionImage?: string;

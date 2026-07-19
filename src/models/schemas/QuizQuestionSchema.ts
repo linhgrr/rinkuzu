@@ -6,6 +6,7 @@ import {
   MAX_QUESTION_TEXT_LENGTH,
   MIN_OPTION_COUNT,
 } from '@/lib/validation/question';
+import { QUESTION_TYPES } from '@/shared/constants/question-type';
 
 interface QuizQuestionDocumentBase {
   _id: Types.ObjectId;
@@ -51,7 +52,7 @@ export const QuizQuestionSchema = new Schema<QuizQuestionDocument>({
   },
   type: {
     type: String,
-    enum: ['single', 'multiple'],
+    enum: QUESTION_TYPES,
     required: [true, 'Question type is required'],
   },
   correctIndex: {

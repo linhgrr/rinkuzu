@@ -8,6 +8,7 @@ import {
   slugRouteParamSchema,
 } from '@/lib/validation/common';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
+import type { QuizQuestionDisplay, QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';
 
 const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
 
@@ -90,14 +91,7 @@ export type QuizQuestionDto = QuizQuestionInputDto & {
   id: string;
 };
 
-export interface PlayableQuizQuestionDto {
-  id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-}
+export type PlayableQuizQuestionDto = QuizQuestionDisplay;
 
 export interface QuizDetailDto extends QuizListItemDto {
   questions: QuizQuestionDto[];
@@ -135,16 +129,7 @@ export interface QuizDiscussionDto {
   updatedAt: string;
 }
 
-export interface FlashcardQuestionDto {
-  id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-}
+export type FlashcardQuestionDto = QuizQuestionWithAnswerKey;
 
 export interface FlashcardQuizDto {
   id: string;

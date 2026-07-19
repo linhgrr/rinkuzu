@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { QUESTION_TYPES, type QuestionType } from '@/shared/constants/question-type';
 
 interface BookmarkDocument extends Document {
   userId: string;
@@ -11,7 +12,7 @@ interface BookmarkDocument extends Document {
   question: {
     text: string;
     options: string[];
-    type: 'single' | 'multiple';
+    type: QuestionType;
     correctIndex?: number;
     correctIndexes?: number[];
     questionImage?: string;
@@ -57,7 +58,7 @@ const BookmarkSchema = new Schema<BookmarkDocument>(
       ],
       type: {
         type: String,
-        enum: ['single', 'multiple'],
+        enum: QUESTION_TYPES,
         required: true,
       },
       correctIndex: Number,

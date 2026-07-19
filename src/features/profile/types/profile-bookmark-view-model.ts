@@ -1,7 +1,9 @@
+import type { QuestionType } from '@/shared/constants/question-type';
+
 interface ProfileBookmarkQuestionViewModel {
   text: string;
   options: string[];
-  type: 'single' | 'multiple';
+  type: QuestionType;
   correctIndex?: number;
   correctIndexes?: number[];
   questionImage?: string;

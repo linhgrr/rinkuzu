@@ -1,3 +1,5 @@
+import type { QuizQuestionDisplay } from '@/shared/types/quiz-question';
+
 export interface QuizPlayAuthorViewModel {
   id: string;
   name?: string;
@@ -5,14 +7,7 @@ export interface QuizPlayAuthorViewModel {
   avatar?: string;
 }
 
-export interface QuizPlayQuestionViewModel {
-  id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-}
+export type QuizPlayQuestionViewModel = QuizQuestionDisplay;
 
 export interface QuizPlayViewModel {
   id: string;

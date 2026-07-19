@@ -1,15 +1,6 @@
-export interface AttemptQuestionDetailViewModel {
-  id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-  userAnswer: number | number[];
-  isCorrect: boolean;
-}
+import type { QuizQuestionReview } from '@/shared/types/quiz-question';
+
+export type AttemptQuestionDetailViewModel = QuizQuestionReview;
 
 export interface AttemptDetailViewModel {
   id: string;

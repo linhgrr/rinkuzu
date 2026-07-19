@@ -1,6 +1,7 @@
 import type { PaginationMeta } from '@/dtos/common';
 import { z } from 'zod';
 import { objectIdRouteParamSchema } from '@/lib/validation/common';
+import type { QuizQuestionReview } from '@/shared/types/quiz-question';
 
 export const attemptIdRouteParamsSchema = z.strictObject({ id: objectIdRouteParamSchema });
 
@@ -60,18 +61,7 @@ export interface UserAttemptListDto {
   pagination: PaginationMeta;
 }
 
-export interface AttemptQuestionDetailDto {
-  id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-  userAnswer: number | number[];
-  isCorrect: boolean;
-}
+export type AttemptQuestionDetailDto = QuizQuestionReview;
 
 export interface AttemptDetailDto {
   id: string;

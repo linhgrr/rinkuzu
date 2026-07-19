@@ -28,6 +28,7 @@ import { QuestionReviewList } from '@/features/quiz/components/result/QuestionRe
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { AIExplainPanel } from '@/features/quiz/components/result/AIExplainPanel';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
+import type { QuestionType } from '@/shared/constants/question-type';
 
 type QuizResultQuestion = QuizResultQuestionViewModel;
 type QuizResult = QuizResultViewModel;
@@ -187,7 +188,7 @@ function quizResultPageReducer(
 function formatAnswerValue(
   answer: number | number[],
   options: string[],
-  type: 'single' | 'multiple',
+  type: QuestionType,
   notAnsweredLabel: string,
   isAnswered = true,
 ) {
@@ -274,7 +275,7 @@ interface QuizResultReadyStateProps {
   formatAnswer: (
     answer: number | number[],
     options: string[],
-    type: 'single' | 'multiple',
+    type: QuestionType,
     isAnswered?: boolean,
   ) => string;
   formatCorrectAnswer: (question: QuizResultQuestion) => string;

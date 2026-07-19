@@ -5,6 +5,7 @@ import type {
 } from '@/features/quiz/types/quiz-editor-view-model';
 import type { QuizQuestionInputViewModel } from '@/features/quiz/types/quiz-question';
 import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
+import type { QuestionType } from '@/shared/constants/question-type';
 
 export type EditableQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
 
@@ -134,7 +135,7 @@ export function addQuestion(
 export function toggleQuestionType(
   questions: QuizEditorQuestionViewModel[],
   index: number,
-  value: 'single' | 'multiple',
+  value: QuestionType,
 ): QuizEditorQuestionViewModel[] {
   return questions.map((question, questionIndex) => {
     if (questionIndex !== index) return question;

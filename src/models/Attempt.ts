@@ -286,14 +286,20 @@ AttemptSchema.index(
   { user: 1, idempotencyKey: 1 },
   {
     unique: true,
-    partialFilterExpression: { user: { $type: 'objectId' } },
+    partialFilterExpression: {
+      user: { $type: 'objectId' },
+      idempotencyKey: { $type: 'string' },
+    },
   },
 );
 AttemptSchema.index(
   { guestEmail: 1, idempotencyKey: 1 },
   {
     unique: true,
-    partialFilterExpression: { guestEmail: { $type: 'string' } },
+    partialFilterExpression: {
+      guestEmail: { $type: 'string' },
+      idempotencyKey: { $type: 'string' },
+    },
   },
 );
 

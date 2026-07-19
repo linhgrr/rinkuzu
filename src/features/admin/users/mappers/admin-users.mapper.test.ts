@@ -9,6 +9,7 @@ describe('toAdminUserListViewModel', () => {
           id: 'user-1',
           email: 'learner@example.com',
           role: 'user',
+          disable: 0,
           createdAt: '2026-07-02T00:00:00.000Z',
           subscription: {
             type: 'premium',
@@ -29,6 +30,9 @@ describe('toAdminUserListViewModel', () => {
 
     expect(result.users[0]).toMatchObject({
       id: 'user-1',
+      disable: 0,
+      accountStatusLabel: 'accountActive',
+      accountStatusVariant: 'success',
       createdAtLabel: '07/02/2026',
       subscription: {
         startDateLabel: '07/02/2026',

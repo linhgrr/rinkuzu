@@ -66,7 +66,7 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
         <div className="mt-auto flex items-center gap-2 pt-3 text-sm text-ink">
           <UserAvatar user={author} size={26} />
           <span className="min-w-0 truncate">
-            {author.displayName || author.name || author.email || 'RinKuzu learner'}
+            {author.displayName || author.name || 'RinKuzu learner'}
           </span>
           {quiz.isPrivate ? (
             <HiOutlineLockClosed

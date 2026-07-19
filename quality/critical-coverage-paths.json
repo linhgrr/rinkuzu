@@ -17,6 +17,9 @@
     "branches": 60
   },
   "globs": [
+    "src/auth.ts",
+    "src/auth.config.ts",
+    "src/lib/auth/**",
     "src/lib/auth-tokens.ts",
     "src/lib/password.ts",
     "src/lib/api/client.ts",
@@ -25,8 +28,16 @@
     "src/lib/entitlements/**",
     "src/lib/llm/**",
     "src/lib/security/**",
+    "src/shared/constants/account-disable.ts",
+    "src/shared/constants/admin-invariant.ts",
+    "src/app/api/admin/users/**",
     "src/services/auth/**",
-    "src/services/subscription/**"
+    "src/services/admin/**",
+    "src/services/subscription/**",
+    "src/repositories/UserRepository.ts",
+    "src/repositories/AuthAccountRepository.ts",
+    "src/models/User.ts",
+    "src/models/AdminMutationFence.ts"
   ],
   "changedThresholds": {
     "lines": 85,
@@ -35,6 +46,9 @@
     "branches": 75
   },
   "changedGlobs": [
+    "src/auth.ts",
+    "src/auth.config.ts",
+    "src/lib/auth/**",
     "src/lib/auth-tokens.ts",
     "src/lib/password.ts",
     "src/lib/api/client.ts",
@@ -43,7 +57,15 @@
     "src/lib/entitlements/**",
     "src/lib/llm/**",
     "src/lib/security/**",
+    "src/shared/constants/account-disable.ts",
+    "src/shared/constants/admin-invariant.ts",
+    "src/app/api/admin/users/**",
     "src/services/auth/**",
-    "src/services/subscription/**"
+    "src/services/admin/**",
+    "src/services/subscription/**",
+    "src/repositories/UserRepository.ts",
+    "src/repositories/AuthAccountRepository.ts",
+    "src/models/User.ts",
+    "src/models/AdminMutationFence.ts"
   ]
 }

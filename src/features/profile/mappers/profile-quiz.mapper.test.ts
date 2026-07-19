@@ -16,7 +16,6 @@ describe('toProfileQuizLibraryViewModel', () => {
             description: 'Hidden from card',
             author: {
               id: 'user-1',
-              email: 'learner@example.com',
               displayName: 'Learner',
             },
             folder: null,
@@ -50,7 +49,6 @@ describe('toProfileQuizLibraryViewModel', () => {
           slug: 'algebra',
           author: {
             id: 'user-1',
-            email: 'learner@example.com',
             displayName: 'Learner',
           },
           isPrivate: false,

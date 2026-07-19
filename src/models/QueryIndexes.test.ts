@@ -44,6 +44,10 @@ describe('query performance indexes', () => {
     expect(hasIndex(User, { createdAt: -1 })).toBe(true);
   });
 
+  it('indexes active-admin invariant counts by role and disable', () => {
+    expect(hasIndex(User, { role: 1, disable: 1 })).toBe(true);
+  });
+
   it('indexes bookmark lists by stable user identity and recency', () => {
     expect(hasIndex(Bookmark, { userId: 1, createdAt: -1 })).toBe(true);
   });

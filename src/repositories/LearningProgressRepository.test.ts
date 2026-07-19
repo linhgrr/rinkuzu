@@ -202,7 +202,6 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
           {
             $project: {
               _id: 1,
-              email: 1,
               name: 1,
               displayName: 1,
               avatar: 1,
@@ -247,7 +246,6 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
               description: 1,
               author: {
                 _id: { $ifNull: ['$authorDoc._id', '$author'] },
-                email: '$authorDoc.email',
                 name: '$authorDoc.name',
                 displayName: '$authorDoc.displayName',
                 avatar: '$authorDoc.avatar',
@@ -355,8 +353,9 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
     ] as Record<string, unknown> | undefined;
     expect(authorProjection).toBeDefined();
     expect(Object.keys(authorProjection ?? {}).sort()).toEqual(
-      ['_id', 'avatar', 'displayName', 'email', 'name'].sort(),
+      ['_id', 'avatar', 'displayName', 'name'].sort(),
     );
+    expect(authorProjection).not.toHaveProperty('email');
 
     // Post-lookup stages reference questionCount only as a pass-through field, never questions.
     const replaceRootIndex = pipeline.findIndex((stage) => '$replaceRoot' in stage);
@@ -394,7 +393,7 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
             _id: quizId,
             title: 'Owned quiz',
             slug: 'owned-quiz',
-            author: { _id: '507f191e810c19729de860ea', email: 'author@example.com' },
+            author: { _id: '507f191e810c19729de860ea', displayName: 'Author' },
             folder: folderId,
             isPrivate: false,
             questionCount: 2,

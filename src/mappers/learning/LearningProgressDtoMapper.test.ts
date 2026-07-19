@@ -73,6 +73,8 @@ describe('LearningProgressDtoMapper', () => {
       }),
     );
     expect(dto).not.toHaveProperty('_id');
+    expect(dto.author).not.toHaveProperty('email');
+    expect(JSON.stringify(dto.author)).not.toMatch(/"email"/);
   });
 
   it('maps due review questions with id and serialized dates', () => {

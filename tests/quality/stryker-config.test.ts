@@ -22,6 +22,7 @@ describe('Stryker production configuration', () => {
         'src/lib/password.ts',
         'src/lib/auth-tokens.ts',
         'src/lib/auth/**/*.ts',
+        'src/shared/constants/account-disable.ts',
       ]),
     );
     expect(config.mutate).toEqual(
@@ -31,6 +32,7 @@ describe('Stryker production configuration', () => {
         'src/lib/security/**/*.ts',
         'src/lib/password.ts',
         'src/lib/auth-tokens.ts',
+        'src/shared/constants/account-disable.ts',
       ]),
     );
     // Directory-shaped path is not a mutate pattern (files live under src/lib/auth/**).

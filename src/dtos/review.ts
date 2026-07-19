@@ -30,9 +30,9 @@ export const libraryListQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(100).default(100),
 });
 
+/** Public library author identity — stable non-PII fields only (no email). */
 interface LibraryQuizAuthorDto {
   id: string;
-  email?: string;
   name?: string;
   displayName?: string;
   avatar?: string;

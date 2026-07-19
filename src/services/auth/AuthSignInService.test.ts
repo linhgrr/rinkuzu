@@ -33,6 +33,7 @@ const account: AuthLoginAccount = {
   passwordHash: 'stored-hash',
   emailVerified: new Date('2026-01-01T00:00:00.000Z'),
   displayName: 'Rin',
+  authVersion: 0,
   failedLoginAttempts: 0,
 };
 
@@ -56,7 +57,7 @@ class SignInRepositoryStub implements IAuthSignInRepository {
       ) => Promise<boolean>
     >();
   upsertVerifiedGoogleAccount =
-    vi.fn<(data: VerifiedGoogleAccountData) => Promise<AuthenticatedUser>>();
+    vi.fn<(data: VerifiedGoogleAccountData) => Promise<AuthenticatedUser | null>>();
 }
 
 class RateLimiterStub implements IAuthRateLimiter {
@@ -248,12 +249,39 @@ describe('AuthSignInService', () => {
         avatar: 'https://example.com/avatar.png',
         displayName: account.displayName,
         passwordChangedAt: new Date('2026-02-01T00:00:00.000Z').getTime(),
+        authVersion: 0,
       },
     });
     expect(repository.recordSuccessfulLogin).toHaveBeenCalledWith(
       account.id,
       account.passwordHash,
-      expect.objectContaining({ passwordHash: 'new-argon2-hash', ip: context.ip }),
+      expect.objectContaining({
+        passwordHash: 'new-argon2-hash',
+        ip: context.ip,
+        expectedAuthVersion: account.authVersion,
+      }),
+    );
+  });
+
+  it('fails closed when recordSuccessfulLogin CAS misses after disable/restore ABA', async () => {
+    repository.findLoginAccount.mockResolvedValue(account);
+    repository.recordSuccessfulLogin.mockResolvedValue(false);
+
+    await expect(
+      service.authenticateCredentials({ email: account.email, password: 'correct' }, context),
+    ).resolves.toEqual({ success: false, code: 'invalid_credentials' });
+
+    expect(repository.recordSuccessfulLogin).toHaveBeenCalledWith(
+      account.id,
+      account.passwordHash,
+      expect.objectContaining({ expectedAuthVersion: 0, ip: context.ip }),
+    );
+    await scheduler.runAll();
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'login_failed',
+        metadata: { reason: 'account_changed_during_login' },
+      }),
     );
   });
 
@@ -269,6 +297,7 @@ describe('AuthSignInService', () => {
       role: account.role,
       displayName: 'Rin',
       passwordChangedAt: null,
+      authVersion: 0,
     };
     repository.upsertVerifiedGoogleAccount.mockResolvedValue(googleUser);
 
@@ -282,5 +311,10 @@ describe('AuthSignInService', () => {
     expect(repository.upsertVerifiedGoogleAccount).toHaveBeenCalledWith(
       expect.objectContaining({ email: account.email, displayName: 'Rin', ip: context.ip }),
     );
+
+    repository.upsertVerifiedGoogleAccount.mockResolvedValueOnce(null);
+    await expect(
+      service.authenticateGoogle({ email: account.email, emailVerified: true }, context),
+    ).resolves.toEqual({ success: false, code: 'invalid_google_profile' });
   });
 });

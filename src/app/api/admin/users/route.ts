@@ -6,16 +6,12 @@ import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/requ
 import { grantUserSubscriptionRequestSchema } from '@/dtos/admin-billing';
 import { getAdminBillingService } from '@/lib/admin-billing-factory';
 import { logger } from '@/lib/logger';
-import {
-  adminUserListQuerySchema,
-  deleteAdminUserQuerySchema,
-  updateAdminUserRoleRequestSchema,
-} from '@/dtos/admin-user';
+import { adminUserListQuerySchema, updateAdminUserRoleRequestSchema } from '@/dtos/admin-user';
 
 const adminService = serviceFactory.getAdminService();
 const adminBillingService = getAdminBillingService();
 
-// GET /api/admin/users - List users with filtering
+// GET /api/admin/users - List users with filtering (admin-inclusive disable status)
 export const GET = withAdmin(async (request: NextRequest) => {
   const query = readAndValidateSearchParams(request, adminUserListQuerySchema);
   if (!query.success) {
@@ -29,21 +25,15 @@ export const GET = withAdmin(async (request: NextRequest) => {
 // PATCH /api/admin/users - Update user role
 export const PATCH = withAdmin(async (request: NextRequest, context) => {
   try {
-    const adminEmail = context.email;
-    if (!adminEmail) {
-      return apiErr('validation_error', 'Admin email is required', 400);
-    }
-
     const input = await readAndValidateJson(request, updateAdminUserRoleRequestSchema);
     if (!input.success) {
       return apiErr('validation_error', input.error, 400, { fields: input.fields });
     }
 
-    const result = await adminService.updateUserRole(
-      input.data.userId,
-      input.data.role,
-      adminEmail,
-    );
+    const result = await adminService.updateUserRole(input.data.userId, input.data.role, {
+      id: context.userId,
+      email: context.email,
+    });
 
     if (!result.success) {
       return apiServiceErr(result);
@@ -52,32 +42,6 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
     return apiOk(result.data);
   } catch (error: unknown) {
     logger.error({ error }, 'Update user role error');
-    return apiErr('internal_error', 'Internal server error', 500);
-  }
-});
-
-// DELETE /api/admin/users - Delete user
-export const DELETE = withAdmin(async (request: NextRequest, context) => {
-  try {
-    const adminEmail = context.email;
-    if (!adminEmail) {
-      return apiErr('validation_error', 'Admin email is required', 400);
-    }
-
-    const query = readAndValidateSearchParams(request, deleteAdminUserQuerySchema);
-    if (!query.success) {
-      return apiErr('validation_error', query.error, 400, { fields: query.fields });
-    }
-
-    const result = await adminService.deleteUser(query.data.userId, adminEmail);
-
-    if (!result.success) {
-      return apiServiceErr(result);
-    }
-
-    return apiOk(result.data, 200, { meta: { message: 'User deleted successfully' } });
-  } catch (error: unknown) {
-    logger.error({ error }, 'Delete user error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

@@ -57,7 +57,7 @@ describe('DiscussionRepository', () => {
           _id: new Types.ObjectId('507f191e810c19729de860ed'),
           author: {
             _id: authorId,
-            email: 'learner@example.com',
+            displayName: 'Learner',
           },
           content: 'Needs explanation',
           isEdited: false,
@@ -82,7 +82,7 @@ describe('DiscussionRepository', () => {
         {
           author: {
             id: authorId.toString(),
-            email: 'learner@example.com',
+            displayName: 'Learner',
           },
           content: 'Needs explanation',
         },
@@ -118,7 +118,7 @@ describe('DiscussionRepository', () => {
     );
     expect(discussionModelMocks.populate).toHaveBeenCalledWith(
       'comments.author',
-      'email name displayName avatar',
+      'name displayName avatar',
     );
     expect(discussionModelMocks.lean).toHaveBeenCalledOnce();
   });

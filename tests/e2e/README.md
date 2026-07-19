@@ -20,6 +20,11 @@ Playwright is configured in `playwright.config.ts`.
   - `@critical-adaptive`: upload UI, processing state, and generated subject page
   - `@critical-subscription`: checkout handoff plus success/cancel outcomes
   - `@critical-admin`: admin route/API access and a persisted role mutation
+  - `@critical-admin-disable`: admin disable/restore, authVersion session revocation, disabled/active filters, fresh login after restore
+
+Fixture users are seeded with the canonical disable contract
+(`disable: 0`, `authVersion: 0`, `disabledAt: null`, `disabledBy: null`) so
+active-status filters and session checks behave exactly as production.
 
 Critical flows write only to a local MongoDB database named `rinkuzu_ci`. The
 suite fails closed for every other host or database name. Seeded rows and

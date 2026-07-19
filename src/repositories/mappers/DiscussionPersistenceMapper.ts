@@ -9,7 +9,6 @@ import { mapOptionalUserProfileFields } from '@/repositories/mappers/mapOptional
 function mapAuthor(author: DiscussionCommentPersistenceRecord['author']): DiscussionAuthor {
   return {
     id: serializeId(author._id, 'discussion.comment.author._id'),
-    email: author.email,
     ...mapOptionalUserProfileFields(author),
   };
 }

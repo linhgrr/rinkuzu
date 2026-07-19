@@ -1,11 +1,11 @@
-import type { AdminMessageDto, AdminUserListDto } from '@/dtos/admin-user';
+import type { AdminMessageDto, AdminUserListDto, AdminUserStatusDto } from '@/dtos/admin-user';
 import type { AdminUserSubscriptionGrantDto } from '@/dtos/admin-billing';
-import type { DeleteResultDto } from '@/dtos/common';
 import { fetchApiData } from '@/lib/api/client';
 import { toAdminUserListViewModel } from '@/features/admin/users/mappers/admin-users.mapper';
 import type {
   AdminUserListViewModel,
   AdminUserRoleUpdateInput,
+  AdminUserStatusUpdateInput,
   AdminUserSubscriptionGrantInput,
 } from '@/features/admin/users/types/admin-users-view-model';
 
@@ -25,9 +25,14 @@ export async function updateAdminUserRole({
   });
 }
 
-export async function deleteAdminUser(userId: string): Promise<DeleteResultDto> {
-  return fetchApiData<DeleteResultDto>(`/api/admin/users?userId=${userId}`, {
-    method: 'DELETE',
+export async function updateAdminUserStatus({
+  userId,
+  disable,
+}: AdminUserStatusUpdateInput): Promise<AdminUserStatusDto> {
+  return fetchApiData<AdminUserStatusDto>(`/api/admin/users/${userId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ disable }),
   });
 }
 

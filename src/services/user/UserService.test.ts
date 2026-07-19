@@ -44,11 +44,11 @@ function createService(overrides: ServiceOverrides = {}) {
   const userRepository: Mocked<IUserRepository> = {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findByIdIncludingDisabled: vi.fn(),
     findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
-    updateRole: vi.fn(),
+    applyAdminMutation: vi.fn(),
     findAll: vi.fn(),
-    delete: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
     countByRole: vi.fn(),
@@ -101,7 +101,6 @@ describe('UserService', () => {
       const { service, userRepository, quizRepository } = createService();
       userRepository.findPublicProfileById = vi.fn().mockResolvedValue({
         id: '507f191e810c19729de860ea',
-        email: 'learner@example.com',
         displayName: 'Learner',
         bio: 'Public bio',
         createdAt: new Date('2026-07-01T00:00:00Z'),
@@ -144,11 +143,8 @@ describe('UserService', () => {
       expect(result.data).toEqual({
         user: {
           id: '507f191e810c19729de860ea',
-          email: 'learner@example.com',
-          name: undefined,
           displayName: 'Learner',
           bio: 'Public bio',
-          avatar: undefined,
           createdAt: '2026-07-01T00:00:00.000Z',
         },
         quizzes: [
@@ -195,7 +191,6 @@ describe('UserService', () => {
         quizStartedBeforeProfileResolved = true;
         resolveProfile({
           id: '507f191e810c19729de860ea',
-          email: 'learner@example.com',
           displayName: 'Learner',
           createdAt: new Date('2026-07-01T00:00:00Z'),
         });

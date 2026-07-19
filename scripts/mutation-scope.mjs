@@ -12,6 +12,10 @@ export const CRITICAL_MUTATION_PATTERNS = [
   // Password hashing / verification and secure token minting (runtime security).
   'src/lib/password.ts',
   'src/lib/auth-tokens.ts',
+  // Canonical account disable / authVersion contract used by session + admin.
+  'src/shared/constants/account-disable.ts',
+  // Active-admin invariant fence id + stable error codes for admin mutations.
+  'src/shared/constants/admin-invariant.ts',
   // Trusted URL / navigation guards and other security helpers.
   'src/lib/security/**/*.ts',
   'src/lib/entitlements/**/*.ts',
@@ -31,6 +35,8 @@ const CRITICAL_MUTATION_PATHS = [
   /^src\/lib\/api\/auth\.ts$/,
   /^src\/lib\/password\.ts$/,
   /^src\/lib\/auth-tokens\.ts$/,
+  /^src\/shared\/constants\/account-disable\.ts$/,
+  /^src\/shared\/constants\/admin-invariant\.ts$/,
   /^src\/lib\/security\/.+\.ts$/,
   /^src\/lib\/entitlements\/.+\.ts$/,
   /^src\/lib\/integrations\/payos\.ts$/,

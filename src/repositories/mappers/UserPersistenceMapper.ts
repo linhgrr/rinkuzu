@@ -6,6 +6,10 @@ import type {
   UserPersistenceRecord,
   UserSubscriptionPersistenceRecord,
 } from '@/repositories/types/UserPersistence';
+import {
+  isAccountDisableState,
+  type AccountDisableState,
+} from '@/shared/constants/account-disable';
 
 export function toUserSubscription(
   record: UserSubscriptionPersistenceRecord,
@@ -13,13 +17,34 @@ export function toUserSubscription(
   return mapEmbeddedSubscription(record);
 }
 
+function requireDisable(value: unknown): AccountDisableState {
+  if (!isAccountDisableState(value)) {
+    throw new Error('user.disable must be exactly 0 or 1');
+  }
+  return value;
+}
+
+function mapOptionalDisabledBy(
+  value: UserPersistenceRecord['disabledBy'],
+): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  return serializeId(value, 'user.disabledBy');
+}
+
 export class UserPersistenceMapper {
   static toEntity(record: UserPersistenceRecord): User {
+    const disable = requireDisable(record.disable);
+    const disabledBy = mapOptionalDisabledBy(record.disabledBy);
+
     return {
       id: serializeId(record._id, 'user._id'),
       email: record.email,
       role: record.role,
+      disable,
       createdAt: record.createdAt,
+      ...(record.disabledAt === undefined ? {} : { disabledAt: record.disabledAt }),
+      ...(disabledBy === undefined ? {} : { disabledBy }),
       ...(record.name === undefined ? {} : { name: record.name }),
       ...(record.displayName === undefined ? {} : { displayName: record.displayName }),
       ...(record.bio === undefined ? {} : { bio: record.bio }),
@@ -33,7 +58,6 @@ export class UserPersistenceMapper {
   static toPublicProfile(record: PublicProfileUserPersistenceRecord): PublicProfileUser {
     return {
       id: serializeId(record._id, 'user._id'),
-      email: record.email,
       createdAt: record.createdAt,
       ...(record.name === undefined ? {} : { name: record.name }),
       ...(record.displayName === undefined ? {} : { displayName: record.displayName }),

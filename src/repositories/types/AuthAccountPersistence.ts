@@ -13,6 +13,7 @@ export interface AuthAccountPersistenceRecord {
   avatar?: string | null;
   displayName?: string | null;
   passwordChangedAt?: Date | null;
+  authVersion?: number | null;
   failedLoginAttempts?: number | null;
   failedLoginWindowStart?: Date | null;
   lockedUntil?: Date | null;

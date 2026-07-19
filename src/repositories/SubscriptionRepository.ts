@@ -355,8 +355,9 @@ export class SubscriptionRepository implements ISubscriptionRepository {
           );
         }
 
+        // Final atomic boundary: only active accounts (disable: 0) may be activated.
         const userResult = await User.updateOne(
-          { _id: data.userId },
+          { _id: data.userId, disable: 0 },
           {
             $set: {
               subscription: {

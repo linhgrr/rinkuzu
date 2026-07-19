@@ -40,7 +40,6 @@ describe('QuizDetailDtoMapper', () => {
       slug: 'algebra-basics',
       author: {
         id: '507f191e810c19729de860eb',
-        email: 'teacher@example.com',
         name: 'Teacher',
         displayName: 'Math Teacher',
         avatar: 'https://example.com/avatar.png',
@@ -65,11 +64,14 @@ describe('QuizDetailDtoMapper', () => {
     expect(QuizDetailDtoMapper.toDetail(quiz).questions[0]).not.toHaveProperty('correctIndexes');
   });
 
-  it('does not expose persistence identity keys in the DTO shape', () => {
+  it('does not expose persistence identity keys or author email in the DTO shape', () => {
     const dto = QuizDetailDtoMapper.toDetail(quiz);
 
     expect(dto).not.toHaveProperty('_id');
     expect(typeof dto.author === 'object' ? dto.author : null).not.toHaveProperty('_id');
+    expect(dto.author).not.toHaveProperty('email');
+    // Negative key assertion: serialized JSON must not contain email anywhere in author tree.
+    expect(JSON.stringify(dto.author)).not.toMatch(/"email"/);
   });
 
   it('removes correct answers from the play DTO', () => {

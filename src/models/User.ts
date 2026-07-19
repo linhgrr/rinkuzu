@@ -1,6 +1,10 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
+import {
+  ACCOUNT_DISABLE_ACTIVE,
+  ACCOUNT_DISABLE_DISABLED,
+} from '@/shared/constants/account-disable';
 
 interface UserDocument extends Document {
   email: string;
@@ -10,6 +14,13 @@ interface UserDocument extends Document {
   bio?: string;
   avatar?: string;
   role: 'admin' | 'user';
+
+  /** Canonical soft-disable: 0 = active, 1 = disabled. Never hard-delete accounts. */
+  disable: typeof ACCOUNT_DISABLE_ACTIVE | typeof ACCOUNT_DISABLE_DISABLED;
+  disabledAt?: Date | null;
+  disabledBy?: Types.ObjectId | null;
+  /** Monotonic session revocation counter; increments on each real disable/restore. */
+  authVersion: number;
 
   // Email verification
   emailVerified?: Date | null;
@@ -67,6 +78,26 @@ const UserSchema = new Schema<UserDocument>({
     enum: ['admin', 'user'],
     default: 'user',
   },
+  disable: {
+    type: Number,
+    enum: [ACCOUNT_DISABLE_ACTIVE, ACCOUNT_DISABLE_DISABLED],
+    required: true,
+    default: ACCOUNT_DISABLE_ACTIVE,
+  },
+  disabledAt: { type: Date, default: null },
+  disabledBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  authVersion: {
+    type: Number,
+    required: true,
+    default: 0,
+    min: [0, 'authVersion must be a non-negative integer'],
+    validate: {
+      validator(value: number) {
+        return Number.isInteger(value) && value >= 0;
+      },
+      message: 'authVersion must be a non-negative integer',
+    },
+  },
   emailVerified: { type: Date, default: null },
   emailVerificationTokenHash: { type: String, default: null },
   emailVerificationExpires: { type: Date, default: null },
@@ -94,6 +125,10 @@ const UserSchema = new Schema<UserDocument>({
 
 UserSchema.index({ role: 1, createdAt: -1 });
 UserSchema.index({ createdAt: -1 });
+/** Admin user list filtered by disable status, sorted by newest first. */
+UserSchema.index({ disable: 1, createdAt: -1 });
+/** Active-admin invariant count: role + disable exact match. */
+UserSchema.index({ role: 1, disable: 1 });
 UserSchema.index(
   { passwordResetTokenHash: 1 },
   { partialFilterExpression: { passwordResetTokenHash: { $type: 'string' } } },

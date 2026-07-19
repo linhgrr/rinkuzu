@@ -20,8 +20,10 @@ const mocks = vi.hoisted(() => ({
   subscriptionExists: vi.fn(),
   subscriptionCreate: vi.fn(),
   userFindById: vi.fn(),
+  userFindOne: vi.fn(),
   userExists: vi.fn(),
   userFindByIdAndUpdate: vi.fn(),
+  userFindOneAndUpdate: vi.fn(),
   withTransaction: vi.fn(),
   endSession: vi.fn(),
   startSession: vi.fn(),
@@ -53,8 +55,10 @@ vi.mock('@/models/Subscription', () => ({
 vi.mock('@/models/User', () => ({
   default: {
     findById: mocks.userFindById,
+    findOne: mocks.userFindOne,
     exists: mocks.userExists,
     findByIdAndUpdate: mocks.userFindByIdAndUpdate,
+    findOneAndUpdate: mocks.userFindOneAndUpdate,
   },
 }));
 vi.mock('mongoose', async (importOriginal) => {
@@ -365,8 +369,8 @@ describe('AdminBillingRepository', () => {
     expect(mocks.subscriptionFind).toHaveBeenCalledWith({});
   });
 
-  it('finds billing user identity by id and returns null when missing', async () => {
-    mocks.userFindById
+  it('finds billing user identity by id with exact-active filter', async () => {
+    mocks.userFindOne
       .mockReturnValueOnce({
         select: () =>
           leanChain({
@@ -384,13 +388,14 @@ describe('AdminBillingRepository', () => {
       email: 'user@example.com',
     });
     await expect(repository.findUserById(userId)).resolves.toBeNull();
+    expect(mocks.userFindOne).toHaveBeenCalledWith({ _id: userId, disable: 0 });
   });
 
-  it('grants a subscription only for an active plan and existing user', async () => {
+  it('grants a subscription only for an active plan and existing active user', async () => {
     mocks.planExists.mockReturnValue({
       session: vi.fn().mockResolvedValue({ _id: planId }),
     });
-    mocks.userFindByIdAndUpdate.mockReturnValue({
+    mocks.userFindOneAndUpdate.mockReturnValue({
       select: () => ({
         lean: vi.fn().mockResolvedValue({ _id: new Types.ObjectId(userId) }),
       }),
@@ -410,8 +415,8 @@ describe('AdminBillingRepository', () => {
     });
 
     expect(mocks.planExists).toHaveBeenCalledWith({ _id: planId, isActive: true });
-    expect(mocks.userFindByIdAndUpdate).toHaveBeenCalledWith(
-      userId,
+    expect(mocks.userFindOneAndUpdate).toHaveBeenCalledWith(
+      { _id: userId, disable: 0 },
       {
         subscription: {
           type: planId,
@@ -445,7 +450,7 @@ describe('AdminBillingRepository', () => {
     expect(mocks.endSession).toHaveBeenCalledOnce();
   });
 
-  it('maps grant races for unavailable plan and missing user', async () => {
+  it('maps grant races for unavailable plan and missing/disabled user', async () => {
     mocks.planExists.mockReturnValueOnce({
       session: vi.fn().mockResolvedValue(null),
     });
@@ -463,7 +468,7 @@ describe('AdminBillingRepository', () => {
     mocks.planExists.mockReturnValueOnce({
       session: vi.fn().mockResolvedValue({ _id: planId }),
     });
-    mocks.userFindByIdAndUpdate.mockReturnValueOnce({
+    mocks.userFindOneAndUpdate.mockReturnValueOnce({
       select: () => ({
         lean: vi.fn().mockResolvedValue(null),
       }),

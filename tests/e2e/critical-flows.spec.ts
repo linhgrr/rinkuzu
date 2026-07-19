@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { createE2EUserEmail } from './support/fixture-identifiers';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
 const E2E_CONTROL_TOKEN = 'rinkuzu-e2e-control';
@@ -132,15 +133,15 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
     const now = new Date();
     const regular: SeededUser = {
       id: new ObjectId(),
-      email: `e2e-regular-${runId}@example.com`,
+      email: createE2EUserEmail('regular', runId),
     };
     const admin: SeededUser = {
       id: new ObjectId(),
-      email: `e2e-admin-${runId}@example.com`,
+      email: createE2EUserEmail('admin', runId),
     };
     const target: SeededUser = {
       id: new ObjectId(),
-      email: `e2e-target-${runId}@example.com`,
+      email: createE2EUserEmail('target', runId),
     };
     const quizId = new ObjectId();
     const questionId = new ObjectId();

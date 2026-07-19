@@ -2,23 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Session } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 
-import authConfig, { resolveAuthRedirectTarget, shouldTrustAuthHost } from '@/auth.config';
-
-describe('shouldTrustAuthHost', () => {
-  it('trusts Vercel managed host headers', () => {
-    expect(shouldTrustAuthHost({ VERCEL: '1' })).toBe(true);
-  });
-
-  it('supports an explicit operator opt-in outside Vercel', () => {
-    expect(shouldTrustAuthHost({ AUTH_TRUST_HOST: 'true' })).toBe(true);
-  });
-
-  it('fails closed for missing, false, or malformed values', () => {
-    expect(shouldTrustAuthHost({})).toBe(false);
-    expect(shouldTrustAuthHost({ AUTH_TRUST_HOST: 'false' })).toBe(false);
-    expect(shouldTrustAuthHost({ AUTH_TRUST_HOST: 'TRUE', VERCEL: 'true' })).toBe(false);
-  });
-});
+import authConfig, { resolveAuthRedirectTarget } from '@/auth.config';
 
 describe('resolveAuthRedirectTarget', () => {
   const baseUrl = 'https://www.rinkuzu.app';

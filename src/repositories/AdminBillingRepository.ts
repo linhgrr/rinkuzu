@@ -23,6 +23,7 @@ import type {
 import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import { buildPaginationMeta } from '@/lib/pagination';
+import { findBillingPlanById } from '@/repositories/helpers/findBillingPlanById';
 import { AdminBillingPersistenceMapper } from '@/repositories/mappers/AdminBillingPersistenceMapper';
 import type {
   AdminSubscriptionPersistenceRecord,
@@ -37,9 +38,7 @@ export class AdminBillingRepository implements IAdminBillingRepository {
   }
 
   async findPlanById(planId: string): Promise<BillingPlan | null> {
-    await connectDB();
-    const plan = await Plan.findById(planId).lean<BillingPlanPersistenceRecord>();
-    return plan ? AdminBillingPersistenceMapper.toPlan(plan) : null;
+    return findBillingPlanById(planId);
   }
 
   async createPlan(data: CreateBillingPlanData): Promise<BillingPlan> {

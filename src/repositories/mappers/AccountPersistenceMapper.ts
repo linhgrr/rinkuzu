@@ -1,6 +1,7 @@
 import type { AccountCredentials, AccountProfile, AccountSubscription } from '@/entities/Account';
 import { serializeId } from '@/lib/mongo-id';
 import { mapEmbeddedSubscription } from '@/repositories/mappers/SubscriptionPersistenceMapper';
+import { mapOptionalEditableProfileFields } from '@/repositories/mappers/mapOptionalEditableProfileFields';
 import type {
   AccountCredentialsPersistenceRecord,
   AccountProfilePersistenceRecord,
@@ -18,9 +19,7 @@ export class AccountPersistenceMapper {
       email: record.email,
       role: record.role,
       createdAt: record.createdAt,
-      ...(record.displayName === undefined ? {} : { displayName: record.displayName }),
-      ...(record.bio === undefined ? {} : { bio: record.bio }),
-      ...(record.avatar === undefined ? {} : { avatar: record.avatar }),
+      ...mapOptionalEditableProfileFields(record),
       ...(record.subscription === undefined
         ? {}
         : { subscription: toSubscription(record.subscription) }),

@@ -1,6 +1,7 @@
 import type { PublicProfileUser, User, UserSubscriptionSnapshot } from '@/entities/User';
 import { serializeId } from '@/lib/mongo-id';
 import { mapEmbeddedSubscription } from '@/repositories/mappers/SubscriptionPersistenceMapper';
+import { mapOptionalEditableProfileFields } from '@/repositories/mappers/mapOptionalEditableProfileFields';
 import type {
   PublicProfileUserPersistenceRecord,
   UserPersistenceRecord,
@@ -46,9 +47,7 @@ export class UserPersistenceMapper {
       ...(record.disabledAt === undefined ? {} : { disabledAt: record.disabledAt }),
       ...(disabledBy === undefined ? {} : { disabledBy }),
       ...(record.name === undefined ? {} : { name: record.name }),
-      ...(record.displayName === undefined ? {} : { displayName: record.displayName }),
-      ...(record.bio === undefined ? {} : { bio: record.bio }),
-      ...(record.avatar === undefined ? {} : { avatar: record.avatar }),
+      ...mapOptionalEditableProfileFields(record),
       ...(record.subscription === undefined
         ? {}
         : { subscription: toUserSubscription(record.subscription) }),
@@ -60,9 +59,7 @@ export class UserPersistenceMapper {
       id: serializeId(record._id, 'user._id'),
       createdAt: record.createdAt,
       ...(record.name === undefined ? {} : { name: record.name }),
-      ...(record.displayName === undefined ? {} : { displayName: record.displayName }),
-      ...(record.bio === undefined ? {} : { bio: record.bio }),
-      ...(record.avatar === undefined ? {} : { avatar: record.avatar }),
+      ...mapOptionalEditableProfileFields(record),
     };
   }
 }

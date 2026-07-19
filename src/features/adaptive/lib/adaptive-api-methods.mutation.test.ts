@@ -659,7 +659,7 @@ describe('adaptive-api-methods mutation coverage', () => {
             exercise_history: [
               {
                 ...historyBase,
-                exercise_id: 'mcq-1',
+                exercise_id: ' mcq-1 ',
                 payload: {
                   exercise_type: 'mcq',
                   options: { A: 'a' },
@@ -730,6 +730,7 @@ describe('adaptive-api-methods mutation coverage', () => {
       const detail = await getSubjectHistoryDetail('job-hist');
       expect(detail.exercise_history).toHaveLength(7);
       expect(detail.exercise_history[0]).toMatchObject({
+        exercise_id: 'mcq-1',
         exercise_type: 'mcq',
         correct_option: 'A',
         options: { A: 'a' },
@@ -773,11 +774,19 @@ describe('adaptive-api-methods mutation coverage', () => {
     });
 
     it.each([
-      { exerciseIds: ['', 'valid-id'], expectedMessage: 'Missing exercise_id' },
-      { exerciseIds: ['duplicate-id', 'duplicate-id'], expectedMessage: 'Duplicate exercise_id' },
+      {
+        exerciseIds: ['', 'valid-id'],
+        expectedMessage: 'Missing exercise_id',
+        expectedDetail: 'subject exercise_history[0]',
+      },
+      {
+        exerciseIds: ['duplicate-id', 'duplicate-id'],
+        expectedMessage: 'Duplicate exercise_id',
+        expectedDetail: 'subject exercise_history[1]',
+      },
     ])(
       'rejects invalid history row identity: $expectedMessage',
-      async ({ exerciseIds, expectedMessage }) => {
+      async ({ exerciseIds, expectedMessage, expectedDetail }) => {
         const exercise = (exerciseId: string) => ({
           exercise_id: exerciseId,
           concept_name: 'Concept',
@@ -825,6 +834,7 @@ describe('adaptive-api-methods mutation coverage', () => {
         await expect(getSubjectHistoryDetailFresh('job-invalid-history')).rejects.toMatchObject({
           code: 'upstream_invalid_envelope',
           message: expect.stringContaining(expectedMessage),
+          detail: expectedDetail,
         });
       },
     );

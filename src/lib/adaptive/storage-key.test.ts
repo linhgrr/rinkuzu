@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ADAPTIVE_PIPELINE_UPLOAD_PREFIX,
-  buildAdaptivePipelineObjectKeyPrefix,
-  resolveOwnedAdaptivePipelineS3Key,
-} from './storage-key';
+import { resolveOwnedAdaptivePipelineS3Key } from './storage-key';
 
 const USER_ID = '507f191e810c19729de860ea';
 const OTHER_USER_ID = '507f191e810c19729de860eb';
+const ADAPTIVE_PIPELINE_UPLOAD_PREFIX = 'uploads/adaptive_pipeline';
+
+function objectPrefix(userId: string): string {
+  return `${ADAPTIVE_PIPELINE_UPLOAD_PREFIX}/${userId}/`;
+}
 
 function ownedKey(fileName = '1710000000000-source.pdf'): string {
-  return `${buildAdaptivePipelineObjectKeyPrefix(USER_ID)}${fileName}`;
+  return `${objectPrefix(USER_ID)}${fileName}`;
 }
 
 describe('resolveOwnedAdaptivePipelineS3Key', () => {
@@ -19,7 +20,7 @@ describe('resolveOwnedAdaptivePipelineS3Key', () => {
   });
 
   it('denies another user namespace', () => {
-    const foreign = `${buildAdaptivePipelineObjectKeyPrefix(OTHER_USER_ID)}file.pdf`;
+    const foreign = `${objectPrefix(OTHER_USER_ID)}file.pdf`;
     expect(resolveOwnedAdaptivePipelineS3Key(foreign, USER_ID)).toEqual({
       ok: false,
       error: 's3Key is outside the authenticated user namespace',
@@ -87,11 +88,8 @@ describe('resolveOwnedAdaptivePipelineS3Key', () => {
   });
 
   it('denies prefix-only keys with no object name', () => {
-    expect(
-      resolveOwnedAdaptivePipelineS3Key(
-        buildAdaptivePipelineObjectKeyPrefix(USER_ID).slice(0, -1),
-        USER_ID,
-      ).ok,
-    ).toBe(false);
+    expect(resolveOwnedAdaptivePipelineS3Key(objectPrefix(USER_ID).slice(0, -1), USER_ID).ok).toBe(
+      false,
+    );
   });
 });

@@ -2,7 +2,7 @@
 
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
-import type { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession';
+import type { ChatMessage } from '@/features/quiz/lib/chat-history';
 
 interface AIExplainPanelProps {
   isOpen: boolean;

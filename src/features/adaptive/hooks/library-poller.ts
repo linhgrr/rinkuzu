@@ -41,7 +41,8 @@ export function createLibraryPoller({
   unschedule = clearTimeout,
 }: LibraryPollerOptions): LibraryPoller {
   let timerId: ReturnType<typeof setTimeout> | null = null;
-  let inFlight = false;
+  let currentTick: Promise<void> | null = null;
+  let lifecycleVersion = 0;
   let stopped = false;
 
   const clearTimer = (): void => {
@@ -56,23 +57,20 @@ export function createLibraryPoller({
     timerId = schedule(() => void tick(), delayMs);
   };
 
-  const tick = async (): Promise<void> => {
-    if (stopped || inFlight) return;
-
-    inFlight = true;
+  const runTick = async (version: number): Promise<void> => {
     try {
       let jobs: PipelineJobListItem[];
       try {
         jobs = await listJobs();
       } catch {
         // On list error: schedule a retry at MAX delay, do not crash.
-        if (!stopped) {
+        if (!stopped && version === lifecycleVersion) {
           scheduleNext(MAX_DELAY_MS);
         }
         return;
       }
 
-      if (stopped) return;
+      if (stopped || version !== lifecycleVersion) return;
 
       onJobs(jobs);
 
@@ -90,17 +88,39 @@ export function createLibraryPoller({
       const delayMs = Math.min(Math.max(MIN_DELAY_MS, minRetrySeconds * 1_000), MAX_DELAY_MS);
       scheduleNext(delayMs);
     } finally {
-      inFlight = false;
-      onTickSettled();
+      if (version === lifecycleVersion) {
+        onTickSettled();
+      }
     }
   };
 
+  const tick = (): Promise<void> => {
+    if (stopped) return Promise.resolve();
+    if (currentTick) return currentTick;
+
+    const promise = runTick(lifecycleVersion);
+    currentTick = promise;
+    const clearCurrentTick = (): void => {
+      if (currentTick === promise) currentTick = null;
+    };
+    void promise.then(clearCurrentTick, clearCurrentTick);
+    return promise;
+  };
+
   const tickNow = async (): Promise<void> => {
-    // Run an immediate tick regardless of pending timer.
-    // Reset stopped so that a forced refresh works even after the poller has stopped
-    // (e.g. after a retry/cancel action on a previously-terminal job list).
     clearTimer();
     stopped = false;
+
+    // Invalidate an older list response before waiting for it to settle. This keeps a
+    // pre-mutation response from restoring stale state after retry/cancel completes.
+    const requestedVersion = ++lifecycleVersion;
+    const activeTick = currentTick;
+    if (activeTick) await activeTick;
+
+    // A newer refresh or stop supersedes this request while it is waiting.
+    if (stopped || requestedVersion !== lifecycleVersion) return;
+
+    clearTimer();
     await tick();
   };
 
@@ -126,13 +146,12 @@ export function createLibraryPoller({
 
   return {
     start: () => {
-      stopped = false;
-      void tick();
+      void tickNow();
     },
     stop: () => {
       stopped = true;
+      lifecycleVersion += 1;
       clearTimer();
-      inFlight = false;
     },
     tickNow,
     retry,

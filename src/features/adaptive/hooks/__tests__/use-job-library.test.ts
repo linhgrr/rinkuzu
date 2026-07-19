@@ -257,6 +257,115 @@ describe('createLibraryPoller', () => {
     expect(onBusy).toHaveBeenCalledWith(null);
   });
 
+  it('ignores an in-flight pre-cancel response and waits for a fresh list', async () => {
+    let resolveStaleList!: (jobs: PipelineJobListItem[]) => void;
+    const listJobs = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<PipelineJobListItem[]>((resolve) => {
+            resolveStaleList = resolve;
+          }),
+      )
+      .mockResolvedValueOnce([makeJob('j1', 'cancelled', 0)]);
+    const onJobs = vi.fn();
+    const onBusy = vi.fn();
+    const poller = createTestLibraryPoller({
+      listJobs,
+      retryJob: vi.fn(),
+      cancelJob: vi.fn().mockResolvedValue({ job_id: 'j1', status: 'cancelled' }),
+      onJobs,
+      onBusy,
+      schedule: (fn, ms) => timers.schedule(fn, ms),
+      unschedule: (id) => timers.unschedule(id),
+    });
+
+    poller.start();
+    expect(listJobs).toHaveBeenCalledTimes(1);
+
+    const cancelPromise = poller.cancel('j1');
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(onBusy).toHaveBeenCalledWith('j1');
+
+    resolveStaleList([makeJob('j1', 'extracting', 1)]);
+    await cancelPromise;
+
+    expect(listJobs).toHaveBeenCalledTimes(2);
+    expect(onJobs).toHaveBeenCalledTimes(1);
+    expect(onJobs).toHaveBeenCalledWith([expect.objectContaining({ status: 'cancelled' })]);
+    expect(onBusy).toHaveBeenLastCalledWith(null);
+    expect(timers.pendingCount).toBe(0);
+  });
+
+  it('does not restart a queued post-cancel refresh after stop', async () => {
+    let resolveStaleList!: (jobs: PipelineJobListItem[]) => void;
+    const listJobs = vi.fn().mockImplementationOnce(
+      () =>
+        new Promise<PipelineJobListItem[]>((resolve) => {
+          resolveStaleList = resolve;
+        }),
+    );
+    const onJobs = vi.fn();
+    const onBusy = vi.fn();
+    const poller = createTestLibraryPoller({
+      listJobs,
+      retryJob: vi.fn(),
+      cancelJob: vi.fn().mockResolvedValue({ job_id: 'j1', status: 'cancelled' }),
+      onJobs,
+      onBusy,
+      schedule: (fn, ms) => timers.schedule(fn, ms),
+      unschedule: (id) => timers.unschedule(id),
+    });
+
+    poller.start();
+    const cancelPromise = poller.cancel('j1');
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    poller.stop();
+
+    resolveStaleList([makeJob('j1', 'extracting', 1)]);
+    await cancelPromise;
+
+    expect(listJobs).toHaveBeenCalledTimes(1);
+    expect(onJobs).not.toHaveBeenCalled();
+    expect(onBusy).toHaveBeenLastCalledWith(null);
+    expect(timers.pendingCount).toBe(0);
+  });
+
+  it('coalesces concurrent refreshes behind an in-flight list into the latest request', async () => {
+    let resolveStaleList!: (jobs: PipelineJobListItem[]) => void;
+    const listJobs = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<PipelineJobListItem[]>((resolve) => {
+            resolveStaleList = resolve;
+          }),
+      )
+      .mockResolvedValueOnce([makeJob('j1', 'completed', 0)]);
+    const onJobs = vi.fn();
+    const poller = createTestLibraryPoller({
+      listJobs,
+      retryJob: vi.fn(),
+      cancelJob: vi.fn(),
+      onJobs,
+      onBusy: vi.fn(),
+      schedule: (fn, ms) => timers.schedule(fn, ms),
+      unschedule: (id) => timers.unschedule(id),
+    });
+
+    poller.start();
+    const supersededRefresh = poller.tickNow();
+    const latestRefresh = poller.tickNow();
+    resolveStaleList([makeJob('j1', 'extracting', 1)]);
+
+    await Promise.all([supersededRefresh, latestRefresh]);
+
+    expect(listJobs).toHaveBeenCalledTimes(2);
+    expect(onJobs).toHaveBeenCalledTimes(1);
+    expect(onJobs).toHaveBeenCalledWith([expect.objectContaining({ status: 'completed' })]);
+    expect(timers.pendingCount).toBe(0);
+  });
+
   // -------------------------------------------------------------------------
   // 4. List error schedules a retry at MAX (10000ms), doesn't throw
   // -------------------------------------------------------------------------

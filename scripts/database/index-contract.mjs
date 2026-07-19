@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-19.3';
+export const INDEX_CONTRACT_VERSION = '2026-07-19.4';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -57,6 +57,17 @@ export const INDEX_CONTRACT = Object.freeze([
     { createdAt: 1 },
     { expireAfterSeconds: 180 * 24 * 60 * 60 },
   ),
+
+  // auth_rate_limits is owned by rate-limiter-flexible rather than Mongoose.
+  // Production disables the library's request-path index creation, so these
+  // indexes must be applied and verified by the deployment migration.
+  required(
+    'auth-rate-limits.expiration',
+    'auth_rate_limits',
+    { expire: -1 },
+    { expireAfterSeconds: 0 },
+  ),
+  required('auth-rate-limits.key', 'auth_rate_limits', { key: 1 }, { unique: true }),
 
   // bookmarks
   required(

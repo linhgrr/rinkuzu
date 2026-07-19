@@ -138,6 +138,14 @@ const envSchema = z
       });
     }
 
+    if (data.NODE_ENV === 'production' && data.AUTH_TRUST_HOST !== 'true') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['AUTH_TRUST_HOST'],
+        message: 'AUTH_TRUST_HOST must be true in production',
+      });
+    }
+
     if (
       (data.AUTH_GOOGLE_ID && !data.AUTH_GOOGLE_SECRET) ||
       (!data.AUTH_GOOGLE_ID && data.AUTH_GOOGLE_SECRET)

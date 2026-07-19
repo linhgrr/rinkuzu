@@ -99,6 +99,22 @@ describe('env validation', () => {
     const { env } = await import('@/lib/env');
     expect(env.MONGODB_URI).toContain('/rinkuzu?');
   });
+
+  it.each([undefined, 'false'])(
+    'rejects production without explicit trusted-host configuration: %s',
+    async (authTrustHost) => {
+      replaceProcessEnv({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        MONGODB_URI: 'mongodb://127.0.0.1:27017/rinkuzu',
+        AUTH_TRUST_HOST: authTrustHost,
+      });
+
+      await expect(import('@/lib/env')).rejects.toThrow(
+        /AUTH_TRUST_HOST must be true in production/,
+      );
+    },
+  );
 });
 
 describe('INTERNAL_SERVICE_TOKEN validation', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
@@ -33,12 +33,21 @@ type ErrorState = {
   code?: string;
 };
 
+function subscribeToClientHydration() {
+  return () => {};
+}
+
 function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProps) {
   const t = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<ErrorState | null>(null);
   const [retrySeconds, setRetrySeconds] = useState(0);
   const [navigationPending, setNavigationPending] = useState(false);
+  const hydrated = useSyncExternalStore(
+    subscribeToClientHydration,
+    () => true,
+    () => false,
+  );
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
 
@@ -111,6 +120,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
 
   const submitPending = isSubmitting || navigationPending;
   const submitDisabled = submitPending || retrySeconds > 0;
+  const controlsDisabled = !hydrated || submitPending;
   const lockoutCountdownLabel =
     retrySeconds > 0
       ? `${Math.floor(retrySeconds / 60)
@@ -121,7 +131,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
 
   return (
     <div>
-      {googleEnabled && <GoogleAuthButton callbackUrl={callbackUrl} disabled={submitPending} />}
+      {googleEnabled && <GoogleAuthButton callbackUrl={callbackUrl} disabled={controlsDisabled} />}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>
         {serverError && (
           <Card
@@ -159,7 +169,10 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
           </Card>
         )}
 
-        <fieldset disabled={submitPending} className="space-y-6 disabled:opacity-60">
+        <fieldset
+          disabled={controlsDisabled}
+          className={submitPending ? 'space-y-6 opacity-60' : 'space-y-6'}
+        >
           <div>
             <Input
               label={t('emailAddress')}
@@ -235,7 +248,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
           <Button
             type="submit"
             loading={submitPending}
-            disabled={submitDisabled}
+            disabled={!hydrated || submitDisabled}
             aria-busy={submitPending}
             size="lg"
             className="w-full rounded-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"

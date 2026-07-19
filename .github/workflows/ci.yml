@@ -148,7 +148,7 @@ jobs:
 
       - name: Upload duplicate-code evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: duplication-${{ github.sha }}
           path: reports/jscpd
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload immutable coverage evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: coverage-${{ github.sha }}
           path: coverage
@@ -237,7 +237,7 @@ jobs:
 
       - name: Upload mutation evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: mutation-${{ github.sha }}
           path: reports/mutation
@@ -365,7 +365,7 @@ jobs:
           printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
 
       - name: Upload production build
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: next-production-${{ github.sha }}
           path: .next
@@ -421,7 +421,7 @@ jobs:
 
       - name: Upload E2E evidence
         if: ${{ !cancelled() && steps.production_e2e.outcome != 'skipped' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: e2e-${{ github.sha }}
           path: |
@@ -510,7 +510,7 @@ jobs:
 
       - name: Upload performance evidence
         if: ${{ !cancelled() && steps.performance_gate.outcome != 'skipped' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: performance-${{ github.sha }}
           path: |

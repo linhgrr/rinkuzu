@@ -233,6 +233,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
   const userIdStrings = userIds.map((id) => id.toHexString());
   const emails = [fixture.regular.email, fixture.admin.email, fixture.target.email];
   const authRateLimitKeys = credentialsRateLimitKeys(emails);
+  const llmRateLimitKeyPattern = new RegExp(`:(?:${userIdStrings.join('|')})$`);
 
   try {
     await Promise.all([
@@ -248,6 +249,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
         $or: [{ userId: { $in: userIds } }, { email: { $in: emails } }],
       }),
       db.collection('auth_rate_limits').deleteMany({ key: { $in: authRateLimitKeys } }),
+      db.collection('llm_rate_limits').deleteMany({ key: llmRateLimitKeyPattern }),
     ]);
     await db.collection('quizzes').deleteMany({ _e2eRun: runId });
     await db.collection('plans').deleteMany({ _e2eRun: runId });
@@ -260,6 +262,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       db.collection('attempts').countDocuments({ quiz: fixture.quizId }),
       db.collection('userprogresses').countDocuments({ userId: { $in: userIdStrings } }),
       db.collection('auth_rate_limits').countDocuments({ key: { $in: authRateLimitKeys } }),
+      db.collection('llm_rate_limits').countDocuments({ key: llmRateLimitKeyPattern }),
     ]);
     if (remaining.some((count) => count !== 0)) {
       throw new Error(`Critical E2E cleanup postcondition failed: ${remaining.join(',')}`);

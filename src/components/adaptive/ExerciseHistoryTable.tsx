@@ -288,10 +288,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {paginatedExercises.map((exercise, index) => (
-              <tr
-                key={exercise.exercise_id || index}
-                className="transition-colors hover:bg-neutral-50"
-              >
+              <tr key={exercise.exercise_id} className="transition-colors hover:bg-neutral-50">
                 <td className="px-5 py-3 font-mono text-xs text-neutral-500">
                   {(currentPage - 1) * PAGE_SIZE + index + 1}
                 </td>

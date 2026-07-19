@@ -123,6 +123,12 @@ function requireString(value: string | undefined, field: string, context: string
   throw invalidAdaptiveEnvelope(`Missing ${field}`, context);
 }
 
+function requireNonEmptyString(value: string, field: string, context: string): string {
+  const normalized = value.trim();
+  if (normalized) return normalized;
+  throw invalidAdaptiveEnvelope(`Missing ${field}`, context);
+}
+
 function requireStringRecord(
   value: Record<string, string> | undefined,
   field: string,
@@ -275,6 +281,7 @@ function normalizeExerciseHistoryItem(
   const { payload, ...history } = item;
   const common = {
     ...history,
+    exercise_id: requireNonEmptyString(item.exercise_id, 'exercise_id', context),
     bloom_level: normalizeBloomLevel(item.bloom_level, context),
     sentence: null,
     options: {},
@@ -355,7 +362,18 @@ function normalizeExerciseHistoryItem(
 function normalizeExerciseHistory(
   exerciseHistory: ApiSchemas['SubjectHistoryDetailResponse']['exercise_history'],
 ): ExerciseHistoryFull[] {
-  return exerciseHistory.map(normalizeExerciseHistoryItem);
+  const seenExerciseIds = new Set<string>();
+  return exerciseHistory.map((item, index) => {
+    const exercise = normalizeExerciseHistoryItem(item, index);
+    if (seenExerciseIds.has(exercise.exercise_id)) {
+      throw invalidAdaptiveEnvelope(
+        `Duplicate exercise_id: ${exercise.exercise_id}`,
+        `subject exercise_history[${index}]`,
+      );
+    }
+    seenExerciseIds.add(exercise.exercise_id);
+    return exercise;
+  });
 }
 
 function normalizeSubjectHistoryDetail(

@@ -473,6 +473,7 @@ try {
       countIndexes: [...publicQuizCountIndexes].sort(),
       countKeysExamined: publicQuizCountStats.totalKeysExamined,
       countDocumentsExamined: publicQuizCountStats.totalDocsExamined,
+      countReturnedRows: publicQuizCountStats.nReturned,
       lookupDocumentsExamined: publicQuizListLookup?.totalDocsExamined ?? null,
       lookupIndexesUsed: publicQuizListLookup?.indexesUsed ?? [],
     };
@@ -494,15 +495,17 @@ try {
         `public-quiz-list examined ${publicQuizListRow.keysExamined} keys/${publicQuizListRow.documentsExamined} documents and returned ${publicQuizListRow.returnedRows} rows; expected at most 4/4`,
       );
     }
-    if (
-      !publicQuizCountIndexes.has('isPrivate_1_createdAt_-1') ||
-      publicQuizListRow.countKeysExamined !== 600 ||
-      publicQuizListRow.countDocumentsExamined !== 0
-    ) {
-      throw new Error(
-        `public-quiz-list count did not use the expected covered index scan; stages=${publicQuizListRow.countStages.join(',')}; indexes=${publicQuizListRow.countIndexes.join(',')}; keys=${publicQuizListRow.countKeysExamined}; documents=${publicQuizListRow.countDocumentsExamined}`,
-      );
-    }
+    assertCoveredExactCountPlan(
+      {
+        name: 'public-quiz-list-count',
+        stages: publicQuizListRow.countStages,
+        indexes: publicQuizListRow.countIndexes,
+        keysExamined: publicQuizListRow.countKeysExamined,
+        documentsExamined: publicQuizListRow.countDocumentsExamined,
+        returnedRows: publicQuizListRow.countReturnedRows,
+      },
+      { totalItems: 600, expectedIndex: 'isPrivate_1_createdAt_-1' },
+    );
     if (
       publicQuizListRow.lookupDocumentsExamined !== 4 ||
       !publicQuizListRow.lookupIndexesUsed.includes('_id_')

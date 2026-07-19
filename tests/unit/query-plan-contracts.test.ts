@@ -8,7 +8,7 @@ function coveredCount(keysExamined: number) {
     indexes: ['_id_'],
     keysExamined,
     documentsExamined: 0,
-    returnedRows: 1,
+    returnedRows: 800,
   };
 }
 
@@ -31,7 +31,8 @@ describe('covered exact-count query-plan contract', () => {
     { ...coveredCount(800), stages: ['IXSCAN'], label: 'non-count index scan' },
     { ...coveredCount(800), stages: ['COUNT_SCAN', 'FETCH'], label: 'document fetch stage' },
     { ...coveredCount(800), documentsExamined: 1, label: 'document fetch' },
-    { ...coveredCount(800), returnedRows: 0, label: 'missing count result' },
+    { ...coveredCount(800), returnedRows: 799, label: 'missing cursor row' },
+    { ...coveredCount(800), returnedRows: 801, label: 'unexpected cursor row' },
   ])('rejects $label', ({ label: _label, ...evidence }) => {
     expect(() =>
       assertCoveredExactCountPlan(evidence, { totalItems: 800, expectedIndex: '_id_' }),

@@ -35,12 +35,24 @@ export class LearningProgressDtoMapper {
   }
 
   static toLibraryQuizDto(quiz: LibraryQuiz): LibraryQuizDto {
+    const author =
+      quiz.author == null
+        ? null
+        : {
+            id: quiz.author.id,
+            ...(quiz.author.name !== undefined && { name: quiz.author.name }),
+            ...(quiz.author.displayName !== undefined && {
+              displayName: quiz.author.displayName,
+            }),
+            ...(quiz.author.avatar !== undefined && { avatar: quiz.author.avatar }),
+          };
+
     return {
       id: quiz.id,
       title: quiz.title,
       slug: quiz.slug,
       ...(quiz.description !== undefined && { description: quiz.description }),
-      author: quiz.author,
+      author,
       folder: quiz.folder,
       questions: [],
       isPrivate: quiz.isPrivate,

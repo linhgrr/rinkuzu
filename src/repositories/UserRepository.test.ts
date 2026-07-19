@@ -2,14 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Types } from 'mongoose';
 
 const userModelMocks = vi.hoisted(() => {
+  // Chain: findById/findOne → select → session → lean (txn path)
+  // and findById/findOne → select → lean (non-txn path)
   const findByIdLean = vi.fn();
-  const findByIdSessionLean = vi.fn();
-  const findByIdSession = vi.fn(() => ({ lean: findByIdSessionLean }));
-  const findByIdSelect = vi.fn(() => ({ lean: findByIdLean, session: findByIdSession }));
+  const findByIdSession = vi.fn(() => ({ lean: findByIdLean }));
+  const findByIdSelect = vi.fn(() => ({ session: findByIdSession, lean: findByIdLean }));
   const findById = vi.fn(() => ({ select: findByIdSelect }));
 
   const findOneLean = vi.fn();
-  const findOneSelect = vi.fn(() => ({ lean: findOneLean }));
+  const findOneSession = vi.fn(() => ({ lean: findOneLean }));
+  const findOneSelect = vi.fn(() => ({ session: findOneSession, lean: findOneLean }));
   const findOne = vi.fn(() => ({ select: findOneSelect }));
 
   const listLean = vi.fn();
@@ -19,55 +21,48 @@ const userModelMocks = vi.hoisted(() => {
   const listSelect = vi.fn(() => ({ sort }));
   const find = vi.fn(() => ({ select: listSelect }));
 
-  const updateLean = vi.fn();
-  const updateSelect = vi.fn(() => ({ lean: updateLean }));
-  const findByIdAndUpdate = vi.fn(() => ({ select: updateSelect }));
+  const findOneAndUpdateLean = vi.fn();
+  const findOneAndUpdateSelect = vi.fn(() => ({ lean: findOneAndUpdateLean }));
+  const findOneAndUpdate = vi.fn(() => ({ select: findOneAndUpdateSelect }));
 
   return {
     aggregate: vi.fn(),
     countDocuments: vi.fn(),
-    deleteOne: vi.fn(),
     find,
     findById,
-    findByIdAndUpdate,
     findByIdLean,
     findByIdSelect,
     findByIdSession,
-    findByIdSessionLean,
     findOne,
     findOneLean,
     findOneSelect,
+    findOneSession,
+    findOneAndUpdate,
+    findOneAndUpdateLean,
+    findOneAndUpdateSelect,
     listLean,
     limit,
     skip,
     sort,
     listSelect,
-    updateLean,
-    updateSelect,
   };
 });
 
-const cascadeMocks = vi.hoisted(() => ({
-  attemptDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  subscriptionDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  subscriptionUpdateMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  bookmarkDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  questionProgressDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  userProgressDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  quizProgressDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  folderQuizDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  folderDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  discussionUpdateMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  reportDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  quizFind: vi.fn(),
-  quizDeleteMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  auditLogUpdateMany: vi.fn(() => ({ session: vi.fn().mockResolvedValue(undefined) })),
-  deleteQuizDependents: vi.fn().mockResolvedValue(undefined),
-  deleteOwnedPdfUrlsBestEffort: vi.fn().mockResolvedValue(undefined),
-  withTransaction: vi.fn(),
-  endSession: vi.fn(),
-  startSession: vi.fn(),
-}));
+const fenceMocks = vi.hoisted(() => {
+  const lean = vi.fn();
+  const findOneAndUpdate = vi.fn(() => ({ lean }));
+  return { findOneAndUpdate, lean };
+});
+
+const mongooseMocks = vi.hoisted(() => {
+  const withTransaction = vi.fn();
+  const endSession = vi.fn();
+  const startSession = vi.fn(async () => ({
+    withTransaction,
+    endSession,
+  }));
+  return { startSession, withTransaction, endSession };
+});
 
 vi.mock('@/lib/mongoose', () => ({
   default: vi.fn().mockResolvedValue(undefined),
@@ -77,151 +72,141 @@ vi.mock('@/models/User', () => ({
   default: {
     aggregate: userModelMocks.aggregate,
     countDocuments: userModelMocks.countDocuments,
-    deleteOne: userModelMocks.deleteOne,
     find: userModelMocks.find,
     findById: userModelMocks.findById,
-    findByIdAndUpdate: userModelMocks.findByIdAndUpdate,
     findOne: userModelMocks.findOne,
+    findOneAndUpdate: userModelMocks.findOneAndUpdate,
   },
 }));
 
-vi.mock('@/models/Attempt', () => ({
-  default: { deleteMany: cascadeMocks.attemptDeleteMany },
-}));
-vi.mock('@/models/Subscription', () => ({
+vi.mock('@/models/AdminMutationFence', () => ({
   default: {
-    deleteMany: cascadeMocks.subscriptionDeleteMany,
-    updateMany: cascadeMocks.subscriptionUpdateMany,
+    findOneAndUpdate: fenceMocks.findOneAndUpdate,
   },
 }));
-vi.mock('@/models/Bookmark', () => ({
-  default: { deleteMany: cascadeMocks.bookmarkDeleteMany },
-}));
-vi.mock('@/models/QuestionProgress', () => ({
-  default: { deleteMany: cascadeMocks.questionProgressDeleteMany },
-}));
-vi.mock('@/models/UserProgress', () => ({
-  default: { deleteMany: cascadeMocks.userProgressDeleteMany },
-}));
-vi.mock('@/models/QuizProgress', () => ({
-  default: { deleteMany: cascadeMocks.quizProgressDeleteMany },
-}));
-vi.mock('@/models/FolderQuiz', () => ({
-  default: { deleteMany: cascadeMocks.folderQuizDeleteMany },
-}));
-vi.mock('@/models/Folder', () => ({
-  default: { deleteMany: cascadeMocks.folderDeleteMany },
-}));
-vi.mock('@/models/Discussion', () => ({
-  default: { updateMany: cascadeMocks.discussionUpdateMany },
-}));
-vi.mock('@/models/Report', () => ({
-  default: { deleteMany: cascadeMocks.reportDeleteMany },
-}));
-vi.mock('@/models/Quiz', () => ({
-  default: {
-    find: cascadeMocks.quizFind,
-    deleteMany: cascadeMocks.quizDeleteMany,
-  },
-}));
-vi.mock('@/models/AuditLog', () => ({
-  default: { updateMany: cascadeMocks.auditLogUpdateMany },
-}));
-vi.mock('@/repositories/helpers/deleteQuizDependents', () => ({
-  deleteQuizDependents: cascadeMocks.deleteQuizDependents,
-}));
-vi.mock('@/lib/s3', () => ({
-  deleteOwnedPdfUrlsBestEffort: cascadeMocks.deleteOwnedPdfUrlsBestEffort,
-  getQuizPdfObjectPrefix: (userId: string) => `uploads/quiz_extract/${userId}/`,
-}));
-vi.mock('mongoose', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('mongoose')>();
+
+vi.mock('mongoose', async () => {
+  const actual = await vi.importActual<typeof import('mongoose')>('mongoose');
   return {
     ...actual,
     default: {
       ...actual.default,
-      startSession: cascadeMocks.startSession,
+      startSession: mongooseMocks.startSession,
     },
+    startSession: mongooseMocks.startSession,
   };
 });
 
 import { UserRepository } from '@/repositories/UserRepository';
+import {
+  ActorNotActiveAdminError,
+  AdminInvariantUnavailableError,
+  AdminMutationConflictError,
+  AdminMutationTargetNotFoundError,
+  LastActiveAdminError,
+} from '@/entities/AdminMutation';
 
-const USER_ENTITY_PROJECTION = '_id email name displayName bio avatar role subscription createdAt';
-const userRecord = {
-  _id: new Types.ObjectId('507f191e810c19729de860ea'),
+// Loose mock aliases — chain shapes vary per test; keep runtime behavior strict.
+type LooseMock = {
+  mockImplementation: (fn: (...args: unknown[]) => unknown) => unknown;
+  mock: { calls: unknown[][] };
+};
+const fenceFindOneAndUpdate = fenceMocks.findOneAndUpdate as LooseMock;
+const userFindOneSelect = userModelMocks.findOneSelect as LooseMock;
+const userFindByIdSelect = userModelMocks.findByIdSelect as LooseMock;
+const userFindOneAndUpdate = userModelMocks.findOneAndUpdate as LooseMock;
+
+const USER_ENTITY_PROJECTION =
+  '_id email name displayName bio avatar role subscription createdAt disable disabledAt disabledBy';
+
+const actorId = '507f191e810c19729de860ea';
+const targetId = '507f191e810c19729de860eb';
+const otherAdminId = '507f191e810c19729de860ec';
+
+const actorRecord = {
+  _id: new Types.ObjectId(actorId),
+  email: 'admin@example.com',
+  role: 'admin' as const,
+  disable: 0 as const,
+  disabledAt: null,
+  disabledBy: null,
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+};
+
+const targetUserRecord = {
+  _id: new Types.ObjectId(targetId),
   email: 'learner@example.com',
   displayName: 'Learner',
   role: 'user' as const,
+  disable: 0 as const,
+  disabledAt: null,
+  disabledBy: null,
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
+};
+
+const targetAdminRecord = {
+  ...targetUserRecord,
+  role: 'admin' as const,
+  email: 'other-admin@example.com',
 };
 
 describe('UserRepository entity projections', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    userModelMocks.findByIdLean.mockResolvedValue(userRecord);
-    userModelMocks.findOneLean.mockResolvedValue(userRecord);
-    userModelMocks.listLean.mockResolvedValue([userRecord]);
-    userModelMocks.updateLean.mockResolvedValue({ ...userRecord, role: 'admin' });
+    userModelMocks.findByIdLean.mockResolvedValue(targetUserRecord);
+    userModelMocks.findOneLean.mockResolvedValue(targetUserRecord);
+    userModelMocks.listLean.mockResolvedValue([targetUserRecord]);
     userModelMocks.countDocuments.mockResolvedValue(1);
   });
 
-  it('allowlists entity fields for single-user reads', async () => {
+  it('allowlists entity fields and requires disable 0 for single-user reads', async () => {
     const repository = new UserRepository();
+    const id = String(targetUserRecord._id);
 
-    await expect(repository.findById(String(userRecord._id))).resolves.toMatchObject({
-      email: userRecord.email,
+    await expect(repository.findById(id)).resolves.toMatchObject({
+      email: targetUserRecord.email,
+      disable: 0,
     });
-    await expect(repository.findByEmail(userRecord.email)).resolves.toMatchObject({
-      email: userRecord.email,
+    await expect(repository.findByEmail(targetUserRecord.email)).resolves.toMatchObject({
+      email: targetUserRecord.email,
+      disable: 0,
     });
 
-    expect(userModelMocks.findByIdSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
-    expect(userModelMocks.findOne).toHaveBeenCalledWith({ email: userRecord.email });
+    expect(userModelMocks.findOne).toHaveBeenCalledWith({ _id: id, disable: 0 });
+    expect(userModelMocks.findOne).toHaveBeenCalledWith({
+      email: targetUserRecord.email,
+      disable: 0,
+    });
     expect(userModelMocks.findOneSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
+    expect(USER_ENTITY_PROJECTION).not.toMatch(/authVersion/);
   });
 
   it('returns null when findById or findByEmail misses', async () => {
-    userModelMocks.findByIdLean.mockResolvedValueOnce(null);
-    userModelMocks.findOneLean.mockResolvedValueOnce(null);
+    userModelMocks.findOneLean.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     const repository = new UserRepository();
 
-    await expect(repository.findById(String(userRecord._id))).resolves.toBeNull();
-    await expect(repository.findByEmail(userRecord.email)).resolves.toBeNull();
+    await expect(repository.findById(String(targetUserRecord._id))).resolves.toBeNull();
+    await expect(repository.findByEmail(targetUserRecord.email)).resolves.toBeNull();
   });
 
-  it('allowlists entity fields for admin lists and role updates', async () => {
+  it('allowlists entity fields for admin lists', async () => {
     const repository = new UserRepository();
 
     await expect(repository.findAll({ page: 1, limit: 20 })).resolves.toMatchObject({
-      items: [{ email: userRecord.email }],
+      items: [{ email: targetUserRecord.email, disable: 0 }],
       pagination: { totalItems: 1 },
-    });
-    await expect(repository.updateRole(String(userRecord._id), 'admin')).resolves.toMatchObject({
-      role: 'admin',
     });
 
     expect(userModelMocks.listSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
-    expect(userModelMocks.updateSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
-    expect(userModelMocks.findByIdAndUpdate).toHaveBeenCalledWith(
-      String(userRecord._id),
-      { $set: { role: 'admin' } },
-      { new: true },
-    );
     expect(USER_ENTITY_PROJECTION).not.toMatch(/password|token|failedLogin|lockedUntil|lastLogin/i);
-  });
-
-  it('returns null from updateRole when the user is missing', async () => {
-    userModelMocks.updateLean.mockResolvedValueOnce(null);
-    await expect(
-      new UserRepository().updateRole(String(userRecord._id), 'admin'),
-    ).resolves.toBeNull();
   });
 
   it('loads recent users without a count query and sorts newest first', async () => {
     const repository = new UserRepository();
 
-    await expect(repository.findRecent(5)).resolves.toMatchObject([{ email: userRecord.email }]);
+    await expect(repository.findRecent(5)).resolves.toMatchObject([
+      { email: targetUserRecord.email },
+    ]);
 
     expect(userModelMocks.find).toHaveBeenCalledWith({});
     expect(userModelMocks.listSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
@@ -230,309 +215,520 @@ describe('UserRepository entity projections', () => {
     expect(userModelMocks.countDocuments).not.toHaveBeenCalled();
   });
 
-  it('applies search and role filters with page offsets for admin lists', async () => {
+  it('applies search, role, and disable filters with page offsets for admin lists', async () => {
     const repository = new UserRepository();
 
-    await repository.findAll({ page: 2, limit: 10, search: 'learner', role: 'admin' });
+    await repository.findAll({
+      page: 2,
+      limit: 10,
+      search: 'learner',
+      role: 'admin',
+      disable: 1,
+    });
 
     expect(userModelMocks.find).toHaveBeenCalledWith({
       email: { $regex: 'learner', $options: 'i' },
       role: 'admin',
+      disable: 1,
     });
-    expect(userModelMocks.sort).toHaveBeenCalledWith({ createdAt: -1 });
     expect(userModelMocks.skip).toHaveBeenCalledWith(10);
     expect(userModelMocks.limit).toHaveBeenCalledWith(10);
   });
 
-  it('omits search and role clauses when those filters are absent', async () => {
-    await new UserRepository().findAll({ page: 1, limit: 5 });
-    expect(userModelMocks.find).toHaveBeenCalledWith({});
-    expect(userModelMocks.skip).toHaveBeenCalledWith(0);
-  });
-
-  it('maps subscription snapshots and public profiles while omitting missing data', async () => {
-    userModelMocks.findByIdLean
-      .mockResolvedValueOnce({
-        subscription: {
-          type: 'premium',
-          isActive: true,
-          startDate: new Date('2026-07-01T00:00:00.000Z'),
-        },
-      })
-      .mockResolvedValueOnce({ subscription: undefined })
-      .mockResolvedValueOnce({ subscription: null })
-      .mockResolvedValueOnce({
-        _id: userRecord._id,
-        email: userRecord.email,
-        displayName: 'Learner',
-        bio: 'Hello',
-        avatar: 'https://example.com/a.png',
-        createdAt: userRecord.createdAt,
-      })
-      .mockResolvedValueOnce(null);
-
+  it('escapes regex metacharacters so admin search is a literal match', async () => {
     const repository = new UserRepository();
-    await expect(repository.findSubscriptionById(String(userRecord._id))).resolves.toMatchObject({
-      type: 'premium',
-      isActive: true,
+
+    await repository.findAll({
+      page: 1,
+      limit: 10,
+      search: 'a.b+c*d[e]f^g$h(i)j',
     });
-    expect(userModelMocks.findByIdSelect).toHaveBeenCalledWith('subscription');
-    await expect(repository.findSubscriptionById(String(userRecord._id))).resolves.toBeNull();
-    await expect(repository.findSubscriptionById(String(userRecord._id))).resolves.toBeNull();
-    await expect(repository.findPublicProfileById(String(userRecord._id))).resolves.toMatchObject({
-      displayName: 'Learner',
-      bio: 'Hello',
+
+    expect(userModelMocks.find).toHaveBeenCalledWith({
+      email: {
+        $regex: 'a\\.b\\+c\\*d\\[e\\]f\\^g\\$h\\(i\\)j',
+        $options: 'i',
+      },
     });
-    expect(userModelMocks.findByIdSelect).toHaveBeenCalledWith(
-      'email name displayName bio avatar createdAt',
-    );
-    await expect(repository.findPublicProfileById(String(userRecord._id))).resolves.toBeNull();
+
+    userModelMocks.find.mockClear();
+    await repository.findAll({ page: 1, limit: 5, search: 'user+admin@example.com' });
+    expect(userModelMocks.find).toHaveBeenCalledWith({
+      email: { $regex: 'user\\+admin@example\\.com', $options: 'i' },
+    });
   });
 
-  it('aggregates role counts with a group/project pipeline', async () => {
-    userModelMocks.aggregate.mockResolvedValueOnce([
-      { role: 'user', count: 3 },
-      { role: 'admin', count: 1 },
-    ]);
+  it('requires active disable filter for subscription and public profile reads', async () => {
+    const repository = new UserRepository();
+    const id = String(targetUserRecord._id);
+    userModelMocks.findOneLean
+      .mockResolvedValueOnce({ subscription: { type: 'premium', isActive: true } })
+      .mockResolvedValueOnce({
+        _id: targetUserRecord._id,
+        email: targetUserRecord.email,
+        createdAt: targetUserRecord.createdAt,
+      });
 
-    await expect(new UserRepository().countByRole()).resolves.toEqual([
-      { role: 'user', count: 3 },
-      { role: 'admin', count: 1 },
-    ]);
-    expect(userModelMocks.aggregate).toHaveBeenCalledWith([
-      {
-        $group: {
-          _id: '$role',
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          role: '$_id',
-          count: 1,
-        },
-      },
-    ]);
-  });
+    await repository.findSubscriptionById(id);
+    await repository.findPublicProfileById(id);
 
-  it('counts created-at buckets and generic filters', async () => {
-    userModelMocks.aggregate.mockResolvedValueOnce([
-      { _id: null, today: 2, thisWeek: 5, thisMonth: 9 },
-    ]);
-    userModelMocks.countDocuments.mockResolvedValueOnce(42);
-
-    const thresholds = {
-      today: new Date('2026-07-16T00:00:00.000Z'),
-      thisWeek: new Date('2026-07-10T00:00:00.000Z'),
-      thisMonth: new Date('2026-06-16T00:00:00.000Z'),
-    };
-    await expect(new UserRepository().countByCreatedAtBuckets(thresholds)).resolves.toEqual({
-      today: 2,
-      thisWeek: 5,
-      thisMonth: 9,
-    });
-    const pipeline = userModelMocks.aggregate.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
-    expect(pipeline).toEqual([
-      {
-        $match: {
-          createdAt: { $gte: thresholds.thisMonth },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          today: {
-            $sum: {
-              $cond: [{ $gte: ['$createdAt', thresholds.today] }, 1, 0],
-            },
-          },
-          thisWeek: {
-            $sum: {
-              $cond: [{ $gte: ['$createdAt', thresholds.thisWeek] }, 1, 0],
-            },
-          },
-          thisMonth: { $sum: 1 },
-        },
-      },
-    ]);
-
-    await expect(
-      new UserRepository().count({ createdAt: { $gte: thresholds.today } }),
-    ).resolves.toBe(42);
-    expect(userModelMocks.countDocuments).toHaveBeenCalledWith({
-      createdAt: { $gte: thresholds.today },
-    });
-    await expect(new UserRepository().count()).resolves.toBe(1);
-    expect(userModelMocks.countDocuments).toHaveBeenLastCalledWith({});
+    expect(userModelMocks.findOne).toHaveBeenCalledWith({ _id: id, disable: 0 });
   });
 });
 
-describe('UserRepository.delete cascade', () => {
-  const userId = String(userRecord._id);
-  const authoredQuizId = new Types.ObjectId('507f191e810c19729de860eb');
+describe('UserRepository.applyAdminMutation', () => {
+  const now = new Date('2026-07-18T00:00:00.000Z');
+  const callOrder: string[] = [];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    cascadeMocks.withTransaction.mockImplementation(async (callback: () => Promise<void>) =>
-      callback(),
-    );
-    cascadeMocks.startSession.mockResolvedValue({
-      withTransaction: cascadeMocks.withTransaction,
-      endSession: cascadeMocks.endSession,
+    callOrder.length = 0;
+
+    mongooseMocks.withTransaction.mockImplementation(async (callback: () => Promise<unknown>) => {
+      callOrder.push('withTransaction:start');
+      const value = await callback();
+      callOrder.push('withTransaction:end');
+      return value;
     });
-    userModelMocks.findByIdSessionLean.mockResolvedValue({
-      _id: userRecord._id,
-      email: 'Learner@Example.com',
+
+    fenceFindOneAndUpdate.mockImplementation(() => {
+      callOrder.push('fence:touch');
+      return {
+        lean: async () => {
+          callOrder.push('fence:lean');
+          return {
+            _id: 'active-admin',
+            revision: 1,
+            updatedAt: now,
+          };
+        },
+      };
     });
-    cascadeMocks.quizFind.mockReturnValue({
-      select: vi.fn(() => ({
-        session: vi.fn(() => ({
-          lean: vi.fn().mockResolvedValue([
-            {
-              _id: authoredQuizId,
-              slug: 'authored-quiz',
-              pdfUrl: 'https://cdn.example.com/test-bucket/uploads/quiz_extract/authored.pdf',
+
+    // findOne().select().session().lean() — actor re-read
+    userFindOneSelect.mockImplementation(() => {
+      callOrder.push('actor:select');
+      return {
+        session: () => {
+          callOrder.push('actor:read');
+          return {
+            lean: async () => {
+              callOrder.push('actor:lean');
+              return actorRecord;
             },
-          ]),
-        })),
-      })),
+          };
+        },
+        lean: async () => actorRecord,
+      };
     });
-    userModelMocks.deleteOne.mockReturnValue({
-      session: vi.fn().mockResolvedValue({ deletedCount: 1 }),
+
+    // findById().select().session().lean() — target re-read
+    userFindByIdSelect.mockImplementation(() => {
+      callOrder.push('target:select');
+      return {
+        session: () => {
+          callOrder.push('target:read');
+          return {
+            lean: async () => {
+              callOrder.push('target:lean');
+              return targetUserRecord;
+            },
+          };
+        },
+        lean: async () => targetUserRecord,
+      };
     });
+
+    userModelMocks.countDocuments.mockImplementation(async () => {
+      callOrder.push('count:activeAdmins');
+      return 2;
+    });
+
+    userFindOneAndUpdate.mockImplementation((_filter, update) => {
+      callOrder.push('user:write');
+      const setFields =
+        update && typeof update === 'object' && '$set' in update
+          ? (update as { $set: Record<string, unknown> }).$set
+          : {};
+      const isRole = 'role' in setFields;
+      return {
+        select: () => ({
+          lean: async () => {
+            callOrder.push('user:write:lean');
+            if (isRole) {
+              return { ...targetUserRecord, role: setFields['role'] };
+            }
+            return {
+              ...targetUserRecord,
+              disable: setFields['disable'],
+              disabledAt: setFields['disabledAt'] ?? null,
+              disabledBy: setFields['disabledBy'] ?? null,
+            };
+          },
+        }),
+      };
+    });
+  });
+
+  it('touches fence before actor/target/count reads and returns callback result on retry', async () => {
+    let callbackRuns = 0;
+    const results: unknown[] = [];
+    mongooseMocks.withTransaction.mockImplementation(async (callback: () => Promise<unknown>) => {
+      // withTransaction may retry the callback; only the final returned value is used.
+      // First run result is discarded (no outer capture of intermediate side effects).
+      callbackRuns += 1;
+      results.push(await callback());
+      callbackRuns += 1;
+      const finalResult = await callback();
+      results.push(finalResult);
+      return finalResult;
+    });
+
+    const result = await new UserRepository().applyAdminMutation({
+      kind: 'role',
+      targetUserId: targetId,
+      role: 'admin',
+      actor: { id: actorId, email: 'admin@example.com' },
+    });
+
+    expect(result).toMatchObject({ kind: 'role', changed: true, role: 'admin' });
+    expect(callbackRuns).toBe(2);
+    expect(results[1]).toEqual(result);
+    expect(callOrder.indexOf('fence:touch')).toBeLessThan(callOrder.indexOf('actor:read'));
+    expect(callOrder.indexOf('fence:touch')).toBeLessThan(callOrder.indexOf('target:read'));
+    expect(mongooseMocks.endSession).toHaveBeenCalled();
+  });
+
+  it('no-op role still touches fence but does not write/authVersion-increment user', async () => {
+    userFindByIdSelect.mockImplementation(() => ({
+      session: () => ({
+        lean: async () => ({ ...targetUserRecord, role: 'user' }),
+      }),
+      lean: async () => ({ ...targetUserRecord, role: 'user' }),
+    }));
+
+    const result = await new UserRepository().applyAdminMutation({
+      kind: 'role',
+      targetUserId: targetId,
+      role: 'user',
+      actor: { id: actorId, email: 'admin@example.com' },
+    });
+
+    expect(result).toMatchObject({ kind: 'role', changed: false, role: 'user' });
+    expect(callOrder).toContain('fence:touch');
+    expect(userModelMocks.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(callOrder).not.toContain('count:activeAdmins');
+  });
+
+  it('actual role change increments authVersion once via $inc', async () => {
+    await new UserRepository().applyAdminMutation({
+      kind: 'role',
+      targetUserId: targetId,
+      role: 'admin',
+      actor: { id: actorId, email: 'admin@example.com' },
+    });
+
+    expect(userModelMocks.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: targetUserRecord._id, role: 'user' },
+      { $set: { role: 'admin' }, $inc: { authVersion: 1 } },
+      { new: true, session: expect.anything() },
+    );
+  });
+
+  it('counts active admins only when demoting an active admin and blocks last admin', async () => {
+    userFindByIdSelect.mockImplementation(() => ({
+      session: () => ({
+        lean: async () => targetAdminRecord,
+      }),
+      lean: async () => targetAdminRecord,
+    }));
+    userModelMocks.countDocuments.mockResolvedValueOnce(1);
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: targetId,
+        role: 'user',
+        actor: { id: actorId, email: 'admin@example.com' },
+      }),
+    ).rejects.toBeInstanceOf(LastActiveAdminError);
+
+    expect(userModelMocks.countDocuments).toHaveBeenCalledWith(
+      { role: 'admin', disable: 0 },
+      { session: expect.anything() },
+    );
+    expect(userModelMocks.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('allows demote when another active admin remains and increments authVersion', async () => {
+    userFindByIdSelect.mockImplementation(() => ({
+      session: () => ({
+        lean: async () => targetAdminRecord,
+      }),
+      lean: async () => targetAdminRecord,
+    }));
+    userModelMocks.countDocuments.mockResolvedValueOnce(2);
+    userFindOneAndUpdate.mockImplementation(() => ({
+      select: () => ({
+        lean: async () => ({ ...targetAdminRecord, role: 'user' }),
+      }),
+    }));
+
+    const result = await new UserRepository().applyAdminMutation({
+      kind: 'role',
+      targetUserId: targetId,
+      role: 'user',
+      actor: { id: actorId, email: 'admin@example.com' },
+    });
+
+    expect(result).toMatchObject({ kind: 'role', changed: true, role: 'user' });
+    expect(userModelMocks.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'admin' }),
+      { $set: { role: 'user' }, $inc: { authVersion: 1 } },
+      { new: true, session: expect.anything() },
+    );
+  });
+
+  it('no-op disable touches fence without authVersion write', async () => {
+    userFindByIdSelect.mockImplementation(() => ({
+      session: () => ({
+        lean: async () => ({ ...targetUserRecord, disable: 1 }),
+      }),
+      lean: async () => ({ ...targetUserRecord, disable: 1 }),
+    }));
+
+    const result = await new UserRepository().applyAdminMutation({
+      kind: 'disable',
+      targetUserId: targetId,
+      disable: 1,
+      actor: { id: actorId, email: 'admin@example.com' },
+      now,
+    });
+
+    expect(result).toMatchObject({ kind: 'disable', changed: false, disable: 1 });
+    expect(callOrder).toContain('fence:touch');
+    expect(userModelMocks.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('actual disable increments authVersion and unsets security tokens', async () => {
+    const result = await new UserRepository().applyAdminMutation({
+      kind: 'disable',
+      targetUserId: targetId,
+      disable: 1,
+      actor: { id: actorId, email: 'admin@example.com' },
+      now,
+    });
+
+    expect(result).toMatchObject({ kind: 'disable', changed: true, disable: 1 });
+    expect(userModelMocks.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: targetUserRecord._id, disable: 0 },
+      {
+        $set: {
+          disable: 1,
+          disabledAt: now,
+          disabledBy: expect.any(Types.ObjectId),
+        },
+        $inc: { authVersion: 1 },
+        $unset: {
+          passwordResetTokenHash: 1,
+          passwordResetExpires: 1,
+          emailVerificationTokenHash: 1,
+          emailVerificationExpires: 1,
+        },
+      },
+      { new: true, session: expect.anything() },
+    );
+  });
+
+  it('restore clears metadata without recreating security tokens', async () => {
+    userFindByIdSelect.mockImplementation(() => ({
+      session: () => ({
+        lean: async () => ({
+          ...targetUserRecord,
+          disable: 1,
+          disabledAt: now,
+          disabledBy: new Types.ObjectId(actorId),
+        }),
+      }),
+      lean: async () => ({
+        ...targetUserRecord,
+        disable: 1,
+        disabledAt: now,
+        disabledBy: new Types.ObjectId(actorId),
+      }),
+    }));
+    userFindOneAndUpdate.mockImplementation(() => ({
+      select: () => ({
+        lean: async () => ({
+          ...targetUserRecord,
+          disable: 0,
+          disabledAt: null,
+          disabledBy: null,
+        }),
+      }),
+    }));
+
+    const result = await new UserRepository().applyAdminMutation({
+      kind: 'disable',
+      targetUserId: targetId,
+      disable: 0,
+      actor: { id: actorId, email: 'admin@example.com' },
+      now,
+    });
+
+    expect(result).toMatchObject({ kind: 'disable', changed: true, disable: 0 });
+    const updateArg = userFindOneAndUpdate.mock.calls.at(0)?.at(1);
+    expect(updateArg).toEqual({
+      $set: {
+        disable: 0,
+        disabledAt: null,
+        disabledBy: null,
+      },
+      $inc: { authVersion: 1 },
+    });
+  });
+
+  it('blocks disabling the last active admin', async () => {
+    userFindByIdSelect.mockImplementation(() => ({
+      session: () => ({
+        lean: async () => ({ ...actorRecord, _id: new Types.ObjectId(otherAdminId) }),
+      }),
+      lean: async () => ({ ...actorRecord, _id: new Types.ObjectId(otherAdminId) }),
+    }));
+    userModelMocks.countDocuments.mockResolvedValueOnce(1);
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'disable',
+        targetUserId: otherAdminId,
+        disable: 1,
+        actor: { id: actorId, email: 'admin@example.com' },
+        now,
+      }),
+    ).rejects.toBeInstanceOf(LastActiveAdminError);
+  });
+
+  it('maps missing fence to AdminInvariantUnavailableError', async () => {
+    fenceFindOneAndUpdate.mockImplementation(() => ({
+      lean: async () => null,
+    }));
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: targetId,
+        role: 'admin',
+        actor: { id: actorId, email: 'admin@example.com' },
+      }),
+    ).rejects.toBeInstanceOf(AdminInvariantUnavailableError);
+  });
+
+  it('maps missing transaction support to AdminInvariantUnavailableError', async () => {
+    mongooseMocks.withTransaction.mockRejectedValueOnce(
+      new Error('Transaction numbers are only allowed on a replica set member or mongos'),
+    );
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: targetId,
+        role: 'admin',
+        actor: { id: actorId, email: 'admin@example.com' },
+      }),
+    ).rejects.toBeInstanceOf(AdminInvariantUnavailableError);
+  });
+
+  it('maps operational startSession failure to AdminInvariantUnavailableError', async () => {
+    const operationalError = new Error('session factory down');
+    operationalError.name = 'MongoServerSelectionError';
+    mongooseMocks.startSession.mockRejectedValueOnce(operationalError);
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: targetId,
+        role: 'admin',
+        actor: { id: actorId, email: 'admin@example.com' },
+      }),
+    ).rejects.toBeInstanceOf(AdminInvariantUnavailableError);
+  });
+
+  it('does not disguise unexpected startSession errors as infrastructure outages', async () => {
+    const programmerError = new Error('unexpected session factory bug');
+    mongooseMocks.startSession.mockRejectedValueOnce(programmerError);
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: targetId,
+        role: 'admin',
+        actor: { id: actorId, email: 'admin@example.com' },
+      }),
+    ).rejects.toBe(programmerError);
+  });
+
+  it('throws ActorNotActiveAdminError when actor re-read fails', async () => {
+    userFindOneSelect.mockImplementation(() => ({
+      session: () => ({
+        lean: async () => null,
+      }),
+      lean: async () => null,
+    }));
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: targetId,
+        role: 'admin',
+        actor: { id: actorId, email: 'admin@example.com' },
+      }),
+    ).rejects.toBeInstanceOf(ActorNotActiveAdminError);
+  });
+
+  it('throws AdminMutationTargetNotFoundError when target is missing', async () => {
+    userFindByIdSelect.mockImplementation(() => ({
+      session: () => ({
+        lean: async () => null,
+      }),
+      lean: async () => null,
+    }));
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: targetId,
+        role: 'admin',
+        actor: { id: actorId, email: 'admin@example.com' },
+      }),
+    ).rejects.toBeInstanceOf(AdminMutationTargetNotFoundError);
+  });
+
+  it('throws AdminMutationConflictError when conditional write misses', async () => {
+    userFindOneAndUpdate.mockImplementation(() => ({
+      select: () => ({
+        lean: async () => null,
+      }),
+    }));
+
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: targetId,
+        role: 'admin',
+        actor: { id: actorId, email: 'admin@example.com' },
+      }),
+    ).rejects.toBeInstanceOf(AdminMutationConflictError);
   });
 
   it('rejects invalid object ids without opening a session', async () => {
-    await expect(new UserRepository().delete('not-valid')).resolves.toBe(false);
-    expect(cascadeMocks.startSession).not.toHaveBeenCalled();
-  });
-
-  it('returns false and ends the session when the user document is missing', async () => {
-    userModelMocks.findByIdSessionLean.mockResolvedValueOnce(null);
-
-    await expect(new UserRepository().delete(userId)).resolves.toBe(false);
-    expect(cascadeMocks.attemptDeleteMany).not.toHaveBeenCalled();
-    expect(cascadeMocks.deleteOwnedPdfUrlsBestEffort).not.toHaveBeenCalled();
-    expect(cascadeMocks.endSession).toHaveBeenCalledOnce();
-  });
-
-  it('cascades ownership cleanup, lowercases email matches, and deletes authored quizzes', async () => {
-    await expect(new UserRepository().delete(userId)).resolves.toBe(true);
-
-    const session = await cascadeMocks.startSession.mock.results[0]?.value;
-    const attemptSession = cascadeMocks.attemptDeleteMany.mock.results[0]?.value
-      .session as ReturnType<typeof vi.fn>;
-
-    expect(cascadeMocks.attemptDeleteMany).toHaveBeenCalledWith({
-      $or: [{ user: expect.any(Types.ObjectId) }, { guestEmail: 'learner@example.com' }],
-    });
-    expect(attemptSession).toHaveBeenCalledWith(session);
-    // Pending/incomplete billing rows are hard-deleted; financially relevant history is retained.
-    expect(cascadeMocks.subscriptionDeleteMany).toHaveBeenCalledWith({
-      $or: [{ user: expect.any(Types.ObjectId) }, { userEmail: 'learner@example.com' }],
-      status: 'pending',
-    });
-    expect(cascadeMocks.subscriptionUpdateMany).toHaveBeenCalledWith(
-      {
-        $or: [{ user: expect.any(Types.ObjectId) }, { userEmail: 'learner@example.com' }],
-        status: { $in: ['completed', 'failed', 'cancelled', 'expired'] },
-      },
-      {
-        $set: {
-          userEmail: `deleted+${userId}@retained.local`,
-          isActive: false,
-        },
-        $unset: { payosPaymentUrl: 1 },
-      },
-    );
-    expect(cascadeMocks.bookmarkDeleteMany).toHaveBeenCalledWith({
-      $or: [{ userId }, { userEmail: 'learner@example.com' }],
-    });
-    expect(cascadeMocks.questionProgressDeleteMany).toHaveBeenCalledWith({ userId });
-    expect(cascadeMocks.userProgressDeleteMany).toHaveBeenCalledWith({ userId });
-    expect(cascadeMocks.quizProgressDeleteMany).toHaveBeenCalledWith({
-      userId: expect.any(Types.ObjectId),
-    });
-    expect(cascadeMocks.folderQuizDeleteMany).toHaveBeenCalledWith({
-      owner: expect.any(Types.ObjectId),
-    });
-    expect(cascadeMocks.folderDeleteMany).toHaveBeenCalledWith({
-      owner: expect.any(Types.ObjectId),
-    });
-    expect(cascadeMocks.discussionUpdateMany).toHaveBeenCalledWith(
-      { 'comments.author': expect.any(Types.ObjectId) },
-      { $pull: { comments: { author: expect.any(Types.ObjectId) } } },
-    );
-    expect(cascadeMocks.reportDeleteMany).toHaveBeenCalledWith({
-      reporterEmail: 'learner@example.com',
-    });
-    expect(cascadeMocks.deleteQuizDependents).toHaveBeenCalledWith(
-      [{ id: authoredQuizId, slug: 'authored-quiz' }],
-      expect.any(Object),
-    );
-    expect(cascadeMocks.quizDeleteMany).toHaveBeenCalledWith({
-      _id: { $in: [authoredQuizId] },
-    });
-    expect(cascadeMocks.auditLogUpdateMany).toHaveBeenCalledWith(
-      { userId: expect.any(Types.ObjectId) },
-      { $set: { userId: null } },
-    );
-    expect(userModelMocks.deleteOne).toHaveBeenCalledWith({ _id: expect.any(Types.ObjectId) });
-    expect(cascadeMocks.deleteOwnedPdfUrlsBestEffort).toHaveBeenCalledWith(
-      ['https://cdn.example.com/test-bucket/uploads/quiz_extract/authored.pdf'],
-      `uploads/quiz_extract/${userId}/`,
-    );
-    expect(cascadeMocks.endSession).toHaveBeenCalledOnce();
-  });
-
-  it('retains scrubbed completed billing history and only hard-deletes pending rows', async () => {
-    await expect(new UserRepository().delete(userId)).resolves.toBe(true);
-
-    expect(cascadeMocks.subscriptionDeleteMany).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'pending' }),
-    );
-    expect(cascadeMocks.subscriptionUpdateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: { $in: ['completed', 'failed', 'cancelled', 'expired'] },
+    await expect(
+      new UserRepository().applyAdminMutation({
+        kind: 'role',
+        targetUserId: 'not-valid',
+        role: 'admin',
+        actor: { id: actorId, email: 'admin@example.com' },
       }),
-      {
-        $set: {
-          userEmail: `deleted+${userId}@retained.local`,
-          isActive: false,
-        },
-        $unset: { payosPaymentUrl: 1 },
-      },
-    );
-    // Audit logs are nullified, never deleted.
-    expect(cascadeMocks.auditLogUpdateMany).toHaveBeenCalled();
-  });
-
-  it('is idempotent when the user is already gone (repeated deletion)', async () => {
-    userModelMocks.findByIdSessionLean.mockResolvedValueOnce(null);
-
-    await expect(new UserRepository().delete(userId)).resolves.toBe(false);
-    expect(cascadeMocks.subscriptionDeleteMany).not.toHaveBeenCalled();
-    expect(cascadeMocks.subscriptionUpdateMany).not.toHaveBeenCalled();
-    expect(userModelMocks.deleteOne).not.toHaveBeenCalled();
-    expect(cascadeMocks.endSession).toHaveBeenCalledOnce();
-  });
-
-  it('skips quiz deletion when the user authored no quizzes and reports false on partial delete', async () => {
-    cascadeMocks.quizFind.mockReturnValueOnce({
-      select: vi.fn(() => ({
-        session: vi.fn(() => ({
-          lean: vi.fn().mockResolvedValue([]),
-        })),
-      })),
-    });
-    userModelMocks.deleteOne.mockReturnValueOnce({
-      session: vi.fn().mockResolvedValue({ deletedCount: 0 }),
-    });
-
-    await expect(new UserRepository().delete(userId)).resolves.toBe(false);
-    expect(cascadeMocks.quizDeleteMany).not.toHaveBeenCalled();
-    expect(cascadeMocks.deleteQuizDependents).toHaveBeenCalledWith([], expect.any(Object));
-    expect(cascadeMocks.deleteOwnedPdfUrlsBestEffort).not.toHaveBeenCalled();
+    ).rejects.toBeInstanceOf(AdminMutationTargetNotFoundError);
+    expect(mongooseMocks.startSession).not.toHaveBeenCalled();
   });
 });

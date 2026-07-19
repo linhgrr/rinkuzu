@@ -56,7 +56,7 @@ export class DiscussionRepository implements IDiscussionRepository {
         setDefaultsOnInsert: true,
       },
     )
-      .populate('comments.author', 'email name displayName avatar')
+      .populate('comments.author', 'name displayName avatar')
       .lean<DiscussionPersistenceRecord>();
     return record ? DiscussionPersistenceMapper.toEntity(record) : null;
   }

@@ -3,7 +3,9 @@ import type {
   AdminMessageDto,
   AdminUserListDto,
   AdminUserListQueryDto,
+  AdminUserStatusDto,
   UpdateAdminUserRoleRequestDto,
+  UpdateAdminUserStatusRequestDto,
 } from '@/dtos/admin-user';
 import type {
   AdminReportListDto,
@@ -26,13 +28,27 @@ import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUse
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { invalidateEntitlements } from '@/lib/entitlements/cache';
 import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
 import { AdminReportDtoMapper } from '@/mappers/admin/AdminReportDtoMapper';
 import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
 import { AdminStatsDtoMapper } from '@/mappers/admin/AdminStatsDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import type { User } from '@/entities/User';
+import {
+  ActorNotActiveAdminError,
+  AdminInvariantUnavailableError,
+  AdminMutationConflictError,
+  AdminMutationTargetNotFoundError,
+  LastActiveAdminError,
+  type AdminMutationActor,
+} from '@/entities/AdminMutation';
+import {
+  ACCOUNT_DISABLE_ACTIVE,
+  ACCOUNT_DISABLE_DISABLED,
+  type AccountDisableState,
+} from '@/shared/constants/account-disable';
+import { ADMIN_INVARIANT_ERROR_CODE } from '@/shared/constants/admin-invariant';
 
 export class AdminService implements IAdminService {
   constructor(
@@ -42,39 +58,75 @@ export class AdminService implements IAdminService {
     private attemptRepository: IAttemptRepository,
   ) {}
 
-  private async authorizeUserMutation(
-    userId: string,
-    adminEmail: string,
-    selfActionError: string,
-  ): Promise<ServiceResult<User>> {
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
+  private mapListStatusFilter(
+    status: AdminUserListQueryDto['status'],
+  ): AccountDisableState | undefined {
+    if (status === 'active') return ACCOUNT_DISABLE_ACTIVE;
+    if (status === 'disabled') return ACCOUNT_DISABLE_DISABLED;
+    return undefined;
+  }
+
+  private mapAdminMutationFailure(error: unknown, fallbackMessage: string): ServiceResult<never> {
+    if (error instanceof LastActiveAdminError) {
+      return {
+        success: false,
+        error: error.message,
+        statusCode: 409,
+        code: ADMIN_INVARIANT_ERROR_CODE.LAST_ACTIVE_ADMIN,
+      };
+    }
+    if (error instanceof AdminInvariantUnavailableError) {
+      logger.error(
+        { error, cause: error.cause },
+        'Active-admin invariant unavailable during admin mutation',
+      );
+      return {
+        success: false,
+        error: 'Active-admin invariant is unavailable',
+        statusCode: 503,
+        code: ADMIN_INVARIANT_ERROR_CODE.ADMIN_INVARIANT_UNAVAILABLE,
+      };
+    }
+    if (error instanceof ActorNotActiveAdminError) {
+      return {
+        success: false,
+        error: error.message,
+        statusCode: 403,
+      };
+    }
+    if (error instanceof AdminMutationTargetNotFoundError) {
       return {
         success: false,
         error: 'User not found',
         statusCode: 404,
       };
     }
-
-    if (user.email === adminEmail) {
+    if (error instanceof AdminMutationConflictError) {
       return {
         success: false,
-        error: selfActionError,
-        statusCode: 400,
+        error: 'Account status changed concurrently; retry',
+        statusCode: 409,
       };
     }
-
-    return { success: true, data: user };
+    logger.error({ error }, fallbackMessage);
+    return {
+      success: false,
+      error: fallbackMessage,
+      statusCode: 500,
+    };
   }
 
   async getUsers(searchParams: AdminUserListQueryDto): Promise<ServiceResult<AdminUserListDto>> {
     try {
-      const { search, page, limit } = searchParams;
+      const { search, page, limit, role, status } = searchParams;
+      const disable = this.mapListStatusFilter(status);
 
       const result = await this.userRepository.findAll({
         page,
         limit,
         ...(search !== undefined && { search }),
+        ...(role !== undefined && { role }),
+        ...(disable !== undefined && { disable }),
       });
 
       return {
@@ -94,7 +146,7 @@ export class AdminService implements IAdminService {
   async updateUserRole(
     userId: string,
     role: UpdateAdminUserRoleRequestDto['role'],
-    adminEmail: string,
+    actor: AdminMutationActor,
   ): Promise<ServiceResult<AdminMessageDto>> {
     try {
       if (role !== 'admin' && role !== 'user') {
@@ -105,54 +157,57 @@ export class AdminService implements IAdminService {
         };
       }
 
-      const authorization = await this.authorizeUserMutation(
-        userId,
-        adminEmail,
-        'Cannot change your own role',
-      );
-      if (!authorization.success) return authorization;
-
-      await this.userRepository.updateRole(userId, role);
+      // Authorization is transaction-authoritative (actor re-read inside mutation).
+      await this.userRepository.applyAdminMutation({
+        kind: 'role',
+        targetUserId: userId,
+        role,
+        actor,
+      });
 
       return {
         success: true,
         data: AdminMessageDtoMapper.toDto(`User role updated to ${role}`),
       };
     } catch (error) {
-      logger.error({ error }, 'Update user role error');
-      return {
-        success: false,
-        error: 'Failed to update user role',
-        statusCode: 500,
-      };
+      return this.mapAdminMutationFailure(error, 'Failed to update user role');
     }
   }
 
-  async deleteUser(userId: string, adminEmail: string): Promise<ServiceResult<DeleteResultDto>> {
+  async setUserDisable(
+    userId: string,
+    disable: UpdateAdminUserStatusRequestDto['disable'],
+    actor: AdminMutationActor,
+  ): Promise<ServiceResult<AdminUserStatusDto>> {
     try {
-      const authorization = await this.authorizeUserMutation(
-        userId,
-        adminEmail,
-        'Cannot delete your own account',
-      );
-      if (!authorization.success) return authorization;
+      // Authorization is transaction-authoritative (actor re-read inside mutation).
+      // Self-mutation is allowed only when the last-active-admin invariant still holds.
+      const transition = await this.userRepository.applyAdminMutation({
+        kind: 'disable',
+        targetUserId: userId,
+        disable,
+        actor,
+        now: new Date(),
+      });
 
-      const deleted = await this.userRepository.delete(userId);
-      if (!deleted) {
-        return { success: false, error: 'User not found', statusCode: 404 };
+      if (transition.kind !== 'disable') {
+        return {
+          success: false,
+          error: 'Failed to update user status',
+          statusCode: 500,
+        };
       }
+
+      // Reconcile local cache after both changed and idempotent success. A client
+      // may be retrying after an ambiguous commit result from another instance.
+      invalidateEntitlements(userId);
 
       return {
         success: true,
-        data: DeleteResultDtoMapper.toDto(userId),
+        data: AdminUserDtoMapper.toStatusDto(transition.user, transition.changed, disable),
       };
     } catch (error) {
-      logger.error({ error }, 'Delete user error');
-      return {
-        success: false,
-        error: 'Failed to delete user',
-        statusCode: 500,
-      };
+      return this.mapAdminMutationFailure(error, 'Failed to update user status');
     }
   }
 

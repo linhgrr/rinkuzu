@@ -14,7 +14,6 @@ describe('DiscussionPersistenceMapper', () => {
           _id: new Types.ObjectId('507f191e810c19729de860ec'),
           author: {
             _id: new Types.ObjectId('507f191e810c19729de860ed'),
-            email: 'learner@example.com',
             displayName: 'Learner',
           },
           content: 'Why is B correct?',
@@ -27,7 +26,8 @@ describe('DiscussionPersistenceMapper', () => {
       updatedAt: new Date('2026-07-01T02:00:00Z'),
     };
 
-    expect(DiscussionPersistenceMapper.toEntity(record)).toEqual({
+    const entity = DiscussionPersistenceMapper.toEntity(record);
+    expect(entity).toEqual({
       id: '507f191e810c19729de860ea',
       quiz: '507f191e810c19729de860eb',
       questionIndex: 1,
@@ -36,7 +36,6 @@ describe('DiscussionPersistenceMapper', () => {
           id: '507f191e810c19729de860ec',
           author: {
             id: '507f191e810c19729de860ed',
-            email: 'learner@example.com',
             displayName: 'Learner',
           },
           content: 'Why is B correct?',
@@ -48,5 +47,6 @@ describe('DiscussionPersistenceMapper', () => {
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T02:00:00Z'),
     });
+    expect(entity.comments[0]?.author).not.toHaveProperty('email');
   });
 });

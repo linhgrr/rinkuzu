@@ -4,7 +4,9 @@ import type {
   AdminMessageDto,
   AdminUserListDto,
   AdminUserListQueryDto,
+  AdminUserStatusDto,
   UpdateAdminUserRoleRequestDto,
+  UpdateAdminUserStatusRequestDto,
 } from '@/dtos/admin-user';
 import type {
   AdminReportListDto,
@@ -17,6 +19,7 @@ import type {
   AdminOverviewStatsDto,
   AdminStatsListQueryDto,
 } from '@/dtos/admin-stats';
+import type { AdminMutationActor } from '@/entities/AdminMutation';
 
 export interface IAdminService {
   // User management
@@ -24,9 +27,13 @@ export interface IAdminService {
   updateUserRole(
     userId: string,
     role: UpdateAdminUserRoleRequestDto['role'],
-    adminEmail: string,
+    actor: AdminMutationActor,
   ): Promise<ServiceResult<AdminMessageDto>>;
-  deleteUser(userId: string, adminEmail: string): Promise<ServiceResult<DeleteResultDto>>;
+  setUserDisable(
+    userId: string,
+    disable: UpdateAdminUserStatusRequestDto['disable'],
+    actor: AdminMutationActor,
+  ): Promise<ServiceResult<AdminUserStatusDto>>;
 
   // Reports management
   getReports(searchParams: AdminReportListQueryDto): Promise<ServiceResult<AdminReportListDto>>;

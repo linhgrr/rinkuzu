@@ -21,6 +21,7 @@ const adminUser: User = {
   id: '507f191e810c19729de860ea',
   email: 'admin@example.com',
   role: 'admin',
+  disable: 0,
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
 };
 
@@ -28,9 +29,18 @@ const targetUser: User = {
   id: '507f191e810c19729de860eb',
   email: 'learner@example.com',
   role: 'user',
+  disable: 0,
   createdAt: new Date('2026-02-01T00:00:00.000Z'),
   displayName: 'Learner',
 };
+
+const { invalidateEntitlementsMock } = vi.hoisted(() => ({
+  invalidateEntitlementsMock: vi.fn(),
+}));
+
+vi.mock('@/lib/entitlements/cache', () => ({
+  invalidateEntitlements: invalidateEntitlementsMock,
+}));
 
 function createUserRepository(
   overrides: Partial<IUserRepository & IRecentUserRepository> = {},
@@ -38,10 +48,15 @@ function createUserRepository(
   return {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findByIdIncludingDisabled: vi.fn(),
     findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
-    updateRole: vi.fn().mockResolvedValue(undefined),
-    delete: vi.fn().mockResolvedValue(true),
+    applyAdminMutation: vi.fn().mockResolvedValue({
+      kind: 'disable',
+      user: targetUser,
+      changed: true,
+      disable: 1,
+    }),
     findAll: vi.fn().mockResolvedValue({ items: [], pagination }),
     findRecent: vi.fn().mockResolvedValue([]),
     count: vi.fn().mockResolvedValue(0),
@@ -128,7 +143,12 @@ describe('AdminService mutation coverage', () => {
       });
       const service = createService({ user: userRepository });
 
-      const withSearch = await service.getUsers({ page: 2, limit: 10, search: 'learn' });
+      const withSearch = await service.getUsers({
+        page: 2,
+        limit: 10,
+        search: 'learn',
+        status: 'all',
+      });
       expect(userRepository.findAll).toHaveBeenCalledWith({
         page: 2,
         limit: 10,
@@ -143,6 +163,7 @@ describe('AdminService mutation coverage', () => {
               email: targetUser.email,
               displayName: 'Learner',
               role: 'user',
+              disable: 0,
               createdAt: '2026-02-01T00:00:00.000Z',
             },
           ],
@@ -150,8 +171,12 @@ describe('AdminService mutation coverage', () => {
         },
       });
 
-      await service.getUsers({ page: 1, limit: 20 });
-      expect(userRepository.findAll).toHaveBeenLastCalledWith({ page: 1, limit: 20 });
+      await service.getUsers({ page: 1, limit: 20, status: 'active' });
+      expect(userRepository.findAll).toHaveBeenLastCalledWith({
+        page: 1,
+        limit: 20,
+        disable: 0,
+      });
     });
 
     it('returns 500 when user listing fails', async () => {
@@ -160,7 +185,7 @@ describe('AdminService mutation coverage', () => {
       });
       const service = createService({ user: userRepository });
 
-      await expect(service.getUsers({ page: 1, limit: 20 })).resolves.toEqual({
+      await expect(service.getUsers({ page: 1, limit: 20, status: 'all' })).resolves.toEqual({
         success: false,
         error: 'Failed to get users',
         statusCode: 500,
@@ -169,78 +194,112 @@ describe('AdminService mutation coverage', () => {
   });
 
   describe('updateUserRole', () => {
+    const actor = { id: adminUser.id, email: adminUser.email };
+
     it('rejects invalid roles without repository access', async () => {
       const userRepository = createUserRepository();
       const service = createService({ user: userRepository });
 
       await expect(
-        service.updateUserRole(targetUser.id, 'moderator' as 'admin', 'admin@example.com'),
+        service.updateUserRole(targetUser.id, 'moderator' as 'admin', actor),
       ).resolves.toEqual({
         success: false,
         error: 'Invalid role',
         statusCode: 400,
       });
-      expect(userRepository.findById).not.toHaveBeenCalled();
-      expect(userRepository.updateRole).not.toHaveBeenCalled();
+      expect(userRepository.applyAdminMutation).not.toHaveBeenCalled();
     });
 
-    it('rejects missing users and self-role changes', async () => {
+    it('maps target-not-found and last-active-admin domain errors', async () => {
+      const { AdminMutationTargetNotFoundError, LastActiveAdminError } =
+        await import('@/entities/AdminMutation');
       const userRepository = createUserRepository({
-        findById: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(adminUser),
+        applyAdminMutation: vi
+          .fn()
+          .mockRejectedValueOnce(new AdminMutationTargetNotFoundError())
+          .mockRejectedValueOnce(new LastActiveAdminError()),
       });
       const service = createService({ user: userRepository });
 
-      await expect(
-        service.updateUserRole('missing', 'admin', 'admin@example.com'),
-      ).resolves.toEqual({
+      await expect(service.updateUserRole('missing', 'admin', actor)).resolves.toEqual({
         success: false,
         error: 'User not found',
         statusCode: 404,
       });
 
-      await expect(
-        service.updateUserRole(adminUser.id, 'user', 'admin@example.com'),
-      ).resolves.toEqual({
+      await expect(service.updateUserRole(adminUser.id, 'user', actor)).resolves.toEqual({
         success: false,
-        error: 'Cannot change your own role',
-        statusCode: 400,
+        error: 'Cannot remove or disable the last active admin',
+        statusCode: 409,
+        code: 'last_active_admin',
       });
-      expect(userRepository.updateRole).not.toHaveBeenCalled();
     });
 
-    it('updates role for other users for both admin and user targets', async () => {
+    it('updates role via transactional mutation for both admin and user targets', async () => {
       const userRepository = createUserRepository({
-        findById: vi.fn().mockResolvedValue(targetUser),
+        applyAdminMutation: vi.fn().mockResolvedValue({
+          kind: 'role',
+          user: targetUser,
+          changed: true,
+          role: 'admin',
+        }),
       });
       const service = createService({ user: userRepository });
 
-      await expect(
-        service.updateUserRole(targetUser.id, 'admin', 'admin@example.com'),
-      ).resolves.toEqual({
+      await expect(service.updateUserRole(targetUser.id, 'admin', actor)).resolves.toEqual({
         success: true,
         data: { message: 'User role updated to admin' },
       });
-      expect(userRepository.updateRole).toHaveBeenCalledWith(targetUser.id, 'admin');
+      expect(userRepository.applyAdminMutation).toHaveBeenCalledWith({
+        kind: 'role',
+        targetUserId: targetUser.id,
+        role: 'admin',
+        actor,
+      });
 
-      await expect(
-        service.updateUserRole(targetUser.id, 'user', 'admin@example.com'),
-      ).resolves.toEqual({
+      await expect(service.updateUserRole(targetUser.id, 'user', actor)).resolves.toEqual({
         success: true,
         data: { message: 'User role updated to user' },
       });
-      expect(userRepository.updateRole).toHaveBeenLastCalledWith(targetUser.id, 'user');
+      expect(userRepository.applyAdminMutation).toHaveBeenLastCalledWith({
+        kind: 'role',
+        targetUserId: targetUser.id,
+        role: 'user',
+        actor,
+      });
     });
 
-    it('returns 500 when role update throws', async () => {
+    it('maps admin_invariant_unavailable to 503 and actor failure to 403', async () => {
+      const { AdminInvariantUnavailableError, ActorNotActiveAdminError } =
+        await import('@/entities/AdminMutation');
       const userRepository = createUserRepository({
-        findById: vi.fn().mockResolvedValue(targetUser),
-        updateRole: vi.fn().mockRejectedValue(new Error('write failed')),
+        applyAdminMutation: vi
+          .fn()
+          .mockRejectedValueOnce(new AdminInvariantUnavailableError())
+          .mockRejectedValueOnce(new ActorNotActiveAdminError()),
       });
       const service = createService({ user: userRepository });
 
-      await expect(
-        service.updateUserRole(targetUser.id, 'admin', 'admin@example.com'),
-      ).resolves.toEqual({
+      await expect(service.updateUserRole(targetUser.id, 'admin', actor)).resolves.toEqual({
+        success: false,
+        error: 'Active-admin invariant is unavailable',
+        statusCode: 503,
+        code: 'admin_invariant_unavailable',
+      });
+      await expect(service.updateUserRole(targetUser.id, 'admin', actor)).resolves.toEqual({
+        success: false,
+        error: 'Actor is not an active admin',
+        statusCode: 403,
+      });
+    });
+
+    it('returns 500 when role update throws unexpected error', async () => {
+      const userRepository = createUserRepository({
+        applyAdminMutation: vi.fn().mockRejectedValue(new Error('write failed')),
+      });
+      const service = createService({ user: userRepository });
+
+      await expect(service.updateUserRole(targetUser.id, 'admin', actor)).resolves.toEqual({
         success: false,
         error: 'Failed to update user role',
         statusCode: 500,
@@ -248,65 +307,131 @@ describe('AdminService mutation coverage', () => {
     });
   });
 
-  describe('deleteUser', () => {
-    it('blocks self-deletion and missing users', async () => {
+  describe('setUserDisable', () => {
+    const actor = { id: adminUser.id, email: adminUser.email };
+
+    beforeEach(() => {
+      invalidateEntitlementsMock.mockReset();
+    });
+
+    it('maps missing target without invalidating entitlements', async () => {
+      const { AdminMutationTargetNotFoundError } = await import('@/entities/AdminMutation');
       const userRepository = createUserRepository({
-        findById: vi.fn().mockResolvedValueOnce(adminUser).mockResolvedValueOnce(null),
+        applyAdminMutation: vi.fn().mockRejectedValue(new AdminMutationTargetNotFoundError()),
       });
       const service = createService({ user: userRepository });
 
-      await expect(service.deleteUser(adminUser.id, 'admin@example.com')).resolves.toEqual({
-        success: false,
-        error: 'Cannot delete your own account',
-        statusCode: 400,
-      });
-      await expect(service.deleteUser('missing', 'admin@example.com')).resolves.toEqual({
+      await expect(service.setUserDisable('507f191e810c19729de860ec', 1, actor)).resolves.toEqual({
         success: false,
         error: 'User not found',
         statusCode: 404,
       });
-      expect(userRepository.delete).not.toHaveBeenCalled();
+      expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
     });
 
-    it('returns 404 when repository delete reports false', async () => {
+    it('disables users and invalidates entitlements only after successful changed transition', async () => {
+      const disabledUser: User = {
+        ...targetUser,
+        disable: 1,
+        disabledAt: new Date('2026-07-18T00:00:00.000Z'),
+      };
       const userRepository = createUserRepository({
-        findById: vi.fn().mockResolvedValue(targetUser),
-        delete: vi.fn().mockResolvedValue(false),
+        applyAdminMutation: vi.fn().mockResolvedValue({
+          kind: 'disable',
+          user: disabledUser,
+          changed: true,
+          disable: 1,
+        }),
       });
       const service = createService({ user: userRepository });
 
-      await expect(service.deleteUser(targetUser.id, 'admin@example.com')).resolves.toEqual({
-        success: false,
-        error: 'User not found',
-        statusCode: 404,
-      });
-    });
-
-    it('deletes other users and maps delete DTO', async () => {
-      const userRepository = createUserRepository({
-        findById: vi.fn().mockResolvedValue(targetUser),
-        delete: vi.fn().mockResolvedValue(true),
-      });
-      const service = createService({ user: userRepository });
-
-      await expect(service.deleteUser(targetUser.id, 'admin@example.com')).resolves.toEqual({
+      await expect(service.setUserDisable(targetUser.id, 1, actor)).resolves.toMatchObject({
         success: true,
-        data: { id: targetUser.id, deleted: true },
+        data: {
+          id: targetUser.id,
+          disable: 1,
+          changed: true,
+        },
       });
-      expect(userRepository.delete).toHaveBeenCalledWith(targetUser.id);
+      expect(userRepository.applyAdminMutation).toHaveBeenCalledWith({
+        kind: 'disable',
+        targetUserId: targetUser.id,
+        disable: 1,
+        actor,
+        now: expect.any(Date),
+      });
+      expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith(targetUser.id);
     });
 
-    it('returns 500 when delete throws', async () => {
+    it('reconciles entitlements on idempotent already-disabled success', async () => {
+      const disabledUser: User = { ...targetUser, disable: 1 };
       const userRepository = createUserRepository({
-        findById: vi.fn().mockResolvedValue(targetUser),
-        delete: vi.fn().mockRejectedValue(new Error('boom')),
+        applyAdminMutation: vi.fn().mockResolvedValue({
+          kind: 'disable',
+          user: disabledUser,
+          changed: false,
+          disable: 1,
+        }),
       });
       const service = createService({ user: userRepository });
 
-      await expect(service.deleteUser(targetUser.id, 'admin@example.com')).resolves.toEqual({
+      await expect(service.setUserDisable(targetUser.id, 1, actor)).resolves.toMatchObject({
+        success: true,
+        data: { changed: false, disable: 1 },
+      });
+      expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith(targetUser.id);
+    });
+
+    it('maps last_active_admin 409 and admin_invariant_unavailable 503', async () => {
+      const { LastActiveAdminError, AdminInvariantUnavailableError } =
+        await import('@/entities/AdminMutation');
+      const userRepository = createUserRepository({
+        applyAdminMutation: vi
+          .fn()
+          .mockRejectedValueOnce(new LastActiveAdminError())
+          .mockRejectedValueOnce(new AdminInvariantUnavailableError()),
+      });
+      const service = createService({ user: userRepository });
+
+      await expect(service.setUserDisable(targetUser.id, 1, actor)).resolves.toEqual({
         success: false,
-        error: 'Failed to delete user',
+        error: 'Cannot remove or disable the last active admin',
+        statusCode: 409,
+        code: 'last_active_admin',
+      });
+      await expect(service.setUserDisable(targetUser.id, 1, actor)).resolves.toEqual({
+        success: false,
+        error: 'Active-admin invariant is unavailable',
+        statusCode: 503,
+        code: 'admin_invariant_unavailable',
+      });
+      expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
+    });
+
+    it('returns 500 when applyAdminMutation throws unexpected error', async () => {
+      const userRepository = createUserRepository({
+        applyAdminMutation: vi.fn().mockRejectedValue(new Error('boom')),
+      });
+      const service = createService({ user: userRepository });
+
+      await expect(service.setUserDisable(targetUser.id, 1, actor)).resolves.toEqual({
+        success: false,
+        error: 'Failed to update user status',
         statusCode: 500,
+      });
+    });
+
+    it('maps AdminMutationConflictError to 409', async () => {
+      const { AdminMutationConflictError } = await import('@/entities/AdminMutation');
+      const userRepository = createUserRepository({
+        applyAdminMutation: vi.fn().mockRejectedValue(new AdminMutationConflictError()),
+      });
+      const service = createService({ user: userRepository });
+
+      await expect(service.setUserDisable(targetUser.id, 1, actor)).resolves.toEqual({
+        success: false,
+        error: 'Account status changed concurrently; retry',
+        statusCode: 409,
       });
     });
   });

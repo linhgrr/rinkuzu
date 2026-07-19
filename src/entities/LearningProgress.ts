@@ -1,9 +1,9 @@
 import type { QuizLibraryStatus } from '@/shared/types/quiz-library';
 import type { SRSRating } from '@/entities/SpacedRepetition';
 
+/** Library author identity — stable non-PII fields only (no email). */
 export interface LibraryQuizAuthor {
   id: string;
-  email?: string;
   name?: string;
   displayName?: string;
   avatar?: string;

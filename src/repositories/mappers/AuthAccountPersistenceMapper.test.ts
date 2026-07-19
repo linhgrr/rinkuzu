@@ -46,4 +46,23 @@ describe('AuthAccountPersistenceMapper', () => {
       passwordResetExpires,
     });
   });
+
+  it('requires exact non-negative integer authVersion for login and session maps', () => {
+    expect(() =>
+      AuthAccountPersistenceMapper.toLoginAccount({
+        _id: 'account-1',
+        email: 'learner@example.com',
+        role: 'user',
+      }),
+    ).toThrow(/authVersion/);
+
+    expect(
+      AuthAccountPersistenceMapper.toAuthenticatedUser({
+        _id: 'account-1',
+        email: 'learner@example.com',
+        role: 'user',
+        authVersion: 4,
+      }),
+    ).toMatchObject({ authVersion: 4, passwordChangedAt: null });
+  });
 });

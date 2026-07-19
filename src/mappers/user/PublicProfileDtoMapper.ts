@@ -7,7 +7,6 @@ import { serializeDate } from '@/lib/date-serialization';
 function toUserDto(user: PublicProfileUser): PublicProfileUserDto {
   return {
     id: user.id,
-    email: user.email,
     createdAt: serializeDate(user.createdAt, 'user.createdAt'),
     ...(user.name === undefined ? {} : { name: user.name }),
     ...(user.displayName === undefined ? {} : { displayName: user.displayName }),

@@ -31,6 +31,8 @@ export interface AuthLoginAccount extends AuthAccountIdentity {
   avatar?: string;
   displayName?: string;
   passwordChangedAt?: Date;
+  /** Session revocation counter; copied into JWT as `av`. */
+  authVersion: number;
   failedLoginAttempts: number;
   failedLoginWindowStart?: Date;
   lockedUntil?: Date;
@@ -40,6 +42,8 @@ export interface AuthenticatedUser extends AuthAccountIdentity {
   avatar?: string;
   displayName?: string;
   passwordChangedAt: number | null;
+  /** Exact match required against JWT `av` during session hydration. */
+  authVersion: number;
 }
 
 export interface FailedLoginAttemptState {

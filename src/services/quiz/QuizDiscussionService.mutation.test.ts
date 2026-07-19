@@ -64,7 +64,6 @@ function discussion(overrides: Partial<Discussion> = {}): Discussion {
         id: 'comment-1',
         author: {
           id: userId,
-          email: 'learner@example.com',
           displayName: 'Learner',
         },
         content: 'Helpful',
@@ -194,7 +193,6 @@ describe('QuizDiscussionService mutation coverage', () => {
               id: 'c-2',
               author: {
                 id: userId,
-                email: 'learner@example.com',
                 displayName: 'Learner',
               },
               content: 'Second',
@@ -218,7 +216,6 @@ describe('QuizDiscussionService mutation coverage', () => {
                 id: 'c-2',
                 author: {
                   id: userId,
-                  email: 'learner@example.com',
                   name: 'Learner',
                 },
                 content: 'Second',

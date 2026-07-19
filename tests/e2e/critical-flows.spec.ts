@@ -47,6 +47,9 @@ function credentialsRateLimitKeys(emails: string[]): string[] {
   ];
 }
 
+const ACTIVE_ADMIN_FENCE_ID = 'active-admin';
+const ACTIVE_ADMIN_FENCE_COLLECTION = 'adminmutationfences';
+
 function requireCiMongoUri(): { databaseName: string; uri: string } {
   const uri = process.env['MONGODB_URI'];
   if (!uri) throw new Error('MONGODB_URI is required for critical E2E flows');
@@ -62,6 +65,59 @@ function requireCiMongoUri(): { databaseName: string; uri: string } {
   }
 
   return { databaseName, uri };
+}
+
+/**
+ * Canonical fence shape required before admin role/status mutations.
+ * Insert-once only: never rewrite revision/updatedAt on an existing document.
+ * Malformed existing fences fail closed (no silent repair).
+ */
+function isCanonicalActiveAdminFence(
+  doc: {
+    _id?: unknown;
+    revision?: unknown;
+    updatedAt?: unknown;
+  } | null,
+): boolean {
+  if (!doc || typeof doc !== 'object') return false;
+  if (doc._id !== ACTIVE_ADMIN_FENCE_ID) return false;
+  if (typeof doc.revision !== 'number' || !Number.isInteger(doc.revision) || doc.revision < 0) {
+    return false;
+  }
+  return doc.updatedAt instanceof Date && Number.isFinite(doc.updatedAt.getTime());
+}
+
+/**
+ * Parallel-safe idempotent seed of the shared active-admin fence singleton.
+ * Uses $setOnInsert so concurrent fixtures never reset an existing revision.
+ * Cleanup must never delete this document.
+ */
+type ActiveAdminFenceDoc = {
+  _id: string;
+  revision: number;
+  updatedAt: Date;
+};
+
+async function ensureCanonicalActiveAdminFence(db: Db, now: Date): Promise<void> {
+  const collection = db.collection<ActiveAdminFenceDoc>(ACTIVE_ADMIN_FENCE_COLLECTION);
+  await collection.updateOne(
+    { _id: ACTIVE_ADMIN_FENCE_ID },
+    {
+      $setOnInsert: {
+        _id: ACTIVE_ADMIN_FENCE_ID,
+        revision: 0,
+        updatedAt: now,
+      },
+    },
+    { upsert: true },
+  );
+
+  const fence = await collection.findOne({ _id: ACTIVE_ADMIN_FENCE_ID });
+  if (!isCanonicalActiveAdminFence(fence)) {
+    throw new Error(
+      'Critical E2E active-admin fence missing or malformed; refuse to repair or mutate shared singleton',
+    );
+  }
 }
 
 async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixture> {
@@ -91,6 +147,9 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
     const quizSlug = `e2e-critical-${runId}`.toLowerCase();
     const planId = `e2e-plan-${runId}`;
 
+    // Shared singleton fence for admin mutations — insert-once, never cleaned up per-run.
+    await ensureCanonicalActiveAdminFence(db, now);
+
     await db.collection('auth_rate_limits').deleteMany({
       key: { $in: credentialsRateLimitKeys([regular.email, admin.email, target.email]) },
     });
@@ -103,6 +162,11 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
       ].map(({ id, ...user }) => ({
         _id: id,
         ...user,
+        // Canonical disable contract — active filters and session checks require exact fields.
+        disable: 0,
+        authVersion: 0,
+        disabledAt: null,
+        disabledBy: null,
         _e2eRun: runId,
         createdAt: now,
         emailVerified: now,
@@ -515,6 +579,146 @@ test.describe('production critical paths', () => {
         data: { users: [{ email: fixture.target.email, role: 'admin' }] },
         success: true,
       });
+    });
+  });
+
+  test('disables target, revokes session via authVersion, filters, restores, and re-logins @critical-admin-disable', async ({
+    page,
+    browser,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      // Isolated target BrowserContext so admin login on the default page
+      // cannot overwrite the target's pre-disable session cookie.
+      const targetContextOptions =
+        typeof testInfo.project.use.baseURL === 'string' && testInfo.project.use.baseURL.length > 0
+          ? { baseURL: testInfo.project.use.baseURL }
+          : undefined;
+      const targetContext = await browser.newContext(targetContextOptions);
+      try {
+        const targetPage = await targetContext.newPage();
+
+        // Target establishes a pre-disable session that must be revoked after disable.
+        const targetSessionBefore = await login(targetPage, fixture.target);
+        expect(targetSessionBefore.user?.id).toBe(fixture.target.id.toHexString());
+
+        // Admin stays on the default Playwright page/context.
+        const adminSession = await login(page, fixture.admin);
+        expect(adminSession.user?.role).toBe('admin');
+        await page.goto('/en/admin/users');
+        await expect(page.getByRole('heading', { name: 'User Management' })).toBeVisible();
+
+        const disableMutation = await page.evaluate(
+          async ({ targetUserId }) => {
+            const response = await fetch(`/api/admin/users/${targetUserId}/status`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ disable: 1 }),
+            });
+            return { body: await response.json(), status: response.status };
+          },
+          { targetUserId: fixture.target.id.toHexString() },
+        );
+        expect(disableMutation.status).toBe(200);
+        expect(disableMutation.body).toMatchObject({
+          success: true,
+          data: { disable: 1, changed: true },
+        });
+
+        const disabledDoc = await fixture.db
+          .collection('users')
+          .findOne({ _id: fixture.target.id });
+        expect(disabledDoc?.['disable']).toBe(1);
+        expect(disabledDoc?.['authVersion']).toBe(1);
+        expect(disabledDoc?.['disabledAt']).toBeTruthy();
+        expect(disabledDoc?.['disabledBy']).toBeTruthy();
+
+        // Pre-existing target cookie (old context) is rejected by the Node session endpoint.
+        const revokedSession = await targetPage.evaluate(async () => {
+          const response = await fetch('/api/auth/session', { cache: 'no-store' });
+          return { status: response.status, body: await response.json() };
+        });
+        expect(revokedSession.status).toBe(200);
+        expect(revokedSession.body?.user).toBeFalsy();
+
+        // Disabled filter lists the target.
+        const disabledList = await page.evaluate(
+          async ({ email }) => {
+            const response = await fetch(
+              `/api/admin/users?status=disabled&search=${encodeURIComponent(email)}`,
+            );
+            return { body: await response.json(), status: response.status };
+          },
+          { email: fixture.target.email },
+        );
+        expect(disabledList.status).toBe(200);
+        expect(disabledList.body).toMatchObject({
+          success: true,
+          data: {
+            users: [{ email: fixture.target.email, disable: 1 }],
+          },
+        });
+
+        // Restore increments authVersion again.
+        const restoreMutation = await page.evaluate(
+          async ({ targetUserId }) => {
+            const response = await fetch(`/api/admin/users/${targetUserId}/status`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ disable: 0 }),
+            });
+            return { body: await response.json(), status: response.status };
+          },
+          { targetUserId: fixture.target.id.toHexString() },
+        );
+        expect(restoreMutation.status).toBe(200);
+        expect(restoreMutation.body).toMatchObject({
+          success: true,
+          data: { disable: 0, changed: true },
+        });
+
+        const restoredDoc = await fixture.db
+          .collection('users')
+          .findOne({ _id: fixture.target.id });
+        expect(restoredDoc?.['disable']).toBe(0);
+        expect(restoredDoc?.['authVersion']).toBe(2);
+        expect(restoredDoc?.['disabledAt']).toBeNull();
+        expect(restoredDoc?.['disabledBy']).toBeNull();
+
+        // Old target cookie (pre-disable JWT, same isolated context) stays rejected after restore.
+        const stillRevoked = await targetPage.evaluate(async () => {
+          const response = await fetch('/api/auth/session', { cache: 'no-store' });
+          return { status: response.status, body: await response.json() };
+        });
+        expect(stillRevoked.body?.user).toBeFalsy();
+
+        // Clear cookies only immediately before the explicitly fresh target login.
+        await targetContext.clearCookies();
+        const freshSession = await login(targetPage, fixture.target);
+        expect(freshSession.user).toMatchObject({
+          email: fixture.target.email,
+          id: fixture.target.id.toHexString(),
+        });
+
+        // Active filter lists the restored target.
+        const activeList = await page.evaluate(
+          async ({ email }) => {
+            const response = await fetch(
+              `/api/admin/users?status=active&search=${encodeURIComponent(email)}`,
+            );
+            return { body: await response.json(), status: response.status };
+          },
+          { email: fixture.target.email },
+        );
+        expect(activeList.status).toBe(200);
+        expect(activeList.body).toMatchObject({
+          success: true,
+          data: {
+            users: [{ email: fixture.target.email, disable: 0 }],
+          },
+        });
+      } finally {
+        await targetContext.close();
+      }
     });
   });
 });

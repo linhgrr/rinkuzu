@@ -7,6 +7,8 @@ const user: User = {
   email: 'learner@example.com',
   displayName: 'Learner',
   role: 'user',
+  disable: 0,
+  disabledAt: null,
   createdAt: new Date('2026-07-01T00:00:00Z'),
   subscription: {
     type: 'premium-p1m',
@@ -23,6 +25,8 @@ describe('AdminUserDtoMapper', () => {
       email: 'learner@example.com',
       displayName: 'Learner',
       role: 'user',
+      disable: 0,
+      disabledAt: null,
       createdAt: '2026-07-01T00:00:00.000Z',
       subscription: {
         type: 'premium-p1m',
@@ -33,8 +37,10 @@ describe('AdminUserDtoMapper', () => {
     });
   });
 
-  it('does not expose authentication fields', () => {
-    expect(AdminUserDtoMapper.toDto(user)).not.toHaveProperty('password');
+  it('does not expose authentication fields or authVersion', () => {
+    const dto = AdminUserDtoMapper.toDto(user);
+    expect(dto).not.toHaveProperty('password');
+    expect(dto).not.toHaveProperty('authVersion');
   });
 
   it('omits absent optional profile and subscription fields', () => {
@@ -42,6 +48,7 @@ describe('AdminUserDtoMapper', () => {
       id: user.id,
       email: user.email,
       role: user.role,
+      disable: 0,
       createdAt: user.createdAt,
     });
 
@@ -56,5 +63,21 @@ describe('AdminUserDtoMapper', () => {
     });
 
     expect(dto.subscription).toEqual({ type: 'lifetime', isActive: true });
+  });
+
+  it('maps status DTO for disable transitions without authVersion', () => {
+    const disabled: User = {
+      ...user,
+      disable: 1,
+      disabledAt: new Date('2026-07-10T00:00:00Z'),
+    };
+    const dto = AdminUserDtoMapper.toStatusDto(disabled, true, 1);
+    expect(dto).toMatchObject({
+      id: user.id,
+      disable: 1,
+      changed: true,
+      disabledAt: '2026-07-10T00:00:00.000Z',
+    });
+    expect(dto).not.toHaveProperty('authVersion');
   });
 });

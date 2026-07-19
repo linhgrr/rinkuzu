@@ -21,7 +21,7 @@ function toDetailBase(quiz: Quiz) {
     title: quiz.title,
     ...(quiz.description !== undefined && { description: quiz.description }),
     slug: quiz.slug,
-    author: toQuizAuthorDto(quiz.author, { includeEmail: true }),
+    author: toQuizAuthorDto(quiz.author),
     folder: quiz.folder ?? null,
     isPrivate: quiz.isPrivate,
     questionCount: quiz.questionCount ?? quiz.questions.length,

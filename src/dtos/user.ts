@@ -13,9 +13,9 @@ export const attemptDetailQuerySchema = z.strictObject({
   userEmail: z.string().trim().pipe(z.email()).optional(),
 });
 
+/** Public profile identity — stable non-PII fields only (no email). */
 export interface PublicProfileUserDto {
   id: string;
-  email?: string;
   name?: string;
   displayName?: string;
   bio?: string;

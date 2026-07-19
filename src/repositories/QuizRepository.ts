@@ -89,6 +89,7 @@ const USER_QUIZ_LIST_PROJECTION = {
   sourceDraftId: 1,
 };
 
+/** Public quiz author projection — stable non-PII fields only (no email). */
 const QUIZ_WITH_AUTHOR_PROJECTION = {
   _id: 1,
   title: 1,
@@ -96,7 +97,6 @@ const QUIZ_WITH_AUTHOR_PROJECTION = {
   slug: 1,
   author: {
     _id: { $ifNull: [{ $first: '$authorDoc._id' }, '$author'] },
-    email: { $first: '$authorDoc.email' },
     name: { $first: '$authorDoc.name' },
     displayName: { $first: '$authorDoc.displayName' },
     avatar: { $first: '$authorDoc.avatar' },

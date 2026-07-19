@@ -20,10 +20,10 @@ function createUserRepository(): IUserRepository & IRecentUserRepository {
   return {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findByIdIncludingDisabled: vi.fn(),
     findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
-    updateRole: vi.fn(),
-    delete: vi.fn(),
+    applyAdminMutation: vi.fn(),
     findAll: vi.fn().mockResolvedValue({ items: [], pagination }),
     findRecent: vi.fn().mockResolvedValue([]),
     count: vi.fn().mockResolvedValue(0),

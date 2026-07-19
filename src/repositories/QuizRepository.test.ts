@@ -126,7 +126,6 @@ describe('QuizRepository.findUserQuizzes', () => {
         slug: 'algebra-basics',
         author: {
           _id: authorId,
-          email: 'learner@example.com',
           displayName: 'Learner',
         },
         folder: null,
@@ -142,7 +141,6 @@ describe('QuizRepository.findUserQuizzes', () => {
       id: String(quizId),
       author: {
         id: String(authorId),
-        email: 'learner@example.com',
         displayName: 'Learner',
       },
       questions: [],
@@ -162,12 +160,16 @@ describe('QuizRepository.findUserQuizzes', () => {
         $project: expect.objectContaining({
           author: expect.objectContaining({
             _id: { $ifNull: [{ $first: '$authorDoc._id' }, '$author'] },
-            email: { $first: '$authorDoc.email' },
+            displayName: { $first: '$authorDoc.displayName' },
           }),
           questions: 1,
         }),
       },
     ]);
+    const projectCall = quizModelMocks.aggregate.mock.calls[0]?.[0]?.find(
+      (stage: { $project?: unknown }) => stage.$project,
+    );
+    expect(JSON.stringify(projectCall?.$project?.author ?? {})).not.toMatch(/email/);
     expect(quizModelMocks.findOne).not.toHaveBeenCalled();
   });
 

@@ -132,6 +132,7 @@ export class AuthSignInService {
     const updated = await this.repository.recordSuccessfulLogin(account.id, account.passwordHash, {
       now,
       ip: context.ip,
+      expectedAuthVersion: account.authVersion,
       ...(replacementPasswordHash ? { passwordHash: replacementPasswordHash } : {}),
     });
     if (!updated) {
@@ -157,6 +158,7 @@ export class AuthSignInService {
         ...(account.avatar ? { avatar: account.avatar } : {}),
         ...(account.displayName ? { displayName: account.displayName } : {}),
         passwordChangedAt: account.passwordChangedAt?.getTime() ?? null,
+        authVersion: account.authVersion,
       },
     };
   }
@@ -177,6 +179,10 @@ export class AuthSignInService {
       ...(input.displayName ? { displayName: input.displayName.trim() } : {}),
       ...(input.avatar ? { avatar: input.avatar.trim() } : {}),
     });
+    // Disabled / unusable Google accounts reject generically (no existence leak).
+    if (!user) {
+      return { success: false, code: 'invalid_google_profile' };
+    }
     this.scheduleAudit('login_success', context, {
       userId: user.id,
       email: user.email,

@@ -11,7 +11,6 @@ export class QuizDiscussionDtoMapper {
       id: String(comment.id),
       author: {
         id: comment.author.id,
-        email: comment.author.email,
         ...(name !== undefined && { name }),
         ...(comment.author.avatar !== undefined && { avatar: comment.author.avatar }),
       },

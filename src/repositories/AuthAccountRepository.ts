@@ -20,21 +20,22 @@ import type {
 import { AuthAccountPersistenceMapper } from '@/repositories/mappers/AuthAccountPersistenceMapper';
 import { matchIndexedString } from '@/repositories/filters/indexed-string';
 import type { AuthAccountPersistenceRecord } from '@/repositories/types/AuthAccountPersistence';
+import { ACCOUNT_DISABLE_ACTIVE, ACTIVE_ACCOUNT_FILTER } from '@/shared/constants/account-disable';
 
 const SECURITY_FIELDS =
   'email role password emailVerified emailVerificationTokenHash ' +
   'emailVerificationExpires passwordResetTokenHash passwordResetExpires';
 
 const LOGIN_FIELDS =
-  'email role password emailVerified avatar displayName passwordChangedAt ' +
+  'email role password emailVerified avatar displayName passwordChangedAt authVersion ' +
   'failedLoginAttempts failedLoginWindowStart lockedUntil';
 
-const AUTHENTICATED_USER_FIELDS = 'email role avatar displayName passwordChangedAt';
+const AUTHENTICATED_USER_FIELDS = 'email role avatar displayName passwordChangedAt authVersion';
 
 export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignInRepository {
   async findByEmail(email: string): Promise<AuthAccountSecurityState | null> {
     await connectDB();
-    const record = await User.findOne({ email })
+    const record = await User.findOne({ email, ...ACTIVE_ACCOUNT_FILTER })
       .select(SECURITY_FIELDS)
       .lean<AuthAccountPersistenceRecord>();
     return record ? AuthAccountPersistenceMapper.toSecurityState(record) : null;
@@ -47,6 +48,10 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         email: data.email,
         password: data.passwordHash,
         role: 'user',
+        disable: ACCOUNT_DISABLE_ACTIVE,
+        authVersion: 0,
+        disabledAt: null,
+        disabledBy: null,
         ...(data.displayName ? { displayName: data.displayName } : {}),
         emailVerificationTokenHash: data.verificationTokenHash,
         emailVerificationExpires: data.verificationExpires,
@@ -57,6 +62,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         role: user.role,
       });
     } catch (error) {
+      // Includes globally unique email collisions with disabled accounts — no existence leak.
       if (isMongoDuplicateKeyError(error)) return null;
       throw error;
     }
@@ -66,6 +72,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     await connectDB();
     const record = await User.findOneAndUpdate(
       {
+        ...ACTIVE_ACCOUNT_FILTER,
         emailVerificationTokenHash: matchIndexedString(tokenHash),
         emailVerificationExpires: { $gt: now },
       },
@@ -90,7 +97,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
   ): Promise<boolean> {
     await connectDB();
     const result = await User.updateOne(
-      { email, password: { $type: 'string' } },
+      { email, password: { $type: 'string' }, ...ACTIVE_ACCOUNT_FILTER },
       {
         $set: {
           passwordResetTokenHash: tokenHash,
@@ -108,7 +115,12 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
   ): Promise<boolean> {
     await connectDB();
     const result = await User.updateOne(
-      { email, password: { $type: 'string' }, emailVerified: null },
+      {
+        email,
+        password: { $type: 'string' },
+        emailVerified: null,
+        ...ACTIVE_ACCOUNT_FILTER,
+      },
       {
         $set: {
           emailVerificationTokenHash: tokenHash,
@@ -125,6 +137,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
   ): Promise<AuthAccountIdentity | null> {
     await connectDB();
     const record = await User.findOne({
+      ...ACTIVE_ACCOUNT_FILTER,
       passwordResetTokenHash: matchIndexedString(tokenHash),
       passwordResetExpires: { $gt: now },
     })
@@ -139,10 +152,12 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     passwordHash: string,
     now: Date,
   ): Promise<AuthAccountIdentity | null> {
+    if (!Types.ObjectId.isValid(accountId)) return null;
     await connectDB();
     const record = await User.findOneAndUpdate(
       {
         _id: new Types.ObjectId(accountId),
+        ...ACTIVE_ACCOUNT_FILTER,
         passwordResetTokenHash: matchIndexedString(tokenHash),
         passwordResetExpires: { $gt: now },
       },
@@ -171,7 +186,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
 
   async findLoginAccount(email: string): Promise<AuthLoginAccount | null> {
     await connectDB();
-    const record = await User.findOne({ email })
+    const record = await User.findOne({ email, ...ACTIVE_ACCOUNT_FILTER })
       .select(LOGIN_FIELDS)
       .lean<AuthAccountPersistenceRecord>();
     return record ? AuthAccountPersistenceMapper.toLoginAccount(record) : null;
@@ -180,7 +195,10 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
   async findSessionUser(accountId: string): Promise<AuthenticatedUser | null> {
     if (!Types.ObjectId.isValid(accountId)) return null;
     await connectDB();
-    const record = await User.findById(accountId)
+    const record = await User.findOne({
+      _id: new Types.ObjectId(accountId),
+      ...ACTIVE_ACCOUNT_FILTER,
+    })
       .select(AUTHENTICATED_USER_FIELDS)
       .lean<AuthAccountPersistenceRecord>();
     return record ? AuthAccountPersistenceMapper.toAuthenticatedUser(record) : null;
@@ -191,6 +209,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     now: Date,
     policy: FailedLoginPolicy,
   ): Promise<FailedLoginAttemptState | null> {
+    if (!Types.ObjectId.isValid(accountId)) return null;
     await connectDB();
     const windowFloor = new Date(now.getTime() - policy.windowMs);
     const nextAttempts = {
@@ -213,7 +232,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     const shouldLock = { $gte: [nextAttempts, policy.maxAttempts] };
 
     const record = await User.findOneAndUpdate(
-      { _id: new Types.ObjectId(accountId) },
+      { _id: new Types.ObjectId(accountId), ...ACTIVE_ACCOUNT_FILTER },
       [
         {
           $set: {
@@ -260,9 +279,18 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     expectedPasswordHash: string,
     data: SuccessfulLoginData,
   ): Promise<boolean> {
+    if (!Types.ObjectId.isValid(accountId)) return false;
     await connectDB();
+    // CAS: _id + expected password hash + exact disable:0 + expected authVersion.
+    // A disable+restore between credential read and this write bumps authVersion
+    // and must fail closed (no stale successful login).
     const result = await User.updateOne(
-      { _id: new Types.ObjectId(accountId), password: expectedPasswordHash },
+      {
+        _id: new Types.ObjectId(accountId),
+        password: expectedPasswordHash,
+        authVersion: data.expectedAuthVersion,
+        ...ACTIVE_ACCOUNT_FILTER,
+      },
       {
         $set: {
           failedLoginAttempts: 0,
@@ -277,27 +305,41 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     return result.matchedCount === 1;
   }
 
-  async upsertVerifiedGoogleAccount(data: VerifiedGoogleAccountData): Promise<AuthenticatedUser> {
+  async upsertVerifiedGoogleAccount(
+    data: VerifiedGoogleAccountData,
+  ): Promise<AuthenticatedUser | null> {
     await connectDB();
-    const record = await User.findOneAndUpdate(
-      { email: data.email },
-      {
-        $set: {
-          email: data.email,
-          emailVerified: data.now,
-          lastLoginAt: data.now,
-          lastLoginIp: data.ip,
-          ...(data.displayName ? { displayName: data.displayName } : {}),
-          ...(data.avatar ? { avatar: data.avatar } : {}),
+    try {
+      const record = await User.findOneAndUpdate(
+        { email: data.email, ...ACTIVE_ACCOUNT_FILTER },
+        {
+          $set: {
+            email: data.email,
+            emailVerified: data.now,
+            lastLoginAt: data.now,
+            lastLoginIp: data.ip,
+            ...(data.displayName ? { displayName: data.displayName } : {}),
+            ...(data.avatar ? { avatar: data.avatar } : {}),
+          },
+          $setOnInsert: {
+            role: 'user',
+            disable: ACCOUNT_DISABLE_ACTIVE,
+            authVersion: 0,
+            disabledAt: null,
+            disabledBy: null,
+          },
         },
-        $setOnInsert: { role: 'user' },
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
-    )
-      .select(AUTHENTICATED_USER_FIELDS)
-      .lean<AuthAccountPersistenceRecord>();
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      )
+        .select(AUTHENTICATED_USER_FIELDS)
+        .lean<AuthAccountPersistenceRecord>();
 
-    if (!record) throw new Error('Google account upsert did not return a user');
-    return AuthAccountPersistenceMapper.toAuthenticatedUser(record);
+      if (!record) return null;
+      return AuthAccountPersistenceMapper.toAuthenticatedUser(record);
+    } catch (error) {
+      // Disabled account still owns the globally unique email.
+      if (isMongoDuplicateKeyError(error)) return null;
+      throw error;
+    }
   }
 }

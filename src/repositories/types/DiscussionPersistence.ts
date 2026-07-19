@@ -2,7 +2,6 @@ import type { MongoIdLike } from '@/types/mongo';
 
 interface DiscussionAuthorPersistenceRecord {
   _id: MongoIdLike;
-  email: string;
   name?: string;
   displayName?: string;
   avatar?: string;

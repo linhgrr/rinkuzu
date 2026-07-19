@@ -45,6 +45,8 @@ describe('critical mutation scope', () => {
     'src/lib/auth/session.ts',
     'src/lib/password.ts',
     'src/lib/auth-tokens.ts',
+    'src/shared/constants/account-disable.ts',
+    'src/shared/constants/admin-invariant.ts',
     'src/lib/security/trusted-navigation.ts',
     'src/models/User.ts',
     'src/repositories/UserRepository.ts',
@@ -86,6 +88,8 @@ describe('critical mutation scope', () => {
       'src/lib/password.test.ts',
       'src/lib/auth-tokens.ts',
       'src/lib/auth-tokens.test.ts',
+      'src/shared/constants/account-disable.ts',
+      'src/shared/constants/admin-invariant.ts',
       'src/lib/security/trusted-navigation.ts',
       'src/lib/security/trusted-navigation.test.ts',
       'src/lib/auth.ts',
@@ -98,6 +102,8 @@ describe('critical mutation scope', () => {
       'src/lib/auth-tokens.ts',
       'src/lib/password.ts',
       'src/lib/security/trusted-navigation.ts',
+      'src/shared/constants/account-disable.ts',
+      'src/shared/constants/admin-invariant.ts',
     ]);
   });
 

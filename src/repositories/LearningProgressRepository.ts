@@ -229,7 +229,6 @@ export class LearningProgressRepository implements ILearningProgressRepository {
             {
               $project: {
                 _id: 1,
-                email: 1,
                 name: 1,
                 displayName: 1,
                 avatar: 1,
@@ -275,7 +274,6 @@ export class LearningProgressRepository implements ILearningProgressRepository {
                 description: 1,
                 author: {
                   _id: { $ifNull: ['$authorDoc._id', '$author'] },
-                  email: '$authorDoc.email',
                   name: '$authorDoc.name',
                   displayName: '$authorDoc.displayName',
                   avatar: '$authorDoc.avatar',

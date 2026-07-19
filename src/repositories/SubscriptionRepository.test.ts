@@ -254,7 +254,7 @@ describe('SubscriptionRepository.activateSubscription', () => {
       expect.objectContaining({ session: expect.any(Object) }),
     );
     expect(mocks.userUpdateOne).toHaveBeenCalledWith(
-      { _id: activation.userId },
+      { _id: activation.userId, disable: 0 },
       {
         $set: {
           subscription: {
@@ -292,7 +292,7 @@ describe('SubscriptionRepository.activateSubscription', () => {
       expect.any(Object),
     );
     expect(mocks.userUpdateOne).toHaveBeenCalledWith(
-      { _id: activation.userId },
+      { _id: activation.userId, disable: 0 },
       {
         $set: {
           subscription: {

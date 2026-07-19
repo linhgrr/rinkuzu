@@ -84,6 +84,10 @@ try {
     const userRows = Array.from({ length: 400 }, (_, index) => ({
       ...marker,
       email: `ci-plan-user-${index}@example.com`,
+      // Enough active admins for the role+disable count probe (role_1_disable_1).
+      role: index < 20 ? 'admin' : 'user',
+      disable: index % 5 === 0 ? 1 : 0,
+      createdAt: new Date(now.getTime() - index * 1_000),
       ...(index === 0 ? { emailVerificationTokenHash: 'ci-plan-email-verification-token' } : {}),
       ...(index === 1 ? { passwordResetTokenHash: 'ci-plan-password-reset-token' } : {}),
       subscription: {
@@ -97,6 +101,7 @@ try {
         ...marker,
         _id: userId,
         email: `ci-dashboard-author-${index}@example.com`,
+        displayName: `ci-dashboard-author-${index}`,
       }),
     );
     const ownedQuizRows = Array.from({ length: 400 }, (_, index) => ({
@@ -329,6 +334,70 @@ try {
       );
     }
     evidence.push(recentUsersRow);
+
+    // Admin status list: filter by disable, sort by createdAt using compound index.
+    const adminStatusUsersExplain = await users
+      .find({ disable: 0 }, { projection: { email: 1, role: 1, createdAt: 1, disable: 1 } })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .explain('executionStats');
+    const adminStatusUsersStats = adminStatusUsersExplain.executionStats;
+    const adminStatusUsersStages = collectStageNames(adminStatusUsersStats.executionStages);
+    const adminStatusUsersIndexes = collectIndexNames(adminStatusUsersStats.executionStages);
+    const adminStatusUsersRow = {
+      name: 'admin-status-active-users',
+      stages: [...adminStatusUsersStages].sort(),
+      indexes: [...adminStatusUsersIndexes].sort(),
+      keysExamined: adminStatusUsersStats.totalKeysExamined,
+      documentsExamined: adminStatusUsersStats.totalDocsExamined,
+      returnedRows: adminStatusUsersStats.nReturned,
+    };
+    if (
+      !adminStatusUsersStages.has('IXSCAN') ||
+      adminStatusUsersStages.has('SORT') ||
+      !adminStatusUsersIndexes.has('disable_1_createdAt_-1')
+    ) {
+      throw new Error(
+        `admin-status-active-users did not use disable_1_createdAt_-1 without a blocking sort; stages=${adminStatusUsersRow.stages.join(',')}; indexes=${adminStatusUsersRow.indexes.join(',')}`,
+      );
+    }
+    if (
+      adminStatusUsersRow.returnedRows !== 5 ||
+      adminStatusUsersRow.keysExamined > 5 ||
+      adminStatusUsersRow.documentsExamined > 5
+    ) {
+      throw new Error(
+        `admin-status-active-users examined ${adminStatusUsersRow.keysExamined} keys/${adminStatusUsersRow.documentsExamined} documents and returned ${adminStatusUsersRow.returnedRows} rows; expected at most 5/5 for five rows`,
+      );
+    }
+    evidence.push(adminStatusUsersRow);
+
+    // Active-admin invariant count: exact role+disable match must use role_1_disable_1.
+    const activeAdminCountExplain = await users
+      .find({ role: 'admin', disable: 0 }, { projection: { _id: 1 } })
+      .explain('executionStats');
+    const activeAdminCountStats = activeAdminCountExplain.executionStats;
+    const activeAdminCountStages = collectStageNames(activeAdminCountStats.executionStages);
+    const activeAdminCountIndexes = collectIndexNames(activeAdminCountStats.executionStages);
+    const activeAdminCountRow = {
+      name: 'active-admin-count',
+      stages: [...activeAdminCountStages].sort(),
+      indexes: [...activeAdminCountIndexes].sort(),
+      keysExamined: activeAdminCountStats.totalKeysExamined,
+      documentsExamined: activeAdminCountStats.totalDocsExamined,
+      returnedRows: activeAdminCountStats.nReturned,
+    };
+    if (!activeAdminCountStages.has('IXSCAN') || !activeAdminCountIndexes.has('role_1_disable_1')) {
+      throw new Error(
+        `active-admin-count did not use role_1_disable_1; stages=${activeAdminCountRow.stages.join(',')}; indexes=${activeAdminCountRow.indexes.join(',')}`,
+      );
+    }
+    if (activeAdminCountRow.documentsExamined > activeAdminCountRow.returnedRows) {
+      throw new Error(
+        `active-admin-count examined ${activeAdminCountRow.documentsExamined} documents for ${activeAdminCountRow.returnedRows} rows; expected covered index scan`,
+      );
+    }
+    evidence.push(activeAdminCountRow);
 
     const [allQuizCountExplain, allQuizCountRows] = await Promise.all([
       quizzes.aggregate([{ $count: 'totalItems' }], { hint: '_id_' }).explain('executionStats'),
@@ -697,7 +766,8 @@ try {
         (row, questionIndex) =>
           row.questionIndex === questionIndex &&
           row.comments.length === 1 &&
-          row.comments[0].author.email === `ci-dashboard-author-${questionIndex + 1}@example.com` &&
+          row.comments[0].author.displayName === `ci-dashboard-author-${questionIndex + 1}` &&
+          !Object.hasOwn(row.comments[0].author, 'email') &&
           !Object.hasOwn(row, '_ciQueryPlanProbe') &&
           !Object.hasOwn(row.comments[0].author, '_ciQueryPlanProbe'),
       )

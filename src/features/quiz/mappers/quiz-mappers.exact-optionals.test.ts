@@ -77,7 +77,7 @@ describe('quiz mapper optional fields', () => {
       comments: [
         {
           id: 'comment-1',
-          author: { id: 'user-1', email: 'learner@example.com' },
+          author: { id: 'user-1', name: 'Learner' },
           content: 'Explain?',
           isEdited: false,
           createdAt: '2026-07-02T00:00:00.000Z',

@@ -50,6 +50,10 @@ describe('User model mutation coverage', () => {
     const user = new User({ email: 'Learner@Example.COM' });
     expect(user.email).toBe('learner@example.com');
     expect(user.role).toBe('user');
+    expect(user.disable).toBe(0);
+    expect(user.disabledAt).toBeNull();
+    expect(user.disabledBy).toBeNull();
+    expect(user.authVersion).toBe(0);
     expect(user.emailVerified).toBeNull();
     expect(user.emailVerificationTokenHash).toBeNull();
     expect(user.emailVerificationExpires).toBeNull();
@@ -227,6 +231,11 @@ describe('User model mutation coverage', () => {
       indexes.some(
         ([spec]) =>
           spec['role'] === 1 && spec['createdAt'] === -1 && Object.keys(spec).length === 2,
+      ),
+    ).toBe(true);
+    expect(
+      indexes.some(
+        ([spec]) => spec['role'] === 1 && spec['disable'] === 1 && Object.keys(spec).length === 2,
       ),
     ).toBe(true);
     expect(

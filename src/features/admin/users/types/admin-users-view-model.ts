@@ -1,4 +1,5 @@
 import type { UserRole } from '@/types/next-auth';
+import type { AccountDisableState } from '@/shared/constants/account-disable';
 
 export interface AdminUserSubscriptionViewModel {
   type: string;
@@ -16,6 +17,11 @@ export interface AdminUserViewModel {
   email: string;
   displayName?: string;
   role: UserRole;
+  disable: AccountDisableState;
+  disabledAt?: string | null;
+  disabledAtLabel?: string;
+  accountStatusLabel: 'accountActive' | 'accountDisabled';
+  accountStatusVariant: 'success' | 'danger';
   createdAt: string;
   createdAtLabel: string;
   subscription?: AdminUserSubscriptionViewModel;
@@ -38,7 +44,14 @@ export interface AdminUserRoleUpdateInput {
   role: UserRole;
 }
 
+export interface AdminUserStatusUpdateInput {
+  userId: string;
+  disable: AccountDisableState;
+}
+
 export interface AdminUserSubscriptionGrantInput {
   userId: string;
   planId: string;
 }
+
+export type AdminUserStatusFilter = 'active' | 'disabled' | 'all';

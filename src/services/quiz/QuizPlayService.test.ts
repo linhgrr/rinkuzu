@@ -69,10 +69,10 @@ function createService() {
   const userRepository: Mocked<IUserRepository> = {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findByIdIncludingDisabled: vi.fn(),
     findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
-    updateRole: vi.fn(),
-    delete: vi.fn(),
+    applyAdminMutation: vi.fn(),
     findAll: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
@@ -483,6 +483,7 @@ describe('QuizPlayService progress operations', () => {
         id: userId,
         email: 'learner@example.com',
         role: 'user',
+        disable: 0,
         createdAt: new Date('2026-01-01T00:00:00Z'),
       })
       .mockResolvedValueOnce(null);

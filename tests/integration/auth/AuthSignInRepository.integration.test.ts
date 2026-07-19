@@ -30,6 +30,10 @@ describe('AuthAccountRepository sign-in integration', () => {
         email,
         password,
         role: 'user',
+        disable: 0,
+        authVersion: 0,
+        disabledAt: null,
+        disabledBy: null,
         emailVerified: new Date(),
         failedLoginAttempts: 0,
         failedLoginWindowStart: null,
@@ -90,7 +94,9 @@ describe('AuthAccountRepository sign-in integration', () => {
       displayName: 'Google User 2',
     });
 
-    expect(second.id).toBe(first.id);
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(second?.id).toBe(first?.id);
     await mongoose.connection.collection('users').deleteOne({ email: googleEmail });
   });
 
@@ -98,12 +104,13 @@ describe('AuthAccountRepository sign-in integration', () => {
     const login = await repo.findLoginAccount(email);
     const passwordHash = login?.passwordHash;
     expect(passwordHash).toBeTruthy();
-    if (!passwordHash) {
+    if (!login?.passwordHash) {
       throw new Error('expected password hash for integration login account');
     }
-    const ok = await repo.recordSuccessfulLogin(userId, passwordHash, {
+    const ok = await repo.recordSuccessfulLogin(userId, login.passwordHash, {
       now: new Date(),
       ip: '127.0.0.1',
+      expectedAuthVersion: login.authVersion,
     });
     expect(ok).toBe(true);
     const after = await repo.findLoginAccount(email);

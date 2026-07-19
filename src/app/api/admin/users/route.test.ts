@@ -1,21 +1,14 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  authMock,
-  getUsersMock,
-  updateUserRoleMock,
-  deleteUserMock,
-  grantUserSubscriptionMock,
-  loggerErrorMock,
-} = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  getUsersMock: vi.fn(),
-  updateUserRoleMock: vi.fn(),
-  deleteUserMock: vi.fn(),
-  grantUserSubscriptionMock: vi.fn(),
-  loggerErrorMock: vi.fn(),
-}));
+const { authMock, getUsersMock, updateUserRoleMock, grantUserSubscriptionMock, loggerErrorMock } =
+  vi.hoisted(() => ({
+    authMock: vi.fn(),
+    getUsersMock: vi.fn(),
+    updateUserRoleMock: vi.fn(),
+    grantUserSubscriptionMock: vi.fn(),
+    loggerErrorMock: vi.fn(),
+  }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
@@ -26,7 +19,6 @@ vi.mock('@/lib/serviceFactory', () => ({
     getAdminService: () => ({
       getUsers: getUsersMock,
       updateUserRole: updateUserRoleMock,
-      deleteUser: deleteUserMock,
     }),
   },
 }));
@@ -36,7 +28,7 @@ vi.mock('@/lib/admin-billing-factory', () => ({
   }),
 }));
 
-import { DELETE, GET, PATCH, POST } from '@/app/api/admin/users/route';
+import { GET, PATCH, POST } from '@/app/api/admin/users/route';
 
 const userId = '507f1f77bcf86cd799439011';
 const routeContext = { params: Promise.resolve({}) };
@@ -62,6 +54,10 @@ function jsonRequest(method: string, body: unknown): NextRequest {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+function nowIso() {
+  return '2026-07-01T00:00:00.000Z';
 }
 
 describe('/api/admin/users', () => {
@@ -93,7 +89,15 @@ describe('/api/admin/users', () => {
         .mockResolvedValueOnce({
           success: true,
           data: {
-            users: [{ id: userId, email: 'u@example.com', role: 'user', createdAt: nowIso() }],
+            users: [
+              {
+                id: userId,
+                email: 'u@example.com',
+                role: 'user',
+                disable: 0,
+                createdAt: nowIso(),
+              },
+            ],
             pagination: {
               currentPage: 1,
               totalPages: 1,
@@ -110,13 +114,17 @@ describe('/api/admin/users', () => {
           statusCode: 500,
         });
 
-      const ok = await GET(getRequest('?page=1&limit=10&search=alpha&role=user'), routeContext);
+      const ok = await GET(
+        getRequest('?page=1&limit=10&search=alpha&role=user&status=active'),
+        routeContext,
+      );
       expect(ok.status).toBe(200);
       expect(getUsersMock).toHaveBeenCalledWith({
         page: 1,
         limit: 10,
         search: 'alpha',
         role: 'user',
+        status: 'active',
       });
 
       const fail = await GET(getRequest(), routeContext);
@@ -136,7 +144,10 @@ describe('/api/admin/users', () => {
       });
       const ok = await PATCH(jsonRequest('PATCH', { userId, role: 'admin' }), routeContext);
       expect(ok.status).toBe(200);
-      expect(updateUserRoleMock).toHaveBeenCalledWith(userId, 'admin', 'admin@example.com');
+      expect(updateUserRoleMock).toHaveBeenCalledWith(userId, 'admin', {
+        id: 'admin-1',
+        email: 'admin@example.com',
+      });
 
       updateUserRoleMock.mockResolvedValueOnce({
         success: false,
@@ -145,6 +156,30 @@ describe('/api/admin/users', () => {
       });
       const missing = await PATCH(jsonRequest('PATCH', { userId, role: 'user' }), routeContext);
       expect(missing.status).toBe(404);
+
+      updateUserRoleMock.mockResolvedValueOnce({
+        success: false,
+        error: 'Cannot remove or disable the last active admin',
+        statusCode: 409,
+        code: 'last_active_admin',
+      });
+      const lastAdmin = await PATCH(jsonRequest('PATCH', { userId, role: 'user' }), routeContext);
+      expect(lastAdmin.status).toBe(409);
+      await expect(lastAdmin.json()).resolves.toMatchObject({
+        error: { code: 'last_active_admin' },
+      });
+
+      updateUserRoleMock.mockResolvedValueOnce({
+        success: false,
+        error: 'Active-admin invariant is unavailable',
+        statusCode: 503,
+        code: 'admin_invariant_unavailable',
+      });
+      const unavailable = await PATCH(jsonRequest('PATCH', { userId, role: 'user' }), routeContext);
+      expect(unavailable.status).toBe(503);
+      await expect(unavailable.json()).resolves.toMatchObject({
+        error: { code: 'admin_invariant_unavailable' },
+      });
 
       updateUserRoleMock.mockRejectedValueOnce(new Error('db down'));
       const boom = await PATCH(jsonRequest('PATCH', { userId, role: 'user' }), routeContext);
@@ -156,80 +191,19 @@ describe('/api/admin/users', () => {
     });
   });
 
-  describe('DELETE', () => {
-    it('validates userId, deletes users, and maps service/unexpected failures', async () => {
-      const invalid = await DELETE(getRequest('?userId=not-an-id'), routeContext);
-      expect(invalid.status).toBe(400);
-      expect(deleteUserMock).not.toHaveBeenCalled();
-
-      deleteUserMock.mockResolvedValueOnce({
-        success: true,
-        data: { id: userId, deleted: true },
-      });
-      const ok = await DELETE(getRequest(`?userId=${userId}`), routeContext);
-      expect(ok.status).toBe(200);
-      await expect(ok.json()).resolves.toMatchObject({
-        success: true,
-        meta: { message: 'User deleted successfully' },
-      });
-      expect(deleteUserMock).toHaveBeenCalledWith(userId, 'admin@example.com');
-
-      deleteUserMock.mockResolvedValueOnce({
-        success: false,
-        error: 'Cannot delete yourself',
-        statusCode: 400,
-      });
-      expect((await DELETE(getRequest(`?userId=${userId}`), routeContext)).status).toBe(400);
-
-      deleteUserMock.mockRejectedValueOnce(new Error('delete failed'));
-      const boom = await DELETE(getRequest(`?userId=${userId}`), routeContext);
-      expect(boom.status).toBe(500);
-      expect(loggerErrorMock).toHaveBeenCalledWith(
-        { error: expect.any(Error) },
-        'Delete user error',
-      );
-    });
-  });
-
   describe('POST', () => {
     it('validates grant payload and delegates to billing service', async () => {
       const invalid = await POST(jsonRequest('POST', { userId: 'bad', planId: '' }), routeContext);
       expect(invalid.status).toBe(400);
       expect(grantUserSubscriptionMock).not.toHaveBeenCalled();
 
-      grantUserSubscriptionMock
-        .mockResolvedValueOnce({
-          success: true,
-          data: {
-            user: 'user@example.com',
-            plan: 'Premium',
-            startDate: nowIso(),
-            isActive: true,
-          },
-        })
-        .mockResolvedValueOnce({
-          success: false,
-          error: 'Plan not found',
-          statusCode: 404,
-        });
-
-      const ok = await POST(jsonRequest('POST', { userId, planId: 'premium-p1m' }), routeContext);
-      expect(ok.status).toBe(200);
-      await expect(ok.json()).resolves.toMatchObject({
+      grantUserSubscriptionMock.mockResolvedValueOnce({
         success: true,
-        meta: { message: 'Subscription added successfully' },
+        data: { userId, planId: 'premium', endDate: nowIso() },
       });
-      expect(grantUserSubscriptionMock).toHaveBeenCalledWith({
-        userId,
-        planId: 'premium-p1m',
-      });
-
-      const fail = await POST(jsonRequest('POST', { userId, planId: 'premium-p1m' }), routeContext);
-      expect(fail.status).toBe(404);
+      const ok = await POST(jsonRequest('POST', { userId, planId: 'premium' }), routeContext);
+      expect(ok.status).toBe(200);
+      expect(grantUserSubscriptionMock).toHaveBeenCalledWith({ userId, planId: 'premium' });
     });
   });
 });
-
-function nowIso() {
-  return '2026-07-01T00:00:00.000Z';
-}

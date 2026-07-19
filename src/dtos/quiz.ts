@@ -65,9 +65,9 @@ export interface QuizListOptionsDto {
   onlyMine: boolean;
 }
 
+/** Public author identity — stable non-PII fields only (no email). */
 export interface QuizListAuthorDto {
   id: string;
-  email?: string;
   name?: string;
   displayName?: string;
   avatar?: string;
@@ -118,7 +118,6 @@ export interface DiscussionCommentDto {
   id: string;
   author: {
     id: string;
-    email: string;
     name?: string;
     avatar?: string;
   };

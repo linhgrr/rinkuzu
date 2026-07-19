@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { formatZodIssues } from '@/lib/validation/zod-issues';
 
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
@@ -28,9 +29,7 @@ function loadPublicEnv(): PublicEnv {
   });
 
   if (!parsed.success) {
-    const issues = parsed.error.issues
-      .map((issue) => `  • ${issue.path.join('.') || '(root)'}: ${issue.message}`)
-      .join('\n');
+    const issues = formatZodIssues(parsed.error.issues);
     throw new Error(`Invalid public environment configuration:\n${issues}`);
   }
 

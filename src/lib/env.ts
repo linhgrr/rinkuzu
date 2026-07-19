@@ -1,5 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
+import { formatZodIssues } from '@/lib/validation/zod-issues';
 
 const OBJECT_STORAGE_REGIONS = ['auto', 'wnam', 'enam', 'weur', 'eeur', 'apac', 'oc'] as const;
 
@@ -119,9 +120,7 @@ function loadEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
 
   if (!parsed.success) {
-    const issues = parsed.error.issues
-      .map((issue) => `  • ${issue.path.join('.') || '(root)'}: ${issue.message}`)
-      .join('\n');
+    const issues = formatZodIssues(parsed.error.issues);
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
 

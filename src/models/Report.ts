@@ -1,20 +1,8 @@
 import mongoose from 'mongoose';
-import { REPORT_STATUSES, type ReportStatus } from '@/shared/constants/report-status';
+import { REPORT_STATUSES } from '@/shared/constants/report-status';
+import type { ReportFields } from '@/shared/types/report';
 
-interface ReportDocument {
-  quizId: string;
-  quizTitle: string;
-  quizSlug: string;
-  reporterEmail: string;
-  reporterName: string;
-  content: string;
-  status: ReportStatus;
-  createdAt: Date;
-  updatedAt: Date;
-  resolvedAt?: Date;
-  resolvedBy?: string;
-  adminNotes?: string;
-}
+type ReportDocument = ReportFields;
 
 const reportSchema = new mongoose.Schema<ReportDocument>(
   {

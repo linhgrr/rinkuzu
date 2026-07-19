@@ -2,6 +2,7 @@ import type { AdminReportDto, AdminReportListDto } from '@/dtos/admin-report';
 import type { PaginationMeta } from '@/dtos/common';
 import type { Report } from '@/entities/Report';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
+import { copyReportCoreFields } from '@/lib/report-fields';
 
 export class AdminReportDtoMapper {
   static toListDto(reports: Report[], pagination: PaginationMeta): AdminReportListDto {
@@ -15,14 +16,7 @@ export class AdminReportDtoMapper {
     const resolvedAt = serializeOptionalDate(report.resolvedAt, 'report.resolvedAt');
 
     return {
-      id: report.id,
-      quizId: report.quizId,
-      quizTitle: report.quizTitle,
-      quizSlug: report.quizSlug,
-      reporterEmail: report.reporterEmail,
-      reporterName: report.reporterName,
-      content: report.content,
-      status: report.status,
+      ...copyReportCoreFields(report),
       createdAt: serializeDate(report.createdAt, 'report.createdAt'),
       updatedAt: serializeDate(report.updatedAt, 'report.updatedAt'),
       ...(resolvedAt !== undefined && { resolvedAt }),

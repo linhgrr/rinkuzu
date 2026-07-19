@@ -1,17 +1,14 @@
 import type { Quiz, QuizQuestion } from '@/entities/Quiz';
 import type { PlayableQuizQuestionDto, QuizDetailDto, QuizPlayDetailDto } from '@/dtos/quiz';
 import { serializeDate } from '@/lib/date-serialization';
+import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
 import { toQuizAuthorDto } from '@/mappers/quiz/QuizAuthorDtoMapper';
 import { toQuizQuestionDto } from '@/mappers/quiz/QuizQuestionDtoMapper';
 
 function toPlayableQuestionDto(question: QuizQuestion): PlayableQuizQuestionDto {
   return {
-    id: question.id,
-    question: question.question,
-    options: question.options,
+    ...copyQuizQuestionFields(question),
     type: question.type,
-    ...(question.questionImage !== undefined && { questionImage: question.questionImage }),
-    ...(question.optionImages !== undefined && { optionImages: question.optionImages }),
   };
 }
 

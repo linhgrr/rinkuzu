@@ -1,4 +1,5 @@
-import type { Report, ReportStatus } from '@/entities/Report';
+import type { Report } from '@/entities/Report';
+import type { ReportStatus } from '@/shared/constants/report-status';
 import type {
   PaginatedRepositoryResult,
   RepositoryPaginationOptions,

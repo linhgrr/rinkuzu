@@ -1,4 +1,4 @@
-import type { SubscriptionRecordFields } from '@/entities/Subscription';
+import type { SubscriptionRecordFields } from '@/shared/types/subscription';
 import type { MongoIdLike } from '@/types/mongo';
 
 export interface BillingPlanPersistenceRecord {

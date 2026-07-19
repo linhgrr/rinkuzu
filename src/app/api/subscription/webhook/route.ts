@@ -8,10 +8,31 @@ import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
+function sortRecordKeys(value: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(value).sort(([left], [right]) => left.localeCompare(right)),
+  );
+}
+
+function toPayOSSignatureValue(value: unknown): string {
+  if (value === null || value === undefined || value === 'null' || value === 'undefined') return '';
+  if (Array.isArray(value)) {
+    return JSON.stringify(
+      value.map((item) =>
+        typeof item === 'object' && item !== null && !Array.isArray(item)
+          ? sortRecordKeys(item as Record<string, unknown>)
+          : item,
+      ),
+    );
+  }
+  return String(value);
+}
+
 function buildPayOSSignaturePayload(data: Record<string, unknown>): string {
   return Object.keys(data)
+    .filter((key) => data[key] !== undefined)
     .sort()
-    .map((key) => `${key}=${data[key] ?? ''}`)
+    .map((key) => `${key}=${toPayOSSignatureValue(data[key])}`)
     .join('&');
 }
 
@@ -54,16 +75,22 @@ export async function POST(request: NextRequest) {
     if (!Number.isSafeInteger(orderCode) || orderCode <= 0) {
       return apiErr('validation_error', 'Invalid order code', 400);
     }
-    if (rawOrderCode === undefined || rawAmount === undefined) {
+    const amount = Number(rawAmount);
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
       return apiErr('validation_error', 'Invalid payment amount', 400);
+    }
+    if (typeof data.reference !== 'string' || data.reference.trim().length === 0) {
+      return apiErr('validation_error', 'Invalid payment reference', 400);
+    }
+    if (data.code !== '00') {
+      return apiErr('validation_error', 'Invalid payment code', 400);
     }
 
     const subscriptionService = createSubscriptionService();
     await subscriptionService.activateVerifiedSubscription(orderCode, {
-      orderCode: rawOrderCode,
-      amount: rawAmount,
-      ...(data.reference !== undefined ? { reference: data.reference } : {}),
-      ...(data.code !== undefined ? { code: data.code } : {}),
+      orderCode,
+      amount,
+      reference: data.reference,
     });
 
     return apiOk(null);

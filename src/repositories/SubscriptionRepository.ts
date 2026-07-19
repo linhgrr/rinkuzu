@@ -13,9 +13,9 @@ import {
 import {
   isAdminSubscriptionStatusTransitionAllowed,
   SubscriptionActivationConflictError,
-  type AdminMutableSubscriptionStatus,
   type SubscriptionRecord,
 } from '@/entities/Subscription';
+import type { AdminMutableSubscriptionStatus } from '@/shared/constants/subscription-status';
 import mongoose from 'mongoose';
 import { SubscriptionPersistenceMapper } from '@/repositories/mappers/SubscriptionPersistenceMapper';
 import { matchIndexedString } from '@/repositories/filters/indexed-string';
@@ -383,14 +383,5 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     } finally {
       await session.endSession();
     }
-  }
-
-  async deletePendingByOrderId(orderId: string): Promise<boolean> {
-    await connectDB();
-    const result = await Subscription.findOneAndDelete({
-      payosOrderId: orderId,
-      status: 'pending',
-    });
-    return !!result;
   }
 }

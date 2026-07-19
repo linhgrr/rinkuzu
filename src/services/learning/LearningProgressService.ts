@@ -16,7 +16,7 @@ import type { ILearningProgressRepository } from '@/interfaces/repositories/ILea
 import type { ILearningProgressService } from '@/interfaces/services/ILearningProgressService';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
-import type { SRSRating } from '@/entities/SpacedRepetition';
+import type { SRSRating } from '@/shared/constants/srs-rating';
 import { calculateNextReview } from '@/services/srs.service';
 import { LearningProgressDtoMapper } from '@/mappers/learning/LearningProgressDtoMapper';
 import { toUtcDateKey } from '@/lib/date-serialization';

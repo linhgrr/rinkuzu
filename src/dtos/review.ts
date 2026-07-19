@@ -3,8 +3,9 @@ import type { QuizLibraryStatus } from '@/shared/types/quiz-library';
 import type { PaginationMeta } from '@/dtos/common';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 import { objectIdSchema } from '@/lib/validation/common';
+import { SRS_RATINGS, type SRSRating } from '@/shared/constants/srs-rating';
 
-const srsRatingSchema = z.enum(['fail', 'hard', 'good', 'easy']);
+const srsRatingSchema = z.enum(SRS_RATINGS);
 
 const questionReferenceSchema = z.object({
   text: z.string(),
@@ -79,7 +80,7 @@ export interface DueReviewQuestionDto {
   totalCorrect: number;
   history: Array<{
     date: string;
-    rating: 'fail' | 'hard' | 'good' | 'easy';
+    rating: SRSRating;
   }>;
   isBookmarked: boolean;
   notes: string;

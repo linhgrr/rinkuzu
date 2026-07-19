@@ -1,4 +1,5 @@
-import type { SRSRating, SRSReviewResult } from '@/entities/SpacedRepetition';
+import type { SRSReviewResult } from '@/entities/SpacedRepetition';
+import type { SRSRating } from '@/shared/constants/srs-rating';
 
 /**
  * SuperMemo-2 Algorithm Implementation

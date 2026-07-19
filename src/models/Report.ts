@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import type { ReportStatus } from '@/entities/Report';
+import { REPORT_STATUSES, type ReportStatus } from '@/shared/constants/report-status';
 
 interface ReportDocument {
   quizId: string;
@@ -45,7 +45,7 @@ const reportSchema = new mongoose.Schema<ReportDocument>(
     },
     status: {
       type: String,
-      enum: ['pending', 'resolved', 'dismissed'],
+      enum: REPORT_STATUSES,
       default: 'pending',
     },
     resolvedAt: {

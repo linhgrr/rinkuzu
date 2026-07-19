@@ -5,6 +5,7 @@ import {
   ACCOUNT_DISABLE_ACTIVE,
   ACCOUNT_DISABLE_DISABLED,
 } from '@/shared/constants/account-disable';
+import { USER_ROLES, type UserRole } from '@/shared/constants/user-role';
 
 interface UserDocument extends Document {
   email: string;
@@ -13,7 +14,7 @@ interface UserDocument extends Document {
   displayName?: string;
   bio?: string;
   avatar?: string;
-  role: 'admin' | 'user';
+  role: UserRole;
 
   /** Canonical soft-disable: 0 = active, 1 = disabled. Never hard-delete accounts. */
   disable: typeof ACCOUNT_DISABLE_ACTIVE | typeof ACCOUNT_DISABLE_DISABLED;
@@ -75,7 +76,7 @@ const UserSchema = new Schema<UserDocument>({
   avatar: { type: String },
   role: {
     type: String,
-    enum: ['admin', 'user'],
+    enum: USER_ROLES,
     default: 'user',
   },
   disable: {

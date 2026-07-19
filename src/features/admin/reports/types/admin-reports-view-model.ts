@@ -1,4 +1,6 @@
-export type AdminReportStatusViewModel = 'pending' | 'resolved' | 'dismissed';
+import type { ReportStatus } from '@/shared/constants/report-status';
+
+export type AdminReportStatusViewModel = ReportStatus;
 export type AdminReportFilterViewModel = 'all' | AdminReportStatusViewModel;
 
 export interface AdminReportViewModel {

@@ -1,3 +1,4 @@
+import type { AccountDisableState } from '@/shared/constants/account-disable';
 import type { MongoIdLike } from '@/types/mongo';
 
 export interface UserSubscriptionPersistenceRecord {
@@ -17,13 +18,15 @@ export interface UserPersistenceRecord {
   bio?: string;
   avatar?: string;
   role: 'admin' | 'user';
+  disable: AccountDisableState;
+  disabledAt?: Date | null;
+  disabledBy?: MongoIdLike | null;
   subscription?: UserSubscriptionPersistenceRecord;
   createdAt: Date;
 }
 
 export interface PublicProfileUserPersistenceRecord {
   _id: MongoIdLike;
-  email: string;
   name?: string;
   displayName?: string;
   bio?: string;
@@ -33,4 +36,5 @@ export interface PublicProfileUserPersistenceRecord {
 
 export interface UserSubscriptionProjection {
   subscription?: UserSubscriptionPersistenceRecord;
+  disable?: AccountDisableState;
 }

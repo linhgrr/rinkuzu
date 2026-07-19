@@ -72,7 +72,6 @@ type QuizPlayerQuiz = Omit<QuizPlayViewModel, 'questions'> & {
 function toAuthorIdentity(author: QuizPlayAuthorViewModel): UserIdentity {
   return {
     id: author.id,
-    ...(author.email !== undefined ? { email: author.email } : {}),
     ...(author.name !== undefined ? { name: author.name } : {}),
     ...(author.displayName !== undefined ? { displayName: author.displayName } : {}),
     ...(author.avatar !== undefined ? { avatar: author.avatar } : {}),

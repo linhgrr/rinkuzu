@@ -9,7 +9,7 @@ export class QuizListDtoMapper {
       id: quiz.id,
       title: quiz.title,
       slug: quiz.slug,
-      author: toQuizAuthorDto(quiz.author, { includeEmail: false }),
+      author: toQuizAuthorDto(quiz.author),
       folder: quiz.folder ?? null,
       isPrivate: quiz.isPrivate,
       questionCount: quiz.questionCount ?? quiz.questions.length,

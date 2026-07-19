@@ -25,6 +25,11 @@
       "id": "admin-access",
       "tag": "@critical-admin",
       "description": "Enforce admin access and complete a representative administration action"
+    },
+    {
+      "id": "admin-account-disable",
+      "tag": "@critical-admin-disable",
+      "description": "Admin disable/restore: session revocation via authVersion, filter listing, and fresh login after restore"
     }
   ]
 }

@@ -5,7 +5,6 @@ import { PublicProfileDtoMapper } from '@/mappers/user/PublicProfileDtoMapper';
 
 const user: PublicProfileUser = {
   id: '507f191e810c19729de860ea',
-  email: 'learner@example.com',
   displayName: 'Learner',
   createdAt: new Date('2026-07-01T00:00:00Z'),
 };
@@ -37,5 +36,20 @@ describe('PublicProfileDtoMapper', () => {
       quizzes: [{ id: quiz.id }],
       pagination,
     });
+  });
+
+  it('never emits email on the public profile user tree', () => {
+    const pagination = {
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 0,
+      itemsPerPage: 12,
+      hasNextPage: false,
+      hasPrevPage: false,
+    };
+    const dto = PublicProfileDtoMapper.toDto(user, [], pagination);
+
+    expect(dto.user).not.toHaveProperty('email');
+    expect(JSON.stringify(dto.user)).not.toMatch(/"email"/);
   });
 });

@@ -1,6 +1,5 @@
 interface QuizEditorAuthorViewModel {
   id: string;
-  email?: string;
   name?: string;
   displayName?: string;
   avatar?: string;

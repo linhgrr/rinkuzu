@@ -1,6 +1,6 @@
+/** Public discussion author — stable non-PII fields only (no email). */
 export interface DiscussionAuthor {
   id: string;
-  email: string;
   name?: string;
   displayName?: string;
   avatar?: string;

@@ -111,12 +111,13 @@ function createUserRepository(overrides: Partial<IUserRepository> = {}): Mocked<
       id: authorId,
       email: 'teacher@example.com',
       role: 'user',
+      disable: 0,
       createdAt: new Date('2026-01-01T00:00:00Z'),
     }),
+    findByIdIncludingDisabled: vi.fn(),
     findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
-    updateRole: vi.fn(),
-    delete: vi.fn(),
+    applyAdminMutation: vi.fn(),
     findAll: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
@@ -226,6 +227,7 @@ describe('QuizCrudService', () => {
         id: authorId,
         email: 'admin@example.com',
         role: 'admin',
+        disable: 0,
         createdAt: new Date('2026-01-01T00:00:00Z'),
       });
       entitlementMocks.resolveEntitlements.mockClear();

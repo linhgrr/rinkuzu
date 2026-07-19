@@ -146,7 +146,8 @@ export class AdminBillingRepository implements IAdminBillingRepository {
 
   async findUserById(userId: string): Promise<AdminBillingUserIdentity | null> {
     await connectDB();
-    const user = await User.findById(userId).select('email').lean<{
+    // Active accounts only — disabled users cannot receive admin grants.
+    const user = await User.findOne({ _id: userId, disable: 0 }).select('email').lean<{
       _id: Types.ObjectId;
       email: string;
     }>();
@@ -165,8 +166,9 @@ export class AdminBillingRepository implements IAdminBillingRepository {
         const plan = await Plan.exists({ _id: input.planId, isActive: true }).session(session);
         if (!plan) throw new BillingPlanUnavailableError();
 
-        const user = await User.findByIdAndUpdate(
-          input.userId,
+        // Final atomic boundary: only active accounts (disable: 0) may receive grants.
+        const user = await User.findOneAndUpdate(
+          { _id: input.userId, disable: 0 },
           {
             subscription: {
               type: input.planId,

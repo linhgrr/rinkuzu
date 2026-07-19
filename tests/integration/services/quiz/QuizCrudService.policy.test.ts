@@ -37,10 +37,10 @@ describe('QuizCrudService quiz publication policy', () => {
   const userRepository: Mocked<IUserRepository> = {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findByIdIncludingDisabled: vi.fn(),
     findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
-    updateRole: vi.fn(),
-    delete: vi.fn(),
+    applyAdminMutation: vi.fn(),
     findAll: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
@@ -88,6 +88,7 @@ describe('QuizCrudService quiz publication policy', () => {
       id: 'user-1',
       email: 'user@example.com',
       role: 'user',
+      disable: 0,
       createdAt: new Date('2026-01-01T00:00:00Z'),
     };
     vi.mocked(userRepository.findById).mockResolvedValue(user);
@@ -139,6 +140,7 @@ describe('QuizCrudService quiz publication policy', () => {
       id: 'admin-1',
       email: 'admin@example.com',
       role: 'admin',
+      disable: 0,
       createdAt: new Date('2026-01-01T00:00:00Z'),
     });
     const service = new QuizCrudService(quizRepository, userRepository);

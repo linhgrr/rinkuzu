@@ -5,6 +5,7 @@ import Google from 'next-auth/providers/google';
 import authConfig from '@/auth.config';
 import { extractRequestContext } from '@/lib/audit';
 import { getAuthSignInRepository, getAuthSignInService } from '@/lib/auth-sign-in-factory';
+import { selectAuthDbUserId } from '@/lib/auth/auth-db-identity';
 import { applySessionUser, clearSessionUser } from '@/lib/auth/session-projection';
 import { env } from '@/lib/env';
 import { AuthAuditAdapter } from '@/lib/integrations/auth-audit';
@@ -12,15 +13,27 @@ import { NextDeferredTaskScheduler } from '@/lib/integrations/next-deferred-task
 import { logger } from '@/lib/logger';
 import { loginSchema } from '@/lib/validation/auth';
 import { toCredentialsSignInError } from '@/services/auth/CredentialsSignInErrors';
+import { isAuthVersion } from '@/shared/constants/account-disable';
 
 const logoutAudit = new AuthAuditAdapter();
 const logoutScheduler = new NextDeferredTaskScheduler();
 
 type GoogleProfile = {
+  /** Canonical nonempty Google subject; becomes Auth.js providerAccountId. */
+  sub: string;
   email?: string;
   emailVerified: boolean;
   displayName?: string;
   avatar?: string;
+};
+
+type AuthJsUserClaimsSource = {
+  email: string;
+  role: 'admin' | 'user';
+  avatar?: string;
+  displayName?: string;
+  passwordChangedAt: number | null;
+  authVersion: number;
 };
 
 function readTrimmedString(record: Record<string, unknown>, key: string): string | undefined {
@@ -30,22 +43,76 @@ function readTrimmedString(record: Record<string, unknown>, key: string): string
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function parseGoogleProfile(profile: unknown): GoogleProfile {
+/**
+ * Parses Google OIDC profile fields. Requires a nonempty `sub` so Auth.js can
+ * store a stable providerAccountId; fails closed when sub is missing.
+ */
+function parseGoogleProfile(profile: unknown): GoogleProfile | null {
   if (typeof profile !== 'object' || profile === null) {
-    return { emailVerified: false };
+    return null;
   }
 
   const record = profile as Record<string, unknown>;
+  const sub = readTrimmedString(record, 'sub');
+  if (!sub) return null;
+
   const email = readTrimmedString(record, 'email')?.toLowerCase();
   const displayName = readTrimmedString(record, 'name');
   const avatar = readTrimmedString(record, 'picture');
 
   return {
+    sub,
     ...(email ? { email } : {}),
     emailVerified: record['email_verified'] === true,
     ...(displayName ? { displayName } : {}),
     ...(avatar ? { avatar } : {}),
   };
+}
+
+function toAuthJsUserClaims(user: AuthJsUserClaimsSource) {
+  return {
+    email: user.email,
+    role: user.role,
+    ...(user.avatar ? { avatar: user.avatar } : {}),
+    ...(user.displayName ? { displayName: user.displayName } : {}),
+    passwordChangedAt: user.passwordChangedAt,
+    authVersion: user.authVersion,
+  };
+}
+
+function clearAuthTokenClaims(token: Record<string, unknown>): void {
+  delete token['sub'];
+  delete token['id'];
+  delete token['role'];
+  delete token['avatar'];
+  delete token['displayName'];
+  delete token['pwc'];
+  delete token['av'];
+  delete token['email'];
+}
+
+function assignAuthenticatedClaims(
+  token: Record<string, unknown>,
+  user: {
+    id: string;
+    email: string;
+    role: 'admin' | 'user';
+    avatar?: string;
+    displayName?: string;
+    passwordChangedAt: number | null;
+    authVersion: number;
+  },
+): void {
+  token['sub'] = user.id;
+  token['id'] = user.id;
+  token['role'] = user.role;
+  token['email'] = user.email;
+  token['pwc'] = user.passwordChangedAt;
+  token['av'] = user.authVersion;
+  if (user.avatar) token['avatar'] = user.avatar;
+  else delete token['avatar'];
+  if (user.displayName) token['displayName'] = user.displayName;
+  else delete token['displayName'];
 }
 
 const providers = [
@@ -67,13 +134,10 @@ const providers = [
       const result = await getAuthSignInService().authenticateCredentials(parsed.data, context);
       if (!result.success) throw toCredentialsSignInError(result);
 
+      // Credentials: repository user.id is the durable Mongo id (Auth.js keeps it).
       return {
         id: result.user.id,
-        email: result.user.email,
-        role: result.user.role,
-        ...(result.user.avatar ? { avatar: result.user.avatar } : {}),
-        ...(result.user.displayName ? { displayName: result.user.displayName } : {}),
-        passwordChangedAt: result.user.passwordChangedAt,
+        ...toAuthJsUserClaims(result.user),
       };
     },
   }),
@@ -89,6 +153,37 @@ const providers = [
               response_type: 'code',
             },
           },
+          async profile(profile) {
+            const google = parseGoogleProfile(profile);
+            if (!google?.email || !google.emailVerified) {
+              throw new Error('Google email is missing or not verified');
+            }
+
+            // Exactly one repository upsert path for Google — never from jwt/adapter.
+            const result = await getAuthSignInService().authenticateGoogle(
+              {
+                email: google.email,
+                emailVerified: true,
+                ...(google.displayName ? { displayName: google.displayName } : {}),
+                ...(google.avatar ? { avatar: google.avatar } : {}),
+              },
+              { ip: null, userAgent: null },
+            );
+
+            if (!result.success) {
+              throw new Error('Google authentication rejected');
+            }
+
+            // Auth core overwrites `id` with randomUUID and uses the returned id as
+            // providerAccountId. Return Google sub as id; carry Mongo id as dbUserId.
+            return {
+              id: google.sub,
+              dbUserId: result.user.id,
+              name: result.user.displayName ?? result.user.email,
+              image: result.user.avatar,
+              ...toAuthJsUserClaims(result.user),
+            };
+          },
         }),
       ]
     : []),
@@ -99,58 +194,34 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   providers,
   callbacks: {
     ...authConfig.callbacks,
-    async signIn({ account, profile }) {
-      if (account?.provider !== 'google') return true;
-      const google = parseGoogleProfile(profile);
-      return Boolean(google.email && google.emailVerified);
-    },
-    async jwt({ token, user, account, profile }) {
+    async signIn({ account, user }) {
       if (account?.provider === 'google') {
-        const google = parseGoogleProfile(profile);
-        const result = await getAuthSignInService().authenticateGoogle(
-          {
-            ...(google.email ? { email: google.email } : {}),
-            emailVerified: google.emailVerified,
-            ...(google.displayName ? { displayName: google.displayName } : {}),
-            ...(google.avatar ? { avatar: google.avatar } : {}),
-          },
-          { ip: null, userAgent: null },
-        );
-
-        if (!result.success) {
-          logger.warn({ code: result.code }, 'Google sign-in rejected');
-          delete token.sub;
-          delete token.role;
-          delete token.avatar;
-          delete token.displayName;
-          delete token.pwc;
-          delete token.email;
+        // Fail closed: Google must present durable dbUserId + authVersion.
+        // Never accept Auth core's random user.id as the session subject.
+        const dbUserId = selectAuthDbUserId(account.provider, user);
+        if (!dbUserId || !isAuthVersion(user.authVersion)) return false;
+        return true;
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      if (user) {
+        const provider = account?.provider ?? 'credentials';
+        const dbUserId = selectAuthDbUserId(provider, user);
+        if (!dbUserId || !isAuthVersion(user.authVersion)) {
+          clearAuthTokenClaims(token as Record<string, unknown>);
           return token;
         }
 
-        token.sub = result.user.id;
-        token.id = result.user.id;
-        token.role = result.user.role;
-        token.email = result.user.email;
-        token.pwc = result.user.passwordChangedAt;
-        if (result.user.avatar) token.avatar = result.user.avatar;
-        else delete token.avatar;
-        if (result.user.displayName) token.displayName = result.user.displayName;
-        else delete token.displayName;
-        return token;
-      }
-
-      if (user) {
-        token.sub = user.id;
-        token.id = user.id;
-        token.role = user.role;
-        token.pwc = user.passwordChangedAt ?? null;
-        if (typeof user.email === 'string') token.email = user.email;
-        else delete token.email;
-        if (user.avatar) token.avatar = user.avatar;
-        else delete token.avatar;
-        if (user.displayName) token.displayName = user.displayName;
-        else delete token.displayName;
+        assignAuthenticatedClaims(token as Record<string, unknown>, {
+          id: dbUserId,
+          email: typeof user.email === 'string' ? user.email : '',
+          role: user.role,
+          ...(user.avatar ? { avatar: user.avatar } : {}),
+          ...(user.displayName ? { displayName: user.displayName } : {}),
+          passwordChangedAt: user.passwordChangedAt ?? null,
+          authVersion: user.authVersion,
+        });
       }
 
       return token;

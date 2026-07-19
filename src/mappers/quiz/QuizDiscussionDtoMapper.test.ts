@@ -11,7 +11,6 @@ const discussion: Discussion = {
       id: 'comment-1',
       author: {
         id: 'user-1',
-        email: 'learner@example.com',
         name: 'Learner',
         displayName: 'Rin Learner',
         avatar: 'https://example.com/avatar.png',
@@ -36,7 +35,6 @@ describe('QuizDiscussionDtoMapper', () => {
           id: 'comment-1',
           author: {
             id: 'user-1',
-            email: 'learner@example.com',
             name: 'Rin Learner',
             avatar: 'https://example.com/avatar.png',
           },
@@ -51,7 +49,7 @@ describe('QuizDiscussionDtoMapper', () => {
     });
   });
 
-  it('does not expose persistence identity keys in the DTO shape', () => {
+  it('does not expose persistence identity keys or author email in the DTO shape', () => {
     const dto = QuizDiscussionDtoMapper.toDto(discussion);
 
     expect(dto).not.toHaveProperty('_id');
@@ -60,5 +58,7 @@ describe('QuizDiscussionDtoMapper', () => {
     if (!comment) throw new Error('Expected one mapped discussion comment');
     expect(comment).not.toHaveProperty('_id');
     expect(comment.author).not.toHaveProperty('_id');
+    expect(comment.author).not.toHaveProperty('email');
+    expect(JSON.stringify(dto)).not.toMatch(/"email"/);
   });
 });

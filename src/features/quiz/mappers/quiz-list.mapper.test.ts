@@ -11,7 +11,6 @@ describe('toQuizListViewModel', () => {
           slug: 'architecture',
           author: {
             id: 'user-1',
-            email: 'author@example.com',
             displayName: 'Author',
           },
           folder: 'folder-1',
@@ -39,10 +38,7 @@ describe('toQuizListViewModel', () => {
           slug: 'architecture',
           author: {
             id: 'user-1',
-            email: 'author@example.com',
-            name: undefined,
             displayName: 'Author',
-            avatar: undefined,
           },
           folderId: 'folder-1',
           isPrivate: false,

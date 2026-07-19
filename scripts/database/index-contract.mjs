@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-16.4';
+export const INDEX_CONTRACT_VERSION = '2026-07-19.2';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -155,6 +155,10 @@ export const INDEX_CONTRACT = Object.freeze([
   required('users.email', 'users', { email: 1 }, { unique: true }),
   required('users.role-recent', 'users', { role: 1, createdAt: -1 }),
   required('users.recent', 'users', { createdAt: -1 }),
+  /** Admin user list filtered by disable status, sorted by newest first. */
+  required('users.disable-recent', 'users', { disable: 1, createdAt: -1 }),
+  /** Active-admin invariant count: role + disable exact match. */
+  required('users.role-disable', 'users', { role: 1, disable: 1 }),
   required(
     'users.password-reset-token',
     'users',

@@ -24,7 +24,6 @@ function mapAuthor(
   if (typeof author === 'object' && '_id' in author) {
     return {
       id: serializeId(author._id, 'quiz.author._id'),
-      ...(author.email === undefined ? {} : { email: author.email }),
       ...mapOptionalUserProfileFields(author),
     };
   }

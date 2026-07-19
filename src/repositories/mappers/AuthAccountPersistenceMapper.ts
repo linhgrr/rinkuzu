@@ -6,9 +6,17 @@ import type {
 } from '@/entities/AuthAccount';
 import { serializeId } from '@/lib/mongo-id';
 import type { AuthAccountPersistenceRecord } from '@/repositories/types/AuthAccountPersistence';
+import { isAuthVersion } from '@/shared/constants/account-disable';
 
 type AuthAccountBase = AuthAccountIdentity &
   Pick<AuthAccountSecurityState, 'passwordHash' | 'emailVerified'>;
+
+function requireAuthVersion(value: unknown): number {
+  if (!isAuthVersion(value)) {
+    throw new Error('authAccount.authVersion must be a non-negative integer');
+  }
+  return value;
+}
 
 export class AuthAccountPersistenceMapper {
   static toIdentity(record: AuthAccountPersistenceRecord): AuthAccountIdentity {
@@ -40,6 +48,7 @@ export class AuthAccountPersistenceMapper {
   static toLoginAccount(record: AuthAccountPersistenceRecord): AuthLoginAccount {
     return {
       ...AuthAccountPersistenceMapper.toBase(record),
+      authVersion: requireAuthVersion(record.authVersion),
       ...(record.avatar == null ? {} : { avatar: record.avatar }),
       ...(record.displayName == null ? {} : { displayName: record.displayName }),
       ...(record.passwordChangedAt == null ? {} : { passwordChangedAt: record.passwordChangedAt }),
@@ -62,6 +71,7 @@ export class AuthAccountPersistenceMapper {
   static toAuthenticatedUser(record: AuthAccountPersistenceRecord): AuthenticatedUser {
     return {
       ...AuthAccountPersistenceMapper.toIdentity(record),
+      authVersion: requireAuthVersion(record.authVersion),
       ...(record.avatar == null ? {} : { avatar: record.avatar }),
       ...(record.displayName == null ? {} : { displayName: record.displayName }),
       passwordChangedAt: record.passwordChangedAt?.getTime() ?? null,

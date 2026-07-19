@@ -23,6 +23,8 @@ export interface FailedLoginPolicy {
 export interface SuccessfulLoginData {
   now: Date;
   ip: string | null;
+  /** Exact authVersion loaded with the login account (CAS against disable/restore ABA). */
+  expectedAuthVersion: number;
   passwordHash?: string;
 }
 
@@ -35,6 +37,7 @@ export interface VerifiedGoogleAccountData {
 }
 
 export interface IAuthAccountRepository {
+  /** Active accounts only. Disabled emails appear absent (generic outward behavior). */
   findByEmail(email: string): Promise<AuthAccountSecurityState | null>;
 
   createPending(data: CreatePendingAccountData): Promise<AuthAccountIdentity | null>;
@@ -72,5 +75,9 @@ export interface IAuthSignInRepository {
     data: SuccessfulLoginData,
   ): Promise<boolean>;
 
-  upsertVerifiedGoogleAccount(data: VerifiedGoogleAccountData): Promise<AuthenticatedUser>;
+  /**
+   * Upserts only active accounts (`email` + `disable: 0`).
+   * Returns null when the email belongs to a disabled account (duplicate-key) or is unusable.
+   */
+  upsertVerifiedGoogleAccount(data: VerifiedGoogleAccountData): Promise<AuthenticatedUser | null>;
 }

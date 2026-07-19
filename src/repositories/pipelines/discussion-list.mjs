@@ -1,6 +1,6 @@
+/** Public author payload — stable non-PII fields only (no email). */
 const DISCUSSION_AUTHOR_PROJECTION = {
   _id: '$$author._id',
-  email: '$$author.email',
   name: '$$author.name',
   displayName: '$$author.displayName',
   avatar: '$$author.avatar',
@@ -25,7 +25,6 @@ export function buildDiscussionListPipeline(quizId) {
           {
             $project: {
               _id: 1,
-              email: 1,
               name: 1,
               displayName: 1,
               avatar: 1,

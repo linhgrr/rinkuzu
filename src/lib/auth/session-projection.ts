@@ -2,6 +2,7 @@ import type { Session } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 
 import type { AuthenticatedUser } from '@/entities/AuthAccount';
+import { isAuthVersion } from '@/shared/constants/account-disable';
 
 function stripSessionUser(session: Session): Session {
   const { user: _ignored, ...sessionWithoutUser } = session;
@@ -34,7 +35,8 @@ export function projectTokenToSession(session: Session, token: JWT): Session {
 
 /**
  * Fail-closed session hydration after a DB lookup.
- * A missing account or a password change newer than the JWT revokes the session.
+ * Requires exact JWT `av` === database `authVersion` and active account.
+ * Missing `av` always revokes. Password change newer than JWT also revokes.
  */
 export function applySessionUser(
   session: Session,
@@ -42,6 +44,10 @@ export function applySessionUser(
   dbUser: AuthenticatedUser | null,
 ): Session {
   if (!token.sub || !dbUser) return stripSessionUser(session);
+
+  if (!isAuthVersion(token.av) || token.av !== dbUser.authVersion) {
+    return stripSessionUser(session);
+  }
 
   const tokenPasswordChangedAt = typeof token.pwc === 'number' ? token.pwc : null;
   if (

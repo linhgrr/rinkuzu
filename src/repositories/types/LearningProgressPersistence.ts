@@ -4,7 +4,6 @@ import type { MongoIdLike } from '@/types/mongo';
 
 export interface LibraryQuizAuthorPersistenceRecord {
   _id: MongoIdLike;
-  email?: string;
   name?: string;
   displayName?: string;
   avatar?: string;

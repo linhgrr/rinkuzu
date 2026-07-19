@@ -82,10 +82,10 @@ function createService() {
   const userRepository: Mocked<IUserRepository> = {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findByIdIncludingDisabled: vi.fn(),
     findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
-    updateRole: vi.fn(),
-    delete: vi.fn(),
+    applyAdminMutation: vi.fn(),
     findAll: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),

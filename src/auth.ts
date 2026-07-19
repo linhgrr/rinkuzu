@@ -130,7 +130,7 @@ const providers = [
         throw toCredentialsSignInError({ success: false, code: 'invalid_credentials' });
       }
 
-      const context = request ? extractRequestContext(request) : { ip: null, userAgent: null };
+      const context = extractRequestContext(request);
       const result = await getAuthSignInService().authenticateCredentials(parsed.data, context);
       if (!result.success) throw toCredentialsSignInError(result);
 

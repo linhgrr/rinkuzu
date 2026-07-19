@@ -114,7 +114,7 @@ type CredentialsProvider = {
   id: string;
   authorize: (
     credentials: Record<string, unknown> | undefined,
-    request?: Request,
+    request: Request,
   ) => Promise<Record<string, unknown>>;
 };
 
@@ -444,10 +444,15 @@ describe('production Auth.js config (src/auth.ts)', () => {
       },
     });
 
-    const user = await credentialsProvider().authorize({
-      email: 'cred@example.com',
-      password: 'Password1!',
-    });
+    const user = await credentialsProvider().authorize(
+      {
+        email: 'cred@example.com',
+        password: 'Password1!',
+      },
+      new Request('https://www.rinkuzu.app/api/auth/callback/credentials', {
+        method: 'POST',
+      }),
+    );
 
     expect(user).toMatchObject({
       id: 'mongo-cred-9',

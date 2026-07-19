@@ -418,7 +418,7 @@ test.describe('production critical paths', () => {
             success: true,
             data: {
               expiresIn: 300,
-              s3Key: `e2e/${fixture.runId}/material.pdf`,
+              s3Key: `uploads/adaptive_pipeline/${fixture.regular.id.toHexString()}/e2e-${fixture.runId}.pdf`,
               uploadUrl: `${origin}/__e2e-object-storage/${fixture.runId}`,
             },
           }),

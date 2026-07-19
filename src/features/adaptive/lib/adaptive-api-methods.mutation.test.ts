@@ -772,6 +772,63 @@ describe('adaptive-api-methods mutation coverage', () => {
       });
     });
 
+    it.each([
+      { exerciseIds: ['', 'valid-id'], expectedMessage: 'Missing exercise_id' },
+      { exerciseIds: ['duplicate-id', 'duplicate-id'], expectedMessage: 'Duplicate exercise_id' },
+    ])(
+      'rejects invalid history row identity: $expectedMessage',
+      async ({ exerciseIds, expectedMessage }) => {
+        const exercise = (exerciseId: string) => ({
+          exercise_id: exerciseId,
+          concept_name: 'Concept',
+          concept_idx: 0,
+          bloom_level: 1,
+          question: 'Question?',
+          explanation: 'Explanation',
+          payload: { exercise_type: 'mcq', options: { A: 'Answer' }, correct_option: 'A' },
+          explanation_correct: 'Correct',
+          explanation_incorrect: 'Incorrect',
+          theory: null,
+          is_correct: true,
+          timestamp: 100,
+          user_answer: 'A',
+        });
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockResolvedValue(
+            okJson({
+              job_id: 'job-invalid-history',
+              filename: 'history.pdf',
+              subject_id: 'subject-1',
+              status: 'active',
+              total_correct: 2,
+              total_answered: 2,
+              accuracy: 1,
+              step: 2,
+              max_steps: 10,
+              avg_mastery: 0.5,
+              unlocked_concepts: 1,
+              locked_concepts: 0,
+              mastered_concepts: 0,
+              progress_percent: 20,
+              concept_names: { '0': 'Concept' },
+              concept_mastery: [0.5],
+              bloom_mastery: [[0.5]],
+              exercise_history: exerciseIds.map(exercise),
+              created_at: 1,
+              updated_at: 2,
+              last_session_id: 'session-1',
+            }),
+          ),
+        );
+
+        await expect(getSubjectHistoryDetailFresh('job-invalid-history')).rejects.toMatchObject({
+          code: 'upstream_invalid_envelope',
+          message: expect.stringContaining(expectedMessage),
+        });
+      },
+    );
+
     it('getSubjectHistoryDetailFresh and getSubjectsFresh bypass cache', async () => {
       const spy = vi
         .fn()

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import mongoose from 'mongoose';
-import { RateLimiterMongo } from 'rate-limiter-flexible';
+import { RateLimiterMongo, RateLimiterRes } from 'rate-limiter-flexible';
 
 import connectDB from '@/lib/mongoose';
 import { apiErr } from '@/lib/api/response';
@@ -62,6 +62,8 @@ function getLimiter(action: AuthRateLimitAction): RateLimiterMongo {
     keyPrefix: `auth:${action}`,
     points: limit.points,
     duration: limit.durationSec,
+    // Production indexes are an explicit deployment contract, not request-path DDL.
+    disableIndexesCreation: process.env.NODE_ENV === 'production',
   });
   limiterCache.set(action, limiter);
   return limiter;
@@ -87,9 +89,12 @@ export async function checkAuthRateLimit(
       resetSeconds: Math.ceil(result.msBeforeNext / 1000),
       limit: limit.points,
     };
-  } catch (err) {
-    const e = err as { msBeforeNext?: number };
-    const ms = typeof e.msBeforeNext === 'number' ? e.msBeforeNext : limit.durationSec * 1000;
+  } catch (error) {
+    // rate-limiter-flexible rejects with RateLimiterRes only when the quota is
+    // exhausted. Operational failures (Mongo outage, timeout, auth error) must
+    // remain failures instead of being mislabeled as a legitimate 429.
+    if (!(error instanceof RateLimiterRes)) throw error;
+    const ms = error.msBeforeNext;
     return {
       allowed: false,
       retryAfterSeconds: Math.max(1, Math.ceil(ms / 1000)),

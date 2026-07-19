@@ -66,9 +66,10 @@ async isUserPremium(userId: string): Promise<boolean> {
 
 #### Background Job
 
-- **Script**: `src/scripts/checkExpiredSubscriptions.js`
+- **Endpoint**: `POST /api/admin/subscriptions/check-expired`
 - **Schedule**: Daily at 1:00 AM
-- **Function**: Finds and updates expired subscriptions
+- **Authentication**: `Authorization: Bearer <SUBSCRIPTION_CRON_SECRET>`
+- **Function**: Runs the shared subscription service that finds and updates expired subscriptions
 
 #### Manual Trigger
 
@@ -119,23 +120,22 @@ if (durationText.includes('tháng') || durationText.includes('month')) {
 
 ## Deployment Setup
 
-### 1. Cron Job Setup (Production)
+### 1. Scheduler Setup (Production)
 
 ```bash
-# Add to server crontab
-0 1 * * * cd /path/to/app && node src/scripts/checkExpiredSubscriptions.js
+# Configure the scheduler's secret from the deployment environment.
+curl --fail-with-body \
+  -X POST \
+  -H "Authorization: Bearer ${SUBSCRIPTION_CRON_SECRET}" \
+  https://www.rinkuzu.app/api/admin/subscriptions/check-expired
 ```
 
-### 2. Docker Setup
-
-```dockerfile
-# Add to Dockerfile
-COPY src/scripts/checkExpiredSubscriptions.js /app/scripts/
-```
-
-### 3. Environment Variables
+### 2. Environment Variables
 
 ```env
+# Required for the expiration scheduler. Generate a random value of at least 32 characters.
+SUBSCRIPTION_CRON_SECRET=replace_with_a_random_secret
+
 # Required for PayOS integration
 PAYOS_CLIENT_ID=your_client_id
 PAYOS_API_KEY=your_api_key
@@ -242,8 +242,8 @@ user.subscription = {
 ### Common Issues
 
 1. **Subscription không tự động expire**
-   - Check cron job status
-   - Verify script permissions
+   - Check scheduler delivery logs and HTTP status
+   - Verify `SUBSCRIPTION_CRON_SECRET` matches the bearer token
    - Check database connection
 
 2. **Thời gian tính toán sai**
@@ -259,12 +259,12 @@ user.subscription = {
 ### Debug Commands
 
 ```bash
-# Manual run expiration check
-node src/scripts/checkExpiredSubscriptions.js
-
 # Check subscription status
 curl -X GET /api/subscription/status
 
-# Admin trigger expiration check
-curl -X POST /api/admin/subscriptions/check-expired
+# Scheduler trigger expiration check
+curl --fail-with-body \
+  -X POST \
+  -H "Authorization: Bearer ${SUBSCRIPTION_CRON_SECRET}" \
+  https://www.rinkuzu.app/api/admin/subscriptions/check-expired
 ```

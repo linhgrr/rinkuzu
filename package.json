@@ -139,7 +139,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.2",
-    "@commitlint/config-conventional": "^20.5.0",
+    "@commitlint/config-conventional": "^21.2.0",
     "@lhci/cli": "^0.15.1",
     "@next/bundle-analyzer": "16.2.10",
     "@next/env": "16.2.10",

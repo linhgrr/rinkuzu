@@ -706,7 +706,7 @@ export default function AdminUsersPage() {
     keepPreviousData: true,
   });
 
-  const { data: plansData } = useSWR('/api/admin/plans', fetchAdminBillingPlanViewModels);
+  const { data: plansData } = useSWR('/api/admin/plans', () => fetchAdminBillingPlanViewModels());
 
   const users = usersData?.users ?? [];
   const plans = plansData ?? [];

@@ -42,8 +42,7 @@ export function createLibraryPoller({
 }: LibraryPollerOptions): LibraryPoller {
   let timerId: ReturnType<typeof setTimeout> | null = null;
   let currentTick: Promise<void> | null = null;
-  let lifecycleVersion = 0;
-  let stopped = false;
+  let lifecycleToken = Symbol('library-poller');
 
   const clearTimer = (): void => {
     if (timerId !== null) {
@@ -57,27 +56,26 @@ export function createLibraryPoller({
     timerId = schedule(() => void tick(), delayMs);
   };
 
-  const runTick = async (version: number): Promise<void> => {
+  const runTick = async (token: symbol): Promise<void> => {
     try {
       let jobs: PipelineJobListItem[];
       try {
         jobs = await listJobs();
       } catch {
         // On list error: schedule a retry at MAX delay, do not crash.
-        if (!stopped && version === lifecycleVersion) {
+        if (token === lifecycleToken) {
           scheduleNext(MAX_DELAY_MS);
         }
         return;
       }
 
-      if (stopped || version !== lifecycleVersion) return;
+      if (token !== lifecycleToken) return;
 
       onJobs(jobs);
 
       const activeJobs = jobs.filter((j) => !isTerminal(j.status));
       if (activeJobs.length === 0) {
         // All terminal — stop polling.
-        stopped = true;
         clearTimer();
         return;
       }
@@ -88,37 +86,34 @@ export function createLibraryPoller({
       const delayMs = Math.min(Math.max(MIN_DELAY_MS, minRetrySeconds * 1_000), MAX_DELAY_MS);
       scheduleNext(delayMs);
     } finally {
-      if (version === lifecycleVersion) {
+      if (token === lifecycleToken) {
         onTickSettled();
       }
     }
   };
 
-  const tick = (): Promise<void> => {
-    if (stopped) return Promise.resolve();
-    if (currentTick) return currentTick;
-
-    const promise = runTick(lifecycleVersion);
+  const tick = async (): Promise<void> => {
+    const promise = runTick(lifecycleToken);
     currentTick = promise;
-    const clearCurrentTick = (): void => {
-      if (currentTick === promise) currentTick = null;
-    };
-    void promise.then(clearCurrentTick, clearCurrentTick);
-    return promise;
+    try {
+      await promise;
+    } finally {
+      currentTick = null;
+    }
   };
 
   const tickNow = async (): Promise<void> => {
     clearTimer();
-    stopped = false;
 
     // Invalidate an older list response before waiting for it to settle. This keeps a
     // pre-mutation response from restoring stale state after retry/cancel completes.
-    const requestedVersion = ++lifecycleVersion;
+    const requestedToken = Symbol('library-poller-refresh');
+    lifecycleToken = requestedToken;
     const activeTick = currentTick;
     if (activeTick) await activeTick;
 
     // A newer refresh or stop supersedes this request while it is waiting.
-    if (stopped || requestedVersion !== lifecycleVersion) return;
+    if (requestedToken !== lifecycleToken) return;
 
     clearTimer();
     await tick();
@@ -149,8 +144,7 @@ export function createLibraryPoller({
       void tickNow();
     },
     stop: () => {
-      stopped = true;
-      lifecycleVersion += 1;
+      lifecycleToken = Symbol('library-poller-stopped');
       clearTimer();
     },
     tickNow,

@@ -366,6 +366,83 @@ describe('createLibraryPoller', () => {
     expect(timers.pendingCount).toBe(0);
   });
 
+  it('does not settle loading for a superseded response before the latest refresh settles', async () => {
+    let resolveStaleList!: (jobs: PipelineJobListItem[]) => void;
+    let resolveFreshList!: (jobs: PipelineJobListItem[]) => void;
+    const listJobs = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<PipelineJobListItem[]>((resolve) => {
+            resolveStaleList = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<PipelineJobListItem[]>((resolve) => {
+            resolveFreshList = resolve;
+          }),
+      );
+    const onTickSettled = vi.fn();
+    const poller = createLibraryPoller({
+      listJobs,
+      retryJob: vi.fn(),
+      cancelJob: vi.fn(),
+      onJobs: vi.fn(),
+      onBusy: vi.fn(),
+      onTickSettled,
+      schedule: (fn, ms) => timers.schedule(fn, ms),
+      unschedule: (id) => timers.unschedule(id),
+    });
+
+    poller.start();
+    const latestRefresh = poller.tickNow();
+    resolveStaleList([makeJob('j1', 'extracting', 1)]);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(listJobs).toHaveBeenCalledTimes(2);
+    expect(onTickSettled).not.toHaveBeenCalled();
+
+    resolveFreshList([makeJob('j1', 'completed', 0)]);
+    await latestRefresh;
+
+    expect(onTickSettled).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not schedule an error retry for a superseded response', async () => {
+    let rejectStaleList!: (error: unknown) => void;
+    const listJobs = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<PipelineJobListItem[]>((_, reject) => {
+            rejectStaleList = reject;
+          }),
+      )
+      .mockResolvedValueOnce([makeJob('j1', 'completed', 0)]);
+    const scheduledDelays: number[] = [];
+    const poller = createTestLibraryPoller({
+      listJobs,
+      retryJob: vi.fn(),
+      cancelJob: vi.fn(),
+      onJobs: vi.fn(),
+      onBusy: vi.fn(),
+      schedule: (fn, ms) => {
+        scheduledDelays.push(ms);
+        return timers.schedule(fn, ms);
+      },
+      unschedule: (id) => timers.unschedule(id),
+    });
+
+    poller.start();
+    const latestRefresh = poller.tickNow();
+    rejectStaleList(new Error('stale network failure'));
+    await latestRefresh;
+
+    expect(listJobs).toHaveBeenCalledTimes(2);
+    expect(scheduledDelays).toHaveLength(0);
+  });
+
   // -------------------------------------------------------------------------
   // 4. List error schedules a retry at MAX (10000ms), doesn't throw
   // -------------------------------------------------------------------------

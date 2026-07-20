@@ -461,4 +461,36 @@ describe('production Auth.js config (src/auth.ts)', () => {
       passwordChangedAt: 50,
     });
   });
+
+  it('credentials authorize rejects missing credentials before calling the service', async () => {
+    await expect(
+      credentialsProvider().authorize(
+        undefined,
+        new Request('https://www.rinkuzu.app/api/auth/callback/credentials', {
+          method: 'POST',
+        }),
+      ),
+    ).rejects.toMatchObject({ code: 'invalid_credentials' });
+
+    expect(authenticateCredentialsMock).not.toHaveBeenCalled();
+  });
+
+  it('credentials authorize maps an authentication service failure', async () => {
+    authenticateCredentialsMock.mockResolvedValueOnce({
+      success: false,
+      code: 'invalid_credentials',
+    });
+
+    await expect(
+      credentialsProvider().authorize(
+        {
+          email: 'missing@example.com',
+          password: 'Password1!',
+        },
+        new Request('https://www.rinkuzu.app/api/auth/callback/credentials', {
+          method: 'POST',
+        }),
+      ),
+    ).rejects.toMatchObject({ code: 'invalid_credentials' });
+  });
 });

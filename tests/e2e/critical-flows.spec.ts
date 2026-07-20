@@ -408,11 +408,31 @@ test.describe('production critical paths', () => {
   }, testInfo) => {
     test.setTimeout(60_000);
     await withDatabaseFixture(testInfo, async (fixture) => {
+      let objectStorageUploadBytes = 0;
+      await page.exposeFunction('recordObjectStorageUploadBytes', (byteLength: number) => {
+        objectStorageUploadBytes = byteLength;
+      });
+      await page.addInitScript(() => {
+        const originalFetch = window.fetch.bind(window);
+        window.fetch = async (input, init) => {
+          const requestUrl =
+            typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+          if (requestUrl.includes('/__e2e-object-storage/') && init?.method === 'PUT') {
+            const uploadBodyBytes = init.body instanceof Blob ? init.body.size : 0;
+            await (
+              window as typeof window & {
+                recordObjectStorageUploadBytes: (byteLength: number) => Promise<void>;
+              }
+            ).recordObjectStorageUploadBytes(uploadBodyBytes);
+          }
+          return originalFetch(input, init);
+        };
+      });
+
       await login(page, fixture.regular);
       const origin = new URL(page.url()).origin;
       const subjectName = `E2E Adaptive ${fixture.runId}`;
       let presignedPayload: unknown = null;
-      let objectStorageUploadBytes = 0;
 
       await page.route('**/api/storage/presigned-url', async (route) => {
         presignedPayload = route.request().postDataJSON();
@@ -429,7 +449,6 @@ test.describe('production critical paths', () => {
         });
       });
       await page.route('**/__e2e-object-storage/**', async (route) => {
-        objectStorageUploadBytes = route.request().postDataBuffer()?.byteLength ?? 0;
         await route.fulfill({ status: 200, body: '' });
       });
 

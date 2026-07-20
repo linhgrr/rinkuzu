@@ -24,6 +24,7 @@ for (const file of workflows) {
   const source = fs.readFileSync(file, 'utf8');
   const jobsIndex = source.search(/^jobs:/m);
   const header = jobsIndex === -1 ? source : source.slice(0, jobsIndex);
+  const jobsSource = jobsIndex === -1 ? '' : source.slice(jobsIndex + 'jobs:'.length);
 
   for (const trigger of ['pull_request_target', 'workflow_run']) {
     const match = new RegExp(`^\\s*${trigger}:`, 'm').exec(source);
@@ -67,6 +68,50 @@ for (const file of workflows) {
   for (const match of source.matchAll(/\$\{\{\s*secrets\.([A-Za-z0-9_]+)\s*\}\}/g)) {
     if (match[1] !== 'GITHUB_TOKEN') {
       fail(file, lineNumber(source, match.index), `long-lived secret ${match[1]} is forbidden`);
+    }
+  }
+
+  const jobHeaders = [...jobsSource.matchAll(/^  ([A-Za-z0-9_-]+):\n/gm)];
+  const jobBodies = new Map();
+  for (const [index, match] of jobHeaders.entries()) {
+    const jobName = match[1];
+    const start = match.index + match[0].length;
+    const end = jobHeaders[index + 1]?.index ?? jobsSource.length;
+    const jobBody = jobsSource.slice(start, end);
+    jobBodies.set(jobName, { body: jobBody, index: match.index });
+    const timeoutMatch = /^    timeout-minutes:\s*(\d+)\s*$/m.exec(jobBody);
+    if (!timeoutMatch) {
+      fail(file, lineNumber(source, jobsIndex + match.index), `job ${jobName} has no timeout`);
+      continue;
+    }
+    const timeoutMinutes = Number(timeoutMatch[1]);
+    if (timeoutMinutes < 1 || timeoutMinutes > 360) {
+      fail(
+        file,
+        lineNumber(source, jobsIndex + match.index + timeoutMatch.index),
+        `job ${jobName} timeout must be between 1 and 360 minutes`,
+      );
+    }
+  }
+
+  if (path.basename(file) === 'ci.yml') {
+    const secretScan = jobBodies.get('secret-scan');
+    if (!secretScan) {
+      fail(file, 1, 'secret-scan job is required');
+      continue;
+    }
+    const secretBody = secretScan.body;
+    const secretLine = lineNumber(source, jobsIndex + secretScan.index);
+    /** @type {Array<[RegExp, string]>} */
+    const requirements = [
+      [/fetch-depth:\s*0/, 'secret-scan must fetch full history'],
+      [/GITLEAKS_VERSION:\s*'[0-9]+\.[0-9]+\.[0-9]+'/, 'Gitleaks version must be pinned'],
+      [/GITLEAKS_ARCHIVE_SHA256:\s*[a-f0-9]{64}/, 'Gitleaks archive checksum must be pinned'],
+      [/sha256sum --check --strict/, 'Gitleaks archive checksum must be verified'],
+      [/gitleaks" git[\s\S]*--log-opts='--all'/, 'Gitleaks must scan all reachable history'],
+    ];
+    for (const [pattern, message] of requirements) {
+      if (!pattern.test(secretBody)) fail(file, secretLine, message);
     }
   }
 }

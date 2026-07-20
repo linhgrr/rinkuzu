@@ -2,7 +2,7 @@
 
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **rinkuzu** (9423 symbols, 22764 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **rinkuzu** (9385 symbols, 22640 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
@@ -60,6 +60,7 @@ This project is indexed by GitNexus as **rinkuzu** (9423 symbols, 22764 relation
 - Before every commit, run `detect_changes({scope: "staged"})` and confirm only intended symbols/files are affected. Before handoff, run `detect_changes({scope: "compare", base_ref: "master"})`.
 - Use the external-agent supervisor for parallel Grok audits and long gates. Keep read-only audits parallel, serialize writers, and have the root agent review every edit and final result. Never let an external agent touch protected user files, Gradle/cache, `.env`, live data, or Git history.
 - Treat every quality artifact as evidence-bound: pin Node/npm, record commit SHA and source/config fingerprints, and fail closed when coverage, mutation, Lighthouse, contracts, or generated reports are stale, missing, or internally inconsistent. A warning threshold must remain visibly distinct from a passing gate.
+- Give every CI job an explicit bounded timeout. A full-history secret gate must fetch full history and invoke a checksum-pinned scanner with an explicit all-references log scope; event-scoped action defaults must not be labelled as repository-history evidence.
 - Run targeted tests for each changed boundary, then the full pre-commit gate. Never use `--no-verify`, skip a failing check, or mark an unrun gate green. Commit small validated waves frequently.
 - For database changes, keep one DDL writer, run index migration dry-run before any apply, require approval for destructive/unique/TTL changes, and validate changed reads with real `executionStats` when the environment is available. Report unavailable live validation separately.
 - Preserve unrelated worktree changes and the protected files listed in the task scope. Do not modify login/signup visuals, landing visuals, Android/Gradle files, or user-owned generated evidence unless explicitly requested.

@@ -4,7 +4,6 @@ import path from 'node:path';
 const root = process.cwd();
 const policyPath = path.join(root, '.github/rulesets/master-production.json');
 const expectedRepository = process.env.GITHUB_REPOSITORY ?? 'linhgrr/rinkuzu';
-const requiredContext = 'Production Gate';
 
 function fail(message) {
   throw new Error(`Repository governance check failed: ${message}`);
@@ -33,31 +32,10 @@ function assertRuleset(ruleset, source) {
     fail(`${source}: signed commits require a separate verified-history cutover`);
   }
 
-  const pullRequest = getRule(ruleset, 'pull_request')?.parameters;
-  if (!pullRequest) fail(`${source}: missing pull_request rule`);
-  if (pullRequest.required_approving_review_count !== 0) {
-    fail(`${source}: unavailable human approvals must not deadlock this solo repository`);
-  }
-  if (pullRequest.require_code_owner_review) {
-    fail(`${source}: the sole CODEOWNER cannot approve their own pull request`);
-  }
-  if (pullRequest.require_last_push_approval) {
-    fail(`${source}: latest-push approval requires a second maintainer`);
-  }
-  if (!pullRequest.required_review_thread_resolution) {
-    fail(`${source}: review conversations must be resolved`);
-  }
-  if (pullRequest.dismiss_stale_reviews_on_push) {
-    fail(`${source}: dismiss-stale and latest-push approval must not both be enabled`);
-  }
-
-  const statusChecks = getRule(ruleset, 'required_status_checks')?.parameters;
-  if (!statusChecks?.strict_required_status_checks_policy) {
-    fail(`${source}: required checks must run on the latest/up-to-date branch`);
-  }
-  const contexts = statusChecks.required_status_checks?.map((check) => check.context) ?? [];
-  if (!contexts.includes(requiredContext)) {
-    fail(`${source}: ${requiredContext} is not a required check`);
+  for (const type of ['pull_request', 'required_status_checks']) {
+    if (getRule(ruleset, type)) {
+      fail(`${source}: ${type} would block the configured direct-push workflow`);
+    }
   }
 }
 

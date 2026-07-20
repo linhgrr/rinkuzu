@@ -37,12 +37,6 @@ async function runChecker(policy: RulesetPolicy) {
   });
 }
 
-function pullRequestParameters(policy: RulesetPolicy): Record<string, unknown> {
-  const rule = policy.rules.find(({ type }) => type === 'pull_request');
-  if (!rule?.parameters) throw new Error('Test policy is missing its pull_request rule');
-  return rule.parameters;
-}
-
 afterEach(async () => {
   await Promise.all(
     temporaryDirectories
@@ -59,18 +53,29 @@ describe('repository governance checker', () => {
     expect(result.stdout).toContain('Repository governance is valid (policy only).');
   });
 
-  it.each([
-    ['required approval', 'required_approving_review_count', 1, 'unavailable human approvals'],
-    ['CODEOWNER approval', 'require_code_owner_review', true, 'sole CODEOWNER'],
-    ['latest-push approval', 'require_last_push_approval', true, 'second maintainer'],
-  ])('rejects %s that would deadlock a solo maintainer', async (_, key, value, message) => {
+  it.each(['pull_request', 'required_status_checks'])(
+    'rejects %s because it blocks the configured direct-push workflow',
+    async (type) => {
+      const policy = await readPolicy();
+      policy.rules.push({ type });
+
+      const result = await runChecker(policy);
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`${type} would block the configured direct-push workflow`);
+    },
+  );
+
+  it('rejects routine bypass actors', async () => {
     const policy = await readPolicy();
-    pullRequestParameters(policy)[key] = value;
+    Object.assign(policy, {
+      bypass_actors: [{ actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' }],
+    });
 
     const result = await runChecker(policy);
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain(message);
+    expect(result.stderr).toContain('routine bypass actors are forbidden');
   });
 
   it('rejects required signatures without a verified-history cutover', async () => {

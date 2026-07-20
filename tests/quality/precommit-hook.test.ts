@@ -10,9 +10,17 @@ const repositoryRoot = process.cwd();
 describe('pre-commit guard', () => {
   it('fails fast before running the full gate', () => {
     const hook = readFileSync(`${repositoryRoot}/.husky/pre-commit`, 'utf8');
+    const packageJson = JSON.parse(readFileSync(`${repositoryRoot}/package.json`, 'utf8')) as {
+      scripts?: Record<string, string>;
+    };
+    const deadCodeGate = packageJson.scripts?.['check:dead-code'];
+    const fullGate = packageJson.scripts?.['precommit:full'];
 
     expect(hook).toMatch(/^#!\/usr\/bin\/env sh\nset -eu\n/);
     expect(hook.indexOf('npx lint-staged')).toBeLessThan(hook.indexOf('npm run precommit:full'));
+    expect(deadCodeGate).toContain('knip --strict');
+    expect(deadCodeGate).toContain('knip --production --strict');
+    expect(fullGate).toContain('npm run check:dead-code');
   });
 
   it('keeps ratchet baselines addable while ignoring transient perf output', () => {

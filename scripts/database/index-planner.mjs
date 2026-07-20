@@ -341,7 +341,7 @@ export function buildIndexPlan({
   });
 }
 
-export function computeActionFingerprint(value) {
+function computeActionFingerprint(value) {
   return sha256(
     stableStringify({
       type: value.type,

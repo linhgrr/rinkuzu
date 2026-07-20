@@ -19,8 +19,8 @@ import {
   toStrykerMutatePatterns,
 } from './mutation-scope.mjs';
 
-export const GATE_RUN_META_SCHEMA_VERSION = 1;
-export const GATE_RUN_META_RELATIVE = 'reports/mutation/gate-run-meta.json';
+const GATE_RUN_META_SCHEMA_VERSION = 1;
+const GATE_RUN_META_RELATIVE = 'reports/mutation/gate-run-meta.json';
 export const MUTATION_SCOPE_RELATIVE = 'reports/mutation/scope.json';
 export const MUTATION_REPORT_RELATIVE = 'reports/mutation/mutation.json';
 export const MUTATION_RERUN_MESSAGE =
@@ -212,7 +212,7 @@ function isQualityTestPath(filePath) {
  * @param {string} [root]
  * @returns {string}
  */
-export function readInstalledStrykerVersion(root = process.cwd()) {
+function readInstalledStrykerVersion(root = process.cwd()) {
   const packagePath = path.join(root, STRYKER_CORE_PACKAGE_RELATIVE);
   if (!existsSync(packagePath)) {
     throw new Error(

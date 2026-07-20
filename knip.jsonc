@@ -1,15 +1,12 @@
 {
-  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   "entry": [
     "src/app/**/{page,layout,route,loading,error,not-found,template,default}.{ts,tsx}!",
     "src/auth.ts!",
     "src/auth.config.ts!",
-    "src/instrumentation.ts!",
-    "src/middleware.ts!",
     "src/app/sw.ts!",
-    "src/scripts/checkExpiredSubscriptions.js!",
-    "scripts/sync-performance-indexes.mjs!",
-    "scripts/database/check-query-plans.mjs!",
+    "doctor.config.mjs",
+    "tests/types/declaration-contracts.ts",
   ],
   "project": [
     "src/**/*.{ts,tsx}!",
@@ -17,7 +14,26 @@
     "tests/**/*.{ts,tsx}",
     "*.config.{js,mjs,ts}",
   ],
-  "ignore": ["src/generated/**"],
+  "ignoreIssues": {
+    "src/generated/**": [
+      "exports",
+      "nsExports",
+      "types",
+      "nsTypes",
+      "enumMembers",
+      "namespaceMembers",
+      "duplicates",
+    ],
+  },
+  "ignoreDependencies": [
+    // These pinned CLIs are intentionally resolved from node_modules and
+    // spawned without a shell; Knip cannot infer package use from the path.
+    "@redocly/cli",
+    "jscpd",
+    "madge",
+    "openapi-typescript",
+  ],
+  "treatConfigHintsAsErrors": true,
   "rules": {
     "files": "error",
     "dependencies": "error",

@@ -109,7 +109,7 @@
     "esbuild": "0.28.1",
     "framer-motion": "^12.35.0",
     "katex": "^0.16.33",
-    "lucide-react": "^0.577.0",
+    "lucide-react": "^1.25.0",
     "mongoose": "^8.24.1",
     "next": "16.2.10",
     "next-auth": "5.0.0-beta.31",

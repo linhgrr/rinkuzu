@@ -12,6 +12,15 @@ const modelMocks = vi.hoisted(() => ({
   reportDeleteMany: vi.fn(),
 }));
 
+const dependentDeleteMocks = [
+  modelMocks.bookmarkDeleteMany,
+  modelMocks.discussionDeleteMany,
+  modelMocks.folderQuizDeleteMany,
+  modelMocks.questionProgressDeleteMany,
+  modelMocks.quizProgressDeleteMany,
+  modelMocks.reportDeleteMany,
+];
+
 vi.mock('@/models/Attempt', () => ({
   default: { deleteMany: modelMocks.attemptDeleteMany },
 }));
@@ -38,11 +47,11 @@ import { deleteQuizDependents } from './deleteQuizDependents';
 
 describe('deleteQuizDependents', () => {
   const session: ClientSession = Object.create(null);
-  const sessionCalls = Object.values(modelMocks).map(() => vi.fn().mockResolvedValue(undefined));
+  const sessionCalls = dependentDeleteMocks.map(() => vi.fn().mockResolvedValue(undefined));
 
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.values(modelMocks).forEach((deleteMany, index) => {
+    dependentDeleteMocks.forEach((deleteMany, index) => {
       deleteMany.mockReturnValue({ session: sessionCalls[index] });
     });
   });
@@ -55,7 +64,7 @@ describe('deleteQuizDependents', () => {
     }
   });
 
-  it('deletes Attempt and every quiz-dependent record for a single quiz id', async () => {
+  it('preserves immutable Attempt history while deleting mutable dependents', async () => {
     const quizId = new Types.ObjectId();
     const quizSlug = 'single-quiz';
 
@@ -73,8 +82,7 @@ describe('deleteQuizDependents', () => {
     });
     expect(modelMocks.folderQuizDeleteMany).toHaveBeenCalledWith({ quiz: { $in: [quizId] } });
     expect(modelMocks.quizProgressDeleteMany).toHaveBeenCalledWith({ quiz: { $in: [quizId] } });
-    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledWith({ quiz: { $in: [quizId] } });
-    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledTimes(1);
+    expect(modelMocks.attemptDeleteMany).not.toHaveBeenCalled();
 
     for (const sessionCall of sessionCalls) {
       expect(sessionCall).toHaveBeenCalledWith(session);
@@ -82,7 +90,7 @@ describe('deleteQuizDependents', () => {
     }
   });
 
-  it('deletes every quiz-dependent record using the shared identifiers', async () => {
+  it('deletes mutable dependents for multiple quizzes without deleting Attempt snapshots', async () => {
     const firstId = new Types.ObjectId();
     const secondId = new Types.ObjectId();
     const quizIds = [firstId, secondId];
@@ -108,8 +116,7 @@ describe('deleteQuizDependents', () => {
     });
     expect(modelMocks.folderQuizDeleteMany).toHaveBeenCalledWith({ quiz: { $in: quizIds } });
     expect(modelMocks.quizProgressDeleteMany).toHaveBeenCalledWith({ quiz: { $in: quizIds } });
-    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledWith({ quiz: { $in: quizIds } });
-    expect(modelMocks.attemptDeleteMany).toHaveBeenCalledTimes(1);
+    expect(modelMocks.attemptDeleteMany).not.toHaveBeenCalled();
 
     for (const sessionCall of sessionCalls) {
       expect(sessionCall).toHaveBeenCalledWith(session);

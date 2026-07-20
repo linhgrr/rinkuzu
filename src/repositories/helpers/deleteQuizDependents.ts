@@ -1,5 +1,4 @@
 import type { ClientSession, Types } from 'mongoose';
-import Attempt from '@/models/Attempt';
 import Bookmark from '@/models/Bookmark';
 import Discussion from '@/models/Discussion';
 import FolderQuiz from '@/models/FolderQuiz';
@@ -22,11 +21,12 @@ export async function deleteQuizDependents(
   const quizIdStrings = quizIds.map(String);
   const quizSlugs = quizzes.map((quiz) => quiz.slug);
 
+  // Attempts own immutable quiz snapshots and remain valid history after the
+  // source quiz is deleted. Only mutable/rebuildable dependents are cascaded.
   await Discussion.deleteMany({ quiz: { $in: quizIds } }).session(session);
   await Report.deleteMany({ quizId: { $in: quizIdStrings } }).session(session);
   await Bookmark.deleteMany({ 'quiz.slug': { $in: quizSlugs } }).session(session);
   await QuestionProgress.deleteMany({ quizSlug: { $in: quizSlugs } }).session(session);
   await FolderQuiz.deleteMany({ quiz: { $in: quizIds } }).session(session);
   await QuizProgress.deleteMany({ quiz: { $in: quizIds } }).session(session);
-  await Attempt.deleteMany({ quiz: { $in: quizIds } }).session(session);
 }

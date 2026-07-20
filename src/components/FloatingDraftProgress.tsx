@@ -3,7 +3,6 @@
 import { Link } from '@/i18n/navigation';
 import { useState, useSyncExternalStore } from 'react';
 import { useDraftStore, DraftProgress } from '@/store/useDraftStore';
-import { usePdfProcessor } from '@/hooks/usePdfProcessor';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -25,11 +24,11 @@ function subscribeToClientMount() {
 export function FloatingDraftProgress() {
   const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } =
     useDraftStore();
-  const { stopProcessing } = usePdfProcessor();
   const t = useTranslations('draft');
   const [isExpanded, setIsExpanded] = useState(false);
   const [draftToCancel, setDraftToCancel] = useState<DraftProgress | null>(null);
   const [draftToRemove, setDraftToRemove] = useState<DraftProgress | null>(null);
+  const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
   const mounted = useSyncExternalStore(
     subscribeToClientMount,
     () => true,
@@ -44,18 +43,22 @@ export function FloatingDraftProgress() {
     return null;
   }
 
-  const handleCancel = async (id: string, title: string) => {
-    stopProcessing(id);
-
-    // Notify server to delete the draft
+  const handleDelete = async (
+    draft: DraftProgress,
+    successMessage: 'cancelledProcessing' | 'removedDraft',
+  ): Promise<boolean> => {
+    setDeletingDraftId(draft.id);
     try {
-      await deleteQuizDraft(id);
-    } catch (error) {
-      console.error('Failed to delete draft on server:', error);
+      await deleteQuizDraft(draft.id);
+      removeDraft(draft.id);
+      setDeletingDraftId(null);
+      toast.success(t(successMessage, { title: draft.title }));
+      return true;
+    } catch {
+      setDeletingDraftId(null);
+      toast.error(t('deleteFailed'));
+      return false;
     }
-
-    removeDraft(id);
-    toast.success(t('cancelledProcessing', { title }));
   };
 
   return (
@@ -125,11 +128,13 @@ export function FloatingDraftProgress() {
         title={t('cancelConfirmTitle')}
         message={draftToCancel ? t('cancelConfirmMessage', { title: draftToCancel.title }) : ''}
         confirmText={t('cancel')}
+        isLoading={deletingDraftId === draftToCancel?.id}
         onCancel={() => setDraftToCancel(null)}
         onConfirm={async () => {
           if (!draftToCancel) return;
-          await handleCancel(draftToCancel.id, draftToCancel.title);
-          setDraftToCancel(null);
+          if (await handleDelete(draftToCancel, 'cancelledProcessing')) {
+            setDraftToCancel(null);
+          }
         }}
       />
       <ConfirmModal
@@ -137,11 +142,13 @@ export function FloatingDraftProgress() {
         title={t('removeReadyDraftTitle')}
         message={draftToRemove ? t('removeReadyDraftMessage', { title: draftToRemove.title }) : ''}
         confirmText={t('remove')}
+        isLoading={deletingDraftId === draftToRemove?.id}
         onCancel={() => setDraftToRemove(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!draftToRemove) return;
-          removeDraft(draftToRemove.id);
-          setDraftToRemove(null);
+          if (await handleDelete(draftToRemove, 'removedDraft')) {
+            setDraftToRemove(null);
+          }
         }}
       />
     </div>

@@ -1,6 +1,8 @@
 {
   "processingPDF": "Processing PDF",
   "cancelledProcessing": "Cancelled processing \"{title}\"",
+  "removedDraft": "Deleted draft \"{title}\"",
+  "deleteFailed": "Could not delete the draft. Please try again.",
   "processingFiles": "Processing {count} files",
   "quizzesReady": "{count} quizzes ready",
   "expired": "Expired",
@@ -19,5 +21,5 @@
   "cancelConfirmTitle": "Cancel processing?",
   "cancelConfirmMessage": "Cancel processing \"{title}\" and delete its draft from the server?",
   "removeReadyDraftTitle": "Remove ready draft?",
-  "removeReadyDraftMessage": "Remove \"{title}\" from the floating progress list? The editable draft remains available from its page."
+  "removeReadyDraftMessage": "Delete \"{title}\" from the server? This draft cannot be recovered."
 }

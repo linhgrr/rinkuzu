@@ -1,6 +1,8 @@
 {
   "processingPDF": "Đang xử lý PDF",
   "cancelledProcessing": "Đã hủy xử lý \"{title}\"",
+  "removedDraft": "Đã xóa bản nháp \"{title}\"",
+  "deleteFailed": "Không thể xóa bản nháp. Vui lòng thử lại.",
   "processingFiles": "Đang xử lý {count} file",
   "quizzesReady": "{count} quiz sẵn sàng",
   "expired": "Hết hạn",
@@ -19,5 +21,5 @@
   "cancelConfirmTitle": "Hủy xử lý?",
   "cancelConfirmMessage": "Hủy xử lý \"{title}\" và xóa bản nháp này khỏi máy chủ?",
   "removeReadyDraftTitle": "Xóa bản nháp đã sẵn sàng?",
-  "removeReadyDraftMessage": "Xóa \"{title}\" khỏi danh sách tiến trình nổi? Bản nháp chỉnh sửa vẫn có thể mở từ trang của nó."
+  "removeReadyDraftMessage": "Xóa \"{title}\" khỏi máy chủ? Không thể khôi phục bản nháp này."
 }

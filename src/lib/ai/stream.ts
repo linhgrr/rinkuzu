@@ -1,3 +1,7 @@
+import { ApiResponseError } from '@/lib/api/client';
+import { extractApiErrorCode, extractApiErrorMeta } from '@/lib/api/error';
+import { reportApiError } from '@/lib/api/error-events';
+
 interface StreamTextOptions {
   onContent?: (chunk: string, fullContent: string) => void;
 }
@@ -138,7 +142,15 @@ export async function consumeOpenAISseResponse(
 
   if (!response.ok) {
     const body = await parseJsonResponse(response);
-    throw createStreamError(options.extractErrorMessage(body, response.status), response.status);
+    const error = new ApiResponseError({
+      message: options.extractErrorMessage(body, response.status),
+      status: response.status,
+      payload: body,
+      code: extractApiErrorCode(body),
+      meta: extractApiErrorMeta(body),
+    });
+    reportApiError(error);
+    throw error;
   }
 
   if (!contentType?.includes('text/event-stream')) {

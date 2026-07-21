@@ -7,10 +7,8 @@ import useSWR from 'swr';
 import { HiOutlineSearch } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import Pagination from '@/components/ui/Pagination';
-import { SectionHeading } from '@/components/ui/SectionHeading';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
-import { ExploreSearchInput } from '@/features/explore/components/ExploreSearchInput';
 import { fetchQuizListViewModel } from '@/features/quiz/api/quiz-list-api';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
 import type {
@@ -114,17 +112,9 @@ function QuizzesContent() {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 pb-24 pt-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1340px]">
-        <ExploreSearchInput
-          key={query}
-          initialQuery={query}
-          placeholder={t('searchPlaceholder')}
-          onCommit={(nextQuery) => updateUrl({ q: nextQuery, page: 1 })}
-        />
-
         <div className="mt-6">
           <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <SectionHeading title={t('title')} subtitle={t('subtitle')} />
+            <div className="flex justify-end">
               <SegmentedControl
                 ariaLabel={t('visibility.label')}
                 value={activeVisibility}
@@ -167,8 +157,6 @@ function QuizzesFallback() {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1340px] space-y-6">
-        <div className="h-8 w-56 rounded-md skeleton-shimmer" />
-        <div className="h-12 max-w-3xl rounded-xl skeleton-shimmer" />
         <QuizGridSkeleton count={6} />
       </div>
     </main>

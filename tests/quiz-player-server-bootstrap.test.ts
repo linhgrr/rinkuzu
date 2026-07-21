@@ -10,7 +10,6 @@ const desktopLayoutSource = readFileSync(
   'src/features/quiz/components/player/DesktopQuizLayout.tsx',
   'utf8',
 );
-const aiExplainSource = readFileSync('src/features/quiz/hooks/useQuizAIExplain.ts', 'utf8');
 
 describe('quiz player server bootstrap', () => {
   it('loads the quiz on the server instead of fetching after hydration', () => {
@@ -27,7 +26,5 @@ describe('quiz player server bootstrap', () => {
       "import('@/features/quiz/components/QuestionDiscussion')",
     );
     expect(desktopLayoutSource).toContain('discussionLoaded ?');
-    expect(aiExplainSource).toContain("await import('@/lib/quiz/ask-ai')");
-    expect(aiExplainSource).not.toContain("from '@/lib/quiz/ask-ai'");
   });
 });

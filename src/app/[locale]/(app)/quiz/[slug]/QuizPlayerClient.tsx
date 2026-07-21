@@ -20,7 +20,6 @@ import {
 } from 'react-icons/hi';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { useQuizAIExplain } from '@/features/quiz/hooks/useQuizAIExplain';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
@@ -719,17 +718,6 @@ export default function QuizPlayerClient({
 
   const isMobile = useMediaQuery(MEDIA_MAX_MD);
 
-  const {
-    showAIModal,
-    aiExplanation,
-    userQuestion,
-    setUserQuestion,
-    loadingAI,
-    aiError,
-    askAI,
-    openAIModal,
-    closeAIModal,
-  } = useQuizAIExplain();
   const sessionEmail = session?.user?.email || undefined;
   const progressEnabled = Boolean(session?.user?.email);
 
@@ -1067,27 +1055,6 @@ export default function QuizPlayerClient({
           nextQuestion={() => dispatch({ type: 'goToNextQuestion' })}
           submitQuiz={submitQuiz}
           submitting={submitting}
-          ai={{
-            isOpen: showAIModal,
-            open: openAIModal,
-            close: closeAIModal,
-            userQuestion,
-            setUserQuestion,
-            ask: () =>
-              askAI({
-                question: currentQuestion.question,
-                options: currentQuestion.options,
-                ...(currentQuestion.questionImage !== undefined
-                  ? { questionImage: currentQuestion.questionImage }
-                  : {}),
-                ...(currentQuestion.optionImages !== undefined
-                  ? { optionImages: currentQuestion.optionImages }
-                  : {}),
-              }),
-            loading: loadingAI,
-            error: aiError,
-            explanation: aiExplanation,
-          }}
           submit={{
             confirmOpen: showSubmitConfirm,
             setConfirmOpen: setShowSubmitConfirm,

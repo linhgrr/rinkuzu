@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { subscribeToApiErrors } from '@/lib/api/error-events';
 import { consumeOpenAISseResponse } from './stream';
 
 function createSseResponse(events: unknown[]): Response {
@@ -14,6 +15,10 @@ const options = {
 };
 
 describe('consumeOpenAISseResponse', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('consumes the exact Responses SSE protocol emitted by the backend', async () => {
     const onContent = vi.fn();
     const response = createSseResponse([
@@ -78,5 +83,25 @@ describe('consumeOpenAISseResponse', () => {
     await expect(consumeOpenAISseResponse(response, options)).rejects.toThrow(
       'Tutor backend failed',
     );
+  });
+
+  it('reports entitlement errors from non-stream responses', async () => {
+    vi.stubGlobal('window', {});
+    const listener = vi.fn();
+    const unsubscribe = subscribeToApiErrors(listener);
+    const response = new Response(
+      JSON.stringify({
+        success: false,
+        error: { code: 'llm_rate_limit_exceeded', message: 'Limit reached' },
+      }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } },
+    );
+
+    await expect(consumeOpenAISseResponse(response, options)).rejects.toMatchObject({
+      name: 'ApiResponseError',
+      code: 'llm_rate_limit_exceeded',
+    });
+    expect(listener).toHaveBeenCalledOnce();
+    unsubscribe();
   });
 });

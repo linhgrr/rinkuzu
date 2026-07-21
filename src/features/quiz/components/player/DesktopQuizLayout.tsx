@@ -7,7 +7,6 @@ import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { OptionImage, QuestionImage } from '@/components/ui/ImageDisplay';
-import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
 import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from 'react-icons/hi';
@@ -53,18 +52,6 @@ interface DesktopQuizExitControls {
   confirmExit: () => void;
 }
 
-interface DesktopQuizAIControls {
-  isOpen: boolean;
-  open: () => void;
-  close: () => void;
-  userQuestion: string;
-  setUserQuestion: (value: string) => void;
-  ask: () => Promise<void>;
-  loading: boolean;
-  error: string;
-  explanation: string;
-}
-
 interface DesktopQuizSubmitControls {
   confirmOpen: boolean;
   setConfirmOpen: (open: boolean) => void;
@@ -92,7 +79,6 @@ interface DesktopQuizLayoutProps {
   nextQuestion: () => void;
   submitQuiz: () => Promise<boolean>;
   submitting: boolean;
-  ai: DesktopQuizAIControls;
   submit: DesktopQuizSubmitControls;
   t: TranslateFn;
 }
@@ -115,7 +101,6 @@ interface DesktopQuestionCardProps {
   currentQuestionIndex: number;
   currentAnswer: QuizAnswer | undefined;
   questionCount: number;
-  onOpenAI: () => void;
   onToggleDiscussion: () => void;
   onSelectAnswer: (index: number) => void;
   onPrevious: () => void;
@@ -148,19 +133,6 @@ interface DesktopExitModalProps {
   onConfirmExit: () => void;
   answeredQuestions: number;
   questionCount: number;
-  t: TranslateFn;
-}
-
-interface DesktopAIModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  currentQuestion: QuizPlayQuestionViewModel;
-  userQuestion: string;
-  onUserQuestionChange: (value: string) => void;
-  onAskAI: () => Promise<void>;
-  loading: boolean;
-  error: string;
-  explanation: string;
   t: TranslateFn;
 }
 
@@ -262,7 +234,6 @@ function DesktopQuestionCard({
   currentQuestionIndex,
   currentAnswer,
   questionCount,
-  onOpenAI,
   onToggleDiscussion,
   onSelectAnswer,
   onPrevious,
@@ -282,13 +253,6 @@ function DesktopQuestionCard({
             </div>
           </div>
           <div className="ml-4 flex items-center gap-x-2">
-            <Button
-              variant="outline"
-              onClick={onOpenAI}
-              className="border-green-200 text-brand-trust hover:border-green-300 hover:bg-green-50"
-            >
-              {t('askRinChan')}
-            </Button>
             <Button
               variant="outline"
               onClick={onToggleDiscussion}
@@ -535,95 +499,6 @@ function DesktopExitModal({
   );
 }
 
-function DesktopAIModal({
-  isOpen,
-  onClose,
-  currentQuestion,
-  userQuestion,
-  onUserQuestionChange,
-  onAskAI,
-  loading,
-  error,
-  explanation,
-  t,
-}: DesktopAIModalProps) {
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('askRinChan')} size="wide">
-      <div className="space-y-4">
-        <div className="rounded-lg bg-neutral-50 p-4">
-          <h4 className="mb-2 font-medium text-neutral-900">{t('currentQuestion')}</h4>
-          <div className="text-sm text-neutral-700 [&_p]:mb-0 [&_p]:text-sm [&_p]:text-neutral-700">
-            <MarkdownRenderer content={currentQuestion.question} />
-          </div>
-          <div className="mt-2 space-y-1">
-            {currentQuestion.options.map((option, index) => (
-              <div key={option} className="flex items-start gap-x-2 text-xs text-neutral-600">
-                <span className="mt-0.5">{String.fromCharCode(65 + index)}.</span>
-                <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-neutral-600">
-                  <MarkdownRenderer content={option} />
-                </div>
-                <OptionPreview
-                  {...(currentQuestion.optionImages?.[index] !== undefined
-                    ? { src: currentQuestion.optionImages[index] }
-                    : {})}
-                  alt={`Option ${index} image`}
-                  className="ml-1"
-                />
-              </div>
-            ))}
-          </div>
-          {currentQuestion.questionImage ? (
-            <div className="mt-3">
-              <QuestionImage src={currentQuestion.questionImage} alt="Question img" />
-            </div>
-          ) : null}
-        </div>
-
-        <div>
-          <label
-            htmlFor="desktop-quiz-ai-question"
-            className="mb-2 block text-sm font-medium text-neutral-700"
-          >
-            {t('askSpecificQuestion')}
-          </label>
-          <Input
-            id="desktop-quiz-ai-question"
-            value={userQuestion}
-            onChange={(event) => onUserQuestionChange(event.target.value)}
-            placeholder={t('questionPlaceholder')}
-            className="w-full"
-          />
-          <p className="mt-1 text-xs text-neutral-500">{t('leaveEmptyGeneral')}</p>
-        </div>
-
-        <Button
-          onClick={onAskAI}
-          loading={loading}
-          disabled={loading}
-          className="w-full bg-brand-trust text-white hover:bg-brand-trust-hover"
-        >
-          {loading ? t('gettingExplanation') : t('getRinChanExplanation')}
-        </Button>
-
-        {error ? (
-          <div className="rounded-md bg-red-50 p-3">
-            <div className="text-sm text-red-700">{error}</div>
-          </div>
-        ) : null}
-
-        {explanation ? (
-          <div className="rounded-md bg-green-50 p-4">
-            <h4 className="mb-3 font-medium text-green-900">{t('aiExplanation')}</h4>
-            <MarkdownRenderer content={explanation} className="text-green-800" />
-          </div>
-        ) : null}
-
-        <div className="rounded-md bg-yellow-50 p-3 text-xs text-yellow-800">{t('aiNote')}</div>
-      </div>
-    </Modal>
-  );
-}
-
 export function DesktopQuizLayout({
   slug,
   quizTitle,
@@ -644,7 +519,6 @@ export function DesktopQuizLayout({
   nextQuestion,
   submitQuiz,
   submitting,
-  ai,
   submit,
   t,
 }: DesktopQuizLayoutProps) {
@@ -684,7 +558,6 @@ export function DesktopQuizLayout({
               currentQuestionIndex={currentQuestionIndex}
               currentAnswer={userAnswers[currentQuestionIndex]}
               questionCount={questions.length}
-              onOpenAI={ai.open}
               onToggleDiscussion={() => setDiscussionCollapsed(!discussion.collapsed)}
               onSelectAnswer={selectAnswer}
               onPrevious={previousQuestion}
@@ -730,19 +603,6 @@ export function DesktopQuizLayout({
           onConfirmExit={exit.confirmExit}
           answeredQuestions={answeredQuestions}
           questionCount={questions.length}
-          t={t}
-        />
-
-        <DesktopAIModal
-          isOpen={ai.isOpen}
-          onClose={ai.close}
-          currentQuestion={currentQuestion}
-          userQuestion={ai.userQuestion}
-          onUserQuestionChange={ai.setUserQuestion}
-          onAskAI={ai.ask}
-          loading={ai.loading}
-          error={ai.error}
-          explanation={ai.explanation}
           t={t}
         />
 

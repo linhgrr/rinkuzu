@@ -4,6 +4,7 @@ import {
   isStandardSuccessEnvelope,
   type StandardSuccessEnvelope,
 } from './envelope';
+import { reportApiError } from './error-events';
 
 export class ApiResponseError extends Error {
   status: number;
@@ -75,13 +76,15 @@ async function parseApiBody(response: Response): Promise<ParsedApiBody> {
 }
 
 function invalidEnvelopeError(status: number, payload: unknown, rawText: string): ApiResponseError {
-  return new ApiResponseError({
+  const error = new ApiResponseError({
     message: 'Invalid API response envelope',
     status,
     payload: payload ?? rawText,
     code: 'invalid_response_envelope',
     detail: rawText || null,
   });
+  reportApiError(error);
+  return error;
 }
 
 /**
@@ -104,7 +107,7 @@ export async function fetchApiResponse<
       rawPayload,
       `Request failed with status ${response.status}`,
     );
-    throw new ApiResponseError({
+    const error = new ApiResponseError({
       message,
       status: response.status,
       payload: rawPayload,
@@ -112,6 +115,8 @@ export async function fetchApiResponse<
       detail: message,
       meta: extractApiErrorMeta(rawPayload),
     });
+    reportApiError(error);
+    throw error;
   }
 
   throw invalidEnvelopeError(response.status, rawPayload, rawText);

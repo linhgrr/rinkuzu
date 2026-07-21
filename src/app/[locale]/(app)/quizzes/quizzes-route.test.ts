@@ -32,7 +32,7 @@ describe('/[locale]/quizzes route contract', () => {
     expect(INDEXABLE_STATIC_PUBLIC_ROUTES).toContain('/quizzes');
     expect(APP_MESSAGE_NAMESPACES).toContain('quizzes');
     expect(DESKTOP_PRIMARY_NAV).toContainEqual(
-      expect.objectContaining({ href: ROUTES.QUIZZES, labelKey: 'quizzes' }),
+      expect.objectContaining({ href: ROUTES.QUIZZES, labelKey: 'explore' }),
     );
     expect(MOBILE_TABS_BY_SCOPE.quiz).toContainEqual(
       expect.objectContaining({ href: ROUTES.QUIZZES, labelKey: 'tabQuizzes' }),

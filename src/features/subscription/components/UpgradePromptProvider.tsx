@@ -1,22 +1,14 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { UpgradePromptContext } from '@/features/subscription/lib/upgrade-prompt-context';
+import { isPremiumLimitError } from '@/features/subscription/lib/limit-error';
+import { subscribeToApiErrors } from '@/lib/api/error-events';
 
-/**
- * Escalation upgrade prompt: the first time a user hits a premium limit we show
- * a blocking modal (high-intent, explains benefits) with a "don't show again"
- * option; after that we fall back to a non-blocking toast. The preference is
- * per-device in localStorage — no backend needed.
- *
- * ponytail: one shared dismiss flag for all limit kinds; split per-reason only
- * if a real need appears.
- */
 const DISMISS_KEY = 'rinkuzu-upgrade-prompt-dismissed';
 
 function isDismissed(): boolean {
@@ -30,26 +22,33 @@ export function UpgradePromptProvider({ children }: { children: ReactNode }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
-  const goToBilling = () => {
+  const goToBilling = useCallback(() => {
     setModalOpen(false);
     push('/subscription');
-  };
+  }, [push]);
 
-  const showToast = () => {
+  const showToast = useCallback(() => {
     toast.info(t('limitReachedTitle'), {
       description: t('rateLimitMessage'),
       action: { label: t('upgradeCta'), onClick: goToBilling },
     });
-  };
+  }, [goToBilling, t]);
 
-  const promptUpgrade = () => {
-    // First hit → blocking modal; afterwards (or once dismissed) → toast only.
+  const promptUpgrade = useCallback(() => {
     if (isDismissed()) {
       showToast();
       return;
     }
     setModalOpen(true);
-  };
+  }, [showToast]);
+
+  useEffect(
+    () =>
+      subscribeToApiErrors((error) => {
+        if (isPremiumLimitError(error)) promptUpgrade();
+      }),
+    [promptUpgrade],
+  );
 
   const closeModal = () => {
     if (dontShowAgain && typeof window !== 'undefined') {
@@ -58,10 +57,8 @@ export function UpgradePromptProvider({ children }: { children: ReactNode }) {
     setModalOpen(false);
   };
 
-  const value = { promptUpgrade };
-
   return (
-    <UpgradePromptContext.Provider value={value}>
+    <>
       {children}
       <Modal isOpen={modalOpen} onClose={closeModal} title={t('limitReachedTitle')}>
         <div className="p-6">
@@ -93,6 +90,6 @@ export function UpgradePromptProvider({ children }: { children: ReactNode }) {
           </div>
         </div>
       </Modal>
-    </UpgradePromptContext.Provider>
+    </>
   );
 }

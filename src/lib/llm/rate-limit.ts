@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
 import { apiErr } from '@/lib/api/response';
-import type { UserRole } from '@/types/next-auth';
 import {
   getLimit,
   resolveEntitlements,
@@ -38,10 +37,6 @@ type RateLimiterResult = {
   remainingPoints: number;
   msBeforeNext: number;
 };
-
-export function isAdminRole(role: unknown): role is UserRole {
-  return role === 'admin';
-}
 
 const LIMITER_COLLECTION = 'llm_rate_limits';
 const limiterCache = new Map<string, RateLimiterMongo>();

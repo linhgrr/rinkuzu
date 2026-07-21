@@ -78,7 +78,7 @@ export const DESKTOP_PRIMARY_NAV: DesktopNavGroupDef[] = [
       { href: '/admin/ocr-keys', labelKey: 'ocrKeys' },
     ],
   },
-  { id: 'explore', labelKey: 'quizzes', href: ROUTES.QUIZZES },
+  { id: 'explore', labelKey: 'explore', href: ROUTES.QUIZZES },
 ];
 
 export const DESKTOP_BOTTOM_NAV: DesktopNavGroupDef[] = [

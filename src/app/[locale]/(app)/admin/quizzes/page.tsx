@@ -136,6 +136,7 @@ export default function AdminQuizManagementPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let cancelled = false;
 
     async function loadQuizzes() {
       dispatch({ type: 'patch', value: { loading: true, error: '' } });
@@ -147,9 +148,12 @@ export default function AdminQuizManagementPage() {
           visibility: state.visibility,
           signal: controller.signal,
         });
+        if (cancelled) return;
         dispatch({ type: 'loaded', quizzes: data.quizzes, pagination: data.pagination });
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) {
+          return;
+        }
         dispatch({
           type: 'patch',
           value: {
@@ -162,7 +166,10 @@ export default function AdminQuizManagementPage() {
 
     void loadQuizzes();
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [state.page, state.appliedSearch, state.visibility, t]);
 
   const pageStats = {
@@ -233,14 +240,11 @@ export default function AdminQuizManagementPage() {
               placeholder={t('searchQuizzes')}
               className="min-h-11 w-full bg-transparent text-sm outline-none"
               onKeyDown={(event) => {
+                if (event.nativeEvent.isComposing) return;
                 if (event.key === 'Enter') applySearch();
               }}
             />
           </label>
-          <Button size="sm" variant="outline" onClick={applySearch}>
-            <HiOutlineSearch className="mr-1 size-4" />
-            {t('search')}
-          </Button>
           <select
             value={state.visibility}
             aria-label={t('allVisibility')}

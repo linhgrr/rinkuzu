@@ -12,10 +12,11 @@ describe('API error events', () => {
     const listener = vi.fn();
     const unsubscribe = subscribeToApiErrors(listener);
     const error = new ApiResponseError({
-      message: 'Limit reached',
+      message: 'Usage quota exceeded',
       status: 429,
       payload: null,
-      code: 'llm_rate_limit_exceeded',
+      code: 'quota_exceeded',
+      meta: { tier: 'free', upgradeEligible: true },
     });
 
     reportApiError(error);

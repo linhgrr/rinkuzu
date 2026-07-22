@@ -9,7 +9,6 @@
     "conflict": "Conflict",
     "request_aborted": "Request aborted",
     "rate_limit_exceeded": "Rate limit exceeded",
-    "llm_rate_limit_exceeded": "Rate limit exceeded",
     "quota_exceeded": "Usage quota exceeded",
     "premium_required": "Premium subscription required",
     "entitlement_unavailable": "Entitlements are temporarily unavailable",

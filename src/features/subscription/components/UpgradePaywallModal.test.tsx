@@ -1,0 +1,79 @@
+/** @vitest-environment jsdom */
+
+import type { ReactNode } from 'react';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { UpgradePaywallModal } from './UpgradePaywallModal';
+
+const { fetchSubscriptionPageMock, createPaymentMock } = vi.hoisted(() => ({
+  fetchSubscriptionPageMock: vi.fn(),
+  createPaymentMock: vi.fn(),
+}));
+
+vi.mock('next-intl', () => ({
+  useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) =>
+    `${namespace}:${key}${values ? `:${JSON.stringify(values)}` : ''}`,
+}));
+
+vi.mock('@/features/subscription/api/subscription-page-api', () => ({
+  fetchSubscriptionPageViewModel: fetchSubscriptionPageMock,
+  createSubscriptionPaymentUrl: createPaymentMock,
+}));
+
+vi.mock('@/components/ui/Modal', () => ({
+  Modal: ({ children, isOpen, title }: { children: ReactNode; isOpen: boolean; title: string }) =>
+    isOpen ? <section aria-label={title}>{children}</section> : null,
+}));
+
+describe('UpgradePaywallModal', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('shows Free beside every live paid offer and derives the best monthly value', async () => {
+    fetchSubscriptionPageMock.mockResolvedValue({
+      plans: [
+        {
+          id: 'eco-plus-monthly',
+          name: 'Eco Plus 1M',
+          price: 39_000,
+          priceLabel: '39.000 ₫',
+          durationDisplay: '1 tháng',
+          calculatedMonths: 1,
+        },
+        {
+          id: 'eco-plus-six-months',
+          name: 'Eco Plus 6M',
+          price: 100_000,
+          priceLabel: '100.000 ₫',
+          durationDisplay: '6 tháng',
+          calculatedMonths: 6,
+        },
+      ],
+      currentSubscription: null,
+      isPremium: false,
+    });
+
+    render(<UpgradePaywallModal isOpen kind="quota" onClose={vi.fn()} />);
+
+    expect(await screen.findByText('Eco Plus 1M')).toBeTruthy();
+    expect(screen.getByText('Eco Plus 6M')).toBeTruthy();
+    expect(screen.getByText('pricing:free.name')).toBeTruthy();
+    expect(screen.getByText('premium:paywall.bestValue')).toBeTruthy();
+    expect(screen.getByLabelText('premium:paywall.currentPlan')).toBeTruthy();
+  });
+
+  it('does not offer another purchase when Premium became active in another tab', async () => {
+    fetchSubscriptionPageMock.mockResolvedValue({
+      plans: [],
+      currentSubscription: { isActive: true },
+      isPremium: true,
+    });
+
+    render(<UpgradePaywallModal isOpen kind="feature" onClose={vi.fn()} />);
+
+    expect(await screen.findByText('premium:paywall.alreadyPremiumTitle')).toBeTruthy();
+    expect(screen.queryByText('premium:paywall.bestValue')).toBeNull();
+  });
+});

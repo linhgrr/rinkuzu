@@ -39,6 +39,7 @@ describe('toSubscriptionPageViewModel', () => {
           price: 99000,
           priceLabel: '99.000 ₫',
           durationDisplay: '1 Month',
+          calculatedMonths: 1,
         },
       ],
       currentSubscription: {

@@ -92,14 +92,19 @@ describe('consumeOpenAISseResponse', () => {
     const response = new Response(
       JSON.stringify({
         success: false,
-        error: { code: 'llm_rate_limit_exceeded', message: 'Limit reached' },
+        error: {
+          code: 'quota_exceeded',
+          message: 'Usage quota exceeded',
+          meta: { tier: 'free', upgradeEligible: true },
+        },
       }),
       { status: 429, headers: { 'Content-Type': 'application/json' } },
     );
 
     await expect(consumeOpenAISseResponse(response, options)).rejects.toMatchObject({
       name: 'ApiResponseError',
-      code: 'llm_rate_limit_exceeded',
+      code: 'quota_exceeded',
+      meta: { tier: 'free', upgradeEligible: true },
     });
     expect(listener).toHaveBeenCalledOnce();
     unsubscribe();

@@ -57,6 +57,7 @@ import {
   refundLlmUsage,
   reserveLlmUsage,
 } from './rate-limit';
+import { isPremiumLimitError } from '@/features/subscription/lib/limit-error';
 
 describe('entitlement usage ledger', () => {
   beforeEach(() => {
@@ -115,13 +116,21 @@ describe('entitlement usage ledger', () => {
     );
     const response = buildLlmRateLimitResponse(result);
     expect(response.status).toBe(429);
-    await expect(response.json()).resolves.toMatchObject({
+    const body = await response.json();
+    expect(body).toMatchObject({
       success: false,
       error: {
         code: 'quota_exceeded',
-        meta: { capability: 'ask_rin_chan', tier: 'free' },
+        meta: { capability: 'ask_rin_chan', tier: 'free', upgradeEligible: true },
       },
     });
+    expect(isPremiumLimitError(body.error)).toBe(true);
+
+    const premiumBody = await buildLlmRateLimitResponse({ ...result, tier: 'premium' }).json();
+    expect(premiumBody).toMatchObject({
+      error: { code: 'quota_exceeded', meta: { tier: 'premium', upgradeEligible: false } },
+    });
+    expect(isPremiumLimitError(premiumBody.error)).toBe(false);
   });
 
   it('recognizes a committed idempotency key without charging again', async () => {

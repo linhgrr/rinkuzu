@@ -4,6 +4,7 @@ export interface SubscriptionPlanViewModel {
   price: number;
   priceLabel: string;
   durationDisplay: string;
+  calculatedMonths: number;
 }
 
 export interface CurrentSubscriptionViewModel {

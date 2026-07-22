@@ -1,4 +1,4 @@
-const UPGRADE_ELIGIBLE_CODES = new Set(['llm_rate_limit_exceeded', 'premium_required']);
+const UPGRADE_ELIGIBLE_CODES = new Set(['premium_required']);
 
 type ErrorWithEntitlement = {
   code?: unknown;

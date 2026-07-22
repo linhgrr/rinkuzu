@@ -1,6 +1,5 @@
 /** @vitest-environment jsdom */
 
-import type { ReactNode } from 'react';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
@@ -15,9 +14,9 @@ const { pushMock, toastInfoMock } = vi.hoisted(() => ({
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: pushMock }) }));
 vi.mock('sonner', () => ({ toast: { info: toastInfoMock } }));
-vi.mock('@/components/ui/Modal', () => ({
-  Modal: ({ children, isOpen, title }: { children: ReactNode; isOpen: boolean; title: string }) =>
-    isOpen ? <section aria-label={title}>{children}</section> : null,
+vi.mock('@/features/subscription/components/UpgradePaywallModal', () => ({
+  UpgradePaywallModal: ({ isOpen, kind }: { isOpen: boolean; kind: 'quota' | 'feature' }) =>
+    isOpen ? <section aria-label="limitReachedTitle" data-kind={kind} /> : null,
 }));
 
 describe('UpgradePromptProvider', () => {
@@ -27,21 +26,40 @@ describe('UpgradePromptProvider', () => {
     vi.clearAllMocks();
   });
 
-  it('opens the shared prompt for entitlement errors', () => {
+  it('opens the shared prompt for upgrade-eligible free-tier quota errors', () => {
     render(<UpgradePromptProvider>content</UpgradePromptProvider>);
 
     act(() => {
       reportApiError(
         new ApiResponseError({
-          message: 'LLM limit reached',
+          message: 'Usage quota exceeded',
           status: 429,
           payload: null,
-          code: 'llm_rate_limit_exceeded',
+          code: 'quota_exceeded',
+          meta: { tier: 'free', upgradeEligible: true },
         }),
       );
     });
 
     expect(screen.getByRole('region', { name: 'limitReachedTitle' })).toBeTruthy();
+  });
+
+  it('does not offer an upgrade for premium-tier quota exhaustion', () => {
+    render(<UpgradePromptProvider>content</UpgradePromptProvider>);
+
+    act(() => {
+      reportApiError(
+        new ApiResponseError({
+          message: 'Usage quota exceeded',
+          status: 429,
+          payload: null,
+          code: 'quota_exceeded',
+          meta: { tier: 'premium', upgradeEligible: false },
+        }),
+      );
+    });
+
+    expect(screen.queryByRole('region', { name: 'limitReachedTitle' })).toBeNull();
   });
 
   it('ignores unrelated rate-limit errors', () => {

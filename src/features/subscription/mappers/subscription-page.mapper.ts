@@ -19,6 +19,7 @@ function toSubscriptionPlanViewModel(
     price: plan.price,
     priceLabel: formatVndCurrency(plan.price),
     durationDisplay: plan.durationDisplay,
+    calculatedMonths: plan.calculatedMonths,
   };
 }
 

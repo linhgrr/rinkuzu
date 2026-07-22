@@ -13,5 +13,27 @@
   "rateLimitMessage": "Bạn đã dùng hết lượt trong ngày cho tính năng này ở gói miễn phí.",
   "upgradeCta": "Nâng cấp",
   "dontShowAgain": "Đừng hiện lại (lần sau chỉ hiện thông báo nhỏ)",
-  "dismiss": "Để sau"
+  "dismiss": "Để sau",
+  "paywall": {
+    "quotaTitle": "Tiếp tục học cùng Rin-chan",
+    "quotaDescription": "Bạn đã dùng hết lượt miễn phí hôm nay. Premium tăng hạn mức và mở khóa quiz riêng tư.",
+    "featureTitle": "Mở khóa phần học này",
+    "featureDescription": "Premium mở khóa quiz riêng tư và tăng hạn mức cho các công cụ AI.",
+    "currentPlan": "Gói hiện tại",
+    "freeResetNote": "Bạn vẫn có thể tiếp tục dùng các tính năng miễn phí khác. Hạn mức sẽ tự làm mới theo chu kỳ hiển thị trong hồ sơ.",
+    "availablePlans": "Các gói Premium đang mở bán",
+    "premiumHeading": "Học liền mạch hơn với Premium",
+    "premiumSummary": "Nhận 150 lượt Ask Rin-chan mỗi ngày, 50 lần tạo quiz từ PDF mỗi tháng và 12 lộ trình thích ứng mỗi tháng.",
+    "loading": "Đang tải các gói Premium",
+    "loadError": "Chưa thể tải các gói Premium. Bạn có thể thử lại mà không mất nội dung đang học.",
+    "retry": "Tải lại",
+    "alreadyPremiumTitle": "Premium của bạn đã hoạt động",
+    "alreadyPremiumDescription": "Quyền truy cập có thể vừa được cập nhật ở tab khác. Đóng cửa sổ này và thử lại tính năng.",
+    "noPlans": "Hiện chưa có gói Premium nào đang mở bán. Hạn mức miễn phí của bạn sẽ tự làm mới.",
+    "bestValue": "Chi phí theo tháng tốt nhất",
+    "perMonth": "Tương đương {price}/tháng",
+    "choosePlan": "Chọn {plan}",
+    "paymentError": "Chưa thể mở trang thanh toán. Vui lòng thử lại sau.",
+    "continueFree": "Tiếp tục với Miễn phí"
+  }
 }

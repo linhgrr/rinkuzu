@@ -36,6 +36,7 @@ describe('SubscriptionPage plan comparison', () => {
           price: 99000,
           priceLabel: '99.000 ₫',
           durationDisplay: '1 month',
+          calculatedMonths: 1,
         },
       ],
       currentSubscription: null,
@@ -67,6 +68,7 @@ describe('SubscriptionPage plan comparison', () => {
           price: 99000,
           priceLabel: '99.000 ₫',
           durationDisplay: '1 month',
+          calculatedMonths: 1,
         },
       ],
       currentSubscription: {

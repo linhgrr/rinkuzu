@@ -408,6 +408,7 @@ export function buildLlmRateLimitResponse(result: LlmUsageReservation) {
   return apiErr('quota_exceeded', 'Usage quota exceeded', 429, {
     capability: result.action,
     tier: result.tier,
+    upgradeEligible: result.tier === 'free',
     retryAfterSeconds: result.retryAfterSeconds,
     windows: Object.fromEntries(
       result.windows.map((item) => [

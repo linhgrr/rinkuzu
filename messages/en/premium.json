@@ -13,5 +13,27 @@
   "rateLimitMessage": "You've hit your daily limit for this feature on the free plan.",
   "upgradeCta": "Upgrade",
   "dontShowAgain": "Don't show this again (only a small toast next time)",
-  "dismiss": "Not now"
+  "dismiss": "Not now",
+  "paywall": {
+    "quotaTitle": "Keep learning with Rin-chan",
+    "quotaDescription": "You have used today's free allowance. Premium raises your limits and unlocks private quizzes.",
+    "featureTitle": "Unlock this learning feature",
+    "featureDescription": "Premium unlocks private quizzes and raises limits across the AI learning tools.",
+    "currentPlan": "Current plan",
+    "freeResetNote": "You can keep using other free features. Allowances reset on the schedule shown in your profile.",
+    "availablePlans": "Available Premium plans",
+    "premiumHeading": "Learn with fewer interruptions",
+    "premiumSummary": "Get 150 Ask Rin-chan messages per day, 50 PDF quiz generations per month, and 12 adaptive paths per month.",
+    "loading": "Loading Premium plans",
+    "loadError": "Premium plans could not be loaded. Retry without losing your current learning context.",
+    "retry": "Try again",
+    "alreadyPremiumTitle": "Your Premium access is active",
+    "alreadyPremiumDescription": "Your access may have changed in another tab. Close this window and retry the feature.",
+    "noPlans": "No Premium plan is currently available. Your free allowance will reset automatically.",
+    "bestValue": "Best monthly value",
+    "perMonth": "Equivalent to {price}/month",
+    "choosePlan": "Choose {plan}",
+    "paymentError": "The payment page could not be opened. Please try again.",
+    "continueFree": "Continue with Free"
+  }
 }

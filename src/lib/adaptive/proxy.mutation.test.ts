@@ -70,9 +70,9 @@ const rateLimitMocks = vi.hoisted(() => {
         {
           success: false,
           error: {
-            code: 'llm_rate_limit_exceeded',
-            message: 'Rate limit exceeded',
-            detail: 'LLM rate limit exceeded',
+            code: 'quota_exceeded',
+            message: 'Usage quota exceeded',
+            meta: { tier: 'free', upgradeEligible: true },
           },
         },
         { status: 429 },
@@ -162,9 +162,9 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
         {
           success: false,
           error: {
-            code: 'llm_rate_limit_exceeded',
-            message: 'Rate limit exceeded',
-            detail: 'LLM rate limit exceeded',
+            code: 'quota_exceeded',
+            message: 'Usage quota exceeded',
+            meta: { tier: 'free', upgradeEligible: true },
           },
         },
         { status: 429 },

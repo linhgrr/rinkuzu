@@ -7,27 +7,25 @@ export async function fetchAskRinAgent(url: string, init: RequestInit): Promise<
   const response = await fetch(url, init);
   if (response.ok) return response;
 
+  let payload: unknown = null;
   try {
-    const payload: unknown = await response.clone().json();
-    if (isStandardErrorEnvelope(payload)) {
-      const message = extractApiErrorMessage(
-        payload,
-        `Request failed with status ${response.status}`,
-      );
-      reportApiError(
-        new ApiResponseError({
-          message,
-          status: response.status,
-          payload,
-          code: extractApiErrorCode(payload),
-          detail: message,
-          meta: extractApiErrorMeta(payload),
-        }),
-      );
-    }
+    payload = await response.clone().json();
   } catch {
-    // HttpAgent remains the owner of invalid/non-JSON response handling.
+    // Non-JSON upstream bodies are deliberately not exposed through the chat UI.
   }
 
-  return response;
+  const standardPayload = isStandardErrorEnvelope(payload) ? payload : null;
+  const message = standardPayload
+    ? extractApiErrorMessage(standardPayload, 'Ask Rin-chan request failed')
+    : 'Ask Rin-chan request failed';
+  const error = new ApiResponseError({
+    message,
+    status: response.status,
+    payload: standardPayload,
+    code: standardPayload ? extractApiErrorCode(standardPayload) : null,
+    detail: standardPayload ? message : null,
+    meta: standardPayload ? extractApiErrorMeta(standardPayload) : null,
+  });
+  reportApiError(error);
+  throw error;
 }

@@ -35,6 +35,8 @@ import {
   type AskRinContextPayload,
 } from '@/lib/ask-rin-chan/client';
 import { fetchAskRinAgent } from '@/lib/ask-rin-chan/agui-fetch';
+import { getAskRinPublicErrorKey } from '@/lib/ask-rin-chan/public-error';
+import { isAwaitingFirstAssistantText } from '@/lib/ask-rin-chan/stream-state';
 
 const CHATBOT_ICON = '/images/chatbot_icon.png';
 
@@ -57,15 +59,7 @@ interface AskRinRuntimeProps {
   onHistoryChange?: (summary: AskRinHistorySummary) => void;
 }
 
-function AskRinText({ text }: TextMessagePartProps) {
-  const role = useAuiState((state) => state.message.role);
-  if (role === 'assistant') {
-    return <MarkdownRenderer content={text} className="text-sm leading-6 text-neutral-800" />;
-  }
-  return <p className="whitespace-pre-wrap text-sm leading-6">{text}</p>;
-}
-
-function ThinkingMessage(_props: EmptyMessagePartProps) {
+function ThinkingIndicator() {
   const t = useTranslations('adaptiveLearning.chatbot');
   return (
     <div className="flex items-center gap-2 text-sm text-neutral-500" aria-label={t('thinking')}>
@@ -73,6 +67,21 @@ function ThinkingMessage(_props: EmptyMessagePartProps) {
       <span>{t('thinking')}</span>
     </div>
   );
+}
+
+function AskRinText({ text, status }: TextMessagePartProps) {
+  const role = useAuiState((state) => state.message.role);
+  if (isAwaitingFirstAssistantText(role, text, status.type)) {
+    return <ThinkingIndicator />;
+  }
+  if (role === 'assistant') {
+    return <MarkdownRenderer content={text} className="text-sm leading-6 text-neutral-800" />;
+  }
+  return <p className="whitespace-pre-wrap text-sm leading-6">{text}</p>;
+}
+
+function ThinkingMessage(_props: EmptyMessagePartProps) {
+  return <ThinkingIndicator />;
 }
 
 function AskRinMessage() {
@@ -277,7 +286,6 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
   const t = useTranslations('adaptiveLearning.chatbot');
   const historyErrorLabel = t('errorHistory');
   const interruptedLabel = t('errorInterrupted');
-  const connectionErrorLabel = t('errorConnection');
   const [error, setError] = useState('');
   const historyCallbackRef = useRef(onHistoryChange);
   const historySummaryRef = useRef<AskRinHistorySummary>({ totalMessages: 0, totalTurns: 0 });
@@ -349,7 +357,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
     agent,
     adapters: { history },
     onError: (runError) => {
-      setError(extractUnknownErrorMessage(runError, connectionErrorLabel));
+      setError(t(getAskRinPublicErrorKey(runError)));
     },
   });
 
@@ -382,7 +390,6 @@ function AskRinRegistration({
   onHistoryChange?: (summary: AskRinHistorySummary) => void;
 }) {
   const t = useTranslations('adaptiveLearning.chatbot');
-  const connectionErrorLabel = t('errorConnection');
   const [credentials, setCredentials] = useState<AskRinContextCredentials | null>(null);
   const [registrationError, setRegistrationError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -396,13 +403,13 @@ function AskRinRegistration({
       })
       .catch((contextError: unknown) => {
         if (active) {
-          setRegistrationError(extractUnknownErrorMessage(contextError, connectionErrorLabel));
+          setRegistrationError(t(getAskRinPublicErrorKey(contextError)));
         }
       });
     return () => {
       active = false;
     };
-  }, [attempt, connectionErrorLabel, serializedContext]);
+  }, [attempt, serializedContext, t]);
 
   const retryRegistration = () => {
     setCredentials(null);

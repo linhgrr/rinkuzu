@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": {
     "repository": "linhgrr/rinkuzu-ai-api",
-    "commit": "5de2b7d67dff6c4de281a4f7d502051f4e545804"
+    "commit": "8938d1e9535ba7b6d465163ab8e1b9e5a8234b37"
   },
   "artifacts": {
     "openapi": {

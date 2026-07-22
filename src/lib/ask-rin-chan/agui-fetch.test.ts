@@ -11,7 +11,7 @@ describe('fetchAskRinAgent', () => {
     vi.clearAllMocks();
   });
 
-  it('publishes upgrade-eligible quota errors without consuming the HttpAgent response', async () => {
+  it('publishes and throws a typed upgrade-eligible quota error', async () => {
     const response = Response.json(
       {
         success: false,
@@ -26,9 +26,11 @@ describe('fetchAskRinAgent', () => {
     );
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
 
-    const result = await fetchAskRinAgent('/api/ask-rin-chan/agent', {});
-
-    expect(result).toBe(response);
+    await expect(fetchAskRinAgent('/api/ask-rin-chan/agent', {})).rejects.toMatchObject({
+      code: 'quota_exceeded',
+      status: 429,
+      meta: { upgradeEligible: true },
+    });
     expect(reportApiErrorMock).toHaveBeenCalledWith(
       expect.objectContaining({
         code: 'quota_exceeded',
@@ -36,19 +38,18 @@ describe('fetchAskRinAgent', () => {
         meta: { upgradeEligible: true },
       }),
     );
-    await expect(result.json()).resolves.toMatchObject({
-      error: { code: 'quota_exceeded' },
-    });
   });
 
-  it('leaves non-standard failures to HttpAgent without emitting a product error', async () => {
+  it('sanitizes non-standard failures instead of exposing their response body', async () => {
     const response = new Response('bad gateway', { status: 502 });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
 
-    const result = await fetchAskRinAgent('/api/ask-rin-chan/agent', {});
-
-    expect(result).toBe(response);
-    expect(reportApiErrorMock).not.toHaveBeenCalled();
-    await expect(result.text()).resolves.toBe('bad gateway');
+    await expect(fetchAskRinAgent('/api/ask-rin-chan/agent', {})).rejects.toMatchObject({
+      message: 'Ask Rin-chan request failed',
+      status: 502,
+      payload: null,
+      code: null,
+    });
+    expect(reportApiErrorMock).toHaveBeenCalledOnce();
   });
 });

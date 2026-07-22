@@ -531,7 +531,13 @@
     "iconAlt": "Trợ lý AI",
     "errorInsufficientContext": "Không có đủ ngữ cảnh câu hỏi để hỏi AI.",
     "errorAIFailure": "Không thể lấy phản hồi từ AI.",
-    "errorConnection": "Có lỗi khi kết nối AI.",
+    "errorConnection": "Rin-chan chưa thể kết nối lúc này. Bạn hãy thử lại nhé.",
+    "errorBusy": "Rin-chan vẫn đang trả lời tin nhắn trước. Bạn chờ một chút nhé.",
+    "errorContextExpired": "Câu hỏi này đã thay đổi hoặc hết hạn. Hãy tải lại trang rồi thử lại.",
+    "errorImageUnsupported": "Rin-chan chưa thể đọc hình trong câu hỏi này. Bạn hãy thử một câu khác nhé.",
+    "errorInvalidRequest": "Rin-chan chưa hiểu yêu cầu này. Bạn hãy diễn đạt lại rồi thử nhé.",
+    "errorQuota": "Bạn đã dùng hết lượt Ask Rin-chan. Hãy chọn gói phù hợp để tiếp tục.",
+    "errorRateLimited": "Bạn đang hỏi hơi nhanh. Hãy chờ một chút rồi thử lại nhé.",
     "errorInterrupted": "_Phản hồi bị gián đoạn trước khi hoàn tất. Bạn có thể hỏi lại để Rin-chan tiếp tục._"
   },
   "meta": {

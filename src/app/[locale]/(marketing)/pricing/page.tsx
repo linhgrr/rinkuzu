@@ -10,6 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { formatVndCurrency } from '@/lib/formatters';
 import { DurationUtils } from '@/types/subscription';
+import {
+  FREE_PRICING_FEATURE_KEYS,
+  PREMIUM_PRICING_FEATURE_KEYS,
+} from '@/features/subscription/constants/pricing-features';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -25,7 +29,6 @@ interface PremiumPlanView {
   name: string;
   price: number;
   durationDisplay: string;
-  features: string[];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -48,7 +51,8 @@ export default async function PricingPage({ params }: Props) {
   const premiumPlans = (await loadPremiumPlans()).sort((a, b) => a.price - b.price);
   const lowestPrice = premiumPlans[0]?.price ?? null;
 
-  const freeFeatures = t.raw('free.features') as string[];
+  const freeFeatures = FREE_PRICING_FEATURE_KEYS.map((key) => t(`free.features.${key}`));
+  const premiumFeatures = PREMIUM_PRICING_FEATURE_KEYS.map((key) => t(`premium.features.${key}`));
   const faqs = t.raw('faqs') as FaqEntry[];
 
   const faqSchema = buildFaqSchema(faqs);
@@ -115,7 +119,7 @@ export default async function PricingPage({ params }: Props) {
                     {t('premium.everythingInFree')}
                   </p>
                   <ul className="space-y-3">
-                    {plan.features.map((feature) => (
+                    {premiumFeatures.map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-sm">
                         <CircleCheck className="size-4 flex-shrink-0 text-green-500" />
                         <span>{feature}</span>
@@ -178,7 +182,6 @@ async function loadPremiumPlans(): Promise<PremiumPlanView[]> {
         name: plan.name,
         price: plan.price,
         durationDisplay: DurationUtils.getDurationInfo(plan.duration).displayName,
-        features: plan.features,
       });
     }
     return premiumPlans;

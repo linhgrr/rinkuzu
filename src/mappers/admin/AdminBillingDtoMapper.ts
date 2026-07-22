@@ -29,7 +29,6 @@ export class AdminBillingDtoMapper {
       name: plan.name,
       price: plan.price,
       duration: plan.duration,
-      features: plan.features,
       isActive: plan.isActive,
       createdAt: serializeDate(plan.createdAt, 'plan.createdAt'),
       updatedAt: serializeDate(plan.updatedAt, 'plan.updatedAt'),

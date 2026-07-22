@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Pricing | RinKuzu",
-    "description": "RinKuzu pricing: a generous free plan for PDF quiz generation and adaptive practice, plus affordable premium plans that unlock private quizzes, higher limits, and advanced stats."
+    "description": "RinKuzu pricing: learn with Ask Rin-chan, generate quizzes from PDFs, and practice adaptively for free; Premium unlocks private quizzes and higher limits."
   },
   "hero": {
     "title": "Simple, Transparent Pricing",
@@ -11,25 +11,32 @@
     "name": "Free",
     "tagline": "For students and individuals",
     "cta": "Get Started Free",
-    "features": [
-      "PDF-to-quiz generation (daily limit)",
-      "Adaptive practice sessions",
-      "Knowledge graph visualization",
-      "Bloom's Taxonomy mastery levels",
-      "Progress tracking dashboard",
-      "Community quiz browsing"
-    ]
+    "features": {
+      "askRinChan": "Up to 25 Ask Rin-chan messages per day",
+      "pdfQuiz": "5 PDF-to-quiz generations per month, up to 30 pages per file",
+      "adaptivePath": "2 adaptive learning paths per month",
+      "adaptiveExercises": "Up to 50 adaptive exercises per day",
+      "publicQuizzes": "Create and share public quizzes",
+      "progressTracking": "Progress and mastery tracking"
+    }
   },
   "premium": {
     "popular": "Popular",
     "everythingInFree": "Everything in Free, and:",
-    "cta": "Upgrade"
+    "cta": "Upgrade",
+    "features": {
+      "privateQuizzes": "Create private quizzes",
+      "askRinChan": "Up to 150 Ask Rin-chan messages per day",
+      "pdfQuiz": "50 PDF-to-quiz generations per month, up to 100 pages per file",
+      "adaptivePath": "12 adaptive learning paths per month",
+      "adaptiveExercises": "Up to 500 adaptive exercises per day"
+    }
   },
   "faqHeading": "Pricing Questions",
   "faqs": [
     {
       "q": "What is included in the free plan?",
-      "a": "The free plan includes PDF-to-quiz generation, adaptive practice sessions, mastery tracking, Bloom's Taxonomy level practice, community quiz browsing, and a personal dashboard — with daily usage limits. Everything you need to get started with AI-powered learning."
+      "a": "The free plan includes Ask Rin-chan, PDF-to-quiz generation, adaptive paths and exercises, public quizzes, and progress tracking. Each AI capability has its own quota shown on your profile."
     },
     {
       "q": "How does Premium work?",

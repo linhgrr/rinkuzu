@@ -203,7 +203,6 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
         _e2eRun: string;
         createdAt: Date;
         duration: string;
-        features: string[];
         isActive: boolean;
         name: string;
         price: number;
@@ -214,7 +213,6 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
         _e2eRun: runId,
         createdAt: now,
         duration: 'P1M',
-        features: ['Production E2E payment boundary'],
         isActive: true,
         name: 'E2E Premium Monthly',
         price: 49_000,
@@ -506,7 +504,6 @@ test.describe('production critical paths', () => {
               paymentUrl: 'https://pay.payos.vn/web/e2e-production-checkout',
               plan: {
                 duration: 'P1M',
-                features: ['Production E2E payment boundary'],
                 id: fixture.planId,
                 name: 'E2E Premium Monthly',
                 price: 49_000,

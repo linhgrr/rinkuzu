@@ -13,7 +13,6 @@ export function toAdminBillingPlanViewModel(plan: BillingPlanDto): AdminBillingP
     priceLabel: formatVndCurrency(plan.price),
     duration: plan.duration,
     durationLabel: durationInfo.displayName,
-    features: plan.features,
     isActive: plan.isActive,
     createdAt: plan.createdAt,
     createdAtLabel: formatDate(plan.createdAt),

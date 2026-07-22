@@ -29,7 +29,6 @@ const plan = {
   name: 'Premium',
   price: 99000,
   duration: 'P1M',
-  features: ['AI'],
   isActive: true,
   createdAt: '2026-07-01T00:00:00.000Z',
   updatedAt: '2026-07-01T00:00:00.000Z',
@@ -92,7 +91,6 @@ describe('/api/admin/plans', () => {
         name: 'Premium',
         price: 99000,
         duration: 'P1M',
-        features: ['AI'],
         isActive: true,
       }),
       routeContext,
@@ -102,7 +100,6 @@ describe('/api/admin/plans', () => {
       name: 'Premium',
       price: 99000,
       duration: 'P1M',
-      features: ['AI'],
       isActive: true,
     });
 

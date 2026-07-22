@@ -5,7 +5,6 @@ export interface BillingPlan {
   name: string;
   price: number;
   duration: string;
-  features: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

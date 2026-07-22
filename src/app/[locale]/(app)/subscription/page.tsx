@@ -19,6 +19,10 @@ import {
   subscriptionPageReducer,
   type SubscriptionPageAction,
 } from '@/features/subscription/lib/subscription-page-state';
+import {
+  FREE_PRICING_FEATURE_KEYS,
+  PREMIUM_PRICING_FEATURE_KEYS,
+} from '@/features/subscription/constants/pricing-features';
 
 async function loadSubscriptionPage(dispatch: Dispatch<SubscriptionPageAction>): Promise<void> {
   dispatch({ type: 'loadStart' });
@@ -33,7 +37,12 @@ async function loadSubscriptionPage(dispatch: Dispatch<SubscriptionPageAction>):
 
 export default function SubscriptionPage() {
   const t = useTranslations('subscription');
+  const tPricing = useTranslations('pricing');
   const [state, dispatch] = useReducer(subscriptionPageReducer, initialSubscriptionPageState);
+  const freeFeatures = FREE_PRICING_FEATURE_KEYS.map((key) => tPricing(`free.features.${key}`));
+  const premiumFeatures = PREMIUM_PRICING_FEATURE_KEYS.map((key) =>
+    tPricing(`premium.features.${key}`),
+  );
 
   useEffect(() => {
     void loadSubscriptionPage(dispatch);
@@ -120,11 +129,42 @@ export default function SubscriptionPage() {
             </Card>
           )}
 
+          <div className="mb-6 text-center md:mb-8">
+            <h1 className="text-2xl font-semibold text-ink md:text-3xl">{t('upgradeAccount')}</h1>
+            <p className="mt-2 text-sm text-ink-muted md:text-base">{t('upgradeDescription')}</p>
+          </div>
+
           {/* Subscription Plans */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+          <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
+            <Card className="flex h-full flex-col border-neutral-200 p-4 md:p-6">
+              <div className="mb-4 text-center md:mb-6">
+                <h3 className="mb-2 text-xl font-semibold text-ink md:text-2xl">
+                  {tPricing('free.name')}
+                </h3>
+                <div className="mb-2 text-2xl font-bold text-ink md:text-4xl">0 ₫</div>
+                <p className="text-sm text-ink-muted md:text-base">{tPricing('free.tagline')}</p>
+              </div>
+
+              <ul className="mb-6 flex-1 space-y-2 md:mb-8 md:space-y-3">
+                {freeFeatures.map((feature) => (
+                  <li key={feature} className="flex items-start">
+                    <HiOutlineCheck className="mr-3 mt-0.5 size-5 flex-shrink-0 text-green-500" />
+                    <span className="text-ink">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Button disabled className="w-full" variant="outline">
+                {hasActivePremium ? t('freePlan') : t('currentPlan')}
+              </Button>
+            </Card>
+
             {state.plans.map((plan, index) => (
-              <Card key={plan.id} className="p-4 md:p-6 relative">
-                {index === 1 && (
+              <Card
+                key={plan.id}
+                className="relative flex h-full flex-col border-brand-action/40 p-4 md:p-6"
+              >
+                {index === 0 && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                     <span className="bg-yellow-500 text-white px-3 md:px-4 py-1 rounded-full text-xs md:text-sm font-medium">
                       {t('popular')}
@@ -140,8 +180,11 @@ export default function SubscriptionPage() {
                   <p className="text-sm md:text-base text-ink-muted">{plan.durationDisplay}</p>
                 </div>
 
-                <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
-                  {plan.features.map((feature) => (
+                <p className="mb-3 font-medium text-green-700">
+                  {tPricing('premium.everythingInFree')}
+                </p>
+                <ul className="mb-6 flex-1 space-y-2 md:mb-8 md:space-y-3">
+                  {premiumFeatures.map((feature) => (
                     <li key={feature} className="flex items-start">
                       <HiOutlineCheck className="size-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                       <span className="text-ink">{feature}</span>
@@ -153,9 +196,9 @@ export default function SubscriptionPage() {
                   onClick={() => handlePurchase(plan)}
                   disabled={state.isPremium}
                   className="w-full"
-                  variant={index === 1 ? 'default' : 'outline'}
+                  variant={index === 0 ? 'default' : 'outline'}
                 >
-                  {state.isPremium ? t('premiumPlan') : t('subscribe')}
+                  {state.isPremium ? t('currentPlan') : t('subscribe')}
                 </Button>
               </Card>
             ))}

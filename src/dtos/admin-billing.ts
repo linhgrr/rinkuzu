@@ -18,34 +18,23 @@ const durationSchema = z
   .trim()
   .refine((value) => DurationUtils.isValidISO8601Duration(value), 'Invalid duration format');
 
-const featuresSchema = z.array(z.string()).transform((features) => {
-  const cleaned: string[] = [];
-  for (const feature of features) {
-    const trimmed = feature.trim();
-    if (trimmed.length > 0) cleaned.push(trimmed);
-  }
-  return cleaned;
-});
-
 export const createPaymentRequestSchema = z.object({
   planId: planIdSchema,
 });
 
-export const createPlanRequestSchema = z.object({
+export const createPlanRequestSchema = z.strictObject({
   name: z.string().trim().min(1, 'Plan name is required').max(80),
   price: z.number().finite().positive('Plan price must be greater than 0'),
   duration: durationSchema,
-  features: featuresSchema.default([]),
   isActive: z.boolean().default(true),
 });
 
 export const updatePlanRequestSchema = z
-  .object({
+  .strictObject({
     id: planIdSchema,
     name: z.string().trim().min(1, 'Plan name is required').max(80).optional(),
     price: z.number().finite().positive('Plan price must be greater than 0').optional(),
     duration: durationSchema.optional(),
-    features: featuresSchema.optional(),
     isActive: z.boolean().optional(),
   })
   .refine(
@@ -82,7 +71,6 @@ export interface BillingPlanDto {
   name: string;
   price: number;
   duration: string;
-  features: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

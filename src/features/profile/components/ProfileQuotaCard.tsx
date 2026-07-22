@@ -19,6 +19,18 @@ const CAPABILITIES: MeteredCapability[] = [
   'adaptive_generation',
 ];
 
+interface ProfileQuotaCardProps {
+  variant?: 'summary' | 'full';
+}
+
+function getPrimaryWindow(windows: EntitlementWindowSnapshot[]) {
+  return (
+    windows.find((window) => window.window === 'day') ??
+    windows.find((window) => window.window === 'month') ??
+    windows[0]
+  );
+}
+
 function QuotaWindow({ item, label }: { item: EntitlementWindowSnapshot; label: string }) {
   const percent = Math.min(100, Math.max(0, (item.used / item.limit) * 100));
   return (
@@ -46,7 +58,7 @@ function QuotaWindow({ item, label }: { item: EntitlementWindowSnapshot; label: 
   );
 }
 
-export function ProfileQuotaCard() {
+export function ProfileQuotaCard({ variant = 'full' }: ProfileQuotaCardProps) {
   const t = useTranslations('profile');
   const { data, error, isLoading, mutate } = useSWR('/api/entitlements', fetchProfileEntitlements, {
     refreshInterval: 60_000,
@@ -63,10 +75,11 @@ export function ProfileQuotaCard() {
     day: t('quotaPerDay'),
     month: t('quotaPerMonth'),
   };
+  const isSummary = variant === 'summary';
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-4 border-b border-neutral-100 px-6 py-5">
+      <div className="flex items-center justify-between gap-4 border-b border-neutral-100 px-5 py-4 sm:px-6">
         <div className="flex items-center gap-2">
           <HiOutlineChartBar className="size-5 text-brand-trust" />
           <div>
@@ -76,11 +89,11 @@ export function ProfileQuotaCard() {
         </div>
         {data ? (
           <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold uppercase text-neutral-600">
-            {data.tier}
+            {data.tier === 'premium' ? t('premiumPlan') : t('freePlan')}
           </span>
         ) : null}
       </div>
-      <div className="p-6">
+      <div className="p-5 sm:p-6">
         {isLoading ? <p className="text-sm text-neutral-500">{t('quotaLoading')}</p> : null}
         {error ? (
           <div className="flex items-center justify-between gap-4">
@@ -91,12 +104,24 @@ export function ProfileQuotaCard() {
           </div>
         ) : null}
         {data ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={isSummary ? 'space-y-4' : 'grid gap-4 sm:grid-cols-2'}>
             {CAPABILITIES.map((capability) => {
               const quota = data.capabilities[capability];
               if (quota.kind !== 'metered') return null;
+              const visibleWindows = isSummary
+                ? [getPrimaryWindow(quota.windows)].filter(
+                    (window): window is EntitlementWindowSnapshot => window !== undefined,
+                  )
+                : quota.windows;
               return (
-                <div key={capability} className="rounded-xl border border-neutral-100 p-4">
+                <div
+                  key={capability}
+                  className={
+                    isSummary
+                      ? 'rounded-xl bg-neutral-50 p-3.5'
+                      : 'rounded-xl border border-neutral-100 p-4'
+                  }
+                >
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold text-neutral-900">
                       {capabilityLabels[capability]}
@@ -109,7 +134,7 @@ export function ProfileQuotaCard() {
                   </div>
                   {quota.unmetered ? null : (
                     <div className="space-y-3">
-                      {quota.windows.map((window) => (
+                      {visibleWindows.map((window) => (
                         <QuotaWindow
                           key={window.window}
                           item={window}

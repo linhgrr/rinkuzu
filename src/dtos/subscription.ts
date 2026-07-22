@@ -31,7 +31,6 @@ export interface SubscriptionPlanDto {
   name: string;
   price: number;
   duration: string;
-  features: string[];
 }
 
 export interface PaymentRequestDto {

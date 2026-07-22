@@ -20,7 +20,6 @@ const planDto = {
   name: 'Pro',
   price: 99000,
   duration: 'P1M',
-  features: ['Unlimited quizzes'],
   isActive: true,
   createdAt: '2026-07-02T00:00:00.000Z',
   updatedAt: '2026-07-02T01:00:00.000Z',
@@ -55,7 +54,6 @@ describe('admin-plans-api', () => {
       name: 'Pro',
       price: 99000,
       duration: 'P1M',
-      features: ['Unlimited quizzes'],
       isActive: true,
     };
 
@@ -72,7 +70,6 @@ describe('admin-plans-api', () => {
         name: 'Pro Plus',
         price: 129000,
         duration: 'P1M',
-        features: ['Unlimited quizzes'],
         isActive: true,
       },
     });
@@ -84,7 +81,6 @@ describe('admin-plans-api', () => {
         name: 'Pro Plus',
         price: 129000,
         duration: 'P1M',
-        features: ['Unlimited quizzes'],
         isActive: true,
       }),
     });

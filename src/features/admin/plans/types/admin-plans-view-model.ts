@@ -5,7 +5,6 @@ export interface AdminBillingPlanViewModel {
   priceLabel: string;
   duration: string;
   durationLabel: string;
-  features: string[];
   isActive: boolean;
   createdAt: string;
   createdAtLabel: string;
@@ -17,7 +16,6 @@ export interface AdminBillingPlanMutationInput {
   name: string;
   price: number;
   duration: string;
-  features: string[];
   isActive: boolean;
 }
 

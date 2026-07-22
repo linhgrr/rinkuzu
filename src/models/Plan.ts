@@ -6,7 +6,6 @@ interface IPlan {
   name: string;
   price: number;
   duration: string;
-  features: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -40,12 +39,8 @@ const PlanSchema = new Schema<IPlan>(
       required: true,
       validate: {
         validator: (value: string) => DurationUtils.isValidISO8601Duration(value),
-        message: 'Invalid duration format. Only the monthly P1M plan is supported.',
+        message: 'Invalid duration format. Supported durations are P1M and P6M.',
       },
-    },
-    features: {
-      type: [String],
-      default: [],
     },
     isActive: {
       type: Boolean,

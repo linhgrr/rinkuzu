@@ -1,10 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
   adminSubscriptionListQuerySchema,
+  createPlanRequestSchema,
   updateSubscriptionRequestSchema,
 } from '@/dtos/admin-billing';
 
 describe('admin subscription controller schemas', () => {
+  it('accepts the supported monthly and six-month plan durations', () => {
+    const basePlan = {
+      name: 'Premium',
+      price: 199_000,
+      isActive: true,
+    };
+
+    expect(createPlanRequestSchema.safeParse({ ...basePlan, duration: 'P1M' }).success).toBe(true);
+    expect(createPlanRequestSchema.safeParse({ ...basePlan, duration: 'P6M' }).success).toBe(true);
+    expect(createPlanRequestSchema.safeParse({ ...basePlan, duration: 'P3M' }).success).toBe(false);
+  });
+
   it('parses and bounds list query parameters', () => {
     expect(
       adminSubscriptionListQuerySchema.parse({

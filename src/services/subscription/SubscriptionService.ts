@@ -128,7 +128,6 @@ export class SubscriptionService implements ISubscriptionService {
       name: plan.name,
       price: plan.price,
       duration: plan.duration,
-      features: plan.features,
     }));
   }
 

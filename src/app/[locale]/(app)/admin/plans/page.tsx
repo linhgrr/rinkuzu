@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { SubscriptionDurationType, PREDEFINED_DURATIONS } from '@/types/subscription';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
-import { HiOutlinePlus, HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
+import { HiOutlinePlus } from 'react-icons/hi';
 import {
   createAdminBillingPlan,
   deleteAdminBillingPlan,
@@ -22,16 +22,10 @@ import type {
   AdminBillingPlanViewModel,
 } from '@/features/admin/plans/types/admin-plans-view-model';
 
-interface FeatureField {
-  id: string;
-  value: string;
-}
-
 interface PlanFormState {
   name: string;
   price: number | '';
   duration: string;
-  features: FeatureField[];
   isActive: boolean;
 }
 
@@ -54,16 +48,11 @@ interface PlanCardProps {
   onDelete: (planId: string, planName: string) => Promise<boolean>;
 }
 
-function createFeatureField(value = ''): FeatureField {
-  return { id: crypto.randomUUID(), value };
-}
-
 function createPlanFormState(): PlanFormState {
   return {
     name: '',
     price: '',
     duration: SubscriptionDurationType.MONTHLY,
-    features: [createFeatureField()],
     isActive: true,
   };
 }
@@ -73,37 +62,18 @@ function createEditFormState(plan: AdminBillingPlanViewModel): PlanFormState {
     name: plan.name,
     price: plan.price,
     duration: plan.duration,
-    features: plan.features.length
-      ? plan.features.map((feature) => createFeatureField(feature))
-      : [createFeatureField()],
     isActive: plan.isActive,
   };
-}
-
-function serializeFeatureFields(features: FeatureField[]) {
-  return features.reduce<string[]>((values, feature) => {
-    const normalizedValue = feature.value.trim();
-    if (normalizedValue) {
-      values.push(normalizedValue);
-    }
-    return values;
-  }, []);
 }
 
 function CreatePlanModal({ isOpen, onClose, onCreate, createLabel }: CreatePlanModalProps) {
   const t = useTranslations('admin');
   const [form, setForm] = useState<PlanFormState>(createPlanFormState);
-  const [uiState, setUiState] = useState({
-    createLoading: false,
-    featureToRemoveId: null as string | null,
-  });
+  const [createLoading, setCreateLoading] = useState(false);
 
   const resetForm = () => {
     setForm(createPlanFormState());
-    setUiState({
-      createLoading: false,
-      featureToRemoveId: null,
-    });
+    setCreateLoading(false);
   };
 
   const handleClose = () => {
@@ -111,51 +81,25 @@ function CreatePlanModal({ isOpen, onClose, onCreate, createLabel }: CreatePlanM
     onClose();
   };
 
-  const handleFeatureChange = (featureId: string, value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      features: prev.features.map((feature) =>
-        feature.id === featureId ? { ...feature, value } : feature,
-      ),
-    }));
-  };
-
-  const handleAddFeature = () => {
-    setForm((prev) => ({
-      ...prev,
-      features: [...prev.features, createFeatureField()],
-    }));
-  };
-
-  const handleRemoveFeature = () => {
-    if (!uiState.featureToRemoveId) return;
-
-    setForm((prev) => {
-      const nextFeatures = prev.features.filter(
-        (feature) => feature.id !== uiState.featureToRemoveId,
-      );
-      return {
-        ...prev,
-        features: nextFeatures.length ? nextFeatures : [createFeatureField()],
-      };
-    });
-    setUiState((prev) => ({ ...prev, featureToRemoveId: null }));
-  };
-
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.price || form.price <= 0) return;
 
-    setUiState((prev) => ({ ...prev, createLoading: true }));
+    setCreateLoading(true);
 
-    const didCreate = await onCreate({
-      name: form.name.trim(),
-      price: Number(form.price),
-      duration: form.duration,
-      features: serializeFeatureFields(form.features),
-      isActive: form.isActive,
-    });
+    let didCreate = false;
+    try {
+      didCreate = await onCreate({
+        name: form.name.trim(),
+        price: Number(form.price),
+        duration: form.duration,
+        isActive: form.isActive,
+      });
+    } catch {
+      setCreateLoading(false);
+      return;
+    }
 
-    setUiState((prev) => ({ ...prev, createLoading: false }));
+    setCreateLoading(false);
 
     if (didCreate) {
       handleClose();
@@ -163,180 +107,129 @@ function CreatePlanModal({ isOpen, onClose, onCreate, createLabel }: CreatePlanM
   };
 
   return (
-    <>
-      <Modal
-        isOpen={isOpen}
-        onClose={handleClose}
-        title="Create New Subscription Plan"
-        description="Add a new subscription plan with ISO 8601 duration format"
-        size="medium"
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label
-                htmlFor="create-plan-name"
-                className="mb-2 block text-sm font-medium text-neutral-700"
-              >
-                Plan Name *
-              </label>
-              <Input
-                id="create-plan-name"
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder={t('planNamePlaceholder')}
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="create-plan-price"
-                className="mb-2 block text-sm font-medium text-neutral-700"
-              >
-                Price (VND) *
-              </label>
-              <Input
-                id="create-plan-price"
-                type="number"
-                value={form.price}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    price: e.target.value === '' ? '' : Number(e.target.value),
-                  }))
-                }
-                placeholder="99000"
-                min="0"
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label
-                htmlFor="create-plan-duration"
-                className="mb-2 block text-sm font-medium text-neutral-700"
-              >
-                Duration *
-              </label>
-              <select
-                id="create-plan-duration"
-                value={form.duration}
-                onChange={(e) => setForm((prev) => ({ ...prev, duration: e.target.value }))}
-                className="w-full rounded-md border border-neutral-300 p-2 focus:border-green-500 focus:ring-2 focus:ring-brand-trust"
-                title="Select plan duration"
-              >
-                {Object.entries(PREDEFINED_DURATIONS).map(([key, duration]) => (
-                  <option key={key} value={duration.iso8601}>
-                    {duration.displayName} ({duration.iso8601})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="create-plan-status"
-                className="mb-2 block text-sm font-medium text-neutral-700"
-              >
-                Status
-              </label>
-              <select
-                id="create-plan-status"
-                value={form.isActive.toString()}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    isActive: e.target.value === 'true',
-                  }))
-                }
-                className="w-full rounded-md border border-neutral-300 p-2 focus:border-green-500 focus:ring-2 focus:ring-brand-trust"
-                title="Select plan status"
-              >
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-            </div>
-          </div>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Create New Subscription Plan"
+      description="Add a new subscription plan with ISO 8601 duration format"
+      size="medium"
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <p className="mb-2 block text-sm font-medium text-neutral-700">Features</p>
-            {form.features.map((feature) => (
-              <div key={feature.id} className="mb-2 flex items-center gap-x-2">
-                <Input
-                  type="text"
-                  value={feature.value}
-                  onChange={(e) => handleFeatureChange(feature.id, e.target.value)}
-                  placeholder={t('enterFeature')}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  onClick={() => setUiState((prev) => ({ ...prev, featureToRemoveId: feature.id }))}
-                  variant="outline"
-                  size="sm"
-                  className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
-                  title="Remove this feature"
-                >
-                  <span className="sr-only">Remove this feature</span>
-                  <HiOutlineX className="size-4" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              onClick={handleAddFeature}
-              variant="outline"
-              size="sm"
-              className="mt-2 min-h-[36px] px-3"
+            <label
+              htmlFor="create-plan-name"
+              className="mb-2 block text-sm font-medium text-neutral-700"
             >
-              <HiOutlinePlus className="mr-1 size-4" /> Add Feature
-            </Button>
+              Plan Name *
+            </label>
+            <Input
+              id="create-plan-name"
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder={t('planNamePlaceholder')}
+              className="w-full"
+            />
           </div>
-
-          <div className="flex justify-end gap-x-2 pt-4">
-            <Button
-              type="button"
-              onClick={handleClose}
-              variant="outline"
-              className="min-h-[40px] px-4"
+          <div>
+            <label
+              htmlFor="create-plan-price"
+              className="mb-2 block text-sm font-medium text-neutral-700"
             >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={
-                uiState.createLoading || !form.name.trim() || !form.price || form.price <= 0
+              Price (VND) *
+            </label>
+            <Input
+              id="create-plan-price"
+              type="number"
+              value={form.price}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  price: e.target.value === '' ? '' : Number(e.target.value),
+                }))
               }
-              className="min-h-[40px] bg-brand-trust px-4 text-white hover:bg-brand-trust-hover"
-            >
-              {uiState.createLoading ? 'Creating…' : createLabel}
-            </Button>
+              placeholder="99000"
+              min="0"
+              className="w-full"
+            />
           </div>
         </div>
-      </Modal>
 
-      <ConfirmModal
-        isOpen={!!uiState.featureToRemoveId}
-        title="Remove feature?"
-        message="Remove this feature? This change is not saved until you create the plan."
-        confirmText="Remove"
-        confirmVariant="destructive"
-        onCancel={() => setUiState((prev) => ({ ...prev, featureToRemoveId: null }))}
-        onConfirm={handleRemoveFeature}
-      />
-    </>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label
+              htmlFor="create-plan-duration"
+              className="mb-2 block text-sm font-medium text-neutral-700"
+            >
+              Duration *
+            </label>
+            <select
+              id="create-plan-duration"
+              value={form.duration}
+              onChange={(e) => setForm((prev) => ({ ...prev, duration: e.target.value }))}
+              className="w-full rounded-md border border-neutral-300 p-2 focus:border-green-500 focus:ring-2 focus:ring-brand-trust"
+              title="Select plan duration"
+            >
+              {Object.entries(PREDEFINED_DURATIONS).map(([key, duration]) => (
+                <option key={key} value={duration.iso8601}>
+                  {duration.displayName} ({duration.iso8601})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="create-plan-status"
+              className="mb-2 block text-sm font-medium text-neutral-700"
+            >
+              Status
+            </label>
+            <select
+              id="create-plan-status"
+              value={form.isActive.toString()}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  isActive: e.target.value === 'true',
+                }))
+              }
+              className="w-full rounded-md border border-neutral-300 p-2 focus:border-green-500 focus:ring-2 focus:ring-brand-trust"
+              title="Select plan status"
+            >
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-x-2 pt-4">
+          <Button
+            type="button"
+            onClick={handleClose}
+            variant="outline"
+            className="min-h-[40px] px-4"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={createLoading || !form.name.trim() || !form.price || form.price <= 0}
+            className="min-h-[40px] bg-brand-trust px-4 text-white hover:bg-brand-trust-hover"
+          >
+            {createLoading ? 'Creating…' : createLabel}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
 function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<PlanFormState>(() => createEditFormState(plan));
-  const tPlanCard = useTranslations('admin');
   const [uiState, setUiState] = useState({
-    featureToRemoveId: null as string | null,
     showDeleteConfirm: false,
     isDeleting: false,
   });
@@ -352,39 +245,7 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
 
   const handleCancelEdit = () => {
     resetForm();
-    setUiState((prev) => ({ ...prev, featureToRemoveId: null }));
     setIsEditing(false);
-  };
-
-  const handleFeatureChange = (featureId: string, value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      features: prev.features.map((feature) =>
-        feature.id === featureId ? { ...feature, value } : feature,
-      ),
-    }));
-  };
-
-  const handleAddFeature = () => {
-    setForm((prev) => ({
-      ...prev,
-      features: [...prev.features, createFeatureField()],
-    }));
-  };
-
-  const handleRemoveFeature = () => {
-    if (!uiState.featureToRemoveId) return;
-
-    setForm((prev) => {
-      const nextFeatures = prev.features.filter(
-        (feature) => feature.id !== uiState.featureToRemoveId,
-      );
-      return {
-        ...prev,
-        features: nextFeatures.length ? nextFeatures : [createFeatureField()],
-      };
-    });
-    setUiState((prev) => ({ ...prev, featureToRemoveId: null }));
   };
 
   const handleSave = async () => {
@@ -394,7 +255,6 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
       name: form.name.trim(),
       price: Number(form.price),
       duration: form.duration,
-      features: serializeFeatureFields(form.features),
       isActive: form.isActive,
     });
 
@@ -469,56 +329,6 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
             )}
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-medium text-neutral-900">Features:</h4>
-            {isEditing ? (
-              <div className="space-y-2">
-                {form.features.map((feature) => (
-                  <div key={feature.id} className="flex items-center gap-x-2">
-                    <Input
-                      value={feature.value}
-                      onChange={(e) => handleFeatureChange(feature.id, e.target.value)}
-                      placeholder={tPlanCard('featureDescription')}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setUiState((prev) => ({ ...prev, featureToRemoveId: feature.id }))
-                      }
-                      className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddFeature}
-                  className="min-h-[36px] w-full px-3"
-                >
-                  Add Feature
-                </Button>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {plan.features.map((feature) => (
-                  <li
-                    key={`${plan.id}-${feature}`}
-                    className="flex items-center text-sm text-neutral-600"
-                  >
-                    <HiOutlineCheck className="mr-2 size-4 text-green-500" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
           {isEditing ? (
             <>
               <div className="mt-4">
@@ -587,16 +397,6 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
           </div>
         </CardContent>
       </Card>
-
-      <ConfirmModal
-        isOpen={!!uiState.featureToRemoveId}
-        title="Remove feature?"
-        message="Remove this feature? This change is not saved until you save the plan."
-        confirmText="Remove"
-        confirmVariant="destructive"
-        onCancel={() => setUiState((prev) => ({ ...prev, featureToRemoveId: null }))}
-        onConfirm={handleRemoveFeature}
-      />
 
       <ConfirmModal
         isOpen={uiState.showDeleteConfirm}

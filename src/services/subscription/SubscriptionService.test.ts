@@ -36,7 +36,6 @@ function billingPlan(overrides: Partial<BillingPlan> = {}): BillingPlan {
     name: 'Premium',
     price: 99000,
     duration: 'P1M',
-    features: [],
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -282,7 +281,6 @@ describe('SubscriptionService billing hardening', () => {
         name: 'Premium plan name that is longer than PayOS allows',
         price: 99000,
         duration: 'P1M',
-        features: [],
       },
     });
     expect(subscriptionRepository.create).toHaveBeenCalledWith(
@@ -838,7 +836,7 @@ describe('SubscriptionService billing hardening', () => {
   it('returns active plans and propagates plan fetch failures', async () => {
     const { service, planRepository } = createService({
       planRepository: {
-        listActive: vi.fn().mockResolvedValue([billingPlan({ features: ['Feature'] })]),
+        listActive: vi.fn().mockResolvedValue([billingPlan()]),
       },
     });
 
@@ -848,7 +846,6 @@ describe('SubscriptionService billing hardening', () => {
         name: 'Premium',
         price: 99000,
         duration: 'P1M',
-        features: ['Feature'],
       },
     ]);
 

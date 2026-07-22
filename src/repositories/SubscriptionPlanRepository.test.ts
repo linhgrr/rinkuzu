@@ -24,7 +24,6 @@ const planRecord = {
   name: 'Premium',
   price: 99_000,
   duration: 'P1M',
-  features: ['AI'],
   isActive: true,
   createdAt: now,
   updatedAt: now,

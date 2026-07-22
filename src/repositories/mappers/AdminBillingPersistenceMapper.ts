@@ -12,7 +12,6 @@ export class AdminBillingPersistenceMapper {
       name: record.name,
       price: record.price,
       duration: record.duration,
-      features: record.features,
       isActive: record.isActive,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

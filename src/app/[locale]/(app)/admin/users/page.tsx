@@ -619,14 +619,6 @@ function SelectedPlanDetails({ plan, t }: SelectedPlanDetailsProps) {
         <p>
           <strong>{t('duration')}</strong> {plan.durationLabel}
         </p>
-        <p>
-          <strong>{t('features')}</strong>
-        </p>
-        <ul className="ml-2 list-inside list-disc">
-          {plan.features.map((feature) => (
-            <li key={feature}>{feature}</li>
-          ))}
-        </ul>
       </div>
     </div>
   );

@@ -85,7 +85,6 @@ function planRecord(overrides: Record<string, unknown> = {}) {
     name: 'Premium',
     price: 99_000,
     duration: 'P1M',
-    features: ['AI'],
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -138,7 +137,6 @@ describe('AdminBillingRepository', () => {
         name: 'Premium',
         price: 99_000,
         duration: 'P1M',
-        features: ['AI'],
         isActive: true,
       }),
     ]);
@@ -160,7 +158,6 @@ describe('AdminBillingRepository', () => {
       name: 'Premium',
       price: 99_000,
       duration: 'P1M',
-      features: ['AI'],
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -171,7 +168,6 @@ describe('AdminBillingRepository', () => {
       name: 'Premium',
       price: 99_000,
       duration: 'P1M',
-      features: ['AI'],
       isActive: true,
     });
 
@@ -180,7 +176,6 @@ describe('AdminBillingRepository', () => {
       name: 'Premium',
       price: 99_000,
       duration: 'P1M',
-      features: ['AI'],
       isActive: true,
     });
     expect(plan).toMatchObject({ id: planId, name: 'Premium' });
@@ -198,7 +193,6 @@ describe('AdminBillingRepository', () => {
         name: 'Premium',
         price: 99_000,
         duration: 'P1M',
-        features: [],
         isActive: true,
       }),
     ).rejects.toBeInstanceOf(BillingPlanConflictError);
@@ -209,7 +203,6 @@ describe('AdminBillingRepository', () => {
         name: 'Premium',
         price: 99_000,
         duration: 'P1M',
-        features: [],
         isActive: true,
       }),
     ).rejects.toThrow('write concern');

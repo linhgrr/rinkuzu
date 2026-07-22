@@ -29,7 +29,6 @@ describe('GET /api/subscription/plans', () => {
         name: 'Premium',
         price: 39000,
         duration: SubscriptionDurationType.MONTHLY,
-        features: ['AI'],
         isActive: true,
       },
     ]);

@@ -58,7 +58,6 @@ function plan(overrides = {}) {
     name: 'Premium',
     price: 99000,
     duration: 'P1M',
-    features: ['AI'],
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -123,7 +122,6 @@ describe('AdminBillingService', () => {
       name: 'Premium Plan',
       price: 99000,
       duration: 'P1M',
-      features: ['AI'],
       isActive: true,
     });
 
@@ -132,7 +130,6 @@ describe('AdminBillingService', () => {
       name: 'Premium Plan',
       price: 99000,
       duration: 'P1M',
-      features: ['AI'],
       isActive: true,
     });
     expect(result).toEqual({
@@ -152,7 +149,6 @@ describe('AdminBillingService', () => {
         name: 'Premium',
         price: 99000,
         duration: 'P1M',
-        features: [],
         isActive: true,
       }),
     ).resolves.toEqual({
@@ -170,7 +166,6 @@ describe('AdminBillingService', () => {
         name: 'Premium',
         price: 99000,
         duration: 'P1M',
-        features: [],
         isActive: true,
       }),
     ).resolves.toEqual({
@@ -192,7 +187,6 @@ describe('AdminBillingService', () => {
       name: 'Pro',
       price: 120000,
       duration: 'P3M',
-      features: ['AI', 'OCR'],
       isActive: false,
     });
 
@@ -200,7 +194,6 @@ describe('AdminBillingService', () => {
       name: 'Pro',
       price: 120000,
       duration: 'P3M',
-      features: ['AI', 'OCR'],
       isActive: false,
     });
 
@@ -219,11 +212,6 @@ describe('AdminBillingService', () => {
     repository.updatePlan.mockResolvedValue(plan({ duration: 'P1Y' }));
     await service.updatePlan({ id: 'premium-p1m', duration: 'P1Y' });
     expect(repository.updatePlan).toHaveBeenCalledWith('premium-p1m', { duration: 'P1Y' });
-
-    repository.updatePlan.mockClear();
-    repository.updatePlan.mockResolvedValue(plan({ features: [] }));
-    await service.updatePlan({ id: 'premium-p1m', features: [] });
-    expect(repository.updatePlan).toHaveBeenCalledWith('premium-p1m', { features: [] });
 
     repository.updatePlan.mockClear();
     repository.updatePlan.mockResolvedValue(plan({ isActive: false }));

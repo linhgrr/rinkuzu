@@ -16,6 +16,7 @@ export const APP_MESSAGE_NAMESPACES = [
   'landing',
   'nav',
   'premium',
+  'pricing',
   'profile',
   'pwa',
   'quiz',

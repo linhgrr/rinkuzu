@@ -49,7 +49,6 @@ export class AdminBillingRepository implements IAdminBillingRepository {
         name: data.name,
         price: data.price,
         duration: data.duration,
-        features: data.features,
         isActive: data.isActive,
       });
 
@@ -58,7 +57,6 @@ export class AdminBillingRepository implements IAdminBillingRepository {
         name: saved.name,
         price: saved.price,
         duration: saved.duration,
-        features: saved.features,
         isActive: saved.isActive,
         createdAt: saved.createdAt,
         updatedAt: saved.updatedAt,

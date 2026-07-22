@@ -1,7 +1,7 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import { useEffect, useReducer, useRef, type ChangeEvent, type RefObject } from 'react';
+import { useEffect, useReducer, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -11,7 +11,6 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { ProfileSettingsPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import { Separator } from '@/components/ui/Separator';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { AVATAR_ALLOWED_MEDIA_TYPES, AVATAR_MAX_FILE_SIZE } from '@/shared/constants/avatar';
 import {
@@ -24,10 +23,15 @@ import {
 import type { ProfileSettingsViewModel } from '@/features/profile/types/profile-settings-view-model';
 import { ProfileQuotaCard } from '@/features/profile/components/ProfileQuotaCard';
 import {
+  ProfileHero,
+  ProfileTabNavigation,
+  QuickAccessCard,
+  type ProfileTab,
+} from '@/features/profile/components/ProfileControlCenter';
+import {
   HiOutlineUser,
   HiOutlineLockClosed,
   HiOutlinePhotograph,
-  HiOutlineCalendar,
   HiOutlineMail,
   HiOutlineShieldCheck,
   HiOutlineSparkles,
@@ -52,10 +56,6 @@ interface ProfileSettingsState {
 }
 
 type ProfileSettingsTranslate = (key: string) => string;
-
-interface JoinDateLabelProps {
-  value: string;
-}
 
 interface PersonalInfoSectionProps {
   bio: string;
@@ -197,10 +197,6 @@ function profileSettingsReducer(
   }
 }
 
-function JoinDateLabel({ value }: JoinDateLabelProps) {
-  return <span>{value}</span>;
-}
-
 function PersonalInfoSection({
   bio,
   displayName,
@@ -314,14 +310,6 @@ function PersonalInfoSection({
           disabled
           icon={<HiOutlineMail className="size-full" />}
         />
-
-        <div>
-          <p className="mb-1 block text-[12px] font-semibold text-neutral-700">{t('joinDate')}</p>
-          <div className="flex items-center gap-2 text-sm text-neutral-600">
-            <HiOutlineCalendar className="size-4 text-neutral-400" aria-hidden="true" />
-            <JoinDateLabel value={profile.createdAtLabel} />
-          </div>
-        </div>
 
         <div className="flex justify-end">
           <Button type="button" onClick={onSaveProfile} disabled={savingProfile}>
@@ -438,30 +426,14 @@ function AccountSection({ profile, t }: AccountSectionProps) {
               </p>
             </div>
           </div>
-          <Link href="/subscription">
-            <Button type="button" variant="outline" size="sm">
-              {profile.subscription?.isActive ? t('managePlan') : t('upgradePlan')}
-            </Button>
+          <Link href="/subscription" className="btn btn-secondary h-9 shrink-0 px-3.5 text-sm">
+            {profile.subscription?.isActive ? t('managePlan') : t('upgradePlan')}
           </Link>
         </div>
 
-        <Separator />
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-500">{t('accountType')}</span>
-            <span className="capitalize font-medium text-neutral-900">{profile.role}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-500">{t('emailLabel')}</span>
-            <span className="font-medium text-neutral-900">{profile.email}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-500">{t('joinDate')}</span>
-            <span className="font-medium text-neutral-900">
-              <JoinDateLabel value={profile.createdAtLabel} />
-            </span>
-          </div>
+        <div className="flex items-center justify-between border-t border-neutral-100 pt-4 text-sm">
+          <span className="text-neutral-500">{t('accountType')}</span>
+          <span className="font-medium capitalize text-neutral-900">{profile.role}</span>
         </div>
       </div>
     </Card>
@@ -474,6 +446,7 @@ export default function ProfileSettings() {
   const tCommon = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [state, dispatch] = useReducer(profileSettingsReducer, initialState);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
 
   useEffect(() => {
     if (!session) {
@@ -609,46 +582,85 @@ export default function ProfileSettings() {
 
   return (
     <div className="space-y-6">
-      <PersonalInfoSection
-        bio={state.bio}
-        displayName={state.displayName}
-        fileInputRef={fileInputRef}
+      <ProfileHero
         initials={initials}
-        onBioChange={(value) => dispatch({ type: 'profile:setField', field: 'bio', value })}
-        onChangeAvatar={handleAvatarUpload}
-        onDisplayNameChange={(value) =>
-          dispatch({ type: 'profile:setField', field: 'displayName', value })
-        }
-        onRequestRemoveAvatar={() => dispatch({ type: 'avatar:confirm:open' })}
-        onSaveProfile={handleSaveProfile}
+        onEditProfile={() => setActiveTab('personal')}
         profile={state.profile}
-        savingProfile={state.savingProfile}
-        t={t}
-        uploadingAvatar={state.uploadingAvatar}
-      />
-
-      <PasswordSection
-        confirmPassword={state.confirmPassword}
-        currentPassword={state.currentPassword}
-        newPassword={state.newPassword}
-        onConfirmPasswordChange={(value) =>
-          dispatch({ type: 'password:setField', field: 'confirmPassword', value })
-        }
-        onCurrentPasswordChange={(value) =>
-          dispatch({ type: 'password:setField', field: 'currentPassword', value })
-        }
-        onNewPasswordChange={(value) =>
-          dispatch({ type: 'password:setField', field: 'newPassword', value })
-        }
-        onSavePassword={handleChangePassword}
-        onTogglePasswordVisibility={() => dispatch({ type: 'password:toggleVisibility' })}
-        savingPassword={state.savingPassword}
-        showNewPassword={state.showNewPassword}
         t={t}
       />
 
-      <AccountSection profile={state.profile} t={t} />
-      <ProfileQuotaCard />
+      <ProfileTabNavigation activeTab={activeTab} onChange={setActiveTab} t={t} />
+
+      <section
+        id={`profile-panel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`profile-tab-${activeTab}`}
+        tabIndex={0}
+        className="focus-visible:outline-none"
+      >
+        {activeTab === 'overview' ? (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <div className="space-y-6">
+              <AccountSection profile={state.profile} t={t} />
+              <QuickAccessCard t={t} />
+            </div>
+            <ProfileQuotaCard variant="summary" />
+          </div>
+        ) : null}
+
+        {activeTab === 'personal' ? (
+          <div className="max-w-3xl">
+            <PersonalInfoSection
+              bio={state.bio}
+              displayName={state.displayName}
+              fileInputRef={fileInputRef}
+              initials={initials}
+              onBioChange={(value) => dispatch({ type: 'profile:setField', field: 'bio', value })}
+              onChangeAvatar={handleAvatarUpload}
+              onDisplayNameChange={(value) =>
+                dispatch({ type: 'profile:setField', field: 'displayName', value })
+              }
+              onRequestRemoveAvatar={() => dispatch({ type: 'avatar:confirm:open' })}
+              onSaveProfile={handleSaveProfile}
+              profile={state.profile}
+              savingProfile={state.savingProfile}
+              t={t}
+              uploadingAvatar={state.uploadingAvatar}
+            />
+          </div>
+        ) : null}
+
+        {activeTab === 'plan' ? (
+          <div className="grid gap-6 xl:grid-cols-[minmax(280px,0.75fr)_minmax(0,1.25fr)]">
+            <AccountSection profile={state.profile} t={t} />
+            <ProfileQuotaCard />
+          </div>
+        ) : null}
+
+        {activeTab === 'security' ? (
+          <div className="max-w-2xl">
+            <PasswordSection
+              confirmPassword={state.confirmPassword}
+              currentPassword={state.currentPassword}
+              newPassword={state.newPassword}
+              onConfirmPasswordChange={(value) =>
+                dispatch({ type: 'password:setField', field: 'confirmPassword', value })
+              }
+              onCurrentPasswordChange={(value) =>
+                dispatch({ type: 'password:setField', field: 'currentPassword', value })
+              }
+              onNewPasswordChange={(value) =>
+                dispatch({ type: 'password:setField', field: 'newPassword', value })
+              }
+              onSavePassword={handleChangePassword}
+              onTogglePasswordVisibility={() => dispatch({ type: 'password:toggleVisibility' })}
+              savingPassword={state.savingPassword}
+              showNewPassword={state.showNewPassword}
+              t={t}
+            />
+          </div>
+        ) : null}
+      </section>
 
       <ConfirmModal
         isOpen={state.showRemoveAvatarConfirm}

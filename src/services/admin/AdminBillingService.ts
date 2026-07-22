@@ -55,7 +55,6 @@ export class AdminBillingService implements IAdminBillingService {
         name: input.name,
         price: input.price,
         duration: input.duration,
-        features: input.features,
         isActive: input.isActive,
       });
       return { success: true, data: AdminBillingDtoMapper.toPlanDto(plan) };
@@ -75,7 +74,6 @@ export class AdminBillingService implements IAdminBillingService {
         ...(update.name !== undefined && { name: update.name }),
         ...(update.price !== undefined && { price: update.price }),
         ...(update.duration !== undefined && { duration: update.duration }),
-        ...(update.features !== undefined && { features: update.features }),
         ...(update.isActive !== undefined && { isActive: update.isActive }),
       };
       const updated = await this.repository.updatePlan(id, updateData);

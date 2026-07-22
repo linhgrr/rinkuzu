@@ -44,7 +44,6 @@ const paymentData = {
     name: 'Premium',
     price: 99000,
     duration: 'P1M',
-    features: ['adaptive'],
   },
 };
 

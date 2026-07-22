@@ -19,7 +19,6 @@ function toSubscriptionPlanViewModel(
     price: plan.price,
     priceLabel: formatVndCurrency(plan.price),
     durationDisplay: plan.durationDisplay,
-    features: plan.features,
   };
 }
 

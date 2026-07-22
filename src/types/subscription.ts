@@ -1,6 +1,6 @@
-// Rinkuzu currently sells one renewable monthly Premium plan.
 export enum SubscriptionDurationType {
   MONTHLY = 'P1M',
+  SIX_MONTHS = 'P6M',
 }
 
 interface Duration {
@@ -15,6 +15,11 @@ export const PREDEFINED_DURATIONS: Record<SubscriptionDurationType, Duration> = 
     displayName: '1 Month',
     months: 1,
   },
+  [SubscriptionDurationType.SIX_MONTHS]: {
+    iso8601: 'P6M',
+    displayName: '6 Months',
+    months: 6,
+  },
 };
 
 export class DurationUtils {
@@ -24,8 +29,15 @@ export class DurationUtils {
    * @returns number of months
    */
   static parseToMonths(iso8601Duration: string): number {
-    if (iso8601Duration === SubscriptionDurationType.MONTHLY) return 1;
-    throw new Error(`Unsupported ISO 8601 duration format: ${iso8601Duration}`);
+    const duration = Object.values(PREDEFINED_DURATIONS).find(
+      (candidate) => candidate.iso8601 === iso8601Duration,
+    );
+
+    if (!duration) {
+      throw new Error(`Unsupported ISO 8601 duration format: ${iso8601Duration}`);
+    }
+
+    return duration.months;
   }
 
   /**
@@ -37,7 +49,16 @@ export class DurationUtils {
   static calculateEndDate(startDate: Date, iso8601Duration: string): Date {
     const months = this.parseToMonths(iso8601Duration);
     const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + months);
+    const originalDay = endDate.getUTCDate();
+
+    // Move from day one so dates such as August 31 do not overflow into March.
+    endDate.setUTCDate(1);
+    endDate.setUTCMonth(endDate.getUTCMonth() + months);
+    const lastDayOfTargetMonth = new Date(
+      Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    endDate.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth));
+
     return endDate;
   }
 
@@ -62,10 +83,6 @@ export class DurationUtils {
    * @returns boolean
    */
   static isValidISO8601Duration(duration: string): boolean {
-    try {
-      return duration === SubscriptionDurationType.MONTHLY;
-    } catch {
-      return false;
-    }
+    return Object.values(PREDEFINED_DURATIONS).some((candidate) => candidate.iso8601 === duration);
   }
 }

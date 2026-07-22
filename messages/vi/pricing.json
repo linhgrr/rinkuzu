@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Bảng giá | RinKuzu",
-    "description": "Bảng giá RinKuzu: gói miễn phí hào phóng để tạo quiz từ PDF và luyện tập thích ứng, cùng các gói premium giá tốt mở khóa quiz riêng tư, giới hạn cao hơn và thống kê nâng cao."
+    "description": "Bảng giá RinKuzu: gói miễn phí để học với Ask Rin-chan, tạo quiz từ PDF và luyện tập thích ứng; Premium mở khóa quiz riêng tư cùng hạn mức cao hơn."
   },
   "hero": {
     "title": "Giá đơn giản, minh bạch",
@@ -11,29 +11,36 @@
     "name": "Miễn phí",
     "tagline": "Dành cho học sinh, sinh viên và cá nhân",
     "cta": "Bắt đầu miễn phí",
-    "features": [
-      "Tạo quiz từ PDF (giới hạn hằng ngày)",
-      "Phiên luyện tập thích ứng",
-      "Trực quan hóa sơ đồ tri thức",
-      "Cấp độ thành thạo theo Thang Bloom",
-      "Bảng theo dõi tiến độ",
-      "Duyệt quiz cộng đồng"
-    ]
+    "features": {
+      "askRinChan": "Ask Rin-chan tối đa 25 lượt mỗi ngày",
+      "pdfQuiz": "Tạo 5 quiz từ PDF mỗi tháng, tối đa 30 trang mỗi tệp",
+      "adaptivePath": "Tạo 2 lộ trình học thích ứng mỗi tháng",
+      "adaptiveExercises": "Tạo tối đa 50 bài tập thích ứng mỗi ngày",
+      "publicQuizzes": "Tạo và chia sẻ quiz công khai",
+      "progressTracking": "Theo dõi tiến độ và mức độ thành thạo"
+    }
   },
   "premium": {
     "popular": "Phổ biến",
     "everythingInFree": "Mọi thứ trong gói Miễn phí, và thêm:",
-    "cta": "Nâng cấp"
+    "cta": "Nâng cấp",
+    "features": {
+      "privateQuizzes": "Tạo quiz riêng tư",
+      "askRinChan": "Ask Rin-chan tối đa 150 lượt mỗi ngày",
+      "pdfQuiz": "Tạo 50 quiz từ PDF mỗi tháng, tối đa 100 trang mỗi tệp",
+      "adaptivePath": "Tạo 12 lộ trình học thích ứng mỗi tháng",
+      "adaptiveExercises": "Tạo tối đa 500 bài tập thích ứng mỗi ngày"
+    }
   },
   "faqHeading": "Câu hỏi về giá",
   "faqs": [
     {
       "q": "Gói miễn phí bao gồm những gì?",
-      "a": "Gói miễn phí bao gồm tạo quiz từ PDF, phiên luyện tập thích ứng, theo dõi mức độ thành thạo, luyện tập theo cấp độ Thang Bloom, duyệt quiz cộng đồng và bảng điều khiển cá nhân — với giới hạn sử dụng hằng ngày. Đủ mọi thứ để bắt đầu học cùng AI."
+      "a": "Gói miễn phí gồm Ask Rin-chan, tạo quiz từ PDF, lộ trình và bài tập thích ứng, quiz công khai cùng theo dõi tiến độ. Mỗi chức năng AI có hạn mức riêng được hiển thị trong trang hồ sơ."
     },
     {
       "q": "Gói Premium hoạt động thế nào?",
-      "a": "Premium mở khóa quiz riêng tư, giới hạn hằng ngày cao hơn cho các tính năng AI và thống kê nâng cao. Bạn trả một lần cho thời hạn gói (theo tháng, 6 tháng, năm hoặc trọn đời) — không tự động gia hạn bất ngờ."
+      "a": "Premium mở khóa quiz riêng tư và tăng hạn mức Ask Rin-chan, tạo quiz từ PDF, lộ trình học và bài tập thích ứng. Gói hiện tại được tính theo tháng."
     },
     {
       "q": "Tôi có thể đổi gói bất cứ lúc nào không?",

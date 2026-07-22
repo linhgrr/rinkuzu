@@ -7,7 +7,6 @@ export interface CreateBillingPlanData {
   name: string;
   price: number;
   duration: string;
-  features: string[];
   isActive: boolean;
 }
 
@@ -15,7 +14,6 @@ export interface UpdateBillingPlanData {
   name?: string;
   price?: number;
   duration?: string;
-  features?: string[];
   isActive?: boolean;
 }
 

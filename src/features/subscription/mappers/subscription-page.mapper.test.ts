@@ -12,7 +12,6 @@ describe('toSubscriptionPageViewModel', () => {
             price: 99000,
             duration: 'P1M',
             durationDisplay: '1 Month',
-            features: ['AI'],
             calculatedMonths: 1,
           },
         ],
@@ -40,7 +39,6 @@ describe('toSubscriptionPageViewModel', () => {
           price: 99000,
           priceLabel: '99.000 ₫',
           durationDisplay: '1 Month',
-          features: ['AI'],
         },
       ],
       currentSubscription: {

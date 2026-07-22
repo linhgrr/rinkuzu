@@ -82,27 +82,53 @@ export function FlashcardPageSkeleton({ label }: PageSkeletonProps) {
 export function ProfileSettingsPageSkeleton({ label }: PageSkeletonProps) {
   return (
     <div className="space-y-6" aria-busy="true" aria-label={label}>
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-64 rounded-md" />
-        <Skeleton className="h-5 w-96 max-w-full rounded-md" />
+      <div className="rounded-2xl border border-line-blue/30 bg-white p-5 sm:p-7">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <Skeleton className="size-20 shrink-0 rounded-full sm:size-[88px]" />
+          <div className="min-w-0 flex-1 space-y-3">
+            <Skeleton className="h-8 w-64 max-w-full rounded-md" />
+            <Skeleton className="h-4 w-72 max-w-full rounded-md" />
+            <Skeleton className="h-4 w-48 max-w-full rounded-md" />
+          </div>
+          <Skeleton className="hidden h-9 w-28 rounded-full sm:block" />
+        </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <div className="rounded-2xl border border-line-blue/30 bg-white p-6">
-          <Skeleton className="mx-auto size-28 rounded-full" />
-          <Skeleton className="mx-auto mt-5 h-10 w-36 rounded-full" />
+      <div className="flex gap-6 overflow-hidden border-b border-line-blue/30 pb-3">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton
+            key={`profile-tab-skeleton-${index}`}
+            className="h-6 w-24 shrink-0 rounded-md"
+          />
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-line-blue/30 bg-white p-6">
+            <Skeleton className="h-6 w-40 rounded-md" />
+            <Skeleton className="mt-5 h-20 rounded-xl" />
+            <Skeleton className="mt-4 h-5 w-full rounded-md" />
+          </div>
+          <div className="rounded-2xl border border-line-blue/30 bg-white p-6">
+            <Skeleton className="h-6 w-36 rounded-md" />
+            <div className="mt-5 space-y-4">
+              {Array.from({ length: 3 }, (_, index) => (
+                <Skeleton key={`profile-shortcut-skeleton-${index}`} className="h-12 rounded-xl" />
+              ))}
+            </div>
+          </div>
         </div>
         <div className="rounded-2xl border border-line-blue/30 bg-white p-6">
-          <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-6 w-44 rounded-md" />
+          <div className="mt-5 space-y-4">
             {Array.from({ length: 4 }, (_, index) => (
-              <div key={`profile-settings-field-skeleton-${index}`} className="space-y-2">
-                <Skeleton className="h-4 w-28 rounded-md" />
-                <Skeleton className="h-11 rounded-xl" />
+              <div
+                key={`profile-quota-skeleton-${index}`}
+                className="space-y-2 rounded-xl bg-neutral-50 p-4"
+              >
+                <Skeleton className="h-4 w-36 rounded-md" />
+                <Skeleton className="h-2 rounded-full" />
               </div>
             ))}
-          </div>
-          <Skeleton className="mt-6 h-24 rounded-xl" />
-          <div className="mt-6 flex justify-end">
-            <Skeleton className="h-11 w-32 rounded-full" />
           </div>
         </div>
       </div>

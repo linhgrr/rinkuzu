@@ -2505,6 +2505,142 @@
         }
       }
     },
+    "/api/v1/quiz/ask-ai": {
+      "post": {
+        "tags": ["legacy-ask-rin-chan"],
+        "summary": "Legacy Quiz Ask Ai",
+        "description": "Translate the removed quiz tutor route into the shared Ask Rin-chan service.",
+        "operationId": "legacy_quiz_ask_ai_api_v1_quiz_ask_ai_post",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyQuizTutorRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_LegacyQuizTutorResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/session/{session_id}/chat": {
+      "post": {
+        "tags": ["legacy-ask-rin-chan"],
+        "summary": "Legacy Adaptive Chat",
+        "description": "Translate the removed adaptive chat route into the shared Ask Rin-chan service.",
+        "operationId": "legacy_adaptive_chat_api_v1_session__session_id__chat_post",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_\\-]+$",
+              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
+              "title": "Session Id"
+            },
+            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyTutorChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_LegacyTutorChatResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ready": {
       "get": {
         "summary": "Readiness",
@@ -3208,6 +3344,164 @@
         "type": "object",
         "required": ["concept", "exercise", "cache_status"],
         "title": "LearningStepResponse"
+      },
+      "LegacyChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["user", "assistant"],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": ["role", "content"],
+        "title": "LegacyChatMessage"
+      },
+      "LegacyQuizTutorRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 2,
+            "title": "Options"
+          },
+          "userQuestion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userquestion"
+          },
+          "questionImage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questionimage"
+          },
+          "optionImages": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Optionimages"
+          },
+          "chatHistory": {
+            "items": {
+              "$ref": "#/components/schemas/LegacyChatMessage"
+            },
+            "type": "array",
+            "title": "Chathistory"
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["question", "options"],
+        "title": "LegacyQuizTutorRequest"
+      },
+      "LegacyQuizTutorResponse": {
+        "properties": {
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "structured": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structured"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          },
+          "turn_count": {
+            "type": "integer",
+            "title": "Turn Count"
+          }
+        },
+        "type": "object",
+        "required": ["explanation", "timestamp", "turn_count"],
+        "title": "LegacyQuizTutorResponse"
+      },
+      "LegacyTutorChatRequest": {
+        "properties": {
+          "userQuestion": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Userquestion"
+          },
+          "chatHistory": {
+            "items": {
+              "$ref": "#/components/schemas/LegacyChatMessage"
+            },
+            "type": "array",
+            "title": "Chathistory"
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["userQuestion"],
+        "title": "LegacyTutorChatRequest"
+      },
+      "LegacyTutorChatResponse": {
+        "properties": {
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "type": "object",
+        "required": ["explanation"],
+        "title": "LegacyTutorChatResponse"
       },
       "LlmUsageAnalysisResponse": {
         "properties": {
@@ -6704,6 +6998,60 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[LearningStepResponse]"
+      },
+      "StandardResponse_LegacyQuizTutorResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/LegacyQuizTutorResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[LegacyQuizTutorResponse]"
+      },
+      "StandardResponse_LegacyTutorChatResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/LegacyTutorChatResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[LegacyTutorChatResponse]"
       },
       "StandardResponse_LlmUsageSummaryResponse_": {
         "properties": {

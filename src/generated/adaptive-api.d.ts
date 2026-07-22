@@ -634,6 +634,48 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/quiz/ask-ai': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Legacy Quiz Ask Ai
+     * @deprecated
+     * @description Translate the removed quiz tutor route into the shared Ask Rin-chan service.
+     */
+    post: operations['legacy_quiz_ask_ai_api_v1_quiz_ask_ai_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/session/{session_id}/chat': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Legacy Adaptive Chat
+     * @deprecated
+     * @description Translate the removed adaptive chat route into the shared Ask Rin-chan service.
+     */
+    post: operations['legacy_adaptive_chat_api_v1_session__session_id__chat_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/ready': {
     parameters: {
       query?: never;
@@ -945,6 +987,66 @@ export interface components {
        * @enum {string}
        */
       cache_status: 'served' | 'created';
+    };
+    /** LegacyChatMessage */
+    LegacyChatMessage: {
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: 'user' | 'assistant';
+      /** Content */
+      content: string;
+    };
+    /** LegacyQuizTutorRequest */
+    LegacyQuizTutorRequest: {
+      /** Question */
+      question: string;
+      /** Options */
+      options: string[];
+      /** Userquestion */
+      userQuestion?: string | null;
+      /** Questionimage */
+      questionImage?: string | null;
+      /** Optionimages */
+      optionImages?: (string | null)[];
+      /** Chathistory */
+      chatHistory?: components['schemas']['LegacyChatMessage'][];
+      /**
+       * Stream
+       * @default false
+       */
+      stream: boolean;
+    };
+    /** LegacyQuizTutorResponse */
+    LegacyQuizTutorResponse: {
+      /** Explanation */
+      explanation: string;
+      /** Structured */
+      structured?: {
+        [key: string]: unknown;
+      } | null;
+      /** Timestamp */
+      timestamp: string;
+      /** Turn Count */
+      turn_count: number;
+    };
+    /** LegacyTutorChatRequest */
+    LegacyTutorChatRequest: {
+      /** Userquestion */
+      userQuestion: string;
+      /** Chathistory */
+      chatHistory?: components['schemas']['LegacyChatMessage'][];
+      /**
+       * Stream
+       * @default false
+       */
+      stream: boolean;
+    };
+    /** LegacyTutorChatResponse */
+    LegacyTutorChatResponse: {
+      /** Explanation */
+      explanation: string;
     };
     /** LlmUsageAnalysisResponse */
     LlmUsageAnalysisResponse: {
@@ -2536,6 +2638,32 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['LearningStepResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[LegacyQuizTutorResponse] */
+    StandardResponse_LegacyQuizTutorResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['LegacyQuizTutorResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[LegacyTutorChatResponse] */
+    StandardResponse_LegacyTutorChatResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['LegacyTutorChatResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -4524,6 +4652,81 @@ export interface operations {
         };
         content: {
           'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  legacy_quiz_ask_ai_api_v1_quiz_ask_ai_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LegacyQuizTutorRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_LegacyQuizTutorResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  legacy_adaptive_chat_api_v1_session__session_id__chat_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LegacyTutorChatRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_LegacyTutorChatResponse_'];
         };
       };
       /** @description Validation Error */

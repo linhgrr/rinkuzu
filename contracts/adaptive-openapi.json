@@ -2381,6 +2381,66 @@
         }
       }
     },
+    "/api/v1/ask-rin-chan/agent": {
+      "post": {
+        "tags": ["ask-rin-chan"],
+        "summary": "Run Ask Rin Chan Agent",
+        "description": "Run Ask Rin-chan using the official AG-UI input and event protocol.",
+        "operationId": "run_ask_rin_chan_agent_api_v1_ask_rin_chan_agent_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunAgentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Run Ask Rin Chan Agent Api V1 Ask Rin Chan Agent Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ask-rin-chan/conversations/{exercise_context_id}": {
       "get": {
         "tags": ["ask-rin-chan"],
@@ -2703,6 +2763,34 @@
   },
   "components": {
     "schemas": {
+      "ActivityMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "const": "activity",
+            "title": "Role",
+            "default": "activity"
+          },
+          "activityType": {
+            "type": "string",
+            "title": "Activitytype"
+          },
+          "content": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Content"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["id", "activityType", "content"],
+        "title": "ActivityMessage",
+        "description": "An activity progress message emitted between chat messages."
+      },
       "AskRinChatRequest": {
         "properties": {
           "exerciseContextToken": {
@@ -2779,6 +2867,177 @@
         "type": "object",
         "required": ["messageId", "role", "content", "status", "createdAt"],
         "title": "AskRinMessageResponse"
+      },
+      "AssistantMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "const": "assistant",
+            "title": "Role",
+            "default": "assistant"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "encryptedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encryptedvalue"
+          },
+          "toolCalls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Toolcalls"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["id"],
+        "title": "AssistantMessage",
+        "description": "An assistant message."
+      },
+      "AudioInputContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "audio",
+            "title": "Type",
+            "default": "audio"
+          },
+          "source": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InputContentDataSource"
+              },
+              {
+                "$ref": "#/components/schemas/InputContentUrlSource"
+              }
+            ],
+            "title": "Source",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "data": "#/components/schemas/InputContentDataSource",
+                "url": "#/components/schemas/InputContentUrlSource"
+              }
+            }
+          },
+          "metadata": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["source"],
+        "title": "AudioInputContent",
+        "description": "An audio input content fragment."
+      },
+      "BinaryInputContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "binary",
+            "title": "Type",
+            "default": "binary"
+          },
+          "mimeType": {
+            "type": "string",
+            "title": "Mimetype"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["mimeType"],
+        "title": "BinaryInputContent",
+        "description": "A deprecated binary payload reference in a multimodal user message."
       },
       "BloomLabel": {
         "type": "string",
@@ -2875,6 +3134,23 @@
         "enum": ["locked", "available", "in_progress", "mastered"],
         "title": "ConceptStatus"
       },
+      "Context": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["description", "value"],
+        "title": "Context",
+        "description": "Additional context for the agent."
+      },
       "DeleteSubjectResponse": {
         "properties": {
           "job_id": {
@@ -2898,6 +3174,93 @@
         "type": "object",
         "required": ["job_id", "deleted_job", "deleted_sessions", "status"],
         "title": "DeleteSubjectResponse"
+      },
+      "DeveloperMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "const": "developer",
+            "title": "Role",
+            "default": "developer"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "encryptedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encryptedvalue"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["id", "content"],
+        "title": "DeveloperMessage",
+        "description": "A developer message."
+      },
+      "DocumentInputContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "document",
+            "title": "Type",
+            "default": "document"
+          },
+          "source": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InputContentDataSource"
+              },
+              {
+                "$ref": "#/components/schemas/InputContentUrlSource"
+              }
+            ],
+            "title": "Source",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "data": "#/components/schemas/InputContentDataSource",
+                "url": "#/components/schemas/InputContentUrlSource"
+              }
+            }
+          },
+          "metadata": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["source"],
+        "title": "DocumentInputContent",
+        "description": "A document input content fragment."
       },
       "ExerciseContextResponse": {
         "properties": {
@@ -3165,6 +3528,23 @@
         "required": ["sentence", "hint", "blank_answers"],
         "title": "FillBlankPayload"
       },
+      "FunctionCall": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["name", "arguments"],
+        "title": "FunctionCall",
+        "description": "Name and arguments of a function call."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3177,6 +3557,48 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ImageInputContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "image",
+            "title": "Type",
+            "default": "image"
+          },
+          "source": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InputContentDataSource"
+              },
+              {
+                "$ref": "#/components/schemas/InputContentUrlSource"
+              }
+            ],
+            "title": "Source",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "data": "#/components/schemas/InputContentDataSource",
+                "url": "#/components/schemas/InputContentUrlSource"
+              }
+            }
+          },
+          "metadata": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["source"],
+        "title": "ImageInputContent",
+        "description": "An image input content fragment."
       },
       "InfoResponse": {
         "properties": {
@@ -3210,6 +3632,59 @@
           "content_pipeline_available"
         ],
         "title": "InfoResponse"
+      },
+      "InputContentDataSource": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data",
+            "title": "Type",
+            "default": "data"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "mimeType": {
+            "type": "string",
+            "title": "Mimetype"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["value", "mimeType"],
+        "title": "InputContentDataSource",
+        "description": "Inline base64-encoded source."
+      },
+      "InputContentUrlSource": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "default": "url"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "mimeType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mimetype"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["value"],
+        "title": "InputContentUrlSource",
+        "description": "URL-referenced source."
       },
       "KnowledgeEdgeResponse": {
         "properties": {
@@ -6285,6 +6760,40 @@
         "enum": ["ok", "degraded"],
         "title": "ReadinessStatus"
       },
+      "ReasoningMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "const": "reasoning",
+            "title": "Role",
+            "default": "reasoning"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "encryptedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encryptedvalue"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["id", "content"],
+        "title": "ReasoningMessage",
+        "description": "A reasoning message containing the agent's internal reasoning process."
+      },
       "RecommendationPrerequisite": {
         "properties": {
           "name": {
@@ -6454,6 +6963,144 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RegisterExerciseContextRequest"
+      },
+      "ResumeEntry": {
+        "properties": {
+          "interruptId": {
+            "type": "string",
+            "title": "Interruptid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["resolved", "cancelled"],
+            "title": "Status"
+          },
+          "payload": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["interruptId", "status"],
+        "title": "ResumeEntry",
+        "description": "A per-interrupt response in the resume array of a RunAgentInput."
+      },
+      "RunAgentInput": {
+        "properties": {
+          "threadId": {
+            "type": "string",
+            "title": "Threadid"
+          },
+          "runId": {
+            "type": "string",
+            "title": "Runid"
+          },
+          "parentRunId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentrunid"
+          },
+          "state": {
+            "title": "State"
+          },
+          "messages": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/DeveloperMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/SystemMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/AssistantMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/UserMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/ToolMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/ActivityMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/ReasoningMessage"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "role",
+                "mapping": {
+                  "activity": "#/components/schemas/ActivityMessage",
+                  "assistant": "#/components/schemas/AssistantMessage",
+                  "developer": "#/components/schemas/DeveloperMessage",
+                  "reasoning": "#/components/schemas/ReasoningMessage",
+                  "system": "#/components/schemas/SystemMessage",
+                  "tool": "#/components/schemas/ToolMessage",
+                  "user": "#/components/schemas/UserMessage"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "context": {
+            "items": {
+              "$ref": "#/components/schemas/Context"
+            },
+            "type": "array",
+            "title": "Context"
+          },
+          "forwardedProps": {
+            "title": "Forwardedprops"
+          },
+          "resume": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResumeEntry"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "threadId",
+          "runId",
+          "state",
+          "messages",
+          "tools",
+          "context",
+          "forwardedProps"
+        ],
+        "title": "RunAgentInput",
+        "description": "Input for running an agent."
       },
       "SessionConceptSummary": {
         "properties": {
@@ -8308,6 +8955,70 @@
         "required": ["total_correct", "total_answered", "accuracy"],
         "title": "SubmitAnswerStats"
       },
+      "SystemMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "const": "system",
+            "title": "Role",
+            "default": "system"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "encryptedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encryptedvalue"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["id", "content"],
+        "title": "SystemMessage",
+        "description": "A system message."
+      },
+      "TextInputContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "default": "text"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["text"],
+        "title": "TextInputContent",
+        "description": "A text fragment in a multimodal user message."
+      },
       "TheoryResponse": {
         "properties": {
           "content": {
@@ -8325,6 +9036,114 @@
         "type": "object",
         "required": ["content", "examples"],
         "title": "TheoryResponse"
+      },
+      "Tool": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "parameters": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["name", "description"],
+        "title": "Tool",
+        "description": "A tool definition."
+      },
+      "ToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionCall"
+          },
+          "encryptedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encryptedvalue"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["id", "function"],
+        "title": "ToolCall",
+        "description": "A tool call, modelled after OpenAI tool calls."
+      },
+      "ToolMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "const": "tool",
+            "title": "Role",
+            "default": "tool"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "toolCallId": {
+            "type": "string",
+            "title": "Toolcallid"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "encryptedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encryptedvalue"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["id", "content", "toolCallId"],
+        "title": "ToolMessage",
+        "description": "A tool result message."
       },
       "TrueFalseExerciseResponse": {
         "properties": {
@@ -8435,6 +9254,91 @@
         "required": ["statement", "correct_answer"],
         "title": "TrueFalsePayload"
       },
+      "UserMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "const": "user",
+            "title": "Role",
+            "default": "user"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextInputContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageInputContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AudioInputContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/VideoInputContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DocumentInputContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BinaryInputContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "audio": "#/components/schemas/AudioInputContent",
+                      "binary": "#/components/schemas/BinaryInputContent",
+                      "document": "#/components/schemas/DocumentInputContent",
+                      "image": "#/components/schemas/ImageInputContent",
+                      "text": "#/components/schemas/TextInputContent",
+                      "video": "#/components/schemas/VideoInputContent"
+                    }
+                  }
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "encryptedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encryptedvalue"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["id", "content"],
+        "title": "UserMessage",
+        "description": "A user message supporting text or multimodal content."
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -8470,6 +9374,48 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
+      },
+      "VideoInputContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "video",
+            "title": "Type",
+            "default": "video"
+          },
+          "source": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InputContentDataSource"
+              },
+              {
+                "$ref": "#/components/schemas/InputContentUrlSource"
+              }
+            ],
+            "title": "Source",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "data": "#/components/schemas/InputContentDataSource",
+                "url": "#/components/schemas/InputContentUrlSource"
+              }
+            }
+          },
+          "metadata": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["source"],
+        "title": "VideoInputContent",
+        "description": "A video input content fragment."
       }
     },
     "securitySchemes": {

@@ -19,6 +19,7 @@
     "ask_rin_context_stale": "Ask Rin-chan context is stale",
     "ask_rin_conversation_busy": "Ask Rin-chan is already answering",
     "ask_rin_request_in_progress": "Ask Rin-chan request is already in progress",
+    "ask_rin_run_failed": "Ask Rin-chan could not complete this response",
     "configuration_error": "Configuration error",
     "service_unavailable": "Service unavailable",
     "pipeline_not_found": "Pipeline job not found",

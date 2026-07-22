@@ -616,6 +616,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/ask-rin-chan/agent': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Run Ask Rin Chan Agent
+     * @description Run Ask Rin-chan using the official AG-UI input and event protocol.
+     */
+    post: operations['run_ask_rin_chan_agent_api_v1_ask_rin_chan_agent_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/ask-rin-chan/conversations/{exercise_context_id}': {
     parameters: {
       query?: never;
@@ -737,6 +757,27 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * ActivityMessage
+     * @description An activity progress message emitted between chat messages.
+     */
+    ActivityMessage: {
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      role: 'activity';
+      /** Activitytype */
+      activityType: string;
+      /** Content */
+      content: {
+        [key: string]: unknown;
+      };
+    } & {
+      [key: string]: unknown;
+    };
     /** AskRinChatRequest */
     AskRinChatRequest: {
       /** Exercisecontexttoken */
@@ -773,6 +814,71 @@ export interface components {
       status: 'complete' | 'interrupted';
       /** Createdat */
       createdAt: string;
+    };
+    /**
+     * AssistantMessage
+     * @description An assistant message.
+     */
+    AssistantMessage: {
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      role: 'assistant';
+      /** Content */
+      content?: string | null;
+      /** Name */
+      name?: string | null;
+      /** Encryptedvalue */
+      encryptedValue?: string | null;
+      /** Toolcalls */
+      toolCalls?: components['schemas']['ToolCall'][] | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * AudioInputContent
+     * @description An audio input content fragment.
+     */
+    AudioInputContent: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'audio';
+      /** Source */
+      source:
+        | components['schemas']['InputContentDataSource']
+        | components['schemas']['InputContentUrlSource'];
+      /** Metadata */
+      metadata?: unknown | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * BinaryInputContent
+     * @description A deprecated binary payload reference in a multimodal user message.
+     */
+    BinaryInputContent: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'binary';
+      /** Mimetype */
+      mimeType: string;
+      /** Id */
+      id?: string | null;
+      /** Url */
+      url?: string | null;
+      /** Data */
+      data?: string | null;
+      /** Filename */
+      filename?: string | null;
+    } & {
+      [key: string]: unknown;
     };
     /**
      * BloomLabel
@@ -815,6 +921,18 @@ export interface components {
      * @enum {string}
      */
     ConceptStatus: 'locked' | 'available' | 'in_progress' | 'mastered';
+    /**
+     * Context
+     * @description Additional context for the agent.
+     */
+    Context: {
+      /** Description */
+      description: string;
+      /** Value */
+      value: string;
+    } & {
+      [key: string]: unknown;
+    };
     /** DeleteSubjectResponse */
     DeleteSubjectResponse: {
       /** Job Id */
@@ -828,6 +946,46 @@ export interface components {
        * @constant
        */
       status: 'deleted';
+    };
+    /**
+     * DeveloperMessage
+     * @description A developer message.
+     */
+    DeveloperMessage: {
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      role: 'developer';
+      /** Content */
+      content: string;
+      /** Name */
+      name?: string | null;
+      /** Encryptedvalue */
+      encryptedValue?: string | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * DocumentInputContent
+     * @description A document input content fragment.
+     */
+    DocumentInputContent: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'document';
+      /** Source */
+      source:
+        | components['schemas']['InputContentDataSource']
+        | components['schemas']['InputContentUrlSource'];
+      /** Metadata */
+      metadata?: unknown | null;
+    } & {
+      [key: string]: unknown;
     };
     /** ExerciseContextResponse */
     ExerciseContextResponse: {
@@ -918,10 +1076,41 @@ export interface components {
       /** Blank Answers */
       blank_answers: string[];
     };
+    /**
+     * FunctionCall
+     * @description Name and arguments of a function call.
+     */
+    FunctionCall: {
+      /** Name */
+      name: string;
+      /** Arguments */
+      arguments: string;
+    } & {
+      [key: string]: unknown;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
       detail?: components['schemas']['ValidationError'][];
+    };
+    /**
+     * ImageInputContent
+     * @description An image input content fragment.
+     */
+    ImageInputContent: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'image';
+      /** Source */
+      source:
+        | components['schemas']['InputContentDataSource']
+        | components['schemas']['InputContentUrlSource'];
+      /** Metadata */
+      metadata?: unknown | null;
+    } & {
+      [key: string]: unknown;
     };
     /** InfoResponse */
     InfoResponse: {
@@ -935,6 +1124,40 @@ export interface components {
       mongo_available: boolean;
       /** Content Pipeline Available */
       content_pipeline_available: boolean;
+    };
+    /**
+     * InputContentDataSource
+     * @description Inline base64-encoded source.
+     */
+    InputContentDataSource: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'data';
+      /** Value */
+      value: string;
+      /** Mimetype */
+      mimeType: string;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * InputContentUrlSource
+     * @description URL-referenced source.
+     */
+    InputContentUrlSource: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'url';
+      /** Value */
+      value: string;
+      /** Mimetype */
+      mimeType?: string | null;
+    } & {
+      [key: string]: unknown;
     };
     /** KnowledgeEdgeResponse */
     KnowledgeEdgeResponse: {
@@ -2317,6 +2540,25 @@ export interface components {
      * @enum {string}
      */
     ReadinessStatus: 'ok' | 'degraded';
+    /**
+     * ReasoningMessage
+     * @description A reasoning message containing the agent's internal reasoning process.
+     */
+    ReasoningMessage: {
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      role: 'reasoning';
+      /** Content */
+      content: string;
+      /** Encryptedvalue */
+      encryptedValue?: string | null;
+    } & {
+      [key: string]: unknown;
+    };
     /** RecommendationPrerequisite */
     RecommendationPrerequisite: {
       /** Name */
@@ -2362,6 +2604,57 @@ export interface components {
       sessionId?: string | null;
       /** Exerciseid */
       exerciseId?: string | null;
+    };
+    /**
+     * ResumeEntry
+     * @description A per-interrupt response in the resume array of a RunAgentInput.
+     */
+    ResumeEntry: {
+      /** Interruptid */
+      interruptId: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'resolved' | 'cancelled';
+      /** Payload */
+      payload?: unknown | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * RunAgentInput
+     * @description Input for running an agent.
+     */
+    RunAgentInput: {
+      /** Threadid */
+      threadId: string;
+      /** Runid */
+      runId: string;
+      /** Parentrunid */
+      parentRunId?: string | null;
+      /** State */
+      state: unknown;
+      /** Messages */
+      messages: (
+        | components['schemas']['DeveloperMessage']
+        | components['schemas']['SystemMessage']
+        | components['schemas']['AssistantMessage']
+        | components['schemas']['UserMessage']
+        | components['schemas']['ToolMessage']
+        | components['schemas']['ActivityMessage']
+        | components['schemas']['ReasoningMessage']
+      )[];
+      /** Tools */
+      tools: components['schemas']['Tool'][];
+      /** Context */
+      context: components['schemas']['Context'][];
+      /** Forwardedprops */
+      forwardedProps: unknown;
+      /** Resume */
+      resume?: components['schemas']['ResumeEntry'][] | null;
+    } & {
+      [key: string]: unknown;
     };
     /** SessionConceptSummary */
     SessionConceptSummary: {
@@ -3219,12 +3512,104 @@ export interface components {
       /** Accuracy */
       accuracy: number;
     };
+    /**
+     * SystemMessage
+     * @description A system message.
+     */
+    SystemMessage: {
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      role: 'system';
+      /** Content */
+      content: string;
+      /** Name */
+      name?: string | null;
+      /** Encryptedvalue */
+      encryptedValue?: string | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * TextInputContent
+     * @description A text fragment in a multimodal user message.
+     */
+    TextInputContent: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'text';
+      /** Text */
+      text: string;
+    } & {
+      [key: string]: unknown;
+    };
     /** TheoryResponse */
     TheoryResponse: {
       /** Content */
       content: string;
       /** Examples */
       examples: string[];
+    };
+    /**
+     * Tool
+     * @description A tool definition.
+     */
+    Tool: {
+      /** Name */
+      name: string;
+      /** Description */
+      description: string;
+      /** Parameters */
+      parameters?: unknown | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * ToolCall
+     * @description A tool call, modelled after OpenAI tool calls.
+     */
+    ToolCall: {
+      /** Id */
+      id: string;
+      /**
+       * Type
+       * @default function
+       * @constant
+       */
+      type: 'function';
+      function: components['schemas']['FunctionCall'];
+      /** Encryptedvalue */
+      encryptedValue?: string | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * ToolMessage
+     * @description A tool result message.
+     */
+    ToolMessage: {
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      role: 'tool';
+      /** Content */
+      content: string;
+      /** Toolcallid */
+      toolCallId: string;
+      /** Error */
+      error?: string | null;
+      /** Encryptedvalue */
+      encryptedValue?: string | null;
+    } & {
+      [key: string]: unknown;
     };
     /** TrueFalseExerciseResponse */
     TrueFalseExerciseResponse: {
@@ -3269,6 +3654,36 @@ export interface components {
       /** Correct Answer */
       correct_answer: boolean;
     };
+    /**
+     * UserMessage
+     * @description A user message supporting text or multimodal content.
+     */
+    UserMessage: {
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      role: 'user';
+      /** Content */
+      content:
+        | string
+        | (
+            | components['schemas']['TextInputContent']
+            | components['schemas']['ImageInputContent']
+            | components['schemas']['AudioInputContent']
+            | components['schemas']['VideoInputContent']
+            | components['schemas']['DocumentInputContent']
+            | components['schemas']['BinaryInputContent']
+          )[];
+      /** Name */
+      name?: string | null;
+      /** Encryptedvalue */
+      encryptedValue?: string | null;
+    } & {
+      [key: string]: unknown;
+    };
     /** ValidationError */
     ValidationError: {
       /** Location */
@@ -3281,6 +3696,25 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /**
+     * VideoInputContent
+     * @description A video input content fragment.
+     */
+    VideoInputContent: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'video';
+      /** Source */
+      source:
+        | components['schemas']['InputContentDataSource']
+        | components['schemas']['InputContentUrlSource'];
+      /** Metadata */
+      metadata?: unknown | null;
+    } & {
+      [key: string]: unknown;
     };
   };
   responses: never;
@@ -4572,6 +5006,42 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['AskRinChatRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  run_ask_rin_chan_agent_api_v1_ask_rin_chan_agent_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RunAgentInput'];
       };
     };
     responses: {

@@ -175,15 +175,8 @@ function getStatusBadge(status: AdminSubscriptionStatusViewModel) {
   }
 }
 
-function getTypeBadge(type: string) {
-  switch (type) {
-    case 'yearly':
-      return <Badge variant="success">{type}</Badge>;
-    case 'monthly':
-      return <Badge variant="info">{type}</Badge>;
-    default:
-      return <Badge variant="default">{type}</Badge>;
-  }
+function getPlanBadge(planName: string) {
+  return <Badge variant="default">{planName}</Badge>;
 }
 
 function getAvailableStatusTransitions(
@@ -297,7 +290,7 @@ function SubscriptionsTable({
                     User
                   </th>
                   <th scope="col" className="px-6 py-3">
-                    Type
+                    Plan
                   </th>
                   <th scope="col" className="px-6 py-3">
                     Amount
@@ -322,7 +315,7 @@ function SubscriptionsTable({
                     <td className="px-6 py-4 font-medium text-neutral-900">
                       {subscription.userEmail}
                     </td>
-                    <td className="px-6 py-4">{getTypeBadge(subscription.type)}</td>
+                    <td className="px-6 py-4">{getPlanBadge(subscription.plan.name)}</td>
                     <td className="px-6 py-4">{subscription.amountLabel}</td>
                     <td className="px-6 py-4">{getStatusBadge(subscription.status)}</td>
                     <td className="px-6 py-4 text-neutral-500">{subscription.startDateLabel}</td>
@@ -365,10 +358,7 @@ function SubscriptionDetailModal({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <SubscriptionDetailField label="User Email" value={subscription.userEmail} />
-            <SubscriptionDetailField
-              label="Subscription Type"
-              value={getTypeBadge(subscription.type)}
-            />
+            <SubscriptionDetailField label="Plan" value={getPlanBadge(subscription.plan.name)} />
             <SubscriptionDetailField label="Amount" value={subscription.amountLabel} />
             <SubscriptionDetailField label="Status" value={getStatusBadge(subscription.status)} />
             <SubscriptionDetailField
@@ -389,7 +379,7 @@ function SubscriptionDetailModal({
 
           {availableTransitions.length > 0 ? (
             <div className="border-t pt-4">
-              <p className="mb-3 block text-sm font-medium text-neutral-700">Update Status</p>
+              <p className="mb-3 text-sm font-medium text-neutral-700">Update Status</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {availableTransitions.map((status) => (
                   <Button
@@ -415,7 +405,7 @@ function SubscriptionDetailModal({
 function SubscriptionDetailField({ label, value }: SubscriptionDetailFieldProps) {
   return (
     <div>
-      <p className="mb-1 block text-sm font-medium text-neutral-700">{label}</p>
+      <p className="mb-1 text-sm font-medium text-neutral-700">{label}</p>
       <div className="text-sm text-neutral-900">{value}</div>
     </div>
   );

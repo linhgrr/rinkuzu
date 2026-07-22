@@ -22,7 +22,7 @@ describe('AccountPersistenceMapper', () => {
       AccountPersistenceMapper.toProfile({
         ...profile,
         displayName: 'Learner',
-        subscription: { type: 'premium', isActive: true },
+        subscription: { planId: 'premium', planName: 'Premium', isActive: true },
       }),
     ).toEqual({
       id: 'account-1',
@@ -30,7 +30,7 @@ describe('AccountPersistenceMapper', () => {
       displayName: 'Learner',
       role: 'user',
       createdAt: new Date('2026-07-01T00:00:00.000Z'),
-      subscription: { type: 'premium', isActive: true },
+      subscription: { planId: 'premium', planName: 'Premium', isActive: true },
     });
   });
 
@@ -42,7 +42,8 @@ describe('AccountPersistenceMapper', () => {
       AccountPersistenceMapper.toProfile({
         ...profile,
         subscription: {
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           isActive: true,
           startDate,
           endDate,
@@ -51,7 +52,8 @@ describe('AccountPersistenceMapper', () => {
         },
       }).subscription,
     ).toEqual({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: true,
       startDate,
       endDate,

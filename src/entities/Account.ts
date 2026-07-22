@@ -1,5 +1,6 @@
 export interface AccountSubscription {
-  type: string;
+  planId: string;
+  planName: string;
   startDate?: Date;
   endDate?: Date;
   isActive: boolean;

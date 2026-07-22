@@ -150,6 +150,7 @@ export class AdminBillingService implements IAdminBillingService {
         userId: grant.userId,
         userEmail: grant.userEmail,
         planId: grant.planId,
+        planName: grant.planName,
         amount: grant.amount,
         startDate: grant.startDate,
         ...(endDate !== undefined && { endDate }),

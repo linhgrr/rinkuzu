@@ -19,7 +19,10 @@ function toSubscriptionDto(profile: AccountProfile): AccountSubscriptionDto | un
     'profile.subscription.endDate',
   );
   return {
-    type: profile.subscription.type,
+    plan: {
+      id: profile.subscription.planId,
+      name: profile.subscription.planName,
+    },
     isActive: profile.subscription.isActive,
     ...(startDate === undefined ? {} : { startDate }),
     ...(endDate === undefined ? {} : { endDate }),

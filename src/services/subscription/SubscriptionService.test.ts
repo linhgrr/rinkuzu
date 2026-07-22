@@ -49,7 +49,8 @@ function subscriptionFixture(overrides: Partial<SubscriptionRecord> = {}): Subsc
     id: 'sub-1',
     userId: 'user-1',
     userEmail: 'user@example.com',
-    type: 'premium',
+    planId: 'premium',
+    planName: 'Premium',
     amount: 99_000,
     currency: 'VND',
     status: 'completed',
@@ -105,6 +106,7 @@ function createService(overrides: ServiceOverrides = {}) {
     cancelCurrentForUser: vi.fn(),
     updateById: vi.fn(),
     updateByOrderId: vi.fn(),
+    settlePendingPayment: vi.fn(),
     activateSubscription: vi.fn().mockResolvedValue(undefined),
     ...overrides.subscriptionRepository,
   };
@@ -177,7 +179,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           status: 'completed',
           startDate,
           endDate,
@@ -201,7 +204,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -286,7 +290,8 @@ describe('SubscriptionService billing hardening', () => {
     expect(subscriptionRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         userEmail: 'user@example.com',
-        type: 'premium',
+        planId: 'premium',
+        planName: 'Premium plan name that is longer than PayOS allows',
         amount: 99000,
         currency: 'VND',
         status: 'pending',
@@ -347,7 +352,8 @@ describe('SubscriptionService billing hardening', () => {
 
     // Inactive with future endDate → not premium
     userRepository.findSubscriptionById.mockResolvedValueOnce({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: false,
       endDate: new Date('2099-01-01T00:00:00Z'),
     });
@@ -355,7 +361,8 @@ describe('SubscriptionService billing hardening', () => {
 
     // Active, unexpired endDate → premium
     userRepository.findSubscriptionById.mockResolvedValueOnce({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: true,
       endDate: new Date('2099-01-01T00:00:00Z'),
     });
@@ -363,14 +370,16 @@ describe('SubscriptionService billing hardening', () => {
 
     // Active but missing endDate (anomalous) → fail closed
     userRepository.findSubscriptionById.mockResolvedValueOnce({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: true,
     });
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
     // Active with invalid endDate → expire path then not premium
     userRepository.findSubscriptionById.mockResolvedValueOnce({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: true,
       endDate: new Date(Number.NaN),
       payosOrderId: 'order-invalid-end',
@@ -379,7 +388,8 @@ describe('SubscriptionService billing hardening', () => {
 
     // Active with past endDate → expire path then not premium
     userRepository.findSubscriptionById.mockResolvedValueOnce({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: true,
       endDate: new Date('2000-01-01T00:00:00.000Z'),
       payosOrderId: 'order-expired',
@@ -432,7 +442,7 @@ describe('SubscriptionService billing hardening', () => {
           name: 'User',
           // Active flag without endDate is anomalous: shared fail-closed helper
           // rejects premium, so payment creation is not blocked as "already active".
-          subscription: { type: 'premium', isActive: true },
+          subscription: { planId: 'premium', planName: 'Premium', isActive: true },
         }),
       },
       subscriptionRepository: {
@@ -470,7 +480,7 @@ describe('SubscriptionService billing hardening', () => {
     );
   });
 
-  it('preserves pending subscriptions when PayOS creation fails ambiguously', async () => {
+  it('settles pending subscriptions when PayOS explicitly rejects creation', async () => {
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
@@ -491,6 +501,11 @@ describe('SubscriptionService billing hardening', () => {
 
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow('PayOS down');
     expect(subscriptionRepository.create).toHaveBeenCalledOnce();
+    expect(subscriptionRepository.settlePendingPayment).toHaveBeenCalledWith(
+      expect.any(String),
+      'user-1',
+      'failed',
+    );
   });
 
   it('activates webhook-verified payments with the stored plan duration', async () => {
@@ -498,7 +513,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -516,7 +532,8 @@ describe('SubscriptionService billing hardening', () => {
       expect.objectContaining({
         orderId: '123',
         userId: 'user-1',
-        type: 'premium',
+        planId: 'premium',
+        planName: 'Premium',
         startDate: expect.any(Date),
         endDate: expect.any(Date),
         transactionReference: 'payos-ref',
@@ -562,7 +579,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -591,7 +609,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -615,7 +634,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -639,7 +659,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -727,7 +748,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'missing-plan',
+          planId: 'missing-plan',
+          planName: 'Missing plan',
           amount: 99000,
           status: 'pending',
         }),
@@ -751,7 +773,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'invalid-plan',
+          planId: 'invalid-plan',
+          planName: 'Invalid plan',
           amount: 99000,
           status: 'pending',
         }),
@@ -871,13 +894,11 @@ describe('SubscriptionService billing hardening', () => {
           id: updated.id,
           user: updated.userId,
           userEmail: updated.userEmail,
-          type: updated.type,
+          plan: { id: updated.planId, name: updated.planName },
           amount: updated.amount,
           currency: updated.currency,
           status: updated.status,
           payosOrderId: updated.payosOrderId,
-          payosTransactionId: updated.payosTransactionId,
-          payosPaymentUrl: updated.payosPaymentUrl,
           startDate: updated.startDate?.toISOString(),
           endDate: updated.endDate?.toISOString(),
           isActive: updated.isActive,
@@ -943,7 +964,8 @@ describe('SubscriptionService billing hardening', () => {
     const { service, subscriptionRepository, userRepository } = createService({
       userRepository: {
         findSubscriptionById: vi.fn().mockResolvedValue({
-          type: 'premium_6months',
+          planId: 'premium_6months',
+          planName: 'Premium 6 months',
           isActive: true,
           endDate: expiredEndDate,
           payosOrderId: 'order-1',
@@ -959,7 +981,7 @@ describe('SubscriptionService billing hardening', () => {
     // Expired snapshots stay in the DTO; isPremium alone controls entitlements.
     expect(subscription).toEqual({
       subscription: {
-        type: 'premium_6months',
+        plan: { id: 'premium_6months', name: 'Premium 6 months' },
         isActive: false,
         endDate: expiredEndDate.toISOString(),
         status: 'expired',
@@ -979,7 +1001,8 @@ describe('SubscriptionService billing hardening', () => {
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findSubscriptionById: vi.fn().mockResolvedValue({
-          type: 'premium_6months',
+          planId: 'premium_6months',
+          planName: 'Premium 6 months',
           isActive: false,
           endDate: inactiveEndDate,
           payosOrderId: 'order-1',
@@ -992,7 +1015,7 @@ describe('SubscriptionService billing hardening', () => {
 
     await expect(service.getSubscriptionStatus('user-1')).resolves.toEqual({
       subscription: {
-        type: 'premium_6months',
+        plan: { id: 'premium_6months', name: 'Premium 6 months' },
         isActive: false,
         endDate: inactiveEndDate.toISOString(),
         status: 'expired',
@@ -1055,7 +1078,7 @@ describe('SubscriptionService billing hardening', () => {
     expect(result).toEqual({
       success: true,
       subscription: {
-        type: 'premium',
+        plan: { id: 'premium', name: 'Premium' },
         startDate: existingSnapshot.startDate,
         endDate: existingSnapshot.endDate,
         isActive: true,
@@ -1174,7 +1197,7 @@ describe('SubscriptionService billing hardening', () => {
     ).resolves.toEqual({
       success: true,
       subscription: {
-        type: settled.type,
+        plan: { id: settled.planId, name: settled.planName },
         startDate: settled.startDate,
         endDate: settled.endDate,
         isActive: true,
@@ -1222,7 +1245,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -1268,7 +1292,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -1293,7 +1318,8 @@ describe('SubscriptionService billing hardening', () => {
         subscriptionRepository: {
           findByOrderId: vi.fn().mockResolvedValue({
             userId: 'user-1',
-            type: 'premium',
+            planId: 'premium',
+            planName: 'Premium',
             status: 'completed',
             startDate: new Date('2026-07-01T00:00:00.000Z'),
             endDate: expiry,
@@ -1317,7 +1343,8 @@ describe('SubscriptionService billing hardening', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-1',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -1338,7 +1365,7 @@ describe('SubscriptionService billing hardening', () => {
 
     await expect(service.verifyAndActivateSubscription(123, 'user-1')).resolves.toMatchObject({
       success: true,
-      subscription: { type: 'premium', isActive: true },
+      subscription: { plan: { id: 'premium', name: 'Premium' }, isActive: true },
     });
     expect(subscriptionRepository.findByTransactionReference).toHaveBeenCalledWith(
       'latest-reference',
@@ -1368,6 +1395,7 @@ describe('SubscriptionService billing hardening', () => {
       'Payment URL not received from PayOS',
     );
     expect(subscriptionRepository.create).toHaveBeenCalledOnce();
+    expect(subscriptionRepository.settlePendingPayment).not.toHaveBeenCalled();
   });
 
   it('preserves the original payment transport error and pending record', async () => {
@@ -1389,6 +1417,7 @@ describe('SubscriptionService billing hardening', () => {
 
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toBe(paymentError);
     expect(subscriptionRepository.create).toHaveBeenCalledOnce();
+    expect(subscriptionRepository.settlePendingPayment).not.toHaveBeenCalled();
   });
 
   it('allows an expired embedded premium subscription but rejects a future active one', async () => {
@@ -1405,7 +1434,8 @@ describe('SubscriptionService billing hardening', () => {
         findById: vi.fn().mockResolvedValue({
           email: 'user@example.com',
           subscription: {
-            type: 'premium',
+            planId: 'premium',
+            planName: 'Premium',
             isActive: true,
             endDate: new Date('2000-01-01T00:00:00.000Z'),
           },
@@ -1423,7 +1453,8 @@ describe('SubscriptionService billing hardening', () => {
         findById: vi.fn().mockResolvedValue({
           email: 'user@example.com',
           subscription: {
-            type: 'premium',
+            planId: 'premium',
+            planName: 'Premium',
             isActive: true,
             endDate: new Date('2099-01-01T00:00:00.000Z'),
           },
@@ -1517,7 +1548,8 @@ describe('SubscriptionService billing hardening', () => {
     const missingOrder = createService({
       userRepository: {
         findSubscriptionById: vi.fn().mockResolvedValue({
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           isActive: true,
           endDate: new Date('2000-01-01T00:00:00.000Z'),
         }),
@@ -1526,7 +1558,8 @@ describe('SubscriptionService billing hardening', () => {
     const missingRecord = createService({
       userRepository: {
         findSubscriptionById: vi.fn().mockResolvedValue({
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           isActive: true,
           endDate: new Date('2000-01-01T00:00:00.000Z'),
           payosOrderId: 'order-1',
@@ -1553,6 +1586,128 @@ describe('SubscriptionService billing hardening', () => {
   });
 });
 
+describe('SubscriptionService payment cancellation reconciliation', () => {
+  const pending = subscriptionFixture({ status: 'pending', isActive: false });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('settles an authenticated pending order only after PayOS confirms cancellation', async () => {
+    const cancelled = subscriptionFixture({ status: 'cancelled', isActive: false });
+    const { service, subscriptionRepository } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(pending),
+        settlePendingPayment: vi.fn().mockResolvedValue(cancelled),
+      },
+      payosService: {
+        getPaymentInfo: vi.fn().mockResolvedValue({
+          code: '00',
+          desc: 'success',
+          data: payosPaymentLinkData({
+            status: 'CANCELLED',
+            amountPaid: 0,
+            amountRemaining: 99000,
+            transactions: [],
+            canceledAt: '2026-07-02T04:10:00.000Z',
+          }),
+        }),
+      },
+    });
+
+    await expect(service.reconcilePaymentCancellation(123, 'user-1')).resolves.toEqual({
+      success: true,
+      data: { status: 'cancelled' },
+    });
+    expect(subscriptionRepository.settlePendingPayment).toHaveBeenCalledWith(
+      '123',
+      'user-1',
+      'cancelled',
+    );
+  });
+
+  it('does not query PayOS for an order owned by another user', async () => {
+    const { service, payosService } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(pending),
+      },
+    });
+
+    await expect(service.reconcilePaymentCancellation(123, 'other-user')).resolves.toMatchObject({
+      success: false,
+      statusCode: 403,
+      code: 'forbidden',
+    });
+    expect(payosService.getPaymentInfo).not.toHaveBeenCalled();
+  });
+
+  it('routes an authoritative paid order to the success verifier without cancelling it', async () => {
+    const { service, subscriptionRepository } = createService({
+      subscriptionRepository: { findByOrderId: vi.fn().mockResolvedValue(pending) },
+      payosService: {
+        getPaymentInfo: vi.fn().mockResolvedValue({
+          code: '00',
+          desc: 'success',
+          data: payosPaymentLinkData(),
+        }),
+      },
+    });
+
+    await expect(service.reconcilePaymentCancellation(123, 'user-1')).resolves.toEqual({
+      success: true,
+      data: { status: 'paid' },
+    });
+    expect(subscriptionRepository.settlePendingPayment).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when PayOS returns a different order or amount', async () => {
+    const { service, subscriptionRepository } = createService({
+      subscriptionRepository: { findByOrderId: vi.fn().mockResolvedValue(pending) },
+      payosService: {
+        getPaymentInfo: vi.fn().mockResolvedValue({
+          code: '00',
+          desc: 'success',
+          data: payosPaymentLinkData({ orderCode: 999 }),
+        }),
+      },
+    });
+
+    await expect(service.reconcilePaymentCancellation(123, 'user-1')).resolves.toMatchObject({
+      success: false,
+      statusCode: 502,
+      code: 'payment_provider_error',
+    });
+    expect(subscriptionRepository.settlePendingPayment).not.toHaveBeenCalled();
+  });
+
+  it('returns the durable winner when cancellation races another writer', async () => {
+    const completed = subscriptionFixture();
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValueOnce(pending).mockResolvedValueOnce(completed),
+        settlePendingPayment: vi.fn().mockResolvedValue(null),
+      },
+      payosService: {
+        getPaymentInfo: vi.fn().mockResolvedValue({
+          code: '00',
+          desc: 'success',
+          data: payosPaymentLinkData({
+            status: 'CANCELLED',
+            amountPaid: 0,
+            amountRemaining: 99000,
+            transactions: [],
+          }),
+        }),
+      },
+    });
+
+    await expect(service.reconcilePaymentCancellation(123, 'user-1')).resolves.toEqual({
+      success: true,
+      data: { status: 'paid' },
+    });
+  });
+});
+
 describe('SubscriptionService entitlement cache invalidation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1564,7 +1719,8 @@ describe('SubscriptionService entitlement cache invalidation', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-verify',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -1589,7 +1745,8 @@ describe('SubscriptionService entitlement cache invalidation', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-webhook',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -1676,7 +1833,8 @@ describe('SubscriptionService entitlement cache invalidation', () => {
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           userId: 'user-fail',
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           amount: 99000,
           status: 'pending',
         }),
@@ -1720,7 +1878,8 @@ describe('SubscriptionService entitlement cache invalidation', () => {
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findSubscriptionById: vi.fn().mockResolvedValue({
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           isActive: true,
           endDate: new Date('2000-01-01T00:00:00.000Z'),
           payosOrderId: 'order-lazy',
@@ -1743,7 +1902,8 @@ describe('SubscriptionService entitlement cache invalidation', () => {
     const { service } = createService({
       userRepository: {
         findSubscriptionById: vi.fn().mockResolvedValue({
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           isActive: true,
           endDate: new Date('2000-01-01T00:00:00.000Z'),
           payosOrderId: 'order-false',
@@ -1764,7 +1924,8 @@ describe('SubscriptionService entitlement cache invalidation', () => {
     const { service } = createService({
       userRepository: {
         findSubscriptionById: vi.fn().mockResolvedValue({
-          type: 'premium',
+          planId: 'premium',
+          planName: 'Premium',
           isActive: true,
           endDate: new Date('2000-01-01T00:00:00.000Z'),
           payosOrderId: 'order-throw',

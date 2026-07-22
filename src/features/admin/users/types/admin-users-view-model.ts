@@ -2,7 +2,10 @@ import type { UserRole } from '@/types/next-auth';
 import type { AccountDisableState } from '@/shared/constants/account-disable';
 
 export interface AdminUserSubscriptionViewModel {
-  type: string;
+  plan: {
+    id: string;
+    name: string;
+  };
   startDate?: string;
   startDateLabel?: string;
   endDate?: string;

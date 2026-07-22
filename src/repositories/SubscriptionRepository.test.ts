@@ -71,7 +71,8 @@ function pendingRecord(overrides: Record<string, unknown> = {}) {
     _id: new Types.ObjectId(subscriptionId),
     user: new Types.ObjectId(userId),
     userEmail: 'user@example.com',
-    type: 'premium',
+    planId: 'premium',
+    planName: 'Premium',
     amount: 99_000,
     currency: 'VND',
     status: 'pending' as const,
@@ -126,7 +127,8 @@ describe('SubscriptionRepository lookups and simple writes', () => {
     const created = await new SubscriptionRepository().create({
       userId,
       userEmail: 'user@example.com',
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       amount: 99_000,
       currency: 'VND',
       status: 'pending',
@@ -136,7 +138,8 @@ describe('SubscriptionRepository lookups and simple writes', () => {
     expect(mocks.subscriptionCreate).toHaveBeenCalledWith({
       user: userId,
       userEmail: 'user@example.com',
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       amount: 99_000,
       currency: 'VND',
       status: 'pending',
@@ -198,13 +201,37 @@ describe('SubscriptionRepository lookups and simple writes', () => {
     );
     await expect(repository.updateByOrderId(orderId, { status: 'pending' })).resolves.toBeNull();
   });
+
+  it('settles only the owning pending payment and never overwrites a concurrent winner', async () => {
+    mocks.subscriptionFindOneAndUpdate
+      .mockReturnValueOnce(leanChain(pendingRecord({ status: 'failed' })))
+      .mockReturnValueOnce(leanChain(pendingRecord({ status: 'cancelled' })))
+      .mockReturnValueOnce(leanChain(null));
+
+    const repository = new SubscriptionRepository();
+    await expect(repository.settlePendingPayment(orderId, userId, 'failed')).resolves.toMatchObject(
+      { status: 'failed', userId },
+    );
+    expect(mocks.subscriptionFindOneAndUpdate).toHaveBeenNthCalledWith(
+      1,
+      { payosOrderId: orderId, user: userId, status: 'pending' },
+      { $set: { status: 'failed', isActive: false } },
+      { new: true },
+    );
+
+    await expect(
+      repository.settlePendingPayment(orderId, userId, 'cancelled'),
+    ).resolves.toMatchObject({ status: 'cancelled', userId });
+    await expect(repository.settlePendingPayment(orderId, userId, 'expired')).resolves.toBeNull();
+  });
 });
 
 describe('SubscriptionRepository.activateSubscription', () => {
   const activation = {
     orderId,
     userId,
-    type: 'premium',
+    planId: 'premium',
+    planName: 'Premium',
     startDate: new Date('2026-07-01T00:00:00.000Z'),
   };
 
@@ -242,7 +269,8 @@ describe('SubscriptionRepository.activateSubscription', () => {
       {
         $set: {
           subscription: {
-            type: activation.type,
+            planId: activation.planId,
+            planName: activation.planName,
             startDate: activation.startDate,
             isActive: true,
             payosOrderId: activation.orderId,
@@ -280,7 +308,8 @@ describe('SubscriptionRepository.activateSubscription', () => {
       {
         $set: {
           subscription: {
-            type: activation.type,
+            planId: activation.planId,
+            planName: activation.planName,
             startDate: activation.startDate,
             endDate,
             isActive: true,

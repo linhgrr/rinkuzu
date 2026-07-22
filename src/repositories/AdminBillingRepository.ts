@@ -92,8 +92,8 @@ export class AdminBillingRepository implements IAdminBillingRepository {
         if (!plan) return;
 
         // Sequential on purpose: withTransaction forbids Promise.all (architecture check).
-        const subscriptionExists = await Subscription.exists({ type: planId }).session(session);
-        const assignedUserExists = await User.exists({ 'subscription.type': planId }).session(
+        const subscriptionExists = await Subscription.exists({ planId }).session(session);
+        const assignedUserExists = await User.exists({ 'subscription.planId': planId }).session(
           session,
         );
         if (subscriptionExists || assignedUserExists) {
@@ -168,7 +168,8 @@ export class AdminBillingRepository implements IAdminBillingRepository {
           { _id: input.userId, disable: 0 },
           {
             subscription: {
-              type: input.planId,
+              planId: input.planId,
+              planName: input.planName,
               startDate: input.startDate,
               endDate: input.endDate,
               isActive: true,
@@ -187,7 +188,8 @@ export class AdminBillingRepository implements IAdminBillingRepository {
             {
               user: new Types.ObjectId(input.userId),
               userEmail: input.userEmail,
-              type: input.planId,
+              planId: input.planId,
+              planName: input.planName,
               amount: input.amount,
               currency: 'VND',
               status: 'completed',

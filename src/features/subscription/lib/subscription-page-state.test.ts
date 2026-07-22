@@ -17,7 +17,7 @@ const sampleViewModel = {
     },
   ],
   currentSubscription: {
-    type: 'premium',
+    plan: { id: 'premium', name: 'Premium' },
     endDate: '2026-08-02T00:00:00.000Z',
     endDateLabel: '02/08/2026',
     isActive: true,
@@ -80,7 +80,7 @@ describe('subscriptionPageReducer', () => {
         plans: sampleViewModel.plans,
         isPremium: false,
         currentSubscription: {
-          type: 'premium_6months',
+          plan: { id: 'premium_6months', name: 'Premium 6 months' },
           endDate: '2025-12-28T00:00:00.000Z',
           endDateLabel: '28/12/2025',
           isActive: false,
@@ -92,7 +92,7 @@ describe('subscriptionPageReducer', () => {
     expect(next.status).toBe('ready');
     expect(next.isPremium).toBe(false);
     expect(next.currentSubscription).toMatchObject({
-      type: 'premium_6months',
+      plan: { id: 'premium_6months', name: 'Premium 6 months' },
       isActive: false,
       status: 'expired',
     });

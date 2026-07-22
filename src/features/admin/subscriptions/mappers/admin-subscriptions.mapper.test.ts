@@ -9,7 +9,7 @@ describe('toAdminSubscriptionsListViewModel', () => {
           id: 'sub-1',
           user: 'user-1',
           userEmail: 'learner@example.com',
-          type: 'monthly',
+          plan: { id: 'monthly', name: 'Monthly' },
           amount: 50000,
           currency: 'VND',
           status: 'pending',
@@ -33,6 +33,7 @@ describe('toAdminSubscriptionsListViewModel', () => {
     expect(result.subscriptions[0]).toMatchObject({
       id: 'sub-1',
       userId: 'user-1',
+      plan: { id: 'monthly', name: 'Monthly' },
       amountLabel: '50.000 ₫',
       payosTransactionIdLabel: '—',
       startDateLabel: '—',

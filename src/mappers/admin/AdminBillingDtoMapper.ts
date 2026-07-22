@@ -43,7 +43,7 @@ export class AdminBillingDtoMapper {
       id: subscription.id,
       user: subscription.user,
       userEmail: subscription.userEmail,
-      type: subscription.type,
+      plan: { id: subscription.planId, name: subscription.planName },
       amount: subscription.amount,
       currency: subscription.currency,
       status: subscription.status,

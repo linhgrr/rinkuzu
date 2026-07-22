@@ -1,6 +1,7 @@
 import type { AdminSubscriptionDto, UpdateSubscriptionRequestDto } from '@/dtos/admin-billing';
 import type {
   PaymentRequestDto,
+  PaymentCancellationReconciliationDto,
   SubscriptionActivationDto,
   SubscriptionCancellationDto,
   SubscriptionPlanDto,
@@ -13,6 +14,10 @@ export interface ISubscriptionService {
   getSubscriptionStatus(userId: string): Promise<SubscriptionStatusResponseDto>;
   isUserPremium(userId: string): Promise<boolean>;
   createPaymentRequest(userId: string, planId: string): Promise<PaymentRequestDto>;
+  reconcilePaymentCancellation(
+    orderCode: number,
+    userId: string,
+  ): Promise<ServiceResult<PaymentCancellationReconciliationDto>>;
   verifyAndActivateSubscription(
     orderCode: number,
     userId: string,

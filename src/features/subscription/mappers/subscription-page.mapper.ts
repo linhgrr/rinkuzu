@@ -30,10 +30,10 @@ function toCurrentSubscriptionViewModel(
 
   const { endDate } = status.subscription;
   return {
-    ...(status.subscription.type !== undefined && { type: status.subscription.type }),
+    plan: status.subscription.plan,
     ...(endDate !== undefined && { endDate }),
     endDateLabel: endDate ? formatDate(endDate, { locale: 'vi-VN' }) : '-',
-    isActive: Boolean(status.subscription.isActive),
+    isActive: status.subscription.isActive,
     ...(status.subscription.status !== undefined && { status: status.subscription.status }),
   };
 }

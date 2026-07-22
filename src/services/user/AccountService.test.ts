@@ -80,7 +80,8 @@ describe('AccountService', () => {
   it('returns the same complete profile DTO for reads and updates', async () => {
     const account = profile({
       subscription: {
-        type: 'premium',
+        planId: 'premium',
+        planName: 'Premium',
         startDate: createdAt,
         endDate: new Date('2026-07-30T10:00:00.000Z'),
         isActive: true,
@@ -103,7 +104,7 @@ describe('AccountService', () => {
         role: 'user',
         createdAt: createdAt.toISOString(),
         subscription: {
-          type: 'premium',
+          plan: { id: 'premium', name: 'Premium' },
           startDate: createdAt.toISOString(),
           endDate: '2026-07-30T10:00:00.000Z',
           isActive: true,

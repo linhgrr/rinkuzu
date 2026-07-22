@@ -262,7 +262,9 @@ describe('UserRepository entity projections', () => {
     const repository = new UserRepository();
     const id = String(targetUserRecord._id);
     userModelMocks.findOneLean
-      .mockResolvedValueOnce({ subscription: { type: 'premium', isActive: true } })
+      .mockResolvedValueOnce({
+        subscription: { planId: 'premium', planName: 'Premium', isActive: true },
+      })
       .mockResolvedValueOnce({
         _id: targetUserRecord._id,
         email: targetUserRecord.email,

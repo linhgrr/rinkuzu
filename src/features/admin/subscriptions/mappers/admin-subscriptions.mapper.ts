@@ -25,7 +25,7 @@ export function toAdminSubscriptionViewModel(
     id: subscription.id,
     userId: subscription.user,
     userEmail: subscription.userEmail,
-    type: subscription.type,
+    plan: subscription.plan,
     amount: subscription.amount,
     amountLabel: formatVndCurrency(subscription.amount),
     currency: subscription.currency,

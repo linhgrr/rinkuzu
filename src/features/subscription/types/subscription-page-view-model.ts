@@ -8,7 +8,10 @@ export interface SubscriptionPlanViewModel {
 }
 
 export interface CurrentSubscriptionViewModel {
-  type?: string;
+  plan: {
+    id: string;
+    name: string;
+  };
   endDate?: string;
   endDateLabel: string;
   isActive: boolean;

@@ -41,7 +41,8 @@ interface UserDocument extends Document {
   lastLoginIp?: string | null;
 
   subscription?: {
-    type: string;
+    planId: string;
+    planName: string;
     startDate?: Date;
     endDate?: Date;
     isActive: boolean;
@@ -50,6 +51,19 @@ interface UserDocument extends Document {
   };
   createdAt: Date;
 }
+
+const UserSubscriptionSchema = new Schema(
+  {
+    planId: { type: String, required: true },
+    planName: { type: String, required: true, trim: true },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    isActive: { type: Boolean, required: true, default: false },
+    payosOrderId: { type: String },
+    payosTransactionId: { type: String },
+  },
+  { _id: false },
+);
 
 const UserSchema = new Schema<UserDocument>({
   email: {
@@ -113,14 +127,7 @@ const UserSchema = new Schema<UserDocument>({
   lastLoginAt: { type: Date, default: null },
   lastLoginIp: { type: String, default: null },
 
-  subscription: {
-    type: { type: String },
-    startDate: { type: Date },
-    endDate: { type: Date },
-    isActive: { type: Boolean, default: false },
-    payosOrderId: { type: String },
-    payosTransactionId: { type: String },
-  },
+  subscription: { type: UserSubscriptionSchema, required: false, default: undefined },
   createdAt: { type: Date, default: Date.now },
 });
 

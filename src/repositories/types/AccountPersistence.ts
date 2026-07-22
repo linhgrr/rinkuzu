@@ -1,7 +1,8 @@
 import type { MongoIdLike } from '@/types/mongo';
 
 export interface AccountSubscriptionPersistenceRecord {
-  type: string;
+  planId: string;
+  planName: string;
   startDate?: Date;
   endDate?: Date;
   isActive: boolean;

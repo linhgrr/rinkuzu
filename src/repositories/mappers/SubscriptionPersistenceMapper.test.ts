@@ -9,7 +9,8 @@ const record: SubscriptionPersistenceRecord = {
   _id: 'subscription-1',
   user: 'user-1',
   userEmail: 'learner@example.com',
-  type: 'premium',
+  planId: 'premium',
+  planName: 'Premium',
   amount: 99000,
   currency: 'VND',
   status: 'completed',
@@ -52,11 +53,13 @@ describe('mapEmbeddedSubscription', () => {
   it('maps required fields and omits undefined optionals', () => {
     expect(
       mapEmbeddedSubscription({
-        type: 'premium',
+        planId: 'premium',
+        planName: 'Premium',
         isActive: true,
       }),
     ).toEqual({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: true,
     });
   });
@@ -67,7 +70,8 @@ describe('mapEmbeddedSubscription', () => {
 
     expect(
       mapEmbeddedSubscription({
-        type: 'premium',
+        planId: 'premium',
+        planName: 'Premium',
         isActive: true,
         startDate,
         endDate,
@@ -75,7 +79,8 @@ describe('mapEmbeddedSubscription', () => {
         payosTransactionId: 'txn-1',
       }),
     ).toEqual({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: true,
       startDate,
       endDate,
@@ -88,12 +93,14 @@ describe('mapEmbeddedSubscription', () => {
     // undefined is the sole omit signal; empty string is still included
     expect(
       mapEmbeddedSubscription({
-        type: 'free',
+        planId: 'free',
+        planName: 'Free',
         isActive: false,
         payosOrderId: '',
       }),
     ).toEqual({
-      type: 'free',
+      planId: 'free',
+      planName: 'Free',
       isActive: false,
       payosOrderId: '',
     });

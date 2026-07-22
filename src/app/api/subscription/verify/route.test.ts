@@ -41,7 +41,7 @@ describe('POST /api/subscription/verify', () => {
     authMock.mockResolvedValue(session());
     verifyAndActivateSubscriptionMock.mockResolvedValue({
       success: true,
-      subscription: { type: 'premium', isActive: true },
+      subscription: { plan: { id: 'premium', name: 'Premium' }, isActive: true },
     });
   });
 
@@ -72,7 +72,7 @@ describe('POST /api/subscription/verify', () => {
       success: true,
       data: {
         success: true,
-        subscription: { type: 'premium', isActive: true },
+        subscription: { plan: { id: 'premium', name: 'Premium' }, isActive: true },
       },
     });
   });

@@ -18,8 +18,14 @@ const SubscriptionSchema = new Schema<SubscriptionDocument>(
       required: [true, 'User email is required'],
       lowercase: true,
     },
-    type: {
+    planId: {
       type: String,
+      required: [true, 'Plan ID is required'],
+    },
+    planName: {
+      type: String,
+      required: [true, 'Plan name is required'],
+      trim: true,
     },
     amount: {
       type: Number,

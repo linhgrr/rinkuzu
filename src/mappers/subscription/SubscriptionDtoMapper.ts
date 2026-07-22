@@ -1,7 +1,19 @@
 import type { SubscriptionRecord, UserSubscription } from '@/entities/Subscription';
 import type { AdminSubscriptionDto } from '@/dtos/admin-billing';
-import type { SubscriptionStatusResponseDto } from '@/dtos/subscription';
+import type {
+  PaymentCancellationReconciliationDto,
+  SubscriptionStatusResponseDto,
+} from '@/dtos/subscription';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
+import type { SubscriptionStatus } from '@/shared/constants/subscription-status';
+
+const CANCELLATION_OUTCOME_BY_SUBSCRIPTION_STATUS = {
+  pending: 'pending',
+  completed: 'paid',
+  failed: 'failed',
+  cancelled: 'cancelled',
+  expired: 'expired',
+} as const satisfies Record<SubscriptionStatus, PaymentCancellationReconciliationDto['status']>;
 
 function toSubscriptionStatusDto(
   subscription: UserSubscription,
@@ -9,7 +21,7 @@ function toSubscriptionStatusDto(
   const startDate = serializeOptionalDate(subscription.startDate, 'subscription.startDate');
   const endDate = serializeOptionalDate(subscription.endDate, 'subscription.endDate');
   return {
-    type: subscription.type,
+    plan: { id: subscription.planId, name: subscription.planName },
     isActive: subscription.isActive,
     ...(startDate === undefined ? {} : { startDate }),
     ...(endDate === undefined ? {} : { endDate }),
@@ -22,6 +34,12 @@ function toSubscriptionStatusDto(
 }
 
 export class SubscriptionDtoMapper {
+  static toPaymentCancellationReconciliationDto(
+    status: SubscriptionStatus,
+  ): PaymentCancellationReconciliationDto {
+    return { status: CANCELLATION_OUTCOME_BY_SUBSCRIPTION_STATUS[status] };
+  }
+
   static toStatusResponse(
     subscription: UserSubscription | null,
     isPremium: boolean,
@@ -41,7 +59,7 @@ export class SubscriptionDtoMapper {
       id: subscription.id,
       user: subscription.userId,
       userEmail: subscription.userEmail,
-      type: subscription.type,
+      plan: { id: subscription.planId, name: subscription.planName },
       amount: subscription.amount,
       currency: subscription.currency,
       status: subscription.status,

@@ -26,6 +26,7 @@ export interface CreateAdminSubscriptionGrantData {
   userId: string;
   userEmail: string;
   planId: string;
+  planName: string;
   amount: number;
   startDate: Date;
   endDate?: Date;

@@ -7,7 +7,8 @@ import type { SubscriptionPersistenceRecord } from '@/repositories/types/Subscri
  * Omits optional fields when undefined (exact structural match of prior dual mappers).
  */
 export interface EmbeddedSubscriptionPersistenceFields {
-  type: string;
+  planId: string;
+  planName: string;
   startDate?: Date;
   endDate?: Date;
   isActive: boolean;
@@ -19,7 +20,8 @@ export function mapEmbeddedSubscription(
   record: EmbeddedSubscriptionPersistenceFields,
 ): EmbeddedSubscriptionPersistenceFields {
   return {
-    type: record.type,
+    planId: record.planId,
+    planName: record.planName,
     isActive: record.isActive,
     ...(record.startDate === undefined ? {} : { startDate: record.startDate }),
     ...(record.endDate === undefined ? {} : { endDate: record.endDate }),
@@ -41,7 +43,8 @@ export class SubscriptionPersistenceMapper {
       id: serializeId(record._id, 'subscription._id'),
       userId: serializeId(record.user, 'subscription.user'),
       userEmail: record.userEmail,
-      type: record.type,
+      planId: record.planId,
+      planName: record.planName,
       amount: record.amount,
       currency: record.currency,
       payosOrderId: record.payosOrderId,

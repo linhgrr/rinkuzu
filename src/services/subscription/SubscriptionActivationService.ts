@@ -17,7 +17,8 @@ import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import { invalidateEntitlements } from '@/lib/entitlements/cache';
 
 function toActivationDto(
-  type: string,
+  planId: string,
+  planName: string,
   startDate: Date,
   endDate: Date | undefined,
   isActive: boolean,
@@ -25,7 +26,7 @@ function toActivationDto(
   return {
     success: true,
     subscription: {
-      type,
+      plan: { id: planId, name: planName },
       startDate,
       ...(endDate !== undefined && { endDate }),
       isActive,
@@ -36,13 +37,14 @@ function toActivationDto(
 /** Successful activation result: drop process-local tier cache for this user. */
 function settledActivation(
   userId: string,
-  type: string,
+  planId: string,
+  planName: string,
   startDate: Date,
   endDate: Date | undefined,
   isActive: boolean,
 ): SubscriptionActivationDto {
   invalidateEntitlements(userId);
-  return toActivationDto(type, startDate, endDate, isActive);
+  return toActivationDto(planId, planName, startDate, endDate, isActive);
 }
 
 function assertVerifiedPaymentMatches(
@@ -67,7 +69,7 @@ function isSameActivation(existing: SubscriptionRecord, pending: SubscriptionRec
   return (
     existing.payosOrderId === pending.payosOrderId &&
     existing.userId === pending.userId &&
-    existing.type === pending.type &&
+    existing.planId === pending.planId &&
     existing.amount === pending.amount
   );
 }
@@ -101,7 +103,8 @@ export class SubscriptionActivationService {
       // Idempotent success: authoritative completed state — clear stale free tier.
       return settledActivation(
         subscription.userId,
-        subscription.type,
+        subscription.planId,
+        subscription.planName,
         subscription.startDate,
         subscription.endDate,
         subscription.isActive,
@@ -161,7 +164,8 @@ export class SubscriptionActivationService {
       // Idempotent success: authoritative completed state — clear stale free tier.
       return settledActivation(
         subscription.userId,
-        subscription.type,
+        subscription.planId,
+        subscription.planName,
         subscription.startDate,
         subscription.endDate,
         subscription.isActive,
@@ -209,14 +213,15 @@ export class SubscriptionActivationService {
       }
       return settledActivation(
         subscription.userId,
-        existing.type,
+        existing.planId,
+        existing.planName,
         existing.startDate,
         existing.endDate,
         existing.isActive,
       );
     }
 
-    const plan = await this.planRepository.findById(subscription.type);
+    const plan = await this.planRepository.findById(subscription.planId);
     if (!plan) {
       throw new Error('Plan not found');
     }
@@ -231,7 +236,8 @@ export class SubscriptionActivationService {
       await this.subscriptionRepository.activateSubscription({
         orderId: orderCode.toString(),
         userId: subscription.userId,
-        type: subscription.type,
+        planId: subscription.planId,
+        planName: subscription.planName,
         startDate,
         endDate,
         ...(transactionReference !== undefined && { transactionReference }),
@@ -243,7 +249,8 @@ export class SubscriptionActivationService {
           // Concurrent writer already committed — invalidate after durable settle.
           return settledActivation(
             subscription.userId,
-            settled.type,
+            settled.planId,
+            settled.planName,
             settled.startDate,
             settled.endDate,
             settled.isActive,
@@ -266,7 +273,8 @@ export class SubscriptionActivationService {
           }
           return settledActivation(
             subscription.userId,
-            settled.type,
+            settled.planId,
+            settled.planName,
             settled.startDate,
             settled.endDate,
             settled.isActive,
@@ -277,6 +285,13 @@ export class SubscriptionActivationService {
     }
 
     // Invalidate only after the durable activation commit succeeded.
-    return settledActivation(subscription.userId, subscription.type, startDate, endDate, true);
+    return settledActivation(
+      subscription.userId,
+      subscription.planId,
+      subscription.planName,
+      startDate,
+      endDate,
+      true,
+    );
   }
 }

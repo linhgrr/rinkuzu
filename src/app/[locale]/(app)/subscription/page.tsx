@@ -75,7 +75,7 @@ export default function SubscriptionPage() {
 
   if (state.status === 'error') {
     return (
-      <div className="min-h-screen bg-surface-page pb-24 md:pb-8">
+      <div className="min-h-dvh bg-surface-page pb-24 md:pb-8">
         <div className="py-6 md:py-8">
           <div className="max-w-6xl mx-auto px-4">
             <Card className="p-4 md:p-6">
@@ -90,7 +90,7 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-page pb-24 md:pb-8">
+    <div className="min-h-dvh bg-surface-page pb-24 md:pb-8">
       <div className="py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-4">
           {/* Current Subscription Status */}
@@ -114,7 +114,7 @@ export default function SubscriptionPage() {
                   <p
                     className={`font-medium ${hasActivePremium ? 'text-green-800' : 'text-amber-800'}`}
                   >
-                    {currentSubscription.type}
+                    {currentSubscription.plan.name}
                   </p>
                 </div>
                 <div>

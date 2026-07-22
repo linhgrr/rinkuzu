@@ -26,9 +26,12 @@ export const payosWebhookRequestSchema = z.strictObject({
   signature: z.string().regex(/^[a-fA-F0-9]{64}$/, 'Signature must be a SHA-256 hex digest'),
 });
 
-export interface SubscriptionPlanDto {
+interface SubscriptionPlanIdentityDto {
   id: string;
   name: string;
+}
+
+export interface SubscriptionPlanDto extends SubscriptionPlanIdentityDto {
   price: number;
   duration: string;
 }
@@ -50,7 +53,7 @@ export interface VerifiedPaymentDto {
 export interface SubscriptionActivationDto {
   success: boolean;
   subscription: {
-    type: string;
+    plan: SubscriptionPlanIdentityDto;
     startDate: Date;
     endDate?: Date;
     isActive: boolean;
@@ -59,6 +62,10 @@ export interface SubscriptionActivationDto {
 
 export interface SubscriptionCancellationDto {
   success: boolean;
+}
+
+export interface PaymentCancellationReconciliationDto {
+  status: 'pending' | 'cancelled' | 'expired' | 'failed' | 'paid';
 }
 
 interface SubscriptionPlanViewDto extends SubscriptionPlanDto {
@@ -76,10 +83,10 @@ export interface SubscriptionPlansResponseDto {
 
 export interface SubscriptionStatusResponseDto {
   subscription: {
-    type?: string;
+    plan: SubscriptionPlanIdentityDto;
     startDate?: string;
     endDate?: string;
-    isActive?: boolean;
+    isActive: boolean;
     status?: string;
     payosOrderId?: string;
     payosTransactionId?: string;

@@ -16,7 +16,7 @@ function toAdminUserSubscriptionViewModel(
   const statusVariant = !subscription.isActive ? 'danger' : 'success';
 
   return {
-    type: subscription.type,
+    plan: subscription.plan,
     ...(subscription.startDate !== undefined && {
       startDate: subscription.startDate,
       startDateLabel: formatDate(subscription.startDate),

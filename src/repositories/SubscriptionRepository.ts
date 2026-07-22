@@ -8,6 +8,7 @@ import {
   type CreateSubscriptionData,
   type ExpireDueResult,
   ISubscriptionRepository,
+  type PendingPaymentTerminalStatus,
   type UpdateSubscriptionData,
 } from '@/interfaces/repositories/ISubscriptionRepository';
 import {
@@ -31,7 +32,8 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     const document = await Subscription.create({
       user: subscriptionData.userId,
       userEmail: subscriptionData.userEmail,
-      type: subscriptionData.type,
+      planId: subscriptionData.planId,
+      planName: subscriptionData.planName,
       amount: subscriptionData.amount,
       currency: subscriptionData.currency,
       status: subscriptionData.status,
@@ -162,6 +164,29 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     const record = await Subscription.findOneAndUpdate({ payosOrderId: orderId }, updateData, {
       new: true,
     }).lean<SubscriptionPersistenceRecord>();
+    return record ? SubscriptionPersistenceMapper.toEntity(record) : null;
+  }
+
+  async settlePendingPayment(
+    orderId: string,
+    userId: string,
+    status: PendingPaymentTerminalStatus,
+  ): Promise<SubscriptionRecord | null> {
+    await connectDB();
+    const record = await Subscription.findOneAndUpdate(
+      {
+        payosOrderId: orderId,
+        user: userId,
+        status: 'pending',
+      },
+      {
+        $set: {
+          status,
+          isActive: false,
+        },
+      },
+      { new: true },
+    ).lean<SubscriptionPersistenceRecord>();
     return record ? SubscriptionPersistenceMapper.toEntity(record) : null;
   }
 
@@ -361,7 +386,8 @@ export class SubscriptionRepository implements ISubscriptionRepository {
           {
             $set: {
               subscription: {
-                type: data.type,
+                planId: data.planId,
+                planName: data.planName,
                 startDate: data.startDate,
                 ...(data.endDate !== undefined && { endDate: data.endDate }),
                 isActive: true,

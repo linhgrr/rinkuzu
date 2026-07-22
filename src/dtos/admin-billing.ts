@@ -80,7 +80,10 @@ export interface AdminSubscriptionDto {
   id: string;
   user: string;
   userEmail: string;
-  type: string;
+  plan: {
+    id: string;
+    name: string;
+  };
   amount: number;
   currency: string;
   status: SubscriptionStatusDto;

@@ -12,7 +12,7 @@ describe('toProfileSettingsViewModel', () => {
         role: 'user',
         createdAt: '2026-07-02T00:00:00.000Z',
         subscription: {
-          type: 'premium',
+          plan: { id: 'premium', name: 'Premium' },
           isActive: true,
           startDate: '2026-07-01T00:00:00.000Z',
           endDate: '2026-08-01T00:00:00.000Z',
@@ -29,7 +29,7 @@ describe('toProfileSettingsViewModel', () => {
       createdAt: '2026-07-02T00:00:00.000Z',
       createdAtLabel: '07/02/2026',
       subscription: {
-        type: 'premium',
+        plan: { id: 'premium', name: 'Premium' },
         isActive: true,
         startDate: '2026-07-01T00:00:00.000Z',
         endDate: '2026-08-01T00:00:00.000Z',
@@ -44,12 +44,15 @@ describe('toProfileSettingsViewModel', () => {
       email: 'learner@example.com',
       role: 'user',
       createdAt: '2026-07-02T00:00:00.000Z',
-      subscription: { type: 'premium-p1m', isActive: true },
+      subscription: { plan: { id: 'premium-p1m', name: 'Premium' }, isActive: true },
     });
 
     expect(result).not.toHaveProperty('displayName');
     expect(result).not.toHaveProperty('bio');
     expect(result).not.toHaveProperty('avatar');
-    expect(result.subscription).toEqual({ type: 'premium-p1m', isActive: true });
+    expect(result.subscription).toEqual({
+      plan: { id: 'premium-p1m', name: 'Premium' },
+      isActive: true,
+    });
   });
 });

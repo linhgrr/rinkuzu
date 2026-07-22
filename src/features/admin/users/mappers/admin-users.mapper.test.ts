@@ -12,7 +12,7 @@ describe('toAdminUserListViewModel', () => {
           disable: 0,
           createdAt: '2026-07-02T00:00:00.000Z',
           subscription: {
-            type: 'premium',
+            plan: { id: 'premium', name: 'Premium' },
             startDate: '2026-07-02T00:00:00.000Z',
             isActive: true,
           },

@@ -11,7 +11,8 @@ const user: User = {
   disabledAt: null,
   createdAt: new Date('2026-07-01T00:00:00Z'),
   subscription: {
-    type: 'premium-p1m',
+    planId: 'premium-p1m',
+    planName: 'Premium',
     startDate: new Date('2026-07-01T00:00:00Z'),
     endDate: new Date('2026-08-01T00:00:00Z'),
     isActive: true,
@@ -29,7 +30,7 @@ describe('AdminUserDtoMapper', () => {
       disabledAt: null,
       createdAt: '2026-07-01T00:00:00.000Z',
       subscription: {
-        type: 'premium-p1m',
+        plan: { id: 'premium-p1m', name: 'Premium' },
         startDate: '2026-07-01T00:00:00.000Z',
         endDate: '2026-08-01T00:00:00.000Z',
         isActive: true,
@@ -59,10 +60,13 @@ describe('AdminUserDtoMapper', () => {
   it('omits absent optional subscription dates', () => {
     const dto = AdminUserDtoMapper.toDto({
       ...user,
-      subscription: { type: 'premium-p1m', isActive: true },
+      subscription: { planId: 'premium-p1m', planName: 'Premium', isActive: true },
     });
 
-    expect(dto.subscription).toEqual({ type: 'premium-p1m', isActive: true });
+    expect(dto.subscription).toEqual({
+      plan: { id: 'premium-p1m', name: 'Premium' },
+      isActive: true,
+    });
   });
 
   it('maps status DTO for disable transitions without authVersion', () => {

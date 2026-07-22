@@ -1,6 +1,7 @@
 import { ISubscriptionService } from '@/interfaces/services/ISubscriptionService';
 import type {
   PaymentRequestDto,
+  PaymentCancellationReconciliationDto,
   SubscriptionActivationDto,
   SubscriptionCancellationDto,
   SubscriptionPlanDto,
@@ -93,6 +94,13 @@ export class SubscriptionService implements ISubscriptionService {
     return this.paymentService.createPaymentRequest(userId, planId);
   }
 
+  async reconcilePaymentCancellation(
+    orderCode: number,
+    userId: string,
+  ): Promise<ServiceResult<PaymentCancellationReconciliationDto>> {
+    return this.paymentService.reconcilePaymentCancellation(orderCode, userId);
+  }
+
   async verifyAndActivateSubscription(
     orderCode: number,
     userId: string,
@@ -166,7 +174,7 @@ export class SubscriptionService implements ISubscriptionService {
     // shared helper fails closed so the record never grants permanent premium.
     if (subscription.isActive === true && subscription.endDate == null) {
       logger.warn(
-        { subscriptionType: subscription.type, payosOrderId: subscription.payosOrderId },
+        { planId: subscription.planId, payosOrderId: subscription.payosOrderId },
         'Active subscription missing endDate — denying premium (data anomaly)',
       );
     }

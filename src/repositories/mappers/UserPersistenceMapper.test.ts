@@ -14,7 +14,8 @@ const record: UserPersistenceRecord = {
   disabledAt: null,
   disabledBy: null,
   subscription: {
-    type: 'premium',
+    planId: 'premium',
+    planName: 'Premium',
     startDate: new Date('2026-07-01T00:00:00.000Z'),
     endDate: new Date('2026-08-01T00:00:00.000Z'),
     isActive: true,
@@ -33,7 +34,8 @@ describe('UserPersistenceMapper', () => {
       disabledAt: null,
       disabledBy: null,
       subscription: {
-        type: 'premium',
+        planId: 'premium',
+        planName: 'Premium',
         startDate: new Date('2026-07-01T00:00:00.000Z'),
         endDate: new Date('2026-08-01T00:00:00.000Z'),
         isActive: true,
@@ -78,12 +80,14 @@ describe('UserPersistenceMapper', () => {
   it('omits undefined subscription optionals via toUserSubscription', () => {
     expect(
       toUserSubscription({
-        type: 'premium',
+        planId: 'premium',
+        planName: 'Premium',
         isActive: true,
         payosOrderId: 'order-1',
       }),
     ).toEqual({
-      type: 'premium',
+      planId: 'premium',
+      planName: 'Premium',
       isActive: true,
       payosOrderId: 'order-1',
     });

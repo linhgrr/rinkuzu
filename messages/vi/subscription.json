@@ -39,5 +39,8 @@
   "retryPayment": "Thử lại thanh toán",
   "paymentCancelledTitle": "Thanh toán đã bị hủy",
   "paymentCancelledMessage": "Bạn đã hủy quá trình thanh toán. Gói Premium chưa được kích hoạt.",
+  "confirmingCancellation": "Đang xác nhận hủy thanh toán...",
+  "paymentCancellationPending": "Cổng thanh toán chưa xác nhận việc hủy. Vui lòng thử lại sau ít phút.",
+  "paymentCancellationError": "Chưa thể xác nhận việc hủy. Gói của bạn chưa được kích hoạt; vui lòng thử lại.",
   "orderCode": "Mã đơn hàng"
 }

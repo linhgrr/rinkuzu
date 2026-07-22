@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import type { PaymentRequestDto } from '@/dtos/subscription';
+import type { PaymentCancellationReconciliationDto, PaymentRequestDto } from '@/dtos/subscription';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -9,6 +9,8 @@ import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { isActiveSubscriptionPremium } from '@/lib/subscription-date';
 import type { UserSubscriptionSnapshot } from '@/entities/User';
+import type { ServiceResult } from '@/interfaces/services/types';
+import { SubscriptionDtoMapper } from '@/mappers/subscription/SubscriptionDtoMapper';
 
 export class SubscriptionPaymentService {
   constructor(
@@ -46,7 +48,8 @@ export class SubscriptionPaymentService {
     await this.subscriptionRepository.create({
       userId,
       userEmail: user.email,
-      type: planId,
+      planId: plan.id,
+      planName: plan.name,
       amount: plan.price,
       currency: 'VND',
       status: 'pending',
@@ -77,6 +80,11 @@ export class SubscriptionPaymentService {
             description: paymentResponse.desc,
           },
           'PayOS payment error',
+        );
+        await this.subscriptionRepository.settlePendingPayment(
+          orderCode.toString(),
+          userId,
+          'failed',
         );
         throw new Error(paymentResponse.desc || 'Failed to create payment request');
       }
@@ -117,6 +125,118 @@ export class SubscriptionPaymentService {
       // durably created the payment link; deleting here would make a later,
       // correctly signed webhook impossible to reconcile.
       throw error;
+    }
+  }
+
+  async reconcilePaymentCancellation(
+    orderCode: number,
+    userId: string,
+  ): Promise<ServiceResult<PaymentCancellationReconciliationDto>> {
+    try {
+      const orderId = orderCode.toString();
+      const subscription = await this.subscriptionRepository.findByOrderId(orderId);
+      if (!subscription) {
+        return {
+          success: false,
+          error: 'Payment order not found',
+          statusCode: 404,
+          code: 'not_found',
+        };
+      }
+      if (subscription.userId !== userId) {
+        return {
+          success: false,
+          error: 'Payment order does not belong to the current user',
+          statusCode: 403,
+          code: 'forbidden',
+        };
+      }
+      if (subscription.status !== 'pending') {
+        return {
+          success: true,
+          data: SubscriptionDtoMapper.toPaymentCancellationReconciliationDto(subscription.status),
+        };
+      }
+
+      const paymentInfo = await this.payosService.getPaymentInfo(orderCode);
+      if (paymentInfo.code !== '00' || !paymentInfo.data) {
+        return {
+          success: false,
+          error: 'Could not confirm payment status',
+          statusCode: 502,
+          code: 'payment_provider_error',
+        };
+      }
+      if (
+        paymentInfo.data.orderCode !== orderCode ||
+        paymentInfo.data.amount !== subscription.amount
+      ) {
+        logger.error(
+          {
+            orderCode,
+            providerOrderCode: paymentInfo.data.orderCode,
+            expectedAmount: subscription.amount,
+            providerAmount: paymentInfo.data.amount,
+          },
+          'PayOS cancellation reconciliation mismatch',
+        );
+        return {
+          success: false,
+          error: 'Payment provider returned inconsistent order data',
+          statusCode: 502,
+          code: 'payment_provider_error',
+        };
+      }
+
+      if (paymentInfo.data.status === 'PAID') {
+        return {
+          success: true,
+          data: SubscriptionDtoMapper.toPaymentCancellationReconciliationDto('completed'),
+        };
+      }
+      if (paymentInfo.data.status === 'PENDING') {
+        return {
+          success: true,
+          data: SubscriptionDtoMapper.toPaymentCancellationReconciliationDto('pending'),
+        };
+      }
+
+      const terminalStatus = paymentInfo.data.status === 'CANCELLED' ? 'cancelled' : 'expired';
+      const settled = await this.subscriptionRepository.settlePendingPayment(
+        orderId,
+        userId,
+        terminalStatus,
+      );
+      if (settled) {
+        return {
+          success: true,
+          data: SubscriptionDtoMapper.toPaymentCancellationReconciliationDto(terminalStatus),
+        };
+      }
+
+      // A concurrent verifier/admin may have settled the row after the PayOS read.
+      // Re-read and return the durable winner rather than overwriting it.
+      const current = await this.subscriptionRepository.findByOrderId(orderId);
+      if (!current || current.userId !== userId) {
+        return {
+          success: false,
+          error: 'Payment order changed during reconciliation',
+          statusCode: 409,
+          code: 'payment_state_conflict',
+        };
+      }
+      return {
+        success: true,
+        data: SubscriptionDtoMapper.toPaymentCancellationReconciliationDto(current.status),
+      };
+    } catch (error) {
+      logger.error({ error, orderCode, userId }, 'Payment cancellation reconciliation failed');
+      return {
+        success: false,
+        error: 'Payment service is temporarily unavailable',
+        statusCode: 502,
+        code: 'payment_provider_error',
+      };
     }
   }
 

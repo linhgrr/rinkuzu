@@ -7,7 +7,10 @@ export const updateProfileRequestSchema = z.object({
 });
 
 export interface AccountSubscriptionDto {
-  type: string;
+  plan: {
+    id: string;
+    name: string;
+  };
   startDate?: string;
   endDate?: string;
   isActive: boolean;

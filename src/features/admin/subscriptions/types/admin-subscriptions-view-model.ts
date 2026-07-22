@@ -17,7 +17,10 @@ export interface AdminSubscriptionViewModel {
   id: string;
   userId: string;
   userEmail: string;
-  type: string;
+  plan: {
+    id: string;
+    name: string;
+  };
   amount: number;
   amountLabel: string;
   currency: string;

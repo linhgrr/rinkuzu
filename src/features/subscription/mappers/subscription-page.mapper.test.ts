@@ -23,7 +23,7 @@ describe('toSubscriptionPageViewModel', () => {
       {
         isPremium: true,
         subscription: {
-          type: 'premium',
+          plan: { id: 'premium', name: 'Premium' },
           isActive: true,
           endDate: '2026-08-02T00:00:00.000Z',
           status: 'completed',
@@ -43,7 +43,7 @@ describe('toSubscriptionPageViewModel', () => {
         },
       ],
       currentSubscription: {
-        type: 'premium',
+        plan: { id: 'premium', name: 'Premium' },
         endDate: '2026-08-02T00:00:00.000Z',
         endDateLabel: '02/08/2026',
         isActive: true,
@@ -53,16 +53,23 @@ describe('toSubscriptionPageViewModel', () => {
     });
   });
 
-  it('omits absent optional current subscription fields', () => {
+  it('preserves required plan identity while omitting optional subscription fields', () => {
     const result = toSubscriptionPageViewModel(
       {
         plans: [],
         meta: { durationFormat: 'ISO8601', supportedDurations: [] },
       },
-      { isPremium: false, subscription: {} },
+      {
+        isPremium: false,
+        subscription: {
+          plan: { id: 'plus', name: 'Plus' },
+          isActive: false,
+        },
+      },
     );
 
     expect(result.currentSubscription).toEqual({
+      plan: { id: 'plus', name: 'Plus' },
       endDateLabel: '-',
       isActive: false,
     });

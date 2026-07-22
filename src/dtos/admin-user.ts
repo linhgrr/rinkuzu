@@ -37,7 +37,10 @@ export const updateAdminUserStatusRequestSchema = z.strictObject({
 });
 
 export interface AdminUserSubscriptionDto {
-  type: string;
+  plan: {
+    id: string;
+    name: string;
+  };
   startDate?: string;
   endDate?: string;
   isActive: boolean;

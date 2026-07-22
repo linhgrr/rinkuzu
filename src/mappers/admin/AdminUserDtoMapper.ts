@@ -26,7 +26,10 @@ export class AdminUserDtoMapper {
       );
       const endDate = serializeOptionalDate(user.subscription.endDate, 'user.subscription.endDate');
       subscription = {
-        type: user.subscription.type,
+        plan: {
+          id: user.subscription.planId,
+          name: user.subscription.planName,
+        },
         ...(startDate !== undefined && { startDate }),
         ...(endDate !== undefined && { endDate }),
         isActive: user.subscription.isActive,

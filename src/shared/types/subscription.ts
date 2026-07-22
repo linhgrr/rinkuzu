@@ -2,7 +2,8 @@ import type { SubscriptionStatus } from '@/shared/constants/subscription-status'
 
 export interface SubscriptionRecordFields {
   userEmail: string;
-  type: string;
+  planId: string;
+  planName: string;
   amount: number;
   currency: string;
   status: SubscriptionStatus;

@@ -6,7 +6,8 @@ import type {
 export interface ActivateSubscriptionData {
   orderId: string;
   userId: string;
-  type: string;
+  planId: string;
+  planName: string;
   startDate: Date;
   endDate?: Date;
   transactionReference?: string;
@@ -15,7 +16,8 @@ export interface ActivateSubscriptionData {
 export interface CreateSubscriptionData {
   userId: string;
   userEmail: string;
-  type: string;
+  planId: string;
+  planName: string;
   amount: number;
   currency: string;
   status: SubscriptionStatus;
@@ -30,6 +32,8 @@ export interface UpdateSubscriptionData {
   endDate?: Date;
   isActive?: boolean;
 }
+
+export type PendingPaymentTerminalStatus = 'failed' | 'cancelled' | 'expired';
 
 export type AdminSubscriptionStatusUpdateResult =
   | { outcome: 'updated'; subscription: SubscriptionRecord }
@@ -59,6 +63,11 @@ export interface ISubscriptionRepository {
   updateByOrderId(
     orderId: string,
     updateData: UpdateSubscriptionData,
+  ): Promise<SubscriptionRecord | null>;
+  settlePendingPayment(
+    orderId: string,
+    userId: string,
+    status: PendingPaymentTerminalStatus,
   ): Promise<SubscriptionRecord | null>;
   updateAdminStatusById(
     id: string,

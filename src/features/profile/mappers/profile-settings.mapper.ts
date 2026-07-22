@@ -5,7 +5,7 @@ import { formatDate } from '@/lib/formatters';
 export function toProfileSettingsViewModel(profile: AccountProfileDto): ProfileSettingsViewModel {
   const subscription = profile.subscription
     ? {
-        type: profile.subscription.type,
+        plan: profile.subscription.plan,
         ...(profile.subscription.startDate !== undefined && {
           startDate: profile.subscription.startDate,
         }),

@@ -50,7 +50,8 @@ export type SubscriptionRecord =
     });
 
 export interface UserSubscription {
-  type: string;
+  planId: string;
+  planName: string;
   startDate?: Date;
   endDate?: Date;
   isActive: boolean;

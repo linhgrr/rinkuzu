@@ -72,7 +72,7 @@ describe('SubscriptionPage plan comparison', () => {
         },
       ],
       currentSubscription: {
-        type: 'premium',
+        plan: { id: 'premium', name: 'Premium' },
         endDateLabel: '22/08/2026',
         isActive: true,
         status: 'completed',

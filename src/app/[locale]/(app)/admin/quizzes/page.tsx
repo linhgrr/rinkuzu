@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import Pagination from '@/components/ui/Pagination';
 import { AdminQuizzesListSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
 import { UserAvatar } from '@/components/user/UserAvatar';
@@ -229,22 +230,29 @@ export default function AdminQuizManagementPage() {
           <h1 className="text-3xl font-semibold text-ink">{t('quizManagement')}</h1>
           <p className="mt-2 text-ink/60">{t('quizManagementDescription')}</p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="flex min-w-[280px] items-center gap-2 rounded-xl border border-line bg-white px-3">
-            <HiOutlineSearch className="size-5 text-ink/40" />
-            <input
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            applySearch();
+          }}
+          className="flex flex-col gap-3 sm:flex-row sm:items-center"
+        >
+          <div className="min-w-[280px]">
+            <Input
+              type="search"
+              aria-label={t('searchQuizzes')}
               value={state.searchInput}
               onChange={(event) =>
                 dispatch({ type: 'patch', value: { searchInput: event.target.value } })
               }
               placeholder={t('searchQuizzes')}
-              className="min-h-11 w-full bg-transparent text-sm outline-none"
-              onKeyDown={(event) => {
-                if (event.nativeEvent.isComposing) return;
-                if (event.key === 'Enter') applySearch();
-              }}
+              className="w-full"
             />
-          </label>
+          </div>
+          <Button type="submit" variant="gradient">
+            <HiOutlineSearch className="mr-2 size-4" />
+            {t('search')}
+          </Button>
           <select
             value={state.visibility}
             aria-label={t('allVisibility')}
@@ -263,7 +271,7 @@ export default function AdminQuizManagementPage() {
             <option value="public">{t('publicQuizzes')}</option>
             <option value="private">{t('privateQuizzes')}</option>
           </select>
-        </div>
+        </form>
       </header>
 
       <section className="mt-7 grid gap-4 sm:grid-cols-3">

@@ -64,8 +64,7 @@ export interface SubscriptionCancellationDto {
 
 interface SubscriptionPlanViewDto extends SubscriptionPlanDto {
   durationDisplay: string;
-  isLifetime: boolean;
-  calculatedMonths?: number;
+  calculatedMonths: number;
 }
 
 export interface SubscriptionPlansResponseDto {

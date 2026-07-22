@@ -124,26 +124,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/chat': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Chat About Exercise
-     * @description Chat with an AI tutor about the current exercise, with optional RAG context.
-     */
-    post: operations['chat_about_exercise_api_v1_session__session_id__chat_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/session/{session_id}/status': {
     parameters: {
       query?: never;
@@ -529,26 +509,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/quiz/ask-ai': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Ask Ai About Quiz
-     * @description Ask an AI tutor for help understanding a quiz question (stream or single response).
-     */
-    post: operations['ask_ai_about_quiz_api_v1_quiz_ask_ai_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/admin/ocr-keys': {
     parameters: {
       query?: never;
@@ -622,6 +582,58 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/ask-rin-chan/contexts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Register Exercise Context */
+    post: operations['register_exercise_context_api_v1_ask_rin_chan_contexts_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/ask-rin-chan/chat': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Ask Rin Chan */
+    post: operations['ask_rin_chan_api_v1_ask_rin_chan_chat_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/ask-rin-chan/conversations/{exercise_context_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read Conversation */
+    get: operations['read_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__get'];
+    put?: never;
+    post?: never;
+    /** Clear Conversation */
+    delete: operations['clear_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/ready': {
     parameters: {
       query?: never;
@@ -683,6 +695,43 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AskRinChatRequest */
+    AskRinChatRequest: {
+      /** Exercisecontexttoken */
+      exerciseContextToken: string;
+      /** Message */
+      message: string;
+      /** Clientrequestid */
+      clientRequestId: string;
+    };
+    /** AskRinConversationResponse */
+    AskRinConversationResponse: {
+      /** Conversationid */
+      conversationId: string;
+      /** Exercisecontextid */
+      exerciseContextId: string;
+      /** Messages */
+      messages: components['schemas']['AskRinMessageResponse'][];
+    };
+    /** AskRinMessageResponse */
+    AskRinMessageResponse: {
+      /** Messageid */
+      messageId: string;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: 'user' | 'assistant';
+      /** Content */
+      content: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'complete' | 'interrupted';
+      /** Createdat */
+      createdAt: string;
+    };
     /**
      * BloomLabel
      * @enum {string}
@@ -738,6 +787,13 @@ export interface components {
        */
       status: 'deleted';
     };
+    /** ExerciseContextResponse */
+    ExerciseContextResponse: {
+      /** Exercisecontextid */
+      exerciseContextId: string;
+      /** Exercisecontexttoken */
+      exerciseContextToken: string;
+    };
     /** ExerciseHistoryResponse */
     ExerciseHistoryResponse: {
       /** Exercise Id */
@@ -790,6 +846,10 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
+      /** Exercise Context Id */
+      exercise_context_id: string;
+      /** Exercise Context Token */
+      exercise_context_token: string;
       theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
       /**
@@ -1035,6 +1095,10 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
+      /** Exercise Context Id */
+      exercise_context_id: string;
+      /** Exercise Context Token */
+      exercise_context_token: string;
       theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
       /**
@@ -1094,6 +1158,10 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
+      /** Exercise Context Id */
+      exercise_context_id: string;
+      /** Exercise Context Token */
+      exercise_context_token: string;
       theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
       /**
@@ -1140,6 +1208,10 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
+      /** Exercise Context Id */
+      exercise_context_id: string;
+      /** Exercise Context Token */
+      exercise_context_token: string;
       theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
       /**
@@ -1292,6 +1364,10 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
+      /** Exercise Context Id */
+      exercise_context_id: string;
+      /** Exercise Context Token */
+      exercise_context_token: string;
       theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
       /**
@@ -2118,55 +2194,6 @@ export interface components {
       /** Quiz Id */
       quiz_id: string;
     };
-    /** QuizTutorChatMessage */
-    QuizTutorChatMessage: {
-      /**
-       * Role
-       * @enum {string}
-       */
-      role: 'user' | 'assistant';
-      /** Content */
-      content: string;
-    };
-    /** QuizTutorRequest */
-    QuizTutorRequest: {
-      /** Question */
-      question: string;
-      /** Options */
-      options: string[];
-      /** Userquestion */
-      userQuestion?: string | null;
-      /**
-       * Questionimage
-       * @description Optional image URL/data URL. Accepted only when the configured tutor LLM model supports vision.
-       */
-      questionImage?: string | null;
-      /**
-       * Optionimages
-       * @description Optional option image URLs/data URLs. Accepted only when the configured tutor LLM model supports vision.
-       */
-      optionImages?: (string | null)[];
-      /** Chathistory */
-      chatHistory?: components['schemas']['QuizTutorChatMessage'][];
-      /**
-       * Stream
-       * @default false
-       */
-      stream: boolean;
-    };
-    /** QuizTutorResponseData */
-    QuizTutorResponseData: {
-      /** Explanation */
-      explanation: string;
-      /** Structured */
-      structured?: {
-        [key: string]: unknown;
-      } | null;
-      /** Timestamp */
-      timestamp: string;
-      /** Turn Count */
-      turn_count: number;
-    };
     /** ReadinessResponse */
     ReadinessResponse: {
       status: components['schemas']['ReadinessStatus'];
@@ -2208,6 +2235,31 @@ export interface components {
       current_mastery: number;
       /** Next Milestone */
       next_milestone: number;
+    };
+    /** RegisterExerciseContextRequest */
+    RegisterExerciseContextRequest: {
+      /**
+       * Source
+       * @default quiz
+       * @enum {string}
+       */
+      source: 'quiz' | 'adaptive';
+      /** Question */
+      question?: string | null;
+      /** Options */
+      options?: string[];
+      /** Questionimage */
+      questionImage?: string | null;
+      /** Optionimages */
+      optionImages?: (string | null)[];
+      /** Conceptname */
+      conceptName?: string | null;
+      /** Bloomlevel */
+      bloomLevel?: number | null;
+      /** Sessionid */
+      sessionId?: string | null;
+      /** Exerciseid */
+      exerciseId?: string | null;
     };
     /** SessionConceptSummary */
     SessionConceptSummary: {
@@ -2364,6 +2416,10 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
+      /** Exercise Context Id */
+      exercise_context_id: string;
+      /** Exercise Context Token */
+      exercise_context_token: string;
       theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
       /**
@@ -2428,6 +2484,19 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['DeleteSubjectResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[ExerciseContextResponse] */
+    StandardResponse_ExerciseContextResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['ExerciseContextResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -2693,19 +2762,6 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
-    /** StandardResponse[QuizTutorResponseData] */
-    StandardResponse_QuizTutorResponseData_: {
-      /**
-       * Success
-       * @default true
-       */
-      success: boolean;
-      data: components['schemas']['QuizTutorResponseData'];
-      /** Meta */
-      meta?: {
-        [key: string]: unknown;
-      } | null;
-    };
     /** StandardResponse[ReadinessResponse] */
     StandardResponse_ReadinessResponse_: {
       /**
@@ -2810,14 +2866,14 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
-    /** StandardResponse[TutorChatResponse] */
-    StandardResponse_TutorChatResponse_: {
+    /** StandardResponse[Union[AskRinConversationResponse, NoneType]] */
+    StandardResponse_Union_AskRinConversationResponse__NoneType__: {
       /**
        * Success
        * @default true
        */
       success: boolean;
-      data: components['schemas']['TutorChatResponse'];
+      data: components['schemas']['AskRinConversationResponse'] | null;
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -3059,6 +3115,10 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
+      /** Exercise Context Id */
+      exercise_context_id: string;
+      /** Exercise Context Token */
+      exercise_context_token: string;
       theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
       /**
@@ -3080,36 +3140,6 @@ export interface components {
       statement: string;
       /** Correct Answer */
       correct_answer: boolean;
-    };
-    /** TutorChatMessage */
-    TutorChatMessage: {
-      /**
-       * Role
-       * @enum {string}
-       */
-      role: 'user' | 'assistant';
-      /** Content */
-      content: string;
-    };
-    /** TutorChatRequest */
-    TutorChatRequest: {
-      /** Userquestion */
-      userQuestion: string;
-      /**
-       * Chathistory
-       * @description Deprecated for adaptive tutor chat. Adaptive chat history is owned by the server session and this field is ignored.
-       */
-      chatHistory?: components['schemas']['TutorChatMessage'][];
-      /**
-       * Stream
-       * @default false
-       */
-      stream: boolean;
-    };
-    /** TutorChatResponse */
-    TutorChatResponse: {
-      /** Explanation */
-      explanation: string;
     };
     /** ValidationError */
     ValidationError: {
@@ -3348,45 +3378,6 @@ export interface operations {
       };
     };
   };
-  chat_about_exercise_api_v1_session__session_id__chat_post: {
-    parameters: {
-      query?: never;
-      header: {
-        'x-user-id': string;
-        'x-service-token': string;
-      };
-      path: {
-        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
-        session_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['TutorChatRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StandardResponse_TutorChatResponse_'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
   session_status_api_v1_session__session_id__status_get: {
     parameters: {
       query?: never;
@@ -3553,6 +3544,7 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        'x-rinkuzu-pdf-page-limit'?: number;
         'x-user-id': string;
         'x-service-token': string;
       };
@@ -4190,42 +4182,6 @@ export interface operations {
       };
     };
   };
-  ask_ai_about_quiz_api_v1_quiz_ask_ai_post: {
-    parameters: {
-      query?: never;
-      header: {
-        'x-user-id': string;
-        'x-service-token': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['QuizTutorRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StandardResponse_QuizTutorResponseData_'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
   list_admin_ocr_keys_api_v1_admin_ocr_keys_get: {
     parameters: {
       query?: never;
@@ -4426,6 +4382,148 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_LlmUsageSummaryResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  register_exercise_context_api_v1_ask_rin_chan_contexts_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterExerciseContextRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_ExerciseContextResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  ask_rin_chan_api_v1_ask_rin_chan_chat_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AskRinChatRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  read_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__get: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        exercise_context_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_Union_AskRinConversationResponse__NoneType__'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  clear_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__delete: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        exercise_context_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
         };
       };
       /** @description Validation Error */

@@ -13,7 +13,6 @@ export async function GET() {
       return {
         ...plan,
         durationDisplay: duration.displayName,
-        isLifetime: plan.duration === SubscriptionDurationType.LIFETIME,
         calculatedMonths: duration.months,
       };
     });

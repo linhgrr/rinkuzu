@@ -7,19 +7,43 @@ vi.mock('@/lib/subscription-factory', () => ({
 }));
 
 import { invalidateEntitlements } from './cache';
-import { can, getLimit, resolveEntitlements } from './index';
+import { can, getConstraint, getMeteredWindows, resolveEntitlements } from './index';
 
 describe('entitlements registry', () => {
-  it('grants private_quiz + advanced_stats to premium only', () => {
+  it('grants private quizzes to premium only', () => {
     expect(can({ tier: 'premium' }, 'private_quiz')).toBe(true);
-    expect(can({ tier: 'premium' }, 'advanced_stats')).toBe(true);
     expect(can({ tier: 'free' }, 'private_quiz')).toBe(false);
-    expect(can({ tier: 'free' }, 'advanced_stats')).toBe(false);
   });
 
-  it('returns higher metered limits for premium', () => {
-    expect(getLimit({ tier: 'free' }, 'quiz_extract', 'day')).toBe(3);
-    expect(getLimit({ tier: 'premium' }, 'quiz_extract', 'day')).toBe(30);
+  it('returns the agreed extraction and Ask Rin-chan limits', () => {
+    expect(getMeteredWindows({ tier: 'free' }, 'quiz_extract')).toContainEqual({
+      window: 'month',
+      limit: 5,
+    });
+    expect(getMeteredWindows({ tier: 'premium' }, 'quiz_extract')).toContainEqual({
+      window: 'month',
+      limit: 50,
+    });
+    expect(getMeteredWindows({ tier: 'free' }, 'ask_rin_chan')).toContainEqual({
+      window: 'day',
+      limit: 25,
+    });
+    expect(getMeteredWindows({ tier: 'premium' }, 'ask_rin_chan')).toContainEqual({
+      window: 'day',
+      limit: 150,
+    });
+  });
+
+  it('does not invent windows that are not configured', () => {
+    expect(getMeteredWindows({ tier: 'free' }, 'quiz_extract')).not.toContainEqual({
+      window: 'day',
+      limit: expect.any(Number),
+    });
+  });
+
+  it('keeps adaptive PDF page caps in the entitlement registry', () => {
+    expect(getConstraint({ tier: 'free' }, 'adaptive_pdf_pages')).toBe(30);
+    expect(getConstraint({ tier: 'premium' }, 'adaptive_pdf_pages')).toBe(100);
   });
 });
 

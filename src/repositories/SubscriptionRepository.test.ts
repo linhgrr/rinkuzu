@@ -431,7 +431,7 @@ describe('SubscriptionRepository transactional lifecycle', () => {
       save: mocks.subscriptionSave,
       toObject: () => cancelledRecord,
     };
-    const lifetimeDoc = {
+    const missingEndDateDoc = {
       ...completedRecord(),
       status: 'completed' as const,
       endDate: undefined,
@@ -452,7 +452,7 @@ describe('SubscriptionRepository transactional lifecycle', () => {
     });
     mocks.subscriptionFindById
       .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(null) })
-      .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(lifetimeDoc) })
+      .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(missingEndDateDoc) })
       .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(alreadyCancelledDoc) })
       .mockReturnValueOnce({ session: vi.fn().mockResolvedValue(mutableDoc) });
     mocks.userUpdateOne.mockResolvedValue({ matchedCount: 1 });

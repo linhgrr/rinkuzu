@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { toAdminSubscriptionsListViewModel } from '@/features/admin/subscriptions/mappers/admin-subscriptions.mapper';
-import { LIFETIME_END_DATE } from '@/lib/subscription-date';
 
 describe('toAdminSubscriptionsListViewModel', () => {
   it('maps admin subscriptions to display-safe view models', () => {
@@ -15,7 +14,7 @@ describe('toAdminSubscriptionsListViewModel', () => {
           currency: 'VND',
           status: 'pending',
           payosOrderId: 'order-1',
-          endDate: LIFETIME_END_DATE.toISOString(),
+          endDate: '2026-08-02T00:00:00.000Z',
           isActive: false,
           createdAt: '2026-07-02T00:00:00.000Z',
           updatedAt: '2026-07-02T01:00:00.000Z',
@@ -37,7 +36,7 @@ describe('toAdminSubscriptionsListViewModel', () => {
       amountLabel: '50.000 ₫',
       payosTransactionIdLabel: '—',
       startDateLabel: '—',
-      endDateLabel: 'Lifetime',
+      endDateLabel: '07:00 02/08/2026',
     });
     expect(result.pagination).toEqual({
       page: 1,

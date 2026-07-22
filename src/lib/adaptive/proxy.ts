@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { apiErr, apiForward } from '@/lib/api/response';
 import { isStandardErrorEnvelope, isStandardSuccessEnvelope } from '@/lib/api/envelope';
 import { logger } from '@/lib/logger';
@@ -13,7 +14,10 @@ import type { UserRole } from '@/types/next-auth';
 import {
   buildLlmRateLimitHeaders,
   buildLlmRateLimitResponse,
-  checkLlmRateLimit,
+  commitLlmUsage,
+  refundLlmUsage,
+  reserveLlmUsage,
+  type LlmUsageReservation,
   type LlmRateLimitAction,
 } from '@/lib/llm/rate-limit';
 
@@ -34,6 +38,11 @@ type ProxyOptions = {
   // Target an unversioned infra endpoint (/api/<path>) instead of the
   // versioned /api/v1 surface. Used for health/ready/live/info.
   infra?: boolean;
+  // Trusted server-generated headers only. Never populate this from request headers.
+  internalHeaders?: Readonly<Record<string, string>>;
+  // Only endpoints with their own durable response replay may forward a
+  // previously committed idempotency key without consuming quota again.
+  allowCommittedReplay?: boolean;
 };
 
 /**
@@ -100,26 +109,108 @@ function applyResponseHeaders(target: Response, headers: Headers): Response {
   return target;
 }
 
+function meteredStream(
+  body: ReadableStream<Uint8Array>,
+  reservation: LlmUsageReservation,
+): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let pending = '';
+  let settled = false;
+
+  const commit = async () => {
+    if (settled) return;
+    settled = true;
+    await commitLlmUsage(reservation);
+  };
+  const refund = async () => {
+    if (settled) return;
+    settled = true;
+    await refundLlmUsage(reservation);
+  };
+  const inspect = async (chunk: Uint8Array) => {
+    pending += decoder.decode(chunk, { stream: true });
+    pending = pending.replaceAll('\r\n', '\n');
+    const events = pending.split('\n\n');
+    pending = events.pop() ?? '';
+    for (const eventBlock of events) {
+      for (const line of eventBlock.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const event = JSON.parse(line.slice(6)) as { type?: string; delta?: unknown };
+          if (
+            event.type === 'response.output_text.delta' &&
+            typeof event.delta === 'string' &&
+            event.delta.trim()
+          ) {
+            await commit();
+          }
+          if (event.type === 'response.failed' && !settled) await refund();
+        } catch {
+          // A split event remains buffered; malformed terminal streams refund on close.
+        }
+      }
+    }
+  };
+
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const result = await reader.read();
+        if (result.done) {
+          if (!settled) await refund();
+          controller.close();
+          return;
+        }
+        await inspect(result.value);
+        controller.enqueue(result.value);
+      } catch (error) {
+        if (!settled) await refund();
+        controller.error(error);
+      }
+    },
+    async cancel(reason) {
+      await reader.cancel(reason);
+      if (!settled) await refund();
+    },
+  });
+}
+
 export async function proxyAdaptiveRequest(
   req: Request,
   targetPath: string,
   auth: ProxyAuthContext,
   options?: ProxyOptions,
 ) {
+  let llmReservation: LlmUsageReservation | null = null;
   try {
     const { userId, userRole } = auth;
 
     const targetUrl = buildTargetUrl(req, targetPath, options?.infra ?? false);
     const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId, userRole);
+    Object.assign(headers, options?.internalHeaders);
     const method = options?.method || req.method;
 
     const llmAction = options?.llmAction;
+    const requestId =
+      req.headers.get('idempotency-key') ?? req.headers.get('x-request-id') ?? crypto.randomUUID();
     const llmRateLimit =
       llmAction && userId && userRole !== 'admin'
-        ? await checkLlmRateLimit(userId, llmAction)
+        ? await reserveLlmUsage(userId, llmAction, requestId)
         : null;
+    llmReservation = llmRateLimit;
     if (llmRateLimit && !llmRateLimit.allowed) {
+      if (llmRateLimit.duplicate && llmRateLimit.disposition === 'reserved') {
+        return apiErr('request_in_progress', 'A request with this id is already in progress', 409);
+      }
       return buildLlmRateLimitResponse(llmRateLimit);
+    }
+    if (
+      llmRateLimit?.duplicate &&
+      llmRateLimit.disposition === 'committed' &&
+      !options?.allowCommittedReplay
+    ) {
+      return apiErr('request_already_completed', 'This request was already completed', 409);
     }
 
     const contentType =
@@ -161,6 +252,7 @@ export async function proxyAdaptiveRequest(
 
     const contentTypeHeader = response.headers.get('content-type');
     if (isHtmlResponse(contentTypeHeader)) {
+      if (llmReservation) await refundLlmUsage(llmReservation);
       return apiErr(
         'upstream_html_error',
         'Adaptive service temporarily unavailable',
@@ -188,6 +280,7 @@ export async function proxyAdaptiveRequest(
       }
 
       if (!isStandardErrorEnvelope(payload)) {
+        if (llmReservation) await refundLlmUsage(llmReservation);
         // Never reflect or log raw upstream error bodies — they may contain
         // stack traces, internal paths, or other sensitive detail.
         return applyResponseHeaders(
@@ -201,11 +294,20 @@ export async function proxyAdaptiveRequest(
         );
       }
 
+      if (llmReservation) {
+        if (response.status >= 500 || response.status === 429) {
+          await refundLlmUsage(llmReservation);
+        } else {
+          await commitLlmUsage(llmReservation);
+        }
+      }
+
       const forwarded = apiForward(payload, response.status);
       return applyResponseHeaders(forwarded, responseHeaders);
     }
 
     if (response.status === 204) {
+      if (llmReservation) await commitLlmUsage(llmReservation);
       return new Response(null, {
         status: response.status,
         headers: responseHeaders,
@@ -220,6 +322,7 @@ export async function proxyAdaptiveRequest(
         try {
           payload = JSON.parse(upstreamText);
         } catch {
+          if (llmReservation) await refundLlmUsage(llmReservation);
           return applyResponseHeaders(
             apiErr('upstream_invalid_json', 'Adaptive service returned invalid JSON', 502, {
               targetPath,
@@ -230,6 +333,7 @@ export async function proxyAdaptiveRequest(
       }
 
       if (!isStandardSuccessEnvelope(payload)) {
+        if (llmReservation) await refundLlmUsage(llmReservation);
         return applyResponseHeaders(
           apiErr(
             'upstream_invalid_envelope',
@@ -241,15 +345,24 @@ export async function proxyAdaptiveRequest(
         );
       }
 
+      if (llmReservation) await commitLlmUsage(llmReservation);
       const normalized = apiForward(payload, response.status);
       return applyResponseHeaders(normalized, responseHeaders);
     }
 
-    return new NextResponse(response.body, {
-      status: response.status,
-      headers: responseHeaders,
-    });
+    if (!response.body) {
+      if (llmReservation) await refundLlmUsage(llmReservation);
+      return apiErr('upstream_invalid_envelope', 'Adaptive service returned an empty body', 502);
+    }
+    return new NextResponse(
+      llmReservation ? meteredStream(response.body, llmReservation) : response.body,
+      {
+        status: response.status,
+        headers: responseHeaders,
+      },
+    );
   } catch (error) {
+    if (llmReservation) await refundLlmUsage(llmReservation);
     // AbortSignal.timeout() rejects with DOMException name TimeoutError (Node 22+).
     // Client cancellation and AbortSignal.any composition typically use AbortError.
     // Both are abort-like; distinguish client cancel vs upstream timeout via req.signal.

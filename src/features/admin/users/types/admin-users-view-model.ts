@@ -8,8 +8,8 @@ export interface AdminUserSubscriptionViewModel {
   endDate?: string;
   endDateLabel?: string;
   isActive: boolean;
-  statusLabel: 'noSubscription' | 'inactive' | 'lifetime' | 'active';
-  statusVariant: 'default' | 'danger' | 'warning' | 'success';
+  statusLabel: 'noSubscription' | 'inactive' | 'active';
+  statusVariant: 'default' | 'danger' | 'success';
 }
 
 export interface AdminUserViewModel {

@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  isActiveSubscriptionPremium,
-  isSubscriptionExpired,
-  LIFETIME_END_DATE,
-} from '@/lib/subscription-date';
+import { isActiveSubscriptionPremium, isSubscriptionExpired } from '@/lib/subscription-date';
 
 const now = new Date('2026-07-01T00:00:00.000Z');
 
 describe('isSubscriptionExpired', () => {
-  it('treats a missing end date as a lifetime subscription', () => {
+  it('leaves missing end dates for anomaly handling instead of expiring them', () => {
     expect(isSubscriptionExpired({}, now)).toBe(false);
     expect(isSubscriptionExpired({ endDate: null }, now)).toBe(false);
   });
@@ -76,20 +72,5 @@ describe('isActiveSubscriptionPremium', () => {
     expect(isActiveSubscriptionPremium({ isActive: true, endDate: 'not-a-date' }, now)).toBe(false);
     expect(isActiveSubscriptionPremium(null, now)).toBe(false);
     expect(isActiveSubscriptionPremium(undefined, now)).toBe(false);
-  });
-
-  it('treats the lifetime sentinel endDate as premium while active', () => {
-    expect(isActiveSubscriptionPremium({ isActive: true, endDate: LIFETIME_END_DATE }, now)).toBe(
-      true,
-    );
-    expect(
-      isActiveSubscriptionPremium(
-        { isActive: true, endDate: LIFETIME_END_DATE.toISOString() },
-        now,
-      ),
-    ).toBe(true);
-    expect(isActiveSubscriptionPremium({ isActive: false, endDate: LIFETIME_END_DATE }, now)).toBe(
-      false,
-    );
   });
 });

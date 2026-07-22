@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
+import { useAskRinChanSession } from '@/features/quiz/hooks/useAskRinChanSession';
 import type { ChatMessage } from '@/features/quiz/lib/chat-history';
 import {
   createQuizResultBookmark,
@@ -497,14 +497,17 @@ function useQuizResultPageChat(
     cancelActiveStream,
     sendMessage,
     totalTurns,
-  } = useStreamingChatSession(
-    attemptId ? { persistence: { scope: 'attempt', id: attemptId } } : {},
-  );
+  } = useAskRinChanSession();
 
   const openAIModal = (questionData: AIQuestionData, questionIndex: number) => {
     setUserQuestion('');
     setAIError('');
-    ensureHistory(questionIndex);
+    ensureHistory(questionIndex, {
+      question: questionData.question,
+      options: questionData.options,
+      ...(questionData.questionImage ? { questionImage: questionData.questionImage } : {}),
+      ...(questionData.optionImages ? { optionImages: questionData.optionImages } : {}),
+    });
     dispatch({ type: 'openAIModal', questionData, questionIndex });
   };
 

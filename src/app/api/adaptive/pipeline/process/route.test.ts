@@ -7,12 +7,14 @@ const {
   invalidateCacheMock,
   loggerErrorMock,
   proxyAdaptiveRequestMock,
+  resolveEntitlementsMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   getSignedUrlMock: vi.fn(),
   invalidateCacheMock: vi.fn(),
   loggerErrorMock: vi.fn(),
   proxyAdaptiveRequestMock: vi.fn(),
+  resolveEntitlementsMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
@@ -40,6 +42,10 @@ vi.mock('@/lib/s3', () => ({
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock },
 }));
+vi.mock('@/lib/entitlements', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/entitlements')>();
+  return { ...actual, resolveEntitlements: resolveEntitlementsMock };
+});
 
 import { POST, dynamic } from '@/app/api/adaptive/pipeline/process/route';
 
@@ -70,6 +76,7 @@ describe('POST /api/adaptive/pipeline/process', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue(session());
+    resolveEntitlementsMock.mockResolvedValue({ tier: 'free' });
     getSignedUrlMock.mockResolvedValue('https://signed.example/file.pdf');
     proxyAdaptiveRequestMock.mockResolvedValue(
       new Response(JSON.stringify({ success: true, data: { job_id: 'job-1' } }), {
@@ -185,9 +192,25 @@ describe('POST /api/adaptive/pipeline/process', () => {
         }),
         contentType: 'application/json',
         timeoutMs: 180_000,
+        internalHeaders: { 'x-rinkuzu-pdf-page-limit': '30' },
       },
     );
     expect(invalidateCacheMock).toHaveBeenCalledOnce();
+  });
+
+  it('uses the Premium absolute page cap for admins', async () => {
+    authMock.mockResolvedValue(session({ role: 'admin' }));
+
+    await POST(request({ s3Key: OWNED_KEY, filename: 'source.pdf' }), routeContext);
+
+    expect(proxyAdaptiveRequestMock).toHaveBeenCalledWith(
+      expect.any(NextRequest),
+      '/pipeline/process',
+      { userId: USER_ID, userRole: 'admin' },
+      expect.objectContaining({
+        internalHeaders: { 'x-rinkuzu-pdf-page-limit': '100' },
+      }),
+    );
   });
 
   it('omits subject_id from the proxy body when not provided', async () => {

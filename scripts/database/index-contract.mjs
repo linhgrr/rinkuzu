@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-19.4';
+export const INDEX_CONTRACT_VERSION = '2026-07-22.1';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -68,6 +68,39 @@ export const INDEX_CONTRACT = Object.freeze([
     { expireAfterSeconds: 0 },
   ),
   required('auth-rate-limits.key', 'auth_rate_limits', { key: 1 }, { unique: true }),
+
+  // Entitlement usage is owned by the application usage service rather than a
+  // Mongoose schema; deployment owns its uniqueness and retention guarantees.
+  required(
+    'entitlement-usage-buckets.identity',
+    'entitlement_usage_buckets',
+    { userId: 1, capability: 1, window: 1, bucketStart: 1 },
+    { unique: true },
+  ),
+  required(
+    'entitlement-usage-buckets.expiration',
+    'entitlement_usage_buckets',
+    { expiresAt: 1 },
+    { expireAfterSeconds: 0 },
+  ),
+  required(
+    'entitlement-usage-requests.idempotency',
+    'entitlement_usage_requests',
+    { userId: 1, capability: 1, requestId: 1 },
+    { unique: true },
+  ),
+  required(
+    'entitlement-usage-requests.retention',
+    'entitlement_usage_requests',
+    { retentionExpiresAt: 1 },
+    { expireAfterSeconds: 0 },
+  ),
+  required('entitlement-usage-requests.telemetry', 'entitlement_usage_requests', {
+    createdAt: -1,
+    capability: 1,
+    tier: 1,
+    status: 1,
+  }),
 
   // bookmarks
   required(

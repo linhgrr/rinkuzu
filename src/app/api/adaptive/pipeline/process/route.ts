@@ -10,6 +10,7 @@ import { readAndValidateJson } from '@/lib/api/request';
 import { adaptivePipelineProcessRequestSchema } from '@/dtos/adaptive-pipeline';
 import { logger } from '@/lib/logger';
 import type { components } from '@/generated/adaptive-api';
+import { getConstraint, resolveEntitlements } from '@/lib/entitlements';
 
 export const dynamic = 'force-dynamic';
 type ApiSchemas = components['schemas'];
@@ -28,6 +29,11 @@ export const POST = withAuth(async (req, { userId, session }) => {
       return apiErr('validation_error', ownedKey.error, 400);
     }
     const s3Key = ownedKey.key;
+    const entitlements = await resolveEntitlements(userId);
+    const pdfPageLimit = getConstraint(
+      session.user.role === 'admin' ? { tier: 'premium' } : entitlements,
+      'adaptive_pdf_pages',
+    );
 
     const getCommand = new GetObjectCommand({
       Bucket: BUCKET_NAME,
@@ -57,6 +63,7 @@ export const POST = withAuth(async (req, { userId, session }) => {
         body: JSON.stringify(proxiedBody),
         contentType: 'application/json',
         timeoutMs: 180_000,
+        internalHeaders: { 'x-rinkuzu-pdf-page-limit': String(pdfPageLimit) },
       },
     );
 

@@ -13,7 +13,7 @@ import Pagination from '@/components/ui/Pagination';
 import { HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
-import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
+import { useAskRinChanSession } from '@/features/quiz/hooks/useAskRinChanSession';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { formatCorrectAnswerText } from '@/lib/quiz/answer-text';
 import { ROUTES } from '@/shared/constants/routes';
@@ -296,15 +296,20 @@ export default function ProfileBookmarks() {
     getHistory,
     cancelActiveStream,
     sendMessage,
-  } = useStreamingChatSession({
-    persistence: { scope: 'bookmarks' },
-  });
+  } = useAskRinChanSession();
 
   const openAIModal = (bookmark: ProfileBookmarkViewModel) => {
     dispatch({ type: 'openAiModal', bookmark });
     setUserQuestion('');
     setAIError('');
-    ensureHistory(bookmark.id);
+    ensureHistory(bookmark.id, {
+      question: bookmark.question.text,
+      options: bookmark.question.options,
+      ...(bookmark.question.questionImage
+        ? { questionImage: bookmark.question.questionImage }
+        : {}),
+      ...(bookmark.question.optionImages ? { optionImages: bookmark.question.optionImages } : {}),
+    });
   };
 
   const closeAIModal = () => {

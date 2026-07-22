@@ -15,6 +15,6 @@ export const POST = withAuth(async (req, { userId, session }) =>
     req,
     '/quiz/drafts',
     { userId, userRole: session.user.role },
-    { method: 'POST' },
+    { method: 'POST', llmAction: 'quiz_extract' },
   ),
 );

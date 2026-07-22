@@ -22,21 +22,13 @@ describe('GET /api/subscription/plans', () => {
     vi.clearAllMocks();
   });
 
-  it('transforms plan duration metadata for lifetime and timed plans', async () => {
+  it('transforms monthly plan duration metadata', async () => {
     getSubscriptionPlansMock.mockResolvedValue([
       {
         id: 'premium-p1m',
         name: 'Premium',
-        price: 99000,
+        price: 39000,
         duration: SubscriptionDurationType.MONTHLY,
-        features: ['AI'],
-        isActive: true,
-      },
-      {
-        id: 'lifetime',
-        name: 'Lifetime',
-        price: 999000,
-        duration: SubscriptionDurationType.LIFETIME,
         features: ['AI'],
         isActive: true,
       },
@@ -52,13 +44,7 @@ describe('GET /api/subscription/plans', () => {
           expect.objectContaining({
             id: 'premium-p1m',
             durationDisplay: '1 Month',
-            isLifetime: false,
             calculatedMonths: 1,
-          }),
-          expect.objectContaining({
-            id: 'lifetime',
-            durationDisplay: 'Lifetime',
-            isLifetime: true,
           }),
         ],
         meta: {

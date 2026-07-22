@@ -59,10 +59,10 @@ describe('AdminUserDtoMapper', () => {
   it('omits absent optional subscription dates', () => {
     const dto = AdminUserDtoMapper.toDto({
       ...user,
-      subscription: { type: 'lifetime', isActive: true },
+      subscription: { type: 'premium-p1m', isActive: true },
     });
 
-    expect(dto.subscription).toEqual({ type: 'lifetime', isActive: true });
+    expect(dto.subscription).toEqual({ type: 'premium-p1m', isActive: true });
   });
 
   it('maps status DTO for disable transitions without authVersion', () => {

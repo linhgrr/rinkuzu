@@ -163,9 +163,8 @@ export class SubscriptionService implements ISubscriptionService {
   private isSubscriptionSnapshotPremium(subscription: UserSubscription | null): boolean {
     if (!subscription) return false;
 
-    // A missing endDate is always anomalous: lifetime plans carry a far-future
-    // sentinel (see DurationUtils.calculateEndDate). Warn for ops visibility;
-    // the shared helper fails closed so the record never grants permanent premium.
+    // A missing endDate is always anomalous. Warn for ops visibility; the
+    // shared helper fails closed so the record never grants permanent premium.
     if (subscription.isActive === true && subscription.endDate == null) {
       logger.warn(
         { subscriptionType: subscription.type, payosOrderId: subscription.payosOrderId },

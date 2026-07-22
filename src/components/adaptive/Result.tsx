@@ -49,6 +49,7 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
       />
       <AdaptiveLearningChatbot
         sessionId={sessionId}
+        exerciseId={exercise.exercise_id}
         isOpen={isChatOpen}
         onClose={closeChat}
         context={chatContext}

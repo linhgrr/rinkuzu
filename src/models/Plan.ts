@@ -5,7 +5,7 @@ interface IPlan {
   _id: string;
   name: string;
   price: number;
-  duration: string; // ISO 8601 format (P1M, P3M, P1Y, PT0S)
+  duration: string;
   features: string[];
   isActive: boolean;
   createdAt: Date;
@@ -15,9 +15,8 @@ interface IPlan {
   readonly durationInfo: {
     iso8601: string;
     displayName: string;
-    months?: number;
+    months: number;
   };
-  readonly isLifetime: boolean;
 }
 
 type PlanDocument = HydratedDocument<IPlan>;
@@ -41,7 +40,7 @@ const PlanSchema = new Schema<IPlan>(
       required: true,
       validate: {
         validator: (value: string) => DurationUtils.isValidISO8601Duration(value),
-        message: 'Invalid duration format. Use ISO 8601 (for example P1M, P3M, P1Y, PT0S).',
+        message: 'Invalid duration format. Only the monthly P1M plan is supported.',
       },
     },
     features: {
@@ -60,11 +59,6 @@ const PlanSchema = new Schema<IPlan>(
 
 PlanSchema.virtual('durationInfo').get(function (this: PlanDocument) {
   return DurationUtils.getDurationInfo(this.duration);
-});
-
-PlanSchema.virtual('isLifetime').get(function (this: PlanDocument) {
-  const info = this.durationInfo;
-  return info.months === undefined;
 });
 
 // Ensure virtuals are included in JSON

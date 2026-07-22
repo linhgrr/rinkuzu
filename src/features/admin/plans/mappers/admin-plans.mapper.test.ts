@@ -35,6 +35,6 @@ describe('toAdminBillingPlanViewModel', () => {
         createdAt: '2026-07-02T00:00:00.000Z',
         updatedAt: '2026-07-02T01:00:00.000Z',
       }),
-    ).toThrow('Unsupported ISO 8601 duration format');
+    ).toThrow('Unsupported subscription duration: 12');
   });
 });

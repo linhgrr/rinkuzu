@@ -396,80 +396,6 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/chat": {
-      "post": {
-        "tags": ["session"],
-        "summary": "Chat About Exercise",
-        "description": "Chat with an AI tutor about the current exercise, with optional RAG context.",
-        "operationId": "chat_about_exercise_api_v1_session__session_id__chat_post",
-        "parameters": [
-          {
-            "name": "session_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[a-zA-Z0-9_\\-]+$",
-              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
-              "title": "Session Id"
-            },
-            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
-          },
-          {
-            "name": "x-user-id",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-User-Id"
-            }
-          },
-          {
-            "name": "x-service-token",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-Service-Token"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TutorChatRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StandardResponse_TutorChatResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/session/{session_id}/status": {
       "get": {
         "tags": ["session"],
@@ -768,6 +694,18 @@
         "description": "Run the full content processing pipeline from an S3 uploaded file.",
         "operationId": "process_document_api_v1_pipeline_process_post",
         "parameters": [
+          {
+            "name": "x-rinkuzu-pdf-page-limit",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "X-Rinkuzu-Pdf-Page-Limit"
+            }
+          },
           {
             "name": "x-user-id",
             "in": "header",
@@ -1932,66 +1870,6 @@
         }
       }
     },
-    "/api/v1/quiz/ask-ai": {
-      "post": {
-        "tags": ["quiz"],
-        "summary": "Ask Ai About Quiz",
-        "description": "Ask an AI tutor for help understanding a quiz question (stream or single response).",
-        "operationId": "ask_ai_about_quiz_api_v1_quiz_ask_ai_post",
-        "parameters": [
-          {
-            "name": "x-user-id",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-User-Id"
-            }
-          },
-          {
-            "name": "x-service-token",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-Service-Token"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QuizTutorRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StandardResponse_QuizTutorResponseData_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/ocr-keys": {
       "get": {
         "tags": ["admin-ocr-keys"],
@@ -2385,6 +2263,248 @@
         }
       }
     },
+    "/api/v1/ask-rin-chan/contexts": {
+      "post": {
+        "tags": ["ask-rin-chan"],
+        "summary": "Register Exercise Context",
+        "operationId": "register_exercise_context_api_v1_ask_rin_chan_contexts_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterExerciseContextRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_ExerciseContextResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ask-rin-chan/chat": {
+      "post": {
+        "tags": ["ask-rin-chan"],
+        "summary": "Ask Rin Chan",
+        "operationId": "ask_rin_chan_api_v1_ask_rin_chan_chat_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRinChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Ask Rin Chan Api V1 Ask Rin Chan Chat Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ask-rin-chan/conversations/{exercise_context_id}": {
+      "get": {
+        "tags": ["ask-rin-chan"],
+        "summary": "Read Conversation",
+        "operationId": "read_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__get",
+        "parameters": [
+          {
+            "name": "exercise_context_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_\\-]+$",
+              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
+              "title": "Exercise Context Id"
+            },
+            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_Union_AskRinConversationResponse__NoneType__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["ask-rin-chan"],
+        "summary": "Clear Conversation",
+        "operationId": "clear_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__delete",
+        "parameters": [
+          {
+            "name": "exercise_context_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_\\-]+$",
+              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
+              "title": "Exercise Context Id"
+            },
+            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Clear Conversation Api V1 Ask Rin Chan Conversations  Exercise Context Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ready": {
       "get": {
         "summary": "Readiness",
@@ -2447,6 +2567,83 @@
   },
   "components": {
     "schemas": {
+      "AskRinChatRequest": {
+        "properties": {
+          "exerciseContextToken": {
+            "type": "string",
+            "maxLength": 32768,
+            "minLength": 32,
+            "title": "Exercisecontexttoken"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "clientRequestId": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Clientrequestid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["exerciseContextToken", "message", "clientRequestId"],
+        "title": "AskRinChatRequest"
+      },
+      "AskRinConversationResponse": {
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "title": "Conversationid"
+          },
+          "exerciseContextId": {
+            "type": "string",
+            "title": "Exercisecontextid"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/AskRinMessageResponse"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": ["conversationId", "exerciseContextId", "messages"],
+        "title": "AskRinConversationResponse"
+      },
+      "AskRinMessageResponse": {
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "title": "Messageid"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["user", "assistant"],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["complete", "interrupted"],
+            "title": "Status"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": ["messageId", "role", "content", "status", "createdAt"],
+        "title": "AskRinMessageResponse"
+      },
       "BloomLabel": {
         "type": "string",
         "enum": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
@@ -2565,6 +2762,21 @@
         "type": "object",
         "required": ["job_id", "deleted_job", "deleted_sessions", "status"],
         "title": "DeleteSubjectResponse"
+      },
+      "ExerciseContextResponse": {
+        "properties": {
+          "exerciseContextId": {
+            "type": "string",
+            "title": "Exercisecontextid"
+          },
+          "exerciseContextToken": {
+            "type": "string",
+            "title": "Exercisecontexttoken"
+          }
+        },
+        "type": "object",
+        "required": ["exerciseContextId", "exerciseContextToken"],
+        "title": "ExerciseContextResponse"
       },
       "ExerciseHistoryResponse": {
         "properties": {
@@ -2729,6 +2941,14 @@
             "type": "integer",
             "title": "Max Steps"
           },
+          "exercise_context_id": {
+            "type": "string",
+            "title": "Exercise Context Id"
+          },
+          "exercise_context_token": {
+            "type": "string",
+            "title": "Exercise Context Token"
+          },
           "theory": {
             "anyOf": [
               {
@@ -2774,6 +2994,8 @@
           "question",
           "step",
           "max_steps",
+          "exercise_context_id",
+          "exercise_context_token",
           "sentence",
           "hint"
         ],
@@ -3241,6 +3463,14 @@
             "type": "integer",
             "title": "Max Steps"
           },
+          "exercise_context_id": {
+            "type": "string",
+            "title": "Exercise Context Id"
+          },
+          "exercise_context_token": {
+            "type": "string",
+            "title": "Exercise Context Token"
+          },
           "theory": {
             "anyOf": [
               {
@@ -3285,6 +3515,8 @@
           "question",
           "step",
           "max_steps",
+          "exercise_context_id",
+          "exercise_context_token",
           "options"
         ],
         "title": "MCQExerciseResponse"
@@ -3389,6 +3621,14 @@
             "type": "integer",
             "title": "Max Steps"
           },
+          "exercise_context_id": {
+            "type": "string",
+            "title": "Exercise Context Id"
+          },
+          "exercise_context_token": {
+            "type": "string",
+            "title": "Exercise Context Token"
+          },
           "theory": {
             "anyOf": [
               {
@@ -3440,6 +3680,8 @@
           "question",
           "step",
           "max_steps",
+          "exercise_context_id",
+          "exercise_context_token",
           "pairs",
           "right_items"
         ],
@@ -3513,6 +3755,14 @@
             "type": "integer",
             "title": "Max Steps"
           },
+          "exercise_context_id": {
+            "type": "string",
+            "title": "Exercise Context Id"
+          },
+          "exercise_context_token": {
+            "type": "string",
+            "title": "Exercise Context Token"
+          },
           "theory": {
             "anyOf": [
               {
@@ -3557,6 +3807,8 @@
           "question",
           "step",
           "max_steps",
+          "exercise_context_id",
+          "exercise_context_token",
           "options"
         ],
         "title": "MultiCorrectExerciseResponse"
@@ -3943,6 +4195,14 @@
             "type": "integer",
             "title": "Max Steps"
           },
+          "exercise_context_id": {
+            "type": "string",
+            "title": "Exercise Context Id"
+          },
+          "exercise_context_token": {
+            "type": "string",
+            "title": "Exercise Context Token"
+          },
           "theory": {
             "anyOf": [
               {
@@ -3987,6 +4247,8 @@
           "question",
           "step",
           "max_steps",
+          "exercise_context_id",
+          "exercise_context_token",
           "items"
         ],
         "title": "OrderingExerciseResponse"
@@ -5682,128 +5944,6 @@
         "required": ["quiz_id"],
         "title": "QuizDraftSubmitRequest"
       },
-      "QuizTutorChatMessage": {
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": ["user", "assistant"],
-            "title": "Role"
-          },
-          "content": {
-            "type": "string",
-            "maxLength": 4000,
-            "minLength": 1,
-            "title": "Content"
-          }
-        },
-        "type": "object",
-        "required": ["role", "content"],
-        "title": "QuizTutorChatMessage"
-      },
-      "QuizTutorRequest": {
-        "properties": {
-          "question": {
-            "type": "string",
-            "maxLength": 12000,
-            "minLength": 1,
-            "title": "Question"
-          },
-          "options": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "maxItems": 8,
-            "minItems": 2,
-            "title": "Options"
-          },
-          "userQuestion": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Userquestion"
-          },
-          "questionImage": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Questionimage",
-            "description": "Optional image URL/data URL. Accepted only when the configured tutor LLM model supports vision."
-          },
-          "optionImages": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Optionimages",
-            "description": "Optional option image URLs/data URLs. Accepted only when the configured tutor LLM model supports vision."
-          },
-          "chatHistory": {
-            "items": {
-              "$ref": "#/components/schemas/QuizTutorChatMessage"
-            },
-            "type": "array",
-            "title": "Chathistory"
-          },
-          "stream": {
-            "type": "boolean",
-            "title": "Stream",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": ["question", "options"],
-        "title": "QuizTutorRequest"
-      },
-      "QuizTutorResponseData": {
-        "properties": {
-          "explanation": {
-            "type": "string",
-            "title": "Explanation"
-          },
-          "structured": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Structured"
-          },
-          "timestamp": {
-            "type": "string",
-            "title": "Timestamp"
-          },
-          "turn_count": {
-            "type": "integer",
-            "title": "Turn Count"
-          }
-        },
-        "type": "object",
-        "required": ["explanation", "timestamp", "turn_count"],
-        "title": "QuizTutorResponseData"
-      },
       "ReadinessResponse": {
         "properties": {
           "status": {
@@ -5904,6 +6044,122 @@
           "next_milestone"
         ],
         "title": "RecommendationReason"
+      },
+      "RegisterExerciseContextRequest": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": ["quiz", "adaptive"],
+            "title": "Source",
+            "default": "quiz"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 12000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Options"
+          },
+          "questionImage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questionimage"
+          },
+          "optionImages": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2083,
+                  "minLength": 1,
+                  "format": "uri"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Optionimages"
+          },
+          "conceptName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conceptname"
+          },
+          "bloomLevel": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 6.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bloomlevel"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sessionid"
+          },
+          "exerciseId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exerciseid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RegisterExerciseContextRequest"
       },
       "SessionConceptSummary": {
         "properties": {
@@ -6143,6 +6399,14 @@
             "type": "integer",
             "title": "Max Steps"
           },
+          "exercise_context_id": {
+            "type": "string",
+            "title": "Exercise Context Id"
+          },
+          "exercise_context_token": {
+            "type": "string",
+            "title": "Exercise Context Token"
+          },
           "theory": {
             "anyOf": [
               {
@@ -6187,6 +6451,8 @@
           "question",
           "step",
           "max_steps",
+          "exercise_context_id",
+          "exercise_context_token",
           "rubric"
         ],
         "title": "ShortAnswerExerciseResponse"
@@ -6330,6 +6596,33 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[DeleteSubjectResponse]"
+      },
+      "StandardResponse_ExerciseContextResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExerciseContextResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[ExerciseContextResponse]"
       },
       "StandardResponse_InfoResponse_": {
         "properties": {
@@ -6871,33 +7164,6 @@
         "required": ["data"],
         "title": "StandardResponse[QuizDraftSingleResponse]"
       },
-      "StandardResponse_QuizTutorResponseData_": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": true
-          },
-          "data": {
-            "$ref": "#/components/schemas/QuizTutorResponseData"
-          },
-          "meta": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta"
-          }
-        },
-        "type": "object",
-        "required": ["data"],
-        "title": "StandardResponse[QuizTutorResponseData]"
-      },
       "StandardResponse_ReadinessResponse_": {
         "properties": {
           "success": {
@@ -7114,7 +7380,7 @@
         "required": ["data"],
         "title": "StandardResponse[TheoryResponse]"
       },
-      "StandardResponse_TutorChatResponse_": {
+      "StandardResponse_Union_AskRinConversationResponse__NoneType__": {
         "properties": {
           "success": {
             "type": "boolean",
@@ -7122,7 +7388,14 @@
             "default": true
           },
           "data": {
-            "$ref": "#/components/schemas/TutorChatResponse"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AskRinConversationResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "meta": {
             "anyOf": [
@@ -7139,7 +7412,7 @@
         },
         "type": "object",
         "required": ["data"],
-        "title": "StandardResponse[TutorChatResponse]"
+        "title": "StandardResponse[Union[AskRinConversationResponse, NoneType]]"
       },
       "StandardResponse_dict_": {
         "properties": {
@@ -7738,6 +8011,14 @@
             "type": "integer",
             "title": "Max Steps"
           },
+          "exercise_context_id": {
+            "type": "string",
+            "title": "Exercise Context Id"
+          },
+          "exercise_context_token": {
+            "type": "string",
+            "title": "Exercise Context Token"
+          },
           "theory": {
             "anyOf": [
               {
@@ -7779,6 +8060,8 @@
           "question",
           "step",
           "max_steps",
+          "exercise_context_id",
+          "exercise_context_token",
           "statement"
         ],
         "title": "TrueFalseExerciseResponse"
@@ -7803,61 +8086,6 @@
         "type": "object",
         "required": ["statement", "correct_answer"],
         "title": "TrueFalsePayload"
-      },
-      "TutorChatMessage": {
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": ["user", "assistant"],
-            "title": "Role"
-          },
-          "content": {
-            "type": "string",
-            "maxLength": 4000,
-            "minLength": 1,
-            "title": "Content"
-          }
-        },
-        "type": "object",
-        "required": ["role", "content"],
-        "title": "TutorChatMessage"
-      },
-      "TutorChatRequest": {
-        "properties": {
-          "userQuestion": {
-            "type": "string",
-            "maxLength": 1000,
-            "minLength": 1,
-            "title": "Userquestion"
-          },
-          "chatHistory": {
-            "items": {
-              "$ref": "#/components/schemas/TutorChatMessage"
-            },
-            "type": "array",
-            "title": "Chathistory",
-            "description": "Deprecated for adaptive tutor chat. Adaptive chat history is owned by the server session and this field is ignored."
-          },
-          "stream": {
-            "type": "boolean",
-            "title": "Stream",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": ["userQuestion"],
-        "title": "TutorChatRequest"
-      },
-      "TutorChatResponse": {
-        "properties": {
-          "explanation": {
-            "type": "string",
-            "title": "Explanation"
-          }
-        },
-        "type": "object",
-        "required": ["explanation"],
-        "title": "TutorChatResponse"
       },
       "ValidationError": {
         "properties": {

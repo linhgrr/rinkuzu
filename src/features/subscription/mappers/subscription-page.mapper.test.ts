@@ -13,7 +13,6 @@ describe('toSubscriptionPageViewModel', () => {
             duration: 'P1M',
             durationDisplay: '1 Month',
             features: ['AI'],
-            isLifetime: false,
             calculatedMonths: 1,
           },
         ],
@@ -47,7 +46,6 @@ describe('toSubscriptionPageViewModel', () => {
       currentSubscription: {
         type: 'premium',
         endDate: '2026-08-02T00:00:00.000Z',
-        isLifetime: false,
         endDateLabel: '02/08/2026',
         isActive: true,
         status: 'completed',
@@ -66,7 +64,6 @@ describe('toSubscriptionPageViewModel', () => {
     );
 
     expect(result.currentSubscription).toEqual({
-      isLifetime: false,
       endDateLabel: '-',
       isActive: false,
     });

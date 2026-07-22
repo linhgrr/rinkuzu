@@ -114,8 +114,8 @@ describe('/api/adaptive/session/[...path]', () => {
     expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
   });
 
-  it('proxies body-less POST exercise/step/next-concept with adaptive_generation llmAction', async () => {
-    for (const action of ['exercise', 'step', 'next-concept'] as const) {
+  it('meters only body-less POST actions that generate an exercise', async () => {
+    for (const action of ['exercise', 'step'] as const) {
       proxyAdaptiveRequestMock.mockClear();
       await POST(postRequest(`sess-1/${action}`), context(['sess-1', action]));
 
@@ -131,7 +131,18 @@ describe('/api/adaptive/session/[...path]', () => {
     }
   });
 
-  it('validates submit body and forwards JSON with adaptive_generation llmAction', async () => {
+  it('does not consume generation quota for next-concept', async () => {
+    await POST(postRequest('sess-1/next-concept'), context(['sess-1', 'next-concept']));
+
+    expect(proxyAdaptiveRequestMock).toHaveBeenCalledWith(
+      expect.any(NextRequest),
+      '/session/sess-1/next-concept',
+      { userId: USER_ID, userRole: 'user' },
+      { method: 'POST' },
+    );
+  });
+
+  it('validates submit body without consuming generation quota', async () => {
     const submitBody = {
       exercise_id: 'ex-1',
       idempotency_key: 'idem-1',
@@ -146,7 +157,6 @@ describe('/api/adaptive/session/[...path]', () => {
       { userId: USER_ID, userRole: 'user' },
       {
         method: 'POST',
-        llmAction: 'adaptive_generation',
         body: JSON.stringify(submitBody),
         contentType: 'application/json',
       },
@@ -166,29 +176,7 @@ describe('/api/adaptive/session/[...path]', () => {
     expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
   });
 
-  it('validates chat body and uses adaptive_tutor_chat llmAction', async () => {
-    const chatBody = {
-      userQuestion: 'Explain derivatives',
-      chatHistory: [{ role: 'user' as const, content: 'hi' }],
-      stream: true,
-    };
-
-    await POST(postRequest('sess-1/chat', chatBody), context(['sess-1', 'chat']));
-
-    expect(proxyAdaptiveRequestMock).toHaveBeenCalledWith(
-      expect.any(NextRequest),
-      '/session/sess-1/chat',
-      { userId: USER_ID, userRole: 'user' },
-      {
-        method: 'POST',
-        llmAction: 'adaptive_tutor_chat',
-        body: JSON.stringify(chatBody),
-        contentType: 'application/json',
-      },
-    );
-  });
-
-  it('rejects invalid chat bodies and never maps them to the tutor llmAction', async () => {
+  it('rejects the removed legacy chat route', async () => {
     const response = await POST(
       postRequest('sess-1/chat', { userQuestion: '' }),
       context(['sess-1', 'chat']),

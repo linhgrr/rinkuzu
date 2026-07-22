@@ -1,162 +1,182 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildStandardErrorBody } from '@/lib/api/error';
 
-const connectDBMock = vi.fn().mockResolvedValue({});
-const isUserPremiumMock = vi.fn();
-const createSubscriptionServiceMock = vi.fn(() => ({
-  isUserPremium: isUserPremiumMock,
-}));
-const nextJsonMock = vi.fn((body, init) => ({
-  body,
-  init,
-  headers: new Headers(init?.headers),
-}));
-const rateLimiterCtorMock = vi.fn();
+const mocks = vi.hoisted(() => {
+  const bucketCollection = {
+    findOne: vi.fn(),
+    updateOne: vi.fn(),
+  };
+  const requestCollection = {
+    findOne: vi.fn(),
+    updateOne: vi.fn(),
+  };
+  const session = {
+    withTransaction: vi.fn(async (callback: () => Promise<unknown>) => callback()),
+    endSession: vi.fn(),
+  };
+  return {
+    bucketCollection,
+    requestCollection,
+    session,
+    connectDB: vi.fn().mockResolvedValue(undefined),
+    resolveEntitlements: vi.fn(),
+    json: vi.fn((body: unknown, init?: ResponseInit) => Response.json(body, init)),
+  };
+});
 
-vi.mock('@/lib/mongoose', () => ({
-  default: connectDBMock,
-}));
-
-vi.mock('@/lib/subscription-factory', () => ({
-  createSubscriptionService: createSubscriptionServiceMock,
-}));
-
-vi.mock('next/server', () => ({
-  NextResponse: {
-    json: nextJsonMock,
+vi.mock('@/lib/mongoose', () => ({ default: mocks.connectDB }));
+vi.mock('@/lib/entitlements', () => ({
+  resolveEntitlements: mocks.resolveEntitlements,
+  getMeteredWindows: (entitlements: { tier: 'free' | 'premium' }, action: string) => {
+    const limits = {
+      free: { minute: 5, day: 25 },
+      premium: { minute: 15, day: 150 },
+    }[entitlements.tier];
+    if (action !== 'ask_rin_chan') throw new Error(`Unexpected capability: ${action}`);
+    return [
+      { window: 'minute', limit: limits.minute },
+      { window: 'day', limit: limits.day },
+    ];
   },
 }));
-
+vi.mock('next/server', () => ({ NextResponse: { json: mocks.json } }));
 vi.mock('mongoose', () => ({
   default: {
     connection: {
-      db: { collection: vi.fn() },
+      db: {
+        collection: (name: string) =>
+          name === 'entitlement_usage_buckets' ? mocks.bucketCollection : mocks.requestCollection,
+      },
+      getClient: () => ({ startSession: () => mocks.session }),
     },
   },
 }));
 
-vi.mock('rate-limiter-flexible', () => ({
-  RateLimiterMongo: class {
-    constructor() {
-      return rateLimiterCtorMock();
-    }
-  },
-}));
+import {
+  buildLlmRateLimitResponse,
+  commitLlmUsage,
+  refundLlmUsage,
+  reserveLlmUsage,
+} from './rate-limit';
 
-describe('LLM rate limiter', () => {
+describe('entitlement usage ledger', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetModules();
+    mocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
+    mocks.requestCollection.findOne.mockResolvedValue(null);
+    mocks.requestCollection.updateOne.mockResolvedValue({ acknowledged: true });
+    mocks.bucketCollection.findOne.mockResolvedValue(null);
+    mocks.bucketCollection.updateOne.mockResolvedValue({ acknowledged: true });
+    mocks.session.withTransaction.mockImplementation(async (callback) => callback());
   });
 
-  it('allows requests when both windows remain under limit', async () => {
-    const minuteConsume = vi.fn().mockResolvedValue({
-      consumedPoints: 1,
-      remainingPoints: 4,
-      msBeforeNext: 60_000,
+  it('atomically reserves every configured window', async () => {
+    const result = await reserveLlmUsage('user-1', 'ask_rin_chan', 'request-1');
+
+    expect(result).toMatchObject({
+      allowed: true,
+      disposition: 'reserved',
+      userId: 'user-1',
+      action: 'ask_rin_chan',
+      requestId: 'request-1',
+      duplicate: false,
+      windows: [
+        { window: 'minute', limit: 5, count: 1, remaining: 4 },
+        { window: 'day', limit: 25, count: 1, remaining: 24 },
+      ],
     });
-    const dayConsume = vi.fn().mockResolvedValue({
-      consumedPoints: 1,
-      remainingPoints: 19,
-      msBeforeNext: 86_400_000,
-    });
-
-    rateLimiterCtorMock
-      .mockImplementationOnce(() => ({ consume: minuteConsume }))
-      .mockImplementationOnce(() => ({ consume: dayConsume }));
-    isUserPremiumMock.mockResolvedValue(false);
-
-    const { checkLlmRateLimit } = await import('./rate-limit');
-    const result = await checkLlmRateLimit('user-1', 'quiz_ask_ai');
-
-    expect(connectDBMock).toHaveBeenCalledOnce();
-    expect(createSubscriptionServiceMock).toHaveBeenCalledOnce();
-    expect(isUserPremiumMock).toHaveBeenCalledWith('user-1');
-    expect(result.allowed).toBe(true);
-    expect(result.tier).toBe('free');
-    expect(result.minute.limit).toBe(5);
-    expect(result.minute.remaining).toBe(4);
-    expect(result.day.limit).toBe(20);
-    expect(result.day.remaining).toBe(19);
-    expect(result.retryAfterSeconds).toBeUndefined();
-  });
-
-  it('returns a 429-compatible result when a limiter rejects with consumed points', async () => {
-    const minuteConsume = vi.fn().mockRejectedValue({
-      consumedPoints: 6,
-      remainingPoints: 0,
-      msBeforeNext: 25_000,
-    });
-    const dayConsume = vi.fn().mockResolvedValue({
-      consumedPoints: 2,
-      remainingPoints: 18,
-      msBeforeNext: 86_400_000,
-    });
-
-    rateLimiterCtorMock
-      .mockImplementationOnce(() => ({ consume: minuteConsume }))
-      .mockImplementationOnce(() => ({ consume: dayConsume }));
-    isUserPremiumMock.mockResolvedValue(false);
-
-    const { buildLlmRateLimitResponse, checkLlmRateLimit } = await import('./rate-limit');
-    const result = await checkLlmRateLimit('user-2', 'quiz_ask_ai');
-    buildLlmRateLimitResponse(result);
-
-    expect(result.allowed).toBe(false);
-    expect(result.minute.count).toBe(6);
-    expect(result.minute.limit).toBe(5);
-    expect(result.retryAfterSeconds).toBeGreaterThanOrEqual(1);
-    expect(nextJsonMock).toHaveBeenCalledOnce();
-    const [body, init] = nextJsonMock.mock.calls[0] ?? [];
-    expect(init.status).toBe(429);
-    expect(body).toEqual(
-      buildStandardErrorBody({
-        code: 'llm_rate_limit_exceeded',
-        message: 'Rate limit exceeded',
-        detail: 'LLM rate limit exceeded',
-        meta: {
-          action: result.action,
-          tier: result.tier,
-          retryAfterSeconds: result.retryAfterSeconds,
-          limits: {
-            minute: {
-              limit: result.minute.limit,
-              remaining: result.minute.remaining,
-              resetAt: result.minute.resetAt.toISOString(),
-            },
-            day: {
-              limit: result.day.limit,
-              remaining: result.day.remaining,
-              resetAt: result.day.resetAt.toISOString(),
-            },
-          },
-        },
+    expect(mocks.session.withTransaction).toHaveBeenCalledOnce();
+    expect(mocks.bucketCollection.updateOne).toHaveBeenCalledTimes(2);
+    expect(mocks.requestCollection.updateOne).toHaveBeenCalledWith(
+      { userId: 'user-1', capability: 'ask_rin_chan', requestId: 'request-1' },
+      expect.objectContaining({
+        $set: expect.objectContaining({ status: 'reserved' }),
+        $setOnInsert: expect.objectContaining({ retentionExpiresAt: expect.any(Date) }),
       }),
+      expect.objectContaining({ upsert: true, session: mocks.session }),
     );
   });
 
-  it('uses the latest exceeded reset so Retry-After cannot allow an early retry', async () => {
-    rateLimiterCtorMock
-      .mockImplementationOnce(() => ({
-        consume: vi.fn().mockRejectedValue({
-          consumedPoints: 6,
-          remainingPoints: 0,
-          msBeforeNext: 25_000,
-        }),
-      }))
-      .mockImplementationOnce(() => ({
-        consume: vi.fn().mockRejectedValue({
-          consumedPoints: 21,
-          remainingPoints: 0,
-          msBeforeNext: 80_000,
-        }),
-      }));
-    isUserPremiumMock.mockResolvedValue(false);
+  it('rejects without incrementing when any configured window is exhausted', async () => {
+    mocks.bucketCollection.findOne.mockImplementation(async (filter: { window: string }) =>
+      filter.window === 'minute' ? { count: 5 } : { count: 3 },
+    );
 
-    const { checkLlmRateLimit } = await import('./rate-limit');
-    const result = await checkLlmRateLimit('user-3', 'quiz_ask_ai');
+    const result = await reserveLlmUsage('user-2', 'ask_rin_chan', 'request-2');
 
     expect(result.allowed).toBe(false);
-    expect(result.retryAfterSeconds).toBe(80);
+    expect(result.retryAfterSeconds).toBeGreaterThan(0);
+    expect(mocks.bucketCollection.updateOne).not.toHaveBeenCalled();
+    expect(mocks.requestCollection.updateOne).toHaveBeenCalledWith(
+      { userId: 'user-2', capability: 'ask_rin_chan', requestId: 'request-2' },
+      expect.objectContaining({
+        $set: expect.objectContaining({ status: 'denied', tier: 'free' }),
+      }),
+      expect.objectContaining({ upsert: true, session: mocks.session }),
+    );
+    const response = buildLlmRateLimitResponse(result);
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toMatchObject({
+      success: false,
+      error: {
+        code: 'quota_exceeded',
+        meta: { capability: 'ask_rin_chan', tier: 'free' },
+      },
+    });
+  });
+
+  it('recognizes a committed idempotency key without charging again', async () => {
+    const committed = {
+      userId: 'user-3',
+      capability: 'ask_rin_chan',
+      requestId: 'request-3',
+      status: 'committed',
+      buckets: [],
+      leaseExpiresAt: new Date(Date.now() + 60_000),
+    };
+    mocks.requestCollection.findOne.mockResolvedValue(committed);
+
+    const result = await reserveLlmUsage('user-3', 'ask_rin_chan', 'request-3');
+
+    expect(result).toMatchObject({
+      allowed: true,
+      disposition: 'committed',
+      duplicate: true,
+      userId: 'user-3',
+    });
+    expect(mocks.session.withTransaction).not.toHaveBeenCalled();
+    expect(mocks.bucketCollection.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('scopes commit and refund by user as well as request and capability', async () => {
+    const reservation = await reserveLlmUsage('user-4', 'ask_rin_chan', 'request-4');
+    await commitLlmUsage(reservation);
+
+    expect(mocks.requestCollection.updateOne).toHaveBeenLastCalledWith(
+      {
+        userId: 'user-4',
+        requestId: 'request-4',
+        capability: 'ask_rin_chan',
+        status: 'reserved',
+      },
+      expect.anything(),
+    );
+
+    mocks.requestCollection.findOne.mockResolvedValue({
+      _id: 'usage-request-4',
+      userId: 'user-4',
+      capability: 'ask_rin_chan',
+      requestId: 'request-4',
+      status: 'reserved',
+      buckets: [{ window: 'minute', bucketStart: new Date() }],
+    });
+    await refundLlmUsage(reservation);
+    expect(mocks.requestCollection.findOne).toHaveBeenLastCalledWith(
+      {
+        userId: 'user-4',
+        requestId: 'request-4',
+        capability: 'ask_rin_chan',
+      },
+      { session: mocks.session },
+    );
   });
 });

@@ -6,7 +6,6 @@ import {
   adaptiveSessionGetPathParamsSchema,
   adaptiveSessionPostPathParamsSchema,
   adaptiveSubmitAnswerRequestSchema,
-  adaptiveTutorChatRequestSchema,
 } from '@/dtos/adaptive-session';
 
 export const dynamic = 'force-dynamic';
@@ -40,16 +39,11 @@ export const POST = withAuth(async (req, { params, userId, session }) => {
       return apiErr('validation_error', parsedBody.error, 400, { fields: parsedBody.fields });
     }
     body = JSON.stringify(parsedBody.data);
-  } else if (parsedParams.data.action === 'chat') {
-    const parsedBody = await readAndValidateJson(req, adaptiveTutorChatRequestSchema);
-    if (!parsedBody.success) {
-      return apiErr('validation_error', parsedBody.error, 400, { fields: parsedBody.fields });
-    }
-    body = JSON.stringify(parsedBody.data);
   }
 
-  const llmAction =
-    parsedParams.data.action === 'chat' ? 'adaptive_tutor_chat' : 'adaptive_generation';
+  const llmAction = ['exercise', 'step'].includes(parsedParams.data.action)
+    ? 'adaptive_generation'
+    : undefined;
 
   return proxyAdaptiveRequest(
     req,
@@ -57,7 +51,7 @@ export const POST = withAuth(async (req, { params, userId, session }) => {
     { userId, userRole: session.user.role },
     {
       method: 'POST',
-      llmAction,
+      ...(llmAction ? { llmAction } : {}),
       ...(body ? { body, contentType: 'application/json' } : {}),
     },
   );

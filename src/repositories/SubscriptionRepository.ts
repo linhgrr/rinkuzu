@@ -178,10 +178,10 @@ export class SubscriptionRepository implements ISubscriptionRepository {
         const subscription = await Subscription.findById(id).session(session);
         if (!subscription) return;
 
-        const cannotExpireLifetimeSubscription =
+        const cannotExpireSubscriptionWithoutEndDate =
           status === 'expired' && subscription.endDate === undefined;
         if (
-          cannotExpireLifetimeSubscription ||
+          cannotExpireSubscriptionWithoutEndDate ||
           !isAdminSubscriptionStatusTransitionAllowed(subscription.status, status)
         ) {
           outcome = {

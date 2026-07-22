@@ -515,6 +515,7 @@
     "contextQuestion": "Câu hỏi",
     "placeholder": "Hỏi một câu...",
     "send": "Gửi",
+    "clearHistory": "Xóa cuộc trò chuyện",
     "thinking": "Rin-chan đang nghĩ...",
     "iconAlt": "Trợ lý AI",
     "errorInsufficientContext": "Không có đủ ngữ cảnh câu hỏi để hỏi AI.",

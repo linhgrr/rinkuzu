@@ -177,7 +177,6 @@ function getStatusBadge(status: AdminSubscriptionStatusViewModel) {
 
 function getTypeBadge(type: string) {
   switch (type) {
-    case 'lifetime':
     case 'yearly':
       return <Badge variant="success">{type}</Badge>;
     case 'monthly':

@@ -217,7 +217,7 @@ describe('Stryker mutate handoff escaping', () => {
     'src/app/api/quiz/[slug]/report/route.ts',
     'src/app/api/quizzes/[id]/route.ts',
     'src/features/admin/quizzes/mappers/admin-quizzes.mapper.ts',
-    'src/features/quiz/hooks/useStreamingChatSession.ts',
+    'src/features/quiz/hooks/useAskRinChanSession.ts',
     'src/lib/adaptive/proxy.ts',
     'src/models/Attempt.ts',
     'src/models/schemas/QuizQuestionSchema.ts',

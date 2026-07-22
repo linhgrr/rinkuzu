@@ -19,7 +19,6 @@ const sampleViewModel = {
   currentSubscription: {
     type: 'premium',
     endDate: '2026-08-02T00:00:00.000Z',
-    isLifetime: false,
     endDateLabel: '02/08/2026',
     isActive: true,
     status: 'completed',
@@ -83,7 +82,6 @@ describe('subscriptionPageReducer', () => {
         currentSubscription: {
           type: 'premium_6months',
           endDate: '2025-12-28T00:00:00.000Z',
-          isLifetime: false,
           endDateLabel: '28/12/2025',
           isActive: false,
           status: 'expired',

@@ -12,9 +12,8 @@ function toAdminUserSubscriptionViewModel(
 ): AdminUserSubscriptionViewModel | undefined {
   if (!subscription) return undefined;
 
-  const isLifetime = subscription.type === 'lifetime';
-  const statusLabel = !subscription.isActive ? 'inactive' : isLifetime ? 'lifetime' : 'active';
-  const statusVariant = !subscription.isActive ? 'danger' : isLifetime ? 'warning' : 'success';
+  const statusLabel = !subscription.isActive ? 'inactive' : 'active';
+  const statusVariant = !subscription.isActive ? 'danger' : 'success';
 
   return {
     type: subscription.type,

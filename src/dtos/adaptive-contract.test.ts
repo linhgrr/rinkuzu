@@ -9,7 +9,6 @@ import {
   adaptiveSessionGetPathParamsSchema,
   adaptiveSessionPostPathParamsSchema,
   adaptiveSubmitAnswerRequestSchema,
-  adaptiveTutorChatRequestSchema,
 } from '@/dtos/adaptive-session';
 import { adaptivePipelineSessionCreateQuerySchema } from '@/dtos/adaptive-pipeline';
 
@@ -55,19 +54,7 @@ describe('adaptive Next API contracts', () => {
       answer: { text: null },
     });
     expect(
-      adaptiveTutorChatRequestSchema.parse({
-        userQuestion: 'Explain this concept',
-        chatHistory: undefined,
-      }),
-    ).toEqual({
-      userQuestion: 'Explain this concept',
-      stream: false,
-    });
-    expect(
-      adaptiveTutorChatRequestSchema.safeParse({
-        userQuestion: '',
-        stream: true,
-      }).success,
+      adaptiveSessionPostPathParamsSchema.safeParse({ path: ['session-1', 'chat'] }).success,
     ).toBe(false);
   });
 

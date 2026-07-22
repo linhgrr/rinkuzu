@@ -10,7 +10,6 @@ export interface SubscriptionPlanViewModel {
 export interface CurrentSubscriptionViewModel {
   type?: string;
   endDate?: string;
-  isLifetime: boolean;
   endDateLabel: string;
   isActive: boolean;
   status?: string;

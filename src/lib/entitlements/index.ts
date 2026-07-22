@@ -4,64 +4,74 @@
  * is this user" (plan name). Plans/tiers never leak into feature logic.
  *
  * Two capability kinds:
- *  - boolean: yes/no feature gates (private_quiz, advanced_stats)
- *  - metered: per-minute/per-day quotas for LLM actions
+ *  - boolean: yes/no feature gates
+ *  - metered: calendar-aware quotas for variable-cost actions
  *
  * B2C, per-user, 2 tiers — a code registry is enough (no DB entitlements table,
  * no org overrides, no RBAC). Add those only when trials/enterprise arrive.
  */
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { getCachedTier, setCachedTier } from './cache';
+import type {
+  BooleanCapability,
+  EntitlementConstraint,
+  Entitlements,
+  MeteredCapability,
+  RateWindow,
+  Tier,
+} from '@/types/entitlements';
 
-export type Tier = 'free' | 'premium';
+export type {
+  BooleanCapability,
+  Entitlements,
+  MeteredCapability,
+  RateWindow,
+  Tier,
+} from '@/types/entitlements';
 
-export type BooleanCapability = 'private_quiz' | 'advanced_stats';
-
-export type MeteredCapability =
-  | 'quiz_ask_ai'
-  | 'quiz_extract'
-  | 'adaptive_pipeline'
-  | 'adaptive_tutor_chat'
-  | 'adaptive_generation';
-
-export type RateWindow = 'minute' | 'day';
-
-type MeteredLimit = Record<RateWindow, number>;
+type MeteredLimit = {
+  enabled: boolean;
+  limits: Partial<Record<RateWindow, number>>;
+};
 
 interface TierEntitlements {
   boolean: Record<BooleanCapability, boolean>;
   metered: Record<MeteredCapability, MeteredLimit>;
+  constraints: Record<EntitlementConstraint, number>;
 }
 
-const REGISTRY: Record<Tier, TierEntitlements> = {
+const ENTITLEMENT_REGISTRY: Record<Tier, TierEntitlements> = {
   free: {
-    boolean: { private_quiz: false, advanced_stats: false },
+    boolean: { private_quiz: false },
+    constraints: { adaptive_pdf_pages: 30 },
     metered: {
-      quiz_ask_ai: { minute: 5, day: 20 },
-      quiz_extract: { minute: 1, day: 3 },
-      adaptive_pipeline: { minute: 1, day: 2 },
-      adaptive_tutor_chat: { minute: 6, day: 30 },
-      adaptive_generation: { minute: 6, day: 50 },
+      ask_rin_chan: { enabled: true, limits: { minute: 5, day: 25 } },
+      quiz_extract: { enabled: true, limits: { minute: 1, month: 5 } },
+      adaptive_pipeline: { enabled: true, limits: { minute: 1, month: 2 } },
+      adaptive_generation: { enabled: true, limits: { minute: 6, day: 50 } },
     },
   },
   premium: {
-    boolean: { private_quiz: true, advanced_stats: true },
+    boolean: { private_quiz: true },
+    constraints: { adaptive_pdf_pages: 100 },
     metered: {
-      quiz_ask_ai: { minute: 20, day: 200 },
-      quiz_extract: { minute: 5, day: 30 },
-      adaptive_pipeline: { minute: 3, day: 20 },
-      adaptive_tutor_chat: { minute: 20, day: 300 },
-      adaptive_generation: { minute: 20, day: 500 },
+      ask_rin_chan: { enabled: true, limits: { minute: 15, day: 150 } },
+      quiz_extract: { enabled: true, limits: { minute: 2, month: 50 } },
+      adaptive_pipeline: { enabled: true, limits: { minute: 1, month: 12 } },
+      adaptive_generation: { enabled: true, limits: { minute: 20, day: 500 } },
     },
   },
 };
 
-export interface Entitlements {
-  tier: Tier;
+export function can(entitlements: Entitlements, capability: BooleanCapability): boolean {
+  return ENTITLEMENT_REGISTRY[entitlements.tier].boolean[capability];
 }
 
-export function can(entitlements: Entitlements, capability: BooleanCapability): boolean {
-  return REGISTRY[entitlements.tier].boolean[capability];
+export function getConstraint(
+  entitlements: Entitlements,
+  constraint: EntitlementConstraint,
+): number {
+  return ENTITLEMENT_REGISTRY[entitlements.tier].constraints[constraint];
 }
 
 function readLimitEnv(
@@ -74,15 +84,32 @@ function readLimitEnv(
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : undefined;
 }
 
-export function getLimit(
+function getLimit(
   entitlements: Entitlements,
   action: MeteredCapability,
   window: RateWindow,
-): number {
-  return (
-    readLimitEnv(action, entitlements.tier, window) ??
-    REGISTRY[entitlements.tier].metered[action][window]
-  );
+): number | undefined {
+  const configured = ENTITLEMENT_REGISTRY[entitlements.tier].metered[action];
+  if (!configured.enabled || configured.limits[window] === undefined) return undefined;
+  return readLimitEnv(action, entitlements.tier, window) ?? configured.limits[window];
+}
+
+export function getMeteredWindows(
+  entitlements: Entitlements,
+  action: MeteredCapability,
+): Array<{ window: RateWindow; limit: number }> {
+  const windows: RateWindow[] = ['minute', 'day', 'month'];
+  return windows.flatMap((window) => {
+    const limit = getLimit(entitlements, action, window);
+    return limit === undefined ? [] : [{ window, limit }];
+  });
+}
+
+export function isMeteredCapabilityEnabled(
+  entitlements: Entitlements,
+  action: MeteredCapability,
+): boolean {
+  return ENTITLEMENT_REGISTRY[entitlements.tier].metered[action].enabled;
 }
 
 /**

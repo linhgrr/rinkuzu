@@ -20,22 +20,28 @@ const cachePolicyMocks = vi.hoisted(() => ({
 const rateLimitMocks = vi.hoisted(() => {
   const allowedResult = {
     allowed: true as const,
+    disposition: 'reserved' as const,
+    userId: 'user-1',
     tier: 'free' as const,
-    action: 'quiz_ask_ai' as LlmRateLimitAction,
-    minute: {
-      window: 'minute' as const,
-      limit: 5,
-      remaining: 4,
-      resetAt: new Date('2026-07-17T12:00:00.000Z'),
-      count: 1,
-    },
-    day: {
-      window: 'day' as const,
-      limit: 20,
-      remaining: 19,
-      resetAt: new Date('2026-07-18T00:00:00.000Z'),
-      count: 1,
-    },
+    action: 'ask_rin_chan' as LlmRateLimitAction,
+    requestId: 'request-1',
+    duplicate: false,
+    windows: [
+      {
+        window: 'minute' as const,
+        limit: 5,
+        remaining: 4,
+        resetAt: new Date('2026-07-17T12:00:00.000Z'),
+        count: 1,
+      },
+      {
+        window: 'day' as const,
+        limit: 25,
+        remaining: 24,
+        resetAt: new Date('2026-07-18T00:00:00.000Z'),
+        count: 1,
+      },
+    ],
   };
 
   return {
@@ -43,15 +49,20 @@ const rateLimitMocks = vi.hoisted(() => {
     deniedResult: {
       ...allowedResult,
       allowed: false as const,
+      disposition: 'denied' as const,
       retryAfterSeconds: 42,
-      minute: { ...allowedResult.minute, remaining: 0, count: 6 },
+      windows: allowedResult.windows.map((window) =>
+        window.window === 'minute' ? { ...window, remaining: 0, count: 6 } : window,
+      ),
     },
-    checkLlmRateLimit: vi.fn(),
+    reserveLlmUsage: vi.fn(),
+    commitLlmUsage: vi.fn(),
+    refundLlmUsage: vi.fn(),
     buildLlmRateLimitHeaders: vi.fn(() => ({
       'X-RateLimit-Tier': 'free',
-      'X-RateLimit-Action': 'quiz_ask_ai',
-      'X-RateLimit-Limit': '20',
-      'X-RateLimit-Remaining': '19',
+      'X-RateLimit-Action': 'ask_rin_chan',
+      'X-RateLimit-Limit': '25',
+      'X-RateLimit-Remaining': '24',
       'X-RateLimit-Reset': '2026-07-18T00:00:00.000Z',
     })),
     buildLlmRateLimitResponse: vi.fn(() =>
@@ -85,7 +96,9 @@ vi.mock('next/server', () => ({
 vi.mock('@/lib/adaptive/config', () => configMocks);
 vi.mock('@/lib/adaptive/cache-policy', () => cachePolicyMocks);
 vi.mock('@/lib/llm/rate-limit', () => ({
-  checkLlmRateLimit: rateLimitMocks.checkLlmRateLimit,
+  reserveLlmUsage: rateLimitMocks.reserveLlmUsage,
+  commitLlmUsage: rateLimitMocks.commitLlmUsage,
+  refundLlmUsage: rateLimitMocks.refundLlmUsage,
   buildLlmRateLimitHeaders: rateLimitMocks.buildLlmRateLimitHeaders,
   buildLlmRateLimitResponse: rateLimitMocks.buildLlmRateLimitResponse,
 }));
@@ -136,12 +149,12 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
     vi.clearAllMocks();
     cachePolicyMocks.isCacheSafeAdaptivePath.mockReturnValue(true);
     configMocks.resolveAdaptiveProxyTimeoutMs.mockReturnValue(30_000);
-    rateLimitMocks.checkLlmRateLimit.mockResolvedValue(rateLimitMocks.allowedResult);
+    rateLimitMocks.reserveLlmUsage.mockResolvedValue(rateLimitMocks.allowedResult);
     rateLimitMocks.buildLlmRateLimitHeaders.mockReturnValue({
       'X-RateLimit-Tier': 'free',
-      'X-RateLimit-Action': 'quiz_ask_ai',
-      'X-RateLimit-Limit': '20',
-      'X-RateLimit-Remaining': '19',
+      'X-RateLimit-Action': 'ask_rin_chan',
+      'X-RateLimit-Limit': '25',
+      'X-RateLimit-Remaining': '24',
       'X-RateLimit-Reset': '2026-07-18T00:00:00.000Z',
     });
     rateLimitMocks.buildLlmRateLimitResponse.mockReturnValue(
@@ -194,6 +207,21 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
 
       expect(configMocks.buildAdaptiveInfraUrl).toHaveBeenCalledWith('health');
       expect(getFetchUrl()).toBe('https://adaptive.test/api/health');
+    });
+
+    it('adds only explicit server-generated internal headers', async () => {
+      await proxyAdaptiveRequest(
+        new Request('https://app.test/api/adaptive/pipeline/process'),
+        'pipeline/process',
+        { userId: 'user-1', userRole: 'user' },
+        { internalHeaders: { 'x-rinkuzu-pdf-page-limit': '30' } },
+      );
+
+      expect(getFetchInit().headers).toMatchObject({
+        'X-User-Id': 'user-1',
+        'X-User-Role': 'user',
+        'x-rinkuzu-pdf-page-limit': '30',
+      });
     });
 
     it('attaches POST body text and content-type from the incoming request', async () => {
@@ -353,17 +381,57 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
   });
 
   describe('LLM rate limiting', () => {
+    it('blocks committed idempotency-key replay unless the endpoint owns durable replay', async () => {
+      const committed = {
+        ...rateLimitMocks.allowedResult,
+        disposition: 'committed' as const,
+        duplicate: true,
+      };
+      rateLimitMocks.reserveLlmUsage.mockResolvedValue(committed);
+      const request = new Request('https://app.test/api/adaptive/chat', {
+        method: 'POST',
+        headers: { 'Idempotency-Key': 'request-1' },
+        body: '{}',
+      });
+
+      const blocked = await proxyAdaptiveRequest(
+        request,
+        'chat',
+        { userId: 'user-1', userRole: 'user' },
+        { method: 'POST', llmAction: 'adaptive_generation', body: '{}' },
+      );
+      expect(blocked.status).toBe(409);
+      expect(fetch).not.toHaveBeenCalled();
+
+      await proxyAdaptiveRequest(
+        request,
+        'ask-rin-chan/chat',
+        { userId: 'user-1', userRole: 'user' },
+        {
+          method: 'POST',
+          llmAction: 'ask_rin_chan',
+          body: '{}',
+          allowCommittedReplay: true,
+        },
+      );
+      expect(fetch).toHaveBeenCalledOnce();
+    });
+
     it('returns the rate-limit response when the metered user is blocked', async () => {
-      rateLimitMocks.checkLlmRateLimit.mockResolvedValueOnce(rateLimitMocks.deniedResult);
+      rateLimitMocks.reserveLlmUsage.mockResolvedValueOnce(rateLimitMocks.deniedResult);
 
       const response = await proxyAdaptiveRequest(
         new Request('https://app.test/api/adaptive/chat', { method: 'POST', body: '{}' }),
         'chat',
         { userId: 'user-1', userRole: 'user' },
-        { method: 'POST', llmAction: 'quiz_ask_ai', body: '{}' },
+        { method: 'POST', llmAction: 'ask_rin_chan', body: '{}' },
       );
 
-      expect(rateLimitMocks.checkLlmRateLimit).toHaveBeenCalledWith('user-1', 'quiz_ask_ai');
+      expect(rateLimitMocks.reserveLlmUsage).toHaveBeenCalledWith(
+        'user-1',
+        'ask_rin_chan',
+        expect.any(String),
+      );
       expect(rateLimitMocks.buildLlmRateLimitResponse).toHaveBeenCalledWith(
         rateLimitMocks.deniedResult,
       );
@@ -376,24 +444,24 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
         new Request('https://app.test/api/adaptive/chat', { method: 'POST', body: '{}' }),
         'chat',
         { userId: 'admin-1', userRole: 'admin' },
-        { method: 'POST', llmAction: 'quiz_ask_ai', body: '{}' },
+        { method: 'POST', llmAction: 'ask_rin_chan', body: '{}' },
       );
-      expect(rateLimitMocks.checkLlmRateLimit).not.toHaveBeenCalled();
+      expect(rateLimitMocks.reserveLlmUsage).not.toHaveBeenCalled();
 
       await proxyAdaptiveRequest(
         new Request('https://app.test/api/adaptive/chat', { method: 'POST', body: '{}' }),
         'chat',
         { userRole: 'user' },
-        { method: 'POST', llmAction: 'quiz_ask_ai', body: '{}' },
+        { method: 'POST', llmAction: 'ask_rin_chan', body: '{}' },
       );
-      expect(rateLimitMocks.checkLlmRateLimit).not.toHaveBeenCalled();
+      expect(rateLimitMocks.reserveLlmUsage).not.toHaveBeenCalled();
 
       await proxyAdaptiveRequest(
         new Request('https://app.test/api/adaptive/subjects'),
         'subjects',
         { userId: 'user-1', userRole: 'user' },
       );
-      expect(rateLimitMocks.checkLlmRateLimit).not.toHaveBeenCalled();
+      expect(rateLimitMocks.reserveLlmUsage).not.toHaveBeenCalled();
     });
 
     it('attaches rate-limit headers to successful upstream responses when metering applied', async () => {
@@ -403,14 +471,15 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
         new Request('https://app.test/api/adaptive/chat', { method: 'POST', body: '{}' }),
         'chat',
         { userId: 'user-1', userRole: 'user' },
-        { method: 'POST', llmAction: 'quiz_ask_ai', body: '{}' },
+        { method: 'POST', llmAction: 'ask_rin_chan', body: '{}' },
       );
 
       expect(rateLimitMocks.buildLlmRateLimitHeaders).toHaveBeenCalledWith(
         rateLimitMocks.allowedResult,
       );
-      expect(response.headers.get('X-RateLimit-Action')).toBe('quiz_ask_ai');
-      expect(response.headers.get('X-RateLimit-Remaining')).toBe('19');
+      expect(rateLimitMocks.commitLlmUsage).toHaveBeenCalledWith(rateLimitMocks.allowedResult);
+      expect(response.headers.get('X-RateLimit-Action')).toBe('ask_rin_chan');
+      expect(response.headers.get('X-RateLimit-Remaining')).toBe('24');
       await expect(readJson(response)).resolves.toEqual({
         success: true,
         data: { answer: 1 },

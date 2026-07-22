@@ -5,13 +5,7 @@ import { routePathSegmentSchema } from '@/lib/validation/common';
 type ApiSchemas = components['schemas'];
 
 const adaptiveSessionGetActionSchema = z.enum(['theory', 'status', 'graph', 'mastery-matrix']);
-const adaptiveSessionPostActionSchema = z.enum([
-  'next-concept',
-  'exercise',
-  'step',
-  'submit',
-  'chat',
-]);
+const adaptiveSessionPostActionSchema = z.enum(['next-concept', 'exercise', 'step', 'submit']);
 
 export const adaptiveSessionGetPathParamsSchema = z
   .strictObject({
@@ -61,20 +55,3 @@ export const adaptiveSubmitAnswerRequestSchema: z.ZodType<ApiSchemas['SubmitAnsw
     idempotency_key: z.string().min(1).max(128),
     answer: submitAnswerPayloadSchema,
   });
-
-const tutorChatMessageSchema = z.strictObject({
-  role: z.enum(['user', 'assistant']),
-  content: z.string().min(1).max(4000),
-});
-
-export const adaptiveTutorChatRequestSchema: z.ZodType<ApiSchemas['TutorChatRequest']> = z
-  .strictObject({
-    userQuestion: z.string().min(1).max(1000),
-    chatHistory: z.array(tutorChatMessageSchema).optional(),
-    stream: z.boolean().default(false),
-  })
-  .transform((request): ApiSchemas['TutorChatRequest'] => ({
-    userQuestion: request.userQuestion,
-    ...(request.chatHistory !== undefined ? { chatHistory: request.chatHistory } : {}),
-    stream: request.stream,
-  }));

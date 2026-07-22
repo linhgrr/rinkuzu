@@ -515,6 +515,7 @@
     "contextQuestion": "Question",
     "placeholder": "Ask a question...",
     "send": "Send",
+    "clearHistory": "Clear conversation",
     "thinking": "Rin-chan is thinking...",
     "iconAlt": "AI chatbot",
     "errorInsufficientContext": "Insufficient context to ask AI.",

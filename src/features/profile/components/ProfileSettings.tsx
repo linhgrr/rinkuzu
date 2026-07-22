@@ -22,6 +22,7 @@ import {
   uploadProfileAvatar,
 } from '@/features/profile/api/profile-settings-api';
 import type { ProfileSettingsViewModel } from '@/features/profile/types/profile-settings-view-model';
+import { ProfileQuotaCard } from '@/features/profile/components/ProfileQuotaCard';
 import {
   HiOutlineUser,
   HiOutlineLockClosed,
@@ -647,6 +648,7 @@ export default function ProfileSettings() {
       />
 
       <AccountSection profile={state.profile} t={t} />
+      <ProfileQuotaCard />
 
       <ConfirmModal
         isOpen={state.showRemoveAvatarConfirm}

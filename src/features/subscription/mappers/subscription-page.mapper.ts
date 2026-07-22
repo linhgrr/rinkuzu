@@ -9,7 +9,6 @@ import type {
   SubscriptionStatusViewModel,
 } from '@/features/subscription/types/subscription-page-view-model';
 import { formatDate, formatVndCurrency } from '@/lib/formatters';
-import { isLifetimeEndDate } from '@/lib/subscription-date';
 
 function toSubscriptionPlanViewModel(
   plan: SubscriptionPlansResponseDto['plans'][number],
@@ -30,15 +29,10 @@ function toCurrentSubscriptionViewModel(
   if (!status.subscription) return null;
 
   const { endDate } = status.subscription;
-  const isLifetime = isLifetimeEndDate(endDate);
-
   return {
     ...(status.subscription.type !== undefined && { type: status.subscription.type }),
     ...(endDate !== undefined && { endDate }),
-    isLifetime,
-    // For lifetime, the label is rendered from i18n at the component (no raw
-    // sentinel date). Otherwise a formatted date, or '-' when absent.
-    endDateLabel: isLifetime ? '' : endDate ? formatDate(endDate, { locale: 'vi-VN' }) : '-',
+    endDateLabel: endDate ? formatDate(endDate, { locale: 'vi-VN' }) : '-',
     isActive: Boolean(status.subscription.isActive),
     ...(status.subscription.status !== undefined && { status: status.subscription.status }),
   };

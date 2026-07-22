@@ -62,7 +62,11 @@ describe('SubscriptionPlanRepository', () => {
       id: planRecord._id,
       isActive: true,
     });
-    expect(mocks.findOne).toHaveBeenCalledWith({ _id: planRecord._id, isActive: true });
+    expect(mocks.findOne).toHaveBeenCalledWith({
+      _id: planRecord._id,
+      duration: 'P1M',
+      isActive: true,
+    });
   });
 
   it('lists only active plans', async () => {
@@ -72,6 +76,6 @@ describe('SubscriptionPlanRepository', () => {
     await expect(repository.listActive()).resolves.toEqual([
       expect.objectContaining({ id: planRecord._id, isActive: true }),
     ]);
-    expect(mocks.find).toHaveBeenCalledWith({ isActive: true });
+    expect(mocks.find).toHaveBeenCalledWith({ duration: 'P1M', isActive: true });
   });
 });

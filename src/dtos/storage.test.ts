@@ -31,9 +31,28 @@ describe('storage DTO validation', () => {
       createPresignedUploadUrlRequestSchema.parse({
         fileName: 'source.pdf',
         contentType: 'application/pdf',
-        fileSize: 50 * 1024 * 1024 + 1,
+        fileSize: 5 * 1024 * 1024 + 1,
         purpose: 'quiz',
       }),
     ).toThrow();
+  });
+
+  it('allows adaptive PDFs up to 50MB but keeps quiz extraction at 5MB', () => {
+    expect(
+      createPresignedUploadUrlRequestSchema.safeParse({
+        fileName: 'source.pdf',
+        contentType: 'application/pdf',
+        fileSize: 50 * 1024 * 1024,
+        purpose: 'adaptive',
+      }).success,
+    ).toBe(true);
+    expect(
+      createPresignedUploadUrlRequestSchema.safeParse({
+        fileName: 'source.pdf',
+        contentType: 'application/pdf',
+        fileSize: 50 * 1024 * 1024 + 1,
+        purpose: 'adaptive',
+      }).success,
+    ).toBe(false);
   });
 });

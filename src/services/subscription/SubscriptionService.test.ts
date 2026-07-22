@@ -336,7 +336,7 @@ describe('SubscriptionService billing hardening', () => {
     expect(subscriptionRepository.create).toHaveBeenCalledOnce();
   });
 
-  it('detects free, inactive, active, lifetime, and anomalous premium states', async () => {
+  it('detects free, inactive, active, and anomalous premium states', async () => {
     const { service, userRepository, subscriptionRepository } = createService({
       subscriptionRepository: {
         expireCurrentForUser: vi.fn().mockResolvedValue(true),
@@ -360,14 +360,6 @@ describe('SubscriptionService billing hardening', () => {
       type: 'premium',
       isActive: true,
       endDate: new Date('2099-01-01T00:00:00Z'),
-    });
-    await expect(service.isUserPremium('user-1')).resolves.toBe(true);
-
-    // Active, lifetime sentinel endDate → premium
-    userRepository.findSubscriptionById.mockResolvedValueOnce({
-      type: 'lifetime',
-      isActive: true,
-      endDate: new Date('9999-12-31T23:59:59.999Z'),
     });
     await expect(service.isUserPremium('user-1')).resolves.toBe(true);
 
@@ -396,7 +388,7 @@ describe('SubscriptionService billing hardening', () => {
     });
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
-    expect(userRepository.findSubscriptionById).toHaveBeenCalledTimes(7);
+    expect(userRepository.findSubscriptionById).toHaveBeenCalledTimes(6);
     expect(subscriptionRepository.expireCurrentForUser).toHaveBeenCalledTimes(2);
   });
 

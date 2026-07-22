@@ -1,9 +1,11 @@
+import 'server-only';
+
 import mongoose from 'mongoose';
-import { RateLimiterMongo } from 'rate-limiter-flexible';
+import type { ClientSession, Collection, MongoServerError } from 'mongodb';
 import connectDB from '@/lib/mongoose';
 import { apiErr } from '@/lib/api/response';
 import {
-  getLimit,
+  getMeteredWindows,
   resolveEntitlements,
   type Entitlements,
   type MeteredCapability,
@@ -11,192 +13,412 @@ import {
   type Tier,
 } from '@/lib/entitlements';
 
-// Re-export so route handlers can type their declared action without reaching
-// into the entitlements module directly.
 export type LlmRateLimitAction = MeteredCapability;
 
-type WindowResult = {
+export interface WindowResult {
   window: RateWindow;
   limit: number;
   remaining: number;
   resetAt: Date;
   count: number;
-};
+}
 
-type LlmRateLimitResult = {
+export interface LlmUsageReservation {
   allowed: boolean;
+  disposition: 'reserved' | 'committed' | 'denied';
+  userId: string;
   tier: Tier;
   action: LlmRateLimitAction;
-  minute: WindowResult;
-  day: WindowResult;
+  requestId: string;
+  duplicate: boolean;
+  windows: WindowResult[];
   retryAfterSeconds?: number;
-};
-
-type RateLimiterResult = {
-  consumedPoints: number;
-  remainingPoints: number;
-  msBeforeNext: number;
-};
-
-const LIMITER_COLLECTION = 'llm_rate_limits';
-const limiterCache = new Map<string, RateLimiterMongo>();
-
-function retryAfterSeconds(resetAt: Date) {
-  return Math.max(1, Math.ceil((resetAt.getTime() - Date.now()) / 1000));
 }
 
-function getWindowDurationSeconds(window: RateWindow) {
-  return window === 'minute' ? 60 : 24 * 60 * 60;
+interface UsageBucket {
+  userId: string;
+  capability: LlmRateLimitAction;
+  window: RateWindow;
+  bucketStart: Date;
+  expiresAt: Date;
+  count: number;
+  updatedAt: Date;
 }
 
-function isRateLimiterResult(value: unknown): value is RateLimiterResult {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const candidate = value as Partial<RateLimiterResult>;
-  return (
-    typeof candidate.consumedPoints === 'number' &&
-    typeof candidate.remainingPoints === 'number' &&
-    typeof candidate.msBeforeNext === 'number'
-  );
+interface UsageRequest {
+  userId: string;
+  capability: LlmRateLimitAction;
+  requestId: string;
+  tier: Tier;
+  status: 'reserved' | 'committed' | 'refunded' | 'denied';
+  buckets: Array<{ window: RateWindow; bucketStart: Date }>;
+  leaseExpiresAt: Date;
+  retentionExpiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-function toWindowResult(
-  window: 'minute' | 'day',
-  limit: number,
-  result: RateLimiterResult,
-): WindowResult {
+interface UsageRequestInsertFields {
+  userId: string;
+  capability: LlmRateLimitAction;
+  requestId: string;
+  createdAt: Date;
+  retentionExpiresAt: Date;
+}
+
+const BUCKET_COLLECTION = 'entitlement_usage_buckets';
+const REQUEST_COLLECTION = 'entitlement_usage_requests';
+const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
+const RESERVATION_LEASE_MS = 10 * 60 * 1000;
+const RAW_RETENTION_MS = 180 * 24 * 60 * 60 * 1000;
+
+function collections(): {
+  buckets: Collection<UsageBucket>;
+  requests: Collection<UsageRequest>;
+} {
+  const db = mongoose.connection.db;
+  if (!db) throw new Error('MongoDB connection is not initialized');
   return {
-    window,
-    limit,
-    count: result.consumedPoints,
-    remaining: Math.max(0, result.remainingPoints),
-    resetAt: new Date(Date.now() + Math.max(0, result.msBeforeNext)),
+    buckets: db.collection<UsageBucket>(BUCKET_COLLECTION),
+    requests: db.collection<UsageRequest>(REQUEST_COLLECTION),
   };
 }
 
-function getMongoLimiter(
-  action: LlmRateLimitAction,
-  tier: Tier,
-  window: RateWindow,
-  limit: number,
-) {
-  const cacheKey = `${action}:${tier}:${window}`;
-  const cached = limiterCache.get(cacheKey);
-  if (cached) {
-    return cached;
+function windowBounds(window: RateWindow, now: Date): { start: Date; end: Date } {
+  if (window === 'minute') {
+    const startMs = Math.floor(now.getTime() / 60_000) * 60_000;
+    return { start: new Date(startMs), end: new Date(startMs + 60_000) };
   }
 
-  const db = mongoose.connection.db;
-  if (!db) {
-    throw new Error('MongoDB connection is not initialized');
+  const local = new Date(now.getTime() + VN_OFFSET_MS);
+  if (window === 'day') {
+    const startMs = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate());
+    return {
+      start: new Date(startMs - VN_OFFSET_MS),
+      end: new Date(startMs + 86_400_000 - VN_OFFSET_MS),
+    };
   }
 
-  const limiter = new RateLimiterMongo({
-    storeClient: db,
-    tableName: LIMITER_COLLECTION,
-    keyPrefix: `llm:${cacheKey}`,
-    points: limit,
-    duration: getWindowDurationSeconds(window),
-  });
-  limiterCache.set(cacheKey, limiter);
-  return limiter;
+  const startMs = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1);
+  const endMs = Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 1);
+  return { start: new Date(startMs - VN_OFFSET_MS), end: new Date(endMs - VN_OFFSET_MS) };
 }
 
-async function incrementWindow(
+function isDuplicateKey(error: unknown): error is MongoServerError {
+  return error instanceof Error && 'code' in error && (error as MongoServerError).code === 11000;
+}
+
+async function readWindows(
   userId: string,
   action: LlmRateLimitAction,
   entitlements: Entitlements,
-  window: RateWindow,
-): Promise<WindowResult> {
-  const limit = getLimit(entitlements, action, window);
-  const limiter = getMongoLimiter(action, entitlements.tier, window, limit);
-
-  try {
-    const result = await limiter.consume(userId);
-    return toWindowResult(window, limit, result);
-  } catch (error) {
-    if (isRateLimiterResult(error)) {
-      return toWindowResult(window, limit, error);
-    }
-    throw error;
-  }
+  now: Date,
+  session?: ClientSession,
+): Promise<WindowResult[]> {
+  const { buckets } = collections();
+  return Promise.all(
+    getMeteredWindows(entitlements, action).map(async ({ window, limit }) => {
+      const bounds = windowBounds(window, now);
+      const bucket = await buckets.findOne(
+        { userId, capability: action, window, bucketStart: bounds.start },
+        { session },
+      );
+      const count = Math.max(0, bucket?.count ?? 0);
+      return {
+        window,
+        limit,
+        count,
+        remaining: Math.max(0, limit - count),
+        resetAt: bounds.end,
+      };
+    }),
+  );
 }
 
-export async function checkLlmRateLimit(
+function retryAfterSeconds(windows: WindowResult[]): number | undefined {
+  const exceeded = windows.filter((item) => item.count >= item.limit);
+  if (exceeded.length === 0) return undefined;
+  const resetAt = Math.max(...exceeded.map((item) => item.resetAt.getTime()));
+  return Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+}
+
+function usageRequestInsertFields(
   userId: string,
   action: LlmRateLimitAction,
-): Promise<LlmRateLimitResult> {
-  await connectDB();
-
-  const entitlements = await resolveEntitlements(userId);
-
-  const [minute, day] = await Promise.all([
-    incrementWindow(userId, action, entitlements, 'minute'),
-    incrementWindow(userId, action, entitlements, 'day'),
-  ]);
-
-  const exceeded = [minute, day].filter((item) => item.count > item.limit);
-  const retryWindow =
-    exceeded.length > 0
-      ? exceeded.reduce((latest, item) =>
-          item.resetAt.getTime() > latest.resetAt.getTime() ? item : latest,
-        )
-      : null;
-
+  requestId: string,
+  now: Date,
+): UsageRequestInsertFields {
   return {
-    allowed: exceeded.length === 0,
-    tier: entitlements.tier,
-    action,
-    minute,
-    day,
-    ...(retryWindow !== null && {
-      retryAfterSeconds: retryAfterSeconds(retryWindow.resetAt),
-    }),
+    userId,
+    capability: action,
+    requestId,
+    createdAt: now,
+    retentionExpiresAt: new Date(now.getTime() + RAW_RETENTION_MS),
   };
 }
 
-export function buildLlmRateLimitHeaders(result: LlmRateLimitResult): HeadersInit {
+async function recoverExpiredReservation(
+  userId: string,
+  action: LlmRateLimitAction,
+  request: UsageRequest,
+): Promise<void> {
+  if (request.status !== 'reserved' || request.leaseExpiresAt > new Date()) return;
+  await refundLlmUsage({
+    allowed: true,
+    disposition: 'reserved',
+    userId,
+    tier: 'free',
+    action,
+    requestId: request.requestId,
+    duplicate: false,
+    windows: [],
+  });
+}
+
+export async function reserveLlmUsage(
+  userId: string,
+  action: LlmRateLimitAction,
+  requestId: string,
+): Promise<LlmUsageReservation> {
+  await connectDB();
+  const entitlements = await resolveEntitlements(userId);
+  const now = new Date();
+  const { buckets, requests } = collections();
+  const existing = await requests.findOne({ userId, capability: action, requestId });
+  if (existing) {
+    await recoverExpiredReservation(userId, action, existing);
+    const refreshed = await requests.findOne({ userId, capability: action, requestId });
+    if (refreshed?.status !== 'refunded') {
+      return {
+        allowed: refreshed?.status === 'committed',
+        disposition:
+          refreshed?.status === 'committed'
+            ? 'committed'
+            : refreshed?.status === 'denied'
+              ? 'denied'
+              : 'reserved',
+        userId,
+        tier: entitlements.tier,
+        action,
+        requestId,
+        duplicate: true,
+        windows: await readWindows(userId, action, entitlements, now),
+      };
+    }
+  }
+
+  const client = mongoose.connection.getClient();
+  const session = client.startSession();
+  try {
+    const reservation = await session.withTransaction(async () => {
+      const concurrent = await requests.findOne(
+        { userId, capability: action, requestId },
+        { session },
+      );
+      if (concurrent && concurrent.status !== 'refunded') {
+        return {
+          allowed: concurrent.status === 'committed',
+          disposition:
+            concurrent.status === 'committed'
+              ? 'committed'
+              : concurrent.status === 'denied'
+                ? 'denied'
+                : 'reserved',
+          userId,
+          tier: entitlements.tier,
+          action,
+          requestId,
+          duplicate: true,
+          windows: await readWindows(userId, action, entitlements, now, session),
+        } satisfies LlmUsageReservation;
+      }
+
+      const before = await readWindows(userId, action, entitlements, now, session);
+      if (before.some((item) => item.count >= item.limit)) {
+        await requests.updateOne(
+          { userId, capability: action, requestId },
+          {
+            $set: {
+              tier: entitlements.tier,
+              status: 'denied',
+              buckets: [],
+              leaseExpiresAt: now,
+              updatedAt: now,
+            },
+            $setOnInsert: usageRequestInsertFields(userId, action, requestId, now),
+          },
+          { upsert: true, session },
+        );
+        return {
+          allowed: false,
+          disposition: 'denied',
+          userId,
+          tier: entitlements.tier,
+          action,
+          requestId,
+          duplicate: false,
+          windows: before,
+          retryAfterSeconds: retryAfterSeconds(before),
+        } satisfies LlmUsageReservation;
+      }
+
+      for (const item of before) {
+        const bounds = windowBounds(item.window, now);
+        await buckets.updateOne(
+          { userId, capability: action, window: item.window, bucketStart: bounds.start },
+          {
+            $inc: { count: 1 },
+            $set: { expiresAt: bounds.end, updatedAt: now },
+            $setOnInsert: {
+              userId,
+              capability: action,
+              window: item.window,
+              bucketStart: bounds.start,
+            },
+          },
+          { upsert: true, session },
+        );
+      }
+
+      const bucketRefs = before.map((item) => ({
+        window: item.window,
+        bucketStart: windowBounds(item.window, now).start,
+      }));
+      await requests.updateOne(
+        { userId, capability: action, requestId },
+        {
+          $set: {
+            tier: entitlements.tier,
+            status: 'reserved',
+            buckets: bucketRefs,
+            leaseExpiresAt: new Date(now.getTime() + RESERVATION_LEASE_MS),
+            updatedAt: now,
+          },
+          $setOnInsert: usageRequestInsertFields(userId, action, requestId, now),
+        },
+        { upsert: true, session },
+      );
+      return {
+        allowed: true,
+        disposition: 'reserved',
+        userId,
+        tier: entitlements.tier,
+        action,
+        requestId,
+        duplicate: false,
+        windows: before.map((item) => ({
+          ...item,
+          count: item.count + 1,
+          remaining: Math.max(0, item.limit - item.count - 1),
+        })),
+      } satisfies LlmUsageReservation;
+    });
+    if (!reservation) throw new Error('Usage reservation transaction returned no result');
+    return reservation;
+  } catch (error) {
+    if (isDuplicateKey(error)) {
+      return reserveLlmUsage(userId, action, requestId);
+    }
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+}
+
+export async function commitLlmUsage(reservation: LlmUsageReservation): Promise<void> {
+  if (!reservation.allowed) return;
+  const { requests } = collections();
+  await requests.updateOne(
+    {
+      userId: reservation.userId,
+      requestId: reservation.requestId,
+      capability: reservation.action,
+      status: 'reserved',
+    },
+    { $set: { status: 'committed', updatedAt: new Date() } },
+  );
+}
+
+export async function refundLlmUsage(reservation: LlmUsageReservation): Promise<void> {
+  if (!reservation.allowed) return;
+  await connectDB();
+  const { buckets, requests } = collections();
+  const client = mongoose.connection.getClient();
+  const session = client.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const request = await requests.findOne(
+        {
+          userId: reservation.userId,
+          requestId: reservation.requestId,
+          capability: reservation.action,
+        },
+        { session },
+      );
+      if (!request || request.status !== 'reserved') return;
+      for (const bucket of request.buckets) {
+        await buckets.updateOne(
+          {
+            userId: request.userId,
+            capability: request.capability,
+            window: bucket.window,
+            bucketStart: bucket.bucketStart,
+            count: { $gt: 0 },
+          },
+          { $inc: { count: -1 }, $set: { updatedAt: new Date() } },
+          { session },
+        );
+      }
+      await requests.updateOne(
+        { _id: request._id, status: 'reserved' },
+        { $set: { status: 'refunded', updatedAt: new Date() } },
+        { session },
+      );
+    });
+  } finally {
+    await session.endSession();
+  }
+}
+
+export async function getLlmUsageSnapshot(
+  userId: string,
+  action: LlmRateLimitAction,
+  entitlements: Entitlements,
+): Promise<WindowResult[]> {
+  await connectDB();
+  return readWindows(userId, action, entitlements, new Date());
+}
+
+export function buildLlmRateLimitHeaders(result: LlmUsageReservation): HeadersInit {
+  const primary = [...result.windows].sort((a, b) => b.resetAt.getTime() - a.resetAt.getTime())[0];
   const headers: Record<string, string> = {
     'X-RateLimit-Tier': result.tier,
     'X-RateLimit-Action': result.action,
-    'X-RateLimit-Limit': String(result.day.limit),
-    'X-RateLimit-Remaining': String(result.day.remaining),
-    'X-RateLimit-Reset': result.day.resetAt.toISOString(),
   };
-
-  if (result.retryAfterSeconds) {
-    headers['Retry-After'] = String(result.retryAfterSeconds);
+  if (primary) {
+    headers['X-RateLimit-Limit'] = String(primary.limit);
+    headers['X-RateLimit-Remaining'] = String(primary.remaining);
+    headers['X-RateLimit-Reset'] = primary.resetAt.toISOString();
   }
-
+  if (result.retryAfterSeconds) headers['Retry-After'] = String(result.retryAfterSeconds);
   return headers;
 }
 
-export function buildLlmRateLimitResponse(result: LlmRateLimitResult) {
-  const response = apiErr('llm_rate_limit_exceeded', 'LLM rate limit exceeded', 429, {
-    action: result.action,
+export function buildLlmRateLimitResponse(result: LlmUsageReservation) {
+  return apiErr('quota_exceeded', 'Usage quota exceeded', 429, {
+    capability: result.action,
     tier: result.tier,
     retryAfterSeconds: result.retryAfterSeconds,
-    limits: {
-      minute: {
-        limit: result.minute.limit,
-        remaining: result.minute.remaining,
-        resetAt: result.minute.resetAt.toISOString(),
-      },
-      day: {
-        limit: result.day.limit,
-        remaining: result.day.remaining,
-        resetAt: result.day.resetAt.toISOString(),
-      },
-    },
+    windows: Object.fromEntries(
+      result.windows.map((item) => [
+        item.window,
+        {
+          used: item.count,
+          limit: item.limit,
+          remaining: item.remaining,
+          resetAt: item.resetAt.toISOString(),
+        },
+      ]),
+    ),
   });
-
-  Object.entries(buildLlmRateLimitHeaders(result)).forEach(([key, value]) => {
-    if (value !== undefined) {
-      response.headers.set(key, String(value));
-    }
-  });
-
-  return response;
 }

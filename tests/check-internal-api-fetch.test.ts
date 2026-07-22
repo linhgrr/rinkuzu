@@ -88,9 +88,9 @@ describe('check-internal-api-fetch', () => {
 
   it('allows approved low-level boundaries', () => {
     const projectRoot = makeProject({
-      'src/lib/quiz/ask-ai.ts': `
-        export async function ask() {
-          return fetch('/api/quiz/ask-ai');
+      'src/lib/ask-rin-chan/client.ts': `
+        export async function askRinChan() {
+          return fetch('/api/ask-rin-chan/chat');
         }
       `,
     });

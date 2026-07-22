@@ -13,7 +13,6 @@ import type {
   UpdateBillingPlanData,
 } from '@/interfaces/repositories/IAdminBillingRepository';
 import { AdminBillingService } from '@/services/admin/AdminBillingService';
-import { LIFETIME_END_DATE } from '@/lib/subscription-date';
 
 const { loggerErrorMock } = vi.hoisted(() => ({
   loggerErrorMock: vi.fn(),
@@ -467,7 +466,7 @@ describe('AdminBillingService', () => {
     ).resolves.toEqual({ success: false, error: 'Plan is unavailable', statusCode: 409 });
   });
 
-  it('grants lifetime plans with the far-future end date sentinel', async () => {
+  it('fails closed when a legacy unsupported-duration plan reaches grant execution', async () => {
     repository.findUserById.mockResolvedValue({
       id: '507f191e810c19729de860ea',
       email: 'user@example.com',
@@ -475,17 +474,17 @@ describe('AdminBillingService', () => {
     repository.findPlanById.mockResolvedValue(plan({ duration: 'PT0S' }));
     repository.addUserSubscriptionGrant.mockResolvedValue();
 
-    const result = await service.grantUserSubscription({
-      userId: '507f191e810c19729de860ea',
-      planId: 'premium-p1m',
-    });
-
-    expect(result.success).toBe(true);
-    expect(repository.addUserSubscriptionGrant).toHaveBeenCalledWith(
-      expect.objectContaining({
-        endDate: LIFETIME_END_DATE,
+    await expect(
+      service.grantUserSubscription({
+        userId: '507f191e810c19729de860ea',
+        planId: 'premium-p1m',
       }),
-    );
+    ).resolves.toEqual({
+      success: false,
+      error: 'Internal server error',
+      statusCode: 500,
+    });
+    expect(repository.addUserSubscriptionGrant).not.toHaveBeenCalled();
   });
 
   it('maps unexpected grant failures to 500', async () => {

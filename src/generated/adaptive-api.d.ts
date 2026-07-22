@@ -4475,7 +4475,7 @@ export interface operations {
         'x-service-token': string;
       };
       path: {
-        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        /** @description Namespaced exercise context identifier */
         exercise_context_id: string;
       };
       cookie?: never;
@@ -4510,7 +4510,7 @@ export interface operations {
         'x-service-token': string;
       };
       path: {
-        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        /** @description Namespaced exercise context identifier */
         exercise_context_id: string;
       };
       cookie?: never;

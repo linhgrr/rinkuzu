@@ -2394,12 +2394,12 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[a-zA-Z0-9_\\-]+$",
-              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
+              "maxLength": 160,
+              "pattern": "^[a-zA-Z0-9_:\\-]+$",
+              "description": "Namespaced exercise context identifier",
               "title": "Exercise Context Id"
             },
-            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
+            "description": "Namespaced exercise context identifier"
           },
           {
             "name": "x-user-id",
@@ -2455,12 +2455,12 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[a-zA-Z0-9_\\-]+$",
-              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
+              "maxLength": 160,
+              "pattern": "^[a-zA-Z0-9_:\\-]+$",
+              "description": "Namespaced exercise context identifier",
               "title": "Exercise Context Id"
             },
-            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
+            "description": "Namespaced exercise context identifier"
           },
           {
             "name": "x-user-id",

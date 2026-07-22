@@ -63,7 +63,7 @@ describe('SubscriptionPlanRepository', () => {
     });
     expect(mocks.findOne).toHaveBeenCalledWith({
       _id: planRecord._id,
-      duration: 'P1M',
+      duration: { $in: ['P1M', 'P6M'] },
       isActive: true,
     });
   });
@@ -75,6 +75,9 @@ describe('SubscriptionPlanRepository', () => {
     await expect(repository.listActive()).resolves.toEqual([
       expect.objectContaining({ id: planRecord._id, isActive: true }),
     ]);
-    expect(mocks.find).toHaveBeenCalledWith({ duration: 'P1M', isActive: true });
+    expect(mocks.find).toHaveBeenCalledWith({
+      duration: { $in: ['P1M', 'P6M'] },
+      isActive: true,
+    });
   });
 });

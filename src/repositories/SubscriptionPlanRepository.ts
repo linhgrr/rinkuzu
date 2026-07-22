@@ -7,6 +7,8 @@ import { AdminBillingPersistenceMapper } from '@/repositories/mappers/AdminBilli
 import type { BillingPlanPersistenceRecord } from '@/repositories/types/AdminBillingPersistence';
 import { SubscriptionDurationType } from '@/types/subscription';
 
+const SUPPORTED_PLAN_DURATIONS = Object.values(SubscriptionDurationType);
+
 export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
   async findById(planId: string): Promise<BillingPlan | null> {
     return findBillingPlanById(planId);
@@ -17,7 +19,7 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
     const plan = await Plan.findOne({
       _id: planId,
       isActive: true,
-      duration: SubscriptionDurationType.MONTHLY,
+      duration: { $in: SUPPORTED_PLAN_DURATIONS },
     }).lean<BillingPlanPersistenceRecord>();
     return plan ? AdminBillingPersistenceMapper.toPlan(plan) : null;
   }
@@ -26,7 +28,7 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
     await connectDB();
     const plans = await Plan.find({
       isActive: true,
-      duration: SubscriptionDurationType.MONTHLY,
+      duration: { $in: SUPPORTED_PLAN_DURATIONS },
     }).lean<BillingPlanPersistenceRecord[]>();
     return plans.map((plan) => AdminBillingPersistenceMapper.toPlan(plan));
   }

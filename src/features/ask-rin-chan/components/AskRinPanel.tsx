@@ -110,15 +110,13 @@ function EmptyConversation() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center px-4 py-10 text-center">
-      <div className="mb-4 flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-green-50 ring-1 ring-green-100">
-        <Image
-          src={CHATBOT_ICON}
-          alt={t('iconAlt')}
-          width={56}
-          height={56}
-          className="size-14 object-contain"
-        />
-      </div>
+      <Image
+        src={CHATBOT_ICON}
+        alt={t('iconAlt')}
+        width={64}
+        height={64}
+        className="mb-4 size-16 object-contain"
+      />
       <h3 className="text-base font-semibold text-neutral-900">{t('emptyTitle')}</h3>
       <p className="mt-2 text-sm leading-6 text-neutral-500">{t('initialGreeting')}</p>
       <div className="mt-5 grid w-full gap-2">
@@ -182,12 +180,13 @@ function AskRinThread({
       <header className="border-b border-neutral-100 px-5 py-4 pr-16 sm:px-6 sm:pr-16">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="relative shrink-0">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-green-50 ring-1 ring-green-100">
-                <Image src={CHATBOT_ICON} alt={t('iconAlt')} width={28} height={28} />
-              </div>
-              <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white bg-emerald-500" />
-            </div>
+            <Image
+              src={CHATBOT_ICON}
+              alt={t('iconAlt')}
+              width={40}
+              height={40}
+              className="size-10 shrink-0 object-contain"
+            />
             <div className="min-w-0">
               <h2 className="truncate font-semibold text-neutral-900">{t('title')}</h2>
               <p className="truncate text-xs text-neutral-500">{t('subtitle')}</p>

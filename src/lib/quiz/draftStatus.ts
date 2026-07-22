@@ -2,7 +2,7 @@ import type { components } from '@/generated/adaptive-api';
 
 type AdaptiveSchemas = components['schemas'];
 
-export type QuizDraftStatus = AdaptiveSchemas['QuizDraftResponseData']['status'];
+export type QuizDraftStatus = AdaptiveSchemas['QuizDraftResponseData']['status'] | 'drafting';
 export type StoreDraftStatus = 'processing' | 'completed' | 'error';
 
 // Collapse the FastAPI draft status set onto the store vocabulary.
@@ -10,6 +10,8 @@ export type StoreDraftStatus = 'processing' | 'completed' | 'error';
 // from local progress sync.
 export function mapDraftStatus(status: QuizDraftStatus): StoreDraftStatus | null {
   switch (status) {
+    case 'drafting':
+      return null;
     case 'queued':
     case 'processing':
       return 'processing';

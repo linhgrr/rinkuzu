@@ -22,13 +22,17 @@ export interface QuizDraft {
   description: QuizDraftTransportContract['description'];
   folderId: QuizDraftTransportContract['category_id'];
   prompt: QuizDraftTransportContract['prompt'];
+  sourceType: 'pdf' | 'manual';
+  isPrivate: boolean;
+  revision: number;
+  questionCount: number;
   pdf: QuizDraftPdf;
-  status: QuizDraftTransportContract['status'];
+  status: QuizDraftTransportContract['status'] | 'drafting';
   progress: QuizDraftProgress;
   questions: QuizQuestionInputViewModel[];
   error: QuizDraftTransportContract['error'];
   submittedQuizId: QuizDraftTransportContract['submitted_quiz_id'];
   createdAt: QuizDraftTransportContract['created_at'];
   updatedAt: QuizDraftTransportContract['updated_at'];
-  expiresAt: QuizDraftTransportContract['expires_at'];
+  expiresAt: QuizDraftTransportContract['expires_at'] | null;
 }

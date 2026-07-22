@@ -9,6 +9,10 @@ export class QuizDraftMapper {
       description: draft.description,
       folderId: draft.category_id,
       prompt: draft.prompt,
+      sourceType: draft.source_type,
+      isPrivate: draft.is_private,
+      revision: draft.revision,
+      questionCount: draft.question_count,
       pdf: {
         s3Key: draft.pdf.s3_key,
         fileName: draft.pdf.file_name,
@@ -21,20 +25,20 @@ export class QuizDraftMapper {
         const base = {
           question: question.question,
           options: question.options,
+          ...(question.questionImage ? { questionImage: question.questionImage } : {}),
+          ...(question.optionImages?.length
+            ? {
+                optionImages: question.optionImages.map((image) => image ?? undefined),
+              }
+            : {}),
         };
         if (question.type === 'single') {
-          if (question.correctIndex == null) {
-            throw new Error('Single-choice draft question is missing correctIndex');
-          }
-          return { ...base, type: 'single' as const, correctIndex: question.correctIndex };
-        }
-        if (!question.correctIndexes?.length) {
-          throw new Error('Multiple-choice draft question is missing correctIndexes');
+          return { ...base, type: 'single' as const, correctIndex: question.correctIndex ?? 0 };
         }
         return {
           ...base,
           type: 'multiple' as const,
-          correctIndexes: question.correctIndexes,
+          correctIndexes: question.correctIndexes ?? [],
         };
       }),
       error: draft.error,

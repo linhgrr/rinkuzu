@@ -9,6 +9,7 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   CREATE_QUIZ: '/create',
+  CREATE_QUIZ_PDF: '/create/pdf',
   BOOKMARKS: '/profile', // Consolidated
   HISTORY: '/profile', // Consolidated
   EXPLORE: '/explore',
@@ -28,6 +29,10 @@ export const ROUTES = {
 
   EDIT: {
     QUIZ: (id: string) => `/edit/${id}`,
+  },
+
+  DRAFT: {
+    EDIT: (id: string) => `/draft/${id}/edit`,
   },
 
   HISTORY_DETAIL: (attemptId: string) => `/history/${attemptId}`,

@@ -45,9 +45,9 @@ export const DESKTOP_PRIMARY_NAV: DesktopNavGroupDef[] = [
   {
     id: 'quiz',
     labelKey: 'groupQuizBuilder',
-    href: ROUTES.CREATE_QUIZ,
     matchPrefix: '/create',
     items: [
+      { href: ROUTES.CREATE_QUIZ, labelKey: 'createQuiz' },
       { href: '/my-quizzes', labelKey: 'myQuizzes' },
       { href: '/review', labelKey: 'review' },
       { href: '/history', labelKey: 'history', matchPrefix: '/history' },

@@ -250,7 +250,7 @@ function UploadSection({
 }: UploadSectionProps) {
   return (
     <div>
-      <p className="mb-3 block text-sm font-semibold text-neutral-700">{t('pdfDocument')}</p>
+      <p className="mb-3 text-sm font-semibold text-neutral-700">{t('pdfDocument')}</p>
       {pdfFile ? (
         <Card variant="bordered" className="p-4">
           <div className="flex items-center justify-between">
@@ -540,7 +540,7 @@ export function CreateQuizPage() {
 
   useEffect(() => {
     if (matchesMedia(MEDIA_MAX_MD)) {
-      replace('/create/mobile');
+      replace('/create/pdf/mobile');
     }
   }, [replace]);
 
@@ -607,7 +607,7 @@ export function CreateQuizPage() {
         chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: draft.expiresAt,
+        ...(draft.expiresAt ? { expiresAt: draft.expiresAt } : {}),
       });
 
       toast.success(t('processingStarted'));
@@ -630,11 +630,11 @@ export function CreateQuizPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100dvh]">
       <main className="pt-20">
-        <div className="flex min-h-screen transition-[width] duration-300">
+        <div className="flex min-h-[100dvh]">
           <div
-            className={`px-4 pb-8 transition-[width,padding] duration-300 sm:px-6 lg:px-8 ${state.showPDFViewer ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}
+            className={`px-4 pb-8 sm:px-6 lg:px-8 ${state.showPDFViewer ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}
           >
             <CreateQuizFormCard
               aiPrompt={state.aiPrompt}

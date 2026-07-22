@@ -123,7 +123,7 @@ export function MobileCreateQuizPage() {
         chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: draft.expiresAt,
+        ...(draft.expiresAt ? { expiresAt: draft.expiresAt } : {}),
       });
 
       toast.success(t('processingStarted'));
@@ -143,7 +143,7 @@ export function MobileCreateQuizPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-6 pb-24">
+    <div className="min-h-[100dvh] bg-neutral-50 px-4 py-6 pb-24">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-neutral-900">{t('createQuiz')}</h1>

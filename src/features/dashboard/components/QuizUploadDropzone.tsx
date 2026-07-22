@@ -40,7 +40,7 @@ export function QuizUploadDropzone({ className }: QuizUploadDropzoneProps) {
     }
     setError(null);
     setPendingFile(file);
-    router.push(ROUTES.CREATE_QUIZ);
+    router.push(ROUTES.CREATE_QUIZ_PDF);
   };
 
   return (

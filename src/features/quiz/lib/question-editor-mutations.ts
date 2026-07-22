@@ -6,6 +6,7 @@ import type {
 import type { QuizQuestionInputViewModel } from '@/features/quiz/types/quiz-question';
 import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
 import type { QuestionType } from '@/shared/constants/question-type';
+import { MAX_OPTION_COUNT, MIN_OPTION_COUNT } from '@/lib/validation/question';
 
 export type EditableQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
 
@@ -87,6 +88,64 @@ export function updateOption(
   });
 }
 
+export function addOption(
+  questions: QuizEditorQuestionViewModel[],
+  questionIndex: number,
+): QuizEditorQuestionViewModel[] {
+  return questions.map((question, index) => {
+    if (index !== questionIndex || question.options.length >= MAX_OPTION_COUNT) return question;
+    return {
+      ...question,
+      options: [...question.options, ''],
+      optionImages: [
+        ...(question.optionImages ?? question.options.map(() => undefined)),
+        undefined,
+      ],
+    };
+  });
+}
+
+export function removeOption(
+  questions: QuizEditorQuestionViewModel[],
+  questionIndex: number,
+  optionIndex: number,
+): QuizEditorQuestionViewModel[] {
+  return questions.map((question, index) => {
+    if (
+      index !== questionIndex ||
+      question.options.length <= MIN_OPTION_COUNT ||
+      optionIndex < 0 ||
+      optionIndex >= question.options.length
+    ) {
+      return question;
+    }
+
+    const base = {
+      ...withBase(question),
+      options: question.options.filter((_, index) => index !== optionIndex),
+      optionImages: (question.optionImages ?? question.options.map(() => undefined)).filter(
+        (_, index) => index !== optionIndex,
+      ),
+    };
+    if (question.type === 'single') {
+      const lastIndex = base.options.length - 1;
+      const correctIndex =
+        question.correctIndex === optionIndex
+          ? Math.min(optionIndex, lastIndex)
+          : question.correctIndex > optionIndex
+            ? question.correctIndex - 1
+            : question.correctIndex;
+      return { ...base, type: 'single' as const, correctIndex };
+    }
+
+    const correctIndexes = question.correctIndexes.reduce<number[]>((indexes, value) => {
+      if (value !== optionIndex) indexes.push(value > optionIndex ? value - 1 : value);
+      return indexes;
+    }, []);
+    return { ...base, type: 'multiple' as const, correctIndexes };
+  });
+}
+
 export function updateQuestionImage(
   questions: QuizEditorQuestionViewModel[],
   questionIndex: number,
@@ -130,6 +189,15 @@ export function addQuestion(
   question: QuizEditorQuestionViewModel,
 ): QuizEditorQuestionViewModel[] {
   return [...questions, question];
+}
+
+export function insertQuestion(
+  questions: QuizEditorQuestionViewModel[],
+  index: number,
+  question: QuizEditorQuestionViewModel,
+): QuizEditorQuestionViewModel[] {
+  const insertionIndex = Math.max(0, Math.min(index, questions.length));
+  return [...questions.slice(0, insertionIndex), question, ...questions.slice(insertionIndex)];
 }
 
 export function toggleQuestionType(

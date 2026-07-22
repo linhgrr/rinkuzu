@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 import {
+  addOption,
   createEmptyEditorQuestion,
+  insertQuestion,
+  removeOption,
   setSingleCorrect,
   toEditorQuestions,
   toQuestionInputs,
@@ -90,5 +94,43 @@ describe('question-editor-mutations', () => {
 
     expect(question).not.toHaveProperty('questionImage');
     expect(question).not.toHaveProperty('optionImages');
+  });
+
+  it('adds and removes options while preserving answer indexes and images', () => {
+    const baseQuestion = createEmptyEditorQuestion('q-options');
+    if (baseQuestion.type !== 'single') throw new Error('Expected a single-choice question');
+    let questions: QuizEditorQuestionViewModel[] = [
+      {
+        ...baseQuestion,
+        options: ['A', 'B', 'C'],
+        optionImages: ['a.png', 'b.png', 'c.png'],
+        correctIndex: 2,
+      },
+    ];
+
+    questions = addOption(questions, 0);
+    expect(questions[0]?.options).toEqual(['A', 'B', 'C', '']);
+    expect(questions[0]?.optionImages).toEqual(['a.png', 'b.png', 'c.png', undefined]);
+
+    questions = removeOption(questions, 0, 1);
+    expect(questions[0]).toMatchObject({
+      options: ['A', 'C', ''],
+      optionImages: ['a.png', 'c.png', undefined],
+      correctIndex: 1,
+    });
+
+    questions = removeOption(questions, 0, 1);
+    questions = removeOption(questions, 0, 0);
+    expect(questions[0]?.options).toHaveLength(2);
+  });
+
+  it('inserts a new question at any requested position', () => {
+    const first = createEmptyEditorQuestion('first');
+    const second = createEmptyEditorQuestion('second');
+    const inserted = createEmptyEditorQuestion('inserted');
+
+    expect(
+      insertQuestion([first, second], 1, inserted).map((question) => question.editorId),
+    ).toEqual(['first', 'inserted', 'second']);
   });
 });

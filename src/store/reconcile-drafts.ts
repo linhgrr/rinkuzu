@@ -23,7 +23,7 @@ export interface DraftServerSyncItem {
   questionsCount: number;
   error?: string;
   createdAt: string;
-  expiresAt: string;
+  expiresAt?: string;
 }
 
 const OPTIMISTIC_DRAFT_GRACE_MS = 60_000;

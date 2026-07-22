@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
@@ -9,6 +10,7 @@ import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpl
 import { HiOutlineDocumentText, HiOutlinePlus, HiOutlineTrash } from 'react-icons/hi';
 import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 import type { QuestionType } from '@/shared/constants/question-type';
+import { MAX_OPTION_COUNT, MIN_OPTION_COUNT } from '@/lib/validation/question';
 
 type EditorQuestion = QuizEditorQuestionViewModel;
 type EditableQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
@@ -23,11 +25,14 @@ interface QuestionEditorProps {
     value: EditorQuestion[EditableQuestionField],
   ) => void;
   onUpdateOption: (qIdx: number, optIdx: number, value: string) => void;
+  onAddOption: (qIdx: number) => void;
+  onRemoveOption: (qIdx: number, optIdx: number) => void;
   onUpdateQuestionImage: (qIdx: number, url: string) => void;
   onRemoveQuestionImage: (qIdx: number) => void;
   onUpdateOptionImage: (qIdx: number, optIdx: number, url: string) => void;
   onRemoveOptionImage: (qIdx: number, optIdx: number) => void;
   onAddQuestion: () => void;
+  onInsertQuestion: (index: number) => void;
   onRemoveQuestion: (idx: number) => void;
   onToggleType: (idx: number, type: QuestionType) => void;
   onSetSingleCorrect: (qIdx: number, optIdx: number) => void;
@@ -41,11 +46,14 @@ export function QuestionEditor({
   questionToRemove,
   onUpdateField,
   onUpdateOption,
+  onAddOption,
+  onRemoveOption,
   onUpdateQuestionImage,
   onRemoveQuestionImage,
   onUpdateOptionImage,
   onRemoveOptionImage,
   onAddQuestion,
+  onInsertQuestion,
   onRemoveQuestion,
   onToggleType,
   onSetSingleCorrect,
@@ -85,104 +93,144 @@ export function QuestionEditor({
           {questions.map((q, index) => {
             const questionKey = q.editorId;
             return (
-              <div key={questionKey} className="space-y-4 rounded-lg border p-4">
-                <div className="flex items-start justify-between">
-                  <h4 className="flex items-center gap-2 font-medium">
-                    <div className="flex size-6 items-center justify-center rounded-full bg-green-100 text-xs text-brand-trust">
-                      {index + 1}
+              <Fragment key={questionKey}>
+                <div className="space-y-4 rounded-lg border p-4">
+                  <div className="flex items-start justify-between">
+                    <h4 className="flex items-center gap-2 font-medium">
+                      <div className="flex size-6 items-center justify-center rounded-full bg-green-100 text-xs text-brand-trust">
+                        {index + 1}
+                      </div>
+                      {t('questionNumber', { number: index + 1 })}
+                    </h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onSetQuestionToRemove(index)}
+                      className="rounded-full px-3 text-red-500 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <HiOutlineTrash className="mr-1 size-4" />
+                      {t('remove')}
+                    </Button>
+                  </div>
+
+                  <Textarea
+                    value={q.question}
+                    onChange={(e) => onUpdateField(index, 'question', e.target.value)}
+                    className="min-h-[88px]"
+                    rows={2}
+                    placeholder={t('enterQuestion')}
+                  />
+
+                  <QuestionImageUpload
+                    {...(q.questionImage !== undefined ? { currentImage: q.questionImage } : {})}
+                    onImageUploaded={(url) => onUpdateQuestionImage(index, url)}
+                    onImageRemoved={() => onRemoveQuestionImage(index)}
+                  />
+
+                  <div>
+                    <p className="mb-1 text-sm font-medium">{t('questionType')}</p>
+                    <div className="mt-1 flex gap-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name={`question-type-${questionKey}`}
+                          checked={q.type === 'single'}
+                          onChange={() => onToggleType(index, 'single')}
+                        />
+                        <span className="ml-2 text-sm">{t('singleChoice')}</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name={`question-type-${questionKey}`}
+                          checked={q.type === 'multiple'}
+                          onChange={() => onToggleType(index, 'multiple')}
+                        />
+                        <span className="ml-2 text-sm">{t('multipleChoice')}</span>
+                      </label>
                     </div>
-                    {t('questionNumber', { number: index + 1 })}
-                  </h4>
+                  </div>
+
+                  <div className="space-y-4">
+                    {q.options.map((opt, optIdx) => (
+                      <div key={`${questionKey}:option:${optIdx}`} className="space-y-2">
+                        <div className="flex items-center gap-x-2">
+                          {q.type === 'single' ? (
+                            <input
+                              type="radio"
+                              aria-label={t('markCorrectAnswer', { number: optIdx + 1 })}
+                              name={`correct-${questionKey}`}
+                              checked={q.correctIndex === optIdx}
+                              onChange={() => onSetSingleCorrect(index, optIdx)}
+                            />
+                          ) : (
+                            <input
+                              type="checkbox"
+                              aria-label={t('markCorrectAnswer', { number: optIdx + 1 })}
+                              checked={q.correctIndexes.includes(optIdx)}
+                              onChange={(e) =>
+                                onToggleMultipleCorrect(index, optIdx, e.target.checked)
+                              }
+                            />
+                          )}
+                          <Input
+                            value={opt}
+                            onChange={(e) => onUpdateOption(index, optIdx, e.target.value)}
+                            className="flex-1"
+                            placeholder={t('optionPlaceholder', { number: optIdx + 1 })}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            aria-label={t('removeOption', { number: optIdx + 1 })}
+                            disabled={q.options.length <= MIN_OPTION_COUNT}
+                            onClick={() => onRemoveOption(index, optIdx)}
+                            className="text-neutral-400 hover:text-red-600"
+                          >
+                            <HiOutlineTrash className="size-4" />
+                          </Button>
+                        </div>
+                        <div className="pl-7">
+                          <OptionImageUpload
+                            {...(q.optionImages?.[optIdx] !== undefined
+                              ? { currentImage: q.optionImages[optIdx] }
+                              : {})}
+                            onImageUploaded={(url) => onUpdateOptionImage(index, optIdx, url)}
+                            onImageRemoved={() => onRemoveOptionImage(index, optIdx)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={q.options.length >= MAX_OPTION_COUNT}
+                      onClick={() => onAddOption(index)}
+                      className="gap-2"
+                    >
+                      <HiOutlinePlus className="size-4" />
+                      {t('addOption')}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-neutral-200" aria-hidden="true" />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => onSetQuestionToRemove(index)}
-                    className="rounded-full px-3 text-red-500 hover:bg-red-50 hover:text-red-600"
+                    onClick={() => onInsertQuestion(index + 1)}
+                    className="gap-1.5 !text-neutral-700 hover:!text-neutral-950"
                   >
-                    <HiOutlineTrash className="mr-1 size-4" />
-                    {t('remove')}
+                    <HiOutlinePlus className="size-4" />
+                    {t('addQuestionHere')}
                   </Button>
+                  <span className="h-px flex-1 bg-neutral-200" aria-hidden="true" />
                 </div>
-
-                <Textarea
-                  value={q.question}
-                  onChange={(e) => onUpdateField(index, 'question', e.target.value)}
-                  className="min-h-[88px]"
-                  rows={2}
-                  placeholder={t('enterQuestion')}
-                />
-
-                <QuestionImageUpload
-                  {...(q.questionImage !== undefined ? { currentImage: q.questionImage } : {})}
-                  onImageUploaded={(url) => onUpdateQuestionImage(index, url)}
-                  onImageRemoved={() => onRemoveQuestionImage(index)}
-                />
-
-                <div>
-                  <p className="mb-1 text-sm font-medium">{t('questionType')}</p>
-                  <div className="mt-1 flex gap-x-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        checked={q.type === 'single'}
-                        onChange={() => onToggleType(index, 'single')}
-                      />
-                      <span className="ml-2 text-sm">{t('singleChoice')}</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        checked={q.type === 'multiple'}
-                        onChange={() => onToggleType(index, 'multiple')}
-                      />
-                      <span className="ml-2 text-sm">{t('multipleChoice')}</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {q.options.map((opt, optIdx) => (
-                    <div key={`${questionKey}:option:${optIdx}`} className="space-y-2">
-                      <div className="flex items-center gap-x-2">
-                        {q.type === 'single' ? (
-                          <input
-                            type="radio"
-                            aria-label={t('markCorrectAnswer', { number: optIdx + 1 })}
-                            name={`correct-${questionKey}`}
-                            checked={q.correctIndex === optIdx}
-                            onChange={() => onSetSingleCorrect(index, optIdx)}
-                          />
-                        ) : (
-                          <input
-                            type="checkbox"
-                            aria-label={t('markCorrectAnswer', { number: optIdx + 1 })}
-                            checked={q.correctIndexes.includes(optIdx)}
-                            onChange={(e) =>
-                              onToggleMultipleCorrect(index, optIdx, e.target.checked)
-                            }
-                          />
-                        )}
-                        <Input
-                          value={opt}
-                          onChange={(e) => onUpdateOption(index, optIdx, e.target.value)}
-                          className="flex-1"
-                          placeholder={t('optionPlaceholder', { number: optIdx + 1 })}
-                        />
-                      </div>
-                      <div className="pl-7">
-                        <OptionImageUpload
-                          {...(q.optionImages?.[optIdx] !== undefined
-                            ? { currentImage: q.optionImages[optIdx] }
-                            : {})}
-                          onImageUploaded={(url) => onUpdateOptionImage(index, optIdx, url)}
-                          onImageRemoved={() => onRemoveOptionImage(index, optIdx)}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              </Fragment>
             );
           })}
         </CardContent>

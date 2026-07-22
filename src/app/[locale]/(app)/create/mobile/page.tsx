@@ -1,5 +1,12 @@
-import { MobileCreateQuizPage } from '@/features/quiz/components/create/MobileCreateQuizPage';
+import { redirect } from '@/i18n/navigation';
 
-export default function MobileCreateQuizRoutePage() {
-  return <MobileCreateQuizPage />;
+interface LegacyMobileCreateQuizRouteProps {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function MobileCreateQuizRoutePage({
+  params,
+}: LegacyMobileCreateQuizRouteProps) {
+  const { locale } = await params;
+  return redirect({ href: '/create/pdf/mobile', locale });
 }

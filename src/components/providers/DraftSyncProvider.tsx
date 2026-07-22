@@ -44,6 +44,7 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
     cleanupExpiredDrafts();
     syncWithServer(
       draftList.flatMap((draft) => {
+        if (draft.sourceType === 'manual') return [];
         const status = mapDraftStatus(draft.status);
         if (!status) return [];
         return [
@@ -53,10 +54,10 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
             status,
             chunksTotal: draft.progress.total,
             chunksProcessed: draft.progress.processed,
-            questionsCount: draft.questions.length,
+            questionsCount: draft.questionCount,
             ...(draft.error !== null && draft.error !== undefined ? { error: draft.error } : {}),
             createdAt: draft.createdAt,
-            expiresAt: draft.expiresAt,
+            ...(draft.expiresAt ? { expiresAt: draft.expiresAt } : {}),
           },
         ];
       }),

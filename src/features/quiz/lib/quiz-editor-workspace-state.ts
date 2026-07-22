@@ -1,9 +1,12 @@
 import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 import type { QuestionType } from '@/shared/constants/question-type';
 import {
+  addOption,
   addQuestion,
   createEmptyEditorQuestion,
+  insertQuestion,
   removeQuestionAt,
+  removeOption,
   setSingleCorrect,
   toggleMultipleCorrect,
   toggleQuestionType,
@@ -45,9 +48,12 @@ export type QuizEditorWorkspaceAction =
       value: QuizEditorQuestionViewModel[EditableQuestionField];
     }
   | { type: 'updateOption'; questionIndex: number; optionIndex: number; value: string }
+  | { type: 'addOption'; questionIndex: number }
+  | { type: 'removeOption'; questionIndex: number; optionIndex: number }
   | { type: 'updateQuestionImage'; questionIndex: number; value?: string }
   | { type: 'updateOptionImage'; questionIndex: number; optionIndex: number; value?: string }
-  | { type: 'addQuestion' }
+  | { type: 'addQuestion'; editorId: string }
+  | { type: 'insertQuestion'; index: number; editorId: string }
   | { type: 'removeQuestion'; index: number }
   | { type: 'toggleQuestionType'; index: number; value: QuestionType }
   | { type: 'setSingleCorrect'; questionIndex: number; optionIndex: number }
@@ -109,6 +115,13 @@ export function quizEditorWorkspaceReducer(
           action.value,
         ),
       };
+    case 'addOption':
+      return { ...state, questions: addOption(state.questions, action.questionIndex) };
+    case 'removeOption':
+      return {
+        ...state,
+        questions: removeOption(state.questions, action.questionIndex, action.optionIndex),
+      };
     case 'updateQuestionImage':
       return {
         ...state,
@@ -127,9 +140,15 @@ export function quizEditorWorkspaceReducer(
     case 'addQuestion':
       return {
         ...state,
-        questions: addQuestion(
+        questions: addQuestion(state.questions, createEmptyEditorQuestion(action.editorId)),
+      };
+    case 'insertQuestion':
+      return {
+        ...state,
+        questions: insertQuestion(
           state.questions,
-          createEmptyEditorQuestion(`q-new-${crypto.randomUUID()}`),
+          action.index,
+          createEmptyEditorQuestion(action.editorId),
         ),
       };
     case 'removeQuestion':

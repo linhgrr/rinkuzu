@@ -8,8 +8,7 @@ import { MEDIA_MAX_MD } from '@/shared/constants/breakpoints';
 type Variant = 'desktop' | 'mobile';
 
 /**
- * Sends desktop browsers visiting /create/mobile to /create, and mobile
- * browsers visiting /create to /create/mobile. Returns `true` while the
+ * Keeps the PDF builder on its desktop/mobile route variant. Returns `true` while the
  * decision is pending so the caller can render a skeleton instead of
  * flashing the wrong layout.
  */
@@ -33,12 +32,8 @@ export function useCreateResponsiveRedirect(currentVariant: Variant): boolean {
     }
 
     // usePathname is locale-stripped; next-intl router re-applies the prefix.
-    const nextPath =
-      target === 'mobile'
-        ? pathname.endsWith('/create')
-          ? `${pathname}/mobile`
-          : pathname.replace(/\/create$/, '/create/mobile')
-        : pathname.replace(/\/create\/mobile$/, '/create');
+    const desktopPath = pathname.replace(/\/mobile$/, '');
+    const nextPath = target === 'mobile' ? `${desktopPath}/mobile` : desktopPath;
 
     replace(nextPath + window.location.search);
   }, [currentVariant, pathname, replace]);

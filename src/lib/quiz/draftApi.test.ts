@@ -9,6 +9,10 @@ const transportDraft: QuizDraftTransportDto = {
   description: '',
   category_id: 'folder-1',
   prompt: null,
+  source_type: 'pdf',
+  is_private: false,
+  revision: 2,
+  question_count: 2,
   pdf: {
     s3_key: 'users/user-1/source.pdf',
     file_name: 'source.pdf',
@@ -56,6 +60,9 @@ describe('QuizDraftMapper', () => {
         createdAt: '2026-07-01T00:00:00Z',
         updatedAt: '2026-07-01T00:01:00Z',
         expiresAt: '2026-07-02T00:00:00Z',
+        sourceType: 'pdf',
+        revision: 2,
+        questionCount: 2,
         pdf: expect.objectContaining({
           s3Key: 'users/user-1/source.pdf',
           fileName: 'source.pdf',
@@ -88,6 +95,7 @@ describe('QuizDraftMapper', () => {
 describe('mapDraftStatus', () => {
   it.each([
     ['queued', 'processing'],
+    ['drafting', null],
     ['processing', 'processing'],
     ['completed', 'completed'],
     ['failed', 'error'],

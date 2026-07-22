@@ -16,6 +16,7 @@ import { QuestionEditor } from '@/features/quiz/components/editor/QuestionEditor
 import {
   createQuizEditorWorkspaceState,
   quizEditorWorkspaceReducer,
+  type QuizEditorWorkspaceAction,
   type QuizEditorWorkspaceState,
 } from '@/features/quiz/lib/quiz-editor-workspace-state';
 import { toQuestionInputs } from '@/features/quiz/lib/question-editor-mutations';
@@ -32,7 +33,7 @@ const PDFViewer = dynamic(() => import('@/features/quiz/components/PDFViewer'), 
  * - update quiz: updateQuizRequestSchema.questions (questionListSchema)
  * No editorId / client-only fields — see toQuestionInputs().
  */
-type QuizEditorWorkspaceSubmitPayload = {
+export type QuizEditorWorkspaceSubmitPayload = {
   title: string;
   description: string;
   selectedFolderId: string | null;
@@ -90,6 +91,8 @@ type QuizEditorWorkspaceProps = {
   footerExtra?: ReactNode;
   metaExtra?: ReactNode;
   banner?: ReactNode;
+  headerExtra?: ReactNode;
+  onChange?: (payload: QuizEditorWorkspaceSubmitPayload) => void;
 };
 
 function WorkspacePdfPanel({
@@ -105,7 +108,7 @@ function WorkspacePdfPanel({
 }) {
   if (layout === 'flush') {
     return (
-      <aside className="sticky top-0 h-screen w-1/2 border-l border-neutral-200 bg-white p-4">
+      <aside className="sticky top-0 h-[100dvh] w-1/2 border-l border-neutral-200 bg-white p-4">
         <PDFViewer
           pdfDataUrl={pdfDataUrl || null}
           pdfUrl={pdfUrl}
@@ -147,6 +150,8 @@ export function QuizEditorWorkspace({
   footerExtra,
   metaExtra,
   banner,
+  headerExtra,
+  onChange,
 }: QuizEditorWorkspaceProps) {
   const [state, dispatch] = useReducer(
     quizEditorWorkspaceReducer,
@@ -163,6 +168,17 @@ export function QuizEditorWorkspace({
         showPDFViewer: Boolean(pdfUrl),
       }),
   );
+  const dispatchEditorAction = (action: QuizEditorWorkspaceAction) => {
+    const nextState = quizEditorWorkspaceReducer(state, action);
+    dispatch(action);
+    onChange?.({
+      title: nextState.title,
+      description: nextState.description,
+      selectedFolderId: nextState.selectedFolderId,
+      isPrivate: nextState.isPrivate,
+      questions: toQuestionInputs(nextState.questions),
+    });
+  };
 
   const handleSubmit = async (event?: React.FormEvent) => {
     event?.preventDefault();
@@ -194,8 +210,8 @@ export function QuizEditorWorkspace({
         : 'w-full';
 
   return (
-    <div className="flex min-h-screen transition-[width] duration-300">
-      <div className={`transition-[width,padding] duration-300 ${formColumnClass}`}>
+    <div className="flex min-h-[100dvh]">
+      <div className={formColumnClass}>
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
           {banner}
 
@@ -210,24 +226,27 @@ export function QuizEditorWorkspace({
                 </p>
               )}
             </div>
-            {pdfUrl ? (
-              <Button
-                type="button"
-                onClick={() => dispatch({ type: 'togglePdfViewer' })}
-                variant="outline"
-                className="flex shrink-0 items-center gap-2 border-green-200 text-brand-trust hover:bg-green-50"
-              >
-                {state.showPDFViewer ? (
-                  <>
-                    <HiOutlineEyeOff className="size-4" /> {labels.hidePdf}
-                  </>
-                ) : (
-                  <>
-                    <HiOutlineDocumentText className="size-4" /> {labels.showPdf}
-                  </>
-                )}
-              </Button>
-            ) : null}
+            <div className="flex shrink-0 items-center gap-3">
+              {headerExtra}
+              {pdfUrl ? (
+                <Button
+                  type="button"
+                  onClick={() => dispatch({ type: 'togglePdfViewer' })}
+                  variant="outline"
+                  className="flex shrink-0 items-center gap-2 border-green-200 text-brand-trust hover:bg-green-50"
+                >
+                  {state.showPDFViewer ? (
+                    <>
+                      <HiOutlineEyeOff className="size-4" /> {labels.hidePdf}
+                    </>
+                  ) : (
+                    <>
+                      <HiOutlineDocumentText className="size-4" /> {labels.showPdf}
+                    </>
+                  )}
+                </Button>
+              ) : null}
+            </div>
           </div>
 
           <form
@@ -258,11 +277,15 @@ export function QuizEditorWorkspace({
 
                 <QuizMetaForm
                   title={state.title}
-                  onTitleChange={(value) => dispatch({ type: 'setTitle', value })}
+                  onTitleChange={(value) => dispatchEditorAction({ type: 'setTitle', value })}
                   description={state.description}
-                  onDescriptionChange={(value) => dispatch({ type: 'setDescription', value })}
+                  onDescriptionChange={(value) =>
+                    dispatchEditorAction({ type: 'setDescription', value })
+                  }
                   selectedFolderId={state.selectedFolderId}
-                  onFolderChange={(value) => dispatch({ type: 'setSelectedFolder', value })}
+                  onFolderChange={(value) =>
+                    dispatchEditorAction({ type: 'setSelectedFolder', value })
+                  }
                   labels={{
                     title: labels.title,
                     titlePlaceholder: labels.titlePlaceholder,
@@ -276,7 +299,7 @@ export function QuizEditorWorkspace({
                   {...(showPrivateToggle
                     ? {
                         onPrivateChange: (value: boolean) =>
-                          dispatch({ type: 'setIsPrivate', value }),
+                          dispatchEditorAction({ type: 'setIsPrivate', value }),
                       }
                     : {})}
                   disabled={!canEdit || state.isSubmitting}
@@ -290,19 +313,25 @@ export function QuizEditorWorkspace({
               canEdit={canEdit && !state.isSubmitting}
               questionToRemove={state.questionToRemove}
               onUpdateField={(index, field, value) =>
-                dispatch({ type: 'updateQuestionField', index, field, value })
+                dispatchEditorAction({ type: 'updateQuestionField', index, field, value })
               }
               onUpdateOption={(questionIndex, optionIndex, value) =>
-                dispatch({ type: 'updateOption', questionIndex, optionIndex, value })
+                dispatchEditorAction({ type: 'updateOption', questionIndex, optionIndex, value })
+              }
+              onAddOption={(questionIndex) =>
+                dispatchEditorAction({ type: 'addOption', questionIndex })
+              }
+              onRemoveOption={(questionIndex, optionIndex) =>
+                dispatchEditorAction({ type: 'removeOption', questionIndex, optionIndex })
               }
               onUpdateQuestionImage={(questionIndex, url) =>
-                dispatch({ type: 'updateQuestionImage', questionIndex, value: url })
+                dispatchEditorAction({ type: 'updateQuestionImage', questionIndex, value: url })
               }
               onRemoveQuestionImage={(questionIndex) =>
-                dispatch({ type: 'updateQuestionImage', questionIndex })
+                dispatchEditorAction({ type: 'updateQuestionImage', questionIndex })
               }
               onUpdateOptionImage={(questionIndex, optionIndex, url) =>
-                dispatch({
+                dispatchEditorAction({
                   type: 'updateOptionImage',
                   questionIndex,
                   optionIndex,
@@ -310,22 +339,34 @@ export function QuizEditorWorkspace({
                 })
               }
               onRemoveOptionImage={(questionIndex, optionIndex) =>
-                dispatch({
+                dispatchEditorAction({
                   type: 'updateOptionImage',
                   questionIndex,
                   optionIndex,
                 })
               }
-              onAddQuestion={() => dispatch({ type: 'addQuestion' })}
-              onRemoveQuestion={(index) => dispatch({ type: 'removeQuestion', index })}
+              onAddQuestion={() =>
+                dispatchEditorAction({
+                  type: 'addQuestion',
+                  editorId: `q-new-${crypto.randomUUID()}`,
+                })
+              }
+              onInsertQuestion={(index) =>
+                dispatchEditorAction({
+                  type: 'insertQuestion',
+                  index,
+                  editorId: `q-new-${crypto.randomUUID()}`,
+                })
+              }
+              onRemoveQuestion={(index) => dispatchEditorAction({ type: 'removeQuestion', index })}
               onToggleType={(index, type) =>
-                dispatch({ type: 'toggleQuestionType', index, value: type })
+                dispatchEditorAction({ type: 'toggleQuestionType', index, value: type })
               }
               onSetSingleCorrect={(questionIndex, optionIndex) =>
-                dispatch({ type: 'setSingleCorrect', questionIndex, optionIndex })
+                dispatchEditorAction({ type: 'setSingleCorrect', questionIndex, optionIndex })
               }
               onToggleMultipleCorrect={(questionIndex, optionIndex, checked) =>
-                dispatch({
+                dispatchEditorAction({
                   type: 'toggleMultipleCorrect',
                   questionIndex,
                   optionIndex,

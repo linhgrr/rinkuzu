@@ -6,8 +6,8 @@ import type { components } from '@/generated/adaptive-api';
 type AdaptiveSchemas = components['schemas'];
 
 export type QuizDraftTransportDto = AdaptiveSchemas['QuizDraftResponseData'];
-export type QuizDraftSingleResponseDto = AdaptiveSchemas['QuizDraftSingleResponse'];
-export type QuizDraftListResponseDto = AdaptiveSchemas['QuizDraftListResponse'];
+export type QuizDraftSingleResponseDto = { draft: QuizDraftTransportDto };
+export type QuizDraftListResponseDto = { drafts: QuizDraftTransportDto[] };
 type QuizDraftCreateTransportDto = AdaptiveSchemas['QuizDraftCreateRequest'];
 
 export interface CreateQuizDraftInputDto {
@@ -18,6 +18,23 @@ export interface CreateQuizDraftInputDto {
   folderId?: QuizDraftCreateTransportDto['category_id'];
   description?: QuizDraftCreateTransportDto['description'];
   prompt?: QuizDraftCreateTransportDto['prompt'];
+  isPrivate?: boolean;
+}
+
+export interface CreateManualQuizDraftInputDto {
+  title: AdaptiveSchemas['QuizManualDraftCreateRequest']['title'];
+  description?: AdaptiveSchemas['QuizManualDraftCreateRequest']['description'];
+  folderId?: AdaptiveSchemas['QuizManualDraftCreateRequest']['category_id'];
+  isPrivate?: AdaptiveSchemas['QuizManualDraftCreateRequest']['is_private'];
+}
+
+export interface PatchQuizDraftInputDto {
+  title?: string;
+  description?: string;
+  folderId?: string | null;
+  isPrivate?: boolean;
+  questions?: SubmitQuizDraftRequestDto['questions'];
+  expectedRevision: number;
 }
 
 export interface SubmitQuizDraftResultDto {

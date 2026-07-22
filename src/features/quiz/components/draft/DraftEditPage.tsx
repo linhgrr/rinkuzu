@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
@@ -8,7 +8,12 @@ import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
 import { DraftDesktopOnlyNotice } from '@/features/quiz/components/draft/DraftDesktopOnlyNotice';
 import { QuizEditorWorkspace } from '@/features/quiz/components/editor/QuizEditorWorkspace';
-import { toEditorQuestions } from '@/features/quiz/lib/question-editor-mutations';
+import { Button } from '@/components/ui/Button';
+import { useQuizDraftAutosave } from '@/features/quiz/hooks/useQuizDraftAutosave';
+import {
+  createEmptyEditorQuestion,
+  toEditorQuestions,
+} from '@/features/quiz/lib/question-editor-mutations';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { fetchSubscriptionStatusViewModel } from '@/features/subscription/api/subscription-page-api';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -28,6 +33,12 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
   const { push } = useRouter();
   const { data: session } = useSession();
   const removeDraft = useDraftStore((store) => store.removeDraft);
+  const [restoredPayload, setRestoredPayload] = useState<
+    ReturnType<typeof toInitialAutosavePayload> | undefined
+  >();
+  const [workspaceVersion, setWorkspaceVersion] = useState(0);
+  const autosave = useQuizDraftAutosave(initialDraft.id, initialDraft.revision);
+  const isManualDraft = initialDraft.sourceType === 'manual';
 
   const { data: subscriptionStatus } = useSWR(
     session?.user?.role === 'admin' ? null : 'subscription-status',
@@ -48,74 +59,159 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
     };
   }, [pdfDataUrl]);
 
-  return (
-    <div className="min-h-screen bg-neutral-50">
-      <DraftDesktopOnlyNotice
-        title={t('desktopOnlyTitle')}
-        description={t('desktopOnlyDescription')}
-        backHomeLabel={t('backHome')}
-      />
+  const serverQuestions = toEditorQuestions(initialDraft.questions, 'draft');
+  const initialQuestions = restoredPayload
+    ? toEditorQuestions(restoredPayload.questions, 'recovery')
+    : serverQuestions.length > 0 || !isManualDraft
+      ? serverQuestions
+      : [createEmptyEditorQuestion('manual-question-1')];
 
-      <div className="hidden md:block">
-        <QuizEditorWorkspace
-          initial={{
-            title: initialDraft.title,
-            description: initialDraft.description,
-            selectedFolderId: initialDraft.folderId ?? null,
-            isPrivate: false,
-            questions: toEditorQuestions(initialDraft.questions, 'draft'),
-          }}
-          {...(pdfUrl !== undefined ? { pdfUrl } : {})}
-          {...(pdfDataUrl !== undefined ? { pdfDataUrl } : {})}
-          pdfLayout="flush"
-          canEdit
-          showPrivateToggle={canCreatePrivateQuiz}
-          requireQuestions
-          labels={{
-            pageTitle: t('editDraftTitle'),
-            questionsCount: (count) => t('questionsExtracted', { count }),
-            metaTitle: t('quizTitle'),
-            metaDescription: t('uploadDescription'),
-            title: t('quizTitle'),
-            titlePlaceholder: t('enterTitle'),
-            description: t('descriptionOptional'),
-            descriptionPlaceholder: t('provideContext'),
-            folder: t('folderLabel'),
-            privateLabel: t('privateQuiz'),
-            privateDescription: t('privateQuizDescription'),
-            cancel: tCommon('cancel'),
-            submit: t('publishQuiz'),
-            submitting: t('publishingQuiz'),
-            hidePdf: t('hidePDFReference'),
-            showPdf: t('showPDFReference'),
-          }}
-          onCancel={() => push(ROUTES.DASHBOARD)}
-          onSubmit={async (payload) => {
-            // BE: submitQuizDraftRequestSchema — questions min 1 via questionListSchema
-            if (payload.questions.length === 0) {
-              toast.error(t('oneQuestionRequired'));
-              throw new Error('no_questions');
-            }
-            try {
-              const result = await submitQuizDraft(initialDraft.id, {
-                title: payload.title,
-                folderId: payload.selectedFolderId,
-                description: payload.description,
-                questions: payload.questions,
-                isPrivate: payload.isPrivate,
-              });
-              removeDraft(initialDraft.id);
-              toast.success(t('publishSuccess'));
-              push(ROUTES.QUIZ.VIEW(result.slug));
-            } catch (error: unknown) {
-              toast.error(tCommon('error'), {
-                description: extractUnknownErrorMessage(error, t('publishFailed')),
-              });
-              throw error;
-            }
-          }}
-        />
-      </div>
+  const editor = (
+    <QuizEditorWorkspace
+      key={`${initialDraft.id}:${workspaceVersion}`}
+      initial={{
+        title: restoredPayload?.title ?? initialDraft.title,
+        description: restoredPayload?.description ?? initialDraft.description,
+        selectedFolderId: restoredPayload?.selectedFolderId ?? initialDraft.folderId ?? null,
+        isPrivate: restoredPayload?.isPrivate ?? initialDraft.isPrivate,
+        questions: initialQuestions,
+      }}
+      {...(pdfUrl !== undefined ? { pdfUrl } : {})}
+      {...(pdfDataUrl !== undefined ? { pdfDataUrl } : {})}
+      pdfLayout="flush"
+      canEdit
+      showPrivateToggle={canCreatePrivateQuiz}
+      requireQuestions
+      headerExtra={
+        <span className="text-sm text-neutral-500" aria-live="polite">
+          {autosave.status === 'saving'
+            ? t('autosaveSaving')
+            : autosave.status === 'dirty'
+              ? t('autosavePending')
+              : autosave.status === 'saved'
+                ? t('autosaveSaved')
+                : autosave.status === 'error'
+                  ? t('autosaveOffline')
+                  : null}
+        </span>
+      }
+      banner={
+        autosave.recovery || autosave.status === 'conflict' ? (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            <span>
+              {autosave.status === 'conflict' ? t('autosaveConflict') : t('recoveryAvailable')}
+            </span>
+            <div className="flex gap-2">
+              {autosave.status === 'conflict' ? (
+                <Button type="button" size="sm" onClick={() => window.location.reload()}>
+                  {t('reloadLatest')}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      const recovered = autosave.restoreRecovery();
+                      if (!recovered) return;
+                      setRestoredPayload(toInitialAutosavePayload(recovered));
+                      setWorkspaceVersion((version) => version + 1);
+                    }}
+                  >
+                    {t('restoreDraft')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={autosave.discardRecovery}
+                  >
+                    {t('discardRecovery')}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        ) : undefined
+      }
+      labels={{
+        pageTitle: isManualDraft ? t('manualEditorTitle') : t('editDraftTitle'),
+        questionsCount: (count) => t('questionsExtracted', { count }),
+        metaTitle: t('quizTitle'),
+        metaDescription: isManualDraft ? t('manualEditorDescription') : t('uploadDescription'),
+        title: t('quizTitle'),
+        titlePlaceholder: t('enterTitle'),
+        description: t('descriptionOptional'),
+        descriptionPlaceholder: t('provideContext'),
+        folder: t('folderLabel'),
+        privateLabel: t('privateQuiz'),
+        privateDescription: t('privateQuizDescription'),
+        cancel: tCommon('cancel'),
+        submit: t('publishQuiz'),
+        submitting: t('publishingQuiz'),
+        hidePdf: t('hidePDFReference'),
+        showPdf: t('showPDFReference'),
+      }}
+      onChange={autosave.queueSave}
+      onCancel={() => {
+        void autosave.flush().finally(() => push(ROUTES.CREATE_QUIZ));
+      }}
+      onSubmit={async (payload) => {
+        if (payload.questions.length === 0) {
+          toast.error(t('oneQuestionRequired'));
+          throw new Error('no_questions');
+        }
+        if (autosave.status === 'conflict') {
+          toast.error(t('autosaveConflict'));
+          throw new Error('draft_conflict');
+        }
+        await autosave.flush();
+        try {
+          const result = await submitQuizDraft(initialDraft.id, {
+            title: payload.title,
+            folderId: payload.selectedFolderId,
+            description: payload.description,
+            questions: payload.questions,
+            isPrivate: payload.isPrivate,
+          });
+          autosave.discardRecovery();
+          removeDraft(initialDraft.id);
+          toast.success(t('publishSuccess'));
+          push(ROUTES.QUIZ.VIEW(result.slug));
+        } catch (error: unknown) {
+          toast.error(tCommon('error'), {
+            description: extractUnknownErrorMessage(error, t('publishFailed')),
+          });
+          throw error;
+        }
+      }}
+    />
+  );
+
+  return (
+    <div className="min-h-[100dvh] bg-neutral-50">
+      {isManualDraft ? (
+        editor
+      ) : (
+        <>
+          <DraftDesktopOnlyNotice
+            title={t('desktopOnlyTitle')}
+            description={t('desktopOnlyDescription')}
+            backHomeLabel={t('backHome')}
+          />
+          <div className="hidden md:block">{editor}</div>
+        </>
+      )}
     </div>
   );
+}
+
+function toInitialAutosavePayload(payload: {
+  title: string;
+  description: string;
+  selectedFolderId: string | null;
+  isPrivate: boolean;
+  questions: QuizDraft['questions'];
+}) {
+  return payload;
 }

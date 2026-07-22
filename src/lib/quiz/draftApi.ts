@@ -4,6 +4,8 @@
 import { fetchApiData } from '@/lib/api/client';
 import type {
   CreateQuizDraftInputDto,
+  CreateManualQuizDraftInputDto,
+  PatchQuizDraftInputDto,
   QuizDraftListResponseDto,
   QuizDraftSingleResponseDto,
   SubmitQuizDraftRequestDto,
@@ -28,6 +30,23 @@ export async function createQuizDraft(input: CreateQuizDraftInputDto): Promise<Q
       category_id: input.folderId,
       description: input.description,
       prompt: input.prompt,
+      is_private: input.isPrivate ?? false,
+    }),
+  });
+  return QuizDraftMapper.toViewModel(draft);
+}
+
+export async function createManualQuizDraft(
+  input: CreateManualQuizDraftInputDto,
+): Promise<QuizDraft> {
+  const { draft } = await fetchApiData<QuizDraftSingleResponseDto>('/api/quiz-drafts/manual', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: input.title,
+      description: input.description,
+      category_id: input.folderId,
+      is_private: input.isPrivate ?? false,
     }),
   });
   return QuizDraftMapper.toViewModel(draft);
@@ -51,6 +70,25 @@ export async function listQuizDrafts(init?: QuizDraftRequestInit): Promise<QuizD
 
 export async function deleteQuizDraft(draftId: string): Promise<void> {
   await fetchApiData(`/api/quiz-drafts/${draftId}`, { method: 'DELETE' });
+}
+
+export async function patchQuizDraft(
+  draftId: string,
+  input: PatchQuizDraftInputDto,
+): Promise<QuizDraft> {
+  const { draft } = await fetchApiData<QuizDraftSingleResponseDto>(`/api/quiz-drafts/${draftId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.folderId !== undefined ? { category_id: input.folderId } : {}),
+      ...(input.isPrivate !== undefined ? { is_private: input.isPrivate } : {}),
+      ...(input.questions !== undefined ? { questions: input.questions } : {}),
+      expected_revision: input.expectedRevision,
+    }),
+  });
+  return QuizDraftMapper.toViewModel(draft);
 }
 
 export async function submitQuizDraft(

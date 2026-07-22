@@ -1598,6 +1598,66 @@
         }
       }
     },
+    "/api/v1/quiz/drafts/manual": {
+      "post": {
+        "tags": ["quiz-drafts"],
+        "summary": "Create Manual Quiz Draft",
+        "description": "Create a durable manual draft without scheduling an AI worker.",
+        "operationId": "create_manual_quiz_draft_api_v1_quiz_drafts_manual_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizManualDraftCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_QuizDraftSingleResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/quiz/drafts/{draft_id}": {
       "get": {
         "tags": ["quiz-drafts"],
@@ -6379,6 +6439,11 @@
             ],
             "title": "Prompt",
             "description": "Custom AI prompt to guide question generation."
+          },
+          "is_private": {
+            "type": "boolean",
+            "title": "Is Private",
+            "default": false
           }
         },
         "type": "object",
@@ -6405,8 +6470,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 200,
-                "minLength": 1
+                "maxLength": 200
               },
               {
                 "type": "null"
@@ -6443,13 +6507,37 @@
                 "items": {
                   "$ref": "#/components/schemas/QuizDraftQuestion"
                 },
-                "type": "array"
+                "type": "array",
+                "maxItems": 200
               },
               {
                 "type": "null"
               }
             ],
             "title": "Questions"
+          },
+          "is_private": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Private"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
           }
         },
         "type": "object",
@@ -6531,8 +6619,9 @@
         "properties": {
           "question": {
             "type": "string",
-            "minLength": 1,
-            "title": "Question"
+            "maxLength": 2000,
+            "title": "Question",
+            "default": ""
           },
           "type": {
             "type": "string",
@@ -6541,11 +6630,12 @@
           },
           "options": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 500
             },
             "type": "array",
-            "maxItems": 5,
-            "minItems": 4,
+            "maxItems": 20,
+            "minItems": 2,
             "title": "Options"
           },
           "correctIndex": {
@@ -6565,11 +6655,38 @@
             },
             "type": "array",
             "title": "Correctindexes"
+          },
+          "questionImage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questionimage"
+          },
+          "optionImages": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Optionimages"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["question", "type", "options"],
+        "required": ["type", "options"],
         "title": "QuizDraftQuestion"
       },
       "QuizDraftResponseData": {
@@ -6608,12 +6725,30 @@
             ],
             "title": "Prompt"
           },
+          "source_type": {
+            "type": "string",
+            "enum": ["pdf", "manual"],
+            "title": "Source Type"
+          },
+          "is_private": {
+            "type": "boolean",
+            "title": "Is Private"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "question_count": {
+            "type": "integer",
+            "title": "Question Count"
+          },
           "pdf": {
             "$ref": "#/components/schemas/QuizDraftPdfInfo"
           },
           "status": {
             "type": "string",
             "enum": [
+              "drafting",
               "queued",
               "processing",
               "completed",
@@ -6667,8 +6802,15 @@
             "title": "Updated At"
           },
           "expires_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Expires At"
           }
         },
@@ -6679,6 +6821,10 @@
           "description",
           "category_id",
           "prompt",
+          "source_type",
+          "is_private",
+          "revision",
+          "question_count",
           "pdf",
           "status",
           "progress",
@@ -6712,6 +6858,47 @@
         "type": "object",
         "required": ["quiz_id"],
         "title": "QuizDraftSubmitRequest"
+      },
+      "QuizManualDraftCreateRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "is_private": {
+            "type": "boolean",
+            "title": "Is Private",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["title"],
+        "title": "QuizManualDraftCreateRequest"
       },
       "ReadinessResponse": {
         "properties": {

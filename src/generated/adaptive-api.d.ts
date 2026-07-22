@@ -458,6 +458,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/quiz/drafts/manual': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Manual Quiz Draft
+     * @description Create a durable manual draft without scheduling an AI worker.
+     */
+    post: operations['create_manual_quiz_draft_api_v1_quiz_drafts_manual_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/quiz/drafts/{draft_id}': {
     parameters: {
       query?: never;
@@ -2400,6 +2420,11 @@ export interface components {
        * @description Custom AI prompt to guide question generation.
        */
       prompt?: string | null;
+      /**
+       * Is Private
+       * @default false
+       */
+      is_private: boolean;
     };
     /** QuizDraftListResponse */
     QuizDraftListResponse: {
@@ -2416,6 +2441,10 @@ export interface components {
       category_id?: string | null;
       /** Questions */
       questions?: components['schemas']['QuizDraftQuestion'][] | null;
+      /** Is Private */
+      is_private?: boolean | null;
+      /** Expected Revision */
+      expected_revision?: number | null;
     };
     /** QuizDraftPdfInfo */
     QuizDraftPdfInfo: {
@@ -2448,7 +2477,10 @@ export interface components {
     };
     /** QuizDraftQuestion */
     QuizDraftQuestion: {
-      /** Question */
+      /**
+       * Question
+       * @default
+       */
       question: string;
       /**
        * Type
@@ -2461,6 +2493,10 @@ export interface components {
       correctIndex?: number | null;
       /** Correctindexes */
       correctIndexes?: number[];
+      /** Questionimage */
+      questionImage?: string | null;
+      /** Optionimages */
+      optionImages?: (string | null)[];
     };
     /** QuizDraftResponseData */
     QuizDraftResponseData: {
@@ -2474,12 +2510,24 @@ export interface components {
       category_id: string | null;
       /** Prompt */
       prompt: string | null;
+      /**
+       * Source Type
+       * @enum {string}
+       */
+      source_type: 'pdf' | 'manual';
+      /** Is Private */
+      is_private: boolean;
+      /** Revision */
+      revision: number;
+      /** Question Count */
+      question_count: number;
       pdf: components['schemas']['QuizDraftPdfInfo'];
       /**
        * Status
        * @enum {string}
        */
       status:
+        | 'drafting'
         | 'queued'
         | 'processing'
         | 'completed'
@@ -2504,11 +2552,8 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
-      /**
-       * Expires At
-       * Format: date-time
-       */
-      expires_at: string;
+      /** Expires At */
+      expires_at: string | null;
     };
     /** QuizDraftSingleResponse */
     QuizDraftSingleResponse: {
@@ -2518,6 +2563,20 @@ export interface components {
     QuizDraftSubmitRequest: {
       /** Quiz Id */
       quiz_id: string;
+    };
+    /** QuizManualDraftCreateRequest */
+    QuizManualDraftCreateRequest: {
+      /** Title */
+      title: string;
+      /** Description */
+      description?: string | null;
+      /** Category Id */
+      category_id?: string | null;
+      /**
+       * Is Private
+       * @default false
+       */
+      is_private: boolean;
     };
     /** ReadinessResponse */
     ReadinessResponse: {
@@ -4573,6 +4632,42 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['QuizDraftCreateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_manual_quiz_draft_api_v1_quiz_drafts_manual_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['QuizManualDraftCreateRequest'];
       };
     };
     responses: {

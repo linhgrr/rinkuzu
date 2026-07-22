@@ -138,14 +138,14 @@ function meteredStream(
         if (!line.startsWith('data: ')) continue;
         try {
           const event = JSON.parse(line.slice(6)) as { type?: string; delta?: unknown };
-          if (
-            event.type === 'response.output_text.delta' &&
-            typeof event.delta === 'string' &&
-            event.delta.trim()
-          ) {
+          const isTextDelta =
+            event.type === 'response.output_text.delta' || event.type === 'TEXT_MESSAGE_CONTENT';
+          if (isTextDelta && typeof event.delta === 'string' && event.delta.trim()) {
             await commit();
           }
-          if (event.type === 'response.failed' && !settled) await refund();
+          if ((event.type === 'response.failed' || event.type === 'RUN_ERROR') && !settled) {
+            await refund();
+          }
         } catch {
           // A split event remains buffered; malformed terminal streams refund on close.
         }

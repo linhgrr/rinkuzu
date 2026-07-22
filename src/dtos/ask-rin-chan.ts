@@ -19,15 +19,48 @@ export const askRinContextRequestSchema = z.discriminatedUnion('source', [
   }),
 ]);
 
-export const askRinChatRequestSchema = z.strictObject({
-  exerciseContextToken: z.string().min(32).max(32_768),
-  message: z.string().trim().min(1).max(1_000),
-  clientRequestId: z.string().min(8).max(128),
+const agUiTextPartSchema = z.strictObject({
+  type: z.literal('text'),
+  text: z.string().max(12_000),
 });
+
+const agUiMessageSchema = z.looseObject({
+  id: z.string().min(1).max(200),
+  role: z.enum(['developer', 'system', 'assistant', 'user', 'tool', 'activity', 'reasoning']),
+  content: z.union([z.string().max(12_000), z.array(agUiTextPartSchema).max(20)]).optional(),
+});
+
+const agUiResumeSchema = z.strictObject({
+  interruptId: z.string().min(1).max(200),
+  status: z.enum(['resolved', 'cancelled']),
+  payload: z.unknown().optional(),
+});
+
+export const askRinAgentRequestSchema = z
+  .strictObject({
+    threadId: z.string().trim().min(1).max(400),
+    runId: z.string().min(1).max(128),
+    parentRunId: z.string().max(128).optional(),
+    state: z.unknown(),
+    messages: z.array(agUiMessageSchema).min(1).max(100),
+    tools: z.array(z.never()).max(0),
+    context: z.array(z.never()).max(0),
+    forwardedProps: z.strictObject({
+      exerciseContextToken: z.string().min(32).max(32_768),
+    }),
+    resume: z.array(agUiResumeSchema).max(100).optional(),
+  })
+  .superRefine((value, context) => {
+    if (JSON.stringify(value).length <= 262_144) return;
+    context.addIssue({
+      code: 'custom',
+      message: 'AG-UI request exceeds the 256 KiB limit',
+      path: [],
+    });
+  });
 
 export const askRinConversationPathSchema = z.object({
   exerciseContextId: z.string().trim().min(1).max(160),
 });
 
 export type AskRinContextRequest = z.infer<typeof askRinContextRequestSchema>;
-export type AskRinChatRequest = z.infer<typeof askRinChatRequestSchema>;

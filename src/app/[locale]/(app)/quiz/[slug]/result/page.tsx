@@ -7,8 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import { useAskRinChanSession } from '@/features/quiz/hooks/useAskRinChanSession';
-import type { ChatMessage } from '@/features/quiz/lib/chat-history';
+import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
 import {
   createQuizResultBookmark,
   deleteQuizResultBookmark,
@@ -26,7 +25,7 @@ import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
-import { AIExplainPanel } from '@/features/quiz/components/result/AIExplainPanel';
+import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuestionType } from '@/shared/constants/question-type';
 
@@ -56,6 +55,7 @@ interface QuizResultPageState {
   bookmarkMessage: string;
   bookmarkMessageTone: BookmarkMessageTone;
   bookmarkToRemove: number | null;
+  chatTurnsByQuestion: Record<number, number>;
 }
 
 type QuizResultPageAction =
@@ -68,6 +68,7 @@ type QuizResultPageAction =
   | { type: 'removeBookmarkSuccess'; questionIndex: number }
   | { type: 'setBookmarkMessage'; message: string; tone: BookmarkMessageTone }
   | { type: 'clearBookmarkMessage' }
+  | { type: 'setChatTurns'; questionIndex: number; turns: number }
   | { type: 'setBookmarkToRemove'; questionIndex: number | null };
 
 const initialQuizResultPageState: QuizResultPageState = {
@@ -83,6 +84,7 @@ const initialQuizResultPageState: QuizResultPageState = {
   bookmarkMessage: '',
   bookmarkMessageTone: 'success',
   bookmarkToRemove: null,
+  chatTurnsByQuestion: {},
 };
 
 function quizResultPageReducer(
@@ -175,6 +177,14 @@ function quizResultPageReducer(
         ...state,
         bookmarkMessage: '',
       };
+    case 'setChatTurns':
+      return {
+        ...state,
+        chatTurnsByQuestion: {
+          ...state.chatTurnsByQuestion,
+          [action.questionIndex]: action.turns,
+        },
+      };
     case 'setBookmarkToRemove':
       return {
         ...state,
@@ -219,7 +229,7 @@ function QuizResultErrorState({
   title: string;
 }) {
   return (
-    <div className="min-h-screen bg-surface-page flex items-center justify-center">
+    <div className="min-h-dvh bg-surface-page flex items-center justify-center">
       <Card className="max-w-md">
         <CardHeader>
           <CardTitle className="text-center text-red-600">{title}</CardTitle>
@@ -257,18 +267,15 @@ function QuizResultActions({
 }
 
 interface QuizResultReadyStateProps {
-  aiError: string;
   aiQuestionData: AIQuestionData | null;
-  askAI: () => void;
   backHomeLabel: string;
   bookmarkedQuestions: Set<number>;
   bookmarkLoading: Set<number>;
   bookmarkMessage: string;
   bookmarkMessageTone: BookmarkMessageTone;
   bookmarkToRemove: number | null;
-  chatHistories: Record<string, ChatMessage[]>;
   chatStats: { totalTurns: number; questionsWithChat: number };
-  clearChatHistory: (questionIndex: number) => void;
+  chatTurnsByQuestion: Readonly<Record<number, number>>;
   closeAIModal: () => void;
   currentQuestionIndex: number;
   encodedSlug: string;
@@ -279,15 +286,12 @@ interface QuizResultReadyStateProps {
     isAnswered?: boolean,
   ) => string;
   formatCorrectAnswer: (question: QuizResultQuestion) => string;
-  getHistory: (historyKey: string | number) => ChatMessage[];
-  loadingAI: boolean;
   onCancelRemove: () => void;
   onConfirmRemove: () => void;
   onDismissBookmarkMessage: () => void;
-  onKeyDown: (event: React.KeyboardEvent) => void;
+  onChatHistoryChange: (questionIndex: number, turns: number) => void;
   onOpenAI: (questionData: AIQuestionData, questionIndex: number) => void;
   onToggleBookmark: (questionIndex: number, questionData: QuizResultQuestion) => void;
-  onUserQuestionChange: (value: string) => void;
   result: QuizResult;
   scoreColor: (score: number) => string;
   scoreMessage: (score: number) => string;
@@ -300,8 +304,6 @@ interface QuizResultReadyStateProps {
   };
   t: (key: string, values?: Record<string, string | number | Date>) => string;
   tProfile: (key: string) => string;
-  userLabel: string;
-  userQuestion: string;
 }
 
 interface QuizResultStatsSummary {
@@ -479,128 +481,27 @@ function useQuizResultPageData(
   };
 }
 
-function useQuizResultPageChat(
-  attemptId: string | null,
-  state: QuizResultPageState,
-  dispatch: React.Dispatch<QuizResultPageAction>,
-) {
-  const {
-    chatHistories,
-    userQuestion,
-    setUserQuestion,
-    loadingAI,
-    aiError,
-    setAIError,
-    ensureHistory,
-    clearHistory,
-    getHistory,
-    cancelActiveStream,
-    sendMessage,
-    totalTurns,
-  } = useAskRinChanSession();
-
-  const openAIModal = (questionData: AIQuestionData, questionIndex: number) => {
-    setUserQuestion('');
-    setAIError('');
-    ensureHistory(questionIndex, {
-      question: questionData.question,
-      options: questionData.options,
-      ...(questionData.questionImage ? { questionImage: questionData.questionImage } : {}),
-      ...(questionData.optionImages ? { optionImages: questionData.optionImages } : {}),
-    });
-    dispatch({ type: 'openAIModal', questionData, questionIndex });
-  };
-
-  const closeAIModal = () => {
-    cancelActiveStream();
-    setUserQuestion('');
-    setAIError('');
-    dispatch({ type: 'closeAIModal' });
-  };
-
-  const askAI = async () => {
-    if (!state.aiQuestionData || state.currentQuestionIndex === -1) {
-      return;
-    }
-
-    await sendMessage({
-      historyKey: state.currentQuestionIndex,
-      payload: {
-        question: state.aiQuestionData.question,
-        options: state.aiQuestionData.options,
-        ...(state.aiQuestionData.questionImage !== undefined
-          ? { questionImage: state.aiQuestionData.questionImage }
-          : {}),
-        ...(state.aiQuestionData.optionImages !== undefined
-          ? { optionImages: state.aiQuestionData.optionImages }
-          : {}),
-      },
-      emptyQuestionErrorMessage: 'Please enter a question to ask Rin-chan!',
-      requestErrorMessage: 'Failed to connect to AI service. Please try again.',
-    });
-  };
-
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-
-      if (!loadingAI && userQuestion.trim()) {
-        void askAI();
-      }
-    }
-  };
-
-  const questionsWithChat = Object.keys(chatHistories).filter(
-    (key) => getHistory(key).length > 0,
-  ).length;
-  const chatStats: QuizResultChatSummary = {
-    totalTurns,
-    questionsWithChat,
-  };
-
-  return {
-    chatHistories,
-    userQuestion,
-    setUserQuestion,
-    loadingAI,
-    aiError,
-    getHistory,
-    openAIModal,
-    closeAIModal,
-    askAI,
-    handleKeyPress,
-    clearChatHistory: clearHistory,
-    chatStats,
-  };
-}
-
 function QuizResultReadyState({
-  aiError,
   aiQuestionData,
-  askAI,
   backHomeLabel,
   bookmarkedQuestions,
   bookmarkLoading,
   bookmarkMessage,
   bookmarkMessageTone,
   bookmarkToRemove,
-  chatHistories,
   chatStats,
-  clearChatHistory,
+  chatTurnsByQuestion,
   closeAIModal,
   currentQuestionIndex,
   encodedSlug,
   formatAnswer,
   formatCorrectAnswer,
-  getHistory,
-  loadingAI,
   onCancelRemove,
   onConfirmRemove,
   onDismissBookmarkMessage,
-  onKeyDown,
+  onChatHistoryChange,
   onOpenAI,
   onToggleBookmark,
-  onUserQuestionChange,
   result,
   scoreColor,
   scoreMessage,
@@ -608,13 +509,9 @@ function QuizResultReadyState({
   stats,
   t,
   tProfile,
-  userLabel,
-  userQuestion,
 }: QuizResultReadyStateProps) {
-  const tCommon = useTranslations('common');
-
   return (
-    <div className="min-h-screen bg-surface-page">
+    <div className="min-h-dvh bg-surface-page">
       <div className="bg-surface shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
@@ -634,8 +531,7 @@ function QuizResultReadyState({
           incorrectCount={stats.incorrectCount}
           unansweredCount={stats.unansweredCount}
           totalQuestions={stats.totalQuestions}
-          chatHistories={chatHistories}
-          getChatStats={() => chatStats}
+          chatStats={chatStats}
           getScoreColor={scoreColor}
           getScoreMessage={scoreMessage}
           t={t}
@@ -659,7 +555,7 @@ function QuizResultReadyState({
           bookmarkLoading={bookmarkLoading}
           onToggleBookmark={onToggleBookmark}
           onOpenAI={onOpenAI}
-          getHistory={getHistory}
+          chatTurnsByQuestion={chatTurnsByQuestion}
           formatAnswer={formatAnswer}
           formatCorrectAnswer={formatCorrectAnswer}
           t={t}
@@ -673,44 +569,36 @@ function QuizResultReadyState({
         />
       </main>
 
-      <AIExplainPanel
-        isOpen={showAIModal}
-        onClose={closeAIModal}
-        questionContent={
-          aiQuestionData
-            ? {
-                questionText: aiQuestionData.question,
-                options: aiQuestionData.options ?? [],
-                ...(aiQuestionData.questionImage !== undefined
-                  ? { questionImage: aiQuestionData.questionImage }
-                  : {}),
-                ...(aiQuestionData.optionImages !== undefined
-                  ? { optionImages: aiQuestionData.optionImages }
-                  : {}),
-              }
-            : null
-        }
-        messages={getHistory(currentQuestionIndex)}
-        userLabel={userLabel}
-        assistantLabel={tProfile('rinChan')}
-        userQuestion={userQuestion}
-        onUserQuestionChange={onUserQuestionChange}
-        onKeyDown={onKeyDown}
-        onSend={askAI}
-        sendDisabled={loadingAI || !userQuestion.trim()}
-        sendLabel={t('askRinChan')}
-        loadingLabel={tProfile('thinking')}
-        loadingAI={loadingAI}
-        aiError={aiError}
-        inputPlaceholder={t('questionPlaceholder')}
-        inputMode="textarea"
-        inputHintLeft={t('leaveEmptyGeneral')}
-        inputHintRight={`Press Ctrl+Enter ${tCommon('send')}`}
-        clearLabel={tCommon('clear')}
-        onClearHistory={() => clearChatHistory(currentQuestionIndex)}
-        showTimestamps
-        title={tProfile('chatWithRinChan')}
-      />
+      {aiQuestionData ? (
+        <AskRinPanel
+          isOpen={showAIModal}
+          onClose={closeAIModal}
+          context={{
+            source: 'quiz',
+            question: aiQuestionData.question,
+            options: aiQuestionData.options ?? [],
+            optionImages: aiQuestionData.optionImages?.map((image) => image ?? null) ?? [],
+            ...(aiQuestionData.questionImage
+              ? { questionImage: aiQuestionData.questionImage }
+              : {}),
+          }}
+          contextPreview={
+            <QuestionOptionsPreview
+              questionText={aiQuestionData.question}
+              options={aiQuestionData.options ?? []}
+              {...(aiQuestionData.questionImage
+                ? { questionImage: aiQuestionData.questionImage }
+                : {})}
+              {...(aiQuestionData.optionImages
+                ? { optionImages: aiQuestionData.optionImages }
+                : {})}
+            />
+          }
+          onHistoryChange={({ totalTurns }) =>
+            onChatHistoryChange(currentQuestionIndex, totalTurns)
+          }
+        />
+      ) : null}
     </div>
   );
 }
@@ -730,20 +618,15 @@ function QuizResultPageClient() {
     locale,
     guestUserEmail,
   );
-  const {
-    chatHistories,
-    userQuestion,
-    setUserQuestion,
-    loadingAI,
-    aiError,
-    getHistory,
-    openAIModal,
-    closeAIModal,
-    askAI,
-    handleKeyPress,
-    clearChatHistory,
-    chatStats,
-  } = useQuizResultPageChat(attemptId, state, dispatch);
+  const chatTurnCounts = Object.values(state.chatTurnsByQuestion);
+  const chatStats: QuizResultChatSummary = {
+    totalTurns: chatTurnCounts.reduce((sum, turns) => sum + turns, 0),
+    questionsWithChat: chatTurnCounts.filter((turns) => turns > 0).length,
+  };
+  const openAIModal = (questionData: AIQuestionData, questionIndex: number) => {
+    dispatch({ type: 'openAIModal', questionData, questionIndex });
+  };
+  const closeAIModal = () => dispatch({ type: 'closeAIModal' });
   const result = state.result;
 
   if (state.status === 'loading') {
@@ -762,20 +645,15 @@ function QuizResultPageClient() {
 
   return (
     <QuizResultReadyState
-      aiError={aiError}
       aiQuestionData={state.aiQuestionData}
-      askAI={() => {
-        void askAI();
-      }}
       backHomeLabel={t('backHome')}
       bookmarkedQuestions={state.bookmarkedQuestions}
       bookmarkLoading={state.bookmarkLoading}
       bookmarkMessage={state.bookmarkMessage}
       bookmarkMessageTone={state.bookmarkMessageTone}
       bookmarkToRemove={state.bookmarkToRemove}
-      chatHistories={chatHistories}
       chatStats={chatStats}
-      clearChatHistory={clearChatHistory}
+      chatTurnsByQuestion={state.chatTurnsByQuestion}
       closeAIModal={closeAIModal}
       currentQuestionIndex={state.currentQuestionIndex}
       encodedSlug={encodedSlug}
@@ -783,17 +661,16 @@ function QuizResultPageClient() {
         formatAnswerValue(answer, options, type, t('notAnswered'), isAnswered)
       }
       formatCorrectAnswer={formatCorrectAnswerText}
-      getHistory={getHistory}
-      loadingAI={loadingAI}
       onCancelRemove={() => dispatch({ type: 'setBookmarkToRemove', questionIndex: null })}
       onConfirmRemove={() =>
         state.bookmarkToRemove !== null && void removeBookmark(state.bookmarkToRemove)
       }
       onDismissBookmarkMessage={() => dispatch({ type: 'clearBookmarkMessage' })}
-      onKeyDown={handleKeyPress}
+      onChatHistoryChange={(questionIndex, turns) =>
+        dispatch({ type: 'setChatTurns', questionIndex, turns })
+      }
       onOpenAI={openAIModal}
       onToggleBookmark={toggleBookmark}
-      onUserQuestionChange={setUserQuestion}
       result={result}
       scoreColor={getQuizResultScoreColor}
       scoreMessage={(score) => getQuizResultScoreMessage(score, tProfile)}
@@ -801,8 +678,6 @@ function QuizResultPageClient() {
       stats={stats}
       t={t}
       tProfile={tProfile}
-      userLabel={tProfile('you')}
-      userQuestion={userQuestion}
     />
   );
 }

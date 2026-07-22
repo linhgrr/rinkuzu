@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import type { ChatMessage } from '@/features/quiz/lib/chat-history';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuestionType } from '@/shared/constants/question-type';
 import type { QuizQuestionReview } from '@/shared/types/quiz-question';
@@ -18,7 +17,7 @@ interface QuestionReviewListProps {
   bookmarkLoading: Set<number>;
   onToggleBookmark: (questionIndex: number, questionData: QuestionData) => void;
   onOpenAI: (questionData: QuestionData, questionIndex: number) => void;
-  getHistory: (key: string | number) => ChatMessage[];
+  chatTurnsByQuestion: Readonly<Record<number, number>>;
   formatAnswer: (
     answer: number | number[],
     options: string[],
@@ -52,7 +51,7 @@ export function QuestionReviewList({
   bookmarkLoading,
   onToggleBookmark,
   onOpenAI,
-  getHistory,
+  chatTurnsByQuestion,
   formatAnswer,
   formatCorrectAnswer,
   t,
@@ -67,6 +66,7 @@ export function QuestionReviewList({
         <div className="space-y-6">
           {questions.map((questionResult, index) => {
             const isAnswered = isQuestionAnswered(questionResult, questionResult.userAnswer);
+            const chatTurns = chatTurnsByQuestion[index] ?? 0;
 
             return (
               <div
@@ -110,9 +110,9 @@ export function QuestionReviewList({
                       className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
                     >
                       {t('askRinChan')}
-                      {getHistory(index).length > 0 && (
+                      {chatTurns > 0 && (
                         <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
-                          {Math.floor(getHistory(index).length / 2)}
+                          {chatTurns}
                         </span>
                       )}
                     </Button>

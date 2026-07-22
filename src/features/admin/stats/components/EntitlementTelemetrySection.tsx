@@ -42,6 +42,19 @@ export function EntitlementTelemetrySection() {
     ],
     [t('entitlementActiveUsers'), data.totals.uniqueUsers.toLocaleString()],
   ];
+  const askRinRows = data.byCapability.filter((row) => row.capability === 'ask_rin_chan');
+  const askRin = askRinRows.reduce(
+    (totals, row) => ({
+      attempts: totals.attempts + row.attempts,
+      committed: totals.committed + row.committed,
+      refunded: totals.refunded + row.refunded,
+      stale: totals.stale + row.stale,
+      freeAttempts: totals.freeAttempts + (row.tier === 'free' ? row.attempts : 0),
+      freeDenied: totals.freeDenied + (row.tier === 'free' ? row.denied : 0),
+    }),
+    { attempts: 0, committed: 0, refunded: 0, stale: 0, freeAttempts: 0, freeDenied: 0 },
+  );
+  const settledAskRinRuns = askRin.committed + askRin.refunded + askRin.stale;
 
   return (
     <section className="space-y-4">
@@ -63,6 +76,48 @@ export function EntitlementTelemetrySection() {
           </Card>
         ))}
       </div>
+      <Card className="border-green-200 bg-green-50/40">
+        <CardHeader>
+          <CardTitle>{t('askRinTelemetryTitle')}</CardTitle>
+          <p className="text-sm text-neutral-500">{t('askRinTelemetryDescription')}</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-green-100 bg-white p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {t('askRinAttempts')}
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-neutral-900">
+                {askRin.attempts.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-xl border border-green-100 bg-white p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {t('askRinCompletionRate')}
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-emerald-700">
+                {formatRate(askRin.committed, settledAskRinRuns)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-green-100 bg-white p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {t('askRinUpgradePressure')}
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-amber-700">
+                {formatRate(askRin.freeDenied, askRin.freeAttempts)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-green-100 bg-white p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {t('askRinRefundedRuns')}
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-neutral-900">
+                {(askRin.refunded + askRin.stale).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardContent>
           {data.byCapability.length === 0 ? (

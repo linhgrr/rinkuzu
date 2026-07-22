@@ -11,9 +11,8 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import { HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
-import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
+import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
-import { useAskRinChanSession } from '@/features/quiz/hooks/useAskRinChanSession';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { formatCorrectAnswerText } from '@/lib/quiz/answer-text';
 import { ROUTES } from '@/shared/constants/routes';
@@ -23,8 +22,7 @@ import {
 } from '@/features/profile/api/profile-bookmarks-api';
 import type { ProfileBookmarkViewModel } from '@/features/profile/types/profile-bookmark-view-model';
 
-const chatbotIcon =
-  'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
+const chatbotIcon = '/images/chatbot_icon.png';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type BookmarkModal = 'ai' | 'remove' | null;
@@ -76,6 +74,7 @@ interface ProfileBookmarksState {
   currentBookmark: ProfileBookmarkViewModel | null;
   activeModal: BookmarkModal;
   removingBookmarkId: string | null;
+  historyTurns: Record<string, number>;
 }
 
 type ProfileBookmarksAction =
@@ -83,6 +82,7 @@ type ProfileBookmarksAction =
   | { type: 'setPage'; value: number }
   | { type: 'openAiModal'; bookmark: ProfileBookmarkViewModel }
   | { type: 'openRemoveModal'; bookmark: ProfileBookmarkViewModel }
+  | { type: 'setHistoryTurns'; bookmarkId: string; turns: number }
   | { type: 'closeModal' };
 
 const initialState: ProfileBookmarksState = {
@@ -91,6 +91,7 @@ const initialState: ProfileBookmarksState = {
   currentBookmark: null,
   activeModal: null,
   removingBookmarkId: null,
+  historyTurns: {},
 };
 
 function profileBookmarksReducer(
@@ -106,6 +107,11 @@ function profileBookmarksReducer(
       return { ...state, currentBookmark: action.bookmark, activeModal: 'ai' };
     case 'openRemoveModal':
       return { ...state, currentBookmark: action.bookmark, activeModal: 'remove' };
+    case 'setHistoryTurns':
+      return {
+        ...state,
+        historyTurns: { ...state.historyTurns, [action.bookmarkId]: action.turns },
+      };
     case 'closeModal':
       return { ...state, currentBookmark: null, activeModal: null, removingBookmarkId: null };
     default:
@@ -285,38 +291,12 @@ export default function ProfileBookmarks() {
   const bookmarks = data?.bookmarks ?? [];
   const pagination = data?.pagination ?? null;
 
-  const {
-    userQuestion,
-    setUserQuestion,
-    loadingAI,
-    aiError,
-    setAIError,
-    ensureHistory,
-    removeHistory,
-    getHistory,
-    cancelActiveStream,
-    sendMessage,
-  } = useAskRinChanSession();
-
   const openAIModal = (bookmark: ProfileBookmarkViewModel) => {
     dispatch({ type: 'openAiModal', bookmark });
-    setUserQuestion('');
-    setAIError('');
-    ensureHistory(bookmark.id, {
-      question: bookmark.question.text,
-      options: bookmark.question.options,
-      ...(bookmark.question.questionImage
-        ? { questionImage: bookmark.question.questionImage }
-        : {}),
-      ...(bookmark.question.optionImages ? { optionImages: bookmark.question.optionImages } : {}),
-    });
   };
 
   const closeAIModal = () => {
-    cancelActiveStream();
     dispatch({ type: 'closeModal' });
-    setUserQuestion('');
-    setAIError('');
   };
 
   const removeBookmark = async (bookmarkId: string) => {
@@ -325,8 +305,8 @@ export default function ProfileBookmarks() {
     try {
       await deleteProfileBookmark(bookmarkId);
       mutate();
-      removeHistory(bookmarkId);
       dispatch({ type: 'patch', value: { localError: '' } });
+      dispatch({ type: 'setHistoryTurns', bookmarkId, turns: 0 });
       dispatch({ type: 'closeModal' });
     } catch (error: unknown) {
       dispatch({
@@ -336,35 +316,6 @@ export default function ProfileBookmarks() {
           localError: extractUnknownErrorMessage(error, 'Failed to remove bookmark'),
         },
       });
-    }
-  };
-
-  const askAI = async () => {
-    if (!state.currentBookmark) return;
-
-    await sendMessage({
-      historyKey: state.currentBookmark.id,
-      payload: {
-        question: state.currentBookmark.question.text,
-        options: state.currentBookmark.question.options,
-        ...(state.currentBookmark.question.questionImage !== undefined
-          ? { questionImage: state.currentBookmark.question.questionImage }
-          : {}),
-        ...(state.currentBookmark.question.optionImages !== undefined
-          ? { optionImages: state.currentBookmark.question.optionImages }
-          : {}),
-      },
-      emptyQuestionErrorMessage: 'Please enter a question!',
-      requestErrorMessage: 'Failed to connect to AI service.',
-    });
-  };
-
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-      if (!loadingAI && userQuestion.trim()) {
-        void askAI();
-      }
     }
   };
 
@@ -392,7 +343,7 @@ export default function ProfileBookmarks() {
         <div className="space-y-6">
           <BookmarksList
             bookmarks={bookmarks}
-            historyForBookmark={(bookmarkId) => Math.floor(getHistory(bookmarkId).length / 2)}
+            historyForBookmark={(bookmarkId) => state.historyTurns[bookmarkId] ?? 0}
             onOpenAiModal={openAIModal}
             onOpenRemoveModal={(bookmark) => dispatch({ type: 'openRemoveModal', bookmark })}
             t={t}
@@ -412,11 +363,20 @@ export default function ProfileBookmarks() {
       )}
 
       {state.activeModal === 'ai' && state.currentBookmark ? (
-        <StreamingChatModal
-          isOpen={true}
+        <AskRinPanel
+          isOpen
           onClose={closeAIModal}
-          title={t('chatWithRinChan')}
-          questionContent={
+          context={{
+            source: 'quiz',
+            question: state.currentBookmark.question.text,
+            options: state.currentBookmark.question.options,
+            optionImages:
+              state.currentBookmark.question.optionImages?.map((image) => image ?? null) ?? [],
+            ...(state.currentBookmark.question.questionImage
+              ? { questionImage: state.currentBookmark.question.questionImage }
+              : {}),
+          }}
+          contextPreview={
             <QuestionOptionsPreview
               questionText={state.currentBookmark.question.text}
               options={state.currentBookmark.question.options}
@@ -428,20 +388,15 @@ export default function ProfileBookmarks() {
                 : {})}
             />
           }
-          messages={getHistory(state.currentBookmark.id)}
-          userLabel={t('you')}
-          assistantLabel={t('rinChan')}
-          userQuestion={userQuestion}
-          onUserQuestionChange={setUserQuestion}
-          onKeyDown={handleKeyPress}
-          onSend={askAI}
-          sendDisabled={loadingAI || !userQuestion.trim()}
-          sendLabel={tCommon('send')}
-          loadingLabel={t('thinking')}
-          loadingAI={loadingAI}
-          aiError={aiError}
-          inputPlaceholder={t('askQuestion')}
-          inputMode="input"
+          onHistoryChange={({ totalTurns }) =>
+            state.currentBookmark
+              ? dispatch({
+                  type: 'setHistoryTurns',
+                  bookmarkId: state.currentBookmark.id,
+                  turns: totalTurns,
+                })
+              : undefined
+          }
         />
       ) : null}
 

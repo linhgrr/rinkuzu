@@ -1,7 +1,5 @@
-import { consumeOpenAISseResponse } from '@/lib/ai/stream';
 import { fetchApiData } from '@/lib/api/client';
-import { extractApiErrorMessage } from '@/lib/api/error';
-import type { AskRinChatRequest, AskRinContextRequest } from '@/dtos/ask-rin-chan';
+import type { AskRinContextRequest } from '@/dtos/ask-rin-chan';
 
 export type AskRinContextPayload = AskRinContextRequest;
 
@@ -22,11 +20,6 @@ export interface AskRinConversation {
   conversationId: string;
   exerciseContextId: string;
   messages: AskRinMessage[];
-}
-
-interface StreamAskRinOptions {
-  signal?: AbortSignal;
-  onContent?: (chunk: string, fullContent: string) => void;
 }
 
 export function registerAskRinContext(
@@ -55,23 +48,4 @@ export async function deleteAskRinConversation(exerciseContextId: string): Promi
     { method: 'DELETE' },
   );
   return result.deleted;
-}
-
-export async function streamAskRinChan(
-  payload: AskRinChatRequest,
-  options: StreamAskRinOptions = {},
-): Promise<string> {
-  const response = await fetch('/api/ask-rin-chan/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Idempotency-Key': payload.clientRequestId,
-    },
-    body: JSON.stringify(payload),
-    ...(options.signal ? { signal: options.signal } : {}),
-  });
-  return consumeOpenAISseResponse(response, {
-    ...(options.onContent ? { onContent: options.onContent } : {}),
-    extractErrorMessage: (body, status) => extractApiErrorMessage(body, `HTTP error ${status}`),
-  });
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import type { ChatMessage } from '@/features/quiz/lib/chat-history';
 
 type TranslateParams = Record<string, string | number | Date>;
 
@@ -16,8 +15,7 @@ interface ResultStatsProps {
   incorrectCount: number;
   unansweredCount: number;
   totalQuestions: number;
-  chatHistories: Record<string, ChatMessage[]>;
-  getChatStats: () => ChatStats;
+  chatStats: ChatStats;
   getScoreColor: (score: number) => string;
   getScoreMessage: (score: number) => string;
   t: (key: string, values?: TranslateParams) => string;
@@ -30,8 +28,7 @@ export function ResultStats({
   incorrectCount,
   unansweredCount,
   totalQuestions,
-  chatHistories,
-  getChatStats,
+  chatStats,
   getScoreColor,
   getScoreMessage,
   t,
@@ -108,29 +105,25 @@ export function ResultStats({
           </div>
 
           {/* Chat Statistics */}
-          {Object.keys(chatHistories).length > 0 &&
-            (() => {
-              const stats = getChatStats();
-              return stats.totalTurns > 0 ? (
-                <div className="border-t pt-4">
-                  <h4 className="text-sm font-medium text-neutral-700 mb-3">
-                    {tProfile('chatWithRinChan')} Statistics
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-xl font-bold text-brand-trust">{stats.totalTurns}</div>
-                      <div className="text-sm text-green-700">Total Chat Turns</div>
-                    </div>
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-xl font-bold text-brand-trust">
-                        {stats.questionsWithChat}
-                      </div>
-                      <div className="text-sm text-green-700">Questions Discussed</div>
-                    </div>
-                  </div>
+          {chatStats.totalTurns > 0 ? (
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-neutral-700 mb-3">
+                {tProfile('chatWithRinChan')} Statistics
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-xl font-bold text-brand-trust">{chatStats.totalTurns}</div>
+                  <div className="text-sm text-green-700">Total Chat Turns</div>
                 </div>
-              ) : null;
-            })()}
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-xl font-bold text-brand-trust">
+                    {chatStats.questionsWithChat}
+                  </div>
+                  <div className="text-sm text-green-700">Questions Discussed</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </>

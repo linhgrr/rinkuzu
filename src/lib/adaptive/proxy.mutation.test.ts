@@ -122,6 +122,12 @@ function successEnvelope(data: unknown, status = 200): Response {
   return jsonResponse({ success: true, data }, { status });
 }
 
+function sseResponse(events: unknown[]): Response {
+  return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(''), {
+    headers: { 'content-type': 'text/event-stream' },
+  });
+}
+
 function getFetchInit(
   callIndex = 0,
 ): RequestInit & { next?: { revalidate: number; tags: string[] } } {
@@ -381,6 +387,48 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
   });
 
   describe('LLM rate limiting', () => {
+    it.each([
+      ['legacy', { type: 'response.output_text.delta', delta: 'answer' }],
+      ['AG-UI', { type: 'TEXT_MESSAGE_CONTENT', messageId: 'message-1', delta: 'answer' }],
+    ])('commits usage on the first non-empty %s text delta', async (_name, event) => {
+      vi.mocked(fetch).mockResolvedValueOnce(sseResponse([event]));
+
+      const response = await proxyAdaptiveRequest(
+        new Request('https://app.test/api/ask-rin-chan/agent', {
+          method: 'POST',
+          body: '{}',
+        }),
+        'ask-rin-chan/agent',
+        { userId: 'user-1', userRole: 'user' },
+        { method: 'POST', llmAction: 'ask_rin_chan', body: '{}' },
+      );
+      await response.text();
+
+      expect(rateLimitMocks.commitLlmUsage).toHaveBeenCalledOnce();
+      expect(rateLimitMocks.refundLlmUsage).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['legacy', { type: 'response.failed', response: { error: { message: 'failed' } } }],
+      ['AG-UI', { type: 'RUN_ERROR', code: 'ask_rin_run_failed', message: 'failed' }],
+    ])('refunds usage when a %s stream fails before producing text', async (_name, event) => {
+      vi.mocked(fetch).mockResolvedValueOnce(sseResponse([event]));
+
+      const response = await proxyAdaptiveRequest(
+        new Request('https://app.test/api/ask-rin-chan/agent', {
+          method: 'POST',
+          body: '{}',
+        }),
+        'ask-rin-chan/agent',
+        { userId: 'user-1', userRole: 'user' },
+        { method: 'POST', llmAction: 'ask_rin_chan', body: '{}' },
+      );
+      await response.text();
+
+      expect(rateLimitMocks.refundLlmUsage).toHaveBeenCalledOnce();
+      expect(rateLimitMocks.commitLlmUsage).not.toHaveBeenCalled();
+    });
+
     it('blocks committed idempotency-key replay unless the endpoint owns durable replay', async () => {
       const committed = {
         ...rateLimitMocks.allowedResult,
@@ -405,7 +453,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
 
       await proxyAdaptiveRequest(
         request,
-        'ask-rin-chan/chat',
+        'ask-rin-chan/agent',
         { userId: 'user-1', userRole: 'user' },
         {
           method: 'POST',

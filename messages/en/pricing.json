@@ -40,7 +40,7 @@
     },
     {
       "q": "How does Premium work?",
-      "a": "Premium unlocks private quizzes and higher usage limits for AI features. The current plan is billed monthly, with no automatic renewal surprises."
+      "a": "Premium unlocks private quizzes and higher AI usage limits. You make a one-time payment for the access period shown at checkout; it does not renew automatically, and your Premium access remains active until the displayed expiry date."
     },
     {
       "q": "Can I switch plans at any time?",
@@ -48,7 +48,7 @@
     },
     {
       "q": "Is there a student or educator discount?",
-      "a": "Contact us at support@rinkuzu.app for education pricing. We believe AI-powered learning should be accessible to everyone."
+      "a": "There is no public student or educator discount at this time. Educators can contact support@rinkuzu.app to register interest in future classroom pilots."
     }
   ],
   "cta": {

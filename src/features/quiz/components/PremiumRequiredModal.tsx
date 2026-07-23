@@ -71,7 +71,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
                   clipRule="evenodd"
                 />
               </svg>
-              {t('benefitUnlimitedAttempts')}
+              {t('benefitAskRinChan')}
             </li>
             <li className="flex items-center">
               <svg className="size-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -81,7 +81,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
                   clipRule="evenodd"
                 />
               </svg>
-              {t('benefitDetailedStats')}
+              {t('benefitPdfQuiz')}
             </li>
             <li className="flex items-center">
               <svg className="size-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -91,7 +91,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
                   clipRule="evenodd"
                 />
               </svg>
-              {t('benefitPrioritySupport')}
+              {t('benefitAdaptivePaths')}
             </li>
           </ul>
         </div>

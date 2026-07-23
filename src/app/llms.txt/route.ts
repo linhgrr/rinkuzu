@@ -54,8 +54,8 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 - Bilingual: English and Vietnamese
 
 ## Pricing
-- Free Plan: Basic PDF-to-quiz generation, practice, progress tracking, community support
-- Premium Plan: Full adaptive learning access, advanced quiz features, priority support
+- Free Plan: 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day
+- Premium Plan: Private quizzes and higher limits: 50 PDF-to-quiz generations per month (up to 100 pages per file), 12 adaptive paths per month, 500 adaptive exercises per day, and 150 Ask Rin-chan messages per day
 
 ## Contact
 - Email: support@rinkuzu.app
@@ -94,7 +94,7 @@ Q: How do I generate a quiz from a PDF?
 A: Simply upload any PDF document — lecture notes, textbooks, or internal docs — and RinKuzu's AI will automatically extract key concepts, identify prerequisite relationships, and generate high-quality quizzes with explanations. No manual question writing required. The process takes under a minute for most documents.
 
 Q: Is RinKuzu free to use?
-A: Yes. RinKuzu's free plan includes unlimited PDF-to-quiz generation, adaptive practice, mastery tracking, and community quiz browsing. A Premium plan offers advanced features and priority support. See /pricing for details.
+A: Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks private quizzes and raises these limits. See /pricing for details.
 
 Q: Which languages does RinKuzu support?
 A: RinKuzu supports Vietnamese and English with a full bilingual interface. AI-generated content adapts to the language of your uploaded PDF.
@@ -112,10 +112,10 @@ Q: What is the AI tutor Rin-chan?
 A: Rin-chan is RinKuzu's built-in AI tutor. It explains any concept from your PDF in plain language, answers follow-up questions, and guides you through difficult topics — available 24/7 within the app.
 
 Q: Can teachers use RinKuzu for classroom assessment?
-A: Absolutely. Teachers can upload lecture PDFs to generate student quizzes, track class-wide performance, and identify concepts that need re-teaching. Contact support@rinkuzu.app for educator pricing and bulk access.
+A: Yes. Teachers can turn lecture PDFs into quizzes and share public quizzes with students. Classroom management and class-wide analytics are not currently available.
 
 Q: How is my data and privacy protected?
-A: Uploaded PDFs are processed securely and kept private by default. We never use your content to train AI models. RinKuzu is GDPR and Vietnamese PDPA compliant. See /privacy for full details.
+A: Uploaded PDFs are processed to generate learning content. A quiz is shared publicly only when its owner chooses to publish it publicly. See /privacy for details about data processing and storage.
 
 Q: What file formats are supported?
 A: Currently PDF documents are supported. We recommend using text-based PDFs (not scanned images) for the best quiz generation quality. Word, PowerPoint, and plain text support is on the roadmap.

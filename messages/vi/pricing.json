@@ -40,7 +40,7 @@
     },
     {
       "q": "Gói Premium hoạt động thế nào?",
-      "a": "Premium mở khóa quiz riêng tư và tăng hạn mức Ask Rin-chan, tạo quiz từ PDF, lộ trình học và bài tập thích ứng. Gói hiện tại được tính theo tháng."
+      "a": "Premium mở khóa quiz riêng tư và tăng hạn mức sử dụng AI. Bạn thanh toán một lần cho thời hạn hiển thị tại trang thanh toán; gói không tự động gia hạn và quyền Premium duy trì đến ngày hết hạn được hiển thị."
     },
     {
       "q": "Tôi có thể đổi gói bất cứ lúc nào không?",
@@ -48,7 +48,7 @@
     },
     {
       "q": "Có ưu đãi cho học sinh, sinh viên hoặc giáo viên không?",
-      "a": "Liên hệ support@rinkuzu.app để biết giá dành cho giáo dục. Chúng tôi tin rằng học tập cùng AI nên dễ tiếp cận với mọi người."
+      "a": "Hiện chưa có ưu đãi công khai dành cho học sinh, sinh viên hoặc giáo viên. Giáo viên có thể liên hệ support@rinkuzu.app để đăng ký quan tâm tới chương trình thử nghiệm lớp học trong tương lai."
     }
   ],
   "cta": {

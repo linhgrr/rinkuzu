@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next';
-import { serviceFactory } from '@/lib/serviceFactory';
 import { defaultLocale, locales } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 import { serializeDate } from '@/lib/date-serialization';
+import { loadPublicQuizSitemapEntries } from '@/lib/public-quiz-sitemap';
 
 // Extended sitemap entry type that includes hreflang alternates.
 // Next.js MetadataRoute.Sitemap doesn't expose the 'links' field directly,
@@ -60,21 +60,12 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
     }
   }
 
-  const quizService = serviceFactory.getQuizService();
-
-  const quizResult = await quizService.getQuizzes({
-    isPrivate: false,
-    page: 1,
-    limit: 5000,
-    onlyMine: false,
-  });
-
-  for (const quiz of quizResult.quizzes) {
-    const path = `/quiz/${quiz.slug}`;
-    const quizUpdatedAt = quiz.updatedAt ?? quiz.createdAt;
-
-    for (const { locale } of localeVariants(path)) {
-      pushEntry(toEntry(locale, path, toRequiredSitemapDate(quizUpdatedAt, 'quiz.updatedAt')));
+  const publicQuizzes = await loadPublicQuizSitemapEntries('sitemap: quiz generation failed');
+  for (const quiz of publicQuizzes) {
+    for (const { locale } of localeVariants(quiz.path)) {
+      pushEntry(
+        toEntry(locale, quiz.path, toRequiredSitemapDate(quiz.lastModified, 'quiz.updatedAt')),
+      );
     }
   }
 

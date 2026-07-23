@@ -8,12 +8,11 @@
  */
 
 import type { MetadataRoute } from 'next';
-import { serviceFactory } from '@/lib/serviceFactory';
 import { locales, type Locale } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
-import { logger } from '@/lib/logger';
 import { toUtcDateKey } from '@/lib/date-serialization';
+import { loadPublicQuizSitemapEntries } from '@/lib/public-quiz-sitemap';
 
 function toEntry(
   locale: Locale | string,
@@ -52,23 +51,13 @@ export async function GET(): Promise<Response> {
   }
 
   // Public quizzes
-  const quizService = serviceFactory.getQuizService();
-  try {
-    const quizResult = await quizService.getQuizzes({
-      isPrivate: false,
-      page: 1,
-      limit: 5000,
-      onlyMine: false,
-    });
-    for (const quiz of quizResult.quizzes) {
-      const path = `/quiz/${quiz.slug}`;
-      const quizDate = new Date(quiz.updatedAt ?? quiz.createdAt);
-      for (const locale of [...locales]) {
-        pushEntry(toEntry(locale, path, quizDate));
-      }
+  const publicQuizzes = await loadPublicQuizSitemapEntries(
+    'locale sitemap: quiz generation failed',
+  );
+  for (const quiz of publicQuizzes) {
+    for (const locale of [...locales]) {
+      pushEntry(toEntry(locale, quiz.path, quiz.lastModified));
     }
-  } catch (error) {
-    logger.error({ error }, 'locale sitemap: quiz generation failed');
   }
 
   // Sort

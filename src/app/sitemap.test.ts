@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const getQuizzes = vi.fn();
+const { getQuizzes, loggerError } = vi.hoisted(() => ({
+  getQuizzes: vi.fn(),
+  loggerError: vi.fn(),
+}));
 
 vi.mock('@/lib/serviceFactory', () => ({
   serviceFactory: {
@@ -8,16 +11,28 @@ vi.mock('@/lib/serviceFactory', () => ({
   },
 }));
 
+vi.mock('@/lib/logger', () => ({
+  logger: { error: loggerError },
+}));
+
 import sitemap from './sitemap';
 
 describe('sitemap', () => {
   beforeEach(() => {
     getQuizzes.mockReset();
+    loggerError.mockReset();
   });
 
-  it('propagates quiz repository failures instead of caching an incomplete sitemap', async () => {
+  it('returns static routes when dynamic quiz generation is unavailable', async () => {
     getQuizzes.mockRejectedValue(new Error('database unavailable'));
 
-    await expect(sitemap()).rejects.toThrow('database unavailable');
+    const entries = await sitemap();
+
+    expect(entries.length).toBeGreaterThan(0);
+    expect(entries.some((entry) => entry.url.endsWith('/en'))).toBe(true);
+    expect(loggerError).toHaveBeenCalledWith(
+      { error: expect.any(Error) },
+      'sitemap: quiz generation failed',
+    );
   });
 });

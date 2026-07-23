@@ -210,6 +210,18 @@ export const INDEX_CONTRACT = Object.freeze([
   /** Active-admin invariant count: role + disable exact match. */
   required('users.role-disable', 'users', { role: 1, disable: 1 }),
   required(
+    'users.auth-identity',
+    'users',
+    { 'authIdentities.provider': 1, 'authIdentities.subject': 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        'authIdentities.provider': { $type: 'string' },
+        'authIdentities.subject': { $type: 'string' },
+      },
+    },
+  ),
+  required(
     'users.password-reset-token',
     'users',
     { passwordResetTokenHash: 1 },

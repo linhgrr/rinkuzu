@@ -29,6 +29,7 @@ export interface SuccessfulLoginData {
 }
 
 export interface VerifiedGoogleAccountData {
+  subject: string;
   email: string;
   now: Date;
   ip: string | null;
@@ -79,5 +80,5 @@ export interface IAuthSignInRepository {
    * Upserts only active accounts (`email` + `disable: 0`).
    * Returns null when the email belongs to a disabled account (duplicate-key) or is unusable.
    */
-  upsertVerifiedGoogleAccount(data: VerifiedGoogleAccountData): Promise<AuthenticatedUser | null>;
+  resolveVerifiedGoogleAccount(data: VerifiedGoogleAccountData): Promise<AuthenticatedUser | null>;
 }

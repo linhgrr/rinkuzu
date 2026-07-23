@@ -81,14 +81,17 @@ describe('AuthAccountRepository sign-in integration', () => {
 
   it('upserts verified Google account idempotently', async () => {
     const googleEmail = `google-integ-${Date.now()}@example.test`;
-    const first = await repo.upsertVerifiedGoogleAccount({
+    const subject = `google-sub-${Date.now()}`;
+    const first = await repo.resolveVerifiedGoogleAccount({
+      subject,
       email: googleEmail,
       now: new Date(),
       ip: '127.0.0.1',
       displayName: 'Google User',
     });
-    const second = await repo.upsertVerifiedGoogleAccount({
-      email: googleEmail,
+    const second = await repo.resolveVerifiedGoogleAccount({
+      subject,
+      email: `renamed-${googleEmail}`,
       now: new Date(),
       ip: '127.0.0.1',
       displayName: 'Google User 2',
@@ -97,6 +100,7 @@ describe('AuthAccountRepository sign-in integration', () => {
     expect(first).not.toBeNull();
     expect(second).not.toBeNull();
     expect(second?.id).toBe(first?.id);
+    expect(second?.email).toBe(googleEmail);
     await mongoose.connection.collection('users').deleteOne({ email: googleEmail });
   });
 

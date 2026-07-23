@@ -4,7 +4,7 @@ import path from 'node:path';
 const root = process.cwd();
 const sourceDir = path.join(root, 'src');
 const appDir = path.join(sourceDir, 'app');
-const allowedUseParamsFile = path.normalize('src/lib/routing/useRequiredRouteParam.ts');
+const allowedUseParamsFile = 'src/lib/routing/useRequiredRouteParam.ts';
 const failures = [];
 
 function walk(dir, files = []) {

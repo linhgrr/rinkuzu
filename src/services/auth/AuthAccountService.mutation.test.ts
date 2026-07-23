@@ -60,6 +60,7 @@ function securityState(
   const state: AuthAccountSecurityState = {
     ...identity,
     passwordHash: 'password-hash',
+    authProviders: [],
   };
 
   for (const key of Object.keys(overrides) as Array<keyof AuthAccountSecurityState>) {
@@ -244,20 +245,26 @@ describe('AuthAccountService mutation coverage', () => {
   });
 
   describe('requestPasswordReset', () => {
-    it('stays neutral for oauth accounts without a password hash', async () => {
+    it('lets an oauth account establish credentials through an emailed reset token', async () => {
       repository.findByEmail.mockResolvedValue(securityState({ passwordHash: undefined }));
+      repository.issuePasswordResetToken.mockResolvedValue(true);
 
       await expect(service.requestPasswordReset(identity.email, context)).resolves.toEqual({
         success: true,
         data: { email: identity.email, requested: true },
       });
-      expect(repository.issuePasswordResetToken).not.toHaveBeenCalled();
+      expect(repository.issuePasswordResetToken).toHaveBeenCalledWith(
+        identity.email,
+        'token-hash',
+        expect.any(Date),
+      );
 
       await scheduler.runAll();
+      expect(notifier.sendPasswordResetEmail).toHaveBeenCalledWith(identity.email, 'raw-token');
       expect(audit.record).toHaveBeenCalledWith({
         event: 'password_reset_requested',
+        userId: identity.id,
         email: identity.email,
-        metadata: { reason: 'unknown_user_or_oauth' },
         ...context,
       });
     });

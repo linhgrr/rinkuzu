@@ -15,6 +15,7 @@ import type { IAuthAudit } from '@/interfaces/services/IAuthAudit';
 import type { IAuthRateLimiter } from '@/interfaces/services/IAuthRateLimiter';
 import type { IDeferredTaskScheduler } from '@/interfaces/services/IDeferredTaskScheduler';
 import { hashPassword, verifyPassword } from '@/lib/password';
+import { canonicalizeEmail } from '@/shared/email/canonical-email';
 
 export type AuthSignInPolicy = FailedLoginPolicy;
 
@@ -24,6 +25,7 @@ export interface CredentialsSignInInput {
 }
 
 export interface GoogleSignInInput {
+  subject: string;
   email?: string;
   emailVerified: boolean;
   displayName?: string;
@@ -78,7 +80,7 @@ export class AuthSignInService {
     input: CredentialsSignInInput,
     context: AuthRequestContext,
   ): Promise<CredentialsSignInResult> {
-    const email = input.email.trim().toLowerCase();
+    const email = canonicalizeEmail(input.email);
     const limited = await this.checkCredentialsRateLimits(email, context.ip);
     if (limited) return limited;
 
@@ -167,12 +169,14 @@ export class AuthSignInService {
     input: GoogleSignInInput,
     context: AuthRequestContext,
   ): Promise<GoogleSignInResult> {
-    const email = input.email?.trim().toLowerCase();
-    if (!email || !input.emailVerified) {
+    const email = input.email ? canonicalizeEmail(input.email) : '';
+    const subject = input.subject.trim();
+    if (!email || !subject || !input.emailVerified) {
       return { success: false, code: 'invalid_google_profile' };
     }
 
-    const user = await this.repository.upsertVerifiedGoogleAccount({
+    const user = await this.repository.resolveVerifiedGoogleAccount({
+      subject,
       email,
       now: new Date(),
       ip: context.ip,

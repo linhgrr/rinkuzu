@@ -146,3 +146,6 @@ temp/
 # yarn.lock          # if using yarn
 # pnpm-lock.yaml     # if using pnpm 
 .gitnexus
+
+# Added by code-review-graph
+.code-review-graph/

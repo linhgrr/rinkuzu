@@ -177,7 +177,7 @@ describe('AuthAccountRepository', () => {
     ).resolves.toBe(false);
     expect(mocks.updateOne).toHaveBeenNthCalledWith(
       1,
-      { email: 'user@example.com', password: { $type: 'string' }, disable: 0 },
+      { email: 'user@example.com', disable: 0 },
       {
         $set: {
           passwordResetTokenHash: 'reset-hash',
@@ -211,7 +211,7 @@ describe('AuthAccountRepository', () => {
 
   it('loads security, login, and session projections for active accounts only', async () => {
     const securitySelect =
-      'email role password emailVerified emailVerificationTokenHash ' +
+      'email role password authIdentities emailVerified emailVerificationTokenHash ' +
       'emailVerificationExpires passwordResetTokenHash passwordResetExpires';
     const loginSelect =
       'email role password emailVerified avatar displayName passwordChangedAt authVersion ' +
@@ -356,6 +356,7 @@ describe('AuthAccountRepository', () => {
       .mockResolvedValueOnce({ matchedCount: 0 })
       .mockResolvedValueOnce({ matchedCount: 1 });
     mocks.findOneAndUpdate
+      .mockReturnValueOnce(queryChain(null))
       .mockReturnValueOnce(
         queryChain(
           identityRecord({
@@ -422,7 +423,8 @@ describe('AuthAccountRepository', () => {
     });
 
     await expect(
-      repository.upsertVerifiedGoogleAccount({
+      repository.resolveVerifiedGoogleAccount({
+        subject: 'google-sub',
         email: 'user@example.com',
         now,
         ip: '127.0.0.1',
@@ -456,7 +458,8 @@ describe('AuthAccountRepository', () => {
     );
 
     await expect(
-      repository.upsertVerifiedGoogleAccount({
+      repository.resolveVerifiedGoogleAccount({
+        subject: 'google-sub',
         email: 'user@example.com',
         now,
         ip: '127.0.0.1',
@@ -477,7 +480,8 @@ describe('AuthAccountRepository', () => {
     });
 
     await expect(
-      new AuthAccountRepository().upsertVerifiedGoogleAccount({
+      new AuthAccountRepository().resolveVerifiedGoogleAccount({
+        subject: 'disabled-google-sub',
         email: 'disabled-owner@example.com',
         now,
         ip: '127.0.0.1',

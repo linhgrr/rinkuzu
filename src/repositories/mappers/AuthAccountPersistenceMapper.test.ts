@@ -15,6 +15,7 @@ describe('AuthAccountPersistenceMapper', () => {
       id: 'account-1',
       email: 'learner@example.com',
       role: 'user',
+      authProviders: [],
     });
   });
 
@@ -38,6 +39,7 @@ describe('AuthAccountPersistenceMapper', () => {
       id: 'account-1',
       email: 'learner@example.com',
       role: 'user',
+      authProviders: [],
       passwordHash: 'hash',
       emailVerified,
       emailVerificationTokenHash: 'verify-hash',

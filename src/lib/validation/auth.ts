@@ -1,8 +1,8 @@
 import { z } from 'zod';
+import { canonicalizeEmail, EMAIL_MAX_LENGTH } from '@/shared/email/canonical-email';
 
 export const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 72;
-const EMAIL_MAX_LENGTH = 254;
 
 export type PasswordStrength = 0 | 1 | 2 | 3 | 4;
 
@@ -18,10 +18,13 @@ export function scorePassword(password: string): PasswordStrength {
 
 export const emailSchema = z
   .string()
-  .trim()
-  .toLowerCase()
-  .max(EMAIL_MAX_LENGTH, `Email must be at most ${EMAIL_MAX_LENGTH} characters`)
-  .email('Invalid email address');
+  .transform(canonicalizeEmail)
+  .pipe(
+    z
+      .string()
+      .max(EMAIL_MAX_LENGTH, `Email must be at most ${EMAIL_MAX_LENGTH} characters`)
+      .email('Invalid email address'),
+  );
 
 export const passwordSchema = z
   .string()

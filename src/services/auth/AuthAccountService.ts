@@ -38,6 +38,22 @@ export class AuthAccountService implements IAuthAccountService {
     try {
       const existing = await this.repository.findByEmail(input.email);
       if (existing) {
+        const usesAnotherRegistrationMethod =
+          !existing.passwordHash &&
+          (existing.authProviders.length > 0 || existing.emailVerified !== undefined);
+        if (usesAnotherRegistrationMethod) {
+          this.scheduleAudit('register', context, {
+            email: input.email,
+            metadata: { reason: 'registration_method_mismatch' },
+          });
+          return {
+            success: false,
+            code: 'registration_method_mismatch',
+            error:
+              'Registration method does not match the existing account. Use the original sign-in method.',
+            statusCode: 409,
+          };
+        }
         this.scheduleAudit('register', context, {
           email: input.email,
           metadata: { reason: 'duplicate_email' },
@@ -119,10 +135,10 @@ export class AuthAccountService implements IAuthAccountService {
   ): Promise<ServiceResult<PasswordResetRequestResultDto>> {
     try {
       const account = await this.repository.findByEmail(email);
-      if (!account || !account.passwordHash) {
+      if (!account) {
         this.scheduleAudit('password_reset_requested', context, {
           email,
-          metadata: { reason: 'unknown_user_or_oauth' },
+          metadata: { reason: 'unknown_user' },
         });
         return { success: true, data: AuthAccountDtoMapper.toPasswordResetRequestResult(email) };
       }

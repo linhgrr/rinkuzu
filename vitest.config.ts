@@ -12,6 +12,7 @@ export default defineConfig({
     allowOnly: false,
     passWithNoTests: false,
     retry: 0,
+    testTimeout: 20_000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

@@ -45,7 +45,7 @@ describe('Auth.js Google identity dependency contract', () => {
     const googleSub = 'google-sub-canonical-001';
     const mongoUserId = '507f191e810c19729de860ea';
     const authenticateGoogle = vi.fn(
-      async (_input?: { email: unknown; emailVerified: boolean }) => ({
+      async (_input?: { subject: string; email: unknown; emailVerified: boolean }) => ({
         success: true as const,
         user: {
           id: mongoUserId,
@@ -68,6 +68,7 @@ describe('Auth.js Google identity dependency contract', () => {
         if (!sub) throw new Error('missing Google sub');
 
         const result = await authenticateGoogle({
+          subject: sub,
           email: record['email'],
           emailVerified: true,
         });

@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { registerAccount } from '@/features/auth/api/auth-api';
+import { ApiResponseError } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -132,7 +133,13 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
       const result = await registerAccount({ email: values.email, password: values.password });
       setServerSuccess(result.message ?? t('accountCreatedSuccess'));
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : t('registrationFailed'));
+      setServerError(
+        error instanceof ApiResponseError && error.code === 'registration_method_mismatch'
+          ? t('registrationMethodMismatch')
+          : error instanceof Error
+            ? error.message
+            : t('registrationFailed'),
+      );
     }
   });
 

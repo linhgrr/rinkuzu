@@ -30,6 +30,13 @@ export class AuthAccountPersistenceMapper {
   static toSecurityState(record: AuthAccountPersistenceRecord): AuthAccountSecurityState {
     return {
       ...AuthAccountPersistenceMapper.toBase(record),
+      authProviders: [
+        ...new Set(
+          (record.authIdentities ?? [])
+            .map((identity) => identity.provider.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      ],
       ...(record.emailVerificationTokenHash == null
         ? {}
         : { emailVerificationTokenHash: record.emailVerificationTokenHash }),

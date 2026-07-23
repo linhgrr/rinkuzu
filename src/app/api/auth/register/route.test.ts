@@ -110,14 +110,14 @@ describe('POST /api/auth/register', () => {
 
     registerMock.mockResolvedValueOnce({
       success: false,
-      code: 'email_taken',
-      error: 'Email already registered',
+      code: 'registration_method_mismatch',
+      error: 'Registration method does not match the existing account',
       statusCode: 409,
     });
     const failed = await POST(request(validBody));
     expect(failed.status).toBe(409);
     await expect(failed.json()).resolves.toMatchObject({
-      error: { code: 'email_taken' },
+      error: { code: 'registration_method_mismatch' },
     });
   });
 

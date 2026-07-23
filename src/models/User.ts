@@ -5,6 +5,7 @@ import {
   ACCOUNT_DISABLE_ACTIVE,
   ACCOUNT_DISABLE_DISABLED,
 } from '@/shared/constants/account-disable';
+import { canonicalizeEmail } from '@/shared/email/canonical-email';
 import { USER_ROLES, type UserRole } from '@/shared/constants/user-role';
 
 interface UserDocument extends Document {
@@ -22,6 +23,7 @@ interface UserDocument extends Document {
   disabledBy?: Types.ObjectId | null;
   /** Monotonic session revocation counter; increments on each real disable/restore. */
   authVersion: number;
+  authIdentities?: Array<{ provider: string; subject: string }>;
 
   // Email verification
   emailVerified?: Date | null;
@@ -65,13 +67,20 @@ const UserSubscriptionSchema = new Schema(
   { _id: false },
 );
 
+const AuthIdentitySchema = new Schema(
+  {
+    provider: { type: String, required: true, trim: true, lowercase: true },
+    subject: { type: String, required: true, trim: true },
+  },
+  { _id: false },
+);
+
 const UserSchema = new Schema<UserDocument>({
   email: {
     type: String,
     required: [true, 'Email is required'],
     unique: true,
-    lowercase: true,
-    trim: true,
+    set: canonicalizeEmail,
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please enter a valid email'],
   },
   password: {
@@ -113,6 +122,7 @@ const UserSchema = new Schema<UserDocument>({
       message: 'authVersion must be a non-negative integer',
     },
   },
+  authIdentities: { type: [AuthIdentitySchema], required: false, default: undefined },
   emailVerified: { type: Date, default: null },
   emailVerificationTokenHash: { type: String, default: null },
   emailVerificationExpires: { type: Date, default: null },
@@ -146,6 +156,16 @@ UserSchema.index(
   { partialFilterExpression: { emailVerificationTokenHash: { $type: 'string' } } },
 );
 UserSchema.index({ lockedUntil: 1 }, { sparse: true });
+UserSchema.index(
+  { 'authIdentities.provider': 1, 'authIdentities.subject': 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      'authIdentities.provider': { $type: 'string' },
+      'authIdentities.subject': { $type: 'string' },
+    },
+  },
+);
 UserSchema.index(
   { 'subscription.isActive': 1, 'subscription.endDate': 1 },
   { partialFilterExpression: { 'subscription.isActive': true } },

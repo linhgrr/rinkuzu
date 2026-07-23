@@ -56,7 +56,7 @@ class SignInRepositoryStub implements IAuthSignInRepository {
         data: SuccessfulLoginData,
       ) => Promise<boolean>
     >();
-  upsertVerifiedGoogleAccount =
+  resolveVerifiedGoogleAccount =
     vi.fn<(data: VerifiedGoogleAccountData) => Promise<AuthenticatedUser | null>>();
 }
 
@@ -287,9 +287,12 @@ describe('AuthSignInService', () => {
 
   it('rejects unverified Google profiles and upserts a verified profile once', async () => {
     await expect(
-      service.authenticateGoogle({ email: account.email, emailVerified: false }, context),
+      service.authenticateGoogle(
+        { subject: 'google-sub', email: account.email, emailVerified: false },
+        context,
+      ),
     ).resolves.toEqual({ success: false, code: 'invalid_google_profile' });
-    expect(repository.upsertVerifiedGoogleAccount).not.toHaveBeenCalled();
+    expect(repository.resolveVerifiedGoogleAccount).not.toHaveBeenCalled();
 
     const googleUser: AuthenticatedUser = {
       id: account.id,
@@ -299,22 +302,35 @@ describe('AuthSignInService', () => {
       passwordChangedAt: null,
       authVersion: 0,
     };
-    repository.upsertVerifiedGoogleAccount.mockResolvedValue(googleUser);
+    repository.resolveVerifiedGoogleAccount.mockResolvedValue(googleUser);
 
     await expect(
       service.authenticateGoogle(
-        { email: ' USER@example.com ', emailVerified: true, displayName: ' Rin ' },
+        {
+          subject: ' google-sub ',
+          email: ' USER@example.com ',
+          emailVerified: true,
+          displayName: ' Rin ',
+        },
         context,
       ),
     ).resolves.toEqual({ success: true, user: googleUser });
-    expect(repository.upsertVerifiedGoogleAccount).toHaveBeenCalledTimes(1);
-    expect(repository.upsertVerifiedGoogleAccount).toHaveBeenCalledWith(
-      expect.objectContaining({ email: account.email, displayName: 'Rin', ip: context.ip }),
+    expect(repository.resolveVerifiedGoogleAccount).toHaveBeenCalledTimes(1);
+    expect(repository.resolveVerifiedGoogleAccount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: 'google-sub',
+        email: account.email,
+        displayName: 'Rin',
+        ip: context.ip,
+      }),
     );
 
-    repository.upsertVerifiedGoogleAccount.mockResolvedValueOnce(null);
+    repository.resolveVerifiedGoogleAccount.mockResolvedValueOnce(null);
     await expect(
-      service.authenticateGoogle({ email: account.email, emailVerified: true }, context),
+      service.authenticateGoogle(
+        { subject: 'google-sub', email: account.email, emailVerified: true },
+        context,
+      ),
     ).resolves.toEqual({ success: false, code: 'invalid_google_profile' });
   });
 });

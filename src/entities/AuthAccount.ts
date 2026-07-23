@@ -18,6 +18,7 @@ export interface AuthAccountIdentity {
 
 export interface AuthAccountSecurityState extends AuthAccountIdentity {
   passwordHash?: string;
+  authProviders: string[];
   emailVerified?: Date;
   emailVerificationTokenHash?: string;
   emailVerificationExpires?: Date;

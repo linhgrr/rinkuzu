@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { loginSchema } from '@/lib/validation/auth';
 import { toCredentialsSignInError } from '@/services/auth/CredentialsSignInErrors';
 import { isAuthVersion } from '@/shared/constants/account-disable';
+import { canonicalizeEmail } from '@/shared/email/canonical-email';
 
 const logoutAudit = new AuthAuditAdapter();
 const logoutScheduler = new NextDeferredTaskScheduler();
@@ -56,7 +57,8 @@ function parseGoogleProfile(profile: unknown): GoogleProfile | null {
   const sub = readTrimmedString(record, 'sub');
   if (!sub) return null;
 
-  const email = readTrimmedString(record, 'email')?.toLowerCase();
+  const rawEmail = readTrimmedString(record, 'email');
+  const email = rawEmail ? canonicalizeEmail(rawEmail) : undefined;
   const displayName = readTrimmedString(record, 'name');
   const avatar = readTrimmedString(record, 'picture');
 
@@ -162,6 +164,7 @@ const providers = [
             // Exactly one repository upsert path for Google — never from jwt/adapter.
             const result = await getAuthSignInService().authenticateGoogle(
               {
+                subject: google.sub,
                 email: google.email,
                 emailVerified: true,
                 ...(google.displayName ? { displayName: google.displayName } : {}),

@@ -23,7 +23,7 @@ import type { AuthAccountPersistenceRecord } from '@/repositories/types/AuthAcco
 import { ACCOUNT_DISABLE_ACTIVE, ACTIVE_ACCOUNT_FILTER } from '@/shared/constants/account-disable';
 
 const SECURITY_FIELDS =
-  'email role password emailVerified emailVerificationTokenHash ' +
+  'email role password authIdentities emailVerified emailVerificationTokenHash ' +
   'emailVerificationExpires passwordResetTokenHash passwordResetExpires';
 
 const LOGIN_FIELDS =
@@ -31,6 +31,24 @@ const LOGIN_FIELDS =
   'failedLoginAttempts failedLoginWindowStart lockedUntil';
 
 const AUTHENTICATED_USER_FIELDS = 'email role avatar displayName passwordChangedAt authVersion';
+
+interface GoogleProfileUpdates {
+  emailVerified: Date;
+  lastLoginAt: Date;
+  lastLoginIp: string | null;
+  displayName?: string;
+  avatar?: string;
+}
+
+function buildGoogleProfileUpdates(data: VerifiedGoogleAccountData): GoogleProfileUpdates {
+  return {
+    emailVerified: data.now,
+    lastLoginAt: data.now,
+    lastLoginIp: data.ip,
+    ...(data.displayName ? { displayName: data.displayName } : {}),
+    ...(data.avatar ? { avatar: data.avatar } : {}),
+  };
+}
 
 export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignInRepository {
   async findByEmail(email: string): Promise<AuthAccountSecurityState | null> {
@@ -97,7 +115,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
   ): Promise<boolean> {
     await connectDB();
     const result = await User.updateOne(
-      { email, password: { $type: 'string' }, ...ACTIVE_ACCOUNT_FILTER },
+      { email, ...ACTIVE_ACCOUNT_FILTER },
       {
         $set: {
           passwordResetTokenHash: tokenHash,
@@ -305,22 +323,33 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     return result.matchedCount === 1;
   }
 
-  async upsertVerifiedGoogleAccount(
+  async resolveVerifiedGoogleAccount(
     data: VerifiedGoogleAccountData,
   ): Promise<AuthenticatedUser | null> {
     await connectDB();
     try {
+      const identity = { provider: 'google', subject: data.subject };
+      const linkedRecord = await User.findOneAndUpdate(
+        { authIdentities: { $elemMatch: identity }, ...ACTIVE_ACCOUNT_FILTER },
+        {
+          $set: buildGoogleProfileUpdates(data),
+        },
+        { new: true },
+      )
+        .select(AUTHENTICATED_USER_FIELDS)
+        .lean<AuthAccountPersistenceRecord>();
+      if (linkedRecord) {
+        return AuthAccountPersistenceMapper.toAuthenticatedUser(linkedRecord);
+      }
+
       const record = await User.findOneAndUpdate(
         { email: data.email, ...ACTIVE_ACCOUNT_FILTER },
         {
           $set: {
             email: data.email,
-            emailVerified: data.now,
-            lastLoginAt: data.now,
-            lastLoginIp: data.ip,
-            ...(data.displayName ? { displayName: data.displayName } : {}),
-            ...(data.avatar ? { avatar: data.avatar } : {}),
+            ...buildGoogleProfileUpdates(data),
           },
+          $addToSet: { authIdentities: identity },
           $setOnInsert: {
             role: 'user',
             disable: ACCOUNT_DISABLE_ACTIVE,
@@ -337,8 +366,17 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
       if (!record) return null;
       return AuthAccountPersistenceMapper.toAuthenticatedUser(record);
     } catch (error) {
-      // Disabled account still owns the globally unique email.
-      if (isMongoDuplicateKeyError(error)) return null;
+      if (isMongoDuplicateKeyError(error)) {
+        const record = await User.findOne({
+          authIdentities: {
+            $elemMatch: { provider: 'google', subject: data.subject },
+          },
+          ...ACTIVE_ACCOUNT_FILTER,
+        })
+          .select(AUTHENTICATED_USER_FIELDS)
+          .lean<AuthAccountPersistenceRecord>();
+        return record ? AuthAccountPersistenceMapper.toAuthenticatedUser(record) : null;
+      }
       throw error;
     }
   }

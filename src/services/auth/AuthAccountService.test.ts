@@ -34,6 +34,7 @@ function securityState(
   return {
     ...identity,
     passwordHash: 'password-hash',
+    authProviders: [],
     ...overrides,
   };
 }
@@ -122,6 +123,49 @@ describe('AuthAccountService', () => {
     });
   });
 
+  it('rejects a local registration when the existing account uses another method', async () => {
+    repository.findByEmail.mockResolvedValue(
+      securityState({ passwordHash: undefined, authProviders: ['google'] }),
+    );
+
+    await expect(
+      service.register({ email: identity.email, password: 'password' }, context),
+    ).resolves.toEqual({
+      success: false,
+      code: 'registration_method_mismatch',
+      error:
+        'Registration method does not match the existing account. Use the original sign-in method.',
+      statusCode: 409,
+    });
+    expect(hashPassword).not.toHaveBeenCalled();
+
+    await scheduler.runAll();
+    expect(audit.record).toHaveBeenCalledWith({
+      event: 'register',
+      email: identity.email,
+      metadata: { reason: 'registration_method_mismatch' },
+      ...context,
+    });
+  });
+
+  it('rejects legacy verified passwordless accounts before provider identity backfill', async () => {
+    repository.findByEmail.mockResolvedValue(
+      securityState({
+        passwordHash: undefined,
+        authProviders: [],
+        emailVerified: new Date('2026-01-01T00:00:00.000Z'),
+      }),
+    );
+
+    await expect(
+      service.register({ email: identity.email, password: 'password' }, context),
+    ).resolves.toMatchObject({
+      success: false,
+      code: 'registration_method_mismatch',
+      statusCode: 409,
+    });
+  });
+
   it('creates a pending account and defers notification plus audits', async () => {
     repository.findByEmail.mockResolvedValue(null);
     repository.createPending.mockResolvedValue(identity);
@@ -184,7 +228,7 @@ describe('AuthAccountService', () => {
     expect(audit.record).toHaveBeenCalledWith({
       event: 'password_reset_requested',
       email: identity.email,
-      metadata: { reason: 'unknown_user_or_oauth' },
+      metadata: { reason: 'unknown_user' },
       ...context,
     });
   });

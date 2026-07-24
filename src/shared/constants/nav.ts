@@ -73,6 +73,7 @@ export const DESKTOP_PRIMARY_NAV: DesktopNavGroupDef[] = [
       { href: ROUTES.ADMIN.USERS, labelKey: 'userManagement' },
       { href: ROUTES.ADMIN.SUBSCRIPTIONS, labelKey: 'subscriptions' },
       { href: ROUTES.ADMIN.PLANS, labelKey: 'pricingPlans' },
+      { href: ROUTES.ADMIN.PROMOTIONS, labelKey: 'promotions' },
       { href: ROUTES.ADMIN.STATS, labelKey: 'statistics' },
       { href: ROUTES.ADMIN.REPORTS, labelKey: 'quizReports' },
       { href: '/admin/ocr-keys', labelKey: 'ocrKeys' },

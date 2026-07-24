@@ -45,6 +45,7 @@ export const ROUTES = {
   // Admin routes
   ADMIN: {
     PLANS: '/admin/plans',
+    PROMOTIONS: '/admin/promotions',
     QUIZZES: '/admin/quizzes',
     REPORTS: '/admin/reports',
     STATS: '/admin/stats',

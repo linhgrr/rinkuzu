@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-22.1';
+export const INDEX_CONTRACT_VERSION = '2026-07-24.1';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -68,6 +68,177 @@ export const INDEX_CONTRACT = Object.freeze([
     { expireAfterSeconds: 0 },
   ),
   required('auth-rate-limits.key', 'auth_rate_limits', { key: 1 }, { unique: true }),
+
+  // billingorders
+  required('billingorders.public-id', 'billingorders', { publicId: 1 }, { unique: true }),
+  required('billingorders.order-code', 'billingorders', { orderCode: 1 }, { unique: true }),
+  required('billingorders.user-recent', 'billingorders', { user: 1, createdAt: -1 }),
+  required('billingorders.fulfillment-work', 'billingorders', {
+    fulfillmentStatus: 1,
+    updatedAt: 1,
+  }),
+
+  // paymentattempts
+  required('paymentattempts.order-recent', 'paymentattempts', { order: 1, createdAt: -1 }),
+  required(
+    'paymentattempts.active-checkout',
+    'paymentattempts',
+    { order: 1, activeForCheckout: 1 },
+    { unique: true, partialFilterExpression: { activeForCheckout: true } },
+  ),
+  required(
+    'paymentattempts.external-order',
+    'paymentattempts',
+    { provider: 1, providerAccountId: 1, environment: 1, externalOrderId: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { externalOrderId: { $type: 'string' } },
+    },
+  ),
+  required(
+    'paymentattempts.payment-link',
+    'paymentattempts',
+    { provider: 1, providerAccountId: 1, environment: 1, paymentLinkId: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { paymentLinkId: { $type: 'string' } },
+    },
+  ),
+  required('paymentattempts.reconciliation', 'paymentattempts', {
+    collectionStatus: 1,
+    nextReconcileAt: 1,
+  }),
+
+  // paymenttransactions
+  required(
+    'paymenttransactions.provider-reference',
+    'paymenttransactions',
+    {
+      provider: 1,
+      providerAccountId: 1,
+      environment: 1,
+      transactionType: 1,
+      externalReference: 1,
+    },
+    { unique: true },
+  ),
+  required('paymenttransactions.order-event', 'paymenttransactions', {
+    order: 1,
+    providerEventAt: 1,
+  }),
+
+  // Billing idempotency, promotions and eligibility.
+  required(
+    'idempotencyrecords.request-key',
+    'idempotencyrecords',
+    { user: 1, endpoint: 1, apiVersion: 1, idempotencyKey: 1 },
+    { unique: true },
+  ),
+  required('promotions.normalized-code', 'promotions', { normalizedCode: 1 }, { unique: true }),
+  required('promotions.availability', 'promotions', { active: 1, startsAt: 1, endsAt: 1 }),
+  required(
+    'promotionredemptions.promotion-order',
+    'promotionredemptions',
+    { promotion: 1, order: 1 },
+    { unique: true },
+  ),
+  required('promotionredemptions.user-status', 'promotionredemptions', {
+    promotion: 1,
+    user: 1,
+    status: 1,
+  }),
+  required(
+    'firstpurchaseclaims.user-class',
+    'firstpurchaseclaims',
+    { user: 1, eligibilityClass: 1 },
+    { unique: true },
+  ),
+  required(
+    'promotionusercounters.user',
+    'promotionusercounters',
+    { promotion: 1, user: 1 },
+    { unique: true },
+  ),
+
+  // Durable billing inbox and entitlement ledger.
+  required(
+    'paymentwebhookinboxes.dedup',
+    'paymentwebhookinboxes',
+    { provider: 1, providerAccountId: 1, environment: 1, dedupKey: 1 },
+    { unique: true },
+  ),
+  required('paymentwebhookinboxes.work', 'paymentwebhookinboxes', {
+    status: 1,
+    nextAttemptAt: 1,
+    leaseUntil: 1,
+  }),
+  required('entitlementaccounts.user', 'entitlementaccounts', { user: 1 }, { unique: true }),
+  required('entitlementaccounts.expiration', 'entitlementaccounts', { currentEndAt: 1 }),
+  required(
+    'entitlementgrants.source',
+    'entitlementgrants',
+    { sourceType: 1, sourceId: 1 },
+    { unique: true },
+  ),
+  required(
+    'entitlementgrants.sequence',
+    'entitlementgrants',
+    { user: 1, sequence: 1 },
+    { unique: true },
+  ),
+  required(
+    'entitlementadjustments.source',
+    'entitlementadjustments',
+    { sourceType: 1, sourceId: 1 },
+    { unique: true },
+  ),
+  required(
+    'entitlementadjustments.sequence',
+    'entitlementadjustments',
+    { user: 1, sequence: 1 },
+    { unique: true },
+  ),
+  required(
+    'externalmoneyadjustments.provider-reference',
+    'externalmoneyadjustments',
+    {
+      provider: 1,
+      providerAccountId: 1,
+      environment: 1,
+      type: 1,
+      externalReference: 1,
+    },
+    { unique: true },
+  ),
+  required('externalmoneyadjustments.order-event', 'externalmoneyadjustments', {
+    order: 1,
+    occurredAt: 1,
+  }),
+  required('internalrequestnonces.nonce', 'internalrequestnonces', { nonce: 1 }, { unique: true }),
+  required(
+    'internalrequestnonces.expiration',
+    'internalrequestnonces',
+    { expiresAt: 1 },
+    { expireAfterSeconds: 0 },
+  ),
+
+  // Observe-only abuse signals and auditable admin review.
+  required('abusesignals.event', 'abusesignals', { eventId: 1 }, { unique: true }),
+  required('abusesignals.identity-window', 'abusesignals', {
+    signalType: 1,
+    keyVersion: 1,
+    hash: 1,
+    validUntil: 1,
+  }),
+  required('abusesignals.user-window', 'abusesignals', { user: 1, validUntil: 1 }),
+  required('abusecases.public-id', 'abusecases', { publicId: 1 }, { unique: true }),
+  required('abusecases.user-status', 'abusecases', { users: 1, status: 1 }),
+  required('abusecases.queue', 'abusecases', { status: 1, score: -1, updatedAt: -1 }),
+  required('abuseadminaudits.event', 'abuseadminaudits', { eventId: 1 }, { unique: true }),
+  required('abuseadminaudits.case-event', 'abuseadminaudits', {
+    case: 1,
+    occurredAt: -1,
+  }),
 
   // Entitlement usage is owned by the application usage service rather than a
   // Mongoose schema; deployment owns its uniqueness and retention guarantees.

@@ -2,16 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { HiOutlineCheck, HiOutlineShieldCheck, HiOutlineSparkles } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import {
-  createSubscriptionPaymentUrl,
-  fetchSubscriptionPageViewModel,
-} from '@/features/subscription/api/subscription-page-api';
+import { fetchSubscriptionPageViewModel } from '@/features/subscription/api/subscription-page-api';
 import type { SubscriptionPlanViewModel } from '@/features/subscription/types/subscription-page-view-model';
 import { formatVndCurrency } from '@/lib/formatters';
-import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 
 export type UpgradePromptKind = 'quota' | 'feature';
 
@@ -31,6 +28,7 @@ const INITIAL_STATE: PlansState = { status: 'loading', plans: [], isPremium: fal
 export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallModalProps) {
   const t = useTranslations('premium');
   const tPricing = useTranslations('pricing');
+  const router = useRouter();
   const [plansState, setPlansState] = useState<PlansState>(INITIAL_STATE);
   const [reloadKey, setReloadKey] = useState(0);
   const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
@@ -63,17 +61,12 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
     return Math.min(...plansState.plans.map((plan) => plan.price / plan.calculatedMonths));
   }, [plansState]);
 
-  const handlePurchase = async (plan: SubscriptionPlanViewModel) => {
+  const handlePurchase = (plan: SubscriptionPlanViewModel) => {
     if (submittingPlanId) return;
     setSubmittingPlanId(plan.id);
     setPaymentError(false);
-    try {
-      const paymentUrl = await createSubscriptionPaymentUrl(plan.id);
-      window.location.assign(assertTrustedPayosCheckoutUrl(paymentUrl));
-    } catch {
-      setPaymentError(true);
-      setSubmittingPlanId(null);
-    }
+    onClose(suppressFuture);
+    router.push(`/checkout?plan=${encodeURIComponent(plan.id)}`);
   };
 
   const closePaywall = () => onClose(suppressFuture);
@@ -205,7 +198,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
                         variant={isBestValue ? 'default' : 'outline'}
                         loading={submittingPlanId === plan.id}
                         disabled={submittingPlanId !== null}
-                        onClick={() => void handlePurchase(plan)}
+                        onClick={() => handlePurchase(plan)}
                       >
                         {t('paywall.choosePlan', { plan: plan.name })}
                       </Button>

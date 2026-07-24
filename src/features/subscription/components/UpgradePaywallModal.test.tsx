@@ -1,13 +1,13 @@
 /** @vitest-environment jsdom */
 
 import type { ReactNode } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UpgradePaywallModal } from './UpgradePaywallModal';
 
-const { fetchSubscriptionPageMock, createPaymentMock } = vi.hoisted(() => ({
+const { fetchSubscriptionPageMock, routerPushMock } = vi.hoisted(() => ({
   fetchSubscriptionPageMock: vi.fn(),
-  createPaymentMock: vi.fn(),
+  routerPushMock: vi.fn(),
 }));
 
 vi.mock('next-intl', () => ({
@@ -15,9 +15,12 @@ vi.mock('next-intl', () => ({
     `${namespace}:${key}${values ? `:${JSON.stringify(values)}` : ''}`,
 }));
 
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: routerPushMock }),
+}));
+
 vi.mock('@/features/subscription/api/subscription-page-api', () => ({
   fetchSubscriptionPageViewModel: fetchSubscriptionPageMock,
-  createSubscriptionPaymentUrl: createPaymentMock,
 }));
 
 vi.mock('@/components/ui/Modal', () => ({
@@ -62,6 +65,12 @@ describe('UpgradePaywallModal', () => {
     expect(screen.getByText('pricing:free.name')).toBeTruthy();
     expect(screen.getByText('premium:paywall.bestValue')).toBeTruthy();
     expect(screen.getByLabelText('premium:paywall.currentPlan')).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /premium:paywall\.choosePlan:.*Eco Plus 6M/,
+      }),
+    );
+    expect(routerPushMock).toHaveBeenCalledWith('/checkout?plan=eco-plus-six-months');
   });
 
   it('does not offer another purchase when Premium became active in another tab', async () => {

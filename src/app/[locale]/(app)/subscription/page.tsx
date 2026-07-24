@@ -1,19 +1,14 @@
 'use client';
 
 import { type Dispatch, useEffect, useReducer } from 'react';
-import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
-import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
+import { useRouter } from '@/i18n/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { SubscriptionPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { HiOutlineCheck, HiOutlineShieldCheck } from 'react-icons/hi';
 import type { SubscriptionPlanViewModel } from '@/features/subscription/types/subscription-page-view-model';
-import {
-  createSubscriptionPaymentUrl,
-  fetchSubscriptionPageViewModel,
-} from '@/features/subscription/api/subscription-page-api';
+import { fetchSubscriptionPageViewModel } from '@/features/subscription/api/subscription-page-api';
 import {
   initialSubscriptionPageState,
   subscriptionPageReducer,
@@ -38,6 +33,7 @@ async function loadSubscriptionPage(dispatch: Dispatch<SubscriptionPageAction>):
 export default function SubscriptionPage() {
   const t = useTranslations('subscription');
   const tPricing = useTranslations('pricing');
+  const router = useRouter();
   const [state, dispatch] = useReducer(subscriptionPageReducer, initialSubscriptionPageState);
   const freeFeatures = FREE_PRICING_FEATURE_KEYS.map((key) => tPricing(`free.features.${key}`));
   const premiumFeatures = PREMIUM_PRICING_FEATURE_KEYS.map((key) =>
@@ -49,21 +45,7 @@ export default function SubscriptionPage() {
   }, []);
 
   const handlePurchase = (plan: SubscriptionPlanViewModel): void => {
-    dispatch({ type: 'patch', value: { selectedPlan: plan } });
-  };
-
-  const confirmPurchase = async () => {
-    if (!state.selectedPlan) return;
-
-    dispatch({ type: 'patch', value: { paymentLoading: true } });
-    try {
-      const paymentUrl = await createSubscriptionPaymentUrl(state.selectedPlan.id);
-      window.location.assign(assertTrustedPayosCheckoutUrl(paymentUrl));
-    } catch (error) {
-      console.error('Error creating payment:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create payment request');
-    }
-    dispatch({ type: 'patch', value: { paymentLoading: false, selectedPlan: null } });
+    router.push(`/checkout?plan=${encodeURIComponent(plan.id)}`);
   };
 
   const currentSubscription = state.currentSubscription;
@@ -203,23 +185,6 @@ export default function SubscriptionPage() {
               </Card>
             ))}
           </div>
-
-          <ConfirmModal
-            isOpen={!!state.selectedPlan}
-            title={t('subscribe')}
-            message={
-              <div className="space-y-4">
-                <p className="text-ink">
-                  {state.selectedPlan?.name} - {state.selectedPlan?.priceLabel ?? ''}
-                </p>
-              </div>
-            }
-            confirmText={t('subscribe')}
-            cancelText={t('cancel')}
-            isLoading={state.paymentLoading}
-            onCancel={() => dispatch({ type: 'patch', value: { selectedPlan: null } })}
-            onConfirm={confirmPurchase}
-          />
         </div>
       </div>
     </div>

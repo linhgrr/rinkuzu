@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "npm@10.9.8",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --require ./scripts/node-dns-bootstrap.cjs ./node_modules/next/dist/bin/next dev",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build --webpack",
     "start": "node scripts/start-standalone.mjs",

@@ -1,15 +1,20 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SubscriptionPage from '@/app/[locale]/(app)/subscription/page';
 
-const { fetchSubscriptionPageMock } = vi.hoisted(() => ({
+const { fetchSubscriptionPageMock, routerPushMock } = vi.hoisted(() => ({
   fetchSubscriptionPageMock: vi.fn(),
+  routerPushMock: vi.fn(),
 }));
 
 vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => `${namespace}:${key}`,
+}));
+
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: routerPushMock }),
 }));
 
 vi.mock('@/features/subscription/api/subscription-page-api', () => ({
@@ -55,6 +60,8 @@ describe('SubscriptionPage plan comparison', () => {
       (screen.getByRole('button', { name: 'subscription:subscribe' }) as HTMLButtonElement)
         .disabled,
     ).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'subscription:subscribe' }));
+    expect(routerPushMock).toHaveBeenCalledWith('/checkout?plan=premium-monthly');
     expect(screen.getByText('pricing:free.features.askRinChan')).toBeTruthy();
     expect(screen.getByText('pricing:premium.features.privateQuizzes')).toBeTruthy();
   });

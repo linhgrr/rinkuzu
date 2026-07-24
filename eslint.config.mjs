@@ -171,6 +171,7 @@ export default defineConfig(
   prettier,
   globalIgnores([
     'node_modules/**',
+    '.codex-tmp/**',
     '.claude/**',
     '.code-review-graph/**',
     '.gitnexus/**',

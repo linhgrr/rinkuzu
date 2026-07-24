@@ -64,7 +64,7 @@ interface PayOSResponse {
   body: z.infer<typeof envelopeSchema>;
 }
 
-export interface PaymentSignatureInput {
+interface PaymentSignatureInput {
   amount: number;
   cancelUrl: string;
   description: string;

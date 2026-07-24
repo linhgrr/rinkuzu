@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import mongoose, { type Model, Schema, Types } from 'mongoose';
 
-export const PAYMENT_COLLECTION_STATUSES = [
+const PAYMENT_COLLECTION_STATUSES = [
   'creating',
   'pending',
   'partial',
@@ -11,27 +11,20 @@ export const PAYMENT_COLLECTION_STATUSES = [
   'failed',
   'review',
 ] as const;
-export type PaymentCollectionStatus = (typeof PAYMENT_COLLECTION_STATUSES)[number];
 
-export const ORDER_COLLECTION_STATUSES = [
-  'unpaid',
-  'partial',
-  'paid',
-  'overpaid',
-  'review',
-] as const;
-export type OrderCollectionStatus = (typeof ORDER_COLLECTION_STATUSES)[number];
+const ORDER_COLLECTION_STATUSES = ['unpaid', 'partial', 'paid', 'overpaid', 'review'] as const;
+type OrderCollectionStatus = (typeof ORDER_COLLECTION_STATUSES)[number];
 
-export const FULFILLMENT_STATUSES = [
+const FULFILLMENT_STATUSES = [
   'unfulfilled',
   'processing',
   'fulfilled',
   'revoked',
   'review',
 ] as const;
-export type FulfillmentStatus = (typeof FULFILLMENT_STATUSES)[number];
+type FulfillmentStatus = (typeof FULFILLMENT_STATUSES)[number];
 
-export const SETTLEMENT_STATUSES = [
+const SETTLEMENT_STATUSES = [
   'unsettled',
   'settled',
   'partially_refunded',
@@ -41,7 +34,7 @@ export const SETTLEMENT_STATUSES = [
   'reversed',
   'review',
 ] as const;
-export type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number];
+type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number];
 
 const moneyField = {
   type: Number,
@@ -510,8 +503,13 @@ const InternalRequestNonceSchema = new Schema(
 InternalRequestNonceSchema.index({ nonce: 1 }, { unique: true });
 InternalRequestNonceSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-function model<T>(name: string, schema: Schema): Model<T> {
-  return (mongoose.models[name] as Model<T> | undefined) ?? mongoose.model<T>(name, schema);
+type LooseBillingRecord = Record<string, unknown>;
+
+function model(name: string, schema: Schema): Model<LooseBillingRecord> {
+  return (
+    (mongoose.models[name] as Model<LooseBillingRecord> | undefined) ??
+    mongoose.model<LooseBillingRecord>(name, schema)
+  );
 }
 
 export type BillingOrderRecord = {
@@ -537,7 +535,9 @@ export type BillingOrderRecord = {
   version: number;
 };
 
-export const BillingOrder = model<BillingOrderRecord>('BillingOrder', BillingOrderSchema);
+export const BillingOrder =
+  (mongoose.models['BillingOrder'] as Model<BillingOrderRecord> | undefined) ??
+  mongoose.model<BillingOrderRecord>('BillingOrder', BillingOrderSchema);
 export const PaymentAttempt = model('PaymentAttempt', PaymentAttemptSchema);
 export const PaymentTransaction = model('PaymentTransaction', PaymentTransactionSchema);
 export const IdempotencyRecord = model('IdempotencyRecord', IdempotencyRecordSchema);
@@ -549,9 +549,6 @@ export const PaymentWebhookInbox = model('PaymentWebhookInbox', PaymentWebhookIn
 export const EntitlementAccount = model('EntitlementAccount', EntitlementAccountSchema);
 export const EntitlementGrant = model('EntitlementGrant', EntitlementGrantSchema);
 export const EntitlementAdjustment = model('EntitlementAdjustment', EntitlementAdjustmentSchema);
-export const ExternalMoneyAdjustment = model(
-  'ExternalMoneyAdjustment',
-  ExternalMoneyAdjustmentSchema,
-);
+model('ExternalMoneyAdjustment', ExternalMoneyAdjustmentSchema);
 export const BillingCounter = model('BillingCounter', BillingCounterSchema);
 export const InternalRequestNonce = model('InternalRequestNonce', InternalRequestNonceSchema);

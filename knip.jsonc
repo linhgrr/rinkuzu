@@ -5,6 +5,8 @@
     "src/auth.ts!",
     "src/auth.config.ts!",
     "src/app/sw.ts!",
+    "src/models/Abuse.ts!",
+    "src/services/abuse/abuse-identity.ts!",
     "doctor.config.mjs",
     "tests/types/declaration-contracts.ts",
   ],

@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { BillingDomainError } from './billing-domain';
 import { parseAndVerifyPayOSWebhook } from './payos-webhook';
 
 const checksumKey = 'test-checksum-key-with-at-least-32-characters';
@@ -59,7 +58,7 @@ describe('PayOS webhook verification', () => {
         }),
       ),
     ).toThrowError(
-      expect.objectContaining<BillingDomainError>({
+      expect.objectContaining({
         code: 'unsupported_webhook_schema',
       }),
     );
@@ -78,7 +77,7 @@ describe('PayOS webhook verification', () => {
     invalid.signature = '0'.repeat(64);
 
     expect(() => parseAndVerifyPayOSWebhook(JSON.stringify(invalid))).toThrowError(
-      expect.objectContaining<BillingDomainError>({
+      expect.objectContaining({
         code: 'invalid_webhook_signature',
       }),
     );

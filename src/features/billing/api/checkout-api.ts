@@ -1,11 +1,11 @@
 import { fetchApiData } from '@/lib/api/client';
 
-export interface CheckoutPlan {
+interface CheckoutPlan {
   id: string;
   name: string;
 }
 
-export interface CheckoutQuoteAmounts {
+interface CheckoutQuoteAmounts {
   baseAmount: number;
   discountAmount: number;
   finalAmount: number;
@@ -36,7 +36,7 @@ export interface CheckoutOrder {
 }
 
 async function getCsrfToken(): Promise<string> {
-  return (await fetchApiData<{ token: string }>('/api/v1/billing/csrf')).token;
+  return (await fetchApiData<{ token: string }>('/api/v1/billing/csrf', { method: 'POST' })).token;
 }
 
 async function billingMutation<T>(

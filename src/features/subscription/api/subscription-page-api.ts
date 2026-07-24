@@ -1,5 +1,4 @@
 import type {
-  PaymentRequestDto,
   SubscriptionPlansResponseDto,
   SubscriptionStatusResponseDto,
 } from '@/dtos/subscription';
@@ -20,18 +19,6 @@ export async function fetchSubscriptionPageViewModel(): Promise<SubscriptionPage
   ]);
 
   return toSubscriptionPageViewModel(plans, status);
-}
-
-export async function createSubscriptionPaymentUrl(planId: string): Promise<string> {
-  const payment = await fetchApiData<PaymentRequestDto>('/api/subscription/create-payment', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ planId }),
-  });
-
-  return payment.paymentUrl;
 }
 
 export async function fetchSubscriptionStatusViewModel(): Promise<SubscriptionStatusViewModel> {

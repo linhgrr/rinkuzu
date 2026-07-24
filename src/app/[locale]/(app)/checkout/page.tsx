@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { HiOutlineCheckCircle, HiOutlineLockClosed, HiOutlineTag } from 'react-icons/hi';
@@ -28,7 +28,7 @@ function statusLabel(order: CheckoutOrder): string {
   return 'Đang chờ thanh toán';
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const params = useSearchParams();
   const router = useRouter();
   const planId = params.get('plan');
@@ -233,5 +233,19 @@ export default function CheckoutPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-3xl px-4 py-12 text-center text-ink-muted">
+          Đang tải checkout…
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }

@@ -56,6 +56,7 @@ const doctorConfig = {
       {
         files: [
           'src/repositories/AdminBillingRepository.ts',
+          'src/repositories/BillingRepository.ts',
           'src/repositories/LearningProgressRepository.ts',
           'src/repositories/SubscriptionRepository.ts',
         ],

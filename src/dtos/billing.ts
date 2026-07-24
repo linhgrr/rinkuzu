@@ -17,15 +17,6 @@ export const billingWebhookParamsSchema = z.strictObject({
   provider: z.literal('payos'),
 });
 
-export const externalAdjustmentRequestSchema = z.strictObject({
-  paymentTransactionId: z.string().regex(/^[a-f\d]{24}$/i),
-  type: z.enum(['refund', 'chargeback', 'chargeback_reversal', 'credit']),
-  externalReference: z.string().trim().min(1).max(200),
-  amount: z.number().int().positive().safe(),
-  allocation: z.enum(['principal', 'excess']),
-  occurredAt: z.iso.datetime(),
-});
-
 export const promotionCreateSchema = z
   .strictObject({
     code: z.string().trim().min(3).max(32),

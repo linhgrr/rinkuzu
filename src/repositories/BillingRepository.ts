@@ -190,6 +190,13 @@ function objectId(value: string): Types.ObjectId {
   return new Types.ObjectId(value);
 }
 
+function requireObjectId(value: Types.ObjectId | null): Types.ObjectId {
+  if (!value) {
+    throw new BillingDomainError('payment_processing_failed', 'Order was not created', 500);
+  }
+  return value;
+}
+
 function parsePlanDuration(duration: string): PlanDuration {
   const match = /^P(\d+)M$/.exec(duration);
   if (!match?.[1]) {
@@ -644,9 +651,8 @@ export class BillingRepository implements IBillingRepository {
     } finally {
       await session.endSession();
     }
-    if (!orderId || !attemptId) {
-      throw new BillingDomainError('payment_processing_failed', 'Order was not created', 500);
-    }
+    const createdOrderId = requireObjectId(orderId);
+    const createdAttemptId = requireObjectId(attemptId);
 
     const baseUrl = billingConfig.siteUrl();
     if (!baseUrl) {
@@ -681,7 +687,7 @@ export class BillingRepository implements IBillingRepository {
     if (outcome.kind === 'created') {
       await Promise.all([
         PaymentAttempt.updateOne(
-          { _id: attemptId, collectionStatus: 'creating' },
+          { _id: createdAttemptId, collectionStatus: 'creating' },
           {
             $set: {
               paymentLinkId: outcome.paymentLinkId,
@@ -694,36 +700,41 @@ export class BillingRepository implements IBillingRepository {
           },
         ),
         IdempotencyRecord.updateOne(
-          { order: orderId, status: 'processing' },
+          { order: createdOrderId, status: 'processing' },
           {
             $set: {
               status: 'completed',
               responseStatus: 201,
-              responseBodySnapshot: { orderId: orderId.toString() },
+              responseBodySnapshot: { orderId: createdOrderId.toString() },
             },
           },
         ),
       ]);
-      return { status: 201, order: await this.getOrderById(input.userId, orderId.toString()) };
+      return {
+        status: 201,
+        order: await this.getOrderById(input.userId, createdOrderId.toString()),
+      };
     }
 
     if (outcome.kind === 'definite_failure') {
-      await this.failOrderCreation(orderId, attemptId, outcome.message);
+      await this.failOrderCreation(createdOrderId, createdAttemptId, outcome.message);
       throw new BillingDomainError('payment_create_failed', outcome.message, 422);
     }
 
+    const indeterminateMessage =
+      'message' in outcome ? outcome.message : 'Provider response is indeterminate';
     await PaymentAttempt.updateOne(
-      { _id: attemptId },
+      { _id: createdAttemptId },
       {
         $set: {
           createOutcome: 'indeterminate',
-          lastProviderError: outcome.message,
+          lastProviderError: indeterminateMessage,
           nextReconcileAt: new Date(now.getTime() + 60_000),
         },
         $inc: { version: 1 },
       },
     );
-    return { status: 202, order: await this.getOrderById(input.userId, orderId.toString()) };
+    return { status: 202, order: await this.getOrderById(input.userId, createdOrderId.toString()) };
   }
 
   private async userEmail(userId: Types.ObjectId): Promise<string> {
@@ -1084,7 +1095,7 @@ export class BillingRepository implements IBillingRepository {
         rawPayloadHash: input.rawPayloadHash,
         status: 'verified',
       });
-      return { duplicate: false, inboxId: created._id.toString() };
+      return { duplicate: false, inboxId: String(created._id) };
     } catch (error) {
       if ((error as { code?: number }).code !== 11000) throw error;
       const existing = await PaymentWebhookInbox.findOne({
@@ -1115,7 +1126,7 @@ export class BillingRepository implements IBillingRepository {
         status: 'permanent_failure',
         lastError: 'Verified webhook schema is unsupported',
       });
-      return { duplicate: false, inboxId: created._id.toString() };
+      return { duplicate: false, inboxId: String(created._id) };
     } catch (error) {
       if ((error as { code?: number }).code !== 11000) throw error;
       const existing = await PaymentWebhookInbox.findOne({ ...namespace, dedupKey })
@@ -1720,7 +1731,13 @@ export class BillingRepository implements IBillingRepository {
       { session },
     );
     if (order.eligibilityClass === 'first_purchase') {
-      const claim = await FirstPurchaseClaim.findOne({ order: order._id }).session(session).exec();
+      const claim = await FirstPurchaseClaim.findOne({ order: order._id })
+        .session(session)
+        .lean<{
+          _id: Types.ObjectId;
+          status: 'reserved' | 'consumed' | 'released' | 'late_consumed';
+        }>()
+        .exec();
       if (claim) {
         await FirstPurchaseClaim.updateOne(
           { _id: claim._id },
@@ -1788,7 +1805,7 @@ export class BillingRepository implements IBillingRepository {
         startsAt: new Date(input.startsAt),
         endsAt: new Date(input.endsAt),
       });
-      return this.promotionAdminView(created.toObject() as PromotionLean);
+      return this.promotionAdminView(created.toObject<PromotionLean>());
     } catch (error) {
       if ((error as { code?: number }).code === 11000) {
         throw new BillingDomainError('promotion_conflict', 'Promotion code is already used', 409);

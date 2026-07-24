@@ -1,6 +1,6 @@
 import type { BillingQuotePayload } from '@/services/billing/quote-token';
 
-export interface BillingPlanSummary {
+interface BillingPlanSummary {
   id: string;
   name: string;
 }

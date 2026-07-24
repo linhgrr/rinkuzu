@@ -79,8 +79,13 @@ const AbuseAdminAuditSchema = new Schema(
 AbuseAdminAuditSchema.index({ eventId: 1 }, { unique: true });
 AbuseAdminAuditSchema.index({ case: 1, occurredAt: -1 });
 
-function model<T>(name: string, schema: Schema): Model<T> {
-  return (mongoose.models[name] as Model<T> | undefined) ?? mongoose.model<T>(name, schema);
+type LooseAbuseRecord = Record<string, unknown>;
+
+function model(name: string, schema: Schema): Model<LooseAbuseRecord> {
+  return (
+    (mongoose.models[name] as Model<LooseAbuseRecord> | undefined) ??
+    mongoose.model<LooseAbuseRecord>(name, schema)
+  );
 }
 
 export interface AbuseSignalRecord {
@@ -97,6 +102,8 @@ export interface AbuseSignalRecord {
   source: string;
 }
 
-export const AbuseSignal = model<AbuseSignalRecord>('AbuseSignal', AbuseSignalSchema);
+export const AbuseSignal =
+  (mongoose.models['AbuseSignal'] as Model<AbuseSignalRecord> | undefined) ??
+  mongoose.model<AbuseSignalRecord>('AbuseSignal', AbuseSignalSchema);
 export const AbuseCase = model('AbuseCase', AbuseCaseSchema);
 export const AbuseAdminAudit = model('AbuseAdminAudit', AbuseAdminAuditSchema);

@@ -132,7 +132,7 @@
     "rate-limiter-flexible": "^8.3.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-dropzone": "^14.2.3",
+    "react-dropzone": "^19.1.1",
     "react-fast-marquee": "^1.6.5",
     "react-hook-form": "^7.76.0",
     "react-hotkeys-hook": "^4.6.2",

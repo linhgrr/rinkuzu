@@ -88,7 +88,10 @@ export function findDdlViolations(source, fileName = 'source.ts') {
 
 export async function scanDatabaseDdlBoundary({
   repoRoot,
-  allowedFiles = ['scripts/sync-performance-indexes.mjs'],
+  allowedFiles = [
+    'scripts/sync-performance-indexes.mjs',
+    'scripts/migrate-first-purchase-eligibility.mjs',
+  ],
 }) {
   const allowed = new Set(allowedFiles.map(normalizePath));
   const sourceFiles = [];
@@ -169,7 +172,7 @@ function toViolation(sourceFile, file, node, kind, operation) {
     column: location.character + 1,
     kind,
     operation,
-    message: `Database DDL operation ${operation} is only allowed in scripts/sync-performance-indexes.mjs`,
+    message: `Database DDL operation ${operation} is only allowed in approved migration writers`,
   };
 }
 

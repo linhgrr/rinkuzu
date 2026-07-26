@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addCalendarMonths,
+  BillingDomainError,
   calculateDiscount,
   canApplyCollectionTransition,
   hashIdempotencyRequest,
@@ -8,13 +9,23 @@ import {
   replayEntitlement,
 } from './billing-domain';
 
+function captureBillingError(action: () => unknown): BillingDomainError {
+  try {
+    action();
+  } catch (error) {
+    if (error instanceof BillingDomainError) return error;
+    throw error;
+  }
+  throw new Error('Expected a BillingDomainError');
+}
+
 describe('billing domain', () => {
   it('normalizes safe ASCII promo codes and rejects Unicode homoglyphs', () => {
     expect(normalizePromoCode('  first-50 ')).toBe('FIRST-50');
     expect(() => normalizePromoCode('FΙRST50')).toThrow('Promo code is not applicable');
   });
 
-  it('floors percentage discounts and rejects a final amount below the VND floor', () => {
+  it('floors percentage discounts and identifies a final amount below the VND floor as plan-ineligible', () => {
     expect(
       calculateDiscount(99_001, {
         kind: 'percentage',
@@ -24,13 +35,53 @@ describe('billing domain', () => {
       }),
     ).toEqual({ discountAmount: 14_850, finalAmount: 84_151 });
 
-    expect(() =>
+    const error = captureBillingError(() =>
       calculateDiscount(10_000, {
         kind: 'fixed',
         fixedAmount: 9_000,
         minimumSubtotal: 0,
       }),
-    ).toThrow('Promo code is not applicable');
+    );
+    expect(error).toMatchObject({
+      code: 'promo_not_eligible_for_plan',
+      status: 409,
+    });
+  });
+
+  it('identifies a subtotal below the promo minimum as plan-ineligible', () => {
+    const error = captureBillingError(() =>
+      calculateDiscount(19_000, {
+        kind: 'percentage',
+        percentageOff: 10,
+        minimumSubtotal: 20_000,
+      }),
+    );
+    expect(error).toMatchObject({
+      code: 'promo_not_eligible_for_plan',
+      status: 409,
+    });
+  });
+
+  it('rejects a 95% discount on 39,000 VND because the payable amount would be 1,950 VND', () => {
+    const error = captureBillingError(() =>
+      calculateDiscount(39_000, {
+        kind: 'percentage',
+        percentageOff: 95,
+        minimumSubtotal: 0,
+      }),
+    );
+    expect(error).toMatchObject({
+      code: 'promo_not_eligible_for_plan',
+      status: 409,
+    });
+  });
+
+  it('keeps malformed promo codes on the generic non-applicable error', () => {
+    const error = captureBillingError(() => normalizePromoCode('not valid!'));
+    expect(error).toMatchObject({
+      code: 'promo_not_applicable',
+      status: 400,
+    });
   });
 
   it('hashes semantically identical object key order consistently', () => {

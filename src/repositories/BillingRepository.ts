@@ -12,6 +12,7 @@ import {
   EntitlementGrant,
   ExternalMoneyAdjustment,
   FirstPurchaseClaim,
+  FirstPurchaseEligibility,
   IdempotencyRecord,
   PaymentAttempt,
   PaymentTransaction,
@@ -221,6 +222,8 @@ type CreateProviderCheckoutInput = {
   now: Date;
 };
 
+type FirstPurchaseEligibilityStatus = 'available' | 'reserved' | 'consumed';
+
 function objectId(value: string): Types.ObjectId {
   if (!Types.ObjectId.isValid(value)) {
     throw new BillingDomainError('invalid_user', 'User identity is invalid', 401);
@@ -279,6 +282,93 @@ function payosStatus(snapshot: ProviderPaymentSnapshot): string {
 
 export class BillingRepository implements IBillingRepository {
   constructor(private readonly payos = new BillingPayOSAdapter()) {}
+
+  private async ensureFirstPurchaseEligibility(user: Types.ObjectId): Promise<void> {
+    const existing = await FirstPurchaseEligibility.exists({
+      user,
+      eligibilityClass: 'first_purchase',
+    });
+    if (existing) return;
+
+    const [consumedClaim, reservedClaim] = await Promise.all([
+      FirstPurchaseClaim.findOne({
+        user,
+        eligibilityClass: 'first_purchase',
+        status: { $in: ['consumed', 'late_consumed'] },
+      })
+        .sort({ consumedAt: 1, reservedAt: 1, _id: 1 })
+        .select({ order: 1, consumedAt: 1 })
+        .lean<{ order: Types.ObjectId; consumedAt?: Date }>()
+        .exec(),
+      FirstPurchaseClaim.findOne({
+        user,
+        eligibilityClass: 'first_purchase',
+        status: 'reserved',
+      })
+        .sort({ reservedAt: 1 })
+        .select({ order: 1, reservedAt: 1 })
+        .lean<{ order: Types.ObjectId; reservedAt: Date }>()
+        .exec(),
+    ]);
+    const status: FirstPurchaseEligibilityStatus = consumedClaim
+      ? 'consumed'
+      : reservedClaim
+        ? 'reserved'
+        : 'available';
+    const activeOrder = consumedClaim?.order ?? reservedClaim?.order;
+
+    try {
+      await FirstPurchaseEligibility.updateOne(
+        { user, eligibilityClass: 'first_purchase' },
+        {
+          $setOnInsert: {
+            user,
+            eligibilityClass: 'first_purchase',
+            status,
+            ...(activeOrder ? { activeOrder } : {}),
+            ...(status === 'reserved' && reservedClaim
+              ? { reservedAt: reservedClaim.reservedAt }
+              : {}),
+            ...(status === 'consumed'
+              ? { consumedAt: consumedClaim?.consumedAt ?? new Date() }
+              : {}),
+            version: 0,
+          },
+        },
+        { upsert: true },
+      );
+    } catch (error) {
+      // A concurrent initializer won the unique user/class insert.
+      if ((error as { code?: number }).code !== 11000) throw error;
+    }
+  }
+
+  private async releaseFirstPurchaseEligibility(
+    user: Types.ObjectId,
+    order: Types.ObjectId,
+    session: ClientSession,
+  ): Promise<void> {
+    await FirstPurchaseEligibility.updateOne(
+      {
+        user,
+        eligibilityClass: 'first_purchase',
+        status: 'reserved',
+        activeOrder: order,
+      },
+      {
+        $set: {
+          status: 'available',
+          releasedAt: new Date(),
+        },
+        $unset: {
+          activeOrder: 1,
+          reservedAt: 1,
+        },
+        $inc: { version: 1 },
+      },
+      { session },
+    );
+  }
 
   private async computeQuote(
     userId: string,
@@ -339,7 +429,7 @@ export class BillingRepository implements IBillingRepository {
         throw new BillingDomainError('promo_not_applicable', 'Promo code is not applicable');
       }
       if (promotion.eligibilityClass === 'first_purchase') {
-        const [paidOrder, legacyPaidSubscription, claim] = await Promise.all([
+        const [paidOrder, legacyPaidSubscription, claim, eligibility] = await Promise.all([
           BillingOrder.exists({
             user: userObjectId,
             receivedAmount: { $gt: 0 },
@@ -350,8 +440,13 @@ export class BillingRepository implements IBillingRepository {
             eligibilityClass: 'first_purchase',
             status: { $in: ['reserved', 'consumed', 'late_consumed'] },
           }),
+          FirstPurchaseEligibility.exists({
+            user: userObjectId,
+            eligibilityClass: 'first_purchase',
+            status: { $in: ['reserved', 'consumed'] },
+          }),
         ]);
-        if (paidOrder || legacyPaidSubscription || claim) {
+        if (paidOrder || legacyPaidSubscription || claim || eligibility) {
           throw new BillingDomainError('promo_not_applicable', 'Promo code is not applicable');
         }
       }
@@ -488,12 +583,36 @@ export class BillingRepository implements IBillingRepository {
           status: 'reserved',
           discountAmount: input.quote.discountAmount,
           reservedAt: input.now,
+          nextReleaseCheckAt: new Date(input.now.getTime() + 15 * 60_000),
         },
       ],
       { session: input.session },
     );
 
     if (promotion.eligibilityClass === 'first_purchase') {
+      const eligibility = await FirstPurchaseEligibility.findOneAndUpdate(
+        {
+          user: input.user,
+          eligibilityClass: 'first_purchase',
+          status: 'available',
+        },
+        {
+          $set: {
+            status: 'reserved',
+            activeOrder: input.order,
+            reservedAt: input.now,
+          },
+          $unset: {
+            releasedAt: 1,
+            consumedAt: 1,
+          },
+          $inc: { version: 1 },
+        },
+        { new: true, session: input.session },
+      ).exec();
+      if (!eligibility) {
+        throw new BillingDomainError('promo_not_applicable', 'Promo is unavailable');
+      }
       try {
         await FirstPurchaseClaim.create(
           [
@@ -576,6 +695,9 @@ export class BillingRepository implements IBillingRepository {
     );
     if (!quoteMatches(signedQuote, recomputed.payload)) {
       throw new BillingDomainError('quote_stale', 'Price or promotion changed');
+    }
+    if (recomputed.promotion?.eligibilityClass === 'first_purchase') {
+      await this.ensureFirstPurchaseEligibility(user);
     }
 
     const baseUrl = billingConfig.siteUrl();
@@ -878,6 +1000,7 @@ export class BillingRepository implements IBillingRepository {
             },
             { session },
           );
+          await this.releaseFirstPurchaseEligibility(redemption.user, orderId, session);
         }
         await PaymentAttempt.updateOne(
           { _id: attemptId },
@@ -1371,7 +1494,76 @@ export class BillingRepository implements IBillingRepository {
       .lean<AttemptLean[]>()
       .exec();
     for (const attempt of attempts) await this.reconcileAttempt(attempt);
-    return { processed: attempts.length };
+    const released = await this.releaseDuePromotionReservations(limit);
+    return { processed: attempts.length + released };
+  }
+
+  private releaseRetryDelay(reservedAt: Date, now = Date.now()): number {
+    return withJitter(reconciliationDelayMs(now - reservedAt.getTime()));
+  }
+
+  private async reschedulePromotionRelease(
+    redemptionId: Types.ObjectId,
+    reservedAt: Date,
+    error?: unknown,
+  ): Promise<void> {
+    const delay = this.releaseRetryDelay(reservedAt);
+    await PromotionRedemption.updateOne(
+      { _id: redemptionId, status: 'reserved' },
+      {
+        $set: {
+          nextReleaseCheckAt: new Date(Date.now() + delay),
+          ...(error
+            ? {
+                lastReleaseError: (error instanceof Error ? error.message : 'Release failed').slice(
+                  0,
+                  1_000,
+                ),
+              }
+            : {}),
+        },
+        $inc: { releaseAttemptCount: 1 },
+        ...(!error ? { $unset: { lastReleaseError: 1 } } : {}),
+      },
+    );
+  }
+
+  private async releaseDuePromotionReservations(limit: number): Promise<number> {
+    const now = new Date();
+    const redemptions = await PromotionRedemption.find({
+      status: 'reserved',
+      $or: [{ nextReleaseCheckAt: { $lte: now } }, { nextReleaseCheckAt: { $exists: false } }],
+    })
+      .sort({ nextReleaseCheckAt: 1, reservedAt: 1 })
+      .limit(limit)
+      .select({ order: 1, reservedAt: 1, releaseAttemptCount: 1 })
+      .lean<
+        Array<{
+          _id: Types.ObjectId;
+          order: Types.ObjectId;
+          reservedAt: Date;
+          releaseAttemptCount?: number;
+        }>
+      >()
+      .exec();
+    let released = 0;
+    for (const redemption of redemptions) {
+      try {
+        if (
+          await this.releasePromotionReservation(
+            redemption.order,
+            'terminal_zero_payment_reconciliation',
+          )
+        ) {
+          released += 1;
+          continue;
+        }
+        await this.reschedulePromotionRelease(redemption._id, redemption.reservedAt);
+      } catch (error) {
+        await this.reschedulePromotionRelease(redemption._id, redemption.reservedAt, error);
+      }
+    }
+    return released;
   }
 
   private async reconcileAttempt(attempt: AttemptLean): Promise<void> {
@@ -1508,6 +1700,10 @@ export class BillingRepository implements IBillingRepository {
       },
     );
     if (snapshot.amountPaid === 0 && ['cancelled', 'expired', 'failed'].includes(nextStatus)) {
+      await PromotionRedemption.updateOne(
+        { order: attempt.order, status: 'reserved' },
+        { $set: { nextReleaseCheckAt: new Date() } },
+      );
       await this.releasePromotionReservation(attempt.order, `provider_${nextStatus}`);
     }
   }
@@ -1515,10 +1711,17 @@ export class BillingRepository implements IBillingRepository {
   private async releasePromotionReservation(
     orderId: Types.ObjectId,
     reason: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
+    const firstPurchaseClaim = await FirstPurchaseClaim.findOne({ order: orderId })
+      .select({ user: 1 })
+      .lean<{ user: Types.ObjectId }>()
+      .exec();
+    if (firstPurchaseClaim) {
+      await this.ensureFirstPurchaseEligibility(firstPurchaseClaim.user);
+    }
     const session = await mongoose.startSession();
     try {
-      await session.withTransaction(async () => {
+      const released = await session.withTransaction(async (): Promise<boolean> => {
         const order = await BillingOrder.findById(orderId)
           .session(session)
           .lean<{ collectionStatus: string; receivedAmount: number }>()
@@ -1526,7 +1729,11 @@ export class BillingRepository implements IBillingRepository {
         const blockingAttempt = await PaymentAttempt.exists({
           order: orderId,
           $or: [
-            { collectionStatus: { $in: ['creating', 'pending', 'partial', 'review'] } },
+            {
+              collectionStatus: {
+                $in: ['creating', 'pending', 'partial', 'paid', 'review'],
+              },
+            },
             { amountPaid: { $gt: 0 } },
           ],
         }).session(session);
@@ -1535,6 +1742,11 @@ export class BillingRepository implements IBillingRepository {
           transactionType: 'payment',
           direction: 'incoming',
           signedAmount: { $gt: 0 },
+        }).session(session);
+        const terminalAttempt = await PaymentAttempt.exists({
+          order: orderId,
+          collectionStatus: { $in: ['cancelled', 'expired', 'failed'] },
+          amountPaid: 0,
         }).session(session);
         const redemption = await PromotionRedemption.findOne({
           order: orderId,
@@ -1549,9 +1761,10 @@ export class BillingRepository implements IBillingRepository {
           order.receivedAmount !== 0 ||
           blockingAttempt ||
           incomingPayment ||
+          !terminalAttempt ||
           !redemption
         ) {
-          return;
+          return false;
         }
 
         const promotionResult = await Promotion.updateOne(
@@ -1588,10 +1801,19 @@ export class BillingRepository implements IBillingRepository {
         }
         await FirstPurchaseClaim.updateOne(
           { order: orderId, status: 'reserved' },
-          { $set: { status: 'released', releasedAt: new Date() } },
+          {
+            $set: {
+              status: 'released',
+              releasedAt: new Date(),
+              releaseReason: reason,
+            },
+          },
           { session },
         );
+        await this.releaseFirstPurchaseEligibility(redemption.user, orderId, session);
+        return true;
       });
+      return released ?? false;
     } finally {
       await session.endSession();
     }
@@ -1714,6 +1936,9 @@ export class BillingRepository implements IBillingRepository {
     const order = await BillingOrder.findById(orderId).lean<OrderLean>().exec();
     if (!order || order.fulfillmentStatus === 'fulfilled') return;
     await this.ensureEntitlementAccount(order.user);
+    if (order.eligibilityClass === 'first_purchase') {
+      await this.ensureFirstPurchaseEligibility(order.user);
+    }
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
@@ -1965,6 +2190,45 @@ export class BillingRepository implements IBillingRepository {
           },
           { session },
         );
+        if (claim.status === 'reserved') {
+          await FirstPurchaseEligibility.updateOne(
+            {
+              user: order.user,
+              eligibilityClass: 'first_purchase',
+              status: 'reserved',
+              activeOrder: order._id,
+            },
+            {
+              $set: {
+                status: 'consumed',
+                consumedAt: new Date(),
+              },
+              $inc: { version: 1 },
+            },
+            { session },
+          );
+        } else if (claim.status === 'released') {
+          await FirstPurchaseEligibility.updateOne(
+            {
+              user: order.user,
+              eligibilityClass: 'first_purchase',
+              status: { $in: ['available', 'reserved'] },
+            },
+            {
+              $set: {
+                status: 'consumed',
+                activeOrder: order._id,
+                consumedAt: new Date(),
+              },
+              $unset: {
+                releasedAt: 1,
+                reservedAt: 1,
+              },
+              $inc: { version: 1 },
+            },
+            { session },
+          );
+        }
       }
     }
   }

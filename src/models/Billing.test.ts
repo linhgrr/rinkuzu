@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Promotion } from './Billing';
+import { FirstPurchaseEligibility, Promotion, PromotionRedemption } from './Billing';
 
 const basePromotion = {
   code: 'TEST10',
@@ -37,5 +37,44 @@ describe('Promotion model validation', () => {
     const fixed = new Promotion({ ...basePromotion, kind: 'fixed' });
     expect(percentage.validateSync()?.errors['percentageOff']).toBeDefined();
     expect(fixed.validateSync()?.errors['fixedAmount']).toBeDefined();
+  });
+});
+
+describe('promotion lifecycle models', () => {
+  it('uses a singleton first-purchase eligibility record as the serialization point', () => {
+    const user = '507f191e810c19729de860ea';
+    const order = '507f191e810c19729de860eb';
+    const eligibility = new FirstPurchaseEligibility({
+      user,
+      eligibilityClass: 'first_purchase',
+      status: 'reserved',
+      activeOrder: order,
+      reservedAt: new Date('2026-07-26T00:00:00Z'),
+    });
+
+    expect(eligibility.validateSync()).toBeUndefined();
+    expect(
+      FirstPurchaseEligibility.schema
+        .indexes()
+        .some(
+          ([key, options]) =>
+            key['user'] === 1 && key['eligibilityClass'] === 1 && options.unique === true,
+        ),
+    ).toBe(true);
+  });
+
+  it('schedules a durable release check for reserved redemptions', () => {
+    const redemption = new PromotionRedemption({
+      promotion: '507f191e810c19729de860ea',
+      order: '507f191e810c19729de860eb',
+      user: '507f191e810c19729de860ec',
+      status: 'reserved',
+      discountAmount: 37_050,
+      reservedAt: new Date('2026-07-26T00:00:00Z'),
+      nextReleaseCheckAt: new Date('2026-07-26T00:15:00Z'),
+    });
+
+    expect(redemption.validateSync()).toBeUndefined();
+    expect(redemption.get('releaseAttemptCount')).toBe(0);
   });
 });

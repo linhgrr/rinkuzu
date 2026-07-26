@@ -294,26 +294,39 @@ const PromotionRedemptionSchema = new Schema(
     redeemedAt: { type: Date },
     releasedAt: { type: Date },
     releaseReason: { type: String },
+    nextReleaseCheckAt: { type: Date },
+    releaseAttemptCount: { type: Number, required: true, default: 0, min: 0 },
+    lastReleaseError: { type: String, maxlength: 1_000 },
   },
   { timestamps: true },
 );
 
 PromotionRedemptionSchema.index({ promotion: 1, order: 1 }, { unique: true });
 PromotionRedemptionSchema.index({ promotion: 1, user: 1, status: 1 });
+PromotionRedemptionSchema.index({ status: 1, nextReleaseCheckAt: 1 });
+
+const firstPurchaseIdentityFields = {
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  eligibilityClass: { type: String, enum: ['first_purchase'], required: true },
+} as const;
+
+const firstPurchaseLifecycleFields = {
+  reservedAt: { type: Date },
+  consumedAt: { type: Date },
+  releasedAt: { type: Date },
+} as const;
 
 const FirstPurchaseClaimSchema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    eligibilityClass: { type: String, enum: ['first_purchase'], required: true },
+    ...firstPurchaseIdentityFields,
     status: {
       type: String,
       enum: ['reserved', 'consumed', 'released', 'late_consumed'],
       required: true,
     },
     order: { type: Schema.Types.ObjectId, ref: 'BillingOrder', required: true },
-    reservedAt: { type: Date, required: true },
-    consumedAt: { type: Date },
-    releasedAt: { type: Date },
+    ...firstPurchaseLifecycleFields,
+    reservedAt: { ...firstPurchaseLifecycleFields.reservedAt, required: true },
     releaseReason: { type: String, maxlength: 120 },
   },
   { timestamps: true },
@@ -329,6 +342,27 @@ FirstPurchaseClaimSchema.index(
   },
 );
 FirstPurchaseClaimSchema.index({ order: 1 }, { unique: true });
+
+const FirstPurchaseEligibilitySchema = new Schema(
+  {
+    ...firstPurchaseIdentityFields,
+    status: {
+      type: String,
+      enum: ['available', 'reserved', 'consumed'],
+      required: true,
+      default: 'available',
+    },
+    activeOrder: { type: Schema.Types.ObjectId, ref: 'BillingOrder' },
+    ...firstPurchaseLifecycleFields,
+    version: { type: Number, required: true, default: 0, min: 0 },
+  },
+  { timestamps: true },
+);
+
+// This singleton is the serialization point for first-purchase eligibility.
+// FirstPurchaseClaim remains the immutable per-order history used for audit
+// and late-payment handling.
+FirstPurchaseEligibilitySchema.index({ user: 1, eligibilityClass: 1 }, { unique: true });
 
 const PromotionUserCounterSchema = new Schema(
   {
@@ -556,6 +590,10 @@ export const IdempotencyRecord = model('IdempotencyRecord', IdempotencyRecordSch
 export const Promotion = model('Promotion', PromotionSchema);
 export const PromotionRedemption = model('PromotionRedemption', PromotionRedemptionSchema);
 export const FirstPurchaseClaim = model('FirstPurchaseClaim', FirstPurchaseClaimSchema);
+export const FirstPurchaseEligibility = model(
+  'FirstPurchaseEligibility',
+  FirstPurchaseEligibilitySchema,
+);
 export const PromotionUserCounter = model('PromotionUserCounter', PromotionUserCounterSchema);
 export const PaymentWebhookInbox = model('PaymentWebhookInbox', PaymentWebhookInboxSchema);
 export const EntitlementAccount = model('EntitlementAccount', EntitlementAccountSchema);

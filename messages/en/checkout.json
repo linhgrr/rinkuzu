@@ -53,6 +53,7 @@
     "verify": "Unable to verify the payment status",
     "createPayment": "Unable to create the payment",
     "promoNotApplicable": "This promo code is invalid or no longer available.",
+    "promoNotEligibleForPlan": "This promo code cannot be applied to the selected plan.",
     "quoteStale": "The price or promotion has changed. Please review the updated quote.",
     "paymentPaused": "New payments are temporarily paused. Please try again later.",
     "perpetual": "This account already has lifetime Premium access.",

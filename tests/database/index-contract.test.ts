@@ -9,6 +9,24 @@ import {
 } from '../../scripts/database/index-planner.mjs';
 import Attempt from '@/models/Attempt';
 import AuditLog from '@/models/AuditLog';
+import {
+  BillingCounter,
+  BillingOrder,
+  EntitlementAccount,
+  EntitlementAdjustment,
+  EntitlementGrant,
+  ExternalMoneyAdjustment,
+  FirstPurchaseClaim,
+  FirstPurchaseEligibility,
+  IdempotencyRecord,
+  InternalRequestNonce,
+  PaymentAttempt,
+  PaymentTransaction,
+  PaymentWebhookInbox,
+  Promotion,
+  PromotionRedemption,
+  PromotionUserCounter,
+} from '@/models/Billing';
 import Bookmark from '@/models/Bookmark';
 import Discussion from '@/models/Discussion';
 import Folder from '@/models/Folder';
@@ -24,10 +42,26 @@ import UserProgress from '@/models/UserProgress';
 const MODELS = {
   attempts: Attempt,
   auditlogs: AuditLog,
+  billingcounters: BillingCounter,
+  billingorders: BillingOrder,
   bookmarks: Bookmark,
   discussions: Discussion,
+  entitlementaccounts: EntitlementAccount,
+  entitlementadjustments: EntitlementAdjustment,
+  entitlementgrants: EntitlementGrant,
+  externalmoneyadjustments: ExternalMoneyAdjustment,
+  firstpurchaseclaims: FirstPurchaseClaim,
+  firstpurchaseeligibilities: FirstPurchaseEligibility,
   folders: Folder,
   folderquizzes: FolderQuiz,
+  idempotencyrecords: IdempotencyRecord,
+  internalrequestnonces: InternalRequestNonce,
+  paymentattempts: PaymentAttempt,
+  paymenttransactions: PaymentTransaction,
+  paymentwebhookinboxes: PaymentWebhookInbox,
+  promotions: Promotion,
+  promotionredemptions: PromotionRedemption,
+  promotionusercounters: PromotionUserCounter,
   questionprogresses: QuestionProgress,
   quizzes: Quiz,
   quizprogresses: QuizProgress,

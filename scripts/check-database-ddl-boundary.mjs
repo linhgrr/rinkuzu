@@ -10,7 +10,10 @@ try {
     JSON.stringify(
       {
         status: violations.length === 0 ? 'clean' : 'violation',
-        allowedDdlWriter: 'scripts/sync-performance-indexes.mjs',
+        allowedDdlWriters: [
+          'scripts/sync-performance-indexes.mjs',
+          'scripts/migrate-first-purchase-eligibility.mjs',
+        ],
         violationCount: violations.length,
         violations,
       },

@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-24.1';
+export const INDEX_CONTRACT_VERSION = '2026-07-26.1';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -147,9 +147,20 @@ export const INDEX_CONTRACT = Object.freeze([
     user: 1,
     status: 1,
   }),
+  required('promotionredemptions.release-work', 'promotionredemptions', {
+    status: 1,
+    nextReleaseCheckAt: 1,
+  }),
   required(
     'firstpurchaseclaims.user-class',
     'firstpurchaseclaims',
+    { user: 1, eligibilityClass: 1 },
+    { unique: true, partialFilterExpression: { status: 'reserved' } },
+  ),
+  required('firstpurchaseclaims.order', 'firstpurchaseclaims', { order: 1 }, { unique: true }),
+  required(
+    'firstpurchaseeligibilities.user-class',
+    'firstpurchaseeligibilities',
     { user: 1, eligibilityClass: 1 },
     { unique: true },
   ),

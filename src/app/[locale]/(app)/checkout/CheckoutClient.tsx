@@ -45,6 +45,7 @@ type CheckoutErrorKey =
   | 'errors.verify'
   | 'errors.createPayment'
   | 'errors.promoNotApplicable'
+  | 'errors.promoNotEligibleForPlan'
   | 'errors.quoteStale'
   | 'errors.paymentPaused'
   | 'errors.perpetual'
@@ -66,6 +67,7 @@ function errorMessageKey(error: unknown, fallback: CheckoutErrorKey): CheckoutEr
   if (!(error instanceof ApiResponseError)) return fallback;
   const keys: Record<string, CheckoutErrorKey> = {
     promo_not_applicable: 'errors.promoNotApplicable',
+    promo_not_eligible_for_plan: 'errors.promoNotEligibleForPlan',
     quote_stale: 'errors.quoteStale',
     payment_creation_disabled: 'errors.paymentPaused',
     already_has_perpetual_entitlement: 'errors.perpetual',

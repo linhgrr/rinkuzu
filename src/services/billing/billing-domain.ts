@@ -45,7 +45,10 @@ export function calculateDiscount(subtotal: number, rule: PromotionRule): Discou
     throw new BillingDomainError('invalid_price', 'Subtotal is not payable', 400);
   }
   if (subtotal < rule.minimumSubtotal) {
-    throw new BillingDomainError('promo_not_applicable', 'Promo code is not applicable');
+    throw new BillingDomainError(
+      'promo_not_eligible_for_plan',
+      'Promo code is not eligible for this plan',
+    );
   }
 
   const discountAmount =
@@ -62,7 +65,10 @@ export function calculateDiscount(subtotal: number, rule: PromotionRule): Discou
     discountAmount < 0 ||
     finalAmount < VND_MINIMUM_PAYABLE
   ) {
-    throw new BillingDomainError('promo_not_applicable', 'Promo code is not applicable');
+    throw new BillingDomainError(
+      'promo_not_eligible_for_plan',
+      'Promo code is not eligible for this plan',
+    );
   }
   return { discountAmount, finalAmount };
 }

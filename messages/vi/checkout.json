@@ -53,6 +53,7 @@
     "verify": "Không thể xác minh trạng thái thanh toán",
     "createPayment": "Không thể tạo giao dịch",
     "promoNotApplicable": "Mã ưu đãi không hợp lệ hoặc không còn khả dụng.",
+    "promoNotEligibleForPlan": "Mã này không áp dụng cho gói đã chọn.",
     "quoteStale": "Giá hoặc ưu đãi đã thay đổi. Vui lòng kiểm tra báo giá mới.",
     "paymentPaused": "Hệ thống đang tạm dừng tạo giao dịch mới. Vui lòng thử lại sau.",
     "perpetual": "Tài khoản này đã có quyền Premium không thời hạn.",

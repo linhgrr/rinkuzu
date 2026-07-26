@@ -30,6 +30,7 @@ export interface CheckoutOrder {
   finalAmount: number;
   receivedAmount: number;
   collectionStatus: string;
+  attemptCollectionStatus?: string;
   fulfillmentStatus: string;
   settlementStatus: string;
   checkoutUrl?: string;

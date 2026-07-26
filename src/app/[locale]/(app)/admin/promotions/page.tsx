@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
@@ -29,9 +30,11 @@ function promotionValue(promotion: AdminPromotion): string {
 }
 
 export default function AdminPromotionsPage() {
+  const t = useTranslations('adminPromotions');
   const [items, setItems] = useState<AdminPromotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [kind, setKind] = useState<PromotionKind>('percentage');
   const [percentage, setPercentage] = useState(10);
@@ -43,24 +46,28 @@ export default function AdminPromotionsPage() {
   const [startsAt, setStartsAt] = useState(localInputDate(0));
   const [endsAt, setEndsAt] = useState(localInputDate(30));
 
-  const reload = () =>
-    fetchAdminPromotions()
-      .then(setItems)
-      .catch((error: unknown) =>
-        toast.error(error instanceof Error ? error.message : 'Không tải được promo'),
-      )
-      .finally(() => setLoading(false));
+  const reload = async () => {
+    setLoading(true);
+    try {
+      setItems(await fetchAdminPromotions());
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('loadError'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     void fetchAdminPromotions()
       .then(setItems)
-      .catch((error: unknown) =>
-        toast.error(error instanceof Error ? error.message : 'Không tải được promo'),
-      )
+      .catch((error: unknown) => {
+        toast.error(error instanceof Error ? error.message : t('loadError'));
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const create = async () => {
+    if (!code.trim() || saving) return;
     setSaving(true);
     try {
       await createAdminPromotion({
@@ -75,39 +82,52 @@ export default function AdminPromotionsPage() {
         endsAt: new Date(endsAt).toISOString(),
       });
       setCode('');
-      toast.success('Đã tạo promo');
+      toast.success(t('created'));
       await reload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không tạo được promo');
+      toast.error(error instanceof Error ? error.message : t('createError'));
     } finally {
       setSaving(false);
     }
   };
 
+  const archive = async (id: string) => {
+    if (archivingId) return;
+    setArchivingId(id);
+    try {
+      await archiveAdminPromotion(id);
+      await reload();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('archiveError'));
+    } finally {
+      setArchivingId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <AdminPageHeader title="Promotions" description="Tạo, theo dõi quota và archive mã ưu đãi." />
+      <AdminPageHeader title={t('title')} description={t('description')} />
       <Card className="mt-6 grid gap-4 p-5 md:grid-cols-3">
         <Input
-          label="Mã promo"
+          label={t('code')}
           value={code}
           maxLength={32}
           onChange={(event) => setCode(event.target.value)}
         />
         <label className="block text-xs font-semibold text-neutral-700">
-          Loại giảm giá
+          {t('kind')}
           <select
             value={kind}
             onChange={(event) => setKind(event.target.value as PromotionKind)}
             className="input mt-1 w-full"
           >
-            <option value="percentage">Theo phần trăm</option>
-            <option value="fixed">Số tiền cố định</option>
+            <option value="percentage">{t('percentage')}</option>
+            <option value="fixed">{t('fixed')}</option>
           </select>
         </label>
         {kind === 'percentage' ? (
           <Input
-            label="% giảm"
+            label={t('percentageOff')}
             type="number"
             min={1}
             max={100}
@@ -116,7 +136,7 @@ export default function AdminPromotionsPage() {
           />
         ) : (
           <Input
-            label="Số tiền giảm (₫)"
+            label={t('fixedAmount')}
             type="number"
             min={1}
             step={1_000}
@@ -125,7 +145,7 @@ export default function AdminPromotionsPage() {
           />
         )}
         <Input
-          label="Giá trị đơn tối thiểu (₫)"
+          label={t('minimumSubtotal')}
           type="number"
           min={0}
           step={1_000}
@@ -133,27 +153,27 @@ export default function AdminPromotionsPage() {
           onChange={(event) => setMinimumSubtotal(Number(event.target.value))}
         />
         <Input
-          label="Tổng lượt"
+          label={t('totalLimit')}
           type="number"
           min={1}
           value={totalLimit}
           onChange={(event) => setTotalLimit(Number(event.target.value))}
         />
         <Input
-          label="Lượt mỗi người"
+          label={t('perUserLimit')}
           type="number"
           min={1}
           value={perUserLimit}
           onChange={(event) => setPerUserLimit(Number(event.target.value))}
         />
         <Input
-          label="Bắt đầu"
+          label={t('startsAt')}
           type="datetime-local"
           value={startsAt}
           onChange={(event) => setStartsAt(event.target.value)}
         />
         <Input
-          label="Kết thúc"
+          label={t('endsAt')}
           type="datetime-local"
           value={endsAt}
           onChange={(event) => setEndsAt(event.target.value)}
@@ -164,15 +184,15 @@ export default function AdminPromotionsPage() {
             checked={firstPurchase}
             onChange={(event) => setFirstPurchase(event.target.checked)}
           />
-          Chỉ lần mua đầu
+          {t('firstPurchase')}
         </label>
         <Button loading={saving} disabled={!code.trim()} onClick={() => void create()}>
-          Tạo promotion
+          {t('create')}
         </Button>
       </Card>
 
       <div className="mt-6 grid gap-4">
-        {loading && <p className="text-ink-muted">Đang tải…</p>}
+        {loading && <p className="text-ink-muted">{t('loading')}</p>}
         {items.map((promotion) => (
           <Card
             key={promotion.id}
@@ -188,22 +208,24 @@ export default function AdminPromotionsPage() {
                       : 'bg-neutral-100 text-neutral-500'
                   }`}
                 >
-                  {promotion.active ? 'Active' : 'Archived'}
+                  {promotion.active ? t('active') : t('archived')}
                 </span>
               </div>
               <p className="mt-1 text-sm text-ink-muted">
-                {promotionValue(promotion)} · reserved {promotion.reservedCount} · redeemed{' '}
-                {promotion.redeemedCount}
+                {promotionValue(promotion)} · {t('reserved')} {promotion.reservedCount} ·{' '}
+                {t('redeemed')} {promotion.redeemedCount}
                 {promotion.totalLimit ? ` / ${promotion.totalLimit}` : ''}
-                {promotion.overrunCount ? ` · overrun ${promotion.overrunCount}` : ''}
+                {promotion.overrunCount ? ` · ${t('overrun')} ${promotion.overrunCount}` : ''}
               </p>
             </div>
             {promotion.active && (
               <Button
                 variant="outline"
-                onClick={() => void archiveAdminPromotion(promotion.id).then(() => reload())}
+                loading={archivingId === promotion.id}
+                disabled={Boolean(archivingId)}
+                onClick={() => void archive(promotion.id)}
               >
-                Archive
+                {t('archive')}
               </Button>
             )}
           </Card>

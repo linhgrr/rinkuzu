@@ -314,11 +314,21 @@ const FirstPurchaseClaimSchema = new Schema(
     reservedAt: { type: Date, required: true },
     consumedAt: { type: Date },
     releasedAt: { type: Date },
+    releaseReason: { type: String, maxlength: 120 },
   },
   { timestamps: true },
 );
 
-FirstPurchaseClaimSchema.index({ user: 1, eligibilityClass: 1 }, { unique: true });
+// Claims are immutable history. Only one reservation may be active for a user,
+// while released/consumed claims remain queryable for late-payment reconciliation.
+FirstPurchaseClaimSchema.index(
+  { user: 1, eligibilityClass: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: 'reserved' },
+  },
+);
+FirstPurchaseClaimSchema.index({ order: 1 }, { unique: true });
 
 const PromotionUserCounterSchema = new Schema(
   {
@@ -341,6 +351,8 @@ const NormalizedWebhookPayloadSchema = new Schema(
     reference: { type: String, required: true },
     transactionDateTime: { type: String, required: true },
     payerSignal: { type: String, default: null },
+    payerSignalKeyVersion: { type: String, default: null },
+    payerSignalNormalizedVersion: { type: Number, default: null },
   },
   { _id: false, strict: true },
 );
@@ -549,6 +561,9 @@ export const PaymentWebhookInbox = model('PaymentWebhookInbox', PaymentWebhookIn
 export const EntitlementAccount = model('EntitlementAccount', EntitlementAccountSchema);
 export const EntitlementGrant = model('EntitlementGrant', EntitlementGrantSchema);
 export const EntitlementAdjustment = model('EntitlementAdjustment', EntitlementAdjustmentSchema);
-model('ExternalMoneyAdjustment', ExternalMoneyAdjustmentSchema);
+export const ExternalMoneyAdjustment = model(
+  'ExternalMoneyAdjustment',
+  ExternalMoneyAdjustmentSchema,
+);
 export const BillingCounter = model('BillingCounter', BillingCounterSchema);
 export const InternalRequestNonce = model('InternalRequestNonce', InternalRequestNonceSchema);

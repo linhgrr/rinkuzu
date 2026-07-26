@@ -22,6 +22,8 @@
     "ask_rin_run_failed": "Ask Rin-chan could not complete this response",
     "ask_rin_image_unsupported": "Image question is unavailable",
     "configuration_error": "Configuration error",
+    "payment_creation_disabled": "Payment creation is temporarily paused",
+    "activation_paused": "Subscription activation is temporarily paused",
     "service_unavailable": "Service unavailable",
     "pipeline_not_found": "Pipeline job not found",
     "pipeline_not_completed": "Pipeline job is not completed",

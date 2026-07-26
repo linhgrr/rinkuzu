@@ -5,6 +5,7 @@ import { apiErr, apiOk } from '@/lib/api/response';
 import { readAndValidateJson } from '@/lib/api/request';
 import { payosWebhookRequestSchema } from '@/dtos/subscription';
 import { logger } from '@/lib/logger';
+import { billingConfig } from '@/services/billing/billing-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,10 @@ export async function POST(request: NextRequest) {
 
     if (!isValidSignature(data, signature, checksumKey)) {
       return apiErr('validation_error', 'Invalid signature', 400);
+    }
+
+    if (!billingConfig.entitlementAutoActivationEnabled()) {
+      return apiErr('activation_paused', 'Subscription activation is temporarily paused', 503);
     }
 
     if (success !== true || code !== '00') {

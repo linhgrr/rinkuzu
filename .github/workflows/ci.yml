@@ -365,6 +365,8 @@ jobs:
         run: bash scripts/ci-mongodb.sh start
 
       - name: Build once
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: npm run build
 
       - name: Compute production build identity
@@ -487,6 +489,7 @@ jobs:
       - name: Build base commit and record route sizes
         env:
           PERF_BASE_SHA: ${{ steps.performance-base.outputs.sha }}
+          NODE_OPTIONS: --max-old-space-size=4096
         run: |
           base_dir="${RUNNER_TEMP}/rinkuzu-performance-base"
           git worktree add --detach "$base_dir" "$PERF_BASE_SHA"

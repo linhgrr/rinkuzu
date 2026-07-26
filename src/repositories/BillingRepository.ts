@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import mongoose, { Types, type ClientSession } from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
+import Subscription from '@/models/Subscription';
 import User from '@/models/User';
 import {
   BillingCounter,
@@ -9,6 +10,7 @@ import {
   EntitlementAccount,
   EntitlementAdjustment,
   EntitlementGrant,
+  ExternalMoneyAdjustment,
   FirstPurchaseClaim,
   IdempotencyRecord,
   PaymentAttempt,
@@ -24,6 +26,7 @@ import type {
   BillingOrderView,
   BillingQuoteResult,
   CreateBillingOrderInput,
+  CreateExternalMoneyAdjustmentInput,
   CreatePromotionInput,
   IBillingRepository,
   InboxProcessingResult,
@@ -51,6 +54,7 @@ import {
 } from '@/services/billing/quote-token';
 import {
   BillingPayOSAdapter,
+  type ProviderCreateOutcome,
   type ProviderPaymentSnapshot,
 } from '@/services/billing/payos-adapter';
 
@@ -183,6 +187,40 @@ interface ReservePromotionInput {
   now: Date;
 }
 
+type ExistingWebhookPayload = {
+  amount?: number;
+  currency?: string;
+};
+
+type ExistingWebhookRecord = {
+  _id: Types.ObjectId;
+  rawPayloadHash: string;
+  orderCode?: number;
+  paymentLinkId?: string;
+  normalizedPayload?: ExistingWebhookPayload;
+};
+
+type PayerSignalHash = {
+  hash: string;
+  keyVersion: string;
+  normalizedVersion: number;
+};
+
+type PayerSignalInput = {
+  bankId?: string | null;
+  accountNumber?: string | null;
+};
+
+type CreateProviderCheckoutInput = {
+  orderCode: number;
+  amount: number;
+  description: string;
+  publicId: string;
+  baseUrl: string;
+  buyerEmail: string;
+  now: Date;
+};
+
 function objectId(value: string): Types.ObjectId {
   if (!Types.ObjectId.isValid(value)) {
     throw new BillingDomainError('invalid_user', 'User identity is invalid', 401);
@@ -301,18 +339,19 @@ export class BillingRepository implements IBillingRepository {
         throw new BillingDomainError('promo_not_applicable', 'Promo code is not applicable');
       }
       if (promotion.eligibilityClass === 'first_purchase') {
-        const [paidOrder, claim] = await Promise.all([
+        const [paidOrder, legacyPaidSubscription, claim] = await Promise.all([
           BillingOrder.exists({
             user: userObjectId,
-            collectionStatus: { $in: ['paid', 'overpaid'] },
+            receivedAmount: { $gt: 0 },
           }),
+          Subscription.exists({ user: userObjectId, status: 'completed' }),
           FirstPurchaseClaim.exists({
             user: userObjectId,
             eligibilityClass: 'first_purchase',
             status: { $in: ['reserved', 'consumed', 'late_consumed'] },
           }),
         ]);
-        if (paidOrder || claim) {
+        if (paidOrder || legacyPaidSubscription || claim) {
           throw new BillingDomainError('promo_not_applicable', 'Promo code is not applicable');
         }
       }
@@ -455,18 +494,25 @@ export class BillingRepository implements IBillingRepository {
     );
 
     if (promotion.eligibilityClass === 'first_purchase') {
-      await FirstPurchaseClaim.create(
-        [
-          {
-            user: input.user,
-            eligibilityClass: 'first_purchase',
-            status: 'reserved',
-            order: input.order,
-            reservedAt: input.now,
-          },
-        ],
-        { session: input.session },
-      );
+      try {
+        await FirstPurchaseClaim.create(
+          [
+            {
+              user: input.user,
+              eligibilityClass: 'first_purchase',
+              status: 'reserved',
+              order: input.order,
+              reservedAt: input.now,
+            },
+          ],
+          { session: input.session },
+        );
+      } catch (error) {
+        if ((error as { code?: number }).code === 11000) {
+          throw new BillingDomainError('promo_not_applicable', 'Promo is unavailable');
+        }
+        throw error;
+      }
     }
   }
 
@@ -532,6 +578,11 @@ export class BillingRepository implements IBillingRepository {
       throw new BillingDomainError('quote_stale', 'Price or promotion changed');
     }
 
+    const baseUrl = billingConfig.siteUrl();
+    if (!baseUrl) {
+      throw new BillingDomainError('billing_configuration_error', 'Site URL is missing', 500);
+    }
+    const buyerEmail = await this.userEmail(user);
     const session = await mongoose.startSession();
     let orderId: Types.ObjectId | null = null;
     let attemptId: Types.ObjectId | null = null;
@@ -654,18 +705,14 @@ export class BillingRepository implements IBillingRepository {
     const createdOrderId = requireObjectId(orderId);
     const createdAttemptId = requireObjectId(attemptId);
 
-    const baseUrl = billingConfig.siteUrl();
-    if (!baseUrl) {
-      throw new BillingDomainError('billing_configuration_error', 'Site URL is missing', 500);
-    }
-    const createOutcome = await this.payos.createCheckout({
+    const createOutcome = await this.createProviderCheckout({
       orderCode,
       amount: recomputed.payload.finalAmount,
       description: recomputed.plan.name.slice(0, 25),
-      returnUrl: `${baseUrl}/checkout?order=${publicId}`,
-      cancelUrl: `${baseUrl}/checkout?order=${publicId}`,
-      expiredAt: Math.floor((now.getTime() + 15 * 60_000) / 1_000),
-      buyerEmail: await this.userEmail(user),
+      publicId,
+      baseUrl,
+      buyerEmail,
+      now,
     });
 
     let outcome = createOutcome;
@@ -685,31 +732,22 @@ export class BillingRepository implements IBillingRepository {
       }
     }
     if (outcome.kind === 'created') {
-      await Promise.all([
-        PaymentAttempt.updateOne(
-          { _id: createdAttemptId, collectionStatus: 'creating' },
-          {
-            $set: {
-              paymentLinkId: outcome.paymentLinkId,
-              checkoutUrl: outcome.checkoutUrl,
-              collectionStatus: 'pending',
-              createOutcome: 'created',
-              nextReconcileAt: new Date(now.getTime() + 60_000),
-            },
-            $inc: { version: 1 },
+      await this.markAttemptCreated(
+        createdAttemptId,
+        outcome.paymentLinkId,
+        outcome.checkoutUrl,
+        now,
+      );
+      await IdempotencyRecord.updateOne(
+        { order: createdOrderId, status: 'processing' },
+        {
+          $set: {
+            status: 'completed',
+            responseStatus: 201,
+            responseBodySnapshot: { orderId: createdOrderId.toString() },
           },
-        ),
-        IdempotencyRecord.updateOne(
-          { order: createdOrderId, status: 'processing' },
-          {
-            $set: {
-              status: 'completed',
-              responseStatus: 201,
-              responseBodySnapshot: { orderId: createdOrderId.toString() },
-            },
-          },
-        ),
-      ]);
+        },
+      );
       return {
         status: 201,
         order: await this.getOrderById(input.userId, createdOrderId.toString()),
@@ -741,6 +779,59 @@ export class BillingRepository implements IBillingRepository {
     const user = await User.findById(userId).select({ email: 1 }).lean<{ email: string }>().exec();
     if (!user) throw new BillingDomainError('user_not_found', 'User not found', 404);
     return user.email;
+  }
+
+  private createProviderCheckout(
+    input: CreateProviderCheckoutInput,
+  ): Promise<ProviderCreateOutcome> {
+    const callbackUrl = `${input.baseUrl}/checkout?order=${input.publicId}`;
+    return this.payos.createCheckout({
+      orderCode: input.orderCode,
+      amount: input.amount,
+      description: input.description,
+      returnUrl: callbackUrl,
+      cancelUrl: callbackUrl,
+      expiredAt: Math.floor((input.now.getTime() + 15 * 60_000) / 1_000),
+      buyerEmail: input.buyerEmail,
+    });
+  }
+
+  private async markAttemptCreated(
+    attemptId: Types.ObjectId,
+    paymentLinkId: string,
+    checkoutUrl: string,
+    now: Date,
+  ): Promise<void> {
+    const result = await PaymentAttempt.updateOne(
+      { _id: attemptId, collectionStatus: 'creating' },
+      {
+        $set: {
+          paymentLinkId,
+          checkoutUrl,
+          collectionStatus: 'pending',
+          createOutcome: 'created',
+          nextReconcileAt: new Date(now.getTime() + 60_000),
+        },
+        $inc: { version: 1 },
+      },
+    );
+    if (result.matchedCount === 1) return;
+    const current = await PaymentAttempt.findById(attemptId)
+      .lean<{ paymentLinkId?: string; collectionStatus: string }>()
+      .exec();
+    if (current?.paymentLinkId || current?.collectionStatus !== 'creating') return;
+    await PaymentAttempt.updateOne(
+      { _id: attemptId, collectionStatus: 'creating' },
+      {
+        $set: {
+          paymentLinkId,
+          checkoutUrl,
+          collectionStatus: 'pending',
+          createOutcome: 'created',
+        },
+        $inc: { version: 1 },
+      },
+    );
   }
 
   private async failOrderCreation(
@@ -776,7 +867,17 @@ export class BillingRepository implements IBillingRepository {
             },
             { session },
           );
-          await FirstPurchaseClaim.deleteOne({ order: orderId, status: 'reserved' }, { session });
+          await FirstPurchaseClaim.updateOne(
+            { order: orderId, status: 'reserved' },
+            {
+              $set: {
+                status: 'released',
+                releasedAt: new Date(),
+                releaseReason: 'create_failed',
+              },
+            },
+            { session },
+          );
         }
         await PaymentAttempt.updateOne(
           { _id: attemptId },
@@ -914,6 +1015,11 @@ export class BillingRepository implements IBillingRepository {
       );
     }
 
+    const baseUrl = billingConfig.siteUrl();
+    if (!baseUrl) {
+      throw new BillingDomainError('billing_configuration_error', 'Site URL is missing', 500);
+    }
+    const buyerEmail = await this.userEmail(order.user);
     const session = await mongoose.startSession();
     const attemptId = new Types.ObjectId();
     let orderCode = 0;
@@ -924,7 +1030,6 @@ export class BillingRepository implements IBillingRepository {
         const deactivated = await PaymentAttempt.updateOne(
           {
             _id: previous._id,
-            activeForCheckout: true,
             collectionStatus: { $in: ['cancelled', 'expired', 'failed'] },
             amountPaid: 0,
           },
@@ -964,18 +1069,14 @@ export class BillingRepository implements IBillingRepository {
       await session.endSession();
     }
 
-    const baseUrl = billingConfig.siteUrl();
-    if (!baseUrl) {
-      throw new BillingDomainError('billing_configuration_error', 'Site URL is missing', 500);
-    }
-    const createOutcome = await this.payos.createCheckout({
+    const createOutcome = await this.createProviderCheckout({
       orderCode,
       amount: order.finalAmount,
       description: order.planName.slice(0, 25),
-      returnUrl: `${baseUrl}/checkout?order=${order.publicId}`,
-      cancelUrl: `${baseUrl}/checkout?order=${order.publicId}`,
-      expiredAt: Math.floor((now.getTime() + 15 * 60_000) / 1_000),
-      buyerEmail: await this.userEmail(order.user),
+      publicId: order.publicId,
+      baseUrl,
+      buyerEmail,
+      now,
     });
     let outcome = createOutcome;
     if (createOutcome.kind === 'duplicate') {
@@ -992,19 +1093,7 @@ export class BillingRepository implements IBillingRepository {
           };
     }
     if (outcome.kind === 'created') {
-      await PaymentAttempt.updateOne(
-        { _id: attemptId, collectionStatus: 'creating' },
-        {
-          $set: {
-            paymentLinkId: outcome.paymentLinkId,
-            checkoutUrl: outcome.checkoutUrl,
-            collectionStatus: 'pending',
-            createOutcome: 'created',
-            nextReconcileAt: new Date(now.getTime() + 60_000),
-          },
-          $inc: { version: 1 },
-        },
-      );
+      await this.markAttemptCreated(attemptId, outcome.paymentLinkId, outcome.checkoutUrl, now);
       return { status: 201, order: await this.getOrderByPublicId(userId, publicId) };
     }
     await PaymentAttempt.updateOne(
@@ -1040,13 +1129,11 @@ export class BillingRepository implements IBillingRepository {
   }
 
   private async toOrderView(order: OrderLean): Promise<BillingOrderView> {
-    const activeAttempt = await PaymentAttempt.findOne({
-      order: order._id,
-      activeForCheckout: true,
-    })
+    const latestAttempt = await PaymentAttempt.findOne({ order: order._id })
       .sort({ createdAt: -1 })
       .lean<AttemptLean>()
       .exec();
+    const activeAttempt = latestAttempt?.activeForCheckout ? latestAttempt : null;
     return {
       id: order.publicId,
       plan: { id: order.planId, name: order.planName },
@@ -1058,6 +1145,7 @@ export class BillingRepository implements IBillingRepository {
       excessAmount: order.excessAmount,
       excessResolution: order.excessResolution,
       collectionStatus: order.collectionStatus,
+      ...(latestAttempt ? { attemptCollectionStatus: latestAttempt.collectionStatus } : {}),
       fulfillmentStatus: order.fulfillmentStatus,
       settlementStatus: order.settlementStatus,
       ...(activeAttempt?.checkoutUrl ? { checkoutUrl: activeAttempt.checkoutUrl } : {}),
@@ -1076,6 +1164,10 @@ export class BillingRepository implements IBillingRepository {
       providerAccountId: billingConfig.providerAccountId(),
       environment: billingConfig.providerEnvironment(),
     };
+    const payerSignal = this.hashPayerSignal({
+      bankId: input.counterAccountBankId,
+      accountNumber: input.counterAccountNumber,
+    });
     try {
       const created = await PaymentWebhookInbox.create({
         ...namespace,
@@ -1090,7 +1182,9 @@ export class BillingRepository implements IBillingRepository {
           paymentLinkId: input.paymentLinkId,
           reference: input.reference,
           transactionDateTime: input.transactionDateTime,
-          payerSignal: this.hashPayerSignal(input.counterAccountBankId, input.counterAccountNumber),
+          payerSignal: payerSignal?.hash ?? null,
+          payerSignalKeyVersion: payerSignal?.keyVersion ?? null,
+          payerSignalNormalizedVersion: payerSignal?.normalizedVersion ?? null,
         },
         rawPayloadHash: input.rawPayloadHash,
         status: 'verified',
@@ -1102,10 +1196,27 @@ export class BillingRepository implements IBillingRepository {
         ...namespace,
         dedupKey: `payment:${input.reference}`,
       })
-        .select({ _id: 1 })
-        .lean<{ _id: Types.ObjectId }>()
+        .select({ _id: 1, rawPayloadHash: 1, orderCode: 1, paymentLinkId: 1, normalizedPayload: 1 })
+        .lean<ExistingWebhookRecord>()
         .exec();
       if (!existing) throw error;
+      const matches =
+        existing.rawPayloadHash === input.rawPayloadHash &&
+        existing.orderCode === input.orderCode &&
+        existing.paymentLinkId === input.paymentLinkId &&
+        existing.normalizedPayload?.amount === input.amount &&
+        existing.normalizedPayload?.currency === input.currency;
+      if (!matches) {
+        await PaymentWebhookInbox.updateOne(
+          { _id: existing._id },
+          {
+            $set: {
+              status: 'permanent_failure',
+              lastError: 'Duplicate payment reference with mismatched payload',
+            },
+          },
+        );
+      }
       return { duplicate: true, inboxId: existing._id.toString() };
     }
   }
@@ -1138,14 +1249,19 @@ export class BillingRepository implements IBillingRepository {
     }
   }
 
-  private hashPayerSignal(bankId?: string | null, accountNumber?: string | null): string | null {
+  private hashPayerSignal(input: PayerSignalInput): PayerSignalHash | null {
     const secret = process.env['ABUSE_SIGNAL_HASH_SECRET'];
-    const bank = bankId?.trim();
-    const account = accountNumber?.replace(/[\s-]/g, '');
+    const keyVersion = process.env['ABUSE_SIGNAL_HASH_KEY_VERSION'] ?? 'v1';
+    const bank = input.bankId?.trim();
+    const account = input.accountNumber?.replace(/[\s-]/g, '');
     if (!secret || secret.length < 32 || !bank || !account || !/^\d{4,30}$/.test(account)) {
       return null;
     }
-    return crypto.createHmac('sha256', secret).update(`${bank}:${account}`).digest('hex');
+    return {
+      hash: crypto.createHmac('sha256', secret).update(`${bank}:${account}`).digest('hex'),
+      keyVersion,
+      normalizedVersion: 1,
+    };
   }
 
   async processInbox(limit = 25): Promise<InboxProcessingResult> {
@@ -1279,6 +1395,8 @@ export class BillingRepository implements IBillingRepository {
     if (
       snapshot.orderCode !== orderCode ||
       snapshot.amount !== attempt.requestedAmount ||
+      (attempt.paymentLinkId !== undefined && snapshot.id !== attempt.paymentLinkId) ||
+      (snapshot.currency !== undefined && snapshot.currency !== attempt.currency) ||
       snapshot.amountPaid < 0 ||
       snapshot.amountRemaining < 0
     ) {
@@ -1379,6 +1497,104 @@ export class BillingRepository implements IBillingRepository {
     );
     if (transitioned.matchedCount !== 1) return;
     await this.refreshOrderCollection(attempt.order, attempt._id, snapshot);
+    await IdempotencyRecord.updateMany(
+      { order: attempt.order, status: 'processing' },
+      {
+        $set: {
+          status: 'completed',
+          responseStatus: 201,
+          responseBodySnapshot: { orderId: attempt.order.toString() },
+        },
+      },
+    );
+    if (snapshot.amountPaid === 0 && ['cancelled', 'expired', 'failed'].includes(nextStatus)) {
+      await this.releasePromotionReservation(attempt.order, `provider_${nextStatus}`);
+    }
+  }
+
+  private async releasePromotionReservation(
+    orderId: Types.ObjectId,
+    reason: string,
+  ): Promise<void> {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const order = await BillingOrder.findById(orderId)
+          .session(session)
+          .lean<{ collectionStatus: string; receivedAmount: number }>()
+          .exec();
+        const blockingAttempt = await PaymentAttempt.exists({
+          order: orderId,
+          $or: [
+            { collectionStatus: { $in: ['creating', 'pending', 'partial', 'review'] } },
+            { amountPaid: { $gt: 0 } },
+          ],
+        }).session(session);
+        const incomingPayment = await PaymentTransaction.exists({
+          order: orderId,
+          transactionType: 'payment',
+          direction: 'incoming',
+          signedAmount: { $gt: 0 },
+        }).session(session);
+        const redemption = await PromotionRedemption.findOne({
+          order: orderId,
+          status: 'reserved',
+        })
+          .session(session)
+          .lean<{ _id: Types.ObjectId; promotion: Types.ObjectId; user: Types.ObjectId }>()
+          .exec();
+        if (
+          !order ||
+          order.collectionStatus !== 'unpaid' ||
+          order.receivedAmount !== 0 ||
+          blockingAttempt ||
+          incomingPayment ||
+          !redemption
+        ) {
+          return;
+        }
+
+        const promotionResult = await Promotion.updateOne(
+          { _id: redemption.promotion, reservedCount: { $gt: 0 } },
+          { $inc: { reservedCount: -1 } },
+          { session },
+        );
+        const userCounterResult = await PromotionUserCounter.updateOne(
+          {
+            promotion: redemption.promotion,
+            user: redemption.user,
+            reservedCount: { $gt: 0 },
+          },
+          { $inc: { reservedCount: -1 } },
+          { session },
+        );
+        const redemptionResult = await PromotionRedemption.updateOne(
+          { _id: redemption._id, status: 'reserved' },
+          {
+            $set: {
+              status: 'released',
+              releasedAt: new Date(),
+              releaseReason: reason,
+            },
+          },
+          { session },
+        );
+        if (
+          promotionResult.modifiedCount !== 1 ||
+          userCounterResult.modifiedCount !== 1 ||
+          redemptionResult.modifiedCount !== 1
+        ) {
+          throw new Error('Promo reservation counters are inconsistent');
+        }
+        await FirstPurchaseClaim.updateOne(
+          { order: orderId, status: 'reserved' },
+          { $set: { status: 'released', releasedAt: new Date() } },
+          { session },
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
   }
 
   private async refreshOrderCollection(
@@ -1833,6 +2049,119 @@ export class BillingRepository implements IBillingRepository {
       throw new BillingDomainError('promotion_not_found', 'Promotion not found', 404);
     }
     return this.promotionAdminView(promotion);
+  }
+
+  async recordExternalMoneyAdjustment(
+    input: CreateExternalMoneyAdjustmentInput,
+  ): Promise<BillingOrderView> {
+    await connectDB();
+    const orderId = objectId(input.orderId);
+    const recordedBy = objectId(input.recordedBy);
+    const occurredAt = new Date(input.occurredAt);
+    if (
+      !Number.isSafeInteger(input.amount) ||
+      input.amount <= 0 ||
+      Number.isNaN(occurredAt.getTime())
+    ) {
+      throw new BillingDomainError('validation_error', 'Invalid money adjustment', 400);
+    }
+    const namespace = {
+      provider: 'payos',
+      providerAccountId: billingConfig.providerAccountId(),
+      environment: billingConfig.providerEnvironment(),
+      type: input.type,
+      externalReference: input.externalReference.trim(),
+    };
+    const existing = await ExternalMoneyAdjustment.findOne(namespace)
+      .lean<{ order: Types.ObjectId }>()
+      .exec();
+    if (existing) {
+      const current = await BillingOrder.findById(orderId).lean<OrderLean>().exec();
+      if (!current) throw new BillingDomainError('order_not_found', 'Order not found', 404);
+      return this.toOrderView(current);
+    }
+
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const order = await BillingOrder.findById(orderId)
+          .session(session)
+          .lean<{
+            currency: 'VND';
+            receivedAmount: number;
+            settlementStatus: string;
+          }>()
+          .exec();
+        if (!order) throw new BillingDomainError('order_not_found', 'Order not found', 404);
+        if (order.currency !== input.currency) {
+          throw new BillingDomainError('currency_mismatch', 'Currency does not match order', 400);
+        }
+        const paymentTransaction = await PaymentTransaction.findOne({
+          order: orderId,
+          transactionType: 'payment',
+          direction: 'incoming',
+        })
+          .sort({ providerEventAt: 1 })
+          .session(session)
+          .lean<{ _id: Types.ObjectId }>()
+          .exec();
+        if (!paymentTransaction) {
+          throw new BillingDomainError('payment_not_found', 'No captured payment was found', 409);
+        }
+        if (input.allocation === 'principal' && input.amount > order.receivedAmount) {
+          throw new BillingDomainError(
+            'adjustment_exceeds_payment',
+            'Adjustment exceeds captured amount',
+            409,
+          );
+        }
+        await ExternalMoneyAdjustment.create(
+          [
+            {
+              order: orderId,
+              paymentTransaction: paymentTransaction._id,
+              ...namespace,
+              amount: input.amount,
+              currency: input.currency,
+              allocation: input.allocation,
+              occurredAt,
+              recordedBy,
+            },
+          ],
+          { session },
+        );
+        const settlementStatus =
+          input.type === 'chargeback'
+            ? 'charged_back'
+            : input.type === 'chargeback_reversal'
+              ? 'reversed'
+              : input.type === 'refund'
+                ? 'partially_refunded'
+                : order.settlementStatus;
+        await BillingOrder.updateOne(
+          { _id: orderId },
+          {
+            $set: {
+              settlementStatus,
+              ...(input.type === 'chargeback' || input.type === 'refund'
+                ? { fulfillmentStatus: 'review' }
+                : {}),
+            },
+          },
+          { session },
+        );
+      });
+    } catch (error) {
+      if ((error as { code?: number }).code === 11000) {
+        const current = await BillingOrder.findById(orderId).lean<OrderLean>().exec();
+        if (!current) throw new BillingDomainError('order_not_found', 'Order not found', 404);
+        return this.toOrderView(current);
+      }
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+    return this.getOrderByPublicId(input.recordedBy, input.orderId);
   }
 
   async consumeInternalNonce(nonce: string, expiresAt: Date): Promise<void> {

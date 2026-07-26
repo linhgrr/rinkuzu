@@ -13,6 +13,16 @@ export const billingOrderParamsSchema = z.strictObject({
   orderId: z.uuid(),
 });
 
+export const externalMoneyAdjustmentSchema = z.strictObject({
+  orderId: z.uuid(),
+  type: z.enum(['refund', 'chargeback', 'chargeback_reversal', 'credit']),
+  externalReference: z.string().trim().min(1).max(200),
+  amount: z.number().int().positive().safe(),
+  currency: z.literal('VND'),
+  allocation: z.enum(['principal', 'excess']),
+  occurredAt: z.iso.datetime(),
+});
+
 export const billingWebhookParamsSchema = z.strictObject({
   provider: z.literal('payos'),
 });

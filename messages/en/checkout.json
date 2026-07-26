@@ -1,0 +1,61 @@
+{
+  "loading": "Loading checkout…",
+  "noPlan": {
+    "title": "No plan selected",
+    "action": "Choose a Premium plan"
+  },
+  "header": {
+    "title": "Complete your purchase",
+    "description": "Your price is confirmed before a payment is created."
+  },
+  "paymentMethod": {
+    "title": "Payment method",
+    "bankQr": "Bank transfer via QR code",
+    "bankQrDescription": "Scan with a supported Vietnamese banking app.",
+    "selected": "Selected"
+  },
+  "promo": {
+    "label": "Promo code",
+    "placeholder": "Enter promo code",
+    "apply": "Apply"
+  },
+  "terms": "I agree to the terms of service and confirm the order details.",
+  "summary": {
+    "title": "Order summary",
+    "basePrice": "Base price",
+    "discount": "Discount",
+    "total": "Total",
+    "updating": "Updating price…",
+    "pay": "Continue to payment",
+    "provider": "Your payment is securely processed by PayOS."
+  },
+  "status": {
+    "fulfilled": "Payment successful",
+    "fulfillmentReview": "Activation is being reviewed",
+    "cancelled": "Payment cancelled",
+    "expired": "Payment expired",
+    "failed": "Payment could not be created",
+    "attemptReview": "Payment is being reviewed",
+    "partial": "Partial payment received",
+    "paidProcessing": "Payment received, activating access",
+    "pending": "Waiting for payment",
+    "cancelledDescription": "You were not charged. This order will not be activated."
+  },
+  "actions": {
+    "continuePayment": "Continue payment",
+    "verify": "Check status",
+    "cancel": "Cancel order",
+    "choosePlan": "Choose another plan"
+  },
+  "errors": {
+    "quote": "Unable to create a quote",
+    "loadOrder": "Unable to load this order",
+    "verify": "Unable to verify the payment status",
+    "createPayment": "Unable to create the payment",
+    "promoNotApplicable": "This promo code is invalid or no longer available.",
+    "quoteStale": "The price or promotion has changed. Please review the updated quote.",
+    "paymentPaused": "New payments are temporarily paused. Please try again later.",
+    "perpetual": "This account already has lifetime Premium access.",
+    "stateConflict": "The payment status has changed. Please check it again."
+  }
+}

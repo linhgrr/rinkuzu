@@ -22,6 +22,7 @@ export interface BillingOrderView {
   excessAmount: number;
   excessResolution: string;
   collectionStatus: string;
+  attemptCollectionStatus?: string;
   fulfillmentStatus: string;
   settlementStatus: string;
   checkoutUrl?: string;
@@ -104,6 +105,17 @@ export interface CreatePromotionInput {
   endsAt: string;
 }
 
+export interface CreateExternalMoneyAdjustmentInput {
+  recordedBy: string;
+  orderId: string;
+  type: 'refund' | 'chargeback' | 'chargeback_reversal' | 'credit';
+  externalReference: string;
+  amount: number;
+  currency: 'VND';
+  allocation: 'principal' | 'excess';
+  occurredAt: string;
+}
+
 export interface IBillingRepository {
   quote(userId: string, planId: string, promoCode?: string | null): Promise<BillingQuoteResult>;
   createOrder(input: CreateBillingOrderInput): Promise<BillingOrderMutationResult>;
@@ -119,4 +131,7 @@ export interface IBillingRepository {
   listPromotions(): Promise<PromotionAdminView[]>;
   createPromotion(input: CreatePromotionInput): Promise<PromotionAdminView>;
   archivePromotion(id: string): Promise<PromotionAdminView>;
+  recordExternalMoneyAdjustment(
+    input: CreateExternalMoneyAdjustmentInput,
+  ): Promise<BillingOrderView>;
 }

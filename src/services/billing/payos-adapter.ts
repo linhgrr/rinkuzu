@@ -35,9 +35,16 @@ const paymentDataSchema = z.object({
   amount: z.number().int().nonnegative(),
   amountPaid: z.number().int().nonnegative(),
   amountRemaining: z.number().int().nonnegative(),
+  currency: z.string().optional(),
   status: z.string(),
   createdAt: z.string(),
-  transactions: z.array(transactionSchema).default([]),
+  transactions: z.unknown().transform((value) => {
+    if (!Array.isArray(value)) return [];
+    return value.flatMap((item) => {
+      const parsed = transactionSchema.safeParse(item);
+      return parsed.success ? [parsed.data] : [];
+    });
+  }),
 });
 
 export type ProviderCreateOutcome =
@@ -130,6 +137,18 @@ export class BillingPayOSAdapter {
         return { kind: 'indeterminate', message: response.body.desc };
       }
       if (response.body.code !== '00') {
+        try {
+          const snapshot = await this.getPayment(input.orderCode);
+          if (snapshot) {
+            return {
+              kind: 'created',
+              paymentLinkId: snapshot.id,
+              checkoutUrl: `https://pay.payos.vn/web/${snapshot.id}`,
+            };
+          }
+        } catch {
+          // Keep this indeterminate when the provider state cannot be queried.
+        }
         if (/tồn tại|đã tồn tại|exist/i.test(response.body.desc)) {
           return { kind: 'duplicate' };
         }

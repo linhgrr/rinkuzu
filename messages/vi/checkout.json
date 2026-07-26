@@ -1,0 +1,61 @@
+{
+  "loading": "Đang tải trang thanh toán…",
+  "noPlan": {
+    "title": "Bạn chưa chọn gói",
+    "action": "Chọn gói Premium"
+  },
+  "header": {
+    "title": "Hoàn tất đăng ký",
+    "description": "Giá được xác nhận trước khi tạo giao dịch."
+  },
+  "paymentMethod": {
+    "title": "Phương thức thanh toán",
+    "bankQr": "Chuyển khoản ngân hàng qua mã QR",
+    "bankQrDescription": "Quét mã bằng ứng dụng ngân hàng tại Việt Nam.",
+    "selected": "Đã chọn"
+  },
+  "promo": {
+    "label": "Mã ưu đãi",
+    "placeholder": "Nhập mã ưu đãi",
+    "apply": "Áp dụng"
+  },
+  "terms": "Tôi đồng ý với điều khoản sử dụng và xác nhận thông tin đơn hàng.",
+  "summary": {
+    "title": "Tóm tắt đơn hàng",
+    "basePrice": "Giá gốc",
+    "discount": "Ưu đãi",
+    "total": "Tổng cộng",
+    "updating": "Đang cập nhật giá…",
+    "pay": "Tiếp tục thanh toán",
+    "provider": "Giao dịch được xử lý an toàn qua PayOS."
+  },
+  "status": {
+    "fulfilled": "Thanh toán thành công",
+    "fulfillmentReview": "Đang kiểm tra việc kích hoạt",
+    "cancelled": "Thanh toán đã hủy",
+    "expired": "Giao dịch đã hết hạn",
+    "failed": "Không thể tạo giao dịch",
+    "attemptReview": "Giao dịch đang được kiểm tra",
+    "partial": "Đã nhận một phần thanh toán",
+    "paidProcessing": "Đã nhận tiền, đang kích hoạt",
+    "pending": "Đang chờ thanh toán",
+    "cancelledDescription": "Bạn chưa bị trừ tiền. Đơn này sẽ không được kích hoạt."
+  },
+  "actions": {
+    "continuePayment": "Tiếp tục thanh toán",
+    "verify": "Kiểm tra lại",
+    "cancel": "Hủy đơn",
+    "choosePlan": "Quay lại chọn gói"
+  },
+  "errors": {
+    "quote": "Không thể tạo báo giá",
+    "loadOrder": "Không thể tải đơn hàng",
+    "verify": "Không thể xác minh trạng thái thanh toán",
+    "createPayment": "Không thể tạo giao dịch",
+    "promoNotApplicable": "Mã ưu đãi không hợp lệ hoặc không còn khả dụng.",
+    "quoteStale": "Giá hoặc ưu đãi đã thay đổi. Vui lòng kiểm tra báo giá mới.",
+    "paymentPaused": "Hệ thống đang tạm dừng tạo giao dịch mới. Vui lòng thử lại sau.",
+    "perpetual": "Tài khoản này đã có quyền Premium không thời hạn.",
+    "stateConflict": "Trạng thái giao dịch đã thay đổi. Vui lòng kiểm tra lại."
+  }
+}

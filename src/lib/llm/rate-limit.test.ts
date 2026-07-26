@@ -52,8 +52,10 @@ vi.mock('mongoose', () => ({
 }));
 
 import {
+  buildLlmRateLimitHeaders,
   buildLlmRateLimitResponse,
   commitLlmUsage,
+  getLlmUsageSnapshot,
   refundLlmUsage,
   reserveLlmUsage,
 } from './rate-limit';
@@ -187,5 +189,119 @@ describe('entitlement usage ledger', () => {
       },
       { session: mocks.session },
     );
+  });
+
+  it.each([
+    ['reserved', false, 'reserved'],
+    ['denied', false, 'denied'],
+  ] as const)(
+    'returns duplicate %s reservations without charging again',
+    async (status, allowed, disposition) => {
+      mocks.requestCollection.findOne.mockResolvedValue({
+        userId: 'user-duplicate',
+        capability: 'ask_rin_chan',
+        requestId: `request-${status}`,
+        status,
+        buckets: [],
+        leaseExpiresAt: new Date(Date.now() + 60_000),
+      });
+
+      await expect(
+        reserveLlmUsage('user-duplicate', 'ask_rin_chan', `request-${status}`),
+      ).resolves.toMatchObject({ allowed, disposition, duplicate: true });
+      expect(mocks.session.withTransaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ['committed', true, 'committed'],
+    ['denied', false, 'denied'],
+    ['reserved', false, 'reserved'],
+  ] as const)(
+    'handles a concurrent %s request inside the transaction',
+    async (status, allowed, disposition) => {
+      mocks.requestCollection.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        userId: 'user-race',
+        capability: 'ask_rin_chan',
+        requestId: `race-${status}`,
+        status,
+        buckets: [],
+        leaseExpiresAt: new Date(Date.now() + 60_000),
+      });
+
+      await expect(
+        reserveLlmUsage('user-race', 'ask_rin_chan', `race-${status}`),
+      ).resolves.toMatchObject({ allowed, disposition, duplicate: true });
+      expect(mocks.bucketCollection.updateOne).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not commit or refund denied usage', async () => {
+    const denied = {
+      allowed: false,
+      disposition: 'denied' as const,
+      userId: 'user-denied',
+      tier: 'free' as const,
+      action: 'ask_rin_chan' as const,
+      requestId: 'request-denied',
+      duplicate: false,
+      windows: [],
+    };
+
+    await commitLlmUsage(denied);
+    await refundLlmUsage(denied);
+
+    expect(mocks.requestCollection.updateOne).not.toHaveBeenCalled();
+    expect(mocks.connectDB).not.toHaveBeenCalled();
+  });
+
+  it('leaves a missing or non-reserved refund request unchanged', async () => {
+    const reservation = await reserveLlmUsage('user-refund', 'ask_rin_chan', 'request-refund');
+    mocks.requestCollection.findOne.mockResolvedValueOnce(null);
+    await refundLlmUsage(reservation);
+    mocks.requestCollection.findOne.mockResolvedValueOnce({ status: 'committed' });
+    await refundLlmUsage(reservation);
+
+    expect(mocks.bucketCollection.updateOne).toHaveBeenCalledTimes(2);
+  });
+
+  it('builds snapshot and standard rate-limit headers', async () => {
+    mocks.bucketCollection.findOne.mockResolvedValue({ count: 2 });
+    const snapshot = await getLlmUsageSnapshot('user-snapshot', 'ask_rin_chan', {
+      tier: 'free',
+    });
+    const headers = buildLlmRateLimitHeaders({
+      allowed: false,
+      disposition: 'denied',
+      userId: 'user-snapshot',
+      tier: 'free',
+      action: 'ask_rin_chan',
+      requestId: 'snapshot',
+      duplicate: false,
+      windows: snapshot,
+      retryAfterSeconds: 15,
+    }) as Record<string, string>;
+
+    expect(headers).toMatchObject({
+      'X-RateLimit-Tier': 'free',
+      'X-RateLimit-Action': 'ask_rin_chan',
+      'Retry-After': '15',
+    });
+    expect(headers['X-RateLimit-Limit']).toBeDefined();
+    expect(
+      buildLlmRateLimitHeaders({
+        allowed: true,
+        disposition: 'reserved',
+        userId: 'user-empty',
+        tier: 'premium',
+        action: 'ask_rin_chan',
+        requestId: 'empty',
+        duplicate: false,
+        windows: [],
+      }),
+    ).toEqual({
+      'X-RateLimit-Tier': 'premium',
+      'X-RateLimit-Action': 'ask_rin_chan',
+    });
   });
 });

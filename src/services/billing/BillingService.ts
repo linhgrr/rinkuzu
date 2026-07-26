@@ -3,6 +3,7 @@ import type {
   BillingOrderView,
   BillingQuoteResult,
   CreateBillingOrderInput,
+  CreateExternalMoneyAdjustmentInput,
   CreatePromotionInput,
   IBillingRepository,
   InboxProcessingResult,
@@ -69,5 +70,11 @@ export class BillingService {
 
   archivePromotion(id: string): Promise<PromotionAdminView> {
     return this.repository.archivePromotion(id);
+  }
+
+  recordExternalMoneyAdjustment(
+    input: CreateExternalMoneyAdjustmentInput,
+  ): Promise<BillingOrderView> {
+    return this.repository.recordExternalMoneyAdjustment(input);
   }
 }

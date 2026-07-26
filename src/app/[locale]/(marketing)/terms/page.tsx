@@ -170,14 +170,14 @@ function SubscriptionSection() {
             institutions.
           </p>
         </div>
-        <div>
+        <div id="billing-and-refunds" className="scroll-mt-24">
           <h3 className="font-medium text-neutral-800">4.3 Billing and Payment</h3>
           <p>
-            Payments are processed securely via PayOS. You authorize us to charge your chosen
-            payment method for all fees associated with your Premium subscription. All fees are in
-            USD or VND as displayed at checkout and are non-refundable except as required by
-            applicable law. Recurring subscriptions renew automatically at the end of each billing
-            period unless cancelled at least 7 days before renewal. View our{' '}
+            Premium access purchased through the PayOS QR checkout is a one-time payment for the
+            duration displayed before payment. It does not renew automatically. Prices and the
+            amount due are displayed in VND at checkout before a payment link is created. Payments
+            are non-refundable except where required by applicable law or where RinKuzu confirms a
+            billing error. View our{' '}
             <Link href="/privacy" className="text-brand-trust hover:underline">
               Privacy Policy
             </Link>{' '}
@@ -185,11 +185,15 @@ function SubscriptionSection() {
           </p>
         </div>
         <div>
-          <h3 className="font-medium text-neutral-800">4.4 Cancellation</h3>
+          <h3 className="font-medium text-neutral-800">4.4 Cancellation and Refunds</h3>
           <p>
-            You may cancel your Premium subscription at any time through your account settings.
-            Cancellation takes effect at the end of the current billing period. Downgrading to the
-            Free plan does not entitle you to a refund for the current period.
+            Cancelling an unpaid PayOS order stops its normal checkout flow. If a bank transfer was
+            already initiated or is later confirmed by the payment provider, RinKuzu may still
+            record the payment and activate the purchased Premium access. Once a payment has been
+            confirmed, Premium access remains available for the purchased duration unless a refund,
+            chargeback, or billing correction is recorded. Contact{' '}
+            <EmailLink address="support@rinkuzu.app" /> if you believe a payment was duplicated,
+            charged incorrectly, or not matched to your account.
           </p>
         </div>
       </div>

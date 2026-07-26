@@ -33,7 +33,7 @@ const informationWeCollectSections = [
   },
   {
     title: '1.4 Technical and Usage Data',
-    body: `Automatically collected: IP address, browser type and version, operating system, device identifiers, pages visited, referring URLs, clickstream data, and error logs. We use Google Analytics 4 to analyze aggregate usage patterns. This data is anonymized where possible and does not identify individual users without their consent.`,
+    body: `With your consent, we collect: browser type and version, operating system, device identifiers, pages visited, referring URLs, product events, and error logs. We use Google Analytics 4 for campaign attribution and PostHog US Cloud for aggregate product analytics. We do not send uploaded PDF content, passwords, or answer text to these analytics services.`,
   },
 ];
 
@@ -83,9 +83,15 @@ const processorRows: ProcessorRow[] = [
   },
   {
     service: 'Google Analytics 4',
-    purpose: 'Aggregate usage analytics (anonymized)',
+    purpose: 'Campaign attribution and aggregate traffic analytics',
     dataShared: 'Technical & usage data (no PII)',
     location: 'EEA / US',
+  },
+  {
+    service: 'PostHog US Cloud',
+    purpose: 'Consent-based product events, funnels, and retention analysis',
+    dataShared: 'Pseudonymous user ID and product events (no PDF or answer content)',
+    location: 'US',
   },
   {
     service: 'PayOS',

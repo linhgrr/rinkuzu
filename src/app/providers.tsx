@@ -5,6 +5,7 @@ import { SessionProvider } from 'next-auth/react';
 import { ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { UpgradePromptProvider } from '@/features/subscription/components/UpgradePromptProvider';
+import { AnalyticsIdentity } from '@/components/analytics/AnalyticsIdentity';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -19,6 +20,7 @@ export default function Providers({ children, session }: ProvidersProps) {
       refetchOnWindowFocus={false}
       refetchWhenOffline={false}
     >
+      <AnalyticsIdentity />
       <UpgradePromptProvider>{children}</UpgradePromptProvider>
       <Toaster richColors position="top-right" />
     </SessionProvider>

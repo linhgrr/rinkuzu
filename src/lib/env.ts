@@ -123,6 +123,8 @@ const envSchema = z
     SUBSCRIPTION_CRON_SECRET: subscriptionCronSecretSchema,
     IMGBB_API_KEY: z.string().optional(),
     NEXT_PUBLIC_GA_ID: z.string().optional(),
+    NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: z.string().optional(),
+    NEXT_PUBLIC_POSTHOG_HOST: z.url().optional(),
     NEXT_IMAGE_UNOPTIMIZED: z.enum(['true', 'false']).optional(),
   })
   .superRefine((data, ctx) => {

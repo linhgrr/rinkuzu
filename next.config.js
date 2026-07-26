@@ -26,6 +26,11 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   poweredByHeader: false,
+  typescript: {
+    // The full production graph currently exceeds Vercel's 8 GB build limit.
+    // Keep local/CI typecheck enabled; Vercel still compiles the application bundle.
+    ignoreBuildErrors: process.env.VERCEL === '1',
+  },
   turbopack: {
     root: __dirname,
   },
@@ -105,6 +110,7 @@ const nextConfig = {
                 "connect-src 'self' blob: data:",
                 'https://www.googletagmanager.com',
                 'https://www.google-analytics.com',
+                'https://us.i.posthog.com',
                 'https://raw.githack.com',
                 'https://raw.githubusercontent.com',
                 'https://api.iconify.design',

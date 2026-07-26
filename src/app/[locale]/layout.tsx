@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata, Viewport } from 'next';
 import { Inter, Montserrat, Unbounded, Vina_Sans } from 'next/font/google';
-import Script from 'next/script';
 import '../globals.css';
 import { routing } from '@/i18n/routing';
 import { canonicalFor, languageAlternates, siteUrl } from '@/lib/seo';
@@ -15,6 +14,7 @@ import {
 } from '@/lib/structured-data';
 import { NextIntlClientProvider } from 'next-intl';
 import { SerwistProvider } from '@serwist/turbopack/react';
+import { AnalyticsRoot } from '@/components/analytics/AnalyticsRoot';
 
 const inter = Inter({
   subsets: ['latin', 'vietnamese'],
@@ -161,9 +161,6 @@ export default async function LocaleLayout({
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="overscroll-behavior" content="none" />
         <meta name="format-detection" content="telephone=no" />
-        {/* Preconnect for third-party origins used by GTM and analytics */}
-        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
       </head>
       <body
         className={`${inter.className} ${montserrat.variable} ${unbounded.variable} ${vinaSans.variable} min-h-screen bg-neutral-50 antialiased`}
@@ -180,24 +177,9 @@ export default async function LocaleLayout({
             <JsonLd id="webpage-schema" data={webpageSchema} />
             <JsonLd id="software-app-schema" data={softwareApplicationSchema} />
             {children}
+            <AnalyticsRoot />
           </NextIntlClientProvider>
         </SerwistProvider>
-        {process.env['NEXT_PUBLIC_GA_ID'] ? (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env['NEXT_PUBLIC_GA_ID']}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga-init" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env['NEXT_PUBLIC_GA_ID']}');
-              `}
-            </Script>
-          </>
-        ) : null}
       </body>
     </html>
   );

@@ -215,6 +215,22 @@ utm_content={content_id}_{variant}
 
 Bổ sung analytics trong Rinkuzu:
 
+#### Cập nhật triển khai ngày 2026-07-23
+
+- [x] GA4 đã được cấu hình trên production để đo acquisition và UTM.
+- [x] PostHog US Cloud đã được cấu hình cho product analytics; region được xác minh từ project `525510`.
+- [x] Analytics chỉ khởi tạo sau khi người dùng đồng ý; banner consent hỗ trợ tiếng Việt và tiếng Anh.
+- [x] Không gửi email, tên, tiêu đề PDF, nội dung PDF, mật khẩu hoặc nội dung đáp án vào analytics.
+- [x] Đã instrument `$pageview`, `signup_started`, `signup_completed`, `login_completed`, `pdf_upload_started`, `pdf_upload_completed`, `pdf_upload_failed`, `adaptive_session_started`, `adaptive_answer_submitted`, `first_question_answered` và `quiz_completed`.
+- [x] Production đã được smoke test sau khi nâng Next.js lên `16.2.11`, NextAuth lên `5.0.0-beta.32` và `@auth/core` lên `0.41.3`.
+- [x] Đã tạo và lưu [RinKuzu Activation Funnel](https://us.posthog.com/project/525510/insights/YMZtwhZK): `$pageview` → `signup_completed` → `pdf_upload_completed` → `first_question_answered` → `quiz_completed`.
+- [x] Đã đánh dấu `signup_completed`, `pdf_upload_completed`, `first_question_answered` và `quiz_completed` là Key events trong GA4.
+- [x] Đã xác minh PostHog nhận `Pageview` production từ `https://www.rinkuzu.app/vi/dashboard` sau consent.
+- [ ] Thu và chốt baseline acquisition/activation trong bảy ngày đầu; các event activation cần phát sinh từ người dùng thật trước khi đánh giá conversion.
+- [ ] Xử lý type graph toàn repo đang vượt giới hạn RAM 8 GB khi chạy TypeScript; Vercel hiện chỉ bỏ qua typecheck trong build production, còn local/CI vẫn giữ cổng typecheck.
+
+Danh sách dưới đây là event schema mục tiêu. Những event chưa xuất hiện trong danh sách đã instrument ở trên vẫn là backlog:
+
 ```text
 landing_cta_clicked
 signup_started

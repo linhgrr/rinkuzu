@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
   HiOutlineCheckCircle,
   HiOutlineClock,
-  HiOutlineLockClosed,
+  HiOutlineExternalLink,
   HiOutlineQrcode,
   HiOutlineTag,
   HiOutlineXCircle,
@@ -23,7 +23,7 @@ import {
   type CheckoutOrder,
   type CheckoutQuote,
 } from '@/features/billing/api/checkout-api';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { ApiResponseError } from '@/lib/api/client';
 import { formatVndCurrency } from '@/lib/formatters';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
@@ -88,6 +88,7 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [order, setOrder] = useState<CheckoutOrder | null>(null);
   const [promoCode, setPromoCode] = useState('');
+  const [promoOpen, setPromoOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(Boolean(planId || orderId));
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -167,6 +168,11 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
     }
   };
 
+  const toggleTermsFromRow = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target instanceof Element && event.target.closest('a, input')) return;
+    setTermsAccepted((accepted) => !accepted);
+  };
+
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 text-center text-ink-muted">{t('loading')}</div>
@@ -215,7 +221,9 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
                 <Button
                   onClick={() => window.location.assign(assertTrustedPayosCheckoutUrl(checkoutUrl))}
                 >
-                  {t('actions.continuePayment')}
+                  {t('actions.continuePayment', {
+                    amount: formatVndCurrency(order.finalAmount),
+                  })}
                 </Button>
               )}
             <Button
@@ -264,30 +272,15 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8 lg:grid-cols-[1.2fr_0.8fr]">
-      <Card className="p-6 md:p-8">
-        <div className="flex items-center gap-3">
-          <span className="rounded-xl bg-emerald-50 p-2 text-emerald-700">
-            <HiOutlineLockClosed className="size-6" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold text-ink">{t('header.title')}</h1>
-            <p className="text-sm text-ink-muted">{t('header.description')}</p>
-          </div>
-        </div>
+    <div className="mx-auto grid max-w-5xl gap-10 px-4 py-8 sm:px-6 sm:py-12 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
+      <section className="min-w-0">
+        <h1 className="text-2xl font-semibold text-ink sm:text-3xl">{t('header.title')}</h1>
+
         <fieldset className="mt-8">
           <legend className="text-sm font-semibold text-ink">{t('paymentMethod.title')}</legend>
-          <label className="mt-3 flex cursor-default items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50/60 p-4">
-            <input
-              type="radio"
-              name="payment-method"
-              value="payos-bank-qr"
-              checked
-              readOnly
-              className="size-4 accent-emerald-600"
-            />
-            <span className="rounded-lg bg-white p-2 text-emerald-700 shadow-sm">
-              <HiOutlineQrcode className="size-6" />
+          <div className="mt-3 flex items-center gap-3 border-y border-line py-4">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-800">
+              <HiOutlineQrcode className="size-6" aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block font-medium text-ink">{t('paymentMethod.bankQr')}</span>
@@ -295,45 +288,91 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
                 {t('paymentMethod.bankQrDescription')}
               </span>
             </span>
-            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800">
-              {t('paymentMethod.selected')}
-            </span>
-          </label>
+          </div>
         </fieldset>
+
         <div className="mt-8">
-          <Input
-            label={t('promo.label')}
-            value={promoCode}
-            maxLength={32}
-            icon={<HiOutlineTag />}
-            onChange={(event) => setPromoCode(event.target.value)}
-            placeholder={t('promo.placeholder')}
-          />
-          <Button
-            className="mt-3"
-            variant="outline"
-            disabled={quoteLoading}
-            onClick={() => void loadQuote(promoCode.trim() || null)}
-          >
-            {t('promo.apply')}
-          </Button>
+          {promoOpen ? (
+            <div className="sm:flex sm:items-end sm:gap-3">
+              <Input
+                label={t('promo.label')}
+                value={promoCode}
+                maxLength={32}
+                icon={<HiOutlineTag />}
+                onChange={(event) => setPromoCode(event.target.value)}
+                placeholder={t('promo.placeholder')}
+              />
+              <Button
+                className="mt-3 shrink-0 sm:mt-0"
+                variant="outline"
+                loading={quoteLoading}
+                disabled={quoteLoading}
+                onClick={() => void loadQuote(promoCode.trim() || null)}
+              >
+                {t('promo.apply')}
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPromoOpen(true)}
+              className="flex min-h-11 items-center gap-2 rounded-lg font-semibold text-ink underline decoration-line-blue underline-offset-4 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            >
+              <HiOutlineTag className="size-5" aria-hidden="true" />
+              {t('promo.prompt')}
+            </button>
+          )}
         </div>
-        <label className="mt-8 flex items-start gap-3 rounded-xl bg-neutral-50 p-4 text-sm text-ink">
+
+        <div
+          className="mt-8 flex cursor-pointer items-start gap-3 border-t border-line pt-5 text-sm leading-6 text-ink"
+          onClick={toggleTermsFromRow}
+        >
           <input
+            id="checkout-terms"
             type="checkbox"
             checked={termsAccepted}
             onChange={(event) => setTermsAccepted(event.target.checked)}
-            className="mt-0.5 size-4"
+            aria-labelledby="checkout-terms-copy"
+            className="mt-0.5 size-5 shrink-0 accent-[var(--brand-trust)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
           />
-          <span>{t('terms')}</span>
-        </label>
-      </Card>
+          <p id="checkout-terms-copy">
+            {t('terms.prefix')}{' '}
+            <Link
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline underline-offset-2"
+            >
+              {t('terms.service')}
+            </Link>{' '}
+            {t('terms.and')}{' '}
+            <Link
+              href="/terms#billing-and-refunds"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline underline-offset-2"
+            >
+              {t('terms.refund')}
+            </Link>
+            {t('terms.oneTime')}
+          </p>
+        </div>
+      </section>
 
-      <Card className="h-fit p-6">
+      <Card className="h-fit p-6 lg:sticky lg:top-6">
         <h2 className="text-lg font-semibold text-ink">{t('summary.title')}</h2>
         {quote && (
           <>
-            <p className="mt-5 font-medium text-ink">{quote.plan.name}</p>
+            <div className="mt-5">
+              <p className="font-semibold text-ink">{quote.plan.name}</p>
+              <p className="mt-1 text-sm text-ink-muted">
+                {quote.quote.durationUnit === 'month'
+                  ? t('summary.monthDuration', { count: quote.quote.durationValue })
+                  : t('summary.dayDuration', { count: quote.quote.durationValue })}
+              </p>
+              <p className="mt-1 text-sm font-medium text-ink">{t('summary.oneTime')}</p>
+            </div>
             <div
               className="mt-5 min-h-28 border-t border-neutral-200 pt-5 text-sm"
               aria-busy={quoteLoading}
@@ -359,8 +398,8 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
                       <span>−{formatVndCurrency(quote.quote.discountAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-lg font-semibold">
-                    <span>{t('summary.total')}</span>
+                  <div className="flex justify-between border-t border-line pt-4 text-lg font-semibold">
+                    <span>{t('summary.dueToday')}</span>
                     <span>{formatVndCurrency(quote.quote.finalAmount)}</span>
                   </div>
                 </div>
@@ -370,11 +409,21 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
               className="mt-6 w-full"
               loading={submitting}
               disabled={!termsAccepted || quoteLoading}
+              aria-label={
+                submitting
+                  ? t('summary.openingProvider')
+                  : t('summary.pay', {
+                      amount: formatVndCurrency(quote.quote.finalAmount),
+                    })
+              }
               onClick={() => void submit()}
             >
-              {t('summary.pay')}
+              {t('summary.pay', { amount: formatVndCurrency(quote.quote.finalAmount) })}
             </Button>
-            <p className="mt-3 text-center text-xs text-ink-muted">{t('summary.provider')}</p>
+            <p className="mt-3 flex items-start justify-center gap-1.5 text-center text-xs leading-5 text-ink-muted">
+              <HiOutlineExternalLink className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span>{t('summary.provider')}</span>
+            </p>
           </>
         )}
       </Card>

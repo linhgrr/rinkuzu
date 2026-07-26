@@ -6,6 +6,16 @@ import path from 'node:path';
 const root = process.cwd();
 const registryPath = path.join(root, 'security/acceptances.json');
 const severityRank = { low: 1, moderate: 2, high: 3, critical: 4 };
+const bundledNpmCli = path.join(
+  path.dirname(process.execPath),
+  'node_modules',
+  'npm',
+  'bin',
+  'npm-cli.js',
+);
+const npmCli = process.env['npm_execpath'] || (fs.existsSync(bundledNpmCli) ? bundledNpmCli : null);
+const npmExecutable = npmCli ? process.execPath : 'npm';
+const npmArgs = npmCli ? [npmCli] : [];
 
 function fail(message) {
   throw new Error(`npm audit policy failed: ${message}`);
@@ -80,7 +90,7 @@ function validateAcceptance(acceptance, npmVersion) {
 }
 
 function runAudit(args) {
-  const result = spawnSync('npm', ['audit', '--json', ...args], {
+  const result = spawnSync(npmExecutable, [...npmArgs, 'audit', '--json', ...args], {
     cwd: root,
     encoding: 'utf8',
     env: { ...process.env, npm_config_cache: path.join(root, '.npm') },
@@ -100,7 +110,9 @@ function runAudit(args) {
   }
 }
 
-const npmVersion = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim();
+const npmVersion = execFileSync(npmExecutable, [...npmArgs, '--version'], {
+  encoding: 'utf8',
+}).trim();
 if (npmVersion !== '10.9.8') fail(`expected npm 10.9.8, got ${npmVersion}`);
 
 const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));

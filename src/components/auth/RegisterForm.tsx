@@ -27,6 +27,7 @@ import { emailSchema, passwordSchema } from '@/lib/validation/auth';
 import { usePasswordStrength } from '@/lib/validation/usePasswordStrength';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { ROUTES } from '@/shared/constants/routes';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
 interface RegisterFormProps {
   locale: string;
@@ -129,8 +130,10 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
+    captureAnalyticsEvent('signup_started', { method: 'credentials', locale });
     try {
       const result = await registerAccount({ email: values.email, password: values.password });
+      captureAnalyticsEvent('signup_completed', { method: 'credentials', locale });
       setServerSuccess(result.message ?? t('accountCreatedSuccess'));
     } catch (error) {
       setServerError(

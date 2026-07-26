@@ -17,6 +17,7 @@ export const AUTH_REQUIRED_PATH_PREFIXES = [
   '/profile',
   '/review',
   ROUTES.SUBSCRIPTION,
+  '/checkout',
   '/history',
   '/bookmarks',
   '/my-quizzes',

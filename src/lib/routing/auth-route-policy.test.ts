@@ -9,6 +9,8 @@ describe('getAuthRoutePolicy', () => {
     ['/bookmarks', 'authenticated'],
     ['/my-quizzes/folder/123', 'authenticated'],
     ['/adaptive/upload', 'authenticated'],
+    ['/checkout', 'authenticated'],
+    ['/checkout/order', 'authenticated'],
     ['/admin', 'admin'],
     ['/admin/users', 'admin'],
     ['/login', 'public'],

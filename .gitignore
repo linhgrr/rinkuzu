@@ -149,3 +149,7 @@ temp/
 
 # Added by code-review-graph
 .code-review-graph/
+
+.vercel
+.codex-tmp/
+*.inspect.ndjson

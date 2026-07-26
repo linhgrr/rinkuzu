@@ -21,6 +21,7 @@ import {
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 import { resolveAuthCallback } from '@/lib/routing/auth-callback';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
 interface LoginFormProps {
   locale: string;
@@ -107,6 +108,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
       }
       // Full page replace — deterministic, avoids SPA race with next-intl router.
       if (result?.ok && result.url) {
+        captureAnalyticsEvent('login_completed', { method: 'credentials', locale });
         setNavigationPending(true);
         window.location.replace(result.url);
         return;

@@ -555,9 +555,9 @@ test.describe('production critical paths', () => {
       await expect(page.getByRole('heading', { name: 'E2E Premium Monthly' })).toBeVisible();
       await page.getByRole('button', { name: 'Subscribe', exact: true }).click();
       await page.waitForURL(/\/en\/checkout\?plan=/);
-      await expect(page.getByRole('heading', { name: 'Complete your purchase' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Review and pay' })).toBeVisible();
       await page.getByRole('checkbox').check();
-      await page.getByRole('button', { name: 'Continue to payment', exact: true }).click();
+      await page.getByRole('button', { name: /Continue to PayOS/ }).click();
       await page.waitForURL('https://pay.payos.vn/web/e2e-production-checkout');
       await expect(
         page.getByRole('heading', { name: 'PayOS checkout boundary reached' }),

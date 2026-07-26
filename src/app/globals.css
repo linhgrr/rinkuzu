@@ -79,6 +79,7 @@
     --brand-action: var(--accent);
     --brand-action-hover: var(--accent-hover);
     --brand-action-active: var(--primary-6);
+    --brand-action-text: var(--primary-8);
     --brand-trust: var(--accent);
     --brand-trust-hover: var(--accent-hover);
     --brand-trust-active: var(--primary-6);
@@ -250,6 +251,7 @@
     --brand-action: #fb923c;
     --brand-action-hover: #fdba74;
     --brand-action-active: #fed7aa;
+    --brand-action-text: #10110f;
 
     --brand-trust: #34d399;
     --brand-trust-hover: #6ee7b7;
@@ -325,7 +327,7 @@
   }
 
   .btn:focus-visible {
-    outline: 3px solid var(--focus-ring-soft);
+    outline: 3px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
@@ -340,7 +342,7 @@
     border-radius: var(--radius-md);
     border: 1px solid transparent;
     background: var(--brand-action);
-    color: var(--text-inverse);
+    color: var(--brand-action-text);
     font-size: 15px;
     font-weight: 650;
     line-height: 1;
@@ -469,7 +471,8 @@
   .input:focus-visible {
     border-color: var(--brand-trust);
     box-shadow: 0 0 0 3px var(--focus-ring-soft);
-    outline: none;
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   /* Badges */

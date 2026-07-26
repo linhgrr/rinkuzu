@@ -39,7 +39,8 @@ function readCloneFragment(root, file) {
 
 function fragmentEndpoint(root, file) {
   const fragment = readCloneFragment(root, file);
-  return `src/${file.name}\0${sha256(fragment)}`;
+  const normalizedName = file.name.replaceAll('\\', '/');
+  return `src/${normalizedName}\0${sha256(fragment)}`;
 }
 
 function isImportOnlyFragment(fragment) {

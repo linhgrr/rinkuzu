@@ -10,6 +10,7 @@ import { toBrowserPath } from '@/lib/routing/pathname';
 import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
 import { ROUTES } from '@/shared/constants/routes';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
+import { resetAnalyticsIdentity } from '@/lib/analytics/client';
 
 const ICON = {
   home: 'material-symbols:home-outline-rounded',
@@ -495,7 +496,7 @@ function LogoutButton({ className, t }: LogoutButtonProps) {
   const locale = useLocale();
 
   return (
-    <form action="/api/session/logout" method="post">
+    <form action="/api/session/logout" method="post" onSubmit={resetAnalyticsIdentity}>
       <input type="hidden" name="locale" value={locale} />
       <button type="submit" className={className}>
         <Icon icon={ICON.logout} className="size-5" aria-hidden="true" />

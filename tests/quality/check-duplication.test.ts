@@ -194,4 +194,26 @@ describe('duplicate-code quality gate', () => {
     };
     expect(fingerprintDuplicate(root, shifted)).toBe(firstFingerprint);
   });
+
+  it('keeps clone fingerprints stable across path separators', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'rinkuzu-duplication-'));
+    temporaryDirectories.push(root);
+    mkdirSync(path.join(root, 'src', 'nested'), { recursive: true });
+    const fragment = ['const one = 1;', 'const two = 2;', 'const three = 3;'].join('\n');
+    writeFileSync(path.join(root, 'src', 'nested', 'a.ts'), `${fragment}\n`);
+    writeFileSync(path.join(root, 'src', 'nested', 'b.ts'), `${fragment}\n`);
+
+    const windowsPaths = {
+      format: 'typescript',
+      firstFile: { name: 'nested\\a.ts', start: 1, end: 3 },
+      secondFile: { name: 'nested\\b.ts', start: 1, end: 3 },
+    };
+    const posixPaths = {
+      format: 'typescript',
+      firstFile: { name: 'nested/a.ts', start: 1, end: 3 },
+      secondFile: { name: 'nested/b.ts', start: 1, end: 3 },
+    };
+
+    expect(fingerprintDuplicate(root, windowsPaths)).toBe(fingerprintDuplicate(root, posixPaths));
+  });
 });

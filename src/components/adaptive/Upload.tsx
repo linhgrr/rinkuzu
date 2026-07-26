@@ -16,6 +16,7 @@ import {
 import { checkApiHealth, uploadPdf } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
+import { captureAnalyticsEvent, fileSizeBucket } from '@/lib/analytics/client';
 
 const DEFAULT_PIPELINE_PAGE_BATCH_SIZE = 10;
 
@@ -72,10 +73,18 @@ export default function AdaptiveLearningUpload() {
     setIsUploading(true);
     setError(null);
     setUploadProgress(10);
+    const uploadStartedAt = performance.now();
+    const sizeBucket = fileSizeBucket(file.size);
+    captureAnalyticsEvent('pdf_upload_started', { file_size_bucket: sizeBucket });
     try {
       const online = await checkApiHealth();
       if (!online) {
         const message = t('uploadPage.backendOffline');
+        captureAnalyticsEvent('pdf_upload_failed', {
+          file_size_bucket: sizeBucket,
+          reason: 'service_unavailable',
+          duration_ms: Math.round(performance.now() - uploadStartedAt),
+        });
         setError(message);
         toast.error(message);
         setIsUploading(false);
@@ -84,6 +93,10 @@ export default function AdaptiveLearningUpload() {
       setUploadProgress(30);
       const result = await uploadPdf(file, subjectName.trim(), DEFAULT_PIPELINE_PAGE_BATCH_SIZE);
       setUploadProgress(100);
+      captureAnalyticsEvent('pdf_upload_completed', {
+        file_size_bucket: sizeBucket,
+        duration_ms: Math.round(performance.now() - uploadStartedAt),
+      });
       saveSelectedPipelineJob({
         jobId: result.job_id,
         filename: file.name,
@@ -94,6 +107,11 @@ export default function AdaptiveLearningUpload() {
         push(ADAPTIVE_ROUTES.dashboard);
       }, 500);
     } catch (err) {
+      captureAnalyticsEvent('pdf_upload_failed', {
+        file_size_bucket: sizeBucket,
+        reason: err instanceof AdaptiveApiError ? err.code : 'unknown',
+        duration_ms: Math.round(performance.now() - uploadStartedAt),
+      });
       const message = getFriendlyUploadError(err);
       setError(message);
       toast.error(message);

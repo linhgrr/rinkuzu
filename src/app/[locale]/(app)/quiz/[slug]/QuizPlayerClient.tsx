@@ -3,6 +3,7 @@
 import { useRouter, Link } from '@/i18n/navigation';
 import { useEffect, useReducer, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
@@ -852,6 +853,11 @@ export default function QuizPlayerClient({
     userEmail: state.userEmail,
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
     onSubmitSuccess: async (attemptId, score) => {
+      captureAnalyticsEvent('quiz_completed', {
+        question_count: quiz?.questions.length ?? 0,
+        score,
+        authenticated: Boolean(sessionEmail),
+      });
       // Cancel pending/in-flight autosaves and wait for the DELETE before
       // navigation. This prevents the submit flow from racing the progress
       // cleanup and avoids resurrecting a just-completed attempt.

@@ -4,30 +4,46 @@
     "title": "Bạn chưa chọn gói",
     "action": "Chọn gói Premium"
   },
+  "shell": {
+    "navigation": "Điều hướng thanh toán",
+    "support": "Hỗ trợ",
+    "backToPlans": "Quay lại chọn gói",
+    "switchToEnglish": "Chuyển sang tiếng Anh",
+    "switchToVietnamese": "Chuyển sang tiếng Việt"
+  },
   "header": {
-    "title": "Hoàn tất đăng ký",
-    "description": "Giá được xác nhận trước khi tạo giao dịch."
+    "title": "Kiểm tra và thanh toán"
   },
   "paymentMethod": {
     "title": "Phương thức thanh toán",
     "bankQr": "Chuyển khoản ngân hàng qua mã QR",
-    "bankQrDescription": "Quét mã bằng ứng dụng ngân hàng tại Việt Nam.",
-    "selected": "Đã chọn"
+    "bankQrDescription": "Dùng được với các ứng dụng ngân hàng tại Việt Nam."
   },
   "promo": {
+    "prompt": "Bạn có mã ưu đãi?",
     "label": "Mã ưu đãi",
     "placeholder": "Nhập mã ưu đãi",
     "apply": "Áp dụng"
   },
-  "terms": "Tôi đồng ý với điều khoản sử dụng và xác nhận thông tin đơn hàng.",
+  "terms": {
+    "prefix": "Tôi đồng ý với",
+    "service": "Điều khoản sử dụng",
+    "and": "và",
+    "refund": "điều khoản hoàn tiền",
+    "oneTime": ", đồng thời hiểu rằng đây là khoản thanh toán một lần và không tự động gia hạn."
+  },
   "summary": {
     "title": "Tóm tắt đơn hàng",
+    "monthDuration": "{count} tháng sử dụng Premium",
+    "dayDuration": "{count} ngày sử dụng Premium",
+    "oneTime": "Thanh toán một lần · Không tự động gia hạn",
     "basePrice": "Giá gốc",
     "discount": "Ưu đãi",
-    "total": "Tổng cộng",
+    "dueToday": "Thanh toán hôm nay",
     "updating": "Đang cập nhật giá…",
-    "pay": "Tiếp tục thanh toán",
-    "provider": "Giao dịch được xử lý an toàn qua PayOS."
+    "pay": "Tiếp tục đến PayOS · {amount}",
+    "openingProvider": "Đang mở PayOS",
+    "provider": "PayOS sẽ mở trang thanh toán QR ở bước tiếp theo."
   },
   "status": {
     "fulfilled": "Thanh toán thành công",
@@ -39,10 +55,10 @@
     "partial": "Đã nhận một phần thanh toán",
     "paidProcessing": "Đã nhận tiền, đang kích hoạt",
     "pending": "Đang chờ thanh toán",
-    "cancelledDescription": "Bạn chưa bị trừ tiền. Đơn này sẽ không được kích hoạt."
+    "cancelledDescription": "Hiện chưa có khoản thanh toán nào được xác nhận. Nếu bạn đã bắt đầu chuyển khoản, hãy kiểm tra lại trạng thái."
   },
   "actions": {
-    "continuePayment": "Tiếp tục thanh toán",
+    "continuePayment": "Tiếp tục đến PayOS · {amount}",
     "verify": "Kiểm tra lại",
     "cancel": "Hủy đơn",
     "choosePlan": "Quay lại chọn gói"

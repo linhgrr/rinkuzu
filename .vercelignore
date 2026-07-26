@@ -1,0 +1,21 @@
+.next
+node_modules
+.git
+.gitnexus
+.code-review-graph
+.vercel
+coverage
+playwright-report
+test-results
+reports
+.lighthouseci
+.performance-baseline
+.playwright-mcp
+.codex-tmp
+example quiz pdf
+assets/marketing
+docs
+tests
+*.log
+*.tsbuildinfo
+lighthouse-rinkuzu.json

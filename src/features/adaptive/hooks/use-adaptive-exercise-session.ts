@@ -25,6 +25,7 @@ import type {
   TheoryData,
   TranslateFn,
 } from '@/features/adaptive/types/learning';
+import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytics/client';
 
 type RouterLike = {
   push: (href: string) => void;
@@ -126,6 +127,11 @@ export const useAdaptiveExerciseSession = ({
       setTheory(step.theory);
       setShowTheory(Boolean(step.theory));
       setExercise(step.exercise);
+      captureAnalyticsEventOnce('adaptive_session_started', `adaptive-session-${sessionId}`, {
+        exercise_type: step.exercise.exercise_type,
+        bloom_level: step.exercise.bloom_level,
+        has_theory: Boolean(step.theory),
+      });
       const nextAnswerDraft =
         getSessionExerciseDraft(sessionId, step.exercise.exercise_id) ??
         createInitialExerciseAnswer(step.exercise);
@@ -214,6 +220,14 @@ export const useAdaptiveExerciseSession = ({
       });
       if (!isMountedRef.current) return;
 
+      captureAnalyticsEvent('adaptive_answer_submitted', {
+        exercise_type: exercise.exercise_type,
+        bloom_level: exercise.bloom_level,
+        is_correct: result.is_correct,
+      });
+      captureAnalyticsEventOnce('first_question_answered', 'first-question-answered', {
+        learning_mode: 'adaptive',
+      });
       saveSessionExerciseOutcome(sessionId, { result, exercise });
       clearSessionExerciseDraft(sessionId, exercise.exercise_id);
       submitIdempotencyRef.current = null;

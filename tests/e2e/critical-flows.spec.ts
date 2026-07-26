@@ -489,25 +489,57 @@ test.describe('production critical paths', () => {
   }, testInfo) => {
     await withDatabaseFixture(testInfo, async (fixture) => {
       await login(page, fixture.regular);
-      let createPaymentPayload: unknown = null;
+      let quotePayload: unknown = null;
+      let createOrderPayload: unknown = null;
       let verifyPaymentPayload: unknown = null;
 
-      await page.route('**/api/subscription/create-payment', async (route) => {
-        createPaymentPayload = route.request().postDataJSON();
+      await page.route('**/api/v1/billing/csrf', async (route) => {
+        await route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, data: { token: 'e2e-billing-csrf' } }),
+        });
+      });
+      await page.route('**/api/v1/billing/quotes', async (route) => {
+        quotePayload = route.request().postDataJSON();
         await route.fulfill({
           contentType: 'application/json',
           body: JSON.stringify({
             success: true,
             data: {
-              amount: 49_000,
-              orderCode: 424_242,
-              paymentUrl: 'https://pay.payos.vn/web/e2e-production-checkout',
-              plan: {
-                duration: 'P1M',
-                id: fixture.planId,
-                name: 'E2E Premium Monthly',
-                price: 49_000,
+              token: 'e2e-quote-token',
+              quote: {
+                baseAmount: 49_000,
+                discountAmount: 0,
+                finalAmount: 49_000,
+                currency: 'VND',
+                durationUnit: 'month',
+                durationValue: 1,
+                expiresAt: Date.now() + 300_000,
               },
+              plan: { id: fixture.planId, name: 'E2E Premium Monthly' },
+            },
+          }),
+        });
+      });
+      await page.route('**/api/v1/billing/orders', async (route) => {
+        createOrderPayload = route.request().postDataJSON();
+        await route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: 'e2e-billing-order',
+              plan: { id: fixture.planId, name: 'E2E Premium Monthly' },
+              currency: 'VND',
+              baseAmount: 49_000,
+              discountAmount: 0,
+              finalAmount: 49_000,
+              receivedAmount: 0,
+              collectionStatus: 'unpaid',
+              attemptCollectionStatus: 'pending',
+              fulfillmentStatus: 'unfulfilled',
+              settlementStatus: 'unsettled',
+              checkoutUrl: 'https://pay.payos.vn/web/e2e-production-checkout',
             },
           }),
         });
@@ -522,15 +554,16 @@ test.describe('production critical paths', () => {
       await page.goto('/en/subscription');
       await expect(page.getByRole('heading', { name: 'E2E Premium Monthly' })).toBeVisible();
       await page.getByRole('button', { name: 'Subscribe', exact: true }).click();
-      await page
-        .getByRole('dialog')
-        .getByRole('button', { name: 'Subscribe', exact: true })
-        .click();
+      await page.waitForURL(/\/en\/checkout\?plan=/);
+      await expect(page.getByRole('heading', { name: 'Complete your purchase' })).toBeVisible();
+      await page.getByRole('checkbox').check();
+      await page.getByRole('button', { name: 'Continue to payment', exact: true }).click();
       await page.waitForURL('https://pay.payos.vn/web/e2e-production-checkout');
       await expect(
         page.getByRole('heading', { name: 'PayOS checkout boundary reached' }),
       ).toBeVisible();
-      expect(createPaymentPayload).toEqual({ planId: fixture.planId });
+      expect(quotePayload).toEqual({ planId: fixture.planId, promoCode: null });
+      expect(createOrderPayload).toEqual({ quoteToken: 'e2e-quote-token' });
 
       await page.route('**/api/subscription/verify', async (route) => {
         verifyPaymentPayload = route.request().postDataJSON();

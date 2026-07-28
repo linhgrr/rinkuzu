@@ -296,6 +296,15 @@ export const evaluateRouteBudgets = ({ rootDir, rawConfig, baselineReport = null
             : 0
           : (deltaBytes / baselineSizeBytes) * 100;
     const absoluteExceeded = sizeBytes > group.limitBytes;
+    const baselineAbsoluteExceeded =
+      baselineSizeBytes !== null && baselineSizeBytes > group.limitBytes;
+    const absoluteDebtIncreased =
+      absoluteExceeded &&
+      baselineAbsoluteExceeded &&
+      baselineSizeBytes !== null &&
+      sizeBytes > baselineSizeBytes;
+    const absoluteViolation =
+      absoluteExceeded && (!baselineAbsoluteExceeded || absoluteDebtIncreased);
     const routeOverride = config.regression.routeOverrides.get(row.route) ?? null;
     const regressionThreshold = routeOverride ?? config.regression;
     const regressionExceeded =
@@ -304,13 +313,14 @@ export const evaluateRouteBudgets = ({ rootDir, rawConfig, baselineReport = null
       deltaBytes > regressionThreshold.maxIncreaseBytes &&
       deltaPercent > regressionThreshold.maxPercent;
 
-    if (absoluteExceeded) {
+    if (absoluteViolation) {
       violations.push({
         code: 'bundle-absolute-cap',
         route: row.route,
         group: group.name,
         actual: sizeBytes,
         limit: group.limitBytes,
+        baseline: baselineSizeBytes,
       });
     }
     if (regressionExceeded) {
@@ -341,8 +351,11 @@ export const evaluateRouteBudgets = ({ rootDir, rawConfig, baselineReport = null
       regressionMaxPercent: regressionThreshold.maxPercent,
       regressionOverrideReason: routeOverride?.reason ?? null,
       absoluteExceeded,
+      baselineAbsoluteExceeded,
+      absoluteDebtIncreased,
+      absoluteViolation,
       regressionExceeded,
-      ok: !absoluteExceeded && !regressionExceeded,
+      ok: !absoluteViolation && !regressionExceeded,
     };
   });
 

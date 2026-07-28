@@ -11,6 +11,7 @@ if [[ -z "${LIGHTHOUSE_PORT:-}" ]]; then
   )"
 fi
 export LIGHTHOUSE_PORT
+PERF_ORIGIN="http://127.0.0.1:$LIGHTHOUSE_PORT"
 
 if [[ "$PERF_MODE" != "local" && "$PERF_MODE" != "pr" && "$PERF_MODE" != "release" ]]; then
   printf 'PERF_MODE must be local, pr, or release; received %s\n' "$PERF_MODE" >&2
@@ -34,9 +35,9 @@ mkdir -p "$PERF_DIR"
 
 export MONGODB_URI="${MONGODB_URI:-mongodb://127.0.0.1:27017/test}"
 export AUTH_SECRET="${AUTH_SECRET:-test-auth-secret-at-least-32-characters}"
-export AUTH_URL="${AUTH_URL:-http://localhost:3000}"
+export AUTH_URL="${AUTH_URL:-$PERF_ORIGIN}"
 export AUTH_TRUST_HOST="${AUTH_TRUST_HOST:-true}"
-export NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}"
+export NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-$PERF_ORIGIN}"
 export SESSION_MAX_AGE_SECONDS="${SESSION_MAX_AGE_SECONDS:-28800}"
 export SESSION_UPDATE_AGE_SECONDS="${SESSION_UPDATE_AGE_SECONDS:-3600}"
 export AUTH_LOCKOUT_MAX_ATTEMPTS="${AUTH_LOCKOUT_MAX_ATTEMPTS:-5}"

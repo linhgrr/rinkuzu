@@ -24,7 +24,7 @@ export function canonicalFor(locale: string, path: string): string {
   return `${siteUrl.origin}${normalized}`;
 }
 
-export function languageAlternates(path: string): Record<string, string> {
+function languageAlternates(path: string): Record<string, string> {
   const map: Record<string, string> = {};
   for (const locale of locales) {
     map[locale] = canonicalFor(locale, path);

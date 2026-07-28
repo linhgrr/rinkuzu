@@ -3,8 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Montserrat, Unbounded, Vina_Sans } from 'next/font/google';
 import '../globals.css';
 import { routing } from '@/i18n/routing';
-import { canonicalFor, languageAlternates, siteUrl } from '@/lib/seo';
-import { defaultLocale } from '@/i18n/config';
+import { siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 import {
   buildOrganizationSchema,
@@ -57,10 +56,6 @@ export const metadata: Metadata = {
     'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
   keywords: 'quiz, education, PDF, AI, teachers, students, assessment, interactive learning',
   authors: [{ name: 'RinKuzu Team' }],
-  alternates: {
-    canonical: canonicalFor(defaultLocale, '/'),
-    languages: languageAlternates('/'),
-  },
   openGraph: {
     type: 'website',
     siteName: 'RinKuzu',

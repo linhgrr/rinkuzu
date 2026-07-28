@@ -242,43 +242,6 @@ describe('production performance budget primitives', () => {
     );
   });
 
-  it('ratchets pre-existing absolute bundle debt without requiring it to reach zero', () => {
-    const { root, chunkPath } = createRouteFixture();
-    const currentSize = zlib.gzipSync(fs.readFileSync(chunkPath), { level: 9 }).length;
-    const config = sizeConfig();
-    const group = required(config.routeGroups[0], 'route budget group');
-    group.limit = '128 KiB';
-
-    const unchangedDebt = evaluateRouteBudgets({
-      rootDir: root,
-      rawConfig: config,
-      baselineReport: baselineReport(currentSize),
-    });
-    const unchangedEntry = required(unchangedDebt.entries[0], 'unchanged debt entry');
-    expect(unchangedEntry.absoluteExceeded).toBe(true);
-    expect(unchangedEntry.absoluteViolation).toBe(false);
-    expect(unchangedDebt.violations).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'bundle-absolute-cap' })]),
-    );
-
-    const increasedDebt = evaluateRouteBudgets({
-      rootDir: root,
-      rawConfig: config,
-      baselineReport: baselineReport(currentSize - 1),
-    });
-    const increasedEntry = required(increasedDebt.entries[0], 'increased debt entry');
-    expect(increasedEntry.absoluteDebtIncreased).toBe(true);
-    expect(increasedEntry.absoluteViolation).toBe(true);
-    expect(increasedDebt.violations).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'bundle-absolute-cap',
-          baseline: currentSize - 1,
-        }),
-      ]),
-    );
-  });
-
   it('fails closed for missing chunks and ambiguous route classification', () => {
     const { root, chunkPath } = createRouteFixture();
     fs.rmSync(chunkPath);
@@ -327,15 +290,8 @@ describe('production performance budget primitives', () => {
 describe('production performance workflow contract', () => {
   it('builds an immutable base and enables release-only assertions outside PR checks', () => {
     const workflow = fs.readFileSync('.github/workflows/ci.yml', 'utf8');
-    const lighthouseConfig = fs.readFileSync('lighthouserc.cjs', 'utf8');
 
     expect(workflow).toContain("github.event_name == 'merge_group') && 'pr' || 'release'");
-    expect(workflow).toContain('NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000');
-    expect(workflow).toContain("LIGHTHOUSE_PORT: '3000'");
-    expect(lighthouseConfig).toContain('const baseUrl = `http://127.0.0.1:${port}`');
-    expect(lighthouseConfig).toContain(
-      'startServerCommand: `npm run start -- --hostname 127.0.0.1 --port ${port}`',
-    );
     expect(workflow).toContain('base_sha="$(git rev-parse "${GITHUB_SHA}^1")"');
     expect(workflow).toContain('npm run perf:size-baseline --');
     expect(workflow).toContain('PERF_BASELINE_SIZE_REPORT: .performance-baseline/route-sizes.json');

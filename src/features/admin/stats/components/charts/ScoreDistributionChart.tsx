@@ -64,7 +64,7 @@ export const ScoreDistributionChart = ({
             {data.map((entry) => (
               <Cell
                 key={entry.range}
-                fill={entry.passing ? 'var(--brand-trust)' : 'var(--border-strong)'}
+                fill={entry.passing ? 'var(--green-600)' : 'var(--orange-600)'}
               />
             ))}
           </Bar>

@@ -73,7 +73,11 @@ export const GrowthTrendChart = ({ data, isLoading, labels }: GrowthTrendChartPr
               boxShadow: 'var(--shadow-sm)',
             }}
           />
-          <Legend wrapperStyle={{ paddingTop: 'var(--space-5)' }} />
+          <Legend
+            iconSize={10}
+            formatter={(value) => <span className="text-sm text-neutral-700">{value}</span>}
+            wrapperStyle={{ paddingTop: 'var(--space-5)' }}
+          />
           <Area
             type="monotone"
             dataKey="newUsers"

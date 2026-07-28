@@ -46,7 +46,7 @@ function UsageAnalysisCard({ data, t }: { data: LlmUsageViewModel; t: TranslateF
   ];
 
   return (
-    <Card>
+    <Card className="p-0">
       <CardHeader className="px-5 pt-5">
         <CardTitle>{t('llmUsageAnalysisTitle')}</CardTitle>
       </CardHeader>
@@ -55,7 +55,7 @@ function UsageAnalysisCard({ data, t }: { data: LlmUsageViewModel; t: TranslateF
           {rows.map((row) => (
             <div key={row.label}>
               <dt className="text-neutral-500">{row.label}</dt>
-              <dd className="mt-1 break-all font-medium text-neutral-900">{row.value}</dd>
+              <dd className="mt-1 break-words font-medium text-neutral-900">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -78,7 +78,7 @@ function BreakdownTable({
   const totalCost = rows.reduce((sum, row) => sum + row.costUsd, 0);
 
   return (
-    <Card>
+    <Card className="p-0">
       <CardHeader className="px-5 pt-5">
         <CardTitle>{title}</CardTitle>
       </CardHeader>
@@ -123,7 +123,7 @@ function BreakdownTable({
 
 function LlmUsageLoadingCard({ label }: { label: string }) {
   return (
-    <Card>
+    <Card className="p-0">
       <CardContent>
         <p className="py-3 text-sm text-neutral-500">{label}</p>
       </CardContent>
@@ -192,7 +192,7 @@ export function LlmUsageSection() {
       </div>
       {error ? <p className="text-sm text-error">{t('llmUsageError')}</p> : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
+        <Card className="p-0">
           <CardHeader className="px-5 pt-5">
             <CardTitle>{t('llmUsageTotalCost')}</CardTitle>
           </CardHeader>
@@ -201,7 +201,7 @@ export function LlmUsageSection() {
             <p className="text-sm text-neutral-500">${data.totalCostUsd.toFixed(4)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="p-0">
           <CardHeader className="px-5 pt-5">
             <CardTitle>{t('llmUsageTotalTokens')}</CardTitle>
           </CardHeader>
@@ -215,7 +215,7 @@ export function LlmUsageSection() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="p-0">
           <CardHeader className="px-5 pt-5">
             <CardTitle>{t('llmUsageRecordedCalls')}</CardTitle>
           </CardHeader>
@@ -223,7 +223,7 @@ export function LlmUsageSection() {
             <p className="text-2xl font-semibold">{data.calls.toLocaleString()}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="p-0">
           <CardHeader className="px-5 pt-5">
             <CardTitle>{t('llmUsageActiveUsers')}</CardTitle>
           </CardHeader>
@@ -232,7 +232,7 @@ export function LlmUsageSection() {
           </CardContent>
         </Card>
       </div>
-      <Card>
+      <Card className="p-0">
         <CardHeader className="px-5 pt-5">
           <CardTitle>{t('llmUsageDailyTrend')}</CardTitle>
         </CardHeader>

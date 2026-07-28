@@ -1,6 +1,6 @@
 'use client';
 
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, Label, ResponsiveContainer } from 'recharts';
 
 interface DonutSlice {
   name: string;
@@ -16,14 +16,14 @@ export interface LlmCostDonutChartProps {
 }
 
 const COLORS = [
-  'var(--brand-trust)',
-  'var(--brand-action)',
-  'var(--info)',
-  'var(--purple)',
-  'var(--success)',
-  'var(--state-review)',
-  'var(--state-new)',
+  'var(--blue-500)',
+  'var(--orange-500)',
+  'var(--purple-500)',
+  'var(--green-600)',
   'var(--error)',
+  'var(--yellow-500)',
+  'var(--secondary-4)',
+  'var(--neutral-warm-7)',
 ];
 
 interface DonutTooltipProps {
@@ -56,13 +56,7 @@ export const LlmCostDonutChart = ({
   }
 
   return (
-    <div className="relative h-72 w-full" role="img" aria-label={label}>
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-neutral-900">{centerValue}</span>
-        <span className="text-xs font-medium uppercase tracking-wider text-neutral-500">
-          {centerLabel}
-        </span>
-      </div>
+    <div className="h-72 w-full" role="img" aria-label={label}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -79,12 +73,30 @@ export const LlmCostDonutChart = ({
             {data.map((entry, index) => (
               <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
             ))}
+            <Label
+              value={centerValue}
+              position="center"
+              dy={-6}
+              fill="var(--text-primary)"
+              fontSize={20}
+              fontWeight={700}
+            />
+            <Label
+              value={centerLabel.toUpperCase()}
+              position="center"
+              dy={14}
+              fill="var(--text-secondary)"
+              fontSize={10}
+              fontWeight={500}
+            />
           </Pie>
           <Tooltip content={<DonutTooltip valueFormatter={valueFormatter} />} />
           <Legend
             layout="horizontal"
             verticalAlign="bottom"
             align="center"
+            iconSize={10}
+            formatter={(value) => <span className="text-sm text-neutral-700">{value}</span>}
             wrapperStyle={{ paddingTop: 'var(--space-3)' }}
           />
         </PieChart>

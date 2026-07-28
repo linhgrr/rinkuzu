@@ -22,7 +22,7 @@ export function EntitlementTelemetrySection() {
   }
   if (error || !data) {
     return (
-      <Card>
+      <Card className="p-0">
         <CardContent>
           <p className="py-4 text-sm text-neutral-500">{t('entitlementTelemetryError')}</p>
         </CardContent>
@@ -66,7 +66,7 @@ export function EntitlementTelemetrySection() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(([label, value]) => (
-          <Card key={label}>
+          <Card key={label} className="p-0">
             <CardHeader>
               <CardTitle>{label}</CardTitle>
             </CardHeader>
@@ -76,7 +76,7 @@ export function EntitlementTelemetrySection() {
           </Card>
         ))}
       </div>
-      <Card className="border-green-200 bg-green-50/40">
+      <Card className="border-green-200 bg-green-50/40 p-0">
         <CardHeader>
           <CardTitle>{t('askRinTelemetryTitle')}</CardTitle>
           <p className="text-sm text-neutral-500">{t('askRinTelemetryDescription')}</p>
@@ -118,7 +118,7 @@ export function EntitlementTelemetrySection() {
           </div>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="p-0">
         <CardContent>
           {data.byCapability.length === 0 ? (
             <p className="py-4 text-sm text-neutral-500">{t('entitlementTelemetryEmpty')}</p>

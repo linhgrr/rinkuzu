@@ -57,7 +57,10 @@ export function LlmUsageTrendChart({ data, labels }: LlmUsageTrendChartProps) {
               boxShadow: 'var(--shadow-sm)',
             }}
           />
-          <Legend />
+          <Legend
+            iconSize={10}
+            formatter={(value) => <span className="text-sm text-neutral-700">{value}</span>}
+          />
           <Area
             yAxisId="tokens"
             type="monotone"

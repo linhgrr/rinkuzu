@@ -187,15 +187,15 @@ function MetricComparison({
     comparison.changePercent === null
       ? t('trendNew')
       : `${comparison.changePercent > 0 ? '+' : ''}${comparison.changePercent}%`;
+  const colorClass =
+    comparison.changePercent === null
+      ? 'text-neutral-600'
+      : comparison.changePercent < 0
+        ? 'text-error'
+        : 'text-green-700';
 
   return (
-    <p
-      className={`mt-2 text-xs font-medium ${
-        comparison.changePercent !== null && comparison.changePercent < 0
-          ? 'text-error'
-          : 'text-brand-trust'
-      }`}
-    >
+    <p className={`mt-2 text-xs font-medium ${colorClass}`}>
       {value} {t('vsPreviousPeriod')}
     </p>
   );
@@ -203,15 +203,15 @@ function MetricComparison({
 
 function OverviewCards({ stats, t }: AdminStatsDataProps) {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
+    <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <Card className="p-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-neutral-600">
             {t('totalUsersCount')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-brand-trust">{stats.overview.totalUsers}</div>
+          <div className="text-2xl font-bold text-blue-500">{stats.overview.totalUsers}</div>
           <p className="text-xs text-neutral-500">
             {t('newThisMonth', { count: stats.timeBasedStats.thisMonth.newUsers })}
           </p>
@@ -226,7 +226,7 @@ function OverviewCards({ stats, t }: AdminStatsDataProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="p-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-neutral-600">
             {t('totalQuizzes')}
@@ -246,7 +246,7 @@ function OverviewCards({ stats, t }: AdminStatsDataProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="p-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-neutral-600">
             {t('attemptsCount')}
@@ -268,14 +268,14 @@ function OverviewCards({ stats, t }: AdminStatsDataProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="p-0">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-neutral-600">
             {t('averageScore')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-brand-trust">
+          <div className="text-2xl font-bold text-purple">
             {Math.round(stats.scoreStats.averageScore)}%
           </div>
           <p className="text-xs text-neutral-500">
@@ -328,20 +328,20 @@ function GrowthTrendsSection({
   ];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="p-0">
+      <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>{t('growthTrends')}</CardTitle>
           <CardDescription>{t('growthTrendsDescription')}</CardDescription>
         </div>
-        <div className="flex gap-1">
+        <div className="grid w-full grid-cols-4 gap-1 sm:flex sm:w-auto">
           {periods.map((p) => (
             <Button
               key={p.value}
               variant={period === p.value ? 'default' : 'outline'}
               size="sm"
               onClick={() => void selectPeriod(p.value)}
-              className="min-h-11 px-3 text-xs"
+              className="min-h-11 w-full px-3 text-sm font-semibold"
             >
               {p.label}
             </Button>
@@ -368,8 +368,8 @@ function GrowthTrendsSection({
 
 function ScoreDistributionSection({ stats, t }: AdminStatsDataProps) {
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <Card className="lg:col-span-2">
+    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+      <Card className="p-0 lg:col-span-2">
         <CardHeader>
           <CardTitle>{t('scoreDistribution')}</CardTitle>
           <CardDescription>{t('scoreDistributionDescription')}</CardDescription>
@@ -382,7 +382,7 @@ function ScoreDistributionSection({ stats, t }: AdminStatsDataProps) {
           />
         </CardContent>
       </Card>
-      <Card>
+      <Card className="p-0">
         <CardHeader>
           <CardTitle>{t('averageScore')}</CardTitle>
           <CardDescription>{t('medianNote')}</CardDescription>
@@ -390,7 +390,7 @@ function ScoreDistributionSection({ stats, t }: AdminStatsDataProps) {
         <CardContent>
           <div className="space-y-4">
             <div className="text-center">
-              <div className="text-4xl font-bold text-brand-trust">
+              <div className="text-4xl font-bold text-purple">
                 {Math.round(stats.scoreStats.averageScore)}%
               </div>
               <p className="mt-1 text-sm text-neutral-500">{t('averageScore')}</p>
@@ -412,7 +412,7 @@ function ScoreDistributionSection({ stats, t }: AdminStatsDataProps) {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-neutral-600">{t('passRate')}</span>
-                <span className="font-semibold text-brand-trust">
+                <span className="font-semibold text-orange-700">
                   {stats.scoreStats.scoreDistribution.length > 0
                     ? `${stats.scoreStats.passRate}%`
                     : '—'}
@@ -434,7 +434,7 @@ function TopCreatorsSection({ stats, t, onOpenModal }: TopCreatorsSectionProps) 
   }));
 
   return (
-    <Card>
+    <Card className="p-0">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>{t('topCreators')}</CardTitle>
@@ -468,7 +468,7 @@ function ActivityColumn({ title, titleClassName, children }: ActivityColumnProps
 
 function RecentActivityCard({ stats, t, onOpenModal }: RecentActivityCardProps) {
   return (
-    <Card>
+    <Card className="p-0">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>{t('recentActivity')}</CardTitle>
@@ -480,33 +480,33 @@ function RecentActivityCard({ stats, t, onOpenModal }: RecentActivityCardProps) 
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <ActivityColumn title={t('newUsers', { count: '' })} titleClassName="text-brand-trust">
+          <ActivityColumn title={t('newUsers', { count: '' })} titleClassName="text-info">
             {stats.recentActivity.users.slice(0, 5).map((user) => (
               <div key={user.email} className="rounded bg-green-50 p-2 text-sm">
                 <div className="font-medium">{user.email}</div>
-                <div className="text-neutral-500">{user.createdAtLabel}</div>
+                <div className="text-neutral-600">{user.createdAtLabel}</div>
               </div>
             ))}
           </ActivityColumn>
 
-          <ActivityColumn title={t('newQuizzes', { count: '' })} titleClassName="text-green-600">
+          <ActivityColumn title={t('newQuizzes', { count: '' })} titleClassName="text-green-700">
             {stats.recentActivity.quizzes.slice(0, 5).map((quiz) => (
               <div key={quiz.title} className="rounded bg-green-50 p-2 text-sm">
                 <div className="truncate font-medium">{quiz.title}</div>
-                <div className="text-xs text-neutral-500">{quiz.createdAtLabel}</div>
+                <div className="text-xs text-neutral-600">{quiz.createdAtLabel}</div>
               </div>
             ))}
           </ActivityColumn>
 
-          <ActivityColumn title={t('recentAttempts')} titleClassName="text-brand-trust">
+          <ActivityColumn title={t('recentAttempts')} titleClassName="text-orange-700">
             {stats.recentActivity.attempts.slice(0, 5).map((attempt) => (
               <div key={attempt.id} className="rounded bg-green-50 p-2 text-sm">
                 <div className="truncate font-medium">{attempt.quiz.title}</div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-500">{attempt.actor.email}</span>
+                  <span className="text-neutral-600">{attempt.actor.email}</span>
                   <span className="font-medium">{attempt.score}%</span>
                 </div>
-                <div className="text-xs text-neutral-500">{attempt.takenAtLabel}</div>
+                <div className="text-xs text-neutral-600">{attempt.takenAtLabel}</div>
               </div>
             ))}
           </ActivityColumn>

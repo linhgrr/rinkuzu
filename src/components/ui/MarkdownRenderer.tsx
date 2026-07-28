@@ -13,6 +13,7 @@ export interface MarkdownRendererProps {
   content: string;
   className?: string;
   variant?: MarkdownRendererVariant;
+  headingLevel?: 2 | 3 | 4 | 5 | 6;
 }
 
 const variantClasses: Record<MarkdownRendererVariant, string> = {
@@ -30,22 +31,52 @@ const variantClasses: Record<MarkdownRendererVariant, string> = {
 
 const QUESTION_DISALLOWED_ELEMENTS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 const OPTION_DISALLOWED_ELEMENTS = [...QUESTION_DISALLOWED_ELEMENTS, 'a'];
+const HEADING_DISALLOWED_ELEMENTS = [
+  ...QUESTION_DISALLOWED_ELEMENTS,
+  'p',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'pre',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+  'hr',
+];
 
 export const MarkdownRenderer = memo(function MarkdownRenderer({
   content,
   className,
   variant = 'document',
+  headingLevel,
 }: MarkdownRendererProps) {
   const normalizedContent = normalizeMarkdownContent(content);
-  const disallowedElements =
-    variant === 'document'
+  const disallowedElements = headingLevel
+    ? HEADING_DISALLOWED_ELEMENTS
+    : variant === 'document'
       ? undefined
       : variant === 'option'
         ? OPTION_DISALLOWED_ELEMENTS
         : QUESTION_DISALLOWED_ELEMENTS;
+  const Root =
+    headingLevel === 2
+      ? 'h2'
+      : headingLevel === 3
+        ? 'h3'
+        : headingLevel === 4
+          ? 'h4'
+          : headingLevel === 5
+            ? 'h5'
+            : headingLevel === 6
+              ? 'h6'
+              : 'div';
 
   return (
-    <div
+    <Root
       className={cn(
         'max-w-none break-words [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden',
         variantClasses[variant],
@@ -116,6 +147,6 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       >
         {normalizedContent}
       </ReactMarkdown>
-    </div>
+    </Root>
   );
 });

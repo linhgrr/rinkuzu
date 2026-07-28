@@ -19,7 +19,7 @@ export default function BottomCta({ isAuthenticated = false }: BottomCtaProps) {
       </div>
 
       <div className="flex flex-col items-center w-full text-center pb-[16px]">
-        <p className="font-unbounded font-light text-base md:text-[20px] text-[#ededed] leading-[1.5]">
+        <p className="font-unbounded text-[19px] font-bold leading-[1.5] text-white md:text-[20px]">
           Turn hours of reading into minutes of understanding.
           <br className="hidden sm:block" />
           Our AI breaks down complex documents into simple, actionable steps.
@@ -42,7 +42,7 @@ export default function BottomCta({ isAuthenticated = false }: BottomCtaProps) {
               width={28}
             />
           </span>
-          <span className="font-unbounded font-medium text-[18px] text-[#ff541b] whitespace-nowrap leading-[1.5]">
+          <span className="whitespace-nowrap font-unbounded text-[18px] font-semibold leading-[1.5] text-[#542607]">
             Upload PDF
           </span>
         </Link>

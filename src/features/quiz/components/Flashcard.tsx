@@ -5,6 +5,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { QuestionContent } from '@/components/ui/QuestionContent';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import { Button } from '@/components/ui/Button';
 import { formatCorrectAnswerLetters, getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
 import type { QuestionType } from '@/shared/constants/question-type';
@@ -181,12 +182,11 @@ function FlashcardFront({ options, question }: FlashcardFrontProps) {
     <Card className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-neutral-100 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]">
       <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
         <div className="flex-1 flex flex-col justify-center">
-          <div role="heading" aria-level={3}>
-            <QuestionContent
-              content={question}
-              className="mb-8 break-words text-center text-2xl font-semibold leading-relaxed text-neutral-900"
-            />
-          </div>
+          <QuestionContent
+            content={question}
+            headingLevel={3}
+            className="mb-8 break-words text-center text-2xl font-semibold leading-relaxed text-neutral-900"
+          />
           <div className="space-y-4">
             {options.map((option, index) => (
               <div
@@ -229,9 +229,9 @@ function FlashcardBack({
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-center">
             <span className="text-green-600 font-bold text-lg mr-2">{correctAnswerLetters}</span>
             <div className="min-w-0 flex-1 space-y-1">
-              {correctAnswers.map((answer, index) => (
+              {toStableContentEntries(correctAnswers).map(({ content: answer, key }) => (
                 <QuestionContent
-                  key={`${index}-${answer}`}
+                  key={key}
                   content={answer}
                   variant="answer"
                   className="break-words text-lg font-semibold text-green-800"

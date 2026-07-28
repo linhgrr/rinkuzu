@@ -9,6 +9,7 @@ import { QuestionContent } from '@/components/ui/QuestionContent';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
 import type { QuizPreviewQuestionViewModel } from '@/features/quiz/types/quiz-preview-view-model';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 
 interface QuizPreviewModalProps {
   isOpen: boolean;
@@ -81,14 +82,11 @@ export function QuizPreviewModal({
 
         <Card className="mb-6">
           <CardHeader>
-            <div
-              role="heading"
-              aria-level={3}
-              className="flex items-start gap-x-2 text-lg font-semibold text-neutral-900"
-            >
+            <div className="flex items-start gap-x-2 text-lg font-semibold text-neutral-900">
               <QuestionContent
                 content={currentQuestion.question}
                 variant="compact"
+                headingLevel={3}
                 className="min-w-0 flex-1 text-lg"
               />
               {currentQuestion.type === 'single' ? (
@@ -126,18 +124,21 @@ export function QuizPreviewModal({
               <div className="text-sm font-medium text-green-800 mb-1">{t('correctAnswers')}:</div>
               <div className="space-y-1 text-sm text-green-700">
                 {correctAnswers.length > 0
-                  ? correctAnswers.map((answer, index) => (
-                      <div key={`${index}-${answer}`} className="flex min-w-0 items-start gap-1">
-                        <span className="flex-shrink-0">
-                          {String.fromCharCode(65 + (correctIndexes[index] ?? index))}.
-                        </span>
-                        <QuestionContent
-                          content={answer}
-                          variant="answer"
-                          className="min-w-0 flex-1"
-                        />
-                      </div>
-                    ))
+                  ? toStableContentEntries(correctAnswers).map(
+                      ({ content: answer, key, sourceIndex }) => (
+                        <div key={key} className="flex min-w-0 items-start gap-1">
+                          <span className="flex-shrink-0">
+                            {String.fromCharCode(65 + (correctIndexes[sourceIndex] ?? sourceIndex))}
+                            .
+                          </span>
+                          <QuestionContent
+                            content={answer}
+                            variant="answer"
+                            className="min-w-0 flex-1"
+                          />
+                        </div>
+                      ),
+                    )
                   : t('noCorrectAnswer')}
               </div>
             </div>

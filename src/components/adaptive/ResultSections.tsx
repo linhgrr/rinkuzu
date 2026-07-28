@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from 'react-icons/hi';
 import type { SubmitResult, Exercise, TranslateFn } from '@/features/adaptive/types/learning';
 
@@ -75,12 +76,8 @@ function ResultCorrectAnswer({
   if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
     return (
       <div className="space-y-1">
-        {exercise.correct_answer.map((answer, index) => (
-          <MarkdownRenderer
-            key={`${index}-${answer}`}
-            content={normalizeMathContent(answer)}
-            variant="answer"
-          />
+        {toStableContentEntries(exercise.correct_answer).map(({ content: answer, key }) => (
+          <MarkdownRenderer key={key} content={normalizeMathContent(answer)} variant="answer" />
         ))}
       </div>
     );
@@ -89,12 +86,8 @@ function ResultCorrectAnswer({
   if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
     return (
       <div className="space-y-1">
-        {exercise.correct_answer.map((answer, index) => (
-          <MarkdownRenderer
-            key={`${index}-${answer}`}
-            content={normalizeMathContent(answer)}
-            variant="answer"
-          />
+        {toStableContentEntries(exercise.correct_answer).map(({ content: answer, key }) => (
+          <MarkdownRenderer key={key} content={normalizeMathContent(answer)} variant="answer" />
         ))}
       </div>
     );

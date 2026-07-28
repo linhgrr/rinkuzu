@@ -105,6 +105,7 @@ module.exports = {
           8: 'var(--neutral-warm-8)',
         },
         cta: 'var(--cta)',
+        'landing-action': 'var(--landing-nav-accent)',
         // Semantic aliases
         surface: 'var(--surface)',
         'surface-page': 'var(--surface-page)',
@@ -200,6 +201,14 @@ module.exports = {
         dashboard: '1340px',
       },
       fontFamily: {
+        system: [
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'sans-serif',
+        ],
         sans: [
           'var(--font-montserrat)',
           'Montserrat',

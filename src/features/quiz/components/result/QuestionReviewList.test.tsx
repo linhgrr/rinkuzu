@@ -42,7 +42,7 @@ describe('QuestionReviewList', () => {
     );
 
     expect(screen.getByText('both')).toHaveProperty('tagName', 'STRONG');
-    expect(container.querySelector('[role="heading"][aria-level="3"]')).toBeInTheDocument();
+    expect(container.querySelector('h3')).toBeInTheDocument();
     expect(container.querySelectorAll('[data-rich-text="option"]')).toHaveLength(2);
     expect(container.querySelectorAll('.katex').length).toBeGreaterThanOrEqual(5);
     expect((await axe(container)).violations).toEqual([]);

@@ -18,27 +18,27 @@ import { AnalyticsRoot } from '@/components/analytics/AnalyticsRoot';
 
 const inter = Inter({
   subsets: ['latin', 'vietnamese'],
-  display: 'swap',
+  display: 'optional',
   variable: '--font-inter',
 });
 
 const montserrat = Montserrat({
   subsets: ['latin', 'vietnamese'],
-  display: 'swap',
+  display: 'optional',
   variable: '--font-montserrat',
   weight: ['400', '600', '700'],
 });
 
 const unbounded = Unbounded({
   subsets: ['latin'],
-  display: 'swap',
+  display: 'optional',
   variable: '--font-unbounded',
   weight: ['300', '400', '500', '600', '700', '800'],
 });
 
 const vinaSans = Vina_Sans({
   subsets: ['latin'],
-  display: 'swap',
+  display: 'optional',
   variable: '--font-vina-sans',
   weight: ['400'],
 });

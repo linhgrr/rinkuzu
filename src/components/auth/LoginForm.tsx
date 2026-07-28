@@ -238,7 +238,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
             <div className="mt-2 text-right">
               <Link
                 href="/forgot-password"
-                className="text-sm font-medium text-brand-trust hover:text-brand-trust-hover"
+                className="text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
               >
                 {t('forgotPassword')}
               </Link>
@@ -253,7 +253,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
             disabled={!hydrated || submitDisabled}
             aria-busy={submitPending}
             size="lg"
-            className="w-full rounded-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
+            className="w-full rounded-full border-0 bg-landing-action font-system text-[19px] font-bold text-white shadow-sm transition-[filter] hover:brightness-95"
           >
             {submitPending ? t('signingIn') : t('signInButton')}
           </Button>
@@ -268,14 +268,14 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
               <button
                 type="button"
                 onClick={onSwitchMode}
-                className="font-semibold text-brand-trust transition-colors hover:text-brand-trust-hover"
+                className="font-semibold text-ink underline underline-offset-2 transition-colors hover:text-accent"
               >
                 {t('createAccount')}
               </button>
             ) : (
               <Link
                 href="/register"
-                className="font-semibold text-brand-trust hover:text-brand-trust-hover transition-colors"
+                className="font-semibold text-ink underline underline-offset-2 transition-colors hover:text-accent"
               >
                 {t('createAccount')}
               </Link>

@@ -176,9 +176,9 @@ function HomeHero({ title, description, ctaLabel }: HomeHeroProps) {
       </div>
       <HeroArtwork />
       <div className="relative z-10 flex max-w-[505px] flex-col gap-4 text-ink sm:gap-5">
-        <h1 className="font-home text-page-title font-bold tracking-normal sm:text-page-title-sm min-[1684px]:text-page-title-lg">
+        <h2 className="font-home text-page-title font-bold tracking-normal sm:text-page-title-sm min-[1684px]:text-page-title-lg">
           {title}
-        </h1>
+        </h2>
         <p className="font-home text-base font-normal leading-[1.4]">{description}</p>
       </div>
       <Link

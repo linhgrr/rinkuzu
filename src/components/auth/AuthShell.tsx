@@ -52,7 +52,7 @@ export function AuthShell({ locale, googleEnabled = false }: AuthShellProps) {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <div className="auth-shell flex min-h-screen w-full bg-surface-page">
+      <div className="auth-shell flex min-h-screen w-full bg-surface-page font-system">
         {/* Visual panel — slides side to side via layout animation */}
         <m.div
           layout
@@ -63,11 +63,9 @@ export function AuthShell({ locale, googleEnabled = false }: AuthShellProps) {
             src="/images/auth_panel.png"
             alt=""
             fill
-            priority
             sizes="50vw"
             className="object-contain"
             aria-hidden="true"
-            unoptimized
           />
         </m.div>
 

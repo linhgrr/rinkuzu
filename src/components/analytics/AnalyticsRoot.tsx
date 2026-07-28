@@ -50,14 +50,14 @@ export function AnalyticsRoot() {
 
   return (
     <aside
-      className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-4 shadow-xl sm:flex sm:items-center sm:gap-5"
+      className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-4 font-system shadow-xl sm:flex sm:items-center sm:gap-5"
       aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
     >
       <p className="flex-1 text-sm leading-6 text-neutral-700">
         {copy.body}{' '}
         <a
           href={`/${localePrefix}/privacy`}
-          className="font-semibold text-brand-trust underline underline-offset-2"
+          className="font-semibold text-ink underline underline-offset-2 hover:text-accent"
         >
           {copy.privacy}
         </a>
@@ -74,7 +74,7 @@ export function AnalyticsRoot() {
         </button>
         <button
           type="button"
-          className="rounded-full bg-brand-action px-4 py-2 text-sm font-semibold text-white hover:bg-brand-action-hover"
+          className="min-h-11 rounded-full bg-brand-action px-4 py-2 text-[19px] font-bold text-white hover:bg-brand-action-hover"
           onClick={() => {
             grantAnalyticsConsent();
           }}

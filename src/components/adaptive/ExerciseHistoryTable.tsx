@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import { Modal } from '@/components/ui/Modal';
 import Pagination from '@/components/ui/Pagination';
 import { HiCheck, HiOutlineEye, HiOutlineX } from 'react-icons/hi';
@@ -143,8 +144,8 @@ function CorrectAnswerView({ exercise, t }: CorrectAnswerViewProps) {
   if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
     return (
       <div className="space-y-1">
-        {exercise.correct_answer.map((answer, index) => (
-          <MarkdownRenderer key={`${index}-${answer}`} content={answer} variant="answer" />
+        {toStableContentEntries(exercise.correct_answer).map(({ content: answer, key }) => (
+          <MarkdownRenderer key={key} content={answer} variant="answer" />
         ))}
       </div>
     );
@@ -153,8 +154,8 @@ function CorrectAnswerView({ exercise, t }: CorrectAnswerViewProps) {
   if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
     return (
       <div className="space-y-1">
-        {exercise.correct_answer.map((answer, index) => (
-          <MarkdownRenderer key={`${index}-${answer}`} content={answer} variant="answer" />
+        {toStableContentEntries(exercise.correct_answer).map(({ content: answer, key }) => (
+          <MarkdownRenderer key={key} content={answer} variant="answer" />
         ))}
       </div>
     );

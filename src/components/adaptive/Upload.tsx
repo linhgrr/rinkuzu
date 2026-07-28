@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +27,7 @@ export default function AdaptiveLearningUpload() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [subjectName, setSubjectName] = useState('');
+  const subjectNameRef = useRef('');
 
   const getFriendlyUploadError = (err: unknown) => {
     if (err instanceof AdaptiveApiError) {
@@ -64,7 +65,8 @@ export default function AdaptiveLearningUpload() {
   };
 
   const handleUpload = async (file: File) => {
-    if (!subjectName.trim()) {
+    const normalizedSubjectName = subjectNameRef.current.trim();
+    if (!normalizedSubjectName) {
       const message = t('uploadPage.subjectRequiredBeforeUpload');
       setError(message);
       return;
@@ -91,7 +93,7 @@ export default function AdaptiveLearningUpload() {
         return;
       }
       setUploadProgress(30);
-      const result = await uploadPdf(file, subjectName.trim(), DEFAULT_PIPELINE_PAGE_BATCH_SIZE);
+      const result = await uploadPdf(file, normalizedSubjectName, DEFAULT_PIPELINE_PAGE_BATCH_SIZE);
       setUploadProgress(100);
       captureAnalyticsEvent('pdf_upload_completed', {
         file_size_bucket: sizeBucket,
@@ -100,7 +102,7 @@ export default function AdaptiveLearningUpload() {
       saveSelectedPipelineJob({
         jobId: result.job_id,
         filename: file.name,
-        subjectName: subjectName.trim(),
+        subjectName: normalizedSubjectName,
       });
       toast.success(t('processing.status.queuedForProcessing'));
       setTimeout(() => {
@@ -123,7 +125,7 @@ export default function AdaptiveLearningUpload() {
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      if (!subjectName.trim()) {
+      if (!subjectNameRef.current.trim()) {
         const message = t('uploadPage.subjectRequiredBeforeSelectFile');
         setError(message);
         return;
@@ -143,7 +145,7 @@ export default function AdaptiveLearningUpload() {
 
   const handleOpenFileDialog = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (!subjectName.trim()) {
+    if (!subjectNameRef.current.trim()) {
       const message = t('uploadPage.subjectRequiredBeforeSelectFile');
       setError(message);
       return;
@@ -188,7 +190,10 @@ export default function AdaptiveLearningUpload() {
               placeholder={t('uploadPage.subjectNamePlaceholder')}
               value={subjectName}
               maxLength={120}
-              onChange={(e) => setSubjectName(e.target.value)}
+              onChange={(event) => {
+                subjectNameRef.current = event.target.value;
+                setSubjectName(event.target.value);
+              }}
               className="w-full bg-neutral-50 text-sm font-medium hover:bg-white"
               disabled={isUploading}
             />

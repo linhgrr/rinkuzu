@@ -46,6 +46,23 @@ describe('QuestionContent', () => {
     expect(container.querySelector('h1')).toBeNull();
     expect(container.querySelector('a')).toBeNull();
   });
+
+  it('uses a native heading and keeps heading markdown phrasing-only', async () => {
+    const { container } = render(
+      <QuestionContent
+        content={'Choose **two** values:\n\n- $2$\n- $-2$'}
+        variant="compact"
+        headingLevel={3}
+      />,
+    );
+
+    const heading = screen.getByRole('heading', { level: 3 });
+    expect(heading).toHaveTextContent(/Choose two values/);
+    expect(heading.querySelector('strong')).toHaveTextContent('two');
+    expect(heading.querySelector('.katex')).not.toBeNull();
+    expect(heading.querySelector('p, ul, ol, li, div')).toBeNull();
+    expect((await axe(container)).violations).toEqual([]);
+  });
 });
 
 describe('QuestionExcerpt', () => {

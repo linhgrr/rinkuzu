@@ -29,7 +29,7 @@ describe('ReviewCard', () => {
     );
 
     expect(screen.getByText('now')).toHaveProperty('tagName', 'STRONG');
-    expect(container.querySelector('[role="heading"][aria-level="3"]')).toBeInTheDocument();
+    expect(container.querySelector('h3')).toBeInTheDocument();
     fireEvent.click(screen.getByText('tapToSeeAnswer'));
     expect(container.querySelectorAll('[data-rich-text="option"]')).toHaveLength(2);
     expect(container.querySelectorAll('.katex')).toHaveLength(3);

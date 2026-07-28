@@ -9,6 +9,7 @@ interface QuestionContentProps {
   content: string;
   variant?: QuestionContentVariant;
   className?: string;
+  headingLevel?: 2 | 3 | 4 | 5 | 6;
 }
 
 interface QuestionExcerptProps {
@@ -28,8 +29,16 @@ export const QuestionContent = memo(function QuestionContent({
   content,
   variant = 'prompt',
   className,
+  headingLevel,
 }: QuestionContentProps) {
-  return <MarkdownRenderer content={content} variant={variant} className={className} />;
+  return (
+    <MarkdownRenderer
+      content={content}
+      variant={variant}
+      className={className}
+      headingLevel={headingLevel}
+    />
+  );
 });
 
 export const QuestionExcerpt = memo(function QuestionExcerpt({

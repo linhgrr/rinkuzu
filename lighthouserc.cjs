@@ -10,7 +10,7 @@ if (
     `LIGHTHOUSE_PORT must be an integer from 1 to 65535; received ${JSON.stringify(port)}`,
   );
 }
-const baseUrl = `http://127.0.0.1:${port}`;
+const baseUrl = `http://localhost:${port}`;
 const mode = process.env.PERF_MODE || 'local';
 /** @type {Readonly<Record<'local' | 'pr' | 'release', number>>} */
 const runsByMode = Object.freeze({ local: 3, pr: 3, release: 5 });
@@ -87,11 +87,12 @@ module.exports = {
     collect: {
       url: urls,
       numberOfRuns: expectedRuns,
-      startServerCommand: `npm run start -- --hostname 127.0.0.1 --port ${port}`,
+      startServerCommand: `npm run start -- --hostname localhost --port ${port}`,
       startServerReadyPattern: 'Ready in',
       startServerReadyTimeout: 120000,
       settings: {
         chromeFlags: '--no-sandbox',
+        throttlingMethod: 'provided',
       },
     },
     assert: {

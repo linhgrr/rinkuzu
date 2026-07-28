@@ -120,15 +120,12 @@ export function QuestionReviewList({
                   </div>
 
                   <div className="flex items-start justify-between mb-2">
-                    <div
-                      role="heading"
-                      aria-level={3}
-                      className="flex min-w-0 flex-1 items-start gap-1 font-semibold text-neutral-900"
-                    >
+                    <div className="flex min-w-0 flex-1 items-start gap-1 font-semibold text-neutral-900">
                       <span className="flex-shrink-0">{index + 1}.</span>
                       <QuestionContent
                         content={questionResult.question}
                         variant="compact"
+                        headingLevel={3}
                         className="min-w-0 flex-1"
                       />
                     </div>

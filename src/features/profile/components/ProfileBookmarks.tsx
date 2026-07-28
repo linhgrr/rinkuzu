@@ -175,13 +175,12 @@ function BookmarkCard({
     <SurfaceCard className="p-4 sm:p-6">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
         <div className="min-w-0 flex-1">
-          <div role="heading" aria-level={3}>
-            <QuestionContent
-              content={bookmark.question.text}
-              variant="compact"
-              className="font-home text-lg font-semibold text-ink"
-            />
-          </div>
+          <QuestionContent
+            content={bookmark.question.text}
+            variant="compact"
+            headingLevel={3}
+            className="font-home text-lg font-semibold text-ink"
+          />
           <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             <div className="font-home text-sm text-ink-muted">
               <Link

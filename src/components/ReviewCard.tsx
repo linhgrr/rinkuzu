@@ -75,12 +75,11 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
               <span className="inline-block px-3 py-1 bg-green-100 text-brand-trust-hover rounded-full text-xs font-semibold mb-4">
                 {t('question')}
               </span>
-              <div role="heading" aria-level={3}>
-                <QuestionContent
-                  content={question.text}
-                  className="mb-8 text-xl font-medium leading-relaxed text-[var(--text-primary)] md:text-2xl"
-                />
-              </div>
+              <QuestionContent
+                content={question.text}
+                headingLevel={3}
+                className="mb-8 text-xl font-medium leading-relaxed text-[var(--text-primary)] md:text-2xl"
+              />
               <p className="text-[var(--text-muted)] text-sm animate-pulse">
                 {t('tapToSeeAnswer')}
               </p>

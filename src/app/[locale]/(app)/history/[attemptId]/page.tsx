@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
 import { QuestionContent } from '@/components/ui/QuestionContent';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import {
   HiOutlineArrowLeft,
   HiOutlineChartBar,
@@ -49,9 +50,9 @@ function AnswerContent({ value }: { value: string | string[] }) {
 
   return (
     <div className="space-y-1">
-      {answers.map((answer, index) => (
+      {toStableContentEntries(answers).map(({ content: answer, key }) => (
         <QuestionContent
-          key={`${index}-${answer}`}
+          key={key}
           content={answer}
           variant="answer"
           className="font-inherit text-inherit"

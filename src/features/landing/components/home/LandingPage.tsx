@@ -42,7 +42,7 @@ export default function LandingPage({ isAuthenticated = false }: LandingPageProp
         {/* Marquee */}
         <div className="w-[100vw] relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-[#ff541b] mt-[68px] md:mt-[215px] mb-0">
           <Marquee speed={50} autoFill>
-            <div className="flex whitespace-nowrap h-[80px] items-center text-[20px] font-unbounded font-normal text-white gap-[72px] mr-[72px]">
+            <div className="mr-[72px] flex h-[80px] items-center gap-[72px] whitespace-nowrap font-unbounded text-[20px] font-bold text-white">
               <div className="flex flex-col justify-center relative shrink-0">
                 <p>AI POWERED</p>
               </div>

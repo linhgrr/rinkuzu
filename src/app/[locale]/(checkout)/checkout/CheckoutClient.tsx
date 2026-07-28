@@ -155,10 +155,11 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
     try {
       const created = await createCheckoutOrder(quote.token, idempotencyKey);
       setOrder(created);
-      router.replace(`/checkout?order=${encodeURIComponent(created.id)}`);
       if (created.checkoutUrl) {
         window.location.assign(assertTrustedPayosCheckoutUrl(created.checkoutUrl));
+        return;
       }
+      router.replace(`/checkout?order=${encodeURIComponent(created.id)}`);
     } catch (error) {
       toast.error(t(errorMessageKey(error, 'errors.createPayment')));
       if (error instanceof ApiResponseError && error.status >= 400 && error.status < 500) {

@@ -1,11 +1,14 @@
 'use client';
 
+import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
+  HiOutlineArrowRight,
   HiOutlineClock,
+  HiOutlineCloudUpload,
   HiOutlineDocumentText,
   HiOutlinePencilAlt,
   HiOutlineTrash,
@@ -69,63 +72,87 @@ export function CreateQuizHubPage() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-neutral-50 px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+    <main className="min-h-[100dvh] bg-neutral-50 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <div className="mx-auto max-w-6xl">
-        <header className="max-w-2xl">
+        <header>
           <h1 className="text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">
             {t('createHubTitle')}
           </h1>
-          <p className="mt-3 text-base leading-7 text-neutral-600">{t('createHubDescription')}</p>
         </header>
 
         <section
-          className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2"
+          className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2"
           aria-label={t('chooseMethod')}
         >
-          <Card className="border-brand-trust/30 bg-green-50/60 shadow-none">
-            <CardContent className="flex h-full flex-col p-6 sm:p-7">
-              <h2 className="text-2xl font-semibold tracking-tight text-neutral-950">
-                {t('manualMethodTitle')}
-              </h2>
-              <p className="mt-2 max-w-md leading-7 text-neutral-600">
-                {t('manualMethodDescription')}
-              </p>
+          <Card
+            hover
+            className="group overflow-hidden border-brand-trust/20 bg-gradient-to-br from-green-50 via-white to-green-50/40 p-0 shadow-[var(--shadow-sm)] hover:border-brand-trust/35"
+          >
+            <CardContent className="relative flex min-h-56 flex-col p-5 sm:p-6">
+              <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full">
+                <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
+                  {t('manualMethodTitle')}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-neutral-600">
+                  {t('manualMethodDescription')}
+                </p>
+              </div>
               <Button
-                className="mt-7 w-full justify-center sm:w-fit"
+                className="relative z-10 mt-auto w-fit"
                 loading={isCreatingManual}
                 onClick={() => void handleCreateManual()}
               >
                 {isCreatingManual ? t('creatingDraft') : t('startManual')}
+                <HiOutlineArrowRight className="size-4" aria-hidden="true" />
               </Button>
+              <Image
+                src="/images/create-quiz/manual-quiz-illustration.png"
+                alt=""
+                width={444}
+                height={512}
+                sizes="(min-width: 640px) 160px, 112px"
+                className="pointer-events-none absolute right-3 bottom-5 h-auto w-28 select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:rotate-1 motion-reduce:transition-none max-[359px]:hidden sm:right-4 sm:w-40"
+              />
             </CardContent>
           </Card>
 
-          <Card className="border-neutral-200 bg-white shadow-none">
-            <CardContent className="flex h-full flex-col p-6 sm:p-7">
-              <h2 className="text-2xl font-semibold tracking-tight text-neutral-950">
-                {t('pdfMethodTitle')}
-              </h2>
-              <p className="mt-2 max-w-md leading-7 text-neutral-600">
-                {t('pdfMethodDescription')}
-              </p>
+          <Card
+            hover
+            className="group overflow-hidden border-blue-200/80 bg-gradient-to-br from-blue-50 via-white to-blue-50/60 p-0 shadow-[var(--shadow-sm)] hover:border-blue-300"
+          >
+            <CardContent className="relative flex min-h-56 flex-col p-5 sm:p-6">
+              <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full">
+                <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
+                  {t('pdfMethodTitle')}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-neutral-600">
+                  {t('pdfMethodDescription')}
+                </p>
+              </div>
               <Button
                 variant="outline"
-                className="mt-7 w-full justify-center sm:w-fit"
+                className="relative z-10 mt-auto w-fit bg-white/90"
                 onClick={() => push(ROUTES.CREATE_QUIZ_PDF)}
               >
+                <HiOutlineCloudUpload className="size-4" aria-hidden="true" />
                 {t('choosePdf')}
               </Button>
+              <Image
+                src="/images/create-quiz/pdf-quiz-illustration.png"
+                alt=""
+                width={413}
+                height={512}
+                sizes="(min-width: 640px) 144px, 112px"
+                className="pointer-events-none absolute right-3 bottom-5 h-auto w-28 select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:-rotate-1 motion-reduce:transition-none max-[359px]:hidden sm:right-5 sm:w-36"
+              />
             </CardContent>
           </Card>
         </section>
 
-        <section className="mt-12" aria-labelledby="quiz-drafts-title">
-          <div>
-            <h2 id="quiz-drafts-title" className="text-2xl font-semibold text-neutral-950">
-              {t('yourDrafts')}
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-neutral-600">{t('yourDraftsDescription')}</p>
-          </div>
+        <section className="mt-10" aria-labelledby="quiz-drafts-title">
+          <h2 id="quiz-drafts-title" className="text-2xl font-semibold text-neutral-950">
+            {t('yourDrafts')}
+          </h2>
 
           {isLoading ? (
             <div className="mt-5 grid gap-3" aria-label={t('loadingDrafts')}>
@@ -148,7 +175,7 @@ export function CreateQuizHubPage() {
               {drafts.map((draft) => {
                 const canContinue = !['queued', 'processing'].includes(draft.status);
                 return (
-                  <Card key={draft.id} className="border-neutral-200 bg-white shadow-none">
+                  <Card key={draft.id} className="border-neutral-200 bg-white p-0 shadow-none">
                     <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">

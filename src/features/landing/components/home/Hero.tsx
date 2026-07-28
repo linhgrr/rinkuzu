@@ -18,7 +18,7 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
         {/* Main Title - Responsive text sizing */}
         <div className="w-full xl:w-[1090px] mt-24 xl:mt-[254px]">
           <h1
-            className="font-vina-sans text-[70px] leading-[0.9] text-left text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:text-[164px]"
+            className="font-system text-left text-[70px] leading-[0.9] text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:font-vina-sans xl:text-[164px]"
             style={{ filter: 'drop-shadow(4px 4px 0px #542607)' }}
           >
             YOUR AI-POWERED LEARNING COMPANION
@@ -57,7 +57,7 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
                     width={28}
                   />
                 </span>
-                <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
+                <span className="whitespace-nowrap font-unbounded text-[19px] font-bold text-white">
                   Upload PDF
                 </span>
               </Link>
@@ -67,8 +67,8 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
       </div>
 
       {/* Right Content - 3D Character */}
-      <div className="flex-none w-full xl:w-[527px] flex items-center justify-center xl:absolute xl:-right-[20px] xl:top-[80px] mt-12 xl:mt-0 z-10 pointer-events-none">
-        <div className="relative w-full max-w-[527px] xl:w-[527px] aspect-[1/2] xl:aspect-auto xl:h-[1084px] scale-x-[-1]">
+      <div className="pointer-events-none z-10 hidden flex-none items-center justify-center xl:absolute xl:-right-[20px] xl:top-[80px] xl:flex xl:w-[527px]">
+        <div className="relative h-[1084px] w-[527px] scale-x-[-1]">
           <div className="absolute inset-0">
             <Image
               alt="AI Character"

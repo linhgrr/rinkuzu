@@ -77,13 +77,12 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
               key={FAQ_KEYS[index]}
               className="rounded-xl border border-neutral-200 bg-white p-5"
             >
-              <div role="heading" aria-level={3}>
-                <QuestionContent
-                  content={item.question}
-                  variant="compact"
-                  className="mb-1 font-medium text-neutral-900"
-                />
-              </div>
+              <QuestionContent
+                content={item.question}
+                variant="compact"
+                headingLevel={3}
+                className="mb-1 font-medium text-neutral-900"
+              />
               <QuestionContent
                 content={item.answer}
                 variant="compact"

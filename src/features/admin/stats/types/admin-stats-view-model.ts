@@ -39,6 +39,35 @@ export interface AdminRecentAttemptViewModel {
   };
 }
 
+export type AdminGrowthPeriodViewModel = 7 | 30 | 90 | 365;
+
+interface AdminGrowthDataPointViewModel {
+  date: string;
+  newUsers: number;
+  newQuizzes: number;
+  attempts: number;
+  averageScore: number | null;
+}
+
+export interface AdminMetricComparisonViewModel {
+  current: number;
+  previous: number;
+  changePercent: number | null;
+}
+
+export interface AdminGrowthTrendsViewModel {
+  period: AdminGrowthPeriodViewModel;
+  from: string;
+  to: string;
+  data: AdminGrowthDataPointViewModel[];
+  comparison: {
+    newUsers: AdminMetricComparisonViewModel;
+    newQuizzes: AdminMetricComparisonViewModel;
+    attempts: AdminMetricComparisonViewModel;
+    averageScore: AdminMetricComparisonViewModel;
+  };
+}
+
 interface AdminCreatorStatsViewModel {
   id: string;
   email: string;
@@ -65,5 +94,14 @@ export interface AdminStatsViewModel {
     averageScore: number;
     highestScore: number;
     lowestScore: number;
+    passRate: number;
+    scoreDistribution: {
+      range: string;
+      min: number;
+      max: number;
+      count: number;
+      passing: boolean;
+    }[];
   };
+  growthTrends: AdminGrowthTrendsViewModel;
 }

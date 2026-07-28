@@ -55,11 +55,36 @@ describe('toAdminStatsViewModel', () => {
           averageScore: 80,
           highestScore: 100,
           lowestScore: 60,
+          passRate: 75,
+          scoreDistribution: [
+            {
+              range: '70–79%',
+              min: 70,
+              max: 80,
+              count: 3,
+              passing: true,
+            },
+          ],
         },
         growthTrends: {
-          users: [],
-          quizzes: [],
-          attempts: [],
+          period: 30,
+          from: '2026-06-03',
+          to: '2026-07-02',
+          data: [
+            {
+              date: '2026-07-02',
+              newUsers: 1,
+              newQuizzes: 1,
+              attempts: 1,
+              averageScore: 80,
+            },
+          ],
+          comparison: {
+            newUsers: { current: 1, previous: 0, changePercent: null },
+            newQuizzes: { current: 1, previous: 0, changePercent: null },
+            attempts: { current: 1, previous: 0, changePercent: null },
+            averageScore: { current: 80, previous: 0, changePercent: null },
+          },
         },
       }),
     ).toEqual({
@@ -116,6 +141,36 @@ describe('toAdminStatsViewModel', () => {
         averageScore: 80,
         highestScore: 100,
         lowestScore: 60,
+        passRate: 75,
+        scoreDistribution: [
+          {
+            range: '70–79%',
+            min: 70,
+            max: 80,
+            count: 3,
+            passing: true,
+          },
+        ],
+      },
+      growthTrends: {
+        period: 30,
+        from: '2026-06-03',
+        to: '2026-07-02',
+        data: [
+          {
+            date: '2026-07-02',
+            newUsers: 1,
+            newQuizzes: 1,
+            attempts: 1,
+            averageScore: 80,
+          },
+        ],
+        comparison: {
+          newUsers: { current: 1, previous: 0, changePercent: null },
+          newQuizzes: { current: 1, previous: 0, changePercent: null },
+          attempts: { current: 1, previous: 0, changePercent: null },
+          averageScore: { current: 80, previous: 0, changePercent: null },
+        },
       },
     });
   });

@@ -2,11 +2,19 @@ import type {
   AdminStatsDto,
   AdminActivityStatsListDto,
   AdminCreatorStatsListDto,
+  AdminGrowthTrendsDto,
 } from '@/dtos/admin-stats';
 import { fetchApiData } from '@/lib/api/client';
-import { toAdminStatsViewModel } from '@/features/admin/stats/mappers/admin-stats.mapper';
+import {
+  toAdminGrowthTrendsViewModel,
+  toAdminStatsViewModel,
+} from '@/features/admin/stats/mappers/admin-stats.mapper';
 import { toStatsModalResultViewModel } from '@/features/admin/stats/mappers/stats-modal.mapper';
-import type { AdminStatsViewModel } from '@/features/admin/stats/types/admin-stats-view-model';
+import type {
+  AdminGrowthPeriodViewModel,
+  AdminGrowthTrendsViewModel,
+  AdminStatsViewModel,
+} from '@/features/admin/stats/types/admin-stats-view-model';
 import type {
   FetchStatsModalInput,
   StatsModalResultViewModel,
@@ -34,4 +42,11 @@ export async function fetchStatsModalViewModel(
     `${input.apiEndpoint}${separator}${params}`,
   );
   return toStatsModalResultViewModel(input.type, payload);
+}
+
+export async function fetchGrowthTrendsViewModel(
+  days: AdminGrowthPeriodViewModel,
+): Promise<AdminGrowthTrendsViewModel> {
+  const dto = await fetchApiData<AdminGrowthTrendsDto>(`/api/admin/stats/growth?days=${days}`);
+  return toAdminGrowthTrendsViewModel(dto);
 }

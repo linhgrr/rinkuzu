@@ -101,5 +101,4 @@ export interface IQuizRepository {
   findTopCreators(
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<QuizCreatorStatRecord>>;
-
 }

@@ -7,6 +7,7 @@ const {
   getActivityStatsMock,
   getCreatorStatsMock,
   getScoreStatsMock,
+  getGrowthTrendsMock,
   loggerErrorMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
@@ -14,6 +15,7 @@ const {
   getActivityStatsMock: vi.fn(),
   getCreatorStatsMock: vi.fn(),
   getScoreStatsMock: vi.fn(),
+  getGrowthTrendsMock: vi.fn(),
   loggerErrorMock: vi.fn(),
 }));
 
@@ -26,6 +28,7 @@ vi.mock('@/lib/serviceFactory', () => ({
       getActivityStats: getActivityStatsMock,
       getCreatorStats: getCreatorStatsMock,
       getScoreStats: getScoreStatsMock,
+      getGrowthTrends: getGrowthTrendsMock,
     }),
   },
 }));
@@ -56,7 +59,27 @@ describe('GET /api/admin/stats', () => {
       ok({ creators: [{ id: 'creator-1', email: 'c@example.com' }], pagination: {} }),
     );
     getScoreStatsMock.mockResolvedValue(
-      ok({ averageScore: 80, highestScore: 100, lowestScore: 10 }),
+      ok({
+        averageScore: 80,
+        highestScore: 100,
+        lowestScore: 10,
+        passRate: 75,
+        scoreDistribution: [],
+      }),
+    );
+    getGrowthTrendsMock.mockResolvedValue(
+      ok({
+        period: 30,
+        from: '2026-06-29',
+        to: '2026-07-28',
+        data: [],
+        comparison: {
+          newUsers: { current: 0, previous: 0, changePercent: 0 },
+          newQuizzes: { current: 0, previous: 0, changePercent: 0 },
+          attempts: { current: 0, previous: 0, changePercent: 0 },
+          averageScore: { current: 0, previous: 0, changePercent: 0 },
+        },
+      }),
     );
   });
 
@@ -82,10 +105,28 @@ describe('GET /api/admin/stats', () => {
         recentActivity: { users: [], quizzes: [], attempts: [] },
         activityBuckets: [],
         topCreators: [{ id: 'creator-1', email: 'c@example.com' }],
-        scoreStats: { averageScore: 80, highestScore: 100, lowestScore: 10 },
-        growthTrends: { users: [], quizzes: [], attempts: [] },
+        scoreStats: {
+          averageScore: 80,
+          highestScore: 100,
+          lowestScore: 10,
+          passRate: 75,
+          scoreDistribution: [],
+        },
+        growthTrends: {
+          period: 30,
+          from: '2026-06-29',
+          to: '2026-07-28',
+          data: [],
+          comparison: {
+            newUsers: { current: 0, previous: 0, changePercent: 0 },
+            newQuizzes: { current: 0, previous: 0, changePercent: 0 },
+            attempts: { current: 0, previous: 0, changePercent: 0 },
+            averageScore: { current: 0, previous: 0, changePercent: 0 },
+          },
+        },
       },
     });
+    expect(getGrowthTrendsMock).toHaveBeenCalledWith(30);
   });
 
   it('fails closed when any combined service call is unsuccessful', async () => {

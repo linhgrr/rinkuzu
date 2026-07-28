@@ -51,6 +51,10 @@ function editableQuestion(question: AdminReportedQuestionViewModel) {
 
 type EditableQuestion = ReturnType<typeof editableQuestion>;
 
+function createOptionIds(question: AdminReportedQuestionViewModel): string[] {
+  return question.options.map(() => `${question.id}-option-${crypto.randomUUID()}`);
+}
+
 function replaceOption(
   question: EditableQuestion,
   optionIndex: number,
@@ -90,6 +94,7 @@ function removeOption(question: EditableQuestion, optionIndex: number): Editable
 function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQuestionEditorProps) {
   const [current, setCurrent] = useState<AdminReportedQuestionViewModel | null>(null);
   const [draft, setDraft] = useState<EditableQuestion | null>(null);
+  const [optionIds, setOptionIds] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -101,6 +106,7 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
       .then((question) => {
         setCurrent(question);
         setDraft(editableQuestion(question));
+        setOptionIds(createOptionIds(question));
       })
       .catch((loadError: unknown) => {
         if (loadError instanceof DOMException && loadError.name === 'AbortError') return;
@@ -148,6 +154,7 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
       });
       setCurrent(updated);
       setDraft(editableQuestion(updated));
+      setOptionIds(createOptionIds(updated));
       setEditing(false);
       toast.success('Question updated');
     } catch (saveError) {
@@ -160,6 +167,11 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
   if (!editing) {
     const correctIndexes =
       current.type === 'single' ? [current.correctIndex ?? 0] : (current.correctIndexes ?? []);
+    const optionRows = current.options.map((option, index) => ({
+      id: optionIds[index] ?? `${current.id}-option-${option}`,
+      index,
+      option,
+    }));
 
     return (
       <section className="rounded-xl border border-[var(--border-default)] bg-white p-4">
@@ -179,9 +191,9 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
         </div>
         <QuestionContent content={current.question} className="font-medium text-neutral-950" />
         <div className="mt-3 space-y-2">
-          {current.options.map((option, index) => (
+          {optionRows.map(({ id, index, option }) => (
             <div
-              key={`${index}-${option}`}
+              key={id}
               className={`rounded-lg border px-3 py-2 text-sm ${
                 correctIndexes.includes(index)
                   ? 'border-green-200 bg-green-50 text-green-900'
@@ -269,12 +281,13 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
       <fieldset className="space-y-3">
         <legend className="mb-2 text-sm font-medium">Answers</legend>
         {draft.options.map((option, optionIndex) => {
+          const optionId = optionIds[optionIndex] ?? `${current.id}-draft-option-${option}`;
           const checked =
             draft.type === 'single'
               ? draft.correctIndex === optionIndex
               : draft.correctIndexes.includes(optionIndex);
           return (
-            <div key={optionIndex} className="flex items-center gap-2">
+            <div key={optionId} className="flex items-center gap-2">
               <input
                 type={draft.type === 'single' ? 'radio' : 'checkbox'}
                 name={draft.type === 'single' ? `reported-correct-answer-${reportId}` : undefined}
@@ -306,7 +319,10 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
                 variant="ghost"
                 size="sm"
                 disabled={draft.options.length <= 2}
-                onClick={() => setDraft(removeOption(draft, optionIndex))}
+                onClick={() => {
+                  setDraft(removeOption(draft, optionIndex));
+                  setOptionIds((ids) => ids.filter((id) => id !== optionId));
+                }}
                 aria-label={`Remove answer ${optionIndex + 1}`}
                 className="text-neutral-500 hover:text-red-700"
               >
@@ -320,15 +336,16 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
           variant="outline"
           size="sm"
           disabled={draft.options.length >= 20}
-          onClick={() =>
+          onClick={() => {
             setDraft({
               ...draft,
               options: [...draft.options, ''],
               ...(draft.optionImages !== undefined
                 ? { optionImages: [...draft.optionImages, undefined] }
                 : {}),
-            })
-          }
+            });
+            setOptionIds((ids) => [...ids, `${current.id}-option-${crypto.randomUUID()}`]);
+          }}
         >
           <HiOutlinePlus className="mr-1 size-4" />
           Add answer
@@ -347,6 +364,7 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
           variant="outline"
           onClick={() => {
             setDraft(editableQuestion(current));
+            setOptionIds(createOptionIds(current));
             setEditing(false);
           }}
           disabled={saving}

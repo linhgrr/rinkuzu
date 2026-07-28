@@ -12,6 +12,7 @@ import { BookmarkRepository } from '@/repositories/BookmarkRepository';
 import { QuizProgressRepository } from '@/repositories/QuizProgressRepository';
 import { FolderRepository } from '@/repositories/FolderRepository';
 import { QuizAttemptProgressRepository } from '@/repositories/QuizAttemptProgressRepository';
+import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
 
 interface Repositories {
   quiz: QuizRepository;
@@ -23,6 +24,7 @@ interface Repositories {
   quizProgress: QuizProgressRepository;
   folder: FolderRepository;
   quizAttemptProgress: QuizAttemptProgressRepository;
+  adminStats: AdminStatsRepository;
 }
 
 interface Services {
@@ -48,6 +50,7 @@ class ServiceFactory {
       quizProgress: new QuizProgressRepository(),
       folder: new FolderRepository(),
       quizAttemptProgress: new QuizAttemptProgressRepository(),
+      adminStats: new AdminStatsRepository(),
     };
   }
 
@@ -98,6 +101,7 @@ class ServiceFactory {
         this.repositories.report,
         this.repositories.quiz,
         this.repositories.attempt,
+        this.repositories.adminStats,
       );
     }
     return this.services.admin;

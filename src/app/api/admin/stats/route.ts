@@ -10,18 +10,21 @@ export const GET = withAdmin(async () => {
   try {
     const adminService = serviceFactory.getAdminService();
 
-    const [statsResult, activityResult, creatorResult, scoreResult] = await Promise.all([
-      adminService.getStats(),
-      adminService.getActivityStats(),
-      adminService.getCreatorStats({ page: 1, limit: TOP_CREATORS_LIMIT }),
-      adminService.getScoreStats(),
-    ]);
+    const [statsResult, activityResult, creatorResult, scoreResult, growthResult] =
+      await Promise.all([
+        adminService.getStats(),
+        adminService.getActivityStats(),
+        adminService.getCreatorStats({ page: 1, limit: TOP_CREATORS_LIMIT }),
+        adminService.getScoreStats(),
+        adminService.getGrowthTrends(30),
+      ]);
 
     if (
       !statsResult.success ||
       !activityResult.success ||
       !creatorResult.success ||
-      !scoreResult.success
+      !scoreResult.success ||
+      !growthResult.success
     ) {
       return apiErr('internal_error', 'Failed to fetch statistics', 500);
     }
@@ -31,7 +34,7 @@ export const GET = withAdmin(async () => {
       ...activityResult.data,
       topCreators: creatorResult.data.creators,
       scoreStats: scoreResult.data,
-      growthTrends: { users: [], quizzes: [], attempts: [] },
+      growthTrends: growthResult.data,
     };
 
     return apiOk(combinedStats);

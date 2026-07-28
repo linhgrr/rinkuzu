@@ -1,5 +1,6 @@
 import type { AdminStatsDto } from '@/dtos/admin-stats';
 import type {
+  AdminGrowthTrendsViewModel,
   AdminRecentAttemptViewModel,
   AdminStatsViewModel,
 } from '@/features/admin/stats/types/admin-stats-view-model';
@@ -20,6 +21,23 @@ function toRecentAttemptViewModel(
     },
     quiz: {
       title: attempt.quiz.title,
+    },
+  };
+}
+
+export function toAdminGrowthTrendsViewModel(
+  dto: AdminStatsDto['growthTrends'],
+): AdminGrowthTrendsViewModel {
+  return {
+    period: dto.period,
+    from: dto.from,
+    to: dto.to,
+    data: dto.data.map((point) => ({ ...point })),
+    comparison: {
+      newUsers: { ...dto.comparison.newUsers },
+      newQuizzes: { ...dto.comparison.newQuizzes },
+      attempts: { ...dto.comparison.attempts },
+      averageScore: { ...dto.comparison.averageScore },
     },
   };
 }
@@ -63,6 +81,9 @@ export function toAdminStatsViewModel(dto: AdminStatsDto): AdminStatsViewModel {
       averageScore: dto.scoreStats.averageScore,
       highestScore: dto.scoreStats.highestScore,
       lowestScore: dto.scoreStats.lowestScore,
+      passRate: dto.scoreStats.passRate,
+      scoreDistribution: dto.scoreStats.scoreDistribution.map((bucket) => ({ ...bucket })),
     },
+    growthTrends: toAdminGrowthTrendsViewModel(dto.growthTrends),
   };
 }

@@ -8,6 +8,17 @@ export const adminStatsListQuerySchema = z.object({
 
 export type AdminStatsListQueryDto = z.infer<typeof adminStatsListQuerySchema>;
 
+export type AdminGrowthPeriodDto = 7 | 30 | 90 | 365;
+
+const adminGrowthPeriodSchema = z
+  .enum(['7', '30', '90', '365'])
+  .default('30')
+  .transform((value): AdminGrowthPeriodDto => Number(value) as AdminGrowthPeriodDto);
+
+export const adminGrowthQuerySchema = z.object({
+  days: adminGrowthPeriodSchema,
+});
+
 export interface AdminOverviewStatsDto {
   totalQuizzes: number;
   totalUsers: number;
@@ -19,6 +30,43 @@ export interface AdminScoreStatsDto {
   averageScore: number;
   highestScore: number;
   lowestScore: number;
+  passRate: number;
+  scoreDistribution: AdminScoreDistributionBucketDto[];
+}
+
+interface AdminScoreDistributionBucketDto {
+  range: string;
+  min: number;
+  max: number;
+  count: number;
+  passing: boolean;
+}
+
+interface AdminGrowthDataPointDto {
+  date: string;
+  newUsers: number;
+  newQuizzes: number;
+  attempts: number;
+  averageScore: number | null;
+}
+
+interface AdminMetricComparisonDto {
+  current: number;
+  previous: number;
+  changePercent: number | null;
+}
+
+export interface AdminGrowthTrendsDto {
+  period: AdminGrowthPeriodDto;
+  from: string;
+  to: string;
+  data: AdminGrowthDataPointDto[];
+  comparison: {
+    newUsers: AdminMetricComparisonDto;
+    newQuizzes: AdminMetricComparisonDto;
+    attempts: AdminMetricComparisonDto;
+    averageScore: AdminMetricComparisonDto;
+  };
 }
 
 interface AdminTimeBucketDto {
@@ -82,16 +130,8 @@ export interface AdminCreatorStatDto {
 export interface AdminStatsDto extends AdminOverviewStatsDto, AdminActivityStatsDto {
   overview: AdminOverviewStatsDto;
   topCreators: AdminCreatorStatDto[];
-  scoreStats: {
-    averageScore: number;
-    highestScore: number;
-    lowestScore: number;
-  };
-  growthTrends: {
-    users: Array<{ year: number; month: number; count: number }>;
-    quizzes: Array<{ year: number; month: number; count: number }>;
-    attempts: Array<{ year: number; month: number; count: number }>;
-  };
+  scoreStats: AdminScoreStatsDto;
+  growthTrends: AdminGrowthTrendsDto;
 }
 
 export interface AdminCreatorStatsListDto {

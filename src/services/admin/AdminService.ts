@@ -1,12 +1,13 @@
 import { IAdminService } from '@/interfaces/services/IAdminService';
 import type {
-  AdminMessageDto,
-  AdminUserListDto,
-  AdminUserListQueryDto,
-  AdminUserStatusDto,
-  UpdateAdminUserRoleRequestDto,
-  UpdateAdminUserStatusRequestDto,
-} from '@/dtos/admin-user';
+  AdminActivityStatsDto,
+  AdminCreatorStatsListDto,
+  AdminGrowthTrendsDto,
+  AdminGrowthPeriodDto,
+  AdminOverviewStatsDto,
+  AdminScoreStatsDto,
+  AdminStatsListQueryDto,
+} from '@/dtos/admin-stats';
 import type {
   AdminReportListDto,
   AdminReportListQueryDto,
@@ -15,19 +16,22 @@ import type {
   UpdateAdminReportedQuestionRequestDto,
 } from '@/dtos/admin-report';
 import type {
-  AdminActivityStatsDto,
-  AdminCreatorStatsListDto,
-  AdminOverviewStatsDto,
-  AdminScoreStatsDto,
-  AdminStatsListQueryDto,
-} from '@/dtos/admin-stats';
+  AdminMessageDto,
+  AdminUserListDto,
+  AdminUserListQueryDto,
+  AdminUserStatusDto,
+  UpdateAdminUserRoleRequestDto,
+  UpdateAdminUserStatusRequestDto,
+} from '@/dtos/admin-user';
 import type { DeleteResultDto } from '@/dtos/common';
+import type { QuizQuestion } from '@/entities/Quiz';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
 import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type { IAdminStatsRepository } from '@/interfaces/repositories/IAdminStatsRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
 import { invalidateEntitlements } from '@/lib/entitlements/cache';
@@ -52,12 +56,23 @@ import {
 } from '@/shared/constants/account-disable';
 import { ADMIN_INVARIANT_ERROR_CODE } from '@/shared/constants/admin-invariant';
 
+type ReportedQuestionContextResult =
+  | {
+      success: true;
+      quizId: string;
+      questionId: string;
+      questionIndex: number;
+      question: QuizQuestion;
+    }
+  | { success: false; error: string; statusCode: number };
+
 export class AdminService implements IAdminService {
   constructor(
     private userRepository: IUserRepository & IRecentUserRepository,
     private reportRepository: IReportRepository,
     private quizRepository: IQuizRepository & IDashboardQuizRepository,
     private attemptRepository: IAttemptRepository,
+    private adminStatsRepository?: IAdminStatsRepository,
   ) {}
 
   private mapListStatusFilter(
@@ -284,37 +299,12 @@ export class AdminService implements IAdminService {
 
   async getReportedQuestion(reportId: string): Promise<ServiceResult<AdminReportedQuestionDto>> {
     try {
-      const report = await this.reportRepository.findById(reportId);
-      if (!report) {
-        return { success: false, error: 'Report not found', statusCode: 404 };
-      }
-      if (!report.questionId) {
-        return {
-          success: false,
-          error: 'This legacy report is not linked to a specific question',
-          statusCode: 409,
-        };
-      }
-
-      const quiz = await this.quizRepository.findById(report.quizId);
-      if (!quiz) {
-        return { success: false, error: 'Quiz not found', statusCode: 404 };
-      }
-      const questionIndex = quiz.questions.findIndex(
-        (question) => question.id === report.questionId,
-      );
-      const question = quiz.questions[questionIndex];
-      if (questionIndex < 0 || !question) {
-        return {
-          success: false,
-          error: 'The reported question no longer exists',
-          statusCode: 409,
-        };
-      }
+      const context = await this.getReportedQuestionContext(reportId);
+      if (!context.success) return context;
 
       return {
         success: true,
-        data: AdminReportDtoMapper.toQuestionDto(question, questionIndex),
+        data: AdminReportDtoMapper.toQuestionDto(context.question, context.questionIndex),
       };
     } catch (error) {
       logger.error({ error }, 'Get reported question error');
@@ -331,32 +321,8 @@ export class AdminService implements IAdminService {
     input: UpdateAdminReportedQuestionRequestDto,
   ): Promise<ServiceResult<AdminReportedQuestionDto>> {
     try {
-      const report = await this.reportRepository.findById(reportId);
-      if (!report) {
-        return { success: false, error: 'Report not found', statusCode: 404 };
-      }
-      if (!report.questionId) {
-        return {
-          success: false,
-          error: 'This legacy report is not linked to a specific question',
-          statusCode: 409,
-        };
-      }
-
-      const quiz = await this.quizRepository.findById(report.quizId);
-      if (!quiz) {
-        return { success: false, error: 'Quiz not found', statusCode: 404 };
-      }
-      const questionIndex = quiz.questions.findIndex(
-        (question) => question.id === report.questionId,
-      );
-      if (questionIndex < 0) {
-        return {
-          success: false,
-          error: 'The reported question no longer exists',
-          statusCode: 409,
-        };
-      }
+      const context = await this.getReportedQuestionContext(reportId);
+      if (!context.success) return context;
 
       const question =
         input.type === 'single'
@@ -388,8 +354,8 @@ export class AdminService implements IAdminService {
 
       const updated = await updateQuestionById.call(
         this.quizRepository,
-        report.quizId,
-        report.questionId,
+        context.quizId,
+        context.questionId,
         question,
       );
       if (!updated) {
@@ -403,8 +369,8 @@ export class AdminService implements IAdminService {
       return {
         success: true,
         data: AdminReportDtoMapper.toQuestionDto(
-          { id: report.questionId, ...question },
-          questionIndex,
+          { id: context.questionId, ...question },
+          context.questionIndex,
         ),
       };
     } catch (error) {
@@ -415,6 +381,45 @@ export class AdminService implements IAdminService {
         statusCode: 500,
       };
     }
+  }
+
+  private async getReportedQuestionContext(
+    reportId: string,
+  ): Promise<ReportedQuestionContextResult> {
+    const report = await this.reportRepository.findById(reportId);
+    if (!report) {
+      return { success: false, error: 'Report not found', statusCode: 404 };
+    }
+    if (!report.questionId) {
+      return {
+        success: false,
+        error: 'This legacy report is not linked to a specific question',
+        statusCode: 409,
+      };
+    }
+
+    const quiz = await this.quizRepository.findById(report.quizId);
+    if (!quiz) {
+      return { success: false, error: 'Quiz not found', statusCode: 404 };
+    }
+
+    const questionIndex = quiz.questions.findIndex((question) => question.id === report.questionId);
+    const question = quiz.questions[questionIndex];
+    if (questionIndex < 0 || !question) {
+      return {
+        success: false,
+        error: 'The reported question no longer exists',
+        statusCode: 409,
+      };
+    }
+
+    return {
+      success: true,
+      quizId: report.quizId,
+      questionId: report.questionId,
+      questionIndex,
+      question,
+    };
   }
 
   async getStats(): Promise<ServiceResult<AdminOverviewStatsDto>> {
@@ -510,11 +515,43 @@ export class AdminService implements IAdminService {
 
   async getScoreStats(): Promise<ServiceResult<AdminScoreStatsDto>> {
     try {
-      const stats = await this.attemptRepository.scoreStats();
-      return { success: true, data: AdminStatsDtoMapper.toScoreStatsDto(stats) };
+      const [stats, distribution] = await Promise.all([
+        this.attemptRepository.scoreStats(),
+        this.adminStatsRepository?.getScoreDistribution() ?? Promise.resolve([]),
+      ]);
+      return {
+        success: true,
+        data: AdminStatsDtoMapper.toScoreStatsDto(stats, distribution),
+      };
     } catch (error) {
       logger.error({ error }, 'Get score stats error');
       return { success: false, error: 'Failed to get score stats', statusCode: 500 };
+    }
+  }
+
+  async getGrowthTrends(days: AdminGrowthPeriodDto): Promise<ServiceResult<AdminGrowthTrendsDto>> {
+    try {
+      if (!this.adminStatsRepository) {
+        return {
+          success: false,
+          error: 'Statistics analytics are unavailable',
+          statusCode: 503,
+        };
+      }
+      const now = new Date();
+      const todayUtc = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+      );
+      const since = new Date(todayUtc.getTime() - (days * 2 - 1) * 86_400_000);
+      const activity = await this.adminStatsRepository.getDailyActivity(since);
+
+      return {
+        success: true,
+        data: AdminStatsDtoMapper.toGrowthTrendsDto(activity, days, now),
+      };
+    } catch (error) {
+      logger.error({ error }, 'Get growth trends error');
+      return { success: false, error: 'Failed to get growth trends', statusCode: 500 };
     }
   }
 

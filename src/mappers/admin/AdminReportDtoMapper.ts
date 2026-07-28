@@ -6,23 +6,12 @@ import type {
 import type { PaginationMeta } from '@/dtos/common';
 import type { Report } from '@/entities/Report';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
-import { copyReportCoreFields } from '@/lib/report-fields';
+import { copyReportCoreFields, toReportQuestionSnapshot } from '@/lib/report-fields';
 import type { QuizQuestion } from '@/entities/Quiz';
 
 export class AdminReportDtoMapper {
   static toQuestionDto(question: QuizQuestion, index: number): AdminReportedQuestionDto {
-    return {
-      id: question.id,
-      index,
-      question: question.question,
-      options: [...question.options],
-      type: question.type,
-      ...(question.type === 'single'
-        ? { correctIndex: question.correctIndex }
-        : { correctIndexes: [...question.correctIndexes] }),
-      ...(question.questionImage !== undefined ? { questionImage: question.questionImage } : {}),
-      ...(question.optionImages !== undefined ? { optionImages: [...question.optionImages] } : {}),
-    };
+    return toReportQuestionSnapshot(question, index);
   }
 
   static toListDto(reports: Report[], pagination: PaginationMeta): AdminReportListDto {

@@ -18,6 +18,8 @@ import type {
 import type {
   AdminActivityStatsDto,
   AdminCreatorStatsListDto,
+  AdminGrowthTrendsDto,
+  AdminGrowthPeriodDto,
   AdminOverviewStatsDto,
   AdminStatsListQueryDto,
 } from '@/dtos/admin-stats';
@@ -55,4 +57,5 @@ export interface IAdminService {
   getStats(): Promise<ServiceResult<AdminOverviewStatsDto>>;
   getActivityStats(): Promise<ServiceResult<AdminActivityStatsDto>>;
   getCreatorStats(query: AdminStatsListQueryDto): Promise<ServiceResult<AdminCreatorStatsListDto>>;
+  getGrowthTrends(days: AdminGrowthPeriodDto): Promise<ServiceResult<AdminGrowthTrendsDto>>;
 }

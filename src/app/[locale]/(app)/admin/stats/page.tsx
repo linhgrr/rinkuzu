@@ -1,10 +1,18 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { fetchAdminStatsViewModel } from '@/features/admin/stats/api/admin-stats-api';
-import type { AdminStatsViewModel } from '@/features/admin/stats/types/admin-stats-view-model';
+import {
+  fetchAdminStatsViewModel,
+  fetchGrowthTrendsViewModel,
+} from '@/features/admin/stats/api/admin-stats-api';
+import type {
+  AdminGrowthPeriodViewModel,
+  AdminGrowthTrendsViewModel,
+  AdminMetricComparisonViewModel,
+  AdminStatsViewModel,
+} from '@/features/admin/stats/types/admin-stats-view-model';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminStatsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +20,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import StatsModal from '@/features/admin/stats/components/StatsModal';
 import { LlmUsageSection } from '@/features/admin/stats/components/LlmUsageSection';
 import { EntitlementTelemetrySection } from '@/features/admin/stats/components/EntitlementTelemetrySection';
+import { KpiSparkline } from '@/features/admin/stats/components/charts/KpiSparkline';
+import { GrowthTrendChart } from '@/features/admin/stats/components/charts/GrowthTrendChart';
+import { ScoreDistributionChart } from '@/features/admin/stats/components/charts/ScoreDistributionChart';
+import { TopCreatorsBarChart } from '@/features/admin/stats/components/charts/TopCreatorsBarChart';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;
@@ -27,24 +39,6 @@ interface AdminStatsErrorBannerProps {
 interface AdminStatsDataProps {
   stats: AdminStatsViewModel;
   t: TranslateFn;
-}
-
-interface TimePeriodCardProps {
-  title: string;
-  users: number;
-  quizzes: number;
-  attempts: number;
-  titleClassName: string;
-  itemClassName: string;
-  t: TranslateFn;
-}
-
-interface RankingListCardProps {
-  title: string;
-  description: string;
-  buttonLabel: string;
-  onViewAll: () => void;
-  children: ReactNode;
 }
 
 interface TopCreatorsSectionProps extends AdminStatsDataProps {
@@ -114,7 +108,7 @@ function adminStatsReducer(state: AdminStatsState, action: AdminStatsAction): Ad
 function AdminStatsLayout({ children }: AdminStatsLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
-      <div className="p-8">{children}</div>
+      <div className="px-4 py-5 sm:px-6">{children}</div>
     </div>
   );
 }
@@ -128,6 +122,31 @@ function AdminStatsErrorBanner({ error }: AdminStatsErrorBannerProps) {
     <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
       {error}
     </div>
+  );
+}
+
+function MetricComparison({
+  comparison,
+  t,
+}: {
+  comparison: AdminMetricComparisonViewModel;
+  t: TranslateFn;
+}) {
+  const value =
+    comparison.changePercent === null
+      ? t('trendNew')
+      : `${comparison.changePercent > 0 ? '+' : ''}${comparison.changePercent}%`;
+
+  return (
+    <p
+      className={`mt-2 text-xs font-medium ${
+        comparison.changePercent !== null && comparison.changePercent < 0
+          ? 'text-error'
+          : 'text-brand-trust'
+      }`}
+    >
+      {value} {t('vsPreviousPeriod')}
+    </p>
   );
 }
 
@@ -145,6 +164,14 @@ function OverviewCards({ stats, t }: AdminStatsDataProps) {
           <p className="text-xs text-neutral-500">
             {t('newThisMonth', { count: stats.timeBasedStats.thisMonth.newUsers })}
           </p>
+          <MetricComparison comparison={stats.growthTrends.comparison.newUsers} t={t} />
+          <div className="mt-2">
+            <KpiSparkline
+              data={stats.growthTrends.data.slice(-7).map((point) => point.newUsers)}
+              color="var(--blue-500)"
+              label={t('sparklineLabel', { title: t('totalUsersCount') })}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -157,6 +184,14 @@ function OverviewCards({ stats, t }: AdminStatsDataProps) {
         <CardContent>
           <div className="text-2xl font-bold text-green-600">{stats.overview.totalQuizzes}</div>
           <p className="text-xs text-neutral-500">{t('availableQuizzes')}</p>
+          <MetricComparison comparison={stats.growthTrends.comparison.newQuizzes} t={t} />
+          <div className="mt-2">
+            <KpiSparkline
+              data={stats.growthTrends.data.slice(-7).map((point) => point.newQuizzes)}
+              color="var(--green-500)"
+              label={t('sparklineLabel', { title: t('totalQuizzes') })}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -171,6 +206,14 @@ function OverviewCards({ stats, t }: AdminStatsDataProps) {
           <p className="text-xs text-neutral-500">
             {t('attempts', { count: stats.timeBasedStats.thisMonth.attempts })}
           </p>
+          <MetricComparison comparison={stats.growthTrends.comparison.attempts} t={t} />
+          <div className="mt-2">
+            <KpiSparkline
+              data={stats.growthTrends.data.slice(-7).map((point) => point.attempts)}
+              color="var(--orange-500)"
+              label={t('sparklineLabel', { title: t('attemptsCount') })}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -187,128 +230,179 @@ function OverviewCards({ stats, t }: AdminStatsDataProps) {
           <p className="text-xs text-neutral-500">
             {t('highestScore', { score: stats.scoreStats.highestScore })}
           </p>
+          <MetricComparison comparison={stats.growthTrends.comparison.averageScore} t={t} />
+          <div className="mt-2">
+            <KpiSparkline
+              data={stats.growthTrends.data.slice(-7).map((point) => point.averageScore)}
+              color="var(--purple-500)"
+              label={t('sparklineLabel', { title: t('averageScore') })}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function TimePeriodCard({
-  title,
-  users,
-  quizzes,
-  attempts,
-  titleClassName,
-  itemClassName,
+function GrowthTrendsSection({
+  initialData,
   t,
-}: TimePeriodCardProps) {
-  return (
-    <div className="rounded-lg bg-green-50 p-4 text-center">
-      <h3 className={`mb-2 font-medium ${titleClassName}`}>{title}</h3>
-      <div className="space-y-1">
-        <p className={`text-sm ${itemClassName}`}>{t('newUsers', { count: users })}</p>
-        <p className={`text-sm ${itemClassName}`}>{t('newQuizzes', { count: quizzes })}</p>
-        <p className={`text-sm ${itemClassName}`}>{t('attempts', { count: attempts })}</p>
-      </div>
-    </div>
-  );
-}
+}: {
+  initialData: AdminGrowthTrendsViewModel;
+  t: TranslateFn;
+}) {
+  const [period, setPeriod] = useState<AdminGrowthPeriodViewModel>(initialData.period);
+  const [growthData, setGrowthData] = useState(initialData);
+  const [loading, setLoading] = useState(false);
 
-function TimeBasedStatsCard({ stats, t }: AdminStatsDataProps) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('activityOverTime')}</CardTitle>
-        <CardDescription>{t('systemActivityStats')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <TimePeriodCard
-            title={t('today')}
-            users={stats.timeBasedStats.today.newUsers}
-            quizzes={stats.timeBasedStats.today.newQuizzes}
-            attempts={stats.timeBasedStats.today.attempts}
-            titleClassName="text-green-800"
-            itemClassName="text-brand-trust"
-            t={t}
-          />
-          <TimePeriodCard
-            title={t('thisWeek')}
-            users={stats.timeBasedStats.thisWeek.newUsers}
-            quizzes={stats.timeBasedStats.thisWeek.newQuizzes}
-            attempts={stats.timeBasedStats.thisWeek.attempts}
-            titleClassName="text-green-900"
-            itemClassName="text-green-700"
-            t={t}
-          />
-          <TimePeriodCard
-            title={t('thisMonth')}
-            users={stats.timeBasedStats.thisMonth.newUsers}
-            quizzes={stats.timeBasedStats.thisMonth.newQuizzes}
-            attempts={stats.timeBasedStats.thisMonth.attempts}
-            titleClassName="text-brand-trust"
-            itemClassName="text-green-700"
-            t={t}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+  const selectPeriod = async (nextPeriod: AdminGrowthPeriodViewModel) => {
+    if (nextPeriod === period) return;
+    setPeriod(nextPeriod);
+    setLoading(true);
+    try {
+      const data = await fetchGrowthTrendsViewModel(nextPeriod);
+      setGrowthData(data);
+    } catch {
+      setGrowthData({ ...initialData, period: nextPeriod, data: [] });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-function RankingListCard({
-  title,
-  description,
-  buttonLabel,
-  onViewAll,
-  children,
-}: RankingListCardProps) {
+  const periods: { value: AdminGrowthPeriodViewModel; label: string }[] = [
+    { value: 7, label: t('period7d') },
+    { value: 30, label: t('period30d') },
+    { value: 90, label: t('period90d') },
+    { value: 365, label: t('period1y') },
+  ];
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
+          <CardTitle>{t('growthTrends')}</CardTitle>
+          <CardDescription>{t('growthTrendsDescription')}</CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={onViewAll} className="min-h-[36px] px-3">
-          {buttonLabel}
-        </Button>
+        <div className="flex gap-1">
+          {periods.map((p) => (
+            <Button
+              key={p.value}
+              variant={period === p.value ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => void selectPeriod(p.value)}
+              className="min-h-11 px-3 text-xs"
+            >
+              {p.label}
+            </Button>
+          ))}
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">{children}</div>
+        <GrowthTrendChart
+          data={growthData.data}
+          isLoading={loading}
+          labels={{
+            chart: t('growthChartLabel'),
+            loading: t('chartLoading'),
+            empty: t('noChartData'),
+            users: t('users'),
+            quizzes: t('quizzes'),
+            attempts: t('attemptsCount'),
+          }}
+        />
       </CardContent>
     </Card>
   );
 }
 
-function TopCreatorsSection({ stats, t, onOpenModal }: TopCreatorsSectionProps) {
+function ScoreDistributionSection({ stats, t }: AdminStatsDataProps) {
   return (
-    <RankingListCard
-      title={t('topCreators')}
-      description={t('mostQuizzesCreated')}
-      buttonLabel={t('viewAll')}
-      onViewAll={onOpenModal}
-    >
-      {stats.topCreators.slice(0, 5).map((creator, index) => (
-        <div
-          key={creator.email}
-          className="flex items-center justify-between rounded-lg bg-neutral-50 p-3"
-        >
-          <div className="flex items-center gap-x-3">
-            <span className="text-sm font-medium text-neutral-500">#{index + 1}</span>
-            <span className="font-medium">{creator.email}</span>
-          </div>
-          <div className="text-right text-sm">
-            <div className="font-medium">
-              {creator.quizCount} {t('quiz')}
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>{t('scoreDistribution')}</CardTitle>
+          <CardDescription>{t('scoreDistributionDescription')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScoreDistributionChart
+            data={stats.scoreStats.scoreDistribution}
+            label={t('scoreDistribution')}
+            emptyLabel={t('noChartData')}
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('averageScore')}</CardTitle>
+          <CardDescription>{t('medianNote')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-brand-trust">
+                {Math.round(stats.scoreStats.averageScore)}%
+              </div>
+              <p className="mt-1 text-sm text-neutral-500">{t('averageScore')}</p>
             </div>
-            <div className="text-neutral-500">
-              {creator.totalQuestions} {t('questions')}
+            <div className="space-y-3 border-t border-[var(--border-default)] pt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600">
+                  {t('highestScore', { score: '' }).replace(': %', '')}
+                </span>
+                <span className="font-semibold text-green-600">
+                  {stats.scoreStats.highestScore}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600">
+                  {t('lowestScore', { score: '' }).replace(': %', '')}
+                </span>
+                <span className="font-semibold text-red-500">{stats.scoreStats.lowestScore}%</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600">{t('passRate')}</span>
+                <span className="font-semibold text-brand-trust">
+                  {stats.scoreStats.scoreDistribution.length > 0
+                    ? `${stats.scoreStats.passRate}%`
+                    : '—'}
+                </span>
+              </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function TopCreatorsSection({ stats, t, onOpenModal }: TopCreatorsSectionProps) {
+  const creatorData = stats.topCreators.slice(0, 10).map((creator) => ({
+    email: creator.email,
+    quizCount: creator.quizCount,
+    totalQuestions: creator.totalQuestions,
+  }));
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>{t('topCreators')}</CardTitle>
+          <CardDescription>{t('mostQuizzesCreated')}</CardDescription>
         </div>
-      ))}
-    </RankingListCard>
+        <Button variant="outline" size="sm" onClick={onOpenModal} className="min-h-[36px] px-3">
+          {t('viewAll')}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <TopCreatorsBarChart
+          data={creatorData}
+          label={t('topCreators')}
+          emptyLabel={t('noChartData')}
+          quizzesLabel={t('quizzes')}
+          questionsLabel={t('questions')}
+        />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -382,9 +476,10 @@ function AdminStatsContent({
     <>
       <AdminPageHeader title={t('statistics')} description={t('systemStatistics')} />
       <AdminStatsErrorBanner error={error} />
-      <div className="space-y-8">
+      <div className="space-y-6">
         <OverviewCards stats={stats} t={t} />
-        <TimeBasedStatsCard stats={stats} t={t} />
+        <GrowthTrendsSection initialData={stats.growthTrends} t={t} />
+        <ScoreDistributionSection stats={stats} t={t} />
         <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
         <RecentActivityCard stats={stats} t={t} onOpenModal={onOpenActivity} />
         <LlmUsageSection />

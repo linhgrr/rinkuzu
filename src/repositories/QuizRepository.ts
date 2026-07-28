@@ -478,5 +478,4 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
       pagination: buildPaginationMeta(page, limit, total),
     };
   }
-
 }

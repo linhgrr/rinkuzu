@@ -744,7 +744,13 @@ describe('AdminService mutation coverage', () => {
 
       await expect(service.getScoreStats()).resolves.toEqual({
         success: true,
-        data: { averageScore: 87, highestScore: 100, lowestScore: 10 },
+        data: {
+          averageScore: 87,
+          highestScore: 100,
+          lowestScore: 10,
+          passRate: 0,
+          scoreDistribution: [],
+        },
       });
       await expect(service.getScoreStats()).resolves.toEqual({
         success: false,

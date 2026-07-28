@@ -6,6 +6,7 @@ import type { QuizDiscussionDto, ReportQuizResponseDto } from '@/dtos/quiz';
 import type { Quiz } from '@/entities/Quiz';
 import type { Session } from 'next-auth';
 import { logger } from '@/lib/logger';
+import { toReportQuestionSnapshot } from '@/lib/report-fields';
 import { requireQuizReadAccess } from './quiz-helpers';
 import { QuizDiscussionDtoMapper } from '@/mappers/quiz/QuizDiscussionDtoMapper';
 
@@ -160,22 +161,7 @@ export class QuizDiscussionService {
         quizTitle: quiz.title,
         quizSlug: quiz.slug,
         questionId: question.id,
-        questionSnapshot: {
-          id: question.id,
-          index: questionIndex,
-          question: question.question,
-          options: [...question.options],
-          type: question.type,
-          ...(question.type === 'single'
-            ? { correctIndex: question.correctIndex }
-            : { correctIndexes: [...question.correctIndexes] }),
-          ...(question.questionImage !== undefined
-            ? { questionImage: question.questionImage }
-            : {}),
-          ...(question.optionImages !== undefined
-            ? { optionImages: [...question.optionImages] }
-            : {}),
-        },
+        questionSnapshot: toReportQuestionSnapshot(question, questionIndex),
         reporterEmail,
         reporterName,
         content: content.trim(),

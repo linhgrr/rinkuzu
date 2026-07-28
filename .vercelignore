@@ -7,7 +7,7 @@ node_modules
 coverage
 playwright-report
 test-results
-reports
+/reports/
 .lighthouseci
 .performance-baseline
 .playwright-mcp

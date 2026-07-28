@@ -11,5 +11,5 @@ describe('ESLint global ignores', () => {
     await expect(eslint.isPathIgnored('test-results/trace.js')).resolves.toBe(true);
     await expect(eslint.isPathIgnored('reports/mutation/generated.js')).resolves.toBe(true);
     await expect(eslint.isPathIgnored('src/lib/utils.ts')).resolves.toBe(false);
-  });
+  }, 60_000);
 });

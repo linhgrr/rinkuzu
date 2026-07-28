@@ -311,6 +311,7 @@ const CLASSIFY_CASES = [
   ['scripts/check-coverage-gates.mjs', 'toolchain'],
   ['quality/mutation-baseline.json', 'policy_only'],
   ['tests/quality/mutation-scope.test.ts', 'quality_test'],
+  ['tests/performance-budget.test.ts', 'quality_test'],
   ['messages/en/common.json', 'unrelated'],
 ] as const;
 
@@ -372,6 +373,12 @@ const POLICY_CASES = [
   {
     name: 'quality-test-only not_applicable',
     paths: ['tests/quality/foo.test.ts'],
+    mode: 'changed',
+    outcome: 'not_applicable',
+  },
+  {
+    name: 'legacy quality-test-only not_applicable',
+    paths: ['tests/performance-budget.test.ts'],
     mode: 'changed',
     outcome: 'not_applicable',
   },

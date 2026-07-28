@@ -46,6 +46,7 @@ const EMPTY_SHA256 = createHash('sha256').update(Buffer.alloc(0)).digest('hex');
 const R = (msg) => `${msg} ${MUTATION_RERUN_MESSAGE}`;
 const UNIT_TEST_PATH =
   /^(?:src|tests)\/(?:(?!e2e\/|integration\/|quality\/).)+\.(?:test|spec)\.[cm]?[jt]sx?$/;
+const LEGACY_QUALITY_TEST_PATHS = new Set(['tests/performance-budget.test.ts']);
 const SAFE_RELATIVE_PATH = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[-A-Za-z0-9_./()[\]]+$/;
 const SHA256_HEX = /^[a-f0-9]{64}$/;
 const GIT_SHA40 = /^[0-9a-f]{40}$/;
@@ -171,6 +172,7 @@ export function buildRelevantManifest(root, entries) {
 
 export function isUnitTestPath(filePath) {
   const normalized = normalizeMutationPath(filePath);
+  if (LEGACY_QUALITY_TEST_PATHS.has(normalized)) return false;
   if (!UNIT_TEST_PATH.test(normalized)) return false;
   if (normalized.startsWith('perf/') || normalized.startsWith('public/')) return false;
   if (normalized.startsWith('messages/')) return false;
@@ -202,7 +204,10 @@ export function isMutationFingerprintTestPath(filePath) {
 
 function isQualityTestPath(filePath) {
   const n = normalizeMutationPath(filePath);
-  return n.startsWith('tests/quality/') && /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(n);
+  return (
+    LEGACY_QUALITY_TEST_PATHS.has(n) ||
+    (n.startsWith('tests/quality/') && /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(n))
+  );
 }
 
 /**

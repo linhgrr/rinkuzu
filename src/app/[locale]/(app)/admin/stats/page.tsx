@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import {
   fetchAdminStatsViewModel,
@@ -18,12 +19,62 @@ import { AdminStatsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/features/admin/stats/components/StatsModal';
-import { LlmUsageSection } from '@/features/admin/stats/components/LlmUsageSection';
 import { EntitlementTelemetrySection } from '@/features/admin/stats/components/EntitlementTelemetrySection';
-import { KpiSparkline } from '@/features/admin/stats/components/charts/KpiSparkline';
-import { GrowthTrendChart } from '@/features/admin/stats/components/charts/GrowthTrendChart';
-import { ScoreDistributionChart } from '@/features/admin/stats/components/charts/ScoreDistributionChart';
-import { TopCreatorsBarChart } from '@/features/admin/stats/components/charts/TopCreatorsBarChart';
+
+const KpiSparkline = dynamic(
+  () =>
+    import('@/features/admin/stats/components/charts/KpiSparkline').then(
+      (module) => module.KpiSparkline,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-10 w-full animate-pulse rounded bg-neutral-100" />,
+  },
+);
+
+const GrowthTrendChart = dynamic(
+  () =>
+    import('@/features/admin/stats/components/charts/GrowthTrendChart').then(
+      (module) => module.GrowthTrendChart,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-80 w-full animate-pulse rounded bg-neutral-100" />,
+  },
+);
+
+const ScoreDistributionChart = dynamic(
+  () =>
+    import('@/features/admin/stats/components/charts/ScoreDistributionChart').then(
+      (module) => module.ScoreDistributionChart,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-72 w-full animate-pulse rounded bg-neutral-100" />,
+  },
+);
+
+const TopCreatorsBarChart = dynamic(
+  () =>
+    import('@/features/admin/stats/components/charts/TopCreatorsBarChart').then(
+      (module) => module.TopCreatorsBarChart,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-80 w-full animate-pulse rounded bg-neutral-100" />,
+  },
+);
+
+const LlmUsageSection = dynamic(
+  () =>
+    import('@/features/admin/stats/components/LlmUsageSection').then(
+      (module) => module.LlmUsageSection,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-80 w-full animate-pulse rounded-xl bg-neutral-100" />,
+  },
+);
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;

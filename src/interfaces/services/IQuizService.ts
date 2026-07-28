@@ -103,6 +103,7 @@ export interface IQuizService {
 
   reportQuiz(
     slug: string,
+    questionId: string,
     content: string,
     reporterEmail: string,
     reporterName: string,

@@ -194,11 +194,16 @@ describe('quiz-interaction-api', () => {
     });
 
     fetchApiDataMock.mockResolvedValueOnce({ reported: true });
-    await expect(reportQuizViewModel('quiz c', 'broken')).resolves.toEqual({ reported: true });
+    await expect(
+      reportQuizViewModel('quiz c', '507f1f77bcf86cd799439011', 'broken'),
+    ).resolves.toEqual({ reported: true });
     expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/quiz/quiz%20c/report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: 'broken' }),
+      body: JSON.stringify({
+        questionId: '507f1f77bcf86cd799439011',
+        content: 'broken',
+      }),
     });
   });
 });

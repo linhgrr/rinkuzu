@@ -25,6 +25,10 @@ vi.mock('@/components/ui/ConfirmModal', () => ({
   ConfirmModal: () => null,
 }));
 
+vi.mock('@/features/quiz/components/ReportQuiz', () => ({
+  default: () => null,
+}));
+
 const questions: QuizPlayQuestionViewModel[] = [
   {
     id: 'q0',
@@ -40,7 +44,7 @@ describe('MobileQuizLayout', () => {
   it('propagates and renders option images aligned with shuffled options', () => {
     render(
       <MobileQuizLayout
-        quiz={{ questions }}
+        quiz={{ slug: 'math', title: 'Math', questions }}
         userAnswers={[-1]}
         currentQuestionIndex={0}
         onAnswersChange={vi.fn()}

@@ -84,7 +84,6 @@ interface DesktopQuizLayoutProps {
 }
 
 interface DesktopQuizHeaderProps {
-  slug: string;
   quizTitle: string;
   sessionEmail?: string | null;
   userEmail: string;
@@ -97,6 +96,8 @@ interface DesktopQuizHeaderProps {
 }
 
 interface DesktopQuestionCardProps {
+  slug: string;
+  quizTitle: string;
   currentQuestion: QuizPlayQuestionViewModel;
   currentQuestionIndex: number;
   currentAnswer: QuizAnswer | undefined;
@@ -155,7 +156,6 @@ function OptionPreview({ src, alt, className }: OptionPreviewProps) {
 }
 
 function DesktopQuizHeader({
-  slug,
   quizTitle,
   sessionEmail,
   userEmail,
@@ -197,7 +197,6 @@ function DesktopQuizHeader({
             </div>
           </div>
           <div className="flex items-center gap-x-4">
-            <ReportQuiz quizSlug={slug} quizTitle={quizTitle} />
             <div className="text-right">
               <div className="text-sm font-semibold text-neutral-700">
                 {t('question')} {currentQuestionIndex + 1} {t('of', { ns: 'common' })}{' '}
@@ -230,6 +229,8 @@ function DesktopQuizHeader({
 }
 
 function DesktopQuestionCard({
+  slug,
+  quizTitle,
   currentQuestion,
   currentQuestionIndex,
   currentAnswer,
@@ -253,6 +254,13 @@ function DesktopQuestionCard({
             </div>
           </div>
           <div className="ml-4 flex items-center gap-x-2">
+            <ReportQuiz
+              quizSlug={slug}
+              quizTitle={quizTitle}
+              questionId={currentQuestion.id}
+              questionNumber={currentQuestionIndex + 1}
+              questionText={currentQuestion.question}
+            />
             <Button
               variant="outline"
               onClick={onToggleDiscussion}
@@ -536,7 +544,6 @@ export function DesktopQuizLayout({
   return (
     <div className="min-h-screen">
       <DesktopQuizHeader
-        slug={slug}
         quizTitle={quizTitle}
         {...(sessionEmail !== undefined ? { sessionEmail } : {})}
         userEmail={userEmail}
@@ -554,6 +561,8 @@ export function DesktopQuizLayout({
         <div className="flex">
           <div className={`flex-1 ${discussion.collapsed ? '' : 'pr-6'}`}>
             <DesktopQuestionCard
+              slug={slug}
+              quizTitle={quizTitle}
               currentQuestion={currentQuestion}
               currentQuestionIndex={currentQuestionIndex}
               currentAnswer={userAnswers[currentQuestionIndex]}

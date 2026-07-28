@@ -6,7 +6,7 @@ import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-mod
 import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
 interface MobileQuizLayoutProps {
-  quiz: Pick<QuizPlayViewModel, 'questions'>;
+  quiz: Pick<QuizPlayViewModel, 'questions' | 'slug' | 'title'>;
   userAnswers: QuizAnswer[];
   currentQuestionIndex: number;
   onAnswersChange: (answers: QuizAnswer[]) => void;
@@ -17,12 +17,16 @@ interface MobileQuizLayoutProps {
   error?: string;
 }
 
-function orderedAnswersToMobileRecord(answers: QuizAnswer[]): Record<string, number | number[]> {
+function orderedAnswersToMobileRecord(
+  questions: QuizPlayViewModel['questions'],
+  answers: QuizAnswer[],
+): Record<string, number | number[]> {
   const record: Record<string, number | number[]> = {};
   answers.forEach((answer, index) => {
     const isAnswered = Array.isArray(answer) ? answer.length > 0 : answer !== -1;
-    if (isAnswered) {
-      record[`q-${index}`] = answer;
+    const question = questions[index];
+    if (isAnswered && question) {
+      record[question.id] = answer;
     }
   });
   return record;
@@ -39,8 +43,8 @@ export function MobileQuizLayout({
   submitting,
   error,
 }: MobileQuizLayoutProps) {
-  const questionsWithId = quiz.questions.map((question, index) => ({
-    id: `q-${index}`,
+  const questionsWithId = quiz.questions.map((question) => ({
+    id: question.id,
     question: question.question,
     options: question.options,
     type: question.type,
@@ -58,8 +62,10 @@ export function MobileQuizLayout({
 
   return (
     <MobileQuizPlayer
+      quizSlug={quiz.slug}
+      quizTitle={quiz.title}
       questions={questionsWithId}
-      answers={orderedAnswersToMobileRecord(userAnswers)}
+      answers={orderedAnswersToMobileRecord(quiz.questions, userAnswers)}
       currentIndex={currentQuestionIndex}
       onAnswersChange={handleAnswersChange}
       onIndexChange={onIndexChange}

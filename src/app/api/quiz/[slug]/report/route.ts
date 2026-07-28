@@ -7,7 +7,14 @@ export const POST = createQuizSlugMutationRoute({
   execute: ({ slug, input, email, session }) =>
     serviceFactory
       .getQuizService()
-      .reportQuiz(slug, input.content, email, session.user.name || email, session),
+      .reportQuiz(
+        slug,
+        input.questionId,
+        input.content,
+        email,
+        session.user.name || email,
+        session,
+      ),
   successMeta: { message: 'Report submitted successfully' },
   logMessage: 'Error submitting report',
   publicErrorMessage: 'Internal server error',

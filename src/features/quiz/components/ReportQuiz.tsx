@@ -10,11 +10,16 @@ import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import { reportQuizViewModel } from '@/features/quiz/api/quiz-interaction-api';
 
 interface ReportQuizProps {
   quizSlug: string;
   quizTitle: string;
+  questionId: string;
+  questionNumber: number;
+  questionText: string;
+  compact?: boolean;
 }
 
 const reportSchema = z.object({
@@ -22,7 +27,14 @@ const reportSchema = z.object({
 });
 type ReportFormValues = z.infer<typeof reportSchema>;
 
-export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
+export default function ReportQuiz({
+  quizSlug,
+  quizTitle,
+  questionId,
+  questionNumber,
+  questionText,
+  compact = false,
+}: ReportQuizProps) {
   const { data: session } = useSession();
   const t = useTranslations('report');
   const tCommon = useTranslations('common');
@@ -45,7 +57,7 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
 
   const onSubmit = handleSubmit(async ({ content }) => {
     try {
-      await reportQuizViewModel(quizSlug, content);
+      await reportQuizViewModel(quizSlug, questionId, content);
       setIsSubmitted(true);
       reset({ content: '' });
       setTimeout(() => {
@@ -68,7 +80,11 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
         type="button"
         variant="ghost"
         onClick={() => setIsOpen(true)}
-        className="h-[36px] px-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+        className={
+          compact
+            ? 'min-h-11 px-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700'
+            : 'h-[36px] px-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700'
+        }
         title={t('reportThisQuiz')}
       >
         <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +95,7 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
           />
         </svg>
-        {t('reportQuiz')}
+        {t('reportQuestion')}
       </Button>
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('reportQuiz')}>
@@ -110,6 +126,15 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                 <p className="mb-2 block text-sm font-medium text-neutral-700">
                   {t('quiz')}: <span className="font-semibold">{quizTitle}</span>
                 </p>
+                <div className="mb-4 rounded-xl border border-[var(--border-default)] bg-neutral-50 p-3">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    {t('questionNumber', { number: questionNumber })}
+                  </p>
+                  <QuestionContent
+                    content={questionText}
+                    className="line-clamp-3 text-sm text-neutral-800"
+                  />
+                </div>
                 <p className="mb-4 text-sm text-neutral-500">{t('describeIssue')}</p>
               </div>
 

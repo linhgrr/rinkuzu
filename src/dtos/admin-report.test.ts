@@ -3,6 +3,7 @@ import {
   adminReportIdParamsSchema,
   adminReportListQuerySchema,
   updateAdminReportRequestSchema,
+  updateAdminReportedQuestionRequestSchema,
 } from '@/dtos/admin-report';
 
 const reportId = '507f191e810c19729de860ea';
@@ -43,6 +44,30 @@ describe('admin report controller schemas', () => {
       updateAdminReportRequestSchema.safeParse({
         status: 'resolved',
         extra: true,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('validates a complete question edit and its answer key', () => {
+    expect(
+      updateAdminReportedQuestionRequestSchema.parse({
+        question: ' 2 + 2 = ? ',
+        options: [' 3 ', ' 4 '],
+        type: 'single',
+        correctIndex: 1,
+      }),
+    ).toEqual({
+      question: '2 + 2 = ?',
+      options: ['3', '4'],
+      type: 'single',
+      correctIndex: 1,
+    });
+    expect(
+      updateAdminReportedQuestionRequestSchema.safeParse({
+        question: '2 + 2 = ?',
+        options: ['3', '4'],
+        type: 'multiple',
+        correctIndexes: [],
       }).success,
     ).toBe(false);
   });

@@ -9,6 +9,10 @@ export class ReportPersistenceMapper {
       quizId: record.quizId,
       quizTitle: record.quizTitle,
       quizSlug: record.quizSlug,
+      ...(record.questionId === undefined ? {} : { questionId: record.questionId }),
+      ...(record.questionSnapshot === undefined
+        ? {}
+        : { questionSnapshot: record.questionSnapshot }),
       reporterEmail: record.reporterEmail,
       reporterName: record.reporterName,
       content: record.content,

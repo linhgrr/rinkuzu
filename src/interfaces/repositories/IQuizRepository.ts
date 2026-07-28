@@ -69,6 +69,12 @@ export interface IQuizRepository {
 
   update(id: string, quizData: UpdateQuizData): Promise<Quiz | null>;
 
+  updateQuestionById?(
+    quizId: string,
+    questionId: string,
+    question: QuizQuestionContent,
+  ): Promise<boolean>;
+
   delete(id: string): Promise<boolean>;
 
   findAll(
@@ -95,4 +101,5 @@ export interface IQuizRepository {
   findTopCreators(
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<QuizCreatorStatRecord>>;
+
 }

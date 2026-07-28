@@ -11,7 +11,9 @@ import type {
 import type {
   AdminReportListDto,
   AdminReportListQueryDto,
+  AdminReportedQuestionDto,
   UpdateAdminReportRequestDto,
+  UpdateAdminReportedQuestionRequestDto,
 } from '@/dtos/admin-report';
 import type {
   AdminActivityStatsDto,
@@ -42,6 +44,11 @@ export interface IAdminService {
     input: UpdateAdminReportRequestDto,
     adminEmail: string,
   ): Promise<ServiceResult<AdminMessageDto>>;
+  getReportedQuestion(reportId: string): Promise<ServiceResult<AdminReportedQuestionDto>>;
+  updateReportedQuestion(
+    reportId: string,
+    input: UpdateAdminReportedQuestionRequestDto,
+  ): Promise<ServiceResult<AdminReportedQuestionDto>>;
   deleteReport(reportId: string): Promise<ServiceResult<DeleteResultDto>>;
 
   // Statistics

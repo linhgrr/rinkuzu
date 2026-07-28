@@ -245,9 +245,17 @@ describe('QuizService facade', () => {
       expires: '2099-01-01T00:00:00.000Z',
     };
 
-    await service.reportQuiz('algebra', 'broken', 'user@example.com', 'User', session);
+    await service.reportQuiz(
+      'algebra',
+      '507f1f77bcf86cd799439011',
+      'broken',
+      'user@example.com',
+      'User',
+      session,
+    );
     expect(discussionMocks.reportQuiz).toHaveBeenCalledWith(
       'algebra',
+      '507f1f77bcf86cd799439011',
       'broken',
       'user@example.com',
       'User',

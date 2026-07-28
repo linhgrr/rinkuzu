@@ -10,13 +10,18 @@ import {
 
 describe('quiz DTO schemas', () => {
   it('trims and validates report quiz requests', () => {
-    expect(reportQuizRequestSchema.parse({ content: '  wrong answer  ' })).toEqual({
+    const questionId = '507f1f77bcf86cd799439011';
+    expect(reportQuizRequestSchema.parse({ questionId, content: '  wrong answer  ' })).toEqual({
+      questionId,
       content: 'wrong answer',
     });
   });
 
   it('rejects invalid report quiz requests', () => {
     expect(() => reportQuizRequestSchema.parse({ content: '' })).toThrow();
+    expect(() =>
+      reportQuizRequestSchema.parse({ questionId: 'not-an-object-id', content: 'valid' }),
+    ).toThrow();
     expect(() => reportQuizRequestSchema.parse({ content: 'x'.repeat(2001) })).toThrow();
     expect(() => reportQuizRequestSchema.parse({ content: 'valid', extra: true })).toThrow();
   });

@@ -2,16 +2,15 @@ import type { QuizQuestionInputViewModel } from '@/features/quiz/types/quiz-ques
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 
 interface MobileAnswerQuizInput {
-  questions: Pick<QuizQuestionInputViewModel, 'type'>[];
+  questions: Array<Pick<QuizQuestionInputViewModel, 'type'> & { id: string }>;
 }
 
 export function mapMobileAnswersToOrderedAnswers(
   quiz: MobileAnswerQuizInput,
   answers: Record<string, number | number[]>,
 ): QuizAnswer[] {
-  return quiz.questions.map((question, index) => {
-    const questionId = `q-${index}`;
-    const answer = answers[questionId];
+  return quiz.questions.map((question) => {
+    const answer = answers[question.id];
 
     if (answer !== undefined) {
       return answer;

@@ -24,6 +24,8 @@ import type {
   AdminReportStatusViewModel,
   AdminReportViewModel,
 } from '@/features/admin/reports/types/admin-reports-view-model';
+import { ReportedQuestionEditor } from '@/features/admin/reports/components/ReportedQuestionEditor';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import {
   HiOutlineEye,
   HiOutlinePencil,
@@ -132,6 +134,11 @@ function ReportCardItem({ report, onReview, onDelete }: ReportCardItemProps) {
             <div className="mb-2 flex items-center gap-3">
               <h3 className="text-lg font-semibold text-neutral-900">{report.quizTitle}</h3>
               {getStatusBadge(report.status)}
+              {report.questionSnapshot ? (
+                <Badge variant="info">Question {report.questionSnapshot.index + 1}</Badge>
+              ) : (
+                <Badge variant="default">Legacy quiz report</Badge>
+              )}
             </div>
 
             <div className="mb-3 text-sm text-neutral-600">
@@ -148,6 +155,18 @@ function ReportCardItem({ report, onReview, onDelete }: ReportCardItemProps) {
             <div className="mb-4 rounded-lg bg-neutral-50 p-3">
               <p className="whitespace-pre-wrap text-sm text-neutral-700">{report.content}</p>
             </div>
+
+            {report.questionSnapshot ? (
+              <div className="mb-4 border-l-2 border-brand-action pl-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Reported question snapshot
+                </p>
+                <QuestionContent
+                  content={report.questionSnapshot.question}
+                  className="line-clamp-2 text-sm text-neutral-800"
+                />
+              </div>
+            ) : null}
 
             {report.adminNotes ? (
               <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3">
@@ -169,7 +188,7 @@ function ReportCardItem({ report, onReview, onDelete }: ReportCardItemProps) {
             </Button>
 
             <Link href={ROUTES.EDIT.QUIZ(report.quizId)}>
-              <Button variant="primary" size="sm" className="w-full">
+              <Button variant="outline" size="sm" className="w-full">
                 <HiOutlinePencil className="mr-1 size-4" /> Edit Quiz
               </Button>
             </Link>
@@ -200,7 +219,7 @@ function ReportReviewModal({
 }: ReportReviewModalProps) {
   const tAdmin = useTranslations('admin');
   return (
-    <Modal isOpen={!!report} onClose={onClose} title="Review Report">
+    <Modal isOpen={!!report} onClose={onClose} title="Review Report" size="large">
       {report ? (
         <div>
           <div className="mb-6">
@@ -221,6 +240,10 @@ function ReportReviewModal({
               <p className="mb-1 text-sm font-medium text-neutral-700">Report Content:</p>
               <p className="whitespace-pre-wrap text-sm text-neutral-600">{report.content}</p>
             </div>
+          </div>
+
+          <div className="mb-6">
+            <ReportedQuestionEditor report={report} />
           </div>
 
           <div className="mb-6">

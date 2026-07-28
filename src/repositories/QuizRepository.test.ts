@@ -7,6 +7,7 @@ const quizModelMocks = vi.hoisted(() => ({
   findById: vi.fn(),
   findByIdAndUpdate: vi.fn(),
   findOne: vi.fn(),
+  updateOne: vi.fn(),
   populate: vi.fn(),
   select: vi.fn(),
   lean: vi.fn(),
@@ -38,6 +39,7 @@ vi.mock('@/models/Quiz', () => ({
     findById: quizModelMocks.findById,
     findByIdAndUpdate: quizModelMocks.findByIdAndUpdate,
     findOne: quizModelMocks.findOne,
+    updateOne: quizModelMocks.updateOne,
   },
 }));
 
@@ -54,6 +56,7 @@ describe('QuizRepository.findUserQuizzes', () => {
     quizModelMocks.aggregate.mockResolvedValue([quizListRecord]);
     quizModelMocks.countDocuments.mockResolvedValue(1);
     quizModelMocks.updateLean.mockResolvedValue(null);
+    quizModelMocks.updateOne.mockResolvedValue({ matchedCount: 1 });
   });
 
   it('projects only fields required for quiz access checks', async () => {
@@ -85,6 +88,39 @@ describe('QuizRepository.findUserQuizzes', () => {
       '507f191e810c19729de860ea',
       { title: 'Updated' },
       { new: true, runValidators: true },
+    );
+  });
+
+  it('atomically updates only the reported question and preserves its id', async () => {
+    const repository = new QuizRepository();
+    const quizId = '507f191e810c19729de860ea';
+    const questionId = '507f191e810c19729de860ec';
+
+    await expect(
+      repository.updateQuestionById(quizId, questionId, {
+        question: 'Updated question',
+        options: ['A', 'B'],
+        type: 'single',
+        correctIndex: 1,
+      }),
+    ).resolves.toBe(true);
+
+    expect(quizModelMocks.updateOne).toHaveBeenCalledWith(
+      { _id: quizId, 'questions._id': questionId },
+      {
+        $set: {
+          'questions.$.question': 'Updated question',
+          'questions.$.options': ['A', 'B'],
+          'questions.$.type': 'single',
+          'questions.$.correctIndex': 1,
+        },
+        $unset: {
+          'questions.$.correctIndexes': 1,
+          'questions.$.questionImage': 1,
+          'questions.$.optionImages': 1,
+        },
+      },
+      { runValidators: true },
     );
   });
 

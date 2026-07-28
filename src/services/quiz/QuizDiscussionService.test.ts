@@ -11,6 +11,7 @@ import { QuizDiscussionService } from '@/services/quiz/QuizDiscussionService';
 const now = new Date('2026-07-03T10:00:00.000Z');
 const quizId = '507f191e810c19729de860ea';
 const userId = '507f191e810c19729de860eb';
+const questionId = '507f191e810c19729de860ec';
 
 function quizSummary(overrides: Partial<Quiz> = {}): Quiz {
   return {
@@ -18,7 +19,15 @@ function quizSummary(overrides: Partial<Quiz> = {}): Quiz {
     title: 'Algorithms',
     slug: 'algorithms',
     author: userId,
-    questions: [],
+    questions: [
+      {
+        id: questionId,
+        question: 'What is a stable sort?',
+        options: ['Preserves equal-item order', 'Uses no memory'],
+        type: 'single',
+        correctIndex: 0,
+      },
+    ],
     questionCount: 3,
     isPrivate: false,
     createdAt: now,
@@ -94,7 +103,7 @@ function createService() {
     update: vi.fn(),
     delete: vi.fn(),
     findAll: vi.fn(),
-    findForPlay: vi.fn(),
+    findForPlay: vi.fn().mockResolvedValue(quizSummary()),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
     count: vi.fn(),
@@ -203,24 +212,31 @@ describe('QuizDiscussionService', () => {
     expect(discussionRepository.addCommentForQuizQuestion).not.toHaveBeenCalled();
   });
 
-  it('creates reports from quiz metadata without loading questions', async () => {
+  it('creates a question-level report with a server-owned snapshot', async () => {
     const { service, quizRepository, reportRepository } = createService();
 
     const result = await service.reportQuiz(
       'algorithms',
+      questionId,
       'Wrong answer',
       'reporter@example.com',
       'Reporter',
     );
 
     expect(result).toEqual({ success: true, data: { reportId: 'report-1' } });
-    expect(quizRepository.findSummaryBySlug).toHaveBeenCalledWith('algorithms');
-    expect(quizRepository.findBySlug).not.toHaveBeenCalled();
+    expect(quizRepository.findForPlay).toHaveBeenCalledWith('algorithms');
     expect(reportRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         quizId,
         quizTitle: 'Algorithms',
         quizSlug: 'algorithms',
+        questionId,
+        questionSnapshot: expect.objectContaining({
+          id: questionId,
+          index: 0,
+          question: 'What is a stable sort?',
+          correctIndex: 0,
+        }),
       }),
     );
   });

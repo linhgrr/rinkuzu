@@ -1,5 +1,6 @@
 import type { Report } from '@/entities/Report';
 import type { ReportStatus } from '@/shared/constants/report-status';
+import type { ReportQuestionSnapshot } from '@/shared/types/report';
 import type {
   PaginatedRepositoryResult,
   RepositoryPaginationOptions,
@@ -13,6 +14,8 @@ export interface CreateReportData {
   quizId: string;
   quizTitle: string;
   quizSlug: string;
+  questionId: string;
+  questionSnapshot: ReportQuestionSnapshot;
   reporterEmail: string;
   reporterName: string;
   content: string;

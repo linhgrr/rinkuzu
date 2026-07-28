@@ -190,6 +190,123 @@ describe('AdminService report and stats contracts', () => {
     });
   });
 
+  it('loads and updates the exact question linked by a report', async () => {
+    const reportId = '507f191e810c19729de860ea';
+    const quizId = '507f191e810c19729de860eb';
+    const questionId = '507f191e810c19729de860ec';
+    const reportRepository = createReportRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: reportId,
+        quizId,
+        questionId,
+        quizTitle: 'Algebra',
+        quizSlug: 'algebra',
+        reporterEmail: 'learner@example.com',
+        reporterName: 'Learner',
+        content: 'Wrong answer',
+        status: 'pending',
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+    });
+    const updateQuestionById = vi.fn().mockResolvedValue(true);
+    const quizRepository = createQuizRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: quizId,
+        title: 'Algebra',
+        slug: 'algebra',
+        author: '507f191e810c19729de860ed',
+        questions: [
+          {
+            id: questionId,
+            question: '2 + 2 = ?',
+            options: ['3', '4'],
+            type: 'single',
+            correctIndex: 1,
+          },
+        ],
+        isPrivate: false,
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+      updateQuestionById,
+    });
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      quizRepository,
+      createAttemptRepository(),
+    );
+
+    await expect(service.getReportedQuestion(reportId)).resolves.toEqual({
+      success: true,
+      data: {
+        id: questionId,
+        index: 0,
+        question: '2 + 2 = ?',
+        options: ['3', '4'],
+        type: 'single',
+        correctIndex: 1,
+      },
+    });
+
+    const input = {
+      question: '2 + 3 = ?',
+      options: ['4', '5'],
+      type: 'single' as const,
+      correctIndex: 1,
+    };
+    await expect(service.updateReportedQuestion(reportId, input)).resolves.toEqual({
+      success: true,
+      data: {
+        id: questionId,
+        index: 0,
+        ...input,
+      },
+    });
+    expect(updateQuestionById).toHaveBeenCalledWith(quizId, questionId, input);
+  });
+
+  it('blocks inline editing for legacy reports without a question id', async () => {
+    const reportRepository = createReportRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: 'legacy-report',
+        quizId: 'quiz-id',
+        quizTitle: 'Legacy',
+        quizSlug: 'legacy',
+        reporterEmail: 'learner@example.com',
+        reporterName: 'Learner',
+        content: 'Unknown question',
+        status: 'pending',
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+    });
+    const quizRepository = createQuizRepository();
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      quizRepository,
+      createAttemptRepository(),
+    );
+
+    const expected = {
+      success: false,
+      error: 'This legacy report is not linked to a specific question',
+      statusCode: 409,
+    };
+    await expect(service.getReportedQuestion('legacy-report')).resolves.toEqual(expected);
+    await expect(
+      service.updateReportedQuestion('legacy-report', {
+        question: 'Question',
+        options: ['A', 'B'],
+        type: 'single',
+        correctIndex: 0,
+      }),
+    ).resolves.toEqual(expected);
+    expect(quizRepository.findById).not.toHaveBeenCalled();
+  });
+
   it('maps top creator aggregate records to creator DTOs', async () => {
     const quizRepository = createQuizRepository({
       findTopCreators: vi.fn().mockResolvedValue({

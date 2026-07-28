@@ -12,6 +12,10 @@ export function copyReportCoreFields(
     quizId: report.quizId,
     quizTitle: report.quizTitle,
     quizSlug: report.quizSlug,
+    ...(report.questionId !== undefined && { questionId: report.questionId }),
+    ...(report.questionSnapshot !== undefined && {
+      questionSnapshot: report.questionSnapshot,
+    }),
     reporterEmail: report.reporterEmail,
     reporterName: report.reporterName,
     content: report.content,

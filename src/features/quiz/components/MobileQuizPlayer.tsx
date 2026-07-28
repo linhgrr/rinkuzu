@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from 'react-icons/hi';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuestionContent } from '@/components/ui/QuestionContent';
+import ReportQuiz from '@/features/quiz/components/ReportQuiz';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
 type MobileQuizAnswerMap = Record<string, number | number[]>;
@@ -13,6 +14,8 @@ type MobileQuizTranslate = (key: string, values?: Record<string, string | number
 type MobileTouchHandler = (event: TouchEvent<HTMLDivElement>) => void;
 
 interface MobileQuizPlayerProps {
+  quizSlug: string;
+  quizTitle: string;
   questions: QuizPlayQuestionViewModel[];
   answers: MobileQuizAnswerMap;
   currentIndex: number;
@@ -37,6 +40,8 @@ interface MobileQuizHeaderProps {
 }
 
 interface MobileQuestionCardProps {
+  quizSlug: string;
+  quizTitle: string;
   currentIndex: number;
   currentQuestion: QuizPlayQuestionViewModel;
   handleOptionSelect: (optionIndex: number) => void;
@@ -122,6 +127,8 @@ function MobileQuizHeader({
 }
 
 function MobileQuestionCard({
+  quizSlug,
+  quizTitle,
   currentIndex,
   currentQuestion,
   handleOptionSelect,
@@ -157,11 +164,21 @@ function MobileQuestionCard({
           )}
 
           <div className="mb-4 flex-shrink-0">
-            <span className="mb-2 inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600">
-              {currentQuestion.type === 'single'
-                ? t('singleChoiceHelper')
-                : t('multipleChoiceHelper')}
-            </span>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600">
+                {currentQuestion.type === 'single'
+                  ? t('singleChoiceHelper')
+                  : t('multipleChoiceHelper')}
+              </span>
+              <ReportQuiz
+                compact
+                quizSlug={quizSlug}
+                quizTitle={quizTitle}
+                questionId={currentQuestion.id}
+                questionNumber={currentIndex + 1}
+                questionText={currentQuestion.question}
+              />
+            </div>
             <QuestionContent
               content={currentQuestion.question}
               className="text-base font-medium leading-relaxed text-neutral-900"
@@ -290,6 +307,8 @@ function MobileQuizFooter({
 }
 
 export function MobileQuizPlayer({
+  quizSlug,
+  quizTitle,
   questions,
   answers,
   currentIndex,
@@ -441,6 +460,8 @@ export function MobileQuizPlayer({
       />
 
       <MobileQuestionCard
+        quizSlug={quizSlug}
+        quizTitle={quizTitle}
         currentIndex={currentIndex}
         currentQuestion={activeQuestion}
         handleOptionSelect={handleOptionSelect}

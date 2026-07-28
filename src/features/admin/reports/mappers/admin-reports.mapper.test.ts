@@ -9,6 +9,15 @@ describe('toAdminReportViewModels', () => {
         quizId: 'quiz-1',
         quizTitle: 'Algebra',
         quizSlug: 'algebra',
+        questionId: 'question-1',
+        questionSnapshot: {
+          id: 'question-1',
+          index: 2,
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          type: 'single',
+          correctIndex: 1,
+        },
         reporterEmail: 'learner@example.com',
         reporterName: 'Learner',
         content: 'Wrong answer',
@@ -22,6 +31,8 @@ describe('toAdminReportViewModels', () => {
       id: 'report-1',
       quizId: 'quiz-1',
       status: 'pending',
+      questionId: 'question-1',
+      questionSnapshot: expect.objectContaining({ index: 2, correctIndex: 1 }),
       adminNotesInput: '',
     });
     expect(result?.createdAtLabel).not.toBe('—');

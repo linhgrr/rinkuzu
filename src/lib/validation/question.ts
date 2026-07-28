@@ -91,7 +91,7 @@ const multipleChoiceQuestionSchema = baseQuestion
     path: ['correctIndexes'],
   });
 
-const questionSchema = z
+export const quizQuestionInputSchema = z
   .discriminatedUnion('type', [singleChoiceQuestionSchema, multipleChoiceQuestionSchema])
   .superRefine((question, context) => {
     const optionImages = question.optionImages;
@@ -121,7 +121,7 @@ const questionSchema = z
   });
 
 export const questionListSchema = z
-  .array(questionSchema)
+  .array(quizQuestionInputSchema)
   .min(1, 'At least one question is required')
   .max(MAX_QUESTIONS_PER_QUIZ, 'Too many questions');
 

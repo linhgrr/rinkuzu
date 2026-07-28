@@ -21,6 +21,7 @@ vi.mock('@/lib/logger', () => ({
 import { POST } from '@/app/api/quiz/[slug]/report/route';
 
 const slug = 'algorithms';
+const questionId = '507f1f77bcf86cd799439011';
 const routeContext = { params: Promise.resolve({ slug }) };
 
 function session(overrides?: { id?: string; email?: string; name?: string | null; role?: string }) {
@@ -55,14 +56,14 @@ describe('POST /api/quiz/[slug]/report', () => {
   it('requires authentication before reporting', async () => {
     authMock.mockResolvedValue(null);
 
-    const response = await POST(request({ content: 'broken question' }), routeContext);
+    const response = await POST(request({ questionId, content: 'broken question' }), routeContext);
 
     expect(response.status).toBe(401);
     expect(reportQuizMock).not.toHaveBeenCalled();
   });
 
   it('rejects invalid report content without calling the service', async () => {
-    const response = await POST(request({ content: '   ' }), routeContext);
+    const response = await POST(request({ questionId, content: '   ' }), routeContext);
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
@@ -72,11 +73,15 @@ describe('POST /api/quiz/[slug]/report', () => {
   });
 
   it('submits a public-quiz report successfully with trimmed content and reporter identity', async () => {
-    const response = await POST(request({ content: '  wrong answer key  ' }), routeContext);
+    const response = await POST(
+      request({ questionId, content: '  wrong answer key  ' }),
+      routeContext,
+    );
 
     expect(response.status).toBe(200);
     expect(reportQuizMock).toHaveBeenCalledWith(
       slug,
+      questionId,
       'wrong answer key',
       'reporter@example.com',
       'Reporter',
@@ -94,10 +99,11 @@ describe('POST /api/quiz/[slug]/report', () => {
   it('falls back to the session email when the display name is missing', async () => {
     authMock.mockResolvedValue(session({ name: null }));
 
-    await POST(request({ content: 'typo in option B' }), routeContext);
+    await POST(request({ questionId, content: 'typo in option B' }), routeContext);
 
     expect(reportQuizMock).toHaveBeenCalledWith(
       slug,
+      questionId,
       'typo in option B',
       'reporter@example.com',
       'reporter@example.com',
@@ -113,7 +119,10 @@ describe('POST /api/quiz/[slug]/report', () => {
       statusCode: 403,
     });
 
-    const response = await POST(request({ content: 'private quiz issue' }), routeContext);
+    const response = await POST(
+      request({ questionId, content: 'private quiz issue' }),
+      routeContext,
+    );
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({

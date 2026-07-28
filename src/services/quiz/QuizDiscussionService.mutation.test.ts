@@ -38,6 +38,7 @@ const now = new Date('2026-07-03T10:00:00.000Z');
 const quizId = '507f191e810c19729de860ea';
 const userId = '507f191e810c19729de860eb';
 const authorId = '507f191e810c19729de860ec';
+const questionId = '507f191e810c19729de860ed';
 
 function quizSummary(overrides: Partial<Quiz> = {}): Quiz {
   return {
@@ -45,7 +46,15 @@ function quizSummary(overrides: Partial<Quiz> = {}): Quiz {
     title: 'Algorithms',
     slug: 'algorithms',
     author: authorId,
-    questions: [],
+    questions: [
+      {
+        id: questionId,
+        question: 'What does stable mean?',
+        options: ['Preserves order', 'Runs in O(1)'],
+        type: 'single',
+        correctIndex: 0,
+      },
+    ],
     questionCount: 3,
     isPrivate: false,
     createdAt: now,
@@ -149,7 +158,7 @@ function createService() {
     update: vi.fn(),
     delete: vi.fn(),
     findAll: vi.fn(),
-    findForPlay: vi.fn(),
+    findForPlay: vi.fn().mockResolvedValue(quizSummary()),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
     count: vi.fn(),
@@ -396,15 +405,15 @@ describe('QuizDiscussionService mutation coverage', () => {
   describe('reportQuiz', () => {
     it('returns 404 when the quiz summary is missing', async () => {
       const { service, quizRepository, reportRepository } = createService();
-      quizRepository.findSummaryBySlug.mockResolvedValue(null);
+      quizRepository.findForPlay.mockResolvedValue(null);
 
-      await expect(service.reportQuiz('missing', 'content', 'r@example.com', 'R')).resolves.toEqual(
-        {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        },
-      );
+      await expect(
+        service.reportQuiz('missing', questionId, 'content', 'r@example.com', 'R'),
+      ).resolves.toEqual({
+        success: false,
+        error: 'Quiz not found',
+        statusCode: 404,
+      });
       expect(reportRepository.create).not.toHaveBeenCalled();
     });
 
@@ -413,7 +422,7 @@ describe('QuizDiscussionService mutation coverage', () => {
 
       for (const content of ['', '   ', '\n\t']) {
         await expect(
-          service.reportQuiz('algorithms', content, 'r@example.com', 'R'),
+          service.reportQuiz('algorithms', questionId, content, 'r@example.com', 'R'),
         ).resolves.toEqual({
           success: false,
           error: 'Report content is required',
@@ -428,7 +437,7 @@ describe('QuizDiscussionService mutation coverage', () => {
       reportRepository.create.mockResolvedValue(report({ id: 'report-99' }));
 
       await expect(
-        service.reportQuiz('algorithms', '  spoiler  ', 'r@example.com', 'Reporter'),
+        service.reportQuiz('algorithms', questionId, '  spoiler  ', 'r@example.com', 'Reporter'),
       ).resolves.toEqual({
         success: true,
         data: { reportId: 'report-99' },
@@ -437,6 +446,15 @@ describe('QuizDiscussionService mutation coverage', () => {
         quizId,
         quizTitle: 'Algorithms',
         quizSlug: 'algorithms',
+        questionId,
+        questionSnapshot: {
+          id: questionId,
+          index: 0,
+          question: 'What does stable mean?',
+          options: ['Preserves order', 'Runs in O(1)'],
+          type: 'single',
+          correctIndex: 0,
+        },
         reporterEmail: 'r@example.com',
         reporterName: 'Reporter',
         content: 'spoiler',
@@ -446,7 +464,7 @@ describe('QuizDiscussionService mutation coverage', () => {
 
     it('denies free non-owners reporting private quizzes', async () => {
       const { service, quizRepository, reportRepository } = createService();
-      quizRepository.findSummaryBySlug.mockResolvedValue(
+      quizRepository.findForPlay.mockResolvedValue(
         quizSummary({ isPrivate: true, author: authorId }),
       );
       entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
@@ -454,6 +472,7 @@ describe('QuizDiscussionService mutation coverage', () => {
       await expect(
         service.reportQuiz(
           'algorithms',
+          questionId,
           'broken',
           'r@example.com',
           'R',
@@ -474,7 +493,7 @@ describe('QuizDiscussionService mutation coverage', () => {
       ['premium non-owner', userId, 'user' as const, { tier: 'premium' }],
     ])('allows %s to report a private quiz', async (_label, reporterId, role, entitlements) => {
       const { service, quizRepository, reportRepository } = createService();
-      quizRepository.findSummaryBySlug.mockResolvedValue(
+      quizRepository.findForPlay.mockResolvedValue(
         quizSummary({ isPrivate: true, author: authorId }),
       );
       if (entitlements) {
@@ -484,6 +503,7 @@ describe('QuizDiscussionService mutation coverage', () => {
       await expect(
         service.reportQuiz(
           'algorithms',
+          questionId,
           'broken',
           'r@example.com',
           'R',
@@ -501,7 +521,7 @@ describe('QuizDiscussionService mutation coverage', () => {
       reportRepository.create.mockRejectedValue(new Error('insert fail'));
 
       await expect(
-        service.reportQuiz('algorithms', 'bad key', 'r@example.com', 'R'),
+        service.reportQuiz('algorithms', questionId, 'bad key', 'r@example.com', 'R'),
       ).resolves.toEqual({
         success: false,
         error: 'Failed to report quiz',

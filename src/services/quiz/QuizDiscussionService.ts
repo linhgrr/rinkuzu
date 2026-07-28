@@ -113,17 +113,39 @@ export class QuizDiscussionService {
 
   async reportQuiz(
     slug: string,
+    questionId: string,
     content: string,
     reporterEmail: string,
     reporterName: string,
     session?: Session | null,
   ): Promise<ServiceResult<ReportQuizResponseDto>> {
     try {
-      const access = await this.getAccessibleQuizSummary(slug, session);
+      const access = await requireQuizReadAccess(
+        await this.quizRepository.findForPlay(slug),
+        session?.user?.id,
+        session?.user?.role,
+      );
       if (!access.success) {
         return access;
       }
       const quiz = access.data;
+      const questionIndex = quiz.questions.findIndex((question) => question.id === questionId);
+
+      if (questionIndex < 0) {
+        return {
+          success: false,
+          error: 'Question not found',
+          statusCode: 404,
+        };
+      }
+      const question = quiz.questions[questionIndex];
+      if (!question) {
+        return {
+          success: false,
+          error: 'Question not found',
+          statusCode: 404,
+        };
+      }
 
       if (!content || content.trim().length === 0) {
         return {
@@ -137,6 +159,23 @@ export class QuizDiscussionService {
         quizId: quiz.id,
         quizTitle: quiz.title,
         quizSlug: quiz.slug,
+        questionId: question.id,
+        questionSnapshot: {
+          id: question.id,
+          index: questionIndex,
+          question: question.question,
+          options: [...question.options],
+          type: question.type,
+          ...(question.type === 'single'
+            ? { correctIndex: question.correctIndex }
+            : { correctIndexes: [...question.correctIndexes] }),
+          ...(question.questionImage !== undefined
+            ? { questionImage: question.questionImage }
+            : {}),
+          ...(question.optionImages !== undefined
+            ? { optionImages: [...question.optionImages] }
+            : {}),
+        },
         reporterEmail,
         reporterName,
         content: content.trim(),

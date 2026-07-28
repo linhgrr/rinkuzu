@@ -10,7 +10,9 @@ import type {
 import type {
   AdminReportListDto,
   AdminReportListQueryDto,
+  AdminReportedQuestionDto,
   UpdateAdminReportRequestDto,
+  UpdateAdminReportedQuestionRequestDto,
 } from '@/dtos/admin-report';
 import type {
   AdminActivityStatsDto,
@@ -275,6 +277,141 @@ export class AdminService implements IAdminService {
       return {
         success: false,
         error: 'Failed to update report status',
+        statusCode: 500,
+      };
+    }
+  }
+
+  async getReportedQuestion(reportId: string): Promise<ServiceResult<AdminReportedQuestionDto>> {
+    try {
+      const report = await this.reportRepository.findById(reportId);
+      if (!report) {
+        return { success: false, error: 'Report not found', statusCode: 404 };
+      }
+      if (!report.questionId) {
+        return {
+          success: false,
+          error: 'This legacy report is not linked to a specific question',
+          statusCode: 409,
+        };
+      }
+
+      const quiz = await this.quizRepository.findById(report.quizId);
+      if (!quiz) {
+        return { success: false, error: 'Quiz not found', statusCode: 404 };
+      }
+      const questionIndex = quiz.questions.findIndex(
+        (question) => question.id === report.questionId,
+      );
+      const question = quiz.questions[questionIndex];
+      if (questionIndex < 0 || !question) {
+        return {
+          success: false,
+          error: 'The reported question no longer exists',
+          statusCode: 409,
+        };
+      }
+
+      return {
+        success: true,
+        data: AdminReportDtoMapper.toQuestionDto(question, questionIndex),
+      };
+    } catch (error) {
+      logger.error({ error }, 'Get reported question error');
+      return {
+        success: false,
+        error: 'Failed to get reported question',
+        statusCode: 500,
+      };
+    }
+  }
+
+  async updateReportedQuestion(
+    reportId: string,
+    input: UpdateAdminReportedQuestionRequestDto,
+  ): Promise<ServiceResult<AdminReportedQuestionDto>> {
+    try {
+      const report = await this.reportRepository.findById(reportId);
+      if (!report) {
+        return { success: false, error: 'Report not found', statusCode: 404 };
+      }
+      if (!report.questionId) {
+        return {
+          success: false,
+          error: 'This legacy report is not linked to a specific question',
+          statusCode: 409,
+        };
+      }
+
+      const quiz = await this.quizRepository.findById(report.quizId);
+      if (!quiz) {
+        return { success: false, error: 'Quiz not found', statusCode: 404 };
+      }
+      const questionIndex = quiz.questions.findIndex(
+        (question) => question.id === report.questionId,
+      );
+      if (questionIndex < 0) {
+        return {
+          success: false,
+          error: 'The reported question no longer exists',
+          statusCode: 409,
+        };
+      }
+
+      const question =
+        input.type === 'single'
+          ? {
+              question: input.question,
+              options: input.options,
+              type: 'single' as const,
+              correctIndex: input.correctIndex,
+              ...(input.questionImage !== undefined ? { questionImage: input.questionImage } : {}),
+              ...(input.optionImages !== undefined ? { optionImages: input.optionImages } : {}),
+            }
+          : {
+              question: input.question,
+              options: input.options,
+              type: 'multiple' as const,
+              correctIndexes: input.correctIndexes,
+              ...(input.questionImage !== undefined ? { questionImage: input.questionImage } : {}),
+              ...(input.optionImages !== undefined ? { optionImages: input.optionImages } : {}),
+            };
+
+      const updateQuestionById = this.quizRepository.updateQuestionById;
+      if (!updateQuestionById) {
+        return {
+          success: false,
+          error: 'Question editing is temporarily unavailable',
+          statusCode: 503,
+        };
+      }
+
+      const updated = await updateQuestionById.call(
+        this.quizRepository,
+        report.quizId,
+        report.questionId,
+        question,
+      );
+      if (!updated) {
+        return {
+          success: false,
+          error: 'The reported question changed or no longer exists',
+          statusCode: 409,
+        };
+      }
+
+      return {
+        success: true,
+        data: AdminReportDtoMapper.toQuestionDto(
+          { id: report.questionId, ...question },
+          questionIndex,
+        ),
+      };
+    } catch (error) {
+      logger.error({ error }, 'Update reported question error');
+      return {
+        success: false,
+        error: 'Failed to update reported question',
         statusCode: 500,
       };
     }

@@ -142,12 +142,20 @@ export class QuizService implements IQuizService {
 
   async reportQuiz(
     slug: string,
+    questionId: string,
     content: string,
     reporterEmail: string,
     reporterName: string,
     session?: Session | null,
   ): Promise<ServiceResult<ReportQuizResponseDto>> {
-    return this.discussionService.reportQuiz(slug, content, reporterEmail, reporterName, session);
+    return this.discussionService.reportQuiz(
+      slug,
+      questionId,
+      content,
+      reporterEmail,
+      reporterName,
+      session,
+    );
   }
 
   async submitQuizAttempt(

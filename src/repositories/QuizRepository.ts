@@ -1,6 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import QuizModel from '@/models/Quiz';
-import type { Quiz } from '@/entities/Quiz';
+import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
 import {
   IQuizRepository,
   type CreateQuizData,
@@ -276,6 +276,43 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     return record ? QuizPersistenceMapper.toEntity(record) : null;
   }
 
+  async updateQuestionById(
+    quizId: string,
+    questionId: string,
+    question: QuizQuestionContent,
+  ): Promise<boolean> {
+    await connectDB();
+
+    const $set: Record<string, unknown> = {
+      'questions.$.question': question.question,
+      'questions.$.options': question.options,
+      'questions.$.type': question.type,
+      ...(question.type === 'single'
+        ? { 'questions.$.correctIndex': question.correctIndex }
+        : { 'questions.$.correctIndexes': question.correctIndexes }),
+      ...(question.questionImage !== undefined
+        ? { 'questions.$.questionImage': question.questionImage }
+        : {}),
+      ...(question.optionImages !== undefined
+        ? { 'questions.$.optionImages': question.optionImages }
+        : {}),
+    };
+    const $unset: Record<string, 1> = {
+      ...(question.type === 'single'
+        ? { 'questions.$.correctIndexes': 1 as const }
+        : { 'questions.$.correctIndex': 1 as const }),
+      ...(question.questionImage === undefined ? { 'questions.$.questionImage': 1 as const } : {}),
+      ...(question.optionImages === undefined ? { 'questions.$.optionImages': 1 as const } : {}),
+    };
+
+    const result = await QuizModel.updateOne(
+      { _id: quizId, 'questions._id': questionId },
+      { $set, $unset },
+      { runValidators: true },
+    );
+    return result.matchedCount === 1;
+  }
+
   async delete(id: string): Promise<boolean> {
     await connectDB();
     const session = await mongoose.startSession();
@@ -441,4 +478,5 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
       pagination: buildPaginationMeta(page, limit, total),
     };
   }
+
 }

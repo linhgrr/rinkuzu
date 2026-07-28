@@ -26,6 +26,7 @@ export const quizListQuerySchema = z.strictObject({
 });
 
 export const reportQuizRequestSchema = z.strictObject({
+  questionId: objectIdSchema,
   content: z.string().trim().min(1, 'Report content is required').max(2000),
 });
 

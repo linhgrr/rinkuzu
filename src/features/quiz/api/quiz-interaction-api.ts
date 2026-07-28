@@ -102,12 +102,13 @@ export async function addQuizDiscussionCommentViewModel({
 
 export async function reportQuizViewModel(
   slug: string,
+  questionId: string,
   content: string,
 ): Promise<ReportQuizResponseDto> {
   const encodedSlug = routePathSegment(slug);
   return fetchApiData<ReportQuizResponseDto>(`/api/quiz/${encodedSlug}/report`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ questionId, content }),
   });
 }

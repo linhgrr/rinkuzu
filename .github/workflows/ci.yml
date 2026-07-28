@@ -462,7 +462,6 @@ jobs:
       PERF_RUNNER_CLASS: controlled
       PERF_REUSE_BUILD: '1'
       PERF_EXPECTED_BUILD_DIGEST: ${{ needs.build.outputs.digest }}
-      LIGHTHOUSE_PORT: '3000'
     steps:
       - name: Checkout full history
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd

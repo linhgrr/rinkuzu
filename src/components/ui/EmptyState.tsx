@@ -1,6 +1,8 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
   icon?: ReactNode;
@@ -10,18 +12,15 @@ interface EmptyStateProps {
   className?: string;
 }
 
-export function EmptyState({
-  icon,
-  title = 'No data found',
-  description,
-  action,
-  className = '',
-}: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
+  const tCommon = useTranslations('common');
+  const displayTitle = title ?? tCommon('noData');
+
   return (
-    <div className={`py-12 text-center ${className}`.trim()}>
-      {icon && <div className="mb-4 flex justify-center">{icon}</div>}
-      {title && <h3 className="text-lg font-medium text-neutral-900">{title}</h3>}
-      {description && <p className="mt-1 text-sm text-neutral-600">{description}</p>}
+    <div className={cn('py-12 text-center font-home', className)}>
+      {icon && <div className="mb-4 flex justify-center text-ink-muted">{icon}</div>}
+      {displayTitle && <h3 className="font-home text-lg font-semibold text-ink">{displayTitle}</h3>}
+      {description && <p className="font-home mt-1.5 text-sm text-ink-muted">{description}</p>}
       {action && <div className="mt-6">{action}</div>}
     </div>
   );

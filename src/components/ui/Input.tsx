@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { cn } from '@/lib/utils';
@@ -23,7 +25,7 @@ function Input({
   ...props
 }: InputProps) {
   const reactId = React.useId();
-  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : reactId);
+  const inputId = id || reactId;
 
   const iconSizes = {
     sm: 'w-4 h-4',
@@ -32,16 +34,16 @@ function Input({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full font-home">
       {label && (
-        <label htmlFor={inputId} className="mb-1 block text-[12px] font-semibold text-neutral-700">
+        <label htmlFor={inputId} className="mb-1.5 block font-home text-xs font-semibold text-ink">
           {label}
         </label>
       )}
 
       <div className="relative">
         {icon && iconPosition === 'left' && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink-muted">
             <div className={iconSizes[inputSize]}>{icon}</div>
           </div>
         )}
@@ -49,13 +51,14 @@ function Input({
         <input
           id={inputId}
           className={cn(
-            'input',
-            inputSize === 'sm' && 'h-[36px] text-[14px]',
-            inputSize === 'lg' && 'h-[52px] text-[16px]',
+            'input font-home text-ink placeholder:text-ink-muted',
+            inputSize === 'sm' && 'h-9 text-xs',
+            inputSize === 'md' && 'h-11 text-sm',
+            inputSize === 'lg' && 'h-[52px] text-base',
             icon && iconPosition === 'left' && 'pl-10',
             icon && iconPosition === 'right' && 'pr-10',
             error &&
-              'border-red-500 focus-visible:border-red-500 focus-visible:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
+              'border-error focus-visible:border-error focus-visible:shadow-[0_0_0_3px_var(--focus-ring-error)]',
             className,
           )}
           ref={ref}
@@ -63,14 +66,14 @@ function Input({
         />
 
         {icon && iconPosition === 'right' && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400">
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-ink-muted">
             <div className={iconSizes[inputSize]}>{icon}</div>
           </div>
         )}
       </div>
 
       {error && (
-        <p className="mt-1.5 text-sm text-red-500 flex items-center">
+        <p className="mt-1.5 flex items-center font-home text-xs text-error">
           <HiOutlineExclamationCircle className="size-4 mr-1 flex-shrink-0" />
           {error}
         </p>
@@ -90,14 +93,14 @@ type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
 
 function Textarea({ className, error, label, id, ref, ...props }: TextareaProps) {
   const reactId = React.useId();
-  const textareaId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : reactId);
+  const textareaId = id || reactId;
 
   return (
-    <div className="w-full">
+    <div className="w-full font-home">
       {label && (
         <label
           htmlFor={textareaId}
-          className="mb-1 block text-[12px] font-semibold text-neutral-700"
+          className="mb-1.5 block font-home text-xs font-semibold text-ink"
         >
           {label}
         </label>
@@ -106,9 +109,9 @@ function Textarea({ className, error, label, id, ref, ...props }: TextareaProps)
       <textarea
         id={textareaId}
         className={cn(
-          'input !h-auto min-h-[100px] resize-y py-2.5',
+          'input !h-auto min-h-[100px] resize-y p-3 font-home text-sm text-ink placeholder:text-ink-muted',
           error &&
-            'border-red-500 focus-visible:border-red-500 focus-visible:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
+            'border-error focus-visible:border-error focus-visible:shadow-[0_0_0_3px_var(--focus-ring-error)]',
           className,
         )}
         ref={ref}
@@ -116,7 +119,7 @@ function Textarea({ className, error, label, id, ref, ...props }: TextareaProps)
       />
 
       {error && (
-        <p className="mt-1.5 text-sm text-red-500 flex items-center">
+        <p className="mt-1.5 flex items-center font-home text-xs text-error">
           <HiOutlineExclamationCircle className="size-4 mr-1 flex-shrink-0" />
           {error}
         </p>

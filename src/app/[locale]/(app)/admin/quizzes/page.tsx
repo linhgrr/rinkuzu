@@ -6,6 +6,9 @@ import { useTranslations } from 'next-intl';
 import Pagination from '@/components/ui/Pagination';
 import { AdminQuizzesListSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
 import { UserAvatar } from '@/components/user/UserAvatar';
@@ -229,23 +232,22 @@ export default function AdminQuizManagementPage() {
           <h1 className="text-3xl font-semibold text-ink">{t('quizManagement')}</h1>
           <p className="mt-2 text-ink/60">{t('quizManagementDescription')}</p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="flex min-w-[280px] items-center gap-2 rounded-xl border border-line bg-white px-3">
-            <HiOutlineSearch className="size-5 text-ink/40" />
-            <input
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="min-w-[280px]">
+            <Input
               value={state.searchInput}
               onChange={(event) =>
                 dispatch({ type: 'patch', value: { searchInput: event.target.value } })
               }
               placeholder={t('searchQuizzes')}
-              className="min-h-11 w-full bg-transparent text-sm outline-none"
+              icon={<HiOutlineSearch className="size-5" />}
               onKeyDown={(event) => {
                 if (event.nativeEvent.isComposing) return;
                 if (event.key === 'Enter') applySearch();
               }}
             />
-          </label>
-          <select
+          </div>
+          <Select
             value={state.visibility}
             aria-label={t('allVisibility')}
             onChange={(event) =>
@@ -257,25 +259,25 @@ export default function AdminQuizManagementPage() {
                 },
               })
             }
-            className="min-h-11 rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-accent"
+            className="bg-surface"
           >
             <option value="all">{t('allVisibility')}</option>
             <option value="public">{t('publicQuizzes')}</option>
             <option value="private">{t('privateQuizzes')}</option>
-          </select>
+          </Select>
         </div>
       </header>
 
-      <section className="mt-7 grid gap-4 sm:grid-cols-3">
+      <section className="mt-6 grid gap-4 sm:grid-cols-3">
         {[
           [state.pagination.total, t('totalQuizzes')],
           [pageStats.public, t('publicOnPage')],
           [pageStats.private, t('privateOnPage')],
         ].map(([value, label]) => (
-          <div key={String(label)} className="rounded-2xl border border-line-blue/30 bg-white p-5">
-            <div className="text-2xl font-semibold text-ink">{value}</div>
-            <div className="mt-1 text-sm text-ink/55">{label}</div>
-          </div>
+          <SurfaceCard key={String(label)} className="p-5">
+            <div className="font-home text-2xl font-semibold text-ink">{value}</div>
+            <div className="mt-1 font-home text-xs text-ink-muted">{label}</div>
+          </SurfaceCard>
         ))}
       </section>
 

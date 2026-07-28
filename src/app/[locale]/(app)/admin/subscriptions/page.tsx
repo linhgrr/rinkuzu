@@ -91,7 +91,6 @@ const initialState: AdminSubscriptionsState = {
 interface SubscriptionSearchBarProps {
   searchTerm: string;
   statusFilter: string;
-  searchLabel: string;
   clearLabel: string;
   searchPlaceholder: string;
   onSearchTermChange: (value: string) => void;
@@ -192,7 +191,6 @@ function getAvailableStatusTransitions(
 function SubscriptionSearchBar({
   searchTerm,
   statusFilter,
-  searchLabel,
   clearLabel,
   searchPlaceholder,
   onSearchTermChange,
@@ -200,20 +198,22 @@ function SubscriptionSearchBar({
   onClear,
 }: SubscriptionSearchBarProps) {
   return (
-    <form onSubmit={onSubmit} className="mb-4 flex gap-4">
-      <div className="max-w-md flex-1">
+    <form onSubmit={onSubmit} className="mb-4 flex flex-wrap items-center gap-4">
+      <div className="max-w-md min-w-[240px] flex-1">
         <Input
           type="text"
           placeholder={searchPlaceholder}
           value={searchTerm}
           onChange={(event) => onSearchTermChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing || event.key !== 'Enter') return;
+            event.preventDefault();
+            event.currentTarget.form?.requestSubmit();
+          }}
+          icon={<HiOutlineSearch className="size-5" />}
           className="w-full"
         />
       </div>
-      <Button type="submit" variant="gradient">
-        <HiOutlineSearch className="mr-2 size-4" />
-        {searchLabel}
-      </Button>
       {searchTerm || statusFilter ? (
         <Button type="button" variant="outline" onClick={onClear}>
           {clearLabel}
@@ -531,7 +531,6 @@ export default function AdminSubscriptionsPage() {
         <SubscriptionSearchBar
           searchTerm={state.searchInput}
           statusFilter={state.statusFilter}
-          searchLabel={tCommon('search')}
           clearLabel={tCommon('clear')}
           searchPlaceholder={t('searchByEmailPlaceholder')}
           onSearchTermChange={setSearchInput}
@@ -555,7 +554,7 @@ export default function AdminSubscriptionsPage() {
             <SubscriptionsTable
               subscriptions={state.subscriptions}
               pagination={state.pagination}
-              noResultsLabel={t('noUsersFound')}
+              noResultsLabel={t('noSubscriptionsFound')}
               loadingLabel={t('loadingStatistics')}
               onViewDetails={(subscription) =>
                 dispatch({ type: 'patch', value: { selectedSubscription: subscription } })

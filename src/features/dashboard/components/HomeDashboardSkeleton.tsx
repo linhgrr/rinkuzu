@@ -34,7 +34,7 @@ export function HomeDashboardSkeleton() {
       aria-busy="true"
       aria-label="Loading dashboard"
     >
-      <div className="mx-auto max-w-[1340px]">
+      <div className="mx-auto max-w-dashboard">
         <div className="mb-5 space-y-2 sm:mb-6">
           <Skeleton className="h-8 w-72 max-w-full rounded-md" />
           <Skeleton className="h-6 w-80 max-w-full rounded-md" />
@@ -42,14 +42,14 @@ export function HomeDashboardSkeleton() {
 
         <div className="grid grid-cols-1 gap-6 min-[1684px]:grid-cols-[minmax(0,900px)_416px]">
           <div className="flex min-w-0 flex-col gap-6">
-            <div className="min-h-[280px] rounded-[20px] border border-accent/40 bg-hero p-5 sm:min-h-[295px] sm:p-6">
+            <div className="min-h-[280px] rounded-panel border border-accent/40 bg-hero p-5 sm:min-h-[295px] sm:p-6">
               <Skeleton className="h-10 w-[28rem] max-w-full rounded-lg" />
               <Skeleton className="mt-5 h-5 w-full max-w-[32rem] rounded-md" />
               <Skeleton className="mt-2 h-5 w-4/5 max-w-[26rem] rounded-md" />
               <Skeleton className="mt-9 h-12 w-40 rounded-full" />
             </div>
 
-            <section className="flex flex-col gap-6 rounded-[20px] border border-line bg-surface p-4 sm:p-5">
+            <section className="flex flex-col gap-6 rounded-panel border border-line bg-surface p-4 sm:p-5">
               <SectionHeadingSkeleton />
               <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 min-[1180px]:grid-cols-4">
                 {Array.from({ length: 8 }, (_, index) => (
@@ -58,21 +58,10 @@ export function HomeDashboardSkeleton() {
               </div>
             </section>
 
-            <section className="flex flex-col gap-4 rounded-[20px] border border-line bg-surface-blue p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-              <div className="flex items-center gap-3">
-                <Skeleton className="size-11 rounded-xl" />
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-40 rounded-md" />
-                  <Skeleton className="h-5 w-72 max-w-full rounded-md" />
-                </div>
-              </div>
-              <Skeleton className="h-11 w-36 rounded-full" />
-            </section>
-
             {Array.from({ length: 2 }, (_, sectionIndex) => (
               <section
                 key={`home-quiz-section-skeleton-${sectionIndex}`}
-                className="flex flex-col gap-6 rounded-[20px] border border-line bg-surface p-4 sm:p-5"
+                className="flex flex-col gap-6 rounded-panel border border-line bg-surface p-4 sm:p-5"
               >
                 <SectionHeadingSkeleton />
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 min-[1180px]:grid-cols-4">
@@ -85,12 +74,12 @@ export function HomeDashboardSkeleton() {
           </div>
 
           <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 min-[1684px]:sticky min-[1684px]:top-24 min-[1684px]:flex min-[1684px]:self-start min-[1684px]:flex-col">
-            <section className="flex min-h-[280px] flex-col gap-6 rounded-[20px] border border-line bg-surface p-4 sm:min-h-[295px] sm:p-5">
+            <section className="flex min-h-[280px] flex-col gap-6 rounded-panel border border-line bg-surface p-4 sm:min-h-[295px] sm:p-5">
               <SectionHeadingSkeleton />
               <Skeleton className="min-h-[170px] flex-1 rounded-[10px]" />
             </section>
 
-            <section className="flex min-h-[357px] flex-col gap-6 rounded-[20px] border border-line bg-surface p-4 sm:gap-7 sm:p-5">
+            <section className="flex min-h-[357px] flex-col gap-6 rounded-panel border border-line bg-surface p-4 sm:gap-7 sm:p-5">
               <SectionHeadingSkeleton />
               <div className="flex items-center justify-between gap-4">
                 {Array.from({ length: 3 }, (_, index) => (

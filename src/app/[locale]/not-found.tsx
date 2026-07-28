@@ -12,7 +12,7 @@ export default function LocaleNotFound() {
       <div className="flex flex-wrap items-center justify-center gap-3">
         <Link
           href={ROUTES.HOME}
-          className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-text transition-colors hover:bg-accent-hover"
+          className="rounded-full bg-brand-action px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-action-hover"
         >
           Home
         </Link>

@@ -78,9 +78,13 @@ function SectionError({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('explore');
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-      <p className="font-home text-sm text-amber-800">{t('partialError')}</p>
-      <Button variant="ghost" className="mt-2" onClick={onRetry}>
+    <div className="rounded-xl border border-line-blue/30 bg-surface-blue p-4">
+      <p className="font-home text-sm text-ink">{t('partialError')}</p>
+      <Button
+        variant="ghost"
+        className="mt-2 text-accent hover:text-accent-hover"
+        onClick={onRetry}
+      >
         {t('retry')}
       </Button>
     </div>
@@ -272,7 +276,7 @@ function ExploreContent() {
               onClick={() => updateUrl({ type: tab.type, page: 1, visibility: 'all' })}
               className={`min-h-10 shrink-0 rounded-full px-4 font-home text-sm font-semibold transition-colors ${
                 activeType === tab.type
-                  ? 'bg-accent text-accent-text'
+                  ? 'bg-brand-action text-white'
                   : 'border border-line bg-surface text-ink hover:bg-accent-soft'
               }`}
               aria-pressed={activeType === tab.type}

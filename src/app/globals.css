@@ -76,10 +76,10 @@
     --brand-primary: var(--accent);
     --brand-primary-hover: var(--accent-hover);
     --brand-primary-active: var(--primary-6);
-    --brand-action: var(--accent);
-    --brand-action-hover: var(--accent-hover);
-    --brand-action-active: var(--primary-6);
-    --brand-action-text: var(--primary-8);
+    --brand-action: var(--cta);
+    --brand-action-hover: var(--primary-5);
+    --brand-action-active: var(--primary-7);
+    --brand-action-text: var(--neutral-white);
     --brand-trust: var(--accent);
     --brand-trust-hover: var(--accent-hover);
     --brand-trust-active: var(--primary-6);
@@ -111,30 +111,56 @@
     --secondary-2: #e2ecfc;
     --secondary-3: #c2d6e4;
     --secondary-4: #718ebd;
+    /* Alpha */
+    --alpha-00: rgba(217, 213, 208, 0.4);
+    --alpha-1: rgba(68, 31, 5, 0.2);
+    --alpha-2: rgba(68, 31, 5, 0.4);
+    --alpha-3: rgba(68, 31, 5, 0.7);
+    --alpha-04: rgba(217, 213, 208, 0.25);
+    /* Linear */
+    --linear-1: linear-gradient(90deg, #f25d1b 0%, #ff7c23 100%);
+    /* Status */
+    --status-1: #eaeff3;
+    --status-2: #076cee;
+    --status-3: #eaf6e4;
+    --status-4: #14c145;
+    --status-5: #828282;
 
     /* Semantic layer — resolves through Figma primitives (no prefix, app-wide) */
-    --surface: var(--neutral-white);
-    --surface-page: var(--neutral-warm-2);
-    --surface-warm: var(--neutral-warm-3);
+    --surface: #fefefe;
+    --surface-page: #f8f8f8;
+    --surface-warm: var(--primary-0);
     --surface-blue: var(--secondary-1);
-    --hero: rgba(255, 214, 187, 0.6);
+    --hero: var(--primary-2);
     --ink: var(--primary-8);
     --ink-strong: var(--primary-8);
-    --ink-muted: rgba(68, 31, 5, 0.7);
+    --ink-muted: var(--alpha-3);
     --accent: var(--primary);
     --accent-hover: var(--cta);
     --accent-soft: var(--primary-2);
     --accent-warm: var(--primary-3);
     --accent-pale: var(--primary-2);
-    --accent-text: var(--primary-0);
-    --line: rgba(68, 31, 5, 0.1);
+    --accent-text: var(--neutral-white);
+    --line: #e8eeff;
     --line-blue: var(--secondary-4);
     --progress-track: var(--neutral-warm-31);
     --progress-blue-track: var(--secondary-3);
     --progress-blue: var(--secondary-4);
+    --progress-gradient: var(--linear-1);
     --badge-cool: var(--secondary-2);
     --divider-warm: var(--primary-3);
+    --control-surface: var(--alpha-04);
+    --control-border: var(--alpha-00);
     --card-shadow-accent: 2px 2px 0 var(--primary-3);
+    --success: var(--status-4);
+    --success-surface: var(--status-3);
+    --info: var(--status-2);
+    --info-surface: var(--status-1);
+    --purple: var(--purple-500);
+    --purple-surface: rgba(139, 92, 246, 0.1);
+    --error: var(--red-500);
+    --error-border: rgba(229, 72, 77, 0.35);
+    --error-surface: rgba(229, 72, 77, 0.08);
     --font-home:
       var(--font-montserrat), Montserrat, Inter, ui-sans-serif, system-ui, -apple-system,
       BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -142,18 +168,28 @@
     /* Learning states */
     --state-correct: var(--green-500);
     --state-incorrect: var(--red-500);
-    --state-skipped: var(--neutral-400);
+    --state-skipped: var(--status-5);
     --state-review: var(--orange-500);
     --state-new: var(--blue-500);
     --state-mastered: var(--green-600);
 
     /* Focus */
-    --focus-ring: var(--green-500);
-    --focus-ring-soft: rgba(0, 157, 140, 0.22);
+    --focus-ring: var(--accent);
+    --focus-ring-soft: rgba(239, 74, 0, 0.22);
+    --focus-ring-error: rgba(229, 72, 77, 0.28);
+
+    /* Landing navigation roles preserve the approved Figma values. */
+    --landing-nav-surface: rgba(21, 20, 25, 0.8);
+    --landing-nav-surface-mobile: rgba(21, 20, 25, 0.95);
+    --landing-nav-accent: #ff541b;
+    --landing-nav-accent-hover: #fd761a;
+    --landing-nav-accent-soft: rgba(255, 84, 27, 0.1);
+    --landing-nav-shadow: 0 7px 8.8px 0 rgba(0, 0, 0, 0.15);
 
     /* Typography */
     --font-sans:
-      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      var(--font-montserrat), Montserrat, Inter, ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 
     --text-display-xl: 72px;
@@ -251,7 +287,7 @@
     --brand-action: #fb923c;
     --brand-action-hover: #fdba74;
     --brand-action-active: #fed7aa;
-    --brand-action-text: #10110f;
+    --brand-action-text: #ffffff;
 
     --brand-trust: #34d399;
     --brand-trust-hover: #6ee7b7;
@@ -259,6 +295,10 @@
 
     --focus-ring: #34d399;
     --focus-ring-soft: rgba(52, 211, 153, 0.24);
+    --error: #f87171;
+    --error-border: rgba(248, 113, 113, 0.45);
+    --error-surface: rgba(248, 113, 113, 0.12);
+    --focus-ring-error: rgba(248, 113, 113, 0.32);
   }
 }
 
@@ -317,6 +357,7 @@
     justify-content: center;
     gap: 8px;
     border-radius: var(--radius-md);
+    font-family: var(--font-home), Montserrat, sans-serif;
     white-space: nowrap;
     transition:
       background var(--duration-fast) var(--ease-standard),
@@ -497,13 +538,13 @@
   }
 
   .badge-success {
-    background: rgba(0, 157, 140, 0.1);
-    color: var(--green-700);
+    background: var(--success-surface);
+    color: var(--success);
   }
 
   .badge-info {
-    background: rgba(0, 157, 140, 0.1);
-    color: var(--brand-trust);
+    background: var(--info-surface);
+    color: var(--info);
   }
 
   .badge-primary {
@@ -517,8 +558,8 @@
   }
 
   .badge-purple {
-    background: rgba(0, 157, 140, 0.1);
-    color: var(--brand-trust);
+    background: var(--purple-surface);
+    color: var(--purple);
   }
 
   .badge-gray {

@@ -7,6 +7,7 @@ import { AdminPlansPageSkeleton } from '@/components/admin/AdminLoadingSkeletons
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { SubscriptionDurationType, PREDEFINED_DURATIONS } from '@/types/subscription';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
@@ -157,66 +158,47 @@ function CreatePlanModal({ isOpen, onClose, onCreate, createLabel }: CreatePlanM
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label
-              htmlFor="create-plan-duration"
-              className="mb-2 block text-sm font-medium text-neutral-700"
-            >
-              Duration *
-            </label>
-            <select
-              id="create-plan-duration"
-              value={form.duration}
-              onChange={(e) => setForm((prev) => ({ ...prev, duration: e.target.value }))}
-              className="w-full rounded-md border border-neutral-300 p-2 focus:border-green-500 focus:ring-2 focus:ring-brand-trust"
-              title="Select plan duration"
-            >
-              {Object.entries(PREDEFINED_DURATIONS).map(([key, duration]) => (
-                <option key={key} value={duration.iso8601}>
-                  {duration.displayName} ({duration.iso8601})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor="create-plan-status"
-              className="mb-2 block text-sm font-medium text-neutral-700"
-            >
-              Status
-            </label>
-            <select
-              id="create-plan-status"
-              value={form.isActive.toString()}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  isActive: e.target.value === 'true',
-                }))
-              }
-              className="w-full rounded-md border border-neutral-300 p-2 focus:border-green-500 focus:ring-2 focus:ring-brand-trust"
-              title="Select plan status"
-            >
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
-            </select>
-          </div>
+          <Select
+            id="create-plan-duration"
+            label="Duration *"
+            value={form.duration}
+            onChange={(e) => setForm((prev) => ({ ...prev, duration: e.target.value }))}
+            title="Select plan duration"
+          >
+            {Object.entries(PREDEFINED_DURATIONS).map(([key, duration]) => (
+              <option key={key} value={duration.iso8601}>
+                {duration.displayName} ({duration.iso8601})
+              </option>
+            ))}
+          </Select>
+          <Select
+            id="create-plan-status"
+            label="Status"
+            value={form.isActive.toString()}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                isActive: e.target.value === 'true',
+              }))
+            }
+            title="Select plan status"
+          >
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </Select>
         </div>
 
         <div className="flex justify-end gap-x-2 pt-4">
-          <Button
-            type="button"
-            onClick={handleClose}
-            variant="outline"
-            className="min-h-[40px] px-4"
-          >
+          <Button type="button" onClick={handleClose} variant="outline" size="md">
             Cancel
           </Button>
           <Button
             type="button"
             onClick={handleSubmit}
             disabled={createLoading || !form.name.trim() || !form.price || form.price <= 0}
-            className="min-h-[40px] bg-brand-trust px-4 text-white hover:bg-brand-trust-hover"
+            variant="primary"
+            size="md"
+            loading={createLoading}
           >
             {createLoading ? 'Creating…' : createLabel}
           </Button>
@@ -550,7 +532,7 @@ export default function AdminPlansPage() {
 
             {plans.length === 0 ? (
               <div className="py-12 text-center">
-                <div className="text-neutral-500">{t('noUsersFound')}</div>
+                <div className="font-home text-ink-muted">{t('noPlansFound')}</div>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

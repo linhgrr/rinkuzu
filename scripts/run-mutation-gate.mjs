@@ -30,6 +30,7 @@ const CHANGED_DEFAULT_TIMEOUT_MS = 45 * 60 * 1000;
 const MIN_STRYKER_TIMEOUT_MS = 60_000;
 const MAX_STRYKER_TIMEOUT_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_MAX_BUFFER = 32 * 1024 * 1024;
+const DIAGNOSTIC_TAIL_MAX_CHARS = 8 * 1024;
 
 export function parseMutationGateArgs(argv) {
   /** @type {string | null} */
@@ -263,18 +264,30 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 
+function diagnosticTail(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (normalized.length === 0) return null;
+  return normalized.slice(-DIAGNOSTIC_TAIL_MAX_CHARS);
+}
+
 function captureCampaignFingerprint(root, campaignMode, sourceInventory) {
   return fingerprintRelevantInputs(root, { mode: campaignMode, sourceInventory });
 }
 
-function loadCampaignReport(reportPath, strykerExitCode) {
+function loadCampaignReport(reportPath, strykerResult) {
+  const diagnostics = {
+    strykerExitCode: strykerResult.status,
+    strykerStdoutTail: diagnosticTail(strykerResult.stdout),
+    strykerStderrTail: diagnosticTail(strykerResult.stderr),
+  };
   if (!existsSync(reportPath)) {
     return {
       ok: false,
       fields: {
         failureReason: 'report_missing_after_stryker',
-        strykerExitCode,
         errorMessage: 'Mutation report missing after Stryker run.',
+        ...diagnostics,
       },
     };
   }
@@ -285,8 +298,8 @@ function loadCampaignReport(reportPath, strykerExitCode) {
       ok: false,
       fields: {
         failureReason: 'report_unreadable',
-        strykerExitCode,
         errorMessage: errorMessage(error),
+        ...diagnostics,
       },
     };
   }
@@ -387,7 +400,7 @@ function runStrykerCampaign(
     return fail({ failureReason: 'workspace_drift_t0_t1', fingerprintT0, fingerprintT1 });
   }
 
-  const loaded = loadCampaignReport(paths.reportPath, strykerResult.status);
+  const loaded = loadCampaignReport(paths.reportPath, strykerResult);
   if (loaded.ok === false) return fail(loaded.fields);
 
   const classified = classifyCampaignExit(

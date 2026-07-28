@@ -16,7 +16,7 @@ interface ModalProps {
 }
 
 const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]):not([tabindex="-1"]):not([data-modal-close]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function Modal({
   isOpen,
@@ -95,33 +95,33 @@ export function Modal({
 
         <div
           className={cn(
-            'relative mx-auto flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 sm:max-h-[90vh]',
+            'relative mx-auto flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-y-auto overscroll-contain rounded-[20px] bg-[#fefefe] border border-line-blue shadow-2xl sm:max-h-[90vh]',
             sizeClasses[size],
             className,
           )}
         >
           {(title || description) && (
-            <div className="border-b border-neutral-100 p-5 pr-14 sm:p-6 sm:pr-16">
+            <div className="border-b border-line p-5 pr-14 sm:p-6 sm:pr-16">
               {title && (
-                <h2 id={titleId} className="text-lg font-semibold leading-7 text-neutral-900">
+                <h2 id={titleId} className="font-home text-lg font-semibold leading-7 text-ink">
                   {title}
                 </h2>
               )}
               {description && (
-                <p id={descriptionId} className="mt-1 text-sm text-neutral-500">
+                <p id={descriptionId} className="mt-1 font-home text-sm text-ink-muted">
                   {description}
                 </p>
               )}
             </div>
           )}
 
-          {!(title || description) && <div>{children}</div>}
-          {(title || description) && <div className="p-5 sm:p-6">{children}</div>}
+          {title || description ? <div className="p-5 font-home sm:p-6">{children}</div> : children}
 
           <button
             type="button"
+            data-modal-close
             onClick={onClose}
-            className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+            className="absolute right-3 top-3 flex size-10 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-blue hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             aria-label={tCommon('close')}
           >
             <svg

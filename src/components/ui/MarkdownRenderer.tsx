@@ -1,75 +1,73 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import { memo } from 'react';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { cn } from '@/lib/utils';
+import { normalizeMarkdownContent } from '@/lib/markdown/normalize';
 
-interface MarkdownRendererProps {
+type MarkdownRendererVariant = 'document' | 'prompt' | 'option' | 'answer' | 'compact';
+
+export interface MarkdownRendererProps {
   content: string;
   className?: string;
+  variant?: MarkdownRendererVariant;
 }
 
-const LATEX_ESCAPE_RECOVERY_PATTERNS: Array<{ pattern: RegExp; replacement: string }> = [
-  { pattern: /\u0008(?=(eta|egin|ig|oxed|ullet|ar))/g, replacement: '\\b' },
-  { pattern: /\u000c(?=(rac|orall|ootnotesize|box))/g, replacement: '\\f' },
-  { pattern: /\n(?=(abla|eq|e|ewline|otin|ormalsize))/g, replacement: '\\n' },
-  {
-    pattern:
-      /\r(?=(ho|ight|ightarrow|ightarrowtail|ightleftharpoons|ightleftharpoons|ightparen|ightangle|ighttriangle))/g,
-    replacement: '\\r',
-  },
-  { pattern: /\t(?=(ext|imes|heta|au|an|o|riangle|extbf|extit|ilde))/g, replacement: '\\t' },
-];
+const variantClasses: Record<MarkdownRendererVariant, string> = {
+  document:
+    '[&_h1]:mb-3 [&_h1]:mt-4 [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:text-neutral-900 [&_h1:first-child]:mt-0 [&_h2]:mb-2 [&_h2]:mt-3 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-neutral-900 [&_h2:first-child]:mt-0 [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-sm [&_h3]:font-medium [&_h3]:text-neutral-900 [&_h3:first-child]:mt-0 [&_p]:mb-2 [&_p]:text-sm [&_p]:leading-relaxed [&_p]:text-neutral-700 [&_p:last-child]:mb-0 [&_li]:text-sm [&_li]:text-neutral-700',
+  prompt:
+    'text-base font-medium leading-relaxed text-inherit [&_h1]:mb-2 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_p]:mb-2 [&_p]:text-inherit [&_p:last-child]:mb-0 [&_li]:text-inherit',
+  option:
+    'text-sm leading-relaxed text-inherit [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-semibold [&_p]:m-0 [&_p]:text-inherit [&_li]:text-inherit',
+  answer:
+    'text-sm leading-relaxed text-inherit [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-semibold [&_p]:m-0 [&_p]:text-inherit [&_li]:text-inherit',
+  compact:
+    'text-sm leading-relaxed text-inherit [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-semibold [&_p]:m-0 [&_p]:text-inherit [&_li]:text-inherit',
+};
 
-function normalizeLatexEscapes(content: string): string {
-  if (!content) return content;
+const QUESTION_DISALLOWED_ELEMENTS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+const OPTION_DISALLOWED_ELEMENTS = [...QUESTION_DISALLOWED_ELEMENTS, 'a'];
 
-  return LATEX_ESCAPE_RECOVERY_PATTERNS.reduce(
-    (value, { pattern, replacement }) => value.replace(pattern, replacement),
-    content,
-  );
-}
-
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
-  const normalizedContent = normalizeLatexEscapes(content);
+export const MarkdownRenderer = memo(function MarkdownRenderer({
+  content,
+  className,
+  variant = 'document',
+}: MarkdownRendererProps) {
+  const normalizedContent = normalizeMarkdownContent(content);
+  const disallowedElements =
+    variant === 'document'
+      ? undefined
+      : variant === 'option'
+        ? OPTION_DISALLOWED_ELEMENTS
+        : QUESTION_DISALLOWED_ELEMENTS;
 
   return (
-    <div className={cn('max-w-none', className)}>
+    <div
+      className={cn(
+        'max-w-none break-words [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden',
+        variantClasses[variant],
+        className,
+      )}
+      data-rich-text={variant}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
+        skipHtml
+        urlTransform={defaultUrlTransform}
+        {...(disallowedElements ? { disallowedElements, unwrapDisallowed: true } : {})}
         components={{
-          h1: ({ children }) => (
-            <h1 className="text-lg font-semibold text-neutral-900 mb-3 mt-4 first:mt-0">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-base font-semibold text-neutral-900 mb-2 mt-3 first:mt-0">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-sm font-medium text-neutral-900 mb-2 mt-3 first:mt-0">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => (
-            <p className="text-sm text-neutral-700 mb-2 leading-relaxed">{children}</p>
-          ),
           ul: ({ children }) => (
             <ul className="list-disc list-inside space-y-1 mb-3 ml-2">{children}</ul>
           ),
           ol: ({ children }) => (
             <ol className="list-decimal list-inside space-y-1 mb-3 ml-2">{children}</ol>
           ),
-          li: ({ children }) => <li className="text-sm text-neutral-700">{children}</li>,
-          strong: ({ children }) => (
-            <strong className="font-semibold text-neutral-900">{children}</strong>
-          ),
-          em: ({ children }) => <em className="italic text-neutral-800">{children}</em>,
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
           code: ({ children }) => (
             <code className="bg-neutral-100 text-neutral-900 px-1 py-0.5 rounded text-xs font-mono">
               {children}
@@ -120,4 +118,4 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       </ReactMarkdown>
     </div>
   );
-}
+});

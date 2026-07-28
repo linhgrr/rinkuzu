@@ -105,15 +105,13 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
         </section>
 
         <section aria-label={t('paywall.availablePlans')}>
-          <div className="mb-4 flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 text-emerald-950 ring-1 ring-emerald-100">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-accent-warm bg-surface-warm p-4 text-ink">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-action text-white">
               <HiOutlineSparkles className="size-5" aria-hidden="true" />
             </span>
             <div>
-              <h3 className="font-semibold">{t('paywall.premiumHeading')}</h3>
-              <p className="mt-1 text-sm leading-5 text-emerald-800">
-                {t('paywall.premiumSummary')}
-              </p>
+              <h3 className="font-semibold text-ink">{t('paywall.premiumHeading')}</h3>
+              <p className="mt-1 text-sm leading-5 text-ink-muted">{t('paywall.premiumSummary')}</p>
             </div>
           </div>
 
@@ -147,9 +145,9 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
           )}
 
           {plansState.status === 'ready' && plansState.isPremium && (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950">
+            <div className="rounded-2xl border border-line-blue bg-surface-blue p-5 text-ink">
               <h3 className="font-semibold">{t('paywall.alreadyPremiumTitle')}</h3>
-              <p className="mt-2 text-sm leading-5 text-emerald-800">
+              <p className="mt-2 text-sm leading-5 text-ink-muted">
                 {t('paywall.alreadyPremiumDescription')}
               </p>
             </div>
@@ -176,12 +174,12 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
                       key={plan.id}
                       className={`relative flex min-h-52 flex-col rounded-2xl border p-5 ${
                         isBestValue
-                          ? 'border-emerald-500 bg-emerald-50/50 shadow-[0_12px_32px_rgba(5,150,105,0.12)]'
+                          ? 'border-accent bg-surface-warm shadow-[0_12px_32px_rgba(239,74,0,0.12)]'
                           : 'border-neutral-200 bg-white'
                       }`}
                     >
                       {isBestValue && (
-                        <span className="mb-3 self-start rounded-full bg-emerald-700 px-3 py-1 text-xs font-semibold text-white">
+                        <span className="mb-3 self-start rounded-full bg-brand-action px-3 py-1 text-xs font-semibold text-white">
                           {t('paywall.bestValue')}
                         </span>
                       )}
@@ -190,12 +188,12 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
                         {plan.priceLabel}
                       </p>
                       <p className="mt-1 text-sm text-neutral-500">{plan.durationDisplay}</p>
-                      <p className="mt-2 text-sm font-medium text-emerald-800">
+                      <p className="mt-2 text-sm font-medium text-accent">
                         {t('paywall.perMonth', { price: formatVndCurrency(monthlyPrice) })}
                       </p>
                       <Button
                         className="mt-auto w-full"
-                        variant={isBestValue ? 'default' : 'outline'}
+                        variant={isBestValue ? 'primary' : 'outline'}
                         loading={submittingPlanId === plan.id}
                         disabled={submittingPlanId !== null}
                         onClick={() => handlePurchase(plan)}

@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
-import { formatCorrectAnswerText } from '@/lib/quiz/answer-text';
+import { getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
 import type { QuizPreviewQuestionViewModel } from '@/features/quiz/types/quiz-preview-view-model';
 
 interface QuizPreviewModalProps {
@@ -66,6 +67,7 @@ export function QuizPreviewModal({
     currentQuestion.type === 'single'
       ? [currentQuestion.correctIndex]
       : currentQuestion.correctIndexes;
+  const correctAnswers = getCorrectAnswerOptions(currentQuestion);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('title')} size="large">
@@ -79,18 +81,26 @@ export function QuizPreviewModal({
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-x-2">
-              <span>{currentQuestion.question}</span>
+            <div
+              role="heading"
+              aria-level={3}
+              className="flex items-start gap-x-2 text-lg font-semibold text-neutral-900"
+            >
+              <QuestionContent
+                content={currentQuestion.question}
+                variant="compact"
+                className="min-w-0 flex-1 text-lg"
+              />
               {currentQuestion.type === 'single' ? (
-                <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                <span className="inline-flex flex-shrink-0 items-center rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
                   {t('singleChoice')}
                 </span>
               ) : (
-                <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                <span className="inline-flex flex-shrink-0 items-center rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">
                   {t('multipleChoice')}
                 </span>
               )}
-            </CardTitle>
+            </div>
 
             {/* Display question image if exists */}
           </CardHeader>
@@ -114,8 +124,21 @@ export function QuizPreviewModal({
 
             <div className="mt-4 p-3 bg-green-50 rounded-lg">
               <div className="text-sm font-medium text-green-800 mb-1">{t('correctAnswers')}:</div>
-              <div className="text-sm text-green-700">
-                {formatCorrectAnswerText(currentQuestion, t('noCorrectAnswer'))}
+              <div className="space-y-1 text-sm text-green-700">
+                {correctAnswers.length > 0
+                  ? correctAnswers.map((answer, index) => (
+                      <div key={`${index}-${answer}`} className="flex min-w-0 items-start gap-1">
+                        <span className="flex-shrink-0">
+                          {String.fromCharCode(65 + (correctIndexes[index] ?? index))}.
+                        </span>
+                        <QuestionContent
+                          content={answer}
+                          variant="answer"
+                          className="min-w-0 flex-1"
+                        />
+                      </div>
+                    ))
+                  : t('noCorrectAnswer')}
               </div>
             </div>
           </CardContent>

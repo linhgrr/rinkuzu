@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fingerprintAuditFinding } from './npm-audit-fingerprint.mjs';
 
 const root = process.cwd();
 const registryPath = path.join(root, 'security/acceptances.json');
@@ -19,34 +19,6 @@ const npmArgs = npmCli ? [npmCli] : [];
 
 function fail(message) {
   throw new Error(`npm audit policy failed: ${message}`);
-}
-
-function canonical(value) {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entry]) => [key, canonical(entry)]),
-    );
-  }
-  return value;
-}
-
-function fingerprint(name, vulnerability) {
-  const evidence = {
-    name,
-    severity: vulnerability.severity,
-    isDirect: vulnerability.isDirect,
-    range: vulnerability.range,
-    via: vulnerability.via,
-    effects: vulnerability.effects,
-    nodes: vulnerability.nodes,
-    fixAvailable: vulnerability.fixAvailable,
-  };
-  return createHash('sha256')
-    .update(JSON.stringify(canonical(evidence)))
-    .digest('hex');
 }
 
 function parseDate(value, label) {
@@ -134,7 +106,7 @@ for (const [name, vulnerability] of Object.entries(fullReport.vulnerabilities)) 
   const threshold = scope === 'runtime' ? severityRank.moderate : severityRank.high;
   if ((severityRank[vulnerability.severity] ?? Number.POSITIVE_INFINITY) < threshold) continue;
 
-  const findingFingerprint = fingerprint(name, vulnerability);
+  const findingFingerprint = fingerprintAuditFinding(name, vulnerability);
   const acceptance = acceptanceByFingerprint.get(findingFingerprint);
   const accepted =
     acceptance?.package === name &&

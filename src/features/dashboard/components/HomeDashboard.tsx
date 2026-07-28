@@ -13,7 +13,6 @@ import type {
 import { QuizUploadDropzone } from './QuizUploadDropzone';
 import { QuizCard } from '@/features/quiz/components/QuizCard';
 import type { QuizListItemViewModel } from '@/features/quiz/types/quiz-list-view-model';
-import { HiOutlineArrowRight, HiOutlineInbox } from 'react-icons/hi';
 
 interface HomeDashboardProps {
   viewModel: {
@@ -78,11 +77,6 @@ interface ContinueLearningProps {
   subtitle: string;
   viewAllLabel: string;
   emptyActionLabel: string;
-}
-
-interface ReviewTodayProps {
-  dueCount: number;
-  copy: DashboardHomeCopy['reviewToday'];
 }
 
 interface QuizSectionProps {
@@ -166,7 +160,7 @@ function HeroArtwork() {
 
 function HomeHero({ title, description, ctaLabel }: HomeHeroProps) {
   return (
-    <section className="relative min-h-[280px] rounded-[20px] border border-accent bg-hero px-5 py-6 sm:min-h-[295px] sm:px-6 sm:py-7">
+    <section className="relative min-h-[280px] rounded-panel border border-accent bg-hero px-5 py-6 sm:min-h-[295px] sm:px-6 sm:py-7">
       <div
         className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] opacity-30"
         aria-hidden="true"
@@ -182,14 +176,14 @@ function HomeHero({ title, description, ctaLabel }: HomeHeroProps) {
       </div>
       <HeroArtwork />
       <div className="relative z-10 flex max-w-[505px] flex-col gap-4 text-ink sm:gap-5">
-        <h1 className="font-home text-[28px] font-bold leading-[1.25] tracking-normal sm:text-[32px] min-[1684px]:text-[36px]">
+        <h1 className="font-home text-page-title font-bold tracking-normal sm:text-page-title-sm min-[1684px]:text-page-title-lg">
           {title}
         </h1>
         <p className="font-home text-base font-normal leading-[1.4]">{description}</p>
       </div>
       <Link
         href="/adaptive"
-        className="relative z-10 mt-7 inline-flex rounded-full bg-accent px-5 py-3 font-home text-base font-semibold leading-[1.4] text-accent-text hover:bg-accent-hover sm:mt-9 sm:text-lg"
+        className="relative z-10 mt-7 inline-flex rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold leading-[1.4] text-white hover:bg-brand-action-hover sm:mt-9 sm:text-lg"
       >
         {ctaLabel}
       </Link>
@@ -426,33 +420,6 @@ function ContinueLearning({
   );
 }
 
-function ReviewToday({ dueCount, copy }: ReviewTodayProps) {
-  const hasDueReviews = dueCount > 0;
-
-  return (
-    <SurfaceCard className="flex flex-col gap-4 bg-surface-blue p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-badge-cool text-accent">
-          <HiOutlineInbox className="size-6" aria-hidden="true" />
-        </span>
-        <div>
-          <h2 className="font-home text-lg font-semibold leading-[1.4] text-ink">{copy.title}</h2>
-          <p className="mt-1 font-home text-base leading-[1.4] text-ink-muted">
-            {hasDueReviews ? copy.due : copy.caughtUp}
-          </p>
-        </div>
-      </div>
-      <Link
-        href={hasDueReviews ? '/review' : ROUTES.EXPLORE}
-        className="inline-flex min-h-11 w-fit shrink-0 items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-home text-sm font-semibold text-accent-text transition-colors hover:bg-accent-hover"
-      >
-        {hasDueReviews ? copy.reviewAction : copy.exploreAction}
-        <HiOutlineArrowRight className="size-4" aria-hidden="true" />
-      </Link>
-    </SurfaceCard>
-  );
-}
-
 function QuizSection({
   quizzes,
   title,
@@ -490,7 +457,7 @@ function QuizSection({
 export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
   return (
     <div className="px-4 pb-20 pt-5 font-home text-ink selection:bg-accent-soft sm:px-6 sm:pt-6 lg:px-8">
-      <div className="mx-auto max-w-[1340px]">
+      <div className="mx-auto max-w-dashboard">
         <div className="mb-5 flex flex-col gap-1 sm:mb-6">
           <h1 className="font-home text-2xl font-semibold leading-[1.4] text-ink">
             {copy.welcomeTitle}
@@ -515,7 +482,6 @@ export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
               viewAllLabel={copy.viewAll}
               emptyActionLabel={copy.continueLearning.emptyAction}
             />
-            <ReviewToday dueCount={viewModel.progress.dueCount} copy={copy.reviewToday} />
             <QuizSection
               quizzes={viewModel.recentOwnedQuizzes}
               title={copy.recentOwnedQuizzes.title}

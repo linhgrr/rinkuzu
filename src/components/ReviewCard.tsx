@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Card } from './ui/Card';
+import { QuestionContent } from './ui/QuestionContent';
 import type {
   ReviewQuestionReferenceViewModel,
   ReviewRating,
@@ -74,9 +75,12 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
               <span className="inline-block px-3 py-1 bg-green-100 text-brand-trust-hover rounded-full text-xs font-semibold mb-4">
                 {t('question')}
               </span>
-              <h3 className="text-xl md:text-2xl font-medium text-[var(--text-primary)] mb-8 leading-relaxed">
-                {question.text}
-              </h3>
+              <div role="heading" aria-level={3}>
+                <QuestionContent
+                  content={question.text}
+                  className="mb-8 text-xl font-medium leading-relaxed text-[var(--text-primary)] md:text-2xl"
+                />
+              </div>
               <p className="text-[var(--text-muted)] text-sm animate-pulse">
                 {t('tapToSeeAnswer')}
               </p>
@@ -92,9 +96,11 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
           >
             <div className="flex-1 overflow-y-auto">
               {/* Question Text Repeated Small */}
-              <p className="text-xs md:text-sm text-[var(--text-muted)] mb-4 md:mb-6 pb-3 md:pb-4 border-b">
-                {question.text}
-              </p>
+              <QuestionContent
+                content={question.text}
+                variant="compact"
+                className="mb-4 border-b pb-3 text-xs text-[var(--text-muted)] md:mb-6 md:pb-4 md:text-sm"
+              />
 
               {/* Options / Answer */}
               <div className="space-y-2 md:space-y-3">
@@ -124,11 +130,13 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                               <HiCheck className="size-3" strokeWidth={3} aria-hidden="true" />
                             )}
                           </div>
-                          <span
-                            className={`text-sm md:text-base ${isCorrect ? 'font-medium' : ''}`}
-                          >
-                            {opt}
-                          </span>
+                          <QuestionContent
+                            content={opt}
+                            variant="option"
+                            className={`min-w-0 flex-1 text-sm md:text-base ${
+                              isCorrect ? 'font-medium' : ''
+                            }`}
+                          />
                         </div>
                       </div>
                     );

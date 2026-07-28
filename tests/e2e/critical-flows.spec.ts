@@ -312,6 +312,9 @@ async function readSession(page: Page): Promise<SessionPayload> {
 }
 
 async function login(page: Page, user: SeededUser): Promise<SessionPayload> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+  });
   await page.goto('/en/login?callbackUrl=%2Fdashboard');
   await page.getByLabel('Email Address').fill(user.email);
   await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
@@ -339,6 +342,27 @@ test.describe('production critical paths', () => {
       expect(await readSession(page)).toMatchObject({
         user: { email: fixture.regular.email, id: fixture.regular.id.toHexString() },
       });
+
+      const skipLink = page.getByRole('link', { name: 'Skip to main content' });
+      await expect(skipLink).toHaveAttribute('href', '#app-main-content');
+      await page.keyboard.press('Tab');
+      await expect(skipLink).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('#app-main-content')).toBeFocused();
+      await expect(page.locator('h1')).toHaveCount(1);
+      await expect(page.locator('a[aria-current="page"]:visible')).not.toHaveCount(0);
+
+      await page.goto('/en/quizzes');
+      await expect(page.getByRole('heading', { name: 'Quizzes', level: 1 })).toBeAttached();
+      await expect(page.locator('main h1').locator('..')).toHaveCSS('max-width', '1320px');
+      const filterButtons = page
+        .getByRole('group', { name: 'Filter quiz visibility' })
+        .getByRole('button');
+      const filterButtonCount = await filterButtons.count();
+      for (let index = 0; index < filterButtonCount; index += 1) {
+        const bounds = await filterButtons.nth(index).boundingBox();
+        expect(bounds?.height).toBeGreaterThanOrEqual(44);
+      }
 
       const forbidden = await page.evaluate(async () => {
         const response = await fetch('/api/admin/users');
@@ -586,6 +610,15 @@ test.describe('production critical paths', () => {
       await expect(page.getByRole('heading', { name: 'Payment Successful!' })).toBeVisible();
       expect(verifyPaymentPayload).toEqual({ orderCode: '424242' });
 
+      await page.route('**/api/subscription/cancel-payment', async (route) => {
+        await route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: { status: 'cancelled' },
+          }),
+        });
+      });
       await page.goto('/en/payment/cancel?orderCode=424242');
       await expect(page.getByRole('heading', { name: 'Payment Cancelled' })).toBeVisible();
       await expect(page.getByText('Order Code: 424242', { exact: true })).toBeVisible();

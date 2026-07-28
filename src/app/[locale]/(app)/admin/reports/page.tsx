@@ -164,24 +164,21 @@ function ReportCardItem({ report, onReview, onDelete }: ReportCardItemProps) {
           </div>
 
           <div className="ml-4 flex flex-col gap-2">
-            <Button
-              variant="gradient"
-              onClick={() => onReview(report)}
-              className="min-h-[36px] px-3"
-            >
+            <Button variant="primary" size="sm" onClick={() => onReview(report)}>
               <HiOutlineEye className="mr-1 size-4" /> Review
             </Button>
 
             <Link href={ROUTES.EDIT.QUIZ(report.quizId)}>
-              <Button variant="accent" className="min-h-[36px] w-full px-3">
+              <Button variant="primary" size="sm" className="w-full">
                 <HiOutlinePencil className="mr-1 size-4" /> Edit Quiz
               </Button>
             </Link>
 
             <Button
               variant="outline"
+              size="sm"
               onClick={() => onDelete(report)}
-              className="min-h-[36px] border-red-200 px-3 text-red-600 hover:bg-red-50"
+              className="border-red-200 text-red-600 hover:bg-red-50"
             >
               <HiOutlineTrash className="mr-1 size-4" /> Delete
             </Button>
@@ -284,6 +281,7 @@ function ReportReviewModal({
 }
 
 export default function AdminReportsPage() {
+  const tAdmin = useTranslations('admin');
   const [state, dispatch] = useReducer(adminReportsReducer, initialState);
 
   useEffect(() => {
@@ -375,8 +373,8 @@ export default function AdminReportsPage() {
         ) : (
           <>
             <AdminPageHeader
-              title="Quiz Reports"
-              description="Manage and review user reports about quiz content"
+              title={tAdmin('quizReports')}
+              description={tAdmin('reportsDescription')}
             />
             <ReportFilterBar
               statusFilter={state.statusFilter}
@@ -387,12 +385,8 @@ export default function AdminReportsPage() {
               {state.reports.length === 0 ? (
                 <Card className="p-12">
                   <EmptyState
-                    title="No Reports Found"
-                    description={
-                      state.statusFilter === 'all'
-                        ? 'No reports have been submitted yet.'
-                        : `No ${state.statusFilter} reports found.`
-                    }
+                    title={tAdmin('noReportsTitle')}
+                    description={tAdmin('noReportsFound')}
                   />
                 </Card>
               ) : (
@@ -424,9 +418,9 @@ export default function AdminReportsPage() {
 
       <ConfirmModal
         isOpen={!!state.reportToDelete}
-        title="Delete report?"
-        message="Are you sure you want to delete this report? This action cannot be undone."
-        confirmText="Delete"
+        title={tAdmin('delete')}
+        message={tAdmin('deleteReportConfirm')}
+        confirmText={tAdmin('delete')}
         confirmVariant="destructive"
         isLoading={state.deleting}
         onCancel={() => dispatch({ type: 'patch', value: { reportToDelete: null } })}

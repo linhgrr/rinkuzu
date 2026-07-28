@@ -15,6 +15,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import {
   createAdminOcrKey,
@@ -382,7 +383,19 @@ export default function AdminOcrKeysPage() {
           <h2 className="text-lg font-semibold text-ink">{t('ocrKeysTableTitle')}</h2>
         </div>
         {state.loading ? (
-          <div className="p-5 text-sm text-ink/60">{t('loading')}</div>
+          <div className="space-y-3 p-5 font-home" aria-busy="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`ocr-key-skeleton-${index}`}
+                className="flex items-center justify-between gap-4"
+              >
+                <Skeleton className="h-5 w-48 rounded-md" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-5 w-32 rounded-md" />
+                <Skeleton className="h-8 w-24 rounded-md" />
+              </div>
+            ))}
+          </div>
         ) : state.keys.length === 0 ? (
           <div className="p-8 text-center text-sm text-ink/60">{t('ocrKeysEmpty')}</div>
         ) : (

@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { HiCheck } from 'react-icons/hi';
 import { Modal } from '@/components/ui/Modal';
-import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import type { ConceptDetail } from '@/features/adaptive/types/graph';
 
 interface ConceptDetailPanelProps {
@@ -63,7 +63,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">
               {t('conceptDetail.definition')}
             </h3>
-            <DynamicMarkdownRenderer
+            <MarkdownRenderer
               content={concept.definition}
               className="text-sm leading-relaxed text-neutral-700"
             />

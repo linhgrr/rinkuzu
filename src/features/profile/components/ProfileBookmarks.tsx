@@ -5,16 +5,21 @@ import { useReducer } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { Pill } from '@/components/ui/Pill';
+import { QuestionContent } from '@/components/ui/QuestionContent';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import Pagination from '@/components/ui/Pagination';
 import { HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
 import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { formatCorrectAnswerText } from '@/lib/quiz/answer-text';
+import { getCorrectAnswerIndexes, getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
 import { ROUTES } from '@/shared/constants/routes';
 import {
   deleteProfileBookmark,
@@ -42,7 +47,7 @@ interface BookmarksHeaderProps {
 }
 
 interface BookmarksErrorBannerProps {
-  message: string;
+  message?: string | null;
 }
 
 interface BookmarkCardProps {
@@ -70,7 +75,6 @@ interface EmptyBookmarksStateProps {
 
 interface ProfileBookmarksState {
   currentPage: number;
-  localError: string;
   currentBookmark: ProfileBookmarkViewModel | null;
   activeModal: BookmarkModal;
   removingBookmarkId: string | null;
@@ -87,7 +91,6 @@ type ProfileBookmarksAction =
 
 const initialState: ProfileBookmarksState = {
   currentPage: 1,
-  localError: '',
   currentBookmark: null,
   activeModal: null,
   removingBookmarkId: null,
@@ -127,7 +130,7 @@ function BookmarkOptionImage({ src, alt }: BookmarkOptionImageProps) {
       width={480}
       height={200}
       unoptimized
-      className="h-auto max-w-full rounded border"
+      className="h-auto max-w-full rounded border border-line"
       style={{ maxHeight: '200px' }}
     />
   );
@@ -135,14 +138,18 @@ function BookmarkOptionImage({ src, alt }: BookmarkOptionImageProps) {
 
 function HydratedDateText({ dateString, label }: HydratedDateTextProps) {
   return (
-    <time dateTime={dateString} className="text-xs text-neutral-500">
+    <time dateTime={dateString} className="font-home text-xs text-ink-muted">
       {label}
     </time>
   );
 }
 
 function BookmarksHeader({ t }: BookmarksHeaderProps) {
-  return <h2 className="text-2xl font-semibold text-neutral-900">{t('bookmarkedQuestions')}</h2>;
+  return (
+    <h2 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
+      {t('bookmarkedQuestions')}
+    </h2>
+  );
 }
 
 function BookmarksErrorBanner({ message }: BookmarksErrorBannerProps) {
@@ -150,7 +157,7 @@ function BookmarksErrorBanner({ message }: BookmarksErrorBannerProps) {
     return null;
   }
 
-  return <div className="rounded bg-red-50 p-4 text-sm text-red-700">{message}</div>;
+  return <ErrorState message={message} className="mb-4" />;
 }
 
 function BookmarkCard({
@@ -161,75 +168,88 @@ function BookmarkCard({
   t,
   tCommon,
 }: BookmarkCardProps) {
+  const correctAnswerIndexes = getCorrectAnswerIndexes(bookmark.question);
+  const correctAnswers = getCorrectAnswerOptions(bookmark.question);
+
   return (
-    <Card className="transition-shadow hover:shadow-md">
-      <CardHeader className="p-4 sm:p-6">
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
-          <div className="min-w-0 flex-1">
-            <CardTitle className="text-lg">{bookmark.question.text}</CardTitle>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <div className="text-sm text-neutral-600">
-                <Link
-                  href={`/quiz/${bookmark.quiz.slug}`}
-                  className="text-brand-action hover:underline"
-                >
-                  {bookmark.quiz.title}
-                </Link>
-              </div>
-              <span
-                className={`rounded px-2 py-0.5 text-xs font-medium ${
-                  bookmark.question.type === 'single'
-                    ? 'bg-orange-100 text-orange-800'
-                    : 'bg-green-100 text-green-800'
-                }`}
-              >
-                {bookmark.question.type === 'single' ? t('singleChoice') : t('multipleChoice')}
-              </span>
-              <HydratedDateText dateString={bookmark.createdAt} label={bookmark.createdAtLabel} />
-            </div>
+    <SurfaceCard className="p-4 sm:p-6">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+        <div className="min-w-0 flex-1">
+          <div role="heading" aria-level={3}>
+            <QuestionContent
+              content={bookmark.question.text}
+              variant="compact"
+              className="font-home text-lg font-semibold text-ink"
+            />
           </div>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenAiModal(bookmark)}
-              className="flex items-center gap-1.5"
-            >
-              <Image src={chatbotIcon} alt="AI chatbot" width={16} height={16} className="size-4" />
-              {t('askAI')}
-              {aiHistoryCount > 0 ? ` (${aiHistoryCount})` : ''}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenRemoveModal(bookmark)}
-              className="flex items-center gap-1.5 border-red-200 text-red-600 hover:bg-red-50"
-            >
-              <HiOutlineTrash className="size-4" /> {tCommon('remove')}
-            </Button>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            <div className="font-home text-sm text-ink-muted">
+              <Link
+                href={`/quiz/${bookmark.quiz.slug}`}
+                className="text-accent hover:underline font-medium"
+              >
+                {bookmark.quiz.title}
+              </Link>
+            </div>
+            <Pill tone={bookmark.question.type === 'single' ? 'warm' : 'cool'}>
+              {bookmark.question.type === 'single' ? t('singleChoice') : t('multipleChoice')}
+            </Pill>
+            <HydratedDateText dateString={bookmark.createdAt} label={bookmark.createdAtLabel} />
           </div>
         </div>
-        {bookmark.question.questionImage ? (
-          <div className="mt-4">
-            <BookmarkOptionImage src={bookmark.question.questionImage} alt="Question" />
-          </div>
-        ) : null}
-      </CardHeader>
-      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+        <div className="flex w-full gap-2 sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenAiModal(bookmark)}
+            className="flex items-center gap-1.5 font-home"
+          >
+            <Image src={chatbotIcon} alt="AI chatbot" width={16} height={16} className="size-4" />
+            {t('askAI')}
+            {aiHistoryCount > 0 ? ` (${aiHistoryCount})` : ''}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenRemoveModal(bookmark)}
+            className="flex items-center gap-1.5 font-home border-red-200 text-red-600 hover:bg-red-50"
+          >
+            <HiOutlineTrash className="size-4" /> {tCommon('remove')}
+          </Button>
+        </div>
+      </div>
+      {bookmark.question.questionImage ? (
+        <div className="mt-4">
+          <BookmarkOptionImage src={bookmark.question.questionImage} alt="Question" />
+        </div>
+      ) : null}
+      <div className="mt-4">
         <div className="space-y-3">
           <div className="text-sm">
-            <span className="font-medium text-neutral-700">{t('correct')}: </span>
-            <span className="text-green-600">{formatCorrectAnswerText(bookmark.question)}</span>
+            <span className="font-medium text-neutral-700">{t('correct')}:</span>
+            <div className="mt-1 space-y-1 text-green-600">
+              {correctAnswers.map((answer, index) => (
+                <div
+                  key={`${correctAnswerIndexes[index] ?? index}-${answer}`}
+                  className="flex gap-1"
+                >
+                  <span className="flex-shrink-0">
+                    {String.fromCharCode(65 + (correctAnswerIndexes[index] ?? index))}.
+                  </span>
+                  <QuestionContent content={answer} variant="answer" className="min-w-0 flex-1" />
+                </div>
+              ))}
+            </div>
           </div>
           <QuestionOptionsPreview
             options={bookmark.question.options}
-            className="mt-2 text-sm text-neutral-600"
+            className="mt-2 font-home text-sm text-ink-muted"
             optionsClassName="grid grid-cols-1 gap-1"
             optionItemClassName="opacity-75"
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </SurfaceCard>
   );
 }
 
@@ -277,6 +297,29 @@ function EmptyBookmarksState({ t, tCommon }: EmptyBookmarksStateProps) {
   );
 }
 
+function BookmarksSkeleton() {
+  return (
+    <div className="space-y-4 font-home" aria-busy="true">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-48 rounded-md" />
+        <Skeleton className="h-6 w-24 rounded-full" />
+      </div>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <SurfaceCard key={`bookmark-skeleton-${index}`} className="p-5">
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-3/4 rounded-md" />
+            <Skeleton className="h-4 w-1/2 rounded-md" />
+            <div className="flex gap-2 pt-2">
+              <Skeleton className="h-8 w-24 rounded-full" />
+              <Skeleton className="h-8 w-24 rounded-full" />
+            </div>
+          </div>
+        </SurfaceCard>
+      ))}
+    </div>
+  );
+}
+
 export default function ProfileBookmarks() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
@@ -304,32 +347,21 @@ export default function ProfileBookmarks() {
 
     try {
       await deleteProfileBookmark(bookmarkId);
-      mutate();
-      dispatch({ type: 'patch', value: { localError: '' } });
-      dispatch({ type: 'setHistoryTurns', bookmarkId, turns: 0 });
       dispatch({ type: 'closeModal' });
-    } catch (error: unknown) {
-      dispatch({
-        type: 'patch',
-        value: {
-          removingBookmarkId: null,
-          localError: extractUnknownErrorMessage(error, 'Failed to remove bookmark'),
-        },
+      void mutate().catch(() => {
+        toast.error(t('refreshBookmarksError'));
       });
+    } catch {
+      toast.error(t('removeBookmarkError'));
+    } finally {
+      dispatch({ type: 'patch', value: { removingBookmarkId: null } });
     }
   };
 
-  const displayError = error?.message ?? state.localError;
+  const displayError = error ? (error instanceof Error ? error.message : tCommon('error')) : null;
 
-  if (isLoading && bookmarks.length === 0) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-          <div className="text-sm text-neutral-500">{tCommon('loadingBookmarks')}</div>
-        </div>
-      </div>
-    );
+  if (isLoading) {
+    return <BookmarksSkeleton />;
   }
 
   return (

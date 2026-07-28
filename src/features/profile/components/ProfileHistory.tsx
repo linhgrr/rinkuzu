@@ -4,8 +4,11 @@ import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { Pill } from '@/components/ui/Pill';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants/routes';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -81,73 +84,115 @@ function profileHistoryReducer(
   }
 }
 
-function getScoreColor(score: number) {
-  if (score >= 80) return 'text-green-600 bg-green-50';
-  if (score >= 60) return 'text-yellow-600 bg-yellow-50';
-  return 'text-red-600 bg-red-50';
+function getScoreColor(score: number): string {
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-amber-600';
+  return 'text-red-600';
 }
 
 function AttemptTakenAt({ iso, label }: AttemptTakenAtProps) {
   return (
-    <time dateTime={iso} suppressHydrationWarning>
+    <time dateTime={iso} className="font-home text-xs text-ink-muted">
       {label}
     </time>
   );
 }
 
-export default function ProfileHistory() {
+function HistorySkeleton() {
+  return (
+    <div className="space-y-6 font-home" aria-busy="true">
+      <Skeleton className="h-8 w-48 rounded-md" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <SurfaceCard key={`history-stat-skeleton-${index}`} className="p-4">
+            <Skeleton className="h-4 w-24 rounded-md" />
+            <Skeleton className="mt-2 h-7 w-16 rounded-md" />
+          </SurfaceCard>
+        ))}
+      </div>
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <SurfaceCard key={`history-item-skeleton-${index}`} className="p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-64 rounded-md" />
+                <Skeleton className="h-4 w-36 rounded-md" />
+              </div>
+              <Skeleton className="h-8 w-24 rounded-full" />
+            </div>
+          </SurfaceCard>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfileHistory() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(profileHistoryReducer, initialState);
 
   useEffect(() => {
     let isActive = true;
+    dispatch({ type: 'fetch:start' });
 
-    const fetchAttempts = async () => {
-      try {
-        dispatch({ type: 'fetch:start' });
-        const params = new URLSearchParams({
-          page: state.currentPage.toString(),
-          limit: ITEMS_PER_PAGE.toString(),
-        });
-
-        const data = await fetchProfileHistoryViewModel(params);
-
-        if (!isActive) {
-          return;
-        }
-
+    void fetchProfileHistoryViewModel(
+      new URLSearchParams({
+        page: state.currentPage.toString(),
+        limit: ITEMS_PER_PAGE.toString(),
+      }),
+    )
+      .then((viewModel) => {
+        if (!isActive) return;
         dispatch({
           type: 'fetch:success',
-          attempts: data.attempts,
-          pagination: data.pagination,
+          attempts: viewModel.attempts,
+          pagination: viewModel.pagination,
         });
-      } catch (error: unknown) {
-        if (!isActive) {
-          return;
-        }
-
+      })
+      .catch((err) => {
+        if (!isActive) return;
         dispatch({
           type: 'fetch:error',
-          error: extractUnknownErrorMessage(error, 'Failed to load quiz history'),
+          error: extractUnknownErrorMessage(err, t('loadHistoryError')),
         });
-      }
-    };
-
-    fetchAttempts();
+      });
 
     return () => {
       isActive = false;
     };
-  }, [state.currentPage]);
+  }, [state.currentPage, t]);
 
   const getPerformanceBadge = (score: number) => {
     if (score >= 90)
-      return { text: t('excellent'), icon: <HiOutlineAcademicCap className="size-4" /> };
-    if (score >= 80) return { text: t('great'), icon: <HiOutlineStar className="size-4" /> };
-    if (score >= 70) return { text: t('good'), icon: <HiOutlineThumbUp className="size-4" /> };
-    if (score >= 60) return { text: t('pass'), icon: <HiOutlineEmojiHappy className="size-4" /> };
-    return { text: t('needsWork'), icon: <HiOutlineEmojiSad className="size-4" /> };
+      return {
+        text: t('excellent'),
+        icon: <HiOutlineAcademicCap className="size-4" />,
+        tone: 'warm' as const,
+      };
+    if (score >= 80)
+      return {
+        text: t('great'),
+        icon: <HiOutlineStar className="size-4" />,
+        tone: 'cool' as const,
+      };
+    if (score >= 70)
+      return {
+        text: t('good'),
+        icon: <HiOutlineThumbUp className="size-4" />,
+        tone: 'cool' as const,
+      };
+    if (score >= 60)
+      return {
+        text: t('pass'),
+        icon: <HiOutlineEmojiHappy className="size-4" />,
+        tone: 'neutral' as const,
+      };
+    return {
+      text: t('needsWork'),
+      icon: <HiOutlineEmojiSad className="size-4" />,
+      tone: 'neutral' as const,
+    };
   };
 
   const handlePageChange = (page: number) => {
@@ -155,68 +200,52 @@ export default function ProfileHistory() {
   };
 
   if (state.loading && state.attempts.length === 0) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-          <div className="text-sm text-neutral-500">{tCommon('loadingHistory')}</div>
-        </div>
-      </div>
-    );
+    return <HistorySkeleton />;
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-neutral-900">{t('quizHistory')}</h2>
+    <div className="space-y-6 font-home text-ink">
+      <h2 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
+        {t('quizHistory')}
+      </h2>
 
-      {state.error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="text-sm text-red-700">{state.error}</div>
-        </div>
-      )}
+      {state.error && <ErrorState message={state.error} className="mb-4" />}
 
       {state.attempts.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <EmptyState
-              icon={<HiOutlineDocumentText className="size-16 text-neutral-300" />}
-              title={t('noHistory')}
-              description={t('exploreQuizzes')}
-              action={
-                <Link href={ROUTES.DASHBOARD}>
-                  <Button>{tCommon('browseQuizzes')}</Button>
-                </Link>
-              }
-            />
-          </CardContent>
-        </Card>
+        <SurfaceCard className="p-8 text-center">
+          <EmptyState
+            icon={<HiOutlineDocumentText className="size-14 text-ink-muted" />}
+            title={t('noHistory')}
+            description={t('exploreQuizzes')}
+            action={
+              <Link href={ROUTES.DASHBOARD}>
+                <Button>{tCommon('browseQuizzes')}</Button>
+              </Link>
+            }
+          />
+        </SurfaceCard>
       ) : (
         <div className="space-y-4">
           {/* Stats Summary */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="text-center py-4">
-                <div className="text-xl font-bold text-brand-trust">
-                  {state.pagination?.totalItems ?? state.attempts.length}
-                </div>
-                <div className="text-xs text-neutral-600">{t('totalAttempts')}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="text-center py-4">
-                <div className="text-xl font-bold text-green-600">
-                  {state.attempts.length > 0
-                    ? Math.round(
-                        state.attempts.reduce((sum, attempt) => sum + attempt.score, 0) /
-                          state.attempts.length,
-                      )
-                    : 0}
-                  %
-                </div>
-                <div className="text-xs text-neutral-600">{t('avgScore')}</div>
-              </CardContent>
-            </Card>
-            {/* Simplified stats for mobile */}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <SurfaceCard className="p-4 text-center">
+              <div className="font-home text-2xl font-semibold text-accent">
+                {state.pagination?.totalItems ?? state.attempts.length}
+              </div>
+              <div className="font-home text-xs text-ink-muted mt-1">{t('totalAttempts')}</div>
+            </SurfaceCard>
+            <SurfaceCard className="p-4 text-center">
+              <div className="font-home text-2xl font-semibold text-green-600">
+                {state.attempts.length > 0
+                  ? Math.round(
+                      state.attempts.reduce((sum, attempt) => sum + attempt.score, 0) /
+                        state.attempts.length,
+                    )
+                  : 0}
+                %
+              </div>
+              <div className="font-home text-xs text-ink-muted mt-1">{t('avgScore')}</div>
+            </SurfaceCard>
           </div>
 
           {/* Attempts List */}
@@ -224,62 +253,54 @@ export default function ProfileHistory() {
             {state.attempts.map((attempt) => {
               const badge = getPerformanceBadge(attempt.score);
               return (
-                <Card key={attempt.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-x-2 flex-wrap gap-y-1 mb-1">
-                          <h3 className="text-lg font-semibold text-neutral-900 truncate max-w-[200px] sm:max-w-md">
-                            {attempt.quiz.title}
-                          </h3>
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreColor(attempt.score)}`}
-                          >
-                            {badge.icon} {badge.text}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-x-4 text-xs text-neutral-500 mt-2">
-                          <span className="flex items-center gap-1">
-                            <HiOutlineDocumentText className="size-3" />{' '}
-                            {tCommon('questionsCount', { count: attempt.totalQuestions })}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <HiOutlineClock className="size-3" />{' '}
-                            <AttemptTakenAt iso={attempt.takenAt} label={attempt.takenAtLabel} />
-                          </span>
-                        </div>
+                <SurfaceCard key={attempt.id} className="p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-x-2.5 flex-wrap gap-y-1.5 mb-1.5">
+                        <h3 className="font-home text-base sm:text-lg font-semibold text-ink truncate max-w-[200px] sm:max-w-md">
+                          {attempt.quiz.title}
+                        </h3>
+                        <Pill tone={badge.tone} className="flex items-center gap-1">
+                          {badge.icon} {badge.text}
+                        </Pill>
                       </div>
 
-                      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                        <div className="text-right sm:text-left">
-                          <div
-                            className={`text-2xl font-bold ${getScoreColor(attempt.score).split(' ')[0]}`}
-                          >
-                            {attempt.score}%
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Link href={ROUTES.HISTORY_DETAIL(attempt.id)}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="bg-neutral-50 hover:bg-neutral-100 border-neutral-200 text-neutral-700"
-                            >
-                              {t('details')}
-                            </Button>
-                          </Link>
-                          <Link href={ROUTES.QUIZ.VIEW(attempt.quiz.slug)}>
-                            <Button variant="outline" size="sm">
-                              {t('redo')}
-                            </Button>
-                          </Link>
-                        </div>
+                      <div className="flex items-center gap-x-4 font-home text-xs text-ink-muted mt-2">
+                        <span className="flex items-center gap-1">
+                          <HiOutlineDocumentText className="size-3.5" />{' '}
+                          {tCommon('questionsCount', { count: attempt.totalQuestions })}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <HiOutlineClock className="size-3.5" />{' '}
+                          <AttemptTakenAt iso={attempt.takenAt} label={attempt.takenAtLabel} />
+                        </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                      <div className="text-right sm:text-left">
+                        <div
+                          className={`font-home text-2xl font-bold ${getScoreColor(attempt.score)}`}
+                        >
+                          {attempt.score}%
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Link href={ROUTES.HISTORY_DETAIL(attempt.id)}>
+                          <Button variant="outline" size="sm">
+                            {t('details')}
+                          </Button>
+                        </Link>
+                        <Link href={ROUTES.QUIZ.VIEW(attempt.quiz.slug)}>
+                          <Button variant="primary" size="sm">
+                            {t('redo')}
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </SurfaceCard>
               );
             })}
           </div>
@@ -299,3 +320,5 @@ export default function ProfileHistory() {
     </div>
   );
 }
+
+export default ProfileHistory;

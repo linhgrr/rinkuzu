@@ -19,7 +19,11 @@ export default function LandingPage({ isAuthenticated = false }: LandingPageProp
       <TextureBackground />
       <Header isAuthenticated={isAuthenticated} />
 
-      <main className="relative z-10 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 lg:px-[96px]">
+      <main
+        id="landing-main-content"
+        tabIndex={-1}
+        className="relative z-10 mx-auto w-full max-w-[1920px] px-4 sm:px-8 md:px-12 lg:px-[96px]"
+      >
         {/* Hero */}
         <section className="relative w-full flex flex-col">
           <Hero isAuthenticated={isAuthenticated} />

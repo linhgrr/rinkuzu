@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from 'react-icons/hi';
-import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { getExercisePromptSections } from '@/features/adaptive/lib/exercise-prompt';
 import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
@@ -144,7 +144,7 @@ export const ExerciseTheoryView = ({
                 {t('exercise.theory.basicTheory')}
               </h3>
               <div className="text-base md:text-lg leading-relaxed text-neutral-700">
-                <DynamicMarkdownRenderer content={theory.content} />
+                <MarkdownRenderer content={theory.content} />
               </div>
             </div>
 
@@ -164,7 +164,7 @@ export const ExerciseTheoryView = ({
                         {t('exercise.theory.example', { index: idx + 1 })}
                       </div>
                       <div className="text-sm md:text-base text-neutral-700 leading-relaxed">
-                        <DynamicMarkdownRenderer content={ex} />
+                        <MarkdownRenderer content={ex} />
                       </div>
                     </div>
                   ))}
@@ -317,7 +317,7 @@ export const ExerciseQuestionView = ({
                 const headerContent = getExerciseHeaderContent(exercise);
                 return headerContent ? (
                   <h2 className="mb-8 text-xl font-medium leading-relaxed text-neutral-900 tracking-tight">
-                    <DynamicMarkdownRenderer content={headerContent} />
+                    <MarkdownRenderer content={headerContent} />
                   </h2>
                 ) : null;
               })()}

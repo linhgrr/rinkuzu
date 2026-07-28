@@ -14,7 +14,7 @@ function SurfaceCard({ className, ref, ...props }: SurfaceCardProps) {
   return (
     <section
       ref={ref}
-      className={cn('rounded-[20px] border border-line bg-surface p-5', className)}
+      className={cn('rounded-panel border border-line bg-surface p-5', className)}
       {...props}
     />
   );

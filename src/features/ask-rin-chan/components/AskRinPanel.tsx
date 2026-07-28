@@ -24,7 +24,7 @@ import {
   HiOutlineTrash,
 } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
-import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Modal } from '@/components/ui/Modal';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {

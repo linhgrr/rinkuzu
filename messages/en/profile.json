@@ -167,6 +167,9 @@
   "noPublicQuizzes": "No public quizzes yet",
   "removeBookmarkTitle": "Remove bookmark?",
   "removeBookmarkConfirm": "Remove the bookmark from \"{title}\"? You can bookmark it again later.",
+  "removeBookmarkError": "Failed to remove the bookmark.",
+  "refreshBookmarksError": "The bookmark was removed, but the list could not be refreshed.",
+  "loadHistoryError": "Failed to load quiz history.",
   "removeAvatarConfirmTitle": "Remove profile photo?",
   "removeAvatarConfirmMessage": "This will remove your current profile photo from your account.",
   "uploadAvatar": "Upload avatar"

@@ -272,6 +272,12 @@ function UsersSearchBar({
             placeholder={t('searchUsers')}
             value={searchTerm}
             onChange={(event) => onSearchTermChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.nativeEvent.isComposing || event.key !== 'Enter') return;
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }}
+            icon={<HiOutlineSearch className="size-5" />}
             className="w-full"
           />
         </div>
@@ -281,10 +287,6 @@ function UsersSearchBar({
           options={statusOptions}
           onChange={onStatusFilterChange}
         />
-        <Button type="submit" variant="gradient">
-          <HiOutlineSearch className="mr-2 size-4" />
-          {t('search')}
-        </Button>
         {searchTerm ? (
           <Button type="button" variant="outline" onClick={onClear}>
             {tCommon('clear')}

@@ -54,13 +54,6 @@ export interface DashboardHomeCopy {
     subtitle: string;
     emptyAction: string;
   };
-  reviewToday: {
-    title: string;
-    due: string;
-    caughtUp: string;
-    reviewAction: string;
-    exploreAction: string;
-  };
   recentOwnedQuizzes: {
     title: string;
     subtitle: string;

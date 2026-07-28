@@ -1,4 +1,4 @@
-# RinKuzu Design System — Figma Home Dashboard & Product UI Tokens
+# RinKuzu Design System — App-Wide Design System Standard (Home Redesign Baseline)
 
 ## 0. Product Context
 
@@ -8,50 +8,55 @@ RinKuzu is an AI-powered adaptive learning platform that transforms PDFs into pe
 2. **Deep mastery** — knowledge graph, Bloom levels, progress, and analytics feel credible.
 3. **Friendly guidance** — Rin-chan and adaptive learning make the product approachable.
 
-The system uses a professional SaaS foundation with a warm education-focused identity:
+The system uses a professional warm SaaS foundation with an approachable AI learning identity:
 
-- **Green = primary brand identity, learning progress, success, trust**
-- **Orange = focused action, motivation, CTA momentum**
-- **Neutral surfaces = clarity and focus**
-- **Soft depth = approachable intelligence**
+- **Warm Orange = primary action momentum, key CTAs, active states, conversion**
+- **Soft Warm Neutrals = calm, high-legibility surfaces and structured depth**
+- **Green = learning progress, mastery badges, correct answers, success feedback**
+- **Cool Secondary Blue = subtle borders, supporting metrics, badge accents**
 
-This is not a generic orange/green theme. It is a green-led learning SaaS identity with orange reserved for high-intent action moments.
+---
 
-### 0.1 Current Home Redesign Source of Truth
+### 0.1 Protected Designer Frames & Anti-AI-Slop Guidelines
 
-The authenticated home/dashboard screen is now sourced from the Figma frame:
+#### 1. Designer Reference Screens (VISUAL BASELINE REQUIRED)
 
-- File: `Rinkuzu website - FINAL`
-- Node: `2102:4700`
-- URL: `https://www.figma.com/design/NAj8r48fIqdjpK6SbLzYl0/Rinkuzu-website---FINAL--?node-id=2102-4700&m=dev`
-- Code entry: `src/features/dashboard/components/DashboardPageShell.tsx`
-- Component set: `src/features/dashboard/components/HomeDashboard.tsx`
-- Assets: `public/images/home-redesign/`
+The following 3 screens were designed by the UI designer and remain the visual references:
 
-This frame introduces a dashboard-specific warm token layer. The older green-led system remains valid for non-dashboard surfaces until those screens are intentionally migrated. Do not mix the old green dashboard cards with the new home shell.
+1. **Home (`/dashboard`)**: Entry `DashboardPageShell.tsx` & `HomeDashboard.tsx` (Figma frame `2102:4700`)
+2. **Quizzes (`/quizzes`)**: Entry `quizzes/page.tsx` & `QuizCard.tsx`
+3. **Personal Learning Home (`/adaptive`)**: Entry `AdaptiveLearningDashboard.tsx`, `HeroSection.tsx`, `Library.tsx`
 
-Home desktop frame rules:
+They may be changed when consistency, accessibility, or responsive behavior improves. Any intentional
+visual change requires desktop and mobile review; token-only refactors should preserve computed style.
+Artwork crop, aspect ratio, rotation, overlap, and fractional SVG/image bounds are optical geometry and
+must not be rounded mechanically.
 
-- Canvas: `1920x1080`
-- Sidebar: `280px`, fixed left, starts below `72px` topbar
-- Topbar: `72px`, surface `#fefefe`, border `#e8eeff`
-- Main content: `1340px` centered inside the `1640px` area after the sidebar
-- Main x position on 1920px desktop: `430px`
-- Main grid: `900px` left column, `416px` right column, `24px` gap
-- Header y position: `96px`
-- Hero/upload y position: `180px`
-- Lower cards y position: `499px`
+#### 3. 4-Point / 8-Point Grid System (Quy tắc Bội số 4px/8px)
 
-Home component inventory:
+All layout containers, cards, padding, margins, gaps, button heights, and icon bounds must strictly align with the **4px / 8px Grid System**:
 
-- `HomeTopbar`: logo block, sidebar toggle, notification, language, avatar
-- `HomeSidebar`: Home, Quiz Builder group, Personal Learning group, Explore, Setting, Help
-- `HomeHero`: warm AI learning banner with Figma character assets
-- `QuizBuilderCard`: dashed PDF upload surface
-- `LearningProgressCard`: streak, accuracy, study time, weekly activity
-- `ContinueLearning`: eight learning cards in a `4x2` desktop grid
+- **Spacing Scale Steps**:
+  - `4px` (`space-1`): Micro gaps between icons & inline badges
+  - `8px` (`space-2`): Inner element spacing, badge padding
+  - `12px` (`space-3`): Compact stack gaps, button inner padding
+  - `16px` (`space-4` / `p-4`): Standard mobile card padding, default form gaps
+  - `20px` (`space-5` / `p-5`): Desktop card padding (Figma Home baseline)
+  - `24px` (`space-6` / `p-6`): Major container padding, column grid gap (`gap-6`)
+  - `32px` (`space-8` / `p-8`): Section spacing
+  - `48px` (`space-12`): Page section divider spacing
+- **Button & Input Height Steps**:
+  - Small: `36px` (`h-9`)
+  - Medium / Standard: `44px` (`h-11`)
+  - Large / Hero CTA: `52px` or `56px` (`h-14`)
+- **Prohibited Patterns**:
+  - Do not introduce arbitrary layout spacing when a named grid token exists.
+  - `18px` horizontal button padding and `14px` horizontal input padding are named optical control
+    tokens. Panel radius `20px` is the named `radius-panel` token.
+  - Fractional or non-grid artwork geometry is allowed when it preserves crop, aspect ratio, transform,
+    or optical alignment. Register recurring exceptions in `quality/design-system-policy.json`.
 
-Home-specific primitive tokens:
+#### App-Wide Design System Primitive Tokens:
 
 ```css
 :root {
@@ -64,6 +69,7 @@ Home-specific primitive tokens:
   --home-ink-strong: #441f05;
   --home-ink-muted: rgba(61, 19, 0, 0.5);
   --home-accent: #ef4a00;
+  --home-accent-hover: #fa621d;
   --home-accent-soft: #fce4d3;
   --home-accent-warm: #ffd6bb;
   --home-accent-pale: #ffe5d3;
@@ -78,45 +84,49 @@ Home-specific primitive tokens:
 }
 ```
 
-Home typography:
+#### Typography roles:
 
-- Font family: Montserrat
-- Title: `36px`, `700`, `line-height: 1.25`, letter spacing `0`
-- Section title: `18px`, `600`, `line-height: 1.4`
-- Body: `16px`, `400`, `line-height: 1.4`
-- Body semibold: `16px`, `600`, `line-height: 1.4`
-- Metric value: `22px`, `600`, `line-height: 1.35`
-- Sub text: `14px`, `400`, `line-height: 1.4`
+- Core application UI uses **Montserrat (`var(--font-montserrat)` / `font-home`)**.
+- **Unbounded** and **Vina Sans** are landing display roles only; they are not substitutes for app body
+  text or controls.
+- Main Page Title: `36px` / `32px` / `28px`, `700` (Bold), `line-height: 1.25`, `text-ink`
+- Section Title: `18px`, `600` (Semibold), `line-height: 1.4`, `text-ink`
+- Body Text: `16px`, `400` (Regular) / `600` (Semibold), `line-height: 1.4`, `text-ink`
+- Subtext / Meta: `14px`, `400`, `line-height: 1.4`, `text-ink-muted`
+- Metric Values: `22px`, `600`, `line-height: 1.35`
 
 ---
 
-## 1. Brand Atmosphere
+## 1. Brand Atmosphere & Visual Hierarchy
 
 ### 1.1 Desired Feel
 
-RinKuzu should feel:
+RinKuzu across all screens should feel:
 
-- Smart but not intimidating
-- Energetic but not childish
-- Academic but not old-fashioned
-- Friendly but still trustworthy
-- AI-native without looking like a generic AI wrapper
-
-The visual language should combine:
-
-- Clean SaaS layout discipline
-- Warm, student-friendly colors
-- Clear learning-state feedback
-- Subtle AI/graph-inspired visuals
-- Strong CTA hierarchy for sign-up and upload flows
+- **Smart & Guided** — clear visual priority, readable hierarchy, approachable AI tutor
+- **Energetic & Focused** — vibrant orange CTAs guide action without overwhelming
+- **Warm & Academic** — warm SaaS surfaces replace cold technical gray/slate UIs
+- **Production-Grade & Consistent** — uniform margins, rounded corners, typography, and card components
 
 ### 1.2 Core Visual Principles
 
-**1. Clarity before decoration**
-Every screen must help the learner understand what to do next.
+**1. Semantic role decides color**
+Use the app action token for authenticated actions and active navigation, landing CTA tokens for the
+marketing header, progress/success tokens for learning outcomes, and error tokens for destructive or
+failed states. Similar orange values do not need to collapse into one hex when their semantic roles differ.
+Solid orange action surfaces use white text and retain the approved bright-orange brand treatment. This
+is a documented branding exception to the normal button-text contrast rule; orange tints used by badges
+and notices keep their darker semantic foreground instead of being treated as solid actions.
 
-**2. Green anchors the brand**
-Use green for product identity, learning progress, completed tasks, mastery, correct answers, growth, trusted states, and learning success.
+**2. Warm surfaces anchor legibility**
+Page backgrounds default to `#f8f8f8` (`--surface-page`), while content cards use `#fefefe` (`--surface`) with subtle soft borders `#e8eeff`. Avoid harsh dark gray boxes or unstyled pure white containers.
+
+**3. Green represents mastery and progress**
+Green is strictly reserved for learning progress bars, correct option highlights, mastery badges, streak counters, and success notifications.
+
+**4. Core app typography is Montserrat**
+Montserrat is the standard for titles, body text, buttons, inputs, pills, and card metadata across
+authenticated app surfaces. Unbounded and Vina Sans remain approved landing display roles.
 
 **3. Orange motivates action**
 Use orange for the next meaningful CTA: generate quiz, start learning, upload PDF, upgrade plan.
@@ -212,48 +222,103 @@ This prevents orange from overpowering the product while keeping CTA moments hig
 
 ## 2.3 Semantic Tokens
 
+Authoritative light-mode color source: Figma file `NAj8r48fIqdjpK6SbLzYl0`. The approved
+variable groups are Primary (`224:339`), Neutral (`224:471`), Alpha (`2147:5371`), Linear
+(`230:585`), Secondary (`2155:5677`) and Status (`2239:1685`); Home (`2102:4700`) defines
+their semantic use in the authenticated product. Figma variable roles take precedence over
+similarly colored generic scales: `CTA` (`#fa621d`) is the solid action fill, while
+`Primary / Main` (`#ff7c23`) is the primary accent. These nodes define the light-mode
+standard; dark-mode colors remain a product extension until an approved dark token frame is
+provided.
+
 ```css
 :root {
+  /* Figma primitives */
+  --primary-0: #fffbf8;
+  --primary-1: #fff2e9;
+  --primary-2: #ffe5d4;
+  --primary-3: #ffd6bb;
+  --primary: #ff7c23;
+  --primary-5: #ea660c;
+  --primary-6: #d05908;
+  --primary-7: #733810;
+  --primary-8: #441f05;
+  --cta: #fa621d;
+  --neutral-white: #ffffff;
+  --neutral-warm-2: #fffcf9;
+  --neutral-warm-3: #fffaf5;
+  --neutral-warm-31: #f6e2d5;
+  --neutral-warm-4: #d9d5d0;
+  --neutral-warm-5: #bab7b3;
+  --neutral-warm-6: #595856;
+  --neutral-warm-7: #403f3d;
+  --neutral-warm-8: #2a0b00;
+  --secondary-1: #f8fbff;
+  --secondary-2: #e2ecfc;
+  --secondary-3: #c2d6e4;
+  --secondary-4: #718ebd;
+  --alpha-00: rgba(217, 213, 208, 0.4);
+  --alpha-1: rgba(68, 31, 5, 0.2);
+  --alpha-2: rgba(68, 31, 5, 0.4);
+  --alpha-3: rgba(68, 31, 5, 0.7);
+  --alpha-04: rgba(217, 213, 208, 0.25);
+  --linear-1: linear-gradient(90deg, #f25d1b 0%, #ff7c23 100%);
+  --status-1: #eaeff3;
+  --status-2: #076cee;
+  --status-3: #eaf6e4;
+  --status-4: #14c145;
+  --status-5: #828282;
+
   /* Background */
-  --bg-page: var(--neutral-0);
-  --bg-section: var(--neutral-50);
-  --bg-surface: var(--neutral-0);
-  --bg-surface-muted: var(--neutral-100);
-  --bg-surface-warm: #fffaf4;
+  --surface-page: #f8f8f8;
+  --surface: #fefefe;
+  --surface-warm: var(--primary-0);
+  --surface-blue: var(--secondary-1);
+  --hero: var(--primary-2);
+  --bg-page: var(--surface-page);
+  --bg-surface: var(--surface);
+  --bg-surface-warm: var(--surface-warm);
 
   /* Text */
-  --text-primary: var(--neutral-900);
-  --text-secondary: var(--neutral-600);
-  --text-muted: var(--neutral-500);
-  --text-inverse: var(--neutral-0);
+  --ink: var(--primary-8);
+  --ink-muted: var(--alpha-3);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-muted);
+  --text-inverse: #ffffff;
 
   /* Border */
-  --border-subtle: rgba(24, 24, 21, 0.08);
-  --border-default: rgba(24, 24, 21, 0.12);
-  --border-strong: rgba(24, 24, 21, 0.18);
+  --line: #e8eeff;
+  --line-blue: var(--secondary-4);
+  --border-default: var(--line);
 
   /* Brand meaning */
-  --brand-primary: var(--green-500);
-  --brand-primary-hover: var(--green-600);
-  --brand-primary-active: var(--green-700);
-  --brand-action: var(--orange-500);
-  --brand-action-hover: var(--orange-600);
-  --brand-action-active: var(--orange-700);
-  --brand-trust: var(--green-500);
-  --brand-trust-hover: var(--green-600);
-  --brand-trust-active: var(--green-700);
+  --brand-primary: var(--primary);
+  --brand-primary-hover: var(--cta);
+  --brand-action: var(--cta);
+  --brand-action-hover: var(--primary-5);
+  --brand-action-active: var(--primary-7);
+  --brand-action-text: #ffffff;
+
+  /* Status and component roles */
+  --success: var(--status-4);
+  --success-surface: var(--status-3);
+  --info: var(--status-2);
+  --info-surface: var(--status-1);
+  --progress-gradient: var(--linear-1);
+  --control-surface: var(--alpha-04);
+  --control-border: var(--alpha-00);
 
   /* Learning states */
   --state-correct: var(--green-500);
   --state-incorrect: var(--red-500);
-  --state-skipped: var(--neutral-400);
+  --state-skipped: var(--status-5);
   --state-review: var(--orange-500);
   --state-new: var(--blue-500);
   --state-mastered: var(--green-600);
 
   /* Focus */
-  --focus-ring: var(--green-500);
-  --focus-ring-soft: rgba(0, 157, 140, 0.22);
+  --focus-ring: var(--accent);
+  --focus-ring-soft: rgba(239, 74, 0, 0.22);
 }
 ```
 
@@ -285,6 +350,7 @@ This prevents orange from overpowering the product while keeping CTA moments hig
   --brand-action: #fb923c;
   --brand-action-hover: #fdba74;
   --brand-action-active: #fed7aa;
+  --brand-action-text: #ffffff;
 
   --brand-trust: #34d399;
   --brand-trust-hover: #6ee7b7;
@@ -1374,7 +1440,7 @@ Generation loading:
 Minimum requirements:
 
 - Body text: WCAG AA
-- Button text: WCAG AA
+- Button text: WCAG AA, except the approved bright-orange action surface with white brand text
 - Focus states: visible on all surfaces
 - Chart colors: must not rely on color alone
 

@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuestionType } from '@/shared/constants/question-type';
 import type { QuizQuestionReview } from '@/shared/types/quiz-question';
@@ -119,9 +120,18 @@ export function QuestionReviewList({
                   </div>
 
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-neutral-900 flex-1">
-                      {index + 1}. {questionResult.question}
-                    </h3>
+                    <div
+                      role="heading"
+                      aria-level={3}
+                      className="flex min-w-0 flex-1 items-start gap-1 font-semibold text-neutral-900"
+                    >
+                      <span className="flex-shrink-0">{index + 1}.</span>
+                      <QuestionContent
+                        content={questionResult.question}
+                        variant="compact"
+                        className="min-w-0 flex-1"
+                      />
+                    </div>
                     <div className="flex items-center gap-x-2">
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
@@ -160,9 +170,18 @@ export function QuestionReviewList({
                 )}
 
                 <div className="space-y-2">
-                  <div className="text-sm">
-                    <span className="font-medium text-neutral-700">{t('yourAnswer')}: </span>
-                    <span
+                  <div className="flex items-start gap-1 text-sm">
+                    <span className="flex-shrink-0 font-medium text-neutral-700">
+                      {t('yourAnswer')}:
+                    </span>
+                    <QuestionContent
+                      variant="answer"
+                      content={formatAnswer(
+                        questionResult.userAnswer,
+                        questionResult.options,
+                        questionResult.type,
+                        isAnswered,
+                      )}
                       className={
                         questionResult.isCorrect
                           ? 'text-green-600'
@@ -170,20 +189,19 @@ export function QuestionReviewList({
                             ? 'text-red-600'
                             : 'text-neutral-500'
                       }
-                    >
-                      {formatAnswer(
-                        questionResult.userAnswer,
-                        questionResult.options,
-                        questionResult.type,
-                        isAnswered,
-                      )}
-                    </span>
+                    />
                   </div>
 
                   {!questionResult.isCorrect && (
-                    <div className="text-sm">
-                      <span className="font-medium text-neutral-700">{tProfile('correct')}: </span>
-                      <span className="text-green-600">{formatCorrectAnswer(questionResult)}</span>
+                    <div className="flex items-start gap-1 text-sm">
+                      <span className="flex-shrink-0 font-medium text-neutral-700">
+                        {tProfile('correct')}:
+                      </span>
+                      <QuestionContent
+                        content={formatCorrectAnswer(questionResult)}
+                        variant="answer"
+                        className="text-green-600"
+                      />
                     </div>
                   )}
 
@@ -206,12 +224,10 @@ export function QuestionReviewList({
                             ? questionResult.correctIndex === optIdx
                             : questionResult.correctIndexes?.includes(optIdx);
 
-                        const optionText = String.fromCharCode(65 + optIdx) + '. ' + option;
-
                         return (
                           <div
                             key={`${optIdx}-${option}`}
-                            className={`text-sm p-2 rounded border flex items-center ${
+                            className={`flex items-start rounded border p-2 text-sm ${
                               isCorrectAnswer
                                 ? 'bg-green-100 border-green-300 text-green-800'
                                 : isUserAnswer
@@ -219,8 +235,17 @@ export function QuestionReviewList({
                                   : 'bg-neutral-50 border-neutral-200 text-neutral-700'
                             }`}
                           >
-                            <div className="flex-1">
-                              <span className="text-neutral-900">{optionText}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start gap-1 text-neutral-900">
+                                <span className="flex-shrink-0">
+                                  {String.fromCharCode(65 + optIdx)}.
+                                </span>
+                                <QuestionContent
+                                  content={option}
+                                  variant="option"
+                                  className="min-w-0 flex-1"
+                                />
+                              </div>
 
                               {(() => {
                                 const optionImage = questionResult.optionImages?.[optIdx];

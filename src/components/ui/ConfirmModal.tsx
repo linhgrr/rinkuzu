@@ -44,16 +44,16 @@ export function ConfirmModal({
 
   return (
     <Modal isOpen={isOpen} onClose={isLoading ? () => {} : onCancel} title={resolvedTitle}>
-      <div className="space-y-5">
-        <div className="break-words text-[15px] leading-7 text-neutral-600 sm:text-base">
+      <div className="space-y-4 font-home">
+        <div className="break-words font-home text-sm leading-6 text-ink-muted sm:text-base">
           {message}
         </div>
-        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-neutral-100 pt-5 sm:flex-row sm:justify-end">
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-line pt-4 sm:flex-row sm:justify-end">
           <Button
             variant="outline"
             onClick={onCancel}
             disabled={isLoading}
-            className="min-h-11 w-full justify-center px-5 font-medium sm:w-auto"
+            className="min-h-11 w-full justify-center px-5 font-home sm:w-auto"
           >
             {resolvedCancelText}
           </Button>

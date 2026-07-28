@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { FlashcardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
+import { QuestionExcerpt } from '@/components/ui/QuestionContent';
 import { Flashcard } from '@/features/quiz/components/Flashcard';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { ApiResponseError } from '@/lib/api/client';
@@ -263,9 +264,11 @@ function FlashcardResultsView({
                     <div className="font-medium text-neutral-900">
                       {t('question')} {index + 1}
                     </div>
-                    <div className="text-sm text-neutral-600 mt-1">
-                      {question.question.substring(0, 100)}...
-                    </div>
+                    <QuestionExcerpt
+                      content={question.question}
+                      maxLines={2}
+                      className="mt-1 text-sm text-neutral-600"
+                    />
                   </div>
                 ))}
               </div>

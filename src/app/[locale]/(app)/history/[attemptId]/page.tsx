@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
-import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import {
   HiOutlineArrowLeft,
   HiOutlineChartBar,
@@ -43,6 +43,23 @@ const initialAttemptDetailState: AttemptDetailState = {
   loading: true,
   error: '',
 };
+
+function AnswerContent({ value }: { value: string | string[] }) {
+  const answers = Array.isArray(value) ? value : [value];
+
+  return (
+    <div className="space-y-1">
+      {answers.map((answer, index) => (
+        <QuestionContent
+          key={`${index}-${answer}`}
+          content={answer}
+          variant="answer"
+          className="font-inherit text-inherit"
+        />
+      ))}
+    </div>
+  );
+}
 
 function attemptDetailReducer(
   state: AttemptDetailState,
@@ -126,7 +143,7 @@ function AttemptQuestionCard({
         <section>
           <h4 className="mb-2 text-sm font-semibold text-ink">{t('questionPrompt')}:</h4>
           <div className="break-words rounded-2xl bg-surface-warm p-3 text-sm leading-6 sm:p-4 sm:text-base">
-            <MarkdownRenderer content={question.question} />
+            <QuestionContent content={question.question} />
             {question.questionImage && (
               <div className="mt-3 overflow-hidden rounded-xl">
                 <ImageDisplay src={question.questionImage} alt={t('questionImageAlt')} />
@@ -145,7 +162,7 @@ function AttemptQuestionCard({
                 : 'border-red-200 bg-red-50 text-red-800',
             )}
           >
-            {Array.isArray(answerText) ? answerText.join(', ') : answerText}
+            <AnswerContent value={answerText} />
           </div>
         </section>
 
@@ -153,7 +170,7 @@ function AttemptQuestionCard({
           <section>
             <h5 className="mb-2 text-sm font-semibold text-ink">{t('correctAnswer')}:</h5>
             <div className="break-words rounded-2xl border border-green-200 bg-green-50 p-3 text-sm font-semibold leading-6 text-green-800 sm:p-4 sm:text-base">
-              {Array.isArray(correctAnswerText) ? correctAnswerText.join(', ') : correctAnswerText}
+              <AnswerContent value={correctAnswerText} />
             </div>
           </section>
         )}
@@ -199,7 +216,11 @@ function AttemptQuestionCard({
                         <span className="font-semibold">
                           {String.fromCharCode(65 + optionIndex)}.
                         </span>{' '}
-                        {option}
+                        <QuestionContent
+                          content={option}
+                          variant="option"
+                          className="mt-1 font-normal"
+                        />
                       </div>
                       <div className="flex flex-wrap gap-2 sm:ml-4 sm:justify-end">
                         {isCorrectChoice && (

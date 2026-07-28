@@ -32,25 +32,28 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
   const author = getAuthor(quiz);
 
   return (
-    <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-[#e2ecfc] bg-surface-blue p-4 shadow-[1px_1px_4px_rgba(0,0,0,0.03)] transition-shadow duration-150 ease-out hover:shadow-[2px_2px_0_#718ebd] focus-within:shadow-[2px_2px_0_#718ebd] motion-reduce:transition-none">
+    <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none">
       <div className="flex items-center justify-between text-sm text-ink/40">
         <span>{t('questionCount', { count: quiz.questionCount })}</span>
         {onDelete ? (
           <details className="relative">
             <summary
-              className="flex size-7 cursor-pointer list-none items-center justify-center rounded-md text-ink/55 opacity-70 transition-[color,background-color,opacity] hover:bg-accent-soft hover:text-accent group-hover:opacity-100 group-focus-within:opacity-100"
+              className="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-ink/55 opacity-70 transition-[color,background-color,opacity] hover:bg-accent-soft hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent group-hover:opacity-100 group-focus-within:opacity-100"
               aria-label={t('quizActions')}
             >
-              <HiOutlineDotsVertical className="size-5" />
+              <HiOutlineDotsVertical className="size-5" aria-hidden="true" />
             </summary>
             <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-line bg-white py-1 text-sm text-ink shadow-lg">
-              <Link href={`/edit/${quizId}`} className="block px-3 py-2 hover:bg-surface-warm">
+              <Link
+                href={`/edit/${quizId}`}
+                className="flex min-h-11 items-center px-3 py-2 hover:bg-surface-warm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+              >
                 {t('edit')}
               </Link>
               <button
                 type="button"
                 onClick={() => onDelete(quiz, quizId)}
-                className="block w-full px-3 py-2 text-left text-red-600 hover:bg-red-50"
+                className="flex min-h-11 w-full items-center px-3 py-2 text-left text-error hover:bg-error-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-error"
               >
                 {t('deleteQuiz')}
               </button>
@@ -59,10 +62,11 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
         ) : null}
       </div>
 
-      <Link href={ROUTES.QUIZ.VIEW(quiz.slug)} className="mt-2 flex flex-1 flex-col">
-        <h3 className="line-clamp-2 font-home text-base font-semibold leading-[1.4] text-ink">
-          {quiz.title}
-        </h3>
+      <Link
+        href={ROUTES.QUIZ.VIEW(quiz.slug)}
+        className="mt-2 flex flex-1 flex-col rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <h3 className="line-clamp-2 font-home text-body font-semibold text-ink">{quiz.title}</h3>
         <div className="mt-auto flex items-center gap-2 pt-3 text-sm text-ink">
           <UserAvatar user={author} size={26} />
           <span className="min-w-0 truncate">
@@ -82,7 +86,7 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
 
 export function QuizCardSkeleton() {
   return (
-    <Skeleton className="flex min-h-[146px] flex-col rounded-xl border border-line-blue/30 bg-surface-blue p-4">
+    <Skeleton className="flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card">
       <div className="flex items-center justify-between">
         <div className="h-4 w-20 rounded bg-line-blue/30" />
         <div className="size-7 rounded-md bg-line-blue/25" />

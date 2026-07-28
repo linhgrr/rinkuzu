@@ -38,9 +38,9 @@
   "retry": "Try again",
   "retryPayment": "Retry Payment",
   "paymentCancelledTitle": "Payment Cancelled",
-  "paymentCancelledMessage": "You cancelled the payment process. Premium subscription has not been activated.",
+  "paymentCancelledMessage": "No payment is currently confirmed. If you already started a bank transfer, check the status again.",
   "confirmingCancellation": "Confirming payment cancellation...",
   "paymentCancellationPending": "The payment provider has not confirmed the cancellation yet. Please try again shortly.",
-  "paymentCancellationError": "We could not confirm the cancellation. Your plan has not been activated; please try again.",
+  "paymentCancellationError": "We could not confirm the cancellation. Check the payment status before trying again.",
   "orderCode": "Order Code"
 }

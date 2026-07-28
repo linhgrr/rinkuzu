@@ -191,9 +191,10 @@ function SidebarSubItem({ href, label, active }: SidebarSubItemProps) {
   return (
     <Link
       href={href}
+      aria-current={active ? 'page' : undefined}
       className={`relative flex h-10 items-center gap-2.5 pl-6 pr-2.5 font-home text-base leading-[1.4] transition-colors ${
         active ? 'font-semibold text-accent' : 'font-normal text-ink hover:text-accent'
-      }`}
+      } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
     >
       <span className="h-10 w-px border-l border-dashed border-line-blue/70" aria-hidden="true" />
       <span className="whitespace-nowrap">{label}</span>
@@ -233,7 +234,12 @@ function SidebarItem({
 
   if (href) {
     return (
-      <Link href={href} className={base} title={collapsed ? label : undefined}>
+      <Link
+        href={href}
+        aria-current={active ? 'page' : undefined}
+        className={`${base} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
+        title={collapsed ? label : undefined}
+      >
         {inner}
       </Link>
     );
@@ -698,9 +704,10 @@ function MobileMenuItem({ href, icon, label, active, onNavigate }: MobileMenuIte
     <Link
       href={href}
       onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
       className={`flex h-12 items-center gap-3 rounded-[12px] px-3 font-home text-base font-semibold leading-[1.4] transition-colors ${
         active ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-accent-soft/60'
-      }`}
+      } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
     >
       {icon ? <ShellIcon name={icon} /> : <span className="ml-9" aria-hidden="true" />}
       <span className="truncate">{label}</span>
@@ -837,6 +844,12 @@ export function AppChrome({ children }: AppChromeProps) {
 
   return (
     <>
+      <a
+        href="#app-main-content"
+        className="sr-only z-[100] rounded-md bg-surface px-4 py-3 font-home font-semibold text-ink shadow-lg focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:outline-none focus:ring-2 focus:ring-accent"
+      >
+        {t('skipToContent')}
+      </a>
       <AppTopbar
         collapsed={collapsed}
         onToggleSidebar={() => setCollapsed((prev) => !prev)}
@@ -873,6 +886,8 @@ export function AppChrome({ children }: AppChromeProps) {
         toggleGroup={toggleGroup}
       />
       <div
+        id="app-main-content"
+        tabIndex={-1}
         className={`pt-16 transition-[padding] duration-300 ease-out lg:pt-[72px] ${
           collapsed ? 'lg:pl-[88px]' : 'lg:pl-[280px]'
         }`}

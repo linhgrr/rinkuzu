@@ -46,5 +46,6 @@
   "changeLanguage": "Đổi ngôn ngữ",
   "clearSelection": "Xóa lựa chọn",
   "searchCategoriesPlaceholder": "Tìm danh mục...",
-  "pagination": "Phân trang"
+  "pagination": "Phân trang",
+  "retry": "Thử lại"
 }

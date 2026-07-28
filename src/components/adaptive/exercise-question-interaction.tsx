@@ -11,7 +11,7 @@ import {
 } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
-import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { getExercisePromptSections } from '@/features/adaptive/lib/exercise-prompt';
 import { getMatchingInteractionItems } from '@/features/adaptive/lib/matching-answer';
 import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
@@ -66,7 +66,7 @@ function OptionCard<T extends OptionCardSelectionValue>({
       <span
         className={`text-base leading-relaxed transition-colors duration-200 ${active ? 'font-medium text-neutral-900' : 'text-neutral-700'}`}
       >
-        <DynamicMarkdownRenderer content={value} />
+        <MarkdownRenderer content={value} />
       </span>
     </button>
   );
@@ -176,7 +176,7 @@ function MatchingInteraction({
                 {index + 1}
               </div>
               <div className="flex-1 text-sm text-neutral-700">
-                <DynamicMarkdownRenderer content={item} />
+                <MarkdownRenderer content={item} />
               </div>
             </div>
           ))}
@@ -206,7 +206,7 @@ function MatchingInteraction({
               >
                 <HiOutlineDotsVertical className="size-4 shrink-0 text-neutral-300" />
                 <div className="flex-1 text-right text-sm text-neutral-700">
-                  <DynamicMarkdownRenderer content={entry.value} />
+                  <MarkdownRenderer content={entry.value} />
                 </div>
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
                   {String.fromCharCode(65 + index)}
@@ -263,7 +263,7 @@ export function ExerciseInteraction({
     return (
       <div className="grid gap-3 sm:gap-4">
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
-          <DynamicMarkdownRenderer content={promptSections.primary} />
+          <MarkdownRenderer content={promptSections.primary} />
         </div>
         {[
           { label: 'T', value: t('exercise.interactions.trueLabel'), bool: true },
@@ -287,7 +287,7 @@ export function ExerciseInteraction({
     return (
       <div className="space-y-4">
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
-          <DynamicMarkdownRenderer content={promptSections.primary} />
+          <MarkdownRenderer content={promptSections.primary} />
         </div>
         <Textarea
           value={answerDraft.values[0]}
@@ -330,7 +330,7 @@ export function ExerciseInteraction({
             >
               <div className="overflow-hidden">
                 <div className="border-t border-amber-200 px-4 py-3 text-sm text-amber-900">
-                  <DynamicMarkdownRenderer content={exercise.hint} />
+                  <MarkdownRenderer content={exercise.hint} />
                 </div>
               </div>
             </div>
@@ -393,7 +393,7 @@ export function ExerciseInteraction({
                 {index + 1}
               </div>
               <div className="flex-1 text-neutral-700">
-                <DynamicMarkdownRenderer content={item} />
+                <MarkdownRenderer content={item} />
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">

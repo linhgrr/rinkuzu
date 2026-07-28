@@ -157,7 +157,7 @@ export const HeroSection = ({
             }}
             disabled={isOpening || isBusy || subject?.runtime.kind === 'retryable'}
             className={cn(
-              'h-auto w-full rounded-full bg-accent px-5 py-3 font-home text-base font-semibold text-accent-text hover:bg-accent-hover sm:w-auto sm:text-lg',
+              'h-auto w-full rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold text-white hover:bg-brand-action-hover sm:w-auto sm:text-lg',
               subject ? 'mt-5 sm:mt-6' : '',
               isProcessing && 'bg-red-600 hover:bg-red-700',
             )}

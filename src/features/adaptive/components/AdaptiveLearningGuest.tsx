@@ -1,5 +1,6 @@
 import { Link } from '@/i18n/navigation';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import { buildFaqSchema, buildSoftwareApplicationSchema } from '@/lib/structured-data';
 import { ROUTES } from '@/shared/constants/routes';
@@ -76,8 +77,18 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
               key={FAQ_KEYS[index]}
               className="rounded-xl border border-neutral-200 bg-white p-5"
             >
-              <h3 className="mb-1 font-medium text-neutral-900">{item.question}</h3>
-              <p className="text-sm text-neutral-600">{item.answer}</p>
+              <div role="heading" aria-level={3}>
+                <QuestionContent
+                  content={item.question}
+                  variant="compact"
+                  className="mb-1 font-medium text-neutral-900"
+                />
+              </div>
+              <QuestionContent
+                content={item.answer}
+                variant="compact"
+                className="text-sm text-neutral-600"
+              />
             </article>
           ))}
         </div>

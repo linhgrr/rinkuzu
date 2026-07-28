@@ -28,8 +28,8 @@ vi.mock('@/components/ui/ConfirmModal', () => ({
 const questions: QuizPlayQuestionViewModel[] = [
   {
     id: 'q0',
-    question: 'Pick one',
-    options: ['Alpha', 'Beta'],
+    question: 'Pick **one** where $x^2 = 4$',
+    options: ['**Alpha**', '$x = -2$'],
     type: 'single',
     questionImage: 'https://cdn.example/q.png',
     optionImages: ['https://cdn.example/a.png', 'https://cdn.example/b.png'],
@@ -61,6 +61,7 @@ describe('MobileQuizLayout', () => {
       'https://cdn.example/b.png',
     );
     expect(screen.getByText('Alpha')).toBeTruthy();
-    expect(screen.getByText('Beta')).toBeTruthy();
+    expect(screen.getByText('Alpha')).toHaveProperty('tagName', 'STRONG');
+    expect(document.querySelectorAll('.katex')).toHaveLength(2);
   });
 });

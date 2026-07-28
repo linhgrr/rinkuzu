@@ -111,7 +111,7 @@ function Badge({
     warning: 'badge-warning',
     danger: 'bg-[rgba(229,72,77,0.1)] text-red-500',
     info: 'badge-info',
-    purple: 'badge-success',
+    purple: 'badge-purple',
     ai: 'badge-ai',
   };
 

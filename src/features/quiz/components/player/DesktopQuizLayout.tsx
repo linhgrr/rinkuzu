@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import { OptionImage, QuestionImage } from '@/components/ui/ImageDisplay';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
@@ -249,7 +249,7 @@ function DesktopQuestionCard({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="text-xl font-semibold [&_p]:m-0 [&_p]:text-xl [&_p]:text-neutral-900">
-              <MarkdownRenderer content={currentQuestion.question} />
+              <QuestionContent content={currentQuestion.question} />
             </div>
           </div>
           <div className="ml-4 flex items-center gap-x-2">
@@ -317,7 +317,7 @@ function DesktopQuestionCard({
                 </div>
                 <div className="flex-1">
                   <div className="text-neutral-900 [&_p]:m-0 [&_p]:text-base [&_p]:text-neutral-900">
-                    <MarkdownRenderer content={option} />
+                    <QuestionContent content={option} variant="option" />
                   </div>
                   <div className="mt-2">
                     <OptionPreview

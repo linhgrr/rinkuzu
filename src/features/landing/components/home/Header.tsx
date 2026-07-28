@@ -18,7 +18,13 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="fixed w-full top-0 left-0 bg-[#151419]/80 backdrop-blur-md border-b border-white/5 shadow-[0px_7px_8.8px_0px_rgba(0,0,0,0.15)] z-50">
+    <header className="fixed left-0 top-0 z-50 w-full border-b border-white/5 bg-[var(--landing-nav-surface)] shadow-[var(--landing-nav-shadow)] backdrop-blur-md">
+      <a
+        href="#landing-main-content"
+        className="sr-only z-[60] rounded-lg bg-[var(--landing-nav-surface-mobile)] px-4 py-3 font-unbounded text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:outline-none focus:ring-2 focus:ring-[var(--landing-nav-accent-hover)]"
+      >
+        Skip to main content
+      </a>
       <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 lg:px-24 h-[80px] flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center" aria-label="Rinkuzu home">
@@ -40,7 +46,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
             <Link
               key={link.label}
               href={link.href}
-              className="cursor-pointer hover:text-[#fd761a] transition-colors leading-[1.5]"
+              className="cursor-pointer leading-[1.5] transition-colors hover:text-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
             >
               {link.label}
             </Link>
@@ -53,7 +59,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
             <>
               <Link
                 href="/login"
-                className="border border-[#ff541b] flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-[#ff541b]/10 transition-colors"
+                className="flex h-[44px] items-center justify-center rounded-[100px] border border-[var(--landing-nav-accent)] px-6 transition-colors hover:bg-[var(--landing-nav-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
               >
                 <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
                   Login
@@ -61,7 +67,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
               </Link>
               <Link
                 href="/register"
-                className="bg-[#ff541b] flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-[#fd761a] transition-colors"
+                className="flex h-[44px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] px-6 transition-colors hover:bg-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
               >
                 <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
                   Sign up
@@ -71,7 +77,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
           ) : (
             <Link
               href="/dashboard"
-              className="bg-[#ff541b] flex h-[44px] lg:h-[48px] items-center justify-center px-6 lg:px-[32px] rounded-[100px] hover:bg-[#fd761a] transition-colors"
+              className="flex h-[44px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] px-6 transition-colors hover:bg-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
             >
               <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
                 Dashboard
@@ -86,7 +92,9 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
             type="button"
             onClick={() => setIsMobileMenuOpen((v) => !v)}
             aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-            className="text-white hover:text-[#fd761a]"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="landing-mobile-menu"
+            className="flex size-11 items-center justify-center rounded-lg text-white hover:text-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -108,14 +116,17 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
 
       {/* Mobile drawer */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#151419]/95 border-t border-white/5">
+        <div
+          id="landing-mobile-menu"
+          className="border-t border-white/5 bg-[var(--landing-nav-surface-mobile)] md:hidden"
+        >
           <div className="px-4 py-4 flex flex-col gap-1">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="font-unbounded font-normal text-white text-[16px] py-3 px-2 rounded-lg hover:bg-white/5 transition-colors"
+                className="rounded-lg px-2 py-3 font-unbounded text-[16px] font-normal text-white transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
               >
                 {link.label}
               </Link>
@@ -126,14 +137,14 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                   <Link
                     href="/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="border border-[#ff541b] flex h-[48px] items-center justify-center rounded-[100px]"
+                    className="flex h-[48px] items-center justify-center rounded-[100px] border border-[var(--landing-nav-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
                   >
                     <span className="font-unbounded font-medium text-[16px] text-white">Login</span>
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="bg-[#ff541b] flex h-[48px] items-center justify-center rounded-[100px]"
+                    className="flex h-[48px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
                   >
                     <span className="font-unbounded font-medium text-[16px] text-white">
                       Sign up
@@ -144,7 +155,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 <Link
                   href="/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="bg-[#ff541b] flex h-[48px] items-center justify-center rounded-[100px]"
+                  className="flex h-[48px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
                 >
                   <span className="font-unbounded font-medium text-[16px] text-white">
                     Dashboard

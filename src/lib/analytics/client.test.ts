@@ -49,6 +49,7 @@ describe('analytics client', () => {
       ignored: undefined,
     });
 
+    await vi.waitFor(() => expect(posthogMock.init).toHaveBeenCalledTimes(1));
     expect(posthogMock.init).toHaveBeenCalledWith(
       'phc_test',
       expect.objectContaining({
@@ -79,6 +80,7 @@ describe('analytics client', () => {
       learning_mode: 'adaptive',
     });
 
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
     expect(posthogMock.capture).toHaveBeenCalledTimes(1);
   });
 
@@ -86,6 +88,7 @@ describe('analytics client', () => {
     const analytics = await loadAnalytics();
 
     analytics.grantAnalyticsConsent();
+    await vi.waitFor(() => expect(posthogMock.init).toHaveBeenCalledTimes(1));
     analytics.denyAnalyticsConsent();
 
     expect(posthogMock.opt_out_capturing).toHaveBeenCalledTimes(1);

@@ -5,7 +5,7 @@ export default function AdaptiveLearningLayout({ children }: { children: React.R
     <div className="min-h-screen bg-surface-page pb-12">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-text focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-md focus:bg-brand-action focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
       >
         Skip to main content
       </a>

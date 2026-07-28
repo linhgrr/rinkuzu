@@ -5,6 +5,7 @@ import { useState, useRef, type TouchEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from 'react-icons/hi';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
 type MobileQuizAnswerMap = Record<string, number | number[]>;
@@ -161,9 +162,10 @@ function MobileQuestionCard({
                 ? t('singleChoiceHelper')
                 : t('multipleChoiceHelper')}
             </span>
-            <p className="text-base font-medium leading-relaxed text-neutral-900">
-              {currentQuestion.question}
-            </p>
+            <QuestionContent
+              content={currentQuestion.question}
+              className="text-base font-medium leading-relaxed text-neutral-900"
+            />
           </div>
 
           <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
@@ -194,7 +196,11 @@ function MobileQuestionCard({
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="text-sm text-neutral-800">{option}</span>
+                      <QuestionContent
+                        content={option}
+                        variant="option"
+                        className="text-sm text-neutral-800"
+                      />
                       {optionImage ? (
                         <div className="mt-2 overflow-hidden rounded-lg bg-neutral-100">
                           <Image

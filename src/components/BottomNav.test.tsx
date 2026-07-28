@@ -1,0 +1,44 @@
+/** @vitest-environment jsdom */
+
+import '@testing-library/jest-dom/vitest';
+
+import type { AnchorHTMLAttributes, ReactNode } from 'react';
+import { render, screen } from '@testing-library/react';
+import { axe } from 'jest-axe';
+import { describe, expect, it, vi } from 'vitest';
+import BottomNav from './BottomNav';
+
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({
+    href,
+    children,
+    ...props
+  }: { href: string; children: ReactNode } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+  usePathname: () => '/dashboard',
+}));
+
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({
+    data: { user: { displayName: 'Learner', email: 'learner@example.com' } },
+    status: 'authenticated',
+  }),
+}));
+
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}));
+
+describe('BottomNav', () => {
+  it('uses the app accent contract and exposes the current page', async () => {
+    const { container } = render(<BottomNav />);
+
+    const current = screen.getByRole('link', { name: 'tabHome' });
+    expect(current).toHaveAttribute('aria-current', 'page');
+    expect(current.querySelector('svg')).toHaveClass('text-accent');
+    expect((await axe(container)).violations).toEqual([]);
+  });
+});

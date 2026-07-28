@@ -70,10 +70,10 @@ export default function AdaptiveLearningDashboard({
   return (
     <div className="pb-16 font-home text-ink selection:bg-accent-soft sm:pb-20">
       <div className="mb-5 flex flex-col gap-1 sm:mb-6">
-        <h1 className="font-home text-[22px] font-semibold leading-[1.35] sm:text-2xl sm:leading-[1.4]">
+        <h1 className="font-home text-body-2xl font-semibold sm:text-2xl sm:leading-[1.4]">
           {tDashboard('pageTitle')}
         </h1>
-        <p className="max-w-[65ch] font-home text-sm leading-[1.5] sm:text-base sm:leading-[1.4]">
+        <p className="max-w-[65ch] font-home text-sm leading-[1.5] sm:text-body">
           {tDashboard('pageSubtitle')}
         </p>
         {apiOnline === false || error ? (

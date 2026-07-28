@@ -90,16 +90,14 @@ export default function BottomNav() {
           alt=""
           width={24}
           height={24}
-          className={`w-6 h-6 rounded-full object-cover border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
+          className={`h-6 w-6 rounded-full border-2 object-cover ${isActive ? 'border-accent' : 'border-neutral-400'}`}
           unoptimized
         />
       ) : (
         <div
-          className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
+          className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${isActive ? 'border-accent' : 'border-neutral-400'}`}
         >
-          <span
-            className={`text-xs font-bold ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
-          >
+          <span className={`text-xs font-bold ${isActive ? 'text-accent' : 'text-neutral-500'}`}>
             {(session.user?.displayName || session.user?.email || 'U').charAt(0).toUpperCase()}
           </span>
         </div>
@@ -111,7 +109,7 @@ export default function BottomNav() {
     labelKey: 'tabHome',
     icon: (isActive) =>
       isActive ? (
-        <HiHome className="size-6 text-brand-trust" />
+        <HiHome className="size-6 text-accent" />
       ) : (
         <HiOutlineHome className="size-6 text-neutral-500" />
       ),
@@ -122,7 +120,7 @@ export default function BottomNav() {
     labelKey: 'tabQuizzes',
     icon: (isActive) =>
       isActive ? (
-        <HiSearch className="size-6 text-brand-trust" />
+        <HiSearch className="size-6 text-accent" />
       ) : (
         <HiOutlineSearch className="size-6 text-neutral-500" />
       ),
@@ -133,7 +131,7 @@ export default function BottomNav() {
     labelKey: 'review',
     icon: (isActive) =>
       isActive ? (
-        <HiInbox className="size-6 text-brand-trust" />
+        <HiInbox className="size-6 text-accent" />
       ) : (
         <HiOutlineInbox className="size-6 text-neutral-500" />
       ),
@@ -162,9 +160,7 @@ export default function BottomNav() {
     href: '/adaptive',
     labelKey: 'tabLibrary',
     icon: (isActive) => (
-      <HiOutlineAcademicCap
-        className={`size-6 ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
-      />
+      <HiOutlineAcademicCap className={`size-6 ${isActive ? 'text-accent' : 'text-neutral-500'}`} />
     ),
   };
 
@@ -174,7 +170,7 @@ export default function BottomNav() {
     isCenter: true,
     icon: (isActive) => (
       <div
-        className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgb(0,0,0,0.12)] border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-brand-trust scale-105' : 'bg-brand-trust hover:scale-105'}`}
+        className={`-mt-6 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-white bg-accent shadow-[0_8px_16px_rgb(0,0,0,0.12)] transition-transform duration-300 ${isActive ? 'scale-105' : 'hover:scale-105'}`}
         aria-label={t('uploadSubjectAria')}
       >
         <HiOutlineUpload className="size-6 text-white" aria-hidden="true" />
@@ -186,9 +182,7 @@ export default function BottomNav() {
     href: '/dashboard',
     labelKey: 'tabProgress',
     icon: (isActive) => (
-      <HiOutlineChartBar
-        className={`size-6 ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
-      />
+      <HiOutlineChartBar className={`size-6 ${isActive ? 'text-accent' : 'text-neutral-500'}`} />
     ),
   };
 
@@ -227,12 +221,13 @@ export default function BottomNav() {
             <Link
               key={tab.href + tab.labelKey}
               href={tab.href}
-              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-3 py-1 rounded-xl transition-colors active:bg-neutral-100 ${tab.isCenter ? '' : 'gap-0.5'}`}
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center rounded-xl px-3 py-1 transition-colors active:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${tab.isCenter ? '' : 'gap-0.5'}`}
             >
               {tab.icon(isActive)}
               {!tab.isCenter && (
                 <span
-                  className={`text-[10px] font-medium ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
+                  className={`text-[10px] font-medium ${isActive ? 'text-accent' : 'text-neutral-500'}`}
                 >
                   {t(tab.labelKey)}
                 </span>

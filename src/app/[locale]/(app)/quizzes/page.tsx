@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { HiOutlineSearch } from 'react-icons/hi';
-import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import Pagination from '@/components/ui/Pagination';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
@@ -56,14 +56,7 @@ function EmptyState({ hasQuery }: { hasQuery: boolean }) {
 function SectionError({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('quizzes');
 
-  return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-      <p className="font-home text-sm text-amber-800">{t('loadError')}</p>
-      <Button variant="ghost" className="mt-2" onClick={onRetry}>
-        {t('retry')}
-      </Button>
-    </div>
-  );
+  return <ErrorState message={t('loadError')} onRetry={onRetry} />;
 }
 
 function QuizzesContent() {
@@ -111,7 +104,8 @@ function QuizzesContent() {
 
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 pb-24 pt-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1340px]">
+      <div className="mx-auto max-w-app">
+        <h1 className="sr-only">{t('title')}</h1>
         <div className="mt-6">
           <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
             <div className="flex justify-end">
@@ -156,7 +150,7 @@ function QuizzesContent() {
 function QuizzesFallback() {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1340px] space-y-6">
+      <div className="mx-auto max-w-app space-y-6">
         <QuizGridSkeleton count={6} />
       </div>
     </main>

@@ -4,8 +4,9 @@ import { useEffect, useReducer } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import { Button } from '@/components/ui/Button';
-import { formatCorrectAnswerLetters, formatCorrectAnswerText } from '@/lib/quiz/answer-text';
+import { formatCorrectAnswerLetters, getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
 import type { QuestionType } from '@/shared/constants/question-type';
 
 type SwipeDirection = 'left' | 'right';
@@ -49,7 +50,7 @@ interface FlashcardBackProps extends Pick<
   'correctIndex' | 'correctIndexes' | 'options' | 'type'
 > {
   correctAnswerLetters: string;
-  correctAnswerText: string;
+  correctAnswers: string[];
   t: ReturnType<typeof useTranslations>;
 }
 
@@ -180,9 +181,12 @@ function FlashcardFront({ options, question }: FlashcardFrontProps) {
     <Card className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-neutral-100 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]">
       <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
         <div className="flex-1 flex flex-col justify-center">
-          <h3 className="text-2xl font-semibold text-neutral-900 mb-8 text-center leading-relaxed break-words">
-            {question}
-          </h3>
+          <div role="heading" aria-level={3}>
+            <QuestionContent
+              content={question}
+              className="mb-8 break-words text-center text-2xl font-semibold leading-relaxed text-neutral-900"
+            />
+          </div>
           <div className="space-y-4">
             {options.map((option, index) => (
               <div
@@ -192,7 +196,11 @@ function FlashcardFront({ options, question }: FlashcardFrontProps) {
                 <span className="text-lg font-medium text-neutral-600 w-6">
                   {String.fromCharCode(65 + index)}.
                 </span>
-                <span className="text-neutral-700 flex-1 break-words">{option}</span>
+                <QuestionContent
+                  content={option}
+                  variant="option"
+                  className="min-w-0 flex-1 break-words text-lg text-neutral-700"
+                />
               </div>
             ))}
           </div>
@@ -204,7 +212,7 @@ function FlashcardFront({ options, question }: FlashcardFrontProps) {
 
 function FlashcardBack({
   correctAnswerLetters,
-  correctAnswerText,
+  correctAnswers,
   correctIndex,
   correctIndexes,
   options,
@@ -220,9 +228,16 @@ function FlashcardBack({
           </h3>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-center">
             <span className="text-green-600 font-bold text-lg mr-2">{correctAnswerLetters}</span>
-            <span className="text-green-800 font-semibold text-lg break-words">
-              {correctAnswerText}
-            </span>
+            <div className="min-w-0 flex-1 space-y-1">
+              {correctAnswers.map((answer, index) => (
+                <QuestionContent
+                  key={`${index}-${answer}`}
+                  content={answer}
+                  variant="answer"
+                  className="break-words text-lg font-semibold text-green-800"
+                />
+              ))}
+            </div>
           </div>
           <div className="space-y-2">
             <h4 className="font-medium text-neutral-900">{t('allAnswers')}</h4>
@@ -244,11 +259,13 @@ function FlashcardBack({
                   >
                     {String.fromCharCode(65 + index)}.
                   </span>
-                  <span
-                    className={`flex-1 break-words ${correct ? 'text-green-800 font-medium' : 'text-neutral-700'}`}
-                  >
-                    {option}
-                  </span>
+                  <QuestionContent
+                    content={option}
+                    variant="option"
+                    className={`min-w-0 flex-1 break-words ${
+                      correct ? 'font-medium text-green-800' : 'text-neutral-700'
+                    }`}
+                  />
                   {correct && (
                     <span className="text-green-600" aria-hidden="true">
                       ✓
@@ -299,15 +316,15 @@ export function Flashcard({
 }: FlashcardProps) {
   const t = useTranslations('flashcard');
   const [state, dispatch] = useReducer(flashcardReducer, initialFlashcardState);
-  const correctAnswerText = formatCorrectAnswerText(
-    {
-      ...(correctIndex !== undefined ? { correctIndex } : {}),
-      ...(correctIndexes !== undefined ? { correctIndexes } : {}),
-      options,
-      type,
-    },
-    t('noCorrectAnswer'),
-  );
+  const correctAnswers = getCorrectAnswerOptions({
+    ...(correctIndex !== undefined ? { correctIndex } : {}),
+    ...(correctIndexes !== undefined ? { correctIndexes } : {}),
+    options,
+    type,
+  });
+  if (correctAnswers.length === 0) {
+    correctAnswers.push(t('noCorrectAnswer'));
+  }
   const correctAnswerLetters = formatCorrectAnswerLetters(
     {
       ...(correctIndex !== undefined ? { correctIndex } : {}),
@@ -453,7 +470,7 @@ export function Flashcard({
             <FlashcardFront options={options} question={question} />
             <FlashcardBack
               correctAnswerLetters={correctAnswerLetters}
-              correctAnswerText={correctAnswerText}
+              correctAnswers={correctAnswers}
               {...(correctIndex !== undefined ? { correctIndex } : {})}
               {...(correctIndexes !== undefined ? { correctIndexes } : {})}
               options={options}

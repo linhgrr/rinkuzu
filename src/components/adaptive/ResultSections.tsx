@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from 'react-icons/hi';
 import type { SubmitResult, Exercise, TranslateFn } from '@/features/adaptive/types/learning';
 
@@ -40,11 +40,11 @@ function ResultCorrectAnswer({
             className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2"
           >
             <div className="min-w-0 flex-1 text-xs text-neutral-600">
-              <DynamicMarkdownRenderer content={normalizeMathContent(pair.left)} />
+              <MarkdownRenderer content={normalizeMathContent(pair.left)} />
             </div>
             <HiArrowRight className="size-3 text-green-400" />
             <div className="min-w-0 flex-1 text-right text-xs font-semibold text-green-700">
-              <DynamicMarkdownRenderer content={normalizeMathContent(pair.right)} />
+              <MarkdownRenderer content={normalizeMathContent(pair.right)} />
             </div>
           </div>
         ))}
@@ -64,7 +64,7 @@ function ResultCorrectAnswer({
               {idx + 1}
             </span>
             <div className="min-w-0 font-medium text-neutral-700">
-              <DynamicMarkdownRenderer content={normalizeMathContent(item)} />
+              <MarkdownRenderer content={normalizeMathContent(item)} />
             </div>
           </div>
         ))}
@@ -74,13 +74,29 @@ function ResultCorrectAnswer({
 
   if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
     return (
-      <DynamicMarkdownRenderer content={normalizeMathContent(exercise.correct_answer.join(', '))} />
+      <div className="space-y-1">
+        {exercise.correct_answer.map((answer, index) => (
+          <MarkdownRenderer
+            key={`${index}-${answer}`}
+            content={normalizeMathContent(answer)}
+            variant="answer"
+          />
+        ))}
+      </div>
     );
   }
 
   if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
     return (
-      <DynamicMarkdownRenderer content={normalizeMathContent(exercise.correct_answer.join(', '))} />
+      <div className="space-y-1">
+        {exercise.correct_answer.map((answer, index) => (
+          <MarkdownRenderer
+            key={`${index}-${answer}`}
+            content={normalizeMathContent(answer)}
+            variant="answer"
+          />
+        ))}
+      </div>
     );
   }
 
@@ -94,7 +110,7 @@ function ResultCorrectAnswer({
     );
   }
 
-  return <DynamicMarkdownRenderer content={normalizeMathContent(result.correct_option)} />;
+  return <MarkdownRenderer content={normalizeMathContent(result.correct_option)} />;
 }
 
 export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
@@ -186,7 +202,7 @@ export const ResultContent = ({
           </CardHeader>
           <CardContent className="p-6">
             <div className="mb-4 text-sm leading-relaxed text-neutral-700">
-              <DynamicMarkdownRenderer content={result.explanation} />
+              <MarkdownRenderer content={result.explanation} />
             </div>
 
             <div className="space-y-4">

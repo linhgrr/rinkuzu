@@ -247,5 +247,18 @@
     "failed": "Bị lỗi",
     "disabled": "Đã tắt",
     "untested": "Chưa kiểm tra"
-  }
+  },
+  "noPlansFound": "Không tìm thấy gói đăng ký nào",
+  "noSubscriptionsFound": "Không tìm thấy thông tin đăng ký nào",
+  "reportsDescription": "Quản lý và xem xét báo cáo của người dùng về nội dung bộ câu hỏi",
+  "allReports": "Tất cả báo cáo",
+  "reporter": "Người báo cáo",
+  "adminNotes": "Ghi chú của admin",
+  "reviewReport": "Xem chi tiết báo cáo",
+  "reportContent": "Nội dung báo cáo",
+  "markResolved": "Đã xử lý",
+  "dismiss": "Bỏ qua",
+  "noReportsFound": "Chưa có báo cáo nào được gửi.",
+  "noReportsTitle": "Không tìm thấy báo cáo nào",
+  "deleteReportConfirm": "Bạn có chắc chắn muốn xóa báo cáo này? Hành động này không thể hoàn tác."
 }

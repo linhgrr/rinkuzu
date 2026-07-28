@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-19T18:17:30.153Z",
+  "generatedAt": "2026-07-28T00:05:51.398Z",
   "mode": "local",
   "buildDigest": null,
   "sizeLimit": {
@@ -14,7 +14,7 @@
   "violations": [
     {
       "code": "performance-evidence-invalid",
-      "message": "Lighthouse evidence is stale"
+      "message": "Lighthouse evidence is missing or malformed: ENOENT: no such file or directory, open 'C:\\Users\\Tuan Linh\\Downloads\\Projects\\Working\\rinkuzu_prj\\rinkuzu\\perf\\lighthouse\\evidence.json'"
     }
   ],
   "ok": false

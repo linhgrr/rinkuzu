@@ -1265,6 +1265,40 @@ describe('run-mutation-gate orchestration', () => {
     },
   );
 
+  it('records bounded Stryker diagnostics when no mutation report is produced', () => {
+    const root = seedMinimalMutationRepo();
+    const baseSha = git(root, ['rev-parse', 'HEAD']);
+    write(root, 'src/models/User.ts', 'export const userModel = 17;\n');
+    commitAll(root, 'critical-without-report');
+    const stderr = `${'x'.repeat(9 * 1024)}\nDry run failed because a unit test failed`;
+    const result = executeMutationGate(root, {
+      mode: 'changed',
+      baseRef: baseSha,
+      env: testEnv(),
+      invokeStrykerFn: () => ({
+        status: 1,
+        signal: null,
+        error: undefined,
+        stdout: 'Stryker started',
+        stderr,
+      }),
+      evaluateFn: () => {
+        throw new Error('should not evaluate missing report');
+      },
+    });
+    expect(result.status).toBe('failed');
+    const meta = JSON.parse(
+      readFileSync(path.join(root, 'reports/mutation/gate-run-meta.json'), 'utf8'),
+    );
+    expect(meta).toMatchObject({
+      failureReason: 'report_missing_after_stryker',
+      strykerExitCode: 1,
+      strykerStdoutTail: 'Stryker started',
+    });
+    expect(meta.strykerStderrTail).toContain('Dry run failed because a unit test failed');
+    expect(meta.strykerStderrTail.length).toBeLessThanOrEqual(8 * 1024);
+  });
+
   it('handles not_applicable without Stryker dry-run and removes stale report', () => {
     const root = seedMinimalMutationRepo();
     const baseSha = git(root, ['rev-parse', 'HEAD']);

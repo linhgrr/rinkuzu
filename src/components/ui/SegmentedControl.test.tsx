@@ -23,8 +23,23 @@ describe('SegmentedControl', () => {
       />,
     );
 
-    expect(screen.getByRole('group', { name: 'Quiz visibility' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+    const group = screen.getByRole('group', { name: 'Quiz visibility' });
+    const selected = screen.getByRole('button', { name: 'All' });
+    const inactive = screen.getByRole('button', { name: 'Public' });
+
+    expect(group).toHaveClass('rounded-control', 'bg-control-surface', 'p-1');
+    expect(selected).toHaveAttribute('aria-pressed', 'true');
+    expect(selected).toHaveClass(
+      'rounded-sm',
+      'text-sub',
+      'bg-neutral-warm-white',
+      'px-3.5',
+      'font-semibold',
+      'text-neutral-warm-8',
+      'shadow-segmented',
+    );
+    expect(selected).not.toHaveClass('min-h-11');
+    expect(inactive).toHaveClass('px-2.5', 'font-normal', 'text-ink');
 
     fireEvent.click(screen.getByRole('button', { name: 'Private' }));
 

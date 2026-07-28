@@ -10,8 +10,8 @@ export function AdminPageHeader({ title, description, actions }: AdminPageHeader
   return (
     <div className="mb-8 flex items-center justify-between gap-4">
       <div>
-        <h1 className="text-3xl font-semibold text-neutral-900">{title}</h1>
-        {description ? <p className="mt-2 text-neutral-600">{description}</p> : null}
+        <h1 className="font-home text-3xl font-semibold text-ink">{title}</h1>
+        {description ? <p className="mt-2 font-home text-ink-muted">{description}</p> : null}
       </div>
       {actions ? <div className="shrink-0">{actions}</div> : null}
     </div>

@@ -75,13 +75,6 @@ export async function DashboardPageShell({
       subtitle: t('continueLearning.subtitle'),
       emptyAction: t('continueLearning.emptyAction'),
     },
-    reviewToday: {
-      title: t('reviewToday.title'),
-      due: t('reviewToday.due', { count: viewModel.progress.dueCount }),
-      caughtUp: t('reviewToday.caughtUp'),
-      reviewAction: t('reviewToday.reviewAction'),
-      exploreAction: t('reviewToday.exploreAction'),
-    },
     recentOwnedQuizzes: {
       title: t('recentOwnedQuizzes.title'),
       subtitle: t('recentOwnedQuizzes.subtitle'),

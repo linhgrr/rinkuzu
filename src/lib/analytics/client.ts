@@ -1,7 +1,5 @@
 'use client';
 
-import posthog from 'posthog-js';
-
 const ANALYTICS_CONSENT_STORAGE_KEY = 'rinkuzu_analytics_consent_v1';
 const ANALYTICS_CONSENT_CHANGE_EVENT = 'rinkuzu:analytics-consent-change';
 
@@ -32,7 +30,10 @@ const posthogToken = process.env['NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN'];
 const posthogHost = process.env['NEXT_PUBLIC_POSTHOG_HOST'] ?? 'https://us.i.posthog.com';
 const googleAnalyticsId = process.env['NEXT_PUBLIC_GA_ID'];
 
-let posthogInitialized = false;
+type PostHogClient = typeof import('posthog-js').default;
+
+let posthogClient: PostHogClient | null = null;
+let posthogLoadPromise: Promise<PostHogClient | null> | null = null;
 let googleAnalyticsInitialized = false;
 
 function isBrowser(): boolean {
@@ -65,18 +66,32 @@ export function subscribeToAnalyticsConsent(onStoreChange: () => void): () => vo
   };
 }
 
-function initializePostHog(): void {
-  if (!isBrowser() || posthogInitialized || !posthogToken) return;
+async function initializePostHog(): Promise<PostHogClient | null> {
+  if (!isBrowser() || getAnalyticsConsent() !== 'granted' || !posthogToken) {
+    return null;
+  }
+  if (posthogClient) return posthogClient;
+  if (posthogLoadPromise) return posthogLoadPromise;
 
-  posthog.init(posthogToken, {
-    api_host: posthogHost,
-    autocapture: false,
-    capture_pageview: false,
-    capture_pageleave: true,
-    disable_session_recording: true,
-    person_profiles: 'identified_only',
-  });
-  posthogInitialized = true;
+  posthogLoadPromise = import('posthog-js')
+    .then(({ default: client }) => {
+      if (getAnalyticsConsent() !== 'granted') return null;
+      client.init(posthogToken, {
+        api_host: posthogHost,
+        autocapture: false,
+        capture_pageview: false,
+        capture_pageleave: true,
+        disable_session_recording: true,
+        person_profiles: 'identified_only',
+      });
+      posthogClient = client;
+      return client;
+    })
+    .catch(() => null)
+    .finally(() => {
+      posthogLoadPromise = null;
+    });
+  return posthogLoadPromise;
 }
 
 function initializeGoogleAnalytics(): void {
@@ -100,11 +115,11 @@ function initializeGoogleAnalytics(): void {
   googleAnalyticsInitialized = true;
 }
 
-export function initializeAnalytics(): boolean {
+export async function initializeAnalytics(): Promise<boolean> {
   if (getAnalyticsConsent() !== 'granted') return false;
-  initializePostHog();
   initializeGoogleAnalytics();
-  return posthogInitialized || googleAnalyticsInitialized;
+  const client = await initializePostHog();
+  return Boolean(client) || googleAnalyticsInitialized;
 }
 
 export function grantAnalyticsConsent(): void {
@@ -113,10 +128,10 @@ export function grantAnalyticsConsent(): void {
   if (googleAnalyticsId) {
     Reflect.set(window, `ga-disable-${googleAnalyticsId}`, false);
   }
-  if (posthogInitialized) {
-    posthog.opt_in_capturing();
+  if (posthogClient) {
+    posthogClient.opt_in_capturing();
   }
-  initializeAnalytics();
+  void initializeAnalytics();
   window.dispatchEvent(new Event(ANALYTICS_CONSENT_CHANGE_EVENT));
 }
 
@@ -126,9 +141,9 @@ export function denyAnalyticsConsent(): void {
   if (googleAnalyticsId) {
     Reflect.set(window, `ga-disable-${googleAnalyticsId}`, true);
   }
-  if (posthogInitialized) {
-    posthog.opt_out_capturing();
-    posthog.reset();
+  if (posthogClient) {
+    posthogClient.opt_out_capturing();
+    posthogClient.reset();
   }
   window.dispatchEvent(new Event(ANALYTICS_CONSENT_CHANGE_EVENT));
 }
@@ -137,13 +152,14 @@ export function captureAnalyticsEvent(
   event: AnalyticsEventName,
   properties: AnalyticsProperties = {},
 ): void {
-  if (!initializeAnalytics()) return;
+  if (getAnalyticsConsent() !== 'granted') return;
   const sanitized = sanitizeProperties(properties);
 
-  if (posthogInitialized) {
-    posthog.capture(event, sanitized);
-  }
+  initializeGoogleAnalytics();
   window.gtag?.('event', event, sanitized);
+  void initializePostHog().then((client) => {
+    if (client && getAnalyticsConsent() === 'granted') client.capture(event, sanitized);
+  });
 }
 
 export function captureAnalyticsEventOnce(
@@ -160,31 +176,38 @@ export function captureAnalyticsEventOnce(
 }
 
 export function trackAnalyticsPageView(url: string, title: string): void {
-  if (!initializeAnalytics()) return;
+  if (getAnalyticsConsent() !== 'granted') return;
   const pagePath = new URL(url).pathname;
+  const properties = {
+    $current_url: url,
+    page_path: pagePath,
+    page_title: title,
+  };
 
-  if (posthogInitialized) {
-    posthog.capture('$pageview', {
-      $current_url: url,
-      page_path: pagePath,
-      page_title: title,
-    });
-  }
+  initializeGoogleAnalytics();
   window.gtag?.('event', 'page_view', {
     page_location: url,
     page_path: pagePath,
     page_title: title,
   });
+  void initializePostHog().then((client) => {
+    if (client && getAnalyticsConsent() === 'granted') {
+      client.capture('$pageview', properties);
+    }
+  });
 }
 
 export function identifyAnalyticsUser(userId: string, properties: AnalyticsProperties = {}): void {
-  if (!initializeAnalytics() || !posthogInitialized) return;
-  posthog.identify(userId, sanitizeProperties(properties));
+  if (getAnalyticsConsent() !== 'granted') return;
+  const sanitized = sanitizeProperties(properties);
+  void initializePostHog().then((client) => {
+    if (client && getAnalyticsConsent() === 'granted') client.identify(userId, sanitized);
+  });
 }
 
 export function resetAnalyticsIdentity(): void {
-  if (!isBrowser() || !posthogInitialized) return;
-  posthog.reset();
+  if (!isBrowser() || !posthogClient) return;
+  posthogClient.reset();
 }
 
 export function fileSizeBucket(sizeBytes: number): string {

@@ -96,13 +96,6 @@
       "subtitle": "Resume your quizzes or AI learning paths from where you left off",
       "emptyAction": "Start learning"
     },
-    "reviewToday": {
-      "title": "Review today",
-      "due": "You have {count} questions due to keep your progress moving",
-      "caughtUp": "You have completed everything due for review today",
-      "reviewAction": "Start review",
-      "exploreAction": "Explore quizzes"
-    },
     "recentOwnedQuizzes": {
       "title": "Your recent quizzes",
       "subtitle": "Reopen quizzes you recently created or updated",

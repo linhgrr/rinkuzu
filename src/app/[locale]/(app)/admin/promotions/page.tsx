@@ -7,6 +7,9 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import {
   archiveAdminPromotion,
   createAdminPromotion,
@@ -114,17 +117,14 @@ export default function AdminPromotionsPage() {
           maxLength={32}
           onChange={(event) => setCode(event.target.value)}
         />
-        <label className="block text-xs font-semibold text-neutral-700">
-          {t('kind')}
-          <select
-            value={kind}
-            onChange={(event) => setKind(event.target.value as PromotionKind)}
-            className="input mt-1 w-full"
-          >
-            <option value="percentage">{t('percentage')}</option>
-            <option value="fixed">{t('fixed')}</option>
-          </select>
-        </label>
+        <Select
+          label={t('kind')}
+          value={kind}
+          onChange={(event) => setKind(event.target.value as PromotionKind)}
+        >
+          <option value="percentage">{t('percentage')}</option>
+          <option value="fixed">{t('fixed')}</option>
+        </Select>
         {kind === 'percentage' ? (
           <Input
             label={t('percentageOff')}
@@ -192,9 +192,23 @@ export default function AdminPromotionsPage() {
       </Card>
 
       <div className="mt-6 grid gap-4">
-        {loading && <p className="text-ink-muted">{t('loading')}</p>}
+        {loading && (
+          <div className="space-y-4" aria-busy="true">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <SurfaceCard key={`promotion-skeleton-${index}`} className="p-5">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-32 rounded-md" />
+                    <Skeleton className="h-4 w-48 rounded-md" />
+                  </div>
+                  <Skeleton className="h-9 w-24 rounded-full" />
+                </div>
+              </SurfaceCard>
+            ))}
+          </div>
+        )}
         {items.map((promotion) => (
-          <Card
+          <SurfaceCard
             key={promotion.id}
             className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between"
           >
@@ -228,7 +242,7 @@ export default function AdminPromotionsPage() {
                 {t('archive')}
               </Button>
             )}
-          </Card>
+          </SurfaceCard>
         ))}
       </div>
     </div>

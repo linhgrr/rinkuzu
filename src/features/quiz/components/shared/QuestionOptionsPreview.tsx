@@ -1,6 +1,7 @@
 'use client';
 
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 
 interface QuestionOptionsPreviewProps {
   questionText?: string;
@@ -38,7 +39,9 @@ export function QuestionOptionsPreview({
 
   return (
     <div className={className}>
-      {questionText && <p className={questionClassName}>{questionText}</p>}
+      {questionText && (
+        <QuestionContent content={questionText} variant="compact" className={questionClassName} />
+      )}
 
       {questionImage && (
         <div className="mt-3">
@@ -58,9 +61,9 @@ export function QuestionOptionsPreview({
               key={`${optionLabel}-${option}-${optionImages?.[index] ?? 'no-image'}-${occurrence}`}
               className={isCorrect ? highlightedOptionItemClassName : optionItemClassName}
             >
-              <div className="flex items-center gap-x-3">
+              <div className="flex items-start gap-x-3">
                 <div
-                  className={`flex size-4 items-center justify-center rounded border-2 ${
+                  className={`mt-0.5 flex size-4 flex-shrink-0 items-center justify-center rounded border-2 ${
                     isCorrect ? 'border-green-500 bg-green-500' : 'border-neutral-300'
                   }`}
                 >
@@ -80,10 +83,17 @@ export function QuestionOptionsPreview({
                   ) : null}
                 </div>
 
-                <div className="flex-1">
-                  <span className={isCorrect ? 'font-medium text-green-800' : undefined}>
-                    {optionLabel}. {option}
-                  </span>
+                <div className="min-w-0 flex-1">
+                  <div
+                    className={
+                      isCorrect
+                        ? 'flex items-start gap-1 font-medium text-green-800'
+                        : 'flex items-start gap-1'
+                    }
+                  >
+                    <span className="flex-shrink-0">{optionLabel}.</span>
+                    <QuestionContent content={option} variant="option" className="min-w-0 flex-1" />
+                  </div>
                   {showOptionImages && optionImages?.[index] && (
                     <div className="mt-2">
                       <OptionImage src={optionImages[index]} alt={`Option ${optionLabel}`} />

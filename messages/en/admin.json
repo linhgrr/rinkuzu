@@ -247,5 +247,18 @@
     "failed": "Failed",
     "disabled": "Disabled",
     "untested": "Untested"
-  }
+  },
+  "noPlansFound": "No subscription plans found",
+  "noSubscriptionsFound": "No subscriptions found",
+  "reportsDescription": "Manage and review user reports about quiz content",
+  "allReports": "All Reports",
+  "reporter": "Reporter",
+  "adminNotes": "Admin Notes",
+  "reviewReport": "Review Report",
+  "reportContent": "Report Content",
+  "markResolved": "Mark Resolved",
+  "dismiss": "Dismiss",
+  "noReportsFound": "No reports have been submitted yet.",
+  "noReportsTitle": "No Reports Found",
+  "deleteReportConfirm": "Are you sure you want to delete this report? This action cannot be undone."
 }

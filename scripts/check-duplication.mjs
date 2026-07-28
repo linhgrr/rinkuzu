@@ -9,7 +9,8 @@ const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
 function assertSafeSourcePath(root, fileName) {
   const sourceRoot = path.resolve(root, 'src');
-  const absolutePath = path.resolve(sourceRoot, fileName);
+  const normalizedFileName = fileName.replaceAll('\\', '/');
+  const absolutePath = path.resolve(sourceRoot, normalizedFileName);
   if (absolutePath !== sourceRoot && !absolutePath.startsWith(`${sourceRoot}${path.sep}`)) {
     throw new Error(`jscpd reported a path outside src: ${fileName}`);
   }

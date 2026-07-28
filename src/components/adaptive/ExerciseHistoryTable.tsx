@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Modal } from '@/components/ui/Modal';
 import Pagination from '@/components/ui/Pagination';
 import { HiCheck, HiOutlineEye, HiOutlineX } from 'react-icons/hi';
@@ -60,13 +60,13 @@ function ExercisePromptView({ exercise }: ExercisePromptViewProps) {
   const promptSections = getExercisePromptSections(exercise);
   return (
     <div className="space-y-3">
-      {promptSections.lead ? <DynamicMarkdownRenderer content={promptSections.lead} /> : null}
+      {promptSections.lead ? <MarkdownRenderer content={promptSections.lead} /> : null}
       <div
         className={
           promptSections.lead ? 'rounded-lg border border-neutral-200 bg-neutral-50 p-3' : ''
         }
       >
-        <DynamicMarkdownRenderer content={promptSections.primary} />
+        <MarkdownRenderer content={promptSections.primary} />
       </div>
     </div>
   );
@@ -86,7 +86,7 @@ function AnswerTextView({ value, t }: AnswerTextViewProps) {
     return <span>{t('exercise.interactions.falseLabel')}</span>;
   }
 
-  return <DynamicMarkdownRenderer content={normalizedValue} />;
+  return <MarkdownRenderer content={normalizedValue} />;
 }
 
 function getSelectedChoiceKeys(userAnswer: string | null | undefined) {
@@ -108,11 +108,11 @@ function CorrectAnswerView({ exercise, t }: CorrectAnswerViewProps) {
             className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2"
           >
             <div className="min-w-0 flex-1 text-xs text-neutral-600">
-              <DynamicMarkdownRenderer content={pair.left} />
+              <MarkdownRenderer content={pair.left} />
             </div>
             <div className="mx-2 text-green-500">→</div>
             <div className="min-w-0 flex-1 text-right text-xs font-semibold text-green-700">
-              <DynamicMarkdownRenderer content={pair.right} />
+              <MarkdownRenderer content={pair.right} />
             </div>
           </div>
         ))}
@@ -132,7 +132,7 @@ function CorrectAnswerView({ exercise, t }: CorrectAnswerViewProps) {
               {idx + 1}
             </span>
             <div className="min-w-0 text-neutral-700">
-              <DynamicMarkdownRenderer content={item} />
+              <MarkdownRenderer content={item} />
             </div>
           </div>
         ))}
@@ -141,11 +141,23 @@ function CorrectAnswerView({ exercise, t }: CorrectAnswerViewProps) {
   }
 
   if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
-    return <DynamicMarkdownRenderer content={exercise.correct_answer.join(', ')} />;
+    return (
+      <div className="space-y-1">
+        {exercise.correct_answer.map((answer, index) => (
+          <MarkdownRenderer key={`${index}-${answer}`} content={answer} variant="answer" />
+        ))}
+      </div>
+    );
   }
 
   if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
-    return <DynamicMarkdownRenderer content={exercise.correct_answer.join(', ')} />;
+    return (
+      <div className="space-y-1">
+        {exercise.correct_answer.map((answer, index) => (
+          <MarkdownRenderer key={`${index}-${answer}`} content={answer} variant="answer" />
+        ))}
+      </div>
+    );
   }
 
   if (exercise.exercise_type === 'true_false' && typeof exercise.correct_answer === 'boolean') {
@@ -158,7 +170,7 @@ function CorrectAnswerView({ exercise, t }: CorrectAnswerViewProps) {
     );
   }
 
-  return <DynamicMarkdownRenderer content={exercise.correct_option} />;
+  return <MarkdownRenderer content={exercise.correct_option} />;
 }
 
 function SelectedChoicesSummary({ exercise, t }: SelectedChoicesSummaryProps) {
@@ -178,7 +190,7 @@ function SelectedChoicesSummary({ exercise, t }: SelectedChoicesSummaryProps) {
             className="inline-flex items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs text-neutral-700"
           >
             <span className="font-mono font-semibold text-neutral-500">{choice}</span>
-            {optionValue ? <DynamicMarkdownRenderer content={optionValue} /> : null}
+            {optionValue ? <MarkdownRenderer content={optionValue} /> : null}
           </div>
         );
       })}
@@ -221,7 +233,7 @@ function SelectedOptionsList({ exercise, t }: SelectedOptionsListProps) {
               {key}.
             </span>
             <span className="flex-1 leading-relaxed">
-              <DynamicMarkdownRenderer content={value} />
+              <MarkdownRenderer content={value} />
             </span>
             {isCorrect ? (
               <div
@@ -303,7 +315,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                   title={buildExercisePromptText(exercise)}
                 >
                   <div className="line-clamp-2 text-sm [&_p]:m-0 [&_p]:inline">
-                    <DynamicMarkdownRenderer content={buildExercisePromptText(exercise)} />
+                    <MarkdownRenderer content={buildExercisePromptText(exercise)} />
                   </div>
                 </td>
                 <td className="flex justify-center px-5 py-3">
@@ -435,7 +447,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                       <li key={criterion} className="flex gap-2">
                         <span className="font-mono text-xs text-amber-700">{index + 1}.</span>
                         <span className="flex-1">
-                          <DynamicMarkdownRenderer content={criterion} />
+                          <MarkdownRenderer content={criterion} />
                         </span>
                       </li>
                     ))}
@@ -450,7 +462,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                   {t('history.table.explanation')}
                 </h4>
                 <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-5 text-sm leading-relaxed text-neutral-800 shadow-sm sm:p-6">
-                  <DynamicMarkdownRenderer content={selectedExercise.explanation} />
+                  <MarkdownRenderer content={selectedExercise.explanation} />
                 </div>
               </div>
             ) : null}

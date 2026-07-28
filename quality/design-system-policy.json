@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "baseline": {
+    "consumer-hardcoded-color": 106,
+    "arbitrary-typography": 347,
+    "arbitrary-radius-shadow": 103,
+    "arbitrary-layout-spacing": 556,
+    "raw-neutral-border": 252,
+    "standalone-raw-button": 74,
+    "raw-select": 1,
+    "solid-orange-dark-text": 0,
+    "new-icon-family": 0
+  },
+  "allowedIconFamilies": ["react-icons/hi", "react-icons/hi2", "lucide-react", "@iconify/react"],
+  "ruleExclusions": {
+    "consumer-hardcoded-color": ["src/emails/**", "src/app/api/email/**"],
+    "standalone-raw-button": ["src/components/ui/Button.tsx"],
+    "raw-select": ["src/components/ui/Select.tsx"]
+  },
+  "exceptions": [
+    {
+      "path": "src/features/dashboard/components/HomeDashboard.tsx",
+      "ruleId": "arbitrary-layout-spacing",
+      "value": "*",
+      "maxOccurrences": 63,
+      "kind": "optical",
+      "rationale": "Fractional hero artwork bounds and positioned illustration geometry preserve the approved Figma crop and overlap.",
+      "owner": "design-system"
+    }
+  ]
+}

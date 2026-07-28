@@ -22,7 +22,7 @@ export function AnalyticsRoot() {
   );
 
   useEffect(() => {
-    if (consent === 'granted') initializeAnalytics();
+    if (consent === 'granted') void initializeAnalytics();
   }, [consent]);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function AnalyticsRoot() {
         </button>
         <button
           type="button"
-          className="rounded-full bg-brand-trust px-4 py-2 text-sm font-semibold text-[var(--brand-action-text)] hover:bg-brand-trust-hover"
+          className="rounded-full bg-brand-action px-4 py-2 text-sm font-semibold text-white hover:bg-brand-action-hover"
           onClick={() => {
             grantAnalyticsConsent();
           }}

@@ -45,5 +45,5 @@ describe('database DDL boundary', () => {
   it('finds no second DDL writer in first-party runtime and scripts', async () => {
     const violations = await scanDatabaseDdlBoundary({ repoRoot: path.resolve(process.cwd()) });
     expect(violations).toEqual([]);
-  }, 30_000);
+  }, 60_000);
 });

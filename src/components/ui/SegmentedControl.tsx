@@ -20,7 +20,7 @@ export function SegmentedControl<Value extends string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className="inline-flex w-fit rounded-[10px] bg-[#d9d5d040] p-1"
+      className="inline-flex w-fit items-center rounded-control bg-control-surface p-1 font-home"
     >
       {options.map((option) => (
         <button
@@ -28,10 +28,10 @@ export function SegmentedControl<Value extends string>({
           type="button"
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
-          className={`rounded-md px-3.5 py-1 text-sm transition-colors ${
+          className={`relative rounded-sm py-1 text-sub transition-colors before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
             value === option.value
-              ? 'bg-white font-semibold text-[#2a0b00] shadow-[1px_1px_2px_rgba(0,0,0,0.03)]'
-              : 'text-ink'
+              ? 'bg-neutral-warm-white px-3.5 font-semibold text-neutral-warm-8 shadow-segmented'
+              : 'px-2.5 font-normal text-ink'
           }`}
         >
           {option.label}

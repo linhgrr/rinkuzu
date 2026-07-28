@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
@@ -168,11 +168,6 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
     }
   };
 
-  const toggleTermsFromRow = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target instanceof Element && event.target.closest('a, input')) return;
-    setTermsAccepted((accepted) => !accepted);
-  };
-
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 text-center text-ink-muted">{t('loading')}</div>
@@ -324,10 +319,7 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
           )}
         </div>
 
-        <div
-          className="mt-8 flex cursor-pointer items-start gap-3 border-t border-line pt-5 text-sm leading-6 text-ink"
-          onClick={toggleTermsFromRow}
-        >
+        <div className="mt-8 flex items-start gap-3 border-t border-line pt-5 text-sm leading-6 text-ink">
           <input
             id="checkout-terms"
             type="checkbox"

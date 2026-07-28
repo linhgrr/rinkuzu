@@ -31,6 +31,7 @@ describe('SegmentedControl', () => {
     expect(selected).toHaveAttribute('aria-pressed', 'true');
     expect(selected).toHaveClass(
       'rounded-sm',
+      'min-h-11',
       'text-sub',
       'bg-neutral-warm-white',
       'px-3.5',
@@ -38,7 +39,6 @@ describe('SegmentedControl', () => {
       'text-neutral-warm-8',
       'shadow-segmented',
     );
-    expect(selected).not.toHaveClass('min-h-11');
     expect(inactive).toHaveClass('px-2.5', 'font-normal', 'text-ink');
 
     fireEvent.click(screen.getByRole('button', { name: 'Private' }));

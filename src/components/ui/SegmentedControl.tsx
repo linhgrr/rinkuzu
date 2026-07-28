@@ -28,7 +28,7 @@ export function SegmentedControl<Value extends string>({
           type="button"
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
-          className={`relative rounded-sm py-1 text-sub transition-colors before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+          className={`relative min-h-11 rounded-sm py-1 text-sub transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
             value === option.value
               ? 'bg-neutral-warm-white px-3.5 font-semibold text-neutral-warm-8 shadow-segmented'
               : 'px-2.5 font-normal text-ink'

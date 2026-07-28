@@ -151,7 +151,7 @@
     "serwist": "9.5.11",
     "sonner": "^2.0.7",
     "swr": "^2.3.8",
-    "tailwind-merge": "^2.3.0",
+    "tailwind-merge": "^3.6.0",
     "unified": "^11.0.5",
     "zod": "^4.3.6",
     "zustand": "^4.5.4"

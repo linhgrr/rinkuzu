@@ -8,12 +8,14 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
+  const isVi = locale === 'vi';
   return buildLocalizedMetadata({
     locale,
     path: '/quizzes',
-    title: 'Browse Quizzes | RinKuzu',
-    description:
-      'Browse public and Premium private quizzes from the RinKuzu community and start practicing right away.',
+    title: isVi ? 'Thư viện quiz | RinKuzu' : 'Browse Quizzes | RinKuzu',
+    description: isVi
+      ? 'Khám phá quiz công khai và nội dung Premium từ cộng đồng RinKuzu để bắt đầu luyện tập.'
+      : 'Browse public and Premium private quizzes from the RinKuzu community and start practicing right away.',
   });
 }
 

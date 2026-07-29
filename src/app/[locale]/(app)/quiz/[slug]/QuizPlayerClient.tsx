@@ -30,13 +30,8 @@ import type {
   QuizAnswer,
   SavedQuizProgress,
 } from '@/features/quiz/types/quiz-interaction-view-model';
-import type {
-  QuizPlayAuthorViewModel,
-  QuizPlayViewModel,
-} from '@/features/quiz/types/quiz-play-view-model';
+import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { routePathSegment } from '@/lib/routing/routeParams';
-import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
-import { getUserDisplayName, type UserIdentity } from '@/components/user/user-identity';
 
 function QuizLayoutLoadingFallback() {
   const t = useTranslations('quiz');
@@ -68,15 +63,6 @@ type QuizPlayerQuiz = Omit<QuizPlayViewModel, 'questions'> & {
   questions: ShuffledQuizQuestion[];
   questionIndexMap: number[];
 };
-
-function toAuthorIdentity(author: QuizPlayAuthorViewModel): UserIdentity {
-  return {
-    id: author.id,
-    ...(author.name !== undefined ? { name: author.name } : {}),
-    ...(author.displayName !== undefined ? { displayName: author.displayName } : {}),
-    ...(author.avatar !== undefined ? { avatar: author.avatar } : {}),
-  };
-}
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -535,7 +521,7 @@ function QuizGateHeader({ title, subtitle }: { title: string; subtitle?: string 
       <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-accent/10 rounded-2xl mb-4 mx-auto w-fit">
         <HiOutlineDocumentText className="size-6 text-accent" />
       </div>
-      <CardTitle className="text-2xl text-ink mb-2">{title}</CardTitle>
+      <h2 className="mb-2 text-2xl font-semibold text-ink">{title}</h2>
       {subtitle && <p className="text-ink-muted">{subtitle}</p>}
     </CardHeader>
   );
@@ -992,19 +978,8 @@ export default function QuizPlayerClient({
     return null;
   }
 
-  const authorName = quiz.author
-    ? getUserDisplayName(toAuthorIdentity(quiz.author)) || 'RinKuzu Community'
-    : 'RinKuzu Community';
   return (
     <>
-      <QuizPageSchema
-        quizSlug={slug}
-        quizTitle={quiz.title}
-        {...(quiz.description !== undefined ? { quizDescription: quiz.description } : {})}
-        authorName={authorName}
-        questionCount={quiz.questions.length}
-      />
-
       {state.resumePrompt && <div className="min-h-screen" aria-hidden="true" />}
 
       {!state.resumePrompt && isMobile && !state.showEmailInput && (

@@ -32,8 +32,6 @@ export const PRIVATE_ROUTE_PREFIXES = [
   '/adaptive/result',
   '/draft',
   '/edit',
-  '/login',
-  '/register',
   '/payment',
   '/quiz/*/result',
   '/test-image-upload',

@@ -1,96 +1,62 @@
-'use client';
-
-import { useLocale } from 'next-intl';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { toBrowserPath } from '@/lib/routing/pathname';
-import { siteUrl } from '@/lib/seo';
-import { ROUTES } from '@/shared/constants/routes';
+import { canonicalFor, siteUrl } from '@/lib/seo';
 
 interface QuizPageSchemaProps {
+  locale: string;
   quizSlug: string;
   quizTitle: string;
   quizDescription?: string;
   authorName?: string;
   categoryName?: string;
-  questionCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function QuizPageSchema({
+  locale,
   quizSlug,
   quizTitle,
   quizDescription,
   authorName = 'RinKuzu Community',
   categoryName,
-  questionCount,
+  createdAt,
+  updatedAt,
 }: QuizPageSchemaProps) {
-  const locale = useLocale();
-  const quizUrl = `${siteUrl.origin}${toBrowserPath(ROUTES.QUIZ.VIEW(quizSlug), locale)}`;
+  const quizUrl = canonicalFor(locale, `/quiz/${quizSlug}`);
+  const description =
+    quizDescription ||
+    (locale === 'vi'
+      ? `Luyện tập quiz ${categoryName || 'nhiều chủ đề'} trên RinKuzu.`
+      : `Practice a ${categoryName || 'general knowledge'} quiz on RinKuzu.`);
 
-  // Primary: SoftwareApplication schema
-  const softwareSchema = {
+  const quizSchema = {
     '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
+    '@type': 'Quiz',
     name: quizTitle,
-    description:
-      quizDescription ||
-      `Practice quiz on ${categoryName || 'various topics'} — adaptive learning with AI explanations.`,
+    description,
     url: quizUrl,
-    applicationCategory: 'EducationApplication',
-    operatingSystem: 'Web',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-      availability: 'https://schema.org/IsAccessibleForFree',
+    inLanguage: locale,
+    learningResourceType: 'Quiz',
+    educationalUse: 'Practice',
+    isAccessibleForFree: true,
+    ...(createdAt ? { dateCreated: createdAt } : {}),
+    ...(updatedAt ? { dateModified: updatedAt } : {}),
+    author:
+      authorName === 'RinKuzu Community'
+        ? {
+            '@type': 'Organization',
+            name: 'RinKuzu',
+            url: siteUrl.origin,
+          }
+        : {
+            '@type': 'Person',
+            name: authorName,
+          },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': quizUrl,
     },
-    author: {
-      '@type': 'Person',
-      name: authorName,
-    },
-    ...(questionCount != null && {
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: '4.7',
-        ratingCount: Math.max(questionCount * 3, 12),
-        bestRating: '5',
-        worstRating: '1',
-      },
-    }),
   };
 
-  // Secondary: Course schema
-  const courseSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Course',
-    name: quizTitle,
-    description:
-      quizDescription ||
-      `Interactive adaptive learning course on ${categoryName || 'various topics'} powered by RinKuzu AI.`,
-    url: quizUrl,
-    provider: {
-      '@type': 'Organization',
-      name: 'RinKuzu',
-      url: siteUrl.origin,
-    },
-    ...(authorName !== 'RinKuzu Community' && {
-      instructor: {
-        '@type': 'Person',
-        name: authorName,
-      },
-    }),
-    ...(questionCount != null && {
-      numberOfCredits: {
-        '@type': 'QuantitativeValue',
-        value: Math.max(1, Math.ceil(questionCount / 10)),
-        unitCode: 'CEU',
-      },
-    }),
-  };
-
-  return (
-    <>
-      <JsonLd id="quiz-software-schema" data={softwareSchema} />
-      <JsonLd id="quiz-course-schema" data={courseSchema} />
-    </>
-  );
+  return <JsonLd id="quiz-schema" data={quizSchema} />;
 }

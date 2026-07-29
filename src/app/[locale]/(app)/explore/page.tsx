@@ -259,6 +259,8 @@ function ExploreContent() {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 pb-24 pt-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1340px]">
+        <h1 className="font-home text-2xl font-semibold text-ink sm:text-3xl">{t('pageTitle')}</h1>
+
         <div className="lg:hidden">
           <ExploreSearchInput
             key={query}
@@ -418,7 +420,7 @@ function ExploreFallback() {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1340px] space-y-6">
-        <div className="h-8 w-56 rounded-md skeleton-shimmer" />
+        <div className="h-9 w-56 rounded-md skeleton-shimmer" />
         <div className="h-12 max-w-3xl rounded-xl skeleton-shimmer" />
         <QuizGridSkeleton count={6} />
       </div>

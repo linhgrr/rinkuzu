@@ -13,22 +13,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const defaultMetadata = buildLocalizedMetadata({
     locale,
     path: `/quiz/${slug}`,
-    title: 'Practice Quiz | RinKuzu',
+    title: locale === 'vi' ? 'Luyện tập quiz | RinKuzu' : 'Practice Quiz | RinKuzu',
     description:
-      'Take interactive quizzes generated from learning materials and get instant feedback.',
+      locale === 'vi'
+        ? 'Luyện tập quiz từ tài liệu học tập và nhận phản hồi ngay trên RinKuzu.'
+        : 'Take interactive quizzes generated from learning materials and get instant feedback.',
+    robots: {
+      index: false,
+      follow: false,
+    },
   });
 
   try {
     const quizService = serviceFactory.getQuizService();
     const quiz = await quizService.getQuizMetadataBySlug(slug);
     if (!quiz) {
-      return {
-        ...defaultMetadata,
-        robots: {
-          index: false,
-          follow: false,
-        },
-      };
+      return defaultMetadata;
     }
 
     const isIndexable = !quiz.isPrivate;
@@ -38,7 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${quiz.title} | RinKuzu`,
       description:
         quiz.description ||
-        'Practice reviewed quizzes on RinKuzu with clear explanations and detailed results.',
+        (locale === 'vi'
+          ? 'Luyện tập quiz trên RinKuzu với lời giải rõ ràng và kết quả chi tiết.'
+          : 'Practice reviewed quizzes on RinKuzu with clear explanations and detailed results.'),
       robots: {
         index: isIndexable,
         follow: isIndexable,

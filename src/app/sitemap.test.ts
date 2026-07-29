@@ -30,6 +30,11 @@ describe('sitemap', () => {
 
     expect(entries.length).toBeGreaterThan(0);
     expect(entries.some((entry) => entry.url.endsWith('/en'))).toBe(true);
+    expect(entries.find((entry) => entry.url.endsWith('/vi'))?.alternates?.languages).toEqual({
+      vi: expect.stringMatching(/\/vi$/),
+      en: expect.stringMatching(/\/en$/),
+      'x-default': expect.stringMatching(/\/vi$/),
+    });
     expect(loggerError).toHaveBeenCalledWith(
       { error: expect.any(Error) },
       'sitemap: quiz generation failed',

@@ -52,6 +52,17 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'quizz-ck.vercel.app',
+          },
+        ],
+        destination: 'https://www.rinkuzu.app/:path*',
+        permanent: true,
+      },
+      {
         source: '/adaptive-learning',
         destination: '/adaptive',
         permanent: true,

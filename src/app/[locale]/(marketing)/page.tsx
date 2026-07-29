@@ -2,10 +2,9 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 
 import { GuestLanding } from '@/features/landing/components/GuestLanding';
-import { getCurrentSession } from '@/lib/auth/session';
-import { redirectToLocalizedPath } from '@/lib/routing/localized-redirect';
 import { buildLocalizedMetadata } from '@/lib/seo';
-import { ROUTES } from '@/shared/constants/routes';
+
+export const dynamic = 'force-static';
 
 export async function generateMetadata({
   params,
@@ -24,11 +23,7 @@ export async function generateMetadata({
 }
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  const [{ locale }, session] = await Promise.all([params, getCurrentSession()]);
+  const { locale } = await params;
 
-  if (session?.user) {
-    return redirectToLocalizedPath(ROUTES.DASHBOARD, locale);
-  }
-
-  return <GuestLanding isAuthenticated={Boolean(session?.user)} locale={locale} />;
+  return <GuestLanding locale={locale} />;
 }

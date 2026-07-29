@@ -1,35 +1,27 @@
 'use client';
 
 import Image from 'next/image';
-import { useRef, useState, useEffect } from 'react';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { imgGroup8 } from './constants';
 import { Reveal } from './Reveal';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-const DESIGN_W = 1728;
-const LINE_H = 387;
-const CONTENT_H = 900;
-
 const englishCards = [
   {
     num: '1',
     title: 'Upload your PDF',
     desc: 'Simply drag and drop any educational material, from textbooks to specialized research papers.',
-    pb: 56,
   },
   {
     num: '2',
     title: 'AI analyzes your content',
     desc: 'Our curator extracts core concepts, identifies difficult areas, and builds a semantic map of the text.',
-    pb: 136,
   },
   {
     num: '3',
     title: 'Get a personalized roadmap',
     desc: 'Receive a step-by-step guide tailored to your current knowledge level and learning goals.',
-    pb: 216,
   },
 ];
 
@@ -37,12 +29,9 @@ interface HowItWorksCardProps {
   num: string;
   title: string;
   desc: string;
-  pb: number;
 }
 
 export default function HowItWorks({ locale }: { locale: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
   const reduce = useReducedMotion();
   const isVi = locale === 'vi';
   const cards = isVi
@@ -51,34 +40,19 @@ export default function HowItWorks({ locale }: { locale: string }) {
           num: '1',
           title: 'Tải tài liệu PDF lên',
           desc: 'Chọn bài giảng, ghi chú hoặc tài liệu mà bạn muốn luyện tập.',
-          pb: 56,
         },
         {
           num: '2',
           title: 'AI phân tích nội dung',
           desc: 'RinKuzu trích xuất khái niệm, quan hệ tiên quyết và các phần cần luyện tập.',
-          pb: 136,
         },
         {
           num: '3',
           title: 'Nhận bước học tiếp theo',
           desc: 'Luyện câu hỏi theo mức độ nắm vững và xem phần kiến thức nên ưu tiên.',
-          pb: 216,
         },
       ]
     : englishCards;
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      if (!entry) return;
-      const w = entry.contentRect.width;
-      setScale(Math.min(w / DESIGN_W, 1));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   return (
     <div className="flex flex-col gap-16 xl:gap-[128px] items-center w-full">
@@ -109,73 +83,42 @@ export default function HowItWorks({ locale }: { locale: string }) {
         </p>
       </Reveal>
 
-      {/* Scaled container: line + cards scale together */}
-      <div ref={containerRef} className="w-full">
-        {/* Mobile layout */}
-        <div className="flex flex-col gap-8 items-center px-4 xl:hidden">
-          {cards.map((c, i) => (
-            <Reveal key={c.num} delay={i * 0.12} className="w-full flex justify-center">
-              <Card num={c.num} title={c.title} desc={c.desc} pb={56} />
-            </Reveal>
-          ))}
+      <div className="w-full px-4 xl:px-0">
+        <div aria-hidden="true" className="relative hidden h-64 w-full xl:block 2xl:h-96">
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="block object-fill"
+            fill
+            sizes="(min-width: 1536px) 1728px, 100vw"
+            src={imgGroup8}
+          />
         </div>
 
-        {/* Desktop: wrapper whose height matches the visual (scaled) size */}
-        <div
-          className="hidden xl:block relative overflow-visible"
-          style={{ height: CONTENT_H * scale }}
-        >
-          <div
-            className="absolute top-0 left-0 flex flex-col items-center"
-            style={{
-              width: DESIGN_W,
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-            }}
-          >
-            <div className="relative shrink-0 w-full" style={{ height: LINE_H }}>
-              <div
-                className="absolute"
-                style={{ top: '-3.18%', right: '-1.23%', bottom: '-0.26%', left: '-1.23%' }}
+        <div className="grid w-full grid-cols-1 items-start gap-8 xl:grid-cols-3 2xl:gap-24">
+          <LazyMotion features={domAnimation}>
+            {cards.map((c, i) => (
+              <m.div
+                key={c.num}
+                className="flex w-full justify-center"
+                initial={reduce ? false : { opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.6, delay: i * 0.2, ease: EASE_OUT }}
               >
-                <Image
-                  alt=""
-                  className="block max-w-none object-fill"
-                  fill
-                  sizes="1728px"
-                  src={imgGroup8}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-[96px] items-start shrink-0">
-              <LazyMotion features={domAnimation}>
-                {cards.map((c, i) => (
-                  <m.div
-                    key={c.num}
-                    initial={reduce ? false : { opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.4 }}
-                    transition={{ duration: 0.6, delay: i * 0.2, ease: EASE_OUT }}
-                  >
-                    <Card {...c} />
-                  </m.div>
-                ))}
-              </LazyMotion>
-            </div>
-          </div>
+                <Card {...c} />
+              </m.div>
+            ))}
+          </LazyMotion>
         </div>
       </div>
     </div>
   );
 }
 
-function Card({ num, title, desc, pb }: HowItWorksCardProps) {
+function Card({ num, title, desc }: HowItWorksCardProps) {
   return (
-    <div
-      className="content-stretch flex flex-col gap-[22px] items-start px-[32px] relative rounded-bl-[24px] rounded-br-[24px] rounded-tr-[24px] shadow-[0px_16px_28px_0px_rgba(0,0,0,0.05)] shrink-0 w-[461px]"
-      style={{ paddingTop: 56, paddingBottom: pb }}
-    >
+    <div className="relative flex w-full max-w-md shrink-0 flex-col content-stretch items-start gap-[22px] rounded-bl-[24px] rounded-br-[24px] rounded-tr-[24px] px-[32px] py-14 shadow-[0px_16px_28px_0px_rgba(0,0,0,0.05)] xl:max-w-none">
       <div
         aria-hidden="true"
         className="absolute bg-[rgba(43,43,43,0.2)] inset-0 pointer-events-none rounded-bl-[24px] rounded-br-[24px] rounded-tr-[24px] backdrop-blur-sm"

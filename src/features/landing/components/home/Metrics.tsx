@@ -28,6 +28,7 @@ export default function Metrics({ locale }: { locale: string }) {
         <div className="absolute inset-[-0.78%_-1px]">
           <Image
             alt=""
+            aria-hidden="true"
             className="block max-w-none object-fill"
             fill
             sizes="2px"
@@ -57,6 +58,7 @@ export default function Metrics({ locale }: { locale: string }) {
         <div className="absolute inset-[-0.78%_-1px]">
           <Image
             alt=""
+            aria-hidden="true"
             className="block max-w-none object-fill"
             fill
             sizes="2px"

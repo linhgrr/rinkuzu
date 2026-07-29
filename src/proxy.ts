@@ -114,6 +114,15 @@ function resolveGuardedPageResponse(
   return applySecurityHeaders(intlMiddleware(request), requestId);
 }
 
+function readRequestAuthToken(request: NextRequest) {
+  const secret = process.env['AUTH_SECRET'];
+  return readAuthToken({
+    req: request,
+    secureCookie: usesSecureAuthCookie(request),
+    ...(secret === undefined ? {} : { secret }),
+  });
+}
+
 /**
  * RSC/prefetch requests are frequently still in flight when a user submits
  * logout. Decode the JWT for the coarse route gate without going through the
@@ -122,17 +131,30 @@ function resolveGuardedPageResponse(
  */
 async function guardedRscProxy(request: NextRequest): Promise<Response> {
   const requestId = request.headers.get('x-request-id') || randomUUID();
-  const secret = process.env['AUTH_SECRET'];
-  const token = await readAuthToken({
-    req: request,
-    secureCookie: usesSecureAuthCookie(request),
-    ...(secret === undefined ? {} : { secret }),
-  });
+  const token = await readRequestAuthToken(request);
 
   return resolveGuardedPageResponse(request, requestId, {
     authenticated: Boolean(token?.sub),
     role: token?.role,
   });
+}
+
+/**
+ * Keep the public landing page static while preserving the signed-in home
+ * redirect. Reading the JWT at the edge avoids making the page itself depend
+ * on request cookies and therefore eligible for static generation and caching.
+ */
+async function publicHomeProxy(request: NextRequest): Promise<Response> {
+  const requestId = request.headers.get('x-request-id') || randomUUID();
+  const token = await readRequestAuthToken(request);
+
+  if (token?.sub) {
+    const { locale } = getLocaleFromPath(request.nextUrl.pathname);
+    const dashboardUrl = new URL(toBrowserPath(ROUTES.DASHBOARD, locale), request.url);
+    return applySecurityHeaders(NextResponse.redirect(dashboardUrl), requestId);
+  }
+
+  return applySecurityHeaders(intlMiddleware(request), requestId);
 }
 
 /**
@@ -181,6 +203,10 @@ export default async function middleware(request: NextRequest, event: NextFetchE
   }
 
   const { pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
+  if (pathWithoutLocale === ROUTES.HOME) {
+    return publicHomeProxy(request);
+  }
+
   if (getAuthRoutePolicy(pathWithoutLocale) !== 'public') {
     if (isRscOrPrefetchRequest(request)) return guardedRscProxy(request);
     const response = await guardedProxy(request, event);

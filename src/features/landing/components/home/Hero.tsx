@@ -23,7 +23,7 @@ export default function Hero({ isAuthenticated = false, locale }: HeroProps) {
             className="font-system text-left text-[70px] leading-[0.9] text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:font-vina-sans xl:text-[144px] min-[1800px]:text-[164px]"
             style={{ filter: 'drop-shadow(4px 4px 0px #542607)' }}
           >
-            {isVi ? 'TRỢ LÝ HỌC TẬP CÙNG AI' : 'YOUR AI-POWERED LEARNING COMPANION'}
+            {isVi ? 'TẠO QUIZ AI TỪ PDF' : 'AI QUIZ GENERATOR FROM PDF'}
           </h1>
         </div>
 
@@ -31,8 +31,8 @@ export default function Hero({ isAuthenticated = false, locale }: HeroProps) {
         <div className="mt-8 flex w-full flex-col gap-[36px] xl:mt-[72px] xl:w-[820px] min-[1800px]:w-[958px]">
           <p className="font-unbounded font-light text-base sm:text-lg xl:text-[20px] leading-[1.5] text-white">
             {isVi
-              ? 'Biến PDF thành nội dung luyện tập cá nhân hóa. Nhìn rõ phần còn yếu và biết nên học gì tiếp theo.'
-              : 'Turn PDFs into personalized practice. See weak areas and know what to study next.'}
+              ? 'Biến PDF thành câu hỏi luyện tập bằng AI, kết nối khái niệm trong đồ thị kiến thức, nhìn rõ phần còn yếu và biết nên học gì tiếp theo.'
+              : 'Use RinKuzu as an AI quiz generator from PDF: create practice questions, connect concepts in a knowledge graph, and see what to study next.'}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-[16px] items-start sm:items-center">

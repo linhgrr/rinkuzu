@@ -18,5 +18,4 @@ export const imgGroup9 = '/assets/imgGroup9.svg';
 export const imgBasilDocumentSolid = '/assets/imgBasilDocumentSolid.svg';
 export const imgGroup10 = '/assets/imgGroup10.svg';
 export const imgPhChartLineUpFill = '/assets/imgPhChartLineUpFill.svg';
-export const imgFrame33 = '/assets/imgFrame33.svg';
 export const imgGroup11 = '/assets/imgGroup11.svg';

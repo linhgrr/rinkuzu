@@ -13,8 +13,9 @@ import { Reveal } from './Reveal';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-export default function CoreIntelligence() {
+export default function CoreIntelligence({ locale }: { locale: string }) {
   const reduce = useReducedMotion();
+  const isVi = locale === 'vi';
   const feature = (delay: number) =>
     reduce
       ? {}
@@ -26,17 +27,19 @@ export default function CoreIntelligence() {
         };
   return (
     <LazyMotion features={domAnimation}>
-      <div className="relative w-full max-w-[1728px] mx-auto flex flex-col xl:flex-row items-center justify-between gap-16 xl:gap-0 z-10 px-4 xl:px-0">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1728px] flex-col items-center justify-between gap-16 px-4 2xl:flex-row 2xl:gap-0 2xl:px-0">
         {/* Left Content - Text & Features */}
-        <div className="flex flex-col gap-12 xl:gap-[96px] w-full xl:w-[959px] shrink-0">
+        <div className="flex w-full shrink-0 flex-col gap-12 2xl:w-[959px] 2xl:gap-[96px]">
           {/* Header */}
-          <Reveal className="flex flex-col gap-[20px] items-center xl:items-start text-center xl:text-left text-white w-full xl:w-[634px]">
+          <Reveal className="flex w-full flex-col items-center gap-[20px] text-center text-white 2xl:w-[634px] 2xl:items-start 2xl:text-left">
             <h2 className="font-unbounded font-extrabold text-4xl xl:text-[48px] leading-[1.2] xl:leading-[1.4] w-full">
-              <span>{`CORE `}</span>
-              <span className="text-[#fd761a]">INTELLIGENCE</span>
+              <span>{isVi ? 'NỀN TẢNG ' : 'CORE '}</span>
+              <span className="text-[#fd761a]">{isVi ? 'CỐT LÕI' : 'INTELLIGENCE'}</span>
             </h2>
             <p className="font-unbounded font-light text-base xl:text-[18px] leading-[1.5] text-white w-full">
-              Sophisticated tools designed for the modern scholar.
+              {isVi
+                ? 'Các công cụ nối tài liệu nguồn với hoạt động luyện tập.'
+                : 'Tools that connect source material to active practice.'}
             </p>
           </Reveal>
 
@@ -62,10 +65,12 @@ export default function CoreIntelligence() {
                 </div>
                 <div className="flex flex-col gap-[12px] w-full">
                   <h3 className="font-unbounded font-bold text-lg xl:text-[22px] text-white leading-[1.4]">
-                    AI Learning Path
+                    {isVi ? 'Lộ trình học bằng AI' : 'AI Learning Path'}
                   </h3>
                   <p className="font-unbounded font-light text-sm xl:text-[18px] text-[#ededed] leading-[1.5]">
-                    Custom milestones based on document complexity and your unique learning speed.
+                    {isVi
+                      ? 'Ưu tiên nội dung dựa trên quan hệ kiến thức và kết quả luyện tập của bạn.'
+                      : 'Prioritize material using concept relationships and your practice results.'}
                   </p>
                 </div>
               </m.div>
@@ -88,10 +93,12 @@ export default function CoreIntelligence() {
                 </div>
                 <div className="flex flex-col gap-[12px] w-full">
                   <h3 className="font-unbounded font-bold text-lg xl:text-[22px] text-white leading-[1.4]">
-                    Smart PDF Analysis
+                    {isVi ? 'Phân tích PDF' : 'PDF Analysis'}
                   </h3>
                   <p className="font-unbounded font-light text-sm xl:text-[18px] text-[#ededed] leading-[1.5]">
-                    Custom milestones based on document complexity and your unique learning speed.
+                    {isVi
+                      ? 'Trích xuất khái niệm và kết nối chúng với vị trí trong tài liệu nguồn.'
+                      : 'Extract concepts and connect them to locations in the source material.'}
                   </p>
                 </div>
               </m.div>
@@ -117,10 +124,12 @@ export default function CoreIntelligence() {
                 </div>
                 <div className="flex flex-col gap-[12px] w-full">
                   <h3 className="font-unbounded font-bold text-lg xl:text-[22px] text-white leading-[1.4]">
-                    Auto quizz and summary
+                    {isVi ? 'Tạo quiz và phần giải thích' : 'Quiz and Explanation Generation'}
                   </h3>
                   <p className="font-unbounded font-light text-sm xl:text-[18px] text-[#ededed] leading-[1.5]">
-                    Custom milestones based on document complexity and your unique learning speed.
+                    {isVi
+                      ? 'Tạo câu hỏi luyện tập có giải thích để hỗ trợ nhớ chủ động.'
+                      : 'Generate practice questions with explanations to support active recall.'}
                   </p>
                 </div>
               </m.div>
@@ -143,10 +152,12 @@ export default function CoreIntelligence() {
                 </div>
                 <div className="flex flex-col gap-[12px] w-full">
                   <h3 className="font-unbounded font-bold text-lg xl:text-[22px] text-white leading-[1.4]">
-                    Progress tracking
+                    {isVi ? 'Theo dõi tiến độ' : 'Progress Tracking'}
                   </h3>
                   <p className="font-unbounded font-light text-sm xl:text-[18px] text-[#ededed] leading-[1.5]">
-                    Custom milestones based on document complexity and your unique learning speed.
+                    {isVi
+                      ? 'Xem mức độ nắm vững theo khái niệm và các phần cần ôn lại.'
+                      : 'See concept-level mastery and the areas that need another review.'}
                   </p>
                 </div>
               </m.div>
@@ -156,7 +167,7 @@ export default function CoreIntelligence() {
 
         {/* Right Content - Image */}
         <m.div
-          className="w-full xl:w-[653px] flex justify-center xl:justify-end shrink-0"
+          className="flex w-full shrink-0 justify-center 2xl:w-[653px] 2xl:justify-end"
           initial={reduce ? false : { opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -166,7 +177,11 @@ export default function CoreIntelligence() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full xl:w-[644px] h-[637px]">
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <Image
-                  alt="AI Interface Illustration"
+                  alt={
+                    isVi
+                      ? 'Minh họa giao diện học tập bằng AI'
+                      : 'AI learning interface illustration'
+                  }
                   className="absolute max-w-none xl:w-[121%] xl:h-[122.17%] xl:-left-[11.88%] xl:-top-[11.96%] w-[120%] h-[120%] -left-[10%] -top-[10%] object-cover mix-blend-normal opacity-100"
                   height={1024}
                   src={imgChatGptImageApr22026At121506Am1}

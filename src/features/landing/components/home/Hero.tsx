@@ -5,31 +5,34 @@ import { Magnetic } from './Magnetic';
 
 interface HeroProps {
   isAuthenticated?: boolean;
+  locale: string;
 }
 
-export default function Hero({ isAuthenticated = false }: HeroProps) {
+export default function Hero({ isAuthenticated = false, locale }: HeroProps) {
   const uploadHref = isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload';
   const demoHref = isAuthenticated ? '/adaptive' : '/register?next=/adaptive';
+  const isVi = locale === 'vi';
 
   return (
     <div className="relative w-full max-w-[1920px] mx-auto min-h-[90vh] xl:h-[1080px] flex flex-col xl:flex-row items-center xl:items-start justify-between mt-4 xl:mt-0">
       {/* Left Content */}
-      <div className="flex-none w-full xl:w-auto flex flex-col z-10 px-4 xl:px-0">
+      <div className="z-10 flex w-full flex-none flex-col px-4 xl:px-0 min-[1800px]:w-auto">
         {/* Main Title - Responsive text sizing */}
-        <div className="w-full xl:w-[1090px] mt-24 xl:mt-[254px]">
+        <div className="mt-24 w-full xl:mt-[254px] min-[1800px]:w-[1090px]">
           <h1
-            className="font-system text-left text-[70px] leading-[0.9] text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:font-vina-sans xl:text-[164px]"
+            className="font-system text-left text-[70px] leading-[0.9] text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:font-vina-sans xl:text-[144px] min-[1800px]:text-[164px]"
             style={{ filter: 'drop-shadow(4px 4px 0px #542607)' }}
           >
-            YOUR AI-POWERED LEARNING COMPANION
+            {isVi ? 'TRỢ LÝ HỌC TẬP CÙNG AI' : 'YOUR AI-POWERED LEARNING COMPANION'}
           </h1>
         </div>
 
         {/* Subtitle & CTA */}
-        <div className="flex flex-col gap-[36px] w-full xl:w-[958px] mt-8 xl:mt-[72px]">
+        <div className="mt-8 flex w-full flex-col gap-[36px] xl:mt-[72px] xl:w-[820px] min-[1800px]:w-[958px]">
           <p className="font-unbounded font-light text-base sm:text-lg xl:text-[20px] leading-[1.5] text-white">
-            Turn your PDFs into a personalized learning journey with AI. Curate your knowledge with
-            surgical precision.
+            {isVi
+              ? 'Biến PDF thành nội dung luyện tập cá nhân hóa. Nhìn rõ phần còn yếu và biết nên học gì tiếp theo.'
+              : 'Turn PDFs into personalized practice. See weak areas and know what to study next.'}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-[16px] items-start sm:items-center">
@@ -39,7 +42,7 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
                 className="border border-[#ff541b] flex h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[#ff541b]/20 transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto"
               >
                 <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
-                  Try Demo
+                  {isVi ? 'Học thử' : 'Try Demo'}
                 </span>
               </Link>
             </Magnetic>
@@ -58,7 +61,7 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
                   />
                 </span>
                 <span className="whitespace-nowrap font-unbounded text-[19px] font-bold text-white">
-                  Upload PDF
+                  {isVi ? 'Tải PDF lên' : 'Upload PDF'}
                 </span>
               </Link>
             </Magnetic>
@@ -67,14 +70,13 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
       </div>
 
       {/* Right Content - 3D Character */}
-      <div className="pointer-events-none z-10 hidden flex-none items-center justify-center xl:absolute xl:-right-[20px] xl:top-[80px] xl:flex xl:w-[527px]">
+      <div className="pointer-events-none z-10 hidden flex-none items-center justify-center min-[1800px]:absolute min-[1800px]:-right-[20px] min-[1800px]:top-[80px] min-[1800px]:flex min-[1800px]:w-[527px]">
         <div className="relative h-[1084px] w-[527px] scale-x-[-1]">
           <div className="absolute inset-0">
             <Image
-              alt="AI Character"
+              alt={isVi ? 'Nhân vật trợ lý AI' : 'AI assistant character'}
               className="absolute inset-0 w-full h-full object-cover drop-shadow-2xl"
               fill
-              priority
               sizes="(min-width: 1280px) 527px, 100vw"
               src={imgCharacterImg}
             />

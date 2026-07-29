@@ -12,7 +12,7 @@ const DESIGN_W = 1728;
 const LINE_H = 387;
 const CONTENT_H = 900;
 
-const cards = [
+const englishCards = [
   {
     num: '1',
     title: 'Upload your PDF',
@@ -40,10 +40,33 @@ interface HowItWorksCardProps {
   pb: number;
 }
 
-export default function HowItWorks() {
+export default function HowItWorks({ locale }: { locale: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const reduce = useReducedMotion();
+  const isVi = locale === 'vi';
+  const cards = isVi
+    ? [
+        {
+          num: '1',
+          title: 'Tải tài liệu PDF lên',
+          desc: 'Chọn bài giảng, ghi chú hoặc tài liệu mà bạn muốn luyện tập.',
+          pb: 56,
+        },
+        {
+          num: '2',
+          title: 'AI phân tích nội dung',
+          desc: 'RinKuzu trích xuất khái niệm, quan hệ tiên quyết và các phần cần luyện tập.',
+          pb: 136,
+        },
+        {
+          num: '3',
+          title: 'Nhận bước học tiếp theo',
+          desc: 'Luyện câu hỏi theo mức độ nắm vững và xem phần kiến thức nên ưu tiên.',
+          pb: 216,
+        },
+      ]
+    : englishCards;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -62,13 +85,27 @@ export default function HowItWorks() {
       {/* Title */}
       <Reveal className="flex flex-col font-unbounded font-extrabold justify-center leading-[0] relative shrink-0 text-4xl md:text-[48px] text-center text-white w-full">
         <p className="leading-[1.2] md:leading-[normal]">
-          <span>{`LET `}</span>
-          <span className="text-[#fd761a]">AI DO HARD</span>
-          <br className="md:hidden" />
-          <span className="hidden md:inline">{` `}</span>
-          <span className="bg-clip-text text-transparent bg-[linear-gradient(178deg,#fff_1.3%,#999_98.7%)]">
-            WORK
-          </span>
+          {isVi ? (
+            <>
+              <span>{`ĐỂ `}</span>
+              <span className="text-[#fd761a]">AI XỬ LÝ</span>
+              <br className="md:hidden" />
+              <span className="hidden md:inline">{` `}</span>
+              <span className="bg-clip-text text-transparent bg-[linear-gradient(178deg,#fff_1.3%,#999_98.7%)]">
+                TÀI LIỆU
+              </span>
+            </>
+          ) : (
+            <>
+              <span>{`LET `}</span>
+              <span className="text-[#fd761a]">AI HANDLE</span>
+              <br className="md:hidden" />
+              <span className="hidden md:inline">{` `}</span>
+              <span className="bg-clip-text text-transparent bg-[linear-gradient(178deg,#fff_1.3%,#999_98.7%)]">
+                THE MATERIAL
+              </span>
+            </>
+          )}
         </p>
       </Reveal>
 

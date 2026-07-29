@@ -7,8 +7,9 @@ import { Reveal } from './Reveal';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-export default function StruggleSection() {
+export default function StruggleSection({ locale }: { locale: string }) {
   const reduce = useReducedMotion();
+  const isVi = locale === 'vi';
   const cardReveal = (delay: number) =>
     reduce
       ? {}
@@ -24,15 +25,29 @@ export default function StruggleSection() {
         {/* Title */}
         <Reveal className="font-unbounded font-extrabold text-center text-white w-full">
           <h2 className="text-3xl sm:text-4xl md:text-[48px] leading-[1.4]">
-            <span className="text-[#fd761a]">STRUGGLING</span>
-            <span>{` `}</span>
-            <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-[#999999]">
-              TO
-            </span>
-            <span>{` `}</span>
-            <span className="text-[#fd761a]">STUDY</span>
-            <span>{` `}</span>
-            <span>EFFECTIVELY ?</span>
+            {isVi ? (
+              <>
+                <span className="text-[#fd761a]">CHƯA BIẾT</span>
+                <span>{` `}</span>
+                <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-[#999999]">
+                  HỌC GÌ
+                </span>
+                <span>{` `}</span>
+                <span className="text-[#fd761a]">TIẾP THEO?</span>
+              </>
+            ) : (
+              <>
+                <span className="text-[#fd761a]">STRUGGLING</span>
+                <span>{` `}</span>
+                <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-[#999999]">
+                  TO
+                </span>
+                <span>{` `}</span>
+                <span className="text-[#fd761a]">STUDY</span>
+                <span>{` `}</span>
+                <span>EFFECTIVELY?</span>
+              </>
+            )}
           </h2>
         </Reveal>
 
@@ -58,14 +73,15 @@ export default function StruggleSection() {
 
             <div className="w-full relative z-10 mt-2">
               <h3 className="font-unbounded font-bold text-xl md:text-[22px] text-white leading-[1.4]">
-                You don’t know what to learn first
+                {isVi ? 'Không biết nên học phần nào trước' : "You don't know what to learn first"}
               </h3>
             </div>
 
             <div className="w-full relative z-10">
               <p className="font-unbounded font-light text-base md:text-[18px] text-gray-300 leading-[1.5]">
-                Inefficient studying by focusing on low-priority details instead of the core
-                conceptual framework.
+                {isVi
+                  ? 'Dễ dành thời gian cho chi tiết nhỏ trước khi hiểu các khái niệm nền tảng.'
+                  : 'It is easy to focus on low-priority details before understanding the core concepts.'}
               </p>
             </div>
           </m.div>
@@ -88,14 +104,17 @@ export default function StruggleSection() {
 
             <div className="w-full relative z-10 mt-2">
               <h3 className="font-unbounded font-bold text-xl md:text-[22px] text-white leading-[1.4]">
-                Too many documents, no clear path
+                {isVi
+                  ? 'Nhiều tài liệu nhưng thiếu lộ trình rõ ràng'
+                  : 'Many documents, no clear path'}
               </h3>
             </div>
 
             <div className="w-full relative z-10">
               <p className="font-unbounded font-light text-base md:text-[18px] text-white/90 leading-[1.5]">
-                Feeling overwhelmed by endless research papers and textbook chapters without a
-                starting point.
+                {isVi
+                  ? 'Bài giảng, giáo trình và ghi chú chồng chất nhưng không rõ điểm bắt đầu.'
+                  : 'Lecture notes, papers, and textbook chapters pile up without a clear starting point.'}
               </p>
             </div>
           </m.div>
@@ -120,14 +139,17 @@ export default function StruggleSection() {
 
             <div className="w-full relative z-10 mt-2">
               <h3 className="font-unbounded font-bold text-xl md:text-[22px] text-white leading-[1.4]">
-                Waste time rereading without progress
+                {isVi
+                  ? 'Đọc lại nhiều lần nhưng khó thấy tiến bộ'
+                  : 'Rereading without clear progress'}
               </h3>
             </div>
 
             <div className="w-full relative z-10">
               <p className="font-unbounded font-light text-base md:text-[18px] text-gray-300 leading-[1.5]">
-                Passive reading often results in poor retention. You need active recall and
-                structured synthesis.
+                {isVi
+                  ? 'Đọc thụ động khó chỉ ra phần chưa hiểu; luyện nhớ chủ động giúp phát hiện lỗ hổng.'
+                  : 'Passive reading can hide gaps; active recall makes them visible.'}
               </p>
             </div>
           </m.div>

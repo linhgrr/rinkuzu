@@ -4,18 +4,19 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 
-const NAV_LINKS = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'My Learning', href: '/adaptive' },
-  { label: 'Upload PDF', href: '/adaptive/upload' },
-];
-
 interface HeaderProps {
   isAuthenticated?: boolean;
+  locale: string;
 }
 
-export default function Header({ isAuthenticated = false }: HeaderProps) {
+export default function Header({ isAuthenticated = false, locale }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isVi = locale === 'vi';
+  const navLinks = [
+    { label: isVi ? 'Bảng điều khiển' : 'Dashboard', href: '/dashboard' },
+    { label: isVi ? 'Lộ trình của tôi' : 'My Learning', href: '/adaptive' },
+    { label: isVi ? 'Tải PDF lên' : 'Upload PDF', href: '/adaptive/upload' },
+  ];
 
   return (
     <header className="fixed left-0 top-0 z-50 w-full border-b border-white/5 bg-[var(--landing-nav-surface)] shadow-[var(--landing-nav-shadow)] backdrop-blur-md">
@@ -23,7 +24,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
         href="#landing-main-content"
         className="sr-only z-[60] rounded-lg bg-[var(--landing-nav-surface-mobile)] px-4 py-3 font-unbounded text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:outline-none focus:ring-2 focus:ring-[var(--landing-nav-accent-hover)]"
       >
-        Skip to main content
+        {isVi ? 'Bỏ qua đến nội dung chính' : 'Skip to main content'}
       </a>
       <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 lg:px-24 h-[80px] flex items-center justify-between">
         {/* Logo */}
@@ -41,8 +42,8 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
         </Link>
 
         {/* Navigation - Desktop */}
-        <nav className="hidden md:flex font-unbounded font-normal items-center justify-center gap-8 lg:gap-16 text-base lg:text-[20px] text-white">
-          {NAV_LINKS.map((link) => (
+        <nav className="hidden items-center justify-center gap-8 whitespace-nowrap font-unbounded text-base font-normal text-white min-[1400px]:flex min-[1600px]:gap-16 min-[1600px]:text-[20px]">
+          {navLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
@@ -54,7 +55,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
         </nav>
 
         {/* Actions - Desktop */}
-        <div className="hidden md:flex gap-4 items-center justify-end">
+        <div className="hidden items-center justify-end gap-4 min-[1400px]:flex">
           {!isAuthenticated ? (
             <>
               <Link
@@ -62,7 +63,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 className="flex h-[44px] items-center justify-center rounded-[100px] border border-[var(--landing-nav-accent)] px-6 transition-colors hover:bg-[var(--landing-nav-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
               >
                 <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
-                  Login
+                  {isVi ? 'Đăng nhập' : 'Login'}
                 </span>
               </Link>
               <Link
@@ -70,7 +71,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 className="flex h-[44px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] px-6 transition-colors hover:bg-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
               >
                 <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
-                  Sign up
+                  {isVi ? 'Đăng ký' : 'Sign up'}
                 </span>
               </Link>
             </>
@@ -80,18 +81,26 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
               className="flex h-[44px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] px-6 transition-colors hover:bg-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
             >
               <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
-                Dashboard
+                {isVi ? 'Bảng điều khiển' : 'Dashboard'}
               </span>
             </Link>
           )}
         </div>
 
         {/* Mobile menu button */}
-        <div className="md:hidden flex items-center">
+        <div className="flex items-center min-[1400px]:hidden">
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen((v) => !v)}
-            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={
+              isMobileMenuOpen
+                ? isVi
+                  ? 'Đóng menu'
+                  : 'Close menu'
+                : isVi
+                  ? 'Mở menu'
+                  : 'Open menu'
+            }
             aria-expanded={isMobileMenuOpen}
             aria-controls="landing-mobile-menu"
             className="flex size-11 items-center justify-center rounded-lg text-white hover:text-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
@@ -118,10 +127,10 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       {isMobileMenuOpen && (
         <div
           id="landing-mobile-menu"
-          className="border-t border-white/5 bg-[var(--landing-nav-surface-mobile)] md:hidden"
+          className="border-t border-white/5 bg-[var(--landing-nav-surface-mobile)] min-[1400px]:hidden"
         >
           <div className="px-4 py-4 flex flex-col gap-1">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
@@ -139,7 +148,9 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex h-[48px] items-center justify-center rounded-[100px] border border-[var(--landing-nav-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
                   >
-                    <span className="font-unbounded font-medium text-[16px] text-white">Login</span>
+                    <span className="font-unbounded font-medium text-[16px] text-white">
+                      {isVi ? 'Đăng nhập' : 'Login'}
+                    </span>
                   </Link>
                   <Link
                     href="/register"
@@ -147,7 +158,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                     className="flex h-[48px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
                   >
                     <span className="font-unbounded font-medium text-[16px] text-white">
-                      Sign up
+                      {isVi ? 'Đăng ký' : 'Sign up'}
                     </span>
                   </Link>
                 </>
@@ -158,7 +169,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                   className="flex h-[48px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
                 >
                   <span className="font-unbounded font-medium text-[16px] text-white">
-                    Dashboard
+                    {isVi ? 'Bảng điều khiển' : 'Dashboard'}
                   </span>
                 </Link>
               )}

@@ -4,37 +4,65 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
 import AutoScroll from 'embla-carousel-auto-scroll';
-import { imgBackground, imgFrame33 } from './constants';
+import { imgBackground } from './constants';
 
-const testimonials = [
+const englishUseCases = [
   {
-    name: 'Sarah Jenkins',
-    role: 'Medical Student',
-    text: '"The PDF analysis is mind-blowing. It turned my 200-page thesis prep into a manageable 10-day roadmap."',
+    name: 'Lecture Notes',
+    role: 'Source-based practice',
+    text: 'Turn a lecture PDF into concepts, practice questions, and explanations linked to the material.',
   },
   {
-    name: 'David Chen',
-    role: 'Software Engineer',
-    text: '"I used to spend hours figuring out what to learn next. Now, I just upload the docs and follow the path."',
+    name: 'Exam Review',
+    role: 'Weak-area focus',
+    text: 'Use practice results to identify concepts that need another review before an exam.',
   },
   {
-    name: 'Emma Watson',
-    role: 'Law Student',
-    text: '"The progress tracking keeps me motivated. It\'s like having a personal tutor available 24/7."',
+    name: 'Concept Map',
+    role: 'Prerequisite context',
+    text: 'See how ideas connect so foundational concepts come before dependent topics.',
   },
   {
-    name: 'Michael Ross',
-    role: 'Data Scientist',
-    text: '"Quizzes generated from my own materials? Absolute game-changer for active recall."',
+    name: 'Active Recall',
+    role: 'Quiz practice',
+    text: 'Practice with questions generated from the material you are already studying.',
   },
   {
-    name: 'Sophia Lee',
-    role: 'MBA Candidate',
-    text: '"The way it breaks down complex case studies into digestible milestones is incredible."',
+    name: 'Next Session',
+    role: 'Actionable guidance',
+    text: 'Return to a clear suggestion based on progress instead of choosing a topic at random.',
   },
 ];
 
-const COUNT = testimonials.length;
+const vietnameseUseCases = [
+  {
+    name: 'Bài giảng',
+    role: 'Luyện tập từ nguồn',
+    text: 'Biến PDF bài giảng thành khái niệm, câu hỏi và phần giải thích gắn với tài liệu.',
+  },
+  {
+    name: 'Ôn thi',
+    role: 'Tập trung vào điểm yếu',
+    text: 'Dùng kết quả luyện tập để xác định khái niệm cần ôn lại trước kỳ thi.',
+  },
+  {
+    name: 'Sơ đồ khái niệm',
+    role: 'Quan hệ tiên quyết',
+    text: 'Xem các ý tưởng kết nối với nhau để học nền tảng trước nội dung phụ thuộc.',
+  },
+  {
+    name: 'Nhớ chủ động',
+    role: 'Luyện quiz',
+    text: 'Luyện câu hỏi được tạo từ chính tài liệu mà bạn đang học.',
+  },
+  {
+    name: 'Buổi học tiếp theo',
+    role: 'Gợi ý có thể hành động',
+    text: 'Quay lại với một gợi ý dựa trên tiến độ thay vì chọn chủ đề ngẫu nhiên.',
+  },
+];
+
+const COUNT = englishUseCases.length;
 const SCALE_MAX = 1.08;
 const SCALE_MIN = 0.82;
 const OPACITY_MAX = 1;
@@ -46,7 +74,9 @@ function wave(dist: number): number {
   return (1 + Math.cos(t * Math.PI)) / 2;
 }
 
-export default function Testimonials() {
+export default function Testimonials({ locale }: { locale: string }) {
+  const isVi = locale === 'vi';
+  const items = isVi ? vietnameseUseCases : englishUseCases;
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: true, align: 'center', skipSnaps: false, dragFree: true },
     [AutoScroll({ speed: 0.5, stopOnInteraction: false, stopOnMouseEnter: true })],
@@ -101,19 +131,16 @@ export default function Testimonials() {
       {/* Header */}
       <div className="flex flex-col gap-6 md:gap-[44px] items-center text-center text-white w-full max-w-[1182px] mx-auto px-4">
         <h2 className="font-unbounded font-extrabold text-3xl sm:text-4xl md:text-[48px] leading-[1.2] md:leading-[1.4]">
-          <span className="text-[#fd761a]">TRUSTED</span>
-          <span>{` BY `}</span>
-          <span className="text-[#fd761a]">10.000+</span>
-          <span>{` `}</span>
+          <span className="text-[#fd761a]">{isVi ? 'PHÙ HỢP' : 'BUILT'}</span>
+          <span>{isVi ? ` VỚI ` : ` FOR `}</span>
           <span className="bg-clip-text text-transparent bg-[linear-gradient(177deg,#fff_1.3%,#999_98.7%)]">
-            LEARNERS
+            {isVi ? 'VIỆC HỌC THỰC TẾ' : 'REAL STUDY FLOWS'}
           </span>
         </h2>
         <p className="font-unbounded font-light text-base md:text-[20px] leading-[1.5] text-white">
-          Turn overwhelming documents into structured, easy-to-follow learning paths. Our AI
-          analyzes your PDFs and breaks them down into clear, actionable steps. Save hours of effort
-          and focus on what truly matters — learning effectively. Join thousands of learners already
-          studying smarter, not harder.
+          {isVi
+            ? 'Từ bài giảng đến ôn thi, RinKuzu giúp nối tài liệu nguồn với hoạt động luyện tập, tiến độ theo khái niệm và bước học tiếp theo.'
+            : 'From lecture notes to exam review, RinKuzu connects source material with practice, concept-level progress, and a clear next step.'}
         </p>
       </div>
 
@@ -121,7 +148,7 @@ export default function Testimonials() {
       <div className="w-[100vw] relative left-1/2 -translate-x-1/2">
         <div className="overflow-hidden py-16" ref={emblaRef}>
           <div className="flex items-center">
-            {testimonials.map((item, i) => (
+            {items.map((item, i) => (
               <div
                 key={item.name}
                 className="flex-[0_0_85%] sm:flex-[0_0_42%] md:flex-[0_0_33%] lg:flex-[0_0_30%] min-w-0 px-[24px]"
@@ -157,18 +184,6 @@ export default function Testimonials() {
                         {item.role}
                       </p>
                     </div>
-                  </div>
-
-                  <div className="relative z-10 h-[28px] w-[204px] shrink-0">
-                    <Image
-                      alt=""
-                      fill
-                      sizes="204px"
-                      className="object-contain"
-                      src={imgFrame33}
-                      unoptimized
-                      aria-hidden="true"
-                    />
                   </div>
 
                   <div className="w-full relative z-10">

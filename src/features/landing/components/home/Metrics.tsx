@@ -2,10 +2,10 @@
 
 import Image from 'next/image';
 import { imgVector14 } from './constants';
-import { CountUp } from './CountUp';
 import { Reveal } from './Reveal';
 
-export default function Metrics() {
+export default function Metrics({ locale }: { locale: string }) {
+  const isVi = locale === 'vi';
   return (
     <div className="relative w-full xl:w-[1081px] flex flex-col md:flex-row items-center md:items-start justify-between p-[32px] rounded-[20px] shadow-[0px_16px_28px_0px_rgba(0,0,0,0.05)] z-10 gap-8 md:gap-0">
       <div
@@ -15,12 +15,12 @@ export default function Metrics() {
 
       <Reveal className="content-stretch flex flex-col gap-[12px] items-center md:items-start text-center md:text-left leading-[0] relative shrink-0 text-white w-full md:w-[307px]">
         <div className="flex flex-col font-unbounded font-semibold justify-center relative shrink-0 text-3xl md:text-[40px] w-full">
-          <p className="leading-[1.4]">
-            <CountUp value={1200} suffix="+" />
-          </p>
+          <p className="leading-[1.4]">PDF</p>
         </div>
         <div className="flex flex-col font-unbounded font-light justify-center relative shrink-0 text-base md:text-[20px] w-full">
-          <p className="leading-[1.5]">Lessons Completed Daily</p>
+          <p className="leading-[1.5]">
+            {isVi ? 'Bắt đầu từ tài liệu nguồn' : 'Start from source material'}
+          </p>
         </div>
       </Reveal>
 
@@ -44,10 +44,12 @@ export default function Metrics() {
         className="content-stretch flex flex-col gap-[12px] items-center md:items-start text-center md:text-left leading-[0] relative shrink-0 text-white w-full md:w-[282px]"
       >
         <div className="flex flex-col font-unbounded font-semibold justify-center relative shrink-0 text-3xl md:text-[40px] w-full">
-          <p className="leading-[1.4]">3 mins</p>
+          <p className="leading-[1.4]">6</p>
         </div>
         <div className="flex flex-col font-unbounded font-light justify-center relative shrink-0 text-base md:text-[20px] w-full">
-          <p className="leading-[1.5]">To generate Your Learning Path</p>
+          <p className="leading-[1.5]">
+            {isVi ? 'Cấp độ nhận thức Bloom' : "Bloom's cognitive levels"}
+          </p>
         </div>
       </Reveal>
 
@@ -71,12 +73,12 @@ export default function Metrics() {
         className="content-stretch flex flex-col gap-[12px] items-center md:items-start text-center md:text-left leading-[0] relative shrink-0 text-white w-full md:w-[285px]"
       >
         <div className="flex flex-col font-unbounded font-semibold justify-center relative shrink-0 text-3xl md:text-[40px] w-full">
-          <p className="leading-[1.4]">
-            <CountUp value={95} suffix="%" />
-          </p>
+          <p className="leading-[1.4]">{isVi ? 'Tiếp' : 'Next'}</p>
         </div>
         <div className="flex flex-col font-unbounded font-light justify-center relative shrink-0 text-base md:text-[20px] w-full">
-          <p className="leading-[1.5]">Users Improved Learning Speed</p>
+          <p className="leading-[1.5]">
+            {isVi ? 'Gợi ý từ điểm kiến thức yếu' : 'Guidance from weak areas'}
+          </p>
         </div>
       </Reveal>
 

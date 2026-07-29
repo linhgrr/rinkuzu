@@ -147,13 +147,120 @@ const contactAddresses: ContactAddress[] = [
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
+  const isVi = locale === 'vi';
   return buildLocalizedMetadata({
     locale,
     path: '/privacy',
-    title: 'Privacy Policy | RinKuzu',
-    description:
-      'RinKuzu Privacy Policy — Learn how we collect, use, and protect your personal data in compliance with GDPR, Vietnamese PDPA, and COPPA.',
+    title: isVi ? 'Chính sách quyền riêng tư | RinKuzu' : 'Privacy Policy | RinKuzu',
+    description: isVi
+      ? 'Tìm hiểu dữ liệu RinKuzu thu thập, mục đích xử lý, thời gian lưu trữ, bên xử lý dữ liệu và các quyền của bạn.'
+      : 'Learn what data RinKuzu collects, why it is processed, how long it is retained, who processes it, and what rights you have.',
   });
+}
+
+function VietnamesePrivacyPage() {
+  const sections = [
+    {
+      title: '1. Thông tin chúng tôi thu thập',
+      paragraphs: [
+        'Khi bạn đăng ký, RinKuzu nhận họ tên, email, mật khẩu đã băm và thông tin hồ sơ tùy chọn. Nếu đăng nhập qua nhà cung cấp OAuth, chúng tôi nhận tên và email do nhà cung cấp đó gửi.',
+        'Khi bạn tải PDF lên, chúng tôi xử lý nội dung tài liệu, văn bản trích xuất, tên tệp, số trang và thời điểm tải lên. Bạn vẫn giữ quyền sở hữu tài liệu của mình.',
+        'RinKuzu lưu câu trả lời, độ chính xác, thời gian làm bài, tiến độ theo khái niệm và gợi ý học tập để cá nhân hóa phiên luyện tập.',
+        'Khi bạn đồng ý với cookie phân tích, chúng tôi có thể thu thập loại trình duyệt, thiết bị, trang đã xem, nguồn truy cập, sự kiện sản phẩm và nhật ký lỗi. Nội dung PDF, mật khẩu và nội dung câu trả lời không được gửi tới dịch vụ phân tích.',
+      ],
+    },
+    {
+      title: '2. Cách chúng tôi sử dụng thông tin',
+      paragraphs: [
+        'Dữ liệu được dùng để vận hành tài khoản, tạo quiz từ PDF, theo dõi tiến độ, đề xuất nội dung tiếp theo, gửi thông báo dịch vụ, ngăn chặn gian lận và đáp ứng nghĩa vụ pháp lý.',
+      ],
+    },
+    {
+      title: '3. Cơ sở pháp lý',
+      paragraphs: [
+        'Tùy hoạt động, việc xử lý dựa trên thực hiện hợp đồng, lợi ích hợp pháp về bảo mật và cải thiện dịch vụ, sự đồng ý đối với phân tích không thiết yếu, hoặc nghĩa vụ pháp lý.',
+      ],
+    },
+    {
+      title: '4. Thời gian lưu trữ',
+      paragraphs: [
+        'Dữ liệu tài khoản được giữ đến khi xóa tài khoản và tối đa 3 năm sau đó; PDF đến khi bạn xóa hoặc tối đa 90 ngày sau khi xóa tài khoản; nhật ký học tập tối đa 3 năm; nhật ký bảo mật 1 năm; hồ sơ thanh toán 7 năm theo yêu cầu kế toán và thuế.',
+      ],
+    },
+    {
+      title: '5. Bên xử lý dữ liệu',
+      paragraphs: [
+        'RinKuzu sử dụng Google Gemini AI để phân tích PDF và tạo nội dung; Vercel để lưu trữ và phân phối ứng dụng; MongoDB Atlas cho cơ sở dữ liệu; Google Analytics 4 và PostHog US Cloud cho phân tích có sự đồng ý; PayOS cho thanh toán; và NextAuth.js cho xác thực, phiên đăng nhập.',
+      ],
+    },
+    {
+      title: '6. Chuyển dữ liệu quốc tế',
+      paragraphs: [
+        'Một số nhà cung cấp có thể xử lý dữ liệu ngoài Việt Nam. Khi áp dụng, chúng tôi dựa trên cơ chế chuyển dữ liệu hợp pháp và điều khoản hợp đồng tiêu chuẩn của nhà cung cấp.',
+      ],
+    },
+    {
+      title: '7. Quyền của bạn',
+      paragraphs: [
+        'Tùy pháp luật áp dụng, bạn có thể yêu cầu truy cập, chỉnh sửa, xóa, hạn chế xử lý, nhận bản sao có thể đọc bằng máy, phản đối xử lý, rút lại sự đồng ý hoặc khiếu nại tới cơ quan bảo vệ dữ liệu.',
+      ],
+    },
+    {
+      title: '8. Bảo vệ trẻ em',
+      paragraphs: [
+        'RinKuzu không chủ ý thu thập dữ liệu của trẻ dưới 13 tuổi. Người dùng từ 13 đến 15 tuổi cần sự đồng ý phù hợp của phụ huynh hoặc người giám hộ theo pháp luật áp dụng.',
+      ],
+    },
+    {
+      title: '9. Nội dung do AI tạo',
+      paragraphs: [
+        'Quiz, giải thích và gợi ý do AI tạo có thể không chính xác. Người dùng nên kiểm tra lại với tài liệu nguồn và không dùng nội dung này thay cho tư vấn chuyên môn.',
+      ],
+    },
+    {
+      title: '10. Bảo mật dữ liệu',
+      paragraphs: [
+        'Chúng tôi áp dụng kiểm soát truy cập, băm mật khẩu, mã hóa khi truyền, ghi nhật ký bảo mật và giới hạn quyền truy cập nội bộ. Không có hệ thống nào bảo đảm an toàn tuyệt đối.',
+      ],
+    },
+    {
+      title: '11. Thay đổi chính sách',
+      paragraphs: [
+        'Chúng tôi có thể cập nhật chính sách này và sẽ thay đổi ngày cập nhật trên trang. Thay đổi quan trọng sẽ được thông báo bằng phương thức phù hợp.',
+      ],
+    },
+  ];
+
+  return (
+    <main className="mx-auto max-w-4xl space-y-8 px-6 py-12 text-neutral-700">
+      <header>
+        <h1 className="mb-2 text-3xl font-semibold text-neutral-900">Chính sách quyền riêng tư</h1>
+        <p className="text-sm text-neutral-500">Cập nhật lần cuối: 27 tháng 3, 2026</p>
+      </header>
+      <p>
+        Chính sách này giải thích cách Đại học Bách khoa Hà Nội, vận hành dưới tên RinKuzu, xử lý dữ
+        liệu cá nhân khi bạn sử dụng nền tảng.
+      </p>
+      {sections.map((section) => (
+        <PolicySection key={section.title} title={section.title}>
+          <div className="space-y-3">
+            {section.paragraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+        </PolicySection>
+      ))}
+      <PolicySection title="12. Liên hệ">
+        <p>
+          Gửi yêu cầu về dữ liệu tới <EmailLink address="privacy@rinkuzu.app" /> hoặc xem{' '}
+          <Link href="/cookies" className="text-brand-trust hover:underline">
+            Chính sách cookie
+          </Link>
+          .
+        </p>
+      </PolicySection>
+    </main>
+  );
 }
 
 function PolicySection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -394,7 +501,8 @@ function PrivacyPolicyContent() {
 }
 
 export default async function PrivacyPage({ params }: Props) {
-  await params;
+  const { locale } = await params;
+  if (locale === 'vi') return <VietnamesePrivacyPage />;
 
   return (
     <section className="mx-auto max-w-4xl space-y-10 px-6 py-16">

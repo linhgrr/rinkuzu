@@ -8,12 +8,14 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
+  const isVi = locale === 'vi';
   return buildLocalizedMetadata({
     locale,
     path: '/about',
-    title: 'About RinKuzu — Our Mission to Make Learning Adaptive',
-    description:
-      "RinKuzu is an AI-powered adaptive learning platform built by educators and engineers. Learn about our mission to transform how students master any subject using knowledge graphs and Bloom's Taxonomy.",
+    title: isVi ? 'Về RinKuzu — Học thích ứng từ tài liệu của bạn' : 'About RinKuzu',
+    description: isVi
+      ? 'Tìm hiểu cách RinKuzu biến tài liệu PDF thành nội dung luyện tập, theo dõi điểm yếu và gợi ý bước học tiếp theo.'
+      : 'Learn how RinKuzu turns PDF material into practice, tracks weak areas, and suggests the next learning step.',
   });
 }
 
@@ -41,7 +43,7 @@ const teamSchema = {
   },
 };
 
-const values = [
+const englishValues = [
   {
     icon: 'AI',
     title: 'Adaptive by Design',
@@ -64,7 +66,7 @@ const values = [
   },
 ];
 
-const stats = [
+const englishStats = [
   { value: '2024', label: 'Founded' },
   { value: 'AI-Powered', label: 'Core Technology' },
   { value: '2', label: 'Languages' },
@@ -73,7 +75,39 @@ const stats = [
 
 export default async function AboutPage({ params }: Props) {
   const { locale } = await params;
-  void locale;
+  const isVi = locale === 'vi';
+  const values = isVi
+    ? [
+        {
+          icon: 'AI',
+          title: 'Thích ứng theo người học',
+          body: 'RinKuzu cập nhật mức độ nắm vững sau mỗi lần luyện tập để ưu tiên các khái niệm còn yếu.',
+        },
+        {
+          icon: 'PDF',
+          title: 'Bắt đầu từ PDF',
+          body: 'Tải tài liệu đang học lên để trích xuất khái niệm và tạo câu hỏi mà không cần nhập lại nội dung thủ công.',
+        },
+        {
+          icon: 'KG',
+          title: 'Đồ thị kiến thức',
+          body: 'Quan hệ tiên quyết giúp người học hiểu khái niệm nào cần học trước và bước tiếp theo nên là gì.',
+        },
+        {
+          icon: 'BT',
+          title: 'Phân loại Bloom',
+          body: 'Bài luyện tập trải rộng từ ghi nhớ, thấu hiểu đến vận dụng và tư duy bậc cao.',
+        },
+      ]
+    : englishValues;
+  const stats = isVi
+    ? [
+        { value: 'PDF', label: 'Tài liệu nguồn' },
+        { value: 'AI', label: 'Tạo nội dung luyện tập' },
+        { value: '2', label: 'Ngôn ngữ giao diện' },
+        { value: '1', label: 'Bước học tiếp theo' },
+      ]
+    : englishStats;
 
   return (
     <main className="min-h-screen bg-white">
@@ -84,17 +118,17 @@ export default async function AboutPage({ params }: Props) {
       <section className="bg-[var(--bg-section)] py-20 md:py-32 text-center">
         <div className="max-w-3xl mx-auto px-6">
           <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-4">
-            Our Story
+            {isVi ? 'Câu chuyện của RinKuzu' : 'Our Story'}
           </p>
           <h1 className="text-4xl md:text-6xl font-semibold text-[var(--text-primary)] mb-6 leading-tight">
-            Learning Should Adapt to You,
+            {isVi ? 'Việc học nên thích ứng với bạn,' : 'Learning Should Adapt to You,'}
             <br />
-            Not the Other Way Around
+            {isVi ? 'không phải ngược lại' : 'Not the Other Way Around'}
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
-            RinKuzu was built by educators and engineers who believe that great learning tools
-            should meet students where they are, using AI to understand each learner&apos;s
-            knowledge state and craft a personalized path forward.
+            {isVi
+              ? 'RinKuzu giúp người học biến tài liệu đang có thành câu hỏi luyện tập, nhìn rõ phần kiến thức còn yếu và biết nên học gì tiếp theo.'
+              : 'RinKuzu helps learners turn the material they already have into practice, see weak areas, and decide what to study next.'}
           </p>
         </div>
       </section>
@@ -104,41 +138,51 @@ export default async function AboutPage({ params }: Props) {
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
           <div>
             <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
-              Our Mission
+              {isVi ? 'Mục tiêu của chúng tôi' : 'Our Mission'}
             </p>
             <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)] mb-6 leading-tight">
-              Turning Static PDFs Into Dynamic Learning Journeys
+              {isVi
+                ? 'Biến PDF tĩnh thành một lộ trình luyện tập'
+                : 'Turning Static PDFs Into Practice Journeys'}
             </h2>
             <p className="text-[var(--text-muted)] leading-relaxed mb-4">
-              Most students have a folder of lecture notes, textbooks, and handouts, all the
-              material they need to master a subject, but no structured way to practice it
-              effectively.
+              {isVi
+                ? 'Nhiều sinh viên đã có đầy đủ bài giảng, giáo trình và ghi chú nhưng thiếu một cách có cấu trúc để luyện tập từ chính các tài liệu đó.'
+                : 'Many students already have lecture notes, textbooks, and handouts, but lack a structured way to practice from them.'}
             </p>
             <p className="text-[var(--text-muted)] leading-relaxed mb-4">
-              RinKuzu bridges that gap. Upload a PDF and our AI does the work of an expert
-              instructor: extracting key concepts, identifying what knowledge is required before
-              other knowledge can be understood, and generating practice questions that target
-              exactly where you need growth.
+              {isVi
+                ? 'RinKuzu trích xuất khái niệm từ PDF, xác định quan hệ tiên quyết và tạo câu hỏi để bạn luyện đúng phần cần cải thiện.'
+                : 'RinKuzu extracts concepts from a PDF, identifies prerequisite relationships, and generates questions for the areas that need practice.'}
             </p>
             <p className="text-[var(--text-muted)] leading-relaxed">
-              The result is a learning experience that adapts to your pace, your strengths, and your
-              gaps, turning any document into a personalized curriculum.
+              {isVi
+                ? 'Sau mỗi câu trả lời, hệ thống cập nhật tiến độ và gợi ý nội dung phù hợp cho lượt học tiếp theo.'
+                : 'After each response, the system updates progress and suggests suitable material for the next session.'}
             </p>
           </div>
           {/* Visual */}
           <div className="relative">
-            <div className="rounded-3xl overflow-hidden shadow-[10px_25px_100px_0px_rgba(0,43,107,0.12)]">
+            <div className="overflow-hidden rounded-3xl shadow-xl">
               <Image
                 src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80"
-                alt="Students studying together with RinKuzu on laptop"
+                alt={
+                  isVi
+                    ? 'Sinh viên cùng học với RinKuzu trên máy tính'
+                    : 'Students studying together with RinKuzu on a laptop'
+                }
                 width={600}
                 height={450}
                 className="w-full object-cover"
               />
             </div>
             <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-lg px-6 py-4 border border-neutral-100">
-              <p className="text-2xl font-bold text-[var(--text-primary)]">PDF → Knowledge</p>
-              <p className="text-sm text-[var(--text-muted)]">AI-powered in seconds</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">
+                {isVi ? 'PDF → Luyện tập' : 'PDF → Practice'}
+              </p>
+              <p className="text-sm text-[var(--text-muted)]">
+                {isVi ? 'Từ tài liệu đến bước học tiếp theo' : 'From source to next step'}
+              </p>
             </div>
           </div>
         </div>
@@ -149,10 +193,10 @@ export default async function AboutPage({ params }: Props) {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
-              What We Stand For
+              {isVi ? 'Nguyên tắc sản phẩm' : 'What We Stand For'}
             </p>
             <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)]">
-              Our Core Principles
+              {isVi ? 'Cách RinKuzu hỗ trợ việc học' : 'Our Core Principles'}
             </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
@@ -189,7 +233,7 @@ export default async function AboutPage({ params }: Props) {
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
           {/* Visual */}
           <div className="relative order-2 md:order-1">
-            <div className="rounded-3xl overflow-hidden shadow-[10px_25px_100px_0px_rgba(0,43,107,0.12)]">
+            <div className="overflow-hidden rounded-3xl shadow-xl">
               <Image
                 src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80"
                 alt="AI-powered adaptive learning knowledge graph visualization"
@@ -201,10 +245,10 @@ export default async function AboutPage({ params }: Props) {
           </div>
           <div className="order-1 md:order-2">
             <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
-              Built on Research
+              {isVi ? 'Dựa trên khoa học học tập' : 'Built on Learning Science'}
             </p>
             <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)] mb-6 leading-tight">
-              Grounded in Learning Science
+              {isVi ? 'Theo dõi kiến thức, không chỉ điểm số' : 'Track Knowledge, Not Just Scores'}
             </h2>
             <div className="space-y-5">
               <div>
@@ -212,9 +256,9 @@ export default async function AboutPage({ params }: Props) {
                   Bayesian Knowledge Tracing (BKT)
                 </h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
-                  RinKuzu models the probability you&apos;ve mastered each concept using BKT, the
-                  same framework used in intelligent tutoring systems. Every practice response
-                  updates your mastery estimate in real time.
+                  {isVi
+                    ? 'RinKuzu dùng BKT để ước lượng mức độ nắm vững từng khái niệm. Mỗi câu trả lời giúp cập nhật ước lượng này.'
+                    : 'RinKuzu uses BKT to estimate mastery for each concept. Every practice response updates that estimate.'}
                 </p>
               </div>
               <div>
@@ -222,17 +266,17 @@ export default async function AboutPage({ params }: Props) {
                   Bloom&apos;s Taxonomy (1956)
                 </h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
-                  Our question generation targets all six cognitive levels. This ensures learners
-                  develop both foundational recall and higher-order thinking, the combination that
-                  leads to lasting retention.
+                  {isVi
+                    ? 'Câu hỏi được phân theo sáu cấp độ nhận thức để kết hợp ghi nhớ nền tảng với vận dụng và tư duy bậc cao.'
+                    : 'Questions span six cognitive levels to combine foundational recall with application and higher-order thinking.'}
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold text-[var(--text-primary)] mb-1">Knowledge Graphs</h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
-                  By modeling concepts as nodes and prerequisite relationships as edges, RinKuzu can
-                  recommend what to study next with full awareness of what knowledge must come
-                  first.
+                  {isVi
+                    ? 'Các khái niệm và quan hệ tiên quyết giúp hệ thống gợi ý nội dung nên học trước và bước tiếp theo phù hợp.'
+                    : 'Concepts and prerequisite relationships help the system suggest what should come first and what to study next.'}
                 </p>
               </div>
             </div>
@@ -244,23 +288,27 @@ export default async function AboutPage({ params }: Props) {
       <section className="py-16 md:py-20 bg-[var(--bg-section)]">
         <div className="max-w-2xl mx-auto px-6 text-center space-y-6">
           <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)]">
-            Ready to Start Learning?
+            {isVi
+              ? 'Sẵn sàng luyện tập từ tài liệu của bạn?'
+              : 'Ready to Learn from Your Material?'}
           </h2>
           <p className="text-[var(--text-muted)] text-lg">
-            Join thousands of students and teachers who are mastering subjects faster with RinKuzu.
+            {isVi
+              ? 'Tải một file PDF lên để tạo nội dung luyện tập và xác định bước học tiếp theo.'
+              : 'Upload a PDF to generate practice material and identify the next learning step.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/register"
-              className="inline-flex items-center justify-center rounded-full bg-[var(--text-primary)] text-white font-semibold px-8 py-3.5 hover:bg-[#2d2d2f] transition-colors"
+              className="inline-flex items-center justify-center rounded-full bg-[var(--text-primary)] px-8 py-3.5 font-semibold text-white transition-opacity hover:opacity-90"
             >
-              Get Started Free
+              {isVi ? 'Bắt đầu miễn phí' : 'Get Started Free'}
             </Link>
             <Link
               href="/adaptive"
               className="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white text-[var(--text-primary)] font-semibold px-8 py-3.5 hover:bg-neutral-50 transition-colors"
             >
-              See How It Works
+              {isVi ? 'Xem cách hoạt động' : 'See How It Works'}
             </Link>
           </div>
         </div>

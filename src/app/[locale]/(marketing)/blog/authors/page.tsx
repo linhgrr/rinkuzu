@@ -7,16 +7,18 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
+  const isVi = locale === 'vi';
   return buildLocalizedMetadata({
     locale,
     path: '/blog/authors',
-    title: 'Blog Authors — RinKuzu',
-    description:
-      "Meet the researchers and engineers behind the RinKuzu Blog — writing about adaptive learning, AI in education, knowledge graphs, and Bloom's Taxonomy.",
+    title: isVi ? 'Tác giả Blog RinKuzu' : 'Blog Authors — RinKuzu',
+    description: isVi
+      ? 'Gặp gỡ nhóm nghiên cứu và kỹ sư viết về học thích ứng, AI trong giáo dục, đồ thị kiến thức và phân loại Bloom trên Blog RinKuzu.'
+      : "Meet the researchers and engineers behind the RinKuzu Blog, writing about adaptive learning, AI in education, knowledge graphs, and Bloom's Taxonomy.",
   });
 }
 
-const authors = [
+const englishAuthors = [
   {
     name: 'RinKuzu Team',
     slug: 'rinkuzu-team',
@@ -29,7 +31,15 @@ const authors = [
 
 export default async function AuthorsPage({ params }: Props) {
   const { locale } = await params;
-  void locale;
+  const isVi = locale === 'vi';
+  const authors = isVi
+    ? englishAuthors.map((author) => ({
+        ...author,
+        role: 'Nghiên cứu & Kỹ thuật',
+        shortBio:
+          'Nhóm nghiên cứu và kỹ sư phát triển hệ thống học thích ứng bằng AI tại Đại học Bách khoa Hà Nội.',
+      }))
+    : englishAuthors;
 
   return (
     <main className="min-h-screen bg-white">
@@ -37,20 +47,22 @@ export default async function AuthorsPage({ params }: Props) {
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
           <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
             <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
-              Home
+              {isVi ? 'Trang chủ' : 'Home'}
             </Link>
             <span>/</span>
             <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">
               Blog
             </Link>
             <span>/</span>
-            <span className="text-[var(--text-primary)]">Authors</span>
+            <span className="text-[var(--text-primary)]">{isVi ? 'Tác giả' : 'Authors'}</span>
           </nav>
           <h1 className="text-3xl md:text-5xl font-semibold text-[var(--text-primary)] leading-tight mb-4">
-            Authors
+            {isVi ? 'Tác giả' : 'Authors'}
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed">
-            Meet the researchers and engineers writing about adaptive learning and AI in education.
+            {isVi
+              ? 'Gặp gỡ nhóm nghiên cứu và kỹ sư viết về học thích ứng và AI trong giáo dục.'
+              : 'Meet the researchers and engineers writing about adaptive learning and AI in education.'}
           </p>
         </div>
       </header>

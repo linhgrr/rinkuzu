@@ -1,7 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
+import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -34,29 +34,46 @@ The team's research combines Bayesian Knowledge Tracing, deep knowledge tracing 
 
 const AUTHOR_SLUGS = Object.keys(AUTHORS);
 
+function localizeAuthor(author: (typeof AUTHORS)[string], locale: string) {
+  if (locale !== 'vi') return author;
+  return {
+    ...author,
+    role: 'Nghiên cứu & Kỹ thuật',
+    bio: `Nhóm RinKuzu gồm các nhà nghiên cứu và kỹ sư tại Đại học Bách khoa Hà Nội, làm việc trong các lĩnh vực hệ thống học thích ứng, xây dựng đồ thị kiến thức và AI giáo dục. Nhóm phát triển quy trình biến tài liệu PDF thành lộ trình luyện tập cá nhân hóa dựa trên quan hệ kiến thức.
+
+Hệ thống kết hợp theo dõi mức độ nắm vững, sắp xếp nội dung học và tạo bài tập bằng mô hình ngôn ngữ để hỗ trợ người học đi từ tài liệu nguồn đến bước luyện tập tiếp theo.`,
+    shortBio:
+      'Nhóm nghiên cứu và kỹ sư phát triển hệ thống học thích ứng bằng AI tại Đại học Bách khoa Hà Nội.',
+  };
+}
+
 export async function generateStaticParams() {
   return AUTHOR_SLUGS.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
-  const author = AUTHORS[slug];
+  const sourceAuthor = AUTHORS[slug];
+  const author = sourceAuthor ? localizeAuthor(sourceAuthor, locale) : null;
   if (!author) return {};
 
   return buildLocalizedMetadata({
     locale,
     path: `/blog/authors/${slug}`,
-    title: `${author.name} — Author at RinKuzu Blog`,
+    title:
+      locale === 'vi'
+        ? `${author.name} — Tác giả tại Blog RinKuzu`
+        : `${author.name} — Author at RinKuzu Blog`,
     description: author.shortBio,
   });
 }
 
-function buildPersonSchema(author: (typeof AUTHORS)[string]) {
+function buildPersonSchema(author: (typeof AUTHORS)[string], locale: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: author.name,
-    url: `${siteUrl.origin}/blog/authors/${author.slug}`,
+    url: canonicalFor(locale, `/blog/authors/${author.slug}`),
     description: author.shortBio,
     worksFor: {
       '@type': 'Organization',
@@ -72,11 +89,12 @@ function buildPersonSchema(author: (typeof AUTHORS)[string]) {
 
 export default async function AuthorPage({ params }: Props) {
   const { locale, slug } = await params;
-  void locale;
-  const author = AUTHORS[slug];
+  const sourceAuthor = AUTHORS[slug];
+  const author = sourceAuthor ? localizeAuthor(sourceAuthor, locale) : null;
   if (!author) return null;
+  const isVi = locale === 'vi';
 
-  const personSchema = buildPersonSchema(author);
+  const personSchema = buildPersonSchema(author, locale);
 
   return (
     <>
@@ -88,7 +106,7 @@ export default async function AuthorPage({ params }: Props) {
           <div className="max-w-3xl mx-auto px-6">
             <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-12">
               <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
-                Home
+                {isVi ? 'Trang chủ' : 'Home'}
               </Link>
               <span>/</span>
               <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">
@@ -99,7 +117,7 @@ export default async function AuthorPage({ params }: Props) {
                 href="/blog/authors"
                 className="hover:text-[var(--text-primary)] transition-colors"
               >
-                Authors
+                {isVi ? 'Tác giả' : 'Authors'}
               </Link>
               <span>/</span>
               <span className="text-[var(--text-primary)]">{author.name}</span>
@@ -151,7 +169,7 @@ export default async function AuthorPage({ params }: Props) {
         <section className="py-16 md:py-24">
           <div className="max-w-3xl mx-auto px-6">
             <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-8">
-              Articles by {author.name}
+              {isVi ? `Bài viết của ${author.name}` : `Articles by ${author.name}`}
             </h2>
             <div className="space-y-6">
               {/* AI Quiz Generation article */}
@@ -162,16 +180,21 @@ export default async function AuthorPage({ params }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-2 py-0.5 rounded-full">
-                      AI in Education
+                      {isVi ? 'AI trong giáo dục' : 'AI in Education'}
                     </span>
-                    <span className="text-xs text-[var(--text-muted)]">March 27, 2026</span>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {isVi ? '27 tháng 3, 2026' : 'March 27, 2026'}
+                    </span>
                   </div>
                   <h3 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-brand-trust transition-colors leading-snug mb-1">
-                    How AI Transforms PDF Learning into Adaptive Quizzes
+                    {isVi
+                      ? 'AI biến tài liệu PDF thành quiz thích ứng như thế nào?'
+                      : 'How AI Transforms PDF Learning into Adaptive Quizzes'}
                   </h3>
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
-                    Discover how RinKuzu&apos;s ALSS system, SAINT-Bloom, Dueling DQN, and Gemini,
-                    transforms any PDF lecture into a personalized adaptive quiz journey.
+                    {isVi
+                      ? 'Tìm hiểu cách RinKuzu trích xuất khái niệm từ PDF, tạo câu hỏi và điều chỉnh nội dung luyện tập theo mức độ nắm vững.'
+                      : 'Discover how RinKuzu turns PDF lectures into personalized adaptive quiz journeys.'}
                   </p>
                 </div>
               </Link>
@@ -184,17 +207,21 @@ export default async function AuthorPage({ params }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-2 py-0.5 rounded-full">
-                      Learning Science
+                      {isVi ? 'Khoa học học tập' : 'Learning Science'}
                     </span>
-                    <span className="text-xs text-[var(--text-muted)]">March 20, 2026</span>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {isVi ? '20 tháng 3, 2026' : 'March 20, 2026'}
+                    </span>
                   </div>
                   <h3 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-brand-trust transition-colors leading-snug mb-1">
-                    Knowledge Graphs and Bloom&apos;s Taxonomy: A Complete Guide
+                    {isVi
+                      ? 'Đồ thị kiến thức và phân loại Bloom: Hướng dẫn toàn diện'
+                      : "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide"}
                   </h3>
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
-                    Learn how prerequisite knowledge graphs combined with Bloom&apos;s six cognitive
-                    levels create a scientifically-grounded adaptive learning path for any PDF
-                    document.
+                    {isVi
+                      ? 'Tìm hiểu cách quan hệ tiên quyết kết hợp với sáu cấp độ Bloom để tạo lộ trình luyện tập từ tài liệu PDF.'
+                      : "Learn how prerequisite knowledge graphs and Bloom's six cognitive levels shape an adaptive practice path for PDF documents."}
                   </p>
                 </div>
               </Link>

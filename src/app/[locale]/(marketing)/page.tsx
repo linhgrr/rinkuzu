@@ -30,5 +30,5 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     return redirectToLocalizedPath(ROUTES.DASHBOARD, locale);
   }
 
-  return <GuestLanding isAuthenticated={Boolean(session?.user)} />;
+  return <GuestLanding isAuthenticated={Boolean(session?.user)} locale={locale} />;
 }

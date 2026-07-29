@@ -397,17 +397,109 @@ function TermsPolicyContent() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
+  const isVi = locale === 'vi';
   return buildLocalizedMetadata({
     locale,
     path: '/terms',
-    title: 'Terms of Service | RinKuzu',
-    description:
-      'RinKuzu Terms of Service — Usage terms, content policies, AI-generated content rights, subscription terms, and liability limitations.',
+    title: isVi ? 'Điều khoản sử dụng | RinKuzu' : 'Terms of Service | RinKuzu',
+    description: isVi
+      ? 'Điều khoản về tài khoản, sử dụng nền tảng, nội dung tải lên, nội dung do AI tạo, thanh toán và giới hạn trách nhiệm của RinKuzu.'
+      : 'Terms covering accounts, platform use, uploaded content, AI-generated material, billing, and RinKuzu liability limits.',
   });
 }
 
+function VietnameseTermsPage() {
+  const sections = [
+    {
+      title: '1. Chấp nhận điều khoản',
+      body: 'Khi truy cập hoặc sử dụng RinKuzu, bạn đồng ý với các điều khoản này và Chính sách quyền riêng tư. Nếu không đồng ý, bạn không nên sử dụng nền tảng.',
+    },
+    {
+      title: '2. Đăng ký và bảo mật tài khoản',
+      body: 'Bạn phải cung cấp thông tin chính xác, giữ bí mật thông tin đăng nhập và chịu trách nhiệm cho hoạt động trong tài khoản. Tài khoản không được chuyển nhượng. Chúng tôi có thể tạm ngừng hoặc chấm dứt tài khoản vi phạm điều khoản hoặc gây rủi ro bảo mật.',
+    },
+    {
+      title: '3. Mô tả dịch vụ',
+      body: 'RinKuzu cung cấp công cụ tạo quiz từ PDF, phiên học thích ứng, đồ thị kiến thức, theo dõi mức độ nắm vững và chia sẻ quiz công khai. Tính năng có thể thay đổi trong quá trình phát triển.',
+    },
+    {
+      title: '4. Gói dịch vụ và thanh toán',
+      body: 'Một số tính năng có thể yêu cầu gói trả phí. Giá, chu kỳ thanh toán và quyền lợi hiện hành được hiển thị tại thời điểm mua. Thanh toán được xử lý qua nhà cung cấp bên thứ ba; nghĩa vụ thuế và hoàn tiền tuân theo thông tin hiển thị khi giao dịch và pháp luật áp dụng.',
+    },
+    {
+      title: '5. Sử dụng được chấp nhận',
+      body: 'Bạn không được tải nội dung bất hợp pháp hoặc không có quyền sử dụng; phát tán mã độc hoặc spam; truy cập trái phép; cản trở nền tảng; thu thập dữ liệu tự động ngoài mục đích học cá nhân; xâm phạm sở hữu trí tuệ; hoặc dùng nội dung AI để vi phạm quy định liêm chính học thuật.',
+    },
+    {
+      title: '6. Quyền đối với nội dung',
+      body: 'Bạn giữ quyền sở hữu nội dung đã tải lên và cấp cho RinKuzu giấy phép giới hạn để xử lý, lưu trữ và sử dụng nội dung đó nhằm cung cấp dịch vụ. Quiz do AI tạo có thể dùng cho học cá nhân, lớp học hoặc giáo dục phi thương mại. Khi công khai quiz, bạn cho phép người dùng khác truy cập quiz đó trong nền tảng và xác nhận rằng bạn có quyền chia sẻ nội dung.',
+    },
+    {
+      title: '7. Dịch vụ bên thứ ba',
+      body: 'Nền tảng phụ thuộc vào các nhà cung cấp AI, lưu trữ, cơ sở dữ liệu, xác thực, phân tích và thanh toán. Việc sử dụng các dịch vụ này có thể chịu thêm điều khoản của nhà cung cấp tương ứng.',
+    },
+    {
+      title: '8. Tuyên bố miễn bảo đảm',
+      body: 'RinKuzu được cung cấp theo hiện trạng và khả năng sẵn có. Nội dung do AI tạo có thể sai, thiếu hoặc không phù hợp. Bạn phải kiểm tra lại với tài liệu nguồn và không xem nội dung này là tư vấn chuyên môn.',
+    },
+    {
+      title: '9. Giới hạn trách nhiệm',
+      body: 'Trong phạm vi pháp luật cho phép, RinKuzu không chịu trách nhiệm cho thiệt hại gián tiếp, mất dữ liệu, mất doanh thu, chi phí dịch vụ thay thế hoặc khiếu nại phát sinh từ việc dựa vào nội dung do AI tạo hay truy cập trái phép do người dùng không bảo vệ tài khoản.',
+    },
+    {
+      title: '10. Bồi thường',
+      body: 'Bạn đồng ý chịu trách nhiệm đối với khiếu nại phát sinh từ nội dung bạn tải lên, việc sử dụng nền tảng trái pháp luật hoặc hành vi vi phạm quyền của bên thứ ba.',
+    },
+    {
+      title: '11. Liêm chính học thuật',
+      body: 'RinKuzu là công cụ hỗ trợ học tập. Bạn chịu trách nhiệm tuân thủ quy định của trường, lớp học và tổ chức của mình khi sử dụng quiz, giải thích hoặc nội dung do AI tạo.',
+    },
+    {
+      title: '12. Luật áp dụng và tranh chấp',
+      body: 'Điều khoản được điều chỉnh bởi pháp luật Việt Nam. Các bên nên ưu tiên thương lượng thiện chí; nếu không giải quyết được, tranh chấp được xử lý tại cơ quan có thẩm quyền ở Hà Nội, trừ khi pháp luật bắt buộc quy định khác.',
+    },
+    {
+      title: '13. Thay đổi điều khoản',
+      body: 'Chúng tôi có thể cập nhật điều khoản và sẽ thay đổi ngày cập nhật trên trang. Việc tiếp tục sử dụng sau ngày có hiệu lực đồng nghĩa với việc chấp nhận bản cập nhật.',
+    },
+    {
+      title: '14. Hiệu lực từng phần',
+      body: 'Nếu một điều khoản không thể thi hành, các điều khoản còn lại vẫn có hiệu lực. Việc không thực thi một quyền tại một thời điểm không có nghĩa là từ bỏ quyền đó.',
+    },
+  ];
+
+  return (
+    <main className="mx-auto max-w-4xl space-y-8 px-6 py-12 text-neutral-700">
+      <header>
+        <h1 className="mb-2 text-3xl font-semibold text-neutral-900">Điều khoản sử dụng</h1>
+        <p className="text-sm text-neutral-500">Cập nhật lần cuối: 27 tháng 3, 2026</p>
+      </header>
+      <p>
+        Các điều khoản này điều chỉnh việc bạn truy cập và sử dụng RinKuzu, nền tảng học tập được
+        vận hành tại Đại học Bách khoa Hà Nội.
+      </p>
+      {sections.map((section) => (
+        <PolicySection key={section.title} title={section.title}>
+          <p>{section.body}</p>
+        </PolicySection>
+      ))}
+      <PolicySection title="15. Liên hệ">
+        <p>
+          Nếu có câu hỏi về điều khoản, gửi email tới <EmailLink address="legal@rinkuzu.app" /> hoặc
+          xem{' '}
+          <Link href="/privacy" className="text-brand-trust hover:underline">
+            Chính sách quyền riêng tư
+          </Link>
+          .
+        </p>
+      </PolicySection>
+    </main>
+  );
+}
+
 export default async function TermsPage({ params }: Props) {
-  await params;
+  const { locale } = await params;
+  if (locale === 'vi') return <VietnameseTermsPage />;
 
   return (
     <section className="mx-auto max-w-4xl space-y-10 px-6 py-16">

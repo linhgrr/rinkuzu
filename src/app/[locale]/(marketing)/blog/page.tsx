@@ -7,16 +7,20 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
+  const isVi = locale === 'vi';
   return buildLocalizedMetadata({
     locale,
     path: '/blog',
-    title: 'RinKuzu Blog — Adaptive Learning, AI in Education & Knowledge Graphs',
-    description:
-      "Insights on AI-powered adaptive learning, knowledge graph construction, Bloom's Taxonomy in practice, and how RinKuzu transforms any PDF into a personalized study path.",
+    title: isVi
+      ? 'Blog RinKuzu — Học thích ứng, AI giáo dục và đồ thị kiến thức'
+      : 'RinKuzu Blog — Adaptive Learning, AI in Education & Knowledge Graphs',
+    description: isVi
+      ? 'Bài viết về học thích ứng, xây dựng đồ thị kiến thức, phân loại Bloom và cách biến tài liệu PDF thành lộ trình luyện tập cá nhân hóa.'
+      : "Insights on adaptive learning, knowledge graph construction, Bloom's Taxonomy in practice, and turning PDFs into personalized practice paths.",
   });
 }
 
-const posts = [
+const englishPosts = [
   {
     slug: 'ai-powered-quiz-generation-guide',
     title: 'How AI Transforms PDF Learning into Adaptive Quizzes',
@@ -45,9 +49,33 @@ const posts = [
   },
 ];
 
+const vietnamesePosts = [
+  {
+    ...englishPosts[0],
+    title: 'AI biến tài liệu PDF thành quiz thích ứng như thế nào?',
+    description:
+      'Tìm hiểu cách RinKuzu trích xuất khái niệm từ PDF bài giảng, tạo câu hỏi luyện tập và điều chỉnh nội dung theo mức độ nắm vững của người học.',
+    date: '27 tháng 3, 2026',
+    readTime: '8 phút đọc',
+    category: 'AI trong giáo dục',
+    imageAlt: 'Giáo trình mở có ghi chú bên cạnh máy tính hiển thị giao diện học tập bằng AI',
+  },
+  {
+    ...englishPosts[1],
+    title: 'Đồ thị kiến thức và phân loại Bloom: Hướng dẫn toàn diện',
+    description:
+      'Tìm hiểu cách quan hệ tiên quyết giữa các khái niệm kết hợp với sáu cấp độ nhận thức Bloom để tạo lộ trình luyện tập từ tài liệu PDF.',
+    date: '20 tháng 3, 2026',
+    readTime: '10 phút đọc',
+    category: 'Khoa học học tập',
+    imageAlt: 'Minh họa mạng lưới đồ thị kiến thức gồm các khái niệm học tập liên kết',
+  },
+];
+
 export default async function BlogIndexPage({ params }: Props) {
   const { locale } = await params;
-  void locale;
+  const isVi = locale === 'vi';
+  const posts = isVi ? vietnamesePosts : englishPosts;
 
   return (
     <article className="min-h-screen bg-white">
@@ -56,7 +84,7 @@ export default async function BlogIndexPage({ params }: Props) {
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
           <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
             <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
-              Home
+              {isVi ? 'Trang chủ' : 'Home'}
             </Link>
             <span>/</span>
             <span className="text-[var(--text-primary)] font-medium">Blog</span>
@@ -65,8 +93,9 @@ export default async function BlogIndexPage({ params }: Props) {
             RinKuzu Blog
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed max-w-2xl">
-            Insights on adaptive learning, AI in education, knowledge graphs, and how RinKuzu
-            transforms any PDF lecture into a personalized study journey.
+            {isVi
+              ? 'Kiến thức thực tiễn về học thích ứng, AI trong giáo dục, đồ thị kiến thức và cách biến PDF bài giảng thành lộ trình luyện tập cá nhân hóa.'
+              : 'Insights on adaptive learning, AI in education, knowledge graphs, and turning PDF lectures into personalized practice journeys.'}
           </p>
         </div>
       </header>
@@ -107,7 +136,7 @@ export default async function BlogIndexPage({ params }: Props) {
                 {post.description}
               </p>
               <span className="text-sm font-semibold text-brand-trust group-hover:underline">
-                Read article →
+                {isVi ? 'Đọc bài viết →' : 'Read article →'}
               </span>
             </div>
           </Link>

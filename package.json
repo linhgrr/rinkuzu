@@ -176,7 +176,7 @@
     "@stryker-mutator/vitest-runner": "9.6.1",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/typography": "^0.5.19",
-    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/dagre": "^0.7.54",

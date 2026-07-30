@@ -95,6 +95,9 @@ jobs:
       - name: Verify test integrity
         run: npm run check:test-integrity
 
+      - name: Run repository quality tests
+        run: npm run test:quality
+
       - name: Verify database DDL boundary
         run: npm run check:database-ddl
 
@@ -132,10 +135,6 @@ jobs:
       - name: Lint application and architecture
         if: ${{ !cancelled() }}
         run: npm run lint
-
-      - name: Enforce design-system ratchet
-        if: ${{ !cancelled() }}
-        run: npm run check:design-system
 
       - name: Typecheck application
         if: ${{ !cancelled() }}

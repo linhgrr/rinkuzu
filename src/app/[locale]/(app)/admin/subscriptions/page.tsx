@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { AdminSubscriptionsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminSearchInput } from '@/components/admin/AdminSearchInput';
 import { Button } from '@/components/ui/Button';
 import {
   Badge,
@@ -17,10 +18,9 @@ import {
 } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import Pagination from '@/components/ui/Pagination';
-import { HiOutlineEye, HiOutlineSearch } from 'react-icons/hi';
+import { HiOutlineEye } from 'react-icons/hi';
 import {
   fetchAdminSubscriptionsViewModel,
   updateAdminSubscriptionStatus,
@@ -200,17 +200,10 @@ function SubscriptionSearchBar({
   return (
     <form onSubmit={onSubmit} className="mb-4 flex flex-wrap items-center gap-4">
       <div className="max-w-md min-w-[240px] flex-1">
-        <Input
-          type="text"
+        <AdminSearchInput
           placeholder={searchPlaceholder}
           value={searchTerm}
-          onChange={(event) => onSearchTermChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing || event.key !== 'Enter') return;
-            event.preventDefault();
-            event.currentTarget.form?.requestSubmit();
-          }}
-          icon={<HiOutlineSearch className="size-5" />}
+          onChange={onSearchTermChange}
           className="w-full"
         />
       </div>

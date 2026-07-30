@@ -20,8 +20,6 @@ export default defineConfig({
       reportOnFailure: true,
       exclude: ['src/**/*.{test,spec}.{ts,tsx}', 'src/**/*.d.ts', 'src/generated/**'],
     },
-    environment: 'node',
-    include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['node_modules/**', '.next/**', 'tests/e2e/**', 'tests/integration/**'],
+    projects: ['vitest.node.config.ts', 'vitest.component.config.ts'],
   },
 });

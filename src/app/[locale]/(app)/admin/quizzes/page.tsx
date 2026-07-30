@@ -5,8 +5,8 @@ import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import Pagination from '@/components/ui/Pagination';
 import { AdminQuizzesListSkeleton } from '@/components/admin/AdminLoadingSkeletons';
+import { AdminSearchInput } from '@/components/admin/AdminSearchInput';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -32,7 +32,6 @@ import {
   HiOutlineEye,
   HiOutlineLockClosed,
   HiOutlinePencil,
-  HiOutlineSearch,
   HiOutlineTrash,
 } from 'react-icons/hi';
 
@@ -234,17 +233,11 @@ export default function AdminQuizManagementPage() {
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="min-w-[280px]">
-            <Input
+            <AdminSearchInput
               value={state.searchInput}
-              onChange={(event) =>
-                dispatch({ type: 'patch', value: { searchInput: event.target.value } })
-              }
+              onChange={(value) => dispatch({ type: 'patch', value: { searchInput: value } })}
               placeholder={t('searchQuizzes')}
-              icon={<HiOutlineSearch className="size-5" />}
-              onKeyDown={(event) => {
-                if (event.nativeEvent.isComposing) return;
-                if (event.key === 'Enter') applySearch();
-              }}
+              onEnter={applySearch}
             />
           </div>
           <Select

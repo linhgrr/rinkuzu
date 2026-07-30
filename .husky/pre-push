@@ -1,2 +1,4 @@
 #!/usr/bin/env sh
-npm run build
+set -eu
+
+npm run prepush:full

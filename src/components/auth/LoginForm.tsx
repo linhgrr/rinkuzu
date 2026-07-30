@@ -21,6 +21,7 @@ import {
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 import { resolveAuthCallback } from '@/lib/routing/auth-callback';
+import { replaceBrowserLocation } from '@/lib/routing/browser-navigation';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
 interface LoginFormProps {
@@ -110,7 +111,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
       if (result?.ok && result.url) {
         captureAnalyticsEvent('login_completed', { method: 'credentials', locale });
         setNavigationPending(true);
-        window.location.replace(result.url);
+        replaceBrowserLocation(result.url);
         return;
       }
       setServerError({ code: 'unknown', message: t('loginFailed') });

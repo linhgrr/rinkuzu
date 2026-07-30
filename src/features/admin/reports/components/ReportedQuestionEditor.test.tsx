@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReportedQuestionEditor } from './ReportedQuestionEditor';
@@ -57,14 +58,15 @@ describe('ReportedQuestionEditor', () => {
   });
 
   it('loads the live question and saves an exact question-level edit', async () => {
+    const user = userEvent.setup();
     render(<ReportedQuestionEditor report={report} />);
 
     expect(await screen.findByText('Current question 2')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Edit question/ }));
-    fireEvent.change(screen.getByLabelText('Question'), {
-      target: { value: '2 + 3 = ?' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save question' }));
+    await user.click(screen.getByRole('button', { name: /Edit question/ }));
+    const questionInput = screen.getByLabelText('Question');
+    await user.clear(questionInput);
+    await user.type(questionInput, '2 + 3 = ?');
+    await user.click(screen.getByRole('button', { name: 'Save question' }));
 
     await waitFor(() =>
       expect(updateQuestionMock).toHaveBeenCalledWith({

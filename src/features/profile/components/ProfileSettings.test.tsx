@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 
 import type { ComponentProps, ReactNode } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProfileSettings from './ProfileSettings';
 
@@ -60,6 +61,7 @@ describe('ProfileSettings control center', () => {
   });
 
   it('opens on overview and exposes focused personal, plan, and security panels', async () => {
+    const user = userEvent.setup();
     fetchProfileMock.mockResolvedValue({
       email: 'learner@example.com',
       displayName: 'Learner',
@@ -79,20 +81,21 @@ describe('ProfileSettings control center', () => {
     expect(screen.queryByLabelText('displayName')).toBeNull();
     expect(screen.queryByLabelText('currentPassword')).toBeNull();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'personalTab' }));
+    await user.click(screen.getByRole('tab', { name: 'personalTab' }));
     expect(screen.getByLabelText('displayName')).toBeTruthy();
     expect(screen.queryByTestId('quota-summary')).toBeNull();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'planQuotaTab' }));
+    await user.click(screen.getByRole('tab', { name: 'planQuotaTab' }));
     expect(screen.getByTestId('quota-full')).toBeTruthy();
     expect(screen.getByText('accountSection')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'securityTab' }));
+    await user.click(screen.getByRole('tab', { name: 'securityTab' }));
     expect(screen.getByLabelText('currentPassword')).toBeTruthy();
     expect(screen.queryByTestId('quota-full')).toBeNull();
   });
 
   it('moves from the overview hero to personal editing', async () => {
+    const user = userEvent.setup();
     fetchProfileMock.mockResolvedValue({
       email: 'learner@example.com',
       displayName: 'Learner',
@@ -103,7 +106,7 @@ describe('ProfileSettings control center', () => {
 
     render(<ProfileSettings />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'editProfile' }));
+    await user.click(await screen.findByRole('button', { name: 'editProfile' }));
     expect(screen.getByRole('tab', { name: 'personalTab' }).getAttribute('aria-selected')).toBe(
       'true',
     );

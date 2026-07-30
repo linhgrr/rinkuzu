@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import CheckoutClient from './CheckoutClient';
 
@@ -116,12 +117,13 @@ describe('CheckoutClient purchase review', () => {
   });
 
   it('keeps promo entry collapsed until requested and exposes linked payment terms', async () => {
+    const user = userEvent.setup();
     render(<CheckoutClient planId="premium-monthly" orderId={null} hasProviderCallback={false} />);
 
     await screen.findByRole('heading', { name: 'Review and pay' });
     expect(screen.queryByLabelText('Promo code')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Have a promo code?' }));
+    await user.click(screen.getByRole('button', { name: 'Have a promo code?' }));
     expect(screen.getByLabelText('Promo code')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Terms of Service' }).getAttribute('href')).toBe(
       '/terms',
@@ -132,6 +134,7 @@ describe('CheckoutClient purchase review', () => {
   });
 
   it('requires terms acceptance and creates only one order while submission is active', async () => {
+    const user = userEvent.setup();
     let resolveOrder: ((value: object) => void) | undefined;
     mocks.createOrder.mockImplementation(
       () =>
@@ -144,10 +147,10 @@ describe('CheckoutClient purchase review', () => {
     const payButton = await screen.findByRole('button', { name: /Continue to PayOS/ });
     expect((payButton as HTMLButtonElement).disabled).toBe(true);
 
-    fireEvent.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('checkbox'));
     expect((payButton as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.click(payButton);
-    fireEvent.click(payButton);
+    await user.click(payButton);
+    await user.click(payButton);
 
     expect(mocks.createOrder).toHaveBeenCalledTimes(1);
     resolveOrder?.({

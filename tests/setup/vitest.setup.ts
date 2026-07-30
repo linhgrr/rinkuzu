@@ -1,6 +1,13 @@
 import { afterEach, vi } from 'vitest';
 import { invalidateEntitlements } from '@/lib/entitlements/cache';
 
+let cleanupDom: (() => void) | undefined;
+
+if (typeof document !== 'undefined') {
+  await import('@testing-library/jest-dom/vitest');
+  cleanupDom = (await import('@testing-library/react')).cleanup;
+}
+
 // Allow tests to import modules guarded by `import 'server-only'`. Next.js
 // ships a stub that throws when imported from a client bundle; in node-env
 // vitest we want a no-op.
@@ -43,6 +50,7 @@ for (const [key, value] of Object.entries(testEnvDefaults)) {
 }
 
 afterEach(() => {
+  cleanupDom?.();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   invalidateEntitlements();

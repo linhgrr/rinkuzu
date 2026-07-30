@@ -2,7 +2,8 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FloatingDraftProgress } from './FloatingDraftProgress';
 
@@ -82,6 +83,7 @@ describe('FloatingDraftProgress', () => {
   });
 
   it('deletes a completed draft on the server before removing it locally', async () => {
+    const user = userEvent.setup();
     let resolveDelete: (() => void) | undefined;
     mocks.deleteQuizDraft.mockImplementation(
       () =>
@@ -91,9 +93,9 @@ describe('FloatingDraftProgress', () => {
     );
 
     render(<FloatingDraftProgress />);
-    fireEvent.click(screen.getByRole('button', { name: 'quizzesReady' }));
-    fireEvent.click(screen.getByRole('button', { name: 'dismiss' }));
-    fireEvent.click(screen.getByRole('button', { name: 'remove' }));
+    await user.click(screen.getByRole('button', { name: 'quizzesReady' }));
+    await user.click(screen.getByRole('button', { name: 'dismiss' }));
+    await user.click(screen.getByRole('button', { name: 'remove' }));
 
     expect(mocks.deleteQuizDraft).toHaveBeenCalledWith('draft-ready');
     expect(mocks.removeDraft).not.toHaveBeenCalled();
@@ -109,12 +111,13 @@ describe('FloatingDraftProgress', () => {
   });
 
   it('keeps the local draft visible when the server delete fails', async () => {
+    const user = userEvent.setup();
     mocks.deleteQuizDraft.mockRejectedValue(new Error('service unavailable'));
 
     render(<FloatingDraftProgress />);
-    fireEvent.click(screen.getByRole('button', { name: 'quizzesReady' }));
-    fireEvent.click(screen.getByRole('button', { name: 'dismiss' }));
-    fireEvent.click(screen.getByRole('button', { name: 'remove' }));
+    await user.click(screen.getByRole('button', { name: 'quizzesReady' }));
+    await user.click(screen.getByRole('button', { name: 'dismiss' }));
+    await user.click(screen.getByRole('button', { name: 'remove' }));
 
     await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith('deleteFailed'));
     expect(mocks.removeDraft).not.toHaveBeenCalled();

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
@@ -31,6 +32,7 @@ describe('ReportQuiz', () => {
   });
 
   it('submits the stable id of the question shown to the learner', async () => {
+    const user = userEvent.setup();
     render(
       <ReportQuiz
         quizSlug="algebra"
@@ -41,20 +43,14 @@ describe('ReportQuiz', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'reportQuestion' }));
+    await user.click(screen.getByRole('button', { name: 'reportQuestion' }));
     expect(screen.getByText('Question 3')).toBeTruthy();
     expect(screen.getByText('2 + 2 = ?')).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText(/reportDetails/), {
-      target: { value: 'The marked answer is wrong' },
-    });
+    await user.type(screen.getByLabelText(/reportDetails/), 'The marked answer is wrong');
     const submitButton = screen.getByRole('button', { name: 'submitReport' });
     await waitFor(() => expect((submitButton as HTMLButtonElement).disabled).toBe(false));
-    const form = submitButton.closest('form');
-    expect(form).not.toBeNull();
-    if (form) {
-      fireEvent.submit(form);
-    }
+    await user.click(submitButton);
 
     await waitFor(() =>
       expect(reportQuizMock).toHaveBeenCalledWith(

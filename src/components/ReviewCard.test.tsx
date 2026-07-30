@@ -2,7 +2,8 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
 import ReviewCard from './ReviewCard';
@@ -17,6 +18,7 @@ vi.mock('react-hotkeys-hook', () => ({
 
 describe('ReviewCard', () => {
   it('renders Markdown on both card faces without losing heading semantics', async () => {
+    const user = userEvent.setup();
     const { container } = render(
       <ReviewCard
         question={{
@@ -30,7 +32,7 @@ describe('ReviewCard', () => {
 
     expect(screen.getByText('now')).toHaveProperty('tagName', 'STRONG');
     expect(container.querySelector('h3')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('tapToSeeAnswer'));
+    await user.click(screen.getByText('tapToSeeAnswer'));
     expect(container.querySelectorAll('[data-rich-text="option"]')).toHaveLength(2);
     expect(container.querySelectorAll('.katex')).toHaveLength(3);
     expect((await axe(container)).violations).toEqual([]);

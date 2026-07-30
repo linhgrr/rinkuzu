@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 
 import type { ReactNode } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UpgradePaywallModal } from './UpgradePaywallModal';
 
@@ -35,6 +36,7 @@ describe('UpgradePaywallModal', () => {
   });
 
   it('shows Free beside every live paid offer and derives the best monthly value', async () => {
+    const user = userEvent.setup();
     fetchSubscriptionPageMock.mockResolvedValue({
       plans: [
         {
@@ -65,7 +67,7 @@ describe('UpgradePaywallModal', () => {
     expect(screen.getByText('pricing:free.name')).toBeTruthy();
     expect(screen.getByText('premium:paywall.bestValue')).toBeTruthy();
     expect(screen.getByLabelText('premium:paywall.currentPlan')).toBeTruthy();
-    fireEvent.click(
+    await user.click(
       screen.getByRole('button', {
         name: /premium:paywall\.choosePlan:.*Eco Plus 6M/,
       }),

@@ -2,4 +2,4 @@
 set -eu
 
 npx lint-staged
-npm run precommit:full
+npm run precommit:fast

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SubscriptionPage from '@/app/[locale]/(app)/subscription/page';
 
@@ -33,6 +34,7 @@ describe('SubscriptionPage plan comparison', () => {
   });
 
   it('shows Free beside the paid plans and marks Free as the current plan', async () => {
+    const user = userEvent.setup();
     fetchSubscriptionPageMock.mockResolvedValue({
       plans: [
         {
@@ -60,7 +62,7 @@ describe('SubscriptionPage plan comparison', () => {
       (screen.getByRole('button', { name: 'subscription:subscribe' }) as HTMLButtonElement)
         .disabled,
     ).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: 'subscription:subscribe' }));
+    await user.click(screen.getByRole('button', { name: 'subscription:subscribe' }));
     expect(routerPushMock).toHaveBeenCalledWith('/checkout?plan=premium-monthly');
     expect(screen.getByText('pricing:free.features.askRinChan')).toBeTruthy();
     expect(screen.getByText('pricing:premium.features.privateQuizzes')).toBeTruthy();

@@ -2,13 +2,15 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
 import { SegmentedControl } from './SegmentedControl';
 
 describe('SegmentedControl', () => {
   it('exposes the selected option and reports changes accessibly', async () => {
+    const user = userEvent.setup();
     const onChange = vi.fn();
     const { container } = render(
       <SegmentedControl
@@ -41,7 +43,7 @@ describe('SegmentedControl', () => {
     );
     expect(inactive).toHaveClass('px-2.5', 'font-normal', 'text-ink');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Private' }));
+    await user.click(screen.getByRole('button', { name: 'Private' }));
 
     expect(onChange).toHaveBeenCalledWith('private');
     expect((await axe(container)).violations).toEqual([]);

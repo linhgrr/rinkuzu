@@ -8,6 +8,7 @@ import useSWR from 'swr';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminUsersPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminSearchInput } from '@/components/admin/AdminSearchInput';
 import { Button } from '@/components/ui/Button';
 import {
   Badge,
@@ -19,13 +20,12 @@ import {
 } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { Input } from '@/components/ui/Input';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
 import Pagination from '@/components/ui/Pagination';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { HiOutlineCheck, HiOutlineSearch } from 'react-icons/hi';
+import { HiOutlineCheck } from 'react-icons/hi';
 import {
   fetchAdminUserListViewModel,
   grantAdminUserSubscription,
@@ -267,17 +267,10 @@ function UsersSearchBar({
     <div className="mb-6">
       <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-4">
         <div className="max-w-md min-w-[200px] flex-1">
-          <Input
-            type="text"
+          <AdminSearchInput
             placeholder={t('searchUsers')}
             value={searchTerm}
-            onChange={(event) => onSearchTermChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.nativeEvent.isComposing || event.key !== 'Enter') return;
-              event.preventDefault();
-              event.currentTarget.form?.requestSubmit();
-            }}
-            icon={<HiOutlineSearch className="size-5" />}
+            onChange={onSearchTermChange}
             className="w-full"
           />
         </div>

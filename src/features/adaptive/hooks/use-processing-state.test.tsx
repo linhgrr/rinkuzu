@@ -90,7 +90,9 @@ function createJob(overrides: Partial<PipelineJobStatus> = {}): PipelineJobStatu
     partial_success: false,
     concepts_extracted: 0,
     concepts_after_merge: 0,
-    relations_verified: 0,
+    relations_accepted: 0,
+    relations_llm_verified: 0,
+    relations_deterministic_unverified: 0,
     retry_count: 0,
     retryable: false,
     is_terminal: false,
@@ -367,7 +369,9 @@ describe('useProcessingState', () => {
             progress: 0.6,
             concepts_extracted: 10,
             concepts_after_merge: 8,
-            relations_verified: 3,
+            relations_accepted: 3,
+            relations_llm_verified: 3,
+            relations_deterministic_unverified: 0,
             retry_after_seconds: 1,
           }),
         )
@@ -377,7 +381,9 @@ describe('useProcessingState', () => {
             progress: 0.65,
             concepts_extracted: 10,
             concepts_after_merge: 8,
-            relations_verified: 3,
+            relations_accepted: 3,
+            relations_llm_verified: 3,
+            relations_deterministic_unverified: 0,
             retry_after_seconds: 1,
           }),
         )
@@ -387,7 +393,9 @@ describe('useProcessingState', () => {
             progress: 0.7,
             concepts_extracted: 12,
             concepts_after_merge: 9,
-            relations_verified: 4,
+            relations_accepted: 4,
+            relations_llm_verified: 4,
+            relations_deterministic_unverified: 0,
             retry_after_seconds: 1,
           }),
         );
@@ -399,7 +407,7 @@ describe('useProcessingState', () => {
       expect(firstStats).toEqual({
         concepts_extracted: 10,
         concepts_after_merge: 8,
-        relations_verified: 3,
+        relations_accepted: 3,
       });
 
       await advance(1000);
@@ -409,7 +417,7 @@ describe('useProcessingState', () => {
       expect(result.current.stats).toEqual({
         concepts_extracted: 12,
         concepts_after_merge: 9,
-        relations_verified: 4,
+        relations_accepted: 4,
       });
     });
 
@@ -484,7 +492,9 @@ describe('useProcessingState', () => {
           current_step: '',
           concepts_extracted: 5,
           concepts_after_merge: 4,
-          relations_verified: 2,
+          relations_accepted: 2,
+          relations_llm_verified: 2,
+          relations_deterministic_unverified: 0,
         }),
       );
       createSessionFromPipelineMock.mockResolvedValue({ session_id: 'session-9' });

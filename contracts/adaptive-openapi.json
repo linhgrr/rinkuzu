@@ -2263,6 +2263,1426 @@
         }
       }
     },
+    "/api/v1/admin/llm-settings/snapshot": {
+      "get": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Get Llm Settings Snapshot",
+        "operationId": "get_llm_settings_snapshot_api_v1_admin_llm_settings_snapshot_get",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Llm Settings Snapshot Api V1 Admin Llm Settings Snapshot Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers": {
+      "post": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Create Provider",
+        "operationId": "create_provider_api_v1_admin_llm_settings_providers_post",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Provider Api V1 Admin Llm Settings Providers Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}": {
+      "patch": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Patch Provider",
+        "operationId": "patch_provider_api_v1_admin_llm_settings_providers__provider_id__patch",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patch Provider Api V1 Admin Llm Settings Providers  Provider Id  Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Delete Provider",
+        "operationId": "delete_provider_api_v1_admin_llm_settings_providers__provider_id__delete",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Provider Api V1 Admin Llm Settings Providers  Provider Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/keys": {
+      "post": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Create Credential",
+        "operationId": "create_credential_api_v1_admin_llm_settings_providers__provider_id__keys_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Credential Api V1 Admin Llm Settings Providers  Provider Id  Keys Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}": {
+      "patch": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Patch Credential",
+        "operationId": "patch_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__patch",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patch Credential Api V1 Admin Llm Settings Providers  Provider Id  Keys  Key Id  Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Delete Credential",
+        "operationId": "delete_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__delete",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Credential Api V1 Admin Llm Settings Providers  Provider Id  Keys  Key Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}/secret": {
+      "put": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Replace Credential Secret",
+        "operationId": "replace_credential_secret_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__secret_put",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialSecretReplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Replace Credential Secret Api V1 Admin Llm Settings Providers  Provider Id  Keys  Key Id  Secret Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/models": {
+      "post": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Create Model",
+        "operationId": "create_model_api_v1_admin_llm_settings_providers__provider_id__models_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Model Api V1 Admin Llm Settings Providers  Provider Id  Models Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/models/{model_id}": {
+      "patch": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Patch Model",
+        "operationId": "patch_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__patch",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patch Model Api V1 Admin Llm Settings Providers  Provider Id  Models  Model Id  Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Delete Model",
+        "operationId": "delete_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__delete",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Model Api V1 Admin Llm Settings Providers  Provider Id  Models  Model Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/routing": {
+      "put": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Replace Routing",
+        "operationId": "replace_routing_api_v1_admin_llm_settings_routing_put",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutingUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Replace Routing Api V1 Admin Llm Settings Routing Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/test": {
+      "post": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Test Provider",
+        "operationId": "test_provider_api_v1_admin_llm_settings_providers__provider_id__test_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeySelectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Test Provider Api V1 Admin Llm Settings Providers  Provider Id  Test Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}/test": {
+      "post": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Test Credential",
+        "operationId": "test_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__test_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Test Credential Api V1 Admin Llm Settings Providers  Provider Id  Keys  Key Id  Test Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/models/discover": {
+      "post": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Discover Models",
+        "operationId": "discover_models_api_v1_admin_llm_settings_providers__provider_id__models_discover_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeySelectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Discover Models Api V1 Admin Llm Settings Providers  Provider Id  Models Discover Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-settings/providers/{provider_id}/models/{model_id}/test": {
+      "post": {
+        "tags": ["admin-llm-settings"],
+        "summary": "Test Model",
+        "operationId": "test_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__test_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeySelectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Test Model Api V1 Admin Llm Settings Providers  Provider Id  Models  Model Id  Test Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/llm-usage/summary": {
       "get": {
         "tags": ["admin-usage"],
@@ -2287,6 +3707,15 @@
             "schema": {
               "type": "string",
               "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
             }
           },
           {
@@ -2608,142 +4037,6 @@
               "application/json": {
                 "schema": {
                   "title": "Response Clear Conversation Api V1 Ask Rin Chan Conversations  Exercise Context Id  Delete"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/quiz/ask-ai": {
-      "post": {
-        "tags": ["legacy-ask-rin-chan"],
-        "summary": "Legacy Quiz Ask Ai",
-        "description": "Translate the removed quiz tutor route into the shared Ask Rin-chan service.",
-        "operationId": "legacy_quiz_ask_ai_api_v1_quiz_ask_ai_post",
-        "deprecated": true,
-        "parameters": [
-          {
-            "name": "x-user-id",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-User-Id"
-            }
-          },
-          {
-            "name": "x-service-token",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-Service-Token"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LegacyQuizTutorRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StandardResponse_LegacyQuizTutorResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/session/{session_id}/chat": {
-      "post": {
-        "tags": ["legacy-ask-rin-chan"],
-        "summary": "Legacy Adaptive Chat",
-        "description": "Translate the removed adaptive chat route into the shared Ask Rin-chan service.",
-        "operationId": "legacy_adaptive_chat_api_v1_session__session_id__chat_post",
-        "deprecated": true,
-        "parameters": [
-          {
-            "name": "session_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[a-zA-Z0-9_\\-]+$",
-              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
-              "title": "Session Id"
-            },
-            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
-          },
-          {
-            "name": "x-user-id",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-User-Id"
-            }
-          },
-          {
-            "name": "x-service-token",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-Service-Token"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LegacyTutorChatRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StandardResponse_LegacyTutorChatResponse_"
                 }
               }
             }
@@ -3210,6 +4503,96 @@
         "required": ["description", "value"],
         "title": "Context",
         "description": "Additional context for the agent."
+      },
+      "CredentialCreateRequest": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "api_key": {
+            "type": "string",
+            "format": "password",
+            "title": "Api Key",
+            "writeOnly": true
+          },
+          "priority": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Priority",
+            "default": 100
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["label", "api_key"],
+        "title": "CredentialCreateRequest"
+      },
+      "CredentialPatchRequest": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CredentialPatchRequest"
+      },
+      "CredentialSecretReplaceRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "format": "password",
+            "title": "Api Key",
+            "writeOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["api_key"],
+        "title": "CredentialSecretReplaceRequest"
       },
       "DeleteSubjectResponse": {
         "properties": {
@@ -3746,6 +5129,20 @@
         "title": "InputContentUrlSource",
         "description": "URL-referenced source."
       },
+      "KeySelectionRequest": {
+        "properties": {
+          "key_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Key Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["key_id"],
+        "title": "KeySelectionRequest"
+      },
       "KnowledgeEdgeResponse": {
         "properties": {
           "source": {
@@ -3880,163 +5277,28 @@
         "required": ["concept", "exercise", "cache_status"],
         "title": "LearningStepResponse"
       },
-      "LegacyChatMessage": {
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": ["user", "assistant"],
-            "title": "Role"
-          },
-          "content": {
-            "type": "string",
-            "maxLength": 4000,
-            "minLength": 1,
-            "title": "Content"
-          }
-        },
-        "type": "object",
-        "required": ["role", "content"],
-        "title": "LegacyChatMessage"
+      "LlmAction": {
+        "type": "string",
+        "enum": [
+          "adaptive_exercise",
+          "adaptive_theory",
+          "adaptive_short_answer_eval",
+          "ask_rin_chan",
+          "ask_rin_chan_summary",
+          "quiz_extraction",
+          "pipeline_concept_extraction",
+          "pipeline_relation_verification",
+          "pipeline_cycle_removal",
+          "pipeline_theory_generation"
+        ],
+        "title": "LlmAction",
+        "description": "Stable routing keys for every LLM-backed feature."
       },
-      "LegacyQuizTutorRequest": {
-        "properties": {
-          "question": {
-            "type": "string",
-            "maxLength": 12000,
-            "minLength": 1,
-            "title": "Question"
-          },
-          "options": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "maxItems": 8,
-            "minItems": 2,
-            "title": "Options"
-          },
-          "userQuestion": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Userquestion"
-          },
-          "questionImage": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Questionimage"
-          },
-          "optionImages": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Optionimages"
-          },
-          "chatHistory": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyChatMessage"
-            },
-            "type": "array",
-            "title": "Chathistory"
-          },
-          "stream": {
-            "type": "boolean",
-            "title": "Stream",
-            "default": false
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["question", "options"],
-        "title": "LegacyQuizTutorRequest"
-      },
-      "LegacyQuizTutorResponse": {
-        "properties": {
-          "explanation": {
-            "type": "string",
-            "title": "Explanation"
-          },
-          "structured": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Structured"
-          },
-          "timestamp": {
-            "type": "string",
-            "title": "Timestamp"
-          },
-          "turn_count": {
-            "type": "integer",
-            "title": "Turn Count"
-          }
-        },
-        "type": "object",
-        "required": ["explanation", "timestamp", "turn_count"],
-        "title": "LegacyQuizTutorResponse"
-      },
-      "LegacyTutorChatRequest": {
-        "properties": {
-          "userQuestion": {
-            "type": "string",
-            "maxLength": 1000,
-            "minLength": 1,
-            "title": "Userquestion"
-          },
-          "chatHistory": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyChatMessage"
-            },
-            "type": "array",
-            "title": "Chathistory"
-          },
-          "stream": {
-            "type": "boolean",
-            "title": "Stream",
-            "default": false
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["userQuestion"],
-        "title": "LegacyTutorChatRequest"
-      },
-      "LegacyTutorChatResponse": {
-        "properties": {
-          "explanation": {
-            "type": "string",
-            "title": "Explanation"
-          }
-        },
-        "type": "object",
-        "required": ["explanation"],
-        "title": "LegacyTutorChatResponse"
+      "LlmCapability": {
+        "type": "string",
+        "enum": ["text", "structured_output", "streaming", "vision"],
+        "title": "LlmCapability",
+        "description": "Capabilities a model must declare to be assignable to an action."
       },
       "LlmUsageAnalysisResponse": {
         "properties": {
@@ -4550,6 +5812,170 @@
         "type": "object",
         "required": ["pairs"],
         "title": "MatchingPayload"
+      },
+      "ModelCreateRequest": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "upstream_model_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Upstream Model Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/LlmCapability"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          },
+          "timeout_sec_override": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 300.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Sec Override"
+          },
+          "input_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Price Usd Per M Tokens"
+          },
+          "output_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Price Usd Per M Tokens"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["display_name", "upstream_model_name"],
+        "title": "ModelCreateRequest"
+      },
+      "ModelPatchRequest": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "upstream_model_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upstream Model Name"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "capabilities": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LlmCapability"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capabilities"
+          },
+          "timeout_sec_override": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 300.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Sec Override"
+          },
+          "input_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Price Usd Per M Tokens"
+          },
+          "output_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Price Usd Per M Tokens"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ModelPatchRequest"
       },
       "MultiCorrectExerciseResponse": {
         "properties": {
@@ -5104,7 +6530,18 @@
       },
       "PipelineCycleStatsResponse": {
         "properties": {
-          "removed_cycles": {
+          "had_cycles": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Had Cycles"
+          },
+          "cycles_removed": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5113,7 +6550,58 @@
                 "type": "null"
               }
             ],
-            "title": "Removed Cycles"
+            "title": "Cycles Removed"
+          },
+          "edges_removed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edges Removed"
+          },
+          "iterations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iterations"
+          },
+          "is_dag": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Dag"
+          },
+          "resolution_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Mode"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
           }
         },
         "type": "object",
@@ -5270,6 +6758,39 @@
             },
             "type": "array",
             "title": "Artifacts"
+          },
+          "policy_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Enabled"
+          },
+          "bypass_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bypass Kind"
+          },
+          "llm_config_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Config Revision"
           }
         },
         "type": "object",
@@ -5410,7 +6931,7 @@
             ],
             "title": "Relation Candidates From Mlp"
           },
-          "relations_inserted_after_verification": {
+          "relations_accepted": {
             "anyOf": [
               {
                 "type": "integer"
@@ -5419,7 +6940,29 @@
                 "type": "null"
               }
             ],
-            "title": "Relations Inserted After Verification"
+            "title": "Relations Accepted"
+          },
+          "relations_llm_verified": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relations Llm Verified"
+          },
+          "relations_deterministic_unverified": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relations Deterministic Unverified"
           },
           "relations_extraction_candidates_dropped": {
             "anyOf": [
@@ -5431,17 +6974,6 @@
               }
             ],
             "title": "Relations Extraction Candidates Dropped"
-          },
-          "relations_verified": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Relations Verified"
           },
           "quality_report": {
             "anyOf": [
@@ -5578,9 +7110,19 @@
             "title": "Concepts After Merge",
             "default": 0
           },
-          "relations_verified": {
+          "relations_accepted": {
             "type": "integer",
-            "title": "Relations Verified",
+            "title": "Relations Accepted",
+            "default": 0
+          },
+          "relations_llm_verified": {
+            "type": "integer",
+            "title": "Relations Llm Verified",
+            "default": 0
+          },
+          "relations_deterministic_unverified": {
+            "type": "integer",
+            "title": "Relations Deterministic Unverified",
             "default": 0
           },
           "quality_report": {
@@ -5854,9 +7396,19 @@
             "title": "Concepts After Merge",
             "default": 0
           },
-          "relations_verified": {
+          "relations_accepted": {
             "type": "integer",
-            "title": "Relations Verified",
+            "title": "Relations Accepted",
+            "default": 0
+          },
+          "relations_llm_verified": {
+            "type": "integer",
+            "title": "Relations Llm Verified",
+            "default": 0
+          },
+          "relations_deterministic_unverified": {
+            "type": "integer",
+            "title": "Relations Deterministic Unverified",
             "default": 0
           },
           "graph_stats": {
@@ -6048,6 +7600,28 @@
             ],
             "title": "Reasoning"
           },
+          "verification_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verification Status"
+          },
+          "decision_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Reason"
+          },
           "sources": {
             "anyOf": [
               {
@@ -6186,9 +7760,9 @@
             "title": "Extraction Failure Ratio Ok",
             "default": false
           },
-          "has_verified_relation_when_multi_concept": {
+          "has_accepted_relation_when_multi_concept": {
             "type": "boolean",
-            "title": "Has Verified Relation When Multi Concept",
+            "title": "Has Accepted Relation When Multi Concept",
             "default": false
           }
         },
@@ -6215,9 +7789,19 @@
             "title": "Candidate Relation Count",
             "default": 0
           },
-          "verified_relation_count": {
+          "accepted_relation_count": {
             "type": "integer",
-            "title": "Verified Relation Count",
+            "title": "Accepted Relation Count",
+            "default": 0
+          },
+          "llm_verified_relation_count": {
+            "type": "integer",
+            "title": "Llm Verified Relation Count",
+            "default": 0
+          },
+          "deterministic_unverified_relation_count": {
+            "type": "integer",
+            "title": "Deterministic Unverified Relation Count",
             "default": 0
           },
           "extraction_failure_ratio": {
@@ -6302,6 +7886,28 @@
         "title": "PipelineStatus",
         "description": "Authoritative lifecycle states for content pipeline jobs."
       },
+      "PipelineStepId": {
+        "type": "string",
+        "enum": [
+          "document_loading",
+          "chunk_persistence",
+          "concept_extraction",
+          "embedding",
+          "concept_merge",
+          "relation_discovery",
+          "relation_verification",
+          "graph_building",
+          "graph_optimization",
+          "cycle_resolution",
+          "transitive_reduction",
+          "quality_gate",
+          "saint_embeddings",
+          "theory_generation",
+          "result_assembly"
+        ],
+        "title": "PipelineStepId",
+        "description": "Stable identifiers for pipeline steps.\n\nThese match the ``step_id`` values already emitted in the debug trace so a\npolicy record and a trace entry describe the same step."
+      },
       "ProcessDocumentRequest": {
         "properties": {
           "file_url": {
@@ -6367,6 +7973,95 @@
         "type": "object",
         "required": ["file_url", "filename"],
         "title": "ProcessDocumentRequest"
+      },
+      "ProviderCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "base_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Base Url"
+          },
+          "timeout_sec": {
+            "type": "number",
+            "maximum": 300.0,
+            "minimum": 1.0,
+            "title": "Timeout Sec",
+            "default": 60.0
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name", "base_url"],
+        "title": "ProviderCreateRequest"
+      },
+      "ProviderPatchRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "timeout_sec": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 300.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Sec"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProviderPatchRequest"
       },
       "QuizDraftCreateRequest": {
         "properties": {
@@ -7178,6 +8873,47 @@
         "title": "ResumeEntry",
         "description": "A per-interrupt response in the resume array of a RunAgentInput."
       },
+      "RouteInput": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/LlmAction"
+          },
+          "model_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Model Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["action"],
+        "title": "RouteInput"
+      },
+      "RoutingUpdateRequest": {
+        "properties": {
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/RouteInput"
+            },
+            "type": "array",
+            "title": "Routes"
+          },
+          "step_policies": {
+            "items": {
+              "$ref": "#/components/schemas/StepPolicyInput"
+            },
+            "type": "array",
+            "title": "Step Policies"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["routes"],
+        "title": "RoutingUpdateRequest"
+      },
       "RunAgentInput": {
         "properties": {
           "threadId": {
@@ -7832,60 +9568,6 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[LearningStepResponse]"
-      },
-      "StandardResponse_LegacyQuizTutorResponse_": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": true
-          },
-          "data": {
-            "$ref": "#/components/schemas/LegacyQuizTutorResponse"
-          },
-          "meta": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta"
-          }
-        },
-        "type": "object",
-        "required": ["data"],
-        "title": "StandardResponse[LegacyQuizTutorResponse]"
-      },
-      "StandardResponse_LegacyTutorChatResponse_": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": true
-          },
-          "data": {
-            "$ref": "#/components/schemas/LegacyTutorChatResponse"
-          },
-          "meta": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta"
-          }
-        },
-        "type": "object",
-        "required": ["data"],
-        "title": "StandardResponse[LegacyTutorChatResponse]"
       },
       "StandardResponse_LlmUsageSummaryResponse_": {
         "properties": {
@@ -8625,6 +10307,21 @@
         "required": ["data"],
         "title": "StandardResponse[dict]"
       },
+      "StepPolicyInput": {
+        "properties": {
+          "step_id": {
+            "$ref": "#/components/schemas/PipelineStepId"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["step_id", "enabled"],
+        "title": "StepPolicyInput"
+      },
       "SubjectHistoryDetailResponse": {
         "properties": {
           "job_id": {
@@ -8804,9 +10501,17 @@
             "type": "integer",
             "title": "Concepts After Merge"
           },
-          "relations_verified": {
+          "relations_accepted": {
             "type": "integer",
-            "title": "Relations Verified"
+            "title": "Relations Accepted"
+          },
+          "relations_llm_verified": {
+            "type": "integer",
+            "title": "Relations Llm Verified"
+          },
+          "relations_deterministic_unverified": {
+            "type": "integer",
+            "title": "Relations Deterministic Unverified"
           },
           "completed_at": {
             "type": "number",
@@ -8841,7 +10546,9 @@
           "status",
           "concepts_extracted",
           "concepts_after_merge",
-          "relations_verified",
+          "relations_accepted",
+          "relations_llm_verified",
+          "relations_deterministic_unverified",
           "completed_at",
           "mastered_concept",
           "all_concept",

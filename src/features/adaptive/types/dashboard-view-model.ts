@@ -28,7 +28,7 @@ export type DashboardSubject = {
   status: PipelineStatus;
   conceptsExtracted: number;
   conceptsAfterMerge: number;
-  relationsVerified: number;
+  relationsAccepted: number;
   completedAt: number | null;
   masteredConcept: number;
   allConcept: number;

@@ -27,7 +27,9 @@ function pipelineJob(
     partial_success: false,
     concepts_extracted: 0,
     concepts_after_merge: 0,
-    relations_verified: 0,
+    relations_accepted: 0,
+    relations_llm_verified: 0,
+    relations_deterministic_unverified: 0,
     retryable: false,
     retry_count: 0,
     eta_seconds: null,
@@ -287,7 +289,9 @@ describe('toDashboardSubject', () => {
     status: 'completed',
     concepts_extracted: 10,
     concepts_after_merge: 8,
-    relations_verified: 5,
+    relations_accepted: 5,
+    relations_llm_verified: 5,
+    relations_deterministic_unverified: 0,
     completed_at: 1_700_000_000,
     mastered_concept: 4,
     all_concept: 8,
@@ -309,7 +313,7 @@ describe('toDashboardSubject', () => {
       subjectId: 'subj-intro',
       conceptsExtracted: 10,
       conceptsAfterMerge: 8,
-      relationsVerified: 5,
+      relationsAccepted: 5,
       completedAt: 1_700_000_000,
       masteredConcept: 4,
       allConcept: 8,
@@ -319,7 +323,7 @@ describe('toDashboardSubject', () => {
     expect(vm).not.toHaveProperty('subject_id');
     expect(vm).not.toHaveProperty('concepts_extracted');
     expect(vm).not.toHaveProperty('concepts_after_merge');
-    expect(vm).not.toHaveProperty('relations_verified');
+    expect(vm).not.toHaveProperty('relations_accepted');
     expect(vm).not.toHaveProperty('completed_at');
     expect(vm).not.toHaveProperty('progress_percent');
   });

@@ -31,7 +31,7 @@ type DashboardSubjectSource = Pick<
   | 'status'
   | 'concepts_extracted'
   | 'concepts_after_merge'
-  | 'relations_verified'
+  | 'relations_accepted'
   | 'completed_at'
 >;
 
@@ -43,7 +43,7 @@ type DashboardSubjectCore = Pick<
   | 'status'
   | 'conceptsExtracted'
   | 'conceptsAfterMerge'
-  | 'relationsVerified'
+  | 'relationsAccepted'
   | 'completedAt'
 >;
 
@@ -54,7 +54,7 @@ const toDashboardSubjectCore = (job: DashboardSubjectSource): DashboardSubjectCo
   status: job.status,
   conceptsExtracted: job.concepts_extracted,
   conceptsAfterMerge: job.concepts_after_merge,
-  relationsVerified: job.relations_verified,
+  relationsAccepted: job.relations_accepted,
   completedAt: job.completed_at ?? null,
 });
 

@@ -582,6 +582,230 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/llm-settings/snapshot': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Llm Settings Snapshot */
+    get: operations['get_llm_settings_snapshot_api_v1_admin_llm_settings_snapshot_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Provider */
+    post: operations['create_provider_api_v1_admin_llm_settings_providers_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Provider */
+    delete: operations['delete_provider_api_v1_admin_llm_settings_providers__provider_id__delete'];
+    options?: never;
+    head?: never;
+    /** Patch Provider */
+    patch: operations['patch_provider_api_v1_admin_llm_settings_providers__provider_id__patch'];
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/keys': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Credential */
+    post: operations['create_credential_api_v1_admin_llm_settings_providers__provider_id__keys_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Credential */
+    delete: operations['delete_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__delete'];
+    options?: never;
+    head?: never;
+    /** Patch Credential */
+    patch: operations['patch_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__patch'];
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}/secret': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Replace Credential Secret */
+    put: operations['replace_credential_secret_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__secret_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/models': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Model */
+    post: operations['create_model_api_v1_admin_llm_settings_providers__provider_id__models_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/models/{model_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Model */
+    delete: operations['delete_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__delete'];
+    options?: never;
+    head?: never;
+    /** Patch Model */
+    patch: operations['patch_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__patch'];
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/routing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Replace Routing */
+    put: operations['replace_routing_api_v1_admin_llm_settings_routing_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/test': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Test Provider */
+    post: operations['test_provider_api_v1_admin_llm_settings_providers__provider_id__test_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}/test': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Test Credential */
+    post: operations['test_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__test_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/models/discover': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Discover Models */
+    post: operations['discover_models_api_v1_admin_llm_settings_providers__provider_id__models_discover_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-settings/providers/{provider_id}/models/{model_id}/test': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Test Model */
+    post: operations['test_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__test_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/llm-usage/summary': {
     parameters: {
       query?: never;
@@ -669,48 +893,6 @@ export interface paths {
     post?: never;
     /** Clear Conversation */
     delete: operations['clear_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__delete'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/quiz/ask-ai': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Legacy Quiz Ask Ai
-     * @deprecated
-     * @description Translate the removed quiz tutor route into the shared Ask Rin-chan service.
-     */
-    post: operations['legacy_quiz_ask_ai_api_v1_quiz_ask_ai_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/session/{session_id}/chat': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Legacy Adaptive Chat
-     * @deprecated
-     * @description Translate the removed adaptive chat route into the shared Ask Rin-chan service.
-     */
-    post: operations['legacy_adaptive_chat_api_v1_session__session_id__chat_post'];
-    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -953,6 +1135,43 @@ export interface components {
     } & {
       [key: string]: unknown;
     };
+    /** CredentialCreateRequest */
+    CredentialCreateRequest: {
+      /** Label */
+      label: string;
+      /**
+       * Api Key
+       * Format: password
+       */
+      api_key: string;
+      /**
+       * Priority
+       * @default 100
+       */
+      priority: number;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+    };
+    /** CredentialPatchRequest */
+    CredentialPatchRequest: {
+      /** Label */
+      label?: string | null;
+      /** Priority */
+      priority?: number | null;
+      /** Enabled */
+      enabled?: boolean | null;
+    };
+    /** CredentialSecretReplaceRequest */
+    CredentialSecretReplaceRequest: {
+      /**
+       * Api Key
+       * Format: password
+       */
+      api_key: string;
+    };
     /** DeleteSubjectResponse */
     DeleteSubjectResponse: {
       /** Job Id */
@@ -1179,6 +1398,11 @@ export interface components {
     } & {
       [key: string]: unknown;
     };
+    /** KeySelectionRequest */
+    KeySelectionRequest: {
+      /** Key Id */
+      key_id: string;
+    };
     /** KnowledgeEdgeResponse */
     KnowledgeEdgeResponse: {
       /** Source */
@@ -1231,66 +1455,28 @@ export interface components {
        */
       cache_status: 'served' | 'created';
     };
-    /** LegacyChatMessage */
-    LegacyChatMessage: {
-      /**
-       * Role
-       * @enum {string}
-       */
-      role: 'user' | 'assistant';
-      /** Content */
-      content: string;
-    };
-    /** LegacyQuizTutorRequest */
-    LegacyQuizTutorRequest: {
-      /** Question */
-      question: string;
-      /** Options */
-      options: string[];
-      /** Userquestion */
-      userQuestion?: string | null;
-      /** Questionimage */
-      questionImage?: string | null;
-      /** Optionimages */
-      optionImages?: (string | null)[];
-      /** Chathistory */
-      chatHistory?: components['schemas']['LegacyChatMessage'][];
-      /**
-       * Stream
-       * @default false
-       */
-      stream: boolean;
-    };
-    /** LegacyQuizTutorResponse */
-    LegacyQuizTutorResponse: {
-      /** Explanation */
-      explanation: string;
-      /** Structured */
-      structured?: {
-        [key: string]: unknown;
-      } | null;
-      /** Timestamp */
-      timestamp: string;
-      /** Turn Count */
-      turn_count: number;
-    };
-    /** LegacyTutorChatRequest */
-    LegacyTutorChatRequest: {
-      /** Userquestion */
-      userQuestion: string;
-      /** Chathistory */
-      chatHistory?: components['schemas']['LegacyChatMessage'][];
-      /**
-       * Stream
-       * @default false
-       */
-      stream: boolean;
-    };
-    /** LegacyTutorChatResponse */
-    LegacyTutorChatResponse: {
-      /** Explanation */
-      explanation: string;
-    };
+    /**
+     * LlmAction
+     * @description Stable routing keys for every LLM-backed feature.
+     * @enum {string}
+     */
+    LlmAction:
+      | 'adaptive_exercise'
+      | 'adaptive_theory'
+      | 'adaptive_short_answer_eval'
+      | 'ask_rin_chan'
+      | 'ask_rin_chan_summary'
+      | 'quiz_extraction'
+      | 'pipeline_concept_extraction'
+      | 'pipeline_relation_verification'
+      | 'pipeline_cycle_removal'
+      | 'pipeline_theory_generation';
+    /**
+     * LlmCapability
+     * @description Capabilities a model must declare to be assignable to an action.
+     * @enum {string}
+     */
+    LlmCapability: 'text' | 'structured_output' | 'streaming' | 'vision';
     /** LlmUsageAnalysisResponse */
     LlmUsageAnalysisResponse: {
       /**
@@ -1536,6 +1722,43 @@ export interface components {
       /** Pairs */
       pairs: components['schemas']['MatchingPairPayload'][];
     };
+    /** ModelCreateRequest */
+    ModelCreateRequest: {
+      /** Display Name */
+      display_name: string;
+      /** Upstream Model Name */
+      upstream_model_name: string;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /** Capabilities */
+      capabilities?: components['schemas']['LlmCapability'][];
+      /** Timeout Sec Override */
+      timeout_sec_override?: number | null;
+      /** Input Price Usd Per M Tokens */
+      input_price_usd_per_m_tokens?: string | null;
+      /** Output Price Usd Per M Tokens */
+      output_price_usd_per_m_tokens?: string | null;
+    };
+    /** ModelPatchRequest */
+    ModelPatchRequest: {
+      /** Display Name */
+      display_name?: string | null;
+      /** Upstream Model Name */
+      upstream_model_name?: string | null;
+      /** Enabled */
+      enabled?: boolean | null;
+      /** Capabilities */
+      capabilities?: components['schemas']['LlmCapability'][] | null;
+      /** Timeout Sec Override */
+      timeout_sec_override?: number | null;
+      /** Input Price Usd Per M Tokens */
+      input_price_usd_per_m_tokens?: string | null;
+      /** Output Price Usd Per M Tokens */
+      output_price_usd_per_m_tokens?: string | null;
+    };
     /** MultiCorrectExerciseResponse */
     MultiCorrectExerciseResponse: {
       /** Exercise Id */
@@ -1735,8 +1958,20 @@ export interface components {
     };
     /** PipelineCycleStatsResponse */
     PipelineCycleStatsResponse: {
-      /** Removed Cycles */
-      removed_cycles?: number | null;
+      /** Had Cycles */
+      had_cycles?: boolean | null;
+      /** Cycles Removed */
+      cycles_removed?: number | null;
+      /** Edges Removed */
+      edges_removed?: number | null;
+      /** Iterations */
+      iterations?: number | null;
+      /** Is Dag */
+      is_dag?: boolean | null;
+      /** Resolution Mode */
+      resolution_mode?: string | null;
+      /** Warnings */
+      warnings?: string[];
     };
     /** PipelineDebugArtifactResponse */
     PipelineDebugArtifactResponse: {
@@ -1826,6 +2061,12 @@ export interface components {
       error?: string | null;
       /** Artifacts */
       artifacts?: components['schemas']['PipelineDebugArtifactResponse'][];
+      /** Policy Enabled */
+      policy_enabled?: boolean | null;
+      /** Bypass Kind */
+      bypass_kind?: string | null;
+      /** Llm Config Revision */
+      llm_config_revision?: number | null;
     };
     /** PipelineFailedBatchResponse */
     PipelineFailedBatchResponse: {
@@ -1873,12 +2114,14 @@ export interface components {
       relation_candidates_from_extraction?: number | null;
       /** Relation Candidates From Mlp */
       relation_candidates_from_mlp?: number | null;
-      /** Relations Inserted After Verification */
-      relations_inserted_after_verification?: number | null;
+      /** Relations Accepted */
+      relations_accepted?: number | null;
+      /** Relations Llm Verified */
+      relations_llm_verified?: number | null;
+      /** Relations Deterministic Unverified */
+      relations_deterministic_unverified?: number | null;
       /** Relations Extraction Candidates Dropped */
       relations_extraction_candidates_dropped?: number | null;
-      /** Relations Verified */
-      relations_verified?: number | null;
       quality_report?: components['schemas']['PipelineQualityReportResponse'] | null;
       /** Builder Subject Id */
       builder_subject_id?: string | null;
@@ -1954,10 +2197,20 @@ export interface components {
        */
       concepts_after_merge: number;
       /**
-       * Relations Verified
+       * Relations Accepted
        * @default 0
        */
-      relations_verified: number;
+      relations_accepted: number;
+      /**
+       * Relations Llm Verified
+       * @default 0
+       */
+      relations_llm_verified: number;
+      /**
+       * Relations Deterministic Unverified
+       * @default 0
+       */
+      relations_deterministic_unverified: number;
       quality_report?: components['schemas']['PipelineQualityReportResponse'] | null;
       /** Error Code */
       error_code?: string | null;
@@ -2126,10 +2379,20 @@ export interface components {
        */
       concepts_after_merge: number;
       /**
-       * Relations Verified
+       * Relations Accepted
        * @default 0
        */
-      relations_verified: number;
+      relations_accepted: number;
+      /**
+       * Relations Llm Verified
+       * @default 0
+       */
+      relations_llm_verified: number;
+      /**
+       * Relations Deterministic Unverified
+       * @default 0
+       */
+      relations_deterministic_unverified: number;
       graph_stats?: components['schemas']['PipelineGraphStatsResponse'];
       quality_report?: components['schemas']['PipelineQualityReportResponse'] | null;
       /** Debug Trace */
@@ -2201,6 +2464,10 @@ export interface components {
       evidence?: string[] | null;
       /** Reasoning */
       reasoning?: string | null;
+      /** Verification Status */
+      verification_status?: string | null;
+      /** Decision Reason */
+      decision_reason?: string | null;
       /** Sources */
       sources?: string[] | null;
       /** Ranker Score */
@@ -2269,10 +2536,10 @@ export interface components {
        */
       extraction_failure_ratio_ok: boolean;
       /**
-       * Has Verified Relation When Multi Concept
+       * Has Accepted Relation When Multi Concept
        * @default false
        */
-      has_verified_relation_when_multi_concept: boolean;
+      has_accepted_relation_when_multi_concept: boolean;
     };
     /** PipelineQualityReportResponse */
     PipelineQualityReportResponse: {
@@ -2293,10 +2560,20 @@ export interface components {
        */
       candidate_relation_count: number;
       /**
-       * Verified Relation Count
+       * Accepted Relation Count
        * @default 0
        */
-      verified_relation_count: number;
+      accepted_relation_count: number;
+      /**
+       * Llm Verified Relation Count
+       * @default 0
+       */
+      llm_verified_relation_count: number;
+      /**
+       * Deterministic Unverified Relation Count
+       * @default 0
+       */
+      deterministic_unverified_relation_count: number;
       /**
        * Extraction Failure Ratio
        * @default 0
@@ -2355,6 +2632,30 @@ export interface components {
       | 'completed'
       | 'failed'
       | 'cancelled';
+    /**
+     * PipelineStepId
+     * @description Stable identifiers for pipeline steps.
+     *
+     *     These match the ``step_id`` values already emitted in the debug trace so a
+     *     policy record and a trace entry describe the same step.
+     * @enum {string}
+     */
+    PipelineStepId:
+      | 'document_loading'
+      | 'chunk_persistence'
+      | 'concept_extraction'
+      | 'embedding'
+      | 'concept_merge'
+      | 'relation_discovery'
+      | 'relation_verification'
+      | 'graph_building'
+      | 'graph_optimization'
+      | 'cycle_resolution'
+      | 'transitive_reduction'
+      | 'quality_gate'
+      | 'saint_embeddings'
+      | 'theory_generation'
+      | 'result_assembly';
     /** ProcessDocumentRequest */
     ProcessDocumentRequest: {
       /** File Url */
@@ -2382,6 +2683,34 @@ export interface components {
       page_batch_size: number;
       /** Source S3 Key */
       source_s3_key?: string | null;
+    };
+    /** ProviderCreateRequest */
+    ProviderCreateRequest: {
+      /** Name */
+      name: string;
+      /** Base Url */
+      base_url: string;
+      /**
+       * Timeout Sec
+       * @default 60
+       */
+      timeout_sec: number;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+    };
+    /** ProviderPatchRequest */
+    ProviderPatchRequest: {
+      /** Name */
+      name?: string | null;
+      /** Base Url */
+      base_url?: string | null;
+      /** Timeout Sec */
+      timeout_sec?: number | null;
+      /** Enabled */
+      enabled?: boolean | null;
     };
     /** QuizDraftCreateRequest */
     QuizDraftCreateRequest: {
@@ -2680,6 +3009,19 @@ export interface components {
       payload?: unknown | null;
     } & {
       [key: string]: unknown;
+    };
+    /** RouteInput */
+    RouteInput: {
+      action: components['schemas']['LlmAction'];
+      /** Model Ids */
+      model_ids?: string[];
+    };
+    /** RoutingUpdateRequest */
+    RoutingUpdateRequest: {
+      /** Routes */
+      routes: components['schemas']['RouteInput'][];
+      /** Step Policies */
+      step_policies?: components['schemas']['StepPolicyInput'][];
     };
     /**
      * RunAgentInput
@@ -2990,32 +3332,6 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['LearningStepResponse'];
-      /** Meta */
-      meta?: {
-        [key: string]: unknown;
-      } | null;
-    };
-    /** StandardResponse[LegacyQuizTutorResponse] */
-    StandardResponse_LegacyQuizTutorResponse_: {
-      /**
-       * Success
-       * @default true
-       */
-      success: boolean;
-      data: components['schemas']['LegacyQuizTutorResponse'];
-      /** Meta */
-      meta?: {
-        [key: string]: unknown;
-      } | null;
-    };
-    /** StandardResponse[LegacyTutorChatResponse] */
-    StandardResponse_LegacyTutorChatResponse_: {
-      /**
-       * Success
-       * @default true
-       */
-      success: boolean;
-      data: components['schemas']['LegacyTutorChatResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -3375,6 +3691,12 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** StepPolicyInput */
+    StepPolicyInput: {
+      step_id: components['schemas']['PipelineStepId'];
+      /** Enabled */
+      enabled: boolean;
+    };
     /** SubjectHistoryDetailResponse */
     SubjectHistoryDetailResponse: {
       /** Job Id */
@@ -3445,8 +3767,12 @@ export interface components {
       concepts_extracted: number;
       /** Concepts After Merge */
       concepts_after_merge: number;
-      /** Relations Verified */
-      relations_verified: number;
+      /** Relations Accepted */
+      relations_accepted: number;
+      /** Relations Llm Verified */
+      relations_llm_verified: number;
+      /** Relations Deterministic Unverified */
+      relations_deterministic_unverified: number;
       /** Completed At */
       completed_at: number;
       /** Mastered Concept */
@@ -5018,6 +5344,654 @@ export interface operations {
       };
     };
   };
+  get_llm_settings_snapshot_api_v1_admin_llm_settings_snapshot_get: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_provider_api_v1_admin_llm_settings_providers_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProviderCreateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_provider_api_v1_admin_llm_settings_providers__provider_id__delete: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  patch_provider_api_v1_admin_llm_settings_providers__provider_id__patch: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProviderPatchRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_credential_api_v1_admin_llm_settings_providers__provider_id__keys_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CredentialCreateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__delete: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+        key_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  patch_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__patch: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+        key_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CredentialPatchRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  replace_credential_secret_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__secret_put: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+        key_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CredentialSecretReplaceRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_model_api_v1_admin_llm_settings_providers__provider_id__models_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ModelCreateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__delete: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+        model_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  patch_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__patch: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+        model_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ModelPatchRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  replace_routing_api_v1_admin_llm_settings_routing_put: {
+    parameters: {
+      query?: never;
+      header: {
+        'If-Match'?: string | null;
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RoutingUpdateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  test_provider_api_v1_admin_llm_settings_providers__provider_id__test_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KeySelectionRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  test_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__test_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+        key_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  discover_models_api_v1_admin_llm_settings_providers__provider_id__models_discover_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KeySelectionRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  test_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__test_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        provider_id: string;
+        model_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KeySelectionRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_llm_usage_summary_api_v1_admin_llm_usage_summary_get: {
     parameters: {
       query?: {
@@ -5025,6 +5999,7 @@ export interface operations {
       };
       header: {
         'x-user-id': string;
+        'x-user-role': string;
         'x-service-token': string;
       };
       path?: never;
@@ -5217,81 +6192,6 @@ export interface operations {
         };
         content: {
           'application/json': unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  legacy_quiz_ask_ai_api_v1_quiz_ask_ai_post: {
-    parameters: {
-      query?: never;
-      header: {
-        'x-user-id': string;
-        'x-service-token': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LegacyQuizTutorRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StandardResponse_LegacyQuizTutorResponse_'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  legacy_adaptive_chat_api_v1_session__session_id__chat_post: {
-    parameters: {
-      query?: never;
-      header: {
-        'x-user-id': string;
-        'x-service-token': string;
-      };
-      path: {
-        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
-        session_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LegacyTutorChatRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StandardResponse_LegacyTutorChatResponse_'];
         };
       };
       /** @description Validation Error */

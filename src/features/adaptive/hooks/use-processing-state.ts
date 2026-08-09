@@ -49,7 +49,7 @@ const STATUS_TO_STEP: Record<PipelineStatus, number> = {
 export type ProcessingStats = {
   concepts_extracted: number;
   concepts_after_merge: number;
-  relations_verified: number;
+  relations_accepted: number;
 };
 
 const BASE_POLL_DELAY_MS = 2_000;
@@ -275,14 +275,14 @@ export const useProcessingState = (t: TranslateFn) => {
         prev &&
         prev.concepts_extracted === job.concepts_extracted &&
         prev.concepts_after_merge === job.concepts_after_merge &&
-        prev.relations_verified === job.relations_verified
+        prev.relations_accepted === job.relations_accepted
       )
         return prev;
 
       return {
         concepts_extracted: job.concepts_extracted,
         concepts_after_merge: job.concepts_after_merge,
-        relations_verified: job.relations_verified,
+        relations_accepted: job.relations_accepted,
       };
     });
   };

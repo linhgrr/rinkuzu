@@ -12,15 +12,12 @@ const REPO_ROOT = resolve(FRONTEND_ROOT, '..');
 const BACKEND_ROOT = resolve(REPO_ROOT, 'rinkuzu-ai-api');
 export const GENERATED_TYPES_PATH = resolve(FRONTEND_ROOT, 'src/generated/adaptive-api.d.ts');
 
-const BIN_EXT = process.platform === 'win32' ? '.cmd' : '';
-const REDOCLY_BIN = resolve(FRONTEND_ROOT, `node_modules/.bin/redocly${BIN_EXT}`);
-const OPENAPI_TYPESCRIPT_BIN = resolve(
-  FRONTEND_ROOT,
-  `node_modules/.bin/openapi-typescript${BIN_EXT}`,
-);
-const PRETTIER_BIN = resolve(FRONTEND_ROOT, `node_modules/.bin/prettier${BIN_EXT}`);
 const PRETTIER_CONFIG = resolve(FRONTEND_ROOT, '.prettierrc');
-const BACKEND_VENV_PYTHON = resolve(BACKEND_ROOT, '.venv/bin/python');
+const BACKEND_VENV_PYTHON = resolve(
+  BACKEND_ROOT,
+  process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python',
+);
+const NULL_DEVICE = process.platform === 'win32' ? 'NUL' : '/dev/null';
 const UV_BIN = process.env.UV_BIN ?? 'uv';
 const CONTRACT_EXPORT_ENV = Object.freeze({
   ENVIRONMENT: 'dev',
@@ -47,6 +44,20 @@ function canRun(command) {
     shell: false,
   });
   return result.status === 0;
+}
+
+function resolvePackageBin(packageName, binName) {
+  const packageJsonPath = resolve(FRONTEND_ROOT, 'node_modules', packageName, 'package.json');
+  if (!existsSync(packageJsonPath)) {
+    throw new Error(`${packageName} is not installed`);
+  }
+
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+  const bin = typeof packageJson.bin === 'string' ? packageJson.bin : packageJson.bin?.[binName];
+  if (typeof bin !== 'string' || bin.length === 0) {
+    throw new Error(`${packageName} does not expose the expected ${binName} binary`);
+  }
+  return resolve(dirname(packageJsonPath), bin);
 }
 
 function commandExists(command) {
@@ -102,19 +113,35 @@ export function exportOpenApi(schemaPath) {
 }
 
 export function lintOpenApi(schemaPath) {
-  run(REDOCLY_BIN, ['lint', schemaPath, '--extends', 'minimal'], {
-    cwd: FRONTEND_ROOT,
-  });
+  run(
+    process.execPath,
+    [resolvePackageBin('@redocly/cli', 'redocly'), 'lint', schemaPath, '--extends', 'minimal'],
+    {
+      cwd: FRONTEND_ROOT,
+    },
+  );
 }
 
 export function generateTypes(schemaPath, outputPath) {
   mkdirSync(dirname(outputPath), { recursive: true });
-  run(OPENAPI_TYPESCRIPT_BIN, [schemaPath, '-o', outputPath], {
-    cwd: FRONTEND_ROOT,
-  });
   run(
-    PRETTIER_BIN,
-    ['--write', '--config', PRETTIER_CONFIG, '--ignore-path', '/dev/null', outputPath],
+    process.execPath,
+    [resolvePackageBin('openapi-typescript', 'openapi-typescript'), schemaPath, '-o', outputPath],
+    {
+      cwd: FRONTEND_ROOT,
+    },
+  );
+  run(
+    process.execPath,
+    [
+      resolvePackageBin('prettier', 'prettier'),
+      '--write',
+      '--config',
+      PRETTIER_CONFIG,
+      '--ignore-path',
+      NULL_DEVICE,
+      outputPath,
+    ],
     {
       cwd: FRONTEND_ROOT,
     },

@@ -309,7 +309,9 @@ function buildDebugStages(job: DebugPipelineJobStatus): DebugStage[] {
         relation_candidates_from_extraction: stats.relation_candidates_from_extraction ?? null,
         relations_extraction_candidates_dropped:
           stats.relations_extraction_candidates_dropped ?? null,
-        relations_verified: job.relations_verified,
+        relations_accepted: job.relations_accepted,
+        relations_llm_verified: job.relations_llm_verified,
+        relations_deterministic_unverified: job.relations_deterministic_unverified,
       },
       artifacts: [],
     },
@@ -318,7 +320,9 @@ function buildDebugStages(job: DebugPipelineJobStatus): DebugStage[] {
       label: 'Graph build + optimization',
       status: stageState(job, 'building_graph', 'optimizing'),
       input: {
-        verified_relations: job.relations_verified,
+        accepted_relations: job.relations_accepted,
+        llm_verified_relations: job.relations_llm_verified,
+        deterministic_unverified_relations: job.relations_deterministic_unverified,
         apply_reduction: true,
       },
       output: {
@@ -722,7 +726,7 @@ export default function PipelineDebugPage() {
               label="Concepts"
               value={job.concepts_after_merge || job.concepts_extracted}
             />
-            <MetricTile label="Relations" value={job.relations_verified} />
+            <MetricTile label="Accepted relations" value={job.relations_accepted} />
             <MetricTile label="Updated" value={formatTime(job.updated_at)} />
           </section>
 

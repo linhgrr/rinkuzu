@@ -86,7 +86,7 @@ export const ProcessingStatusCard = ({
             </div>
           </div>
           <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-center">
-            <div className="text-xl font-mono text-neutral-900">{stats.relations_verified}</div>
+            <div className="text-xl font-mono text-neutral-900">{stats.relations_accepted}</div>
             <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
               {t('processing.stats.relations')}
             </div>

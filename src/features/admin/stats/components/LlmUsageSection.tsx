@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { formatVndCurrency } from '@/lib/formatters';
 import { fetchLlmUsageViewModel } from '@/features/admin/stats/api/llm-usage-api';
 import type {
   LlmUsageViewModel,
+  LlmUsageFilters,
   LlmUsageWindow,
 } from '@/features/admin/stats/types/llm-usage-view-model';
 import { LlmCostDonutChart } from '@/features/admin/stats/components/charts/LlmCostDonutChart';
@@ -144,16 +146,67 @@ function LlmUsageLoadingCard({ label }: { label: string }) {
   );
 }
 
+function UserActionTable({ data, t }: { data: LlmUsageViewModel['byUserAction']; t: TranslateFn }) {
+  return (
+    <Card className="p-0">
+      <CardHeader className="px-5 pt-5">
+        <CardTitle>{t('llmUsageByUserAction')}</CardTitle>
+      </CardHeader>
+      <CardContent className="overflow-x-auto px-5 pb-5">
+        {data.rows.length === 0 ? (
+          <p className="text-sm text-neutral-500">{t('llmUsageEmpty')}</p>
+        ) : (
+          <table className="w-full min-w-[42rem] text-sm">
+            <thead>
+              <tr className="text-left text-neutral-500">
+                <th className="pb-2">{t('llmUsageUserId')}</th>
+                <th className="pb-2">{t('llmUsageAction')}</th>
+                <th className="pb-2 text-right">{t('llmUsageColOperations')}</th>
+                <th className="pb-2 text-right">{t('llmUsageColAttempts')}</th>
+                <th className="pb-2 text-right">{t('llmUsageColTokens')}</th>
+                <th className="pb-2 text-right">{t('llmUsageColCost')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows.map((row) => (
+                <tr key={`${row.userId}:${row.action}`} className="border-t border-line">
+                  <td className="py-1.5 font-mono">{row.userId}</td>
+                  <td className="py-1.5">{row.action}</td>
+                  <td className="py-1.5 text-right">{row.logicalOperations.toLocaleString()}</td>
+                  <td className="py-1.5 text-right">{row.physicalAttempts.toLocaleString()}</td>
+                  <td className="py-1.5 text-right">{row.totalTokens.toLocaleString()}</td>
+                  <td className="py-1.5 text-right">${row.costUsd.toFixed(4)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {data.truncated ? (
+          <p className="mt-2 text-xs text-neutral-500">{t('llmUsageBreakdownTruncated')}</p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function LlmUsageSection() {
   const t = useTranslations('admin');
   const [data, setData] = useState<LlmUsageViewModel | null>(null);
   const [window, setWindow] = useState<LlmUsageWindow>('30d');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [filters, setFilters] = useState<LlmUsageFilters>({});
+  const [filterDraft, setFilterDraft] = useState({
+    action: '',
+    userId: '',
+    providerId: '',
+    modelId: '',
+    includeNonProduct: false,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchLlmUsageViewModel(window, controller.signal)
+    fetchLlmUsageViewModel(window, controller.signal, filters)
       .then(setData)
       .catch((requestError: unknown) => {
         if (requestError instanceof Error && requestError.name === 'AbortError') return;
@@ -164,7 +217,20 @@ export function LlmUsageSection() {
       });
 
     return () => controller.abort();
-  }, [window]);
+  }, [filters, window]);
+
+  const applyFilters = (event: FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(false);
+    setFilters({
+      ...(filterDraft.action.trim() ? { action: filterDraft.action.trim() } : {}),
+      ...(filterDraft.userId.trim() ? { userId: filterDraft.userId.trim() } : {}),
+      ...(filterDraft.providerId.trim() ? { providerId: filterDraft.providerId.trim() } : {}),
+      ...(filterDraft.modelId.trim() ? { modelId: filterDraft.modelId.trim() } : {}),
+      ...(filterDraft.includeNonProduct ? { includeNonProduct: true } : {}),
+    });
+  };
 
   const changeWindow = (nextWindow: LlmUsageWindow) => {
     if (nextWindow === window) return;
@@ -204,6 +270,56 @@ export function LlmUsageSection() {
           </Select>
         </div>
       </div>
+      <form
+        className="grid gap-3 rounded-lg border border-line bg-white p-4 sm:grid-cols-2 xl:grid-cols-6"
+        onSubmit={applyFilters}
+      >
+        <input
+          className="h-9 rounded-lg border border-line px-3 text-sm"
+          placeholder={t('llmUsageFilterAction')}
+          value={filterDraft.action}
+          onChange={(event) =>
+            setFilterDraft((value) => ({ ...value, action: event.target.value }))
+          }
+        />
+        <input
+          className="h-9 rounded-lg border border-line px-3 text-sm"
+          placeholder={t('llmUsageFilterUser')}
+          value={filterDraft.userId}
+          onChange={(event) =>
+            setFilterDraft((value) => ({ ...value, userId: event.target.value }))
+          }
+        />
+        <input
+          className="h-9 rounded-lg border border-line px-3 text-sm"
+          placeholder={t('llmUsageFilterProvider')}
+          value={filterDraft.providerId}
+          onChange={(event) =>
+            setFilterDraft((value) => ({ ...value, providerId: event.target.value }))
+          }
+        />
+        <input
+          className="h-9 rounded-lg border border-line px-3 text-sm"
+          placeholder={t('llmUsageFilterModel')}
+          value={filterDraft.modelId}
+          onChange={(event) =>
+            setFilterDraft((value) => ({ ...value, modelId: event.target.value }))
+          }
+        />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={filterDraft.includeNonProduct}
+            onChange={(event) =>
+              setFilterDraft((value) => ({ ...value, includeNonProduct: event.target.checked }))
+            }
+          />
+          {t('llmUsageIncludeNonProduct')}
+        </label>
+        <Button type="submit" size="sm">
+          {t('llmUsageApplyFilters')}
+        </Button>
+      </form>
       {error ? <p className="text-sm text-error">{t('llmUsageError')}</p> : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="p-0">
@@ -275,6 +391,7 @@ export function LlmUsageSection() {
         </CardContent>
       </Card>
       <UsageAnalysisCard data={data} t={t} />
+      <UserActionTable data={data.byUserAction} t={t} />
       <Card className="p-0">
         <CardHeader className="px-5 pt-5">
           <CardTitle>{t('llmUsageObservabilityTitle')}</CardTitle>

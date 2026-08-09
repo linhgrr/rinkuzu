@@ -131,6 +131,10 @@ export function generateTypes(schemaPath, outputPath) {
       cwd: FRONTEND_ROOT,
     },
   );
+  formatContractArtifact(outputPath);
+}
+
+export function formatContractArtifact(filePath) {
   run(
     process.execPath,
     [
@@ -140,11 +144,9 @@ export function generateTypes(schemaPath, outputPath) {
       PRETTIER_CONFIG,
       '--ignore-path',
       NULL_DEVICE,
-      outputPath,
+      filePath,
     ],
-    {
-      cwd: FRONTEND_ROOT,
-    },
+    { cwd: FRONTEND_ROOT },
   );
 }
 

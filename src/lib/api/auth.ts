@@ -88,6 +88,56 @@ export function withAdmin<TParams extends RouteParams = RouteParams>(
   return withAuth(handler, { role: 'admin' });
 }
 
+function configuredLlmAdminIds(): ReadonlySet<string> {
+  return new Set(
+    (process.env['LLM_CONFIG_ADMIN_USER_IDS'] ?? '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+}
+
+function isJsonMutation(request: NextRequest): boolean {
+  const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
+  return contentType.startsWith('application/json');
+}
+
+function isStrictSameOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get('origin');
+  const fetchSite = request.headers.get('sec-fetch-site');
+  return origin === new URL(request.url).origin && fetchSite === 'same-origin';
+}
+
+/**
+ * Stronger boundary for the LLM configuration control plane.
+ *
+ * Reads use the normal admin role guard. Mutations additionally require the
+ * browser's exact same-origin signals and JSON content type. Production can
+ * narrow access further with a comma-separated LLM_CONFIG_ADMIN_USER_IDS list.
+ */
+export function withLlmConfigAdmin<TParams extends RouteParams = RouteParams>(
+  handler: RouteHandler<TParams>,
+) {
+  return withAdmin<TParams>(async (request, context) => {
+    const allowlist = configuredLlmAdminIds();
+    if (
+      process.env.NODE_ENV === 'production' &&
+      allowlist.size > 0 &&
+      !allowlist.has(context.userId)
+    ) {
+      return apiErr('forbidden', 'LLM configuration access required', 403);
+    }
+
+    if (!['GET', 'HEAD'].includes(request.method.toUpperCase())) {
+      if (!isStrictSameOrigin(request) || !isJsonMutation(request)) {
+        return apiErr('forbidden', 'Same-origin JSON request required', 403);
+      }
+    }
+
+    return handler(request, context);
+  });
+}
+
 type OptionalAuthContext<TParams extends RouteParams = RouteParams> = {
   userId: string | null;
   email: string | null;

@@ -43,9 +43,22 @@ describe('GET /api/admin/llm-usage', () => {
     expect(response.headers.get('pragma')).toBe('no-cache');
   });
 
+  it('forwards only allowlisted encoded filters', async () => {
+    const response = await GET(
+      request('?window=30d&user_id=user%2Fone&provider_id=provider%3Fa&include_non_product=true'),
+      routeContext,
+    );
+    expect(response.status).toBe(200);
+    const [upstreamRequest] = proxyAdaptiveRequestMock.mock.calls[0] ?? [];
+    const params = new URL(upstreamRequest.url).searchParams;
+    expect(params.get('user_id')).toBe('user/one');
+    expect(params.get('provider_id')).toBe('provider?a');
+    expect(params.get('include_non_product')).toBe('true');
+  });
+
   it('rejects unsupported or unexpected query parameters', async () => {
     expect((await GET(request('?window=365d'), routeContext)).status).toBe(400);
-    expect((await GET(request('?window=30d&user_id=someone'), routeContext)).status).toBe(400);
+    expect((await GET(request('?window=30d&email=someone'), routeContext)).status).toBe(400);
     expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
   });
 });

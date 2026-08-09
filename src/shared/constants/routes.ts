@@ -51,5 +51,6 @@ export const ROUTES = {
     STATS: '/admin/stats',
     SUBSCRIPTIONS: '/admin/subscriptions',
     USERS: '/admin/users',
+    AI_SETTINGS: '/admin/ai-settings',
   },
 } as const;

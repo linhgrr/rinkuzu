@@ -21,7 +21,7 @@ import {
   type LlmRateLimitAction,
 } from '@/lib/llm/rate-limit';
 
-type AdaptiveProxyMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type AdaptiveProxyMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 type ProxyOptions = {
   method?: AdaptiveProxyMethod;
@@ -43,6 +43,9 @@ type ProxyOptions = {
   // Only endpoints with their own durable response replay may forward a
   // previously committed idempotency key without consuming quota again.
   allowCommittedReplay?: boolean;
+  // Forward only a syntactically valid LLM configuration ETag. No other
+  // browser header is copied through this option.
+  forwardIfMatch?: boolean;
 };
 
 /**
@@ -64,6 +67,14 @@ const UPSTREAM_RESPONSE_HEADERS = [
   'vary',
   'x-accel-buffering',
 ] as const;
+
+const TRUSTED_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+const LLM_CONFIG_ETAG = /^"llm-config-[1-9][0-9]*"$/;
+
+function trustedRequestId(req: Request): string {
+  const candidate = req.headers.get('x-request-id')?.trim();
+  return candidate && TRUSTED_REQUEST_ID.test(candidate) ? candidate : crypto.randomUUID();
+}
 
 function buildTargetUrl(req: Request, targetPath: string, infra: boolean): URL {
   const targetUrl = new URL(
@@ -190,6 +201,15 @@ export async function proxyAdaptiveRequest(
     const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId, userRole);
     Object.assign(headers, options?.internalHeaders);
     const method = options?.method || req.method;
+    headers['x-request-id'] = trustedRequestId(req);
+
+    if (options?.forwardIfMatch) {
+      const ifMatch = req.headers.get('if-match')?.trim();
+      if (ifMatch && !LLM_CONFIG_ETAG.test(ifMatch)) {
+        return apiErr('validation_error', 'Invalid If-Match header', 400);
+      }
+      if (ifMatch) headers['If-Match'] = ifMatch;
+    }
 
     const llmAction = options?.llmAction;
     const requestId =

@@ -2303,9 +2303,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Llm Settings Snapshot Api V1 Admin Llm Settings Snapshot Get"
+                  "$ref": "#/components/schemas/AdminLlmResponse_LlmSettingsSnapshotResponse_"
                 }
               }
             }
@@ -4430,6 +4428,19 @@
         "title": "ActivityMessage",
         "description": "An activity progress message emitted between chat messages."
       },
+      "AdminLlmResponse_LlmSettingsSnapshotResponse_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LlmSettingsSnapshotResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ConfigMeta"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "AdminLlmResponse[LlmSettingsSnapshotResponse]"
+      },
       "AskRinChatRequest": {
         "properties": {
           "exerciseContextToken": {
@@ -4773,6 +4784,17 @@
         "enum": ["locked", "available", "in_progress", "mastered"],
         "title": "ConceptStatus"
       },
+      "ConfigMeta": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          }
+        },
+        "type": "object",
+        "required": ["revision"],
+        "title": "ConfigMeta"
+      },
       "Context": {
         "properties": {
           "description": {
@@ -4822,6 +4844,50 @@
         "required": ["label", "api_key"],
         "title": "CredentialCreateRequest"
       },
+      "CredentialHealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "untested"
+          },
+          "success_count": {
+            "type": "integer",
+            "title": "Success Count",
+            "default": 0
+          },
+          "failure_count": {
+            "type": "integer",
+            "title": "Failure Count",
+            "default": 0
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "last_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error Code"
+          }
+        },
+        "type": "object",
+        "title": "CredentialHealthResponse"
+      },
       "CredentialPatchRequest": {
         "properties": {
           "label": {
@@ -4865,6 +4931,59 @@
         "additionalProperties": false,
         "type": "object",
         "title": "CredentialPatchRequest"
+      },
+      "CredentialResponse": {
+        "properties": {
+          "key_id": {
+            "type": "string",
+            "title": "Key Id"
+          },
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "masked_key": {
+            "type": "string",
+            "title": "Masked Key"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "secret_version": {
+            "type": "integer",
+            "title": "Secret Version"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CredentialHealthResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "key_id",
+          "provider_id",
+          "label",
+          "masked_key",
+          "priority",
+          "enabled",
+          "secret_version"
+        ],
+        "title": "CredentialResponse"
       },
       "CredentialSecretReplaceRequest": {
         "properties": {
@@ -5580,11 +5699,114 @@
         "title": "LlmAction",
         "description": "Stable routing keys for every LLM-backed feature."
       },
+      "LlmActionDefinitionResponse": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/LlmAction"
+          },
+          "group": {
+            "$ref": "#/components/schemas/LlmActionGroup"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "required_capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/LlmCapability"
+            },
+            "type": "array",
+            "title": "Required Capabilities"
+          }
+        },
+        "type": "object",
+        "required": ["action", "group", "label", "description", "required_capabilities"],
+        "title": "LlmActionDefinitionResponse"
+      },
+      "LlmActionGroup": {
+        "type": "string",
+        "enum": ["adaptive_learning", "tutor", "quiz", "content_pipeline"],
+        "title": "LlmActionGroup",
+        "description": "UI grouping for the routing screen. Purely presentational."
+      },
       "LlmCapability": {
         "type": "string",
         "enum": ["text", "structured_output", "streaming", "vision"],
         "title": "LlmCapability",
         "description": "Capabilities a model must declare to be assignable to an action."
+      },
+      "LlmSettingsSnapshotResponse": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/LlmActionDefinitionResponse"
+            },
+            "type": "array",
+            "title": "Actions"
+          },
+          "pipeline_steps": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineStepDefinitionResponse"
+            },
+            "type": "array",
+            "title": "Pipeline Steps"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderResponse"
+            },
+            "type": "array",
+            "title": "Providers"
+          },
+          "credentials": {
+            "items": {
+              "$ref": "#/components/schemas/CredentialResponse"
+            },
+            "type": "array",
+            "title": "Credentials"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelResponse"
+            },
+            "type": "array",
+            "title": "Models"
+          },
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/RouteResponse"
+            },
+            "type": "array",
+            "title": "Routes"
+          },
+          "step_policies": {
+            "items": {
+              "$ref": "#/components/schemas/StepPolicyResponse"
+            },
+            "type": "array",
+            "title": "Step Policies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "actions",
+          "pipeline_steps",
+          "providers",
+          "credentials",
+          "models",
+          "routes",
+          "step_policies"
+        ],
+        "title": "LlmSettingsSnapshotResponse"
       },
       "LlmUsageBreakdownResponse": {
         "properties": {
@@ -6590,6 +6812,80 @@
         "type": "object",
         "title": "ModelPatchRequest"
       },
+      "ModelResponse": {
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "upstream_model_name": {
+            "type": "string",
+            "title": "Upstream Model Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/LlmCapability"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          },
+          "timeout_sec_override": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Sec Override"
+          },
+          "input_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Price Usd Per M Tokens"
+          },
+          "output_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Price Usd Per M Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_id",
+          "provider_id",
+          "display_name",
+          "upstream_model_name",
+          "enabled",
+          "capabilities"
+        ],
+        "title": "ModelResponse"
+      },
       "MultiCorrectExerciseResponse": {
         "properties": {
           "exercise_id": {
@@ -7140,6 +7436,18 @@
         "type": "object",
         "required": ["correct_order"],
         "title": "OrderingPayload"
+      },
+      "PipelineBypassKind": {
+        "type": "string",
+        "enum": [
+          "deterministic_relation_acceptance",
+          "deterministic_cycle_resolution",
+          "skip_theory_generation",
+          "keep_redundant_edges",
+          "skip_saint_embeddings"
+        ],
+        "title": "PipelineBypassKind",
+        "description": "The fixed behavior used when an optional step is disabled.\n\nEach value names a strategy implemented in the codebase. Nothing here is\nread from a configuration document, so an admin cannot point a policy at\narbitrary code."
       },
       "PipelineCycleStatsResponse": {
         "properties": {
@@ -8499,6 +8807,48 @@
         "title": "PipelineStatus",
         "description": "Authoritative lifecycle states for content pipeline jobs."
       },
+      "PipelineStepDefinitionResponse": {
+        "properties": {
+          "step_id": {
+            "$ref": "#/components/schemas/PipelineStepId"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "default_enabled": {
+            "type": "boolean",
+            "title": "Default Enabled"
+          },
+          "llm_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LlmAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bypass_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PipelineBypassKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["step_id", "label", "required", "default_enabled"],
+        "title": "PipelineStepDefinitionResponse"
+      },
       "PipelineStepId": {
         "type": "string",
         "enum": [
@@ -8675,6 +9025,50 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ProviderPatchRequest"
+      },
+      "ProviderResponse": {
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "openai_compatible",
+            "title": "Provider Type"
+          },
+          "base_url": {
+            "type": "string",
+            "title": "Base Url"
+          },
+          "normalized_origin": {
+            "type": "string",
+            "title": "Normalized Origin"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "timeout_sec": {
+            "type": "number",
+            "title": "Timeout Sec"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider_id",
+          "name",
+          "provider_type",
+          "base_url",
+          "normalized_origin",
+          "enabled",
+          "timeout_sec"
+        ],
+        "title": "ProviderResponse"
       },
       "QuizDraftCreateRequest": {
         "properties": {
@@ -9504,6 +9898,23 @@
         "type": "object",
         "required": ["action"],
         "title": "RouteInput"
+      },
+      "RouteResponse": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/LlmAction"
+          },
+          "model_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Model Ids"
+          }
+        },
+        "type": "object",
+        "required": ["action", "model_ids"],
+        "title": "RouteResponse"
       },
       "RoutingUpdateRequest": {
         "properties": {
@@ -10961,6 +11372,20 @@
         "type": "object",
         "required": ["step_id", "enabled"],
         "title": "StepPolicyInput"
+      },
+      "StepPolicyResponse": {
+        "properties": {
+          "step_id": {
+            "$ref": "#/components/schemas/PipelineStepId"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "required": ["step_id", "enabled"],
+        "title": "StepPolicyResponse"
       },
       "SubjectHistoryDetailResponse": {
         "properties": {

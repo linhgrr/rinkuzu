@@ -8,6 +8,7 @@ import {
   createTempSchemaPath,
   ensureGeneratedDir,
   exportOpenApi,
+  formatContractArtifact,
   generateTypes,
   lintOpenApi,
 } from './adaptive-contract.shared.mjs';
@@ -41,18 +42,7 @@ try {
   mkdirSync(path.dirname(openapiPath), { recursive: true });
   exportOpenApi(schemaPath);
   lintOpenApi(schemaPath);
-  execFileSync(
-    path.join(frontendRoot, 'node_modules/.bin/prettier'),
-    [
-      '--write',
-      '--config',
-      path.join(frontendRoot, '.prettierrc'),
-      '--ignore-path',
-      '/dev/null',
-      schemaPath,
-    ],
-    { cwd: frontendRoot, stdio: 'inherit' },
-  );
+  formatContractArtifact(schemaPath);
   copyFileSync(schemaPath, openapiPath);
   generateTypes(openapiPath, GENERATED_TYPES_PATH);
 

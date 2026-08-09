@@ -42,7 +42,22 @@ describe('fetchLlmUsageViewModel', () => {
       by_model: breakdown([{ ...row, key: 'model-a' }]),
       by_provider: breakdown([{ ...row, key: 'provider-a' }]),
       by_user: breakdown([row]),
-      by_user_action: { rows: [], truncated: false },
+      by_user_action: {
+        rows: [
+          {
+            user_id: 'user-1',
+            action: 'quiz_extraction',
+            logical_operations: 2,
+            physical_attempts: 3,
+            recoverable_failures: 1,
+            total_tokens: 120,
+            input_tokens: 80,
+            output_tokens: 40,
+            cost_usd: 0.02,
+          },
+        ],
+        truncated: false,
+      },
       daily: [
         {
           date: '2026-07-28',
@@ -90,6 +105,18 @@ describe('fetchLlmUsageViewModel', () => {
           },
         ],
       },
+      byUserAction: {
+        rows: [
+          {
+            userId: 'user-1',
+            action: 'quiz_extraction',
+            logicalOperations: 2,
+            physicalAttempts: 3,
+            totalTokens: 120,
+            costUsd: 0.02,
+          },
+        ],
+      },
       daily: [
         {
           date: '2026-07-28',
@@ -116,6 +143,27 @@ describe('fetchLlmUsageViewModel', () => {
     expect(fetchApiDataMock).toHaveBeenCalledWith('/api/admin/llm-usage?window=7d', {
       cache: 'no-store',
       signal: controller.signal,
+    });
+  });
+
+  it('encodes the allowlisted usage filters and includes non-product traffic only explicitly', async () => {
+    await fetchLlmUsageViewModel('30d', undefined, {
+      action: 'quiz/extraction',
+      userId: 'user one',
+      providerId: 'provider?a',
+      modelId: 'model#1',
+      includeNonProduct: true,
+    });
+
+    const [url] = fetchApiDataMock.mock.calls[0] ?? [];
+    const params = new URL(url, 'http://localhost').searchParams;
+    expect(Object.fromEntries(params)).toEqual({
+      window: '30d',
+      action: 'quiz/extraction',
+      user_id: 'user one',
+      provider_id: 'provider?a',
+      model_config_id: 'model#1',
+      include_non_product: 'true',
     });
   });
 });

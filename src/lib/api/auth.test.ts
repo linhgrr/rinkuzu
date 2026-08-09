@@ -6,7 +6,7 @@ const { authMock } = vi.hoisted(() => ({ authMock: vi.fn() }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 
-import { withAdmin, withAuth, withOptionalAuth } from '@/lib/api/auth';
+import { withAdmin, withAuth, withLlmConfigAdmin, withOptionalAuth } from '@/lib/api/auth';
 
 function createSession(role: 'admin' | 'user' = 'user'): Session {
   return {
@@ -118,6 +118,36 @@ describe('API auth wrappers', () => {
       status: 204,
     });
     expect(handler).toHaveBeenCalledTimes(2);
+  });
+
+  it('requires strict same-origin JSON for LLM configuration mutations', async () => {
+    authMock.mockResolvedValue(createSession('admin'));
+    const handler = vi.fn(async () => new Response(null, { status: 204 }));
+    const secureRequest = new NextRequest('http://localhost/api/admin/ai-settings/providers', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: 'http://localhost',
+        'sec-fetch-site': 'same-origin',
+      },
+      body: '{}',
+    });
+
+    await expect(
+      withLlmConfigAdmin(handler)(secureRequest, { params: Promise.resolve({}) }),
+    ).resolves.toMatchObject({ status: 204 });
+
+    const crossSite = new NextRequest(secureRequest, {
+      headers: {
+        'content-type': 'application/json',
+        origin: 'https://evil.example',
+        'sec-fetch-site': 'cross-site',
+      },
+    });
+    await expect(
+      withLlmConfigAdmin(handler)(crossSite, { params: Promise.resolve({}) }),
+    ).resolves.toMatchObject({ status: 403 });
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it('passes null identity fields to an optional-auth handler for anonymous requests', async () => {

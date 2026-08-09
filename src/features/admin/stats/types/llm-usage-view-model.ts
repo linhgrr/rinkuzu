@@ -16,6 +16,30 @@ export interface LlmUsageBreakdown {
 
 export type LlmUsageWindow = '1d' | '7d' | '30d' | '90d' | '180d';
 
+export interface LlmUsageFilters {
+  action?: string;
+  userId?: string;
+  providerId?: string;
+  modelId?: string;
+  includeNonProduct?: boolean;
+}
+
+export interface LlmUsageUserActionRow {
+  userId: string;
+  action: string;
+  logicalOperations: number;
+  physicalAttempts: number;
+  totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
+export interface LlmUsageUserActionBreakdown {
+  rows: LlmUsageUserActionRow[];
+  truncated: boolean;
+}
+
 export interface LlmUsageDailyPoint {
   date: string;
   logicalOperations: number;
@@ -62,6 +86,7 @@ export interface LlmUsageViewModel {
   byModel: LlmUsageBreakdown;
   byUser: LlmUsageBreakdown;
   byProvider: LlmUsageBreakdown;
+  byUserAction: LlmUsageUserActionBreakdown;
   daily: LlmUsageDailyPoint[];
   observability: LlmUsageObservability;
   analysis: LlmUsageAnalysis;

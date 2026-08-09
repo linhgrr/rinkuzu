@@ -2,6 +2,7 @@ import type { components } from '@/generated/adaptive-api';
 import type {
   LlmUsageBreakdown,
   LlmUsageBreakdownRow,
+  LlmUsageFilters,
   LlmUsageWindow,
   LlmUsageViewModel,
 } from '@/features/admin/stats/types/llm-usage-view-model';
@@ -11,6 +12,7 @@ type ApiSchemas = components['schemas'];
 type LlmUsageSummaryDto = ApiSchemas['LlmUsageSummaryResponse'];
 type UsageBreakdownDto = ApiSchemas['LlmUsageBreakdownResponse'];
 type UsageDimensionDto = ApiSchemas['LlmUsageDimensionRow'];
+type UsageUserActionDto = ApiSchemas['LlmUsageUserActionRow'];
 
 // Display-only conversion. Provider billing remains denominated in USD in the
 // backend usage event; this rate never participates in accounting.
@@ -47,8 +49,14 @@ function firstRow(breakdown: LlmUsageBreakdown): LlmUsageBreakdownRow | undefine
 export async function fetchLlmUsageViewModel(
   window: LlmUsageWindow = '30d',
   signal?: AbortSignal,
+  filters: LlmUsageFilters = {},
 ): Promise<LlmUsageViewModel> {
   const params = new URLSearchParams({ window });
+  if (filters.action) params.set('action', filters.action);
+  if (filters.userId) params.set('user_id', filters.userId);
+  if (filters.providerId) params.set('provider_id', filters.providerId);
+  if (filters.modelId) params.set('model_config_id', filters.modelId);
+  if (filters.includeNonProduct) params.set('include_non_product', 'true');
   const dto = await fetchApiData<LlmUsageSummaryDto>(`/api/admin/llm-usage?${params}`, {
     cache: 'no-store',
     signal,
@@ -81,6 +89,19 @@ export async function fetchLlmUsageViewModel(
     byModel,
     byUser,
     byProvider,
+    byUserAction: {
+      rows: dto.by_user_action.rows.map((row: UsageUserActionDto) => ({
+        userId: row.user_id ?? 'legacy/unknown',
+        action: row.action ?? 'legacy/unknown',
+        logicalOperations: row.logical_operations,
+        physicalAttempts: row.physical_attempts,
+        totalTokens: row.total_tokens,
+        inputTokens: row.input_tokens,
+        outputTokens: row.output_tokens,
+        costUsd: row.cost_usd,
+      })),
+      truncated: dto.by_user_action.truncated,
+    },
     daily: dto.daily.map((row) => ({
       date: row.date,
       logicalOperations: row.logical_operations,

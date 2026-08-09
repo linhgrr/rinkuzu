@@ -1000,6 +1000,11 @@ export interface components {
     } & {
       [key: string]: unknown;
     };
+    /** AdminLlmResponse[LlmSettingsSnapshotResponse] */
+    AdminLlmResponse_LlmSettingsSnapshotResponse_: {
+      data: components['schemas']['LlmSettingsSnapshotResponse'];
+      meta: components['schemas']['ConfigMeta'];
+    };
     /** AskRinChatRequest */
     AskRinChatRequest: {
       /** Exercisecontexttoken */
@@ -1143,6 +1148,11 @@ export interface components {
      * @enum {string}
      */
     ConceptStatus: 'locked' | 'available' | 'in_progress' | 'mastered';
+    /** ConfigMeta */
+    ConfigMeta: {
+      /** Revision */
+      revision: number;
+    };
     /**
      * Context
      * @description Additional context for the agent.
@@ -1175,6 +1185,28 @@ export interface components {
        */
       enabled: boolean;
     };
+    /** CredentialHealthResponse */
+    CredentialHealthResponse: {
+      /**
+       * Status
+       * @default untested
+       */
+      status: string;
+      /**
+       * Success Count
+       * @default 0
+       */
+      success_count: number;
+      /**
+       * Failure Count
+       * @default 0
+       */
+      failure_count: number;
+      /** Last Used At */
+      last_used_at?: string | null;
+      /** Last Error Code */
+      last_error_code?: string | null;
+    };
     /** CredentialPatchRequest */
     CredentialPatchRequest: {
       /** Label */
@@ -1183,6 +1215,24 @@ export interface components {
       priority?: number | null;
       /** Enabled */
       enabled?: boolean | null;
+    };
+    /** CredentialResponse */
+    CredentialResponse: {
+      /** Key Id */
+      key_id: string;
+      /** Provider Id */
+      provider_id: string;
+      /** Label */
+      label: string;
+      /** Masked Key */
+      masked_key: string;
+      /** Priority */
+      priority: number;
+      /** Enabled */
+      enabled: boolean;
+      /** Secret Version */
+      secret_version: number;
+      health?: components['schemas']['CredentialHealthResponse'] | null;
     };
     /** CredentialSecretReplaceRequest */
     CredentialSecretReplaceRequest: {
@@ -1491,12 +1541,48 @@ export interface components {
       | 'pipeline_relation_verification'
       | 'pipeline_cycle_removal'
       | 'pipeline_theory_generation';
+    /** LlmActionDefinitionResponse */
+    LlmActionDefinitionResponse: {
+      action: components['schemas']['LlmAction'];
+      group: components['schemas']['LlmActionGroup'];
+      /** Label */
+      label: string;
+      /** Description */
+      description: string;
+      /** Required Capabilities */
+      required_capabilities: components['schemas']['LlmCapability'][];
+    };
+    /**
+     * LlmActionGroup
+     * @description UI grouping for the routing screen. Purely presentational.
+     * @enum {string}
+     */
+    LlmActionGroup: 'adaptive_learning' | 'tutor' | 'quiz' | 'content_pipeline';
     /**
      * LlmCapability
      * @description Capabilities a model must declare to be assignable to an action.
      * @enum {string}
      */
     LlmCapability: 'text' | 'structured_output' | 'streaming' | 'vision';
+    /** LlmSettingsSnapshotResponse */
+    LlmSettingsSnapshotResponse: {
+      /** Revision */
+      revision: number;
+      /** Actions */
+      actions: components['schemas']['LlmActionDefinitionResponse'][];
+      /** Pipeline Steps */
+      pipeline_steps: components['schemas']['PipelineStepDefinitionResponse'][];
+      /** Providers */
+      providers: components['schemas']['ProviderResponse'][];
+      /** Credentials */
+      credentials: components['schemas']['CredentialResponse'][];
+      /** Models */
+      models: components['schemas']['ModelResponse'][];
+      /** Routes */
+      routes: components['schemas']['RouteResponse'][];
+      /** Step Policies */
+      step_policies: components['schemas']['StepPolicyResponse'][];
+    };
     /** LlmUsageBreakdownResponse */
     LlmUsageBreakdownResponse: {
       /** Rows */
@@ -1955,6 +2041,27 @@ export interface components {
       /** Output Price Usd Per M Tokens */
       output_price_usd_per_m_tokens?: string | null;
     };
+    /** ModelResponse */
+    ModelResponse: {
+      /** Model Id */
+      model_id: string;
+      /** Provider Id */
+      provider_id: string;
+      /** Display Name */
+      display_name: string;
+      /** Upstream Model Name */
+      upstream_model_name: string;
+      /** Enabled */
+      enabled: boolean;
+      /** Capabilities */
+      capabilities: components['schemas']['LlmCapability'][];
+      /** Timeout Sec Override */
+      timeout_sec_override?: number | null;
+      /** Input Price Usd Per M Tokens */
+      input_price_usd_per_m_tokens?: string | null;
+      /** Output Price Usd Per M Tokens */
+      output_price_usd_per_m_tokens?: string | null;
+    };
     /** MultiCorrectExerciseResponse */
     MultiCorrectExerciseResponse: {
       /** Exercise Id */
@@ -2152,6 +2259,21 @@ export interface components {
       /** Correct Order */
       correct_order: string[];
     };
+    /**
+     * PipelineBypassKind
+     * @description The fixed behavior used when an optional step is disabled.
+     *
+     *     Each value names a strategy implemented in the codebase. Nothing here is
+     *     read from a configuration document, so an admin cannot point a policy at
+     *     arbitrary code.
+     * @enum {string}
+     */
+    PipelineBypassKind:
+      | 'deterministic_relation_acceptance'
+      | 'deterministic_cycle_resolution'
+      | 'skip_theory_generation'
+      | 'keep_redundant_edges'
+      | 'skip_saint_embeddings';
     /** PipelineCycleStatsResponse */
     PipelineCycleStatsResponse: {
       /** Had Cycles */
@@ -2828,6 +2950,18 @@ export interface components {
       | 'completed'
       | 'failed'
       | 'cancelled';
+    /** PipelineStepDefinitionResponse */
+    PipelineStepDefinitionResponse: {
+      step_id: components['schemas']['PipelineStepId'];
+      /** Label */
+      label: string;
+      /** Required */
+      required: boolean;
+      /** Default Enabled */
+      default_enabled: boolean;
+      llm_action?: components['schemas']['LlmAction'] | null;
+      bypass_kind?: components['schemas']['PipelineBypassKind'] | null;
+    };
     /**
      * PipelineStepId
      * @description Stable identifiers for pipeline steps.
@@ -2907,6 +3041,26 @@ export interface components {
       timeout_sec?: number | null;
       /** Enabled */
       enabled?: boolean | null;
+    };
+    /** ProviderResponse */
+    ProviderResponse: {
+      /** Provider Id */
+      provider_id: string;
+      /** Name */
+      name: string;
+      /**
+       * Provider Type
+       * @constant
+       */
+      provider_type: 'openai_compatible';
+      /** Base Url */
+      base_url: string;
+      /** Normalized Origin */
+      normalized_origin: string;
+      /** Enabled */
+      enabled: boolean;
+      /** Timeout Sec */
+      timeout_sec: number;
     };
     /** QuizDraftCreateRequest */
     QuizDraftCreateRequest: {
@@ -3211,6 +3365,12 @@ export interface components {
       action: components['schemas']['LlmAction'];
       /** Model Ids */
       model_ids?: string[];
+    };
+    /** RouteResponse */
+    RouteResponse: {
+      action: components['schemas']['LlmAction'];
+      /** Model Ids */
+      model_ids: string[];
     };
     /** RoutingUpdateRequest */
     RoutingUpdateRequest: {
@@ -3902,6 +4062,12 @@ export interface components {
     };
     /** StepPolicyInput */
     StepPolicyInput: {
+      step_id: components['schemas']['PipelineStepId'];
+      /** Enabled */
+      enabled: boolean;
+    };
+    /** StepPolicyResponse */
+    StepPolicyResponse: {
       step_id: components['schemas']['PipelineStepId'];
       /** Enabled */
       enabled: boolean;
@@ -5572,9 +5738,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
+          'application/json': components['schemas']['AdminLlmResponse_LlmSettingsSnapshotResponse_'];
         };
       };
       /** @description Validation Error */

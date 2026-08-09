@@ -339,19 +339,21 @@ export function AiSettingsClient({
           />
         ) : null}
 
-        <section className="min-w-0 rounded-xl border border-line bg-white p-5">
+        <section className="min-w-0 overflow-hidden rounded-xl border border-line bg-white p-4 sm:p-5">
           {!selectedProvider || !snapshot ? (
             <p className="text-neutral-500">{t('aiSettingsSelectProvider')}</p>
           ) : (
             <>
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold">{selectedProvider.name}</h2>
+              <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0 flex-1 basis-64">
+                  <h2 className="break-words text-xl font-semibold leading-snug">
+                    {selectedProvider.name}
+                  </h2>
                   <p className="mt-1 break-all text-sm text-neutral-500">
                     {selectedProvider.baseUrl}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex max-w-full flex-wrap gap-2">
                   <Button
                     variant="secondary"
                     disabled={busy || !providerKeys[0]}

@@ -51,19 +51,21 @@ export function ProvidersPanel({
               key={provider.id}
               variant="ghost"
               onClick={() => onSelect(provider)}
-              className={`h-auto w-full justify-start rounded-lg border p-3 text-left ${provider.id === selectedProviderId ? 'border-accent bg-accent-soft' : 'border-line'}`}
+              className={`h-auto w-full min-w-0 justify-start overflow-hidden rounded-lg border p-4 text-left ${provider.id === selectedProviderId ? 'border-accent bg-accent-soft' : 'border-line'}`}
             >
               <span className="min-w-0 flex-1">
-                <span className="flex items-center justify-between gap-2 font-medium">
-                  {provider.name}
-                  <span className={provider.enabled ? 'text-success' : 'text-ink-muted'}>
+                <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 font-medium">
+                  <span className="min-w-0 break-words leading-snug">{provider.name}</span>
+                  <span
+                    className={`shrink-0 whitespace-nowrap pt-0.5 text-xs ${provider.enabled ? 'text-success' : 'text-ink-muted'}`}
+                  >
                     {provider.enabled ? t('active') : t('inactive')}
                   </span>
                 </span>
-                <span className="mt-1 block truncate text-xs text-ink-muted">
+                <span className="mt-2 block break-all text-xs leading-relaxed text-ink-muted">
                   {provider.origin}
                 </span>
-                <span className="mt-2 block text-xs text-ink-muted">
+                <span className="mt-2 block text-xs leading-relaxed text-ink-muted">
                   {t('aiSettingsProviderCounts', { keys: keys.length, models: models.length })}
                 </span>
               </span>

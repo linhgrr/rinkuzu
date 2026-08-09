@@ -72,7 +72,7 @@ export function ProviderModelsPanel({
 
   return (
     <div className="space-y-4">
-      <form className="space-y-3 rounded-lg border border-line p-3" onSubmit={onSubmit}>
+      <form className="min-w-0 space-y-4 rounded-xl border border-line p-4" onSubmit={onSubmit}>
         <div className="grid gap-2 md:grid-cols-2">
           <input
             className={FIELD}
@@ -104,7 +104,7 @@ export function ProviderModelsPanel({
               setModelForm((value) => ({ ...value, timeout: event.target.value }))
             }
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <input
               className={FIELD}
               inputMode="decimal"
@@ -190,11 +190,13 @@ export function ProviderModelsPanel({
       {models.map((model) => (
         <div
           key={model.id}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line p-3"
+          className="flex min-w-0 flex-wrap items-center justify-between gap-4 overflow-hidden rounded-xl border border-line p-4"
         >
-          <div>
-            <strong>{model.displayName}</strong>
-            <p className="font-mono text-xs text-neutral-500">{model.upstreamName}</p>
+          <div className="min-w-0 flex-1 basis-64">
+            <strong className="block break-words leading-snug">{model.displayName}</strong>
+            <p className="break-all font-mono text-xs leading-relaxed text-neutral-500">
+              {model.upstreamName}
+            </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {CAPABILITIES.map((capability) => (
                 <label
@@ -223,7 +225,7 @@ export function ProviderModelsPanel({
               ))}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex max-w-full flex-wrap gap-2">
             <Button
               size="sm"
               variant="secondary"

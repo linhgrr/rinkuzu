@@ -56,7 +56,10 @@ export function ProviderKeysPanel({
   return (
     <div className="space-y-4">
       <p className="text-sm text-ink-muted">{t('aiSettingsKeyPriorityHelp')}</p>
-      <form className="grid gap-2 md:grid-cols-[1fr_1fr_100px_auto]" onSubmit={onSubmit}>
+      <form
+        className="grid min-w-0 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_100px_auto]"
+        onSubmit={onSubmit}
+      >
         <input
           className={FIELD}
           required
@@ -88,9 +91,9 @@ export function ProviderKeysPanel({
       </form>
 
       {keys.map((key) => (
-        <div key={key.id} className="rounded-lg border border-line p-3">
+        <div key={key.id} className="min-w-0 overflow-hidden rounded-xl border border-line p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-[16rem] flex-1">
+            <div className="min-w-0 flex-1 basis-64">
               <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_7rem]">
                 <input
                   className={FIELD}
@@ -125,7 +128,7 @@ export function ProviderKeysPanel({
                 />
               </div>
               <p className="mt-1">
-                <span className="font-mono text-sm">{key.maskedKey}</span>
+                <span className="break-all font-mono text-sm">{key.maskedKey}</span>
               </p>
               <p className="text-xs text-neutral-500">
                 {t('aiSettingsKeyMeta', {
@@ -173,7 +176,7 @@ export function ProviderKeysPanel({
               </Button>
             </div>
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row">
             <input
               className={FIELD}
               type="password"

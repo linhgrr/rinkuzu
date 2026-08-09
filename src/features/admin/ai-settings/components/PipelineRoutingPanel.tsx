@@ -110,33 +110,42 @@ export function PipelineRoutingPanel({
           snapshot.actions.indexOf(definition);
 
         return (
-          <section key={definition.action} className="space-y-2">
+          <section key={definition.action} className="min-w-0 space-y-2">
             {isFirstInGroup ? (
               <h3 className="text-base font-semibold capitalize">
                 {definition.group.replaceAll('_', ' ')}
               </h3>
             ) : null}
-            <div className={`rounded-lg border p-3 ${invalid ? 'border-error' : 'border-line'}`}>
-              <div className="flex items-start justify-between gap-2">
-                <span>
-                  <strong>{definition.label}</strong>
-                  <span className="mt-1 block text-xs text-neutral-500">
+            <div
+              className={`min-w-0 overflow-hidden rounded-xl border p-4 sm:p-5 ${invalid ? 'border-error' : 'border-line'}`}
+            >
+              <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                <span className="min-w-0">
+                  <strong className="block break-words leading-snug">{definition.label}</strong>
+                  <span className="mt-1 block break-words text-xs leading-relaxed text-neutral-500">
                     {definition.description}
                   </span>
                 </span>
-                <span className="text-xs text-neutral-500">
-                  {definition.required_capabilities.join(', ')}
+                <span className="flex max-w-full flex-wrap gap-1.5 sm:max-w-64 sm:justify-end">
+                  {definition.required_capabilities.map((capability) => (
+                    <span
+                      key={capability}
+                      className="max-w-full break-all rounded-full bg-neutral-100 px-2 py-1 text-[11px] leading-tight text-neutral-600"
+                    >
+                      {capability}
+                    </span>
+                  ))}
                 </span>
               </div>
-              <div className="mt-2 space-y-2">
+              <div className="mt-4 min-w-0 space-y-3">
                 {chain.map((modelId, index) => {
                   const model = snapshot.models.find((candidate) => candidate.id === modelId);
                   return (
                     <div
                       key={`${modelId}-${index}`}
-                      className="flex items-center gap-2 rounded bg-neutral-50 p-2"
+                      className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-neutral-50 p-3"
                     >
-                      <span className="min-w-0 flex-1 truncate">
+                      <span className="min-w-0 flex-1 basis-48 break-words leading-snug">
                         {index + 1}. {model?.displayName ?? modelId}
                       </span>
                       <Button
@@ -207,11 +216,11 @@ export function PipelineRoutingPanel({
         {snapshot.pipelineSteps.map((step) => (
           <label
             key={step.step_id}
-            className="flex items-center justify-between gap-4 rounded border border-line p-3"
+            className="flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-xl border border-line p-4"
           >
-            <span>
-              <strong>{step.label}</strong>
-              <span className="ml-2 text-xs text-ink-muted">
+            <span className="min-w-0 flex-1 basis-64">
+              <strong className="break-words">{step.label}</strong>
+              <span className="ml-2 break-all text-xs text-ink-muted">
                 {step.required ? t('aiSettingsRequired') : step.bypass_kind}
               </span>
             </span>

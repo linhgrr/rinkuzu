@@ -18,6 +18,9 @@ vi.mock('next-intl', () => ({
     if (key === 'questionImageAlt') {
       return `Image for question ${values?.['number'] ?? ''}`;
     }
+    if (key === 'optionImageAlt') {
+      return `Option ${values?.['option'] ?? ''} image`;
+    }
     return key;
   },
 }));
@@ -62,6 +65,21 @@ const questions: QuizPlayQuestionViewModel[] = [
     type: 'single',
     questionImage: 'https://cdn.example/q.png',
     optionImages: ['https://cdn.example/a.png', 'https://cdn.example/b.png'],
+  },
+];
+
+const scrollQuestions: QuizPlayQuestionViewModel[] = [
+  {
+    id: 'q0',
+    question: 'First question',
+    options: ['First answer', 'Another answer'],
+    type: 'single',
+  },
+  {
+    id: 'q1',
+    question: 'Second question',
+    options: ['Second answer', 'Last answer'],
+    type: 'single',
   },
 ];
 
@@ -119,5 +137,35 @@ describe('MobileQuizLayout', () => {
     if (!confirmButton) throw new Error('Expected exit confirmation button');
     fireEvent.click(confirmButton);
     expect(onExit).toHaveBeenCalledOnce();
+  });
+
+  it('renders every question in one scroll flow and tracks the selected question', () => {
+    const onAnswersChange = vi.fn();
+    const onIndexChange = vi.fn();
+
+    render(
+      <MobileQuizLayout
+        quiz={{ slug: 'scroll-quiz', title: 'Scroll quiz', questions: scrollQuestions }}
+        userAnswers={[-1, -1]}
+        currentQuestionIndex={0}
+        onAnswersChange={onAnswersChange}
+        onIndexChange={onIndexChange}
+        onComplete={vi.fn()}
+        onExit={vi.fn()}
+        submitting={false}
+      />,
+    );
+
+    expect(screen.getByText('First question')).toBeTruthy();
+    expect(screen.getByText('Second question')).toBeTruthy();
+    expect(document.querySelector('button[aria-label="previousQuestion"]')).toBeNull();
+    expect(document.querySelector('button[aria-label="nextQuestion"]')).toBeNull();
+
+    const secondAnswerButton = screen.getByText('Second answer').closest('button');
+    if (!secondAnswerButton) throw new Error('Expected second question answer button');
+    fireEvent.click(secondAnswerButton);
+
+    expect(onIndexChange).toHaveBeenCalledWith(1);
+    expect(onAnswersChange).toHaveBeenCalledWith([-1, 0]);
   });
 });

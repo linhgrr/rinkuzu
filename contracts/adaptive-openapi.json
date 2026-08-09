@@ -5893,10 +5893,32 @@
             "type": "number",
             "title": "Cost Usd",
             "default": 0.0
+          },
+          "cache_observed_attempts": {
+            "type": "integer",
+            "title": "Cache Observed Attempts"
+          },
+          "input_cache_hit_tokens": {
+            "type": "integer",
+            "title": "Input Cache Hit Tokens"
+          },
+          "input_cache_miss_tokens": {
+            "type": "integer",
+            "title": "Input Cache Miss Tokens"
+          },
+          "cache_savings_usd": {
+            "type": "number",
+            "title": "Cache Savings Usd"
           }
         },
         "type": "object",
-        "required": ["date"],
+        "required": [
+          "date",
+          "cache_observed_attempts",
+          "input_cache_hit_tokens",
+          "input_cache_miss_tokens",
+          "cache_savings_usd"
+        ],
         "title": "LlmUsageDailyRow"
       },
       "LlmUsageDimensionRow": {
@@ -5966,9 +5988,31 @@
             "type": "number",
             "title": "Cost Usd",
             "default": 0.0
+          },
+          "cache_observed_attempts": {
+            "type": "integer",
+            "title": "Cache Observed Attempts"
+          },
+          "input_cache_hit_tokens": {
+            "type": "integer",
+            "title": "Input Cache Hit Tokens"
+          },
+          "input_cache_miss_tokens": {
+            "type": "integer",
+            "title": "Input Cache Miss Tokens"
+          },
+          "cache_savings_usd": {
+            "type": "number",
+            "title": "Cache Savings Usd"
           }
         },
         "type": "object",
+        "required": [
+          "cache_observed_attempts",
+          "input_cache_hit_tokens",
+          "input_cache_miss_tokens",
+          "cache_savings_usd"
+        ],
         "title": "LlmUsageDimensionRow"
       },
       "LlmUsageEventResponse": {
@@ -6096,6 +6140,18 @@
             "type": "boolean",
             "title": "Token Anomaly"
           },
+          "cache_breakdown_available": {
+            "type": "boolean",
+            "title": "Cache Breakdown Available"
+          },
+          "input_cache_hit_tokens": {
+            "type": "integer",
+            "title": "Input Cache Hit Tokens"
+          },
+          "input_cache_miss_tokens": {
+            "type": "integer",
+            "title": "Input Cache Miss Tokens"
+          },
           "input_price_per_m_usd": {
             "anyOf": [
               {
@@ -6106,6 +6162,17 @@
               }
             ],
             "title": "Input Price Per M Usd"
+          },
+          "input_cache_hit_price_per_m_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Cache Hit Price Per M Usd"
           },
           "output_price_per_m_usd": {
             "anyOf": [
@@ -6121,6 +6188,10 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd"
+          },
+          "cache_savings_usd": {
+            "type": "number",
+            "title": "Cache Savings Usd"
           },
           "latency_ms": {
             "type": "integer",
@@ -6157,7 +6228,11 @@
           "output_tokens",
           "total_tokens",
           "token_anomaly",
+          "cache_breakdown_available",
+          "input_cache_hit_tokens",
+          "input_cache_miss_tokens",
           "cost_usd",
+          "cache_savings_usd",
           "created_at",
           "expires_at"
         ],
@@ -6342,9 +6417,31 @@
             "type": "number",
             "title": "Cost Usd",
             "default": 0.0
+          },
+          "cache_observed_attempts": {
+            "type": "integer",
+            "title": "Cache Observed Attempts"
+          },
+          "input_cache_hit_tokens": {
+            "type": "integer",
+            "title": "Input Cache Hit Tokens"
+          },
+          "input_cache_miss_tokens": {
+            "type": "integer",
+            "title": "Input Cache Miss Tokens"
+          },
+          "cache_savings_usd": {
+            "type": "number",
+            "title": "Cache Savings Usd"
           }
         },
         "type": "object",
+        "required": [
+          "cache_observed_attempts",
+          "input_cache_hit_tokens",
+          "input_cache_miss_tokens",
+          "cache_savings_usd"
+        ],
         "title": "LlmUsageTotalsResponse"
       },
       "LlmUsageUserActionBreakdownResponse": {
@@ -6444,9 +6541,31 @@
             "type": "number",
             "title": "Cost Usd",
             "default": 0.0
+          },
+          "cache_observed_attempts": {
+            "type": "integer",
+            "title": "Cache Observed Attempts"
+          },
+          "input_cache_hit_tokens": {
+            "type": "integer",
+            "title": "Input Cache Hit Tokens"
+          },
+          "input_cache_miss_tokens": {
+            "type": "integer",
+            "title": "Input Cache Miss Tokens"
+          },
+          "cache_savings_usd": {
+            "type": "number",
+            "title": "Cache Savings Usd"
           }
         },
         "type": "object",
+        "required": [
+          "cache_observed_attempts",
+          "input_cache_hit_tokens",
+          "input_cache_miss_tokens",
+          "cache_savings_usd"
+        ],
         "title": "LlmUsageUserActionRow"
       },
       "MCQExerciseResponse": {
@@ -6792,6 +6911,18 @@
             ],
             "title": "Input Price Usd Per M Tokens"
           },
+          "input_cache_hit_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Cache Hit Price Usd Per M Tokens"
+          },
           "output_price_usd_per_m_tokens": {
             "anyOf": [
               {
@@ -6888,6 +7019,18 @@
             ],
             "title": "Input Price Usd Per M Tokens"
           },
+          "input_cache_hit_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Cache Hit Price Usd Per M Tokens"
+          },
           "output_price_usd_per_m_tokens": {
             "anyOf": [
               {
@@ -6955,6 +7098,17 @@
               }
             ],
             "title": "Input Price Usd Per M Tokens"
+          },
+          "input_cache_hit_price_usd_per_m_tokens": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Cache Hit Price Usd Per M Tokens"
           },
           "output_price_usd_per_m_tokens": {
             "anyOf": [

@@ -11,6 +11,10 @@ export interface LlmUsageBreakdownRow {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
+  cacheObservedAttempts: number;
+  inputCacheHitTokens: number;
+  inputCacheMissTokens: number;
+  cacheSavingsUsd: number;
 }
 
 export interface LlmUsageBreakdown {
@@ -42,6 +46,10 @@ export interface LlmUsageUserActionRow {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
+  cacheObservedAttempts: number;
+  inputCacheHitTokens: number;
+  inputCacheMissTokens: number;
+  cacheSavingsUsd: number;
 }
 
 export interface LlmUsageUserActionBreakdown {
@@ -60,6 +68,10 @@ export interface LlmUsageDailyPoint {
   totalLatencyMs: number;
   totalTokens: number;
   costUsd: number;
+  cacheObservedAttempts: number;
+  inputCacheHitTokens: number;
+  inputCacheMissTokens: number;
+  cacheSavingsUsd: number;
 }
 
 export interface LlmUsageAnalysis {
@@ -70,6 +82,8 @@ export interface LlmUsageAnalysis {
   attemptsPerOperation: number;
   successRate: number;
   fallbackRate: number;
+  cacheHitRate: number;
+  cacheCoverage: number;
   topUserId: string;
   topUserCostUsd: number;
   topAction: string;
@@ -87,6 +101,10 @@ export interface LlmUsagePeriodTotals {
   failedOperations: number;
   fallbackOperations: number;
   totalLatencyMs: number;
+  cacheObservedAttempts: number;
+  inputCacheHitTokens: number;
+  inputCacheMissTokens: number;
+  cacheSavingsUsd: number;
 }
 
 export interface LlmUsageObservability {
@@ -111,6 +129,10 @@ export interface LlmUsageViewModel {
   fallbackOperations: number;
   recoverableFailures: number;
   totalLatencyMs: number;
+  cacheObservedAttempts: number;
+  inputCacheHitTokens: number;
+  inputCacheMissTokens: number;
+  cacheSavingsUsd: number;
   previousPeriod: LlmUsagePeriodTotals;
   byAction: LlmUsageBreakdown;
   byModel: LlmUsageBreakdown;

@@ -127,6 +127,7 @@ const snapshot: AiSettingsViewModel = {
       capabilities: ['text'],
       timeoutSec: null,
       inputPrice: null,
+      cacheHitPrice: null,
       outputPrice: null,
     },
     {
@@ -138,6 +139,7 @@ const snapshot: AiSettingsViewModel = {
       capabilities: ['text', 'structured_output'],
       timeoutSec: null,
       inputPrice: null,
+      cacheHitPrice: null,
       outputPrice: null,
     },
     {
@@ -149,6 +151,7 @@ const snapshot: AiSettingsViewModel = {
       capabilities: ['text', 'structured_output'],
       timeoutSec: null,
       inputPrice: null,
+      cacheHitPrice: null,
       outputPrice: null,
     },
   ],
@@ -272,7 +275,7 @@ describe('AiSettingsClient', () => {
     expect(deleteModelMock).not.toHaveBeenCalled();
   });
 
-  it('edits model pricing as a complete input/output pair', async () => {
+  it('edits model pricing with an optional cache-hit rate', async () => {
     const user = userEvent.setup();
     render(<AiSettingsClient />);
 
@@ -284,13 +287,15 @@ describe('AiSettingsClient', () => {
       name: 'aiSettingsPricingEditor',
     });
     const pricingEditor = within(editor);
-    const inputPrice = pricingEditor.getByLabelText('aiSettingsInputPrice');
+    const inputPrice = pricingEditor.getByLabelText('aiSettingsInputMissPrice');
+    const cacheHitPrice = pricingEditor.getByLabelText('aiSettingsCacheHitPrice');
     const outputPrice = pricingEditor.getByLabelText('aiSettingsOutputPrice');
     await user.type(inputPrice, '0.14');
     expect(pricingEditor.getByRole('button', { name: 'aiSettingsSavePricing' })).toBeDisabled();
-    expect(pricingEditor.getByText('aiSettingsPricePairRequired')).toBeVisible();
+    expect(pricingEditor.getByText('aiSettingsCachePricingInvalid')).toBeVisible();
 
     await user.type(outputPrice, '0.28');
+    await user.type(cacheHitPrice, '0.0028');
     await user.click(pricingEditor.getByRole('button', { name: 'aiSettingsSavePricing' }));
 
     await waitFor(() =>
@@ -299,6 +304,7 @@ describe('AiSettingsClient', () => {
         'structured-a',
         {
           input_price_usd_per_m_tokens: '0.14',
+          input_cache_hit_price_usd_per_m_tokens: '0.0028',
           output_price_usd_per_m_tokens: '0.28',
         },
         7,

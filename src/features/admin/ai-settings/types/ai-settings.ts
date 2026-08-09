@@ -55,6 +55,7 @@ export type ModelViewModel = {
   capabilities: LlmCapability[];
   timeoutSec: number | null;
   inputPrice: string | null;
+  cacheHitPrice: string | null;
   outputPrice: string | null;
 };
 

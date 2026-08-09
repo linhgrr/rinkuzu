@@ -48,6 +48,7 @@ export function toAiSettingsViewModel(dto: AiSettingsSnapshotDto): AiSettingsVie
       capabilities: [...model.capabilities],
       timeoutSec: model.timeout_sec_override ?? null,
       inputPrice: model.input_price_usd_per_m_tokens ?? null,
+      cacheHitPrice: model.input_cache_hit_price_usd_per_m_tokens ?? null,
       outputPrice: model.output_price_usd_per_m_tokens ?? null,
     })),
     routes: dto.routes.map((route) => ({ action: route.action, model_ids: [...route.model_ids] })),

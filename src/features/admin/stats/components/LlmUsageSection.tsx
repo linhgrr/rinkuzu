@@ -13,6 +13,7 @@ import {
   BrainCircuit,
   CheckCircle2,
   CircleDollarSign,
+  Database,
   Filter,
   Gauge,
   RefreshCw,
@@ -53,6 +54,11 @@ function ratio(numerator: number, denominator: number): number {
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatCacheHitRate(hitTokens: number, missTokens: number): string {
+  const observedInputTokens = hitTokens + missTokens;
+  return observedInputTokens > 0 ? formatPercent(hitTokens / observedInputTokens) : '—';
 }
 
 function formatLatency(value: number): string {
@@ -141,6 +147,21 @@ function DecisionInsights({
       text: t('llmUsageInsightUnknownPricing', { count: data.observability.unknownPricing }),
     });
   }
+  if (data.physicalAttempts > 0 && data.analysis.cacheCoverage < 0.9) {
+    insights.push({
+      kind: 'warning',
+      text: t('llmUsageInsightCacheCoverage', {
+        rate: formatPercent(data.analysis.cacheCoverage),
+      }),
+    });
+  } else if (data.cacheObservedAttempts > 0 && data.analysis.cacheHitRate < 0.2) {
+    insights.push({
+      kind: 'warning',
+      text: t('llmUsageInsightCacheHitRate', {
+        rate: formatPercent(data.analysis.cacheHitRate),
+      }),
+    });
+  }
   if (data.failedOperations > 0) {
     insights.push({
       kind: 'warning',
@@ -227,7 +248,7 @@ function EfficiencyTable({
         {breakdown.rows.length === 0 ? (
           <p className="text-sm text-neutral-500">{t('llmUsageEmpty')}</p>
         ) : (
-          <table className="w-full min-w-[52rem] text-sm">
+          <table className="w-full min-w-[64rem] text-sm">
             <thead>
               <tr className="text-left text-neutral-500">
                 <th className="pb-2">{t('llmUsageColKey')}</th>
@@ -236,6 +257,8 @@ function EfficiencyTable({
                 <th className="pb-2 text-right">{t('llmUsageFallbackRate')}</th>
                 <th className="pb-2 text-right">{t('llmUsageCostPerSuccess')}</th>
                 <th className="pb-2 text-right">{t('llmUsageAverageLatency')}</th>
+                <th className="pb-2 text-right">{t('llmUsageCacheHitRate')}</th>
+                <th className="pb-2 text-right">{t('llmUsageCacheSavings')}</th>
                 <th className="pb-2 text-right">{t('llmUsageColCost')}</th>
               </tr>
             </thead>
@@ -257,6 +280,12 @@ function EfficiencyTable({
                   </td>
                   <td className="py-2 text-right">
                     {formatLatency(ratio(row.totalLatencyMs, row.logicalOperations))}
+                  </td>
+                  <td className="py-2 text-right">
+                    {formatCacheHitRate(row.inputCacheHitTokens, row.inputCacheMissTokens)}
+                  </td>
+                  <td className="py-2 text-right">
+                    {row.cacheObservedAttempts > 0 ? `$${row.cacheSavingsUsd.toFixed(4)}` : '—'}
                   </td>
                   <td className="py-2 text-right">${row.costUsd.toFixed(4)}</td>
                 </tr>
@@ -674,7 +703,7 @@ export function LlmUsageSection() {
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={CircleDollarSign}
           label={t('llmUsageTotalCost')}
@@ -734,6 +763,30 @@ export function LlmUsageSection() {
           lowerIsBetter
           t={t}
         />
+        <MetricCard
+          icon={Database}
+          label={t('llmUsageCacheHitRate')}
+          value={formatCacheHitRate(data.inputCacheHitTokens, data.inputCacheMissTokens)}
+          detail={t('llmUsageCacheTokenSplit', {
+            hit: data.inputCacheHitTokens.toLocaleString(),
+            miss: data.inputCacheMissTokens.toLocaleString(),
+          })}
+          t={t}
+        />
+        <MetricCard
+          icon={CircleDollarSign}
+          label={t('llmUsageCacheSavings')}
+          value={data.cacheObservedAttempts > 0 ? `$${data.cacheSavingsUsd.toFixed(4)}` : '—'}
+          detail={t('llmUsageCacheCoverageDetail', {
+            rate: formatPercent(data.analysis.cacheCoverage),
+          })}
+          change={
+            data.cacheObservedAttempts > 0 || data.previousPeriod.cacheObservedAttempts > 0
+              ? percentChange(data.cacheSavingsUsd, data.previousPeriod.cacheSavingsUsd)
+              : undefined
+          }
+          t={t}
+        />
       </div>
 
       <div
@@ -775,16 +828,18 @@ export function LlmUsageSection() {
               <CardHeader className="gap-3 px-5 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="text-base">{t('llmUsageTrendTitle')}</CardTitle>
                 <div className="flex max-w-full gap-1 overflow-x-auto">
-                  {(['cost', 'traffic', 'reliability', 'latency'] as LlmTrendMode[]).map((mode) => (
-                    <Button
-                      key={mode}
-                      size="sm"
-                      variant={trendMode === mode ? 'secondary' : 'ghost'}
-                      onClick={() => setTrendMode(mode)}
-                    >
-                      {t(`llmUsageTrend_${mode}`)}
-                    </Button>
-                  ))}
+                  {(['cost', 'traffic', 'reliability', 'latency', 'cache'] as LlmTrendMode[]).map(
+                    (mode) => (
+                      <Button
+                        key={mode}
+                        size="sm"
+                        variant={trendMode === mode ? 'secondary' : 'ghost'}
+                        onClick={() => setTrendMode(mode)}
+                      >
+                        {t(`llmUsageTrend_${mode}`)}
+                      </Button>
+                    ),
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="px-3 pb-5 sm:px-5">
@@ -798,6 +853,7 @@ export function LlmUsageSection() {
                     failed: t('llmUsageFailedOutcomes'),
                     fallback: t('llmUsageFallbackRate'),
                     latency: t('llmUsageAverageLatency'),
+                    cache: t('llmUsageCacheHitRate'),
                     empty: t('noChartData'),
                   }}
                 />

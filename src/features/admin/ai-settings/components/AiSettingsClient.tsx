@@ -119,6 +119,7 @@ export function AiSettingsClient({
     capabilities: ['text'],
     timeout: '',
     inputPrice: '',
+    cacheHitPrice: '',
     outputPrice: '',
     enabled: true,
   });
@@ -395,6 +396,7 @@ export function AiSettingsClient({
               capabilities: modelForm.capabilities,
               timeout_sec_override: modelForm.timeout ? Number(modelForm.timeout) : null,
               input_price_usd_per_m_tokens: modelForm.inputPrice || null,
+              input_cache_hit_price_usd_per_m_tokens: modelForm.cacheHitPrice || null,
               output_price_usd_per_m_tokens: modelForm.outputPrice || null,
             },
             snapshot.revision,
@@ -408,6 +410,7 @@ export function AiSettingsClient({
         capabilities: ['text'],
         timeout: '',
         inputPrice: '',
+        cacheHitPrice: '',
         outputPrice: '',
         enabled: true,
       });

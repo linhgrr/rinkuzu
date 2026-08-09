@@ -33,6 +33,7 @@ export type ModelFormState = {
   displayName: string;
   enabled: boolean;
   inputPrice: string;
+  cacheHitPrice: string;
   outputPrice: string;
   timeout: string;
   upstreamName: string;
@@ -67,6 +68,15 @@ function hasCompletePricing(model: ModelViewModel): boolean {
   return Boolean(model.inputPrice?.trim() && model.outputPrice?.trim());
 }
 
+function pricingValid(input: string, cacheHit: string, output: string): boolean {
+  const hasInput = Boolean(input.trim());
+  const hasOutput = Boolean(output.trim());
+  if (hasInput !== hasOutput) return false;
+  if (!cacheHit.trim()) return true;
+  if (!hasInput) return false;
+  return Number(cacheHit) <= Number(input);
+}
+
 export function ProviderModelsPanel({
   busy,
   discoveredModels,
@@ -92,11 +102,14 @@ export function ProviderModelsPanel({
   const [discovering, setDiscovering] = useState(false);
   const [modelToDelete, setModelToDelete] = useState<ModelViewModel | null>(null);
   const [pricingModelId, setPricingModelId] = useState<string | null>(null);
-  const [priceDraft, setPriceDraft] = useState({ input: '', output: '' });
+  const [priceDraft, setPriceDraft] = useState({ input: '', cacheHit: '', output: '' });
 
-  const createPricePairValid =
-    Boolean(modelForm.inputPrice.trim()) === Boolean(modelForm.outputPrice.trim());
-  const editPricePairValid = Boolean(priceDraft.input.trim()) === Boolean(priceDraft.output.trim());
+  const createPricingValid = pricingValid(
+    modelForm.inputPrice,
+    modelForm.cacheHitPrice,
+    modelForm.outputPrice,
+  );
+  const editPricingValid = pricingValid(priceDraft.input, priceDraft.cacheHit, priceDraft.output);
 
   const effectiveKeyId = usableKeys.some((key) => key.id === selectedKeyId)
     ? selectedKeyId
@@ -129,7 +142,7 @@ export function ProviderModelsPanel({
               }
             />
           </label>
-          <label className="space-y-1 text-xs font-medium text-ink-muted">
+          <label className="space-y-1 text-xs font-medium text-ink-muted md:col-span-2 lg:col-span-1">
             <span>{t('aiSettingsModelTimeout')}</span>
             <input
               className={FIELD}
@@ -142,20 +155,36 @@ export function ProviderModelsPanel({
               }
             />
           </label>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3 md:col-span-2">
             <label className="space-y-1 text-xs font-medium text-ink-muted">
-              <span>{t('aiSettingsInputPrice')}</span>
+              <span>{t('aiSettingsInputMissPrice')}</span>
               <input
                 className={FIELD}
                 type="number"
                 min="0"
                 step="any"
                 placeholder="0.14"
-                aria-invalid={!createPricePairValid}
+                aria-invalid={!createPricingValid}
                 aria-describedby="ai-settings-create-pricing-help"
                 value={modelForm.inputPrice}
                 onChange={(event) =>
                   setModelForm((value) => ({ ...value, inputPrice: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1 text-xs font-medium text-ink-muted">
+              <span>{t('aiSettingsCacheHitPrice')}</span>
+              <input
+                className={FIELD}
+                type="number"
+                min="0"
+                step="any"
+                placeholder="0.0028"
+                aria-invalid={!createPricingValid}
+                aria-describedby="ai-settings-create-pricing-help"
+                value={modelForm.cacheHitPrice}
+                onChange={(event) =>
+                  setModelForm((value) => ({ ...value, cacheHitPrice: event.target.value }))
                 }
               />
             </label>
@@ -167,7 +196,7 @@ export function ProviderModelsPanel({
                 min="0"
                 step="any"
                 placeholder="0.28"
-                aria-invalid={!createPricePairValid}
+                aria-invalid={!createPricingValid}
                 aria-describedby="ai-settings-create-pricing-help"
                 value={modelForm.outputPrice}
                 onChange={(event) =>
@@ -177,11 +206,11 @@ export function ProviderModelsPanel({
             </label>
             <p
               id="ai-settings-create-pricing-help"
-              className={`text-xs sm:col-span-2 ${
-                createPricePairValid ? 'text-neutral-500' : 'text-error'
+              className={`text-xs sm:col-span-3 ${
+                createPricingValid ? 'text-neutral-500' : 'text-error'
               }`}
             >
-              {createPricePairValid ? t('aiSettingsPricingHint') : t('aiSettingsPricePairRequired')}
+              {createPricingValid ? t('aiSettingsPricingHint') : t('aiSettingsCachePricingInvalid')}
             </p>
           </div>
         </div>
@@ -221,7 +250,7 @@ export function ProviderModelsPanel({
           <Button
             type="submit"
             loading={busy}
-            disabled={modelForm.capabilities.length === 0 || !createPricePairValid}
+            disabled={modelForm.capabilities.length === 0 || !createPricingValid}
           >
             <Plus className="size-4" aria-hidden="true" />
             {t('aiSettingsAddModel')}
@@ -315,8 +344,13 @@ export function ProviderModelsPanel({
               {hasCompletePricing(model) ? (
                 <>
                   <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-neutral-700">
-                    {t('aiSettingsInputPriceShort', { price: model.inputPrice ?? '' })}
+                    {t('aiSettingsInputMissPriceShort', { price: model.inputPrice ?? '' })}
                   </span>
+                  {model.cacheHitPrice ? (
+                    <span className="rounded-full bg-green-50 px-2.5 py-1 text-green-800">
+                      {t('aiSettingsCacheHitPriceShort', { price: model.cacheHitPrice })}
+                    </span>
+                  ) : null}
                   <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-neutral-700">
                     {t('aiSettingsOutputPriceShort', { price: model.outputPrice ?? '' })}
                   </span>
@@ -343,6 +377,7 @@ export function ProviderModelsPanel({
                 setPricingModelId(model.id);
                 setPriceDraft({
                   input: model.inputPrice ?? '',
+                  cacheHit: model.cacheHitPrice ?? '',
                   output: model.outputPrice ?? '',
                 });
               }}
@@ -384,11 +419,11 @@ export function ProviderModelsPanel({
           </div>
           {pricingModelId === model.id ? (
             <form
-              className="grid basis-full gap-3 border-t border-line pt-4 sm:grid-cols-2"
+              className="grid basis-full gap-3 border-t border-line pt-4 sm:grid-cols-3"
               aria-label={t('aiSettingsPricingEditor', { name: model.displayName })}
               onSubmit={(event) => {
                 event.preventDefault();
-                if (!editPricePairValid) return;
+                if (!editPricingValid) return;
                 void mutate(
                   () =>
                     patchModel(
@@ -396,6 +431,7 @@ export function ProviderModelsPanel({
                       model.id,
                       {
                         input_price_usd_per_m_tokens: priceDraft.input.trim() || null,
+                        input_cache_hit_price_usd_per_m_tokens: priceDraft.cacheHit.trim() || null,
                         output_price_usd_per_m_tokens: priceDraft.output.trim() || null,
                       },
                       revision,
@@ -410,18 +446,34 @@ export function ProviderModelsPanel({
               }}
             >
               <label className="space-y-1 text-xs font-medium text-ink-muted">
-                <span>{t('aiSettingsInputPrice')}</span>
+                <span>{t('aiSettingsInputMissPrice')}</span>
                 <input
                   className={FIELD}
                   type="number"
                   min="0"
                   step="any"
                   placeholder="0.14"
-                  aria-invalid={!editPricePairValid}
+                  aria-invalid={!editPricingValid}
                   aria-describedby={`ai-settings-pricing-help-${model.id}`}
                   value={priceDraft.input}
                   onChange={(event) =>
                     setPriceDraft((value) => ({ ...value, input: event.target.value }))
+                  }
+                />
+              </label>
+              <label className="space-y-1 text-xs font-medium text-ink-muted">
+                <span>{t('aiSettingsCacheHitPrice')}</span>
+                <input
+                  className={FIELD}
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="0.0028"
+                  aria-invalid={!editPricingValid}
+                  aria-describedby={`ai-settings-pricing-help-${model.id}`}
+                  value={priceDraft.cacheHit}
+                  onChange={(event) =>
+                    setPriceDraft((value) => ({ ...value, cacheHit: event.target.value }))
                   }
                 />
               </label>
@@ -433,7 +485,7 @@ export function ProviderModelsPanel({
                   min="0"
                   step="any"
                   placeholder="0.28"
-                  aria-invalid={!editPricePairValid}
+                  aria-invalid={!editPricingValid}
                   aria-describedby={`ai-settings-pricing-help-${model.id}`}
                   value={priceDraft.output}
                   onChange={(event) =>
@@ -443,14 +495,14 @@ export function ProviderModelsPanel({
               </label>
               <p
                 id={`ai-settings-pricing-help-${model.id}`}
-                className={`text-xs sm:col-span-2 ${
-                  editPricePairValid ? 'text-neutral-500' : 'text-error'
+                className={`text-xs sm:col-span-3 ${
+                  editPricingValid ? 'text-neutral-500' : 'text-error'
                 }`}
               >
-                {editPricePairValid ? t('aiSettingsPricingHint') : t('aiSettingsPricePairRequired')}
+                {editPricingValid ? t('aiSettingsPricingHint') : t('aiSettingsCachePricingInvalid')}
               </p>
-              <div className="flex flex-wrap gap-2 sm:col-span-2">
-                <Button type="submit" size="sm" loading={busy} disabled={!editPricePairValid}>
+              <div className="flex flex-wrap gap-2 sm:col-span-3">
+                <Button type="submit" size="sm" loading={busy} disabled={!editPricingValid}>
                   <Save className="size-4" aria-hidden="true" />
                   {t('aiSettingsSavePricing')}
                 </Button>

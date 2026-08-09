@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import type { LlmUsageDailyPoint } from '@/features/admin/stats/types/llm-usage-view-model';
 
-export type LlmTrendMode = 'cost' | 'traffic' | 'reliability' | 'latency';
+export type LlmTrendMode = 'cost' | 'traffic' | 'reliability' | 'latency' | 'cache';
 
 interface LlmUsageTrendChartProps {
   data: LlmUsageDailyPoint[];
@@ -25,6 +25,7 @@ interface LlmUsageTrendChartProps {
     failed: string;
     fallback: string;
     latency: string;
+    cache: string;
     empty: string;
   };
 }
@@ -47,6 +48,10 @@ export function LlmUsageTrendChart({ data, mode, labels }: LlmUsageTrendChartPro
     fallbackRate: ratio(point.fallbackOperations, point.logicalOperations),
     averageLatencyMs:
       point.logicalOperations > 0 ? point.totalLatencyMs / point.logicalOperations : 0,
+    cacheHitRate:
+      point.inputCacheHitTokens + point.inputCacheMissTokens > 0
+        ? ratio(point.inputCacheHitTokens, point.inputCacheHitTokens + point.inputCacheMissTokens)
+        : null,
   }));
 
   return (
@@ -65,7 +70,9 @@ export function LlmUsageTrendChart({ data, mode, labels }: LlmUsageTrendChartPro
             tickLine={false}
             width={54}
             tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
-            tickFormatter={mode === 'reliability' ? (value) => `${value}%` : undefined}
+            tickFormatter={
+              mode === 'reliability' || mode === 'cache' ? (value) => `${value}%` : undefined
+            }
           />
           <Tooltip
             contentStyle={{
@@ -130,6 +137,17 @@ export function LlmUsageTrendChart({ data, mode, labels }: LlmUsageTrendChartPro
               dataKey="averageLatencyMs"
               name={labels.latency}
               stroke="var(--info)"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+          ) : null}
+          {mode === 'cache' ? (
+            <Line
+              type="monotone"
+              dataKey="cacheHitRate"
+              name={labels.cache}
+              stroke="var(--success)"
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}

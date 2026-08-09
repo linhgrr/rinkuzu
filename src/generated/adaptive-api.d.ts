@@ -1658,6 +1658,14 @@ export interface components {
        * @default 0
        */
       cost_usd: number;
+      /** Cache Observed Attempts */
+      cache_observed_attempts: number;
+      /** Input Cache Hit Tokens */
+      input_cache_hit_tokens: number;
+      /** Input Cache Miss Tokens */
+      input_cache_miss_tokens: number;
+      /** Cache Savings Usd */
+      cache_savings_usd: number;
     };
     /** LlmUsageDimensionRow */
     LlmUsageDimensionRow: {
@@ -1718,6 +1726,14 @@ export interface components {
        * @default 0
        */
       cost_usd: number;
+      /** Cache Observed Attempts */
+      cache_observed_attempts: number;
+      /** Input Cache Hit Tokens */
+      input_cache_hit_tokens: number;
+      /** Input Cache Miss Tokens */
+      input_cache_miss_tokens: number;
+      /** Cache Savings Usd */
+      cache_savings_usd: number;
     };
     /** LlmUsageEventResponse */
     LlmUsageEventResponse: {
@@ -1765,12 +1781,22 @@ export interface components {
       total_tokens: number;
       /** Token Anomaly */
       token_anomaly: boolean;
+      /** Cache Breakdown Available */
+      cache_breakdown_available: boolean;
+      /** Input Cache Hit Tokens */
+      input_cache_hit_tokens: number;
+      /** Input Cache Miss Tokens */
+      input_cache_miss_tokens: number;
       /** Input Price Per M Usd */
       input_price_per_m_usd?: number | null;
+      /** Input Cache Hit Price Per M Usd */
+      input_cache_hit_price_per_m_usd?: number | null;
       /** Output Price Per M Usd */
       output_price_per_m_usd?: number | null;
       /** Cost Usd */
       cost_usd: number;
+      /** Cache Savings Usd */
+      cache_savings_usd: number;
       /**
        * Latency Ms
        * @default 0
@@ -1902,6 +1928,14 @@ export interface components {
        * @default 0
        */
       cost_usd: number;
+      /** Cache Observed Attempts */
+      cache_observed_attempts: number;
+      /** Input Cache Hit Tokens */
+      input_cache_hit_tokens: number;
+      /** Input Cache Miss Tokens */
+      input_cache_miss_tokens: number;
+      /** Cache Savings Usd */
+      cache_savings_usd: number;
     };
     /** LlmUsageUserActionBreakdownResponse */
     LlmUsageUserActionBreakdownResponse: {
@@ -1974,6 +2008,14 @@ export interface components {
        * @default 0
        */
       cost_usd: number;
+      /** Cache Observed Attempts */
+      cache_observed_attempts: number;
+      /** Input Cache Hit Tokens */
+      input_cache_hit_tokens: number;
+      /** Input Cache Miss Tokens */
+      input_cache_miss_tokens: number;
+      /** Cache Savings Usd */
+      cache_savings_usd: number;
     };
     /** MCQExerciseResponse */
     MCQExerciseResponse: {
@@ -2105,6 +2147,8 @@ export interface components {
       timeout_sec_override?: number | null;
       /** Input Price Usd Per M Tokens */
       input_price_usd_per_m_tokens?: string | null;
+      /** Input Cache Hit Price Usd Per M Tokens */
+      input_cache_hit_price_usd_per_m_tokens?: string | null;
       /** Output Price Usd Per M Tokens */
       output_price_usd_per_m_tokens?: string | null;
     };
@@ -2122,6 +2166,8 @@ export interface components {
       timeout_sec_override?: number | null;
       /** Input Price Usd Per M Tokens */
       input_price_usd_per_m_tokens?: string | null;
+      /** Input Cache Hit Price Usd Per M Tokens */
+      input_cache_hit_price_usd_per_m_tokens?: string | null;
       /** Output Price Usd Per M Tokens */
       output_price_usd_per_m_tokens?: string | null;
     };
@@ -2143,6 +2189,8 @@ export interface components {
       timeout_sec_override?: number | null;
       /** Input Price Usd Per M Tokens */
       input_price_usd_per_m_tokens?: string | null;
+      /** Input Cache Hit Price Usd Per M Tokens */
+      input_cache_hit_price_usd_per_m_tokens?: string | null;
       /** Output Price Usd Per M Tokens */
       output_price_usd_per_m_tokens?: string | null;
     };

@@ -1002,6 +1002,12 @@ export interface components {
     };
     /** AdminLlmResponse[LlmSettingsSnapshotResponse] */
     AdminLlmResponse_LlmSettingsSnapshotResponse_: {
+      /**
+       * Success
+       * @default true
+       * @constant
+       */
+      success: true;
       data: components['schemas']['LlmSettingsSnapshotResponse'];
       meta: components['schemas']['ConfigMeta'];
     };

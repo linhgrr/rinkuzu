@@ -4430,6 +4430,12 @@
       },
       "AdminLlmResponse_LlmSettingsSnapshotResponse_": {
         "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true,
+            "title": "Success",
+            "default": true
+          },
           "data": {
             "$ref": "#/components/schemas/LlmSettingsSnapshotResponse"
           },

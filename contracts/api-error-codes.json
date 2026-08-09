@@ -50,6 +50,7 @@
     "llm_key_decrypt_failed": "Provider key is unavailable",
     "llm_provider_probe_failed": "Provider test failed",
     "llm_probe_rate_limited": "Provider test rate limit exceeded",
+    "llm_usage_cursor_invalid": "Usage cursor is invalid or expired",
     "llm_settings_unavailable": "AI settings are temporarily unavailable",
     "llm_config_invalid": "AI configuration is invalid",
     "llm_config_limit_exceeded": "AI configuration limit exceeded",

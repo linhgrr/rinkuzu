@@ -1,31 +1,48 @@
 export interface LlmUsageBreakdownRow {
   key: string;
+  logicalOperations: number;
+  physicalAttempts: number;
+  recoverableFailures: number;
   totalTokens: number;
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
-  calls: number;
 }
 
-export type LlmUsageWindow = '7d' | '30d' | '90d' | '180d';
+export interface LlmUsageBreakdown {
+  rows: LlmUsageBreakdownRow[];
+  truncated: boolean;
+}
+
+export type LlmUsageWindow = '1d' | '7d' | '30d' | '90d' | '180d';
 
 export interface LlmUsageDailyPoint {
   date: string;
+  logicalOperations: number;
+  physicalAttempts: number;
+  recoverableFailures: number;
   totalTokens: number;
   costUsd: number;
-  calls: number;
 }
 
-interface LlmUsageAnalysis {
-  activeUsers: number;
-  averageTokensPerCall: number;
-  averageCostUsdPerCall: number;
+export interface LlmUsageAnalysis {
+  averageTokensPerOperation: number;
+  averageCostUsdPerOperation: number;
+  successRate: number;
+  fallbackRate: number;
   topUserId: string;
   topUserCostUsd: number;
   topAction: string;
   topActionCostShare: number;
   topModel: string;
   topModelCostShare: number;
+}
+
+export interface LlmUsageObservability {
+  tokenAnomalies: number;
+  unknownPricing: number;
+  persistenceFailures: number;
+  missingAttribution: number;
 }
 
 export interface LlmUsageViewModel {
@@ -35,10 +52,17 @@ export interface LlmUsageViewModel {
   outputTokens: number;
   totalCostUsd: number;
   totalCostVnd: number;
-  calls: number;
-  byAction: LlmUsageBreakdownRow[];
-  byModel: LlmUsageBreakdownRow[];
-  byUser: LlmUsageBreakdownRow[];
+  logicalOperations: number;
+  physicalAttempts: number;
+  successfulOperations: number;
+  failedOperations: number;
+  fallbackOperations: number;
+  recoverableFailures: number;
+  byAction: LlmUsageBreakdown;
+  byModel: LlmUsageBreakdown;
+  byUser: LlmUsageBreakdown;
+  byProvider: LlmUsageBreakdown;
   daily: LlmUsageDailyPoint[];
+  observability: LlmUsageObservability;
   analysis: LlmUsageAnalysis;
 }

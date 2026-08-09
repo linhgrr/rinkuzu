@@ -3687,7 +3687,7 @@
       "get": {
         "tags": ["admin-usage"],
         "summary": "Get Llm Usage Summary",
-        "description": "Aggregate LLM usage/cost over a time window, broken down by action + model.",
+        "description": "Return operation-aware usage totals and bounded breakdowns.",
         "operationId": "get_llm_usage_summary_api_v1_admin_llm_usage_summary_get",
         "parameters": [
           {
@@ -3695,9 +3695,103 @@
             "in": "query",
             "required": false,
             "schema": {
+              "enum": ["1d", "7d", "30d", "90d", "180d"],
               "type": "string",
               "default": "30d",
               "title": "Window"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/LlmAction"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "model_config_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model Config Id"
+            }
+          },
+          {
+            "name": "source_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/LlmUsageSource"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Kind"
+            }
+          },
+          {
+            "name": "include_non_product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Non Product"
             }
           },
           {
@@ -3735,6 +3829,198 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StandardResponse_LlmUsageSummaryResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/llm-usage/events": {
+      "get": {
+        "tags": ["admin-usage"],
+        "summary": "Get Llm Usage Events",
+        "description": "Return a signed-cursor page of safe physical-attempt diagnostics.",
+        "operationId": "get_llm_usage_events_api_v1_admin_llm_usage_events_get",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["1d", "7d", "30d", "90d", "180d"],
+              "type": "string",
+              "default": "30d",
+              "title": "Window"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/LlmAction"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "model_config_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model Config Id"
+            }
+          },
+          {
+            "name": "source_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/LlmUsageSource"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Kind"
+            }
+          },
+          {
+            "name": "include_non_product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Non Product"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1024
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_LlmUsageEventsResponse_"
                 }
               }
             }
@@ -5300,76 +5586,72 @@
         "title": "LlmCapability",
         "description": "Capabilities a model must declare to be assignable to an action."
       },
-      "LlmUsageAnalysisResponse": {
+      "LlmUsageBreakdownResponse": {
         "properties": {
-          "active_users": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/LlmUsageDimensionRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["rows"],
+        "title": "LlmUsageBreakdownResponse"
+      },
+      "LlmUsageDailyRow": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "logical_operations": {
             "type": "integer",
-            "title": "Active Users",
+            "title": "Logical Operations",
             "default": 0
           },
-          "average_tokens_per_call": {
+          "physical_attempts": {
+            "type": "integer",
+            "title": "Physical Attempts",
+            "default": 0
+          },
+          "recoverable_failures": {
+            "type": "integer",
+            "title": "Recoverable Failures",
+            "default": 0
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens",
+            "default": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens",
+            "default": 0
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "default": 0
+          },
+          "cost_usd": {
             "type": "number",
-            "title": "Average Tokens Per Call",
-            "default": 0.0
-          },
-          "average_cost_usd_per_call": {
-            "type": "number",
-            "title": "Average Cost Usd Per Call",
-            "default": 0.0
-          },
-          "top_user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Top User Id"
-          },
-          "top_user_cost_usd": {
-            "type": "number",
-            "title": "Top User Cost Usd",
-            "default": 0.0
-          },
-          "top_action": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Top Action"
-          },
-          "top_action_cost_share": {
-            "type": "number",
-            "title": "Top Action Cost Share",
-            "default": 0.0
-          },
-          "top_model": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Top Model"
-          },
-          "top_model_cost_share": {
-            "type": "number",
-            "title": "Top Model Cost Share",
+            "title": "Cost Usd",
             "default": 0.0
           }
         },
         "type": "object",
-        "title": "LlmUsageAnalysisResponse"
+        "required": ["date"],
+        "title": "LlmUsageDailyRow"
       },
-      "LlmUsageBreakdownRow": {
+      "LlmUsageDimensionRow": {
         "properties": {
           "key": {
             "anyOf": [
@@ -5382,9 +5664,19 @@
             ],
             "title": "Key"
           },
-          "total_tokens": {
+          "logical_operations": {
             "type": "integer",
-            "title": "Total Tokens",
+            "title": "Logical Operations",
+            "default": 0
+          },
+          "physical_attempts": {
+            "type": "integer",
+            "title": "Physical Attempts",
+            "default": 0
+          },
+          "recoverable_failures": {
+            "type": "integer",
+            "title": "Recoverable Failures",
             "default": 0
           },
           "input_tokens": {
@@ -5397,26 +5689,6 @@
             "title": "Output Tokens",
             "default": 0
           },
-          "cost_usd": {
-            "type": "number",
-            "title": "Cost Usd",
-            "default": 0.0
-          },
-          "calls": {
-            "type": "integer",
-            "title": "Calls",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "title": "LlmUsageBreakdownRow"
-      },
-      "LlmUsageDailyRow": {
-        "properties": {
-          "date": {
-            "type": "string",
-            "title": "Date"
-          },
           "total_tokens": {
             "type": "integer",
             "title": "Total Tokens",
@@ -5426,16 +5698,254 @@
             "type": "number",
             "title": "Cost Usd",
             "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "LlmUsageDimensionRow"
+      },
+      "LlmUsageEventResponse": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
           },
-          "calls": {
+          "operation_id": {
+            "type": "string",
+            "title": "Operation Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "product_usage": {
+            "type": "boolean",
+            "title": "Product Usage"
+          },
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id"
+          },
+          "model_config_id": {
+            "type": "string",
+            "title": "Model Config Id"
+          },
+          "credential_id": {
+            "type": "string",
+            "title": "Credential Id"
+          },
+          "config_revision": {
             "type": "integer",
-            "title": "Calls",
+            "title": "Config Revision"
+          },
+          "attempt_index": {
+            "type": "integer",
+            "title": "Attempt Index"
+          },
+          "fallback_model_index": {
+            "type": "integer",
+            "title": "Fallback Model Index"
+          },
+          "attempt_outcome": {
+            "type": "string",
+            "title": "Attempt Outcome"
+          },
+          "is_final_attempt": {
+            "type": "boolean",
+            "title": "Is Final Attempt"
+          },
+          "safe_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safe Error Code"
+          },
+          "usage_available": {
+            "type": "boolean",
+            "title": "Usage Available"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens"
+          },
+          "token_anomaly": {
+            "type": "boolean",
+            "title": "Token Anomaly"
+          },
+          "input_price_per_m_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Price Per M Usd"
+          },
+          "output_price_per_m_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Price Per M Usd"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "operation_id",
+          "source_kind",
+          "product_usage",
+          "provider_id",
+          "model_config_id",
+          "credential_id",
+          "config_revision",
+          "attempt_index",
+          "fallback_model_index",
+          "attempt_outcome",
+          "is_final_attempt",
+          "usage_available",
+          "input_tokens",
+          "output_tokens",
+          "total_tokens",
+          "token_anomaly",
+          "cost_usd",
+          "created_at",
+          "expires_at"
+        ],
+        "title": "LlmUsageEventResponse"
+      },
+      "LlmUsageEventsResponse": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/LlmUsageEventResponse"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": ["events"],
+        "title": "LlmUsageEventsResponse"
+      },
+      "LlmUsageObservabilityResponse": {
+        "properties": {
+          "token_anomalies": {
+            "type": "integer",
+            "title": "Token Anomalies",
+            "default": 0
+          },
+          "unknown_pricing": {
+            "type": "integer",
+            "title": "Unknown Pricing",
+            "default": 0
+          },
+          "persistence_failures": {
+            "type": "integer",
+            "title": "Persistence Failures",
+            "default": 0
+          },
+          "missing_attribution": {
+            "type": "integer",
+            "title": "Missing Attribution",
             "default": 0
           }
         },
         "type": "object",
-        "required": ["date"],
-        "title": "LlmUsageDailyRow"
+        "title": "LlmUsageObservabilityResponse"
+      },
+      "LlmUsageSource": {
+        "type": "string",
+        "enum": ["request", "pipeline_job", "quiz_draft", "admin_probe", "system"],
+        "title": "LlmUsageSource",
+        "description": "Where an LLM call originated. Determines whether it is product usage."
       },
       "LlmUsageSummaryResponse": {
         "properties": {
@@ -5447,28 +5957,19 @@
             "$ref": "#/components/schemas/LlmUsageTotalsResponse"
           },
           "by_action": {
-            "items": {
-              "$ref": "#/components/schemas/LlmUsageBreakdownRow"
-            },
-            "type": "array",
-            "title": "By Action"
-          },
-          "by_model": {
-            "items": {
-              "$ref": "#/components/schemas/LlmUsageBreakdownRow"
-            },
-            "type": "array",
-            "title": "By Model"
+            "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
           },
           "by_user": {
-            "items": {
-              "$ref": "#/components/schemas/LlmUsageBreakdownRow"
-            },
-            "type": "array",
-            "title": "By User"
+            "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
           },
-          "analysis": {
-            "$ref": "#/components/schemas/LlmUsageAnalysisResponse"
+          "by_provider": {
+            "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
+          },
+          "by_model": {
+            "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
+          },
+          "by_user_action": {
+            "$ref": "#/components/schemas/LlmUsageUserActionBreakdownResponse"
           },
           "daily": {
             "items": {
@@ -5476,6 +5977,9 @@
             },
             "type": "array",
             "title": "Daily"
+          },
+          "observability": {
+            "$ref": "#/components/schemas/LlmUsageObservabilityResponse"
           }
         },
         "type": "object",
@@ -5483,18 +5987,45 @@
           "window_days",
           "totals",
           "by_action",
-          "by_model",
           "by_user",
-          "analysis",
-          "daily"
+          "by_provider",
+          "by_model",
+          "by_user_action",
+          "daily",
+          "observability"
         ],
         "title": "LlmUsageSummaryResponse"
       },
       "LlmUsageTotalsResponse": {
         "properties": {
-          "total_tokens": {
+          "logical_operations": {
             "type": "integer",
-            "title": "Total Tokens",
+            "title": "Logical Operations",
+            "default": 0
+          },
+          "physical_attempts": {
+            "type": "integer",
+            "title": "Physical Attempts",
+            "default": 0
+          },
+          "successful_operations": {
+            "type": "integer",
+            "title": "Successful Operations",
+            "default": 0
+          },
+          "failed_operations": {
+            "type": "integer",
+            "title": "Failed Operations",
+            "default": 0
+          },
+          "fallback_operations": {
+            "type": "integer",
+            "title": "Fallback Operations",
+            "default": 0
+          },
+          "recoverable_failures": {
+            "type": "integer",
+            "title": "Recoverable Failures",
             "default": 0
           },
           "input_tokens": {
@@ -5507,19 +6038,101 @@
             "title": "Output Tokens",
             "default": 0
           },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "default": 0
+          },
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
             "default": 0.0
-          },
-          "calls": {
-            "type": "integer",
-            "title": "Calls",
-            "default": 0
           }
         },
         "type": "object",
         "title": "LlmUsageTotalsResponse"
+      },
+      "LlmUsageUserActionBreakdownResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/LlmUsageUserActionRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["rows"],
+        "title": "LlmUsageUserActionBreakdownResponse"
+      },
+      "LlmUsageUserActionRow": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "logical_operations": {
+            "type": "integer",
+            "title": "Logical Operations",
+            "default": 0
+          },
+          "physical_attempts": {
+            "type": "integer",
+            "title": "Physical Attempts",
+            "default": 0
+          },
+          "recoverable_failures": {
+            "type": "integer",
+            "title": "Recoverable Failures",
+            "default": 0
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens",
+            "default": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens",
+            "default": 0
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "default": 0
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "LlmUsageUserActionRow"
       },
       "MCQExerciseResponse": {
         "properties": {
@@ -9568,6 +10181,33 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[LearningStepResponse]"
+      },
+      "StandardResponse_LlmUsageEventsResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/LlmUsageEventsResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[LlmUsageEventsResponse]"
       },
       "StandardResponse_LlmUsageSummaryResponse_": {
         "properties": {

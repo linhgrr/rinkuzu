@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const querySchema = z
   .object({
-    window: z.enum(['7d', '30d', '90d', '180d']).default('30d'),
+    window: z.enum(['1d', '7d', '30d', '90d', '180d']).default('30d'),
   })
   .strict();
 

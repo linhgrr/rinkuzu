@@ -1,29 +1,47 @@
-import { fetchApiData } from '@/lib/api/client';
 import type { components } from '@/generated/adaptive-api';
 import type {
+  LlmUsageBreakdown,
   LlmUsageBreakdownRow,
   LlmUsageWindow,
   LlmUsageViewModel,
 } from '@/features/admin/stats/types/llm-usage-view-model';
+import { fetchApiData } from '@/lib/api/client';
 
 type ApiSchemas = components['schemas'];
+type LlmUsageSummaryDto = ApiSchemas['LlmUsageSummaryResponse'];
+type UsageBreakdownDto = ApiSchemas['LlmUsageBreakdownResponse'];
+type UsageDimensionDto = ApiSchemas['LlmUsageDimensionRow'];
 
-// USD→VND display rate. Kept here (not in the pricing config) because it only
-// affects how admin cost is shown, not billing. Override via env if needed.
+// Display-only conversion. Provider billing remains denominated in USD in the
+// backend usage event; this rate never participates in accounting.
 const USD_TO_VND = Number(process.env['NEXT_PUBLIC_USD_TO_VND']) || 25_000;
 
-type LlmUsageSummaryDto = ApiSchemas['LlmUsageSummaryResponse'];
-type UsageBreakdownDto = ApiSchemas['LlmUsageBreakdownRow'];
-
-function toRow(dto: UsageBreakdownDto): LlmUsageBreakdownRow {
+function toRow(dto: UsageDimensionDto): LlmUsageBreakdownRow {
   return {
     key: dto.key ?? '(unknown)',
-    totalTokens: dto.total_tokens ?? 0,
-    inputTokens: dto.input_tokens ?? 0,
-    outputTokens: dto.output_tokens ?? 0,
-    costUsd: dto.cost_usd ?? 0,
-    calls: dto.calls ?? 0,
+    logicalOperations: dto.logical_operations,
+    physicalAttempts: dto.physical_attempts,
+    recoverableFailures: dto.recoverable_failures,
+    totalTokens: dto.total_tokens,
+    inputTokens: dto.input_tokens,
+    outputTokens: dto.output_tokens,
+    costUsd: dto.cost_usd,
   };
+}
+
+function toBreakdown(dto: UsageBreakdownDto): LlmUsageBreakdown {
+  return {
+    rows: dto.rows.map(toRow),
+    truncated: dto.truncated,
+  };
+}
+
+function safeRatio(numerator: number, denominator: number): number {
+  return denominator > 0 ? numerator / denominator : 0;
+}
+
+function firstRow(breakdown: LlmUsageBreakdown): LlmUsageBreakdownRow | undefined {
+  return breakdown.rows[0];
 }
 
 export async function fetchLlmUsageViewModel(
@@ -35,33 +53,59 @@ export async function fetchLlmUsageViewModel(
     cache: 'no-store',
     signal,
   });
+
+  const byAction = toBreakdown(dto.by_action);
+  const byModel = toBreakdown(dto.by_model);
+  const byUser = toBreakdown(dto.by_user);
+  const byProvider = toBreakdown(dto.by_provider);
+  const totalCostUsd = dto.totals.cost_usd;
+  const logicalOperations = dto.totals.logical_operations;
+  const topUser = firstRow(byUser);
+  const topAction = firstRow(byAction);
+  const topModel = firstRow(byModel);
+
   return {
     windowDays: dto.window_days,
     totalTokens: dto.totals.total_tokens,
     inputTokens: dto.totals.input_tokens,
     outputTokens: dto.totals.output_tokens,
-    totalCostUsd: dto.totals.cost_usd,
-    totalCostVnd: Math.round(dto.totals.cost_usd * USD_TO_VND),
-    calls: dto.totals.calls,
-    byAction: dto.by_action.map(toRow),
-    byModel: dto.by_model.map(toRow),
-    byUser: dto.by_user.map(toRow),
+    totalCostUsd,
+    totalCostVnd: Math.round(totalCostUsd * USD_TO_VND),
+    logicalOperations,
+    physicalAttempts: dto.totals.physical_attempts,
+    successfulOperations: dto.totals.successful_operations,
+    failedOperations: dto.totals.failed_operations,
+    fallbackOperations: dto.totals.fallback_operations,
+    recoverableFailures: dto.totals.recoverable_failures,
+    byAction,
+    byModel,
+    byUser,
+    byProvider,
     daily: dto.daily.map((row) => ({
       date: row.date,
+      logicalOperations: row.logical_operations,
+      physicalAttempts: row.physical_attempts,
+      recoverableFailures: row.recoverable_failures,
       totalTokens: row.total_tokens,
       costUsd: row.cost_usd,
-      calls: row.calls,
     })),
+    observability: {
+      tokenAnomalies: dto.observability.token_anomalies,
+      unknownPricing: dto.observability.unknown_pricing,
+      persistenceFailures: dto.observability.persistence_failures,
+      missingAttribution: dto.observability.missing_attribution,
+    },
     analysis: {
-      activeUsers: dto.analysis.active_users,
-      averageTokensPerCall: dto.analysis.average_tokens_per_call,
-      averageCostUsdPerCall: dto.analysis.average_cost_usd_per_call,
-      topUserId: dto.analysis.top_user_id ?? '(unknown)',
-      topUserCostUsd: dto.analysis.top_user_cost_usd,
-      topAction: dto.analysis.top_action ?? '(unknown)',
-      topActionCostShare: dto.analysis.top_action_cost_share,
-      topModel: dto.analysis.top_model ?? '(unknown)',
-      topModelCostShare: dto.analysis.top_model_cost_share,
+      averageTokensPerOperation: safeRatio(dto.totals.total_tokens, logicalOperations),
+      averageCostUsdPerOperation: safeRatio(totalCostUsd, logicalOperations),
+      successRate: safeRatio(dto.totals.successful_operations, logicalOperations),
+      fallbackRate: safeRatio(dto.totals.fallback_operations, logicalOperations),
+      topUserId: topUser?.key ?? '(unknown)',
+      topUserCostUsd: topUser?.costUsd ?? 0,
+      topAction: topAction?.key ?? '(unknown)',
+      topActionCostShare: safeRatio(topAction?.costUsd ?? 0, totalCostUsd),
+      topModel: topModel?.key ?? '(unknown)',
+      topModelCostShare: safeRatio(topModel?.costUsd ?? 0, totalCostUsd),
     },
   };
 }

@@ -815,9 +815,29 @@ export interface paths {
     };
     /**
      * Get Llm Usage Summary
-     * @description Aggregate LLM usage/cost over a time window, broken down by action + model.
+     * @description Return operation-aware usage totals and bounded breakdowns.
      */
     get: operations['get_llm_usage_summary_api_v1_admin_llm_usage_summary_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/llm-usage/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Llm Usage Events
+     * @description Return a signed-cursor page of safe physical-attempt diagnostics.
+     */
+    get: operations['get_llm_usage_events_api_v1_admin_llm_usage_events_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1477,117 +1497,35 @@ export interface components {
      * @enum {string}
      */
     LlmCapability: 'text' | 'structured_output' | 'streaming' | 'vision';
-    /** LlmUsageAnalysisResponse */
-    LlmUsageAnalysisResponse: {
+    /** LlmUsageBreakdownResponse */
+    LlmUsageBreakdownResponse: {
+      /** Rows */
+      rows: components['schemas']['LlmUsageDimensionRow'][];
       /**
-       * Active Users
-       * @default 0
+       * Truncated
+       * @default false
        */
-      active_users: number;
-      /**
-       * Average Tokens Per Call
-       * @default 0
-       */
-      average_tokens_per_call: number;
-      /**
-       * Average Cost Usd Per Call
-       * @default 0
-       */
-      average_cost_usd_per_call: number;
-      /** Top User Id */
-      top_user_id?: string | null;
-      /**
-       * Top User Cost Usd
-       * @default 0
-       */
-      top_user_cost_usd: number;
-      /** Top Action */
-      top_action?: string | null;
-      /**
-       * Top Action Cost Share
-       * @default 0
-       */
-      top_action_cost_share: number;
-      /** Top Model */
-      top_model?: string | null;
-      /**
-       * Top Model Cost Share
-       * @default 0
-       */
-      top_model_cost_share: number;
-    };
-    /** LlmUsageBreakdownRow */
-    LlmUsageBreakdownRow: {
-      /** Key */
-      key?: string | null;
-      /**
-       * Total Tokens
-       * @default 0
-       */
-      total_tokens: number;
-      /**
-       * Input Tokens
-       * @default 0
-       */
-      input_tokens: number;
-      /**
-       * Output Tokens
-       * @default 0
-       */
-      output_tokens: number;
-      /**
-       * Cost Usd
-       * @default 0
-       */
-      cost_usd: number;
-      /**
-       * Calls
-       * @default 0
-       */
-      calls: number;
+      truncated: boolean;
     };
     /** LlmUsageDailyRow */
     LlmUsageDailyRow: {
       /** Date */
       date: string;
       /**
-       * Total Tokens
+       * Logical Operations
        * @default 0
        */
-      total_tokens: number;
+      logical_operations: number;
       /**
-       * Cost Usd
+       * Physical Attempts
        * @default 0
        */
-      cost_usd: number;
+      physical_attempts: number;
       /**
-       * Calls
+       * Recoverable Failures
        * @default 0
        */
-      calls: number;
-    };
-    /** LlmUsageSummaryResponse */
-    LlmUsageSummaryResponse: {
-      /** Window Days */
-      window_days: number;
-      totals: components['schemas']['LlmUsageTotalsResponse'];
-      /** By Action */
-      by_action: components['schemas']['LlmUsageBreakdownRow'][];
-      /** By Model */
-      by_model: components['schemas']['LlmUsageBreakdownRow'][];
-      /** By User */
-      by_user: components['schemas']['LlmUsageBreakdownRow'][];
-      analysis: components['schemas']['LlmUsageAnalysisResponse'];
-      /** Daily */
-      daily: components['schemas']['LlmUsageDailyRow'][];
-    };
-    /** LlmUsageTotalsResponse */
-    LlmUsageTotalsResponse: {
-      /**
-       * Total Tokens
-       * @default 0
-       */
-      total_tokens: number;
+      recoverable_failures: number;
       /**
        * Input Tokens
        * @default 0
@@ -1599,15 +1537,273 @@ export interface components {
        */
       output_tokens: number;
       /**
+       * Total Tokens
+       * @default 0
+       */
+      total_tokens: number;
+      /**
        * Cost Usd
        * @default 0
        */
       cost_usd: number;
+    };
+    /** LlmUsageDimensionRow */
+    LlmUsageDimensionRow: {
+      /** Key */
+      key?: string | null;
       /**
-       * Calls
+       * Logical Operations
        * @default 0
        */
-      calls: number;
+      logical_operations: number;
+      /**
+       * Physical Attempts
+       * @default 0
+       */
+      physical_attempts: number;
+      /**
+       * Recoverable Failures
+       * @default 0
+       */
+      recoverable_failures: number;
+      /**
+       * Input Tokens
+       * @default 0
+       */
+      input_tokens: number;
+      /**
+       * Output Tokens
+       * @default 0
+       */
+      output_tokens: number;
+      /**
+       * Total Tokens
+       * @default 0
+       */
+      total_tokens: number;
+      /**
+       * Cost Usd
+       * @default 0
+       */
+      cost_usd: number;
+    };
+    /** LlmUsageEventResponse */
+    LlmUsageEventResponse: {
+      /** Event Id */
+      event_id: string;
+      /** Operation Id */
+      operation_id: string;
+      /** User Id */
+      user_id?: string | null;
+      /** Action */
+      action?: string | null;
+      /** Source Kind */
+      source_kind: string;
+      /** Source Id */
+      source_id?: string | null;
+      /** Request Id */
+      request_id?: string | null;
+      /** Product Usage */
+      product_usage: boolean;
+      /** Provider Id */
+      provider_id: string;
+      /** Model Config Id */
+      model_config_id: string;
+      /** Credential Id */
+      credential_id: string;
+      /** Config Revision */
+      config_revision: number;
+      /** Attempt Index */
+      attempt_index: number;
+      /** Fallback Model Index */
+      fallback_model_index: number;
+      /** Attempt Outcome */
+      attempt_outcome: string;
+      /** Is Final Attempt */
+      is_final_attempt: boolean;
+      /** Safe Error Code */
+      safe_error_code?: string | null;
+      /** Usage Available */
+      usage_available: boolean;
+      /** Input Tokens */
+      input_tokens: number;
+      /** Output Tokens */
+      output_tokens: number;
+      /** Total Tokens */
+      total_tokens: number;
+      /** Token Anomaly */
+      token_anomaly: boolean;
+      /** Input Price Per M Usd */
+      input_price_per_m_usd?: number | null;
+      /** Output Price Per M Usd */
+      output_price_per_m_usd?: number | null;
+      /** Cost Usd */
+      cost_usd: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+    };
+    /** LlmUsageEventsResponse */
+    LlmUsageEventsResponse: {
+      /** Events */
+      events: components['schemas']['LlmUsageEventResponse'][];
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
+    /** LlmUsageObservabilityResponse */
+    LlmUsageObservabilityResponse: {
+      /**
+       * Token Anomalies
+       * @default 0
+       */
+      token_anomalies: number;
+      /**
+       * Unknown Pricing
+       * @default 0
+       */
+      unknown_pricing: number;
+      /**
+       * Persistence Failures
+       * @default 0
+       */
+      persistence_failures: number;
+      /**
+       * Missing Attribution
+       * @default 0
+       */
+      missing_attribution: number;
+    };
+    /**
+     * LlmUsageSource
+     * @description Where an LLM call originated. Determines whether it is product usage.
+     * @enum {string}
+     */
+    LlmUsageSource: 'request' | 'pipeline_job' | 'quiz_draft' | 'admin_probe' | 'system';
+    /** LlmUsageSummaryResponse */
+    LlmUsageSummaryResponse: {
+      /** Window Days */
+      window_days: number;
+      totals: components['schemas']['LlmUsageTotalsResponse'];
+      by_action: components['schemas']['LlmUsageBreakdownResponse'];
+      by_user: components['schemas']['LlmUsageBreakdownResponse'];
+      by_provider: components['schemas']['LlmUsageBreakdownResponse'];
+      by_model: components['schemas']['LlmUsageBreakdownResponse'];
+      by_user_action: components['schemas']['LlmUsageUserActionBreakdownResponse'];
+      /** Daily */
+      daily: components['schemas']['LlmUsageDailyRow'][];
+      observability: components['schemas']['LlmUsageObservabilityResponse'];
+    };
+    /** LlmUsageTotalsResponse */
+    LlmUsageTotalsResponse: {
+      /**
+       * Logical Operations
+       * @default 0
+       */
+      logical_operations: number;
+      /**
+       * Physical Attempts
+       * @default 0
+       */
+      physical_attempts: number;
+      /**
+       * Successful Operations
+       * @default 0
+       */
+      successful_operations: number;
+      /**
+       * Failed Operations
+       * @default 0
+       */
+      failed_operations: number;
+      /**
+       * Fallback Operations
+       * @default 0
+       */
+      fallback_operations: number;
+      /**
+       * Recoverable Failures
+       * @default 0
+       */
+      recoverable_failures: number;
+      /**
+       * Input Tokens
+       * @default 0
+       */
+      input_tokens: number;
+      /**
+       * Output Tokens
+       * @default 0
+       */
+      output_tokens: number;
+      /**
+       * Total Tokens
+       * @default 0
+       */
+      total_tokens: number;
+      /**
+       * Cost Usd
+       * @default 0
+       */
+      cost_usd: number;
+    };
+    /** LlmUsageUserActionBreakdownResponse */
+    LlmUsageUserActionBreakdownResponse: {
+      /** Rows */
+      rows: components['schemas']['LlmUsageUserActionRow'][];
+      /**
+       * Truncated
+       * @default false
+       */
+      truncated: boolean;
+    };
+    /** LlmUsageUserActionRow */
+    LlmUsageUserActionRow: {
+      /** User Id */
+      user_id?: string | null;
+      /** Action */
+      action?: string | null;
+      /**
+       * Logical Operations
+       * @default 0
+       */
+      logical_operations: number;
+      /**
+       * Physical Attempts
+       * @default 0
+       */
+      physical_attempts: number;
+      /**
+       * Recoverable Failures
+       * @default 0
+       */
+      recoverable_failures: number;
+      /**
+       * Input Tokens
+       * @default 0
+       */
+      input_tokens: number;
+      /**
+       * Output Tokens
+       * @default 0
+       */
+      output_tokens: number;
+      /**
+       * Total Tokens
+       * @default 0
+       */
+      total_tokens: number;
+      /**
+       * Cost Usd
+       * @default 0
+       */
+      cost_usd: number;
     };
     /** MCQExerciseResponse */
     MCQExerciseResponse: {
@@ -3332,6 +3528,19 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['LearningStepResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[LlmUsageEventsResponse] */
+    StandardResponse_LlmUsageEventsResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['LlmUsageEventsResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -5995,7 +6204,13 @@ export interface operations {
   get_llm_usage_summary_api_v1_admin_llm_usage_summary_get: {
     parameters: {
       query?: {
-        window?: string;
+        window?: '1d' | '7d' | '30d' | '90d' | '180d';
+        user_id?: string | null;
+        action?: components['schemas']['LlmAction'] | null;
+        provider_id?: string | null;
+        model_config_id?: string | null;
+        source_kind?: components['schemas']['LlmUsageSource'] | null;
+        include_non_product?: boolean;
       };
       header: {
         'x-user-id': string;
@@ -6014,6 +6229,49 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_LlmUsageSummaryResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_llm_usage_events_api_v1_admin_llm_usage_events_get: {
+    parameters: {
+      query?: {
+        window?: '1d' | '7d' | '30d' | '90d' | '180d';
+        user_id?: string | null;
+        action?: components['schemas']['LlmAction'] | null;
+        provider_id?: string | null;
+        model_config_id?: string | null;
+        source_kind?: components['schemas']['LlmUsageSource'] | null;
+        include_non_product?: boolean;
+        limit?: number;
+        cursor?: string | null;
+      };
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_LlmUsageEventsResponse_'];
         };
       };
       /** @description Validation Error */

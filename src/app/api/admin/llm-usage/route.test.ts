@@ -32,11 +32,11 @@ describe('GET /api/admin/llm-usage', () => {
   });
 
   it('allowlists the usage window and forces private no-store', async () => {
-    const response = await GET(request('?window=90d'), routeContext);
+    const response = await GET(request('?window=1d'), routeContext);
 
     expect(response.status).toBe(200);
     const [upstreamRequest, path, auth] = proxyAdaptiveRequestMock.mock.calls[0] ?? [];
-    expect(new URL(upstreamRequest.url).searchParams.toString()).toBe('window=90d');
+    expect(new URL(upstreamRequest.url).searchParams.toString()).toBe('window=1d');
     expect(path).toBe('/admin/llm-usage/summary');
     expect(auth).toEqual({ userId: 'admin-1', userRole: 'admin' });
     expect(response.headers.get('cache-control')).toBe('private, no-store');

@@ -8,14 +8,18 @@ vi.mock('@/lib/api/client', () => ({ fetchApiData: fetchApiDataMock }));
 
 import { fetchLlmUsageViewModel } from '@/features/admin/stats/api/llm-usage-api';
 
-const breakdown = {
+const row = {
   key: null,
+  logical_operations: 2,
+  physical_attempts: 3,
+  recoverable_failures: 1,
   total_tokens: 120,
   input_tokens: 80,
   output_tokens: 40,
   cost_usd: 0.02,
-  calls: 2,
 };
+
+const breakdown = (rows: object[]) => ({ rows, truncated: false });
 
 describe('fetchLlmUsageViewModel', () => {
   beforeEach(() => {
@@ -23,31 +27,44 @@ describe('fetchLlmUsageViewModel', () => {
     fetchApiDataMock.mockResolvedValue({
       window_days: 7,
       totals: {
+        logical_operations: 2,
+        physical_attempts: 3,
+        successful_operations: 1,
+        failed_operations: 1,
+        fallback_operations: 1,
+        recoverable_failures: 1,
         total_tokens: 120,
         input_tokens: 80,
         output_tokens: 40,
         cost_usd: 0.02,
-        calls: 2,
       },
-      by_action: [{ ...breakdown, key: 'quiz_extraction' }],
-      by_model: [{ ...breakdown, key: 'model-a' }],
-      by_user: [breakdown],
-      daily: [{ date: '2026-07-28', total_tokens: 120, cost_usd: 0.02, calls: 2 }],
-      analysis: {
-        active_users: 1,
-        average_tokens_per_call: 60,
-        average_cost_usd_per_call: 0.01,
-        top_user_id: null,
-        top_user_cost_usd: 0.02,
-        top_action: 'quiz_extraction',
-        top_action_cost_share: 1,
-        top_model: 'model-a',
-        top_model_cost_share: 1,
+      by_action: breakdown([{ ...row, key: 'quiz_extraction' }]),
+      by_model: breakdown([{ ...row, key: 'model-a' }]),
+      by_provider: breakdown([{ ...row, key: 'provider-a' }]),
+      by_user: breakdown([row]),
+      by_user_action: { rows: [], truncated: false },
+      daily: [
+        {
+          date: '2026-07-28',
+          logical_operations: 2,
+          physical_attempts: 3,
+          recoverable_failures: 1,
+          total_tokens: 120,
+          input_tokens: 80,
+          output_tokens: 40,
+          cost_usd: 0.02,
+        },
+      ],
+      observability: {
+        token_anomalies: 1,
+        unknown_pricing: 2,
+        persistence_failures: 3,
+        missing_attribution: 4,
       },
     });
   });
 
-  it('maps token split and daily usage without adding profile data', async () => {
+  it('maps canonical operation-aware usage without restoring legacy call semantics', async () => {
     const controller = new AbortController();
 
     await expect(fetchLlmUsageViewModel('7d', controller.signal)).resolves.toMatchObject({
@@ -55,10 +72,46 @@ describe('fetchLlmUsageViewModel', () => {
       totalTokens: 120,
       inputTokens: 80,
       outputTokens: 40,
-      calls: 2,
-      byUser: [{ key: '(unknown)', inputTokens: 80, outputTokens: 40 }],
-      daily: [{ date: '2026-07-28', totalTokens: 120, costUsd: 0.02, calls: 2 }],
-      analysis: { topUserId: '(unknown)' },
+      logicalOperations: 2,
+      physicalAttempts: 3,
+      successfulOperations: 1,
+      failedOperations: 1,
+      fallbackOperations: 1,
+      recoverableFailures: 1,
+      byUser: {
+        truncated: false,
+        rows: [
+          {
+            key: '(unknown)',
+            logicalOperations: 2,
+            physicalAttempts: 3,
+            inputTokens: 80,
+            outputTokens: 40,
+          },
+        ],
+      },
+      daily: [
+        {
+          date: '2026-07-28',
+          totalTokens: 120,
+          costUsd: 0.02,
+          logicalOperations: 2,
+          physicalAttempts: 3,
+        },
+      ],
+      observability: {
+        tokenAnomalies: 1,
+        unknownPricing: 2,
+        persistenceFailures: 3,
+        missingAttribution: 4,
+      },
+      analysis: {
+        averageTokensPerOperation: 60,
+        averageCostUsdPerOperation: 0.01,
+        successRate: 0.5,
+        fallbackRate: 0.5,
+        topUserId: '(unknown)',
+      },
     });
     expect(fetchApiDataMock).toHaveBeenCalledWith('/api/admin/llm-usage?window=7d', {
       cache: 'no-store',

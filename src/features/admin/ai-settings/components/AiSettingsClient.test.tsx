@@ -1,17 +1,20 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AiSettingsViewModel } from '@/features/admin/ai-settings/types/ai-settings';
 
-const { fetchAiSettingsMock, saveRoutingMock, translateMock } = vi.hoisted(() => ({
-  fetchAiSettingsMock: vi.fn(),
-  saveRoutingMock: vi.fn(),
-  translateMock: (key: string) => key,
-}));
+const { deleteModelMock, fetchAiSettingsMock, saveRoutingMock, testProviderMock, translateMock } =
+  vi.hoisted(() => ({
+    deleteModelMock: vi.fn(),
+    fetchAiSettingsMock: vi.fn(),
+    saveRoutingMock: vi.fn(),
+    testProviderMock: vi.fn(),
+    translateMock: (key: string) => key,
+  }));
 
 vi.mock('next-intl', () => ({
   useTranslations: () => translateMock,
@@ -22,7 +25,7 @@ vi.mock('@/features/admin/ai-settings/api/ai-settings-api', () => ({
   createModel: vi.fn(),
   createProvider: vi.fn(),
   deleteCredential: vi.fn(),
-  deleteModel: vi.fn(),
+  deleteModel: deleteModelMock,
   deleteProvider: vi.fn(),
   discoverModels: vi.fn(),
   fetchAiSettings: fetchAiSettingsMock,
@@ -33,7 +36,7 @@ vi.mock('@/features/admin/ai-settings/api/ai-settings-api', () => ({
   saveRouting: saveRoutingMock,
   testCredential: vi.fn(),
   testModel: vi.fn(),
-  testProvider: vi.fn(),
+  testProvider: testProviderMock,
 }));
 
 import { AiSettingsClient } from '@/features/admin/ai-settings/components/AiSettingsClient';
@@ -150,6 +153,7 @@ describe('AiSettingsClient', () => {
   beforeEach(() => {
     fetchAiSettingsMock.mockResolvedValue(snapshot);
     saveRoutingMock.mockResolvedValue({ data: {}, revision: 8 });
+    testProviderMock.mockResolvedValue({ data: { ok: true } });
   });
 
   afterEach(() => {
@@ -164,7 +168,7 @@ describe('AiSettingsClient', () => {
     await user.click(await screen.findByRole('button', { name: /Provider Two/ }));
     expect(screen.getByRole('heading', { name: 'Provider Two' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'aiSettingsTab_keys' }));
+    await user.click(screen.getByRole('tab', { name: 'aiSettingsTab_keys' }));
     expect(screen.getByText('sk-••••2222')).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent('plaintext-secret');
   });
@@ -173,14 +177,14 @@ describe('AiSettingsClient', () => {
     const user = userEvent.setup();
     render(<AiSettingsClient />);
 
-    await user.click(await screen.findByRole('button', { name: 'aiSettingsTab_keys' }));
-    const secret = screen.getByPlaceholderText('aiSettingsApiKey');
+    await user.click(await screen.findByRole('tab', { name: 'aiSettingsTab_keys' }));
+    const secret = screen.getByLabelText('aiSettingsApiKey');
     await user.type(secret, 'plaintext-secret');
     expect(secret).toHaveValue('plaintext-secret');
 
-    await user.click(screen.getByRole('button', { name: 'aiSettingsTab_models' }));
-    await user.click(screen.getByRole('button', { name: 'aiSettingsTab_keys' }));
-    expect(screen.getByPlaceholderText('aiSettingsApiKey')).toHaveValue('');
+    await user.click(screen.getByRole('tab', { name: 'aiSettingsTab_models' }));
+    await user.click(screen.getByRole('tab', { name: 'aiSettingsTab_keys' }));
+    expect(screen.getByLabelText('aiSettingsApiKey')).toHaveValue('');
   });
 
   it('filters incompatible choices and preserves exact fallback order when moving a model', async () => {
@@ -204,5 +208,68 @@ describe('AiSettingsClient', () => {
         7,
       );
     });
+  });
+
+  it('supports keyboard navigation between provider tabs', async () => {
+    const user = userEvent.setup();
+    render(<AiSettingsClient />);
+
+    const providerTab = await screen.findByRole('tab', { name: 'aiSettingsTab_provider' });
+    providerTab.focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(screen.getByRole('tab', { name: 'aiSettingsTab_keys' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('article', { name: 'Primary' })).toBeInTheDocument();
+  });
+
+  it('preserves an unsaved routing draft while probing a provider', async () => {
+    const user = userEvent.setup();
+    render(<AiSettingsClient initialTab="routing" />);
+
+    const [moveDown] = await screen.findAllByRole('button', { name: 'aiSettingsMoveDown' });
+    if (!moveDown) throw new Error('Expected an enabled move-down button.');
+    await user.click(moveDown);
+    await user.click(screen.getByRole('button', { name: 'aiSettingsProviders' }));
+
+    const probe = await screen.findByRole('button', { name: 'aiSettingsTest' });
+    await waitFor(() => expect(probe).toBeEnabled());
+    await user.click(probe);
+    await waitFor(() => expect(testProviderMock).toHaveBeenCalled());
+
+    await user.click(screen.getByRole('button', { name: 'aiSettingsGlobalRouting' }));
+    await user.click(screen.getByRole('button', { name: 'aiSettingsSaveRouting' }));
+    await waitFor(() =>
+      expect(saveRoutingMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          routes: [{ action: 'quiz_extraction', model_ids: ['structured-b', 'structured-a'] }],
+        }),
+        7,
+      ),
+    );
+  });
+
+  it('asks for confirmation before deleting a model', async () => {
+    const user = userEvent.setup();
+    render(<AiSettingsClient />);
+
+    await user.click(await screen.findByRole('tab', { name: 'aiSettingsTab_models' }));
+    const modelCard = screen.getByRole('article', { name: 'Structured A' });
+    await user.click(within(modelCard).getByRole('button', { name: 'delete' }));
+
+    expect(screen.getByRole('alertdialog', { name: 'aiSettingsDeleteModelTitle' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'cancel' }));
+    expect(deleteModelMock).not.toHaveBeenCalled();
+  });
+
+  it('uses a compact workspace navigation instead of rendering the page subtitle', async () => {
+    render(<AiSettingsClient />);
+
+    expect(
+      await screen.findByRole('navigation', { name: 'aiSettingsWorkspaceNavigation' }),
+    ).toBeVisible();
+    expect(screen.queryByText('aiSettingsDescription')).not.toBeInTheDocument();
   });
 });

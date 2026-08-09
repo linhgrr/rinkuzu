@@ -1,10 +1,29 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslations } from 'next-intl';
-import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import {
+  Cpu,
+  FlaskConical,
+  KeyRound,
+  Power,
+  RefreshCw,
+  Route,
+  Server,
+  Settings2,
+  Trash2,
+} from 'lucide-react';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { ApiResponseError } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {
@@ -17,7 +36,13 @@ import {
   saveRouting,
   testProvider,
 } from '@/features/admin/ai-settings/api/ai-settings-api';
-import type { AiSettingsViewModel } from '@/features/admin/ai-settings/types/ai-settings';
+import type {
+  AiSettingsMutate,
+  AiSettingsViewModel,
+  RoutingMutationPolicy,
+} from '@/features/admin/ai-settings/types/ai-settings';
+import { AiSettingsConfirmDialog } from '@/features/admin/ai-settings/components/AiSettingsConfirmDialog';
+import { AiSettingsIconButton } from '@/features/admin/ai-settings/components/AiSettingsIconButton';
 import {
   PipelineRoutingPanel,
   type DraftRoutes,
@@ -37,7 +62,11 @@ import {
 } from '@/features/admin/ai-settings/components/ProvidersPanel';
 import { ProviderDetail } from '@/features/admin/ai-settings/components/ProviderDetail';
 
-type DetailTab = 'provider' | 'keys' | 'models' | 'routing';
+type DetailTab = 'provider' | 'keys' | 'models';
+type InitialTab = DetailTab | 'routing';
+type WorkspaceView = 'providers' | 'routing';
+
+const DETAIL_TABS: DetailTab[] = ['provider', 'keys', 'models'];
 
 function routeDraft(snapshot: AiSettingsViewModel): DraftRoutes {
   return Object.fromEntries(snapshot.actions.map(({ action }) => [action, []])) as DraftRoutes;
@@ -47,18 +76,26 @@ export function AiSettingsClient({
   initialTab = 'provider',
   initialProviderId = null,
 }: {
-  initialTab?: DetailTab;
+  initialTab?: InitialTab;
   initialProviderId?: string | null;
 }) {
   const t = useTranslations('admin');
   const [snapshot, setSnapshot] = useState<AiSettingsViewModel | null>(null);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(initialProviderId);
   const selectedProviderIdRef = useRef<string | null>(initialProviderId);
-  const [tab, setTab] = useState<DetailTab>(initialTab);
+  const [workspace, setWorkspace] = useState<WorkspaceView>(
+    initialTab === 'routing' ? 'routing' : 'providers',
+  );
+  const [tab, setTab] = useState<DetailTab>(initialTab === 'routing' ? 'provider' : initialTab);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [providerCreateOpen, setProviderCreateOpen] = useState(false);
+  const [providerToDelete, setProviderToDelete] = useState<
+    AiSettingsViewModel['providers'][number] | null
+  >(null);
+  const [probeKeyId, setProbeKeyId] = useState('');
   const [providerForm, setProviderForm] = useState<ProviderFormState>({
     name: '',
     baseUrl: '',
@@ -90,7 +127,7 @@ export function AiSettingsClient({
   const [draftRoutes, setDraftRoutes] = useState<DraftRoutes>({});
   const [draftSteps, setDraftSteps] = useState<DraftSteps>({});
 
-  const load = useCallback(async (signal?: AbortSignal) => {
+  const load = useCallback(async (signal?: AbortSignal, preserveRoutingDraft = false) => {
     const data = await fetchAiSettings(signal);
     setSnapshot(data);
     const current = selectedProviderIdRef.current;
@@ -109,18 +146,20 @@ export function AiSettingsClient({
         enabled: nextProvider.enabled,
       });
     }
-    const routes = routeDraft(data);
-    for (const route of data.routes) routes[route.action] = [...route.model_ids];
-    setDraftRoutes(routes);
-    setDraftSteps(
-      Object.fromEntries(
-        data.pipelineSteps.map((step) => [
-          step.step_id,
-          data.stepPolicies.find((policy) => policy.step_id === step.step_id)?.enabled ??
-            step.default_enabled,
-        ]),
-      ),
-    );
+    if (!preserveRoutingDraft) {
+      const routes = routeDraft(data);
+      for (const route of data.routes) routes[route.action] = [...route.model_ids];
+      setDraftRoutes(routes);
+      setDraftSteps(
+        Object.fromEntries(
+          data.pipelineSteps.map((step) => [
+            step.step_id,
+            data.stepPolicies.find((policy) => policy.step_id === step.step_id)?.enabled ??
+              step.default_enabled,
+          ]),
+        ),
+      );
+    }
   }, []);
 
   useEffect(() => {
@@ -147,6 +186,13 @@ export function AiSettingsClient({
   const providerKeys = useMemo(
     () => snapshot?.credentials.filter((key) => key.providerId === selectedProviderId) ?? [],
     [snapshot, selectedProviderId],
+  );
+  const usableProviderKeys = useMemo(
+    () =>
+      [...providerKeys]
+        .filter((key) => key.enabled)
+        .sort((left, right) => left.priority - right.priority),
+    [providerKeys],
   );
   const providerModels = useMemo(
     () => snapshot?.models.filter((model) => model.providerId === selectedProviderId) ?? [],
@@ -176,6 +222,10 @@ export function AiSettingsClient({
     return () => window.removeEventListener('beforeunload', warn);
   }, [routingDirty]);
 
+  const effectiveProbeKeyId = usableProviderKeys.some((key) => key.id === probeKeyId)
+    ? probeKeyId
+    : (usableProviderKeys[0]?.id ?? '');
+
   function clearSecrets() {
     setKeyForm((value) => ({ ...value, apiKey: '' }));
     setReplacementSecrets({});
@@ -198,14 +248,26 @@ export function AiSettingsClient({
     if (value !== 'keys') clearSecrets();
   }
 
-  async function mutate(task: () => Promise<unknown>, success: string) {
+  const mutate: AiSettingsMutate = async (
+    task: () => Promise<unknown>,
+    success: string,
+    routingPolicy: RoutingMutationPolicy = 'discard',
+  ) => {
+    if (
+      routingDirty &&
+      routingPolicy === 'discard' &&
+      !window.confirm(t('aiSettingsDiscardRoutingConfirm'))
+    ) {
+      return false;
+    }
     setBusy(true);
     setError('');
     setNotice('');
     try {
       await task();
-      await load();
+      await load(undefined, routingPolicy === 'preserve');
       setNotice(success);
+      return true;
     } catch (cause) {
       if (cause instanceof ApiResponseError && [412, 428].includes(cause.status)) {
         await load();
@@ -217,13 +279,62 @@ export function AiSettingsClient({
     } finally {
       setBusy(false);
     }
+  };
+
+  async function refreshSettings() {
+    if (routingDirty && !window.confirm(t('aiSettingsDiscardRoutingConfirm'))) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await load();
+    } catch (cause) {
+      setError(extractUnknownErrorMessage(cause, t('aiSettingsUnexpectedError')));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function discardRoutingDraft() {
+    if (!snapshot) return;
+    const routes = routeDraft(snapshot);
+    for (const route of snapshot.routes) routes[route.action] = [...route.model_ids];
+    setDraftRoutes(routes);
+    setDraftSteps(
+      Object.fromEntries(
+        snapshot.pipelineSteps.map((step) => [
+          step.step_id,
+          snapshot.stepPolicies.find((policy) => policy.step_id === step.step_id)?.enabled ??
+            step.default_enabled,
+        ]),
+      ),
+    );
+  }
+
+  function handleTabKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, value: DetailTab) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = DETAIL_TABS.indexOf(value);
+    const nextIndex =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? DETAIL_TABS.length - 1
+          : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + DETAIL_TABS.length) %
+            DETAIL_TABS.length;
+    const nextTab = DETAIL_TABS[nextIndex];
+    if (!nextTab) return;
+    selectTab(nextTab);
+    window.requestAnimationFrame(() =>
+      document.getElementById(`ai-settings-tab-${nextTab}`)?.focus(),
+    );
   }
 
   async function submitProvider(event: FormEvent) {
     event.preventDefault();
     if (!snapshot) return;
     try {
-      await mutate(
+      const committed = await mutate(
         () =>
           createProvider(
             {
@@ -236,7 +347,9 @@ export function AiSettingsClient({
           ),
         t('aiSettingsSaved'),
       );
+      if (!committed) return;
       setProviderForm({ name: '', baseUrl: '', timeout: '60', enabled: true });
+      setProviderCreateOpen(false);
     } catch {
       // mutate owns the visible error.
     }
@@ -246,7 +359,7 @@ export function AiSettingsClient({
     event.preventDefault();
     if (!snapshot || !selectedProvider) return;
     try {
-      await mutate(
+      const committed = await mutate(
         () =>
           createCredential(
             selectedProvider.id,
@@ -260,6 +373,7 @@ export function AiSettingsClient({
           ),
         t('aiSettingsSaved'),
       );
+      if (!committed) return;
       setKeyForm({ label: '', apiKey: '', priority: '100' });
     } catch {
       // Secret remains only long enough for the admin to retry this failed save.
@@ -270,7 +384,7 @@ export function AiSettingsClient({
     event.preventDefault();
     if (!snapshot || !selectedProvider) return;
     try {
-      await mutate(
+      const committed = await mutate(
         () =>
           createModel(
             selectedProvider.id,
@@ -287,6 +401,7 @@ export function AiSettingsClient({
           ),
         t('aiSettingsSaved'),
       );
+      if (!committed) return;
       setModelForm({
         displayName: '',
         upstreamName: '',
@@ -307,15 +422,47 @@ export function AiSettingsClient({
 
   return (
     <AdminPageShell>
-      <AdminPageHeader
-        title={t('aiSettingsTitle')}
-        description={t('aiSettingsDescription')}
-        actions={
-          <Button variant="secondary" onClick={() => void load()} disabled={busy}>
-            {t('refresh')}
+      <h1 className="sr-only">{t('aiSettingsTitle')}</h1>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white p-2">
+        <nav className="flex flex-wrap gap-1" aria-label={t('aiSettingsWorkspaceNavigation')}>
+          <Button
+            size="sm"
+            variant={workspace === 'providers' ? 'primary' : 'ghost'}
+            aria-pressed={workspace === 'providers'}
+            onClick={() => setWorkspace('providers')}
+          >
+            <Server className="size-4" aria-hidden="true" />
+            {t('aiSettingsProviders')}
           </Button>
-        }
-      />
+          <Button
+            size="sm"
+            variant={workspace === 'routing' ? 'primary' : 'ghost'}
+            aria-pressed={workspace === 'routing'}
+            onClick={() => {
+              setWorkspace('routing');
+              clearSecrets();
+            }}
+          >
+            <Route className="size-4" aria-hidden="true" />
+            {t('aiSettingsGlobalRouting')}
+          </Button>
+        </nav>
+        <div className="flex items-center gap-2">
+          {routingDirty ? (
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+              {t('aiSettingsUnsavedBadge')}
+            </span>
+          ) : null}
+          <AiSettingsIconButton
+            icon={RefreshCw}
+            label={t('refresh')}
+            variant="secondary"
+            disabled={busy}
+            onClick={() => void refreshSettings()}
+          />
+        </div>
+      </div>
 
       {error ? (
         <p role="alert" className="mb-4 rounded-lg bg-error-surface p-3 text-sm text-error">
@@ -323,191 +470,243 @@ export function AiSettingsClient({
         </p>
       ) : null}
       {notice ? (
-        <p className="mb-4 rounded-lg bg-success-surface p-3 text-sm text-success">{notice}</p>
+        <p role="status" className="mb-4 rounded-lg bg-success-surface p-3 text-sm text-green-800">
+          {notice}
+        </p>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        {snapshot ? (
-          <ProvidersPanel
+      {workspace === 'routing' && snapshot ? (
+        <section className="min-w-0 rounded-xl border border-line bg-white p-4 sm:p-5">
+          <div className="mb-5 flex items-center justify-between gap-3 border-b border-line pb-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <Route className="size-5 shrink-0 text-accent" aria-hidden="true" />
+              <h2 className="text-sm font-semibold">{t('aiSettingsGlobalRouting')}</h2>
+            </div>
+            <span className="text-xs text-ink-muted">
+              {t('aiSettingsRevisionValue', { revision: snapshot.revision })}
+            </span>
+          </div>
+          <PipelineRoutingPanel
             busy={busy}
-            form={providerForm}
-            onSelect={selectProvider}
-            onSubmit={submitProvider}
-            selectedProviderId={selectedProviderId}
-            setForm={setProviderForm}
+            draftRoutes={draftRoutes}
+            draftSteps={draftSteps}
+            routingDirty={routingDirty}
+            setDraftRoutes={setDraftRoutes}
+            setDraftSteps={setDraftSteps}
             snapshot={snapshot}
+            onSave={() =>
+              void mutate(
+                () =>
+                  saveRouting(
+                    {
+                      routes: snapshot.actions.map(({ action }) => ({
+                        action,
+                        model_ids: draftRoutes[action] ?? [],
+                      })),
+                      step_policies: snapshot.pipelineSteps.map((step) => ({
+                        step_id: step.step_id,
+                        enabled: draftSteps[step.step_id] ?? step.default_enabled,
+                      })),
+                    },
+                    snapshot.revision,
+                  ),
+                t('aiSettingsSaved'),
+                'commit',
+              ).catch(() => undefined)
+            }
+            onDiscard={discardRoutingDraft}
           />
-        ) : null}
-
-        <section className="min-w-0 overflow-hidden rounded-xl border border-line bg-white p-4 sm:p-5">
-          {!selectedProvider || !snapshot ? (
-            <p className="text-neutral-500">{t('aiSettingsSelectProvider')}</p>
-          ) : (
-            <>
-              <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0 flex-1 basis-64">
-                  <h2 className="break-words text-xl font-semibold leading-snug">
-                    {selectedProvider.name}
-                  </h2>
-                  <p className="mt-1 break-all text-sm text-neutral-500">
-                    {selectedProvider.baseUrl}
-                  </p>
-                </div>
-                <div className="flex max-w-full flex-wrap gap-2">
-                  <Button
-                    variant="secondary"
-                    disabled={busy || !providerKeys[0]}
-                    onClick={() => {
-                      const key = providerKeys[0];
-                      if (key)
-                        void mutate(
-                          () => testProvider(selectedProvider.id, { key_id: key.id }),
-                          t('aiSettingsProbePassed'),
-                        ).catch(() => undefined);
-                    }}
-                  >
-                    {t('aiSettingsTest')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() =>
-                      void mutate(
-                        () =>
-                          patchProvider(
-                            selectedProvider.id,
-                            { enabled: !selectedProvider.enabled },
-                            snapshot.revision,
-                          ),
-                        t('aiSettingsSaved'),
-                      ).catch(() => undefined)
-                    }
-                  >
-                    {selectedProvider.enabled ? t('disable') : t('enable')}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    disabled={busy}
-                    onClick={() => {
-                      if (window.confirm(t('aiSettingsDeleteProviderConfirm'))) {
-                        void mutate(
-                          () => deleteProvider(selectedProvider.id, snapshot.revision),
-                          t('aiSettingsDeleted'),
-                        ).catch(() => undefined);
-                      }
-                    }}
-                  >
-                    {t('delete')}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="my-5 flex flex-wrap gap-2 border-b border-line pb-3">
-                {(['provider', 'keys', 'models', 'routing'] as const).map((value) => (
-                  <Button
-                    key={value}
-                    variant={tab === value ? 'primary' : 'ghost'}
-                    size="sm"
-                    onClick={() => selectTab(value)}
-                  >
-                    {t(`aiSettingsTab_${value}`)}
-                  </Button>
-                ))}
-              </div>
-
-              {tab === 'provider' ? (
-                <ProviderDetail
-                  busy={busy}
-                  edit={providerEdit}
-                  mutate={mutate}
-                  provider={selectedProvider}
-                  revision={snapshot.revision}
-                  setEdit={setProviderEdit}
-                />
-              ) : null}
-
-              {tab === 'keys' ? (
-                <ProviderKeysPanel
-                  busy={busy}
-                  keyForm={keyForm}
-                  keys={providerKeys}
-                  mutate={mutate}
-                  onSubmit={submitKey}
-                  provider={selectedProvider}
-                  replacementSecrets={replacementSecrets}
-                  revision={snapshot.revision}
-                  setKeyForm={setKeyForm}
-                  setReplacementSecrets={setReplacementSecrets}
-                />
-              ) : null}
-
-              {tab === 'models' ? (
-                <ProviderModelsPanel
-                  busy={busy}
-                  discoveredModels={discoveredModels}
-                  keys={providerKeys}
-                  modelForm={modelForm}
-                  models={providerModels}
-                  mutate={mutate}
-                  onSubmit={submitModel}
-                  provider={selectedProvider}
-                  revision={snapshot.revision}
-                  setDiscoveredModels={setDiscoveredModels}
-                  setError={setError}
-                  setModelForm={setModelForm}
-                  setNotice={setNotice}
-                />
-              ) : null}
-
-              {tab === 'routing' ? (
-                <PipelineRoutingPanel
-                  busy={busy}
-                  draftRoutes={draftRoutes}
-                  draftSteps={draftSteps}
-                  routingDirty={routingDirty}
-                  setDraftRoutes={setDraftRoutes}
-                  setDraftSteps={setDraftSteps}
-                  snapshot={snapshot}
-                  onSave={() =>
-                    void mutate(
-                      () =>
-                        saveRouting(
-                          {
-                            routes: snapshot.actions.map(({ action }) => ({
-                              action,
-                              model_ids: draftRoutes[action] ?? [],
-                            })),
-                            step_policies: snapshot.pipelineSteps.map((step) => ({
-                              step_id: step.step_id,
-                              enabled: draftSteps[step.step_id] ?? step.default_enabled,
-                            })),
-                          },
-                          snapshot.revision,
-                        ),
-                      t('aiSettingsSaved'),
-                    ).catch(() => undefined)
-                  }
-                  onDiscard={() => {
-                    const routes = routeDraft(snapshot);
-                    for (const route of snapshot.routes)
-                      routes[route.action] = [...route.model_ids];
-                    setDraftRoutes(routes);
-                    setDraftSteps(
-                      Object.fromEntries(
-                        snapshot.pipelineSteps.map((step) => [
-                          step.step_id,
-                          snapshot.stepPolicies.find((policy) => policy.step_id === step.step_id)
-                            ?.enabled ?? step.default_enabled,
-                        ]),
-                      ),
-                    );
-                  }}
-                />
-              ) : null}
-            </>
-          )}
         </section>
-      </div>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
+          {snapshot ? (
+            <ProvidersPanel
+              busy={busy}
+              creating={providerCreateOpen}
+              form={providerForm}
+              onSelect={selectProvider}
+              onSubmit={submitProvider}
+              selectedProviderId={selectedProviderId}
+              setCreating={setProviderCreateOpen}
+              setForm={setProviderForm}
+              snapshot={snapshot}
+            />
+          ) : null}
+
+          <section className="min-w-0 overflow-hidden rounded-xl border border-line bg-white p-4 sm:p-5">
+            {!selectedProvider || !snapshot ? (
+              <p className="text-neutral-500">{t('aiSettingsSelectProvider')}</p>
+            ) : (
+              <>
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1 basis-64">
+                    <h2 className="break-words text-lg font-semibold leading-snug">
+                      {selectedProvider.name}
+                    </h2>
+                    <p className="mt-1 break-all text-xs text-neutral-500">
+                      {selectedProvider.baseUrl}
+                    </p>
+                  </div>
+                  <div className="flex max-w-full flex-wrap items-center gap-2">
+                    {usableProviderKeys.length > 1 ? (
+                      <Select
+                        className="h-9 max-w-48 text-xs"
+                        aria-label={t('aiSettingsProbeCredential')}
+                        value={effectiveProbeKeyId}
+                        onChange={(event) => setProbeKeyId(event.target.value)}
+                      >
+                        {usableProviderKeys.map((key) => (
+                          <option key={key.id} value={key.id}>
+                            {key.label}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : null}
+                    <AiSettingsIconButton
+                      icon={FlaskConical}
+                      label={t('aiSettingsTest')}
+                      variant="secondary"
+                      disabled={busy || !effectiveProbeKeyId}
+                      onClick={() =>
+                        void mutate(
+                          () => testProvider(selectedProvider.id, { key_id: effectiveProbeKeyId }),
+                          t('aiSettingsProbePassed'),
+                          'preserve',
+                        ).catch(() => undefined)
+                      }
+                    />
+                    <AiSettingsIconButton
+                      icon={Power}
+                      label={selectedProvider.enabled ? t('disable') : t('enable')}
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() =>
+                        void mutate(
+                          () =>
+                            patchProvider(
+                              selectedProvider.id,
+                              { enabled: !selectedProvider.enabled },
+                              snapshot.revision,
+                            ),
+                          t('aiSettingsSaved'),
+                        ).catch(() => undefined)
+                      }
+                    />
+                    <AiSettingsIconButton
+                      icon={Trash2}
+                      label={t('delete')}
+                      variant="destructive"
+                      disabled={busy}
+                      onClick={() => setProviderToDelete(selectedProvider)}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  role="tablist"
+                  aria-label={t('aiSettingsProviderSections')}
+                  className="my-5 flex flex-wrap gap-1 border-b border-line pb-3"
+                >
+                  {DETAIL_TABS.map((value) => {
+                    const Icon =
+                      value === 'provider' ? Settings2 : value === 'keys' ? KeyRound : Cpu;
+                    return (
+                      <Button
+                        id={`ai-settings-tab-${value}`}
+                        key={value}
+                        role="tab"
+                        aria-selected={tab === value}
+                        aria-controls="ai-settings-tabpanel"
+                        tabIndex={tab === value ? 0 : -1}
+                        variant={tab === value ? 'primary' : 'ghost'}
+                        size="sm"
+                        onKeyDown={(event) => handleTabKeyDown(event, value)}
+                        onClick={() => selectTab(value)}
+                      >
+                        <Icon className="size-4" aria-hidden="true" />
+                        {t(`aiSettingsTab_${value}`)}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <div
+                  id="ai-settings-tabpanel"
+                  role="tabpanel"
+                  aria-labelledby={`ai-settings-tab-${tab}`}
+                >
+                  {tab === 'provider' ? (
+                    <ProviderDetail
+                      busy={busy}
+                      edit={providerEdit}
+                      mutate={mutate}
+                      provider={selectedProvider}
+                      revision={snapshot.revision}
+                      setEdit={setProviderEdit}
+                    />
+                  ) : null}
+
+                  {tab === 'keys' ? (
+                    <ProviderKeysPanel
+                      busy={busy}
+                      keyForm={keyForm}
+                      keys={providerKeys}
+                      mutate={mutate}
+                      onSubmit={submitKey}
+                      provider={selectedProvider}
+                      replacementSecrets={replacementSecrets}
+                      revision={snapshot.revision}
+                      setKeyForm={setKeyForm}
+                      setReplacementSecrets={setReplacementSecrets}
+                    />
+                  ) : null}
+
+                  {tab === 'models' ? (
+                    <ProviderModelsPanel
+                      busy={busy}
+                      discoveredModels={discoveredModels}
+                      keys={providerKeys}
+                      modelForm={modelForm}
+                      models={providerModels}
+                      mutate={mutate}
+                      onSubmit={submitModel}
+                      provider={selectedProvider}
+                      revision={snapshot.revision}
+                      setDiscoveredModels={setDiscoveredModels}
+                      setError={setError}
+                      setModelForm={setModelForm}
+                      setNotice={setNotice}
+                    />
+                  ) : null}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      )}
+
+      <AiSettingsConfirmDialog
+        open={providerToDelete !== null}
+        busy={busy}
+        title={t('aiSettingsDeleteProviderTitle')}
+        description={t('aiSettingsDeleteProviderConfirm', {
+          name: providerToDelete?.name ?? '',
+        })}
+        cancelLabel={t('cancel')}
+        confirmLabel={t('delete')}
+        onCancel={() => setProviderToDelete(null)}
+        onConfirm={() => {
+          if (!providerToDelete || !snapshot) return;
+          void mutate(
+            () => deleteProvider(providerToDelete.id, snapshot.revision),
+            t('aiSettingsDeleted'),
+          )
+            .then((committed) => {
+              if (committed) setProviderToDelete(null);
+            })
+            .catch(() => undefined);
+        }}
+      />
     </AdminPageShell>
   );
 }

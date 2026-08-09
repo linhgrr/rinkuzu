@@ -2,8 +2,10 @@
 
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
+import { ArrowDown, ArrowUp, Save, Undo2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { AiSettingsIconButton } from '@/features/admin/ai-settings/components/AiSettingsIconButton';
 import type {
   AiSettingsViewModel,
   LlmAction,
@@ -26,19 +28,30 @@ type PipelineRoutingPanelProps = {
 };
 
 const FIELD =
-  'h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand-trust';
+  'h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-1';
 
-function routeInvalid(
+type RouteIssue =
+  | 'empty'
+  | 'duplicate'
+  | 'model_missing'
+  | 'model_disabled'
+  | 'provider_disabled'
+  | 'missing_key'
+  | 'missing_capability';
+
+function routeIssues(
   snapshot: AiSettingsViewModel,
   action: LlmAction,
   modelIds: string[],
-): boolean {
-  if (modelIds.length === 0 || new Set(modelIds).size !== modelIds.length) return true;
+): RouteIssue[] {
+  const issues = new Set<RouteIssue>();
+  if (modelIds.length === 0) issues.add('empty');
+  if (new Set(modelIds).size !== modelIds.length) issues.add('duplicate');
 
   const required =
     snapshot.actions.find((definition) => definition.action === action)?.required_capabilities ??
     [];
-  return modelIds.some((id) => {
+  for (const id of modelIds) {
     const model = snapshot.models.find((candidate) => candidate.id === id);
     const provider = model
       ? snapshot.providers.find((candidate) => candidate.id === model.providerId)
@@ -48,14 +61,15 @@ function routeInvalid(
           (credential) => credential.providerId === model.providerId && credential.enabled,
         )
       : false;
-    return (
-      !model ||
-      !model.enabled ||
-      !provider?.enabled ||
-      !hasEnabledKey ||
-      required.some((capability) => !model.capabilities.includes(capability))
-    );
-  });
+    if (!model) issues.add('model_missing');
+    else if (!model.enabled) issues.add('model_disabled');
+    if (model && !provider?.enabled) issues.add('provider_disabled');
+    if (model && !hasEnabledKey) issues.add('missing_key');
+    if (model && required.some((capability) => !model.capabilities.includes(capability))) {
+      issues.add('missing_capability');
+    }
+  }
+  return [...issues];
 }
 
 export function PipelineRoutingPanel({
@@ -104,7 +118,9 @@ export function PipelineRoutingPanel({
             )
           );
         });
-        const invalid = routeInvalid(snapshot, definition.action, chain);
+        const issues = routeIssues(snapshot, definition.action, chain);
+        const invalid = issues.length > 0;
+        const actionLabel = t(`aiSettingsAction_${definition.action}`);
         const isFirstInGroup =
           snapshot.actions.findIndex((item) => item.group === definition.group) ===
           snapshot.actions.indexOf(definition);
@@ -112,8 +128,8 @@ export function PipelineRoutingPanel({
         return (
           <section key={definition.action} className="min-w-0 space-y-2">
             {isFirstInGroup ? (
-              <h3 className="text-base font-semibold capitalize">
-                {definition.group.replaceAll('_', ' ')}
+              <h3 className="text-sm font-semibold text-ink-muted">
+                {t(`aiSettingsGroup_${definition.group}`)}
               </h3>
             ) : null}
             <div
@@ -121,9 +137,9 @@ export function PipelineRoutingPanel({
             >
               <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                 <span className="min-w-0">
-                  <strong className="block break-words leading-snug">{definition.label}</strong>
+                  <strong className="block break-words leading-snug">{actionLabel}</strong>
                   <span className="mt-1 block break-words text-xs leading-relaxed text-neutral-500">
-                    {definition.description}
+                    {t(`aiSettingsActionDescription_${definition.action}`)}
                   </span>
                 </span>
                 <span className="flex max-w-full flex-wrap gap-1.5 sm:max-w-64 sm:justify-end">
@@ -132,14 +148,24 @@ export function PipelineRoutingPanel({
                       key={capability}
                       className="max-w-full break-all rounded-full bg-neutral-100 px-2 py-1 text-[11px] leading-tight text-neutral-600"
                     >
-                      {capability}
+                      {t(`aiSettingsCapability_${capability}`)}
                     </span>
                   ))}
                 </span>
               </div>
+              {invalid ? (
+                <ul className="mt-3 space-y-1 rounded-lg border border-error-border bg-error-surface p-3 text-xs text-error">
+                  {issues.map((issue) => (
+                    <li key={issue}>{t(`aiSettingsRouteIssue_${issue}`)}</li>
+                  ))}
+                </ul>
+              ) : null}
               <div className="mt-4 min-w-0 space-y-3">
                 {chain.map((modelId, index) => {
                   const model = snapshot.models.find((candidate) => candidate.id === modelId);
+                  const provider = model
+                    ? snapshot.providers.find((candidate) => candidate.id === model.providerId)
+                    : undefined;
                   return (
                     <div
                       key={`${modelId}-${index}`}
@@ -147,28 +173,30 @@ export function PipelineRoutingPanel({
                     >
                       <span className="min-w-0 flex-1 basis-48 break-words leading-snug">
                         {index + 1}. {model?.displayName ?? modelId}
+                        {provider ? (
+                          <span className="ml-2 inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] text-ink-muted">
+                            {provider.name}
+                          </span>
+                        ) : null}
                       </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        aria-label={t('aiSettingsMoveUp')}
+                      <AiSettingsIconButton
+                        icon={ArrowUp}
+                        label={t('aiSettingsMoveUp')}
                         disabled={index === 0}
                         onClick={() => moveModel(definition.action, index, -1)}
-                      >
-                        ↑
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        aria-label={t('aiSettingsMoveDown')}
+                      />
+                      <AiSettingsIconButton
+                        icon={ArrowDown}
+                        label={t('aiSettingsMoveDown')}
                         disabled={index === chain.length - 1}
                         onClick={() => moveModel(definition.action, index, 1)}
-                      >
-                        ↓
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                      />
+                      <AiSettingsIconButton
+                        icon={X}
+                        label={t('aiSettingsRemoveRouteModel', {
+                          model: model?.displayName ?? modelId,
+                          action: actionLabel,
+                        })}
                         onClick={() =>
                           setDraftRoutes((current) => ({
                             ...current,
@@ -177,14 +205,13 @@ export function PipelineRoutingPanel({
                             ),
                           }))
                         }
-                      >
-                        ×
-                      </Button>
+                      />
                     </div>
                   );
                 })}
                 <Select
                   className={FIELD}
+                  aria-label={t('aiSettingsAddRouteModelFor', { action: actionLabel })}
                   defaultValue=""
                   onChange={(event) => {
                     const modelId = event.target.value;
@@ -219,9 +246,11 @@ export function PipelineRoutingPanel({
             className="flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-xl border border-line p-4"
           >
             <span className="min-w-0 flex-1 basis-64">
-              <strong className="break-words">{step.label}</strong>
+              <strong className="break-words">{t(`aiSettingsPipelineStep_${step.step_id}`)}</strong>
               <span className="ml-2 break-all text-xs text-ink-muted">
-                {step.required ? t('aiSettingsRequired') : step.bypass_kind}
+                {step.required
+                  ? t('aiSettingsRequired')
+                  : t(`aiSettingsBypass_${step.bypass_kind}`)}
               </span>
             </span>
             <input
@@ -240,24 +269,29 @@ export function PipelineRoutingPanel({
       </div>
 
       {routingDirty ? (
-        <p role="status" className="rounded-lg bg-warning-surface p-3 text-sm text-warning">
+        <p
+          role="status"
+          className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+        >
           {t('aiSettingsUnsavedRouting')}
         </p>
       ) : null}
-      <div className="flex flex-wrap gap-2">
+      <div className="sticky bottom-3 z-10 flex flex-wrap gap-2 rounded-xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur">
         <Button
           loading={busy}
           disabled={
             !routingDirty ||
-            snapshot.actions.some(({ action }) =>
-              routeInvalid(snapshot, action, draftRoutes[action] ?? []),
+            snapshot.actions.some(
+              ({ action }) => routeIssues(snapshot, action, draftRoutes[action] ?? []).length > 0,
             )
           }
           onClick={onSave}
         >
+          <Save className="size-4" aria-hidden="true" />
           {t('aiSettingsSaveRouting')}
         </Button>
         <Button variant="secondary" disabled={!routingDirty || busy} onClick={onDiscard}>
+          <Undo2 className="size-4" aria-hidden="true" />
           {t('aiSettingsDiscardRouting')}
         </Button>
       </div>

@@ -69,6 +69,14 @@ export type AiSettingsViewModel = {
   stepPolicies: StepPolicyDto[];
 };
 
+export type RoutingMutationPolicy = 'discard' | 'preserve' | 'commit';
+
+export type AiSettingsMutate = (
+  task: () => Promise<unknown>,
+  success: string,
+  routingPolicy?: RoutingMutationPolicy,
+) => Promise<boolean>;
+
 export type ProbeResult = {
   ok?: boolean;
   latency_ms?: number;

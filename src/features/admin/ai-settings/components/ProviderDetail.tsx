@@ -2,22 +2,26 @@
 
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
+import { Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { patchProvider } from '@/features/admin/ai-settings/api/ai-settings-api';
-import type { ProviderViewModel } from '@/features/admin/ai-settings/types/ai-settings';
+import type {
+  AiSettingsMutate,
+  ProviderViewModel,
+} from '@/features/admin/ai-settings/types/ai-settings';
 import type { ProviderFormState } from '@/features/admin/ai-settings/components/ProvidersPanel';
 
 type ProviderDetailProps = {
   busy: boolean;
   edit: ProviderFormState;
-  mutate: (task: () => Promise<unknown>, success: string) => Promise<void>;
+  mutate: AiSettingsMutate;
   provider: ProviderViewModel;
   revision: number;
   setEdit: Dispatch<SetStateAction<ProviderFormState>>;
 };
 
 const FIELD =
-  'h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand-trust';
+  'h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-1';
 
 export function ProviderDetail({
   busy,
@@ -71,7 +75,7 @@ export function ProviderDetail({
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span>{t('aiSettingsTimeout')}</span>
+          <span>{t('aiSettingsTimeoutSeconds')}</span>
           <input
             className={FIELD}
             required
@@ -91,7 +95,7 @@ export function ProviderDetail({
           {t('aiSettingsProviderEnabled')}
         </label>
       </div>
-      <p className="rounded-lg bg-warning-surface p-3 text-sm text-warning">
+      <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-800">
         {t('aiSettingsEgressWarning')}
       </p>
       <dl className="grid gap-4 sm:grid-cols-2">
@@ -105,6 +109,7 @@ export function ProviderDetail({
         </div>
       </dl>
       <Button type="submit" loading={busy}>
+        <Save className="size-4" aria-hidden="true" />
         {t('aiSettingsSaveProvider')}
       </Button>
     </form>

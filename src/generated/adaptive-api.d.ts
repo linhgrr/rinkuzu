@@ -1619,6 +1619,26 @@ export interface components {
        */
       recoverable_failures: number;
       /**
+       * Successful Operations
+       * @default 0
+       */
+      successful_operations: number;
+      /**
+       * Failed Operations
+       * @default 0
+       */
+      failed_operations: number;
+      /**
+       * Fallback Operations
+       * @default 0
+       */
+      fallback_operations: number;
+      /**
+       * Total Latency Ms
+       * @default 0
+       */
+      total_latency_ms: number;
+      /**
        * Input Tokens
        * @default 0
        */
@@ -1658,6 +1678,26 @@ export interface components {
        * @default 0
        */
       recoverable_failures: number;
+      /**
+       * Successful Operations
+       * @default 0
+       */
+      successful_operations: number;
+      /**
+       * Failed Operations
+       * @default 0
+       */
+      failed_operations: number;
+      /**
+       * Fallback Operations
+       * @default 0
+       */
+      fallback_operations: number;
+      /**
+       * Total Latency Ms
+       * @default 0
+       */
+      total_latency_ms: number;
       /**
        * Input Tokens
        * @default 0
@@ -1732,6 +1772,11 @@ export interface components {
       /** Cost Usd */
       cost_usd: number;
       /**
+       * Latency Ms
+       * @default 0
+       */
+      latency_ms: number;
+      /**
        * Created At
        * Format: date-time
        */
@@ -1762,6 +1807,11 @@ export interface components {
        */
       unknown_pricing: number;
       /**
+       * Usage Unavailable
+       * @default 0
+       */
+      usage_unavailable: number;
+      /**
        * Persistence Failures
        * @default 0
        */
@@ -1783,10 +1833,13 @@ export interface components {
       /** Window Days */
       window_days: number;
       totals: components['schemas']['LlmUsageTotalsResponse'];
+      previous_totals: components['schemas']['LlmUsageTotalsResponse'];
       by_action: components['schemas']['LlmUsageBreakdownResponse'];
       by_user: components['schemas']['LlmUsageBreakdownResponse'];
       by_provider: components['schemas']['LlmUsageBreakdownResponse'];
       by_model: components['schemas']['LlmUsageBreakdownResponse'];
+      by_outcome: components['schemas']['LlmUsageBreakdownResponse'];
+      by_error_code: components['schemas']['LlmUsageBreakdownResponse'];
       by_user_action: components['schemas']['LlmUsageUserActionBreakdownResponse'];
       /** Daily */
       daily: components['schemas']['LlmUsageDailyRow'][];
@@ -1824,6 +1877,11 @@ export interface components {
        * @default 0
        */
       recoverable_failures: number;
+      /**
+       * Total Latency Ms
+       * @default 0
+       */
+      total_latency_ms: number;
       /**
        * Input Tokens
        * @default 0
@@ -1872,10 +1930,30 @@ export interface components {
        */
       physical_attempts: number;
       /**
+       * Successful Operations
+       * @default 0
+       */
+      successful_operations: number;
+      /**
+       * Failed Operations
+       * @default 0
+       */
+      failed_operations: number;
+      /**
+       * Fallback Operations
+       * @default 0
+       */
+      fallback_operations: number;
+      /**
        * Recoverable Failures
        * @default 0
        */
       recoverable_failures: number;
+      /**
+       * Total Latency Ms
+       * @default 0
+       */
+      total_latency_ms: number;
       /**
        * Input Tokens
        * @default 0

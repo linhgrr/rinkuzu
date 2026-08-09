@@ -23,7 +23,11 @@ function toRow(dto: UsageDimensionDto): LlmUsageBreakdownRow {
     key: dto.key ?? '(unknown)',
     logicalOperations: dto.logical_operations,
     physicalAttempts: dto.physical_attempts,
+    successfulOperations: dto.successful_operations,
+    failedOperations: dto.failed_operations,
+    fallbackOperations: dto.fallback_operations,
     recoverableFailures: dto.recoverable_failures,
+    totalLatencyMs: dto.total_latency_ms,
     totalTokens: dto.total_tokens,
     inputTokens: dto.input_tokens,
     outputTokens: dto.output_tokens,
@@ -66,6 +70,8 @@ export async function fetchLlmUsageViewModel(
   const byModel = toBreakdown(dto.by_model);
   const byUser = toBreakdown(dto.by_user);
   const byProvider = toBreakdown(dto.by_provider);
+  const byOutcome = toBreakdown(dto.by_outcome);
+  const byErrorCode = toBreakdown(dto.by_error_code);
   const totalCostUsd = dto.totals.cost_usd;
   const logicalOperations = dto.totals.logical_operations;
   const topUser = firstRow(byUser);
@@ -85,16 +91,34 @@ export async function fetchLlmUsageViewModel(
     failedOperations: dto.totals.failed_operations,
     fallbackOperations: dto.totals.fallback_operations,
     recoverableFailures: dto.totals.recoverable_failures,
+    totalLatencyMs: dto.totals.total_latency_ms,
+    previousPeriod: {
+      totalTokens: dto.previous_totals.total_tokens,
+      totalCostUsd: dto.previous_totals.cost_usd,
+      logicalOperations: dto.previous_totals.logical_operations,
+      physicalAttempts: dto.previous_totals.physical_attempts,
+      successfulOperations: dto.previous_totals.successful_operations,
+      failedOperations: dto.previous_totals.failed_operations,
+      fallbackOperations: dto.previous_totals.fallback_operations,
+      totalLatencyMs: dto.previous_totals.total_latency_ms,
+    },
     byAction,
     byModel,
     byUser,
     byProvider,
+    byOutcome,
+    byErrorCode,
     byUserAction: {
       rows: dto.by_user_action.rows.map((row: UsageUserActionDto) => ({
         userId: row.user_id ?? 'legacy/unknown',
         action: row.action ?? 'legacy/unknown',
         logicalOperations: row.logical_operations,
         physicalAttempts: row.physical_attempts,
+        successfulOperations: row.successful_operations,
+        failedOperations: row.failed_operations,
+        fallbackOperations: row.fallback_operations,
+        recoverableFailures: row.recoverable_failures,
+        totalLatencyMs: row.total_latency_ms,
         totalTokens: row.total_tokens,
         inputTokens: row.input_tokens,
         outputTokens: row.output_tokens,
@@ -106,19 +130,30 @@ export async function fetchLlmUsageViewModel(
       date: row.date,
       logicalOperations: row.logical_operations,
       physicalAttempts: row.physical_attempts,
+      successfulOperations: row.successful_operations,
+      failedOperations: row.failed_operations,
+      fallbackOperations: row.fallback_operations,
       recoverableFailures: row.recoverable_failures,
+      totalLatencyMs: row.total_latency_ms,
       totalTokens: row.total_tokens,
       costUsd: row.cost_usd,
     })),
     observability: {
       tokenAnomalies: dto.observability.token_anomalies,
       unknownPricing: dto.observability.unknown_pricing,
+      usageUnavailable: dto.observability.usage_unavailable,
       persistenceFailures: dto.observability.persistence_failures,
       missingAttribution: dto.observability.missing_attribution,
     },
     analysis: {
       averageTokensPerOperation: safeRatio(dto.totals.total_tokens, logicalOperations),
       averageCostUsdPerOperation: safeRatio(totalCostUsd, logicalOperations),
+      averageCostUsdPerSuccessfulOperation: safeRatio(
+        totalCostUsd,
+        dto.totals.successful_operations,
+      ),
+      averageLatencyMsPerOperation: safeRatio(dto.totals.total_latency_ms, logicalOperations),
+      attemptsPerOperation: safeRatio(dto.totals.physical_attempts, logicalOperations),
       successRate: safeRatio(dto.totals.successful_operations, logicalOperations),
       fallbackRate: safeRatio(dto.totals.fallback_operations, logicalOperations),
       topUserId: topUser?.key ?? '(unknown)',

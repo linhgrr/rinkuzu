@@ -5854,6 +5854,26 @@
             "title": "Recoverable Failures",
             "default": 0
           },
+          "successful_operations": {
+            "type": "integer",
+            "title": "Successful Operations",
+            "default": 0
+          },
+          "failed_operations": {
+            "type": "integer",
+            "title": "Failed Operations",
+            "default": 0
+          },
+          "fallback_operations": {
+            "type": "integer",
+            "title": "Fallback Operations",
+            "default": 0
+          },
+          "total_latency_ms": {
+            "type": "integer",
+            "title": "Total Latency Ms",
+            "default": 0
+          },
           "input_tokens": {
             "type": "integer",
             "title": "Input Tokens",
@@ -5905,6 +5925,26 @@
           "recoverable_failures": {
             "type": "integer",
             "title": "Recoverable Failures",
+            "default": 0
+          },
+          "successful_operations": {
+            "type": "integer",
+            "title": "Successful Operations",
+            "default": 0
+          },
+          "failed_operations": {
+            "type": "integer",
+            "title": "Failed Operations",
+            "default": 0
+          },
+          "fallback_operations": {
+            "type": "integer",
+            "title": "Fallback Operations",
+            "default": 0
+          },
+          "total_latency_ms": {
+            "type": "integer",
+            "title": "Total Latency Ms",
             "default": 0
           },
           "input_tokens": {
@@ -6082,6 +6122,11 @@
             "type": "number",
             "title": "Cost Usd"
           },
+          "latency_ms": {
+            "type": "integer",
+            "title": "Latency Ms",
+            "default": 0
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -6155,6 +6200,11 @@
             "title": "Unknown Pricing",
             "default": 0
           },
+          "usage_unavailable": {
+            "type": "integer",
+            "title": "Usage Unavailable",
+            "default": 0
+          },
           "persistence_failures": {
             "type": "integer",
             "title": "Persistence Failures",
@@ -6184,6 +6234,9 @@
           "totals": {
             "$ref": "#/components/schemas/LlmUsageTotalsResponse"
           },
+          "previous_totals": {
+            "$ref": "#/components/schemas/LlmUsageTotalsResponse"
+          },
           "by_action": {
             "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
           },
@@ -6194,6 +6247,12 @@
             "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
           },
           "by_model": {
+            "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
+          },
+          "by_outcome": {
+            "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
+          },
+          "by_error_code": {
             "$ref": "#/components/schemas/LlmUsageBreakdownResponse"
           },
           "by_user_action": {
@@ -6214,10 +6273,13 @@
         "required": [
           "window_days",
           "totals",
+          "previous_totals",
           "by_action",
           "by_user",
           "by_provider",
           "by_model",
+          "by_outcome",
+          "by_error_code",
           "by_user_action",
           "daily",
           "observability"
@@ -6254,6 +6316,11 @@
           "recoverable_failures": {
             "type": "integer",
             "title": "Recoverable Failures",
+            "default": 0
+          },
+          "total_latency_ms": {
+            "type": "integer",
+            "title": "Total Latency Ms",
             "default": 0
           },
           "input_tokens": {
@@ -6333,9 +6400,29 @@
             "title": "Physical Attempts",
             "default": 0
           },
+          "successful_operations": {
+            "type": "integer",
+            "title": "Successful Operations",
+            "default": 0
+          },
+          "failed_operations": {
+            "type": "integer",
+            "title": "Failed Operations",
+            "default": 0
+          },
+          "fallback_operations": {
+            "type": "integer",
+            "title": "Fallback Operations",
+            "default": 0
+          },
           "recoverable_failures": {
             "type": "integer",
             "title": "Recoverable Failures",
+            "default": 0
+          },
+          "total_latency_ms": {
+            "type": "integer",
+            "title": "Total Latency Ms",
             "default": 0
           },
           "input_tokens": {

@@ -2,7 +2,11 @@ export interface LlmUsageBreakdownRow {
   key: string;
   logicalOperations: number;
   physicalAttempts: number;
+  successfulOperations: number;
+  failedOperations: number;
+  fallbackOperations: number;
   recoverableFailures: number;
+  totalLatencyMs: number;
   totalTokens: number;
   inputTokens: number;
   outputTokens: number;
@@ -29,6 +33,11 @@ export interface LlmUsageUserActionRow {
   action: string;
   logicalOperations: number;
   physicalAttempts: number;
+  successfulOperations: number;
+  failedOperations: number;
+  fallbackOperations: number;
+  recoverableFailures: number;
+  totalLatencyMs: number;
   totalTokens: number;
   inputTokens: number;
   outputTokens: number;
@@ -44,7 +53,11 @@ export interface LlmUsageDailyPoint {
   date: string;
   logicalOperations: number;
   physicalAttempts: number;
+  successfulOperations: number;
+  failedOperations: number;
+  fallbackOperations: number;
   recoverableFailures: number;
+  totalLatencyMs: number;
   totalTokens: number;
   costUsd: number;
 }
@@ -52,6 +65,9 @@ export interface LlmUsageDailyPoint {
 export interface LlmUsageAnalysis {
   averageTokensPerOperation: number;
   averageCostUsdPerOperation: number;
+  averageCostUsdPerSuccessfulOperation: number;
+  averageLatencyMsPerOperation: number;
+  attemptsPerOperation: number;
   successRate: number;
   fallbackRate: number;
   topUserId: string;
@@ -62,9 +78,21 @@ export interface LlmUsageAnalysis {
   topModelCostShare: number;
 }
 
+export interface LlmUsagePeriodTotals {
+  totalTokens: number;
+  totalCostUsd: number;
+  logicalOperations: number;
+  physicalAttempts: number;
+  successfulOperations: number;
+  failedOperations: number;
+  fallbackOperations: number;
+  totalLatencyMs: number;
+}
+
 export interface LlmUsageObservability {
   tokenAnomalies: number;
   unknownPricing: number;
+  usageUnavailable: number;
   persistenceFailures: number;
   missingAttribution: number;
 }
@@ -82,10 +110,14 @@ export interface LlmUsageViewModel {
   failedOperations: number;
   fallbackOperations: number;
   recoverableFailures: number;
+  totalLatencyMs: number;
+  previousPeriod: LlmUsagePeriodTotals;
   byAction: LlmUsageBreakdown;
   byModel: LlmUsageBreakdown;
   byUser: LlmUsageBreakdown;
   byProvider: LlmUsageBreakdown;
+  byOutcome: LlmUsageBreakdown;
+  byErrorCode: LlmUsageBreakdown;
   byUserAction: LlmUsageUserActionBreakdown;
   daily: LlmUsageDailyPoint[];
   observability: LlmUsageObservability;

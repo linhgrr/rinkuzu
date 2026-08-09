@@ -4,6 +4,7 @@ import { useEffect, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
+import { BarChart3, BrainCircuit, Gauge, type LucideIcon } from 'lucide-react';
 import {
   fetchAdminStatsViewModel,
   fetchGrowthTrendsViewModel,
@@ -14,7 +15,6 @@ import type {
   AdminMetricComparisonViewModel,
   AdminStatsViewModel,
 } from '@/features/admin/stats/types/admin-stats-view-model';
-import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminStatsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -78,6 +78,7 @@ const LlmUsageSection = dynamic(
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;
+type StatsWorkspace = 'overview' | 'llm' | 'entitlements';
 
 interface AdminStatsLayoutProps {
   children: ReactNode;
@@ -107,7 +108,9 @@ interface RecentActivityCardProps extends AdminStatsDataProps {
 }
 
 interface AdminStatsContentProps extends AdminStatsDataProps {
+  workspace: StatsWorkspace;
   error: string;
+  onWorkspaceChange: (workspace: StatsWorkspace) => void;
   onOpenCreators: () => void;
   onOpenActivity: () => void;
 }
@@ -518,24 +521,53 @@ function RecentActivityCard({ stats, t, onOpenModal }: RecentActivityCardProps) 
 
 function AdminStatsContent({
   stats,
+  workspace,
   error,
   t,
+  onWorkspaceChange,
   onOpenCreators,
   onOpenActivity,
 }: AdminStatsContentProps) {
+  const workspaces: Array<{ id: StatsWorkspace; label: string; icon: LucideIcon }> = [
+    { id: 'overview', label: t('statsWorkspaceOverview'), icon: BarChart3 },
+    { id: 'llm', label: t('statsWorkspaceLlm'), icon: BrainCircuit },
+    { id: 'entitlements', label: t('statsWorkspaceEntitlements'), icon: Gauge },
+  ];
+
   return (
     <>
-      <AdminPageHeader title={t('statistics')} description={t('systemStatistics')} />
+      <h1 className="sr-only">{t('statistics')}</h1>
+      <nav
+        className="mb-4 flex max-w-full gap-1 overflow-x-auto rounded-xl border border-line bg-white p-1"
+        aria-label={t('statsWorkspaceNavigation')}
+      >
+        {workspaces.map(({ id, label, icon: Icon }) => (
+          <Button
+            key={id}
+            type="button"
+            size="sm"
+            variant={workspace === id ? 'primary' : 'ghost'}
+            aria-pressed={workspace === id}
+            className="min-h-10 shrink-0"
+            onClick={() => onWorkspaceChange(id)}
+          >
+            <Icon className="size-4" aria-hidden="true" />
+            {label}
+          </Button>
+        ))}
+      </nav>
       <AdminStatsErrorBanner error={error} />
-      <div className="space-y-6">
-        <OverviewCards stats={stats} t={t} />
-        <GrowthTrendsSection initialData={stats.growthTrends} t={t} />
-        <ScoreDistributionSection stats={stats} t={t} />
-        <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
-        <RecentActivityCard stats={stats} t={t} onOpenModal={onOpenActivity} />
-        <LlmUsageSection />
-        <EntitlementTelemetrySection />
-      </div>
+      {workspace === 'overview' ? (
+        <div className="space-y-6">
+          <OverviewCards stats={stats} t={t} />
+          <GrowthTrendsSection initialData={stats.growthTrends} t={t} />
+          <ScoreDistributionSection stats={stats} t={t} />
+          <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
+          <RecentActivityCard stats={stats} t={t} onOpenModal={onOpenActivity} />
+        </div>
+      ) : null}
+      {workspace === 'llm' ? <LlmUsageSection /> : null}
+      {workspace === 'entitlements' ? <EntitlementTelemetrySection /> : null}
     </>
   );
 }
@@ -564,6 +596,7 @@ function AdminStatsModals({ activeModal, onClose, t }: AdminStatsModalsProps) {
 export default function AdminStatsPage() {
   const t = useTranslations('admin');
   const [state, dispatch] = useReducer(adminStatsReducer, initialState);
+  const [workspace, setWorkspace] = useState<StatsWorkspace>('overview');
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -596,14 +629,16 @@ export default function AdminStatsPage() {
       {state.stats ? (
         <AdminStatsContent
           stats={state.stats}
+          workspace={workspace}
           error={state.error}
           t={t}
+          onWorkspaceChange={setWorkspace}
           onOpenCreators={() => dispatch({ type: 'openModal', modal: 'creators' })}
           onOpenActivity={() => dispatch({ type: 'openModal', modal: 'activity' })}
         />
       ) : (
         <>
-          <AdminPageHeader title={t('statistics')} description={t('systemStatistics')} />
+          <h1 className="sr-only">{t('statistics')}</h1>
           <AdminStatsErrorBanner error={state.error} />
         </>
       )}

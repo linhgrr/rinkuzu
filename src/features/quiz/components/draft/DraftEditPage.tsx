@@ -6,14 +6,10 @@ import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
-import { DraftDesktopOnlyNotice } from '@/features/quiz/components/draft/DraftDesktopOnlyNotice';
 import { QuizEditorWorkspace } from '@/features/quiz/components/editor/QuizEditorWorkspace';
 import { Button } from '@/components/ui/Button';
 import { useQuizDraftAutosave } from '@/features/quiz/hooks/useQuizDraftAutosave';
-import {
-  createEmptyEditorQuestion,
-  toEditorQuestions,
-} from '@/features/quiz/lib/question-editor-mutations';
+import { toEditorQuestions } from '@/features/quiz/lib/question-editor-mutations';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { fetchSubscriptionStatusViewModel } from '@/features/subscription/api/subscription-page-api';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -62,9 +58,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
   const serverQuestions = toEditorQuestions(initialDraft.questions, 'draft');
   const initialQuestions = restoredPayload
     ? toEditorQuestions(restoredPayload.questions, 'recovery')
-    : serverQuestions.length > 0 || !isManualDraft
-      ? serverQuestions
-      : [createEmptyEditorQuestion('manual-question-1')];
+    : serverQuestions;
 
   const editor = (
     <QuizEditorWorkspace
@@ -136,7 +130,8 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
       }
       labels={{
         pageTitle: isManualDraft ? t('manualEditorTitle') : t('editDraftTitle'),
-        questionsCount: (count) => t('questionsExtracted', { count }),
+        questionsCount: (count) =>
+          isManualDraft ? t('questionsInDraft', { count }) : t('questionsExtracted', { count }),
         metaTitle: t('quizTitle'),
         metaDescription: isManualDraft ? t('manualEditorDescription') : t('uploadDescription'),
         title: t('quizTitle'),
@@ -151,6 +146,8 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
         submitting: t('publishingQuiz'),
         hidePdf: t('hidePDFReference'),
         showPdf: t('showPDFReference'),
+        validationTitle: t('validationTitle'),
+        invalidQuestions: (numbers) => t('invalidQuestions', { numbers }),
       }}
       onChange={autosave.queueSave}
       onCancel={() => {
@@ -188,22 +185,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
     />
   );
 
-  return (
-    <div className="min-h-[100dvh] bg-neutral-50">
-      {isManualDraft ? (
-        editor
-      ) : (
-        <>
-          <DraftDesktopOnlyNotice
-            title={t('desktopOnlyTitle')}
-            description={t('desktopOnlyDescription')}
-            backHomeLabel={t('backHome')}
-          />
-          <div className="hidden md:block">{editor}</div>
-        </>
-      )}
-    </div>
-  );
+  return <div className="min-h-[100dvh] bg-neutral-50">{editor}</div>;
 }
 
 function toInitialAutosavePayload(payload: {

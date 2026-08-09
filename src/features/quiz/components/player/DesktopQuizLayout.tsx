@@ -218,7 +218,7 @@ function DesktopQuizHeader({
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-neutral-200">
             <div
-              className="h-3 rounded-full bg-gradient-to-r from-brand-trust to-green-600 transition-all duration-500 ease-out"
+              className="h-3 rounded-full bg-brand-action transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -291,7 +291,7 @@ function DesktopQuestionCard({
                 key={option}
                 className={`flex cursor-pointer items-center rounded-lg border-2 p-4 transition-colors ${
                   isSelected
-                    ? 'border-green-500 bg-green-50'
+                    ? 'border-brand-action bg-orange-50'
                     : 'border-neutral-200 hover:border-neutral-300'
                 }`}
               >
@@ -307,7 +307,7 @@ function DesktopQuestionCard({
                 <div
                   className={`mr-3 flex size-4 items-center justify-center border-2 ${
                     currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
-                  } ${isSelected ? 'border-green-500 bg-green-500' : 'border-neutral-300'}`}
+                  } ${isSelected ? 'border-brand-action bg-brand-action' : 'border-neutral-300'}`}
                 >
                   {isSelected ? (
                     currentQuestion.type === 'single' ? (
@@ -357,11 +357,7 @@ function DesktopQuestionCard({
           </div>
 
           {currentQuestionIndex === questionCount - 1 ? (
-            <Button
-              onClick={onSubmit}
-              loading={submitting}
-              className="bg-green-600 hover:bg-green-700"
-            >
+            <Button onClick={onSubmit} loading={submitting}>
               {t('submitQuiz')}
             </Button>
           ) : (

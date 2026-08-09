@@ -23,6 +23,7 @@ import { createQuizDraft } from '@/lib/quiz/draftApi';
 import { MAX_QUIZ_PDF_BYTES, MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
+import { ROUTES } from '@/shared/constants/routes';
 import {
   HiOutlineArrowRight,
   HiOutlineDocumentText,
@@ -76,7 +77,17 @@ function createQuizReducer(state: CreateQuizState, action: CreateQuizAction): Cr
     case 'patch':
       return { ...state, ...action.value };
     case 'setPdfFile':
-      return { ...state, pdfFile: action.file, showPDFViewer: false };
+      return {
+        ...state,
+        pdfFile: action.file,
+        title:
+          action.file && !state.title.trim()
+            ? action.file.name.replace(/\.pdf$/i, '')
+            : action.file
+              ? state.title
+              : '',
+        showPDFViewer: false,
+      };
     default:
       return state;
   }
@@ -401,7 +412,7 @@ function CreateQuizFormCard({
                 titlePlaceholder: t('enterTitle'),
                 description: t('descriptionOptional'),
                 descriptionPlaceholder: t('provideContext'),
-                folder: 'Folder',
+                folder: t('folderLabel'),
                 privateLabel: t('privateQuiz'),
                 privateDescription: t('privateQuizDescription'),
                 promptLabel: t('aiPromptLabel'),
@@ -612,7 +623,7 @@ export function CreateQuizPage() {
 
       toast.success(t('processingStarted'));
 
-      push('/');
+      push(ROUTES.CREATE_QUIZ);
     } catch (error: unknown) {
       console.error('Error starting background processing:', error);
       dispatch({

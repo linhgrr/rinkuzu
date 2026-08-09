@@ -91,6 +91,9 @@
   "notAnswered": "Chưa trả lời",
   "of": "trong",
   "performanceSummary": "Tổng kết kết quả",
+  "chatStatistics": "Thống kê trò chuyện",
+  "totalChatTurns": "Tổng lượt trò chuyện",
+  "questionsDiscussed": "Câu hỏi đã thảo luận",
   "practiceContinue": "Tiếp tục luyện tập",
   "preparingQuiz": "Đang chuẩn bị quiz...",
   "progress": "Tiến độ",
@@ -118,5 +121,6 @@
   "removeBookmark": "Xóa câu hỏi đã lưu",
   "previousQuestion": "Câu hỏi trước",
   "nextQuestion": "Câu hỏi tiếp theo",
-  "questionImageAlt": "Hình ảnh cho câu hỏi {number}"
+  "questionImageAlt": "Hình ảnh cho câu hỏi {number}",
+  "optionImageAlt": "Hình ảnh cho đáp án {option}"
 }

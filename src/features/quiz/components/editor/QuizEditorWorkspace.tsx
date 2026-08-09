@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, type ReactNode } from 'react';
+import { useReducer, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -20,6 +20,7 @@ import {
   type QuizEditorWorkspaceState,
 } from '@/features/quiz/lib/quiz-editor-workspace-state';
 import { toQuestionInputs } from '@/features/quiz/lib/question-editor-mutations';
+import { questionListSchema } from '@/lib/validation/question';
 import type {
   QuizEditorQuestionInputViewModel,
   QuizEditorQuestionViewModel,
@@ -60,6 +61,8 @@ type QuizEditorWorkspaceLabels = {
   submitting: string;
   hidePdf: string;
   showPdf: string;
+  validationTitle?: string;
+  invalidQuestions?: (numbers: string) => string;
   /** Published edit only */
   delete?: string;
   deleting?: string;
@@ -108,7 +111,7 @@ function WorkspacePdfPanel({
 }) {
   if (layout === 'flush') {
     return (
-      <aside className="sticky top-0 h-[100dvh] w-1/2 border-l border-neutral-200 bg-white p-4">
+      <aside className="fixed inset-0 z-50 h-[100dvh] bg-white p-3 lg:sticky lg:top-0 lg:z-auto lg:w-1/2 lg:border-l lg:border-neutral-200 lg:p-4">
         <PDFViewer
           pdfDataUrl={pdfDataUrl || null}
           pdfUrl={pdfUrl}
@@ -168,6 +171,8 @@ export function QuizEditorWorkspace({
         showPDFViewer: Boolean(pdfUrl),
       }),
   );
+  const [hasValidationError, setHasValidationError] = useState(false);
+  const [invalidQuestionIndexes, setInvalidQuestionIndexes] = useState<number[]>([]);
   const dispatchEditorAction = (action: QuizEditorWorkspaceAction) => {
     const nextState = quizEditorWorkspaceReducer(state, action);
     dispatch(action);
@@ -184,7 +189,30 @@ export function QuizEditorWorkspace({
     event?.preventDefault();
     if (!canEdit || state.isSubmitting) return;
 
-    // Validation + API live in adapters (draft publish vs published save).
+    const questions = toQuestionInputs(state.questions);
+    const validation = questionListSchema.safeParse(questions);
+    if (!validation.success) {
+      setHasValidationError(true);
+      const indexes = Array.from(
+        new Set(
+          validation.error.issues
+            .map((issue) => issue.path[0])
+            .filter((value): value is number => typeof value === 'number'),
+        ),
+      );
+      setInvalidQuestionIndexes(indexes);
+      const firstInvalid = indexes[0];
+      if (firstInvalid !== undefined) {
+        document.getElementById(`quiz-question-${firstInvalid}`)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+      return;
+    }
+
+    setHasValidationError(false);
+    setInvalidQuestionIndexes([]);
     dispatch({ type: 'setSubmitting', value: true });
     try {
       await onSubmit({
@@ -192,7 +220,7 @@ export function QuizEditorWorkspace({
         description: state.description.trim(),
         selectedFolderId: state.selectedFolderId,
         isPrivate: state.isPrivate,
-        questions: toQuestionInputs(state.questions),
+        questions,
       });
     } catch {
       dispatch({ type: 'setSubmitting', value: false });
@@ -203,7 +231,7 @@ export function QuizEditorWorkspace({
   const formColumnClass =
     pdfLayout === 'flush'
       ? showPdf
-        ? 'w-1/2'
+        ? 'w-full lg:w-1/2'
         : 'w-full'
       : showPdf
         ? 'lg:w-1/2 lg:pr-4'
@@ -212,7 +240,7 @@ export function QuizEditorWorkspace({
   return (
     <div className="flex min-h-[100dvh]">
       <div className={formColumnClass}>
-        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-4xl px-4 pb-32 pt-8 sm:px-6 md:pb-28">
           {banner}
 
           <div className="mb-8 flex items-center justify-between gap-4">
@@ -374,9 +402,26 @@ export function QuizEditorWorkspace({
                 })
               }
               onSetQuestionToRemove={(value) => dispatch({ type: 'setQuestionToRemove', value })}
+              invalidQuestionIndexes={invalidQuestionIndexes}
             />
 
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            {hasValidationError ? (
+              <div
+                role="alert"
+                className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              >
+                <p className="font-semibold">{labels.validationTitle ?? 'Check quiz content'}</p>
+                {invalidQuestionIndexes.length > 0 ? (
+                  <p className="mt-1">
+                    {labels.invalidQuestions?.(
+                      invalidQuestionIndexes.map((index) => index + 1).join(', '),
+                    ) ?? `Questions ${invalidQuestionIndexes.map((index) => index + 1).join(', ')}`}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="fixed inset-x-4 bottom-20 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-default)] bg-white/95 p-3 shadow-lg backdrop-blur md:sticky md:inset-x-auto md:bottom-4 md:p-4">
               <div className="flex flex-wrap gap-3">
                 <Button
                   type="button"
@@ -422,6 +467,9 @@ export function QuizEditorWorkspace({
                   {isDeleting && labels.deleting ? labels.deleting : labels.delete}
                 </Button>
               ) : null}
+              <div className="ml-auto text-sm text-neutral-500 md:hidden" aria-live="polite">
+                {headerExtra}
+              </div>
             </div>
           </form>
 

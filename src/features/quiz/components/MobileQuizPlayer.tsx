@@ -3,8 +3,14 @@
 import Image from 'next/image';
 import { useState, useRef, type TouchEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from 'react-icons/hi';
+import {
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
+  HiOutlineCheck,
+  HiOutlineX,
+} from 'react-icons/hi';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { Button } from '@/components/ui/Button';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
@@ -35,6 +41,7 @@ interface MobileQuizHeaderProps {
   isFirst: boolean;
   isLast: boolean;
   isSubmitting: boolean;
+  onRequestExit: () => void;
   questions: QuizPlayQuestionViewModel[];
   t: MobileQuizTranslate;
 }
@@ -70,17 +77,32 @@ function MobileQuizHeader({
   isFirst,
   isLast,
   isSubmitting,
+  onRequestExit,
   questions,
   t,
 }: MobileQuizHeaderProps) {
+  const answeredCount = questions.filter((question) => answers[question.id] !== undefined).length;
+  const answeredProgress = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
+
   return (
     <div className="flex-shrink-0 border-b border-neutral-100 bg-white px-4 py-3 safe-area-top">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRequestExit}
+          disabled={isSubmitting}
+          className="-ml-2 text-neutral-600 active:bg-neutral-100"
+          aria-label={t('exitQuiz')}
+        >
+          <HiOutlineX className="size-6" aria-hidden="true" />
+        </Button>
         <button
           type="button"
           onClick={goPrev}
           disabled={isFirst || isSubmitting}
-          className="rounded-full p-2 -ml-2 transition-colors active:bg-neutral-100"
+          className="rounded-full p-2 transition-colors active:bg-neutral-100"
           aria-label={t('previousQuestion')}
         >
           <HiOutlineChevronLeft
@@ -93,19 +115,18 @@ function MobileQuizHeader({
           <span className="text-sm font-semibold text-neutral-900">
             {t('question')} {currentIndex + 1} / {questions.length}
           </span>
-          <div className="mx-auto mt-2 flex max-w-[200px] flex-wrap justify-center gap-1">
-            {questions.map((question, index) => (
-              <div
-                key={question.id}
-                className={`size-2 rounded-full transition-colors ${
-                  index === currentIndex
-                    ? 'bg-brand-action'
-                    : answers[question.id] !== undefined
-                      ? 'bg-brand-trust'
-                      : 'bg-neutral-200'
-                }`}
-              />
-            ))}
+          <div
+            className="mx-auto mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-neutral-200"
+            role="progressbar"
+            aria-label={t('progress')}
+            aria-valuemin={0}
+            aria-valuemax={questions.length}
+            aria-valuenow={answeredCount}
+          >
+            <div
+              className="h-full rounded-full bg-brand-action transition-[width] duration-300"
+              style={{ width: `${answeredProgress}%` }}
+            />
           </div>
         </div>
 
@@ -315,13 +336,14 @@ export function MobileQuizPlayer({
   onAnswersChange,
   onIndexChange,
   onComplete,
-  onExit: _onExit,
+  onExit,
   submitting = false,
   submissionError,
 }: MobileQuizPlayerProps) {
   const t = useTranslations('quiz');
   const [submitIntent, setSubmitIntent] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
   const touchCurrentXRef = useRef<number | null>(null);
   const isSubmitting = submitting || submitIntent;
@@ -455,6 +477,7 @@ export function MobileQuizPlayer({
         isFirst={isFirst}
         isLast={isLast}
         isSubmitting={isSubmitting}
+        onRequestExit={() => setShowExitConfirm(true)}
         questions={questions}
         t={t}
       />
@@ -501,6 +524,19 @@ export function MobileQuizPlayer({
         isLoading={isSubmitting}
         onCancel={() => setShowSubmitConfirm(false)}
         onConfirm={() => void submitCurrentAnswers()}
+      />
+      <ConfirmModal
+        isOpen={showExitConfirm}
+        title={t('exitQuiz')}
+        message={t('exitQuizWarning')}
+        confirmText={t('exitQuiz')}
+        cancelText={t('continueQuiz')}
+        confirmVariant="destructive"
+        onCancel={() => setShowExitConfirm(false)}
+        onConfirm={() => {
+          setShowExitConfirm(false);
+          onExit?.();
+        }}
       />
     </div>
   );

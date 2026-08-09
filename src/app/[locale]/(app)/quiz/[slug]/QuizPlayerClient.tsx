@@ -820,9 +820,7 @@ export default function QuizPlayerClient({
   const quiz = state.quiz;
   const currentQuestion = quiz?.questions[state.currentQuestionIndex] || null;
   const answeredQuestions = quiz ? countAnswered(quiz, state.userAnswers) : 0;
-  const progress = quiz
-    ? Math.round(((state.currentQuestionIndex + 1) / quiz.questions.length) * 100)
-    : 0;
+  const progress = quiz ? Math.round((answeredQuestions / quiz.questions.length) * 100) : 0;
 
   const {
     submitting,

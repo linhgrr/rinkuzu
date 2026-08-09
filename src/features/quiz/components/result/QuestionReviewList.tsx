@@ -91,11 +91,7 @@ export function QuestionReviewList({
                           ? 'text-yellow-600 border-yellow-200 bg-yellow-50 hover:bg-yellow-100'
                           : 'text-neutral-600 border-neutral-200 hover:bg-neutral-50'
                       }`}
-                      title={
-                        bookmarkedQuestions.has(index)
-                          ? 'Remove bookmark'
-                          : 'Bookmark this question'
-                      }
+                      title={bookmarkedQuestions.has(index) ? t('removeBookmark') : t('bookmark')}
                     >
                       {bookmarkLoading.has(index) ? (
                         <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -153,7 +149,7 @@ export function QuestionReviewList({
                         {questionResult.isCorrect
                           ? `✓ ${tProfile('correct')}`
                           : isAnswered
-                            ? '✗ Incorrect'
+                            ? `✗ ${t('incorrect')}`
                             : `— ${t('notAnswered')}`}
                       </span>
                     </div>
@@ -162,7 +158,10 @@ export function QuestionReviewList({
 
                 {questionResult.questionImage && (
                   <div className="mb-4">
-                    <OptionImage src={questionResult.questionImage} alt="Question image" />
+                    <OptionImage
+                      src={questionResult.questionImage}
+                      alt={t('questionImageAlt', { number: index + 1 })}
+                    />
                   </div>
                 )}
 
@@ -250,7 +249,9 @@ export function QuestionReviewList({
                                   <div className="mt-2">
                                     <OptionImage
                                       src={optionImage}
-                                      alt={`Option ${String.fromCharCode(65 + optIdx)} image`}
+                                      alt={t('optionImageAlt', {
+                                        option: String.fromCharCode(65 + optIdx),
+                                      })}
                                     />
                                   </div>
                                 ) : null;

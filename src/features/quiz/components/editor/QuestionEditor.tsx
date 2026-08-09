@@ -1,13 +1,18 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
-import { HiOutlineDocumentText, HiOutlinePlus, HiOutlineTrash } from 'react-icons/hi';
+import {
+  HiOutlineDocumentText,
+  HiOutlinePhotograph,
+  HiOutlinePlus,
+  HiOutlineTrash,
+} from 'react-icons/hi';
 import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 import type { QuestionType } from '@/shared/constants/question-type';
 import { MAX_OPTION_COUNT, MIN_OPTION_COUNT } from '@/lib/validation/question';
@@ -38,6 +43,7 @@ interface QuestionEditorProps {
   onSetSingleCorrect: (qIdx: number, optIdx: number) => void;
   onToggleMultipleCorrect: (qIdx: number, optIdx: number, checked: boolean) => void;
   onSetQuestionToRemove: (idx: number | null) => void;
+  invalidQuestionIndexes?: number[];
 }
 
 export function QuestionEditor({
@@ -59,9 +65,15 @@ export function QuestionEditor({
   onSetSingleCorrect,
   onToggleMultipleCorrect,
   onSetQuestionToRemove,
+  invalidQuestionIndexes = [],
 }: QuestionEditorProps) {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
+  const [visibleImageEditors, setVisibleImageEditors] = useState<Set<string>>(() => new Set());
+
+  const showImageEditor = (key: string) => {
+    setVisibleImageEditors((current) => new Set(current).add(key));
+  };
 
   if (!canEdit) return null;
 
@@ -69,7 +81,7 @@ export function QuestionEditor({
     <>
       <Card className="mt-8">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <HiOutlineDocumentText className="size-5 text-brand-trust" />
@@ -94,7 +106,14 @@ export function QuestionEditor({
             const questionKey = q.editorId;
             return (
               <Fragment key={questionKey}>
-                <div className="space-y-4 rounded-lg border p-4">
+                <div
+                  id={`quiz-question-${index}`}
+                  className={`scroll-mt-24 space-y-4 rounded-lg border p-3 sm:p-4 ${
+                    invalidQuestionIndexes.includes(index)
+                      ? 'border-red-300 bg-red-50/40'
+                      : 'border-[var(--border-default)]'
+                  }`}
+                >
                   <div className="flex items-start justify-between">
                     <h4 className="flex items-center gap-2 font-medium">
                       <div className="flex size-6 items-center justify-center rounded-full bg-green-100 text-xs text-brand-trust">
@@ -122,11 +141,24 @@ export function QuestionEditor({
                     placeholder={t('enterQuestion')}
                   />
 
-                  <QuestionImageUpload
-                    {...(q.questionImage !== undefined ? { currentImage: q.questionImage } : {})}
-                    onImageUploaded={(url) => onUpdateQuestionImage(index, url)}
-                    onImageRemoved={() => onRemoveQuestionImage(index)}
-                  />
+                  {q.questionImage || visibleImageEditors.has(`${questionKey}:question-image`) ? (
+                    <QuestionImageUpload
+                      {...(q.questionImage !== undefined ? { currentImage: q.questionImage } : {})}
+                      onImageUploaded={(url) => onUpdateQuestionImage(index, url)}
+                      onImageRemoved={() => onRemoveQuestionImage(index)}
+                    />
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 !text-neutral-600"
+                      onClick={() => showImageEditor(`${questionKey}:question-image`)}
+                    >
+                      <HiOutlinePhotograph className="size-4" />
+                      {t('addQuestionImage')}
+                    </Button>
+                  )}
 
                   <div>
                     <p className="mb-1 text-sm font-medium">{t('questionType')}</p>
@@ -193,13 +225,29 @@ export function QuestionEditor({
                           </Button>
                         </div>
                         <div className="pl-7">
-                          <OptionImageUpload
-                            {...(q.optionImages?.[optIdx] !== undefined
-                              ? { currentImage: q.optionImages[optIdx] }
-                              : {})}
-                            onImageUploaded={(url) => onUpdateOptionImage(index, optIdx, url)}
-                            onImageRemoved={() => onRemoveOptionImage(index, optIdx)}
-                          />
+                          {q.optionImages?.[optIdx] ||
+                          visibleImageEditors.has(`${questionKey}:option-image:${optIdx}`) ? (
+                            <OptionImageUpload
+                              {...(q.optionImages?.[optIdx] !== undefined
+                                ? { currentImage: q.optionImages[optIdx] }
+                                : {})}
+                              onImageUploaded={(url) => onUpdateOptionImage(index, optIdx, url)}
+                              onImageRemoved={() => onRemoveOptionImage(index, optIdx)}
+                            />
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="gap-2 !text-neutral-500"
+                              onClick={() =>
+                                showImageEditor(`${questionKey}:option-image:${optIdx}`)
+                              }
+                            >
+                              <HiOutlinePhotograph className="size-4" />
+                              {t('addOptionImage')}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

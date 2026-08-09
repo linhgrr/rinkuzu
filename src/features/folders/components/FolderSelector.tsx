@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { HiOutlineFolder, HiOutlinePlus } from 'react-icons/hi';
 import { DropdownListSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ interface FolderSelectorProps {
 }
 
 export function FolderSelector({ id, value, onChange, disabled = false }: FolderSelectorProps) {
+  const tProfile = useTranslations('profile');
   const { folders, isLoading, mutate } = useFolders();
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -54,7 +56,7 @@ export function FolderSelector({ id, value, onChange, disabled = false }: Folder
         >
           <span className="flex items-center gap-2">
             <HiOutlineFolder className="size-5 text-brand-trust" />
-            {selected?.name ?? 'My folder'}
+            {selected?.name ?? tProfile('myFolder')}
           </span>
           <span aria-hidden="true" className="text-neutral-400">
             ⌄
@@ -76,9 +78,11 @@ export function FolderSelector({ id, value, onChange, disabled = false }: Folder
                 value === null && 'bg-green-50 text-brand-trust',
               )}
             >
-              My folder
+              {tProfile('myFolder')}
             </button>
-            {isLoading ? <DropdownListSkeleton label="Loading folders" rows={2} /> : null}
+            {isLoading ? (
+              <DropdownListSkeleton label={tProfile('loadingFolders')} rows={2} />
+            ) : null}
             {folders.map((folder) => (
               <button
                 key={folder.id}
@@ -103,7 +107,7 @@ export function FolderSelector({ id, value, onChange, disabled = false }: Folder
                 }}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-brand-trust hover:bg-green-50"
               >
-                <HiOutlinePlus className="size-4" /> Add folder
+                <HiOutlinePlus className="size-4" /> {tProfile('addFolderTitle')}
               </button>
             </div>
           </div>

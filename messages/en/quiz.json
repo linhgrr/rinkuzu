@@ -93,6 +93,9 @@
   "quizComplete": "Quiz Complete!",
   "completedOn": "Completed on",
   "performanceSummary": "Performance Summary",
+  "chatStatistics": "Chat statistics",
+  "totalChatTurns": "Total chat turns",
+  "questionsDiscussed": "Questions discussed",
   "unanswered": "Unanswered",
   "yourAnswer": "Your answer",
   "allOptions": "All options",
@@ -118,5 +121,6 @@
   "removeBookmark": "Remove bookmark",
   "previousQuestion": "Previous question",
   "nextQuestion": "Next question",
-  "questionImageAlt": "Image for question {number}"
+  "questionImageAlt": "Image for question {number}",
+  "optionImageAlt": "Image for option {option}"
 }

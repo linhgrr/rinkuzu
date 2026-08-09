@@ -79,53 +79,27 @@ export function ResultStats({
         </CardContent>
       </Card>
 
-      {/* Performance Breakdown */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>{t('performanceSummary')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{correctCount}</div>
-              <div className="text-sm text-green-700">{tProfile('correct')}</div>
+      {chatStats.totalTurns > 0 ? (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>
+              {tProfile('chatWithRinChan')} · {t('chatStatistics')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-lg bg-green-50 p-3 text-center">
+              <div className="text-xl font-bold text-brand-trust">{chatStats.totalTurns}</div>
+              <div className="text-sm text-green-700">{t('totalChatTurns')}</div>
             </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{incorrectCount}</div>
-              <div className="text-sm text-red-700">{t('incorrect')}</div>
-            </div>
-            <div className="text-center p-4 bg-neutral-50 rounded-lg">
-              <div className="text-2xl font-bold text-neutral-600">{unansweredCount}</div>
-              <div className="text-sm text-neutral-700">{t('unanswered')}</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-brand-trust">{score}%</div>
-              <div className="text-sm text-brand-trust">{tProfile('avgScore')}</div>
-            </div>
-          </div>
-
-          {/* Chat Statistics */}
-          {chatStats.totalTurns > 0 ? (
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-medium text-neutral-700 mb-3">
-                {tProfile('chatWithRinChan')} Statistics
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-xl font-bold text-brand-trust">{chatStats.totalTurns}</div>
-                  <div className="text-sm text-green-700">Total Chat Turns</div>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-xl font-bold text-brand-trust">
-                    {chatStats.questionsWithChat}
-                  </div>
-                  <div className="text-sm text-green-700">Questions Discussed</div>
-                </div>
+            <div className="rounded-lg bg-green-50 p-3 text-center">
+              <div className="text-xl font-bold text-brand-trust">
+                {chatStats.questionsWithChat}
               </div>
+              <div className="text-sm text-green-700">{t('questionsDiscussed')}</div>
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : null}
     </>
   );
 }

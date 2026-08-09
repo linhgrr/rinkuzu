@@ -9,7 +9,6 @@ import {
   HiOutlineUpload,
   HiOutlineDocumentText,
   HiOutlineArrowRight,
-  HiOutlineDesktopComputer,
   HiOutlineX,
 } from 'react-icons/hi';
 import { toast } from 'sonner';
@@ -23,6 +22,7 @@ import { createQuizDraft } from '@/lib/quiz/draftApi';
 import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
+import { ROUTES } from '@/shared/constants/routes';
 
 type MobileCreateState = {
   file: File | null;
@@ -128,8 +128,8 @@ export function MobileCreateQuizPage() {
 
       toast.success(t('processingStarted'));
 
-      // Navigate away first, then DraftSyncProvider resumes polling.
-      push('/dashboard');
+      // Return to the draft hub where processing progress remains visible.
+      push(ROUTES.CREATE_QUIZ);
     } catch (error: unknown) {
       toast.error(tCommon('error'), {
         description: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
@@ -254,7 +254,7 @@ export function MobileCreateQuizPage() {
             htmlFor="mobile-create-quiz-folder"
             className="mb-2 block text-sm font-medium text-neutral-700"
           >
-            Folder
+            {t('folderLabel')}
           </label>
           <FolderSelector
             id="mobile-create-quiz-folder"
@@ -290,13 +290,13 @@ export function MobileCreateQuizPage() {
       )}
 
       {/* Submit Button */}
-      {state.file && state.title.trim() && (
+      {state.file && (
         <Button
           type="button"
           onClick={handleSubmit}
-          disabled={state.isUploading}
+          disabled={state.isUploading || !state.title.trim()}
           size="lg"
-          className="mt-6 w-full rounded-full bg-green-500 hover:bg-brand-trust"
+          className="mt-6 w-full rounded-full"
         >
           {state.isUploading ? (
             <>
@@ -311,15 +311,6 @@ export function MobileCreateQuizPage() {
           )}
         </Button>
       )}
-
-      {/* Desktop Hint */}
-      <div className="mt-8 p-4 rounded-xl bg-neutral-100 flex items-start gap-3">
-        <HiOutlineDesktopComputer className="mt-0.5 size-6 flex-shrink-0 text-neutral-500" />
-        <div>
-          <p className="text-sm font-medium text-neutral-700">{t('editTitleDescription')}</p>
-          <p className="text-sm text-neutral-500 mt-0.5">{t('reviewQuestions')}</p>
-        </div>
-      </div>
     </div>
   );
 }

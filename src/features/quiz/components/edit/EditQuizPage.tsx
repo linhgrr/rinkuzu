@@ -220,6 +220,8 @@ export function EditQuizPage() {
             submitting: t('savingChanges'),
             hidePdf: t('hidePdfShort'),
             showPdf: t('showPdfShort'),
+            validationTitle: t('validationTitle'),
+            invalidQuestions: (numbers) => t('invalidQuestions', { numbers }),
             delete: t('deleteQuiz'),
             deleting: t('deletingQuiz'),
           }}

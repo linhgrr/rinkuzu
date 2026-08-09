@@ -1,8 +1,9 @@
 /** @vitest-environment jsdom */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
+import { Button } from '@/components/ui/Button';
 import { MobileQuizLayout } from './MobileQuizLayout';
 
 vi.mock('next/image', () => ({
@@ -22,7 +23,31 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('@/components/ui/ConfirmModal', () => ({
-  ConfirmModal: () => null,
+  ConfirmModal: ({
+    isOpen,
+    title,
+    confirmText,
+    cancelText,
+    onConfirm,
+    onCancel,
+  }: {
+    isOpen: boolean;
+    title: string;
+    confirmText: string;
+    cancelText: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+  }) =>
+    isOpen ? (
+      <div role="dialog" aria-label={title}>
+        <Button type="button" onClick={onCancel}>
+          {cancelText}
+        </Button>
+        <Button type="button" onClick={onConfirm}>
+          {confirmText}
+        </Button>
+      </div>
+    ) : null,
 }));
 
 vi.mock('@/features/quiz/components/ReportQuiz', () => ({
@@ -67,5 +92,32 @@ describe('MobileQuizLayout', () => {
     expect(screen.getByText('Alpha')).toBeTruthy();
     expect(screen.getByText('Alpha')).toHaveProperty('tagName', 'STRONG');
     expect(document.querySelectorAll('.katex')).toHaveLength(2);
+  });
+
+  it('lets mobile users confirm exiting the quiz', () => {
+    const onExit = vi.fn();
+
+    render(
+      <MobileQuizLayout
+        quiz={{ slug: 'math', title: 'Math', questions }}
+        userAnswers={[-1]}
+        currentQuestionIndex={0}
+        onAnswersChange={vi.fn()}
+        onIndexChange={vi.fn()}
+        onComplete={vi.fn()}
+        onExit={onExit}
+        submitting={false}
+      />,
+    );
+
+    const exitButton = document.querySelector<HTMLButtonElement>('button[aria-label="exitQuiz"]');
+    if (!exitButton) throw new Error('Expected mobile exit button');
+    fireEvent.click(exitButton);
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialog).toBeTruthy();
+    const confirmButton = dialog?.querySelectorAll<HTMLButtonElement>('button')[1];
+    if (!confirmButton) throw new Error('Expected exit confirmation button');
+    fireEvent.click(confirmButton);
+    expect(onExit).toHaveBeenCalledOnce();
   });
 });

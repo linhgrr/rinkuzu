@@ -255,7 +255,7 @@ function QuizResultActions({
   redoLabel: string;
 }) {
   return (
-    <div className="flex justify-center gap-x-4">
+    <div className="mb-8 flex flex-wrap justify-center gap-3">
       <Link href={`/quiz/${encodedSlug}`}>
         <Button variant="outline">{redoLabel}</Button>
       </Link>
@@ -538,6 +538,12 @@ function QuizResultReadyState({
           tProfile={tProfile}
         />
 
+        <QuizResultActions
+          backHomeLabel={backHomeLabel}
+          encodedSlug={encodedSlug}
+          redoLabel={tProfile('redo')}
+        />
+
         <BookmarkPanel
           bookmarkMessage={bookmarkMessage}
           bookmarkMessageTone={bookmarkMessageTone}
@@ -560,12 +566,6 @@ function QuizResultReadyState({
           formatCorrectAnswer={formatCorrectAnswer}
           t={t}
           tProfile={tProfile}
-        />
-
-        <QuizResultActions
-          backHomeLabel={backHomeLabel}
-          encodedSlug={encodedSlug}
-          redoLabel={tProfile('redo')}
         />
       </main>
 

@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 import { useTranslations } from 'next-intl';
-import { FlaskConical, Plus, Power, Search, Trash2 } from 'lucide-react';
+import { CircleDollarSign, FlaskConical, Plus, Power, Save, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -63,6 +63,10 @@ const CAPABILITIES = [
   'vision',
 ] as const satisfies readonly LlmCapability[];
 
+function hasCompletePricing(model: ModelViewModel): boolean {
+  return Boolean(model.inputPrice?.trim() && model.outputPrice?.trim());
+}
+
 export function ProviderModelsPanel({
   busy,
   discoveredModels,
@@ -87,6 +91,12 @@ export function ProviderModelsPanel({
   const [selectedKeyId, setSelectedKeyId] = useState('');
   const [discovering, setDiscovering] = useState(false);
   const [modelToDelete, setModelToDelete] = useState<ModelViewModel | null>(null);
+  const [pricingModelId, setPricingModelId] = useState<string | null>(null);
+  const [priceDraft, setPriceDraft] = useState({ input: '', output: '' });
+
+  const createPricePairValid =
+    Boolean(modelForm.inputPrice.trim()) === Boolean(modelForm.outputPrice.trim());
+  const editPricePairValid = Boolean(priceDraft.input.trim()) === Boolean(priceDraft.output.trim());
 
   const effectiveKeyId = usableKeys.some((key) => key.id === selectedKeyId)
     ? selectedKeyId
@@ -137,7 +147,12 @@ export function ProviderModelsPanel({
               <span>{t('aiSettingsInputPrice')}</span>
               <input
                 className={FIELD}
-                inputMode="decimal"
+                type="number"
+                min="0"
+                step="any"
+                placeholder="0.14"
+                aria-invalid={!createPricePairValid}
+                aria-describedby="ai-settings-create-pricing-help"
                 value={modelForm.inputPrice}
                 onChange={(event) =>
                   setModelForm((value) => ({ ...value, inputPrice: event.target.value }))
@@ -148,13 +163,26 @@ export function ProviderModelsPanel({
               <span>{t('aiSettingsOutputPrice')}</span>
               <input
                 className={FIELD}
-                inputMode="decimal"
+                type="number"
+                min="0"
+                step="any"
+                placeholder="0.28"
+                aria-invalid={!createPricePairValid}
+                aria-describedby="ai-settings-create-pricing-help"
                 value={modelForm.outputPrice}
                 onChange={(event) =>
                   setModelForm((value) => ({ ...value, outputPrice: event.target.value }))
                 }
               />
             </label>
+            <p
+              id="ai-settings-create-pricing-help"
+              className={`text-xs sm:col-span-2 ${
+                createPricePairValid ? 'text-neutral-500' : 'text-error'
+              }`}
+            >
+              {createPricePairValid ? t('aiSettingsPricingHint') : t('aiSettingsPricePairRequired')}
+            </p>
           </div>
         </div>
         <fieldset>
@@ -190,7 +218,11 @@ export function ProviderModelsPanel({
             />
             {t('active')}
           </label>
-          <Button type="submit" loading={busy} disabled={modelForm.capabilities.length === 0}>
+          <Button
+            type="submit"
+            loading={busy}
+            disabled={modelForm.capabilities.length === 0 || !createPricePairValid}
+          >
             <Plus className="size-4" aria-hidden="true" />
             {t('aiSettingsAddModel')}
           </Button>
@@ -279,8 +311,42 @@ export function ProviderModelsPanel({
                 </label>
               ))}
             </div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              {hasCompletePricing(model) ? (
+                <>
+                  <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-neutral-700">
+                    {t('aiSettingsInputPriceShort', { price: model.inputPrice ?? '' })}
+                  </span>
+                  <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-neutral-700">
+                    {t('aiSettingsOutputPriceShort', { price: model.outputPrice ?? '' })}
+                  </span>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-amber-800">
+                  <CircleDollarSign className="size-3.5" aria-hidden="true" />
+                  {t('aiSettingsPricingMissing')}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex max-w-full flex-wrap gap-2">
+            <AiSettingsIconButton
+              icon={CircleDollarSign}
+              label={t('aiSettingsEditPricing')}
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                if (pricingModelId === model.id) {
+                  setPricingModelId(null);
+                  return;
+                }
+                setPricingModelId(model.id);
+                setPriceDraft({
+                  input: model.inputPrice ?? '',
+                  output: model.outputPrice ?? '',
+                });
+              }}
+            />
             <AiSettingsIconButton
               icon={FlaskConical}
               label={t('aiSettingsTest')}
@@ -316,6 +382,90 @@ export function ProviderModelsPanel({
               onClick={() => setModelToDelete(model)}
             />
           </div>
+          {pricingModelId === model.id ? (
+            <form
+              className="grid basis-full gap-3 border-t border-line pt-4 sm:grid-cols-2"
+              aria-label={t('aiSettingsPricingEditor', { name: model.displayName })}
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!editPricePairValid) return;
+                void mutate(
+                  () =>
+                    patchModel(
+                      provider.id,
+                      model.id,
+                      {
+                        input_price_usd_per_m_tokens: priceDraft.input.trim() || null,
+                        output_price_usd_per_m_tokens: priceDraft.output.trim() || null,
+                      },
+                      revision,
+                    ),
+                  t('aiSettingsPricingSaved'),
+                  'preserve',
+                )
+                  .then((committed) => {
+                    if (committed) setPricingModelId(null);
+                  })
+                  .catch(() => undefined);
+              }}
+            >
+              <label className="space-y-1 text-xs font-medium text-ink-muted">
+                <span>{t('aiSettingsInputPrice')}</span>
+                <input
+                  className={FIELD}
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="0.14"
+                  aria-invalid={!editPricePairValid}
+                  aria-describedby={`ai-settings-pricing-help-${model.id}`}
+                  value={priceDraft.input}
+                  onChange={(event) =>
+                    setPriceDraft((value) => ({ ...value, input: event.target.value }))
+                  }
+                />
+              </label>
+              <label className="space-y-1 text-xs font-medium text-ink-muted">
+                <span>{t('aiSettingsOutputPrice')}</span>
+                <input
+                  className={FIELD}
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="0.28"
+                  aria-invalid={!editPricePairValid}
+                  aria-describedby={`ai-settings-pricing-help-${model.id}`}
+                  value={priceDraft.output}
+                  onChange={(event) =>
+                    setPriceDraft((value) => ({ ...value, output: event.target.value }))
+                  }
+                />
+              </label>
+              <p
+                id={`ai-settings-pricing-help-${model.id}`}
+                className={`text-xs sm:col-span-2 ${
+                  editPricePairValid ? 'text-neutral-500' : 'text-error'
+                }`}
+              >
+                {editPricePairValid ? t('aiSettingsPricingHint') : t('aiSettingsPricePairRequired')}
+              </p>
+              <div className="flex flex-wrap gap-2 sm:col-span-2">
+                <Button type="submit" size="sm" loading={busy} disabled={!editPricePairValid}>
+                  <Save className="size-4" aria-hidden="true" />
+                  {t('aiSettingsSavePricing')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPricingModelId(null)}
+                >
+                  <X className="size-4" aria-hidden="true" />
+                  {t('cancel')}
+                </Button>
+              </div>
+            </form>
+          ) : null}
         </article>
       ))}
 

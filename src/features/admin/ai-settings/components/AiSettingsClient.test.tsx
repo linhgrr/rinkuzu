@@ -7,14 +7,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AiSettingsViewModel } from '@/features/admin/ai-settings/types/ai-settings';
 
-const { deleteModelMock, fetchAiSettingsMock, saveRoutingMock, testProviderMock, translateMock } =
-  vi.hoisted(() => ({
-    deleteModelMock: vi.fn(),
-    fetchAiSettingsMock: vi.fn(),
-    saveRoutingMock: vi.fn(),
-    testProviderMock: vi.fn(),
-    translateMock: (key: string) => key,
-  }));
+const {
+  deleteModelMock,
+  fetchAiSettingsMock,
+  patchModelMock,
+  saveRoutingMock,
+  testProviderMock,
+  translateMock,
+} = vi.hoisted(() => ({
+  deleteModelMock: vi.fn(),
+  fetchAiSettingsMock: vi.fn(),
+  patchModelMock: vi.fn(),
+  saveRoutingMock: vi.fn(),
+  testProviderMock: vi.fn(),
+  translateMock: (key: string) => key,
+}));
 
 vi.mock('next-intl', () => ({
   useTranslations: () => translateMock,
@@ -30,7 +37,7 @@ vi.mock('@/features/admin/ai-settings/api/ai-settings-api', () => ({
   discoverModels: vi.fn(),
   fetchAiSettings: fetchAiSettingsMock,
   patchCredential: vi.fn(),
-  patchModel: vi.fn(),
+  patchModel: patchModelMock,
   patchProvider: vi.fn(),
   replaceCredentialSecret: vi.fn(),
   saveRouting: saveRoutingMock,
@@ -153,6 +160,7 @@ describe('AiSettingsClient', () => {
   beforeEach(() => {
     fetchAiSettingsMock.mockResolvedValue(snapshot);
     saveRoutingMock.mockResolvedValue({ data: {}, revision: 8 });
+    patchModelMock.mockResolvedValue({ data: {}, revision: 8 });
     testProviderMock.mockResolvedValue({ data: { ok: true } });
   });
 
@@ -262,6 +270,40 @@ describe('AiSettingsClient', () => {
     expect(screen.getByRole('alertdialog', { name: 'aiSettingsDeleteModelTitle' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'cancel' }));
     expect(deleteModelMock).not.toHaveBeenCalled();
+  });
+
+  it('edits model pricing as a complete input/output pair', async () => {
+    const user = userEvent.setup();
+    render(<AiSettingsClient />);
+
+    await user.click(await screen.findByRole('tab', { name: 'aiSettingsTab_models' }));
+    const modelCard = screen.getByRole('article', { name: 'Structured A' });
+    await user.click(within(modelCard).getByRole('button', { name: 'aiSettingsEditPricing' }));
+
+    const editor = within(modelCard).getByRole('form', {
+      name: 'aiSettingsPricingEditor',
+    });
+    const pricingEditor = within(editor);
+    const inputPrice = pricingEditor.getByLabelText('aiSettingsInputPrice');
+    const outputPrice = pricingEditor.getByLabelText('aiSettingsOutputPrice');
+    await user.type(inputPrice, '0.14');
+    expect(pricingEditor.getByRole('button', { name: 'aiSettingsSavePricing' })).toBeDisabled();
+    expect(pricingEditor.getByText('aiSettingsPricePairRequired')).toBeVisible();
+
+    await user.type(outputPrice, '0.28');
+    await user.click(pricingEditor.getByRole('button', { name: 'aiSettingsSavePricing' }));
+
+    await waitFor(() =>
+      expect(patchModelMock).toHaveBeenCalledWith(
+        'provider-a',
+        'structured-a',
+        {
+          input_price_usd_per_m_tokens: '0.14',
+          output_price_usd_per_m_tokens: '0.28',
+        },
+        7,
+      ),
+    );
   });
 
   it('uses a compact workspace navigation instead of rendering the page subtitle', async () => {

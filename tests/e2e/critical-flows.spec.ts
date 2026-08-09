@@ -668,6 +668,111 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('configures masked AI providers and preserves tutor fallback order @critical-admin-ai-settings', async ({
+    page,
+    request,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const userId = fixture.admin.id.toHexString();
+      const primarySecret = 'e2e-primary-secret-ALPHA';
+      const fallbackSecret = 'e2e-fallback-secret-BETA';
+      const responseBodies: Promise<string>[] = [];
+
+      page.on('response', (response) => {
+        if (response.url().includes('/api/admin/ai-settings')) {
+          responseBodies.push(response.text().catch(() => ''));
+        }
+      });
+
+      await login(page, fixture.admin);
+      await page.goto('/en/admin/ai-settings');
+      await expect(page.getByRole('heading', { name: 'AI Providers & Routing' })).toBeVisible();
+
+      const addProvider = page.getByRole('button', { name: 'Add provider', exact: true });
+      const providerForm = page.locator('form').filter({ has: addProvider });
+      await providerForm.getByPlaceholder('Provider name').fill('E2E Provider');
+      await providerForm
+        .getByPlaceholder('https://api.example.com/v1')
+        .fill('https://api.e2e.example/v1');
+      await addProvider.click();
+      await expect(page.getByText('E2E Provider', { exact: true }).first()).toBeVisible();
+
+      await page.getByRole('button', { name: 'API keys', exact: true }).click();
+      const addKey = page.getByRole('button', { name: 'Add key', exact: true });
+      const keyForm = page.locator('form').filter({ has: addKey });
+
+      await keyForm.getByPlaceholder('Key label').fill('Primary key');
+      await keyForm.getByPlaceholder('Paste API key').fill(primarySecret);
+      await keyForm.locator('input[type="number"]').fill('1');
+      await addKey.click();
+      await expect(page.getByText('••••LPHA', { exact: true })).toBeVisible();
+
+      await keyForm.getByPlaceholder('Key label').fill('Fallback key');
+      await keyForm.getByPlaceholder('Paste API key').fill(fallbackSecret);
+      await keyForm.locator('input[type="number"]').fill('10');
+      await addKey.click();
+      await expect(page.getByText('••••BETA', { exact: true })).toBeVisible();
+
+      await page.getByRole('button', { name: 'Models', exact: true }).click();
+      const addModel = page.getByRole('button', { name: 'Add model', exact: true });
+      const modelForm = page.locator('form').filter({ has: addModel });
+
+      await modelForm.getByPlaceholder('Display name').fill('Primary Tutor');
+      await modelForm.getByPlaceholder('Upstream model name').fill('e2e-primary-model');
+      await addModel.click();
+      await expect(page.getByText('Primary Tutor', { exact: true })).toBeVisible();
+
+      await modelForm.getByPlaceholder('Display name').fill('Fallback Tutor');
+      await modelForm.getByPlaceholder('Upstream model name').fill('e2e-fallback-model');
+      await addModel.click();
+      await expect(page.getByText('Fallback Tutor', { exact: true })).toBeVisible();
+
+      await page.getByRole('button', { name: 'Routing', exact: true }).click();
+      const routeSelect = page.getByRole('combobox');
+      await routeSelect.selectOption({ label: 'Primary Tutor' });
+      await routeSelect.selectOption({ label: 'Fallback Tutor' });
+      await page.getByRole('button', { name: 'Save routing atomically', exact: true }).click();
+      await expect(page.getByText('1. Primary Tutor', { exact: true })).toBeVisible();
+      await expect(page.getByText('2. Fallback Tutor', { exact: true })).toBeVisible();
+
+      await page.goto('/en/admin/ai-settings?tab=routing&provider=provider-1');
+      await expect(page.getByText('1. Primary Tutor', { exact: true })).toBeVisible();
+      await expect(page.getByText('2. Fallback Tutor', { exact: true })).toBeVisible();
+
+      const fallback = await request.post(
+        'http://127.0.0.1:8000/__e2e/llm-settings/simulate-fallback',
+        {
+          data: { action: 'ask_rin_chan', userId },
+          headers: { 'x-e2e-control-token': E2E_CONTROL_TOKEN },
+        },
+      );
+      expect(fallback.ok()).toBeTruthy();
+      await expect(fallback.json()).resolves.toMatchObject({
+        success: true,
+        data: {
+          selected_model_id: 'model-2',
+          attempts: [
+            { attempt_index: 1, model_id: 'model-1', outcome: 'recoverable_failure' },
+            { attempt_index: 2, model_id: 'model-2', outcome: 'success' },
+          ],
+        },
+      });
+
+      const publicPayloads = (await Promise.all(responseBodies)).join('\n');
+      expect(publicPayloads).not.toContain(primarySecret);
+      expect(publicPayloads).not.toContain(fallbackSecret);
+      await expect(page.locator('body')).not.toContainText(primarySecret);
+      await expect(page.locator('body')).not.toContainText(fallbackSecret);
+
+      const reset = await request.post('http://127.0.0.1:8000/__e2e/llm-settings/reset', {
+        data: { userId },
+        headers: { 'x-e2e-control-token': E2E_CONTROL_TOKEN },
+      });
+      expect(reset.ok()).toBeTruthy();
+    });
+  });
+
   test('disables target, revokes session via authVersion, filters, restores, and re-logins @critical-admin-disable', async ({
     page,
     browser,

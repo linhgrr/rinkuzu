@@ -1,7 +1,8 @@
 import { createServer } from 'node:http';
+import { handleFakeLlmControlRequest, handleFakeLlmSettingsRequest } from './fake-llm-settings.mjs';
 
 const HOST = '127.0.0.1';
-const PORT = 8000;
+const PORT = Number(process.env['FAKE_ADAPTIVE_PORT'] ?? 8000);
 const CONTROL_TOKEN = 'rinkuzu-e2e-control';
 const MAX_BODY_BYTES = 1_000_000;
 const statesByUserId = new Map();
@@ -137,6 +138,8 @@ async function handleControlRequest(request, response, pathname) {
   if (!requireControlAuth(request, response)) return;
   const body = await readJsonBody(request);
 
+  if (handleFakeLlmControlRequest(body, response, pathname)) return;
+
   if (request.method === 'POST' && pathname === '/__e2e/complete') {
     const state = statesByUserId.get(body.userId);
     if (!state) {
@@ -160,6 +163,10 @@ async function handleControlRequest(request, response, pathname) {
 async function handleAdaptiveRequest(request, response, url) {
   const userId = requireServiceAuth(request, response);
   if (!userId) return;
+
+  if (await handleFakeLlmSettingsRequest({ readJsonBody, request, response, url, userId })) {
+    return;
+  }
 
   if (request.method === 'GET' && url.pathname === '/api/health') {
     sendOk(response, {

@@ -8,12 +8,10 @@ const { authMock, deleteBookmarkByUserMock, loggerErrorMock } = vi.hoisted(() =>
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getBookmarkService: () => ({
-      deleteBookmarkByUser: deleteBookmarkByUserMock,
-    }),
-  },
+vi.mock('@/lib/bookmark-factory', () => ({
+  getBookmarkService: () => ({
+    deleteBookmarkByUser: deleteBookmarkByUserMock,
+  }),
 }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },

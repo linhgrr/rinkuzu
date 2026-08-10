@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getBookmarkService } from '@/lib/bookmark-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { bookmarkListQuerySchema, createBookmarkRequestSchema } from '@/dtos/bookmark';
 import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
 
-const bookmarkService = serviceFactory.getBookmarkService();
+const bookmarkService = getBookmarkService();
 
 // GET - Get all bookmarks for current user
 export const GET = withAuth(async (request: NextRequest, { userId }) => {

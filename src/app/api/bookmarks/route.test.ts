@@ -11,13 +11,11 @@ const { authMock, getBookmarksByUserMock, createBookmarkMock, loggerErrorMock } 
 );
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getBookmarkService: () => ({
-      getBookmarksByUser: getBookmarksByUserMock,
-      createBookmark: createBookmarkMock,
-    }),
-  },
+vi.mock('@/lib/bookmark-factory', () => ({
+  getBookmarkService: () => ({
+    getBookmarksByUser: getBookmarksByUserMock,
+    createBookmark: createBookmarkMock,
+  }),
 }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },

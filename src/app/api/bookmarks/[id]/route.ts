@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getBookmarkService } from '@/lib/bookmark-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { readAndValidateRouteParams } from '@/lib/api/request';
 import { bookmarkIdRouteParamsSchema } from '@/dtos/bookmark';
 
-const bookmarkService = serviceFactory.getBookmarkService();
+const bookmarkService = getBookmarkService();
 
 // DELETE - Remove bookmark
 export const DELETE = withAuth(async (_request: NextRequest, { params, userId }) => {

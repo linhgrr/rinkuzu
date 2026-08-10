@@ -2,7 +2,6 @@ import type { components } from '@/generated/adaptive-api';
 
 export type LlmAction = components['schemas']['LlmAction'];
 export type LlmCapability = components['schemas']['LlmCapability'];
-export type PipelineStepId = components['schemas']['PipelineStepId'];
 export type ProviderCreateInput = components['schemas']['ProviderCreateRequest'];
 export type ProviderPatchInput = components['schemas']['ProviderPatchRequest'];
 export type CredentialCreateInput = components['schemas']['CredentialCreateRequest'];
@@ -11,15 +10,12 @@ export type ModelCreateInput = components['schemas']['ModelCreateRequest'];
 export type ModelPatchInput = components['schemas']['ModelPatchRequest'];
 export type RoutingUpdateInput = components['schemas']['RoutingUpdateRequest'];
 export type KeySelectionInput = components['schemas']['KeySelectionRequest'];
-export type ProviderDto = components['schemas']['ProviderResponse'];
-export type CredentialDto = components['schemas']['CredentialResponse'];
-export type ModelDto = components['schemas']['ModelResponse'];
 export type ConfigMetaDto = components['schemas']['ConfigMeta'];
 
-export type ActionDefinitionDto = components['schemas']['LlmActionDefinitionResponse'];
-export type PipelineStepDto = components['schemas']['PipelineStepDefinitionResponse'];
-export type RouteDto = components['schemas']['RouteResponse'];
-export type StepPolicyDto = components['schemas']['StepPolicyResponse'];
+type ActionDefinitionDto = components['schemas']['LlmActionDefinitionResponse'];
+type PipelineStepDto = components['schemas']['PipelineStepDefinitionResponse'];
+type RouteDto = components['schemas']['RouteResponse'];
+type StepPolicyDto = components['schemas']['StepPolicyResponse'];
 export type AiSettingsSnapshotDto = components['schemas']['LlmSettingsSnapshotResponse'];
 
 export type ProviderViewModel = {

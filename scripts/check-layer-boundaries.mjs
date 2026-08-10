@@ -268,6 +268,25 @@ const sourceFiles = walk(path.join(root, 'src')).filter(
   (file) => !/\.(?:test|spec)\.tsx?$/.test(file),
 );
 const sourceAndTestFiles = [...walk(path.join(root, 'src')), ...walk(path.join(root, 'tests'))];
+const featureNames = new Set(
+  fs
+    .readdirSync(path.join(root, 'src/features'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name),
+);
+const sharedComponentsRoot = path.join(root, 'src/components');
+const misplacedFeatureComponentDirectories = fs
+  .readdirSync(sharedComponentsRoot, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && featureNames.has(entry.name))
+  .map((entry) => `src/components/${entry.name}`)
+  .sort();
+const featureOwnedRootComponents = new Map([
+  ['ReviewCard.tsx', 'review'],
+  ['ReviewCard.test.tsx', 'review'],
+  ['FloatingDraftProgress.tsx', 'quiz'],
+  ['FloatingDraftProgress.test.tsx', 'quiz'],
+  ['FloatingDraftProgressIsland.tsx', 'quiz'],
+]);
 
 const presentationPersistenceImports = collectViolations(presentationFiles, (imports) =>
   imports.some(
@@ -331,6 +350,18 @@ const quizBuilderDomainLeaks = collectViolations(quizBuilderClientFiles, (import
 );
 
 const errors = [];
+for (const directory of misplacedFeatureComponentDirectories) {
+  errors.push(
+    `feature ownership: move ${directory} under src/features/${path.basename(directory)}/components`,
+  );
+}
+for (const [fileName, featureName] of featureOwnedRootComponents) {
+  if (fs.existsSync(path.join(sharedComponentsRoot, fileName))) {
+    errors.push(
+      `feature ownership: move src/components/${fileName} under src/features/${featureName}/components`,
+    );
+  }
+}
 checkRatchet(
   'presentation -> persistence',
   presentationPersistenceImports,

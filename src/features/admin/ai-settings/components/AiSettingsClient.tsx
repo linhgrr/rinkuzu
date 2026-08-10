@@ -21,7 +21,7 @@ import {
   Settings2,
   Trash2,
 } from 'lucide-react';
-import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { ApiResponseError } from '@/lib/api/client';

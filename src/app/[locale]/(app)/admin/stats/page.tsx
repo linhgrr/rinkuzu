@@ -15,7 +15,7 @@ import type {
   AdminMetricComparisonViewModel,
   AdminStatsViewModel,
 } from '@/features/admin/stats/types/admin-stats-view-model';
-import { AdminStatsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
+import { AdminStatsPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/features/admin/stats/components/StatsModal';

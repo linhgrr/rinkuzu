@@ -3,10 +3,10 @@
 import { useEffect, useReducer } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { AdminSubscriptionsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
-import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
-import { AdminPageShell } from '@/components/admin/AdminPageShell';
-import { AdminSearchInput } from '@/components/admin/AdminSearchInput';
+import { AdminSubscriptionsPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
+import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
+import { AdminSearchInput } from '@/features/admin/components/AdminSearchInput';
 import { Button } from '@/components/ui/Button';
 import {
   Badge,

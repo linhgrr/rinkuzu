@@ -36,6 +36,7 @@ import type {
 import type { components } from '@/generated/adaptive-api';
 import type { PresignedUploadUrlResponseDto } from '@/dtos/storage';
 import { shouldCleanupPendingPdfUpload } from '@/lib/pdf';
+import { buildPresignedPostBody } from '@/lib/storage/presigned-upload';
 
 import {
   timedFetch,
@@ -507,7 +508,7 @@ export async function uploadPdf(
 
   // 2. Upload to S3
   const usePut = uploadMethod === 'PUT';
-  const uploadBody = usePut ? file : buildAdaptivePresignedPostBody(uploadFields, file);
+  const uploadBody = usePut ? file : buildPresignedPostBody(uploadFields, file);
   const uploadRes = await timedFetch(uploadUrl, {
     method: usePut ? 'PUT' : 'POST',
     ...(usePut ? { headers: uploadHeaders } : {}),
@@ -545,13 +546,6 @@ export async function uploadPdf(
     }
     throw error;
   }
-}
-
-function buildAdaptivePresignedPostBody(fields: Record<string, string>, file: File): FormData {
-  const formData = new FormData();
-  Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
-  formData.append('file', file);
-  return formData;
 }
 
 export async function getPipelineJobStatus(

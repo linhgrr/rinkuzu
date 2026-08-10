@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const authShellSource = readFileSync('src/components/auth/AuthShell.tsx', 'utf8');
+const authShellSource = readFileSync('src/features/auth/components/AuthShell.tsx', 'utf8');
 const globalStylesSource = readFileSync('src/app/globals.css', 'utf8');
 
 describe('auth motion and palette contracts', () => {

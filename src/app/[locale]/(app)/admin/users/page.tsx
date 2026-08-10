@@ -5,10 +5,10 @@ import type { FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
-import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
-import { AdminUsersPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
-import { AdminPageShell } from '@/components/admin/AdminPageShell';
-import { AdminSearchInput } from '@/components/admin/AdminSearchInput';
+import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { AdminUsersPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
+import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
+import { AdminSearchInput } from '@/features/admin/components/AdminSearchInput';
 import { Button } from '@/components/ui/Button';
 import {
   Badge,

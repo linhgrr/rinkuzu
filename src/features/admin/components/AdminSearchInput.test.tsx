@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AdminSearchInput } from '@/components/admin/AdminSearchInput';
+import { AdminSearchInput } from '@/features/admin/components/AdminSearchInput';
 
 function SearchHarness({ onEnter, onSubmit }: { onEnter?: () => void; onSubmit?: () => void }) {
   const [value, setValue] = useState('');

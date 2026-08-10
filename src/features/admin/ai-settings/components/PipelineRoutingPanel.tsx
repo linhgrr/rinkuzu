@@ -168,7 +168,7 @@ export function PipelineRoutingPanel({
                     : undefined;
                   return (
                     <div
-                      key={`${modelId}-${index}`}
+                      key={modelId}
                       className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-neutral-50 p-3"
                     >
                       <span className="min-w-0 flex-1 basis-48 break-words leading-snug">

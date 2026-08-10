@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { toAiSettingsViewModel } from './ai-settings.mapper';
-import type {
-  AiSettingsSnapshotDto,
-  CredentialDto,
-} from '@/features/admin/ai-settings/types/ai-settings';
+import type { AiSettingsSnapshotDto } from '@/features/admin/ai-settings/types/ai-settings';
 
 describe('AI settings mapper', () => {
   it('whitelists masked credential metadata and never carries secret fields into UI state', () => {
     const dto: AiSettingsSnapshotDto & {
-      credentials: Array<CredentialDto & { api_key: string; ciphertext: string }>;
+      credentials: Array<
+        AiSettingsSnapshotDto['credentials'][number] & { api_key: string; ciphertext: string }
+      >;
     } = {
       revision: 4,
       actions: [],

@@ -1,4 +1,4 @@
-import SubjectDetails from '@/components/adaptive/SubjectDetails';
+import SubjectDetails from '@/features/adaptive/components/SubjectDetails';
 import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { buildLocalizedMetadata } from '@/lib/seo';

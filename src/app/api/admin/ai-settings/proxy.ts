@@ -31,3 +31,13 @@ export function createAiSettingsHandler<TParams extends RouteParams = RouteParam
     return response;
   });
 }
+
+/** Build the standard PATCH/DELETE pair used by mutable LLM settings resources. */
+export function createMutableAiSettingsResourceHandlers<TParams extends RouteParams>(
+  path: HandlerDefinition<TParams>['path'],
+) {
+  return {
+    PATCH: createAiSettingsHandler<TParams>({ method: 'PATCH', path, forwardIfMatch: true }),
+    DELETE: createAiSettingsHandler<TParams>({ method: 'DELETE', path, forwardIfMatch: true }),
+  };
+}

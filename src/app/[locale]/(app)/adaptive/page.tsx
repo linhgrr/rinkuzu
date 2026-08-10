@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import AdaptiveLearningGuest from '@/features/adaptive/components/AdaptiveLearningGuest';
 import { fetchAdaptiveDashboardData } from '@/features/adaptive/api/adaptive-dashboard-initial-api';
 import { AdaptiveDashboardRouteSkeleton } from './_components/AdaptiveDashboardRouteSkeleton';
-import AdaptiveLearningDashboard from '@/components/adaptive/Dashboard';
+import AdaptiveLearningDashboard from '@/features/adaptive/components/Dashboard';
 import { getCurrentSession } from '@/lib/auth/session';
 import { buildLocalizedMetadata } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';

@@ -1,4 +1,4 @@
-import { AdminUsersPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
+import { AdminUsersPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
 
 export default function AdminLoading() {
   return (

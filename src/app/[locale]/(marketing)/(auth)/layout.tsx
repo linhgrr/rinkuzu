@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from '@/i18n/navigation';
-import { AuthShell } from '@/components/auth/AuthShell';
+import { AuthShell } from '@/features/auth/components/AuthShell';
 import { getCurrentSession } from '@/lib/auth/session';
 import { env } from '@/lib/env';
 import { noIndexMetadata } from '@/lib/seo/no-index-metadata';

@@ -3,7 +3,7 @@
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 
-import { GoogleLogo } from '@/components/auth/GoogleLogo';
+import { GoogleLogo } from '@/features/auth/components/GoogleLogo';
 
 interface GoogleAuthButtonProps {
   callbackUrl: string;

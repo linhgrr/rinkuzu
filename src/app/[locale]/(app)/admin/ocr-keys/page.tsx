@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useEffectEvent, useReducer } from 'react';
+import { FormEvent, Suspense, useEffect, useEffectEvent, useReducer } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { usePathname, useRouter } from '@/i18n/navigation';
@@ -14,8 +14,8 @@ import {
   HiOutlineTrash,
   HiOutlineXCircle,
 } from 'react-icons/hi';
-import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
-import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -160,7 +160,7 @@ function formatDate(value: string | null, locale: string) {
   return (locale.startsWith('vi') ? ocrKeyDateFormatterVi : ocrKeyDateFormatterEn).format(date);
 }
 
-export default function AdminOcrKeysPage() {
+function AdminOcrKeysContent() {
   const t = useTranslations('admin');
   const locale = useLocale();
   const pathname = usePathname();
@@ -608,5 +608,13 @@ export default function AdminOcrKeysPage() {
         <OcrModelPanel />
       )}
     </AdminPageShell>
+  );
+}
+
+export default function AdminOcrKeysPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminOcrKeysContent />
+    </Suspense>
   );
 }

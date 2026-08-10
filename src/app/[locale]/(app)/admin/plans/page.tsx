@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
-import { AdminPlansPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
+import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { AdminPlansPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';

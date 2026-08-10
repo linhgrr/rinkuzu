@@ -1,4 +1,4 @@
-import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 
 export default function AdminAiSettingsLoading() {
   return (

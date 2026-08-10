@@ -1,7 +1,7 @@
 'use client';
 
 import { DraftSyncProvider } from '@/components/providers/DraftSyncProvider';
-import { FloatingDraftProgress } from '@/components/FloatingDraftProgress';
+import { FloatingDraftProgress } from '@/features/quiz/components/draft/FloatingDraftProgress';
 
 export default function FloatingDraftProgressIsland() {
   return (

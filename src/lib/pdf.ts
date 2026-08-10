@@ -1,5 +1,6 @@
 import { fetchApiData } from '@/lib/api/client';
 import type { PresignedUploadUrlResponseDto } from '@/dtos/storage';
+import { buildPresignedPostBody } from '@/lib/storage/presigned-upload';
 
 /**
  * PDF utility functions shared across create pages.
@@ -29,8 +30,7 @@ export function shouldCleanupPendingPdfUpload(error: unknown): boolean {
 
 /** Get the page count of a readable, unencrypted PDF using pdf-lib. */
 export async function getPdfPageCount(file: File): Promise<number> {
-  const { PDFDocument } = await import('pdf-lib');
-  const arrayBuffer = await file.arrayBuffer();
+  const [{ PDFDocument }, arrayBuffer] = await Promise.all([import('pdf-lib'), file.arrayBuffer()]);
   const pdf = await PDFDocument.load(arrayBuffer);
   const pageCount = pdf.getPageCount();
   if (pageCount < 1) throw new Error('PDF has no pages');
@@ -69,13 +69,6 @@ export async function uploadPdfViaPresignedUrl(file: File): Promise<PresignedPdf
   }
 
   return { s3Key };
-}
-
-function buildPresignedPostBody(fields: Record<string, string>, file: File): FormData {
-  const formData = new FormData();
-  Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
-  formData.append('file', file);
-  return formData;
 }
 
 export async function createPdfObjectUrlFromUrl(url: string): Promise<string> {

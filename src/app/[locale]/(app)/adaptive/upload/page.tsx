@@ -1,4 +1,4 @@
-import AdaptiveLearningUpload from '@/components/adaptive/Upload';
+import AdaptiveLearningUpload from '@/features/adaptive/components/Upload';
 import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { buildLocalizedMetadata } from '@/lib/seo';

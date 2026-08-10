@@ -421,8 +421,7 @@ export function ProviderModelsPanel({
             <form
               className="grid basis-full gap-3 border-t border-line pt-4 sm:grid-cols-3"
               aria-label={t('aiSettingsPricingEditor', { name: model.displayName })}
-              onSubmit={(event) => {
-                event.preventDefault();
+              action={() => {
                 if (!editPricingValid) return;
                 void mutate(
                   () =>

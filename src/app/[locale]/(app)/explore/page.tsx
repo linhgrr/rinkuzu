@@ -11,7 +11,7 @@ import Pagination from '@/components/ui/Pagination';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
-import { LibraryCardSkeleton, SubjectCard } from '@/components/adaptive/sections/Library';
+import { LibraryCardSkeleton, SubjectCard } from '@/features/adaptive/components/sections/Library';
 import { fetchQuizListViewModel } from '@/features/quiz/api/quiz-list-api';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
 import type {

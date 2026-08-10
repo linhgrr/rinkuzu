@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { Card } from './ui/Card';
-import { QuestionContent } from './ui/QuestionContent';
+import { Card } from '@/components/ui/Card';
+import { QuestionContent } from '@/components/ui/QuestionContent';
 import type {
   ReviewQuestionReferenceViewModel,
   ReviewRating,

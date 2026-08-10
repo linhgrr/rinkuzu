@@ -1,8 +1,6 @@
 import { z } from 'zod';
-import { MAX_PDF_UPLOAD_BYTES, MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
+import { MAX_PDF_UPLOAD_BYTES } from '@/lib/pdf-upload-policy';
 import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
-
-export { MAX_PDF_UPLOAD_BYTES, MAX_PDF_UPLOAD_MB };
 
 const baseUploadSchema = {
   fileName: z.string().trim().min(1, 'fileName is required'),

@@ -21,8 +21,8 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
 } from 'react-icons/hi';
-import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
-import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
+import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
+import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStrengthMeter';
 import { emailSchema, passwordSchema } from '@/lib/validation/auth';
 import { usePasswordStrength } from '@/lib/validation/usePasswordStrength';
 import { toBrowserPath } from '@/lib/routing/pathname';

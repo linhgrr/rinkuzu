@@ -19,7 +19,7 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
 } from 'react-icons/hi';
-import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
+import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStrengthMeter';
 import { resetPassword } from '@/features/auth/api/auth-api';
 import { passwordSchema } from '@/lib/validation/auth';
 import { usePasswordStrength } from '@/lib/validation/usePasswordStrength';

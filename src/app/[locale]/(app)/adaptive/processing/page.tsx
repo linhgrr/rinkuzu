@@ -1,4 +1,4 @@
-import AdaptiveLearningProcessing from '@/components/adaptive/Processing';
+import AdaptiveLearningProcessing from '@/features/adaptive/components/Processing';
 import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { buildLocalizedMetadata } from '@/lib/seo';

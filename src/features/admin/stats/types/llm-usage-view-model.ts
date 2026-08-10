@@ -1,5 +1,4 @@
-export interface LlmUsageBreakdownRow {
-  key: string;
+interface LlmUsageMetrics {
   logicalOperations: number;
   physicalAttempts: number;
   successfulOperations: number;
@@ -15,6 +14,10 @@ export interface LlmUsageBreakdownRow {
   inputCacheHitTokens: number;
   inputCacheMissTokens: number;
   cacheSavingsUsd: number;
+}
+
+export interface LlmUsageBreakdownRow extends LlmUsageMetrics {
+  key: string;
 }
 
 export interface LlmUsageBreakdown {
@@ -32,27 +35,12 @@ export interface LlmUsageFilters {
   includeNonProduct?: boolean;
 }
 
-export interface LlmUsageUserActionRow {
+interface LlmUsageUserActionRow extends LlmUsageMetrics {
   userId: string;
   action: string;
-  logicalOperations: number;
-  physicalAttempts: number;
-  successfulOperations: number;
-  failedOperations: number;
-  fallbackOperations: number;
-  recoverableFailures: number;
-  totalLatencyMs: number;
-  totalTokens: number;
-  inputTokens: number;
-  outputTokens: number;
-  costUsd: number;
-  cacheObservedAttempts: number;
-  inputCacheHitTokens: number;
-  inputCacheMissTokens: number;
-  cacheSavingsUsd: number;
 }
 
-export interface LlmUsageUserActionBreakdown {
+interface LlmUsageUserActionBreakdown {
   rows: LlmUsageUserActionRow[];
   truncated: boolean;
 }
@@ -74,7 +62,7 @@ export interface LlmUsageDailyPoint {
   cacheSavingsUsd: number;
 }
 
-export interface LlmUsageAnalysis {
+interface LlmUsageAnalysis {
   averageTokensPerOperation: number;
   averageCostUsdPerOperation: number;
   averageCostUsdPerSuccessfulOperation: number;
@@ -92,7 +80,7 @@ export interface LlmUsageAnalysis {
   topModelCostShare: number;
 }
 
-export interface LlmUsagePeriodTotals {
+interface LlmUsagePeriodTotals {
   totalTokens: number;
   totalCostUsd: number;
   logicalOperations: number;
@@ -107,7 +95,7 @@ export interface LlmUsagePeriodTotals {
   cacheSavingsUsd: number;
 }
 
-export interface LlmUsageObservability {
+interface LlmUsageObservability {
   tokenAnomalies: number;
   unknownPricing: number;
   usageUnavailable: number;

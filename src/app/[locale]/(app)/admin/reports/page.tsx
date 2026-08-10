@@ -10,9 +10,9 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { AdminReportsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
-import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
-import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminReportsPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
+import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { ROUTES } from '@/shared/constants/routes';
 import {
   deleteAdminReport,

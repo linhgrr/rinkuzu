@@ -1,17 +1,10 @@
-import { createAiSettingsHandler } from '../../../../proxy';
+import { createMutableAiSettingsResourceHandlers } from '../../../../proxy';
 
 type Params = { providerId: string; keyId: string };
 const path = ({ providerId, keyId }: Params) =>
   `/admin/llm-settings/providers/${encodeURIComponent(providerId)}/keys/${encodeURIComponent(keyId)}`;
 
 export const dynamic = 'force-dynamic';
-export const PATCH = createAiSettingsHandler<Params>({
-  method: 'PATCH',
-  path,
-  forwardIfMatch: true,
-});
-export const DELETE = createAiSettingsHandler<Params>({
-  method: 'DELETE',
-  path,
-  forwardIfMatch: true,
-});
+const handlers = createMutableAiSettingsResourceHandlers<Params>(path);
+export const PATCH = handlers.PATCH;
+export const DELETE = handlers.DELETE;

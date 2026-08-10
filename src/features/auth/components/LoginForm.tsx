@@ -18,7 +18,7 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
 } from 'react-icons/hi';
-import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 import { resolveAuthCallback } from '@/lib/routing/auth-callback';
 import { replaceBrowserLocation } from '@/lib/routing/browser-navigation';

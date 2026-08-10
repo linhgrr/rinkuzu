@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
-import { LoginForm } from '@/components/auth/LoginForm';
-import { RegisterForm } from '@/components/auth/RegisterForm';
+import { LoginForm } from '@/features/auth/components/LoginForm';
+import { RegisterForm } from '@/features/auth/components/RegisterForm';
 import { ROUTES } from '@/shared/constants/routes';
 
 type AuthMode = 'login' | 'signup';

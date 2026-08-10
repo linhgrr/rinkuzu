@@ -1,4 +1,4 @@
-import AdaptiveLearningResult from '@/components/adaptive/Result';
+import AdaptiveLearningResult from '@/features/adaptive/components/Result';
 import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { buildLocalizedMetadata } from '@/lib/seo';

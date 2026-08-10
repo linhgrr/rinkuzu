@@ -13,6 +13,15 @@ import {
 import type { AdminOcrModelSettingsViewModel } from '@/features/admin/ocr-keys/types/admin-ocr-keys-view-model';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 
+const OCR_MODEL_DATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+const ocrModelDateTimeOptions: Intl.DateTimeFormatOptions = {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: OCR_MODEL_DATE_TIME_ZONE,
+};
+const ocrModelDateFormatterEn = new Intl.DateTimeFormat('en', ocrModelDateTimeOptions);
+const ocrModelDateFormatterVi = new Intl.DateTimeFormat('vi', ocrModelDateTimeOptions);
+
 export function OcrModelPanel() {
   const t = useTranslations('admin');
   const locale = useLocale();
@@ -76,7 +85,7 @@ export function OcrModelPanel() {
   }
 
   const updatedAt = settings?.updatedAt
-    ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
+    ? (locale.startsWith('vi') ? ocrModelDateFormatterVi : ocrModelDateFormatterEn).format(
         new Date(settings.updatedAt),
       )
     : t('ocrModelNotOverridden');

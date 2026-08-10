@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { LoginForm } from '@/components/auth/LoginForm';
+import { LoginForm } from '@/features/auth/components/LoginForm';
 
 const { captureAnalyticsEventMock, replaceBrowserLocationMock, signInMock } = vi.hoisted(() => ({
   captureAnalyticsEventMock: vi.fn(),
@@ -35,7 +35,7 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-vi.mock('@/components/auth/GoogleAuthButton', () => ({
+vi.mock('@/features/auth/components/GoogleAuthButton', () => ({
   GoogleAuthButton: () => null,
 }));
 

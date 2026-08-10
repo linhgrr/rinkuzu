@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { ROUTES } from '@/shared/constants/routes';
-import ReviewCard from '@/components/ReviewCard';
+import ReviewCard from '@/features/review/components/ReviewCard';
 import { Card } from '@/components/ui/Card';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {

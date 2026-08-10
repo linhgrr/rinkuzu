@@ -78,10 +78,12 @@
     },
     "upload": {
       "cta": "Nhấp hoặc kéo thả tệp vào đây để tải lên",
-      "hint": "Định dạng PDF, tối đa 5MB",
+      "hint": "PDF tối đa {pages} trang · Dung lượng tối đa {size}MB",
       "errors": {
         "onlyPdf": "Chỉ hỗ trợ tệp PDF",
-        "fileTooLarge": "Tệp vượt quá 5MB"
+        "fileTooLarge": "Tệp vượt quá {size}MB",
+        "tooManyPages": "PDF có {pages} trang; gói hiện tại hỗ trợ tối đa {maxPages} trang",
+        "unreadablePdf": "Không thể đọc PDF hoặc tệp được bảo vệ bằng mật khẩu"
       }
     },
     "learningProgress": {

@@ -1486,6 +1486,18 @@
         "operationId": "create_quiz_draft_api_v1_quiz_drafts_post",
         "parameters": [
           {
+            "name": "x-rinkuzu-pdf-page-limit",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "X-Rinkuzu-Pdf-Page-Limit"
+            }
+          },
+          {
             "name": "x-user-id",
             "in": "header",
             "required": true,
@@ -2037,6 +2049,130 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StandardResponse_OcrProviderKeySingleResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/ocr-keys/model": {
+      "get": {
+        "tags": ["admin-ocr-keys"],
+        "summary": "Get Admin Ocr Model",
+        "operationId": "get_admin_ocr_model_api_v1_admin_ocr_keys_model_get",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_OcrModelSettingsResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["admin-ocr-keys"],
+        "summary": "Update Admin Ocr Model",
+        "operationId": "update_admin_ocr_model_api_v1_admin_ocr_keys_model_patch",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OcrModelPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_OcrModelSettingsResponse_"
                 }
               }
             }
@@ -7288,6 +7424,67 @@
         ],
         "title": "NextConceptResponse"
       },
+      "OcrModelPatchRequest": {
+        "properties": {
+          "model_name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:/-]+$",
+            "title": "Model Name"
+          }
+        },
+        "type": "object",
+        "required": ["model_name"],
+        "title": "OcrModelPatchRequest"
+      },
+      "OcrModelSettingsResponse": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["database", "environment"],
+            "title": "Source"
+          },
+          "env_fallback_model": {
+            "type": "string",
+            "title": "Env Fallback Model"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          }
+        },
+        "type": "object",
+        "required": ["provider", "model_name", "source", "env_fallback_model"],
+        "title": "OcrModelSettingsResponse"
+      },
       "OcrProviderKeyCreateRequest": {
         "properties": {
           "label": {
@@ -10947,6 +11144,33 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[NextConceptResponse]"
+      },
+      "StandardResponse_OcrModelSettingsResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/OcrModelSettingsResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[OcrModelSettingsResponse]"
       },
       "StandardResponse_OcrProviderKeyDeleteResponse_": {
         "properties": {

@@ -152,7 +152,7 @@ RinKuzu is a Next.js 14 app (App Router) with MongoDB, NextAuth, and an API-prox
 - Key integration points:
   - `src/lib/quiz/extractApi.ts`: server-side call to quiz extraction endpoint using `x-user-id` + optional `x-service-token`
   - `src/lib/adaptive-learning/proxy.ts`: authenticated proxy to adaptive backend (`/api/adaptive-learning/*`)
-  - `src/app/api/quiz/upload-url/route.ts`: presigned upload URL for PDF (50MB max)
+  - `src/app/api/storage/presigned-url/route.ts`: quota/rate-aware, size-bound presigned PUT for R2-compatible PDF uploads
 
 ### Companion API (`rinkuzu-ai-api`)
 
@@ -198,9 +198,12 @@ Core UI can run without it, but PDF extraction/adaptive learning features depend
 
 Start with quiz mode for fast validation, then enable adaptive mode when you want personalized progression.
 
-### Is there a 50MB PDF limit?
+### What are the PDF upload limits?
 
-Yes. The upload/extraction flow enforces a 50MB ceiling for PDF inputs.
+Product limits are page-based: 30 pages per PDF on Free and 100 pages on Plus.
+Both quiz and adaptive ingestion also enforce a shared 100MB technical safety ceiling.
+In production, configure the upload bucket to expire unclaimed `uploads/quiz_extract/` and
+`uploads/adaptive/` objects after 24 hours as a final safety net for abandoned browser sessions.
 
 ---
 

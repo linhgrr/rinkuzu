@@ -547,6 +547,24 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/ocr-keys/model': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Admin Ocr Model */
+    get: operations['get_admin_ocr_model_api_v1_admin_ocr_keys_model_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Admin Ocr Model */
+    patch: operations['update_admin_ocr_model_api_v1_admin_ocr_keys_model_patch'];
+    trace?: never;
+  };
   '/api/v1/admin/ocr-keys/{key_id}': {
     parameters: {
       query?: never;
@@ -2255,6 +2273,29 @@ export interface components {
       /** Max Steps */
       max_steps: number;
     };
+    /** OcrModelPatchRequest */
+    OcrModelPatchRequest: {
+      /** Model Name */
+      model_name: string;
+    };
+    /** OcrModelSettingsResponse */
+    OcrModelSettingsResponse: {
+      /** Provider */
+      provider: string;
+      /** Model Name */
+      model_name: string;
+      /**
+       * Source
+       * @enum {string}
+       */
+      source: 'database' | 'environment';
+      /** Env Fallback Model */
+      env_fallback_model: string;
+      /** Updated At */
+      updated_at?: string | null;
+      /** Updated By */
+      updated_by?: string | null;
+    };
     /** OcrProviderKeyCreateRequest */
     OcrProviderKeyCreateRequest: {
       /** Label */
@@ -3877,6 +3918,19 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** StandardResponse[OcrModelSettingsResponse] */
+    StandardResponse_OcrModelSettingsResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OcrModelSettingsResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
     /** StandardResponse[OcrProviderKeyDeleteResponse] */
     StandardResponse_OcrProviderKeyDeleteResponse_: {
       /**
@@ -5456,6 +5510,7 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        'x-rinkuzu-pdf-page-limit'?: number;
         'x-user-id': string;
         'x-service-token': string;
       };
@@ -5729,6 +5784,76 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_OcrProviderKeySingleResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_admin_ocr_model_api_v1_admin_ocr_keys_model_get: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OcrModelSettingsResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_admin_ocr_model_api_v1_admin_ocr_keys_model_patch: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OcrModelPatchRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OcrModelSettingsResponse_'];
         };
       };
       /** @description Validation Error */

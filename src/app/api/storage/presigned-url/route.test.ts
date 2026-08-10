@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, getSignedUrlMock, loggerErrorMock, putObjectInputs } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  getSignedUrlMock: vi.fn(),
-  loggerErrorMock: vi.fn(),
-  putObjectInputs: [] as unknown[],
-}));
+const { authMock, getSignedUrlMock, loggerErrorMock, uploadRateMock, usageSnapshotMock } =
+  vi.hoisted(() => ({
+    authMock: vi.fn(),
+    getSignedUrlMock: vi.fn(),
+    loggerErrorMock: vi.fn(),
+    uploadRateMock: vi.fn(),
+    usageSnapshotMock: vi.fn(),
+  }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
@@ -17,12 +19,18 @@ vi.mock('@aws-sdk/s3-request-presigner', () => ({
 }));
 vi.mock('@aws-sdk/client-s3', () => ({
   PutObjectCommand: class PutObjectCommand {
-    input: unknown;
-    constructor(input: unknown) {
-      this.input = input;
-      putObjectInputs.push(input);
-    }
+    constructor(public input: Record<string, unknown>) {}
   },
+}));
+vi.mock('@/lib/entitlements', () => ({
+  resolveEntitlements: vi.fn().mockResolvedValue({ tier: 'free' }),
+}));
+vi.mock('@/lib/llm/rate-limit', () => ({
+  getLlmUsageSnapshot: usageSnapshotMock,
+}));
+vi.mock('@/lib/auth-rate-limit', () => ({
+  checkAuthRateLimit: uploadRateMock,
+  rateLimitResponse: () => new Response(null, { status: 429 }),
 }));
 vi.mock('@/lib/s3', () => ({
   s3Client: { region: 'test' },
@@ -56,8 +64,22 @@ const validBody = {
 describe('POST /api/storage/presigned-url', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    putObjectInputs.length = 0;
     authMock.mockResolvedValue(session());
+    usageSnapshotMock.mockResolvedValue([
+      {
+        window: 'month',
+        count: 0,
+        limit: 5,
+        remaining: 5,
+        resetAt: new Date('2026-09-01T00:00:00.000Z'),
+      },
+    ]);
+    uploadRateMock.mockResolvedValue({
+      allowed: true,
+      remaining: 19,
+      resetSeconds: 900,
+      limit: 20,
+    });
     getSignedUrlMock.mockResolvedValue('https://s3.example/upload');
     vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
   });
@@ -89,21 +111,22 @@ describe('POST /api/storage/presigned-url', () => {
       success: true,
       data: {
         uploadUrl: 'https://s3.example/upload',
+        uploadMethod: 'PUT',
+        uploadHeaders: { 'Content-Type': 'application/pdf' },
+        uploadFields: {},
         s3Key: 'uploads/quiz_extract/user-1/1700000000000-My_File__1_.pdf',
         expiresIn: 300,
       },
     });
-    expect(putObjectInputs[0]).toEqual({
-      Bucket: 'test-bucket',
-      Key: 'uploads/quiz_extract/user-1/1700000000000-My_File__1_.pdf',
-      ContentType: 'application/pdf',
-    });
     expect(getSignedUrlMock).toHaveBeenCalledWith(
       { region: 'test' },
       expect.objectContaining({
-        input: expect.objectContaining({
+        input: {
+          Bucket: 'test-bucket',
           Key: 'uploads/quiz_extract/user-1/1700000000000-My_File__1_.pdf',
-        }),
+          ContentType: 'application/pdf',
+          ContentLength: 1024,
+        },
       }),
       { expiresIn: 300 },
     );
@@ -133,6 +156,29 @@ describe('POST /api/storage/presigned-url', () => {
     );
     await expect(response.json()).resolves.toMatchObject({
       error: { code: 'upstream_error', detail: 'signer down' },
+    });
+  });
+
+  it('rejects exhausted users before issuing an upload policy', async () => {
+    usageSnapshotMock.mockResolvedValueOnce([
+      {
+        window: 'month',
+        count: 5,
+        limit: 5,
+        remaining: 0,
+        resetAt: new Date('2026-09-01T00:00:00.000Z'),
+      },
+    ]);
+
+    const response = await POST(request(validBody), routeContext);
+
+    expect(response.status).toBe(429);
+    expect(getSignedUrlMock).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: 'quota_exceeded',
+        meta: { capability: 'quiz_extract', tier: 'free', upgradeEligible: true },
+      },
     });
   });
 });

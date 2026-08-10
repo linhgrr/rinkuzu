@@ -143,6 +143,8 @@ const sessionJobMapSchema = z.record(
   z.string().min(1),
   z.strictObject({
     jobId: z.string().min(1),
+    filename: z.string().optional(),
+    subjectName: z.string().optional(),
     updatedAt: z.number().int().nonnegative(),
   }),
 );
@@ -182,10 +184,16 @@ function writeSessionJobMap(map: SessionJobMap): void {
   localStorage.setItem(SESSION_JOB_MAP_KEY, JSON.stringify(map));
 }
 
-export function saveSessionJobMapping(sessionId: string, jobId: string): void {
+export function saveSessionJobMapping(
+  sessionId: string,
+  jobId: string,
+  metadata?: { filename?: string; subjectName?: string },
+): void {
   const map = readSessionJobMap();
   map[sessionId] = {
     jobId,
+    ...(metadata?.filename ? { filename: metadata.filename } : {}),
+    ...(metadata?.subjectName ? { subjectName: metadata.subjectName } : {}),
     updatedAt: Date.now(),
   };
 
@@ -199,6 +207,18 @@ export function saveSessionJobMapping(sessionId: string, jobId: string): void {
 export function getJobIdForSession(sessionId: string): string | null {
   const entry = readSessionJobMap()[sessionId];
   return entry ? entry.jobId : null;
+}
+
+export function getSubjectTitleForSession(sessionId: string, defaultTitle: string): string {
+  const entry = readSessionJobMap()[sessionId];
+  if (!entry) return defaultTitle;
+
+  const mappedTitle = entry.subjectName?.trim() || entry.filename?.trim();
+  if (mappedTitle) return mappedTitle;
+
+  return localStorage.getItem(PIPELINE_JOB_ID_KEY) === entry.jobId
+    ? getSelectedPipelineTitle(defaultTitle)
+    : defaultTitle;
 }
 
 export function saveActiveSessionId(sessionId: string): void {

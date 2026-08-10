@@ -1,0 +1,2 @@
+export const MAX_PDF_UPLOAD_BYTES = 100 * 1024 * 1024;
+export const MAX_PDF_UPLOAD_MB = MAX_PDF_UPLOAD_BYTES / (1024 * 1024);

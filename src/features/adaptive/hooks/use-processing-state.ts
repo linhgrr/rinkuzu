@@ -22,6 +22,7 @@ import {
   clearSelectedPipelineJob,
   getSelectedPipelineFilename,
   getSelectedPipelineJobId,
+  getSelectedPipelineTitle,
   saveActiveSessionId,
   saveSessionJobMapping,
 } from '../lib/session-storage';
@@ -90,6 +91,7 @@ export const useProcessingState = (t: TranslateFn) => {
   const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null);
   const [creatingSession, setCreatingSession] = useState(false);
   const filename = getSelectedPipelineFilename(t('processing.defaultFilename'));
+  const subjectTitle = getSelectedPipelineTitle(filename);
   // Reactive viewport flag — the shared hook seeds the initial value on mount
   // (the previous inline effect only updated on change, missing first paint).
   const showGraphPanel = useMediaQuery(MEDIA_MIN_LG);
@@ -323,7 +325,10 @@ export const useProcessingState = (t: TranslateFn) => {
         const session = await createSessionFromPipeline(jobId, 50);
         clearPolling();
         saveActiveSessionId(session.session_id);
-        saveSessionJobMapping(session.session_id, jobId);
+        saveSessionJobMapping(session.session_id, jobId, {
+          filename,
+          subjectName: subjectTitle,
+        });
         clearSelectedPipelineJob();
         toast.success(t('processing.status.completed'));
         navigationTimeoutRef.current = setTimeout(() => {

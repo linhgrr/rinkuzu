@@ -13,7 +13,8 @@ export type AuthRateLimitAction =
   | 'forgot_password_email'
   | 'resend_verification_email'
   | 'reset_password_token_ip'
-  | 'verify_email_ip';
+  | 'verify_email_ip'
+  | 'pdf_upload_intent_user';
 
 type Limit = {
   points: number;
@@ -28,6 +29,7 @@ const DEFAULTS: Record<AuthRateLimitAction, Limit> = {
   resend_verification_email: { points: 3, durationSec: 60 * 60 }, // 3 / hour / email
   reset_password_token_ip: { points: 10, durationSec: 60 * 15 }, // 10 / 15min / IP
   verify_email_ip: { points: 20, durationSec: 60 * 15 }, // 20 / 15min / IP
+  pdf_upload_intent_user: { points: 20, durationSec: 60 * 15 }, // 20 upload URLs / 15min / user
 };
 
 const COLLECTION = 'auth_rate_limits';

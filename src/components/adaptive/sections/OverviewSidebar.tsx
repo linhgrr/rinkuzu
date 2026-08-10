@@ -6,6 +6,8 @@ import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
+import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
+import { MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
 
 const ASSET_BASE = '/images/home-redesign';
 
@@ -20,6 +22,7 @@ function relativeTime(timestamp: number, t: TranslateFn) {
 
 export function UploadMaterialCard({ onGoUpload, t }: { onGoUpload: () => void; t: TranslateFn }) {
   const router = useRouter();
+  const uploadPolicy = usePdfUploadPolicy('adaptive');
   const openUpload = () => {
     onGoUpload();
     router.prefetch(ADAPTIVE_ROUTES.upload);
@@ -52,7 +55,10 @@ export function UploadMaterialCard({ onGoUpload, t }: { onGoUpload: () => void; 
           {t('uploadDropCta')}
         </span>
         <span className="mt-1 font-home text-xs leading-[1.4] text-ink-muted sm:text-sm">
-          {t('uploadDropHint')}
+          {t('uploadDropHint', {
+            pages: uploadPolicy.maxPages,
+            size: MAX_PDF_UPLOAD_MB,
+          })}
         </span>
       </button>
     </SurfaceCard>
@@ -74,11 +80,15 @@ export function RecentActivity({
       <div className="relative mt-5 flex flex-col gap-4 pl-7 before:absolute before:bottom-1 before:left-2 before:top-1 before:w-px before:bg-ink-muted/50 sm:mt-6 sm:gap-5 sm:pl-8">
         {activities.length > 0 ? (
           activities.map((session) => {
+            const activityKey =
+              session.status === 'completed'
+                ? 'recentActivityCompleted'
+                : 'recentActivityInProgress';
             return (
               <div key={`${session.jobId}-${session.updatedAt}`} className="relative">
                 <span className="absolute -left-[27px] top-0.5 size-4 rounded-full border-4 border-accent-soft bg-accent sm:-left-[31px]" />
                 <p className="line-clamp-2 font-home text-sm leading-[1.4] text-ink sm:text-base">
-                  {t('recentActivityCompleted', { title: session.displayTitle })}
+                  {t(activityKey, { title: session.displayTitle })}
                 </p>
                 <p className="mt-1 font-home text-sm text-ink-muted">
                   {t('recentActivityMeta', {

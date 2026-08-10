@@ -13,7 +13,7 @@ import { isSessionNotFoundError } from '@/features/adaptive/lib/adaptive-api-err
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import {
   getJobIdForSession,
-  getSelectedPipelineTitle,
+  getSubjectTitleForSession,
   saveActiveSessionId,
   saveSessionJobMapping,
 } from '../lib/session-storage';
@@ -93,7 +93,7 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     const bootstrap = async () => {
       const mappedJobId = getJobIdForSession(sessionId);
       const nextState: Partial<SubjectDetailsState> = {
-        filename: getSelectedPipelineTitle(t('defaultLearningPath')),
+        filename: getSubjectTitleForSession(sessionId, t('defaultLearningPath')),
         jobId: mappedJobId,
         loading: false,
       };
@@ -181,7 +181,10 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     void createSessionFromPipeline(jobId, 50)
       .then((session) => {
         saveActiveSessionId(session.session_id);
-        saveSessionJobMapping(session.session_id, jobId);
+        saveSessionJobMapping(session.session_id, jobId, {
+          filename,
+          subjectName: filename,
+        });
         toast.success(t('processing.creatingSession'));
         router.push(ADAPTIVE_ROUTES.exercise(session.session_id));
       })

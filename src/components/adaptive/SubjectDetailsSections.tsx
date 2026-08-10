@@ -89,7 +89,7 @@ export const SubjectDetailsBackButton = ({ onClick, t }: SubjectDetailsBackButto
     <Button
       variant="ghost"
       onClick={onClick}
-      className="-ml-4 mb-4 min-h-[44px] gap-2 px-4 font-medium text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+      className="-ml-4 mb-4 min-h-[44px] gap-2 bg-transparent px-4 font-medium text-ink-muted hover:bg-accent-soft/25 hover:text-ink"
     >
       <HiOutlineArrowLeft className="size-5" />
       {t('subjectDetails.backToDashboard')}
@@ -108,14 +108,14 @@ export const SubjectDetailsHero = ({
   summary,
   t,
 }: SubjectDetailsHeroProps) => (
-  <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8 md:p-10">
+  <div className="relative overflow-hidden rounded-[20px] border border-line bg-surface p-5 shadow-sm sm:p-8 md:p-10">
     <div className="relative flex flex-col justify-between gap-6 md:flex-row md:items-center">
       <div className="flex items-start gap-4">
         <div className="shrink-0 rounded-lg border border-neutral-100 bg-neutral-50 p-3 shadow-xs sm:p-3.5">
           <HiOutlineBookOpen className="h-6 w-6 text-neutral-900 sm:h-7 sm:w-7" />
         </div>
         <div>
-          <h1 className="mb-1.5 text-xl font-semibold tracking-tight text-neutral-900 sm:text-2xl md:text-3xl">
+          <h1 className="mb-1.5 text-xl font-bold tracking-tight text-ink sm:text-2xl md:text-3xl">
             {filename}
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-neutral-500 sm:text-base">
@@ -139,7 +139,9 @@ export const SubjectDetailsHero = ({
           ) : (
             <>
               <HiOutlineLightningBolt className="size-4" />
-              {t('subjectDetails.startLearning')}
+              {status && status.total_answered > 0
+                ? t('dashboard.continueLearning')
+                : t('subjectDetails.startLearning')}
               <HiArrowRight className="size-4" />
             </>
           )}
@@ -193,7 +195,7 @@ export const SubjectDetailsHero = ({
 );
 
 const SubjectStatCard = ({ icon: Icon, label, value }: SubjectStatCardProps) => (
-  <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-5 py-4">
+  <div className="rounded-xl border border-line bg-surface-warm px-5 py-4">
     <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
       <Icon className="size-3.5" />
       {label}

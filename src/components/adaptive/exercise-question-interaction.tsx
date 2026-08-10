@@ -157,13 +157,30 @@ function MatchingInteraction({
   }, [leftItems, rightEntries]);
 
   const sharedCardStyle = cardMinHeight ? { minHeight: `${cardMinHeight}px` } : undefined;
+  const commitRightEntries = (nextEntries: MatchingRightEntry[]) => {
+    const nextRightItems = nextEntries.map((entry) => entry.value);
+    setRightEntriesState({
+      orderKey: createMatchingOrderKey(nextRightItems),
+      entries: nextEntries,
+    });
+    onSetMatchingOrder(leftItems, nextRightItems);
+  };
+
+  const moveRightEntry = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= rightEntries.length) return;
+    const nextEntries = [...rightEntries];
+    const [entry] = nextEntries.splice(fromIndex, 1);
+    if (!entry) return;
+    nextEntries.splice(toIndex, 0, entry);
+    commitRightEntries(nextEntries);
+  };
 
   return (
     <div ref={containerRef} className="space-y-4">
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
         {t('exercise.interactions.matchingInstruction')}
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
         <div className="space-y-3">
           {leftItems.map((item, index) => (
             <div
@@ -186,14 +203,7 @@ function MatchingInteraction({
           <Reorder.Group
             axis="y"
             values={rightEntries}
-            onReorder={(nextEntries) => {
-              const nextRightItems = nextEntries.map((entry) => entry.value);
-              setRightEntriesState({
-                orderKey: createMatchingOrderKey(nextRightItems),
-                entries: nextEntries,
-              });
-              onSetMatchingOrder(leftItems, nextRightItems);
-            }}
+            onReorder={commitRightEntries}
             className="space-y-3"
           >
             {rightEntries.map((entry, index) => (
@@ -207,6 +217,30 @@ function MatchingInteraction({
                 <HiOutlineDotsVertical className="size-4 shrink-0 text-neutral-300" />
                 <div className="flex-1 text-right text-sm text-neutral-700">
                   <MarkdownRenderer content={entry.value} />
+                </div>
+                <div className="flex shrink-0 flex-col gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={index === 0}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={() => moveRightEntry(index, index - 1)}
+                    aria-label={`${t('exercise.interactions.moveUp')}: ${entry.value}`}
+                    className="size-8 min-h-0 rounded-md border-neutral-200 bg-white p-0 text-neutral-600 hover:border-brand-trust hover:text-brand-trust disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <HiChevronUp className="size-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={index === rightEntries.length - 1}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={() => moveRightEntry(index, index + 1)}
+                    aria-label={`${t('exercise.interactions.moveDown')}: ${entry.value}`}
+                    className="size-8 min-h-0 rounded-md border-neutral-200 bg-white p-0 text-neutral-600 hover:border-brand-trust hover:text-brand-trust disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <HiChevronDown className="size-4" aria-hidden="true" />
+                  </Button>
                 </div>
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
                   {String.fromCharCode(65 + index)}

@@ -1,7 +1,16 @@
 'use client';
 
-import { HiOutlineRefresh, HiOutlineTrash, HiOutlineX } from 'react-icons/hi';
+import { useState } from 'react';
+import {
+  HiOutlineChevronDown,
+  HiOutlineChevronUp,
+  HiOutlineEye,
+  HiOutlineRefresh,
+  HiOutlineTrash,
+  HiOutlineX,
+} from 'react-icons/hi';
 import { SectionHeading } from '@/components/ui/SectionHeading';
+import { Button } from '@/components/ui/Button';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
@@ -14,6 +23,7 @@ type LibraryProps = {
   loadingJobId: string | null;
   deletingJobId: string | null;
   onOpenSubject: (jobId: string) => void;
+  onViewProcessing: (subject: DashboardSubject) => void;
   onDelete: (subject: DashboardSubject) => void;
   onRetry?: (jobId: string) => void;
   onCancel?: (jobId: string) => void;
@@ -67,6 +77,7 @@ export function SubjectCard({
   deleting,
   busy,
   onOpenSubject,
+  onViewProcessing,
   onDelete,
   onRetry,
   onCancel,
@@ -77,6 +88,7 @@ export function SubjectCard({
   deleting: boolean;
   busy: boolean;
   onOpenSubject: (jobId: string) => void;
+  onViewProcessing?: (subject: DashboardSubject) => void;
   onDelete?: (subject: DashboardSubject) => void;
   onRetry?: (jobId: string) => void;
   onCancel?: (jobId: string) => void;
@@ -84,6 +96,7 @@ export function SubjectCard({
 }) {
   const state = getCardState(subject, t);
   const canOpen = subject.runtime.kind === 'ready';
+  const openLabel = subject.exercise?.totalAnswered ? t('continueLearning') : subject.ctaLabel;
 
   return (
     <article
@@ -98,7 +111,7 @@ export function SubjectCard({
           className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           onClick={() => onOpenSubject(subject.jobId)}
           disabled={loading}
-          aria-label={`${subject.ctaLabel}: ${subject.displayTitle}`}
+          aria-label={`${openLabel}: ${subject.displayTitle}`}
         />
       ) : null}
       <div className="pointer-events-none relative flex items-start justify-between gap-2">
@@ -143,17 +156,29 @@ export function SubjectCard({
           </button>
         ) : null}
         {subject.runtime.kind === 'processing' ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={(event) => {
-              event.stopPropagation();
-              onCancel?.(subject.jobId);
-            }}
-            className="pointer-events-auto mb-3 flex items-center gap-1 text-sm font-semibold text-red-600"
-          >
-            <HiOutlineX className="size-4" /> {t('cancelProcessing')}
-          </button>
+          <div className="pointer-events-auto mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Button
+              variant="ghost"
+              onClick={(event) => {
+                event.stopPropagation();
+                onViewProcessing?.(subject);
+              }}
+              className="min-h-11 bg-transparent px-0 text-sm font-semibold text-accent hover:text-accent-hover"
+            >
+              <HiOutlineEye className="size-4" aria-hidden="true" /> {t('viewProcessing')}
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={busy}
+              onClick={(event) => {
+                event.stopPropagation();
+                onCancel?.(subject.jobId);
+              }}
+              className="min-h-11 bg-transparent px-0 text-sm font-semibold text-red-600"
+            >
+              <HiOutlineX className="size-4" aria-hidden="true" /> {t('cancelProcessing')}
+            </Button>
+          </div>
         ) : null}
         <div className="mb-2 flex items-center justify-between text-sm">
           <span>
@@ -204,28 +229,26 @@ export const LibrarySection = ({
   loadingJobId,
   deletingJobId,
   onOpenSubject,
+  onViewProcessing,
   onDelete,
   onRetry,
   onCancel,
   busyJobId,
   t,
-}: LibraryProps) => (
-  <SurfaceCard className="flex min-h-[420px] flex-col gap-5 rounded-2xl p-4 sm:min-h-[555px] sm:gap-6 sm:p-5 md:rounded-[20px]">
-    <SectionHeading
-      title={t('knowledgeLibrary')}
-      subtitle={t('knowledgeLibraryFigmaSubtitle')}
-      href="/adaptive"
-      viewAllLabel={t('viewAll')}
-    />
-    <div
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 min-[1500px]:grid-cols-4"
-      aria-busy={loading}
-    >
-      {loading && subjects.length === 0
-        ? Array.from({ length: 8 }).map((_, index) => <LibraryCardSkeleton key={index} />)
-        : subjects
-            .slice(0, 8)
-            .map((subject) => (
+}: LibraryProps) => {
+  const [showAll, setShowAll] = useState(false);
+  const visibleSubjects = showAll ? subjects : subjects.slice(0, 8);
+
+  return (
+    <SurfaceCard className="flex min-h-[420px] flex-col gap-5 rounded-2xl p-4 sm:min-h-[555px] sm:gap-6 sm:p-5 md:rounded-[20px]">
+      <SectionHeading title={t('knowledgeLibrary')} subtitle={t('knowledgeLibraryFigmaSubtitle')} />
+      <div
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 min-[1500px]:grid-cols-4"
+        aria-busy={loading}
+      >
+        {loading && subjects.length === 0
+          ? Array.from({ length: 8 }).map((_, index) => <LibraryCardSkeleton key={index} />)
+          : visibleSubjects.map((subject) => (
               <SubjectCard
                 key={subject.jobId}
                 subject={subject}
@@ -233,15 +256,32 @@ export const LibrarySection = ({
                 deleting={deletingJobId === subject.jobId}
                 busy={busyJobId === subject.jobId}
                 onOpenSubject={onOpenSubject}
+                onViewProcessing={onViewProcessing}
                 onDelete={onDelete}
                 {...(onRetry !== undefined ? { onRetry } : {})}
                 {...(onCancel !== undefined ? { onCancel } : {})}
                 t={t}
               />
             ))}
-    </div>
-    {!loading && subjects.length === 0 ? (
-      <p className="m-auto font-home text-base text-ink-muted">{t('noDocumentsDescription')}</p>
-    ) : null}
-  </SurfaceCard>
-);
+      </div>
+      {!loading && subjects.length > 8 ? (
+        <Button
+          variant="ghost"
+          onClick={() => setShowAll((current) => !current)}
+          aria-expanded={showAll}
+          className="mx-auto min-h-11 rounded-full px-4 font-home text-sm font-semibold text-ink-strong hover:bg-accent-soft/30 hover:text-accent"
+        >
+          {showAll ? t('showLess') : t('viewAll')}
+          {showAll ? (
+            <HiOutlineChevronUp className="size-5" aria-hidden="true" />
+          ) : (
+            <HiOutlineChevronDown className="size-5" aria-hidden="true" />
+          )}
+        </Button>
+      ) : null}
+      {!loading && subjects.length === 0 ? (
+        <p className="m-auto font-home text-base text-ink-muted">{t('noDocumentsDescription')}</p>
+      ) : null}
+    </SurfaceCard>
+  );
+};

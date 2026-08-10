@@ -163,7 +163,7 @@ export const ResultContent = ({
   result,
   t,
 }: ResultContentProps) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col items-center justify-center py-8">
+  <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col items-center justify-center py-8 font-home text-ink">
     <div className="mb-6 flex w-full flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left">
       <div
         className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
@@ -182,6 +182,13 @@ export const ResultContent = ({
           {isCorrect ? t('result.correctDescription') : t('result.incorrectDescription')}
         </p>
       </div>
+      <Button
+        className="min-h-11 rounded-full bg-brand-action px-5 font-semibold text-white hover:bg-brand-action-hover sm:ml-auto"
+        onClick={onHandleNext}
+      >
+        {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}
+        <HiArrowRight className="size-4" aria-hidden="true" />
+      </Button>
     </div>
 
     <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">

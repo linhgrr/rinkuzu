@@ -28,7 +28,7 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
   } = useSubjectDetailsState(sessionId, t);
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12 font-home text-ink">
       <SubjectDetailsBackButton onClick={handleBackToDashboard} t={t} />
 
       <SubjectDetailsHero

@@ -450,7 +450,15 @@ describe('adaptive-api-methods mutation coverage', () => {
     it('uploadPdf uses default batch size, adaptive purpose, and timeouts', async () => {
       const spy = vi
         .fn()
-        .mockResolvedValueOnce(okJson({ uploadUrl: 'https://storage.test/u', s3Key: 'key-1' }))
+        .mockResolvedValueOnce(
+          okJson({
+            uploadUrl: 'https://storage.test/u',
+            uploadMethod: 'PUT',
+            uploadHeaders: { 'Content-Type': 'application/pdf' },
+            uploadFields: {},
+            s3Key: 'key-1',
+          }),
+        )
         .mockResolvedValueOnce(new Response(null, { status: 200 }))
         .mockResolvedValueOnce(
           okJson({
@@ -478,6 +486,7 @@ describe('adaptive-api-methods mutation coverage', () => {
       expect(spy.mock.calls[1]?.[1]).toMatchObject({
         method: 'PUT',
         headers: { 'Content-Type': 'application/pdf' },
+        body: file,
       });
 
       expect(spy.mock.calls[2]?.[0]).toBe('/api/adaptive/pipeline/process');
@@ -497,8 +506,14 @@ describe('adaptive-api-methods mutation coverage', () => {
         'fetch',
         vi
           .fn()
-          .mockResolvedValueOnce(okJson({ uploadUrl: '', s3Key: 'k' }))
-          .mockResolvedValueOnce(okJson({ uploadUrl: 'https://storage.test/u', s3Key: 'k2' }))
+          .mockResolvedValueOnce(okJson({ uploadUrl: '', uploadFields: {}, s3Key: 'k' }))
+          .mockResolvedValueOnce(
+            okJson({
+              uploadUrl: 'https://storage.test/u',
+              uploadFields: { key: 'k2' },
+              s3Key: 'k2',
+            }),
+          )
           .mockResolvedValueOnce(new Response(null, { status: 503 })),
       );
 
@@ -524,7 +539,9 @@ describe('adaptive-api-methods mutation coverage', () => {
         'fetch',
         vi
           .fn()
-          .mockResolvedValueOnce(okJson({ uploadUrl: 'https://storage.test/u', s3Key: 'k' }))
+          .mockResolvedValueOnce(
+            okJson({ uploadUrl: 'https://storage.test/u', uploadFields: { key: 'k' }, s3Key: 'k' }),
+          )
           .mockResolvedValueOnce(new Response(null, { status: 403 })),
       );
 

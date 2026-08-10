@@ -7,7 +7,9 @@ import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants/routes';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
-import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
+import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
+import { getPdfPageCount } from '@/lib/pdf';
+import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { cn } from '@/lib/utils';
 
 const ASSET_BASE = '/images/home-redesign';
@@ -22,20 +24,36 @@ export function QuizUploadDropzone({ className }: QuizUploadDropzoneProps) {
   const setPendingFile = usePendingQuizUploadStore((s) => s.setFile);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const uploadPolicy = usePdfUploadPolicy('quiz');
 
   const showError = (message: string) => {
     setError(message);
     toast.error(message);
   };
 
-  const handleFile = (file: File | undefined) => {
+  const handleFile = async (file: File | undefined) => {
     if (!file) return;
     if (file.type !== 'application/pdf') {
       showError(t('upload.errors.onlyPdf'));
       return;
     }
-    if (file.size > MAX_QUIZ_PDF_BYTES) {
-      showError(t('upload.errors.fileTooLarge'));
+    if (file.size > uploadPolicy.maxBytes) {
+      showError(t('upload.errors.fileTooLarge', { size: MAX_QUIZ_PDF_MB }));
+      return;
+    }
+    try {
+      const pageCount = await getPdfPageCount(file);
+      if (pageCount > uploadPolicy.maxPages) {
+        showError(
+          t('upload.errors.tooManyPages', {
+            pages: pageCount,
+            maxPages: uploadPolicy.maxPages,
+          }),
+        );
+        return;
+      }
+    } catch {
+      showError(t('upload.errors.unreadablePdf'));
       return;
     }
     setError(null);
@@ -53,7 +71,7 @@ export function QuizUploadDropzone({ className }: QuizUploadDropzoneProps) {
       onDrop={(event) => {
         event.preventDefault();
         setDragActive(false);
-        handleFile(event.dataTransfer.files?.[0]);
+        void handleFile(event.dataTransfer.files?.[0]);
       }}
       className={cn(
         'flex min-h-[180px] flex-1 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed p-4 text-center transition-colors',
@@ -69,7 +87,7 @@ export function QuizUploadDropzone({ className }: QuizUploadDropzoneProps) {
         className="hidden"
         aria-label={t('upload.cta')}
         onChange={(event) => {
-          handleFile(event.target.files?.[0]);
+          void handleFile(event.target.files?.[0]);
           event.currentTarget.value = '';
         }}
       />
@@ -89,7 +107,7 @@ export function QuizUploadDropzone({ className }: QuizUploadDropzoneProps) {
         }`}
         aria-live="polite"
       >
-        {error ?? t('upload.hint')}
+        {error ?? t('upload.hint', { pages: uploadPolicy.maxPages, size: MAX_QUIZ_PDF_MB })}
       </span>
     </label>
   );

@@ -323,12 +323,20 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                   {exercise.is_correct == null ? (
                     <span className="font-medium text-neutral-300">N/A</span>
                   ) : exercise.is_correct ? (
-                    <span className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-900">
-                      <HiCheck className="size-4" />
+                    <span
+                      role="img"
+                      aria-label={t('correct')}
+                      className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-900"
+                    >
+                      <HiCheck className="size-4" aria-hidden="true" />
                     </span>
                   ) : (
-                    <span className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-neutral-50 text-neutral-400">
-                      <HiOutlineX className="size-4" />
+                    <span
+                      role="img"
+                      aria-label={t('incorrect')}
+                      className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-neutral-50 text-neutral-400"
+                    >
+                      <HiOutlineX className="size-4" aria-hidden="true" />
                     </span>
                   )}
                 </td>

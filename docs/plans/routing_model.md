@@ -161,10 +161,9 @@ class LlmAction(StrEnum):
     ADAPTIVE_EXERCISE = "adaptive_exercise"
     ADAPTIVE_THEORY = "adaptive_theory"
     ADAPTIVE_SHORT_ANSWER_EVAL = "adaptive_short_answer_eval"
-    ADAPTIVE_TUTOR_CHAT = "adaptive_tutor_chat"
-    TUTOR_CHAT_SUMMARY = "tutor_chat_summary"
+    ASK_RIN_CHAN = "ask_rin_chan"
+    ASK_RIN_CHAN_SUMMARY = "ask_rin_chan_summary"
     QUIZ_EXTRACTION = "quiz_extraction"
-    QUIZ_TUTOR = "quiz_tutor"
     PIPELINE_CONCEPT_EXTRACTION = "pipeline_concept_extraction"
     PIPELINE_RELATION_VERIFICATION = "pipeline_relation_verification"
     PIPELINE_CYCLE_REMOVAL = "pipeline_cycle_removal"
@@ -185,16 +184,33 @@ Define one immutable `LLM_ACTION_DEFINITIONS` registry. It is the backend source
 | adaptive exercise              | text, structured output | Required feature action                       |
 | adaptive theory                | text, structured output | On-demand theory                              |
 | short-answer evaluation        | text, structured output | Required feature action                       |
-| adaptive tutor chat            | text, streaming         | Add vision at runtime when images are present |
-| tutor summary                  | text                    | Non-stream summary                            |
+| ask rin-chan                   | text, streaming         | Add vision at runtime when images are present |
+| ask rin-chan summary           | text                    | Non-stream summary                            |
 | quiz extraction                | text, structured output | Current extraction uses document text         |
-| quiz tutor                     | text, streaming         | Add vision at runtime when images are present |
 | pipeline concept extraction    | text, structured output | Required pipeline step                        |
 | pipeline relation verification | text, structured output | Optional pipeline strategy                    |
 | pipeline cycle removal         | text, structured output | Optional AI assistance; DAG remains required  |
 | pipeline theory generation     | text, structured output | Separate from adaptive/on-demand theory       |
 
-`api/shared/llm_usage.py` temporarily re-exports `LlmAction` from the new module so existing imports continue working during migration. Remove the old string-constant class after all call sites have moved.
+### 6.1 One Chat Action, Not One Per Surface
+
+Tutor chat is a **single** `ASK_RIN_CHAN` action covering both the quiz and adaptive learning surfaces. Do not split it into `adaptive_tutor_chat` and `quiz_tutor`.
+
+The two tutors were unified into `api/domains/assistant/` (one `AskRinChanService`, with a `source: "quiz" | "adaptive"` discriminator on the request). Splitting the routing key would:
+
+- force an admin to configure the same model chain twice for one service,
+- fragment the existing `ask_rin_chan` usage history across two keys,
+- imply a routing distinction the runtime does not actually make.
+
+`ASK_RIN_CHAN_SUMMARY` is separate because it is genuinely different work: a non-streamed, short, cheap summarization that an admin may reasonably route to a smaller model.
+
+`api/shared/llm_usage.py` temporarily re-exports `LlmAction` from the new module so existing imports continue working during migration. Remove the old string-constant class after all call sites have moved. Because the new enum keeps the `ask_rin_chan` value, existing usage rows and the four assistant call sites migrate without a data rewrite.
+
+### 6.2 Pipeline Step Identifiers Live in the Shared Layer
+
+`PipelineStepId` and `PipelineBypassKind` are defined in `api/shared/llm_runtime/steps.py`, not in the content-pipeline domain package.
+
+The configuration aggregate persists step policies, so `LlmConfigSnapshot` needs the identifier type. A shared module importing a domain package creates a circular import (`llm_runtime.models` → `content_pipeline.domain.step_definitions` → `llm_runtime.actions`). The domain module `api/domains/content_pipeline/domain/step_definitions.py` re-exports both enums alongside the step _definitions_ (labels, required flags, bypass strategies), so pipeline code still has a single import site.
 
 ## 7. Configuration Aggregate and Persistence
 
@@ -1069,6 +1085,8 @@ Before modifying an existing symbol, obey each repository's `AGENTS.md`: run Git
 
 ### Wave 0 — Security Prerequisites
 
+> **Status: already complete** as of commit `fd0ce53` ("security: redact llm boundary errors"). Verify rather than reimplement; `tests/test_llm_security_redaction.py` covers items 1 and 3.
+
 1. Modify `api/exceptions.py`.
    - Sanitize request validation logging to `loc`, `type`, and safe `msg` only.
    - Never log Pydantic's raw `input` for `SecretStr` fields.
@@ -1079,6 +1097,7 @@ Before modifying an existing symbol, obey each repository's `AGENTS.md`: run Git
    - Remove every `str(exc)` that can cross an HTTP/SSE boundary.
 4. Change `api/routers/admin_usage.py` from `get_current_user` to `get_current_admin_user` as defense in depth.
 5. Disable LiteLLM verbose/content logging for routed calls; do not log prompts/responses.
+   - Already set at `api/shared/llm.py` module scope: `suppress_debug_info`, `turn_off_message_logging`, `set_verbose`.
 
 Exit criterion: malformed secret input and upstream errors cannot leak a key through response, Loguru, traceback, audit, or SSE.
 
@@ -1112,6 +1131,11 @@ Modify:
 - `api/shared/persistence/__init__.py`: export the new repository surface.
 
 Repository public serializers must never include ciphertext or fingerprint. Add transaction/CAS tests before adding routers.
+
+Two implementation constraints found while building this wave:
+
+- **`validation_alias` disables keyword construction.** `Settings` does not set `populate_by_name`, so a field declared with `validation_alias="LLM_X"` accepts _only_ `LLM_X` — passing `llm_x=...` as a kwarg is silently ignored and the default is kept. Tests that construct `Settings(...)` directly must use the env-var name, or they will assert against defaults and pass vacuously.
+- **Beanie documents cannot be constructed before `init_beanie`.** `LlmConfigRevisionDocument(...)` raises `CollectionWasNotInitialized` outside a live database. Aggregate validation and snapshot building therefore operate on a plain `ConfigRevisionData` dataclass, with the Beanie document used only as the storage representation (`from_document` / `to_document`). This keeps the invariant and snapshot logic unit-testable without a Mongo fixture.
 
 ### Wave 3 — Endpoint Policy and Probe Transport
 
@@ -1186,11 +1210,15 @@ Modify `api/domains/learning/exercise_service.py`:
 
 Modify:
 
-- `api/domains/quiz/tutor_core.py`
-- `api/domains/quiz/tutor_chat.py`
-- `api/domains/quiz/quiz_tutor.py`
+- `api/domains/assistant/service.py`
+- `api/domains/assistant/streaming.py`
+- `api/domains/assistant/router.py`
+- `api/domains/assistant/agui.py`
+- `api/domains/assistant/legacy_router.py`
 
-Remove explicit model resolution and route through the gateway. Summary and final tutor response in one request use the same snapshot. When images are present, add runtime `VISION` capability. Preserve the pre-first-token streaming rule.
+> The plan originally listed `api/domains/quiz/tutor_core.py`, `tutor_chat.py`, and `quiz_tutor.py`. Those files no longer exist: the quiz and adaptive tutors were unified into `api/domains/assistant/` (`AskRinChanService`), with `legacy_router.py` translating the removed quiz routes onto the shared service. Use the file list above.
+
+Remove explicit model resolution and route through the gateway. Summary and final tutor response in one request use the same snapshot. Both surfaces use the single `ASK_RIN_CHAN` action (see 6.1); the summarizer uses `ASK_RIN_CHAN_SUMMARY`. When images are present, add runtime `VISION` capability. Preserve the pre-first-token streaming rule.
 
 ### Wave 8 — Quiz Extraction Background Work
 
@@ -1704,6 +1732,22 @@ uv run ruff check api tests scripts
 uv run mypy api
 uv run pip-audit
 ```
+
+> If `uv` is not on PATH, use the committed project virtualenv directly — it has the same pinned dependencies:
+>
+> ```powershell
+> cd rinkuzu-ai-api
+> .\.venv\Scripts\python.exe -m pytest
+> .\.venv\Scripts\python.exe -m ruff check api tests scripts
+> .\.venv\Scripts\python.exe -m mypy api
+> ```
+>
+> Do not pass `--timeout` to pytest; `pytest-timeout` is not installed and the flag is a collection error.
+
+Two guards fire on new work and are not optional:
+
+- `tests/test_api_error_codes_contract.py` scans `api/**` for `code = "..."` literals and requires each one in `contracts/api-error-codes.json`. The backend and frontend copies of that file must parse identically, so add every new error code from Section 12.6 to **both** `rinkuzu-ai-api/contracts/` and `rinkuzu/contracts/` in the same change.
+- `tests/core/test_quiz_draft_service.py::test_process_draft_falls_back_when_primary_source_endpoint_times_out` fails on `main` before any of this work. It asserts a 1 ms storage timeout is exceeded by a 50 ms sleep and is machine-speed sensitive. Treat it as a known-red baseline, not a regression from this feature.
 
 Frontend:
 

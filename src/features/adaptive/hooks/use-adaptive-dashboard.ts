@@ -9,7 +9,7 @@ import {
   getSubjectsFresh,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
-import { clearSelectedPipelineJob } from '../lib/session-storage';
+import { clearSelectedPipelineJob, saveSelectedPipelineJob } from '../lib/session-storage';
 import { useJobLibrary } from './use-job-library';
 import { useStartAdaptiveSubject } from './use-start-adaptive-subject';
 import {
@@ -154,7 +154,26 @@ export const useAdaptiveDashboard = ({
   };
 
   const handleOpenSubject = (jobId: string) => {
-    if (!deletingJobId) void startSubject(jobId);
+    if (!deletingJobId) {
+      const subject = mergedSubjects.find((item) => item.jobId === jobId);
+      if (subject) {
+        void startSubject(jobId, {
+          filename: subject.filename,
+          subjectName: subject.displayTitle,
+        });
+      } else {
+        void startSubject(jobId);
+      }
+    }
+  };
+
+  const handleViewProcessing = (subject: DashboardSubject) => {
+    saveSelectedPipelineJob({
+      jobId: subject.jobId,
+      filename: subject.filename,
+      subjectName: subject.displayTitle,
+    });
+    router.push(ADAPTIVE_ROUTES.processing);
   };
 
   const handleDeleteClick = (subject: DashboardSubject) => {
@@ -380,6 +399,7 @@ export const useAdaptiveDashboard = ({
     handleDeleteClick,
     handleGoUpload,
     handleOpenSubject,
+    handleViewProcessing,
     itemToDelete,
     loading: dashboardState.loading,
     libraryLoading: jobLibrary.loading,

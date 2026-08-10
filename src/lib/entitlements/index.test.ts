@@ -41,9 +41,13 @@ describe('entitlements registry', () => {
     });
   });
 
-  it('keeps adaptive PDF page caps in the entitlement registry', () => {
+  it('keeps page-based PDF caps and the shared byte safety ceiling in the registry', () => {
+    expect(getConstraint({ tier: 'free' }, 'quiz_pdf_pages')).toBe(30);
+    expect(getConstraint({ tier: 'premium' }, 'quiz_pdf_pages')).toBe(100);
     expect(getConstraint({ tier: 'free' }, 'adaptive_pdf_pages')).toBe(30);
     expect(getConstraint({ tier: 'premium' }, 'adaptive_pdf_pages')).toBe(100);
+    expect(getConstraint({ tier: 'free' }, 'pdf_upload_bytes')).toBe(100 * 1024 * 1024);
+    expect(getConstraint({ tier: 'premium' }, 'pdf_upload_bytes')).toBe(100 * 1024 * 1024);
   });
 });
 

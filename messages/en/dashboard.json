@@ -78,10 +78,12 @@
     },
     "upload": {
       "cta": "Click or drag & drop it here to upload",
-      "hint": "PDF format, max 5MB",
+      "hint": "PDF up to {pages} pages · Maximum file size {size}MB",
       "errors": {
         "onlyPdf": "Only PDF files are supported",
-        "fileTooLarge": "File exceeds 5MB"
+        "fileTooLarge": "File exceeds {size}MB",
+        "tooManyPages": "This PDF has {pages} pages; your plan supports up to {maxPages}",
+        "unreadablePdf": "We could not read this PDF or it is password-protected"
       }
     },
     "learningProgress": {

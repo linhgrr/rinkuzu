@@ -3,7 +3,7 @@
 import { Link, useRouter } from '@/i18n/navigation';
 import { matchesMedia } from '@/hooks/useMediaQuery';
 import { MEDIA_MAX_MD } from '@/shared/constants/breakpoints';
-import { useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
@@ -18,9 +18,15 @@ import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { toast } from 'sonner';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { fetchSubscriptionStatusViewModel } from '@/features/subscription/api/subscription-page-api';
-import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import {
+  deletePendingPdfUpload,
+  getPdfPageCount,
+  shouldCleanupPendingPdfUpload,
+  uploadPdfViaPresignedUrl,
+} from '@/lib/pdf';
 import { createQuizDraft } from '@/lib/quiz/draftApi';
-import { MAX_QUIZ_PDF_BYTES, MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
+import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
+import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import { ROUTES } from '@/shared/constants/routes';
@@ -247,6 +253,7 @@ interface UploadSectionProps {
   getRootProps: ReturnType<typeof useDropzone>['getRootProps'];
   onRemoveFile: () => void;
   pdfFile: File | null;
+  maxPages: number;
   t: Translator;
 }
 
@@ -257,6 +264,7 @@ function UploadSection({
   isDragActive,
   onRemoveFile,
   pdfFile,
+  maxPages,
   t,
 }: UploadSectionProps) {
   return (
@@ -318,9 +326,11 @@ function UploadSection({
                     {t('dragAndDrop')}
                   </p>
                   <p className="text-sm text-neutral-500">
-                    {t('singlePDFMaxSize', { size: MAX_QUIZ_PDF_MB })}
+                    {t('pdfLimitHint', { pages: maxPages })}
                   </p>
-                  <p className="text-xs text-neutral-400 mt-1">{t('supportedFormats')}</p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {t('pdfTechnicalLimit', { size: MAX_QUIZ_PDF_MB })}
+                  </p>
                 </div>
               )}
             </div>
@@ -358,6 +368,7 @@ interface FormCardProps {
   aiPrompt: string;
   t: Translator;
   tCommon: Translator;
+  maxPages: number;
 }
 
 function CreateQuizFormCard({
@@ -380,6 +391,7 @@ function CreateQuizFormCard({
   t,
   tCommon,
   title,
+  maxPages,
 }: FormCardProps) {
   const { extracting, isDragActive, showPDFViewer } = interaction;
 
@@ -438,6 +450,7 @@ function CreateQuizFormCard({
               isDragActive={isDragActive}
               onRemoveFile={onRemoveFile}
               pdfFile={pdfFile}
+              maxPages={maxPages}
               t={t}
             />
 
@@ -548,6 +561,29 @@ export function CreateQuizPage() {
   );
   const canCreatePrivateQuiz =
     session?.user?.role === 'admin' || subscriptionStatus?.isPremium === true;
+  const uploadPolicy = usePdfUploadPolicy('quiz');
+
+  const selectPdf = useCallback(
+    async (file: File) => {
+      try {
+        const pageCount = await getPdfPageCount(file);
+        if (pageCount > uploadPolicy.maxPages) {
+          dispatch({
+            type: 'patch',
+            value: {
+              error: t('pdfTooManyPages', { pages: pageCount, maxPages: uploadPolicy.maxPages }),
+            },
+          });
+          return;
+        }
+        dispatch({ type: 'patch', value: { error: '' } });
+        dispatch({ type: 'setPdfFile', file });
+      } catch {
+        dispatch({ type: 'patch', value: { error: t('pdfUnreadable') } });
+      }
+    },
+    [t, uploadPolicy.maxPages],
+  );
 
   useEffect(() => {
     if (matchesMedia(MEDIA_MAX_MD)) {
@@ -557,24 +593,35 @@ export function CreateQuizPage() {
 
   // Pick up a PDF dropped on the dashboard, handed off via the pending store.
   useEffect(() => {
+    if (uploadPolicy.isLoading) return;
     const pending = consumePendingFile();
     if (pending) {
-      dispatch({ type: 'setPdfFile', file: pending });
+      void selectPdf(pending);
     }
-  }, [consumePendingFile]);
+  }, [consumePendingFile, selectPdf, uploadPolicy.isLoading]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
       if (file) {
-        dispatch({ type: 'setPdfFile', file });
+        void selectPdf(file);
+      }
+    },
+    onDropRejected: (rejections) => {
+      if (rejections[0]?.errors.some((error) => error.code === 'file-too-large')) {
+        dispatch({
+          type: 'patch',
+          value: { error: t('pdfTooLarge', { size: MAX_QUIZ_PDF_MB }) },
+        });
+      } else {
+        dispatch({ type: 'patch', value: { error: t('pdfUnreadable') } });
       }
     },
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
-    maxSize: MAX_QUIZ_PDF_BYTES,
+    maxSize: uploadPolicy.maxBytes,
     multiple: false,
-    disabled: state.extracting,
+    disabled: state.extracting || uploadPolicy.isLoading,
   });
 
   const handleBackgroundExtract = async (event: React.FormEvent) => {
@@ -592,9 +639,11 @@ export function CreateQuizPage() {
 
     dispatch({ type: 'patch', value: { extracting: true, error: '' } });
 
+    let pendingS3Key: string | null = null;
     try {
       const uploadFile = state.pdfFile;
       const { s3Key } = await uploadPdfViaPresignedUrl(uploadFile);
+      pendingS3Key = s3Key;
       const trimmedTitle = state.title.trim();
       const trimmedDescription = state.description.trim();
       const trimmedPrompt = state.aiPrompt.trim();
@@ -608,6 +657,7 @@ export function CreateQuizPage() {
         description: trimmedDescription || undefined,
         prompt: trimmedPrompt || undefined,
       });
+      pendingS3Key = null;
 
       addDraft({
         id: draft.id,
@@ -625,6 +675,9 @@ export function CreateQuizPage() {
 
       push(ROUTES.CREATE_QUIZ);
     } catch (error: unknown) {
+      if (pendingS3Key && shouldCleanupPendingPdfUpload(error)) {
+        await deletePendingPdfUpload(pendingS3Key, 'quiz').catch(() => undefined);
+      }
       console.error('Error starting background processing:', error);
       dispatch({
         type: 'patch',
@@ -684,6 +737,7 @@ export function CreateQuizPage() {
                   }
                 : {})}
               selectedFolderId={state.selectedFolderId}
+              maxPages={uploadPolicy.maxPages}
               t={t}
               tCommon={tCommon}
               title={state.title}

@@ -546,7 +546,7 @@ function AppTopbar({
                 alt="RinKuzu"
                 width={130}
                 height={40}
-                className="pointer-events-none absolute h-[40px] w-auto -translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
+                className="pointer-events-none absolute -translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
                 priority
               />
               <Image
@@ -581,7 +581,7 @@ function AppTopbar({
                 alt="RinKuzu"
                 width={130}
                 height={40}
-                className="h-[40px] w-auto object-contain transition-[opacity,transform] duration-200 ease-out opacity-100"
+                className="object-contain opacity-100 transition-[opacity,transform] duration-200 ease-out"
                 priority
               />
               <Image
@@ -617,7 +617,7 @@ function AppTopbar({
             alt="RinKuzu"
             width={130}
             height={40}
-            className="h-10 w-auto object-contain"
+            className="object-contain"
             priority
           />
         </Link>

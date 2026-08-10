@@ -27,8 +27,12 @@ const packageVersion = (packageName) =>
   ).version;
 
 const backendStatus = git('status', '--porcelain');
-if (backendStatus) {
-  throw new Error('Adaptive contract source repository must be clean before export');
+const allowDirtySource = process.env.ALLOW_DIRTY_ADAPTIVE_CONTRACT === '1';
+if (backendStatus && !allowDirtySource) {
+  throw new Error(
+    'Adaptive contract source repository must be clean before export. ' +
+      'Set ALLOW_DIRTY_ADAPTIVE_CONTRACT=1 only for an explicit working-tree snapshot.',
+  );
 }
 
 const commit = git('rev-parse', 'HEAD');
@@ -51,6 +55,7 @@ try {
     source: {
       repository: githubRepository,
       commit,
+      ...(backendStatus ? { dirty: true } : {}),
     },
     artifacts: {
       openapi: {
@@ -75,4 +80,6 @@ try {
   rmSync(schemaPath, { force: true });
 }
 
-process.stdout.write(`Vendored adaptive contract from ${githubRepository}@${commit}.\n`);
+process.stdout.write(
+  `Vendored adaptive contract from ${githubRepository}@${commit}${backendStatus ? ' (dirty working tree)' : ''}.\n`,
+);

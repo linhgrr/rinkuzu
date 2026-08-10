@@ -9,16 +9,32 @@ export type PresignedPdfUploadResult = {
   s3Key: string;
 };
 
-/** Get the page count of a PDF file using pdf-lib. */
+export async function deletePendingPdfUpload(
+  s3Key: string,
+  purpose: 'quiz' | 'adaptive',
+): Promise<void> {
+  await fetchApiData('/api/storage/upload', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ s3Key, purpose }),
+  });
+}
+
+/** Only delete when the processing API definitively rejected the request. */
+export function shouldCleanupPendingPdfUpload(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || !('status' in error)) return false;
+  const status = Number((error as { status?: unknown }).status);
+  return Number.isInteger(status) && status >= 400 && status < 500 && status !== 408;
+}
+
+/** Get the page count of a readable, unencrypted PDF using pdf-lib. */
 export async function getPdfPageCount(file: File): Promise<number> {
-  try {
-    const { PDFDocument } = await import('pdf-lib');
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await PDFDocument.load(arrayBuffer);
-    return pdf.getPageCount();
-  } catch {
-    return 1;
-  }
+  const { PDFDocument } = await import('pdf-lib');
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const pageCount = pdf.getPageCount();
+  if (pageCount < 1) throw new Error('PDF has no pages');
+  return pageCount;
 }
 
 /**
@@ -26,9 +42,8 @@ export async function getPdfPageCount(file: File): Promise<number> {
  * Returns the S3 key for the uploaded file.
  */
 export async function uploadPdfViaPresignedUrl(file: File): Promise<PresignedPdfUploadResult> {
-  const { uploadUrl, s3Key } = await fetchApiData<PresignedUploadUrlResponseDto>(
-    '/api/storage/presigned-url',
-    {
+  const { uploadUrl, uploadMethod, uploadHeaders, uploadFields, s3Key } =
+    await fetchApiData<PresignedUploadUrlResponseDto>('/api/storage/presigned-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -37,16 +52,16 @@ export async function uploadPdfViaPresignedUrl(file: File): Promise<PresignedPdf
         fileSize: file.size,
         purpose: 'quiz',
       }),
-    },
-  );
+    });
+
+  const usePut = uploadMethod === 'PUT';
+  const body = usePut ? file : buildPresignedPostBody(uploadFields, file);
 
   const putResponse = await fetch(uploadUrl, {
-    // EXTERNAL: S3 presigned PUT
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/pdf',
-    },
-    body: file,
+    // EXTERNAL: R2 supports presigned PUT; legacy S3 POST payloads remain accepted.
+    method: usePut ? 'PUT' : 'POST',
+    ...(usePut ? { headers: uploadHeaders } : {}),
+    body,
   });
 
   if (!putResponse.ok) {
@@ -54,6 +69,13 @@ export async function uploadPdfViaPresignedUrl(file: File): Promise<PresignedPdf
   }
 
   return { s3Key };
+}
+
+function buildPresignedPostBody(fields: Record<string, string>, file: File): FormData {
+  const formData = new FormData();
+  Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
+  formData.append('file', file);
+  return formData;
 }
 
 export async function createPdfObjectUrlFromUrl(url: string): Promise<string> {

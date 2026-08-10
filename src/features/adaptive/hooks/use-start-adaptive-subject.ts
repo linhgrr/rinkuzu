@@ -21,14 +21,18 @@ export function useStartAdaptiveSubject({ t, tAdaptive }: UseStartAdaptiveSubjec
   const router = useRouter();
   const [loadingJobId, setLoadingJobId] = useState<string | null>(null);
 
-  const startSubject = async (jobId: string) => {
+  const startSubject = async (
+    jobId: string,
+    metadata?: { filename?: string; subjectName?: string },
+  ) => {
     if (loadingJobId) return;
 
     setLoadingJobId(jobId);
     try {
       const session = await createSessionFromPipeline(jobId, 50);
       saveActiveSessionId(session.session_id);
-      saveSessionJobMapping(session.session_id, jobId);
+      if (metadata) saveSessionJobMapping(session.session_id, jobId, metadata);
+      else saveSessionJobMapping(session.session_id, jobId);
       toast.success(t('creatingSession'));
       router.push(ADAPTIVE_ROUTES.subject(session.session_id));
     } catch (error) {

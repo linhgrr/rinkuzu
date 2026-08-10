@@ -8,6 +8,7 @@ import {
   getSelectedPipelineTitle,
   getSessionExerciseDraft,
   getSessionExerciseOutcome,
+  getSubjectTitleForSession,
   saveActiveSessionId,
   saveSessionExerciseDraft,
   saveSessionExerciseOutcome,
@@ -95,10 +96,25 @@ describe('adaptive session storage', () => {
   });
 
   it('stores only validated versioned session-to-job mappings', () => {
-    saveSessionJobMapping('session-1', 'job-1');
+    saveSessionJobMapping('session-1', 'job-1', {
+      filename: 'biology.pdf',
+      subjectName: 'Biology',
+    });
 
     expect(getJobIdForSession('session-1')).toBe('job-1');
+    expect(getSubjectTitleForSession('session-1', 'Learning Path')).toBe('Biology');
     expect(localStorage.getItem('al_session_job_map:v1')).toContain('session-1');
+  });
+
+  it('does not leak the selected title into an unrelated session', () => {
+    saveSessionJobMapping('session-1', 'job-1');
+    saveSelectedPipelineJob({
+      jobId: 'job-2',
+      filename: 'chemistry.pdf',
+      subjectName: 'Chemistry',
+    });
+
+    expect(getSubjectTitleForSession('session-1', 'Learning Path')).toBe('Learning Path');
   });
 
   it('centralizes selected pipeline job and active session browser state', () => {

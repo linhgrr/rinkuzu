@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import { useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
@@ -17,9 +17,15 @@ import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import {
+  deletePendingPdfUpload,
+  getPdfPageCount,
+  shouldCleanupPendingPdfUpload,
+  uploadPdfViaPresignedUrl,
+} from '@/lib/pdf';
 import { createQuizDraft } from '@/lib/quiz/draftApi';
-import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
+import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
+import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import { ROUTES } from '@/shared/constants/routes';
@@ -73,27 +79,52 @@ export function MobileCreateQuizPage() {
   const consumePendingFile = usePendingQuizUploadStore((s) => s.consumeFile);
   const [state, dispatch] = useReducer(mobileCreateReducer, initialState);
   const isRedirecting = useCreateResponsiveRedirect('mobile');
+  const uploadPolicy = usePdfUploadPolicy('quiz');
+
+  const selectPdf = useCallback(
+    async (file: File) => {
+      try {
+        const pageCount = await getPdfPageCount(file);
+        if (pageCount > uploadPolicy.maxPages) {
+          toast.error(t('pdfTooManyPages', { pages: pageCount, maxPages: uploadPolicy.maxPages }));
+          return;
+        }
+        dispatch({ type: 'setFile', value: file });
+      } catch {
+        toast.error(t('pdfUnreadable'));
+      }
+    },
+    [t, uploadPolicy.maxPages],
+  );
 
   // Pick up a PDF dropped on the dashboard, if any.
   useEffect(() => {
+    if (uploadPolicy.isLoading) return;
     const pending = consumePendingFile();
     if (pending) {
-      dispatch({ type: 'setFile', value: pending });
+      void selectPdf(pending);
     }
-  }, [consumePendingFile]);
+  }, [consumePendingFile, selectPdf, uploadPolicy.isLoading]);
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
-      dispatch({ type: 'setFile', value: acceptedFiles[0] });
+      void selectPdf(acceptedFiles[0]);
     }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected: (rejections) => {
+      if (rejections[0]?.errors.some((error) => error.code === 'file-too-large')) {
+        toast.error(t('pdfTooLarge', { size: MAX_QUIZ_PDF_MB }));
+      } else {
+        toast.error(t('pdfUnreadable'));
+      }
+    },
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
-    maxSize: MAX_QUIZ_PDF_BYTES,
-    disabled: state.isUploading,
+    maxSize: uploadPolicy.maxBytes,
+    disabled: state.isUploading || uploadPolicy.isLoading,
   });
 
   const handleSubmit = async () => {
@@ -101,8 +132,10 @@ export function MobileCreateQuizPage() {
 
     dispatch({ type: 'patch', value: { isUploading: true } });
 
+    let pendingS3Key: string | null = null;
     try {
       const { s3Key } = await uploadPdfViaPresignedUrl(state.file);
+      pendingS3Key = s3Key;
 
       const draft = await createQuizDraft({
         title: state.title.trim(),
@@ -113,6 +146,7 @@ export function MobileCreateQuizPage() {
         description: state.description.trim() || undefined,
         prompt: state.aiPrompt.trim() || undefined,
       });
+      pendingS3Key = null;
 
       addDraft({
         id: draft.id,
@@ -131,6 +165,9 @@ export function MobileCreateQuizPage() {
       // Return to the draft hub where processing progress remains visible.
       push(ROUTES.CREATE_QUIZ);
     } catch (error: unknown) {
+      if (pendingS3Key && shouldCleanupPendingPdfUpload(error)) {
+        await deletePendingPdfUpload(pendingS3Key, 'quiz').catch(() => undefined);
+      }
       toast.error(tCommon('error'), {
         description: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
       });
@@ -200,7 +237,12 @@ export function MobileCreateQuizPage() {
             <p className="mt-3 font-medium text-neutral-700">
               {isDragActive ? t('dropPDFHere') : t('clickToUpload')}
             </p>
-            <p className="text-sm text-neutral-500">{t('supportedFormats')}</p>
+            <p className="text-sm text-neutral-500">
+              {t('pdfLimitHint', { pages: uploadPolicy.maxPages })}
+            </p>
+            <p className="mt-1 text-xs text-neutral-400">
+              {t('pdfTechnicalLimit', { size: MAX_QUIZ_PDF_MB })}
+            </p>
           </div>
         )}
       </div>

@@ -14,6 +14,7 @@ const {
   createSessionFromPipelineMock,
   getSelectedPipelineJobIdMock,
   getSelectedPipelineFilenameMock,
+  getSelectedPipelineTitleMock,
   clearSelectedPipelineJobMock,
   saveActiveSessionIdMock,
   saveSessionJobMappingMock,
@@ -26,6 +27,7 @@ const {
   createSessionFromPipelineMock: vi.fn(),
   getSelectedPipelineJobIdMock: vi.fn(),
   getSelectedPipelineFilenameMock: vi.fn(),
+  getSelectedPipelineTitleMock: vi.fn(),
   clearSelectedPipelineJobMock: vi.fn(),
   saveActiveSessionIdMock: vi.fn(),
   saveSessionJobMappingMock: vi.fn(),
@@ -50,6 +52,7 @@ vi.mock('@/features/adaptive/lib/adaptive-api-methods', () => ({
 vi.mock('@/features/adaptive/lib/session-storage', () => ({
   getSelectedPipelineJobId: getSelectedPipelineJobIdMock,
   getSelectedPipelineFilename: getSelectedPipelineFilenameMock,
+  getSelectedPipelineTitle: getSelectedPipelineTitleMock,
   clearSelectedPipelineJob: clearSelectedPipelineJobMock,
   saveActiveSessionId: saveActiveSessionIdMock,
   saveSessionJobMapping: saveSessionJobMappingMock,
@@ -140,6 +143,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getSelectedPipelineJobIdMock.mockReturnValue(JOB_ID);
   getSelectedPipelineFilenameMock.mockImplementation((fallback: string) => fallback);
+  getSelectedPipelineTitleMock.mockImplementation((fallback: string) => fallback);
   useMediaQueryMock.mockReturnValue(false);
   getPipelineJobStatusMock.mockReset();
   createSessionFromPipelineMock.mockReset();
@@ -505,7 +509,10 @@ describe('useProcessingState', () => {
       expect(createSessionFromPipelineMock).toHaveBeenCalledTimes(1);
       expect(createSessionFromPipelineMock).toHaveBeenCalledWith(JOB_ID, 50);
       expect(saveActiveSessionIdMock).toHaveBeenCalledWith('session-9');
-      expect(saveSessionJobMappingMock).toHaveBeenCalledWith('session-9', JOB_ID);
+      expect(saveSessionJobMappingMock).toHaveBeenCalledWith('session-9', JOB_ID, {
+        filename: 'processing.defaultFilename',
+        subjectName: 'processing.defaultFilename',
+      });
       expect(clearSelectedPipelineJobMock).toHaveBeenCalledTimes(1);
       expect(toastSuccessMock).toHaveBeenCalledWith('processing.status.completed');
       expect(result.current.creatingSession).toBe(true);

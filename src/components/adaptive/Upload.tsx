@@ -1,12 +1,18 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { HiOutlineCloudUpload, HiOutlineDocumentText, HiOutlineArrowLeft } from 'react-icons/hi';
+import {
+  HiOutlineArrowLeft,
+  HiOutlineCloudUpload,
+  HiOutlineDocumentText,
+  HiOutlineRefresh,
+  HiOutlineX,
+} from 'react-icons/hi';
 import { useTranslations } from 'next-intl';
 import {
   AdaptiveApiError,
@@ -17,6 +23,9 @@ import { checkApiHealth, uploadPdf } from '@/features/adaptive/lib/adaptive-api-
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
 import { captureAnalyticsEvent, fileSizeBucket } from '@/lib/analytics/client';
+import { getPdfPageCount } from '@/lib/pdf';
+import { MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
+import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 
 const DEFAULT_PIPELINE_PAGE_BATCH_SIZE = 10;
 
@@ -26,8 +35,10 @@ export default function AdaptiveLearningUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectName, setSubjectName] = useState('');
-  const subjectNameRef = useRef('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const uploadPolicy = usePdfUploadPolicy('adaptive');
 
   const getFriendlyUploadError = (err: unknown) => {
     if (err instanceof AdaptiveApiError) {
@@ -35,6 +46,19 @@ export default function AdaptiveLearningUpload() {
       if (isAdaptiveRequestAbortedError(err)) return t('uploadPage.errors.connectionInterrupted');
       if (isAdaptiveServiceUnavailableError(err)) return t('uploadPage.errors.serviceUnavailable');
       if (err.code === 'conflict') return t('uploadPage.errors.conflict');
+      if (err.code === 'validation_error') {
+        const validationDetail = `${err.detail ?? ''} ${err.message}`.toLowerCase();
+        if (validationDetail.includes('page')) {
+          return t('uploadPage.errors.pageLimitExceeded', { maxPages: uploadPolicy.maxPages });
+        }
+        if (
+          validationDetail.includes('readable') ||
+          validationDetail.includes('valid pdf') ||
+          validationDetail.includes('encrypted')
+        ) {
+          return t('uploadPage.errors.pdfUnreadable');
+        }
+      }
     }
 
     return t('uploadPage.uploadFailed');
@@ -49,7 +73,7 @@ export default function AdaptiveLearningUpload() {
     }
 
     if (firstError.code === 'file-too-large') {
-      const message = t('uploadPage.errors.fileTooLarge', { maxSizeMb: 50 });
+      const message = t('uploadPage.errors.fileTooLarge', { maxSizeMb: MAX_PDF_UPLOAD_MB });
       setError(message);
       return;
     }
@@ -65,15 +89,16 @@ export default function AdaptiveLearningUpload() {
   };
 
   const handleUpload = async (file: File) => {
-    const normalizedSubjectName = subjectNameRef.current.trim();
+    const normalizedSubjectName = subjectName.trim();
     if (!normalizedSubjectName) {
       const message = t('uploadPage.subjectRequiredBeforeUpload');
-      setError(message);
+      setSubjectError(message);
       return;
     }
 
     setIsUploading(true);
     setError(null);
+    setSubjectError(null);
     setUploadProgress(10);
     const uploadStartedAt = performance.now();
     const sizeBucket = fileSizeBucket(file.size);
@@ -122,15 +147,25 @@ export default function AdaptiveLearningUpload() {
     }
   };
 
-  const onDrop = (acceptedFiles: File[]) => {
+  const onDrop = async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      if (!subjectNameRef.current.trim()) {
-        const message = t('uploadPage.subjectRequiredBeforeSelectFile');
-        setError(message);
-        return;
+      try {
+        const pageCount = await getPdfPageCount(file);
+        if (pageCount > uploadPolicy.maxPages) {
+          setError(
+            t('uploadPage.errors.tooManyPages', {
+              pages: pageCount,
+              maxPages: uploadPolicy.maxPages,
+            }),
+          );
+          return;
+        }
+        setSelectedFile(file);
+        setError(null);
+      } catch {
+        setError(t('uploadPage.errors.unreadablePdf'));
       }
-      void handleUpload(file);
     }
   };
 
@@ -139,22 +174,33 @@ export default function AdaptiveLearningUpload() {
     onDropRejected,
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
-    maxSize: 50 * 1024 * 1024,
-    noClick: true,
+    maxSize: uploadPolicy.maxBytes,
+    disabled: isUploading || uploadPolicy.isLoading,
   });
 
   const handleOpenFileDialog = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (!subjectNameRef.current.trim()) {
-      const message = t('uploadPage.subjectRequiredBeforeSelectFile');
-      setError(message);
-      return;
-    }
     open();
   };
 
+  const handleSubmit = () => {
+    if (!subjectName.trim()) {
+      setSubjectError(t('uploadPage.subjectRequiredBeforeUpload'));
+      return;
+    }
+    if (!selectedFile) {
+      setError(t('uploadPage.fileRequired'));
+      return;
+    }
+    void handleUpload(selectedFile);
+  };
+
+  const selectedFileSize = selectedFile
+    ? `${(selectedFile.size / (1024 * 1024)).toFixed(selectedFile.size >= 1024 * 1024 ? 1 : 2)} MB`
+    : null;
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto max-w-4xl font-home text-ink">
       {/* Header */}
       <div className="mb-12 md:pl-4">
         <Button
@@ -164,16 +210,19 @@ export default function AdaptiveLearningUpload() {
         >
           <HiOutlineArrowLeft className="size-5 mr-2" /> {t('uploadPage.back')}
         </Button>
-        <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-3">
+        <h1 className="mb-3 text-3xl font-bold tracking-tight text-ink md:text-4xl">
           {t('uploadPage.startLearning')}
         </h1>
-        <p className="text-neutral-500 text-base md:text-lg leading-relaxed max-w-2xl">
+        <p className="max-w-2xl text-base leading-relaxed text-ink-muted md:text-lg">
           {t('uploadPage.description')}
         </p>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-4 mb-6 text-sm">
+        <div
+          role="alert"
+          className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        >
           {error}
         </div>
       )}
@@ -191,14 +240,18 @@ export default function AdaptiveLearningUpload() {
               value={subjectName}
               maxLength={120}
               onChange={(event) => {
-                subjectNameRef.current = event.target.value;
                 setSubjectName(event.target.value);
+                if (event.target.value.trim()) setSubjectError(null);
               }}
-              className="w-full bg-neutral-50 text-sm font-medium hover:bg-white"
+              aria-invalid={Boolean(subjectError)}
+              aria-describedby={subjectError ? 'subject-name-error' : undefined}
+              className="w-full bg-surface-warm text-sm font-medium hover:bg-white"
               disabled={isUploading}
             />
-            {error && !subjectName.trim() && (
-              <p className="text-sm text-red-500 font-medium">{t('uploadPage.subjectRequired')}</p>
+            {subjectError && (
+              <p id="subject-name-error" role="alert" className="text-sm font-medium text-red-600">
+                {subjectError}
+              </p>
             )}
           </div>
 
@@ -211,7 +264,7 @@ export default function AdaptiveLearningUpload() {
             <input {...getInputProps()} />
 
             <div className="p-16 md:p-20 flex flex-col items-center justify-center text-center">
-              {!isUploading ? (
+              {!isUploading && !selectedFile ? (
                 <>
                   <div
                     className={`w-16 h-16 rounded-md flex items-center justify-center mb-6 transition-transform duration-200 group-hover:scale-105 border ${
@@ -226,7 +279,10 @@ export default function AdaptiveLearningUpload() {
                     {isDragActive ? t('dropPdfHere') : t('dragDropPdf')}
                   </h3>
                   <p className="text-neutral-500 mb-6 text-sm">
-                    {t('uploadPage.uploadMaterialDescription')}
+                    {t('uploadPage.pdfLimitHint', { maxPages: uploadPolicy.maxPages })}
+                    <span className="mt-1 block text-xs text-neutral-400">
+                      {t('uploadPage.pdfTechnicalLimit', { maxSizeMb: MAX_PDF_UPLOAD_MB })}
+                    </span>
                   </p>
                   <Button
                     variant="primary"
@@ -236,6 +292,33 @@ export default function AdaptiveLearningUpload() {
                     {t('browseFiles')}
                   </Button>
                 </>
+              ) : !isUploading && selectedFile ? (
+                <div className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}>
+                  <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-xl border border-accent-warm bg-white text-accent">
+                    <HiOutlineDocumentText className="size-8" aria-hidden="true" />
+                  </div>
+                  <h3 className="break-words text-lg font-semibold text-ink">
+                    {selectedFile.name}
+                  </h3>
+                  <p className="mt-1 text-sm text-ink-muted">{selectedFileSize}</p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-3">
+                    <Button variant="secondary" onClick={handleOpenFileDialog} className="gap-2">
+                      <HiOutlineRefresh className="size-4" aria-hidden="true" />
+                      {t('uploadPage.replaceFile')}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setError(null);
+                      }}
+                      className="gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <HiOutlineX className="size-4" aria-hidden="true" />
+                      {t('uploadPage.removeFile')}
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="w-full max-w-sm">
                   <div className="size-16 mx-auto rounded-md bg-neutral-100 border border-neutral-200 text-neutral-900 flex items-center justify-center mb-6 animate-pulse">
@@ -259,6 +342,16 @@ export default function AdaptiveLearningUpload() {
                 </div>
               )}
             </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={isUploading || !selectedFile}
+              className="min-h-12 w-full rounded-full px-7 font-semibold sm:w-auto"
+            >
+              {isUploading ? t('uploadPage.uploading') : t('uploadPage.createLearningPath')}
+            </Button>
           </div>
         </div>
       </div>

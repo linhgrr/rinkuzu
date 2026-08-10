@@ -2,6 +2,7 @@ import { withAuth } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
 import {
   can,
+  getConstraint,
   isMeteredCapabilityEnabled,
   resolveEntitlements,
   type MeteredCapability,
@@ -48,6 +49,20 @@ export const GET = withAuth(async (_request, { userId, session }) => {
 
     const snapshot: EntitlementSnapshot = {
       tier: isAdmin ? 'premium' : entitlements.tier,
+      constraints: {
+        quiz_pdf_pages: getConstraint(
+          isAdmin ? { tier: 'premium' } : entitlements,
+          'quiz_pdf_pages',
+        ),
+        adaptive_pdf_pages: getConstraint(
+          isAdmin ? { tier: 'premium' } : entitlements,
+          'adaptive_pdf_pages',
+        ),
+        pdf_upload_bytes: getConstraint(
+          isAdmin ? { tier: 'premium' } : entitlements,
+          'pdf_upload_bytes',
+        ),
+      },
       capabilities: {
         private_quiz: { kind: 'boolean', enabled: isAdmin || can(entitlements, 'private_quiz') },
         ...Object.fromEntries(meteredEntries),

@@ -42,6 +42,7 @@ export default function AdaptiveLearningDashboard({
     handleDeleteClick,
     handleGoUpload,
     handleOpenSubject,
+    handleViewProcessing,
     itemToDelete,
     libraryLoading,
     loading,
@@ -108,6 +109,7 @@ export default function AdaptiveLearningDashboard({
             loadingJobId={loadingJobId}
             deletingJobId={deletingJobId}
             onOpenSubject={handleOpenSubject}
+            onViewProcessing={handleViewProcessing}
             onDelete={handleDeleteClick}
             onRetry={retry}
             onCancel={cancel}

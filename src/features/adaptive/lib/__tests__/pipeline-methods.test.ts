@@ -83,7 +83,13 @@ describe('pipeline lifecycle methods', () => {
   it('uploadPdf requests adaptive storage prefix before processing', async () => {
     const spy = vi
       .fn()
-      .mockResolvedValueOnce(okJson({ uploadUrl: 'https://storage.test/upload', s3Key: 'k1' }))
+      .mockResolvedValueOnce(
+        okJson({
+          uploadUrl: 'https://storage.test/upload',
+          uploadFields: { key: 'k1' },
+          s3Key: 'k1',
+        }),
+      )
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
       .mockResolvedValueOnce(
         okJson({

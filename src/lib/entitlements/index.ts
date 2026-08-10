@@ -43,7 +43,11 @@ interface TierEntitlements {
 const ENTITLEMENT_REGISTRY: Record<Tier, TierEntitlements> = {
   free: {
     boolean: { private_quiz: false },
-    constraints: { adaptive_pdf_pages: 30 },
+    constraints: {
+      quiz_pdf_pages: 30,
+      adaptive_pdf_pages: 30,
+      pdf_upload_bytes: 100 * 1024 * 1024,
+    },
     metered: {
       ask_rin_chan: { enabled: true, limits: { minute: 5, day: 25 } },
       quiz_extract: { enabled: true, limits: { minute: 1, month: 5 } },
@@ -53,7 +57,11 @@ const ENTITLEMENT_REGISTRY: Record<Tier, TierEntitlements> = {
   },
   premium: {
     boolean: { private_quiz: true },
-    constraints: { adaptive_pdf_pages: 100 },
+    constraints: {
+      quiz_pdf_pages: 100,
+      adaptive_pdf_pages: 100,
+      pdf_upload_bytes: 100 * 1024 * 1024,
+    },
     metered: {
       ask_rin_chan: { enabled: true, limits: { minute: 15, day: 150 } },
       quiz_extract: { enabled: true, limits: { minute: 2, month: 50 } },

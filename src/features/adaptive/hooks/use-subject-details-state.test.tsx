@@ -14,7 +14,7 @@ import {
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import {
   getJobIdForSession,
-  getSelectedPipelineTitle,
+  getSubjectTitleForSession,
   saveActiveSessionId,
   saveSessionJobMapping,
 } from '@/features/adaptive/lib/session-storage';
@@ -43,7 +43,7 @@ vi.mock('@/features/adaptive/lib/adaptive-api-methods', () => ({
 
 vi.mock('@/features/adaptive/lib/session-storage', () => ({
   getJobIdForSession: vi.fn(),
-  getSelectedPipelineTitle: vi.fn(),
+  getSubjectTitleForSession: vi.fn(),
   saveActiveSessionId: vi.fn(),
   saveSessionJobMapping: vi.fn(),
 }));
@@ -60,7 +60,7 @@ const getHistoryMock = vi.mocked(getSubjectHistoryDetail);
 const createSessionMock = vi.mocked(createSessionFromPipeline);
 const prefetchStartMock = vi.mocked(prefetchStartLearningData);
 const getJobIdMock = vi.mocked(getJobIdForSession);
-const getTitleMock = vi.mocked(getSelectedPipelineTitle);
+const getTitleMock = vi.mocked(getSubjectTitleForSession);
 const saveActiveMock = vi.mocked(saveActiveSessionId);
 const saveMappingMock = vi.mocked(saveSessionJobMapping);
 const toastSuccessMock = vi.mocked(toast.success);
@@ -160,7 +160,7 @@ describe('useSubjectDetailsState', () => {
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       expect(getSessionStatusMock).toHaveBeenCalledWith('session-1');
-      expect(getTitleMock).toHaveBeenCalledWith('t:defaultLearningPath');
+      expect(getTitleMock).toHaveBeenCalledWith('session-1', 't:defaultLearningPath');
       expect(result.current.status).toMatchObject({ total_concepts: 7, accuracy: 0.756 });
       expect(result.current.filename).toBe('Pipeline Title');
       expect(result.current.summary).toBe('t:subjectDetails.summary:{"concepts":7,"accuracy":76}');
@@ -496,7 +496,10 @@ describe('useSubjectDetailsState', () => {
       );
 
       expect(saveActiveMock).toHaveBeenCalledWith('session-created');
-      expect(saveMappingMock).toHaveBeenCalledWith('session-created', 'job-create');
+      expect(saveMappingMock).toHaveBeenCalledWith('session-created', 'job-create', {
+        filename: 'Pipeline Title',
+        subjectName: 'Pipeline Title',
+      });
       expect(toastSuccessMock).toHaveBeenCalledWith('t:processing.creatingSession');
       expect(result.current.startingSession).toBe(false);
       expect(result.current.sessionNotice).toBeNull();
@@ -530,7 +533,10 @@ describe('useSubjectDetailsState', () => {
 
       await waitFor(() => expect(result.current.startingSession).toBe(false));
       expect(saveActiveMock).toHaveBeenCalledWith('session-done');
-      expect(saveMappingMock).toHaveBeenCalledWith('session-done', 'job-slow');
+      expect(saveMappingMock).toHaveBeenCalledWith('session-done', 'job-slow', {
+        filename: 'Pipeline Title',
+        subjectName: 'Pipeline Title',
+      });
     });
 
     it('on create error: sets sessionNotice, error toast, logs, and clears startingSession', async () => {

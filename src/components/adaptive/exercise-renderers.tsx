@@ -245,9 +245,9 @@ export const ExerciseQuestionView = ({
   submitting,
   t,
 }: ExerciseQuestionViewProps) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-5xl flex-col">
-    <div className="mb-8 flex items-center justify-between">
-      <div className="flex items-center gap-4">
+  <div className="mx-auto flex min-h-[80vh] max-w-5xl flex-col font-home text-ink">
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <Button
           variant="ghost"
           onClick={onQuit}
@@ -256,7 +256,7 @@ export const ExerciseQuestionView = ({
           <HiOutlineX className="mr-2 size-4" />
           {t('quit')}
         </Button>
-        <div className="h-6 w-px bg-neutral-200" />
+        <div className="hidden h-6 w-px bg-neutral-200 sm:block" />
         <div className="flex flex-col">
           <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">
             {t('exercise.progress')}
@@ -273,8 +273,8 @@ export const ExerciseQuestionView = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-medium text-neutral-700 bg-neutral-50 border border-neutral-200 px-2.5 py-1 rounded-md">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="line-clamp-2 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700">
           {concept.concept_name}
         </span>
       </div>

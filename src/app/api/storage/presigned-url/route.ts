@@ -8,6 +8,9 @@ import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { readAndValidateJson } from '@/lib/api/request';
 import { createPresignedUploadUrlRequestSchema } from '@/dtos/storage';
+import { resolveEntitlements, type MeteredCapability } from '@/lib/entitlements';
+import { getLlmUsageSnapshot } from '@/lib/llm/rate-limit';
+import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +20,44 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
-export const POST = withAuth(async (request: NextRequest, { userId }) => {
+const UPLOAD_CAPABILITY: Record<'quiz' | 'adaptive', MeteredCapability> = {
+  quiz: 'quiz_extract',
+  adaptive: 'adaptive_pipeline',
+};
+
+export const POST = withAuth(async (request: NextRequest, { userId, session }) => {
   try {
     const input = await readAndValidateJson(request, createPresignedUploadUrlRequestSchema);
     if (!input.success) {
       return apiErr('validation_error', input.error, 400, input.fields);
+    }
+
+    const uploadRate = await checkAuthRateLimit('pdf_upload_intent_user', userId);
+    if (!uploadRate.allowed) return rateLimitResponse(uploadRate);
+
+    if (session.user.role !== 'admin') {
+      const entitlements = await resolveEntitlements(userId);
+      const capability = UPLOAD_CAPABILITY[input.data.purpose];
+      const windows = await getLlmUsageSnapshot(userId, capability, entitlements);
+      const exhausted = windows.find((window) => window.remaining <= 0);
+      if (exhausted) {
+        return apiErr('quota_exceeded', 'Usage quota exceeded', 429, {
+          capability,
+          tier: entitlements.tier,
+          upgradeEligible: entitlements.tier === 'free',
+          windows: Object.fromEntries(
+            windows.map((window) => [
+              window.window,
+              {
+                used: window.count,
+                limit: window.limit,
+                remaining: window.remaining,
+                resetAt: window.resetAt.toISOString(),
+              },
+            ]),
+          ),
+        });
+      }
     }
 
     let prefix = '';
@@ -40,12 +76,17 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
       Bucket: BUCKET_NAME,
       Key: key,
       ContentType: input.data.contentType,
+      ContentLength: input.data.fileSize,
     });
-
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: URL_EXPIRES_IN_SECONDS });
+    const uploadUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: URL_EXPIRES_IN_SECONDS,
+    });
 
     return apiOk({
       uploadUrl,
+      uploadMethod: 'PUT' as const,
+      uploadHeaders: { 'Content-Type': input.data.contentType },
+      uploadFields: {},
       s3Key: key,
       expiresIn: URL_EXPIRES_IN_SECONDS,
     });

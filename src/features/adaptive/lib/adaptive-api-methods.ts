@@ -35,6 +35,7 @@ import type {
 } from '@/features/adaptive/types/pipeline';
 import type { components } from '@/generated/adaptive-api';
 import type { PresignedUploadUrlResponseDto } from '@/dtos/storage';
+import { shouldCleanupPendingPdfUpload } from '@/lib/pdf';
 
 import {
   timedFetch,
@@ -488,10 +489,8 @@ export async function uploadPdf(
   pageBatchSize: number = DEFAULT_PIPELINE_PAGE_BATCH_SIZE,
 ): Promise<PipelineUploadResponse> {
   // 1. Get presigned URL
-  const { uploadUrl, s3Key } = await executeRequest<PresignedUploadUrlResponseDto>(
-    '/api/storage/presigned-url',
-    'POST',
-    {
+  const { uploadUrl, uploadMethod, uploadHeaders, uploadFields, s3Key } =
+    await executeRequest<PresignedUploadUrlResponseDto>('/api/storage/presigned-url', 'POST', {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fileName: file.name,
@@ -500,20 +499,19 @@ export async function uploadPdf(
         purpose: 'adaptive',
       }),
       timeoutMs: PRESIGNED_URL_TIMEOUT_MS,
-    },
-  );
+    });
 
-  if (!uploadUrl || !s3Key) {
+  if (!uploadUrl || !uploadFields || !s3Key) {
     throw invalidAdaptiveEnvelope('Invalid presigned URL response', 'storage presigned URL');
   }
 
   // 2. Upload to S3
+  const usePut = uploadMethod === 'PUT';
+  const uploadBody = usePut ? file : buildAdaptivePresignedPostBody(uploadFields, file);
   const uploadRes = await timedFetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': file.type || 'application/pdf',
-    },
-    body: file,
+    method: usePut ? 'PUT' : 'POST',
+    ...(usePut ? { headers: uploadHeaders } : {}),
+    body: uploadBody,
     timeoutMs: OBJECT_STORAGE_UPLOAD_TIMEOUT_MS,
   });
 
@@ -526,16 +524,34 @@ export async function uploadPdf(
     });
   }
 
-  // 3. Process the file
-  return executeRequest<PipelineUploadResponse>('/api/adaptive/pipeline/process', 'POST', {
-    body: JSON.stringify({
-      s3Key,
-      filename: file.name,
-      subject_id: subjectId,
-      page_batch_size: pageBatchSize,
-    }),
-    timeoutMs: PIPELINE_PROCESS_TIMEOUT_MS,
-  });
+  // 3. Process the file. If no durable job is created, remove the temporary
+  // object immediately; bucket lifecycle remains the final orphan safety net.
+  try {
+    return await executeRequest<PipelineUploadResponse>('/api/adaptive/pipeline/process', 'POST', {
+      body: JSON.stringify({
+        s3Key,
+        filename: file.name,
+        subject_id: subjectId,
+        page_batch_size: pageBatchSize,
+      }),
+      timeoutMs: PIPELINE_PROCESS_TIMEOUT_MS,
+    });
+  } catch (error) {
+    if (shouldCleanupPendingPdfUpload(error)) {
+      await executeRequest('/api/storage/upload', 'DELETE', {
+        body: JSON.stringify({ s3Key, purpose: 'adaptive' }),
+        timeoutMs: PRESIGNED_URL_TIMEOUT_MS,
+      }).catch(() => undefined);
+    }
+    throw error;
+  }
+}
+
+function buildAdaptivePresignedPostBody(fields: Record<string, string>, file: File): FormData {
+  const formData = new FormData();
+  Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
+  formData.append('file', file);
+  return formData;
 }
 
 export async function getPipelineJobStatus(

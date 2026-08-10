@@ -11,9 +11,24 @@ import type {
   AdminOcrKeyTestDto,
   AdminOcrKeyTestViewModel,
   AdminOcrKeyViewModel,
+  AdminOcrModelSettingsDto,
+  AdminOcrModelSettingsViewModel,
   CreateAdminOcrKeyInput,
   UpdateAdminOcrKeyInput,
 } from '@/features/admin/ocr-keys/types/admin-ocr-keys-view-model';
+
+function toOcrModelSettingsViewModel(
+  dto: AdminOcrModelSettingsDto,
+): AdminOcrModelSettingsViewModel {
+  return {
+    provider: dto.provider,
+    modelName: dto.model_name,
+    source: dto.source,
+    envFallbackModel: dto.env_fallback_model,
+    updatedAt: dto.updated_at ?? null,
+    updatedBy: dto.updated_by ?? null,
+  };
+}
 
 interface AdminOcrKeyCreatePayload {
   label: string;
@@ -97,4 +112,24 @@ export async function deleteAdminOcrKey(keyId: string): Promise<AdminOcrKeyDelet
   return fetchApiData<AdminOcrKeyDeleteDto>(`/api/admin/ocr-keys/${encodeURIComponent(keyId)}`, {
     method: 'DELETE',
   });
+}
+
+export async function fetchAdminOcrModelSettings(
+  signal?: AbortSignal,
+): Promise<AdminOcrModelSettingsViewModel> {
+  const data = await fetchApiData<AdminOcrModelSettingsDto>('/api/admin/ocr-keys/model', {
+    ...(signal !== undefined ? { signal } : {}),
+  });
+  return toOcrModelSettingsViewModel(data);
+}
+
+export async function updateAdminOcrModel(
+  modelName: string,
+): Promise<AdminOcrModelSettingsViewModel> {
+  const data = await fetchApiData<AdminOcrModelSettingsDto>('/api/admin/ocr-keys/model', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model_name: modelName }),
+  });
+  return toOcrModelSettingsViewModel(data);
 }

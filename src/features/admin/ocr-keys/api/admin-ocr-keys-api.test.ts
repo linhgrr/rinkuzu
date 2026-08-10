@@ -12,8 +12,10 @@ import {
   createAdminOcrKey,
   deleteAdminOcrKey,
   fetchAdminOcrKeysViewModel,
+  fetchAdminOcrModelSettings,
   testAdminOcrKey,
   updateAdminOcrKey,
+  updateAdminOcrModel,
 } from '@/features/admin/ocr-keys/api/admin-ocr-keys-api';
 
 const keyDto = {
@@ -128,6 +130,46 @@ describe('admin-ocr-keys-api', () => {
     await expect(deleteAdminOcrKey('key/2')).resolves.toEqual({ deleted: true });
     expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/admin/ocr-keys/key%2F2', {
       method: 'DELETE',
+    });
+  });
+
+  it('reads and updates the active OCR model', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      provider: 'landingai',
+      model_name: 'dpt-2-mini',
+      source: 'environment',
+      env_fallback_model: 'dpt-2-mini',
+      updated_at: null,
+      updated_by: null,
+    });
+
+    await expect(fetchAdminOcrModelSettings()).resolves.toEqual({
+      provider: 'landingai',
+      modelName: 'dpt-2-mini',
+      source: 'environment',
+      envFallbackModel: 'dpt-2-mini',
+      updatedAt: null,
+      updatedBy: null,
+    });
+    expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/admin/ocr-keys/model', {});
+
+    fetchApiDataMock.mockResolvedValueOnce({
+      provider: 'landingai',
+      model_name: 'dpt-2-large',
+      source: 'database',
+      env_fallback_model: 'dpt-2-mini',
+      updated_at: '2026-08-10T00:00:00Z',
+      updated_by: 'admin-1',
+    });
+
+    await expect(updateAdminOcrModel('dpt-2-large')).resolves.toMatchObject({
+      modelName: 'dpt-2-large',
+      source: 'database',
+    });
+    expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/admin/ocr-keys/model', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model_name: 'dpt-2-large' }),
     });
   });
 });

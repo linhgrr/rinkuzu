@@ -64,5 +64,5 @@ try {
 }
 
 process.stdout.write(
-  `Vendored adaptive contract is pinned to ${lock.source.repository}@${lock.source.commit}.\n`,
+  `Vendored adaptive contract is pinned to ${lock.source.repository}@${lock.source.commit}${lock.source.dirty ? ' (dirty working-tree snapshot)' : ''}.\n`,
 );

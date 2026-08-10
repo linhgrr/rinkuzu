@@ -85,3 +85,21 @@ export interface UpdateAdminOcrKeyInput {
   priority?: number;
   enabled?: boolean;
 }
+
+export interface AdminOcrModelSettingsDto {
+  provider: string;
+  model_name: string;
+  source: 'database' | 'environment';
+  env_fallback_model: string;
+  updated_at?: string | null;
+  updated_by?: string | null;
+}
+
+export interface AdminOcrModelSettingsViewModel {
+  provider: string;
+  modelName: string;
+  source: 'database' | 'environment';
+  envFallbackModel: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}

@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  type FormEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Cpu,
@@ -23,6 +15,7 @@ import {
 } from 'lucide-react';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { Select } from '@/components/ui/Select';
 import { ApiResponseError } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -312,25 +305,6 @@ export function AiSettingsClient({
     );
   }
 
-  function handleTabKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, value: DetailTab) {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    const currentIndex = DETAIL_TABS.indexOf(value);
-    const nextIndex =
-      event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? DETAIL_TABS.length - 1
-          : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + DETAIL_TABS.length) %
-            DETAIL_TABS.length;
-    const nextTab = DETAIL_TABS[nextIndex];
-    if (!nextTab) return;
-    selectTab(nextTab);
-    window.requestAnimationFrame(() =>
-      document.getElementById(`ai-settings-tab-${nextTab}`)?.focus(),
-    );
-  }
-
   async function submitProvider(event: FormEvent) {
     event.preventDefault();
     if (!snapshot) return;
@@ -605,33 +579,23 @@ export function AiSettingsClient({
                   </div>
                 </div>
 
-                <div
-                  role="tablist"
-                  aria-label={t('aiSettingsProviderSections')}
-                  className="my-5 flex flex-wrap gap-1 border-b border-line pb-3"
-                >
-                  {DETAIL_TABS.map((value) => {
+                <TabBar
+                  ariaLabel={t('aiSettingsProviderSections')}
+                  className="my-5"
+                  value={tab}
+                  onChange={selectTab}
+                  options={DETAIL_TABS.map((value) => {
                     const Icon =
                       value === 'provider' ? Settings2 : value === 'keys' ? KeyRound : Cpu;
-                    return (
-                      <Button
-                        id={`ai-settings-tab-${value}`}
-                        key={value}
-                        role="tab"
-                        aria-selected={tab === value}
-                        aria-controls="ai-settings-tabpanel"
-                        tabIndex={tab === value ? 0 : -1}
-                        variant={tab === value ? 'primary' : 'ghost'}
-                        size="sm"
-                        onKeyDown={(event) => handleTabKeyDown(event, value)}
-                        onClick={() => selectTab(value)}
-                      >
-                        <Icon className="size-4" aria-hidden="true" />
-                        {t(`aiSettingsTab_${value}`)}
-                      </Button>
-                    );
+                    return {
+                      value,
+                      label: t(`aiSettingsTab_${value}`),
+                      icon: <Icon className="size-4" aria-hidden="true" />,
+                      tabId: `ai-settings-tab-${value}`,
+                      controlsId: 'ai-settings-tabpanel',
+                    };
                   })}
-                </div>
+                />
 
                 <div
                   id="ai-settings-tabpanel"

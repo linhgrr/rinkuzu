@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withOptionalAuth } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getUserService } from '@/lib/user-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { attemptDetailQuerySchema, attemptIdRouteParamsSchema } from '@/dtos/user';
@@ -26,7 +26,7 @@ export const GET = withOptionalAuth(async (request: NextRequest, { params, userI
       return apiErr('unauthorized', 'Authentication required or userEmail parameter', 401);
     }
 
-    const userService = serviceFactory.getUserService();
+    const userService = getUserService();
     const result = await userService.getAttemptDetails(parsedParams.data.id, owner);
 
     if (!result.success) {

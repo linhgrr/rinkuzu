@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getUserService } from '@/lib/user-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { userAttemptListQuerySchema } from '@/dtos/user';
 import { readAndValidateSearchParams } from '@/lib/api/request';
 
-const userService = serviceFactory.getUserService();
+const userService = getUserService();
 
 export const dynamic = 'force-dynamic';
 

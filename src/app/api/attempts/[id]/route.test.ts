@@ -8,12 +8,10 @@ const { authMock, getAttemptDetailsMock, loggerErrorMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getUserService: () => ({
-      getAttemptDetails: getAttemptDetailsMock,
-    }),
-  },
+vi.mock('@/lib/user-factory', () => ({
+  getUserService: () => ({
+    getAttemptDetails: getAttemptDetailsMock,
+  }),
 }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },

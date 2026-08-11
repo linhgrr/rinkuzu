@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import { Modal } from '@/components/ui/Modal';
@@ -62,11 +63,7 @@ function ExercisePromptView({ exercise }: ExercisePromptViewProps) {
   return (
     <div className="space-y-3">
       {promptSections.lead ? <MarkdownRenderer content={promptSections.lead} /> : null}
-      <div
-        className={
-          promptSections.lead ? 'rounded-lg border border-neutral-200 bg-neutral-50 p-3' : ''
-        }
-      >
+      <div className={promptSections.lead ? 'rounded-lg border border-line bg-neutral-50 p-3' : ''}>
         <MarkdownRenderer content={promptSections.primary} />
       </div>
     </div>
@@ -188,7 +185,7 @@ function SelectedChoicesSummary({ exercise, t }: SelectedChoicesSummaryProps) {
         return (
           <div
             key={choice}
-            className="inline-flex items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs text-neutral-700"
+            className="inline-flex items-center gap-2 rounded-md border border-line bg-neutral-50 px-2.5 py-1 text-xs text-neutral-700"
           >
             <span className="font-mono font-semibold text-neutral-500">{choice}</span>
             {optionValue ? <MarkdownRenderer content={optionValue} /> : null}
@@ -219,7 +216,7 @@ function SelectedOptionsList({ exercise, t }: SelectedOptionsListProps) {
           ? 'border-green-200 bg-green-50/50 text-green-900'
           : isUserAnswer
             ? 'border-red-200 bg-red-50/50 text-red-900'
-            : 'border-neutral-200 bg-white text-neutral-700';
+            : 'border-line bg-white text-neutral-700';
 
         const badgeTone = isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
 
@@ -284,10 +281,10 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto rounded-md border border-neutral-200 bg-white">
+      <div className="overflow-x-auto rounded-md border border-line bg-white">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-neutral-200 bg-neutral-50 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <tr className="border-b border-line bg-neutral-50 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
               <th className="px-5 py-3 text-left">#</th>
               <th className="px-5 py-3 text-left">{t('masteryMatrix.concept')}</th>
               <th className="px-5 py-3 text-left">{t('history.table.bloom')}</th>
@@ -326,7 +323,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                     <span
                       role="img"
                       aria-label={t('correct')}
-                      className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-900"
+                      className="inline-flex size-6 items-center justify-center rounded border border-line bg-white text-neutral-900"
                     >
                       <HiCheck className="size-4" aria-hidden="true" />
                     </span>
@@ -334,7 +331,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                     <span
                       role="img"
                       aria-label={t('incorrect')}
-                      className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-neutral-50 text-neutral-400"
+                      className="inline-flex size-6 items-center justify-center rounded border border-line bg-neutral-50 text-neutral-400"
                     >
                       <HiOutlineX className="size-4" aria-hidden="true" />
                     </span>
@@ -344,7 +341,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                   {formatSessionHistoryDate(exercise.timestamp, locale)}
                 </td>
                 <td className="px-5 py-3 text-center">
-                  <button
+                  <ButtonBase
                     type="button"
                     onClick={() => setSelectedExercise(exercise)}
                     className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
@@ -352,7 +349,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                     aria-label={t('history.table.viewDetails')}
                   >
                     <HiOutlineEye className="size-5" />
-                  </button>
+                  </ButtonBase>
                 </td>
               </tr>
             ))}
@@ -378,7 +375,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
       >
         {selectedExercise ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4 rounded-lg border border-neutral-100 bg-neutral-50 p-4 text-sm">
+            <div className="grid grid-cols-2 gap-4 rounded-lg border border-line/50 bg-neutral-50 p-4 text-sm">
               <div>
                 <span className="font-medium text-neutral-500">{t('masteryMatrix.concept')}:</span>
                 <span className="ml-2 font-semibold text-neutral-900">
@@ -399,7 +396,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
               <h4 className="mb-3 text-sm font-semibold text-neutral-900">
                 {t('history.table.question')}
               </h4>
-              <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-sm">
+              <div className="rounded-lg border border-line bg-white p-4 text-sm text-neutral-800 shadow-sm">
                 <ExercisePromptView exercise={selectedExercise} />
               </div>
             </div>
@@ -411,7 +408,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 </h4>
                 <SelectedOptionsList exercise={selectedExercise} t={t} />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-sm">
+                  <div className="rounded-lg border border-line bg-white p-4 text-sm text-neutral-800 shadow-sm">
                     <div className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
                       {t('history.table.yourAnswerCard')}
                     </div>
@@ -427,7 +424,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-sm">
+                <div className="rounded-lg border border-line bg-white p-4 text-sm text-neutral-800 shadow-sm">
                   <div className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
                     {t('history.table.yourAnswerCard')}
                   </div>
@@ -470,13 +467,13 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 <h4 className="mb-3 text-sm font-semibold text-neutral-900">
                   {t('history.table.explanation')}
                 </h4>
-                <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-5 text-sm leading-relaxed text-neutral-800 shadow-sm sm:p-6">
+                <div className="rounded-lg border border-line bg-neutral-50 p-5 text-sm leading-relaxed text-neutral-800 shadow-sm sm:p-6">
                   <MarkdownRenderer content={selectedExercise.explanation} />
                 </div>
               </div>
             ) : null}
 
-            <div className="flex justify-end border-t border-neutral-100 pt-5">
+            <div className="flex justify-end border-t border-line/50 pt-5">
               <Button onClick={() => setSelectedExercise(null)} variant="outline" className="px-6">
                 {t('common.close')}
               </Button>

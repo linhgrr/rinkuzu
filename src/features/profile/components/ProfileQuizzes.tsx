@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { NavigationTabBar } from '@/components/ui/NavigationTabBar';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { QuizUploadDropzone } from '@/features/dashboard/components/QuizUploadDropzone';
 import { FoldersView } from '@/features/folders/components/FoldersView';
@@ -124,6 +125,10 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
     { value: 'in_progress', label: t('filter_in_progress') },
     { value: 'complete', label: t('filter_complete') },
   ] as const;
+  const libraryTabs = [
+    { value: 'quizzes', label: t('tabQuizzes'), href: '/my-quizzes' },
+    { value: 'folders', label: t('tabFolders'), href: '/my-quizzes?tab=folders' },
+  ] as const;
 
   async function deleteQuiz(quizId: string) {
     dispatch({ type: 'delete:start', quizId });
@@ -142,23 +147,12 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
   return (
     <div className="px-4 pb-20 pt-5 font-home text-ink selection:bg-accent-soft sm:px-6 sm:pt-6 lg:px-8">
       <div className="mx-auto max-w-[1340px]">
-        <nav
-          className="mb-5 mt-1 flex gap-6 border-b border-line sm:mt-2"
-          aria-label={t('myQuizzes')}
-        >
-          <Link
-            href="/my-quizzes"
-            className={`border-b-2 px-1 pb-3 text-sm font-semibold ${tab === 'quizzes' ? 'border-brand-trust text-brand-trust' : 'border-transparent text-ink/55'}`}
-          >
-            {t('tabQuizzes')}
-          </Link>
-          <Link
-            href="/my-quizzes?tab=folders"
-            className={`border-b-2 px-1 pb-3 text-sm font-semibold ${tab === 'folders' ? 'border-brand-trust text-brand-trust' : 'border-transparent text-ink/55'}`}
-          >
-            {t('tabFolders')}
-          </Link>
-        </nav>
+        <NavigationTabBar
+          ariaLabel={t('myQuizzes')}
+          value={tab}
+          options={libraryTabs}
+          className="mb-5 mt-1 sm:mt-2"
+        />
 
         {tab === 'folders' ? (
           <section className="min-h-[470px] rounded-[20px] border border-line-blue/35 bg-white p-5 shadow-[1px_1px_4px_rgba(0,0,0,0.03)]">

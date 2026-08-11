@@ -11,13 +11,11 @@ vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getAdminService: () => ({
-      getReportedQuestion: getQuestionMock,
-      updateReportedQuestion: updateQuestionMock,
-    }),
-  },
+vi.mock('@/lib/admin-factory', () => ({
+  getAdminService: () => ({
+    getReportedQuestion: getQuestionMock,
+    updateReportedQuestion: updateQuestionMock,
+  }),
 }));
 
 import { GET, PATCH } from '@/app/api/admin/reports/[id]/question/route';

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { adminReportListQuerySchema } from '@/dtos/admin-report';
@@ -15,7 +15,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
       return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
 
-    const adminService = serviceFactory.getAdminService();
+    const adminService = getAdminService();
     const result = await adminService.getReports(query.data);
 
     if (!result.success) {

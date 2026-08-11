@@ -1,4 +1,4 @@
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { readAndValidateJson } from '@/lib/api/request';
 import { updateAdminReportRequestSchema } from '@/dtos/admin-report';
@@ -15,7 +15,7 @@ export const PATCH = createAdminReportIdRoute({
       return apiErr('validation_error', input.error, 400, { fields: input.fields });
     }
 
-    const adminService = serviceFactory.getAdminService();
+    const adminService = getAdminService();
     const result = await adminService.updateReportStatus(id, input.data, email);
 
     if (!result.success) {
@@ -30,7 +30,7 @@ export const DELETE = createAdminReportIdRoute({
   logMessage: 'Error deleting report',
   publicErrorMessage: 'Internal server error',
   handle: async ({ id }) => {
-    const adminService = serviceFactory.getAdminService();
+    const adminService = getAdminService();
     const result = await adminService.deleteReport(id);
 
     if (!result.success) {

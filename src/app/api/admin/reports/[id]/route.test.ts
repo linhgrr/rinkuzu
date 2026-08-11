@@ -12,13 +12,11 @@ vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getAdminService: () => ({
-      updateReportStatus: updateReportStatusMock,
-      deleteReport: deleteReportMock,
-    }),
-  },
+vi.mock('@/lib/admin-factory', () => ({
+  getAdminService: () => ({
+    updateReportStatus: updateReportStatusMock,
+    deleteReport: deleteReportMock,
+  }),
 }));
 
 import { DELETE, dynamic, PATCH } from '@/app/api/admin/reports/[id]/route';

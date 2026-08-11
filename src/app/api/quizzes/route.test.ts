@@ -12,13 +12,11 @@ const { authMock, createQuizMock, getQuizzesMock, loggerErrorMock } = vi.hoisted
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({ logger: { error: loggerErrorMock } }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getQuizService: () => ({
-      createQuiz: createQuizMock,
-      getQuizzes: getQuizzesMock,
-    }),
-  },
+vi.mock('@/lib/quiz-factory', () => ({
+  getQuizService: () => ({
+    createQuiz: createQuizMock,
+    getQuizzes: getQuizzesMock,
+  }),
 }));
 
 import { GET, POST } from '@/app/api/quizzes/route';

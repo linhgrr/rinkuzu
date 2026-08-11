@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAuth, withOptionalAuth } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
@@ -8,7 +8,7 @@ import { createQuizRequestSchema, quizListQuerySchema } from '@/dtos/quiz';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
-const quizService = serviceFactory.getQuizService();
+const quizService = getQuizService();
 
 // GET /api/quizzes - List compact quiz metadata with filtering.
 // Private question content remains protected by the play/attempt service guard.

@@ -1,4 +1,4 @@
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { readAndValidateJson } from '@/lib/api/request';
@@ -9,7 +9,7 @@ import { createQuizIdRoute } from './quiz-id-route';
 export const GET = createQuizIdRoute({
   handle: async ({ quizId, userId, session }) => {
     try {
-      const quizService = serviceFactory.getQuizService();
+      const quizService = getQuizService();
       const result = await quizService.getQuizById(quizId, userId, session.user.role);
 
       if (!result.success) {
@@ -52,7 +52,7 @@ export const PUT = createQuizIdRoute({
       if (!input.success) {
         return apiErr('validation_error', input.error, 400, input.fields);
       }
-      const quizService = serviceFactory.getQuizService();
+      const quizService = getQuizService();
 
       const result = await quizService.updateQuiz(quizId, input.data, userId, session.user.role);
 
@@ -72,7 +72,7 @@ export const PUT = createQuizIdRoute({
 export const DELETE = createQuizIdRoute({
   handle: async ({ quizId, userId, session }) => {
     try {
-      const quizService = serviceFactory.getQuizService();
+      const quizService = getQuizService();
       const result = await quizService.deleteQuiz(quizId, userId, session.user.role);
 
       if (!result.success) {

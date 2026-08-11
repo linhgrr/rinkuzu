@@ -19,14 +19,12 @@ const {
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({ logger: { error: loggerErrorMock } }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getQuizService: () => ({
-      getQuizById: getQuizByIdMock,
-      updateQuiz: updateQuizMock,
-      deleteQuiz: deleteQuizMock,
-    }),
-  },
+vi.mock('@/lib/quiz-factory', () => ({
+  getQuizService: () => ({
+    getQuizById: getQuizByIdMock,
+    updateQuiz: updateQuizMock,
+    deleteQuiz: deleteQuizMock,
+  }),
 }));
 vi.mock('@/lib/s3', () => ({
   BUCKET_NAME: 'test-bucket',

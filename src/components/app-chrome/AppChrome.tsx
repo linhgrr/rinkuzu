@@ -9,6 +9,7 @@ import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
 import { ROUTES } from '@/shared/constants/routes';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 import { resetAnalyticsIdentity } from '@/lib/analytics/client';
 
@@ -246,9 +247,14 @@ function SidebarItem({
   }
 
   return (
-    <button type="button" onClick={onToggle} className={base} title={collapsed ? label : undefined}>
+    <ButtonBase
+      type="button"
+      onClick={onToggle}
+      className={base}
+      title={collapsed ? label : undefined}
+    >
       {inner}
-    </button>
+    </ButtonBase>
   );
 }
 
@@ -378,7 +384,7 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
 
   return (
     <div className="relative">
-      <button
+      <ButtonBase
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className="flex h-11 items-center gap-1.5 rounded-[10px] px-2 font-home text-base leading-[1.4] text-ink hover:bg-accent-soft/60"
@@ -393,7 +399,7 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
           className={`size-5 transition-transform ${open ? '-rotate-90' : 'rotate-90'}`}
           aria-hidden="true"
         />
-      </button>
+      </ButtonBase>
       {open ? (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
@@ -401,7 +407,7 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
             {LANG_OPTIONS.map((option) => {
               const active = option.value === currentLocale;
               return (
-                <button
+                <ButtonBase
                   key={option.value}
                   type="button"
                   onClick={() => {
@@ -420,7 +426,7 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
                       aria-hidden="true"
                     />
                   ) : null}
-                </button>
+                </ButtonBase>
               );
             })}
           </div>
@@ -438,7 +444,7 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
 
   return (
     <div className="relative" ref={containerRef}>
-      <button
+      <ButtonBase
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className="flex items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -460,7 +466,7 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
             {avatarInitial}
           </span>
         )}
-      </button>
+      </ButtonBase>
       {open ? (
         <div className="absolute right-0 top-[52px] z-50 w-56 overflow-hidden rounded-[12px] border border-line bg-surface py-1 shadow-lg">
           {displayName || email ? (
@@ -504,10 +510,10 @@ function LogoutButton({ className, t }: LogoutButtonProps) {
   return (
     <form action="/api/session/logout" method="post" onSubmit={resetAnalyticsIdentity}>
       <input type="hidden" name="locale" value={locale} />
-      <button type="submit" className={className}>
+      <ButtonBase type="submit" className={className}>
         <Icon icon={ICON.logout} className="size-5" aria-hidden="true" />
         <span>{t('logout')}</span>
-      </button>
+      </ButtonBase>
     </form>
   );
 }
@@ -558,7 +564,7 @@ function AppTopbar({
                 aria-hidden="true"
               />
             </Link>
-            <button
+            <ButtonBase
               type="button"
               onClick={onToggleSidebar}
               className="pointer-events-none absolute inset-0 flex scale-90 items-center justify-center rounded-[12px] text-ink opacity-0 transition-[opacity,transform,background-color] duration-200 ease-out hover:bg-accent-soft/60 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
@@ -567,7 +573,7 @@ function AppTopbar({
               tabIndex={-1}
             >
               <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
-            </button>
+            </ButtonBase>
           </div>
         ) : (
           <>
@@ -593,7 +599,7 @@ function AppTopbar({
                 aria-hidden="true"
               />
             </Link>
-            <button
+            <ButtonBase
               type="button"
               onClick={onToggleSidebar}
               className="flex size-10 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
@@ -601,7 +607,7 @@ function AppTopbar({
               title="Collapse sidebar"
             >
               <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
-            </button>
+            </ButtonBase>
           </>
         )}
       </div>
@@ -622,7 +628,7 @@ function AppTopbar({
           />
         </Link>
 
-        <button
+        <ButtonBase
           type="button"
           onClick={onToggleMobileMenu}
           className="flex size-11 items-center justify-center rounded-[12px] border border-line bg-surface-warm text-ink transition-colors hover:bg-accent-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -647,7 +653,7 @@ function AppTopbar({
               }`}
             />
           </span>
-        </button>
+        </ButtonBase>
       </div>
 
       <div className="hidden flex-1 lg:flex">
@@ -675,13 +681,13 @@ function AppTopbar({
           </form>
 
           <div className="flex shrink-0 items-center gap-3">
-            <button
+            <ButtonBase
               type="button"
               className="flex h-11 w-12 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
               aria-label="Notifications"
             >
               <Icon icon={ICON.bell} className="size-6" aria-hidden="true" />
-            </button>
+            </ButtonBase>
 
             <LanguageDropdown currentLocale={currentLocale} onSelect={onSelectLocale} />
 
@@ -763,7 +769,7 @@ function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenu
 
   return (
     <div className="fixed inset-x-0 bottom-0 top-16 z-[60] lg:hidden">
-      <button
+      <ButtonBase
         type="button"
         className="absolute inset-0 bg-ink/20 backdrop-blur-[1px]"
         aria-label={t('dismissMenu')}

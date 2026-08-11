@@ -6,7 +6,7 @@
     "arbitrary-radius-shadow": 66,
     "arbitrary-layout-spacing": 285,
     "raw-neutral-border": 248,
-    "standalone-raw-button": 67,
+    "standalone-raw-button": 57,
     "raw-select": 1,
     "solid-orange-dark-text": 0,
     "new-icon-family": 0
@@ -14,7 +14,7 @@
   "allowedIconFamilies": ["react-icons/hi", "react-icons/hi2", "lucide-react", "@iconify/react"],
   "ruleExclusions": {
     "consumer-hardcoded-color": ["src/emails/**", "src/app/api/email/**"],
-    "standalone-raw-button": ["src/components/ui/Button.tsx"],
+    "standalone-raw-button": ["src/components/ui/Button.tsx", "src/components/ui/ButtonBase.tsx"],
     "raw-select": ["src/components/ui/Select.tsx"]
   },
   "exceptions": [

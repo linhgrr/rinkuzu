@@ -137,11 +137,10 @@ claims:
     state: forbidden
     evidence_urls:
       - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
-      - https://support.google.com/googleplay/android-developer/answer/13393723?hl=en
     evidence_level: no_supporting_evidence
     expires_on: null
     allowed_channels: []
-    rationale: No ranking evidence exists; Google Play also disallows ranking language in store metadata.
+    rationale: No ranking evidence exists.
 
   - id: forbidden_user_volume_and_repeatability
     canonical_text: Thousands of students use Rinkuzu, Rinkuzu has worldwide active users, or an acquisition channel is repeatable.
@@ -158,7 +157,6 @@ claims:
     state: forbidden
     evidence_urls:
       - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
-      - https://support.google.com/googleplay/android-developer/answer/13393723?hl=en
     evidence_level: no_source_or_consent
     expires_on: null
     allowed_channels: []
@@ -176,7 +174,7 @@ claims:
     rationale: Processing depends on file and external services; no production latency distribution exists.
 
   - id: forbidden_universal_or_offline_support
-    canonical_text: Rinkuzu supports any PDF, scanned or handwritten input, every subject, native mobile apps, or offline learning access.
+    canonical_text: Rinkuzu supports any PDF, scanned or handwritten input, every subject, or offline learning access.
     state: forbidden
     evidence_urls:
       - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
@@ -184,7 +182,7 @@ claims:
     evidence_level: contradicted_or_unverified_scope
     expires_on: null
     allowed_channels: []
-    rationale: A PWA manifest does not prove complete offline behavior or native-store availability; input limits exist.
+    rationale: A PWA manifest does not prove complete offline behavior; input limits exist.
 
   - id: forbidden_learning_outcomes
     canonical_text: Rinkuzu guarantees deep mastery, better grades, faster learning, retention improvement, or scientifically proven outcomes.

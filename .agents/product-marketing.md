@@ -13,13 +13,13 @@ This document is the product, positioning, funnel, and launch source of truth. P
 
 ## Executive decision
 
-Rinkuzu should first prove one narrow mobile-web/PWA value moment for Vietnamese university learners studying from text-based lecture PDFs:
+Rinkuzu should first prove one narrow responsive-web value moment for Vietnamese university learners studying from text-based lecture PDFs:
 
 `verified signup -> accepted PDF upload -> generated adaptive material -> first answered question`
 
 The working position is: **Rinkuzu turns a lecture PDF into source-grounded practice and helps a learner decide what to study next.**
 
-The first 14-day bet is activation, not content volume or a native-store launch. Native iOS/Android does not exist in the audited repository. Store work during the first 90 days is readiness and discovery validation until a founder explicitly selects and funds a native delivery path.
+The first 14-day bet is web activation, not content volume or a new delivery platform. The installable PWA remains part of the existing web product.
 
 ## Evidence rules
 
@@ -87,23 +87,23 @@ Do not position "AI" alone as the differentiator. Quizlet officially offers uplo
 
 ## ICP hypotheses
 
-| Priority | Hypothesis | Observed evidence | Confidence | Smallest validation |
-| --- | --- | --- | --- | --- |
-| 1 | Vietnamese university learners with a course exam in the next 30 days and a text-based lecture PDF | Vietnamese UI, PDF/adaptive flow, current course/exam language in the product; no interviews | 0.40 | Recruit one 30-person consented cohort; segment results by course and PDF type |
-| 2 | Certification/professional learners with dense source PDFs | Product supports general PDFs and repeated practice; no segment evidence | 0.20 | Five problem interviews before any tailored build |
-| 3 | Individual teachers converting their own material into practice | Public quiz sharing exists; classroom management and class analytics do not | 0.20 | Five teacher interviews plus one concierge assignment test; no school procurement claims |
+| Priority | Hypothesis                                                                                         | Observed evidence                                                                            | Confidence | Smallest validation                                                                      |
+| -------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------- |
+| 1        | Vietnamese university learners with a course exam in the next 30 days and a text-based lecture PDF | Vietnamese UI, PDF/adaptive flow, current course/exam language in the product; no interviews | 0.40       | Recruit one 30-person consented cohort; segment results by course and PDF type           |
+| 2        | Certification/professional learners with dense source PDFs                                         | Product supports general PDFs and repeated practice; no segment evidence                     | 0.20       | Five problem interviews before any tailored build                                        |
+| 3        | Individual teachers converting their own material into practice                                    | Public quiz sharing exists; classroom management and class analytics do not                  | 0.20       | Five teacher interviews plus one concierge assignment test; no school procurement claims |
 
-Anti-ICP for the first beta: users needing native offline study, scanned/handwritten inputs, enterprise administration/SSO, guaranteed answer accuracy, or unrestricted general AI chat.
+Anti-ICP for the first beta: users needing offline study, scanned/handwritten inputs, enterprise administration/SSO, guaranteed answer accuracy, or unrestricted general AI chat.
 
 ## Alternatives and switching frame
 
-| Alternative | Observed alternative strength | Rinkuzu testable wedge | Status |
-| --- | --- | --- | --- |
-| Quizlet | Uploaded files can become editable study guides, flashcards, and practice tests; web and mobile are supported | Make prerequisite context and the next weak-area action clearer for Vietnamese PDF learners | First-party competitor observation |
-| Knowt | Creates flashcards from PDF/PPT/video and supports broader study modes | Keep the first value path narrower and measure PDF-to-first-answer speed/reliability | First-party competitor observation |
-| Generic AI chat | Flexible question generation from pasted or uploaded context | Persist progress and offer a repeatable next step without prompt design | Inference; validate in interviews |
-| Manual notes/questions | Maximum learner control and source familiarity | Reduce setup while retaining source context and review control | Inference; validate in interviews |
-| Existing Quizlet/Anki libraries | Habit, content already organized, established repetition loops | Win only when a new source PDF creates a fresh study job | Inference; validate in interviews |
+| Alternative                     | Observed alternative strength                                                   | Rinkuzu testable wedge                                                                      | Status                             |
+| ------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------- |
+| Quizlet                         | Uploaded files can become editable study guides, flashcards, and practice tests | Make prerequisite context and the next weak-area action clearer for Vietnamese PDF learners | First-party competitor observation |
+| Knowt                           | Creates flashcards from PDF/PPT/video and supports broader study modes          | Keep the first value path narrower and measure PDF-to-first-answer speed/reliability        | First-party competitor observation |
+| Generic AI chat                 | Flexible question generation from pasted or uploaded context                    | Persist progress and offer a repeatable next step without prompt design                     | Inference; validate in interviews  |
+| Manual notes/questions          | Maximum learner control and source familiarity                                  | Reduce setup while retaining source context and review control                              | Inference; validate in interviews  |
+| Existing Quizlet/Anki libraries | Habit, content already organized, established repetition loops                  | Win only when a new source PDF creates a fresh study job                                    | Inference; validate in interviews  |
 
 ## Voice
 
@@ -129,21 +129,21 @@ Explicitly banned/unverified now:
 - Guaranteed accuracy, source fidelity, or hallucination-free output.
 - "Any PDF," scanned/handwritten support, all subjects, or all six Bloom levels for every journey.
 - "Instant," "in seconds," "under a minute," or a guaranteed completion time.
-- Native App Store/Google Play availability or offline access.
+- Offline access.
 - 24/7 service/support availability unless monitored uptime/support evidence exists.
 - Public prices, quotas, renewal behavior, refunds, or payment availability without same-day live verification.
 
-Known public-copy debt exists in old translation/blog/FAQ content, including ranking, volume, speed, universal-input, outcome, and unsourced testimonial language. The current landing component is materially safer, but all indexed/public routes require a claims-registry sweep before broader distribution or store submission.
+Known public-copy debt exists in old translation/blog/FAQ content, including ranking, volume, speed, universal-input, outcome, and unsourced testimonial language. The current landing component is materially safer, but all indexed/public routes require a claims-registry sweep before broader web distribution.
 
 ## AARRR audit
 
-| Stage | Observable surface | Available evidence | Baseline as of 2026-08-11 | Measurement gap |
-| --- | --- | --- | --- | --- |
-| Acquisition | Page views, `signup_started`, `signup_completed`, User `createdAt`/`emailVerified` | GA4/PostHog code and verified-user field exist | **Unavailable** | Providers not configured here; signup source is not persisted; no email-verification event |
-| Activation | `pdf_upload_completed`, `adaptive_session_started`, `first_question_answered`; Mongo learning records | Product call sites and timestamps exist | **Unavailable** | No authorized data; upload and first answer lack a common journey ID; first-answer dedupe is global per browser; required draft/publish/open steps are absent |
-| Retention | `adaptive_answer_submitted`, `quiz_completed`; Attempt `takenAt`; UserProgress activity dates | Activity records can form cohorts | **Unavailable** | No authorized data/export; no canonical cohort query or scorecard yet |
-| Referral | Public quiz links and Explore | Sharing behavior exists in product | **Unavailable / unmeasurable** | No share event, referral token, referred-signup field, or attribution join |
-| Revenue | PayOS order/webhook/subscription code and amount/status/timestamps | Aggregate paid-order reporting is structurally possible | **Unavailable** | No PayOS or Atlas access; live plan/checkout status and refunds not verified |
+| Stage       | Observable surface                                                                                    | Available evidence                                      | Baseline as of 2026-08-11      | Measurement gap                                                                                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Acquisition | Page views, `signup_started`, `signup_completed`, User `createdAt`/`emailVerified`                    | GA4/PostHog code and verified-user field exist          | **Unavailable**                | Providers not configured here; signup source is not persisted; no email-verification event                                                                    |
+| Activation  | `pdf_upload_completed`, `adaptive_session_started`, `first_question_answered`; Mongo learning records | Product call sites and timestamps exist                 | **Unavailable**                | No authorized data; upload and first answer lack a common journey ID; first-answer dedupe is global per browser; required draft/publish/open steps are absent |
+| Retention   | `adaptive_answer_submitted`, `quiz_completed`; Attempt `takenAt`; UserProgress activity dates         | Activity records can form cohorts                       | **Unavailable**                | No authorized data/export; no canonical cohort query or scorecard yet                                                                                         |
+| Referral    | Public quiz links and Explore                                                                         | Sharing behavior exists in product                      | **Unavailable / unmeasurable** | No share event, referral token, referred-signup field, or attribution join                                                                                    |
+| Revenue     | PayOS order/webhook/subscription code and amount/status/timestamps                                    | Aggregate paid-order reporting is structurally possible | **Unavailable**                | No PayOS or Atlas access; live plan/checkout status and refunds not verified                                                                                  |
 
 ### Provider evidence without PII
 
@@ -192,18 +192,18 @@ Collect the standard primary question after repeat value: "How would you feel if
 
 Required server/client event names for the pilot:
 
-| Event | Trigger | Required safe properties |
-| --- | --- | --- |
-| `signup_verified` | Verification succeeds | `anonymous_acquisition_id`, normalized source/campaign, locale |
-| `upload_accepted` | Server accepts eligible PDF | opaque `journey_id`, page/size bucket, locale |
-| `draft_generated` | Material is ready for review | `journey_id`, duration bucket, outcome |
-| `session_ready` | Published quiz or adaptive session can open | `journey_id`, mode |
-| `session_opened` | Learner sees the first question | `journey_id`, mode |
-| `first_question_answered` | First accepted answer | `journey_id`, mode, elapsed-time bucket |
-| `learning_activity` | Later accepted answer/quiz completion | pseudonymous user ID, mode, cohort day |
-| `share_link_created` | Opaque referral/share link created | pseudonymous referrer ID, surface |
-| `referred_signup_verified` | Referred account verifies | opaque referral ID, source |
-| `payment_fulfilled` | Verified order is fulfilled | pseudonymous user ID, plan ID, amount VND |
+| Event                      | Trigger                                     | Required safe properties                                       |
+| -------------------------- | ------------------------------------------- | -------------------------------------------------------------- |
+| `signup_verified`          | Verification succeeds                       | `anonymous_acquisition_id`, normalized source/campaign, locale |
+| `upload_accepted`          | Server accepts eligible PDF                 | opaque `journey_id`, page/size bucket, locale                  |
+| `draft_generated`          | Material is ready for review                | `journey_id`, duration bucket, outcome                         |
+| `session_ready`            | Published quiz or adaptive session can open | `journey_id`, mode                                             |
+| `session_opened`           | Learner sees the first question             | `journey_id`, mode                                             |
+| `first_question_answered`  | First accepted answer                       | `journey_id`, mode, elapsed-time bucket                        |
+| `learning_activity`        | Later accepted answer/quiz completion       | pseudonymous user ID, mode, cohort day                         |
+| `share_link_created`       | Opaque referral/share link created          | pseudonymous referrer ID, surface                              |
+| `referred_signup_verified` | Referred account verifies                   | opaque referral ID, source                                     |
+| `payment_fulfilled`        | Verified order is fulfilled                 | pseudonymous user ID, plan ID, amount VND                      |
 
 Never send email, name, direct database ID, IP, auth token, PDF/file name or URL, extracted content, question/answer text, free-form prompt, or payment-provider identifiers.
 
@@ -211,7 +211,7 @@ Never send email, name, direct database ID, IP, auth token, PDF/file name or URL
 
 ### Hypothesis
 
-For verified, consenting Vietnamese university learners with an exam in the next 30 days and a supported text-based lecture PDF, a guided mobile-web/PWA journey will enable at least 60% to answer the first adaptive question within 10 minutes of upload acceptance.
+For verified, consenting Vietnamese university learners with an exam in the next 30 days and a supported text-based lecture PDF, a guided responsive-web journey will enable at least 60% to answer the first adaptive question within 10 minutes of upload acceptance.
 
 ### Observed evidence and sources
 
@@ -226,7 +226,7 @@ Confidence: **0.35 (low-medium)**. Capability evidence is strong; user, reliabil
 
 - Window: 14 consecutive days after RIN-5/RIN-6/RIN-7 produce a staging-ready, privacy-reviewed flow and the board authorizes the beta cohort.
 - Cohort: stop enrollment at 30 eligible, non-staff, consenting learners; one first eligible PDF journey each.
-- Surface: existing mobile web/PWA only; no native app, redesign, new pricing, or broad campaign.
+- Surface: existing responsive web/PWA only; no new delivery platform, redesign, new pricing, or broad campaign.
 - Distribution: one attributable owned-channel invitation/message; no spend.
 - Research: one post-activation friction question and PMF survey invitation after repeat use.
 - Evidence: event-level aggregate QA, activation funnel, extraction failures, D1/D7 where mature, and survey responses. No PII export.
@@ -236,14 +236,14 @@ Confidence: **0.35 (low-medium)**. Capability evidence is strong; user, reliabil
 - External cash: **0 VND**.
 - Product/growth: up to **2 working days** for cohort setup, QA, analysis, and interviews/survey operations.
 - Engineering: existing RIN-5/RIN-6/RIN-7 scope only; no additional build is authorized by this document.
-- Infrastructure: existing authorized staging only. Any paid service, production credential, or store account is a founder gate.
+- Infrastructure: existing authorized staging only. Any paid service or production credential is a founder gate.
 
 ### Success
 
 - At least 30 eligible journeys.
 - Activation >=60% within 10 minutes.
 - Terminal generation failure <5%.
-- >=95% of eligible journeys have exactly one coherent event sequence.
+- > =95% of eligible journeys have exactly one coherent event sequence.
 - Zero content/PII analytics, duplicate quota use, cross-user access, or entitlement regression.
 - D7 >=25% for cohort members with a mature D7 window is a supporting retention signal, not required to call activation successful if too few users are mature.
 
@@ -263,7 +263,7 @@ Confidence: **0.35 (low-medium)**. Capability evidence is strong; user, reliabil
 - Reliability/measurement fails: stop the pilot and return to RIN-6/RIN-7; make no user-value conclusion.
 - Enrollment is insufficient: test a narrower exam/course message and source; do not change the core product from this result alone.
 
-## 90-day mobile/web launch sequence
+## 90-day web launch sequence
 
 ### Days 0-14: measurement and validation readiness
 
@@ -273,7 +273,7 @@ Confidence: **0.35 (low-medium)**. Capability evidence is strong; user, reliabil
 - Confirm initial course/exam niche, staging owner, analytics/privacy owner, and one cohort source.
 - Gate: coherent staging journey, rollback path, no PII, reliable dependencies, and beta approval.
 
-### Days 15-30: private mobile-web/PWA beta
+### Days 15-30: private responsive-web beta
 
 - Run the selected 30-person/14-day experiment on the existing PWA.
 - Capture activation, stage drop-off, errors, D1, early D7, and qualitative friction.
@@ -285,7 +285,7 @@ Confidence: **0.35 (low-medium)**. Capability evidence is strong; user, reliabil
 - Fix only the largest evidenced activation or repeat-use obstacle.
 - Establish D1/D7 cohort reporting and a single useful return cue.
 - If activation passes, specify an opaque share/referral link and verified-signup join; do not gamify or reward until fraud controls and evidence exist.
-- Decide PWA-first permanence versus native discovery. The audited product remains PWA-first by default.
+- Confirm responsive web/PWA as the sole delivery surface for the current strategy.
 
 ### Days 46-60: controlled web distribution
 
@@ -294,37 +294,38 @@ Confidence: **0.35 (low-medium)**. Capability evidence is strong; user, reliabil
 - Keep zero-spend until one source produces a stable activated-user yield in two consecutive cohorts.
 - Publish only registry-approved copy and sourced product demonstrations.
 
-### Days 61-75: store readiness, not automatic submission
+### Days 61-75: web acquisition hardening
 
-- If the founder selects native distribution, open a separate native product/delivery issue; a thin wrapper risks Apple's minimum-functionality rejection because Apple requires utility beyond a repackaged website. Source: [Apple App Review Guidelines 4.2](https://developer.apple.com/app-store/review/guidelines/).
-- Prepare accurate English/Vietnamese names, subtitles/short descriptions, keywords, screenshots of real app behavior, privacy labels/Data Safety, content rating, support URL, reviewer demo account, and backend uptime plan.
-- Implement true account deletion before submission. Apple requires in-app initiation for apps with account creation; Google Play requires both an in-app path and a functional web deletion resource. Sources: [Apple account deletion](https://developer.apple.com/support/offering-account-deletion-in-your-app/), [Google Play account deletion](https://support.google.com/googleplay/android-developer/answer/13327111?hl=en).
-- Confirm account type/ownership. New Google Play personal accounts may require 12 continuously opted-in closed testers for 14 days before production access. Source: [Google Play testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en).
-- Keep metadata claims exact. Google Play explicitly disallows ranking language and anonymous testimonials; its short description limit is 80 characters. Source: [Google Play listing guidance](https://support.google.com/googleplay/android-developer/answer/13393723?hl=en).
+- Improve technical SEO, indexable page quality, internal linking, Core Web Vitals, and one high-intent topic cluster using measured search evidence.
+- Improve landing-to-signup and signup-to-upload conversion using one bounded experiment at a time.
+- Validate attribution from social/SEO to verified signup and activation; keep unknown-source rate visible.
+- Keep every public claim behind `claims.yml` and remove stale or unsupported copy before scaling distribution.
 
 ### Days 76-90: monetization and launch decision
 
 - Verify live plan catalog, PayOS completion/refund evidence, entitlement behavior, and cost per activated learner before changing price.
 - Test one monetization hypothesis only among activated users, with exact one-time duration/renewal language verified on the same day.
-- If web activation, D7, and one acquisition source repeat, prepare a human go/no-go package for wider web launch and, only if native gates pass, store submission.
-- If activation or retention fails, continue as a focused web beta; do not use store distribution to mask product weakness.
+- If web activation, D7, and one acquisition source repeat, prepare a human go/no-go package for wider web launch.
+- If activation or retention fails, continue as a focused web beta and fix the measured bottleneck before scaling distribution.
 
 ## Operating record and dependencies
 
 Existing issues are the active delivery record; do not duplicate them:
 
-- RIN-5: stabilize the mobile delivery path.
+- RIN-5: stabilize the web delivery path.
 - RIN-6: deliver the PDF-to-first-answer vertical slice.
 - RIN-7: instrument activation and reliability signals.
 - RIN-8: prepare beta release evidence package.
 - RIN-9: review real beta evidence and recommend the next bet.
 - RIN-11: Postiz draft-mode content loop.
-- RIN-12: SEO and mobile ASO acquisition baseline.
+- RIN-12: SEO acquisition baseline.
 - RIN-13: weekly growth/social/revenue scorecard.
 
-Only one additional follow-up is justified from this audit: a claims-registry sweep of public routes by the Content, SEO & Social Operator after this foundation is accepted. Implementation remains with the Founding Product Engineer; this document authorizes no code, production, credential, spend, external publication, or store submission.
+Only one additional follow-up is justified from this audit: a claims-registry sweep of public routes by the Content, SEO & Social Operator after this foundation is accepted. Implementation remains with the Founding Product Engineer; this document authorizes no code, production, credential, spend, or external publication.
 
 ## Weekly scorecard fields
+
+The canonical definition, first baseline, taxonomy verification, privacy/freshness rules, and experiment decisions are published in `.agents/weekly-growth-scorecard.md`. That artifact governs weekly snapshots; this section remains the compact source-of-truth index.
 
 - Verified signups by attributable source; unknown-source rate.
 - Eligible uploads and activation rate with median/P75 time to first answer.

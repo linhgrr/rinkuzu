@@ -118,8 +118,14 @@ At commit `a362db7c`, Node `22.23.1` on Windows:
 - Blocked: with `NODE_ENV=production` and a non-secret local object-storage origin,
   the build reached output cleanup but failed with Windows `EBUSY` on
   `.next/standalone`. No Node process whose command line referenced this checkout was
-  present at inspection time. This is not passing production-build evidence and must
-  be rerun in an isolated workspace or after the external lock is identified.
+  present at inspection time. This checkout-specific lock remains unresolved.
+- Passed at commit `3d1594de` in a clean, run-owned scratch clone: `npm ci` installed
+  1,697 packages from the lockfile with zero reported vulnerabilities, and
+  `NODE_ENV=production npm run build` completed with synthetic non-production values
+  for the required secret-shaped fields. The build generated 132 static pages and
+  136 PWA precache entries. MongoDB was deliberately unavailable; sitemap generation
+  logged `ECONNREFUSED 127.0.0.1:27017` but the build exited 0. This proves clean
+  install and bundle reproducibility, not external integration readiness.
 - Blocked push: the mandatory pre-push hook reached the build and failed on the missing
   object-storage origin, so commit `1e1d6be6` remains local. During that hook, the
   internal-fetch guard also reported an unrelated transient `src/example.ts`; the file

@@ -37,7 +37,7 @@ export const ProcessingStatusCard = ({
   steps,
   t,
 }: ProcessingStatusCardProps) => (
-  <div className="relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-8 shadow-sm md:p-10">
+  <div className="relative overflow-hidden rounded-xl border border-line bg-white p-8 shadow-sm md:p-10">
     <div className="text-center">
       {error && (
         <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500">
@@ -51,7 +51,7 @@ export const ProcessingStatusCard = ({
       <p className="mb-6 text-sm text-neutral-500">{filename}</p>
 
       {!error && (
-        <div className="mb-8 inline-flex items-center rounded-md border border-neutral-200 bg-neutral-50 px-4 py-1.5">
+        <div className="mb-8 inline-flex items-center rounded-md border border-line bg-neutral-50 px-4 py-1.5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-900">
             {statusLabel}
           </p>
@@ -73,19 +73,19 @@ export const ProcessingStatusCard = ({
 
       {stats && !error && (
         <div className="mb-8 grid grid-cols-3 gap-3">
-          <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-center">
+          <div className="rounded-md border border-line/50 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.concepts_extracted}</div>
             <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
               {t('processing.stats.extracted')}
             </div>
           </div>
-          <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-center">
+          <div className="rounded-md border border-line/50 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.concepts_after_merge}</div>
             <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
               {t('processing.stats.afterMerge')}
             </div>
           </div>
-          <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-center">
+          <div className="rounded-md border border-line/50 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.relations_accepted}</div>
             <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
               {t('processing.stats.relations')}
@@ -108,7 +108,7 @@ export const ProcessingStatusCard = ({
                       ? 'bg-brand-trust text-white'
                       : isActive
                         ? 'border border-brand-action bg-orange-50'
-                        : 'border border-neutral-200 bg-neutral-50'
+                        : 'border border-line bg-neutral-50'
                   }`}
                 >
                   {isCompleted ? <HiCheck className="size-3" /> : null}
@@ -146,7 +146,7 @@ export const ProcessingStatusCard = ({
             <span>{t('processing.progress')}</span>
             <span className="font-mono">{Math.round(progress)}%</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+          <div className="h-1.5 w-full overflow-hidden rounded-full border border-line bg-neutral-100">
             <div
               className="h-full rounded-full bg-brand-trust transition-[width] duration-500 ease-out"
               style={{ width: `${progress}%` }}
@@ -160,7 +160,7 @@ export const ProcessingStatusCard = ({
           <Button
             variant="outline"
             onClick={handleErrorAction}
-            className="h-auto rounded-md border-neutral-200 px-6 py-2.5 text-sm font-medium transition-colors hover:bg-neutral-50"
+            className="h-auto rounded-md border-control-border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-neutral-50"
           >
             <HiOutlineArrowLeft className="mr-2 size-4" />
             {error.action === 'dashboard'

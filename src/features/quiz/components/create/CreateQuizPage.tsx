@@ -30,6 +30,7 @@ import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import { ROUTES } from '@/shared/constants/routes';
+import { toCreateQuizDraftInput } from '@/features/quiz/components/create/create-quiz-draft-input';
 import {
   HiOutlineArrowRight,
   HiOutlineDocumentText,
@@ -645,18 +646,8 @@ export function CreateQuizPage() {
       const { s3Key } = await uploadPdfViaPresignedUrl(uploadFile);
       pendingS3Key = s3Key;
       const trimmedTitle = state.title.trim();
-      const trimmedDescription = state.description.trim();
-      const trimmedPrompt = state.aiPrompt.trim();
 
-      const draft = await createQuizDraft({
-        title: trimmedTitle,
-        s3Key,
-        fileName: uploadFile.name,
-        fileSize: uploadFile.size,
-        folderId: state.selectedFolderId,
-        description: trimmedDescription || undefined,
-        prompt: trimmedPrompt || undefined,
-      });
+      const draft = await createQuizDraft(toCreateQuizDraftInput(state, uploadFile, s3Key));
       pendingS3Key = null;
 
       addDraft({

@@ -75,7 +75,7 @@ const EDGE_STYLES: Record<
     animated: true,
   },
   default: {
-    stroke: 'var(--text-secondary, #525252)',
+    stroke: 'var(--text-secondary)',
     strokeWidth: 1.5,
     dashed: false,
     opacity: 1,
@@ -113,7 +113,7 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
         variant="ghost"
         onClick={() => data.onSelect(data.id)}
         aria-label={`${data.label}, ${statusLabel}, ${Math.round(data.mastery * 100)}%`}
-        className={`h-auto w-full rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust [&>span]:block ${isLocked ? 'border-neutral-200 opacity-60' : 'hover:border-neutral-400'}`}
+        className={`h-auto w-full rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust [&>span]:block ${isLocked ? 'border-line opacity-60' : 'hover:border-line-blue'}`}
         style={{
           borderColor: getNodeBorderColor(data.status),
           backgroundColor: isFilled ? color : undefined,
@@ -298,8 +298,8 @@ function GraphFlow({
       proOptions={{ hideAttribution: true }}
       className="bg-neutral-50/50"
     >
-      <Background color="#ececea" gap={20} size={1} />
-      <Controls showInteractive={false} className="border-neutral-200 fill-neutral-600" />
+      <Background color="var(--line)" gap={20} size={1} />
+      <Controls showInteractive={false} className="border-line fill-neutral-600" />
     </ReactFlow>
   );
 }
@@ -335,7 +335,7 @@ function KnowledgeGraphViewport({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-xl border border-neutral-200 bg-white ${isExpanded ? 'h-full' : 'h-[600px]'}`}
+      className={`relative w-full overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : 'h-[600px]'}`}
     >
       {!isExpanded ? (
         <div className="pointer-events-none absolute left-5 top-4 z-10 max-w-[calc(100%-6rem)]">
@@ -368,13 +368,13 @@ function KnowledgeGraphViewport({
           aria-expanded={!renderGraph}
           aria-label={expandLabel}
           title={expandLabel}
-          className="absolute right-4 top-4 z-20 flex size-11 items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-600 shadow-sm backdrop-blur-sm transition-[background-color,border-color,color,transform] hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+          className="absolute right-4 top-4 z-20 flex size-11 items-center justify-center rounded-full border border-line bg-white/95 text-neutral-600 shadow-sm backdrop-blur-sm transition-[background-color,border-color,color,transform] hover:border-line-blue hover:bg-neutral-50 hover:text-neutral-900 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
         >
           <Maximize2 className="size-5" aria-hidden="true" />
         </button>
       ) : null}
 
-      <div className="pointer-events-none absolute bottom-4 right-4 z-10 flex max-w-[calc(100%-5rem)] flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg border border-neutral-200 bg-white/90 px-3 py-2 text-[10px] font-mono shadow-sm backdrop-blur-sm sm:right-5">
+      <div className="pointer-events-none absolute bottom-4 right-4 z-10 flex max-w-[calc(100%-5rem)] flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg border border-line bg-white/90 px-3 py-2 text-[10px] font-mono shadow-sm backdrop-blur-sm sm:right-5">
         {legendItems.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5">
             <div className={`h-2 w-2 rounded-full ${item.color}`} />
@@ -446,7 +446,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   const legendItems = [
     { color: 'bg-brand-trust', label: t('knowledgeGraph.legend.mastered') },
     { color: 'bg-brand-action', label: t('knowledgeGraph.legend.inProgress') },
-    { color: 'bg-white border border-neutral-300', label: t('knowledgeGraph.legend.available') },
+    { color: 'bg-white border border-line', label: t('knowledgeGraph.legend.available') },
     { color: 'bg-neutral-200', label: t('knowledgeGraph.legend.locked') },
   ];
 
@@ -457,7 +457,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   if (!sessionId) {
     return (
-      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50">
+      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-line bg-neutral-50">
         <p className="text-sm text-neutral-500">{t('knowledgeGraph.startSessionHint')}</p>
       </div>
     );
@@ -479,7 +479,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   if (!graphData || graphData.nodes.length === 0) {
     return (
-      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50">
+      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-line bg-neutral-50">
         <p className="text-sm text-neutral-500">{t('knowledgeGraph.noData')}</p>
       </div>
     );

@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  type FormEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Activity,
@@ -24,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { Select } from '@/components/ui/Select';
 import { formatVndCurrency } from '@/lib/formatters';
 import { fetchAiSettings } from '@/features/admin/ai-settings/api/ai-settings-api';
@@ -553,21 +548,6 @@ export function LlmUsageSection() {
     { id: 'users', label: t('llmUsageTabUsers'), icon: Users },
   ];
 
-  const navigateTabs = (event: ReactKeyboardEvent<HTMLButtonElement>, current: DashboardTab) => {
-    const currentIndex = tabs.findIndex((item) => item.id === current);
-    let nextIndex: number | null = null;
-    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
-    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    if (event.key === 'Home') nextIndex = 0;
-    if (event.key === 'End') nextIndex = tabs.length - 1;
-    if (nextIndex === null) return;
-    event.preventDefault();
-    const nextTab = tabs[nextIndex];
-    if (!nextTab) return;
-    setTab(nextTab.id);
-    document.getElementById(`llm-usage-tab-${nextTab.id}`)?.focus();
-  };
-
   return (
     <section className="min-w-0 space-y-4" aria-busy={loading}>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white p-2">
@@ -789,31 +769,19 @@ export function LlmUsageSection() {
         />
       </div>
 
-      <div
-        className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-line bg-white p-1"
-        role="tablist"
-        aria-label={t('llmUsageViews')}
-      >
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <Button
-            key={id}
-            id={`llm-usage-tab-${id}`}
-            type="button"
-            size="sm"
-            variant={tab === id ? 'primary' : 'ghost'}
-            role="tab"
-            aria-selected={tab === id}
-            aria-controls="llm-usage-panel"
-            tabIndex={tab === id ? 0 : -1}
-            className="min-h-10 shrink-0"
-            onClick={() => setTab(id)}
-            onKeyDown={(event) => navigateTabs(event, id)}
-          >
-            <Icon className="size-4" aria-hidden="true" />
-            {label}
-          </Button>
-        ))}
-      </div>
+      <TabBar
+        ariaLabel={t('llmUsageViews')}
+        className="w-full"
+        value={tab}
+        onChange={setTab}
+        options={tabs.map(({ id, label, icon: Icon }) => ({
+          value: id,
+          label,
+          icon: <Icon className="size-4" aria-hidden="true" />,
+          tabId: `llm-usage-tab-${id}`,
+          controlsId: 'llm-usage-panel',
+        }))}
+      />
 
       <div
         id="llm-usage-panel"

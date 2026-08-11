@@ -57,37 +57,48 @@ RIN-11 owns a 60-day ledger with `content_id`, `content_pillar`, claim IDs, plat
 ```text
 utm_source={provider}
 utm_medium=organic_social|owned_community|syndicated_content
-utm_campaign=pmf_2026q3_{positioning_angle}
-utm_content={content_id}_{variant}
+utm_campaign={registered_experiment_or_cohort}
+utm_content={platform}_{content_id}_{variant}
 ```
 
-First-touch attribution is immutable after verification. A later touch may be retained separately for analysis, but must not overwrite first touch. Unknown remains a reported category rather than being forced to direct. A content pillar gets credit only when `utm_content` resolves to the versioned ledger; unresolved values stay unknown.
+The initial RIN-11 shadow batch uses `utm_campaign=pdf_practice_shadow_aug2026`. New campaign values must be registered in the ledger before draft creation. First-touch attribution is immutable after verification. A later touch may be retained separately for analysis, but must not overwrite first touch. Unknown remains a reported category rather than being forced to direct. A content pillar gets credit only when `utm_content` resolves to the versioned ledger; unresolved values stay unknown.
 
 ## First baseline — partial week
 
-Window: `[2026-08-10T00:00:00+07:00, 2026-08-11T15:45:42+07:00)`. This is an initial partial-week evidence inventory, not a performance comparison.
+Window: `[2026-08-10T00:00:00+07:00, 2026-08-11T16:01:37+07:00)`. This is an initial partial-week evidence inventory, not a performance comparison.
 
-Repository evidence is pinned to commit `43e80f3d5e08c9bf46ec4c2ce2f3dfa26625300e`. Configuration presence was inspected without printing values. The run had no configured GA4 ID, PostHog project token, MongoDB URI, or PayOS credentials. A Postiz API key was present, but RIN-11 had not yet produced or reconciled its required drafts and no authorized history/analytics extract was used here.
+Product/analytics code evidence is pinned to commit `43e80f3d5e08c9bf46ec4c2ce2f3dfa26625300e`; RIN-11 Postiz evidence is pinned to commit `845a11fddf94e7d62e851159a5ce80035615b36e` and [`docs/marketing/postiz-content-loop.md`](../docs/marketing/postiz-content-loop.md). Configuration presence was inspected without printing values. The run had no configured GA4 ID, PostHog project token, MongoDB URI, or PayOS credentials. RIN-11 used the authorized Postiz connection to read and reconcile aggregate post state; no audience identities or production product data were accessed.
 
-| Metric                                                      | Baseline                                           | Evidence / interpretation                                                                                                                                      |
-| ----------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Postiz publish attempts / successes / success rate          | **Unavailable**                                    | RIN-11 is in progress; its issue thread states no Postiz calls or drafts were made in its latest heartbeat. Historical Postiz data was not accessed by RIN-13. |
-| RIN-11-created Postiz drafts                                | **0 as of its latest recorded heartbeat**          | RIN-11 comment explicitly records that no drafts were created in that heartbeat. This is not a claim that Postiz has no historical drafts.                     |
-| Reach, engagements, engagement rate, link clicks, reach CTR | **Unavailable**                                    | No reconciled Postiz/platform analytics extract was supplied.                                                                                                  |
-| Verified signups by source/UTM                              | **Unmeasurable**                                   | `signup_completed` exists client-side, but no `signup_verified` event or persisted first-touch source exists. Production user data was not accessed.           |
-| Unknown-source rate                                         | **Unmeasurable**                                   | The required first-touch field/join does not exist.                                                                                                            |
-| Activated users per content pillar                          | **Unmeasurable**                                   | No content-ledger -> first touch -> verified user -> journey join exists.                                                                                      |
-| Eligible uploads and stage conversions                      | **Unmeasurable**                                   | Current `pdf_upload_completed` is client-side and has no canonical server journey ID; required draft/ready/open events are absent.                             |
-| Activation rate and time to first answer                    | **Unmeasurable**                                   | Current first-answer event has no upload journey ID and is deduped globally per browser, so it cannot produce the defined denominator or latency.              |
-| Terminal generation failure                                 | **Unmeasurable**                                   | Client upload failure exists, but no canonical terminal pipeline outcome tied to an eligible journey was verified.                                             |
-| D1 / D7 retention                                           | **Unavailable and no eligible cohort established** | Activity code/schema exists, but no authorized event/database extract or canonical cohort query was supplied.                                                  |
-| Referral exposure, links, signups, activation               | **Unmeasurable**                                   | No referral model, event, or attribution join exists.                                                                                                          |
-| Checkout starts / completion                                | **Unmeasurable**                                   | Checkout and billing code exists, but no canonical analytics event ties a checkout attempt to an activation cohort.                                            |
-| Purchases, payers, payer conversion, realized VND, refunds  | **Unavailable**                                    | Billing schemas support verified fulfilled orders/refunds, but MongoDB/PayOS data was not authorized or configured in this run.                                |
-| PMF survey responses                                        | **0 verified responses supplied**                  | RIN-10 found no sourced PMF responses. No survey-system zero is claimed.                                                                                       |
-| Measurement validity                                        | **Unmeasurable**                                   | The required journey sequence and join keys do not exist.                                                                                                      |
+| Metric                                                      | Baseline                                                                         | Evidence / interpretation                                                                                                                                               |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Postiz publish attempts / successes / success rate          | **0 / 0 / not applicable**                                                       | RIN-11 reconciled all three new records as `DRAFT` with no release ID/URL and explicitly authorized no scheduling or publication. Draft saves are not publish attempts. |
+| RIN-11 Postiz draft creation                                | **3 attempts / 3 created / 3 reconciled as draft**                               | Two Threads drafts and one Telegram draft were returned by Postiz and found again as `DRAFT`; all three had complete UTM fields and no media.                           |
+| Reach, engagements, engagement rate, link clicks, reach CTR | **Not applicable for the three shadow drafts; historical aggregate unavailable** | Unpublished drafts cannot produce audience performance. No reconciled platform-analytics extract for historical posts was supplied.                                     |
+| Verified signups by source/UTM                              | **Unmeasurable**                                                                 | `signup_completed` exists client-side, but no `signup_verified` event or persisted first-touch source exists. Production user data was not accessed.                    |
+| Unknown-source rate                                         | **Unmeasurable**                                                                 | The required first-touch field/join does not exist.                                                                                                                     |
+| Activated users per content pillar                          | **Unmeasurable**                                                                 | No content-ledger -> first touch -> verified user -> journey join exists.                                                                                               |
+| Eligible uploads and stage conversions                      | **Unmeasurable**                                                                 | Current `pdf_upload_completed` is client-side and has no canonical server journey ID; required draft/ready/open events are absent.                                      |
+| Activation rate and time to first answer                    | **Unmeasurable**                                                                 | Current first-answer event has no upload journey ID and is deduped globally per browser, so it cannot produce the defined denominator or latency.                       |
+| Terminal generation failure                                 | **Unmeasurable**                                                                 | Client upload failure exists, but no canonical terminal pipeline outcome tied to an eligible journey was verified.                                                      |
+| D1 / D7 retention                                           | **Unavailable and no eligible cohort established**                               | Activity code/schema exists, but no authorized event/database extract or canonical cohort query was supplied.                                                           |
+| Referral exposure, links, signups, activation               | **Unmeasurable**                                                                 | No referral model, event, or attribution join exists.                                                                                                                   |
+| Checkout starts / completion                                | **Unmeasurable**                                                                 | Checkout and billing code exists, but no canonical analytics event ties a checkout attempt to an activation cohort.                                                     |
+| Purchases, payers, payer conversion, realized VND, refunds  | **Unavailable**                                                                  | Billing schemas support verified fulfilled orders/refunds, but MongoDB/PayOS data was not authorized or configured in this run.                                         |
+| PMF survey responses                                        | **0 verified responses supplied**                                                | RIN-10 found no sourced PMF responses. No survey-system zero is claimed.                                                                                                |
+| Measurement validity                                        | **Unmeasurable**                                                                 | The required journey sequence and join keys do not exist.                                                                                                               |
 
 Result: this baseline proves measurement readiness gaps, not zero demand, zero use, zero retention, or zero revenue.
+
+### Content-pillar baseline
+
+Draft counts are tags, not unique-post totals: the Telegram checklist draft carries both the source-to-practice and weak-area-next-step pillars, so the rows must not be summed.
+
+| Content pillar                   | Reconciled RIN-11 drafts | Published | Reach / engagement / clicks       | Attributed verified signups / activated users                  |
+| -------------------------------- | -----------------------: | --------: | --------------------------------- | -------------------------------------------------------------- |
+| Source-to-practice loop          |                        1 |         0 | Not applicable before publication | **Unmeasurable** — first-touch and journey joins do not exist. |
+| Weak-area next step              |                        1 |         0 | Not applicable before publication | **Unmeasurable** — first-touch and journey joins do not exist. |
+| Bilingual installable web access |                        1 |         0 | Not applicable before publication | **Unmeasurable** — first-touch and journey joins do not exist. |
+| Reviewable sharing               |                        1 |         0 | Not applicable before publication | **Unmeasurable** — first-touch and journey joins do not exist. |
 
 ### Initial outcome-target hypotheses
 
@@ -146,16 +157,17 @@ Do not emit raw MongoDB IDs, email, name, IP, auth/payment tokens, Postiz/provid
 - **Failure/stop:** immediate stop on any privacy leak, cross-user access, payment/entitlement regression, or duplicate quota use; stop reliability conclusion at terminal failures >=10% after n>=10; measurement invalid above 5% incoherent journeys; product failure below 40% activation at n>=30.
 - **Decision:** scale only to one attributable acquisition-source test if success and all guardrails pass. Continue with one bounded stage-friction fix at 40-59%. Stop distribution and revisit ICP/job below 40%. If n<30, change only source/message; do not infer product failure. If reliability/measurement fails, return to RIN-6/RIN-7 and make no value conclusion.
 
-### E2 — Postiz clean-shadow content loop (setup in progress under RIN-11)
+### E2 — Postiz clean-shadow content loop (draft gate passed; seven-day shadow next)
 
 - **Hypothesis:** a default-deny claims/UTM/duplicate gate can produce three distinct reconciled platform-ready drafts and then operate for seven shadow days with no policy, PII, UTM, media, duplicate, or state-reconciliation failure.
-- **Observed evidence and sources:** `claims.yml` has a verified organic-social claim set; Postiz deployment/runbook evidence and a configured API-key shape exist; RIN-11 has not yet recorded integrations, history, drafts, or analytics. No content pillar has proven activated-user yield.
-- **Confidence:** 0.45 for draft operational readiness; 0.10 for acquisition impact.
-- **Smallest experiment:** reconcile 60 days of history, define 3-5 pillars, create exactly three non-duplicate Postiz drafts with full UTMs, then run seven clean shadow days without broad auto-publishing.
+- **Observed evidence and sources:** `claims.yml` has a verified organic-social claim set. RIN-11 verified Threads and Telegram integrations, reconciled 17 historical records over 60 days, defined four pillars, created three non-duplicate drafts with complete UTMs, and reconciled all three as `DRAFT` with no release IDs/URLs. The pinned RIN-11 artifact contains IDs and gate evidence. No content pillar has proven reach, clicks, signups, or activated-user yield.
+- **Confidence:** 0.75 for draft operational readiness after the successful batch; 0.10 for acquisition impact.
+- **Smallest experiment:** accept the reconciled three-draft batch as the review set, then record seven consecutive clean shadow days without scheduling or publication.
 - **Cost:** 0 VND; existing Postiz/owned accounts only; up to 1 Content Operator working day plus daily review during the seven-day shadow.
 - **Success:** three distinct drafts with valid claim IDs and UTMs; Postiz IDs/states reconcile; seven consecutive clean shadow days; 100% ledger completeness; zero guardrail failure.
 - **Failure/stop:** stop on a missing/expired/wrong-channel claim, PII, duplicate, malformed UTM, unsupported media, unexpected publication, unreconciled state, auth/API error, or any need for paid access. A provider outage pauses the shadow clock and is not audience evidence.
 - **Decision:** after operational success, continue with a small owned-channel schedule and measure publishing success/clicks/activated users by pillar. Scale cadence for a pillar only after two consecutive mature cohorts show positive activated-user yield with valid measurement and no retention/guardrail regression. Stop a pillar after two mature cohorts with at least 10 verified signups total and zero activations, or immediately for a claim/privacy breach. If reach/click data exists but attribution does not, continue measurement repair only; do not call the channel repeatable.
+- **Current decision:** continue the operational shadow only. Do not publish or select a winning pillar; the first draft gate passed, while the seven-day gate and all audience/outcome evidence remain open.
 
 No acquisition channel is currently repeatable. RIN-12 is a baseline/readiness task, not yet a running acquisition experiment. RIN-5 is delivery stabilization, not a growth result.
 
@@ -167,4 +179,4 @@ No acquisition channel is currently repeatable. RIN-12 is a baseline/readiness t
 4. Read D1/D7 only for mature cohorts and with counts beside rates.
 5. Scale only after the experiment-specific repeatability rule passes; otherwise stop or continue exactly one bounded change.
 
-Next scheduled snapshot: Tuesday 2026-08-18 by 12:00 `Asia/Ho_Chi_Minh`. Expected evidence dependencies are RIN-11 for Postiz ledger/reconciliation and RIN-7 (after RIN-6) for canonical product instrumentation. Unavailable production credentials are reported as external gates, not silently substituted.
+Next scheduled snapshot: Tuesday 2026-08-18 by 12:00 `Asia/Ho_Chi_Minh`. Expected evidence dependencies are RIN-11's seven-day Postiz shadow log and RIN-7 (after RIN-6) for canonical product instrumentation. Unavailable production credentials are reported as external gates, not silently substituted.

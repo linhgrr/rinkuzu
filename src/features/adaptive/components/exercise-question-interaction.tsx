@@ -10,6 +10,7 @@ import {
   HiOutlineLightBulb,
 } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Textarea } from '@/components/ui/Input';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { getExercisePromptSections } from '@/features/adaptive/lib/exercise-prompt';
@@ -43,14 +44,14 @@ function OptionCard<T extends OptionCardSelectionValue>({
   value,
 }: OptionCardProps<T>) {
   return (
-    <button
+    <ButtonBase
       type="button"
       onClick={() => onSelect(selectionValue)}
       aria-pressed={ariaPressed}
       className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-lg border p-4 text-left transition-[border-color,background-color,transform,box-shadow] duration-200 sm:p-5 ${
         active
           ? 'border-brand-action bg-orange-50 shadow-sm'
-          : 'border-neutral-200 bg-white hover:border-neutral-400 active:scale-[0.99]'
+          : 'border-line bg-white hover:border-line-blue active:scale-[0.99]'
       }`}
     >
       {active && <div className="absolute inset-0 rounded-xl bg-orange-500/10" />}
@@ -58,7 +59,7 @@ function OptionCard<T extends OptionCardSelectionValue>({
         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors sm:h-8 sm:w-8 sm:text-sm ${
           active
             ? 'border-brand-action bg-brand-action text-white'
-            : 'border-neutral-300 text-neutral-500 group-hover:border-neutral-400'
+            : 'border-control-border text-neutral-500 group-hover:border-line-blue'
         }`}
       >
         {badge}
@@ -68,7 +69,7 @@ function OptionCard<T extends OptionCardSelectionValue>({
       >
         <MarkdownRenderer content={value} />
       </span>
-    </button>
+    </ButtonBase>
   );
 }
 
@@ -177,7 +178,7 @@ function MatchingInteraction({
 
   return (
     <div ref={containerRef} className="space-y-4">
-      <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+      <div className="rounded-xl border border-line bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
         {t('exercise.interactions.matchingInstruction')}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
@@ -187,7 +188,7 @@ function MatchingInteraction({
               key={`left-${item}`}
               data-matching-card="true"
               style={sharedCardStyle}
-              className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm"
+              className="flex items-center gap-3 rounded-xl border border-line bg-white p-3 shadow-sm"
             >
               <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
                 {index + 1}
@@ -212,7 +213,7 @@ function MatchingInteraction({
                 value={entry}
                 data-matching-card="true"
                 {...(sharedCardStyle !== undefined ? { style: sharedCardStyle } : {})}
-                className="group flex cursor-grab items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm transition-colors hover:border-brand-trust/50 active:cursor-grabbing"
+                className="group flex cursor-grab items-center gap-3 rounded-xl border border-line bg-white p-3 shadow-sm transition-colors hover:border-brand-trust/50 active:cursor-grabbing"
               >
                 <HiOutlineDotsVertical className="size-4 shrink-0 text-neutral-300" />
                 <div className="flex-1 text-right text-sm text-neutral-700">
@@ -226,7 +227,7 @@ function MatchingInteraction({
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={() => moveRightEntry(index, index - 1)}
                     aria-label={`${t('exercise.interactions.moveUp')}: ${entry.value}`}
-                    className="size-8 min-h-0 rounded-md border-neutral-200 bg-white p-0 text-neutral-600 hover:border-brand-trust hover:text-brand-trust disabled:cursor-not-allowed disabled:opacity-30"
+                    className="size-8 min-h-0 rounded-md border-control-border bg-white p-0 text-neutral-600 hover:border-brand-trust hover:text-brand-trust disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     <HiChevronUp className="size-4" aria-hidden="true" />
                   </Button>
@@ -237,7 +238,7 @@ function MatchingInteraction({
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={() => moveRightEntry(index, index + 1)}
                     aria-label={`${t('exercise.interactions.moveDown')}: ${entry.value}`}
-                    className="size-8 min-h-0 rounded-md border-neutral-200 bg-white p-0 text-neutral-600 hover:border-brand-trust hover:text-brand-trust disabled:cursor-not-allowed disabled:opacity-30"
+                    className="size-8 min-h-0 rounded-md border-control-border bg-white p-0 text-neutral-600 hover:border-brand-trust hover:text-brand-trust disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     <HiChevronDown className="size-4" aria-hidden="true" />
                   </Button>
@@ -296,7 +297,7 @@ export function ExerciseInteraction({
   if (answerDraft.type === 'true_false') {
     return (
       <div className="grid gap-3 sm:gap-4">
-        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
+        <div className="rounded-2xl border border-line bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
           <MarkdownRenderer content={promptSections.primary} />
         </div>
         {[
@@ -320,7 +321,7 @@ export function ExerciseInteraction({
   if (answerDraft.type === 'fill_blank') {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
+        <div className="rounded-2xl border border-line bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
           <MarkdownRenderer content={promptSections.primary} />
         </div>
         <Textarea
@@ -329,7 +330,7 @@ export function ExerciseInteraction({
           rows={3}
           placeholder={t('exercise.interactions.fillBlankPlaceholder')}
           aria-label={t('exercise.interactions.fillBlankPlaceholder')}
-          className="min-h-[120px] w-full rounded-2xl border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900"
+          className="min-h-[120px] w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900"
         />
         {exercise.hint ? (
           <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50">
@@ -378,7 +379,7 @@ export function ExerciseInteraction({
     const selectedChoices = new Set(answerDraft.selections);
     return (
       <div className="space-y-3 sm:space-y-4">
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+        <div className="rounded-xl border border-line bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
           {t('exercise.interactions.multiCorrectInstruction')}
         </div>
         <div className="grid gap-3 sm:gap-4">
@@ -402,7 +403,7 @@ export function ExerciseInteraction({
     const ordering = answerDraft.items;
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+        <div className="rounded-xl border border-line bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
           {t('exercise.interactions.orderingInstruction')}
         </div>
         <Reorder.Group
@@ -421,7 +422,7 @@ export function ExerciseInteraction({
               exit={REORDER_EXIT}
               whileDrag={REORDER_DRAG}
               transition={REORDER_TRANSITION}
-              className="group relative flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
+              className="group relative flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
             >
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 font-medium text-green-700 group-hover:bg-green-50 group-hover:text-brand-trust">
                 {index + 1}
@@ -491,7 +492,7 @@ export function ExerciseInteraction({
           rows={8}
           placeholder={t('exercise.interactions.shortAnswerPlaceholder')}
           aria-label={t('exercise.interactions.shortAnswerPlaceholder')}
-          className="min-h-[220px] w-full rounded-2xl border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900"
+          className="min-h-[220px] w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900"
         />
       </div>
     );

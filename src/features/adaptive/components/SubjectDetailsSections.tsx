@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
+import { TabBar } from '@/components/ui/TabBar';
 import {
   HiArrowRight,
   HiOutlineAcademicCap,
@@ -204,49 +205,20 @@ const SubjectStatCard = ({ icon: Icon, label, value }: SubjectStatCardProps) => 
   </div>
 );
 
-export const SubjectDetailsTabs = ({ activeTab, onChange, t }: SubjectDetailsTabsProps) => {
-  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
-    const tabs = TAB_CONFIG;
-    let nextIndex: number;
-    if (e.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
-    else if (e.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    else return;
-    e.preventDefault();
-    const nextTab = tabs[nextIndex];
-    if (!nextTab) return;
-    onChange(nextTab.key);
-    const nextButton = e.currentTarget.parentElement?.children[nextIndex] as HTMLElement;
-    nextButton?.focus();
-  };
-
-  return (
-    <div className="max-w-full overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 p-1 sm:w-fit [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      <div className="flex gap-1" role="tablist">
-        {TAB_CONFIG.map(({ key, icon: Icon, labelKey }, index) => (
-          <button
-            type="button"
-            key={key}
-            id={`tab-${key}`}
-            role="tab"
-            aria-selected={activeTab === key}
-            aria-controls={`tabpanel-${key}`}
-            tabIndex={activeTab === key ? 0 : -1}
-            onClick={() => onChange(key)}
-            onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-sm px-4 py-2 text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ${
-              activeTab === key
-                ? 'border border-neutral-200/50 bg-white text-neutral-900 shadow-sm'
-                : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
-            }`}
-          >
-            <Icon className="size-4" aria-hidden="true" />
-            {t(labelKey)}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
+export const SubjectDetailsTabs = ({ activeTab, onChange, t }: SubjectDetailsTabsProps) => (
+  <TabBar
+    ariaLabel={t('subjectDetails.tabsLabel')}
+    value={activeTab}
+    onChange={onChange}
+    options={TAB_CONFIG.map(({ key, icon: Icon, labelKey }) => ({
+      value: key,
+      label: t(labelKey),
+      icon: <Icon className="size-4" aria-hidden="true" />,
+      tabId: `tab-${key}`,
+      controlsId: `tabpanel-${key}`,
+    }))}
+  />
+);
 
 export const SubjectDetailsTabContent = ({
   activeTab,

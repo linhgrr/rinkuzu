@@ -18,6 +18,7 @@ import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import {
@@ -330,44 +331,28 @@ function AdminOcrKeysContent() {
         }
       />
 
-      <div
-        role="tablist"
-        aria-label={t('ocrManagementTabsLabel')}
-        className="mb-6 flex w-full gap-1 rounded-lg bg-control-surface p-1 sm:w-fit"
-      >
-        <button
-          id="ocr-keys-tab"
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'keys'}
-          aria-controls="ocr-keys-panel"
-          onClick={() => selectTab('keys')}
-          className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:flex-none ${
-            activeTab === 'keys'
-              ? 'bg-neutral-warm-white font-semibold text-neutral-warm-8 shadow-segmented'
-              : 'text-ink/65 hover:text-ink'
-          }`}
-        >
-          <HiOutlineKey className="size-5" />
-          {t('ocrManagementKeysTab')}
-        </button>
-        <button
-          id="ocr-models-tab"
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'models'}
-          aria-controls="ocr-models-panel"
-          onClick={() => selectTab('models')}
-          className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:flex-none ${
-            activeTab === 'models'
-              ? 'bg-neutral-warm-white font-semibold text-neutral-warm-8 shadow-segmented'
-              : 'text-ink/65 hover:text-ink'
-          }`}
-        >
-          <HiOutlineChip className="size-5" />
-          {t('ocrManagementModelsTab')}
-        </button>
-      </div>
+      <TabBar
+        ariaLabel={t('ocrManagementTabsLabel')}
+        className="mb-6 w-full sm:w-fit"
+        value={activeTab}
+        onChange={selectTab}
+        options={[
+          {
+            value: 'keys',
+            label: t('ocrManagementKeysTab'),
+            icon: <HiOutlineKey className="size-4" aria-hidden="true" />,
+            tabId: 'ocr-keys-tab',
+            controlsId: 'ocr-keys-panel',
+          },
+          {
+            value: 'models',
+            label: t('ocrManagementModelsTab'),
+            icon: <HiOutlineChip className="size-4" aria-hidden="true" />,
+            tabId: 'ocr-models-tab',
+            controlsId: 'ocr-models-panel',
+          },
+        ]}
+      />
 
       {activeTab === 'keys' ? (
         <div id="ocr-keys-panel" role="tabpanel" aria-labelledby="ocr-keys-tab">

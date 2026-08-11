@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { TabBar } from '@/components/ui/TabBar';
 import type { ProfileSettingsViewModel } from '@/features/profile/types/profile-settings-view-model';
 import {
   HiOutlineBookmark,
@@ -132,55 +133,22 @@ export function ProfileHero({ initials, onEditProfile, profile, t }: ProfileHero
 }
 
 export function ProfileTabNavigation({ activeTab, onChange, t }: ProfileTabNavigationProps) {
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-
-    let nextIndex = index;
-    if (event.key === 'ArrowLeft')
-      nextIndex = (index - 1 + PROFILE_TABS.length) % PROFILE_TABS.length;
-    if (event.key === 'ArrowRight') nextIndex = (index + 1) % PROFILE_TABS.length;
-    if (event.key === 'Home') nextIndex = 0;
-    if (event.key === 'End') nextIndex = PROFILE_TABS.length - 1;
-
-    const nextTab = PROFILE_TABS[nextIndex];
-    onChange(nextTab.id);
-    document.getElementById(`profile-tab-${nextTab.id}`)?.focus();
-  };
-
   return (
-    <div
-      className="overflow-x-auto border-b border-neutral-200"
-      aria-label={t('profileNavigation')}
-    >
-      <div className="flex min-w-max gap-1" role="tablist">
-        {PROFILE_TABS.map((tab, index) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              id={`profile-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`profile-panel-${tab.id}`}
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => onChange(tab.id)}
-              onKeyDown={(event) => handleKeyDown(event, index)}
-              className={`flex min-h-11 items-center gap-2 border-b-2 px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] ${
-                isActive
-                  ? 'border-brand-trust text-brand-trust'
-                  : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-800'
-              }`}
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {t(tab.labelKey)}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <TabBar
+      ariaLabel={t('profileNavigation')}
+      value={activeTab}
+      onChange={onChange}
+      options={PROFILE_TABS.map((tab) => {
+        const Icon = tab.icon;
+        return {
+          value: tab.id,
+          label: t(tab.labelKey),
+          icon: <Icon className="size-4" aria-hidden="true" />,
+          tabId: `profile-tab-${tab.id}`,
+          controlsId: `profile-panel-${tab.id}`,
+        };
+      })}
+    />
   );
 }
 

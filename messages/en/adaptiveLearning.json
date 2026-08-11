@@ -481,6 +481,7 @@
   },
   "subjectDetails": {
     "backToDashboard": "Back to Dashboard",
+    "tabsLabel": "Subject learning views",
     "summary": "{concepts} Concepts • {accuracy}% Accuracy",
     "summaryFallback": "Knowledge Graph and Mastery Map",
     "startLearning": "Start Learning",

@@ -7,12 +7,10 @@ const { authMock, reportQuizMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getQuizService: () => ({
-      reportQuiz: reportQuizMock,
-    }),
-  },
+vi.mock('@/lib/quiz-factory', () => ({
+  getQuizService: () => ({
+    reportQuiz: reportQuizMock,
+  }),
 }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },

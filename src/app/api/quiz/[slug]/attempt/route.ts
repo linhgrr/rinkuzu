@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withOptionalAuth } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
@@ -22,7 +22,7 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
       return apiErr('validation_error', 'User email is required', 400);
     }
 
-    const quizService = serviceFactory.getQuizService();
+    const quizService = getQuizService();
 
     const result = await quizService.submitQuizAttempt(
       parsedParams.data.slug,

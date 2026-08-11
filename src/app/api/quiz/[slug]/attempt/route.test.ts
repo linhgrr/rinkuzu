@@ -8,12 +8,10 @@ const { authMock, submitQuizAttemptMock, loggerErrorMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getQuizService: () => ({
-      submitQuizAttempt: submitQuizAttemptMock,
-    }),
-  },
+vi.mock('@/lib/quiz-factory', () => ({
+  getQuizService: () => ({
+    submitQuizAttempt: submitQuizAttemptMock,
+  }),
 }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },

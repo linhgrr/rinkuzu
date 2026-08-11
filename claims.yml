@@ -1,0 +1,209 @@
+version: 1
+product: Rinkuzu
+owner: product-growth
+as_of: 2026-08-11
+default_policy: deny
+channel_vocabulary:
+  - internal
+  - private_beta_research
+  - owned_web
+  - product_ui
+  - lifecycle_email
+  - organic_social
+  - app_store_metadata
+  - sales_enablement
+  - press
+states:
+  verified: May be used only in allowed_channels until expires_on.
+  experimental: Hypothesis language only; never present as established fact.
+  forbidden: Must not be used until new evidence is reviewed and this registry changes.
+claims:
+  - id: product_pdf_to_practice
+    canonical_text: Rinkuzu turns supported PDF material into quiz and adaptive practice.
+    state: verified
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/features/landing/components/home/Hero.tsx
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/features/adaptive/components/Upload.tsx
+    evidence_level: tested_repository_behavior
+    expires_on: 2026-11-09
+    allowed_channels:
+      - owned_web
+      - product_ui
+      - lifecycle_email
+      - organic_social
+      - app_store_metadata
+      - sales_enablement
+
+  - id: product_concept_graph_next_step
+    canonical_text: Rinkuzu connects concepts and prerequisite context to help a learner choose a next practice step.
+    state: verified
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/features/landing/components/home/Metrics.tsx
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/features/adaptive/components/KnowledgeGraph.tsx
+    evidence_level: tested_repository_behavior
+    expires_on: 2026-11-09
+    allowed_channels:
+      - owned_web
+      - product_ui
+      - lifecycle_email
+      - organic_social
+      - app_store_metadata
+      - sales_enablement
+
+  - id: product_bilingual_ui
+    canonical_text: Rinkuzu provides English and Vietnamese product interfaces.
+    state: verified
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/tree/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en
+      - https://github.com/linhgrr/rinkuzu/tree/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/vi
+    evidence_level: tested_repository_behavior
+    expires_on: 2026-11-09
+    allowed_channels:
+      - owned_web
+      - product_ui
+      - lifecycle_email
+      - organic_social
+      - app_store_metadata
+      - sales_enablement
+
+  - id: product_installable_pwa
+    canonical_text: Rinkuzu has an installable Progressive Web App manifest and a responsive web experience.
+    state: verified
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/public/manifest.json
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/app/%5Blocale%5D/layout.tsx
+    evidence_level: tested_repository_behavior
+    expires_on: 2026-11-09
+    allowed_channels:
+      - owned_web
+      - product_ui
+      - lifecycle_email
+      - organic_social
+      - sales_enablement
+
+  - id: product_public_quiz_sharing
+    canonical_text: A quiz can be made public and opened through its shareable route.
+    state: verified
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/models/Quiz.ts
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/app/api/quizzes/route.ts
+    evidence_level: tested_repository_behavior
+    expires_on: 2026-11-09
+    allowed_channels:
+      - owned_web
+      - product_ui
+      - lifecycle_email
+      - organic_social
+      - sales_enablement
+
+  - id: hypothesis_vietnamese_exam_pdf_icp
+    canonical_text: Vietnamese university learners preparing for an exam from lecture PDFs are the initial ICP.
+    state: experimental
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/.agents/product-marketing-context.md
+      - https://help.quizlet.com/hc/en-us/articles/18312306436365-Studying-with-Study-Guides
+    evidence_level: inference_from_product_and_market
+    expires_on: 2026-08-25
+    allowed_channels:
+      - internal
+      - private_beta_research
+
+  - id: hypothesis_activation_60_percent
+    canonical_text: At least 60 percent of 30 eligible consenting uploaders will answer a first question within 10 minutes.
+    state: experimental
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/lib/analytics/client.ts
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/features/adaptive/hooks/use-adaptive-exercise-session.ts
+    evidence_level: falsifiable_target_no_baseline
+    expires_on: 2026-08-25
+    allowed_channels:
+      - internal
+      - private_beta_research
+
+  - id: hypothesis_free_and_paid_availability
+    canonical_text: Free and paid plan surfaces exist in code; live availability, price, limits, and payment completion require same-day production verification.
+    state: experimental
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/app/%5Blocale%5D/%28marketing%29/pricing/page.tsx
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/models/Subscription.ts
+    evidence_level: repository_behavior_live_status_unverified
+    expires_on: 2026-08-25
+    allowed_channels:
+      - internal
+      - private_beta_research
+
+  - id: forbidden_market_leadership
+    canonical_text: Rinkuzu is number one, best, leading, award-winning, or ranked above alternatives.
+    state: forbidden
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
+      - https://support.google.com/googleplay/android-developer/answer/13393723?hl=en
+    evidence_level: no_supporting_evidence
+    expires_on: null
+    allowed_channels: []
+    rationale: No ranking evidence exists; Google Play also disallows ranking language in store metadata.
+
+  - id: forbidden_user_volume_and_repeatability
+    canonical_text: Thousands of students use Rinkuzu, Rinkuzu has worldwide active users, or an acquisition channel is repeatable.
+    state: forbidden
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
+    evidence_level: no_production_baseline
+    expires_on: null
+    allowed_channels: []
+    rationale: No authorized production user or source-attribution report was supplied.
+
+  - id: forbidden_unsourced_testimonials
+    canonical_text: Any customer quote, identity, school affiliation, time-saved claim, or endorsement without provenance and consent.
+    state: forbidden
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
+      - https://support.google.com/googleplay/android-developer/answer/13393723?hl=en
+    evidence_level: no_source_or_consent
+    expires_on: null
+    allowed_channels: []
+    rationale: No testimonial source, consent, date, or raw evidence was supplied.
+
+  - id: forbidden_speed_guarantees
+    canonical_text: Rinkuzu creates quizzes instantly, in seconds, under a minute, or within a guaranteed duration.
+    state: forbidden
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/app/%5Blocale%5D/%28marketing%29/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
+    evidence_level: no_benchmark
+    expires_on: null
+    allowed_channels: []
+    rationale: Processing depends on file and external services; no production latency distribution exists.
+
+  - id: forbidden_universal_or_offline_support
+    canonical_text: Rinkuzu supports any PDF, scanned or handwritten input, every subject, native mobile apps, or offline learning access.
+    state: forbidden
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/public/manifest.json
+    evidence_level: contradicted_or_unverified_scope
+    expires_on: null
+    allowed_channels: []
+    rationale: A PWA manifest does not prove complete offline behavior or native-store availability; input limits exist.
+
+  - id: forbidden_learning_outcomes
+    canonical_text: Rinkuzu guarantees deep mastery, better grades, faster learning, retention improvement, or scientifically proven outcomes.
+    state: forbidden
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/src/app/%5Blocale%5D/%28marketing%29/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
+    evidence_level: no_product_outcome_study
+    expires_on: null
+    allowed_channels: []
+    rationale: Architecture and cited educational research do not establish outcomes for Rinkuzu users.
+
+  - id: forbidden_accuracy_and_availability
+    canonical_text: AI output is guaranteed accurate, source-faithful, hallucination-free, or supported by continuous 24/7 service.
+    state: forbidden
+    evidence_urls:
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/quiz.json
+      - https://github.com/linhgrr/rinkuzu/blob/c7e99cc4ec80ae64aa9d478f0e007e712e2ac68d/messages/en/landing.json
+    evidence_level: no_evaluation_or_uptime_slo
+    expires_on: null
+    allowed_channels: []
+    rationale: The product itself warns that generated explanations may be inaccurate; no uptime evidence exists.

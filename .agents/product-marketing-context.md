@@ -1,4 +1,6 @@
-# Product Marketing Context
+# Product Marketing Context (Historical)
+
+> Deprecated on 2026-08-11. Use `.agents/product-marketing.md` for current positioning, funnel definitions, experiments, launch sequencing, and claims policy. Use `claims.yml` as the machine-readable channel approval registry.
 
 _Last updated: 2026-07-22_
 _Status: evidence-based V1 auto-draft. Sections marked “unknown” require first-party validation._

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuestionContent } from '@/components/ui/QuestionContent';
@@ -24,7 +25,7 @@ const QuestionDiscussion = dynamic(
     loading: () => (
       <div
         aria-busy="true"
-        className="h-full min-h-64 w-full animate-pulse bg-neutral-50 md:sticky md:top-0 md:h-screen md:w-80 md:border-l md:border-neutral-200"
+        className="h-full min-h-64 w-full animate-pulse bg-neutral-50 md:sticky md:top-0 md:h-screen md:w-80 md:border-l md:border-line"
       />
     ),
   },
@@ -167,7 +168,7 @@ function DesktopQuizHeader({
   t,
 }: DesktopQuizHeaderProps) {
   return (
-    <div className="border-b border-neutral-200/50 bg-white/80 sticky top-0 z-40 backdrop-blur-sm">
+    <div className="border-b border-line/50 bg-white/80 sticky top-0 z-40 backdrop-blur-sm">
       <div className="mx-auto max-w-4xl p-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-x-4">
@@ -292,7 +293,7 @@ function DesktopQuestionCard({
                 className={`flex cursor-pointer items-center rounded-lg border-2 p-4 transition-colors ${
                   isSelected
                     ? 'border-brand-action bg-orange-50'
-                    : 'border-neutral-200 hover:border-neutral-300'
+                    : 'border-line hover:border-line-blue'
                 }`}
               >
                 <input
@@ -307,7 +308,7 @@ function DesktopQuestionCard({
                 <div
                   className={`mr-3 flex size-4 items-center justify-center border-2 ${
                     currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
-                  } ${isSelected ? 'border-brand-action bg-brand-action' : 'border-neutral-300'}`}
+                  } ${isSelected ? 'border-brand-action bg-brand-action' : 'border-control-border'}`}
                 >
                   {isSelected ? (
                     currentQuestion.type === 'single' ? (
@@ -389,7 +390,7 @@ function DesktopQuestionOverview({
             const isAnswered = isQuestionAnswered(question, userAnswers[index]);
 
             return (
-              <button
+              <ButtonBase
                 type="button"
                 key={question.id ?? `${question.question}-${question.options.join('|')}`}
                 onClick={() => onJumpToQuestion(index)}
@@ -398,11 +399,11 @@ function DesktopQuestionOverview({
                     ? 'bg-brand-trust text-white'
                     : isAnswered
                       ? 'border border-green-300 bg-green-100 text-green-800'
-                      : 'border border-neutral-300 bg-neutral-100 text-neutral-600'
+                      : 'border border-control-border bg-neutral-100 text-neutral-600'
                 }`}
               >
                 {index + 1}
-              </button>
+              </ButtonBase>
             );
           })}
         </div>
@@ -416,7 +417,7 @@ function DesktopQuestionOverview({
             <span>{t('answered')}</span>
           </div>
           <div className="flex items-center">
-            <div className="mr-2 size-3 rounded border border-neutral-300 bg-neutral-100" />
+            <div className="mr-2 size-3 rounded border border-control-border bg-neutral-100" />
             <span>{t('notAnswered')}</span>
           </div>
         </div>

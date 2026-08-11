@@ -137,9 +137,12 @@ function exceptionMatches(exception, occurrence) {
 
 export function evaluateDesignSystem(files, policy, options = {}) {
   const now = options.now ?? new Date();
+  const scopedFiles = files.filter(
+    (file) => !(policy.excludedPaths ?? []).some((glob) => matchesGlob(file.path, glob)),
+  );
   const occurrences = [
-    ...RULES.flatMap((rule) => scanRule(files, rule, policy)),
-    ...scanIconFamilies(files, policy),
+    ...RULES.flatMap((rule) => scanRule(scopedFiles, rule, policy)),
+    ...scanIconFamilies(scopedFiles, policy),
   ];
   const exceptionUsage = new Map(policy.exceptions.map((exception) => [exception, 0]));
   const debt = [];

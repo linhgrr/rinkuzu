@@ -22,6 +22,28 @@ function policy(overrides: Record<string, unknown> = {}) {
 }
 
 describe('design-system ratchet', () => {
+  it('excludes independent visual systems from the app design-system ratchet', () => {
+    const result = evaluateDesignSystem(
+      [
+        {
+          path: 'src/features/landing/Hero.tsx',
+          content: '<button className="border-gray-200 text-[#123456] w-[13px]">Go</button>',
+        },
+        {
+          path: 'src/features/dashboard/Card.tsx',
+          content: '<div className="border-gray-200" />',
+        },
+      ],
+      policy({ excludedPaths: ['src/features/landing/**'] }),
+    );
+
+    expect(result.counts['consumer-hardcoded-color']).toBe(0);
+    expect(result.counts['arbitrary-layout-spacing']).toBe(0);
+    expect(result.counts['standalone-raw-button']).toBe(0);
+    expect(result.counts['raw-neutral-border']).toBe(1);
+    expect(result.errors).toContainEqual(expect.stringContaining('raw-neutral-border'));
+  });
+
   it('rejects a new consumer violation over baseline', () => {
     const result = evaluateDesignSystem(
       [{ path: 'src/example.tsx', content: '<div className="text-[#123456]" />' }],

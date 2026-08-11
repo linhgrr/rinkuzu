@@ -1,5 +1,3 @@
-import type { CreateQuizDraftInputDto } from '@/dtos/quiz-draft';
-
 interface CreateQuizDraftFormValues {
   aiPrompt: string;
   description: string;
@@ -8,11 +6,22 @@ interface CreateQuizDraftFormValues {
   title: string;
 }
 
+interface CreateQuizDraftInput {
+  description?: string;
+  fileName: string;
+  fileSize: number;
+  folderId: string | null;
+  isPrivate: boolean;
+  prompt?: string;
+  s3Key: string;
+  title: string;
+}
+
 export function toCreateQuizDraftInput(
   state: CreateQuizDraftFormValues,
   file: Pick<File, 'name' | 'size'>,
   s3Key: string,
-): CreateQuizDraftInputDto {
+): CreateQuizDraftInput {
   const description = state.description.trim();
   const prompt = state.aiPrompt.trim();
 

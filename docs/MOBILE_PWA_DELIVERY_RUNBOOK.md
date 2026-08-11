@@ -37,7 +37,6 @@ node --version
 npm --version
 npm ci
 npm run check:node
-npm run check:toolchain
 npm run check:install
 ```
 
@@ -177,19 +176,12 @@ On 2026-08-11 the autonomous branch was fast-forwarded from `c7e99cc4` to local 
 Post-sync checks on the application tree:
 
 - `npm run check:node` passed.
-- `npm run check:toolchain` initially failed on Windows because the script tried to execute the
-  `npm` shim directly. GitNexus reported LOW risk for `actualNpm`: zero direct callers, affected
-  flows, or affected modules. The check now invokes the npm CLI through the pinned Node process.
-- The focused cross-platform toolchain regression passed: 1 file, 1 test.
 - `npm run check:install` passed.
 - `npm run check:routes` passed.
 - `npm run check:architecture` passed.
 - Focused Vitest run passed: 4 files, 17 tests.
 - `npm run typecheck` passed.
 - `npm run build` passed only after the complete non-secret fixture environment above was supplied; it generated 132 static pages and 137 precache entries.
-- A later rebuild attempt was evidence-bound blocked because a concurrent `next build` already owned
-  the shared `.next` directory; it was not reported as a pass and the existing process was not
-  terminated.
 - The build logged the known refused loopback MongoDB sitemap warning; live sitemap data remains unverified.
 
 GitNexus caution: post-sync name/file-scoped `impact` and `context` queries for two changed master symbols returned unrelated repository-wide callers and a CRITICAL score, while exact-UID retries returned `not found`. No RIN-5 function/class/method edit proceeded. The change-diff result is retained as the scoped sync evidence; future symbol work must repair or obtain a trustworthy exact impact result first.

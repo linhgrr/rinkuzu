@@ -12,16 +12,16 @@
 @layer base {
   :root {
     /* Orange scale — focused action accent, energy, conversion */
-    --orange-50: #fff7ed;
-    --orange-100: #ffedd5;
-    --orange-200: #fed7aa;
-    --orange-300: #fdba74;
-    --orange-400: #fb923c;
-    --orange-500: #ff7a1a;
-    --orange-600: #e86500;
-    --orange-700: #c65300;
-    --orange-800: #9f4200;
-    --orange-900: #7c3200;
+    --orange-50: var(--primary-0);
+    --orange-100: var(--primary-1);
+    --orange-200: var(--primary-2);
+    --orange-300: var(--primary-3);
+    --orange-400: var(--primary);
+    --orange-500: var(--primary);
+    --orange-600: var(--primary-5);
+    --orange-700: var(--primary-6);
+    --orange-800: var(--primary-7);
+    --orange-900: var(--primary-8);
 
     /* Green scale — primary brand, trust, success, learning progress */
     --green-50: #ecfdf5;
@@ -36,17 +36,17 @@
     --green-900: #004940;
 
     /* Neutral scale — calm SaaS foundation */
-    --neutral-0: #ffffff;
-    --neutral-50: #fafaf8;
-    --neutral-100: #f5f5f2;
-    --neutral-200: #ececea;
-    --neutral-300: #d9d9d6;
-    --neutral-400: #b8b8b2;
-    --neutral-500: #74746f;
-    --neutral-600: #5f5f59;
-    --neutral-700: #3f3f3a;
-    --neutral-800: #2b2b27;
-    --neutral-900: #181815;
+    --neutral-0: var(--neutral-white);
+    --neutral-50: var(--neutral-warm-2);
+    --neutral-100: var(--neutral-warm-3);
+    --neutral-200: var(--neutral-warm-31);
+    --neutral-300: var(--neutral-warm-4);
+    --neutral-400: var(--neutral-warm-5);
+    --neutral-500: var(--neutral-warm-6);
+    --neutral-600: var(--neutral-warm-6);
+    --neutral-700: var(--neutral-warm-7);
+    --neutral-800: var(--neutral-warm-8);
+    --neutral-900: var(--neutral-warm-8);
 
     /* Supporting accents */
     --blue-500: #3b82f6;
@@ -95,7 +95,7 @@
     --primary-6: #d05908;
     --primary-7: #733810;
     --primary-8: #441f05;
-    --cta: #fa621d;
+    --cta: var(--primary);
     /* Neutral (warm) */
     --neutral-white: #ffffff;
     --neutral-warm-2: #fffcf9;
@@ -127,8 +127,8 @@
     --status-5: #828282;
 
     /* Semantic layer — resolves through Figma primitives (no prefix, app-wide) */
-    --surface: #fefefe;
-    --surface-page: #f8f8f8;
+    --surface: var(--neutral-white);
+    --surface-page: var(--neutral-warm-2);
     --surface-warm: var(--primary-0);
     --surface-blue: var(--secondary-1);
     --hero: var(--primary-2);
@@ -136,12 +136,12 @@
     --ink-strong: var(--primary-8);
     --ink-muted: var(--alpha-3);
     --accent: var(--primary);
-    --accent-hover: var(--cta);
+    --accent-hover: var(--primary-5);
     --accent-soft: var(--primary-2);
     --accent-warm: var(--primary-3);
     --accent-pale: var(--primary-2);
     --accent-text: var(--neutral-white);
-    --line: #e8eeff;
+    --line: var(--secondary-2);
     --line-blue: var(--secondary-4);
     --progress-track: var(--neutral-warm-31);
     --progress-blue-track: var(--secondary-3);

@@ -10,16 +10,16 @@ module.exports = {
       colors: {
         // Orange scale — action, energy, conversion
         orange: {
-          50: '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#ff7a1a',
-          600: '#e86500',
-          700: '#c65300',
-          800: '#9f4200',
-          900: '#7c3200',
+          50: 'var(--primary-0)',
+          100: 'var(--primary-1)',
+          200: 'var(--primary-2)',
+          300: 'var(--primary-3)',
+          400: 'var(--primary)',
+          500: 'var(--primary)',
+          600: 'var(--primary-5)',
+          700: 'var(--primary-6)',
+          800: 'var(--primary-7)',
+          900: 'var(--primary-8)',
         },
 
         // Green scale — trust, success, learning progress
@@ -38,17 +38,17 @@ module.exports = {
 
         // Neutral scale — calm SaaS foundation
         neutral: {
-          0: '#ffffff',
-          50: '#fafaf8',
-          100: '#f5f5f2',
-          200: '#ececea',
-          300: '#d9d9d6',
-          400: '#b8b8b2',
-          500: '#74746f',
-          600: '#5f5f59',
-          700: '#3f3f3a',
-          800: '#2b2b27',
-          900: '#181815',
+          0: 'var(--neutral-white)',
+          50: 'var(--neutral-warm-2)',
+          100: 'var(--neutral-warm-3)',
+          200: 'var(--neutral-warm-31)',
+          300: 'var(--neutral-warm-4)',
+          400: 'var(--neutral-warm-5)',
+          500: 'var(--neutral-warm-6)',
+          600: 'var(--neutral-warm-6)',
+          700: 'var(--neutral-warm-7)',
+          800: 'var(--neutral-warm-8)',
+          900: 'var(--neutral-warm-8)',
         },
 
         // Supporting accents

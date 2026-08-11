@@ -5,7 +5,7 @@ describe('checkout design contract', () => {
   it('keeps the approved bright-orange action treatment with white text', () => {
     const css = fs.readFileSync('src/app/globals.css', 'utf8');
 
-    expect(css).toContain('--cta: #fa621d;');
+    expect(css).toContain('--cta: var(--primary);');
     expect(css).toContain('--brand-action: var(--cta);');
     expect(css).toContain('--brand-action-hover: var(--primary-5);');
     expect(css).toContain('--brand-action-active: var(--primary-7);');

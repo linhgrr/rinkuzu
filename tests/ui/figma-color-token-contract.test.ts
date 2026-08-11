@@ -11,7 +11,6 @@ const FIGMA_COLOR_TOKENS = [
   '--primary-6: #d05908;',
   '--primary-7: #733810;',
   '--primary-8: #441f05;',
-  '--cta: #fa621d;',
   '--neutral-white: #ffffff;',
   '--neutral-warm-2: #fffcf9;',
   '--neutral-warm-3: #fffaf5;',
@@ -50,11 +49,12 @@ describe('Figma color token contract', () => {
   it('maps Figma fills to semantic app roles', () => {
     const css = fs.readFileSync('src/app/globals.css', 'utf8');
 
-    expect(css).toContain('--surface-page: #f8f8f8;');
-    expect(css).toContain('--surface: #fefefe;');
+    expect(css).toContain('--surface-page: var(--neutral-warm-2);');
+    expect(css).toContain('--surface: var(--neutral-white);');
     expect(css).toContain('--surface-warm: var(--primary-0);');
     expect(css).toContain('--hero: var(--primary-2);');
-    expect(css).toContain('--line: #e8eeff;');
+    expect(css).toContain('--line: var(--secondary-2);');
+    expect(css).toContain('--cta: var(--primary);');
     expect(css).toContain('--brand-action: var(--cta);');
     expect(css).toContain('--brand-action-text: var(--neutral-white);');
     expect(css).toContain('--ink-muted: var(--alpha-3);');
@@ -66,5 +66,16 @@ describe('Figma color token contract', () => {
     expect(css).toContain('--info: var(--status-2);');
     expect(css).toContain('--info-surface: var(--status-1);');
     expect(css).toContain('--state-skipped: var(--status-5);');
+  });
+
+  it('keeps legacy Tailwind orange and neutral utilities bridged to Figma variables', () => {
+    const tailwind = fs.readFileSync('tailwind.config.js', 'utf8');
+
+    expect(tailwind).toContain("50: 'var(--primary-0)'");
+    expect(tailwind).toContain("500: 'var(--primary)'");
+    expect(tailwind).toContain("900: 'var(--primary-8)'");
+    expect(tailwind).toContain("0: 'var(--neutral-white)'");
+    expect(tailwind).toContain("300: 'var(--neutral-warm-4)'");
+    expect(tailwind).toContain("900: 'var(--neutral-warm-8)'");
   });
 });

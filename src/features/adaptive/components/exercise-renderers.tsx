@@ -43,7 +43,7 @@ export const ExerciseLoadingState = ({ t }: ExerciseLoadingStateProps) => (
       <Skeleton className="mx-auto h-8 w-72 max-w-full rounded-md" />
       <Skeleton className="mx-auto h-5 w-96 max-w-full rounded-md" />
     </div>
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
+    <div className="rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8">
       <Skeleton className="h-6 w-44 rounded-md" />
       <Skeleton className="mt-4 h-5 w-full rounded-md" />
       <Skeleton className="mt-2 h-5 w-4/5 rounded-md" />
@@ -70,7 +70,7 @@ export const ExerciseErrorState = ({ message, onBack, onRetry, t }: ErrorStatePr
       <div className="flex justify-center gap-3">
         <Button
           variant="outline"
-          className="border-neutral-200 hover:bg-neutral-50 text-neutral-700"
+          className="border-control-border hover:bg-neutral-50 text-neutral-700"
           onClick={onBack}
         >
           {t('exercise.backToDashboard')}
@@ -128,7 +128,7 @@ export const ExerciseTheoryView = ({
     </div>
 
     <div className="grid gap-6 md:gap-8 pb-12 md:grid-cols-1">
-      <Card className="overflow-hidden rounded-xl border-neutral-200 shadow-sm bg-white p-5 sm:p-8 md:p-10 relative">
+      <Card className="overflow-hidden rounded-xl border-line shadow-sm bg-white p-5 sm:p-8 md:p-10 relative">
         {loadingTheory ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center min-h-[300px]">
             <HiLightBulb className="size-8 text-neutral-400 mb-4 animate-pulse" />
@@ -139,7 +139,7 @@ export const ExerciseTheoryView = ({
         ) : theory ? (
           <>
             <div className="mb-8">
-              <h3 className="mb-4 flex items-center gap-2 text-lg md:text-xl font-medium text-neutral-900 border-b border-neutral-100 pb-4">
+              <h3 className="mb-4 flex items-center gap-2 text-lg md:text-xl font-medium text-neutral-900 border-b border-line/50 pb-4">
                 <HiBookOpen className="size-5 text-neutral-900" />{' '}
                 {t('exercise.theory.basicTheory')}
               </h3>
@@ -158,7 +158,7 @@ export const ExerciseTheoryView = ({
                   {theory.examples.map((ex: string, idx: number) => (
                     <div
                       key={ex}
-                      className="rounded-xl bg-neutral-50 border border-neutral-200 p-5 md:p-6 transition-colors hover:border-neutral-300 shadow-sm"
+                      className="rounded-xl bg-neutral-50 border border-line p-5 md:p-6 transition-colors hover:border-line-blue shadow-sm"
                     >
                       <div className="mb-2.5 text-[11px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5 before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-brand-trust">
                         {t('exercise.theory.example', { index: idx + 1 })}
@@ -251,7 +251,7 @@ export const ExerciseQuestionView = ({
         <Button
           variant="ghost"
           onClick={onQuit}
-          className="font-medium text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-md px-4 min-h-[44px] border border-transparent hover:border-neutral-200"
+          className="font-medium text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-md px-4 min-h-[44px] border border-transparent hover:border-control-border"
         >
           <HiOutlineX className="mr-2 size-4" />
           {t('quit')}
@@ -262,7 +262,7 @@ export const ExerciseQuestionView = ({
             {t('exercise.progress')}
           </span>
           <div className="flex items-center gap-3">
-            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-neutral-100 border border-neutral-200">
+            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-neutral-100 border border-line">
               <div
                 className="h-full rounded-full bg-brand-trust transition-[width] duration-500 ease-out"
                 style={{ width: `${progressPercent}%` }}
@@ -274,7 +274,7 @@ export const ExerciseQuestionView = ({
       </div>
 
       <div className="flex min-w-0 items-center gap-3">
-        <span className="line-clamp-2 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700">
+        <span className="line-clamp-2 rounded-md border border-line bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700">
           {concept.concept_name}
         </span>
       </div>
@@ -282,8 +282,8 @@ export const ExerciseQuestionView = ({
 
     <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-12">
       <div className="flex flex-col lg:col-span-8">
-        <Card className="flex-1 rounded-xl border border-neutral-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-neutral-100 px-5 sm:px-6 py-4 bg-neutral-50/50 rounded-t-[20px]">
+        <Card className="flex-1 rounded-xl border border-line bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-line/50 px-5 sm:px-6 py-4 bg-neutral-50/50 rounded-t-[20px]">
             <div
               className={`flex items-center gap-2 rounded-md ${bloomColor} px-3 py-1.5 box-border shadow-sm`}
             >
@@ -344,7 +344,7 @@ export const ExerciseQuestionView = ({
       </div>
 
       <div className="flex flex-col gap-6 lg:col-span-4">
-        <div className="relative overflow-hidden rounded-xl bg-neutral-50 border border-neutral-200 p-5 sm:p-6 text-neutral-900 shadow-sm">
+        <div className="relative overflow-hidden rounded-xl bg-neutral-50 border border-line p-5 sm:p-6 text-neutral-900 shadow-sm">
           <div className="relative z-10">
             <h3 className="mb-3 text-base font-semibold tracking-tight flex items-center gap-2">
               <span className="size-2 rounded-full bg-brand-trust animate-pulse" />

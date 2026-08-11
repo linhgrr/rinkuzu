@@ -7,9 +7,8 @@ import { PayOSService } from '@/services/payment/PayOSService';
 /**
  * Build a fresh `SubscriptionService` along with its dependencies.
  *
- * Lives in its own module so callers (route handlers, ServiceFactory,
- * QuizPlayService) can import it without going through ServiceFactory —
- * which would create a circular import in CommonJS module resolution.
+ * Keeping subscription composition in its own module lets route handlers and
+ * `QuizPlayService` reuse it without circular composition dependencies.
  */
 export function createSubscriptionService(): SubscriptionService {
   const subscriptionRepository = new SubscriptionRepository();

@@ -1,4 +1,4 @@
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { logger } from '@/lib/logger';
 
 export interface PublicQuizSitemapEntry {
@@ -10,7 +10,7 @@ export async function loadPublicQuizSitemapEntries(
   failureMessage: string,
 ): Promise<PublicQuizSitemapEntry[]> {
   try {
-    const quizResult = await serviceFactory.getQuizService().getQuizzes({
+    const quizResult = await getQuizService().getQuizzes({
       isPrivate: false,
       page: 1,
       limit: 5000,

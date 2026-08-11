@@ -5,10 +5,8 @@ const { getQuizzes, loggerError } = vi.hoisted(() => ({
   loggerError: vi.fn(),
 }));
 
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getQuizService: () => ({ getQuizzes }),
-  },
+vi.mock('@/lib/quiz-factory', () => ({
+  getQuizService: () => ({ getQuizzes }),
 }));
 
 vi.mock('@/lib/logger', () => ({

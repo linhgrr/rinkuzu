@@ -350,6 +350,16 @@ const quizBuilderDomainLeaks = collectViolations(quizBuilderClientFiles, (import
 );
 
 const errors = [];
+
+const legacyServiceFactoryPath = path.join(root, 'src/lib/serviceFactory.ts');
+if (fs.existsSync(legacyServiceFactoryPath)) {
+  errors.push('composition ownership: remove legacy src/lib/serviceFactory.ts');
+}
+for (const filePath of collectViolations(sourceAndTestFiles, (imports) =>
+  imports.includes('@/lib/serviceFactory'),
+)) {
+  errors.push(`composition ownership: replace @/lib/serviceFactory import in ${filePath}`);
+}
 for (const directory of misplacedFeatureComponentDirectories) {
   errors.push(
     `feature ownership: move ${directory} under src/features/${path.basename(directory)}/components`,

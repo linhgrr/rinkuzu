@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineAcademicCap } from 'react-icons/hi';
 import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { useKnowledgeGraph, useMasteryMatrix } from '@/hooks/useAdaptive';
 import type { MasteryRow } from '@/features/adaptive/types/graph';
 
@@ -138,7 +139,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
 
   if (!data || data.matrix.length === 0 || displayMatrix.length === 0) {
     return (
-      <div className="flex h-[200px] w-full flex-col items-center justify-center gap-3 rounded-md border border-neutral-200 bg-neutral-50">
+      <div className="flex h-[200px] w-full flex-col items-center justify-center gap-3 rounded-md border border-line bg-neutral-50">
         <HiOutlineAcademicCap className="size-10 text-neutral-300" />
         <p className="text-sm text-neutral-500">{t('masteryMatrix.noData')}</p>
         <p className="text-xs text-neutral-400">{t('masteryMatrix.noDataHint')}</p>
@@ -147,8 +148,8 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
-      <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 bg-neutral-50/50">
+    <div className="overflow-hidden rounded-md border border-line bg-white">
+      <div className="flex items-center justify-between border-b border-line/50 px-5 py-4 bg-neutral-50/50">
         <div>
           <h3 className="text-base font-medium tracking-tight text-neutral-900">
             {t('masteryMatrix.title')}
@@ -156,7 +157,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
           <p className="text-sm text-neutral-500">{t('masteryMatrix.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <button
+          <ButtonBase
             type="button"
             onClick={handleSortByMastery}
             className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -166,8 +167,8 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
             }`}
           >
             {t('masteryMatrix.sortByMastery')}
-          </button>
-          <button
+          </ButtonBase>
+          <ButtonBase
             type="button"
             onClick={handleSortByName}
             className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -177,14 +178,14 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
             }`}
           >
             {t('masteryMatrix.sortByName')}
-          </button>
+          </ButtonBase>
         </div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-200">
+            <tr className="bg-neutral-50 border-b border-line">
               <th className="sticky left-0 z-10 w-48 bg-neutral-50 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)] shadow-[1px_0_0_0_var(--neutral-100)]">
                 {t('masteryMatrix.concept')}
               </th>
@@ -213,7 +214,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
               return (
                 <tr
                   key={row.concept_id}
-                  className={`border-b border-neutral-100 last:border-0 ${isEven ? 'bg-white' : 'bg-neutral-50/50'}`}
+                  className={`border-b border-line/50 last:border-0 ${isEven ? 'bg-white' : 'bg-neutral-50/50'}`}
                 >
                   <td
                     className={`sticky left-0 z-10 max-w-[200px] sm:max-w-[300px] truncate px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] shadow-[1px_0_0_0_var(--neutral-100)] ${isEven ? 'bg-white' : 'bg-neutral-50'}`}
@@ -249,12 +250,12 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
       </div>
 
       {sortedMatrix.length > 30 ? (
-        <div className="border-t border-neutral-100 px-6 py-3 text-center text-sm text-neutral-500">
+        <div className="border-t border-line/50 px-6 py-3 text-center text-sm text-neutral-500">
           {t('masteryMatrix.showingTop', { count: sortedMatrix.length })}
         </div>
       ) : null}
 
-      <div className="flex items-center gap-4 border-t border-neutral-100 px-6 py-3 text-xs text-neutral-500">
+      <div className="flex items-center gap-4 border-t border-line/50 px-6 py-3 text-xs text-neutral-500">
         <span className="font-medium">{t('masteryMatrix.legend')}</span>
         <div className="flex items-center gap-1">
           <div className="h-3 w-4 rounded bg-neutral-200" /> {t('masteryMatrix.rangeLt40')}

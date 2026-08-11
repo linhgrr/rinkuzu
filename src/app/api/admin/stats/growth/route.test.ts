@@ -11,10 +11,8 @@ vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getAdminService: () => ({ getGrowthTrends: getGrowthTrendsMock }),
-  },
+vi.mock('@/lib/admin-factory', () => ({
+  getAdminService: () => ({ getGrowthTrends: getGrowthTrendsMock }),
 }));
 
 import { GET } from '@/app/api/admin/stats/growth/route';

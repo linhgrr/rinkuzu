@@ -1,11 +1,11 @@
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getAdminService } from '@/lib/admin-factory';
 import { buildPaginationMeta } from '@/lib/pagination';
 import { createAdminStatsListRoute } from '@/app/api/admin/stats/list-route';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = createAdminStatsListRoute({
-  load: () => serviceFactory.getAdminService().getActivityStats(),
+  load: () => getAdminService().getActivityStats(),
   mapData: (data, query) => {
     const activities = [
       ...data.recentActivity.users.map((user) => ({

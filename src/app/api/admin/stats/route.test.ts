@@ -21,16 +21,14 @@ const {
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({ logger: { error: loggerErrorMock } }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getAdminService: () => ({
-      getStats: getStatsMock,
-      getActivityStats: getActivityStatsMock,
-      getCreatorStats: getCreatorStatsMock,
-      getScoreStats: getScoreStatsMock,
-      getGrowthTrends: getGrowthTrendsMock,
-    }),
-  },
+vi.mock('@/lib/admin-factory', () => ({
+  getAdminService: () => ({
+    getStats: getStatsMock,
+    getActivityStats: getActivityStatsMock,
+    getCreatorStats: getCreatorStatsMock,
+    getScoreStats: getScoreStatsMock,
+    getGrowthTrends: getGrowthTrendsMock,
+  }),
 }));
 
 import { GET, dynamic } from '@/app/api/admin/stats/route';

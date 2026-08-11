@@ -8,12 +8,10 @@ const { createAdminStatsListRouteMock, getActivityStatsMock } = vi.hoisted(() =>
 vi.mock('@/app/api/admin/stats/list-route', () => ({
   createAdminStatsListRoute: createAdminStatsListRouteMock,
 }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getAdminService: () => ({
-      getActivityStats: getActivityStatsMock,
-    }),
-  },
+vi.mock('@/lib/admin-factory', () => ({
+  getAdminService: () => ({
+    getActivityStats: getActivityStatsMock,
+  }),
 }));
 
 const activityPayload = {

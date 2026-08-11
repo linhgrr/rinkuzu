@@ -1,5 +1,5 @@
 import { withAdmin } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 
@@ -8,7 +8,7 @@ const TOP_CREATORS_LIMIT = 20;
 
 export const GET = withAdmin(async () => {
   try {
-    const adminService = serviceFactory.getAdminService();
+    const adminService = getAdminService();
 
     const [statsResult, activityResult, creatorResult, scoreResult, growthResult] =
       await Promise.all([

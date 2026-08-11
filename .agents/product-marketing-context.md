@@ -1,4 +1,6 @@
-# Product Marketing Context
+# Product Marketing Context (Historical)
+
+> Deprecated on 2026-08-11. Use `.agents/product-marketing.md` for current positioning, funnel definitions, experiments, launch sequencing, and claims policy. Use `claims.yml` as the machine-readable channel approval registry.
 
 _Last updated: 2026-07-22_
 _Status: evidence-based V1 auto-draft. Sections marked “unknown” require first-party validation._
@@ -36,7 +38,7 @@ _Status: evidence-based V1 auto-draft. Sections marked “unknown” require fir
 - “When I need to revise repeatedly, preserve my progress and make the next session easy to resume.”
 - Teacher hypothesis: “When I teach from my own material, help me create, assign and inspect practice without manually building every question or spreadsheet.”
 
-**Adoption context:** Mobile-browser and PWA usage is supported. There is no verified public RinKuzu listing on Apple App Store or Google Play as of 2026-07-22.
+**Adoption context:** Responsive-browser and installable PWA usage are supported as web capabilities.
 
 ## Problems & Pain Points
 
@@ -47,7 +49,7 @@ _Status: evidence-based V1 auto-draft. Sections marked “unknown” require fir
 - Generic AI chat requires learners to design prompts and manage source context themselves.
 - Flashcard-first tools often stop at content generation or repetition rather than exposing prerequisite relationships.
 - AI study tools may obscure usage allowances or sell “unlimited” access despite variable model costs.
-- Mobile competitors' public reviews surface search bugs, crashes, weak cancellation UX, inaccurate science/math output, and free tiers that feel too restricted. These are competitor signals, not RinKuzu customer findings.
+- Competitors' public reviews surface search bugs, crashes, weak cancellation UX, inaccurate science/math output, and free tiers that feel too restricted. These are competitor signals, not RinKuzu customer findings.
 
 **What it costs learners:** Time spent making questions, uncertainty about coverage and correctness, fragmented progress, and inefficient revision of already-mastered material.
 
@@ -57,13 +59,13 @@ _Status: evidence-based V1 auto-draft. Sections marked “unknown” require fir
 
 **Direct:**
 
-- Knowt — strong free study modes, AI summaries/chat and assessment creation; broad international product and mobile distribution.
+- Knowt — strong free study modes, AI summaries/chat and assessment creation; broad international distribution.
 - RemNote — deep notes, spaced repetition, PDF learning and explicit AI-credit economics; more complex than a focused quiz journey.
 - Mindgrasp — broad document, recording and study generation; primarily paid/trial-led and public reviews include cancellation and STEM-quality complaints.
 - Quizgecko — focused AI quiz generation from multiple source formats; less differentiated around adaptive concept mastery.
 - Jungle — highly focused document-to-study generation with visible creation/document limits; public price was not reliably rendered during this research.
 
-**Scale leader / adjacent direct:** Quizlet — enormous content library, mature mobile apps and low annual entry pricing; user reviews also complain about restrictive free access and organisation gaps.
+**Scale leader / adjacent direct:** Quizlet — enormous content library and low annual entry pricing; user reviews also complain about restrictive free access and organisation gaps.
 
 **Indirect:** ChatGPT/Gemini, NotebookLM, Anki, manually written questions, classmates' shared notes, and learning-management quiz tools.
 
@@ -83,12 +85,12 @@ _Status: evidence-based V1 auto-draft. Sections marked “unknown” require fir
 
 ## Objections & Anti-Personas
 
-| Objection | Evidence-bound response |
-| --- | --- |
-| “Can I trust AI-generated questions?” | Show source references, allow editing/reporting, and measure correction rate. Current marketing should not claim accuracy without evaluation evidence. |
-| “Why pay when generic AI is available?” | Demonstrate the persistent source-grounded study loop, mastery history and lower setup effort—not generic AI access. |
-| “Will I unexpectedly run out or be charged?” | Display exact allowances, used/remaining/reset time, one-time duration and renewal behaviour before checkout. |
-| “Will it work reliably on my phone?” | Treat mobile/PWA completion rate and performance as a release gate; do not imply native-store availability. |
+| Objection                                    | Evidence-bound response                                                                                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| “Can I trust AI-generated questions?”        | Show source references, allow editing/reporting, and measure correction rate. Current marketing should not claim accuracy without evaluation evidence. |
+| “Why pay when generic AI is available?”      | Demonstrate the persistent source-grounded study loop, mastery history and lower setup effort—not generic AI access.                                   |
+| “Will I unexpectedly run out or be charged?” | Display exact allowances, used/remaining/reset time, one-time duration and renewal behaviour before checkout.                                          |
+| “Will it work reliably in my browser?”       | Treat responsive-web completion rate and performance as a release gate.                                                                                |
 
 **Anti-persona:** A learner seeking only unrestricted general chat, a school requiring enterprise administration/SSO today, or a user needing Word/video/audio ingestion before those formats are supported. Individual teachers are an intended future persona, but a district procurement buyer is not yet supported.
 

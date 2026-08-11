@@ -112,7 +112,7 @@ export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
     aria-busy="true"
     aria-label={t('exercise.loadingTitle')}
   >
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
       <Skeleton className="h-8 w-56 rounded-md" />
       <Skeleton className="mt-3 h-5 w-80 max-w-full rounded-md" />
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -131,7 +131,7 @@ export const ResultEmptyState = ({ onGoDashboard, t }: ResultEmptyStateProps) =>
       <p className="text-sm font-medium text-neutral-500">{t('result.noResultDataFound')}</p>
       <Button
         variant="outline"
-        className="border-neutral-200 text-neutral-700 transition-colors hover:bg-neutral-50"
+        className="border-control-border text-neutral-700 transition-colors hover:bg-neutral-50"
         onClick={onGoDashboard}
       >
         {t('exercise.backToDashboard')}
@@ -169,7 +169,7 @@ export const ResultContent = ({
         className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
           isCorrect
             ? 'bg-green-500 text-white shadow-md'
-            : 'border border-neutral-200 bg-neutral-100 text-neutral-600'
+            : 'border border-line bg-neutral-100 text-neutral-600'
         }`}
       >
         {isCorrect ? <HiCheck className="size-6" /> : <HiOutlineX className="size-6" />}
@@ -193,9 +193,9 @@ export const ResultContent = ({
 
     <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
-        <Card className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
+        <Card className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
           <div className={`h-1.5 w-full ${isCorrect ? 'bg-brand-trust' : 'bg-red-300'}`} />
-          <CardHeader className="border-b border-neutral-100 bg-neutral-50/50 px-6 py-3">
+          <CardHeader className="border-b border-line/50 bg-neutral-50/50 px-6 py-3">
             <h3 className="font-medium tracking-tight text-neutral-900">
               {t('result.explanationTitle')}
             </h3>
@@ -221,12 +221,12 @@ export const ResultContent = ({
               </div>
             </div>
 
-            <div className="mt-6 border-t border-neutral-100 pt-6">
+            <div className="mt-6 border-t border-line/50 pt-6">
               <Button
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 hover:shadow-sm"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-white text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 hover:shadow-sm"
                 onClick={onOpenChat}
               >
-                <span className="relative flex size-7 items-center justify-center rounded-full border border-neutral-200 bg-neutral-100">
+                <span className="relative flex size-7 items-center justify-center rounded-full border border-line bg-neutral-100">
                   <Image
                     src="/images/chatbot_icon.png"
                     alt={t('chatbot.iconAlt')}
@@ -241,7 +241,7 @@ export const ResultContent = ({
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
+        <Card className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
           <CardContent className="p-6">
             <h3 className="mb-4 font-medium tracking-tight text-neutral-900">
               {t('result.masteryUpdate')}
@@ -256,7 +256,7 @@ export const ResultContent = ({
                   {masteryPercent}%
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+              <div className="h-1.5 w-full overflow-hidden rounded-full border border-line bg-neutral-100">
                 <div
                   className="h-full rounded-full bg-brand-trust transition-[width] duration-500"
                   style={{ width: `${masteryPercent}%` }}
@@ -273,7 +273,7 @@ export const ResultContent = ({
         <div className="flex gap-4 pb-6">
           <Button
             variant="ghost"
-            className="h-12 flex-1 rounded-xl border border-neutral-200 font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+            className="h-12 flex-1 rounded-xl border border-control-border font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
             onClick={onGoDashboard}
           >
             <HiOutlineHome className="mr-2 size-5" />
@@ -290,12 +290,12 @@ export const ResultContent = ({
       </div>
 
       <div className="space-y-6">
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-line bg-white p-6 shadow-sm">
           <h4 className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
             {t('result.sessionStats')}
           </h4>
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+            <div className="flex items-center justify-between border-b border-line/50 pb-3">
               <span className="text-xs font-medium text-neutral-700">
                 {t('result.statsCorrect')}
               </span>
@@ -303,7 +303,7 @@ export const ResultContent = ({
                 {result.stats.total_correct}
               </span>
             </div>
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+            <div className="flex items-center justify-between border-b border-line/50 pb-3">
               <span className="text-xs font-medium text-neutral-700">{t('result.statsTotal')}</span>
               <span className="font-mono text-sm text-neutral-900">
                 {result.stats.total_answered}
@@ -321,9 +321,9 @@ export const ResultContent = ({
         </div>
 
         {result.session_completed ? (
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-6 text-center text-neutral-900 shadow-sm">
+          <div className="rounded-xl border border-line bg-neutral-50 p-6 text-center text-neutral-900 shadow-sm">
             <div className="mb-3 flex justify-center">
-              <div className="rounded-full border border-neutral-300 bg-neutral-200 p-2 text-neutral-900">
+              <div className="rounded-full border border-line-blue bg-neutral-200 p-2 text-neutral-900">
                 <HiCheck className="size-5" />
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
 import {
@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-const adminService = serviceFactory.getAdminService();
+const adminService = getAdminService();
 
 // PATCH /api/admin/users/[userId]/status — atomic soft-disable / restore
 export const PATCH = withAdmin(async (request: NextRequest, context) => {

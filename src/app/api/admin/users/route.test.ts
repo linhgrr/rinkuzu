@@ -14,13 +14,11 @@ vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getAdminService: () => ({
-      getUsers: getUsersMock,
-      updateUserRole: updateUserRoleMock,
-    }),
-  },
+vi.mock('@/lib/admin-factory', () => ({
+  getAdminService: () => ({
+    getUsers: getUsersMock,
+    updateUserRole: updateUserRoleMock,
+  }),
 }));
 vi.mock('@/lib/admin-billing-factory', () => ({
   getAdminBillingService: () => ({

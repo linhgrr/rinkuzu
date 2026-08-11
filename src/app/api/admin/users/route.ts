@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
 import { grantUserSubscriptionRequestSchema } from '@/dtos/admin-billing';
@@ -8,7 +8,7 @@ import { getAdminBillingService } from '@/lib/admin-billing-factory';
 import { logger } from '@/lib/logger';
 import { adminUserListQuerySchema, updateAdminUserRoleRequestSchema } from '@/dtos/admin-user';
 
-const adminService = serviceFactory.getAdminService();
+const adminService = getAdminService();
 const adminBillingService = getAdminBillingService();
 
 // GET /api/admin/users - List users with filtering (admin-inclusive disable status)

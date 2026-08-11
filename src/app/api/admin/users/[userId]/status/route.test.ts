@@ -11,12 +11,10 @@ vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getAdminService: () => ({
-      setUserDisable: setUserDisableMock,
-    }),
-  },
+vi.mock('@/lib/admin-factory', () => ({
+  getAdminService: () => ({
+    setUserDisable: setUserDisableMock,
+  }),
 }));
 
 import { PATCH } from '@/app/api/admin/users/[userId]/status/route';

@@ -1,4 +1,4 @@
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { addDiscussionCommentRequestSchema } from '@/dtos/quiz';
 import { createOptionalQuizSlugReadRoute } from '@/app/api/quiz/[slug]/optional-read-route';
 import { createQuizSlugMutationRoute } from '@/app/api/quiz/[slug]/mutation-route';
@@ -7,7 +7,7 @@ import { createQuizSlugMutationRoute } from '@/app/api/quiz/[slug]/mutation-rout
 // Public + authenticated dual path: read access is open; service layer
 // gates private quizzes.
 export const GET = createOptionalQuizSlugReadRoute({
-  load: ({ slug, session }) => serviceFactory.getQuizService().getQuizDiscussions(slug, session),
+  load: ({ slug, session }) => getQuizService().getQuizDiscussions(slug, session),
   logMessage: 'Error fetching discussions',
   publicErrorMessage: 'Failed to fetch discussions',
 });
@@ -16,9 +16,7 @@ export const GET = createOptionalQuizSlugReadRoute({
 export const POST = createQuizSlugMutationRoute({
   schema: addDiscussionCommentRequestSchema,
   execute: ({ slug, input, session }) =>
-    serviceFactory
-      .getQuizService()
-      .addDiscussionComment(slug, input.questionIndex, input.content, session),
+    getQuizService().addDiscussionComment(slug, input.questionIndex, input.content, session),
   logMessage: 'Error adding comment',
   publicErrorMessage: 'Failed to add comment',
 });

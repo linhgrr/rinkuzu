@@ -1,10 +1,10 @@
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { readAndValidateJson } from '@/lib/api/request';
 import { savedQuizProgressSchema } from '@/dtos/quiz';
 import { createQuizProgressRoute } from './progress-route';
 
-const quizService = serviceFactory.getQuizService();
+const quizService = getQuizService();
 
 export const GET = createQuizProgressRoute({
   logMessage: 'Get quiz progress error',

@@ -16,14 +16,12 @@ const {
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getQuizService: () => ({
-      getSavedQuizProgress: getSavedQuizProgressMock,
-      saveQuizProgress: saveQuizProgressMock,
-      deleteSavedQuizProgress: deleteSavedQuizProgressMock,
-    }),
-  },
+vi.mock('@/lib/quiz-factory', () => ({
+  getQuizService: () => ({
+    getSavedQuizProgress: getSavedQuizProgressMock,
+    saveQuizProgress: saveQuizProgressMock,
+    deleteSavedQuizProgress: deleteSavedQuizProgressMock,
+  }),
 }));
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerErrorMock, info: vi.fn(), warn: vi.fn(), debug: vi.fn() },

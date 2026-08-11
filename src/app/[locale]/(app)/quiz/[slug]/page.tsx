@@ -1,5 +1,5 @@
 import { getCurrentSession } from '@/lib/auth/session';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
 import type { QuizPlayAuthorViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
@@ -14,9 +14,11 @@ export default async function QuizPlayerPage({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const [{ locale, slug }, session] = await Promise.all([params, getCurrentSession()]);
-  const result = await serviceFactory
-    .getQuizService()
-    .getQuizForPlay(slug, session?.user?.role, session?.user?.id);
+  const result = await getQuizService().getQuizForPlay(
+    slug,
+    session?.user?.role,
+    session?.user?.id,
+  );
 
   if (!result.success) {
     return (

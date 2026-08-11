@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { buildLocalizedMetadata } from '@/lib/seo';
 
 type Props = {
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 
   try {
-    const quizService = serviceFactory.getQuizService();
+    const quizService = getQuizService();
     const quiz = await quizService.getQuizMetadataBySlug(slug);
     if (!quiz) {
       return defaultMetadata;

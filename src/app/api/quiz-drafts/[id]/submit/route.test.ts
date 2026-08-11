@@ -35,13 +35,11 @@ vi.mock('@/lib/adaptive/config', () => ({
   buildAdaptiveServiceHeaders: buildAdaptiveServiceHeadersMock,
   resolveAdaptiveProxyTimeoutMs: resolveAdaptiveProxyTimeoutMsMock,
 }));
-vi.mock('@/lib/serviceFactory', () => ({
-  serviceFactory: {
-    getQuizService: () => ({
-      createQuizFromDraft: createQuizFromDraftMock,
-      getQuizById: getQuizByIdMock,
-    }),
-  },
+vi.mock('@/lib/quiz-factory', () => ({
+  getQuizService: () => ({
+    createQuizFromDraft: createQuizFromDraftMock,
+    getQuizById: getQuizByIdMock,
+  }),
 }));
 
 import { POST } from '@/app/api/quiz-drafts/[id]/submit/route';

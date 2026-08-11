@@ -4,7 +4,7 @@
 // draft submitted (which also cleans up the source PDF).
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getQuizService } from '@/lib/quiz-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
 import { submitQuizDraftRequestSchema } from '@/dtos/quiz-draft';
@@ -19,7 +19,7 @@ import {
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
 
-const quizService = serviceFactory.getQuizService();
+const quizService = getQuizService();
 
 async function markDraftSubmitted(
   draftId: string,

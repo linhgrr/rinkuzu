@@ -7,7 +7,7 @@ import { getUserDisplayName } from '@/components/user/user-identity';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { buildLocalizedMetadata } from '@/lib/seo';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { getUserService } from '@/lib/user-factory';
 import { isValidMongoObjectId } from '@/lib/mongo-id';
 import { formatDate } from '@/lib/formatters';
 import { ROUTES } from '@/shared/constants/routes';
@@ -50,7 +50,7 @@ export default async function PublicUserProfilePage({
   }
 
   const [profileResult, t, tQuiz] = await Promise.all([
-    serviceFactory.getUserService().getPublicProfile(userId, { page }),
+    getUserService().getPublicProfile(userId, { page }),
     getTranslations({ locale, namespace: 'profile' }),
     getTranslations({ locale, namespace: 'quiz' }),
   ]);

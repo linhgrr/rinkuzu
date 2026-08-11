@@ -8,17 +8,21 @@ import { GoogleLogo } from '@/features/auth/components/GoogleLogo';
 interface GoogleAuthButtonProps {
   callbackUrl: string;
   disabled?: boolean;
+  onBeforeSignIn?: () => void;
 }
 
 /** Google sign-in button + "or continue with email" divider, shared by login & register. */
-export function GoogleAuthButton({ callbackUrl, disabled }: GoogleAuthButtonProps) {
+export function GoogleAuthButton({ callbackUrl, disabled, onBeforeSignIn }: GoogleAuthButtonProps) {
   const t = useTranslations('auth');
 
   return (
     <div className="space-y-4">
       <button
         type="button"
-        onClick={() => signIn('google', { callbackUrl })}
+        onClick={() => {
+          onBeforeSignIn?.();
+          void signIn('google', { callbackUrl });
+        }}
         disabled={disabled}
         aria-label={t('continueWithGoogle')}
         className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-line bg-surface px-4 text-sm font-medium text-ink shadow-xs transition-colors hover:bg-surface-warm disabled:opacity-60"

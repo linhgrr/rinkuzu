@@ -1,0 +1,42 @@
+# Activation and reliability event contract
+
+Status: approved implementation contract for RIN-7. Owner: Founding Product Engineer. Metric owner: CEO/Chief of Staff.
+
+The canonical activation funnel is `$pageview → login_completed → pdf_upload_completed → quiz_completed`, in that order, within 14 days. The operating view is PostHog project `525510`, dashboard `1985240`. Counts are directional until real-user volume is sufficient.
+
+## Event dictionary
+
+| Event                       | Allowed properties                                                           | Trigger                                                                                                                                 | Owner               |
+| --------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `$pageview`                 | `page_path`, `page_title`, `$current_url`                                    | Consented browser navigation. Query strings must not be intentionally added to `page_path`.                                             | Web platform        |
+| `signup_started`            | `method`, `locale`                                                           | A visitor submits an existing registration path.                                                                                        | Authentication      |
+| `signup_completed`          | `method`, `locale`                                                           | Registration succeeds.                                                                                                                  | Authentication      |
+| `login_completed`           | `method` (`credentials` or `google`), `locale`                               | After a successful login marker is consumed and PostHog identifies the authenticated user, preserving the preceding anonymous identity. | Authentication      |
+| `pdf_upload_started`        | `file_size_bucket`                                                           | A valid PDF upload begins.                                                                                                              | Adaptive learning   |
+| `pdf_upload_completed`      | `file_size_bucket`, `duration_ms`                                            | The existing upload API accepts the PDF.                                                                                                | Adaptive learning   |
+| `pdf_upload_failed`         | `file_size_bucket`, `duration_ms`, `reason` (bounded application error code) | Health check or upload fails. This is the flow reliability guardrail.                                                                   | Adaptive learning   |
+| `adaptive_session_started`  | `learning_mode`                                                              | An existing adaptive session becomes usable.                                                                                            | Adaptive learning   |
+| `adaptive_answer_submitted` | `learning_mode`, `correct`                                                   | An answer is accepted by the existing adaptive flow.                                                                                    | Adaptive learning   |
+| `first_question_answered`   | `learning_mode`                                                              | First accepted answer for the browser's existing one-time marker.                                                                       | Learning experience |
+| `quiz_completed`            | `score`, `question_count`, `authenticated`                                   | Existing quiz completion succeeds.                                                                                                      | Learning experience |
+
+## Prohibited data
+
+No event may include names, email addresses, passwords, OAuth tokens, IP addresses supplied by application code, PDF filenames, PDF text/content, subject names, quiz titles/slugs, answers, free-form error messages, stack traces in custom properties, payment details, or raw request/response bodies. User identity is the opaque internal user ID passed only to PostHog `identify`; GA receives no user ID. New properties require contract review before capture.
+
+PostHog may enrich events with SDK/network metadata such as coarse geolocation, browser, URL, and user agent. That vendor-side enrichment and any URL-query redaction policy require a separate data-policy decision; application code must not deliberately add personal data.
+
+## Consent, identity, retention, and external gates
+
+- Analytics is disabled until explicit browser consent. Denial opts out, clears PostHog identity, and disables GA collection.
+- Session recording and autocapture are disabled. Person profiles are created only for identified users.
+- Login intent is stored only in `sessionStorage` as method and locale. It is consumed after identification so pre-login pageviews and the successful login share PostHog identity continuity.
+- No repository setting establishes vendor retention. Current PostHog and GA retention must be reviewed and approved by the data-policy owner before production reliance or any increase in collection.
+- Production credentials, paid analytics changes, session recording, autocapture, exception autocapture, new processors, and changes to retention or data policy require separate human approval.
+- `pdf_upload_failed` is the approved custom reliability signal for this existing flow. Global exception autocapture remains disabled pending the CRITICAL GitNexus blast-radius review and privacy approval.
+
+## Validation record
+
+On 2026-08-11, live schema inspection in project `525510` confirmed `$pageview`, `$identify`, `login_completed`, `pdf_upload_started`, `pdf_upload_completed`, and `quiz_completed`. The refreshed 30-day funnel (2026-07-12 through 2026-08-11 UTC) showed 17 pageview persons, 1 ordered login conversion, and 0 ordered upload/quiz conversions. Event totals showed 11 logins, 1 upload start, 1 upload completion, and 3 quiz completions; the mismatch is evidence of sparse traffic and identity/order discontinuity, not product conversion evidence.
+
+Non-production verification covers consent gating, property omission for `undefined`, pending-login sequencing after identification for credentials and Google login, one-time markers, and the existing upload failure event mapping. No production event was emitted during repository tests.

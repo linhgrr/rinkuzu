@@ -5,11 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginForm } from '@/features/auth/components/LoginForm';
 
-const { captureAnalyticsEventMock, replaceBrowserLocationMock, signInMock } = vi.hoisted(() => ({
-  captureAnalyticsEventMock: vi.fn(),
-  replaceBrowserLocationMock: vi.fn(),
-  signInMock: vi.fn(),
-}));
+const { markAnalyticsLoginPendingMock, replaceBrowserLocationMock, signInMock } = vi.hoisted(
+  () => ({
+    markAnalyticsLoginPendingMock: vi.fn(),
+    replaceBrowserLocationMock: vi.fn(),
+    signInMock: vi.fn(),
+  }),
+);
 
 vi.mock('next-auth/react', () => ({
   signIn: signInMock,
@@ -40,7 +42,7 @@ vi.mock('@/features/auth/components/GoogleAuthButton', () => ({
 }));
 
 vi.mock('@/lib/analytics/client', () => ({
-  captureAnalyticsEvent: captureAnalyticsEventMock,
+  markAnalyticsLoginPending: markAnalyticsLoginPendingMock,
 }));
 
 vi.mock('@/lib/routing/browser-navigation', () => ({
@@ -49,7 +51,7 @@ vi.mock('@/lib/routing/browser-navigation', () => ({
 
 describe('LoginForm', () => {
   beforeEach(() => {
-    captureAnalyticsEventMock.mockReset();
+    markAnalyticsLoginPendingMock.mockReset();
     replaceBrowserLocationMock.mockReset();
     signInMock.mockReset();
   });
@@ -105,10 +107,7 @@ describe('LoginForm', () => {
         callbackUrl: '/en/explore?type=mine',
       });
     });
-    expect(captureAnalyticsEventMock).toHaveBeenCalledWith('login_completed', {
-      method: 'credentials',
-      locale: 'en',
-    });
+    expect(markAnalyticsLoginPendingMock).toHaveBeenCalledWith('credentials', 'en');
     expect(replaceBrowserLocationMock).toHaveBeenCalledOnce();
     expect(replaceBrowserLocationMock).toHaveBeenCalledWith('/en/explore?type=mine');
     expect(screen.getByRole('button', { name: 'signingIn' })).toBeDisabled();

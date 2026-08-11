@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { useSession } from 'next-auth/react';
 import {
+  capturePendingAnalyticsLogin,
   getAnalyticsConsent,
   identifyAnalyticsUser,
   subscribeToAnalyticsConsent,
@@ -20,7 +21,7 @@ export function AnalyticsIdentity() {
 
   useEffect(() => {
     if (!userId || consent !== 'granted') return;
-    identifyAnalyticsUser(userId, { role });
+    void identifyAnalyticsUser(userId, { role }).then(capturePendingAnalyticsLogin);
   }, [consent, role, userId]);
 
   return null;

@@ -4,6 +4,7 @@ const ANALYTICS_CONSENT_STORAGE_KEY = 'rinkuzu_analytics_consent_v1';
 const ANALYTICS_CONSENT_CHANGE_EVENT = 'rinkuzu:analytics-consent-change';
 const LANDING_ATTRIBUTION_STORAGE_KEY = 'rinkuzu_landing_attribution_v1';
 const CAMPAIGN_VALUE_PATTERN = /^[a-zA-Z0-9._~-]{1,100}$/;
+const PENDING_LOGIN_STORAGE_KEY = 'rinkuzu_analytics_pending_login_v1';
 
 export type AnalyticsConsent = 'granted' | 'denied';
 
@@ -20,6 +21,7 @@ export type AnalyticsEventName =
   | 'quiz_completed';
 
 export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>;
+export type AnalyticsLoginMethod = 'credentials' | 'google';
 
 declare global {
   interface Window {
@@ -316,12 +318,41 @@ export function trackAnalyticsPageView(url: string, title: string): void {
   });
 }
 
-export function identifyAnalyticsUser(userId: string, properties: AnalyticsProperties = {}): void {
+export async function identifyAnalyticsUser(
+  userId: string,
+  properties: AnalyticsProperties = {},
+): Promise<void> {
   if (getAnalyticsConsent() !== 'granted') return;
   const sanitized = sanitizeProperties(properties);
-  void initializePostHog().then((client) => {
-    if (client && getAnalyticsConsent() === 'granted') client.identify(userId, sanitized);
-  });
+  const client = await initializePostHog();
+  if (client && getAnalyticsConsent() === 'granted') client.identify(userId, sanitized);
+}
+
+export function markAnalyticsLoginPending(method: AnalyticsLoginMethod, locale: string): void {
+  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  window.sessionStorage.setItem(PENDING_LOGIN_STORAGE_KEY, JSON.stringify({ method, locale }));
+}
+
+export function capturePendingAnalyticsLogin(): void {
+  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  const pending = window.sessionStorage.getItem(PENDING_LOGIN_STORAGE_KEY);
+  if (!pending) return;
+
+  window.sessionStorage.removeItem(PENDING_LOGIN_STORAGE_KEY);
+  try {
+    const parsed = JSON.parse(pending) as { method?: unknown; locale?: unknown };
+    if (
+      (parsed.method === 'credentials' || parsed.method === 'google') &&
+      typeof parsed.locale === 'string'
+    ) {
+      captureAnalyticsEvent('login_completed', {
+        method: parsed.method,
+        locale: parsed.locale,
+      });
+    }
+  } catch {
+    // Invalid or stale client state is discarded without emitting an event.
+  }
 }
 
 export function resetAnalyticsIdentity(): void {

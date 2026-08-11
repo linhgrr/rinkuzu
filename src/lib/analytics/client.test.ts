@@ -22,6 +22,7 @@ describe('analytics client', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/');
     window.localStorage.clear();
+    window.sessionStorage.clear();
     document.head.innerHTML = '';
     delete window.dataLayer;
     delete window.gtag;
@@ -134,6 +135,50 @@ describe('analytics client', () => {
 
     await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
     expect(posthogMock.capture).toHaveBeenCalledTimes(1);
+  });
+
+  it('captures a pending login only after identity continuity is established', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+    analytics.markAnalyticsLoginPending('google', 'en');
+
+    await analytics.identifyAnalyticsUser('opaque-user-id', { role: 'user' });
+    analytics.capturePendingAnalyticsLogin();
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.identify).toHaveBeenCalledWith('opaque-user-id', { role: 'user' });
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'login_completed',
+      expect.objectContaining({
+        method: 'google',
+        locale: 'en',
+      }),
+    );
+    expect(posthogMock.identify.mock.invocationCallOrder[0]).toBeLessThan(
+      posthogMock.capture.mock.invocationCallOrder[0] ?? 0,
+    );
+    expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it('delivers the privacy-bounded upload failure guardrail', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+
+    analytics.captureAnalyticsEvent('pdf_upload_failed', {
+      file_size_bucket: '6_15_mb',
+      reason: 'service_unavailable',
+      duration_ms: 450,
+    });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'pdf_upload_failed',
+      expect.objectContaining({
+        file_size_bucket: '6_15_mb',
+        reason: 'service_unavailable',
+        duration_ms: 450,
+      }),
+    );
   });
 
   it('disables providers on revoke and opts PostHog back in when consent is granted again', async () => {

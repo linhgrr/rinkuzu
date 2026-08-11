@@ -111,6 +111,8 @@ At commit `a362db7c`, Node `22.23.1` on Windows:
 - Passed: `npm run check:routes`
 - Passed: `npm run typecheck`
 - Passed: `npm run typecheck:scripts`
+- Passed in the mandatory pre-push hook: `npm run lint`, 334 node test files
+  (1,998 tests), and 39 component test files (223 tests).
 - Blocked: `npm run build` first failed because
   `OBJECT_STORAGE_ENDPOINT_EXTERNAL` was absent.
 - Blocked: with `NODE_ENV=production` and a non-secret local object-storage origin,
@@ -118,3 +120,7 @@ At commit `a362db7c`, Node `22.23.1` on Windows:
   `.next/standalone`. No Node process whose command line referenced this checkout was
   present at inspection time. This is not passing production-build evidence and must
   be rerun in an isolated workspace or after the external lock is identified.
+- Blocked push: the mandatory pre-push hook reached the build and failed on the missing
+  object-storage origin, so commit `1e1d6be6` remains local. During that hook, the
+  internal-fetch guard also reported an unrelated transient `src/example.ts`; the file
+  was absent before and after the hook and was not modified as part of RIN-5.

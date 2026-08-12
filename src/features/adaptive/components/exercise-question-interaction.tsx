@@ -330,7 +330,7 @@ export function ExerciseInteraction({
           rows={3}
           placeholder={t('exercise.interactions.fillBlankPlaceholder')}
           aria-label={t('exercise.interactions.fillBlankPlaceholder')}
-          className="min-h-[120px] w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900"
+          className="min-h-30 w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900"
         />
         {exercise.hint ? (
           <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50">
@@ -492,7 +492,7 @@ export function ExerciseInteraction({
           rows={8}
           placeholder={t('exercise.interactions.shortAnswerPlaceholder')}
           aria-label={t('exercise.interactions.shortAnswerPlaceholder')}
-          className="min-h-[220px] w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900"
+          className="min-h-55 w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900"
         />
       </div>
     );

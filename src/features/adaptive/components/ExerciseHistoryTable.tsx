@@ -126,7 +126,7 @@ function CorrectAnswerView({ exercise, t }: CorrectAnswerViewProps) {
             key={item}
             className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
           >
-            <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
+            <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-xs font-bold text-green-700">
               {idx + 1}
             </span>
             <div className="min-w-0 text-neutral-700">
@@ -284,7 +284,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
       <div className="overflow-x-auto rounded-md border border-line bg-white">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-line bg-neutral-50 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <tr className="border-b border-line bg-neutral-50 text-xs font-bold uppercase tracking-widest text-neutral-500">
               <th className="px-5 py-3 text-left">#</th>
               <th className="px-5 py-3 text-left">{t('masteryMatrix.concept')}</th>
               <th className="px-5 py-3 text-left">{t('history.table.bloom')}</th>
@@ -304,12 +304,12 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 </td>
                 <td className="px-5 py-3 font-medium text-neutral-900">{exercise.concept_name}</td>
                 <td className="px-5 py-3 text-xs text-neutral-500">
-                  <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-700">
+                  <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700">
                     {getBloomLabel(exercise.bloom_level)}
                   </span>
                 </td>
                 <td
-                  className="max-w-[280px] px-5 py-3 text-neutral-600"
+                  className="max-w-70 px-5 py-3 text-neutral-600"
                   title={buildExercisePromptText(exercise)}
                 >
                   <div className="line-clamp-2 text-sm [&_p]:m-0 [&_p]:inline">

@@ -16,6 +16,7 @@ import type {
   RichTranslateFn,
   TheoryData,
 } from '@/features/adaptive/types/learning';
+import styles from './ExerciseLayout.module.css';
 
 const ExerciseInteraction = dynamic(
   () => import('./exercise-question-interaction').then((module) => module.ExerciseInteraction),
@@ -35,7 +36,7 @@ type ExerciseLoadingStateProps = {
 
 export const ExerciseLoadingState = ({ t }: ExerciseLoadingStateProps) => (
   <div
-    className="mx-auto flex min-h-[80vh] max-w-5xl flex-col justify-center"
+    className={`${styles['exerciseViewport']} mx-auto flex max-w-5xl flex-col justify-center`}
     aria-busy="true"
     aria-label={t('exercise.loadingTitle')}
   >
@@ -64,7 +65,9 @@ type ErrorStateProps = {
 };
 
 export const ExerciseErrorState = ({ message, onBack, onRetry, t }: ErrorStateProps) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-5xl items-center justify-center">
+  <div
+    className={`${styles['exerciseViewport']} mx-auto flex max-w-5xl items-center justify-center`}
+  >
     <div className="space-y-4 text-center">
       <p className="text-lg text-red-500">{message}</p>
       <div className="flex justify-center gap-3">
@@ -112,7 +115,7 @@ export const ExerciseTheoryView = ({
   onStartExercise,
   t,
 }: TheoryViewProps) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col">
+  <div className={`${styles['exerciseViewport']} mx-auto flex max-w-4xl flex-col`}>
     <div className="mb-8 md:mb-10 text-center px-4">
       <h1 className="mb-2 text-xl font-semibold tracking-tight text-neutral-900 md:text-3xl">
         {t('exercise.theory.reviewKnowledge')}
@@ -130,7 +133,7 @@ export const ExerciseTheoryView = ({
     <div className="grid gap-6 md:gap-8 pb-12 md:grid-cols-1">
       <Card className="overflow-hidden rounded-xl border-line shadow-sm bg-white p-5 sm:p-8 md:p-10 relative">
         {loadingTheory ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center min-h-[300px]">
+          <div className="flex min-h-75 flex-col items-center justify-center px-4 py-12 text-center">
             <HiLightBulb className="size-8 text-neutral-400 mb-4 animate-pulse" />
             <TextShimmer className="text-lg font-medium text-neutral-400" duration={1.5}>
               {t('exercise.theory.generatingExplanationFor', { concept: concept.concept_name })}
@@ -160,7 +163,7 @@ export const ExerciseTheoryView = ({
                       key={ex}
                       className="rounded-xl bg-neutral-50 border border-line p-5 md:p-6 transition-colors hover:border-line-blue shadow-sm"
                     >
-                      <div className="mb-2.5 text-[11px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5 before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-brand-trust">
+                      <div className="mb-2.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-neutral-500 before:size-1.5 before:rounded-full before:bg-brand-trust before:content-['']">
                         {t('exercise.theory.example', { index: idx + 1 })}
                       </div>
                       <div className="text-sm md:text-base text-neutral-700 leading-relaxed">
@@ -188,7 +191,7 @@ export const ExerciseTheoryView = ({
         <Button
           onClick={onStartExercise}
           disabled={loadingExercise}
-          className="h-12 min-h-[48px] w-full rounded-full bg-brand-action px-8 text-sm font-medium text-white shadow-md transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover disabled:bg-neutral-200 disabled:text-neutral-400 md:h-11 md:min-w-[200px] md:w-auto md:text-base"
+          className="h-12 min-h-12 w-full rounded-full bg-brand-action px-8 text-sm font-medium text-white shadow-md transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover disabled:bg-neutral-200 disabled:text-neutral-400 md:h-11 md:min-w-50 md:w-auto md:text-base"
         >
           {loadingExercise ? t('exercise.loadingTitle') : t('exercise.theory.startExercise')}
           {!loadingExercise && <HiArrowRight className="ml-2 size-4" />}
@@ -245,20 +248,22 @@ export const ExerciseQuestionView = ({
   submitting,
   t,
 }: ExerciseQuestionViewProps) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-5xl flex-col font-home text-ink">
+  <div
+    className={`${styles['exerciseViewport']} mx-auto flex max-w-5xl flex-col font-home text-ink`}
+  >
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <Button
           variant="ghost"
           onClick={onQuit}
-          className="font-medium text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-md px-4 min-h-[44px] border border-transparent hover:border-control-border"
+          className="min-h-11 rounded-md border border-transparent px-4 font-medium text-neutral-500 hover:border-control-border hover:bg-neutral-100 hover:text-neutral-900"
         >
           <HiOutlineX className="mr-2 size-4" />
           {t('quit')}
         </Button>
         <div className="hidden h-6 w-px bg-neutral-200 sm:block" />
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">
+          <span className="mb-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
             {t('exercise.progress')}
           </span>
           <div className="flex items-center gap-3">
@@ -301,11 +306,11 @@ export const ExerciseQuestionView = ({
           </div>
 
           {loadingExercise ? (
-            <div className="flex flex-col items-center justify-center p-12 min-h-[300px] text-center">
+            <div className="flex min-h-75 flex-col items-center justify-center p-12 text-center">
               <TextShimmer className="text-lg font-medium text-neutral-500 mb-6" duration={1.2}>
                 {t('exercise.constructingChallenge')}
               </TextShimmer>
-              <div className="grid gap-4 w-full max-w-[400px]">
+              <div className="grid w-full max-w-100 gap-4">
                 <div className="h-14 w-full bg-neutral-100 animate-pulse rounded-xl" />
                 <div className="h-14 w-full bg-neutral-100 animate-pulse rounded-xl delay-75" />
                 <div className="h-14 w-full bg-neutral-100 animate-pulse rounded-xl delay-150" />
@@ -357,7 +362,7 @@ export const ExerciseQuestionView = ({
               })}
             </p>
             <Button
-              className="h-12 min-h-[48px] w-full justify-center rounded-full bg-brand-action py-2 text-sm font-medium text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover sm:h-11 sm:min-h-[44px] sm:hover:scale-[1.02] md:text-base"
+              className="h-12 min-h-12 w-full justify-center rounded-full bg-brand-action py-2 text-sm font-medium text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover sm:h-11 sm:min-h-11 sm:hover:scale-[1.02] md:text-base"
               onClick={onSubmit}
               disabled={!canSubmit || submitting}
             >

@@ -108,7 +108,7 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   const statusLabel = data.status.replace('_', ' ');
 
   return (
-    <div className="relative min-w-35">
+    <div className={`${styles['conceptNode']} relative`}>
       <Handle type="target" position={targetPosition} className="!h-1.5 !w-1.5 !bg-neutral-400" />
       <Button
         variant="ghost"
@@ -336,7 +336,7 @@ function KnowledgeGraphViewport({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : 'h-150'}`}
+      className={`relative w-full overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : styles['embeddedViewport']}`}
     >
       {!isExpanded ? (
         <div

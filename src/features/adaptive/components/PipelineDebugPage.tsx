@@ -391,7 +391,9 @@ function StageIcon({ status }: { status: DebugStage['status'] }) {
 
 function JsonBlock({ value }: { value: JsonValue }) {
   return (
-    <pre className="max-h-105 overflow-auto rounded-md border border-line bg-neutral-950 p-4 text-xs leading-5 text-neutral-100">
+    <pre
+      className={`${styles['jsonBlock']} overflow-auto rounded-md border border-line bg-neutral-950 p-4 text-xs leading-5 text-neutral-100`}
+    >
       {JSON.stringify(value, null, 2)}
     </pre>
   );
@@ -419,7 +421,7 @@ function ArtifactList({
         {artifacts.map((artifact, renderIndex) => (
           <ButtonBase
             key={`${artifact.kind}:${artifact.artifact_id}:${artifact.index}:${renderIndex}`}
-            className="min-h-18 rounded-md border border-line bg-white p-3 text-left transition-colors hover:border-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className={`${styles['artifactButton']} rounded-md border border-line bg-white p-3 text-left transition-colors hover:border-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
             onClick={() => onOpen(artifact)}
           >
             <div className="flex items-center justify-between gap-3">
@@ -525,7 +527,7 @@ function ArtifactModal({
             ) : null}
           </div>
           <pre
-            className={`${styles['artifactContent']} min-h-105 overflow-auto rounded-md border border-line bg-neutral-950 p-4 text-xs leading-5 text-neutral-100`}
+            className={`${styles['artifactContent']} overflow-auto rounded-md border border-line bg-neutral-950 p-4 text-xs leading-5 text-neutral-100`}
           >
             {artifact.content || JSON.stringify(artifact.output, null, 2)}
           </pre>

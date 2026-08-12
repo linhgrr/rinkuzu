@@ -2,8 +2,16 @@
   max-width: calc(100% - 6rem);
 }
 
+.conceptNode {
+  min-width: 140px;
+}
+
 .legend {
   max-width: calc(100% - 5rem);
+}
+
+.embeddedViewport {
+  height: 600px;
 }
 
 .placeholder {

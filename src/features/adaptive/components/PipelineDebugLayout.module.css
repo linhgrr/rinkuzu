@@ -2,8 +2,17 @@
   max-height: 88vh;
 }
 
+.jsonBlock {
+  max-height: 420px;
+}
+
+.artifactButton {
+  min-height: 72px;
+}
+
 .artifactContent {
   max-height: 68vh;
+  min-height: 420px;
 }
 
 @media (min-width: 1024px) {

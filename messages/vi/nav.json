@@ -35,6 +35,7 @@
   "quizReports": "Báo cáo Quiz",
   "ocrKeys": "Quản lý OCR",
   "aiSettings": "Nhà cung cấp AI",
+  "pipelineDebug": "Pipeline Debug",
   "openMenu": "Mở menu",
   "closeMenu": "Đóng menu",
   "dismissMenu": "Đóng lớp phủ menu",

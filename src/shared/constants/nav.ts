@@ -79,6 +79,7 @@ export const DESKTOP_PRIMARY_NAV: DesktopNavGroupDef[] = [
       { href: ROUTES.ADMIN.REPORTS, labelKey: 'quizReports' },
       { href: '/admin/ocr-keys', labelKey: 'ocrKeys' },
       { href: ROUTES.ADMIN.AI_SETTINGS, labelKey: 'aiSettings' },
+      { href: ROUTES.ADAPTIVE_PIPELINE_DEBUG, labelKey: 'pipelineDebug' },
     ],
   },
   { id: 'explore', labelKey: 'explore', href: ROUTES.QUIZZES },

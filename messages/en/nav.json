@@ -35,6 +35,7 @@
   "quizReports": "Quiz Reports",
   "ocrKeys": "OCR Management",
   "aiSettings": "AI Providers",
+  "pipelineDebug": "Pipeline Debug",
   "openMenu": "Open menu",
   "closeMenu": "Close menu",
   "dismissMenu": "Dismiss menu",

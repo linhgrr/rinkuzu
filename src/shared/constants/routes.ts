@@ -10,6 +10,7 @@ export const ROUTES = {
   REGISTER: '/register',
   CREATE_QUIZ: '/create',
   CREATE_QUIZ_PDF: '/create/pdf',
+  ADAPTIVE_PIPELINE_DEBUG: '/adaptive/pipeline-debug',
   BOOKMARKS: '/profile', // Consolidated
   HISTORY: '/profile', // Consolidated
   EXPLORE: '/explore',

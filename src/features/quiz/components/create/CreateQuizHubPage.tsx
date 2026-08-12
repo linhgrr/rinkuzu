@@ -159,7 +159,7 @@ export function CreateQuizHubPage() {
               {[0, 1].map((item) => (
                 <div
                   key={item}
-                  className="h-24 animate-pulse rounded-xl border border-neutral-200 bg-white"
+                  className="h-24 animate-pulse rounded-xl border border-line bg-white"
                 />
               ))}
             </div>
@@ -175,7 +175,7 @@ export function CreateQuizHubPage() {
               {drafts.map((draft) => {
                 const canContinue = !['queued', 'processing'].includes(draft.status);
                 return (
-                  <Card key={draft.id} className="border-neutral-200 bg-white p-0 shadow-none">
+                  <Card key={draft.id} className="border-line bg-white p-0 shadow-none">
                     <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export function CreateQuizHubPage() {
               })}
             </div>
           ) : (
-            <div className="mt-5 rounded-xl border border-dashed border-neutral-300 bg-white p-8 text-center">
+            <div className="mt-5 rounded-xl border border-dashed border-line bg-white p-8 text-center">
               <p className="font-medium text-neutral-800">{t('noDrafts')}</p>
               <p className="mt-1 text-sm text-neutral-500">{t('noDraftsDescription')}</p>
             </div>

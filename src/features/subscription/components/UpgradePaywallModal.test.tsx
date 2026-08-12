@@ -87,4 +87,23 @@ describe('UpgradePaywallModal', () => {
     expect(await screen.findByText('premium:paywall.alreadyPremiumTitle')).toBeTruthy();
     expect(screen.queryByText('premium:paywall.bestValue')).toBeNull();
   });
+
+  it('preserves the suppress-future choice when continuing on the free plan', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    fetchSubscriptionPageMock.mockResolvedValue({
+      plans: [],
+      currentSubscription: null,
+      isPremium: false,
+    });
+
+    render(<UpgradePaywallModal isOpen kind="quota" onClose={onClose} />);
+
+    await screen.findByText('premium:paywall.noPlans');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'premium:paywall.continueFree' }));
+
+    expect(onClose).toHaveBeenCalledWith(true);
+    expect(routerPushMock).not.toHaveBeenCalled();
+  });
 });

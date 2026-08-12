@@ -81,12 +81,12 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
       title={title}
       description={description}
       size="large"
-      className="border border-neutral-200 shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+      className="border border-line shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
     >
       <div className="grid gap-5 md:grid-cols-[0.78fr_2.22fr]">
         <section
           aria-label={t('paywall.currentPlan')}
-          className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5"
+          className="rounded-2xl border border-line bg-neutral-50 p-5"
         >
           <div className="flex items-center gap-2 text-neutral-500">
             <HiOutlineShieldCheck className="size-5" aria-hidden="true" />
@@ -156,7 +156,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
           {plansState.status === 'ready' &&
             !plansState.isPremium &&
             plansState.plans.length === 0 && (
-              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-neutral-700">
+              <div className="rounded-2xl border border-line bg-neutral-50 p-5 text-neutral-700">
                 <p className="text-sm">{t('paywall.noPlans')}</p>
               </div>
             )}
@@ -175,7 +175,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
                       className={`relative flex min-h-52 flex-col rounded-2xl border p-5 ${
                         isBestValue
                           ? 'border-accent bg-surface-warm shadow-[0_12px_32px_rgba(239,74,0,0.12)]'
-                          : 'border-neutral-200 bg-white'
+                          : 'border-line bg-white'
                       }`}
                     >
                       {isBestValue && (
@@ -231,13 +231,13 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
         </section>
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 border-t border-neutral-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 flex flex-col gap-3 border-t border-line/50 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <label className="flex items-start gap-2 text-sm leading-5 text-neutral-500">
           <input
             type="checkbox"
             checked={suppressFuture}
             onChange={(event) => setSuppressFuture(event.target.checked)}
-            className="mt-0.5 size-4 rounded border-neutral-300 text-emerald-700 focus:ring-emerald-600"
+            className="mt-0.5 size-4 rounded border-control-border text-emerald-700 focus:ring-emerald-600"
           />
           <span>{t('dontShowAgain')}</span>
         </label>

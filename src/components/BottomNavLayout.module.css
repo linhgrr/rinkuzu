@@ -1,0 +1,29 @@
+.loadingBar {
+  border-top-color: color-mix(in srgb, var(--neutral-200) 50%, transparent);
+}
+
+.bar {
+  border-top-color: color-mix(in srgb, var(--neutral-200) 60%, transparent);
+  box-shadow: 0 -4px 20px rgb(0 0 0 / 4%);
+}
+
+.touchTarget {
+  min-width: 56px;
+  min-height: 48px;
+}
+
+.safeAreaSpacer {
+  height: env(safe-area-inset-bottom, 8px);
+}
+
+.inactiveProfileBorder {
+  border-color: var(--neutral-400);
+}
+
+.floatingAction {
+  box-shadow: 0 8px 16px rgb(0 0 0 / 12%);
+}
+
+.label {
+  font-size: 10px;
+}

@@ -24,6 +24,7 @@ import {
   stripLocaleFromPath,
 } from '@/lib/routing/pathname';
 import { AUTH_REQUIRED_PATH_PREFIXES, MOBILE_TABS_BY_SCOPE } from '@/shared/constants/nav';
+import styles from './BottomNavLayout.module.css';
 
 type IconRender = (isActive: boolean) => React.ReactNode;
 
@@ -60,19 +61,21 @@ export default function BottomNav() {
   if (!session) {
     if (status === 'loading' && isProtectedRoute) {
       return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-neutral-200/50 px-2 pt-2 z-50 safe-area-bottom">
+        <div
+          className={`${styles['loadingBar']} md:hidden fixed bottom-0 left-0 right-0 border-t bg-white/95 px-2 pt-2 z-50 safe-area-bottom backdrop-blur-lg`}
+        >
           <div className="flex justify-around items-end" aria-hidden="true">
             {Array.from({ length: 5 }).map((_, index) => (
               <div
                 key={`bottom-nav-skeleton-${index}`}
-                className="min-w-[56px] min-h-[48px] px-3 py-1 flex flex-col items-center justify-center gap-1"
+                className={`${styles['touchTarget']} px-3 py-1 flex flex-col items-center justify-center gap-1`}
               >
                 <div className="size-6 rounded-full skeleton-shimmer" />
                 <div className="w-8 h-2 rounded skeleton-shimmer" />
               </div>
             ))}
           </div>
-          <div className="h-[env(safe-area-inset-bottom,8px)]" />
+          <div className={styles['safeAreaSpacer']} />
         </div>
       );
     }
@@ -90,12 +93,12 @@ export default function BottomNav() {
           alt=""
           width={24}
           height={24}
-          className={`h-6 w-6 rounded-full border-2 object-cover ${isActive ? 'border-accent' : 'border-neutral-400'}`}
+          className={`h-6 w-6 rounded-full border-2 object-cover ${isActive ? 'border-accent' : styles['inactiveProfileBorder']}`}
           unoptimized
         />
       ) : (
         <div
-          className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${isActive ? 'border-accent' : 'border-neutral-400'}`}
+          className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${isActive ? 'border-accent' : styles['inactiveProfileBorder']}`}
         >
           <span className={`text-xs font-bold ${isActive ? 'text-accent' : 'text-neutral-500'}`}>
             {(session.user?.displayName || session.user?.email || 'U').charAt(0).toUpperCase()}
@@ -144,7 +147,7 @@ export default function BottomNav() {
     isCenter: true,
     icon: (isActive) => (
       <div
-        className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgb(0,0,0,0.12)] border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-brand-action-hover scale-105' : 'bg-brand-action hover:scale-105'}`}
+        className={`${styles['floatingAction']} w-12 h-12 -mt-6 rounded-full flex items-center justify-center border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-brand-action-hover scale-105' : 'bg-brand-action hover:scale-105'}`}
         aria-label={t('createQuizAria')}
       >
         {isActive ? (
@@ -170,7 +173,7 @@ export default function BottomNav() {
     isCenter: true,
     icon: (isActive) => (
       <div
-        className={`-mt-6 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-white bg-accent shadow-[0_8px_16px_rgb(0,0,0,0.12)] transition-transform duration-300 ${isActive ? 'scale-105' : 'hover:scale-105'}`}
+        className={`${styles['floatingAction']} -mt-6 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-white bg-accent transition-transform duration-300 ${isActive ? 'scale-105' : 'hover:scale-105'}`}
         aria-label={t('uploadSubjectAria')}
       >
         <HiOutlineUpload className="size-6 text-white" aria-hidden="true" />
@@ -212,7 +215,9 @@ export default function BottomNav() {
   });
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-neutral-200/60 shadow-[0_-4px_20px_rgb(0,0,0,0.04)] px-2 pt-2 z-50 safe-area-bottom">
+    <div
+      className={`${styles['bar']} md:hidden fixed bottom-0 left-0 right-0 border-t bg-white/80 px-2 pt-2 z-50 safe-area-bottom backdrop-blur-xl`}
+    >
       <div className="flex justify-around items-end">
         {tabs.map((tab) => {
           const isActive = isTabActive(pathWithoutLocale, tab);
@@ -222,12 +227,12 @@ export default function BottomNav() {
               key={tab.href + tab.labelKey}
               href={tab.href}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center rounded-xl px-3 py-1 transition-colors active:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${tab.isCenter ? '' : 'gap-0.5'}`}
+              className={`${styles['touchTarget']} flex flex-col items-center justify-center rounded-xl px-3 py-1 transition-colors active:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${tab.isCenter ? '' : 'gap-0.5'}`}
             >
               {tab.icon(isActive)}
               {!tab.isCenter && (
                 <span
-                  className={`text-[10px] font-medium ${isActive ? 'text-accent' : 'text-neutral-500'}`}
+                  className={`${styles['label']} font-medium ${isActive ? 'text-accent' : 'text-neutral-500'}`}
                 >
                   {t(tab.labelKey)}
                 </span>
@@ -236,7 +241,7 @@ export default function BottomNav() {
           );
         })}
       </div>
-      <div className="h-[env(safe-area-inset-bottom,8px)]"></div>
+      <div className={styles['safeAreaSpacer']}></div>
     </div>
   );
 }

@@ -1,0 +1,23 @@
+.artifactDialog {
+  max-height: 88vh;
+}
+
+.artifactContent {
+  max-height: 68vh;
+}
+
+@media (min-width: 1024px) {
+  .jobPickerGrid {
+    grid-template-columns: minmax(0, 1fr) 17.5rem;
+  }
+
+  .artifactBodyGrid {
+    grid-template-columns: 22.5rem minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .stageInspectorGrid {
+    grid-template-columns: 22.5rem minmax(0, 1fr);
+  }
+}

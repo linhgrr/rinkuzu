@@ -11,7 +11,9 @@ import {
   HiOutlineXMark,
 } from 'react-icons/hi2';
 import { Button } from '@/components/ui/Button';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 import {
@@ -23,6 +25,7 @@ import type {
   PipelineJobStatus,
   PipelineStatus,
 } from '@/features/adaptive/types/pipeline';
+import styles from './PipelineDebugLayout.module.css';
 
 type JsonValue =
   | string
@@ -375,7 +378,7 @@ function stageTone(status: DebugStage['status']): string {
     case 'failed':
       return 'border-red-200 bg-red-50 text-red-700';
     default:
-      return 'border-neutral-200 bg-neutral-50 text-neutral-500';
+      return 'border-line bg-neutral-50 text-neutral-500';
   }
 }
 
@@ -388,7 +391,7 @@ function StageIcon({ status }: { status: DebugStage['status'] }) {
 
 function JsonBlock({ value }: { value: JsonValue }) {
   return (
-    <pre className="max-h-[420px] overflow-auto rounded-md border border-neutral-200 bg-neutral-950 p-4 text-xs leading-5 text-neutral-100">
+    <pre className="max-h-105 overflow-auto rounded-md border border-line bg-neutral-950 p-4 text-xs leading-5 text-neutral-100">
       {JSON.stringify(value, null, 2)}
     </pre>
   );
@@ -403,7 +406,7 @@ function ArtifactList({
 }) {
   if (!artifacts.length) return null;
   return (
-    <div className="mt-4 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+    <div className="mt-4 rounded-md border border-line bg-neutral-50 p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="text-xs font-semibold uppercase tracking-normal text-neutral-500">
           Drill-down artifacts
@@ -414,17 +417,16 @@ function ArtifactList({
       </div>
       <div className="grid gap-2 md:grid-cols-2">
         {artifacts.map((artifact, renderIndex) => (
-          <button
+          <ButtonBase
             key={`${artifact.kind}:${artifact.artifact_id}:${artifact.index}:${renderIndex}`}
-            type="button"
-            className="min-h-[72px] rounded-md border border-neutral-200 bg-white p-3 text-left transition-colors hover:border-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(0,157,140,0.18)]"
+            className="min-h-18 rounded-md border border-line bg-white p-3 text-left transition-colors hover:border-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             onClick={() => onOpen(artifact)}
           >
             <div className="flex items-center justify-between gap-3">
               <span className="truncate text-sm font-semibold text-neutral-900">
                 {artifact.label || artifact.artifact_id}
               </span>
-              <span className="shrink-0 rounded-md bg-neutral-100 px-2 py-1 font-mono text-[11px] text-neutral-600">
+              <span className="shrink-0 rounded-md bg-neutral-100 px-2 py-1 font-mono text-xs text-neutral-600">
                 {artifact.kind}
               </span>
             </div>
@@ -440,7 +442,7 @@ function ArtifactList({
               <span>{artifact.content.length.toLocaleString('vi-VN')} chars</span>
               {artifact.truncated ? <span className="text-amber-700">truncated</span> : null}
             </div>
-          </button>
+          </ButtonBase>
         ))}
       </div>
     </div>
@@ -472,11 +474,11 @@ function ArtifactModal({
   return (
     <dialog
       ref={dialogRef}
-      className="z-50 m-auto flex max-h-[88vh] w-[min(100%,72rem)] max-w-6xl flex-col rounded-xl border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-neutral-950/55"
+      className={`${styles['artifactDialog']} z-50 m-auto flex w-full max-w-6xl flex-col rounded-xl border border-line bg-white p-0 shadow-lg backdrop:bg-neutral-950/55`}
       aria-label={artifact.label || 'Pipeline artifact'}
       onClose={onClose}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-4">
+      <div className="flex items-start justify-between gap-4 border-b border-line p-4">
         <div className="min-w-0">
           <div className="text-xs font-semibold uppercase tracking-normal text-neutral-500">
             {artifact.kind}
@@ -496,7 +498,7 @@ function ArtifactModal({
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 overflow-auto p-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className={`${styles['artifactBodyGrid']} grid min-h-0 flex-1 gap-4 overflow-auto p-4`}>
         <div className="space-y-4">
           <div>
             <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-neutral-500">
@@ -522,7 +524,9 @@ function ArtifactModal({
               </span>
             ) : null}
           </div>
-          <pre className="max-h-[68vh] min-h-[420px] overflow-auto rounded-md border border-neutral-200 bg-neutral-950 p-4 text-xs leading-5 text-neutral-100">
+          <pre
+            className={`${styles['artifactContent']} min-h-105 overflow-auto rounded-md border border-line bg-neutral-950 p-4 text-xs leading-5 text-neutral-100`}
+          >
             {artifact.content || JSON.stringify(artifact.output, null, 2)}
           </pre>
         </div>
@@ -539,7 +543,7 @@ function MetricTile({
   value: string | number | null | undefined;
 }) {
   return (
-    <div className="rounded-md border border-neutral-200 bg-white p-4">
+    <div className="rounded-md border border-line bg-white p-4">
       <div className="text-xs font-semibold uppercase tracking-normal text-neutral-500">
         {label}
       </div>
@@ -634,7 +638,7 @@ export default function PipelineDebugPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-line bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
@@ -670,7 +674,7 @@ export default function PipelineDebugPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className={`${styles['jobPickerGrid']} mt-5 grid gap-3`}>
           <form
             className="flex flex-col gap-3 sm:flex-row"
             onSubmit={(event) => {
@@ -690,24 +694,21 @@ export default function PipelineDebugPage() {
             </Button>
           </form>
 
-          <label className="block text-sm font-medium text-neutral-700">
-            Recent jobs
-            <select
-              className="mt-1 h-[44px] w-full rounded-md border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[rgba(0,157,140,0.16)]"
-              value={selectedJobId}
-              onChange={(event) => {
-                setSelectedJobId(event.target.value);
-                setJobIdInput(event.target.value);
-              }}
-            >
-              <option value="">Chọn job</option>
-              {jobs.map((item) => (
-                <option key={item.job_id} value={item.job_id}>
-                  {item.job_id} · {item.status} · {item.filename || item.subject_id}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label="Recent jobs"
+            value={selectedJobId}
+            onChange={(event) => {
+              setSelectedJobId(event.target.value);
+              setJobIdInput(event.target.value);
+            }}
+          >
+            <option value="">Chọn job</option>
+            {jobs.map((item) => (
+              <option key={item.job_id} value={item.job_id}>
+                {item.job_id} · {item.status} · {item.filename || item.subject_id}
+              </option>
+            ))}
+          </Select>
         </div>
       </section>
 
@@ -730,8 +731,8 @@ export default function PipelineDebugPage() {
             <MetricTile label="Updated" value={formatTime(job.updated_at)} />
           </section>
 
-          <section className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-            <aside className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <section className={`${styles['stageInspectorGrid']} grid gap-6`}>
+            <aside className="rounded-xl border border-line bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-neutral-950">Stage timeline</h2>
                 <span className="rounded-md bg-neutral-100 px-2 py-1 font-mono text-xs text-neutral-600">
@@ -752,7 +753,7 @@ export default function PipelineDebugPage() {
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold">{stage.label}</div>
-                      <div className="mt-0.5 font-mono text-[11px] uppercase tracking-normal opacity-80">
+                      <div className="mt-0.5 font-mono text-xs uppercase tracking-normal opacity-80">
                         {stage.id}
                       </div>
                     </div>
@@ -766,7 +767,7 @@ export default function PipelineDebugPage() {
                 <details
                   key={stage.id}
                   open={stage.status === 'active' || stage.status === 'failed'}
-                  className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
+                  className="rounded-xl border border-line bg-white p-4 shadow-sm"
                 >
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
@@ -783,7 +784,7 @@ export default function PipelineDebugPage() {
                         <p className="font-mono text-xs text-neutral-500">{stage.id}</p>
                       </div>
                     </div>
-                    <span className="rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs font-semibold text-neutral-600">
+                    <span className="rounded-md border border-line bg-neutral-50 px-2 py-1 text-xs font-semibold text-neutral-600">
                       {stage.status}
                     </span>
                   </summary>
@@ -812,7 +813,7 @@ export default function PipelineDebugPage() {
                 </details>
               ))}
 
-              <details className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+              <details className="rounded-xl border border-line bg-white p-4 shadow-sm">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-neutral-950">
                   Raw job response
                 </summary>
@@ -824,7 +825,7 @@ export default function PipelineDebugPage() {
           </section>
         </>
       ) : (
-        <section className="rounded-xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
+        <section className="rounded-xl border border-line bg-white p-8 text-center shadow-sm">
           <Spinner className="mx-auto" />
           <p className="mt-3 text-sm text-neutral-600">Đang tải danh sách pipeline jobs...</p>
         </section>

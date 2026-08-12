@@ -1,4 +1,3 @@
-import Marquee from 'react-fast-marquee';
 import Header from './Header';
 import Hero from './Hero';
 import Metrics from './Metrics';
@@ -16,6 +15,9 @@ interface LandingPageProps {
 
 export default function LandingPage({ isAuthenticated = false, locale }: LandingPageProps) {
   const isVi = locale === 'vi';
+  const marqueeLabels = isVi
+    ? ['HỖ TRỢ BỞI AI', 'LUỒNG HỌC TẬP', 'LỘ TRÌNH HỌC', 'ĐỒ THỊ KIẾN THỨC']
+    : ['AI POWERED', 'STUDY FLOW', 'LEARNING PATH', 'KNOWLEDGE GRAPH'];
   return (
     <div className="relative w-full overflow-clip bg-[#06090e] min-h-screen text-white font-unbounded">
       <TextureBackground />
@@ -42,23 +44,22 @@ export default function LandingPage({ isAuthenticated = false, locale }: Landing
         </section>
 
         {/* Marquee */}
-        <div className="w-[100vw] relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-[#ff541b] mt-[68px] md:mt-[215px] mb-0">
-          <Marquee speed={50} autoFill>
-            <div className="mr-[72px] flex h-[80px] items-center gap-[72px] whitespace-nowrap font-unbounded text-[20px] font-bold text-white">
-              <div className="flex flex-col justify-center relative shrink-0">
-                <p>{isVi ? 'HỖ TRỢ BỞI AI' : 'AI POWERED'}</p>
+        <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mt-[68px] mb-0 w-[100vw] overflow-hidden bg-[#ff541b] md:mt-[215px]">
+          <div className="flex w-max animate-scroll-left motion-reduce:animate-none">
+            {[0, 1].map((copy) => (
+              <div
+                key={copy}
+                aria-hidden={copy === 1}
+                className="flex h-[80px] shrink-0 items-center gap-[72px] whitespace-nowrap pr-[72px] font-unbounded text-[20px] font-bold text-white"
+              >
+                {marqueeLabels.map((label) => (
+                  <p key={label} className="shrink-0">
+                    {label}
+                  </p>
+                ))}
               </div>
-              <div className="flex flex-col justify-center relative shrink-0">
-                <p>{isVi ? 'LUỒNG HỌC TẬP' : 'STUDY FLOW'}</p>
-              </div>
-              <div className="flex flex-col justify-center relative shrink-0">
-                <p>{isVi ? 'LỘ TRÌNH HỌC' : 'LEARNING PATH'}</p>
-              </div>
-              <div className="flex flex-col justify-center relative shrink-0">
-                <p>{isVi ? 'ĐỒ THỊ KIẾN THỨC' : 'KNOWLEDGE GRAPH'}</p>
-              </div>
-            </div>
-          </Marquee>
+            ))}
+          </div>
         </div>
 
         {/* How It Works */}

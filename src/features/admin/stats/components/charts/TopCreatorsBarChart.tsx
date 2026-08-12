@@ -27,7 +27,7 @@ const CustomTooltip = ({ active, payload, quizzesLabel, questionsLabel }: Creato
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-3 shadow-sm">
+      <div className="rounded-lg border border-line bg-white p-3 shadow-sm">
         <p className="mb-1 font-medium text-neutral-900">{data.email}</p>
         <p className="text-sm text-neutral-600">
           {quizzesLabel}: <span className="font-semibold">{data.quizCount}</span>

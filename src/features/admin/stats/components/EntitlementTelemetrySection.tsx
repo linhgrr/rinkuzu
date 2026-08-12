@@ -138,10 +138,7 @@ export function EntitlementTelemetrySection() {
                 </thead>
                 <tbody>
                   {data.byCapability.map((row) => (
-                    <tr
-                      key={`${row.capability}-${row.tier}`}
-                      className="border-t border-neutral-100"
-                    >
+                    <tr key={`${row.capability}-${row.tier}`} className="border-t border-line/50">
                       <td className="py-2 font-medium">{row.capability}</td>
                       <td className="py-2 capitalize">{row.tier}</td>
                       <td className="py-2 text-right">{row.attempts.toLocaleString()}</td>

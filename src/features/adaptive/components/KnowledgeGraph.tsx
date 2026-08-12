@@ -89,12 +89,10 @@ function getMasteryOpacity(mastery: number) {
 }
 
 interface ConceptNodeData extends Record<string, unknown> {
-  id: string;
   label: string;
   status: KnowledgeNode['status'];
   mastery: number;
   direction: GraphDirection;
-  onSelect: (nodeId: string) => void;
 }
 
 function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
@@ -105,43 +103,36 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   const showDot = data.status === 'in_progress';
   const targetPosition = data.direction === 'LR' ? Position.Left : Position.Top;
   const sourcePosition = data.direction === 'LR' ? Position.Right : Position.Bottom;
-  const statusLabel = data.status.replace('_', ' ');
-
   return (
-    <div className={`${styles['conceptNode']} relative`}>
+    <div
+      className={`${styles['conceptNode']} relative rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 ${isLocked ? 'border-line opacity-60' : 'hover:border-line-blue'}`}
+      style={{
+        borderColor: getNodeBorderColor(data.status),
+        backgroundColor: isFilled ? color : undefined,
+        color: isFilled ? 'white' : undefined,
+      }}
+    >
       <Handle type="target" position={targetPosition} className="!h-1.5 !w-1.5 !bg-neutral-400" />
-      <Button
-        variant="ghost"
-        onClick={() => data.onSelect(data.id)}
-        aria-label={`${data.label}, ${statusLabel}, ${Math.round(data.mastery * 100)}%`}
-        className={`h-auto w-full rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust [&>span]:block ${isLocked ? 'border-line opacity-60' : 'hover:border-line-blue'}`}
-        style={{
-          borderColor: getNodeBorderColor(data.status),
-          backgroundColor: isFilled ? color : undefined,
-          color: isFilled ? 'white' : undefined,
-        }}
-      >
-        <div className="flex flex-col items-center justify-center gap-1.5">
-          <div
-            className={`text-center text-xs font-medium tracking-tight ${isFilled ? 'text-white' : 'text-neutral-900'}`}
-          >
-            {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
-          </div>
-
-          {isLocked ? (
-            <Lock aria-hidden className="size-3 text-neutral-400" strokeWidth={2.25} />
-          ) : (
-            <div className="flex items-center gap-1.5">
-              {showDot && <div className="size-1.5 rounded-full bg-white" style={{ opacity }} />}
-              <span
-                className={`font-mono text-xs ${isFilled ? 'text-white/80' : 'text-neutral-500'}`}
-              >
-                {Math.round(data.mastery * 100)}%
-              </span>
-            </div>
-          )}
+      <div className="flex flex-col items-center justify-center gap-1.5">
+        <div
+          className={`text-center text-xs font-medium tracking-tight ${isFilled ? 'text-white' : 'text-neutral-900'}`}
+        >
+          {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
         </div>
-      </Button>
+
+        {isLocked ? (
+          <Lock aria-hidden className="size-3 text-neutral-400" strokeWidth={2.25} />
+        ) : (
+          <div className="flex items-center gap-1.5">
+            {showDot && <div className="size-1.5 rounded-full bg-white" style={{ opacity }} />}
+            <span
+              className={`font-mono text-xs ${isFilled ? 'text-white/80' : 'text-neutral-500'}`}
+            >
+              {Math.round(data.mastery * 100)}%
+            </span>
+          </div>
+        )}
+      </div>
 
       {data.status === 'in_progress' && (
         <div className="pointer-events-none absolute -inset-[1px] animate-pulse rounded-xl border border-orange-300/60" />
@@ -221,17 +212,13 @@ function GraphFlow({
     return graphData.nodes.map((n) => ({
       id: n.id,
       type: 'concept',
-      focusable: false,
       draggable: false,
-      selectable: false,
       position: { x: 0, y: 0 },
       data: {
-        id: n.id,
         label: n.name,
         status: n.status,
         mastery: n.mastery,
         direction,
-        onSelect: onNodeClick,
       },
     }));
   })();
@@ -281,12 +268,16 @@ function GraphFlow({
     return undefined;
   }, [direction, graphData, nodeCount, fitView]);
 
+  const handleNodeClick = (_: React.MouseEvent, node: Node<ConceptNodeData>) => {
+    onNodeClick(node.id);
+  };
+
   return (
     <ReactFlow
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
-      nodesFocusable={false}
+      onNodeClick={handleNodeClick}
       edgesFocusable={false}
       nodesDraggable={false}
       nodesConnectable={false}

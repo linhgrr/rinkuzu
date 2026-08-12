@@ -12,6 +12,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 import { resetAnalyticsIdentity } from '@/lib/analytics/client';
+import styles from './AppChromeLayout.module.css';
 
 const ICON = {
   home: 'material-symbols:home-outline-rounded',
@@ -193,7 +194,7 @@ function SidebarSubItem({ href, label, active }: SidebarSubItemProps) {
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
-      className={`relative flex h-10 items-center gap-2.5 pl-6 pr-2.5 font-home text-base leading-[1.4] transition-colors ${
+      className={`relative flex h-10 items-center gap-2.5 pl-6 pr-2.5 font-home text-body transition-colors ${
         active ? 'font-semibold text-accent' : 'font-normal text-ink hover:text-accent'
       } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
     >
@@ -213,7 +214,7 @@ function SidebarItem({
   expanded,
   onToggle,
 }: SidebarItemProps) {
-  const base = `flex h-12 w-full items-center rounded-[10px] font-home text-base font-semibold leading-[1.4] transition-colors ${
+  const base = `flex h-12 w-full items-center rounded-control font-home text-body font-semibold transition-colors ${
     collapsed ? 'justify-center px-0' : 'px-3'
   } ${active ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-accent-soft/60'}`;
 
@@ -337,8 +338,8 @@ function AppSidebar({
 }: AppSidebarProps) {
   return (
     <aside
-      className={`fixed left-0 top-[72px] z-40 hidden h-[calc(100vh-72px)] flex-col justify-between overflow-y-auto border-r border-line bg-surface py-6 transition-[width] duration-300 ease-out [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden ${
-        collapsed ? 'w-[88px] px-3' : 'w-[280px] px-5'
+      className={`${styles['sidebar']} fixed left-0 z-40 hidden flex-col justify-between overflow-y-auto border-r border-line bg-surface py-6 transition-[width] duration-300 ease-out [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden ${
+        collapsed ? `${styles['sidebarCollapsed']} px-3` : `${styles['sidebarExpanded']} px-5`
       }`}
     >
       <nav className="flex w-full flex-col gap-4">
@@ -356,7 +357,7 @@ function AppSidebar({
       </nav>
 
       <div className="flex w-full flex-col gap-4">
-        <div className={`h-px bg-line ${collapsed ? 'w-full' : 'w-[220px]'}`} />
+        <div className={`h-px bg-line ${collapsed ? 'w-full' : styles['sidebarDivider']}`} />
         {BOTTOM_NAV.map((entry) => (
           <NavSection
             key={entry.id}
@@ -387,7 +388,7 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
       <ButtonBase
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-11 items-center gap-1.5 rounded-[10px] px-2 font-home text-base leading-[1.4] text-ink hover:bg-accent-soft/60"
+        className="flex h-11 items-center gap-1.5 rounded-control px-2 font-home text-body text-ink hover:bg-accent-soft/60"
         aria-haspopup="true"
         aria-expanded={open}
         aria-label="Change language"
@@ -403,7 +404,9 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
       {open ? (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
-          <div className="absolute right-0 top-[52px] z-50 w-44 overflow-hidden rounded-[12px] border border-line bg-surface py-1 shadow-lg">
+          <div
+            className={`${styles['toolbarPopover']} absolute right-0 z-50 w-44 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-lg`}
+          >
             {LANG_OPTIONS.map((option) => {
               const active = option.value === currentLocale;
               return (
@@ -414,7 +417,7 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
                     setOpen(false);
                     if (!active) onSelect(option.value);
                   }}
-                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left font-home text-base leading-[1.4] transition-colors ${
+                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left font-home text-body transition-colors ${
                     active ? 'font-semibold text-accent' : 'text-ink hover:bg-accent-soft/60'
                   }`}
                 >
@@ -468,19 +471,19 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
         )}
       </ButtonBase>
       {open ? (
-        <div className="absolute right-0 top-[52px] z-50 w-56 overflow-hidden rounded-[12px] border border-line bg-surface py-1 shadow-lg">
+        <div
+          className={`${styles['toolbarPopover']} absolute right-0 z-50 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-lg`}
+        >
           {displayName || email ? (
             <>
               <div className="flex flex-col gap-0.5 px-4 py-3">
                 {displayName ? (
-                  <span className="truncate font-home text-base font-semibold leading-[1.4] text-ink">
+                  <span className="truncate font-home text-body font-semibold text-ink">
                     {displayName}
                   </span>
                 ) : null}
                 {email ? (
-                  <span className="truncate font-home text-sm leading-[1.4] text-ink-muted">
-                    {email}
-                  </span>
+                  <span className="truncate font-home text-sub text-ink-muted">{email}</span>
                 ) : null}
               </div>
               <div className="h-px bg-line" />
@@ -489,13 +492,13 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
           <Link
             href="/profile"
             onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-body text-ink transition-colors hover:bg-accent-soft/60"
           >
             <Icon icon={ICON.user} className="size-5" aria-hidden="true" />
             <span>{t('profile')}</span>
           </Link>
           <LogoutButton
-            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-body text-ink transition-colors hover:bg-accent-soft/60"
             t={t}
           />
         </div>
@@ -532,19 +535,21 @@ function AppTopbar({
   t,
 }: AppTopbarProps) {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex h-16 border-b border-line bg-surface lg:h-[72px]">
+    <header
+      className={`${styles['topbar']} fixed inset-x-0 top-0 z-50 flex border-b border-line bg-surface`}
+    >
       <div
         className={`relative hidden h-full items-center border-r border-line transition-[width] duration-300 ease-out lg:flex ${
           collapsed
-            ? 'justify-center px-3 lg:w-[88px]'
-            : 'justify-between px-5 lg:w-[280px] lg:pl-8'
+            ? `${styles['topbarSidebarCollapsed']} justify-center px-3`
+            : `${styles['topbarSidebarExpanded']} justify-between px-5 lg:pl-8`
         }`}
       >
         {collapsed ? (
           <div className="group relative size-[44px] shrink-0">
             <Link
               href={ROUTES.DASHBOARD}
-              className="relative flex size-[44px] items-center justify-center overflow-hidden rounded-[12px] transition-[opacity,transform] duration-200 ease-out group-hover:scale-90 group-hover:opacity-0"
+              className="relative flex size-[44px] items-center justify-center overflow-hidden rounded-lg transition-[opacity,transform] duration-200 ease-out group-hover:scale-90 group-hover:opacity-0"
               aria-label="RinKuzu"
             >
               <Image
@@ -567,7 +572,7 @@ function AppTopbar({
             <ButtonBase
               type="button"
               onClick={onToggleSidebar}
-              className="pointer-events-none absolute inset-0 flex scale-90 items-center justify-center rounded-[12px] text-ink opacity-0 transition-[opacity,transform,background-color] duration-200 ease-out hover:bg-accent-soft/60 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
+              className="pointer-events-none absolute inset-0 flex scale-90 items-center justify-center rounded-lg text-ink opacity-0 transition-[opacity,transform,background-color] duration-200 ease-out hover:bg-accent-soft/60 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
               aria-label="Open sidebar"
               title="Open sidebar"
               tabIndex={-1}
@@ -579,7 +584,7 @@ function AppTopbar({
           <>
             <Link
               href={ROUTES.DASHBOARD}
-              className="relative flex h-[40px] items-center overflow-hidden"
+              className="relative flex h-10 items-center overflow-hidden"
               aria-label="RinKuzu"
             >
               <Image
@@ -602,7 +607,7 @@ function AppTopbar({
             <ButtonBase
               type="button"
               onClick={onToggleSidebar}
-              className="flex size-10 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
+              className="flex size-10 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
               aria-label="Collapse sidebar"
               title="Collapse sidebar"
             >
@@ -631,7 +636,7 @@ function AppTopbar({
         <ButtonBase
           type="button"
           onClick={onToggleMobileMenu}
-          className="flex size-11 items-center justify-center rounded-[12px] border border-line bg-surface-warm text-ink transition-colors hover:bg-accent-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="flex size-11 items-center justify-center rounded-lg border border-line bg-surface-warm text-ink transition-colors hover:bg-accent-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           aria-label={mobileMenuOpen ? t('closeMenu') : t('openMenu')}
           aria-expanded={mobileMenuOpen}
           aria-controls="mobile-app-menu"
@@ -657,9 +662,11 @@ function AppTopbar({
       </div>
 
       <div className="hidden flex-1 lg:flex">
-        <div className="mx-auto flex w-full max-w-[1404px] items-center justify-between gap-6 px-8">
+        <div
+          className={`${styles['shellContent']} mx-auto flex w-full items-center justify-between gap-6 px-8`}
+        >
           <form
-            className="w-full max-w-[486px]"
+            className={`${styles['searchForm']} w-full`}
             action={toBrowserPath(ROUTES.QUIZZES, currentLocale)}
             method="get"
             role="search"
@@ -675,7 +682,7 @@ function AppTopbar({
                 type="search"
                 name="q"
                 placeholder={t('lessonSearch')}
-                className="h-11 w-full rounded-[12px] border border-line bg-surface-warm pl-[52px] pr-4 font-home text-base text-ink outline-none placeholder:text-ink-muted focus:border-accent"
+                className={`${styles['searchInput']} h-11 w-full rounded-lg border border-line bg-surface-warm pr-4 font-home text-body text-ink outline-none placeholder:text-ink-muted focus:border-accent`}
               />
             </label>
           </form>
@@ -683,7 +690,7 @@ function AppTopbar({
           <div className="flex shrink-0 items-center gap-3">
             <ButtonBase
               type="button"
-              className="flex h-11 w-12 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
+              className="flex h-11 w-12 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
               aria-label="Notifications"
             >
               <Icon icon={ICON.bell} className="size-6" aria-hidden="true" />
@@ -711,7 +718,7 @@ function MobileMenuItem({ href, icon, label, active, onNavigate }: MobileMenuIte
       href={href}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={`flex h-12 items-center gap-3 rounded-[12px] px-3 font-home text-base font-semibold leading-[1.4] transition-colors ${
+      className={`flex h-12 items-center gap-3 rounded-lg px-3 font-home text-body font-semibold transition-colors ${
         active ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-accent-soft/60'
       } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
     >
@@ -738,7 +745,7 @@ function MobileMenuGroup({ entry, pathname, t, onNavigate }: MobileMenuGroupProp
         />
       ) : (
         <div
-          className={`flex h-12 items-center gap-3 rounded-[12px] px-3 font-home text-base font-semibold leading-[1.4] ${
+          className={`flex h-12 items-center gap-3 rounded-lg px-3 font-home text-body font-semibold ${
             active ? 'bg-accent-soft text-accent' : 'text-ink'
           }`}
         >
@@ -777,7 +784,7 @@ function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenu
       />
       <nav
         id="mobile-app-menu"
-        className="absolute left-3 right-3 top-3 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[0_18px_48px_rgba(42,11,0,0.18)]"
+        className={`${styles['mobileMenu']} absolute left-3 right-3 top-3 overflow-y-auto border border-line bg-surface p-3`}
         aria-label={t('mainNavigation')}
       >
         <div className="flex flex-col gap-2">
@@ -805,7 +812,7 @@ function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenu
         </div>
         <div className="my-3 h-px bg-line" />
         <LogoutButton
-          className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 text-left font-home text-base font-semibold leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
+          className="flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left font-home text-body font-semibold text-ink transition-colors hover:bg-accent-soft/60"
           t={t}
         />
       </nav>
@@ -894,8 +901,8 @@ export function AppChrome({ children }: AppChromeProps) {
       <div
         id="app-main-content"
         tabIndex={-1}
-        className={`pt-16 transition-[padding] duration-300 ease-out lg:pt-[72px] ${
-          collapsed ? 'lg:pl-[88px]' : 'lg:pl-[280px]'
+        className={`${styles['mainContent']} transition-[padding] duration-300 ease-out ${
+          collapsed ? styles['mainContentCollapsed'] : styles['mainContentExpanded']
         }`}
       >
         {children}

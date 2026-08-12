@@ -1,0 +1,72 @@
+.sidebar {
+  top: var(--app-chrome-height);
+  height: calc(100vh - var(--app-chrome-height));
+}
+
+.sidebarCollapsed {
+  width: var(--app-sidebar-collapsed-width);
+}
+
+.sidebarExpanded {
+  width: var(--app-sidebar-expanded-width);
+}
+
+.sidebarDivider {
+  width: var(--app-sidebar-divider-width);
+}
+
+.toolbarPopover {
+  top: var(--app-toolbar-popover-offset);
+}
+
+.topbar {
+  height: var(--space-16);
+}
+
+.topbarSidebarCollapsed {
+  width: var(--app-sidebar-collapsed-width);
+}
+
+.topbarSidebarExpanded {
+  width: var(--app-sidebar-expanded-width);
+}
+
+.shellContent {
+  max-width: var(--app-shell-max-width);
+}
+
+.searchForm {
+  max-width: var(--app-search-max-width);
+}
+
+.searchInput {
+  padding-left: var(--app-search-leading-padding);
+}
+
+.mobileMenu {
+  max-height: calc(100dvh - var(--space-24));
+  border-radius: var(--app-mobile-menu-radius);
+  box-shadow: var(--shadow-overlay);
+}
+
+.mainContent {
+  padding-top: var(--space-16);
+}
+
+@media (min-width: 1024px) {
+  .topbar {
+    height: var(--app-chrome-height);
+  }
+
+  .mainContent {
+    padding-top: var(--app-chrome-height);
+  }
+
+  .mainContentCollapsed {
+    padding-left: var(--app-sidebar-collapsed-width);
+  }
+
+  .mainContentExpanded {
+    padding-left: var(--app-sidebar-expanded-width);
+  }
+}

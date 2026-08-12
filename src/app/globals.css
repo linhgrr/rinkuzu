@@ -248,8 +248,20 @@
     --shadow-sm: 0 4px 12px rgba(24, 24, 21, 0.06);
     --shadow-md: 0 10px 30px rgba(24, 24, 21, 0.08);
     --shadow-lg: 0 24px 60px rgba(24, 24, 21, 0.12);
+    --shadow-overlay: 0 18px 48px rgba(42, 11, 0, 0.18);
     --shadow-orange-glow: 0 18px 40px rgba(255, 122, 26, 0.24);
     --shadow-green-glow: 0 18px 40px rgba(0, 157, 140, 0.22);
+
+    /* App chrome geometry */
+    --app-chrome-height: 72px;
+    --app-sidebar-collapsed-width: 88px;
+    --app-sidebar-expanded-width: 280px;
+    --app-sidebar-divider-width: 220px;
+    --app-toolbar-popover-offset: 52px;
+    --app-shell-max-width: 1404px;
+    --app-search-max-width: 486px;
+    --app-search-leading-padding: 52px;
+    --app-mobile-menu-radius: 18px;
 
     /* Motion */
     --duration-fast: 120ms;

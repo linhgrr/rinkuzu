@@ -17,6 +17,7 @@ import { BLOOM_LABELS } from '@/features/adaptive/types/learning';
 import type { ExerciseHistoryFull } from '@/features/adaptive/types/history';
 import type { BloomLevel } from '@/features/adaptive/types/learning';
 import { formatSessionHistoryDate } from '@/features/adaptive/lib/session-history-utils';
+import exerciseStyles from './ExerciseLayout.module.css';
 
 const PAGE_SIZE = 10;
 const BLOOM_TRANSLATION_KEYS: Record<BloomLevel, `bloom.${Lowercase<BloomLevel>}`> = {
@@ -309,7 +310,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                   </span>
                 </td>
                 <td
-                  className="max-w-70 px-5 py-3 text-neutral-600"
+                  className={`${exerciseStyles['historyQuestion']} px-5 py-3 text-neutral-600`}
                   title={buildExercisePromptText(exercise)}
                 >
                   <div className="line-clamp-2 text-sm [&_p]:m-0 [&_p]:inline">

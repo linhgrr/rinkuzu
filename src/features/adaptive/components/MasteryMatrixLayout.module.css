@@ -1,0 +1,13 @@
+.emptyState {
+  height: 200px;
+}
+
+.conceptCell {
+  max-width: 200px;
+}
+
+@media (min-width: 640px) {
+  .conceptCell {
+    max-width: 300px;
+  }
+}

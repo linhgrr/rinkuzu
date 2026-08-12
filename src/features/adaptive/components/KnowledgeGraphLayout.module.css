@@ -6,6 +6,10 @@
   max-width: calc(100% - 5rem);
 }
 
+.placeholder {
+  height: 400px;
+}
+
 .expandedModal {
   height: calc(100dvh - 2rem);
   max-height: calc(100dvh - 2rem);

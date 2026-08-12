@@ -1,0 +1,25 @@
+.fillBlankAnswer {
+  min-height: 120px;
+}
+
+.shortAnswer {
+  min-height: 220px;
+}
+
+.loadingState {
+  min-height: 300px;
+}
+
+.loadingOptions {
+  max-width: 400px;
+}
+
+.historyQuestion {
+  max-width: 280px;
+}
+
+@media (min-width: 768px) {
+  .startExerciseAction {
+    min-width: 200px;
+  }
+}

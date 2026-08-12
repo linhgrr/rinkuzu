@@ -17,6 +17,7 @@ import { getExercisePromptSections } from '@/features/adaptive/lib/exercise-prom
 import { getMatchingInteractionItems } from '@/features/adaptive/lib/matching-answer';
 import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
 import type { Exercise } from '@/features/adaptive/types/learning';
+import exerciseStyles from './ExerciseLayout.module.css';
 
 const REORDER_INITIAL = { opacity: 0, y: 10 };
 const REORDER_ANIMATE = { opacity: 1, y: 0 };
@@ -330,7 +331,7 @@ export function ExerciseInteraction({
           rows={3}
           placeholder={t('exercise.interactions.fillBlankPlaceholder')}
           aria-label={t('exercise.interactions.fillBlankPlaceholder')}
-          className="min-h-30 w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900"
+          className={`${exerciseStyles['fillBlankAnswer']} w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900`}
         />
         {exercise.hint ? (
           <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50">
@@ -492,7 +493,7 @@ export function ExerciseInteraction({
           rows={8}
           placeholder={t('exercise.interactions.shortAnswerPlaceholder')}
           aria-label={t('exercise.interactions.shortAnswerPlaceholder')}
-          className="min-h-55 w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900"
+          className={`${exerciseStyles['shortAnswer']} w-full rounded-2xl border-control-border bg-white px-4 py-3 text-base text-neutral-900`}
         />
       </div>
     );

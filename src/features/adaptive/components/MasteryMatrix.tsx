@@ -7,6 +7,7 @@ import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { useKnowledgeGraph, useMasteryMatrix } from '@/hooks/useAdaptive';
 import type { MasteryRow } from '@/features/adaptive/types/graph';
+import styles from './MasteryMatrixLayout.module.css';
 
 interface MasteryMatrixProps {
   sessionId: string;
@@ -139,7 +140,9 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
 
   if (!data || data.matrix.length === 0 || displayMatrix.length === 0) {
     return (
-      <div className="flex h-50 w-full flex-col items-center justify-center gap-3 rounded-md border border-line bg-neutral-50">
+      <div
+        className={`${styles['emptyState']} flex w-full flex-col items-center justify-center gap-3 rounded-md border border-line bg-neutral-50`}
+      >
         <HiOutlineAcademicCap className="size-10 text-neutral-300" />
         <p className="text-sm text-neutral-500">{t('masteryMatrix.noData')}</p>
         <p className="text-xs text-neutral-400">{t('masteryMatrix.noDataHint')}</p>
@@ -217,7 +220,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                   className={`border-b border-line/50 last:border-0 ${isEven ? 'bg-white' : 'bg-neutral-50/50'}`}
                 >
                   <td
-                    className={`sticky left-0 z-10 max-w-50 truncate border-r border-line/50 px-4 py-3.5 text-sm font-medium text-ink sm:max-w-75 ${isEven ? 'bg-white' : 'bg-neutral-50'}`}
+                    className={`${styles['conceptCell']} sticky left-0 z-10 truncate border-r border-line/50 px-4 py-3.5 text-sm font-medium text-ink ${isEven ? 'bg-white' : 'bg-neutral-50'}`}
                   >
                     {row.concept_name}
                   </td>

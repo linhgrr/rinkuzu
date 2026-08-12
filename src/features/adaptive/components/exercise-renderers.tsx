@@ -16,6 +16,7 @@ import type {
   RichTranslateFn,
   TheoryData,
 } from '@/features/adaptive/types/learning';
+import exerciseStyles from './ExerciseLayout.module.css';
 import styles from './LearningViewport.module.css';
 
 const ExerciseInteraction = dynamic(
@@ -133,7 +134,9 @@ export const ExerciseTheoryView = ({
     <div className="grid gap-6 md:gap-8 pb-12 md:grid-cols-1">
       <Card className="overflow-hidden rounded-xl border-line shadow-sm bg-white p-5 sm:p-8 md:p-10 relative">
         {loadingTheory ? (
-          <div className="flex min-h-75 flex-col items-center justify-center px-4 py-12 text-center">
+          <div
+            className={`${exerciseStyles['loadingState']} flex flex-col items-center justify-center px-4 py-12 text-center`}
+          >
             <HiLightBulb className="size-8 text-neutral-400 mb-4 animate-pulse" />
             <TextShimmer className="text-lg font-medium text-neutral-400" duration={1.5}>
               {t('exercise.theory.generatingExplanationFor', { concept: concept.concept_name })}
@@ -191,7 +194,7 @@ export const ExerciseTheoryView = ({
         <Button
           onClick={onStartExercise}
           disabled={loadingExercise}
-          className="h-12 min-h-12 w-full rounded-full bg-brand-action px-8 text-sm font-medium text-white shadow-md transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover disabled:bg-neutral-200 disabled:text-neutral-400 md:h-11 md:min-w-50 md:w-auto md:text-base"
+          className={`${exerciseStyles['startExerciseAction']} h-12 min-h-12 w-full rounded-full bg-brand-action px-8 text-sm font-medium text-white shadow-md transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover disabled:bg-neutral-200 disabled:text-neutral-400 md:h-11 md:w-auto md:text-base`}
         >
           {loadingExercise ? t('exercise.loadingTitle') : t('exercise.theory.startExercise')}
           {!loadingExercise && <HiArrowRight className="ml-2 size-4" />}
@@ -306,11 +309,13 @@ export const ExerciseQuestionView = ({
           </div>
 
           {loadingExercise ? (
-            <div className="flex min-h-75 flex-col items-center justify-center p-12 text-center">
+            <div
+              className={`${exerciseStyles['loadingState']} flex flex-col items-center justify-center p-12 text-center`}
+            >
               <TextShimmer className="text-lg font-medium text-neutral-500 mb-6" duration={1.2}>
                 {t('exercise.constructingChallenge')}
               </TextShimmer>
-              <div className="grid w-full max-w-100 gap-4">
+              <div className={`${exerciseStyles['loadingOptions']} grid w-full gap-4`}>
                 <div className="h-14 w-full bg-neutral-100 animate-pulse rounded-xl" />
                 <div className="h-14 w-full bg-neutral-100 animate-pulse rounded-xl delay-75" />
                 <div className="h-14 w-full bg-neutral-100 animate-pulse rounded-xl delay-150" />

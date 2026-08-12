@@ -464,7 +464,9 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   if (!sessionId) {
     return (
-      <div className="flex h-100 w-full items-center justify-center rounded-xl border border-line bg-neutral-50">
+      <div
+        className={`${styles['placeholder']} flex w-full items-center justify-center rounded-xl border border-line bg-neutral-50`}
+      >
         <p className="text-sm text-neutral-500">{t('knowledgeGraph.startSessionHint')}</p>
       </div>
     );
@@ -476,7 +478,9 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   if (graphFetchError) {
     return (
-      <div className="flex h-100 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50">
+      <div
+        className={`${styles['placeholder']} flex w-full items-center justify-center rounded-xl border border-red-100 bg-red-50`}
+      >
         <p role="alert" className="text-sm text-red-700">
           {t('processing.errors.generic')}
         </p>
@@ -486,7 +490,9 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   if (!graphData || graphData.nodes.length === 0) {
     return (
-      <div className="flex h-100 w-full items-center justify-center rounded-xl border border-line bg-neutral-50">
+      <div
+        className={`${styles['placeholder']} flex w-full items-center justify-center rounded-xl border border-line bg-neutral-50`}
+      >
         <p className="text-sm text-neutral-500">{t('knowledgeGraph.noData')}</p>
       </div>
     );

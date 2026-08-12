@@ -1,0 +1,15 @@
+.incorrectOptionBorder {
+  border-color: var(--neutral-100);
+}
+
+.inactiveMarkerBorder {
+  border-color: var(--neutral-300);
+}
+
+.ratingButton {
+  min-height: 68px;
+}
+
+.ratingLabel {
+  font-size: 10px;
+}

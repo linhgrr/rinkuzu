@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card } from '@/components/ui/Card';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import type {
@@ -16,6 +17,7 @@ interface ReviewCardProps {
 }
 
 import { HiCheck } from 'react-icons/hi';
+import styles from './ReviewCardLayout.module.css';
 
 const CARD_FLIP_CONTAINER_STYLE = { perspective: '1000px' } as const;
 const CARD_FLIP_STYLE = { transformStyle: 'preserve-3d' } as const;
@@ -78,11 +80,9 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
               <QuestionContent
                 content={question.text}
                 headingLevel={3}
-                className="mb-8 text-xl font-medium leading-relaxed text-[var(--text-primary)] md:text-2xl"
+                className="mb-8 text-xl font-medium leading-relaxed text-ink md:text-2xl"
               />
-              <p className="text-[var(--text-muted)] text-sm animate-pulse">
-                {t('tapToSeeAnswer')}
-              </p>
+              <p className="text-sm text-ink-muted animate-pulse">{t('tapToSeeAnswer')}</p>
             </div>
           </Card>
         )}
@@ -98,7 +98,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
               <QuestionContent
                 content={question.text}
                 variant="compact"
-                className="mb-4 border-b pb-3 text-xs text-[var(--text-muted)] md:mb-6 md:pb-4 md:text-sm"
+                className="mb-4 border-b pb-3 text-xs text-ink-muted md:mb-6 md:pb-4 md:text-sm"
               />
 
               {/* Options / Answer */}
@@ -114,7 +114,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                         className={`p-3 md:p-4 rounded-xl border ${
                           isCorrect
                             ? 'bg-green-50 border-green-200 text-green-800'
-                            : 'bg-neutral-50 border-neutral-100 text-neutral-500'
+                            : `bg-neutral-50 ${styles['incorrectOptionBorder']} text-neutral-500`
                         }`}
                       >
                         <div className="flex items-start">
@@ -122,7 +122,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                             className={`mt-0.5 mr-3 flex size-5 flex-shrink-0 items-center justify-center rounded-full border ${
                               isCorrect
                                 ? 'bg-green-500 border-green-500 text-white'
-                                : 'border-neutral-300'
+                                : styles['inactiveMarkerBorder']
                             }`}
                           >
                             {isCorrect && (
@@ -146,61 +146,57 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
 
             {/* Rating Buttons */}
             <div className="mt-4 md:mt-8 grid grid-cols-4 gap-2 md:gap-3 pt-4 border-t">
-              <button
-                type="button"
-                className="flex flex-col items-center p-2 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors group min-h-[68px]"
+              <ButtonBase
+                className={`${styles['ratingButton']} flex flex-col items-center p-2 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors group`}
                 onClick={() => onResult('fail')}
                 aria-label={t('rateAs', { label: t('again'), number: 1 })}
               >
                 <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-red-100 text-red-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">1</span>
                 </div>
-                <span className="text-[10px] md:text-xs font-medium text-red-600">
+                <span className={`${styles['ratingLabel']} md:text-xs font-medium text-red-600`}>
                   {t('again')}
                 </span>
-              </button>
+              </ButtonBase>
 
-              <button
-                type="button"
-                className="flex flex-col items-center p-2 rounded-lg hover:bg-orange-50 active:bg-orange-100 transition-colors group min-h-[68px]"
+              <ButtonBase
+                className={`${styles['ratingButton']} flex flex-col items-center p-2 rounded-lg hover:bg-orange-50 active:bg-orange-100 transition-colors group`}
                 onClick={() => onResult('hard')}
                 aria-label={t('rateAs', { label: t('hard'), number: 2 })}
               >
                 <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-orange-100 text-orange-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">2</span>
                 </div>
-                <span className="text-[10px] md:text-xs font-medium text-orange-600">
+                <span className={`${styles['ratingLabel']} md:text-xs font-medium text-orange-600`}>
                   {t('hard')}
                 </span>
-              </button>
+              </ButtonBase>
 
-              <button
-                type="button"
-                className="flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group min-h-[68px]"
+              <ButtonBase
+                className={`${styles['ratingButton']} flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group`}
                 onClick={() => onResult('good')}
                 aria-label={t('rateAs', { label: t('good'), number: 3 })}
               >
                 <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-green-100 text-green-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">3</span>
                 </div>
-                <span className="text-[10px] md:text-xs font-medium text-green-600">
+                <span className={`${styles['ratingLabel']} md:text-xs font-medium text-green-600`}>
                   {t('good')}
                 </span>
-              </button>
+              </ButtonBase>
 
-              <button
-                type="button"
-                className="flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group min-h-[68px]"
+              <ButtonBase
+                className={`${styles['ratingButton']} flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group`}
                 onClick={() => onResult('easy')}
                 aria-label={t('rateAs', { label: t('easy'), number: 4 })}
               >
                 <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-green-100 text-green-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">4</span>
                 </div>
-                <span className="text-[10px] md:text-xs font-medium text-green-600">
+                <span className={`${styles['ratingLabel']} md:text-xs font-medium text-green-600`}>
                   {t('easy')}
                 </span>
-              </button>
+              </ButtonBase>
             </div>
           </Card>
         )}

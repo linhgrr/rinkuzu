@@ -29,6 +29,7 @@ import type {
   KnowledgeNode,
 } from '@/features/adaptive/types/graph';
 import ConceptDetailPanel from './ConceptDetail';
+import styles from './KnowledgeGraphLayout.module.css';
 
 interface KnowledgeGraphProps {
   sessionId?: string;
@@ -107,7 +108,7 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   const statusLabel = data.status.replace('_', ' ');
 
   return (
-    <div className="relative min-w-[140px]">
+    <div className="relative min-w-35">
       <Handle type="target" position={targetPosition} className="!h-1.5 !w-1.5 !bg-neutral-400" />
       <Button
         variant="ghost"
@@ -133,7 +134,7 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
             <div className="flex items-center gap-1.5">
               {showDot && <div className="size-1.5 rounded-full bg-white" style={{ opacity }} />}
               <span
-                className={`text-[10px] font-mono ${isFilled ? 'text-white/80' : 'text-neutral-500'}`}
+                className={`font-mono text-xs ${isFilled ? 'text-white/80' : 'text-neutral-500'}`}
               >
                 {Math.round(data.mastery * 100)}%
               </span>
@@ -335,10 +336,12 @@ function KnowledgeGraphViewport({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : 'h-[600px]'}`}
+      className={`relative w-full overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : 'h-150'}`}
     >
       {!isExpanded ? (
-        <div className="pointer-events-none absolute left-5 top-4 z-10 max-w-[calc(100%-6rem)]">
+        <div
+          className={`${styles['embeddedHeader']} pointer-events-none absolute left-5 top-4 z-10`}
+        >
           <h3 className="text-base font-medium tracking-tight text-neutral-900">{title}</h3>
           <p className="mt-1 text-xs text-neutral-500">{clickNodeHint}</p>
           {graphError ? (
@@ -360,21 +363,25 @@ function KnowledgeGraphViewport({
       ) : null}
 
       {!isExpanded && onExpand ? (
-        <button
+        <Button
           ref={expandButtonRef}
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={onExpand}
           aria-haspopup="dialog"
           aria-expanded={!renderGraph}
           aria-label={expandLabel}
           title={expandLabel}
-          className="absolute right-4 top-4 z-20 flex size-11 items-center justify-center rounded-full border border-line bg-white/95 text-neutral-600 shadow-sm backdrop-blur-sm transition-[background-color,border-color,color,transform] hover:border-line-blue hover:bg-neutral-50 hover:text-neutral-900 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+          className="absolute right-4 top-4 z-20 size-11 rounded-full border border-line bg-white/95 p-0 text-neutral-600 shadow-sm backdrop-blur-sm transition-[background-color,border-color,color,transform] hover:border-line-blue hover:bg-neutral-50 hover:text-neutral-900 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
         >
           <Maximize2 className="size-5" aria-hidden="true" />
-        </button>
+        </Button>
       ) : null}
 
-      <div className="pointer-events-none absolute bottom-4 right-4 z-10 flex max-w-[calc(100%-5rem)] flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg border border-line bg-white/90 px-3 py-2 text-[10px] font-mono shadow-sm backdrop-blur-sm sm:right-5">
+      <div
+        className={`${styles['legend']} pointer-events-none absolute bottom-4 right-4 z-10 flex flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg border border-line bg-white/90 px-3 py-2 font-mono text-xs shadow-sm backdrop-blur-sm sm:right-5`}
+      >
         {legendItems.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5">
             <div className={`h-2 w-2 rounded-full ${item.color}`} />
@@ -457,7 +464,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   if (!sessionId) {
     return (
-      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-line bg-neutral-50">
+      <div className="flex h-100 w-full items-center justify-center rounded-xl border border-line bg-neutral-50">
         <p className="text-sm text-neutral-500">{t('knowledgeGraph.startSessionHint')}</p>
       </div>
     );
@@ -469,7 +476,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   if (graphFetchError) {
     return (
-      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-red-100 bg-red-50">
+      <div className="flex h-100 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50">
         <p role="alert" className="text-sm text-red-700">
           {t('processing.errors.generic')}
         </p>
@@ -479,7 +486,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
   if (!graphData || graphData.nodes.length === 0) {
     return (
-      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-line bg-neutral-50">
+      <div className="flex h-100 w-full items-center justify-center rounded-xl border border-line bg-neutral-50">
         <p className="text-sm text-neutral-500">{t('knowledgeGraph.noData')}</p>
       </div>
     );
@@ -507,9 +514,9 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
         title={t('knowledgeGraph.title')}
         description={t('knowledgeGraph.expandedDescription')}
         size="wide"
-        className="h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] max-w-[calc(100dvw-2rem)] overflow-hidden sm:h-[92dvh] sm:max-h-[92dvh] sm:max-w-[94vw]"
+        className={`${styles['expandedModal']} overflow-hidden`}
       >
-        <div className="h-[calc(100dvh-11rem)] min-h-0 sm:h-[calc(92dvh-11rem)]">
+        <div className={`${styles['expandedBody']} min-h-0`}>
           <KnowledgeGraphViewport
             graphData={graphData}
             graphError={graphError}

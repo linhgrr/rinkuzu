@@ -139,7 +139,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
 
   if (!data || data.matrix.length === 0 || displayMatrix.length === 0) {
     return (
-      <div className="flex h-[200px] w-full flex-col items-center justify-center gap-3 rounded-md border border-line bg-neutral-50">
+      <div className="flex h-50 w-full flex-col items-center justify-center gap-3 rounded-md border border-line bg-neutral-50">
         <HiOutlineAcademicCap className="size-10 text-neutral-300" />
         <p className="text-sm text-neutral-500">{t('masteryMatrix.noData')}</p>
         <p className="text-xs text-neutral-400">{t('masteryMatrix.noDataHint')}</p>
@@ -186,7 +186,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
         <table className="w-full">
           <thead>
             <tr className="bg-neutral-50 border-b border-line">
-              <th className="sticky left-0 z-10 w-48 bg-neutral-50 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)] shadow-[1px_0_0_0_var(--neutral-100)]">
+              <th className="sticky left-0 z-10 w-48 border-r border-line/50 bg-neutral-50 px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-ink-muted">
                 {t('masteryMatrix.concept')}
               </th>
               {data.bloom_labels.map((label, index) => {
@@ -194,7 +194,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                 return (
                   <th
                     key={label}
-                    className="w-20 p-3 text-center text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]"
+                    className="w-20 p-3 text-center text-xs font-bold uppercase tracking-widest text-ink-muted"
                   >
                     <div
                       className={`mx-auto mb-1.5 h-2 w-2 rounded-full ${BLOOM_COLORS[index] || 'bg-neutral-400'}`}
@@ -203,7 +203,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                   </th>
                 );
               })}
-              <th className="w-20 p-3 text-center text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+              <th className="w-20 p-3 text-center text-xs font-bold uppercase tracking-widest text-ink-muted">
                 {t('masteryMatrix.avg')}
               </th>
             </tr>
@@ -217,7 +217,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                   className={`border-b border-line/50 last:border-0 ${isEven ? 'bg-white' : 'bg-neutral-50/50'}`}
                 >
                   <td
-                    className={`sticky left-0 z-10 max-w-[200px] sm:max-w-[300px] truncate px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] shadow-[1px_0_0_0_var(--neutral-100)] ${isEven ? 'bg-white' : 'bg-neutral-50'}`}
+                    className={`sticky left-0 z-10 max-w-50 truncate border-r border-line/50 px-4 py-3.5 text-sm font-medium text-ink sm:max-w-75 ${isEven ? 'bg-white' : 'bg-neutral-50'}`}
                   >
                     {row.concept_name}
                   </td>

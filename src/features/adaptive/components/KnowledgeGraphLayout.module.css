@@ -1,0 +1,29 @@
+.embeddedHeader {
+  max-width: calc(100% - 6rem);
+}
+
+.legend {
+  max-width: calc(100% - 5rem);
+}
+
+.expandedModal {
+  height: calc(100dvh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  max-width: calc(100dvw - 2rem);
+}
+
+.expandedBody {
+  height: calc(100dvh - 11rem);
+}
+
+@media (min-width: 640px) {
+  .expandedModal {
+    height: 92dvh;
+    max-height: 92dvh;
+    max-width: 94vw;
+  }
+
+  .expandedBody {
+    height: calc(92dvh - 11rem);
+  }
+}

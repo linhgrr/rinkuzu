@@ -1,0 +1,201 @@
+.dashboardMain {
+  max-width: 1404px;
+}
+
+.dashboardSubtitleSkeleton {
+  width: 32rem;
+}
+
+.heroShell {
+  min-height: 340px;
+  border-radius: var(--radius-2xl);
+}
+
+.heroContent {
+  min-height: 306px;
+}
+
+.heroGrid {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--primary-8) 18%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--primary-8) 18%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 20px 20px;
+}
+
+.heroArtwork {
+  pointer-events: none;
+  position: absolute;
+  top: 72px;
+  right: -65px;
+  display: none;
+  width: 455px;
+  height: 303px;
+}
+
+.heroGreenVector {
+  position: absolute;
+  bottom: -5px;
+  left: 7px;
+  width: 400px;
+  height: 336px;
+  transform: rotate(-18.4deg);
+}
+
+.heroCharacterFrame {
+  position: absolute;
+  right: 64px;
+  bottom: 53px;
+  width: 199px;
+  height: 220px;
+  overflow: hidden;
+  transform: scaleX(-1);
+}
+
+.heroCharacter {
+  position: absolute;
+  top: -23px;
+  left: 0;
+  width: 245px;
+  max-width: none;
+  height: 243px;
+}
+
+.heroStar {
+  position: absolute;
+  top: 22px;
+  left: 304px;
+}
+
+.heroSquiggleFrame {
+  position: absolute;
+  top: 15px;
+  left: 109px;
+  display: flex;
+  width: 59px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+}
+
+.heroSquiggle {
+  width: 30px;
+  height: 59px;
+  transform: rotate(90.34deg);
+}
+
+.heroCopy {
+  max-width: 44ch;
+}
+
+.heroProgress {
+  max-width: 470px;
+}
+
+.uploadCard {
+  min-height: 260px;
+}
+
+.uploadDropzone {
+  min-height: 170px;
+  border-radius: 10px;
+}
+
+.uploadDropCta {
+  max-width: 28ch;
+}
+
+.librarySection {
+  min-height: 420px;
+}
+
+.libraryCard {
+  min-height: 196px;
+}
+
+.recentActivity {
+  min-height: 280px;
+}
+
+.timelineDot {
+  left: -27px;
+}
+
+@media (min-width: 640px) {
+  .heroShell {
+    min-height: 320px;
+  }
+
+  .heroContent {
+    min-height: 278px;
+  }
+
+  .uploadCard {
+    min-height: 280px;
+  }
+
+  .librarySection {
+    min-height: 555px;
+  }
+
+  .libraryCard {
+    min-height: 212px;
+  }
+
+  .recentActivity {
+    min-height: 308px;
+  }
+
+  .timelineDot {
+    left: -31px;
+  }
+}
+
+@media (min-width: 768px) {
+  .heroShell {
+    height: 308px;
+    min-height: 0;
+    border-radius: 20px;
+  }
+
+  .heroContent {
+    min-height: 0;
+  }
+
+  .uploadCard {
+    min-height: 308px;
+    border-radius: 20px;
+  }
+
+  .recentActivity {
+    min-height: 343px;
+    border-radius: 20px;
+  }
+
+  .librarySection {
+    border-radius: 20px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .heroArtwork {
+    display: block;
+  }
+
+  .heroContent {
+    max-width: 55%;
+  }
+}
+
+@media (min-width: 1684px) {
+  .uploadCard {
+    height: 308px;
+  }
+}

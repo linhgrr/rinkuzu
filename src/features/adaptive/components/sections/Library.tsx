@@ -11,11 +11,13 @@ import {
 } from 'react-icons/hi';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Button } from '@/components/ui/Button';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
 import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
+import styles from './AdaptiveDashboardLayout.module.css';
 
 type LibraryProps = {
   subjects: DashboardSubject[];
@@ -101,12 +103,13 @@ export function SubjectCard({
   return (
     <article
       className={cn(
-        'group relative flex min-h-[196px] flex-col rounded-xl border border-accent-warm/50 bg-surface-warm p-4 font-home text-ink transition-[transform,box-shadow] sm:min-h-[212px]',
+        styles['libraryCard'],
+        'group relative flex flex-col rounded-xl border border-accent-warm/50 bg-surface-warm p-4 font-home text-ink transition-[transform,box-shadow]',
         canOpen && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-accent',
       )}
     >
       {canOpen ? (
-        <button
+        <ButtonBase
           type="button"
           className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           onClick={() => onOpenSubject(subject.jobId)}
@@ -115,11 +118,11 @@ export function SubjectCard({
         />
       ) : null}
       <div className="pointer-events-none relative flex items-start justify-between gap-2">
-        <span className={cn('rounded-[6px] px-2 py-1 text-sm font-semibold', state.badge)}>
+        <span className={cn('rounded-md px-2 py-1 text-sm font-semibold', state.badge)}>
           {state.label}
         </span>
         {onDelete ? (
-          <button
+          <ButtonBase
             type="button"
             onClick={(event) => {
               event.stopPropagation();
@@ -130,12 +133,12 @@ export function SubjectCard({
             aria-label={t('deleteMaterial')}
           >
             <HiOutlineTrash className="size-4" />
-          </button>
+          </ButtonBase>
         ) : null}
       </div>
 
       <h3
-        className="pointer-events-none relative mt-3 line-clamp-2 min-h-11 text-base font-semibold leading-[1.4]"
+        className="pointer-events-none relative mt-3 line-clamp-2 min-h-11 text-base font-semibold leading-snug"
         title={subject.displayTitle}
       >
         {subject.displayTitle}
@@ -143,7 +146,7 @@ export function SubjectCard({
 
       <div className="pointer-events-none relative mt-auto">
         {subject.runtime.kind === 'retryable' ? (
-          <button
+          <ButtonBase
             type="button"
             disabled={busy}
             onClick={(event) => {
@@ -153,7 +156,7 @@ export function SubjectCard({
             className="pointer-events-auto mb-3 flex items-center gap-1 text-sm font-semibold text-accent hover:text-accent-hover"
           >
             <HiOutlineRefresh className="size-4" /> {t('retryProcessing')}
-          </button>
+          </ButtonBase>
         ) : null}
         {subject.runtime.kind === 'processing' ? (
           <div className="pointer-events-auto mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -204,7 +207,12 @@ export function SubjectCard({
 
 export function LibraryCardSkeleton() {
   return (
-    <Skeleton className="flex min-h-[196px] flex-col rounded-xl border border-accent-warm/30 p-4 sm:min-h-[212px]">
+    <Skeleton
+      className={cn(
+        styles['libraryCard'],
+        'flex flex-col rounded-xl border border-accent-warm/30 p-4',
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="h-7 w-24 rounded-md bg-primary-2/50" />
         <div className="size-6 rounded-md bg-primary-2/40" />
@@ -240,7 +248,12 @@ export const LibrarySection = ({
   const visibleSubjects = showAll ? subjects : subjects.slice(0, 8);
 
   return (
-    <SurfaceCard className="flex min-h-[420px] flex-col gap-5 rounded-2xl p-4 sm:min-h-[555px] sm:gap-6 sm:p-5 md:rounded-[20px]">
+    <SurfaceCard
+      className={cn(
+        styles['librarySection'],
+        'flex flex-col gap-5 rounded-2xl p-4 sm:gap-6 sm:p-5',
+      )}
+    >
       <SectionHeading title={t('knowledgeLibrary')} subtitle={t('knowledgeLibraryFigmaSubtitle')} />
       <div
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 min-[1500px]:grid-cols-4"

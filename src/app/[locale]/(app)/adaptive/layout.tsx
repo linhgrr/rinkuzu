@@ -1,4 +1,6 @@
 import '@xyflow/react/dist/style.css';
+import styles from '@/features/adaptive/components/sections/AdaptiveDashboardLayout.module.css';
+import { cn } from '@/lib/utils';
 
 export default function AdaptiveLearningLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,7 +13,10 @@ export default function AdaptiveLearningLayout({ children }: { children: React.R
       </a>
       <main
         id="main-content"
-        className="mx-auto max-w-[1404px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 animate-fadeIn"
+        className={cn(
+          styles['dashboardMain'],
+          'mx-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 animate-fadeIn',
+        )}
       >
         {children}
       </main>

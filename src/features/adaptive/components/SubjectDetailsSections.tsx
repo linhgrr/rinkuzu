@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { TabBar } from '@/components/ui/TabBar';
 import {
@@ -87,11 +88,7 @@ interface SubjectDetailsTabContentProps {
 
 export const SubjectDetailsBackButton = ({ onClick, t }: SubjectDetailsBackButtonProps) => (
   <div>
-    <Button
-      variant="ghost"
-      onClick={onClick}
-      className="-ml-4 mb-4 min-h-[44px] gap-2 bg-transparent px-4 font-medium text-ink-muted hover:bg-accent-soft/25 hover:text-ink"
-    >
+    <Button variant="ghost" onClick={onClick} className="-ml-4 mb-4">
       <HiOutlineArrowLeft className="size-5" />
       {t('subjectDetails.backToDashboard')}
     </Button>
@@ -109,10 +106,10 @@ export const SubjectDetailsHero = ({
   summary,
   t,
 }: SubjectDetailsHeroProps) => (
-  <div className="relative overflow-hidden rounded-[20px] border border-line bg-surface p-5 shadow-sm sm:p-8 md:p-10">
+  <Card className="relative overflow-hidden p-5 sm:p-8 md:p-10">
     <div className="relative flex flex-col justify-between gap-6 md:flex-row md:items-center">
       <div className="flex items-start gap-4">
-        <div className="shrink-0 rounded-lg border border-neutral-100 bg-neutral-50 p-3 shadow-xs sm:p-3.5">
+        <div className="shrink-0 rounded-lg border border-line bg-surface-muted p-3 shadow-xs sm:p-3.5">
           <HiOutlineBookOpen className="h-6 w-6 text-neutral-900 sm:h-7 sm:w-7" />
         </div>
         <div>
@@ -130,7 +127,7 @@ export const SubjectDetailsHero = ({
           onMouseEnter={onPrefetchStartLearning}
           onFocus={onPrefetchStartLearning}
           disabled={startingSession}
-          className="min-h-[44px] w-full gap-2 rounded-full bg-brand-action px-6 text-sm font-medium text-white shadow-sm transition-[background-color,transform,box-shadow] hover:bg-brand-action-hover active:scale-95 sm:w-auto sm:hover:scale-105 md:w-auto"
+          className="w-full sm:w-auto"
         >
           {startingSession ? (
             <>
@@ -184,7 +181,7 @@ export const SubjectDetailsHero = ({
         {Array.from({ length: 4 }).map((_, idx) => (
           <div
             key={idx}
-            className="animate-pulse rounded-xl border border-neutral-100 bg-neutral-50 px-5 py-4"
+            className="animate-pulse rounded-xl border border-line bg-surface-muted px-5 py-4"
           >
             <div className="mb-3 h-3 w-24 rounded bg-neutral-200" />
             <div className="h-8 w-16 rounded bg-neutral-200" />
@@ -192,12 +189,12 @@ export const SubjectDetailsHero = ({
         ))}
       </div>
     ) : null}
-  </div>
+  </Card>
 );
 
 const SubjectStatCard = ({ icon: Icon, label, value }: SubjectStatCardProps) => (
   <div className="rounded-xl border border-line bg-surface-warm px-5 py-4">
-    <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+    <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-neutral-500">
       <Icon className="size-3.5" />
       {label}
     </div>
@@ -241,7 +238,7 @@ export const SubjectDetailsTabContent = ({
       ) : historyDetail ? (
         <ExerciseHistoryTable exercises={historyDetail.exercise_history} />
       ) : (
-        <div className="rounded-xl border border-neutral-200 bg-white py-12 text-center shadow-sm">
+        <div className="rounded-xl border border-line bg-surface py-12 text-center shadow-sm">
           <HiOutlineClipboardList className="mx-auto mb-3 size-10 text-neutral-300" />
           <p className="text-sm text-neutral-500">{t('history.noMongoDBData')}</p>
           <p className="mt-1 text-xs text-neutral-400">{t('history.sessionSaveHint')}</p>

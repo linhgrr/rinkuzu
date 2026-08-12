@@ -19,6 +19,7 @@ import { HiOutlineDocumentText } from 'react-icons/hi';
 import { fetchProfileQuizLibraryViewModel } from '@/features/profile/api/profile-quizzes-api';
 import { toProfileQuizMonthGroupsViewModel } from '@/features/profile/mappers/profile-quiz.mapper';
 import type { ProfileQuizViewModel } from '@/features/profile/types/profile-quiz-view-model';
+import styles from './ProfileQuizzesLayout.module.css';
 
 interface State {
   quizzes: ProfileQuizViewModel[];
@@ -146,7 +147,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
 
   return (
     <div className="px-4 pb-20 pt-5 font-home text-ink selection:bg-accent-soft sm:px-6 sm:pt-6 lg:px-8">
-      <div className="mx-auto max-w-[1340px]">
+      <div className={`${styles['pageContent']} mx-auto`}>
         <NavigationTabBar
           ariaLabel={t('myQuizzes')}
           value={tab}
@@ -155,18 +156,22 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
         />
 
         {tab === 'folders' ? (
-          <section className="min-h-[470px] rounded-[20px] border border-line-blue/35 bg-white p-5 shadow-[1px_1px_4px_rgba(0,0,0,0.03)]">
+          <section
+            className={`${styles['libraryPanel']} rounded-panel border border-line-blue/35 bg-white p-5 shadow-quiz-card`}
+          >
             <FoldersView />
           </section>
         ) : (
           <div className="grid grid-cols-1 items-start gap-6 min-[1684px]:grid-cols-[minmax(0,900px)_416px]">
-            <section className="relative min-h-[470px] overflow-hidden rounded-[20px] border border-line-blue/35 bg-white p-5 shadow-[1px_1px_4px_rgba(0,0,0,0.03)]">
+            <section
+              className={`${styles['libraryPanel']} relative overflow-hidden rounded-panel border border-line-blue/35 bg-white p-5 shadow-quiz-card`}
+            >
               <Image
                 src="/images/my-quizzes/flower.svg"
                 alt=""
                 width={595}
                 height={598}
-                className="pointer-events-none absolute right-[-67px] top-[203px] hidden h-[598px] w-[595px] max-w-none select-none lg:block"
+                className={`${styles['flowerArtwork']} pointer-events-none absolute hidden max-w-none select-none lg:block`}
                 aria-hidden="true"
               />
 
@@ -194,7 +199,9 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                     ))}
                   </div>
                 ) : groupedQuizzes.length === 0 ? (
-                  <div className="relative flex min-h-[360px] flex-col items-center justify-center text-center">
+                  <div
+                    className={`${styles['emptyState']} relative flex flex-col items-center justify-center text-center`}
+                  >
                     <HiOutlineDocumentText className="size-12 text-ink/25" />
                     <h3 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h3>
                     <p className="mt-1 max-w-sm text-sm text-ink/55">{t('createFirst')}</p>
@@ -232,11 +239,11 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
               </div>
             </section>
 
-            <aside className="rounded-[20px] border border-line-blue/35 bg-white p-5 shadow-[1px_1px_2px_rgba(0,0,0,0.03)]">
+            <aside className="rounded-panel border border-line-blue/35 bg-white p-5 shadow-segmented">
               <h2 className="text-lg font-semibold text-ink">{t('quizBuilder')}</h2>
               <p className="mt-1 text-base text-ink">{t('quizBuilderDescription')}</p>
               <div className="mt-6 flex">
-                <QuizUploadDropzone className="min-h-[168px]" />
+                <QuizUploadDropzone className={styles['uploadDropzone']} />
               </div>
             </aside>
           </div>

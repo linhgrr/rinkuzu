@@ -1,0 +1,22 @@
+.pageContent {
+  max-width: 1340px;
+}
+
+.libraryPanel {
+  min-height: 470px;
+}
+
+.flowerArtwork {
+  right: -67px;
+  top: 203px;
+  width: 595px;
+  height: 598px;
+}
+
+.emptyState {
+  min-height: 360px;
+}
+
+.uploadDropzone {
+  min-height: 168px;
+}

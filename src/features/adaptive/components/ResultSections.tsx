@@ -8,6 +8,7 @@ import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from 'react-icons/hi';
 import type { SubmitResult, Exercise, TranslateFn } from '@/features/adaptive/types/learning';
+import styles from './LearningViewport.module.css';
 
 function normalizeMathContent(content: string): string {
   if (!content) return content;
@@ -61,7 +62,7 @@ function ResultCorrectAnswer({
             key={item}
             className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
           >
-            <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
+            <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-xs font-bold text-green-700">
               {idx + 1}
             </span>
             <div className="min-w-0 font-medium text-neutral-700">
@@ -108,7 +109,7 @@ function ResultCorrectAnswer({
 
 export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
   <div
-    className="mx-auto flex min-h-[80vh] max-w-4xl flex-col justify-center"
+    className={`${styles['learningViewport']} mx-auto flex max-w-4xl flex-col justify-center`}
     aria-busy="true"
     aria-label={t('exercise.loadingTitle')}
   >
@@ -126,7 +127,9 @@ export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
 );
 
 export const ResultEmptyState = ({ onGoDashboard, t }: ResultEmptyStateProps) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
+  <div
+    className={`${styles['learningViewport']} mx-auto flex max-w-4xl items-center justify-center`}
+  >
     <div className="space-y-4 text-center">
       <p className="text-sm font-medium text-neutral-500">{t('result.noResultDataFound')}</p>
       <Button
@@ -163,7 +166,9 @@ export const ResultContent = ({
   result,
   t,
 }: ResultContentProps) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col items-center justify-center py-8 font-home text-ink">
+  <div
+    className={`${styles['learningViewport']} mx-auto flex max-w-4xl flex-col items-center justify-center py-8 font-home text-ink`}
+  >
     <div className="mb-6 flex w-full flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left">
       <div
         className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
@@ -211,7 +216,7 @@ export const ResultContent = ({
                   <HiCheck className="size-4" />
                 </div>
                 <div className="flex-1">
-                  <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-green-600">
+                  <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-green-600">
                     {t('result.correctAnswerLabel')}
                   </span>
                   <div className="text-sm font-medium text-neutral-900">
@@ -291,7 +296,7 @@ export const ResultContent = ({
 
       <div className="space-y-6">
         <div className="rounded-xl border border-line bg-white p-6 shadow-sm">
-          <h4 className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+          <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-500">
             {t('result.sessionStats')}
           </h4>
           <div className="space-y-4">

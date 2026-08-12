@@ -16,7 +16,7 @@ import type {
   RichTranslateFn,
   TheoryData,
 } from '@/features/adaptive/types/learning';
-import styles from './ExerciseLayout.module.css';
+import styles from './LearningViewport.module.css';
 
 const ExerciseInteraction = dynamic(
   () => import('./exercise-question-interaction').then((module) => module.ExerciseInteraction),
@@ -36,7 +36,7 @@ type ExerciseLoadingStateProps = {
 
 export const ExerciseLoadingState = ({ t }: ExerciseLoadingStateProps) => (
   <div
-    className={`${styles['exerciseViewport']} mx-auto flex max-w-5xl flex-col justify-center`}
+    className={`${styles['learningViewport']} mx-auto flex max-w-5xl flex-col justify-center`}
     aria-busy="true"
     aria-label={t('exercise.loadingTitle')}
   >
@@ -66,7 +66,7 @@ type ErrorStateProps = {
 
 export const ExerciseErrorState = ({ message, onBack, onRetry, t }: ErrorStateProps) => (
   <div
-    className={`${styles['exerciseViewport']} mx-auto flex max-w-5xl items-center justify-center`}
+    className={`${styles['learningViewport']} mx-auto flex max-w-5xl items-center justify-center`}
   >
     <div className="space-y-4 text-center">
       <p className="text-lg text-red-500">{message}</p>
@@ -115,7 +115,7 @@ export const ExerciseTheoryView = ({
   onStartExercise,
   t,
 }: TheoryViewProps) => (
-  <div className={`${styles['exerciseViewport']} mx-auto flex max-w-4xl flex-col`}>
+  <div className={`${styles['learningViewport']} mx-auto flex max-w-4xl flex-col`}>
     <div className="mb-8 md:mb-10 text-center px-4">
       <h1 className="mb-2 text-xl font-semibold tracking-tight text-neutral-900 md:text-3xl">
         {t('exercise.theory.reviewKnowledge')}
@@ -249,7 +249,7 @@ export const ExerciseQuestionView = ({
   t,
 }: ExerciseQuestionViewProps) => (
   <div
-    className={`${styles['exerciseViewport']} mx-auto flex max-w-5xl flex-col font-home text-ink`}
+    className={`${styles['learningViewport']} mx-auto flex max-w-5xl flex-col font-home text-ink`}
   >
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">

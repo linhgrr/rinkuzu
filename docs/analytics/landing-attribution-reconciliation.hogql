@@ -1,0 +1,53 @@
+-- RIN-29: consented first-touch coverage and activation reconciliation.
+-- Missing consent is intentionally reported as unobservable, never as non-activation.
+WITH consented_landings AS (
+    SELECT
+        properties.landing_id AS landing_id,
+        min(timestamp) AS landed_at,
+        any(properties.landing_path) AS landing_path,
+        any(properties.landing_referrer_class) AS referrer_class,
+        any(properties.utm_source) AS utm_source,
+        any(properties.utm_medium) AS utm_medium,
+        any(properties.utm_campaign) AS utm_campaign,
+        any(properties.utm_content) AS utm_content
+    FROM events
+    WHERE event = '$pageview'
+      AND notEmpty(properties.landing_id)
+    GROUP BY landing_id
+), funnel AS (
+    SELECT
+        properties.landing_id AS landing_id,
+        countIf(event IN ('signup_completed', 'login_completed')) > 0 AS reached_identity,
+        countIf(event = 'pdf_upload_completed') > 0 AS uploaded_pdf,
+        countIf(event = 'first_question_answered') > 0 AS answered_first_question
+    FROM events
+    WHERE timestamp >= now() - INTERVAL 14 DAY
+      AND notEmpty(properties.landing_id)
+    GROUP BY landing_id
+)
+SELECT
+    l.landing_id,
+    l.landed_at,
+    l.landing_path,
+    l.referrer_class,
+    l.utm_source,
+    l.utm_medium,
+    l.utm_campaign,
+    l.utm_content,
+    coalesce(f.reached_identity, false) AS reached_identity,
+    coalesce(f.uploaded_pdf, false) AS uploaded_pdf,
+    coalesce(f.answered_first_question, false) AS answered_first_question
+FROM consented_landings AS l
+LEFT JOIN funnel AS f USING landing_id
+ORDER BY l.landed_at DESC;
+
+-- Run separately for observability coverage; these rows cannot be attributed safely.
+SELECT
+    toDate(timestamp) AS day,
+    count() AS events_without_consented_landing_id
+FROM events
+WHERE timestamp >= now() - INTERVAL 14 DAY
+  AND event IN ('$pageview', 'signup_completed', 'login_completed', 'pdf_upload_completed', 'first_question_answered')
+  AND empty(properties.landing_id)
+GROUP BY day
+ORDER BY day DESC;

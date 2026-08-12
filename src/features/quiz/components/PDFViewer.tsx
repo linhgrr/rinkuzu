@@ -50,7 +50,7 @@ export default function PDFViewer({
           </div>
         </div>
       )}
-      <div className="flex-1 border border-neutral-200 rounded overflow-hidden bg-neutral-100 flex items-center justify-center relative min-h-[400px]">
+      <div className="flex-1 border border-line rounded overflow-hidden bg-neutral-100 flex items-center justify-center relative min-h-[400px]">
         {displayUrl ? (
           <PDFViewerFrame key={displayUrl} displayUrl={displayUrl} />
         ) : (

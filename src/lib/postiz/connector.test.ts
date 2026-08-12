@@ -38,14 +38,15 @@ describe('Postiz privacy-safe connector', () => {
   });
 
   it('maps explicit nulls and omits audience and content PII', () => {
-    const mapped = mapPostizPost({
+    const upstreamPost = {
       id: 'post-1',
       publishDate: '2026-08-12T00:00:00Z',
       releaseURL: null,
       integration: { id: threadsId, providerIdentifier: 'threads' },
       author: { email: 'audience@example.test' },
       content: 'private audience text',
-    } as never);
+    };
+    const mapped = mapPostizPost(upstreamPost);
     expect(mapped.providerState).toBeNull();
     expect(mapped.providerStateUnavailableReason).toMatch(/did not return/);
     expect(JSON.stringify(mapped)).not.toContain('audience@example.test');

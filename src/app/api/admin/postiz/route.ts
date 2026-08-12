@@ -1,9 +1,22 @@
 import type { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { readAndValidateSearchParams } from '@/lib/api/request';
 import { createPostizConnector, PostizConnectorError } from '@/lib/postiz/connector';
 
 export const dynamic = 'force-dynamic';
+
+const querySchema = z
+  .object({
+    operation: z.enum(['capabilities', 'posts', 'analytics']).default('capabilities'),
+    integrationId: z.string().min(1).optional(),
+    startDate: z.iso.datetime().optional(),
+    endDate: z.iso.datetime().optional(),
+    postId: z.string().min(1).optional(),
+    date: z.coerce.number().int().min(1).max(365).default(30),
+  })
+  .strict();
 
 function connectorFromEnvironment() {
   const baseUrl = process.env['POSTIZ_PUBLIC_API_URL'];
@@ -24,8 +37,7 @@ function connectorFromEnvironment() {
   return createPostizConnector({ baseUrl, apiKey, ownedIntegrationIds });
 }
 
-function required(search: URLSearchParams, name: string): string {
-  const value = search.get(name);
+function required(value: string | undefined, name: string): string {
   if (!value) {
     throw new PostizConnectorError('INVALID_REQUEST', `Missing query parameter: ${name}.`, 400);
   }
@@ -41,21 +53,22 @@ function errorResponse(error: unknown) {
 
 export const GET = withAdmin(async (request: NextRequest) => {
   try {
-    const operation = request.nextUrl.searchParams.get('operation') ?? 'capabilities';
+    const parsed = readAndValidateSearchParams(request, querySchema);
+    if (!parsed.success) {
+      return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
+    }
+    const { operation } = parsed.data;
     const connector = connectorFromEnvironment();
     if (operation === 'capabilities') return apiOk(connector.capabilities);
-    const integrationId = required(request.nextUrl.searchParams, 'integrationId');
-    const startDate = required(request.nextUrl.searchParams, 'startDate');
-    const endDate = required(request.nextUrl.searchParams, 'endDate');
+    const integrationId = required(parsed.data.integrationId, 'integrationId');
+    const startDate = required(parsed.data.startDate, 'startDate');
+    const endDate = required(parsed.data.endDate, 'endDate');
     if (operation === 'posts') {
       return apiOk(await connector.listPosts({ integrationId, startDate, endDate }));
     }
     if (operation === 'analytics') {
-      const postId = required(request.nextUrl.searchParams, 'postId');
-      const date = Number(request.nextUrl.searchParams.get('date') ?? '30');
-      if (!Number.isInteger(date) || date < 1 || date > 365) {
-        throw new PostizConnectorError('INVALID_REQUEST', 'date must be 1..365 days.', 400);
-      }
+      const postId = required(parsed.data.postId, 'postId');
+      const { date } = parsed.data;
       return apiOk(
         await connector.getAnalytics({ integrationId, postId, date, startDate, endDate }),
       );

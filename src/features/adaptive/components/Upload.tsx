@@ -321,7 +321,7 @@ export default function AdaptiveLearningUpload() {
                 </div>
               ) : (
                 <div className="w-full max-w-sm">
-                  <div className="size-16 mx-auto rounded-md bg-neutral-100 border border-neutral-200 text-neutral-900 flex items-center justify-center mb-6 animate-pulse">
+                  <div className="size-16 mx-auto rounded-md bg-neutral-100 border border-line text-neutral-900 flex items-center justify-center mb-6 animate-pulse">
                     <HiOutlineDocumentText className="size-8" />
                   </div>
                   <h3 className="text-lg font-medium tracking-tight text-neutral-900 mb-3">

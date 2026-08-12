@@ -47,7 +47,7 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
           </Link>
           <Link
             href={registerPath}
-            className="inline-flex items-center rounded-lg border border-neutral-300 px-5 py-2.5 font-medium text-neutral-700 hover:bg-neutral-50"
+            className="inline-flex items-center rounded-lg border border-line px-5 py-2.5 font-medium text-neutral-700 hover:bg-neutral-50"
           >
             {t('guest.registerCta')}
           </Link>
@@ -55,15 +55,15 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-xl border border-neutral-200 bg-white p-5">
+        <article className="rounded-xl border border-line bg-white p-5">
           <h2 className="mb-2 font-semibold text-neutral-900">{t('howItWorksStep1')}</h2>
           <p className="text-sm text-neutral-600">{t('uploadDescription')}</p>
         </article>
-        <article className="rounded-xl border border-neutral-200 bg-white p-5">
+        <article className="rounded-xl border border-line bg-white p-5">
           <h2 className="mb-2 font-semibold text-neutral-900">{t('howItWorksStep2')}</h2>
           <p className="text-sm text-neutral-600">{t('knowledgeGraph.subtitle')}</p>
         </article>
-        <article className="rounded-xl border border-neutral-200 bg-white p-5">
+        <article className="rounded-xl border border-line bg-white p-5">
           <h2 className="mb-2 font-semibold text-neutral-900">{t('howItWorksStep3')}</h2>
           <p className="text-sm text-neutral-600">{t('dashboardDescription')}</p>
         </article>
@@ -73,10 +73,7 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
         <h2 className="text-2xl font-semibold text-neutral-900">{t('guest.faqTitle')}</h2>
         <div className="space-y-3">
           {faqItems.map((item, index) => (
-            <article
-              key={FAQ_KEYS[index]}
-              className="rounded-xl border border-neutral-200 bg-white p-5"
-            >
+            <article key={FAQ_KEYS[index]} className="rounded-xl border border-line bg-white p-5">
               <QuestionContent
                 content={item.question}
                 variant="compact"

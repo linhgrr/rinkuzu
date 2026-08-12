@@ -131,7 +131,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
                     {prereq.mastery >= 0.75 ? (
                       <HiCheck className="size-4 text-green-500" />
                     ) : (
-                      <div className="size-4 rounded-full border-2 border-neutral-300" />
+                      <div className="size-4 rounded-full border-2 border-line" />
                     )}
                     <span className="text-sm text-neutral-700">{prereq.name}</span>
                   </div>

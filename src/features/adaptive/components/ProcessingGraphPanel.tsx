@@ -19,6 +19,8 @@ import {
 
 import dagre from 'dagre';
 import type { PipelinePartialGraph } from '@/features/adaptive/types/pipeline';
+import { cn } from '@/lib/utils';
+import styles from './ProcessingLayout.module.css';
 
 interface ConceptNodeData extends Record<string, unknown> {
   label: string;
@@ -26,12 +28,17 @@ interface ConceptNodeData extends Record<string, unknown> {
 
 function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   return (
-    <div className="min-w-[120px] rounded-md border border-neutral-300 bg-white px-3 py-2 transition-all duration-200">
+    <div
+      className={cn(
+        styles['conceptNode'],
+        'rounded-md border border-line bg-white px-3 py-2 transition-all duration-200',
+      )}
+    >
       <Handle type="target" position={Position.Top} className="!h-1 !w-1 !bg-neutral-400" />
-      <div className="text-center text-[10px] font-mono tracking-wider text-neutral-700">
+      <div className="text-center text-xs font-mono tracking-wider text-neutral-700">
         {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
       </div>
-      <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-neutral-400/30" />
+      <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-line/30" />
       <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-neutral-400" />
     </div>
   );
@@ -131,7 +138,7 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelinePartialGrap
       elementsSelectable={false}
     >
       <Background color="var(--neutral-200)" gap={16} size={1} />
-      <Controls showInteractive={false} className="border-neutral-200 fill-neutral-500" />
+      <Controls showInteractive={false} className="border-line fill-neutral-500" />
     </ReactFlow>
   );
 }

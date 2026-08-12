@@ -5,6 +5,7 @@ import { useProcessingState } from '@/features/adaptive/hooks/use-processing-sta
 import { ProcessingGraphCard } from './ProcessingGraphCard';
 import { ProcessingStatusCard } from './ProcessingSections';
 import { ProcessingTipCard } from './ProcessingTipCard';
+import styles from './ProcessingLayout.module.css';
 
 export default function AdaptiveLearningProcessing() {
   const t = useTranslations('adaptiveLearning');
@@ -25,7 +26,7 @@ export default function AdaptiveLearningProcessing() {
 
   return (
     <div className="mx-auto mt-8 flex w-full max-w-6xl flex-col items-stretch gap-8 pt-4 lg:flex-row">
-      <div className="w-full flex-shrink-0 lg:w-[45%]">
+      <div className={`${styles['statusColumn']} flex-shrink-0`}>
         <ProcessingStatusCard
           creatingSession={creatingSession}
           currentStep={currentStep}

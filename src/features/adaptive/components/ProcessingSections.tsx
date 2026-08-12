@@ -52,7 +52,7 @@ export const ProcessingStatusCard = ({
 
       {!error && (
         <div className="mb-8 inline-flex items-center rounded-md border border-line bg-neutral-50 px-4 py-1.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-900">
+          <p className="text-xs font-bold uppercase tracking-widest text-neutral-900">
             {statusLabel}
           </p>
         </div>
@@ -75,19 +75,19 @@ export const ProcessingStatusCard = ({
         <div className="mb-8 grid grid-cols-3 gap-3">
           <div className="rounded-md border border-line/50 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.concepts_extracted}</div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <div className="mt-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
               {t('processing.stats.extracted')}
             </div>
           </div>
           <div className="rounded-md border border-line/50 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.concepts_after_merge}</div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <div className="mt-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
               {t('processing.stats.afterMerge')}
             </div>
           </div>
           <div className="rounded-md border border-line/50 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.relations_accepted}</div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <div className="mt-1 text-xs font-bold uppercase tracking-widest text-neutral-500">
               {t('processing.stats.relations')}
             </div>
           </div>
@@ -142,7 +142,7 @@ export const ProcessingStatusCard = ({
 
       {!error && (
         <div className="relative pt-4">
-          <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+          <div className="mb-2 flex justify-between text-xs font-bold uppercase tracking-widest text-neutral-500">
             <span>{t('processing.progress')}</span>
             <span className="font-mono">{Math.round(progress)}%</span>
           </div>

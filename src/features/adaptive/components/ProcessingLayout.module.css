@@ -1,0 +1,22 @@
+.statusColumn {
+  width: 100%;
+}
+
+.graphCard {
+  width: 100%;
+  height: 600px;
+}
+
+.conceptNode {
+  min-width: 120px;
+}
+
+@media (min-width: 1024px) {
+  .statusColumn {
+    width: 45%;
+  }
+
+  .graphCard {
+    width: 55%;
+  }
+}

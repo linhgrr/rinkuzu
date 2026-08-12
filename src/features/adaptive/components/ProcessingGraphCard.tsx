@@ -4,6 +4,8 @@ import dynamic from 'next/dynamic';
 import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import type { PipelinePartialGraph } from '@/features/adaptive/types/pipeline';
+import { cn } from '@/lib/utils';
+import styles from './ProcessingLayout.module.css';
 
 const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
   loading: () => <PanelBlockSkeleton label="Loading processing graph" />,
@@ -17,7 +19,12 @@ export const ProcessingGraphCard = ({
   partialGraph: PipelinePartialGraph | null;
   t: TranslateFn;
 }) => (
-  <div className="relative hidden h-[600px] w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm lg:flex lg:w-[55%]">
+  <div
+    className={cn(
+      styles['graphCard'],
+      'relative hidden overflow-hidden rounded-xl border border-line bg-white shadow-sm lg:flex',
+    )}
+  >
     <div className="pointer-events-none absolute left-6 top-6 z-10">
       <h3 className="text-sm font-medium tracking-wide text-neutral-900">
         {t('processing.knowledgeGraph')}

@@ -75,7 +75,7 @@ export function ProfileHero({ initials, onEditProfile, profile, t }: ProfileHero
   const isPremium = profile.subscription?.isActive === true;
 
   return (
-    <Card className="overflow-hidden border-neutral-200 bg-white p-5 sm:p-7">
+    <Card className="overflow-hidden border-line bg-white p-5 sm:p-7">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-4 sm:gap-5">
           {profile.avatar ? (
@@ -155,7 +155,7 @@ export function ProfileTabNavigation({ activeTab, onChange, t }: ProfileTabNavig
 export function QuickAccessCard({ t }: QuickAccessCardProps) {
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-5 py-4 sm:px-6">
+      <div className="border-b border-line/50 px-5 py-4 sm:px-6">
         <div className="flex items-center gap-2">
           <HiOutlineCog className="size-5 text-brand-trust" aria-hidden="true" />
           <div>

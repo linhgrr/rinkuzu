@@ -77,7 +77,7 @@ export function QuestionReviewList({
                     ? 'border-green-200 bg-green-50'
                     : isAnswered
                       ? 'border-red-200 bg-red-50'
-                      : 'border-neutral-200 bg-neutral-50'
+                      : 'border-line bg-neutral-50'
                 }`}
               >
                 <div className="mb-3">
@@ -89,7 +89,7 @@ export function QuestionReviewList({
                       className={`${
                         bookmarkedQuestions.has(index)
                           ? 'text-yellow-600 border-yellow-200 bg-yellow-50 hover:bg-yellow-100'
-                          : 'text-neutral-600 border-neutral-200 hover:bg-neutral-50'
+                          : 'text-neutral-600 border-control-border hover:bg-neutral-50'
                       }`}
                       title={bookmarkedQuestions.has(index) ? t('removeBookmark') : t('bookmark')}
                     >
@@ -228,7 +228,7 @@ export function QuestionReviewList({
                                 ? 'bg-green-100 border-green-300 text-green-800'
                                 : isUserAnswer
                                   ? 'bg-red-100 border-red-300 text-red-800'
-                                  : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+                                  : 'bg-neutral-50 border-line text-neutral-700'
                             }`}
                           >
                             <div className="min-w-0 flex-1">

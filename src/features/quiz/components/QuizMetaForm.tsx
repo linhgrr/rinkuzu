@@ -126,7 +126,7 @@ export default function QuizMetaForm({
                 checked={isPrivate}
                 onChange={(e) => onPrivateChange(e.target.checked)}
                 disabled={disabled}
-                className="size-4 text-brand-trust bg-white border-neutral-300 rounded focus:ring-brand-trust focus:ring-2"
+                className="size-4 text-brand-trust bg-white border-control-border rounded focus:ring-brand-trust focus:ring-2"
               />
             </div>
             <div className="flex-1">

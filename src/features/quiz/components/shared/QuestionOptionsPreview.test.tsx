@@ -8,6 +8,27 @@ import { describe, expect, it } from 'vitest';
 import { QuestionOptionsPreview } from './QuestionOptionsPreview';
 
 describe('QuestionOptionsPreview', () => {
+  it('keeps correct and non-correct option states distinct', () => {
+    const { container } = render(
+      <QuestionOptionsPreview
+        options={['Correct answer', 'Distractor']}
+        correctIndexes={[0]}
+        correctLabel="Correct"
+        optionItemClassName="normal-option"
+        highlightedOptionItemClassName="correct-option"
+      />,
+    );
+
+    const markers = container.querySelectorAll('.border-2');
+    expect(markers).toHaveLength(2);
+    expect(markers[0]).toHaveClass('border-green-500', 'bg-green-500');
+    expect(markers[0].querySelector('svg')).not.toBeNull();
+    expect(markers[1]).not.toHaveClass('border-green-500', 'bg-green-500');
+    expect(markers[1].querySelector('svg')).toBeNull();
+    expect(container.querySelector('.correct-option')).not.toBeNull();
+    expect(container.querySelector('.normal-option')).not.toBeNull();
+    expect(screen.getAllByText(/Correct/)).toHaveLength(2);
+  });
   it('renders Markdown and math consistently for the prompt and every option', async () => {
     const { container } = render(
       <QuestionOptionsPreview

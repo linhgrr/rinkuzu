@@ -64,7 +64,7 @@ export function QuestionOptionsPreview({
               <div className="flex items-start gap-x-3">
                 <div
                   className={`mt-0.5 flex size-4 flex-shrink-0 items-center justify-center rounded border-2 ${
-                    isCorrect ? 'border-green-500 bg-green-500' : 'border-neutral-300'
+                    isCorrect ? 'border-green-500 bg-green-500' : 'border-control-border'
                   }`}
                 >
                   {isCorrect ? (

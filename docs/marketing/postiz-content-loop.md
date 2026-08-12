@@ -4,9 +4,9 @@ Owner: Content, SEO & Social Operator
 
 Approval owner: Product & Growth Lead
 
-Snapshot/reconciliation: 2026-08-11T08:57:07Z
+Snapshot/reconciliation: 2026-08-12T12:30:00Z
 
-Mode: draft-only shadow operation
+Mode: governed owned-channel operation; current provider inventory reconciled
 
 ## Live connection and integrations
 
@@ -83,6 +83,15 @@ Hash contract: decode HTML entities, remove HTML tags, collapse whitespace, trim
 | 2026-08-11 12:30 | `cmsm4uz590001qh8km35s5j64` | Threads  | Draft     | `b2cfcc20cb407202af88f4a501c3fe903b105c3d4776eb72a98a43de930a5c1f` | Newly observed legacy draft; quarantine because all four UTMs are absent.     |
 
 ### Versioned scorecard ledger
+
+#### 2026-08-12 RIN-26 distribution reconciliation
+
+The original draft IDs were superseded during the approved RIN-37 distribution run. At `2026-08-12T12:30:00Z`, the replacement entries were provider-confirmed `PUBLISHED` with no error and canonical release URLs. Current provider inventory is 9 published, 7 queued, 0 draft, and 0 error; the superseded draft IDs are historical artifacts and are not counted as current inventory.
+
+| content_id                  | content_pillar       | claim_ids                 | Platform | Postiz ID                   | canonical_url                                           | Lifecycle state                        | published_at (UTC)   | reconciled_at (UTC)  |
+| --------------------------- | -------------------- | ------------------------- | -------- | --------------------------- | ------------------------------------------------------- | -------------------------------------- | -------------------- | -------------------- |
+| `threads_pdf_two_modes_v1`  | `source_to_practice` | `product_pdf_to_practice` | Threads  | `cmsq1rjwz0003l78gw54tiz1g` | `https://www.threads.com/@rinkuzu_app/post/Db8Kqh7gUR5` | provider-confirmed published; no error | 2026-08-12T12:30:00Z | 2026-08-12T12:30:00Z |
+| `telegram_pdf_two_modes_v1` | `source_to_practice` | `product_pdf_to_practice` | Telegram | `cmsq1rjy70004l78g8kwcrbyl` | `https://t.me/-5553294649/8`                            | provider-confirmed published; no error | 2026-08-12T12:30:00Z | 2026-08-12T12:30:00Z |
 
 `content_id` is immutable and versioned. For governed content it is exactly the `utm_content` value, so an attributed visit resolves directly to one ledger row. Legacy content that predates this contract receives a versioned `legacy_*_v1` ID but is not retroactively treated as attributed. `content_pillar` uses one primary pillar slug; secondary evidence remains in `claim_ids`.
 

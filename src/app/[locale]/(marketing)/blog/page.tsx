@@ -38,7 +38,7 @@ const englishPosts = [
     slug: 'knowledge-graphs-adaptive-learning-pdfs',
     title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
     description:
-      "Learn how prerequisite knowledge graphs combined with Bloom's six cognitive levels create a scientifically-grounded adaptive learning path for any PDF document — backed by SAINT-Bloom knowledge tracing and D3QN curriculum planning.",
+      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
     date: 'March 20, 2026',
     dateIso: '2026-03-20',
     readTime: '10 min read',

@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/blog/ai-powered-quiz-generation-guide',
     title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
     description:
-      "Discover how RinKuzu's ALSS system — using SAINT-Bloom knowledge tracing, Dueling DQN curriculum planning, and Gemini-powered exercise generation — transforms any PDF lecture into a personalized adaptive quiz journey.",
+      "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
     imagePath: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
   });
   return {
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ...base.openGraph,
       title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
       description:
-        "Discover how RinKuzu's ALSS system transforms any PDF lecture into a personalized adaptive quiz journey.",
+        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
       url: canonicalUrl,
       type: 'article',
       publishedTime: '2026-03-27T00:00:00.000Z',
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
       description:
-        "Discover how RinKuzu's ALSS system transforms any PDF lecture into a personalized adaptive quiz journey.",
+        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
       images: ['https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80'],
     },
   };
@@ -59,7 +59,7 @@ const articleSchema = {
   name: 'How AI Transforms PDF Learning into Adaptive Quizzes',
   headline: 'How AI Transforms PDF Learning into Adaptive Quizzes',
   description:
-    "Discover how RinKuzu's ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.",
+    "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
   url: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
   datePublished: '2026-03-27',
   dateModified: '2026-03-27',
@@ -107,7 +107,7 @@ const postContent = `
 ## The Static Learning Problem
 Every student has a folder of lecture notes, textbooks, and handouts — rich content that contains the knowledge they need to master a subject. Yet most of that material sits passive, read once and forgotten. The challenge isn't access to information; it's that static documents can't adapt to the reader. A 300-page textbook treats every student the same way, whether they're seeing the material for the first time or reviewing for an exam.
 
-Research in cognitive science consistently shows that spaced repetition, active recall, and adaptive difficulty are among the most effective learning strategies. But applying these strategies manually requires significant expertise and time — time most students and teachers simply don't have. RinKuzu automates this entire pipeline: from any PDF document to a personalized, continuously adapting practice session.
+RinKuzu combines spaced repetition, active recall, and adaptive difficulty in a practice flow. It turns supported PDF material into a personalized practice session.
 
 ## From PDF to Knowledge Graph: The Content Processor Pipeline
 Before a single practice question is generated, RinKuzu's Content Processor transforms the raw PDF into a structured, machine-readable knowledge representation. This pipeline runs once per document and consists of seven steps:
@@ -164,7 +164,7 @@ Gemini outputs structured exercises with five fields: QUESTION, TYPE (multiple_c
 
 **Mastery-adjusted difficulty**: Gemini also receives the learner's current P(correct) for this (concept, Bloom) pair. Low mastery (<50%) prompts the model to generate easier variants; high mastery (>70%) pushes toward harder applications.
 
-**Answer evaluation**: After the learner submits a response, a separate Gemini call evaluates correctness and provides targeted Vietnamese-language feedback. If Gemini is unavailable, a deterministic string-match fallback ensures the session never stalls.
+**Answer evaluation**: After the learner submits a response, a separate Gemini call evaluates correctness and provides targeted Vietnamese-language feedback. A deterministic string-match fallback is available when Gemini is unavailable.
 
 ## The Complete Adaptive Loop: How It All Connects
 The seven-step adaptive loop runs continuously throughout each practice session:
@@ -184,7 +184,7 @@ The best way to understand this architecture is to experience it. Upload any lec
 
 Your session will be shaped by your own knowledge graph, your own SAINT-Bloom state, and your own pace. No two learners take the same path through the same material.
 
-Start with the free plan — no credit card required. Your first personalized quiz is ready in under a minute.
+Start with supported PDF material and create a personalized practice session.
 
 ## References
 
@@ -238,8 +238,8 @@ export default async function BlogPost({ params }: Props) {
             {postTitle}
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
-            Discover how RinKuzu&apos;s ALSS system, SAINT-Bloom, Dueling DQN, and Gemini,
-            transforms any PDF lecture into a personalized adaptive quiz journey.
+            Discover how RinKuzu&apos;s ALSS system, SAINT-Bloom, Dueling DQN, and Gemini, turns
+            supported PDF lecture material into adaptive quiz practice.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
             <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">

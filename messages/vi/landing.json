@@ -1,6 +1,6 @@
 {
   "hero": {
-    "badge": "Nền tảng học tập AI #1 cho học sinh, sinh viên",
+    "badge": "Công cụ luyện tập từ PDF",
     "titlePart1": "Làm chủ kiến thức.",
     "titlePart2": "Vượt mọi kỳ thi.",
     "description": "Tạo quiz từ PDF, ôn tập thông minh với Flashcards và Rin-chan cá nhân hóa hành trình học tập của bạn.",
@@ -9,8 +9,8 @@
     "searchButton": "Tìm kiếm ngay",
     "poweredBy": "Được hỗ trợ bởi",
     "geminiAi": "Gemini AI",
-    "headline": "Làm chủ kiến thức theo tốc độ của bạn",
-    "subtitle": "Biến mọi tài liệu PDF thành hành trình học tập tương tác. AI thích ứng của chúng tôi trích xuất các khái niệm, xây dựng đồ thị kiến thức của bạn, và điều chỉnh bài tập theo tất cả các cấp độ nhận thức Bloom để đảm bảo thành thạo sâu.",
+    "headline": "Luyện tập từ tài liệu nguồn",
+    "subtitle": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập thích ứng. RinKuzu kết nối khái niệm và ngữ cảnh tiên quyết để giúp bạn chọn bước luyện tập tiếp theo.",
     "ctaStartLearning": "Bắt đầu học ngay",
     "ctaQuizBuilder": "Thử Quiz Builder",
     "ctaAdaptiveLearning": "Thử Học Cá Nhân Hóa",
@@ -41,13 +41,13 @@
     "title": "Tại sao chọn RinKuzu?",
     "subtitle": "Mở khóa tiềm năng thực sự của bạn với các công cụ học tập thông minh được hỗ trợ bởi AI.",
     "feature1": {
-      "title": "Tạo Quiz Tức Thì",
-      "description": "Chuyển đổi file PDF bài giảng thành bộ câu hỏi trắc nghiệm chỉ trong vài giây.",
+      "title": "Tạo quiz từ PDF",
+      "description": "Chuyển tài liệu PDF bài giảng được hỗ trợ thành câu hỏi trắc nghiệm để luyện tập.",
       "button": "Thử ngay"
     },
     "feature2": {
-      "title": "Rin-chan 24/7",
-      "description": "Rin-chan luôn sẵn sàng giải thích mọi thắc mắc và hướng dẫn bạn giải bài tập."
+      "title": "Hỏi Rin-chan",
+      "description": "Dùng Rin-chan để xem giải thích và hướng dẫn khi làm bài tập."
     },
     "feature3": {
       "title": "Học Cá Nhân Hóa",
@@ -60,7 +60,7 @@
     },
     "stats": {
       "activeUsers": "Học viên đang ôn tập",
-      "worldwide": "Người dùng toàn cầu"
+      "worldwide": "Giao diện tiếng Việt và tiếng Anh"
     },
     "aiTutor": "Rin-chan Rin-chan"
   },
@@ -80,11 +80,11 @@
     }
   },
   "testimonials": {
-    "title": "Người dùng nói gì về chúng tôi",
+    "title": "RinKuzu hỗ trợ gì",
     "main": {
-      "name": "Trần M.",
-      "role": "Sinh viên năm 3, Khoa Máy tính, ĐH Bách Khoa Hà Nội",
-      "content": "RinKuzu đã thay đổi hoàn toàn cách mình ôn thi. Tính năng tạo quiz từ PDF giúp mình tiết kiệm hàng giờ mỗi tuần và tập trung vào những phần yếu thực sự."
+      "name": "Từ PDF đến luyện tập",
+      "role": "Tính năng sản phẩm đã xác minh",
+      "content": "RinKuzu chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập thích ứng."
     }
   },
   "faq": {
@@ -92,7 +92,7 @@
     "q1": "RinKuzu là gì?",
     "a1": "RinKuzu là nền tảng học cá nhân hóa sử dụng AI, chuyển đổi tài liệu PDF thành lộ trình học cá nhân hóa dựa trên đồ thị kiến thức và phân loại Bloom.",
     "q2": "Làm thế nào để tạo quiz từ file PDF?",
-    "a2": "Chỉ cần tải file PDF (bài giảng, giáo trình, hoặc tài liệu nội bộ) và AI của RinKuzu sẽ tự động trích xuất khái niệm, xác định tiên quyết, và tạo quiz kèm lời giải thích.",
+    "a2": "Tải tài liệu PDF được hỗ trợ và RinKuzu sẽ trích xuất khái niệm, xác định ngữ cảnh tiên quyết và tạo quiz kèm lời giải thích.",
     "q3": "RinKuzu có miễn phí không?",
     "a3": "Có. Gói Miễn phí gồm 5 lượt tạo quiz từ PDF mỗi tháng (tối đa 30 trang mỗi tệp), 2 lộ trình học thích ứng mỗi tháng, 50 bài tập thích ứng mỗi ngày và 25 tin nhắn Ask Rin-chan mỗi ngày. Premium mở khóa quiz riêng tư và tăng các hạn mức này.",
     "q4": "RinKuzu hỗ trợ những ngôn ngữ nào?",
@@ -100,21 +100,21 @@
     "q5": "Đồ thị kiến thức là gì?",
     "a5": "Đồ thị kiến thức liên kết các khái niệm trong tài liệu của bạn. RinKuzu xây dựng đồ thị trực quan thể hiện chuỗi tiên quyết, giúp bạn thấy lộ trình từ cơ bản đến nâng cao.",
     "q6": "Phân loại Bloom là gì và RinKuzu sử dụng như thế nào?",
-    "a6": "Phân loại Bloom gồm 6 cấp độ nhận thức: Nhớ, Hiểu, Áp dụng, Phân tích, Đánh giá, và Sáng tạo. RinKuzu tạo câu hỏi ở mỗi cấp độ để đảm bảo thành thạo sâu từ nhớ đến suy luận bậc cao.",
+    "a6": "Phân loại Bloom gồm 6 cấp độ nhận thức: Nhớ, Hiểu, Áp dụng, Phân tích, Đánh giá và Sáng tạo. RinKuzu dùng các cấp độ này để tạo nhiều dạng câu hỏi luyện tập.",
     "q7": "Học cá nhân hóa trên RinKuzu hoạt động ra sao?",
-    "a7": "RinKuzu theo dõi hiệu suất bằng Bayesian Knowledge Tracing (BKT), ưu tiên câu hỏi về khái niệm yếu nhất của bạn. AI điều chỉnh độ khó động để tối đa hóa hiệu quả học tập.",
+    "a7": "RinKuzu dùng Bayesian Knowledge Tracing (BKT) để biểu diễn kết quả luyện tập và ưu tiên câu hỏi cho các khái niệm được đánh dấu là yếu. AI điều chỉnh độ khó của câu hỏi.",
     "q8": "Tôi có thể chia sẻ quiz không?",
     "a8": "Có! Đặt quiz ở chế độ công khai để chia sẻ với bạn bè, lớp học, hoặc cộng đồng RinKuzu. Khám phá trang Explore để tìm quiz từ người dùng khác.",
     "q9": "RinKuzu tạo những loại câu hỏi nào?",
-    "a9": "RinKuzu tạo câu hỏi trắc nghiệm ở cả 6 cấp độ Bloom's Taxonomy, mỗi câu có lời giải thích tham chiếu nguồn trong PDF, giúp bạn hiểu không chỉ đáp án mà còn lý do tại sao.",
+    "a9": "RinKuzu tạo câu hỏi trắc nghiệm theo các cấp độ Bloom's Taxonomy và kèm phần giải thích do AI tạo để bạn xem lại.",
     "q10": "RinKuzu có hoạt động trên điện thoại không?",
-    "a10": "Có. RinKuzu là Progressive Web App (PWA) hoạt động trên máy tính, máy tính bảng, và trình duyệt di động. Cài đặt để có trải nghiệm giống ứng dụng với quyền truy cập ngoại tuyến.",
+    "a10": "Có. RinKuzu có manifest Progressive Web App có thể cài đặt và trải nghiệm web thích ứng cho máy tính, máy tính bảng và trình duyệt di động.",
     "q11": "Những định dạng file nào được hỗ trợ?",
     "a11": "Hiện tại hỗ trợ tài liệu PDF. Hỗ trợ Word, PowerPoint, và văn bản thuần đang trong lộ trình phát triển.",
     "q12": "Dữ liệu và quyền riêng tư của tôi được bảo vệ như thế nào?",
     "a12": "File PDF được xử lý để tạo nội dung học tập cho bạn. Quiz chỉ được chia sẻ công khai khi bạn chủ động chọn xuất bản công khai. Xem Chính sách bảo mật để biết cách dữ liệu được xử lý và lưu trữ.",
     "q13": "Trợ lý AI Rin-chan là gì?",
-    "a13": "Rin-chan là trợ lý AI tích hợp trong RinKuzu. Nó giải thích mọi khái niệm từ PDF bằng ngôn ngữ đơn giản, trả lời câu hỏi tiếp theo, và hướng dẫn qua các chủ đề khó, hoạt động 24/7.",
+    "a13": "Rin-chan là trợ lý AI tích hợp trong RinKuzu để giải thích, trả lời câu hỏi tiếp theo và hướng dẫn khi luyện tập.",
     "q14": "Làm thế nào để theo dõi tiến độ học tập?",
     "a14": "Dashboard hiển thị mức độ thành thạo theo khái niệm, xu hướng độ chính xác, điểm yếu, và tiến độ hoàn thành. Đánh dấu quiz để ôn lại và xem lịch sử bất kỳ lúc nào.",
     "q15": "Giáo viên có thể dùng RinKuzu để đánh giá trên lớp không?",
@@ -166,16 +166,16 @@
   "ready_to_start": "Sẵn sàng bắt đầu hành trình học tập?",
   "cta": {
     "title": "Sẵn sàng để nâng tầm tri thức?",
-    "subtitle": "Tham gia cùng hàng ngàn học sinh, sinh viên đang học tập hiệu quả hơn mỗi ngày với RinKuzu.",
+    "subtitle": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập thích ứng với RinKuzu.",
     "button": "Tham gia ngay hôm nay",
     "placeholder": "Địa chỉ email của bạn",
     "freeTrial": "Trải nghiệm miễn phí",
     "noCreditCard": "Không cần thẻ tín dụng",
-    "aiSupport": "Hỗ trợ AI 24/7"
+    "aiSupport": "Giao diện tiếng Việt và tiếng Anh"
   },
   "footer": {
     "contact": "Liên hệ",
-    "description": "Nền tảng học cá nhân hóa bằng AI. Biến mọi tài liệu PDF thành hành trình luyện quiz cá nhân hóa.",
+    "description": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập thích ứng.",
     "links": {
       "title": "Liên kết",
       "home": "Trang chủ",

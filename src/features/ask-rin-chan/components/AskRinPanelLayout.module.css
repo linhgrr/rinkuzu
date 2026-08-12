@@ -1,0 +1,33 @@
+.userBubble {
+  max-width: 86%;
+}
+
+.assistantBubble {
+  max-width: 92%;
+  border-color: var(--neutral-200);
+}
+
+.panelHeight {
+  height: min(760px, calc(100dvh - 2rem));
+}
+
+.borderSubtle {
+  border-color: var(--neutral-100);
+}
+
+.borderMuted {
+  border-color: var(--neutral-200);
+}
+
+.contextLabel {
+  letter-spacing: 0.12em;
+}
+
+.composerHint {
+  font-size: 11px;
+}
+
+.loadingSpinner {
+  border-color: var(--neutral-200);
+  border-top-color: var(--brand-trust);
+}

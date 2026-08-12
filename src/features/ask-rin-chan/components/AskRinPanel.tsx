@@ -24,6 +24,7 @@ import {
   HiOutlineTrash,
 } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
+import { ButtonBase } from '@/components/ui/ButtonBase';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Modal } from '@/components/ui/Modal';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -37,6 +38,7 @@ import {
 import { fetchAskRinAgent } from '@/lib/ask-rin-chan/agui-fetch';
 import { getAskRinPublicErrorKey } from '@/lib/ask-rin-chan/public-error';
 import { isAwaitingFirstAssistantText } from '@/lib/ask-rin-chan/stream-state';
+import styles from './AskRinPanelLayout.module.css';
 
 const CHATBOT_ICON = '/images/chatbot_icon.png';
 
@@ -93,8 +95,8 @@ function AskRinMessage() {
       <div
         className={
           isUser
-            ? 'max-w-[86%] rounded-2xl rounded-br-md bg-neutral-900 px-4 py-2.5 text-white'
-            : 'max-w-[92%] rounded-2xl rounded-bl-md border border-neutral-200 bg-white px-4 py-3 shadow-sm'
+            ? `${styles['userBubble']} rounded-2xl rounded-br-md bg-neutral-900 px-4 py-2.5 text-white`
+            : `${styles['assistantBubble']} rounded-2xl rounded-bl-md border bg-white px-4 py-3 shadow-sm`
         }
       >
         <MessagePrimitive.Parts components={{ Text: AskRinText, Empty: ThinkingMessage }} />
@@ -121,14 +123,13 @@ function EmptyConversation() {
       <p className="mt-2 text-sm leading-6 text-neutral-500">{t('initialGreeting')}</p>
       <div className="mt-5 grid w-full gap-2">
         {suggestions.map((suggestion) => (
-          <button
+          <ButtonBase
             key={suggestion}
-            type="button"
             onClick={() => runtime.thread.append(suggestion)}
-            className="rounded-xl border border-neutral-200 bg-white px-4 py-3 text-left text-sm text-neutral-700 transition-colors hover:border-green-300 hover:bg-green-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+            className={`${styles['borderMuted']} rounded-xl border bg-white px-4 py-3 text-left text-sm text-neutral-700 transition-colors hover:border-green-300 hover:bg-green-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust`}
           >
             {suggestion}
-          </button>
+          </ButtonBase>
         ))}
       </div>
     </div>
@@ -176,8 +177,8 @@ function AskRinThread({
   };
 
   return (
-    <div className="flex h-[min(760px,calc(100dvh-2rem))] min-h-0 flex-col">
-      <header className="border-b border-neutral-100 px-5 py-4 pr-16 sm:px-6 sm:pr-16">
+    <div className={`${styles['panelHeight']} flex min-h-0 flex-col`}>
+      <header className={`${styles['borderSubtle']} border-b px-5 py-4 pr-16 sm:px-6 sm:pr-16`}>
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
             <Image
@@ -209,11 +210,17 @@ function AskRinThread({
       </header>
 
       {contextPreview ? (
-        <details className="group border-b border-neutral-100 bg-neutral-50/80 px-5 py-3 sm:px-6">
-          <summary className="cursor-pointer select-none text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500 marker:text-neutral-400">
+        <details
+          className={`${styles['borderSubtle']} group border-b bg-neutral-50/80 px-5 py-3 sm:px-6`}
+        >
+          <summary
+            className={`${styles['contextLabel']} cursor-pointer select-none text-xs font-semibold uppercase text-neutral-500 marker:text-neutral-400`}
+          >
             {t('contextQuestion')}
           </summary>
-          <div className="mt-3 max-h-40 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-3 text-sm text-neutral-700">
+          <div
+            className={`${styles['borderMuted']} mt-3 max-h-40 overflow-y-auto rounded-xl border bg-white p-3 text-sm text-neutral-700`}
+          >
             {contextPreview}
           </div>
         </details>
@@ -248,8 +255,10 @@ function AskRinThread({
           </div>
         ) : null}
 
-        <div className="border-t border-neutral-100 bg-white p-4 sm:px-6">
-          <ComposerPrimitive.Root className="flex items-end gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-sm transition focus-within:border-green-400 focus-within:ring-2 focus-within:ring-green-100">
+        <div className={`${styles['borderSubtle']} border-t bg-white p-4 sm:px-6`}>
+          <ComposerPrimitive.Root
+            className={`${styles['borderMuted']} flex items-end gap-2 rounded-2xl border bg-white p-2 shadow-sm transition focus-within:border-green-400 focus-within:ring-2 focus-within:ring-green-100`}
+          >
             <ComposerPrimitive.Input
               autoFocus
               maxLength={1000}
@@ -274,7 +283,9 @@ function AskRinThread({
               </ComposerPrimitive.Cancel>
             </ThreadPrimitive.If>
           </ComposerPrimitive.Root>
-          <p className="mt-2 text-center text-[11px] text-neutral-400">{t('composerHint')}</p>
+          <p className={`${styles['composerHint']} mt-2 text-center text-neutral-400`}>
+            {t('composerHint')}
+          </p>
         </div>
       </ThreadPrimitive.Root>
     </div>
@@ -427,7 +438,7 @@ function AskRinRegistration({
   }
 
   return (
-    <div className="flex h-[min(760px,calc(100dvh-2rem))] items-center justify-center p-8">
+    <div className={`${styles['panelHeight']} flex items-center justify-center p-8`}>
       {registrationError ? (
         <div className="max-w-sm text-center" role="alert">
           <HiOutlineExclamationCircle className="mx-auto size-9 text-red-500" />
@@ -438,7 +449,9 @@ function AskRinRegistration({
         </div>
       ) : (
         <div className="text-center" role="status">
-          <div className="mx-auto size-9 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-trust" />
+          <div
+            className={`${styles['loadingSpinner']} mx-auto size-9 animate-spin rounded-full border-2`}
+          />
           <p className="mt-3 text-sm text-neutral-500">{t('loadingHistory')}</p>
         </div>
       )}

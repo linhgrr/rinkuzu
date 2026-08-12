@@ -79,7 +79,7 @@ export function ProfileQuotaCard({ variant = 'full' }: ProfileQuotaCardProps) {
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-4 border-b border-neutral-100 px-5 py-4 sm:px-6">
+      <div className="flex items-center justify-between gap-4 border-b border-line/50 px-5 py-4 sm:px-6">
         <div className="flex items-center gap-2">
           <HiOutlineChartBar className="size-5 text-brand-trust" />
           <div>
@@ -119,7 +119,7 @@ export function ProfileQuotaCard({ variant = 'full' }: ProfileQuotaCardProps) {
                   className={
                     isSummary
                       ? 'rounded-xl bg-neutral-50 p-3.5'
-                      : 'rounded-xl border border-neutral-100 p-4'
+                      : 'rounded-xl border border-line/50 p-4'
                   }
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">

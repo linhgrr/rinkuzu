@@ -62,7 +62,7 @@ const englishValues = [
   {
     icon: 'BT',
     title: "Bloom's Taxonomy",
-    body: 'Practice spans all six cognitive levels — from basic recall to creative synthesis — ensuring deep mastery rather than surface-level recognition.',
+    body: 'Practice can span six cognitive levels — from basic recall to creative synthesis — to vary the kinds of questions a learner sees.',
   },
 ];
 

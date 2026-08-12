@@ -32,7 +32,7 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 - Last updated: 2026-04-28
 
 ## What ${SITE_NAME} Does
-1. Upload any PDF document (lecture notes, textbooks, internal docs)
+1. Upload supported PDF material (such as lecture notes)
 2. AI automatically extracts key concepts and builds a knowledge graph
 3. Identifies prerequisite relationships between concepts
 4. Creates personalized quiz sessions matching your current level
@@ -72,7 +72,7 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 
 ## Technology
 - Powered by Google Gemini AI (quiz generation and answer evaluation)
-- Built by Hanoi University of Science and Technology (HUST)
+- English and Vietnamese product interfaces
 - Web application (no installation required)
 - PWA-ready (installable on mobile/desktop)
 - Languages: Vietnamese and English (full bilingual interface)
@@ -91,7 +91,7 @@ Q: What is RinKuzu?
 A: RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys. Using knowledge graphs and Bloom's Taxonomy, it helps students, teachers, and training teams master any subject at their own pace. The system uses SAINT-Bloom knowledge tracing and Dueling DQN reinforcement learning to continuously adapt to each learner's progress.
 
 Q: How do I generate a quiz from a PDF?
-A: Simply upload any PDF document — lecture notes, textbooks, or internal docs — and RinKuzu's AI will automatically extract key concepts, identify prerequisite relationships, and generate high-quality quizzes with explanations. No manual question writing required. The process takes under a minute for most documents.
+A: Upload supported PDF material and RinKuzu extracts key concepts, identifies prerequisite relationships, and generates quizzes with explanations.
 
 Q: Is RinKuzu free to use?
 A: Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks private quizzes and raises these limits. See /pricing for details.
@@ -100,16 +100,16 @@ Q: Which languages does RinKuzu support?
 A: RinKuzu supports Vietnamese and English with a full bilingual interface. AI-generated content adapts to the language of your uploaded PDF.
 
 Q: What is a knowledge graph in learning?
-A: A knowledge graph maps the relationships between concepts in your material. RinKuzu builds a visual graph showing prerequisite chains so you can see the learning path from fundamentals to advanced topics — ensuring you never practice a concept before mastering its prerequisites.
+A: A knowledge graph maps relationships between concepts in your material. RinKuzu builds a visual graph showing prerequisite chains to provide context for choosing a next practice step.
 
 Q: What is Bloom's Taxonomy?
-A: Bloom's Taxonomy classifies cognitive levels from Remember to Create. RinKuzu generates questions at each level — from basic recall to higher-order reasoning — ensuring deep mastery. The six levels are: Remember, Understand, Apply, Analyze, Evaluate, and Create.
+A: Bloom's Taxonomy classifies cognitive levels from Remember to Create. RinKuzu uses these levels to vary the kinds of practice questions it generates.
 
 Q: How does adaptive learning work on RinKuzu?
 A: RinKuzu tracks your performance using Bayesian Knowledge Tracing (BKT), prioritizing questions on your weakest concepts. A Dueling DQN reinforcement learning agent selects the next best (concept, difficulty) pair. The AI adjusts difficulty dynamically for maximum learning efficiency.
 
 Q: What is the AI tutor Rin-chan?
-A: Rin-chan is RinKuzu's built-in AI tutor. It explains any concept from your PDF in plain language, answers follow-up questions, and guides you through difficult topics — available 24/7 within the app.
+A: Rin-chan is RinKuzu's built-in AI assistant for explanations, follow-up questions, and guidance through practice topics.
 
 Q: Can teachers use RinKuzu for classroom assessment?
 A: Yes. Teachers can turn lecture PDFs into quizzes and share public quizzes with students. Classroom management and class-wide analytics are not currently available.
@@ -121,7 +121,7 @@ Q: What file formats are supported?
 A: Currently PDF documents are supported. We recommend using text-based PDFs (not scanned images) for the best quiz generation quality. Word, PowerPoint, and plain text support is on the roadmap.
 
 Q: Does RinKuzu work on mobile?
-A: Yes. RinKuzu is a Progressive Web App (PWA) that works on desktop, tablet, and mobile browsers. Install it for an app-like experience with offline access to your progress.
+A: Yes. RinKuzu has an installable Progressive Web App manifest and a responsive web experience for desktop, tablet, and mobile browsers.
 `;
 
 /**

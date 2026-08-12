@@ -146,8 +146,8 @@ export default async function FAQPage({ params }: Props) {
           <h2 className="text-2xl font-semibold">Still have questions?</h2>
           <p className="text-neutral-400">
             {isVi
-              ? 'Trợ lý AI Rin-chan luôn sẵn sàng 24/7. Hoặc liên hệ với chúng tôi tại '
-              : 'Our AI tutor Rin-chan is available 24/7. Or reach us at '}
+              ? 'Bạn có thể dùng Rin-chan để xem giải thích trong ứng dụng. Hoặc liên hệ với chúng tôi tại '
+              : 'Use Rin-chan for explanations in the app. Or reach us at '}
             <a href="mailto:support@rinkuzu.app" className="underline hover:text-white">
               support@rinkuzu.app
             </a>

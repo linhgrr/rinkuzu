@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/blog/knowledge-graphs-adaptive-learning-pdfs',
     title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
     description:
-      "Learn how prerequisite knowledge graphs combined with Bloom's six cognitive levels create a scientifically-grounded adaptive learning path for any PDF document.",
+      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
     imagePath: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80',
   });
   return {
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ...base.openGraph,
       title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
       description:
-        "Learn how prerequisite knowledge graphs combined with Bloom's six cognitive levels create a scientifically-grounded adaptive learning path for any PDF document.",
+        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
       url: canonicalUrl,
       type: 'article',
       publishedTime: '2026-03-20T00:00:00.000Z',
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
       description:
-        "Learn how prerequisite knowledge graphs combined with Bloom's six cognitive levels create a scientifically-grounded adaptive learning path.",
+        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure an adaptive practice path.",
       images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80'],
     },
   };
@@ -59,7 +59,7 @@ const articleSchema = {
   name: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
   headline: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
   description:
-    "Learn how prerequisite knowledge graphs combined with Bloom's six cognitive levels create a scientifically-grounded adaptive learning path for any PDF document.",
+    "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
   url: `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`,
   datePublished: '2026-03-20',
   dateModified: '2026-03-20',
@@ -179,7 +179,7 @@ The reason is the **illusion of fluency**. Remember-level questions can be answe
 
 Bloom's higher levels — Apply, Analyze, Evaluate, Create — reveal whether understanding is real. RinKuzu's SAINT-Bloom knowledge tracing model maintains P(correct | concept, Bloom_level) — so the system knows whether your mastery at Apply is genuine or riding on strong Remember performance.
 
-Each level builds the neural pathways that transfer learning to novel problems. RinKuzu ensures learners practice across all six levels, preventing the illusion of mastery.
+RinKuzu can generate practice across all six levels, from recall through creative synthesis.
 
 ## Knowledge Graphs + Bloom's: A Powerful Combination
 
@@ -201,7 +201,7 @@ RinKuzu's Dueling DQN agent selects questions based on both dimensions simultane
 
 RinKuzu's adaptive learning architecture draws on a body of educational research spanning cognitive science, machine learning, and learning analytics.
 
-**Knowledge graphs in education** have roots in the field of Intelligent Tutoring Systems (ITS), dating back to ITS tutors like ANDES (for physics) and Cognitive Tutors (based on ACT-R theory). What makes RinKuzu different is scale: while traditional ITS systems required domain experts to hand-code the knowledge structure, RinKuzu's Content Processor extracts that structure automatically from any PDF using large language models. This bridges decades of ITS research with modern AI capabilities.
+**Knowledge graphs in education** have roots in the field of Intelligent Tutoring Systems (ITS), dating back to ITS tutors like ANDES (for physics) and Cognitive Tutors (based on ACT-R theory). RinKuzu's Content Processor extracts a concept structure from supported PDF material using large language models.
 
 **Bayesian Knowledge Tracing (BKT)** — the foundational model behind RinKuzu's mastery tracking — was introduced by Corbett and Anderson in 1995. BKT models each skill as a binary latent variable (learned vs. not learned), updating the learned probability based on observed performance. SAINT-Bloom extends this by decomposing mastery into six levels, recognizing that "learning" a concept is not binary — a student can remember a formula without being able to apply it.
 
@@ -219,7 +219,7 @@ No system is without tradeoffs, and being transparent about them builds trust.
 
 **The illusion of mastery persists at higher levels.** Even with Bloom-level tracking, a system can only measure what it tests. If a student becomes skilled at recognizing the *pattern* of Analyze-level questions — without genuinely deepening conceptual understanding — the system may overestimate mastery. This is a known limitation of any assessment-based knowledge tracer. The Evaluate and Create levels, which require genuine synthesis and original thought, are particularly hard to assess reliably through multiple-choice format.
 
-**Cold-start for new documents.** The first time you upload a PDF, RinKuzu must process it from scratch — a process that takes 30–120 seconds depending on document length. Cached concepts from previously processed documents reduce this significantly on subsequent uploads.
+**Cold-start for new documents.** The first time you upload supported PDF material, RinKuzu processes it from scratch. Processing time depends on the document and external services.
 
 Despite these limitations, the combination of knowledge graphs + Bloom's Taxonomy + RL curriculum sequencing represents a significant step forward from static flashcard decks. The key is using these tools as supplements to — not replacements for — deep engagement with your source material.
 
@@ -236,9 +236,9 @@ These are ambitious goals. But the foundation is solid: a knowledge graph extrac
 
 ## Experience It Yourself
 
-Upload any PDF lecture — calculus, biology, economics, or history — and watch RinKuzu build the knowledge graph and generate adaptive practice questions across all six Bloom levels.
+Upload supported PDF lecture material and use RinKuzu to build a knowledge graph and generate adaptive practice questions across Bloom levels.
 
-Start with the free plan — no credit card required. Your first personalized quiz is ready in under a minute.
+Start with supported PDF material and create a personalized practice session.
 
 ## References
 
@@ -293,7 +293,7 @@ export default async function BlogPost({ params }: Props) {
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
             Learn how prerequisite graphs combined with Bloom&apos;s six cognitive levels create a
-            scientifically-grounded adaptive learning path for any PDF document.
+            adaptive practice path from supported PDF material.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
             <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
@@ -344,7 +344,7 @@ export default async function BlogPost({ params }: Props) {
               </h3>
               <p className="text-neutral-300 text-lg mb-8">
                 Upload a PDF and watch RinKuzu build a knowledge graph and adaptive quiz, free, in
-                under a minute.
+                from supported PDF material.
               </p>
               <Link
                 href="/register"

@@ -1,6 +1,6 @@
 {
   "hero": {
-    "badge": "#1 AI Learning Platform for Students",
+    "badge": "PDF-to-practice learning tools",
     "titlePart1": "Master Knowledge.",
     "titlePart2": "Ace Every Exam.",
     "description": "Create quizzes from PDF, study smart with Flashcards, and personalized Rin-chan for your learning journey.",
@@ -9,8 +9,8 @@
     "searchButton": "Search Now",
     "poweredBy": "Powered by",
     "geminiAi": "Gemini AI",
-    "headline": "Master Any Subject at Your Own Pace",
-    "subtitle": "Transform any PDF document into an interactive learning journey. Our personalized learning AI extracts concepts, builds your knowledge graph, and tailors exercises across all Bloom's cognitive levels to ensure deep mastery.",
+    "headline": "Practice From Your Source Material",
+    "subtitle": "Turn supported PDF material into quiz and adaptive practice. RinKuzu connects concepts and prerequisite context to help you choose a next practice step.",
     "ctaStartLearning": "Start Learning Now",
     "ctaQuizBuilder": "Try Quiz Builder",
     "ctaAdaptiveLearning": "Try Personalized Learning",
@@ -41,13 +41,13 @@
     "title": "Why Choose RinKuzu?",
     "subtitle": "Unlock your true potential with AI-powered smart learning tools.",
     "feature1": {
-      "title": "Instant Quiz Generation",
-      "description": "Convert lecture PDFs into multiple-choice question sets in seconds.",
+      "title": "PDF Quiz Generation",
+      "description": "Turn supported lecture PDFs into multiple-choice practice questions.",
       "button": "Try Now"
     },
     "feature2": {
-      "title": "24/7 Rin-chan",
-      "description": "Rin-chan is always ready to explain any questions and guide you through exercises."
+      "title": "Ask Rin-chan",
+      "description": "Use Rin-chan for explanations and guidance while you work through exercises."
     },
     "feature3": {
       "title": "Personalized Learning",
@@ -60,7 +60,7 @@
     },
     "stats": {
       "activeUsers": "Students reviewing",
-      "worldwide": "Worldwide Active Users"
+      "worldwide": "English and Vietnamese interfaces"
     },
     "aiTutor": "Rin-chan Rin-chan"
   },
@@ -80,11 +80,11 @@
     }
   },
   "testimonials": {
-    "title": "What Our Users Say",
+    "title": "What RinKuzu Supports",
     "main": {
-      "name": "Trần M.",
-      "role": "3rd-year Computer Science, HUST",
-      "content": "RinKuzu đã thay đổi hoàn toàn cách mình ôn thi. Tính năng tạo quiz từ PDF giúp mình tiết kiệm hàng giờ mỗi tuần và tập trung vào những phần yếu thực sự."
+      "name": "PDF to practice",
+      "role": "Verified product capability",
+      "content": "RinKuzu turns supported PDF material into quiz and adaptive practice."
     }
   },
   "faq": {
@@ -92,7 +92,7 @@
     "q1": "What is RinKuzu?",
     "a1": "RinKuzu is an AI-powered personalized learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.",
     "q2": "How do I generate a quiz from a PDF?",
-    "a2": "Upload any PDF document (lecture notes, textbooks, or internal docs) and RinKuzu's AI automatically extracts key concepts, identifies prerequisites, and generates quizzes with explanations.",
+    "a2": "Upload supported PDF material and RinKuzu extracts concepts, identifies prerequisite context, and generates quizzes with explanations.",
     "q3": "Is RinKuzu free to use?",
     "a3": "Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive learning paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks private quizzes and raises these limits.",
     "q4": "Which languages does RinKuzu support?",
@@ -100,21 +100,21 @@
     "q5": "What is a knowledge graph in learning?",
     "a5": "A knowledge graph maps relationships between concepts in your material. RinKuzu builds a visual graph showing prerequisite chains so you can see the learning path from fundamentals to advanced topics.",
     "q6": "What is Bloom's Taxonomy and how does RinKuzu use it?",
-    "a6": "Bloom's Taxonomy classifies cognitive levels from Remember to Create. RinKuzu generates questions at each level, from basic recall to higher-order reasoning, ensuring deep mastery of every concept.",
+    "a6": "Bloom's Taxonomy classifies cognitive levels from Remember to Create. RinKuzu uses these levels to vary the kinds of practice questions it generates.",
     "q7": "How does personalized learning work on RinKuzu?",
-    "a7": "RinKuzu tracks your performance using Bayesian Knowledge Tracing (BKT), prioritizing questions on your weakest concepts. The AI adjusts difficulty dynamically for maximum efficiency.",
+    "a7": "RinKuzu uses Bayesian Knowledge Tracing (BKT) to represent practice performance and prioritize questions for concepts marked as weak. The AI adjusts question difficulty dynamically.",
     "q8": "Can I share my quizzes with others?",
     "a8": "Yes! Set your quizzes to public to share with friends, classmates, or the RinKuzu community. Browse the Explore page for quizzes created by other users.",
     "q9": "What types of questions does RinKuzu generate?",
-    "a9": "RinKuzu generates multiple-choice questions at all six Bloom's Taxonomy levels, each with a source-referenced explanation so you understand not just the answer but why it's correct.",
+    "a9": "RinKuzu generates multiple-choice questions across Bloom's Taxonomy levels and includes generated explanations for review.",
     "q10": "Does RinKuzu work on mobile devices?",
-    "a10": "Yes. RinKuzu is a Progressive Web App (PWA) that works on desktop, tablet, and mobile browsers. Install it for an app-like experience with offline access.",
+    "a10": "Yes. RinKuzu has an installable Progressive Web App manifest and a responsive web experience for desktop, tablet, and mobile browsers.",
     "q11": "What file formats are supported?",
     "a11": "Currently PDF documents are supported. Support for Word docs, PowerPoint slides, and plain text is on our roadmap.",
     "q12": "How is my data and privacy protected?",
     "a12": "Uploaded PDFs are processed to generate your learning content. A quiz is shared publicly only when you choose to publish it publicly. See our Privacy Policy for details about data processing and storage.",
     "q13": "What is the AI tutor Rin-chan?",
-    "a13": "Rin-chan is RinKuzu's built-in AI tutor. It explains any concept from your PDF in plain language, answers follow-up questions, and guides you through difficult topics, available 24/7.",
+    "a13": "Rin-chan is RinKuzu's built-in AI assistant for explanations, follow-up questions, and guidance through practice topics.",
     "q14": "How do I track my learning progress?",
     "a14": "The Dashboard shows your mastery level per concept, accuracy trends, weak topics, and completion rates. Bookmark quizzes for later and review your history anytime.",
     "q15": "Can teachers use RinKuzu for classroom assessment?",
@@ -163,19 +163,19 @@
   },
   "cta": {
     "title": "Ready to Level Up Your Knowledge?",
-    "subtitle": "Join thousands of students who are learning more effectively every day with RinKuzu.",
+    "subtitle": "Turn supported PDF material into quiz and adaptive practice with RinKuzu.",
     "button": "Join Today",
     "placeholder": "Your email address",
     "freeTrial": "Free Trial Available",
     "noCreditCard": "No Credit Card Required",
-    "aiSupport": "24/7 AI Support"
+    "aiSupport": "English and Vietnamese UI"
   },
   "get_started_free": "Get Started Free",
   "view_pricing": "View Pricing",
   "ready_to_start": "Ready to start your learning journey?",
   "footer": {
     "contact": "Contact",
-    "description": "AI-powered personalized learning platform. Transform any PDF into a personalized quiz journey.",
+    "description": "Turn supported PDF material into quiz and adaptive practice.",
     "links": {
       "title": "Links",
       "home": "Home",

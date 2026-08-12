@@ -118,7 +118,7 @@ export default function SubscriptionPage() {
 
           {/* Subscription Plans */}
           <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
-            <Card className="flex h-full flex-col border-neutral-200 p-4 md:p-6">
+            <Card className="flex h-full flex-col border-line p-4 md:p-6">
               <div className="mb-4 text-center md:mb-6">
                 <h3 className="mb-2 text-xl font-semibold text-ink md:text-2xl">
                   {tPricing('free.name')}

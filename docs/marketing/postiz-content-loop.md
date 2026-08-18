@@ -123,6 +123,21 @@ The original draft IDs were superseded during the approved RIN-37 distribution r
 
 Future runs update `reconciled_at` per row and preserve prior reconciliation evidence rather than overwriting a published timestamp.
 
+### 2026-08-14 RIN-50 availability-gated atom
+
+Run timestamp: 2026-08-14 Asia/Saigon. Content Strategy selected a product-led, shareable micro-demo from the verified `product_concept_graph_next_step` claim; Social shaped a conversational Threads-first hook; Copy Editing removed outcome language and universal-PDF implications.
+
+Content/experiment ID: `threads_prerequisite_next_step_v1`. Pillar: `weak_area_next_step`. This is exactly one atom, expressed as platform variants:
+
+- Threads: `Một phần trong PDF thấy khó chưa chắc vì chính phần đó. Rinkuzu nối các khái niệm và ngữ cảnh tiên quyết để bạn chọn bước luyện tập tiếp theo. Xem cách hoạt động: https://www.rinkuzu.app/vi?utm_source=threads&utm_medium=organic_social&utm_campaign=prerequisite_next_step_aug2026&utm_content=threads_prerequisite_next_step_v1`
+- Telegram: `Khi một khái niệm trong PDF thấy khó, phần cần xem lại có thể nằm ở kiến thức đứng trước nó. Rinkuzu nối khái niệm với ngữ cảnh tiên quyết để gợi ý bước luyện tập tiếp theo. Xem cách hoạt động: https://www.rinkuzu.app/vi?utm_source=telegram&utm_medium=organic_social&utm_campaign=prerequisite_next_step_aug2026&utm_content=telegram_prerequisite_next_step_v1`
+
+UTM values are lowercase and complete: `utm_medium=organic_social`, `utm_campaign=prerequisite_next_step_aug2026`, platform-specific `utm_source`, and platform-specific versioned `utm_content` above. The copy contains no PII, private analytics, testimonial, user count, ranking, learning outcome, speed, scientific, or universal-PDF claim. Live schemas returned Threads 500 characters and Telegram 4,096 characters with no additional settings.
+
+Distribution is quarantined and no Postiz draft, schedule, or publication was created. The semantic duplicate check also rejects this candidate because queued Threads record `cmsq66bx70007l78g6udh0mvx` already uses the prerequisite-concept hook; the atom is retained as the single evaluated candidate, not as future publish-ready copy. A fresh public fetch still showed the maintenance notice on `/vi` and `/en`: quiz creation is temporarily unavailable. The canonical authenticated journey was therefore not exercised and cannot be timestamped green. The rolling Postiz inventory also showed Threads queue records due 2026-08-14 and 2026-08-15; the installed connector exposes no cancel/reschedule mutation. RIN-42 remains the existing queue-remediation owner, so no duplicate infrastructure issue was created.
+
+Postiz mutation/IDs/URLs for this atom: none by policy. Resume only after a timestamped synthetic confirms the notice is removed and `landing -> verified signup -> accepted PDF upload -> generated material -> first_question_answered` is green. The next measurable funnel signal after recovery is a `threads_prerequisite_next_step_v1` visit that reaches accepted PDF upload and first answered question; impressions alone do not qualify.
+
 ## Initial shadow drafts
 
 All three posts were created with `type=draft`, no attachments, `shortLink=false`, and complete `utm_source`, `utm_medium`, `utm_campaign`, and `utm_content`. A subsequent authenticated list read found all three as `DRAFT` with no `releaseId` or release URL.

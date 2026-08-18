@@ -180,3 +180,88 @@ No acquisition channel is currently repeatable. RIN-12 is a baseline/readiness t
 5. Scale only after the experiment-specific repeatability rule passes; otherwise stop or continue exactly one bounded change.
 
 Next scheduled snapshot: Tuesday 2026-08-18 by 12:00 `Asia/Ho_Chi_Minh`. Expected evidence dependencies are RIN-11's seven-day Postiz shadow log and RIN-7 (after RIN-6) for canonical product instrumentation. Unavailable production credentials are reported as external gates, not silently substituted.
+
+## Frozen weekly snapshot — 2026-08-10 through 2026-08-16
+
+**Window:** `[2026-08-10T00:00:00+07:00, 2026-08-17T00:00:00+07:00)`  
+**Frozen:** 2026-08-18 before 12:00 `Asia/Ho_Chi_Minh`  
+**Privacy exclusions:** staff/test/bot/fraud/unsupported/pre-consent records are excluded where an authoritative query exists. No user-level production data, audience identities, emails, raw IDs, document content, prompts, questions/answers, or payment identifiers were accessed.  
+**Freshness:** Postiz state was re-read 2026-08-18; Threads post analytics below are the latest issue-record values queried 2026-08-17 and remain preliminary. RIN-72 health evidence is timestamped 2026-08-18T03:06:32Z–03:08:55Z and is post-window recovery evidence, not part of the weekly funnel denominator. GA4, PostHog, server/database aggregates, billing/refunds, spend ledgers, and a consented feedback system were not authorized or callable in this run.
+
+### Executive outcome
+
+The completed week did not produce a valid AARRR outcome baseline. Product availability was RED at observed checks, the canonical journey remained unverified, and attribution-to-activation joins were not available. Five scheduled records published during the week (four Threads, one Telegram), but distribution was not held during RED. Therefore reach is operational evidence only and cannot be interpreted as product value or a repeatable acquisition channel. External spend verified in the issue record was **0 VND**; internal delivery time was not available from an authoritative capacity ledger.
+
+### Availability and distribution control
+
+- A rendered `/vi` check on 2026-08-12 showed the maintenance notice; RIN-68 again observed `/vi` and `/en` maintenance on 2026-08-17. RIN-72 confirmed the notice still visible on 2026-08-18. No timestamped GREEN recovery evidence exists between those observations.
+- Exact continuous outage duration is **unmeasurable** because there was no complete uptime/maintenance event log. Reported observation span is not silently converted into outage duration.
+- Distribution-hold compliance: **failed**. Postiz shows 5/5 due records in the weekly window reached `PUBLISHED`: Threads 4/4 and Telegram 1/1. Three Threads posts published on Aug 14–16 after the Aug 13 Threads-first decision, while no GREEN recovery evidence existed. Queue cancellation/rescheduling was unavailable through the configured connector; RIN-42 is the named account/UI remediation path.
+- Publishing during RED invalidates these records as a clean acquisition experiment cohort. It does not make the post-state or platform-view counts invalid as operational observations.
+
+### AARRR scorecard
+
+| Stage / metric | Numerator / denominator | Result | Freshness and interpretation |
+| --- | ---: | --- | --- |
+| Postiz publishing success | 5 published / 5 due records | **100% operational publish success** | Re-read 2026-08-18. This is a queue-delivery metric, not acquisition success; the distribution gate failed. |
+| Threads publishing success | 4 / 4 | **100%** | Four weekly Threads records had provider release IDs/URLs. |
+| Telegram publishing success | 1 / 1 | **100%** | One weekly Telegram record had a provider release ID/URL. Telegram is not the default acquisition channel after the Aug 13 decision. |
+| Threads impressions/views | 603 across 4 posts | **Preliminary** | Per-post values recorded by RIN-69 on 2026-08-17: 82, 129, 125, 267. Do not infer unique people or sum with another platform. |
+| Threads engagements | 1 / 603 views | **0.17% preliminary engagement rate** | One like; 0 replies/reposts/quotes in the dated extract. Platform definitions may differ; no cross-platform rate is calculated. |
+| Threads link clicks / CTR | unavailable / 603 views | **Unavailable** | The runtime did not expose link-click analytics. Three of four Threads posts had no external link, so they cannot supply link-click attribution. |
+| Telegram reach / engagement / clicks | unavailable | **Unavailable** | No reconciled Telegram analytics extract was supplied. |
+| Qualified visits | unavailable | **Unavailable** | Postiz views are not qualified visits; GA4/PostHog reporting was not callable. |
+| Verified signups by source | unavailable | **Unmeasurable as attributable acquisition** | No authorized user aggregate was accessed; immutable first-touch → `signup_verified` join is not production-proven. Missing is not zero. |
+| Accepted PDF uploads → generated material → first answer | unavailable | **Unmeasurable** | The canonical opaque journey and server events are not production-proven. |
+| Activated users / eligible first journeys | unavailable / unavailable | **Unmeasurable** | No valid denominator or join exists. |
+| D1 / D7 retained users | unavailable / no attributable activated cohort | **Not mature and unmeasurable** | No attributable eligible activation cohort was established. |
+| Referral signup / exposed activated users | unavailable / unavailable | **Unmeasurable** | Referral attribution model/event does not exist. |
+| Checkout starts / eligible activated users | unavailable / unavailable | **Unmeasurable** | Canonical checkout analytics join is not verified. |
+| Fulfilled purchases, payers, refunds, realized VND | unavailable | **Unavailable** | No authorized MongoDB/PayOS aggregate or billing/refund ledger was accessed. |
+| PMF survey responses | 0 verified responses supplied | **0 supplied, not a survey-system zero** | No consented survey response system extract was available. |
+| Measurement validity | coherent journeys / eligible journeys unavailable | **Invalid for funnel decisions** | Availability and distribution-gate violations plus missing canonical joins prevent value/acquisition conclusions. |
+
+### Content-pillar read
+
+Pillar counts are post classifications, not unique-person counts. The dated Threads extract supports operational views/engagement only; link clicks, verified signups, and activated users remain unavailable/unmeasurable.
+
+| Pillar / atom | Threads posts | Views | Engagements | Link clicks | Verified signups | Activated users |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| Source-to-practice / two practice modes | 1 | 82 | 0 | unavailable | unmeasurable | unmeasurable |
+| Learning-depth self-check | 1 | 129 | 0 | unavailable | unmeasurable | unmeasurable |
+| Weak-area / prerequisite chain | 1 | 125 | 0 | unavailable | unmeasurable | unmeasurable |
+| Private-beta learner request | 1 | 267 | 1 like | unavailable | unmeasurable | unmeasurable |
+
+No pillar can be continued, stopped, or scaled on product outcome evidence from this week because the cohort is invalid for acquisition learning and activated-user yield is unmeasurable.
+
+### Durable experiment-register reconciliation
+
+Source of truth: RIN-39 document `experiment-register`, revision 6 (`1a90fc32-58f2-4c00-8638-e95c63efe732`) as read 2026-08-18. History was preserved.
+
+| Experiment | Weekly decision | Evidence-bound reason |
+| --- | --- | --- |
+| EXP-AVAIL-001 | **continue recovery** | RED maintenance is still visible; no full canonical synthetic pass. Distribution remains off. |
+| EXP-ACT-001 | **continue as not started** | Availability and measurement prerequisites have not passed; no eligible cohort exists. |
+| EXP-ACQ-001 | **continue paused** | Threads is primary, but the week is invalid due to RED distribution and missing attribution/activation joins. Do not scale or add TikTok. |
+| EXP-VOC-001 | **stop** | Completed at 0/10 direct learner discussions; preserve result. |
+| EXP-VOC-002 | **continue internally after recovery** | Completed 7/10 relevant, with a recurring theme in 5/10; this is message research, not demand proof. |
+| EXP-COMP-002 | **continue internally after recovery** | Completed 2/2 official workflows; retain the neutral review/edit criterion only. |
+| EXP-SEO-003 | **continue after recovery** | Completed 10/10 tool-shaped results; supports one bounded high-intent test, not demand/ranking evidence. |
+| EXP-RET-001 | **continue blocked** | No activated cohort or consent-safe lifecycle provider contract. |
+| EXP-PMF-001 | **continue not started** | Repeat users do not yet exist; 0 verified responses were supplied. |
+| EXP-REF-001 | **continue blocked** | Referral attribution is unmeasurable and activation has not passed. |
+| EXP-REV-001 | **continue blocked** | Live catalog, fulfilled orders, refunds, costs, activation, and D7 evidence are unavailable. |
+
+### Highest-leverage next experiments (maximum three)
+
+1. **EXP-AVAIL-001 — restore and prove the activation journey.** Hypothesis: the canonical responsive-web journey can be continuously GREEN and safely measured. Evidence: RIN-72 observed maintenance and did not run an authenticated synthetic; focused local checks passed but are not production proof. Confidence: 0.55. Smallest experiment: Founding Product Engineer runs three consecutive timestamped privacy-safe synthetic journeys after maintenance removal. Cost: 0 VND external; existing engineering capacity. Success: 3/3 complete passes with required events and zero critical privacy/security failures. Stop: any critical failure, two consecutive terminal failures, or evidence stale over 24 hours. Decision: pass reopens the next experiment; failure keeps distribution off and returns one bounded defect to engineering.
+2. **EXP-ACT-001 — first private activation cohort.** Hypothesis: at least 18/30 eligible consenting first-time text-PDF journeys answer within 10 minutes. Evidence: product capability exists, but no production outcome baseline exists. Confidence: 0.35. Smallest experiment: Product & Growth runs one 30-person, 14-day private cohort only after EXP-AVAIL-001. Cost: 0 VND external; up to 2 Product & Growth working days plus already-scoped engineering. Success: ≥18/30 activation, ≥95% coherent measurement, <5% terminal failure, zero critical guardrails. Stop: immediate privacy/access/payment/quota harm; reliability stop >10% after n>10; product stop <12/30. Decision: ≥60% enables one attributable Threads test; 40–59% permits one bounded friction fix; <40% revisits ICP/job; invalid measurement makes no value conclusion.
+3. **EXP-ACQ-001 — one-at-a-time attributable Threads sequence after GREEN and activation pass.** Hypothesis: claims-safe Vietnamese Threads atoms can produce attributable verified signups and activated users. Evidence: four weekly Threads posts produced 603 preliminary views and one engagement, but this cohort is invalid for acquisition learning; no activated-user yield exists. Confidence: 0.25. Smallest experiment: Content, SEO & Social Operator runs at least 10 valid posts over at least 14 days, one active content experiment at a time, with complete lowercase Threads UTMs and no default external link on reach-learning posts. Cost: 0 VND external; owned channel and existing capacity. Success: in each of two consecutive mature cohorts, at least 10 attributable verified signups and at least 4 activations, unknown-source rate ≤10%, no D7/guardrail regression. Stop/pause: any RED/AMBER availability, claims/privacy/platform violation, or two mature cohorts with zero activated users. Decision: scale Threads only after the rule passes; otherwise continue one bounded message change or stop. TikTok remains gated until the minimum Threads evidence window is complete or a validated atom merits repurposing.
+
+### Risks, dependencies, and next freeze
+
+- **Primary risk:** a queued Threads record for 2026-08-18T12:30Z may publish during RED because the configured connector cannot cancel/reschedule. RIN-42/Postiz UI owner must postpone it and any later queued group.
+- **Dependencies:** production/founder operator removes maintenance and authorizes a privacy-safe synthetic account; Founding Product Engineer produces timestamped GREEN recovery; Content Operator holds distribution and reconciles queue state.
+- **Founder-only decision:** none unless only the founder controls Postiz UI cancellation or synthetic-account authorization.
+- **Next action:** keep promotion off, remediate the queue, obtain 3/3 GREEN evidence, then start EXP-ACT-001 before any acquisition expansion.
+- **Next freeze:** Tuesday 2026-08-25 by 12:00 `Asia/Ho_Chi_Minh` for the week `[2026-08-17T00:00:00+07:00, 2026-08-24T00:00:00+07:00)`.

@@ -9,6 +9,24 @@ export function isQuizAttemptPath(pathname: string): boolean {
   );
 }
 
+export function isDevtoolShortcut(event: KeyboardEvent): boolean {
+  const key = event.key.toLowerCase();
+
+  if (key === 'f12') {
+    return true;
+  }
+
+  if (event.ctrlKey && event.shiftKey && ['i', 'j', 'c'].includes(key)) {
+    return true;
+  }
+
+  if (event.metaKey && event.altKey && ['i', 'j', 'c'].includes(key)) {
+    return true;
+  }
+
+  return (event.ctrlKey || event.metaKey) && key === 'u';
+}
+
 function isQuizEmailGateInput(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement && target.type === 'email';
 }

@@ -6,6 +6,7 @@ import { ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { UpgradePromptProvider } from '@/features/subscription/components/UpgradePromptProvider';
 import { AnalyticsIdentity } from '@/components/analytics/AnalyticsIdentity';
+import { SingleSessionGuard } from '@/features/auth/components/SingleSessionGuard';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -16,10 +17,11 @@ export default function Providers({ children, session }: ProvidersProps) {
   return (
     <SessionProvider
       {...(session !== undefined ? { session } : {})}
-      refetchInterval={0}
-      refetchOnWindowFocus={false}
+      refetchInterval={session?.user ? 5 : 0}
+      refetchOnWindowFocus={Boolean(session?.user)}
       refetchWhenOffline={false}
     >
+      <SingleSessionGuard />
       <AnalyticsIdentity />
       <UpgradePromptProvider>{children}</UpgradePromptProvider>
       <Toaster richColors position="top-right" />

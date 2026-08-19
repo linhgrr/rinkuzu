@@ -32,7 +32,7 @@ export interface AuthLoginAccount extends AuthAccountIdentity {
   avatar?: string;
   displayName?: string;
   passwordChangedAt?: Date;
-  /** Session revocation counter; copied into JWT as `av`. */
+  /** Session generation; incremented on login and copied into JWT as `av`. */
   authVersion: number;
   failedLoginAttempts: number;
   failedLoginWindowStart?: Date;

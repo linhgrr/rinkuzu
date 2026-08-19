@@ -74,11 +74,13 @@ describe('applySessionUser', () => {
       authVersion: 3,
     });
     expect(session.user).toBeUndefined();
+    expect(session.invalidatedReason).toBeUndefined();
   });
 
   it('revokes session when user is missing (disabled or deleted)', () => {
     const session = applySessionUser(baseSession(), token, null);
     expect(session.user).toBeUndefined();
+    expect(session.invalidatedReason).toBeUndefined();
   });
 
   it('fails closed when JWT av is missing', () => {
@@ -94,9 +96,10 @@ describe('applySessionUser', () => {
       },
     );
     expect(session.user).toBeUndefined();
+    expect(session.invalidatedReason).toBeUndefined();
   });
 
-  it('revokes immediately when authVersion mismatches (disable/restore)', () => {
+  it('marks an older login as replaced when authVersion no longer matches', () => {
     const session = applySessionUser(baseSession(), token, {
       id: 'user-1',
       email: 'user@example.com',
@@ -105,6 +108,7 @@ describe('applySessionUser', () => {
       authVersion: 4,
     });
     expect(session.user).toBeUndefined();
+    expect(session.invalidatedReason).toBe('session_replaced');
   });
 
   it('does not revive an old JWT after restore increments authVersion again', () => {

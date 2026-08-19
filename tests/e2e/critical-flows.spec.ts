@@ -819,7 +819,7 @@ test.describe('production critical paths', () => {
           .collection('users')
           .findOne({ _id: fixture.target.id });
         expect(disabledDoc?.['disable']).toBe(1);
-        expect(disabledDoc?.['authVersion']).toBe(1);
+        expect(disabledDoc?.['authVersion']).toBe(2);
         expect(disabledDoc?.['disabledAt']).toBeTruthy();
         expect(disabledDoc?.['disabledBy']).toBeTruthy();
 
@@ -871,7 +871,7 @@ test.describe('production critical paths', () => {
           .collection('users')
           .findOne({ _id: fixture.target.id });
         expect(restoredDoc?.['disable']).toBe(0);
-        expect(restoredDoc?.['authVersion']).toBe(2);
+        expect(restoredDoc?.['authVersion']).toBe(3);
         expect(restoredDoc?.['disabledAt']).toBeNull();
         expect(restoredDoc?.['disabledBy']).toBeNull();
 

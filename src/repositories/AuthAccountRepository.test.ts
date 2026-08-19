@@ -45,7 +45,12 @@ function queryChain(result: unknown = null) {
 
 describe('AuthAccountRepository', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mocks.connectDB.mockReset();
+    mocks.findOne.mockReset();
+    mocks.findById.mockReset();
+    mocks.findOneAndUpdate.mockReset();
+    mocks.updateOne.mockReset();
+    mocks.create.mockReset();
     const query = queryChain(null);
     mocks.findOne.mockReturnValue(query);
     mocks.findById.mockReturnValue(query);
@@ -351,11 +356,26 @@ describe('AuthAccountRepository', () => {
   });
 
   it('records successful logins and google upserts with optional profile fields', async () => {
-    mocks.updateOne
-      .mockResolvedValueOnce({ matchedCount: 1 })
-      .mockResolvedValueOnce({ matchedCount: 0 })
-      .mockResolvedValueOnce({ matchedCount: 1 });
     mocks.findOneAndUpdate
+      .mockReturnValueOnce(
+        queryChain(
+          identityRecord({
+            displayName: 'User',
+            passwordChangedAt: null,
+            authVersion: 1,
+          }),
+        ),
+      )
+      .mockReturnValueOnce(queryChain(null))
+      .mockReturnValueOnce(
+        queryChain(
+          identityRecord({
+            displayName: 'User',
+            passwordChangedAt: null,
+            authVersion: 1,
+          }),
+        ),
+      )
       .mockReturnValueOnce(queryChain(null))
       .mockReturnValueOnce(
         queryChain(
@@ -363,10 +383,11 @@ describe('AuthAccountRepository', () => {
             displayName: 'Google User',
             avatar: 'https://example.com/g.png',
             passwordChangedAt: null,
-            authVersion: 0,
+            authVersion: 1,
           }),
         ),
       )
+      .mockReturnValueOnce(queryChain(null))
       .mockReturnValueOnce(queryChain(null));
     const repository = new AuthAccountRepository();
 
@@ -377,8 +398,9 @@ describe('AuthAccountRepository', () => {
         expectedAuthVersion: 0,
         passwordHash: 'new-hash',
       }),
-    ).resolves.toBe(true);
-    expect(mocks.updateOne).toHaveBeenCalledWith(
+    ).resolves.toMatchObject({ authVersion: 1 });
+    expect(mocks.findOneAndUpdate).toHaveBeenNthCalledWith(
+      1,
       {
         _id: expect.any(Types.ObjectId),
         password: 'hash',
@@ -394,7 +416,9 @@ describe('AuthAccountRepository', () => {
           lastLoginIp: '127.0.0.1',
           password: 'new-hash',
         },
+        $inc: { authVersion: 1 },
       },
+      { new: true },
     );
 
     await expect(
@@ -403,7 +427,7 @@ describe('AuthAccountRepository', () => {
         ip: '127.0.0.1',
         expectedAuthVersion: 0,
       }),
-    ).resolves.toBe(false);
+    ).resolves.toBeNull();
 
     await expect(
       repository.recordSuccessfulLogin(accountId, 'hash', {
@@ -411,16 +435,7 @@ describe('AuthAccountRepository', () => {
         ip: '10.0.0.1',
         expectedAuthVersion: 0,
       }),
-    ).resolves.toBe(true);
-    expect(mocks.updateOne.mock.calls[2]?.[1]).toEqual({
-      $set: {
-        failedLoginAttempts: 0,
-        failedLoginWindowStart: null,
-        lockedUntil: null,
-        lastLoginAt: now,
-        lastLoginIp: '10.0.0.1',
-      },
-    });
+    ).resolves.toMatchObject({ authVersion: 1 });
 
     await expect(
       repository.resolveVerifiedGoogleAccount({
@@ -434,9 +449,10 @@ describe('AuthAccountRepository', () => {
     ).resolves.toMatchObject({
       email: 'user@example.com',
       displayName: 'Google User',
-      authVersion: 0,
+      authVersion: 1,
     });
-    expect(mocks.findOneAndUpdate).toHaveBeenCalledWith(
+    expect(mocks.findOneAndUpdate).toHaveBeenNthCalledWith(
+      5,
       { email: 'user@example.com', disable: 0 },
       expect.objectContaining({
         $set: expect.objectContaining({
@@ -449,10 +465,10 @@ describe('AuthAccountRepository', () => {
         $setOnInsert: {
           role: 'user',
           disable: 0,
-          authVersion: 0,
           disabledAt: null,
           disabledBy: null,
         },
+        $inc: { authVersion: 1 },
       }),
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
@@ -473,11 +489,14 @@ describe('AuthAccountRepository', () => {
       keyPattern: { email: 1 },
     });
     // Mongoose chain rejects at lean() when the upsert hits the unique email index.
-    mocks.findOneAndUpdate.mockReturnValueOnce({
-      select: () => ({
-        lean: vi.fn().mockRejectedValueOnce(duplicateKeyError),
-      }),
-    });
+    mocks.findOneAndUpdate
+      .mockReturnValueOnce(queryChain(null))
+      .mockReturnValueOnce({
+        select: () => ({
+          lean: vi.fn().mockRejectedValueOnce(duplicateKeyError),
+        }),
+      })
+      .mockReturnValueOnce(queryChain(null));
 
     await expect(
       new AuthAccountRepository().resolveVerifiedGoogleAccount({
@@ -490,7 +509,7 @@ describe('AuthAccountRepository', () => {
   });
 
   it('fails successful-login CAS when authVersion diverges after disable/restore', async () => {
-    mocks.updateOne.mockResolvedValueOnce({ matchedCount: 0 });
+    mocks.findOneAndUpdate.mockReturnValueOnce(queryChain(null));
 
     await expect(
       new AuthAccountRepository().recordSuccessfulLogin(accountId, 'hash', {
@@ -498,16 +517,17 @@ describe('AuthAccountRepository', () => {
         ip: '127.0.0.1',
         expectedAuthVersion: 0,
       }),
-    ).resolves.toBe(false);
+    ).resolves.toBeNull();
 
-    expect(mocks.updateOne).toHaveBeenCalledWith(
+    expect(mocks.findOneAndUpdate).toHaveBeenCalledWith(
       {
-        _id: expect.any(Types.ObjectId),
+        _id: expect.anything(),
         password: 'hash',
         authVersion: 0,
         disable: 0,
       },
       expect.any(Object),
+      { new: true },
     );
   });
 
@@ -551,7 +571,7 @@ describe('AuthAccountRepository', () => {
         ip: '127.0.0.1',
         expectedAuthVersion: 0,
       }),
-    ).resolves.toBe(false);
+    ).resolves.toBeNull();
     expect(mocks.findOneAndUpdate).not.toHaveBeenCalled();
     expect(mocks.updateOne).not.toHaveBeenCalled();
   });

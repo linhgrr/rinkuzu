@@ -10,6 +10,13 @@ function stripSessionUser(session: Session): Session {
   return sessionWithoutUser;
 }
 
+function markSessionReplaced(session: Session): Session {
+  return {
+    ...stripSessionUser(session),
+    invalidatedReason: 'session_replaced',
+  };
+}
+
 export const clearSessionUser = stripSessionUser;
 
 /** Edge-safe JWT to session projection. It never performs I/O. */
@@ -45,8 +52,10 @@ export function applySessionUser(
 ): Session {
   if (!token.sub || !dbUser) return stripSessionUser(session);
 
-  if (!isAuthVersion(token.av) || token.av !== dbUser.authVersion) {
-    return stripSessionUser(session);
+  if (!isAuthVersion(token.av)) return stripSessionUser(session);
+
+  if (token.av !== dbUser.authVersion) {
+    return markSessionReplaced(session);
   }
 
   const tokenPasswordChangedAt = typeof token.pwc === 'number' ? token.pwc : null;

@@ -296,13 +296,15 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     accountId: string,
     expectedPasswordHash: string,
     data: SuccessfulLoginData,
-  ): Promise<boolean> {
-    if (!Types.ObjectId.isValid(accountId)) return false;
+  ): Promise<AuthenticatedUser | null> {
+    if (!Types.ObjectId.isValid(accountId)) return null;
     await connectDB();
     // CAS: _id + expected password hash + exact disable:0 + expected authVersion.
     // A disable+restore between credential read and this write bumps authVersion
     // and must fail closed (no stale successful login).
-    const result = await User.updateOne(
+    // Incrementing authVersion atomically makes this the account's only active
+    // login; every previously issued JWT immediately becomes stale.
+    const record = await User.findOneAndUpdate(
       {
         _id: new Types.ObjectId(accountId),
         password: expectedPasswordHash,
@@ -318,9 +320,13 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
           lastLoginIp: data.ip,
           ...(data.passwordHash ? { password: data.passwordHash } : {}),
         },
+        $inc: { authVersion: 1 },
       },
-    );
-    return result.matchedCount === 1;
+      { new: true },
+    )
+      .select(AUTHENTICATED_USER_FIELDS)
+      .lean<AuthAccountPersistenceRecord>();
+    return record ? AuthAccountPersistenceMapper.toAuthenticatedUser(record) : null;
   }
 
   async resolveVerifiedGoogleAccount(
@@ -333,6 +339,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         { authIdentities: { $elemMatch: identity }, ...ACTIVE_ACCOUNT_FILTER },
         {
           $set: buildGoogleProfileUpdates(data),
+          $inc: { authVersion: 1 },
         },
         { new: true },
       )
@@ -353,10 +360,10 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
           $setOnInsert: {
             role: 'user',
             disable: ACCOUNT_DISABLE_ACTIVE,
-            authVersion: 0,
             disabledAt: null,
             disabledBy: null,
           },
+          $inc: { authVersion: 1 },
         },
         { upsert: true, new: true, setDefaultsOnInsert: true },
       )
@@ -367,12 +374,18 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
       return AuthAccountPersistenceMapper.toAuthenticatedUser(record);
     } catch (error) {
       if (isMongoDuplicateKeyError(error)) {
-        const record = await User.findOne({
-          authIdentities: {
-            $elemMatch: { provider: 'google', subject: data.subject },
+        const identity = { provider: 'google', subject: data.subject };
+        const record = await User.findOneAndUpdate(
+          {
+            authIdentities: { $elemMatch: identity },
+            ...ACTIVE_ACCOUNT_FILTER,
           },
-          ...ACTIVE_ACCOUNT_FILTER,
-        })
+          {
+            $set: buildGoogleProfileUpdates(data),
+            $inc: { authVersion: 1 },
+          },
+          { new: true },
+        )
           .select(AUTHENTICATED_USER_FIELDS)
           .lean<AuthAccountPersistenceRecord>();
         return record ? AuthAccountPersistenceMapper.toAuthenticatedUser(record) : null;

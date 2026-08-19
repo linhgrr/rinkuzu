@@ -13,6 +13,12 @@ function readLocale(formData: FormData): Locale {
     : defaultLocale;
 }
 
+function logoutRedirectTarget(formData: FormData, locale: Locale): string {
+  return formData.get('reason') === 'session_replaced'
+    ? `${toBrowserPath(ROUTES.LOGIN, locale)}?reason=session_replaced`
+    : toBrowserPath(ROUTES.HOME, locale);
+}
+
 type AuthSignOutCookie = {
   name: string;
   value: string;
@@ -38,8 +44,9 @@ function isSignOutCookie(value: unknown): value is AuthSignOutCookie {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const locale = readLocale(await request.formData());
-  const redirectTo = toBrowserPath(ROUTES.HOME, locale);
+  const formData = await request.formData();
+  const locale = readLocale(formData);
+  const redirectTo = logoutRedirectTarget(formData, locale);
   const result = (await signOut({ redirect: false, redirectTo })) as AuthSignOutResult;
   const cookies = Array.isArray(result.cookies) ? result.cookies.filter(isSignOutCookie) : [];
 

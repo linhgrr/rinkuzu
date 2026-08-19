@@ -52,6 +52,10 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
   );
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
+  const sessionReplacedError: ErrorState | null =
+    get('reason') === 'session_replaced'
+      ? { code: 'session_replaced', message: t('sessionReplaced') }
+      : null;
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -131,6 +135,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
           .padStart(2, '0')}:${(retrySeconds % 60).toString().padStart(2, '0')}`
       : '';
   const emailValue = useWatch({ control: form.control, name: 'email' }) ?? '';
+  const displayedError = serverError ?? sessionReplacedError;
 
   return (
     <div>
@@ -142,7 +147,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         />
       )}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>
-        {serverError && (
+        {displayedError && (
           <Card
             variant="bordered"
             className="border-red-200 bg-red-50 p-4 animate-fadeInUp"
@@ -155,13 +160,13 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
                 aria-hidden="true"
               />
               <div className="text-sm">
-                <p className="font-medium">{serverError.message}</p>
-                {serverError.code === 'account_locked' && retrySeconds > 0 && (
+                <p className="font-medium">{displayedError.message}</p>
+                {displayedError.code === 'account_locked' && retrySeconds > 0 && (
                   <p className="mt-1 text-red-600">
                     {t('tryAgainIn')} <span className="font-mono">{lockoutCountdownLabel}</span>
                   </p>
                 )}
-                {serverError.code === 'email_not_verified' && (
+                {displayedError.code === 'email_not_verified' && (
                   <p className="mt-2">
                     <span>{t('emailNotVerifiedResendHint')} </span>
                     <Link

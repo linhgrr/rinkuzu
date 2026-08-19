@@ -131,13 +131,17 @@ export class AuthSignInService {
     const replacementPasswordHash = verification.needsRehash
       ? await hashPassword(input.password)
       : undefined;
-    const updated = await this.repository.recordSuccessfulLogin(account.id, account.passwordHash, {
-      now,
-      ip: context.ip,
-      expectedAuthVersion: account.authVersion,
-      ...(replacementPasswordHash ? { passwordHash: replacementPasswordHash } : {}),
-    });
-    if (!updated) {
+    const authenticatedUser = await this.repository.recordSuccessfulLogin(
+      account.id,
+      account.passwordHash,
+      {
+        now,
+        ip: context.ip,
+        expectedAuthVersion: account.authVersion,
+        ...(replacementPasswordHash ? { passwordHash: replacementPasswordHash } : {}),
+      },
+    );
+    if (!authenticatedUser) {
       this.scheduleAudit('login_failed', context, {
         userId: account.id,
         email: account.email,
@@ -151,18 +155,7 @@ export class AuthSignInService {
       email: account.email,
       metadata: { provider: 'credentials' },
     });
-    return {
-      success: true,
-      user: {
-        id: account.id,
-        email: account.email,
-        role: account.role,
-        ...(account.avatar ? { avatar: account.avatar } : {}),
-        ...(account.displayName ? { displayName: account.displayName } : {}),
-        passwordChangedAt: account.passwordChangedAt?.getTime() ?? null,
-        authVersion: account.authVersion,
-      },
-    };
+    return { success: true, user: authenticatedUser };
   }
 
   async authenticateGoogle(

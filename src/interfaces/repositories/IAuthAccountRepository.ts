@@ -74,7 +74,7 @@ export interface IAuthSignInRepository {
     accountId: string,
     expectedPasswordHash: string,
     data: SuccessfulLoginData,
-  ): Promise<boolean>;
+  ): Promise<AuthenticatedUser | null>;
 
   /**
    * Upserts only active accounts (`email` + `disable: 0`).

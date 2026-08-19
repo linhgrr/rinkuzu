@@ -54,7 +54,7 @@ class SignInRepositoryStub implements IAuthSignInRepository {
         accountId: string,
         expectedPasswordHash: string,
         data: SuccessfulLoginData,
-      ) => Promise<boolean>
+      ) => Promise<AuthenticatedUser | null>
     >();
   resolveVerifiedGoogleAccount =
     vi.fn<(data: VerifiedGoogleAccountData) => Promise<AuthenticatedUser | null>>();
@@ -101,7 +101,14 @@ describe('AuthSignInService', () => {
       resetSeconds: 60,
       limit: 10,
     });
-    repository.recordSuccessfulLogin.mockResolvedValue(true);
+    repository.recordSuccessfulLogin.mockResolvedValue({
+      id: account.id,
+      email: account.email,
+      role: account.role,
+      displayName: account.displayName,
+      passwordChangedAt: null,
+      authVersion: 1,
+    });
     audit.record.mockResolvedValue();
     vi.mocked(verifyPassword).mockResolvedValue({
       valid: true,
@@ -234,6 +241,15 @@ describe('AuthSignInService', () => {
       algorithm: 'bcrypt',
       needsRehash: true,
     });
+    repository.recordSuccessfulLogin.mockResolvedValueOnce({
+      id: account.id,
+      email: account.email,
+      role: account.role,
+      avatar: 'https://example.com/avatar.png',
+      displayName: account.displayName,
+      passwordChangedAt: new Date('2026-02-01T00:00:00.000Z').getTime(),
+      authVersion: 1,
+    });
 
     const result = await service.authenticateCredentials(
       { email: account.email, password: 'correct' },
@@ -249,7 +265,7 @@ describe('AuthSignInService', () => {
         avatar: 'https://example.com/avatar.png',
         displayName: account.displayName,
         passwordChangedAt: new Date('2026-02-01T00:00:00.000Z').getTime(),
-        authVersion: 0,
+        authVersion: 1,
       },
     });
     expect(repository.recordSuccessfulLogin).toHaveBeenCalledWith(
@@ -265,7 +281,7 @@ describe('AuthSignInService', () => {
 
   it('fails closed when recordSuccessfulLogin CAS misses after disable/restore ABA', async () => {
     repository.findLoginAccount.mockResolvedValue(account);
-    repository.recordSuccessfulLogin.mockResolvedValue(false);
+    repository.recordSuccessfulLogin.mockResolvedValue(null);
 
     await expect(
       service.authenticateCredentials({ email: account.email, password: 'correct' }, context),

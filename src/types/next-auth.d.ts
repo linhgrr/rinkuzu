@@ -5,6 +5,8 @@ export type UserRole = SharedUserRole;
 
 declare module 'next-auth' {
   interface Session {
+    /** Set when a newer login has replaced the JWT's session generation. */
+    invalidatedReason?: 'session_replaced';
     user?: {
       id: string;
       role: UserRole;
@@ -27,7 +29,7 @@ declare module 'next-auth' {
     dbUserId?: string;
     /** Epoch milliseconds copied to JWT for password-reset revocation. */
     passwordChangedAt?: number | null;
-    /** Auth version copied to JWT as `av` for disable/restore revocation. */
+    /** Session generation copied to JWT as `av`. */
     authVersion?: number;
   }
 }
@@ -41,7 +43,7 @@ declare module 'next-auth/jwt' {
     /** Password change epoch; session is revoked when the DB value is newer. */
     pwc?: number | null;
     /**
-     * Auth version claim. Must exactly match database `authVersion`.
+     * Session generation claim. Must exactly match database `authVersion`.
      * Missing or mismatched values fail closed and require re-login.
      */
     av?: number;

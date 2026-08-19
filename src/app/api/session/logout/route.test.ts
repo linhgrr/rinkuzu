@@ -6,11 +6,11 @@ vi.mock('@/auth', () => ({ signOut: signOutMock }));
 
 import { POST } from '@/app/api/session/logout/route';
 
-function logoutRequest(locale: string): Request {
+function logoutRequest(locale: string, reason?: string): Request {
   return new Request('http://localhost/api/session/logout', {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ locale }),
+    body: new URLSearchParams({ locale, ...(reason ? { reason } : {}) }),
   });
 }
 
@@ -49,6 +49,35 @@ describe('POST /api/session/logout', () => {
     await POST(logoutRequest('malicious-locale'));
 
     expect(signOutMock).toHaveBeenCalledWith({ redirect: false, redirectTo: '/vi' });
+  });
+
+  it('redirects a replaced session to localized login with its explanation', async () => {
+    signOutMock.mockResolvedValue({
+      redirect: 'http://localhost/vi/login?reason=session_replaced',
+      cookies: [
+        {
+          name: 'authjs.session-token',
+          value: '',
+          options: { httpOnly: true, maxAge: 0, path: '/', sameSite: 'lax' },
+        },
+      ],
+    });
+
+    const response = await POST(logoutRequest('vi', 'session_replaced'));
+
+    expect(signOutMock).toHaveBeenCalledWith({
+      redirect: false,
+      redirectTo: '/vi/login?reason=session_replaced',
+    });
+    expect(response.headers.get('location')).toBe(
+      'http://localhost/vi/login?reason=session_replaced',
+    );
+  });
+
+  it('ignores an unrecognized logout reason', async () => {
+    await POST(logoutRequest('en', 'https://attacker.example'));
+
+    expect(signOutMock).toHaveBeenCalledWith({ redirect: false, redirectTo: '/en' });
   });
 
   it('fails closed if Auth.js does not return a session deletion cookie', async () => {

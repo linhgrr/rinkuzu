@@ -5,13 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginForm } from '@/features/auth/components/LoginForm';
 
-const { markAnalyticsLoginPendingMock, replaceBrowserLocationMock, signInMock } = vi.hoisted(
-  () => ({
+const { markAnalyticsLoginPendingMock, replaceBrowserLocationMock, searchParamsMock, signInMock } =
+  vi.hoisted(() => ({
     markAnalyticsLoginPendingMock: vi.fn(),
     replaceBrowserLocationMock: vi.fn(),
+    searchParamsMock: vi.fn(() => new URLSearchParams('callbackUrl=/explore?type=mine')),
     signInMock: vi.fn(),
-  }),
-);
+  }));
 
 vi.mock('next-auth/react', () => ({
   signIn: signInMock,
@@ -22,7 +22,7 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams('callbackUrl=/explore?type=mine'),
+  useSearchParams: searchParamsMock,
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -53,7 +53,16 @@ describe('LoginForm', () => {
   beforeEach(() => {
     markAnalyticsLoginPendingMock.mockReset();
     replaceBrowserLocationMock.mockReset();
+    searchParamsMock.mockReturnValue(new URLSearchParams('callbackUrl=/explore?type=mine'));
     signInMock.mockReset();
+  });
+
+  it('shows why a replaced session returned the user to login', () => {
+    searchParamsMock.mockReturnValue(new URLSearchParams('reason=session_replaced'));
+
+    render(<LoginForm locale="en" />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('sessionReplaced');
   });
 
   it('announces validation errors and does not submit invalid credentials', async () => {

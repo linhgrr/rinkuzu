@@ -101,6 +101,7 @@ describe('AuthAccountRepository sign-in integration', () => {
     expect(second).not.toBeNull();
     expect(second?.id).toBe(first?.id);
     expect(second?.email).toBe(googleEmail);
+    expect(second?.authVersion).toBe((first?.authVersion ?? 0) + 1);
     await mongoose.connection.collection('users').deleteOne({ email: googleEmail });
   });
 
@@ -111,12 +112,19 @@ describe('AuthAccountRepository sign-in integration', () => {
     if (!login?.passwordHash) {
       throw new Error('expected password hash for integration login account');
     }
-    const ok = await repo.recordSuccessfulLogin(userId, login.passwordHash, {
+    const authenticatedUser = await repo.recordSuccessfulLogin(userId, login.passwordHash, {
       now: new Date(),
       ip: '127.0.0.1',
       expectedAuthVersion: login.authVersion,
     });
-    expect(ok).toBe(true);
+    expect(authenticatedUser?.authVersion).toBe(login.authVersion + 1);
+    await expect(
+      repo.recordSuccessfulLogin(userId, login.passwordHash, {
+        now: new Date(),
+        ip: '127.0.0.1',
+        expectedAuthVersion: login.authVersion,
+      }),
+    ).resolves.toBeNull();
     const after = await repo.findLoginAccount(email);
     expect(after?.failedLoginAttempts).toBe(0);
     expect(after?.lockedUntil).toBeUndefined();

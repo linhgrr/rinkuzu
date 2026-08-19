@@ -21,7 +21,7 @@ interface UserDocument extends Document {
   disable: typeof ACCOUNT_DISABLE_ACTIVE | typeof ACCOUNT_DISABLE_DISABLED;
   disabledAt?: Date | null;
   disabledBy?: Types.ObjectId | null;
-  /** Monotonic session revocation counter; increments on each real disable/restore. */
+  /** Monotonic session generation; increments on login and real disable/restore. */
   authVersion: number;
   authIdentities?: Array<{ provider: string; subject: string }>;
 

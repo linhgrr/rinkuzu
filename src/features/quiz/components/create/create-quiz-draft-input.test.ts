@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { toCreateQuizDraftInput } from './create-quiz-draft-input';
 
 describe('toCreateQuizDraftInput', () => {
-  it.each([true, false])('preserves isPrivate=%s in the draft request', (isPrivate) => {
+  it.each([true, false])('preserves submitToPremium=%s in the draft request', (submitToPremium) => {
     expect(
       toCreateQuizDraftInput(
         {
           aiPrompt: '  focus on definitions  ',
           description: '  Chapter one  ',
-          isPrivate,
+          submitToPremium,
           selectedFolderId: 'folder-1',
           title: '  Biology  ',
         },
@@ -21,7 +21,7 @@ describe('toCreateQuizDraftInput', () => {
       fileName: 'biology.pdf',
       fileSize: 2048,
       folderId: 'folder-1',
-      isPrivate,
+      submitToPremium,
       description: 'Chapter one',
       prompt: 'focus on definitions',
     });
@@ -33,7 +33,7 @@ describe('toCreateQuizDraftInput', () => {
         {
           aiPrompt: ' ',
           description: '',
-          isPrivate: true,
+          submitToPremium: true,
           selectedFolderId: null,
           title: ' Quiz ',
         },
@@ -46,7 +46,7 @@ describe('toCreateQuizDraftInput', () => {
       fileName: 'quiz.pdf',
       fileSize: 1024,
       folderId: null,
-      isPrivate: true,
+      submitToPremium: true,
     });
   });
 });

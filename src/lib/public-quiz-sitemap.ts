@@ -11,7 +11,7 @@ export async function loadPublicQuizSitemapEntries(
 ): Promise<PublicQuizSitemapEntry[]> {
   try {
     const quizResult = await getQuizService().getQuizzes({
-      isPrivate: false,
+      visibility: 'public',
       page: 1,
       limit: 5000,
       onlyMine: false,

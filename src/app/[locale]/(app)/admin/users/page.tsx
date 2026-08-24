@@ -23,11 +23,13 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
+import { Input, Textarea } from '@/components/ui/Input';
 import Pagination from '@/components/ui/Pagination';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { HiOutlineCheck } from 'react-icons/hi';
+import { HiOutlineCheck, HiOutlinePlusCircle } from 'react-icons/hi';
 import {
   fetchAdminUserListViewModel,
+  grantAdminUserCredits,
   grantAdminUserSubscription,
   updateAdminUserRole,
   updateAdminUserStatus,
@@ -48,7 +50,7 @@ import {
 } from '@/shared/constants/account-disable';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
-type AdminUsersModal = 'status' | 'role' | 'subscription' | null;
+type AdminUsersModal = 'status' | 'role' | 'subscription' | 'credit' | null;
 type AdminUserActionRequest<T> = () => Promise<T>;
 
 interface AdminUsersTranslationProps {
@@ -75,6 +77,7 @@ interface UsersResultsInfoProps extends UsersStatsCardsProps {
 }
 
 interface UserActionCallbacks {
+  onOpenCreditModal: (user: AdminUserViewModel) => void;
   onOpenSubscriptionModal: (user: AdminUserViewModel) => void;
   onOpenRoleModal: (user: AdminUserViewModel) => void;
   onOpenStatusModal: (user: AdminUserViewModel) => void;
@@ -131,6 +134,18 @@ interface SubscriptionModalProps extends AdminUsersTranslationProps {
   onSelectPlan: (plan: AdminBillingPlanViewModel) => void;
 }
 
+interface CreditModalProps extends AdminUsersTranslationProps {
+  isOpen: boolean;
+  selectedUser: AdminUserViewModel | null;
+  amount: string;
+  note: string;
+  actionLoading: string | null;
+  onAmountChange: (value: string) => void;
+  onNoteChange: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
 interface AdminUsersState {
   actionLoading: string | null;
   localError: string;
@@ -143,6 +158,9 @@ interface AdminUsersState {
   selectedUser: AdminUserViewModel | null;
   newRole: UserRole;
   selectedPlanId: string;
+  creditAmount: string;
+  creditNote: string;
+  creditIdempotencyKey: string;
 }
 
 type AdminUsersAction =
@@ -155,8 +173,11 @@ type AdminUsersAction =
   | { type: 'openRoleModal'; user: AdminUserViewModel }
   | { type: 'openStatusModal'; user: AdminUserViewModel }
   | { type: 'openSubscriptionModal'; user: AdminUserViewModel }
+  | { type: 'openCreditModal'; user: AdminUserViewModel; idempotencyKey: string }
   | { type: 'closeModal' }
-  | { type: 'setSelectedPlan'; planId: string };
+  | { type: 'setSelectedPlan'; planId: string }
+  | { type: 'setCreditAmount'; value: string }
+  | { type: 'setCreditNote'; value: string };
 
 const STATUS_FILTER_DEFAULT: AdminUserStatusFilter = 'all';
 
@@ -172,6 +193,9 @@ const initialState: AdminUsersState = {
   selectedUser: null,
   newRole: 'user',
   selectedPlanId: '',
+  creditAmount: '1',
+  creditNote: '',
+  creditIdempotencyKey: '',
 };
 
 function adminUsersReducer(state: AdminUsersState, action: AdminUsersAction): AdminUsersState {
@@ -212,18 +236,34 @@ function adminUsersReducer(state: AdminUsersState, action: AdminUsersAction): Ad
         activeModal: 'subscription',
         selectedPlanId: '',
       };
+    case 'openCreditModal':
+      return {
+        ...state,
+        selectedUser: action.user,
+        activeModal: 'credit',
+        creditAmount: '1',
+        creditNote: '',
+        creditIdempotencyKey: action.idempotencyKey,
+      };
     case 'closeModal':
       return {
         ...state,
         activeModal: null,
         selectedUser: null,
         actionLoading: null,
+        creditAmount: '1',
+        creditNote: '',
+        creditIdempotencyKey: '',
       };
     case 'setSelectedPlan':
       return {
         ...state,
         selectedPlanId: action.planId,
       };
+    case 'setCreditAmount':
+      return { ...state, creditAmount: action.value };
+    case 'setCreditNote':
+      return { ...state, creditNote: action.value };
     default: {
       // Exhaustive guard: unknown actions must not silently keep stale modal labels.
       const _exhaustive: never = action;
@@ -340,6 +380,7 @@ function UserRow({
   sessionEmail,
   actionLoading,
   t,
+  onOpenCreditModal,
   onOpenSubscriptionModal,
   onOpenRoleModal,
   onOpenStatusModal,
@@ -386,6 +427,16 @@ function UserRow({
       </td>
       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
         <div className="flex justify-end gap-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenCreditModal(user)}
+            disabled={actionLoading === user.id}
+            className="min-h-[40px] border-amber-300 px-3 text-amber-700 hover:bg-amber-50"
+          >
+            <HiOutlinePlusCircle className="mr-1 size-4" aria-hidden="true" />
+            {t('addCredit')}
+          </Button>
           {user.email !== sessionEmail ? (
             <>
               {!isDisabled ? (
@@ -435,6 +486,7 @@ function UsersTable({
   actionLoading,
   searchTerm,
   t,
+  onOpenCreditModal,
   onOpenSubscriptionModal,
   onOpenRoleModal,
   onOpenStatusModal,
@@ -496,6 +548,7 @@ function UsersTable({
                   {...(sessionEmail !== undefined ? { sessionEmail } : {})}
                   actionLoading={actionLoading}
                   t={t}
+                  onOpenCreditModal={onOpenCreditModal}
                   onOpenSubscriptionModal={onOpenSubscriptionModal}
                   onOpenRoleModal={onOpenRoleModal}
                   onOpenStatusModal={onOpenStatusModal}
@@ -665,6 +718,63 @@ function SubscriptionModal({
   );
 }
 
+function CreditModal({
+  isOpen,
+  selectedUser,
+  amount,
+  note,
+  actionLoading,
+  onAmountChange,
+  onNoteChange,
+  onClose,
+  onConfirm,
+  t,
+}: CreditModalProps) {
+  if (!selectedUser) return null;
+
+  const parsedAmount = Number(amount);
+  const amountIsValid = Number.isInteger(parsedAmount) && parsedAmount >= 1 && parsedAmount <= 1000;
+  const noteIsValid = note.trim().length >= 3 && note.trim().length <= 500;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={t('addCreditTitle')}>
+      <div className="space-y-4">
+        <p className="text-sm text-neutral-600">
+          {t('addCreditDescription', { email: selectedUser.email })}
+        </p>
+        <Input
+          type="number"
+          min={1}
+          max={1000}
+          step={1}
+          inputMode="numeric"
+          label={t('creditAmount')}
+          value={amount}
+          onChange={(event) => onAmountChange(event.target.value)}
+          error={amount && !amountIsValid ? t('creditAmountError') : undefined}
+        />
+        <Textarea
+          label={t('creditReason')}
+          placeholder={t('creditReasonPlaceholder')}
+          maxLength={500}
+          value={note}
+          onChange={(event) => onNoteChange(event.target.value)}
+          error={note && !noteIsValid ? t('creditReasonError') : undefined}
+        />
+        <p className="text-xs text-neutral-500">{t('creditLedgerNotice')}</p>
+        <ModalActions
+          cancelText={t('cancel')}
+          confirmText={t('addCreditButton')}
+          onCancel={onClose}
+          onConfirm={onConfirm}
+          isLoading={actionLoading === selectedUser.id}
+          isDisabled={!amountIsValid || !noteIsValid}
+        />
+      </div>
+    </Modal>
+  );
+}
+
 export default function AdminUsersPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
@@ -822,6 +932,32 @@ export default function AdminUsersPage() {
     );
   };
 
+  const handleAddCredit = async () => {
+    if (!state.selectedUser || !state.creditIdempotencyKey) return;
+    const selectedUser = state.selectedUser;
+    const amount = Number(state.creditAmount);
+    const note = state.creditNote.trim();
+    if (!Number.isInteger(amount) || amount < 1 || amount > 1000 || note.length < 3) return;
+
+    await runUserAction(
+      selectedUser.id,
+      () =>
+        grantAdminUserCredits({
+          userId: selectedUser.id,
+          amount,
+          note,
+          idempotencyKey: state.creditIdempotencyKey,
+        }),
+      (result) =>
+        t('creditAddedSuccess', {
+          amount: result.amount,
+          email: selectedUser.email,
+          balance: result.balance,
+        }),
+      t('userActionRefreshWarning'),
+    );
+  };
+
   if (isColdStart) {
     return (
       <AdminPageShell>
@@ -873,6 +1009,9 @@ export default function AdminUsersPage() {
           actionLoading={state.actionLoading}
           searchTerm={state.searchTerm}
           t={t}
+          onOpenCreditModal={(user) =>
+            dispatch({ type: 'openCreditModal', user, idempotencyKey: crypto.randomUUID() })
+          }
           onOpenSubscriptionModal={(user) => dispatch({ type: 'openSubscriptionModal', user })}
           onOpenRoleModal={(user) => dispatch({ type: 'openRoleModal', user })}
           onOpenStatusModal={(user) => dispatch({ type: 'openStatusModal', user })}
@@ -923,6 +1062,19 @@ export default function AdminUsersPage() {
             planId: plan.id,
           })
         }
+        t={t}
+      />
+
+      <CreditModal
+        isOpen={state.activeModal === 'credit'}
+        selectedUser={state.selectedUser}
+        amount={state.creditAmount}
+        note={state.creditNote}
+        actionLoading={state.actionLoading}
+        onAmountChange={(value) => dispatch({ type: 'setCreditAmount', value })}
+        onNoteChange={(value) => dispatch({ type: 'setCreditNote', value })}
+        onClose={() => dispatch({ type: 'closeModal' })}
+        onConfirm={() => void handleAddCredit()}
         t={t}
       />
     </AdminPageShell>

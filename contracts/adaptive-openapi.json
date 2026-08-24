@@ -1942,6 +1942,141 @@
         }
       }
     },
+    "/api/v1/premium-quiz/reviews": {
+      "post": {
+        "tags": ["premium-quiz-reviews"],
+        "summary": "Create Premium Review",
+        "operationId": "create_premium_review_api_v1_premium_quiz_reviews_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PremiumReviewCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_PremiumReviewCreateResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/premium-quiz/reviews/{job_id}": {
+      "get": {
+        "tags": ["premium-quiz-reviews"],
+        "summary": "Get Premium Review",
+        "operationId": "get_premium_review_api_v1_premium_quiz_reviews__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_PremiumReviewCreateResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/ocr-keys": {
       "get": {
         "tags": ["admin-ocr-keys"],
@@ -9315,6 +9450,395 @@
         "title": "PipelineStepId",
         "description": "Stable identifiers for pipeline steps.\n\nThese match the ``step_id`` values already emitted in the debug trace so a\npolicy record and a trace entry describe the same step."
       },
+      "PremiumDuplicateMatchInput": {
+        "properties": {
+          "submissionId": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Submissionid"
+          },
+          "quizId": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Quizid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "similarity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Similarity"
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["exact_quiz", "shared_questions", "fuzzy"],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["submissionId", "quizId", "title", "similarity", "reason"],
+        "title": "PremiumDuplicateMatchInput"
+      },
+      "PremiumDuplicateReportInput": {
+        "properties": {
+          "exactDocumentRewarded": {
+            "type": "boolean",
+            "title": "Exactdocumentrewarded"
+          },
+          "exactQuiz": {
+            "type": "boolean",
+            "title": "Exactquiz"
+          },
+          "sharedQuestionCount": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sharedquestioncount"
+          },
+          "highestSimilarity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Highestsimilarity"
+          },
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/PremiumDuplicateMatchInput"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Matches"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "exactDocumentRewarded",
+          "exactQuiz",
+          "sharedQuestionCount",
+          "highestSimilarity",
+          "matches"
+        ],
+        "title": "PremiumDuplicateReportInput"
+      },
+      "PremiumQuestionInput": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "options": {
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 2,
+            "title": "Options"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["single", "multiple"],
+            "title": "Type"
+          },
+          "correctIndex": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correctindex"
+          },
+          "correctIndexes": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Correctindexes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id", "question", "options", "type"],
+        "title": "PremiumQuestionInput"
+      },
+      "PremiumReviewCreateRequest": {
+        "properties": {
+          "submissionId": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Submissionid"
+          },
+          "snapshotHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshothash"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": ["pdf", "manual"],
+            "title": "Sourcetype"
+          },
+          "documentFingerprint": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documentfingerprint"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/PremiumSnapshotInput"
+          },
+          "duplicateReport": {
+            "$ref": "#/components/schemas/PremiumDuplicateReportInput"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["submissionId", "snapshotHash", "sourceType", "snapshot", "duplicateReport"],
+        "title": "PremiumReviewCreateRequest"
+      },
+      "PremiumReviewCreateResponse": {
+        "properties": {
+          "job": {
+            "$ref": "#/components/schemas/PremiumReviewJobResponse"
+          }
+        },
+        "type": "object",
+        "required": ["job"],
+        "title": "PremiumReviewCreateResponse"
+      },
+      "PremiumReviewCriterion": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": ["key", "score", "note"],
+        "title": "PremiumReviewCriterion"
+      },
+      "PremiumReviewIssue": {
+        "properties": {
+          "questionIndex": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questionindex"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "error"],
+            "title": "Severity"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": ["severity", "code", "message"],
+        "title": "PremiumReviewIssue"
+      },
+      "PremiumReviewJobResponse": {
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "title": "Jobid"
+          },
+          "submissionId": {
+            "type": "string",
+            "title": "Submissionid"
+          },
+          "snapshotHash": {
+            "type": "string",
+            "title": "Snapshothash"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "running", "completed", "failed"],
+            "title": "Status"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PremiumReviewResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": ["jobId", "submissionId", "snapshotHash", "status"],
+        "title": "PremiumReviewJobResponse"
+      },
+      "PremiumReviewResult": {
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": ["pass", "needs_review", "fail"],
+            "title": "Verdict"
+          },
+          "score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "suggestedCredits": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Suggestedcredits"
+          },
+          "groundingAvailable": {
+            "type": "boolean",
+            "title": "Groundingavailable"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Summary"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/PremiumReviewCriterion"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Criteria"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/PremiumReviewIssue"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Issues"
+          }
+        },
+        "type": "object",
+        "required": [
+          "verdict",
+          "score",
+          "suggestedCredits",
+          "groundingAvailable",
+          "summary",
+          "criteria",
+          "issues"
+        ],
+        "title": "PremiumReviewResult"
+      },
+      "PremiumSnapshotInput": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Slug"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/PremiumQuestionInput"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["title", "slug", "questions"],
+        "title": "PremiumSnapshotInput"
+      },
       "ProcessDocumentRequest": {
         "properties": {
           "file_url": {
@@ -9586,9 +10110,9 @@
             "title": "Prompt",
             "description": "Custom AI prompt to guide question generation."
           },
-          "is_private": {
+          "submit_to_premium": {
             "type": "boolean",
-            "title": "Is Private",
+            "title": "Submit To Premium",
             "default": false
           }
         },
@@ -9662,7 +10186,7 @@
             ],
             "title": "Questions"
           },
-          "is_private": {
+          "submit_to_premium": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -9671,7 +10195,7 @@
                 "type": "null"
               }
             ],
-            "title": "Is Private"
+            "title": "Submit To Premium"
           },
           "expected_revision": {
             "anyOf": [
@@ -9734,6 +10258,22 @@
               }
             ],
             "title": "Page Count"
+          },
+          "file_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Hash"
+          },
+          "retained_for_premium": {
+            "type": "boolean",
+            "title": "Retained For Premium",
+            "default": false
           }
         },
         "type": "object",
@@ -9876,9 +10416,9 @@
             "enum": ["pdf", "manual"],
             "title": "Source Type"
           },
-          "is_private": {
+          "submit_to_premium": {
             "type": "boolean",
-            "title": "Is Private"
+            "title": "Submit To Premium"
           },
           "revision": {
             "type": "integer",
@@ -9968,7 +10508,7 @@
           "category_id",
           "prompt",
           "source_type",
-          "is_private",
+          "submit_to_premium",
           "revision",
           "question_count",
           "pdf",
@@ -9999,6 +10539,11 @@
             "type": "string",
             "minLength": 1,
             "title": "Quiz Id"
+          },
+          "retain_source": {
+            "type": "boolean",
+            "title": "Retain Source",
+            "default": false
           }
         },
         "type": "object",
@@ -10036,9 +10581,9 @@
             ],
             "title": "Category Id"
           },
-          "is_private": {
+          "submit_to_premium": {
             "type": "boolean",
-            "title": "Is Private",
+            "title": "Submit To Premium",
             "default": false
           }
         },
@@ -11495,6 +12040,33 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[PipelineSessionCreateResponse]"
+      },
+      "StandardResponse_PremiumReviewCreateResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/PremiumReviewCreateResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[PremiumReviewCreateResponse]"
       },
       "StandardResponse_QuizDraftListResponse_": {
         "properties": {

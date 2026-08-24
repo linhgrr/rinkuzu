@@ -42,7 +42,7 @@ export interface QuizEditViewModel {
   slug: string;
   author: QuizEditorAuthorViewModel | null;
   folder: string | null;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   questionCount: number;
   createdAt: string;
   updatedAt: string;
@@ -56,5 +56,6 @@ export interface UpdateQuizEditInput {
   description: string;
   folder: string | null;
   questions: QuizEditorQuestionInputViewModel[];
-  isPrivate: boolean;
+  submitToPremium: boolean;
+  rightsAttested?: boolean;
 }

@@ -9,23 +9,42 @@ import { logger } from '@/lib/logger';
 import { toReportQuestionSnapshot } from '@/lib/report-fields';
 import { requireQuizReadAccess } from './quiz-helpers';
 import { QuizDiscussionDtoMapper } from '@/mappers/quiz/QuizDiscussionDtoMapper';
+import type { PremiumAccessContext, PremiumAccessDecision } from '@/entities/PremiumQuiz';
+
+interface PremiumDiscussionAccessPolicy {
+  canAccessPublishedQuiz(
+    context: PremiumAccessContext,
+    quizId: string,
+  ): Promise<PremiumAccessDecision>;
+}
 
 export class QuizDiscussionService {
   constructor(
     private quizRepository: IQuizRepository,
     private discussionRepository: IDiscussionRepository,
     private reportRepository: IReportRepository,
+    private premiumAccessPolicy?: PremiumDiscussionAccessPolicy,
   ) {}
 
   private async getAccessibleQuizSummary(
     slug: string,
     session?: Session | null,
   ): Promise<ServiceResult<Quiz>> {
-    return requireQuizReadAccess(
-      await this.quizRepository.findSummaryBySlug(slug),
-      session?.user?.id,
-      session?.user?.role,
-    );
+    const quiz = await this.quizRepository.findSummaryBySlug(slug);
+    const access = await requireQuizReadAccess(quiz, session?.user?.id, session?.user?.role);
+    if (access.success || access.statusCode !== 403 || !quiz || !session?.user?.id) {
+      return access;
+    }
+    const allowed =
+      this.premiumAccessPolicy !== undefined &&
+      (await this.premiumAccessPolicy.canAccessPublishedQuiz(
+        {
+          userId: session.user.id,
+          ...(session.user.role === undefined ? {} : { role: session.user.role }),
+        },
+        quiz.id,
+      ));
+    return allowed ? { success: true, data: quiz } : access;
   }
 
   async getQuizDiscussions(

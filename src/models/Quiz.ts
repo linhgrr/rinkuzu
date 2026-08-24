@@ -9,7 +9,7 @@ interface QuizDocument extends Document {
   author: Types.ObjectId;
   slug: string;
   questions: QuizQuestionDocument[];
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   pdfUrl?: string; // S3 URL for source PDF
   sourceDraftId?: string;
   createdAt: Date;
@@ -55,9 +55,11 @@ const QuizSchema = new Schema<QuizDocument>(
         message: `Quiz must contain between 1 and ${MAX_QUESTIONS_PER_QUIZ} questions`,
       },
     },
-    isPrivate: {
-      type: Boolean,
-      default: false,
+    visibility: {
+      type: String,
+      enum: ['public', 'personal'],
+      required: true,
+      default: 'public',
     },
     pdfUrl: {
       type: String,
@@ -75,9 +77,9 @@ const QuizSchema = new Schema<QuizDocument>(
 
 // Indexes for better performance
 QuizSchema.index({ createdAt: -1 });
-QuizSchema.index({ isPrivate: 1, createdAt: -1 });
+QuizSchema.index({ visibility: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, createdAt: -1 });
-QuizSchema.index({ author: 1, isPrivate: 1, createdAt: -1 });
+QuizSchema.index({ author: 1, visibility: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, folder: 1, createdAt: -1 });
 QuizSchema.index(
   { sourceDraftId: 1 },

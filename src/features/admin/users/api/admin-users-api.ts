@@ -1,9 +1,15 @@
-import type { AdminMessageDto, AdminUserListDto, AdminUserStatusDto } from '@/dtos/admin-user';
+import type {
+  AdminMessageDto,
+  AdminUserCreditGrantDto,
+  AdminUserListDto,
+  AdminUserStatusDto,
+} from '@/dtos/admin-user';
 import type { AdminUserSubscriptionGrantDto } from '@/dtos/admin-billing';
 import { fetchApiData } from '@/lib/api/client';
 import { toAdminUserListViewModel } from '@/features/admin/users/mappers/admin-users.mapper';
 import type {
   AdminUserListViewModel,
+  AdminUserCreditGrantInput,
   AdminUserRoleUpdateInput,
   AdminUserStatusUpdateInput,
   AdminUserSubscriptionGrantInput,
@@ -44,5 +50,18 @@ export async function grantAdminUserSubscription({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, planId }),
+  });
+}
+
+export async function grantAdminUserCredits({
+  userId,
+  amount,
+  note,
+  idempotencyKey,
+}: AdminUserCreditGrantInput): Promise<AdminUserCreditGrantDto> {
+  return fetchApiData<AdminUserCreditGrantDto>(`/api/admin/users/${userId}/credits`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, note, idempotencyKey }),
   });
 }

@@ -55,7 +55,7 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 
 ## Pricing
 - Free Plan: 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day
-- Premium Plan: Private quizzes and higher limits: 50 PDF-to-quiz generations per month (up to 100 pages per file), 12 adaptive paths per month, 500 adaptive exercises per day, and 150 Ask Rin-chan messages per day
+- Premium Plan: Full access to the curated Quiz Premium catalog and higher limits: 50 PDF-to-quiz generations per month (up to 100 pages per file), 12 adaptive paths per month, 500 adaptive exercises per day, and 150 Ask Rin-chan messages per day
 
 ## Contact
 - Email: support@rinkuzu.app
@@ -94,7 +94,7 @@ Q: How do I generate a quiz from a PDF?
 A: Upload supported PDF material and RinKuzu extracts key concepts, identifies prerequisite relationships, and generates quizzes with explanations.
 
 Q: Is RinKuzu free to use?
-A: Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks private quizzes and raises these limits. See /pricing for details.
+A: Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks the full curated Quiz Premium catalog and raises these limits. Free accounts can permanently unlock individual Premium quizzes with credits earned from approved contributions. See /pricing for details.
 
 Q: Which languages does RinKuzu support?
 A: RinKuzu supports Vietnamese and English with a full bilingual interface. AI-generated content adapts to the language of your uploaded PDF.

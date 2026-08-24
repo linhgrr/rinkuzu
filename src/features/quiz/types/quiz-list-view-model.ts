@@ -12,7 +12,7 @@ export interface QuizListItemViewModel {
   slug: string;
   author: QuizAuthorViewModel | null;
   folderId: string | null;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   questionCount: number;
   createdAt: string;
   updatedAt: string;

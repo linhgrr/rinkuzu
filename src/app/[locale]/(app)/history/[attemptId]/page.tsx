@@ -276,7 +276,8 @@ function AttemptSummary({
 }) {
   const correctCount = attempt.quiz.questions.filter((question) => question.isCorrect).length;
   const wrongCount = attempt.quiz.questions.length - correctCount;
-  const historyUnavailable = attempt.historyStatus === 'quiz_modified';
+  const historyUnavailable = attempt.historyStatus !== 'complete';
+  const contentLocked = attempt.historyStatus === 'content_locked';
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -285,8 +286,12 @@ function AttemptSummary({
           role="status"
           className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900"
         >
-          <p className="font-semibold">{t('historyUnavailableTitle')}</p>
-          <p>{t('historyUnavailableDescription')}</p>
+          <p className="font-semibold">
+            {t(contentLocked ? 'premiumContentLockedTitle' : 'historyUnavailableTitle')}
+          </p>
+          <p>
+            {t(contentLocked ? 'premiumContentLockedDescription' : 'historyUnavailableDescription')}
+          </p>
         </div>
       )}
 

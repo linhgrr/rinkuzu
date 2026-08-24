@@ -133,7 +133,6 @@ function AdminQuizAuthorLink({ author }: AdminQuizAuthorLinkProps) {
 
 export default function AdminQuizManagementPage() {
   const t = useTranslations('admin');
-  const tProfile = useTranslations('profile');
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
@@ -175,8 +174,8 @@ export default function AdminQuizManagementPage() {
   }, [state.page, state.appliedSearch, state.visibility, t]);
 
   const pageStats = {
-    public: state.quizzes.filter((quiz) => !quiz.isPrivate).length,
-    private: state.quizzes.filter((quiz) => quiz.isPrivate).length,
+    public: state.quizzes.filter((quiz) => quiz.visibility === 'public').length,
+    personal: state.quizzes.filter((quiz) => quiz.visibility === 'personal').length,
   };
 
   async function removeQuiz(quizId: string) {
@@ -256,7 +255,7 @@ export default function AdminQuizManagementPage() {
           >
             <option value="all">{t('allVisibility')}</option>
             <option value="public">{t('publicQuizzes')}</option>
-            <option value="private">{t('privateQuizzes')}</option>
+            <option value="personal">{t('personalQuizzes')}</option>
           </Select>
         </div>
       </header>
@@ -265,7 +264,7 @@ export default function AdminQuizManagementPage() {
         {[
           [state.pagination.total, t('totalQuizzes')],
           [pageStats.public, t('publicOnPage')],
-          [pageStats.private, t('privateOnPage')],
+          [pageStats.personal, t('personalOnPage')],
         ].map(([value, label]) => (
           <SurfaceCard key={String(label)} className="p-5">
             <div className="font-home text-2xl font-semibold text-ink">{value}</div>
@@ -299,15 +298,15 @@ export default function AdminQuizManagementPage() {
                     <h2 className="truncate text-lg font-semibold text-ink">{quiz.title}</h2>
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        quiz.isPrivate
+                        quiz.visibility === 'personal'
                           ? 'bg-neutral-100 text-neutral-600'
                           : 'bg-green-50 text-green-700'
                       }`}
                     >
-                      {quiz.isPrivate ? (
+                      {quiz.visibility === 'personal' ? (
                         <span className="inline-flex items-center gap-1">
                           <HiOutlineLockClosed className="size-3" />
-                          {tProfile('private')}
+                          {t('personal')}
                         </span>
                       ) : (
                         t('public')

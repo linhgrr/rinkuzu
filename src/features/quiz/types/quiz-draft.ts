@@ -8,6 +8,8 @@ interface QuizDraftPdf {
   fileName: QuizDraftTransportContract['pdf']['file_name'];
   fileSize: QuizDraftTransportContract['pdf']['file_size'];
   pageCount: QuizDraftTransportContract['pdf']['page_count'];
+  fileHash: QuizDraftTransportContract['pdf']['file_hash'];
+  retainedForPremium: QuizDraftTransportContract['pdf']['retained_for_premium'];
 }
 
 interface QuizDraftProgress {
@@ -23,7 +25,7 @@ export interface QuizDraft {
   folderId: QuizDraftTransportContract['category_id'];
   prompt: QuizDraftTransportContract['prompt'];
   sourceType: 'pdf' | 'manual';
-  isPrivate: boolean;
+  submitToPremium: boolean;
   revision: number;
   questionCount: number;
   pdf: QuizDraftPdf;

@@ -14,7 +14,7 @@ const payload = {
   title: 'Draft title',
   description: '',
   selectedFolderId: null,
-  isPrivate: false,
+  submitToPremium: false,
   questions: [
     {
       type: 'single' as const,

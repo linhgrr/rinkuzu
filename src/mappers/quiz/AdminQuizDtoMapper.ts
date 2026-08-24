@@ -43,7 +43,7 @@ export class AdminQuizDtoMapper {
       slug: quiz.slug,
       author: toAuthorDto(quiz.author),
       ...(quiz.folder !== undefined && { folder: quiz.folder }),
-      isPrivate: quiz.isPrivate,
+      visibility: quiz.visibility,
       questionCount: quiz.questionCount ?? quiz.questions.length,
       createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),
       updatedAt: serializeDate(quiz.updatedAt, 'quiz.updatedAt'),

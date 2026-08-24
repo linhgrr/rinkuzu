@@ -22,7 +22,7 @@ export const quizListQuerySchema = z.strictObject({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   mine: queryBooleanSchema.default(false),
-  visibility: z.enum(['public', 'private']).optional(),
+  visibility: z.enum(['public', 'personal']).optional(),
 });
 
 export const reportQuizRequestSchema = z.strictObject({
@@ -30,14 +30,25 @@ export const reportQuizRequestSchema = z.strictObject({
   content: z.string().trim().min(1, 'Report content is required').max(2000),
 });
 
-export const createQuizRequestSchema = z.strictObject({
-  title: z.string().trim().min(1, 'Title is required').max(200),
-  description: z.string().trim().max(1000).optional(),
-  folderId: z.string().trim().min(1).nullable().optional(),
-  questions: questionListSchema,
-  isPrivate: z.boolean(),
-  pdfUrl: z.url().optional(),
-});
+export const createQuizRequestSchema = z
+  .strictObject({
+    title: z.string().trim().min(1, 'Title is required').max(200),
+    description: z.string().trim().max(1000).optional(),
+    folderId: z.string().trim().min(1).nullable().optional(),
+    questions: questionListSchema,
+    submitToPremium: z.boolean(),
+    rightsAttested: z.boolean().optional(),
+    pdfUrl: z.url().optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.submitToPremium && value.rightsAttested !== true) {
+      context.addIssue({
+        code: 'custom',
+        path: ['rightsAttested'],
+        message: 'You must confirm you have the right to share Premium quiz content',
+      });
+    }
+  });
 
 export const updateQuizRequestSchema = z
   .strictObject({
@@ -45,13 +56,23 @@ export const updateQuizRequestSchema = z
     description: z.string().trim().max(1000).optional(),
     folder: z.string().trim().min(1).nullable().optional(),
     questions: questionListSchema.optional(),
-    isPrivate: z.boolean().optional(),
+    submitToPremium: z.boolean().optional(),
+    rightsAttested: z.boolean().optional(),
     pdfUrl: z.url().optional(),
   })
   .refine(
     (input) => Object.values(input).some((value) => value !== undefined),
     'No quiz fields provided',
-  );
+  )
+  .superRefine((value, context) => {
+    if (value.submitToPremium === true && value.rightsAttested !== true) {
+      context.addIssue({
+        code: 'custom',
+        path: ['rightsAttested'],
+        message: 'You must confirm you have the right to share Premium quiz content',
+      });
+    }
+  });
 
 export type CreateQuizRequestDto = z.infer<typeof createQuizRequestSchema>;
 export type UpdateQuizRequestDto = z.infer<typeof updateQuizRequestSchema>;
@@ -62,7 +83,7 @@ export interface QuizListOptionsDto {
   folder?: string | null;
   page: number;
   limit: number;
-  isPrivate?: boolean;
+  visibility?: 'public' | 'personal';
   userId?: string;
   onlyMine: boolean;
 }
@@ -82,7 +103,7 @@ export interface QuizListItemDto {
   slug: string;
   author: QuizListAuthorDto | null;
   folder: string | null;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   questionCount: number;
   createdAt: string;
   updatedAt: string;

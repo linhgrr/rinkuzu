@@ -47,7 +47,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
           <h3 className="text-lg font-semibold text-neutral-900 mb-2">
             {t('subscriptionRequired')}
           </h3>
-          <p className="text-neutral-600">{t('privateQuizMessage')}</p>
+          <p className="text-neutral-600">{t('premiumQuizMessage')}</p>
         </div>
 
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 mb-6">
@@ -61,7 +61,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
                   clipRule="evenodd"
                 />
               </svg>
-              {t('benefitPrivateQuizzes')}
+              {t('benefitPremiumCatalog')}
             </li>
             <li className="flex items-center">
               <svg className="size-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">

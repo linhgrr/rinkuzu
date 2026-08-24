@@ -1,35 +1,22 @@
-import {
-  buildQuizSearchKey,
-  parseQuizVisibility,
-  parseSearchPage,
-  type QuizVisibilityFilter,
-} from '@/features/explore/lib/search';
-
-export type { QuizVisibilityFilter };
+import { buildQuizSearchKey, parseSearchPage } from '@/features/explore/lib/search';
 
 export const QUIZZES_PAGE_SIZE = 12;
-
-export function parseQuizzesVisibility(value: string | null): QuizVisibilityFilter {
-  return parseQuizVisibility(value);
-}
 
 export function parseQuizzesPage(value: string | null): number {
   return parseSearchPage(value);
 }
 
 /**
- * Maps the UI All/Public/Private control onto GET /api/quizzes query semantics.
- * "all" omits visibility so the API returns both public and private list items.
+ * Builds the public community quiz query. Personal source metadata is only
+ * available through authenticated owner surfaces.
  */
 export function buildQuizzesListApiKey({
   query,
   page,
-  visibility,
   limit = QUIZZES_PAGE_SIZE,
 }: {
   query: string;
   page: number;
-  visibility: QuizVisibilityFilter;
   limit?: number;
 }): string {
   return buildQuizSearchKey({
@@ -37,23 +24,13 @@ export function buildQuizzesListApiKey({
     page,
     mine: false,
     limit,
-    visibility,
   });
 }
 
-export function buildQuizzesPageQueryString({
-  q,
-  page,
-  visibility,
-}: {
-  q: string;
-  page: number;
-  visibility: QuizVisibilityFilter;
-}): string {
+export function buildQuizzesPageQueryString({ q, page }: { q: string; page: number }): string {
   const params = new URLSearchParams();
   if (q.trim()) params.set('q', q.trim());
   if (page > 1) params.set('page', String(page));
-  if (visibility !== 'all') params.set('visibility', visibility);
   const queryString = params.toString();
   return queryString ? `?${queryString}` : '?';
 }

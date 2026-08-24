@@ -20,6 +20,8 @@ export interface Attempt {
   user: string | AttemptUserPreview | null;
   guestEmail?: string;
   quiz: string | AttemptQuizSnapshot;
+  premiumSubmissionId?: string;
+  premiumSnapshotHash?: string;
   answers: AttemptAnswer[];
   score: number;
   totalQuestions: number;

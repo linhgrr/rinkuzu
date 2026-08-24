@@ -29,7 +29,7 @@ function quizSummary(overrides: Partial<Quiz> = {}): Quiz {
       },
     ],
     questionCount: 3,
-    isPrivate: false,
+    visibility: 'public',
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -91,7 +91,7 @@ function sessionMissingUserId(input: unknown): Session | null {
   return { expires };
 }
 
-function createService() {
+function createService(premiumAllowed?: boolean) {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
     findAccessById: vi.fn(),
@@ -134,7 +134,14 @@ function createService() {
   };
 
   return {
-    service: new QuizDiscussionService(quizRepository, discussionRepository, reportRepository),
+    service: new QuizDiscussionService(
+      quizRepository,
+      discussionRepository,
+      reportRepository,
+      premiumAllowed === undefined
+        ? undefined
+        : { canAccessPublishedQuiz: vi.fn().mockResolvedValue(premiumAllowed) },
+    ),
     quizRepository,
     discussionRepository,
     reportRepository,
@@ -173,6 +180,30 @@ describe('QuizDiscussionService', () => {
       statusCode: 400,
     });
     expect(discussionRepository.addCommentForQuizQuestion).not.toHaveBeenCalled();
+  });
+
+  it('uses the Premium publication policy for subscriber or credit-grant discussions', async () => {
+    const { service, quizRepository, discussionRepository } = createService(true);
+    quizRepository.findSummaryBySlug.mockResolvedValue(
+      quizSummary({ visibility: 'personal', author: '507f191e810c19729de860ff' }),
+    );
+
+    const result = await service.getQuizDiscussions('algorithms', authenticatedSession());
+
+    expect(result.success).toBe(true);
+    expect(discussionRepository.findByQuiz).toHaveBeenCalledWith(quizId);
+  });
+
+  it('does not expose discussions for an unpublished personal source', async () => {
+    const { service, quizRepository, discussionRepository } = createService(false);
+    quizRepository.findSummaryBySlug.mockResolvedValue(
+      quizSummary({ visibility: 'personal', author: '507f191e810c19729de860ff' }),
+    );
+
+    const result = await service.getQuizDiscussions('algorithms', authenticatedSession());
+
+    expect(result).toMatchObject({ success: false, statusCode: 403 });
+    expect(discussionRepository.findByQuiz).not.toHaveBeenCalled();
   });
 
   it('uses the authenticated user id and one atomic repository write when adding comments', async () => {

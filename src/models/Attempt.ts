@@ -17,6 +17,8 @@ interface AttemptDocument {
   idempotencyKey: string;
   submissionDigest: string;
   quiz: Types.ObjectId;
+  premiumSubmission?: Types.ObjectId;
+  premiumSnapshotHash?: string;
   quizSnapshot: AttemptQuizSnapshotDocument;
   score: number;
   correctAnswers: number;
@@ -110,6 +112,16 @@ const AttemptSchema = new Schema<AttemptDocument>({
     ref: 'Quiz',
     required: [true, 'Quiz is required'],
   },
+  premiumSubmission: {
+    type: Schema.Types.ObjectId,
+    ref: 'PremiumQuizSubmission',
+    immutable: true,
+  },
+  premiumSnapshotHash: {
+    type: String,
+    match: [/^[a-f0-9]{64}$/, 'Premium snapshot hash must be a SHA-256 hex digest'],
+    immutable: true,
+  },
   quizSnapshot: {
     type: AttemptQuizSnapshotSchema,
     required: [true, 'Quiz snapshot is required'],
@@ -156,6 +168,12 @@ AttemptSchema.pre('validate', function validateIdentity() {
 });
 
 AttemptSchema.pre('validate', function validateSubmissionContract() {
+  if (Boolean(this.premiumSubmission) !== Boolean(this.premiumSnapshotHash)) {
+    this.invalidate(
+      'premiumSubmission',
+      'Premium submission and snapshot hash must be recorded together',
+    );
+  }
   const questions = this.quizSnapshot?.questions;
   const questionCount = questions?.length;
   const totalQuestionsValid = isPositiveInteger(this.totalQuestions);
@@ -280,6 +298,7 @@ AttemptSchema.pre('validate', function validateSubmissionContract() {
 AttemptSchema.index({ user: 1, takenAt: -1 });
 AttemptSchema.index({ guestEmail: 1, takenAt: -1 });
 AttemptSchema.index({ quiz: 1, takenAt: -1 });
+AttemptSchema.index({ premiumSubmission: 1, takenAt: -1 });
 AttemptSchema.index({ user: 1, quiz: 1 });
 AttemptSchema.index({ takenAt: -1 });
 AttemptSchema.index(

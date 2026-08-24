@@ -15,7 +15,7 @@ function libraryQuiz(overrides: Partial<LibraryQuiz> = {}): LibraryQuiz {
       displayName: 'Quang',
     },
     folder: null,
-    isPrivate: false,
+    visibility: 'public',
     pdfUrl: 'https://example.test/source.pdf',
     questionCount: 2,
     ownedByMe: true,

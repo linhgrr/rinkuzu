@@ -94,7 +94,14 @@ function correctIndexesFrom(
 
 function createSubmissionDigest(data: RecordQuizAttemptProgressData): string {
   return createHash('sha256')
-    .update(JSON.stringify({ quizId: data.quizId, answers: data.answers }))
+    .update(
+      JSON.stringify({
+        quizId: data.quizId,
+        answers: data.answers,
+        premiumSubmissionId: data.premiumSubmissionId,
+        premiumSnapshotHash: data.premiumSnapshotHash,
+      }),
+    )
     .digest('hex');
 }
 
@@ -277,6 +284,12 @@ async function createAttempt(
         idempotencyKey: data.idempotencyKey,
         submissionDigest,
         quiz: data.quizId,
+        ...(data.premiumSubmissionId !== undefined
+          ? { premiumSubmission: data.premiumSubmissionId }
+          : {}),
+        ...(data.premiumSnapshotHash !== undefined
+          ? { premiumSnapshotHash: data.premiumSnapshotHash }
+          : {}),
         quizSnapshot: {
           ...data.quizSnapshot,
           questions: data.quizSnapshot.questions.map(({ id, ...question }) => ({

@@ -12,7 +12,7 @@ export function toQuizListItemViewModel(quiz: QuizListItemDto): QuizListItemView
     slug: quiz.slug,
     author: quiz.author,
     folderId: quiz.folder,
-    isPrivate: quiz.isPrivate,
+    visibility: quiz.visibility,
     questionCount: quiz.questionCount,
     createdAt: quiz.createdAt,
     updatedAt: quiz.updatedAt,

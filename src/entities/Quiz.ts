@@ -27,6 +27,8 @@ export type QuizQuestionContent =
 
 export type QuizQuestion = QuizQuestionContent & { id: string };
 
+export type QuizVisibility = 'public' | 'personal';
+
 export interface Quiz {
   id: string;
   title: string;
@@ -35,7 +37,7 @@ export interface Quiz {
   author: string | QuizAuthorPreview;
   folder?: string | null;
   questions: QuizQuestion[];
-  isPrivate: boolean;
+  visibility: QuizVisibility;
   pdfUrl?: string;
   tags?: string[];
   sourceDraftId?: string;

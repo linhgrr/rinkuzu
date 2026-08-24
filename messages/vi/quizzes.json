@@ -1,17 +1,13 @@
 {
   "title": "Quiz",
-  "subtitle": "Khám phá quiz công khai và nội dung Premium từ cộng đồng RinKuzu",
+  "subtitle": "Khám phá quiz công khai từ cộng đồng RinKuzu",
+  "publicTitle": "Quiz cộng đồng",
+  "publicSubtitle": "Quiz công khai được cộng đồng RinKuzu chia sẻ.",
   "searchPlaceholder": "Tìm quiz...",
   "empty": "Chưa có quiz để hiển thị",
-  "emptyDescription": "Hãy quay lại sau hoặc điều chỉnh bộ lọc để khám phá quiz công khai và Premium.",
+  "emptyDescription": "Hãy quay lại sau hoặc điều chỉnh tìm kiếm để khám phá quiz công khai.",
   "noResults": "Không tìm thấy quiz",
-  "tryAdjusting": "Thử điều chỉnh tìm kiếm hoặc bộ lọc quyền truy cập.",
+  "tryAdjusting": "Thử điều chỉnh tìm kiếm.",
   "loadError": "Không thể tải danh sách quiz lúc này.",
-  "retry": "Thử lại",
-  "visibility": {
-    "label": "Lọc quyền truy cập quiz",
-    "all": "Tất cả",
-    "public": "Công khai",
-    "private": "Riêng tư"
-  }
+  "retry": "Thử lại"
 }

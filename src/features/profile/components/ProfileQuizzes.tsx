@@ -19,6 +19,7 @@ import { HiOutlineDocumentText } from 'react-icons/hi';
 import { fetchProfileQuizLibraryViewModel } from '@/features/profile/api/profile-quizzes-api';
 import { toProfileQuizMonthGroupsViewModel } from '@/features/profile/mappers/profile-quiz.mapper';
 import type { ProfileQuizViewModel } from '@/features/profile/types/profile-quiz-view-model';
+import { fetchMyPremiumSubmissions } from '@/features/profile/api/premium-submissions-api';
 import styles from './ProfileQuizzesLayout.module.css';
 
 interface State {
@@ -96,8 +97,26 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
     async function loadQuizzes() {
       dispatch({ type: 'fetch:start' });
       try {
-        const data = await fetchProfileQuizLibraryViewModel();
-        if (active) dispatch({ type: 'fetch:success', quizzes: data.quizzes });
+        const [data, submissions] = await Promise.all([
+          fetchProfileQuizLibraryViewModel(),
+          fetchMyPremiumSubmissions(),
+        ]);
+        const latestByQuiz = new Map(
+          submissions
+            .toSorted((left, right) => left.version - right.version)
+            .map((submission) => [submission.sourceQuizId, submission]),
+        );
+        const quizzes = data.quizzes.map((quiz) => {
+          const submission = latestByQuiz.get(quiz.id);
+          return submission
+            ? {
+                ...quiz,
+                premiumSubmissionStatus: submission.status,
+                awardedCredits: submission.awardedCredits,
+              }
+            : quiz;
+        });
+        if (active) dispatch({ type: 'fetch:success', quizzes });
       } catch (error) {
         if (active) {
           dispatch({

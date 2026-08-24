@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addAdminUserCreditsRequestSchema,
   adminUserIdRouteParamsSchema,
   adminUserListQuerySchema,
   updateAdminUserRoleRequestSchema,
@@ -63,5 +64,29 @@ describe('admin user controller schemas', () => {
       false,
     );
     expect(adminUserIdRouteParamsSchema.parse({ userId })).toEqual({ userId });
+  });
+
+  it('accepts only bounded, traceable credit grants', () => {
+    const valid = {
+      amount: 5,
+      note: '  Verified contribution  ',
+      idempotencyKey: '0aa7c561-a366-4abf-81ec-fb90e64c237c',
+    };
+    expect(addAdminUserCreditsRequestSchema.parse(valid)).toEqual({
+      ...valid,
+      note: 'Verified contribution',
+    });
+    expect(addAdminUserCreditsRequestSchema.safeParse({ ...valid, amount: 0 }).success).toBe(false);
+    expect(addAdminUserCreditsRequestSchema.safeParse({ ...valid, amount: 1.5 }).success).toBe(
+      false,
+    );
+    expect(addAdminUserCreditsRequestSchema.safeParse({ ...valid, amount: 1001 }).success).toBe(
+      false,
+    );
+    expect(addAdminUserCreditsRequestSchema.safeParse({ ...valid, note: 'x' }).success).toBe(false);
+    expect(
+      addAdminUserCreditsRequestSchema.safeParse({ ...valid, idempotencyKey: 'not-a-uuid' })
+        .success,
+    ).toBe(false);
   });
 });

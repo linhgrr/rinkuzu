@@ -12,8 +12,10 @@ export interface QuizCardQuiz {
   title: string;
   slug: string;
   author: UserIdentity | null;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   questionCount: number;
+  premiumSubmissionStatus?: 'pending' | 'changes_requested' | 'rejected' | 'approved';
+  awardedCredits?: number;
 }
 
 interface QuizCardProps {
@@ -34,7 +36,17 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
   return (
     <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none">
       <div className="flex items-center justify-between text-sm text-ink/40">
-        <span>{t('questionCount', { count: quiz.questionCount })}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span>{t('questionCount', { count: quiz.questionCount })}</span>
+          {quiz.premiumSubmissionStatus ? (
+            <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-ink/65">
+              {t(`premiumStatus_${quiz.premiumSubmissionStatus}`)}
+              {quiz.premiumSubmissionStatus === 'approved' && quiz.awardedCredits
+                ? ` · +${quiz.awardedCredits}`
+                : ''}
+            </span>
+          ) : null}
+        </div>
         {onDelete ? (
           <details className="relative">
             <summary
@@ -72,10 +84,10 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
           <span className="min-w-0 truncate">
             {author.displayName || author.name || 'RinKuzu learner'}
           </span>
-          {quiz.isPrivate ? (
+          {quiz.visibility === 'personal' ? (
             <HiOutlineLockClosed
               className="ml-auto size-4 shrink-0 text-ink/45"
-              aria-label={t('private')}
+              aria-label={t('personalSource')}
             />
           ) : null}
         </div>

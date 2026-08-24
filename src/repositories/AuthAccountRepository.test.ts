@@ -221,7 +221,8 @@ describe('AuthAccountRepository', () => {
     const loginSelect =
       'email role password emailVerified avatar displayName passwordChangedAt authVersion ' +
       'failedLoginAttempts failedLoginWindowStart lockedUntil';
-    const sessionSelect = 'email role avatar displayName passwordChangedAt authVersion';
+    const sessionSelect =
+      'email role emailVerified avatar displayName passwordChangedAt authVersion';
 
     mocks.findOne
       .mockReturnValueOnce(

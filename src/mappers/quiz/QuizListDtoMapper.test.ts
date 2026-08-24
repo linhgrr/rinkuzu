@@ -24,7 +24,7 @@ const quiz: Quiz = {
       type: 'single',
     },
   ],
-  isPrivate: false,
+  visibility: 'public',
   createdAt: new Date('2026-07-01T00:00:00Z'),
   updatedAt: new Date('2026-07-01T01:00:00Z'),
 };
@@ -43,7 +43,7 @@ describe('QuizListDtoMapper', () => {
         avatar: 'https://example.com/avatar.png',
       },
       folder: '507f191e810c19729de860ec',
-      isPrivate: false,
+      visibility: 'public',
       questionCount: 1,
       createdAt: '2026-07-01T00:00:00.000Z',
       updatedAt: '2026-07-01T01:00:00.000Z',

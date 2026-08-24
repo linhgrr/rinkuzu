@@ -63,7 +63,7 @@ export class QuizPersistenceMapper {
       author: toAuthor(record.author),
       folder: record.folder == null ? null : serializeId(record.folder, 'quiz.folder'),
       questions: record.questions.map(toQuestion),
-      isPrivate: record.isPrivate,
+      visibility: record.visibility,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       ...(record.description === undefined ? {} : { description: record.description }),

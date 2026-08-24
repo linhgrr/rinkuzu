@@ -1,4 +1,4 @@
-import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
+import type { Quiz, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
 import type {
   CountBuckets,
   CountBucketThresholds,
@@ -14,7 +14,7 @@ export interface QuizFindOptions extends RepositoryPaginationOptions {
 type QuizTextSearchCondition = { title: RegExp } | { description: RegExp };
 
 export interface QuizFindFilter {
-  isPrivate?: boolean;
+  visibility?: QuizVisibility;
   author?: string;
   excludeAuthor?: string;
   folder?: string | null;
@@ -30,7 +30,7 @@ export interface QuizCreatorStatRecord {
   totalQuestions: number;
 }
 
-export type QuizAccessRecord = Pick<Quiz, 'id' | 'author' | 'isPrivate'>;
+export type QuizAccessRecord = Pick<Quiz, 'id' | 'author' | 'visibility'>;
 
 export interface CreateQuizData {
   title: string;
@@ -39,7 +39,7 @@ export interface CreateQuizData {
   author: string;
   folder?: string | null;
   questions: QuizQuestionContent[];
-  isPrivate: boolean;
+  visibility: QuizVisibility;
   pdfUrl?: string;
   tags?: string[];
   sourceDraftId?: string;
@@ -48,7 +48,7 @@ export interface CreateQuizData {
 export type UpdateQuizData = Partial<
   Pick<
     CreateQuizData,
-    'title' | 'description' | 'folder' | 'questions' | 'isPrivate' | 'pdfUrl' | 'tags'
+    'title' | 'description' | 'folder' | 'questions' | 'visibility' | 'pdfUrl' | 'tags'
   >
 >;
 

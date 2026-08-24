@@ -29,7 +29,7 @@ describe('query performance indexes', () => {
   });
 
   it('indexes public quiz list filtering by visibility and recency', () => {
-    expect(hasIndex(Quiz, { isPrivate: 1, createdAt: -1 })).toBe(true);
+    expect(hasIndex(Quiz, { visibility: 1, createdAt: -1 })).toBe(true);
   });
 
   it('indexes global recent quiz reads', () => {
@@ -37,7 +37,7 @@ describe('query performance indexes', () => {
   });
 
   it('indexes public profile quizzes by author, visibility, and recency', () => {
-    expect(hasIndex(Quiz, { author: 1, isPrivate: 1, createdAt: -1 })).toBe(true);
+    expect(hasIndex(Quiz, { author: 1, visibility: 1, createdAt: -1 })).toBe(true);
   });
 
   it('indexes global recent user and user bucket reads', () => {

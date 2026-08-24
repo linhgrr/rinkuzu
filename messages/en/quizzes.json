@@ -1,17 +1,13 @@
 {
   "title": "Quizzes",
-  "subtitle": "Explore public and Premium quiz content from the RinKuzu community",
+  "subtitle": "Explore public quizzes from the RinKuzu community",
+  "publicTitle": "Community quizzes",
+  "publicSubtitle": "Public quizzes shared by the RinKuzu community.",
   "searchPlaceholder": "Search quizzes...",
   "empty": "No quizzes to show yet",
-  "emptyDescription": "Check back later or adjust filters to discover public and Premium quizzes.",
+  "emptyDescription": "Check back later or adjust your search to discover public quizzes.",
   "noResults": "No quizzes found",
-  "tryAdjusting": "Try adjusting your search or visibility filter.",
+  "tryAdjusting": "Try adjusting your search.",
   "loadError": "Quizzes could not be loaded right now.",
-  "retry": "Try again",
-  "visibility": {
-    "label": "Filter quiz visibility",
-    "all": "All",
-    "public": "Public",
-    "private": "Private"
-  }
+  "retry": "Try again"
 }

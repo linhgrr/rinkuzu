@@ -34,7 +34,7 @@ describe('QuizCard', () => {
           title: 'Accessible quiz',
           slug: 'accessible-quiz',
           author: { displayName: 'RinKuzu learner' },
-          isPrivate: false,
+          visibility: 'public',
           questionCount: 4,
         }}
         onDelete={vi.fn()}

@@ -36,7 +36,7 @@ export interface QuizPersistenceRecord {
   author: MongoIdLike | QuizAuthorPersistenceRecord;
   folder?: MongoIdLike | null;
   questions: QuizQuestionPersistenceRecord[];
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   pdfUrl?: string;
   tags?: string[];
   sourceDraftId?: string;

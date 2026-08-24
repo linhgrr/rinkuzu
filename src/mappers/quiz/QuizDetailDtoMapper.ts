@@ -20,7 +20,7 @@ function toDetailBase(quiz: Quiz) {
     slug: quiz.slug,
     author: toQuizAuthorDto(quiz.author),
     folder: quiz.folder ?? null,
-    isPrivate: quiz.isPrivate,
+    visibility: quiz.visibility,
     questionCount: quiz.questionCount ?? quiz.questions.length,
     ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
     ...(quiz.tags !== undefined && { tags: quiz.tags }),

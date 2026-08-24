@@ -22,12 +22,12 @@
     "label": "Filter quiz visibility",
     "all": "All",
     "public": "Public",
-    "private": "Private"
+    "personal": "Personal source"
   },
   "sections": {
     "mine": {
       "title": "Your quizzes",
-      "subtitle": "Quizzes you created, including public and private content",
+      "subtitle": "Quizzes you created, including public quizzes and personal sources",
       "empty": "You do not have any matching quizzes."
     },
     "adaptive": {
@@ -37,8 +37,8 @@
     },
     "quizzes": {
       "title": "Quizzes",
-      "subtitle": "Explore public and Premium quiz content from the RinKuzu community",
-      "empty": "No quizzes match your search and visibility filter."
+      "subtitle": "Explore public quizzes shared by the RinKuzu community",
+      "empty": "No public quizzes match your search."
     }
   }
 }

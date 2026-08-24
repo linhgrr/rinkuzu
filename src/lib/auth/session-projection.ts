@@ -74,6 +74,7 @@ export function applySessionUser(
       id: dbUser.id,
       email: dbUser.email,
       role: dbUser.role,
+      emailVerified: dbUser.emailVerified,
       ...(session.user.name !== undefined ? { name: session.user.name } : {}),
       ...(session.user.image !== undefined ? { image: session.user.image } : {}),
       ...(dbUser.avatar ? { avatar: dbUser.avatar } : {}),

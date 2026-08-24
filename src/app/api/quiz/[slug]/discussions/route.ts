@@ -5,7 +5,7 @@ import { createQuizSlugMutationRoute } from '@/app/api/quiz/[slug]/mutation-rout
 
 // GET /api/quiz/[slug]/discussions - Get all discussions for a quiz.
 // Public + authenticated dual path: read access is open; service layer
-// gates private quizzes.
+// gates personal source quizzes.
 export const GET = createOptionalQuizSlugReadRoute({
   load: ({ slug, session }) => getQuizService().getQuizDiscussions(slug, session),
   logMessage: 'Error fetching discussions',

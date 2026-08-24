@@ -2,7 +2,10 @@
 
 _Owner: Product & Growth Lead_
 
-_Status: Evidence-bound v1_
+**Document version:** v2
+**Last updated:** 2026-08-24
+
+_Status: Evidence-bound v2_
 
 _As of: 2026-08-11_
 
@@ -48,7 +51,7 @@ Primary internal sources:
 
 - Rinkuzu is a responsive English/Vietnamese Next.js web product with an installable PWA manifest.
 - It supports PDF-driven quiz creation and a deeper adaptive-learning path using concepts, prerequisite relationships, Bloom levels, exercises, and progress surfaces.
-- Public/private quiz behavior and public quiz discovery exist in code.
+- Public quiz discovery, personal source quizzes, a manually reviewed Quiz Premium catalog, contribution rewards, credit unlocks, and protected batched delivery exist in code.
 - Auth supports credential accounts and optional Google sign-in. Credential accounts have an `emailVerified` timestamp.
 - Consent-gated GA4/PostHog plumbing and product events exist. Current call sites include signup, login, PDF upload, adaptive session/answer, first question answered, and quiz completed.
 - MongoDB schemas can support aggregate verified-signup, learning-activity, and paid-order reporting once authorized production access exists.
@@ -79,6 +82,8 @@ Confidence: **medium-low (0.40)**. Product capability is observed; segment pain,
 ### Differentiation to test
 
 - Source PDF -> concepts/prerequisites -> practice -> weak-area next step in one loop.
+- A curated Quiz Premium catalog: verified users may contribute material, every publication is manually approved, and approved contributions may earn credits that unlock individual Premium quizzes for free accounts.
+- Premium subscriptions access the whole curated catalog; credits create a contribution loop without making contribution itself a paid feature.
 - Vietnamese and English product experience.
 - Choice between quick quiz creation and deeper adaptive practice.
 - Visible progress rather than one-off generated output.
@@ -342,3 +347,8 @@ The canonical definition, first baseline, taxonomy verification, privacy/freshne
 2. Name the authorized staging/analytics privacy owner and approve the 30-person external beta cohort when RIN-5/RIN-6/RIN-7 are ready.
 3. Decide after web evidence whether native-store distribution merits a new client; PWA remains the default.
 4. Own/pay for any production analytics, app-store accounts, infrastructure, legal review, or external distribution spend.
+
+## Changelog
+
+- v2 (2026-08-24) — Replaced private-quiz positioning with the curated Quiz Premium catalog, manual review, contribution credits, and personal source ownership.
+- v1 (2026-08-11) — Initial evidence-bound product and growth source of truth.

@@ -153,7 +153,7 @@ describe('QuizService facade', () => {
           correctIndex: 1,
         },
       ],
-      isPrivate: false,
+      submitToPremium: false,
     };
     await service.createQuiz('user-1', createData);
     expect(crudMocks.createQuiz).toHaveBeenCalledWith('user-1', createData);

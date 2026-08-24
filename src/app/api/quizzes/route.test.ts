@@ -3,8 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
-const { authMock, createQuizMock, getQuizzesMock, loggerErrorMock } = vi.hoisted(() => ({
+const {
+  assertCanContributeMock,
+  authMock,
+  createPremiumSubmissionMock,
+  createQuizMock,
+  getQuizzesMock,
+  loggerErrorMock,
+} = vi.hoisted(() => ({
+  assertCanContributeMock: vi.fn(),
   authMock: vi.fn(),
+  createPremiumSubmissionMock: vi.fn(),
   createQuizMock: vi.fn(),
   getQuizzesMock: vi.fn(),
   loggerErrorMock: vi.fn(),
@@ -16,6 +25,12 @@ vi.mock('@/lib/quiz-factory', () => ({
   getQuizService: () => ({
     createQuiz: createQuizMock,
     getQuizzes: getQuizzesMock,
+  }),
+}));
+vi.mock('@/lib/premium-quiz-factory', () => ({
+  getPremiumQuizService: () => ({
+    assertCanContribute: assertCanContributeMock,
+    createSubmission: createPremiumSubmissionMock,
   }),
 }));
 
@@ -54,7 +69,7 @@ const validCreateBody = {
       correctIndex: 1,
     },
   ],
-  isPrivate: false,
+  submitToPremium: false,
 };
 
 describe('GET /api/quizzes', () => {
@@ -81,38 +96,32 @@ describe('GET /api/quizzes', () => {
     });
   });
 
-  it('maps community visibility filters without requiring authentication', async () => {
+  it('ignores visibility attempts on the public community catalog', async () => {
     authMock.mockResolvedValue(null);
 
-    await GET(listRequest('?page=1&limit=12&visibility=private'), {
+    await GET(listRequest('?page=1&limit=12&visibility=personal'), {
       params: Promise.resolve({}),
     });
     await GET(listRequest('?page=1&limit=12&visibility=public'), {
       params: Promise.resolve({}),
     });
 
-    expect(getQuizzesMock).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        onlyMine: false,
-        isPrivate: true,
-      }),
-    );
-    expect(getQuizzesMock).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        onlyMine: false,
-        isPrivate: false,
-      }),
-    );
+    const first = getQuizzesMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    const second = getQuizzesMock.mock.calls[1]?.[0] as Record<string, unknown>;
+    expect(first).toMatchObject({ onlyMine: false });
+    expect(second).toMatchObject({ onlyMine: false });
+    expect(first).not.toHaveProperty('visibility');
+    expect(second).not.toHaveProperty('visibility');
   });
 
-  it('applies mine, unfiled folder, and private visibility for authenticated users', async () => {
+  it('applies mine, unfiled folder, and personal visibility for authenticated users', async () => {
     authMock.mockResolvedValue(session());
+    assertCanContributeMock.mockResolvedValue(undefined);
+    createPremiumSubmissionMock.mockResolvedValue({ id: 'premium-submission-1' });
 
     const response = await GET(
       listRequest(
-        `?mine=true&folder=${encodeURIComponent(UNFILED_FOLDER_TARGET)}&visibility=private&search=alg`,
+        `?mine=true&folder=${encodeURIComponent(UNFILED_FOLDER_TARGET)}&visibility=personal&search=alg`,
       ),
       { params: Promise.resolve({}) },
     );
@@ -123,7 +132,7 @@ describe('GET /api/quizzes', () => {
       folder: null,
       page: 1,
       limit: 10,
-      isPrivate: true,
+      visibility: 'personal',
       userId: '507f191e810c19729de860eb',
       onlyMine: true,
     });
@@ -145,7 +154,7 @@ describe('GET /api/quizzes', () => {
       expect.objectContaining({
         onlyMine: true,
         folder: folderId,
-        isPrivate: false,
+        visibility: 'public',
       }),
     );
     expect(getQuizzesMock).toHaveBeenNthCalledWith(
@@ -156,6 +165,7 @@ describe('GET /api/quizzes', () => {
     );
     const guestishCall = getQuizzesMock.mock.calls[1]?.[0] as Record<string, unknown>;
     expect(guestishCall).not.toHaveProperty('folder');
+    expect(guestishCall).not.toHaveProperty('visibility');
   });
 
   it('rejects invalid query params and maps unexpected list failures', async () => {
@@ -196,7 +206,7 @@ describe('POST /api/quizzes', () => {
     expect(response.status).toBe(201);
     expect(createQuizMock).toHaveBeenCalledWith(
       '507f191e810c19729de860eb',
-      expect.objectContaining({ title: 'Algebra', isPrivate: false }),
+      expect.objectContaining({ title: 'Algebra', submitToPremium: false }),
     );
     await expect(response.json()).resolves.toMatchObject({
       success: true,
@@ -213,6 +223,22 @@ describe('POST /api/quizzes', () => {
     expect(createQuizMock).not.toHaveBeenCalled();
   });
 
+  it('checks Premium contribution eligibility before creating the source quiz', async () => {
+    const { PremiumQuizError } = await import('@/entities/PremiumQuizError');
+    assertCanContributeMock.mockRejectedValueOnce(
+      new PremiumQuizError('email_verification_required', 'Verify your email'),
+    );
+
+    const response = await POST(
+      createRequest({ ...validCreateBody, submitToPremium: true, rightsAttested: true }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(403);
+    expect(createQuizMock).not.toHaveBeenCalled();
+    expect(createPremiumSubmissionMock).not.toHaveBeenCalled();
+  });
+
   it('maps premium and validation creation errors, then unexpected failures', async () => {
     createQuizMock
       .mockRejectedValueOnce(
@@ -221,9 +247,12 @@ describe('POST /api/quizzes', () => {
       .mockRejectedValueOnce(new QuizCreationError('invalid_folder', 'Invalid folder selected'))
       .mockRejectedValueOnce(new Error('unexpected'));
 
-    const premium = await POST(createRequest({ ...validCreateBody, isPrivate: true }), {
-      params: Promise.resolve({}),
-    });
+    const premium = await POST(
+      createRequest({ ...validCreateBody, submitToPremium: true, rightsAttested: true }),
+      {
+        params: Promise.resolve({}),
+      },
+    );
     const validation = await POST(createRequest(validCreateBody), {
       params: Promise.resolve({}),
     });

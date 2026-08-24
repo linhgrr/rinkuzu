@@ -15,7 +15,7 @@ const quiz: Quiz = {
   slug: 'public-quiz',
   author: user.id,
   questions: [],
-  isPrivate: false,
+  visibility: 'public',
   createdAt: new Date('2026-07-02T00:00:00Z'),
   updatedAt: new Date('2026-07-02T00:00:00Z'),
 };

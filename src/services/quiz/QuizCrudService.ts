@@ -4,8 +4,6 @@ import {
   type UpdateQuizData,
 } from '@/interfaces/repositories/IQuizRepository';
 import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
-import { can, resolveEntitlements } from '@/lib/entitlements';
-import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type {
   CreateQuizRequestDto,
@@ -16,7 +14,7 @@ import type {
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
-import { getAuthorId, PREMIUM_REQUIRED_CODE } from './quiz-helpers';
+import { getAuthorId } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/lib/mongoose-errors';
@@ -40,7 +38,6 @@ function toQuizQuestionContent(
 export class QuizCrudService {
   constructor(
     private quizRepository: IQuizRepository,
-    private userRepository: IUserRepository,
     private folderRepository?: IFolderRepository,
   ) {}
 
@@ -83,25 +80,12 @@ export class QuizCrudService {
     quizData: CreateQuizRequestDto,
     sourceDraftId?: string,
   ): Promise<Quiz> {
-    const { title, description, folderId, questions, isPrivate, pdfUrl } = quizData;
+    const { title, description, folderId, questions, submitToPremium, pdfUrl } = quizData;
 
     if (folderId) {
       const ownsFolder = await this.folderRepository?.existsOwnedById(folderId, userId);
       if (!ownsFolder) {
         throw new QuizCreationError('invalid_folder', 'Invalid folder selected');
-      }
-    }
-
-    if (isPrivate) {
-      const user = await this.userRepository.findById(userId);
-      const canCreatePrivateQuiz =
-        user?.role === 'admin' || can(await resolveEntitlements(userId), 'private_quiz');
-
-      if (!canCreatePrivateQuiz) {
-        throw new QuizCreationError(
-          'premium_required',
-          'Premium subscription required to create private quizzes',
-        );
       }
     }
 
@@ -118,7 +102,7 @@ export class QuizCrudService {
           author: userId,
           folder: folderId ?? null,
           questions: questions.map(toQuizQuestionContent),
-          isPrivate,
+          visibility: submitToPremium ? 'personal' : 'public',
           ...(pdfUrl !== undefined && { pdfUrl }),
           ...(sourceDraftId !== undefined && { sourceDraftId }),
         });
@@ -216,20 +200,6 @@ export class QuizCrudService {
       const authorization = await this.authorizeQuizMutation(id, userId, userRole);
       if (!authorization.success) return authorization;
 
-      const quiz = authorization.data;
-      const isAdmin = userRole === 'admin';
-
-      if (quizData.isPrivate && !quiz.isPrivate && !isAdmin) {
-        if (!can(await resolveEntitlements(userId), 'private_quiz')) {
-          return {
-            success: false,
-            error: 'Premium subscription required to create private quizzes',
-            statusCode: 403,
-            code: PREMIUM_REQUIRED_CODE,
-          };
-        }
-      }
-
       if (quizData.folder) {
         const ownsFolder = await this.folderRepository?.existsOwnedById(quizData.folder, userId);
         if (!ownsFolder) {
@@ -248,7 +218,9 @@ export class QuizCrudService {
         ...(quizData.questions !== undefined && {
           questions: quizData.questions.map(toQuizQuestionContent),
         }),
-        ...(quizData.isPrivate !== undefined && { isPrivate: quizData.isPrivate }),
+        ...(quizData.submitToPremium !== undefined && {
+          visibility: quizData.submitToPremium ? ('personal' as const) : ('public' as const),
+        }),
         ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
       };
       const updatedQuiz = await this.quizRepository.update(id, updateData);

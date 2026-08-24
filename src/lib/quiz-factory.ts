@@ -6,6 +6,7 @@ import { QuizRepository } from '@/repositories/QuizRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
 import { UserRepository } from '@/repositories/UserRepository';
 import { QuizService } from '@/services/quiz/QuizService';
+import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 
 let quizService: QuizService | undefined;
 
@@ -18,6 +19,7 @@ export function getQuizService(): QuizService {
     new QuizProgressRepository(),
     new QuizAttemptProgressRepository(),
     new FolderRepository(),
+    getPremiumQuizService(),
   );
   return quizService;
 }

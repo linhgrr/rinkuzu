@@ -67,7 +67,7 @@ export class LearningProgressPersistenceMapper {
       slug: record.slug,
       author,
       folder,
-      isPrivate: record.isPrivate,
+      visibility: record.visibility,
       questionCount: record.questionCount ?? record.questions?.length ?? 0,
       ownedByMe,
       createdAt: record.createdAt,

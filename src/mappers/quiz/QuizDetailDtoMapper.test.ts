@@ -24,7 +24,7 @@ const quiz: Quiz = {
       type: 'single',
     },
   ],
-  isPrivate: false,
+  visibility: 'public',
   pdfUrl: 'https://example.com/source.pdf',
   tags: ['math'],
   createdAt: new Date('2026-07-01T00:00:00Z'),
@@ -45,7 +45,7 @@ describe('QuizDetailDtoMapper', () => {
         avatar: 'https://example.com/avatar.png',
       },
       folder: '507f191e810c19729de860ec',
-      isPrivate: false,
+      visibility: 'public',
       questions: [
         {
           id: '507f191e810c19729de860ed',
@@ -94,7 +94,7 @@ describe('QuizDetailDtoMapper', () => {
       slug: quiz.slug,
       author: { id: '507f191e810c19729de860eb' },
       questions: quiz.questions,
-      isPrivate: quiz.isPrivate,
+      visibility: quiz.visibility,
       createdAt: quiz.createdAt,
       updatedAt: quiz.updatedAt,
     });

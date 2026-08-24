@@ -113,12 +113,12 @@ describe('POST /api/quiz/[slug]/report', () => {
     reportQuizMock.mockResolvedValueOnce({
       success: false,
       code: 'premium_required',
-      error: 'Premium subscription required to access private quizzes',
+      error: 'Personal quiz sources are only available to their owner or an admin',
       statusCode: 403,
     });
 
     const response = await POST(
-      request({ questionId, content: 'private quiz issue' }),
+      request({ questionId, content: 'personal source issue' }),
       routeContext,
     );
 
@@ -126,7 +126,7 @@ describe('POST /api/quiz/[slug]/report', () => {
     await expect(response.json()).resolves.toMatchObject({
       error: {
         code: 'premium_required',
-        detail: 'Premium subscription required to access private quizzes',
+        detail: 'Personal quiz sources are only available to their owner or an admin',
       },
     });
   });

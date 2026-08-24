@@ -1,7 +1,7 @@
 interface CreateQuizDraftFormValues {
   aiPrompt: string;
   description: string;
-  isPrivate: boolean;
+  submitToPremium: boolean;
   selectedFolderId: string | null;
   title: string;
 }
@@ -11,7 +11,7 @@ interface CreateQuizDraftInput {
   fileName: string;
   fileSize: number;
   folderId: string | null;
-  isPrivate: boolean;
+  submitToPremium: boolean;
   prompt?: string;
   s3Key: string;
   title: string;
@@ -31,7 +31,7 @@ export function toCreateQuizDraftInput(
     fileName: file.name,
     fileSize: file.size,
     folderId: state.selectedFolderId,
-    isPrivate: state.isPrivate,
+    submitToPremium: state.submitToPremium,
     ...(description ? { description } : {}),
     ...(prompt ? { prompt } : {}),
   };

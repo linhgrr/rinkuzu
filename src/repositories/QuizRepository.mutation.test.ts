@@ -85,7 +85,7 @@ const quizRecord = {
     },
   ],
   questionCount: 1,
-  isPrivate: false,
+  visibility: 'public',
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
   updatedAt: new Date('2026-07-01T01:00:00.000Z'),
 };
@@ -250,7 +250,7 @@ describe('QuizRepository mutation coverage', () => {
         slug: 'algebra-basics',
         author: AUTHOR_ID,
         questions: [],
-        isPrivate: false,
+        visibility: 'public',
       });
 
       expect(quizModelMocks.QuizModelCtor).toHaveBeenCalledOnce();
@@ -376,7 +376,7 @@ describe('QuizRepository mutation coverage', () => {
         Record<string, unknown>
       >;
       expect(pipeline[0]).toEqual({
-        $match: { author: new Types.ObjectId(AUTHOR_ID), isPrivate: false },
+        $match: { author: new Types.ObjectId(AUTHOR_ID), visibility: 'public' },
       });
       expect(pipeline[2]).toEqual({
         $facet: {
@@ -402,7 +402,7 @@ describe('QuizRepository mutation coverage', () => {
         {
           folder: FOLDER_ID,
           author: AUTHOR_ID,
-          isPrivate: true,
+          visibility: 'personal',
         },
         { page: 2, limit: 4 },
       );
@@ -413,7 +413,7 @@ describe('QuizRepository mutation coverage', () => {
             $match: {
               folder: new Types.ObjectId(FOLDER_ID),
               author: new Types.ObjectId(AUTHOR_ID),
-              isPrivate: true,
+              visibility: 'personal',
             },
           },
           { $sort: { createdAt: -1 } },
@@ -424,18 +424,18 @@ describe('QuizRepository mutation coverage', () => {
       expect(quizModelMocks.countDocuments).toHaveBeenCalledWith({
         folder: new Types.ObjectId(FOLDER_ID),
         author: new Types.ObjectId(AUTHOR_ID),
-        isPrivate: true,
+        visibility: 'personal',
       });
 
       await repository.findRecent(
-        { excludeAuthor: AUTHOR_ID, isPrivate: false },
+        { excludeAuthor: AUTHOR_ID, visibility: 'public' },
         { limit: 3, populate: ['author'] },
       );
       expect(quizModelMocks.aggregate).toHaveBeenLastCalledWith(
         expect.arrayContaining([
           {
             $match: {
-              isPrivate: false,
+              visibility: 'public',
               author: { $ne: new Types.ObjectId(AUTHOR_ID) },
             },
           },

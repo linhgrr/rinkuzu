@@ -60,6 +60,14 @@ export class AttemptPersistenceMapper {
       totalQuestions: record.totalQuestions,
       takenAt: record.takenAt,
       ...(record.guestEmail === undefined ? {} : { guestEmail: record.guestEmail }),
+      ...(record.premiumSubmission === undefined
+        ? {}
+        : {
+            premiumSubmissionId: serializeId(record.premiumSubmission, 'attempt.premiumSubmission'),
+          }),
+      ...(record.premiumSnapshotHash === undefined
+        ? {}
+        : { premiumSnapshotHash: record.premiumSnapshotHash }),
     };
   }
 }

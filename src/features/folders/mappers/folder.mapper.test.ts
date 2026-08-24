@@ -12,7 +12,7 @@ describe('toFolderLibraryQuizViewModels', () => {
           author: null,
           folder: null,
           questions: [],
-          isPrivate: false,
+          visibility: 'public',
           questionCount: 1,
           ownedByMe: true,
           createdAt: '2026-07-02T00:00:00.000Z',

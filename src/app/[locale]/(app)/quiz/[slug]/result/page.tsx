@@ -510,6 +510,7 @@ function QuizResultReadyState({
   t,
   tProfile,
 }: QuizResultReadyStateProps) {
+  const contentLocked = result.historyStatus === 'content_locked';
   return (
     <div className="min-h-dvh bg-surface-page">
       <div className="bg-surface shadow-sm border-b">
@@ -525,18 +526,30 @@ function QuizResultReadyState({
       </div>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ResultStats
-          score={result.score}
-          correctCount={stats.correctCount}
-          incorrectCount={stats.incorrectCount}
-          unansweredCount={stats.unansweredCount}
-          totalQuestions={stats.totalQuestions}
-          chatStats={chatStats}
-          getScoreColor={scoreColor}
-          getScoreMessage={scoreMessage}
-          t={t}
-          tProfile={tProfile}
-        />
+        {contentLocked ? (
+          <Card className="mb-6 border-amber-200 bg-amber-50">
+            <CardContent className="p-6 text-center">
+              <p className="text-4xl font-bold text-brand-trust">{result.score}%</p>
+              <p className="mt-2 text-sm font-semibold text-amber-900">
+                {t('premiumHistoryLockedTitle')}
+              </p>
+              <p className="mt-1 text-sm text-amber-800">{t('premiumHistoryLockedDescription')}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <ResultStats
+            score={result.score}
+            correctCount={stats.correctCount}
+            incorrectCount={stats.incorrectCount}
+            unansweredCount={stats.unansweredCount}
+            totalQuestions={stats.totalQuestions}
+            chatStats={chatStats}
+            getScoreColor={scoreColor}
+            getScoreMessage={scoreMessage}
+            t={t}
+            tProfile={tProfile}
+          />
+        )}
 
         <QuizResultActions
           backHomeLabel={backHomeLabel}
@@ -544,29 +557,33 @@ function QuizResultReadyState({
           redoLabel={tProfile('redo')}
         />
 
-        <BookmarkPanel
-          bookmarkMessage={bookmarkMessage}
-          bookmarkMessageTone={bookmarkMessageTone}
-          onDismissMessage={onDismissBookmarkMessage}
-          bookmarkToRemove={bookmarkToRemove}
-          bookmarkLoading={bookmarkLoading}
-          onCancelRemove={onCancelRemove}
-          onConfirmRemove={onConfirmRemove}
-          t={t}
-        />
+        {!contentLocked ? (
+          <>
+            <BookmarkPanel
+              bookmarkMessage={bookmarkMessage}
+              bookmarkMessageTone={bookmarkMessageTone}
+              onDismissMessage={onDismissBookmarkMessage}
+              bookmarkToRemove={bookmarkToRemove}
+              bookmarkLoading={bookmarkLoading}
+              onCancelRemove={onCancelRemove}
+              onConfirmRemove={onConfirmRemove}
+              t={t}
+            />
 
-        <QuestionReviewList
-          questions={result.quiz.questions}
-          bookmarkedQuestions={bookmarkedQuestions}
-          bookmarkLoading={bookmarkLoading}
-          onToggleBookmark={onToggleBookmark}
-          onOpenAI={onOpenAI}
-          chatTurnsByQuestion={chatTurnsByQuestion}
-          formatAnswer={formatAnswer}
-          formatCorrectAnswer={formatCorrectAnswer}
-          t={t}
-          tProfile={tProfile}
-        />
+            <QuestionReviewList
+              questions={result.quiz.questions}
+              bookmarkedQuestions={bookmarkedQuestions}
+              bookmarkLoading={bookmarkLoading}
+              onToggleBookmark={onToggleBookmark}
+              onOpenAI={onOpenAI}
+              chatTurnsByQuestion={chatTurnsByQuestion}
+              formatAnswer={formatAnswer}
+              formatCorrectAnswer={formatCorrectAnswer}
+              t={t}
+              tProfile={tProfile}
+            />
+          </>
+        ) : null}
       </main>
 
       {aiQuestionData ? (

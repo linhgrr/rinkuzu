@@ -47,7 +47,7 @@ export interface LibraryQuizDto {
   author: LibraryQuizAuthorDto | null;
   folder: string | null;
   questions: [];
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   pdfUrl?: string;
   questionCount: number;
   ownedByMe: boolean;

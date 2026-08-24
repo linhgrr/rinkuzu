@@ -8,7 +8,7 @@ import type {
 } from '@/dtos/user';
 
 export type AttemptOwner =
-  | { userId: string; guestEmail?: never }
+  | { userId: string; role?: string; guestEmail?: never }
   | { userId?: never; guestEmail: string };
 
 export interface IUserService {

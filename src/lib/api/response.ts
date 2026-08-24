@@ -3,6 +3,12 @@ import type { StandardApiEnvelope } from '@/lib/api/envelope';
 import { buildStandardErrorBody } from './error';
 import { getApiErrorCodeFromStatus, getDefaultApiErrorMessage } from './error-codes';
 
+const PRIVATE_ERROR_HEADERS = {
+  'Cache-Control': 'private, no-store, max-age=0',
+  Pragma: 'no-cache',
+  'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet, noimageindex',
+} as const;
+
 export interface ApiOkExtras {
   meta?: Record<string, unknown>;
   headers?: HeadersInit;
@@ -47,7 +53,7 @@ export function apiErr(
       detail,
       ...(meta !== undefined ? { meta } : {}),
     }),
-    { status },
+    { status, headers: PRIVATE_ERROR_HEADERS },
   );
 }
 

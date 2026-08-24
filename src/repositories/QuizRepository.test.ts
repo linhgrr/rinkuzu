@@ -23,7 +23,7 @@ const quizListRecord = {
   folder: null,
   questions: [],
   questionCount: 12,
-  isPrivate: false,
+  visibility: 'public',
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
   updatedAt: new Date('2026-07-01T01:00:00.000Z'),
 };
@@ -63,17 +63,17 @@ describe('QuizRepository.findUserQuizzes', () => {
     quizModelMocks.lean.mockResolvedValue({
       _id: new Types.ObjectId('507f191e810c19729de860ea'),
       author: '507f191e810c19729de860eb',
-      isPrivate: true,
+      visibility: 'personal',
     });
     const repository = new QuizRepository();
 
     await expect(repository.findAccessById('507f191e810c19729de860ea')).resolves.toEqual({
       id: '507f191e810c19729de860ea',
       author: '507f191e810c19729de860eb',
-      isPrivate: true,
+      visibility: 'personal',
     });
     expect(quizModelMocks.findById).toHaveBeenCalledWith('507f191e810c19729de860ea');
-    expect(quizModelMocks.select).toHaveBeenCalledWith('_id author isPrivate');
+    expect(quizModelMocks.select).toHaveBeenCalledWith('_id author visibility');
     expect(quizModelMocks.lean).toHaveBeenCalledOnce();
   });
 
@@ -133,7 +133,7 @@ describe('QuizRepository.findUserQuizzes', () => {
       author: '507f191e810c19729de860eb',
       folder: null,
       questions: [],
-      isPrivate: false,
+      visibility: 'public',
       createdAt: new Date('2026-07-01T00:00:00.000Z'),
       updatedAt: new Date('2026-07-01T01:00:00.000Z'),
     });
@@ -146,7 +146,7 @@ describe('QuizRepository.findUserQuizzes', () => {
     });
     expect(quizModelMocks.findOne).toHaveBeenCalledWith({ slug: 'algebra-basics' });
     expect(quizModelMocks.select).toHaveBeenCalledWith(
-      '_id title description slug author folder questions isPrivate pdfUrl tags sourceDraftId createdAt updatedAt',
+      '_id title description slug author folder questions visibility pdfUrl tags sourceDraftId createdAt updatedAt',
     );
     expect(quizModelMocks.lean).toHaveBeenCalledOnce();
   });
@@ -166,7 +166,7 @@ describe('QuizRepository.findUserQuizzes', () => {
         },
         folder: null,
         questions: [],
-        isPrivate: false,
+        visibility: 'public',
         createdAt: new Date('2026-07-01T00:00:00.000Z'),
         updatedAt: new Date('2026-07-01T01:00:00.000Z'),
       },
@@ -269,7 +269,7 @@ describe('QuizRepository.findUserQuizzes', () => {
       {
         $match: {
           author: new Types.ObjectId(userId),
-          isPrivate: false,
+          visibility: 'public',
         },
       },
       { $sort: { createdAt: -1 } },
@@ -297,12 +297,12 @@ describe('QuizRepository.findUserQuizzes', () => {
     const userId = '507f191e810c19729de860eb';
 
     await repository.findAll(
-      { isPrivate: false, excludeAuthor: userId },
+      { visibility: 'public', excludeAuthor: userId },
       { page: 1, limit: 4, sort: { createdAt: -1 } },
     );
 
     const expectedFilter = {
-      isPrivate: false,
+      visibility: 'public',
       author: { $ne: new Types.ObjectId(userId) },
     };
     expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
@@ -352,7 +352,7 @@ describe('QuizRepository.findUserQuizzes', () => {
     const userId = '507f191e810c19729de860eb';
 
     await repository.findRecent(
-      { isPrivate: false, excludeAuthor: userId },
+      { visibility: 'public', excludeAuthor: userId },
       { limit: 4, populate: ['author'] },
     );
 
@@ -360,7 +360,7 @@ describe('QuizRepository.findUserQuizzes', () => {
     expect(pipeline).toEqual([
       {
         $match: {
-          isPrivate: false,
+          visibility: 'public',
           author: { $ne: new Types.ObjectId(userId) },
         },
       },

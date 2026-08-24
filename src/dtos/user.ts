@@ -69,7 +69,7 @@ export interface AttemptDetailDto {
   totalQuestions: number;
   takenAt: string;
   answers: (number | number[])[];
-  historyStatus: 'complete' | 'quiz_modified';
+  historyStatus: 'complete' | 'quiz_modified' | 'content_locked';
   quiz: {
     title: string;
     slug: string;

@@ -15,7 +15,7 @@ describe('quiz draft DTO schemas', () => {
             correctIndex: 1,
           },
         ],
-        isPrivate: false,
+        submitToPremium: false,
       }),
     ).toEqual({
       title: 'Arithmetic',
@@ -28,12 +28,12 @@ describe('quiz draft DTO schemas', () => {
           correctIndex: 1,
         },
       ],
-      isPrivate: false,
+      submitToPremium: false,
     });
   });
 
   it.each([
-    { questions: [], isPrivate: false },
+    { questions: [], submitToPremium: false },
     { title: 'Quiz', questions: [] },
   ])('rejects missing required submit fields instead of fabricating defaults', (input) => {
     expect(submitQuizDraftRequestSchema.safeParse(input).success).toBe(false);
@@ -51,8 +51,27 @@ describe('quiz draft DTO schemas', () => {
             correctIndex: 3,
           },
         ],
-        isPrivate: false,
+        submitToPremium: false,
       }),
     ).toThrow('correctIndex out of range');
+  });
+
+  it('requires sharing-rights confirmation for Premium draft submissions', () => {
+    const base = {
+      title: 'Premium draft',
+      questions: [
+        {
+          question: 'Pick one',
+          options: ['A', 'B'],
+          type: 'single' as const,
+          correctIndex: 0,
+        },
+      ],
+      submitToPremium: true,
+    };
+    expect(submitQuizDraftRequestSchema.safeParse(base).success).toBe(false);
+    expect(submitQuizDraftRequestSchema.safeParse({ ...base, rightsAttested: true }).success).toBe(
+      true,
+    );
   });
 });

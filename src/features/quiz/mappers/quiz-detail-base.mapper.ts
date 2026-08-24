@@ -10,7 +10,7 @@ export function toQuizDetailBaseViewModel(dto: QuizDetailBaseViewModel): QuizDet
     slug: dto.slug,
     author: dto.author,
     folder: dto.folder,
-    isPrivate: dto.isPrivate,
+    visibility: dto.visibility,
     questionCount: dto.questionCount,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,

@@ -7,7 +7,6 @@ import useSWR from 'swr';
 import { HiOutlineSearch } from 'react-icons/hi';
 import { ErrorState } from '@/components/ui/ErrorState';
 import Pagination from '@/components/ui/Pagination';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { fetchQuizListViewModel } from '@/features/quiz/api/quiz-list-api';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
@@ -19,9 +18,7 @@ import {
   buildQuizzesListApiKey,
   buildQuizzesPageQueryString,
   parseQuizzesPage,
-  parseQuizzesVisibility,
   QUIZZES_PAGE_SIZE,
-  type QuizVisibilityFilter,
 } from '@/features/quizzes/lib/quizzes-page-state';
 import { useRouter } from '@/i18n/navigation';
 
@@ -64,15 +61,13 @@ function QuizzesContent() {
   const { replace } = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get('q')?.trim() ?? '';
-  const activeVisibility = parseQuizzesVisibility(searchParams.get('visibility'));
   const page = parseQuizzesPage(searchParams.get('page'));
 
-  const updateUrl = (next: { q?: string; page?: number; visibility?: QuizVisibilityFilter }) => {
+  const updateUrl = (next: { q?: string; page?: number }) => {
     replace(
       buildQuizzesPageQueryString({
         q: next.q ?? query,
         page: next.page ?? page,
-        visibility: next.visibility ?? activeVisibility,
       }),
       { scroll: false },
     );
@@ -81,10 +76,8 @@ function QuizzesContent() {
   const listKey = buildQuizzesListApiKey({
     query,
     page,
-    visibility: activeVisibility,
     limit: QUIZZES_PAGE_SIZE,
   });
-
   const {
     data,
     error,
@@ -93,30 +86,18 @@ function QuizzesContent() {
   } = useSWR<QuizListViewModel>(listKey, fetchQuizListViewModel, {
     keepPreviousData: true,
   });
-
   const quizzes = data?.quizzes ?? EMPTY_QUIZZES;
   const pagination = data?.pagination;
-  const visibilityOptions = [
-    { value: 'all', label: t('visibility.all') },
-    { value: 'public', label: t('visibility.public') },
-    { value: 'private', label: t('visibility.private') },
-  ] as const;
-
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 pb-24 pt-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-app">
         <h1 className="sr-only">{t('title')}</h1>
-        <div className="mt-6">
+        <div className="mt-6 space-y-6">
           <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
-            <div className="flex justify-end">
-              <SegmentedControl
-                ariaLabel={t('visibility.label')}
-                value={activeVisibility}
-                options={visibilityOptions}
-                onChange={(visibility) => updateUrl({ visibility, page: 1 })}
-              />
+            <div>
+              <h2 className="font-home text-xl font-semibold text-ink">{t('publicTitle')}</h2>
+              <p className="mt-1 font-home text-sm text-ink-muted">{t('publicSubtitle')}</p>
             </div>
-
             {isLoading ? (
               <QuizGridSkeleton count={6} />
             ) : error ? (

@@ -14,12 +14,23 @@ import type {
 import { logger } from '@/lib/logger';
 import { PublicProfileDtoMapper } from '@/mappers/user/PublicProfileDtoMapper';
 import { UserAttemptDtoMapper } from '@/mappers/user/UserAttemptDtoMapper';
+import type { PremiumAccessContext, PremiumAccessDecision } from '@/entities/PremiumQuiz';
+
+interface PremiumAttemptAccessPolicy {
+  canAccessAttempt(
+    context: PremiumAccessContext,
+    quizId: string,
+    submissionId: string,
+    snapshotHash: string,
+  ): Promise<PremiumAccessDecision>;
+}
 
 export class UserService implements IUserService {
   constructor(
     private userRepository: IUserRepository,
     private attemptRepository: IAttemptRepository,
     private quizRepository: IQuizRepository,
+    private premiumAccessPolicy?: PremiumAttemptAccessPolicy,
   ) {}
 
   async getPublicProfile(
@@ -85,9 +96,24 @@ export class UserService implements IUserService {
         };
       }
 
+      const quiz = typeof attempt.quiz === 'object' ? attempt.quiz : null;
+      let canReadPremiumContent = true;
+      if (attempt.premiumSubmissionId !== undefined && attempt.premiumSnapshotHash !== undefined) {
+        canReadPremiumContent =
+          owner.userId !== undefined &&
+          quiz !== null &&
+          this.premiumAccessPolicy !== undefined &&
+          (await this.premiumAccessPolicy.canAccessAttempt(
+            { userId: owner.userId, ...(owner.role === undefined ? {} : { role: owner.role }) },
+            quiz.id,
+            attempt.premiumSubmissionId,
+            attempt.premiumSnapshotHash,
+          ));
+      }
+
       return {
         success: true,
-        data: UserAttemptDtoMapper.toDetailDto(attempt),
+        data: UserAttemptDtoMapper.toDetailDto(attempt, !canReadPremiumContent),
       };
     } catch (error) {
       logger.error({ error }, 'Get attempt details error');

@@ -18,7 +18,7 @@ export interface LibraryQuizPersistenceRecord {
   folder?: MongoIdLike | null;
   questions?: QuizQuestionPersistenceRecord[];
   questionCount?: number;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   pdfUrl?: string;
   createdAt: Date;
   updatedAt: Date;

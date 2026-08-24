@@ -50,13 +50,16 @@ export class UserAttemptDtoMapper {
     };
   }
 
-  static toDetailDto(attempt: Attempt): AttemptDetailDto {
+  static toDetailDto(attempt: Attempt, contentLocked = false): AttemptDetailDto {
     const quiz = requireQuizSnapshot(attempt);
     if (!quiz.questions) {
       throw new TypeError('attempt.quiz.questions is required');
     }
-    const historyStatus =
-      attempt.answers.length === quiz.questions.length ? 'complete' : 'quiz_modified';
+    const historyStatus: AttemptDetailDto['historyStatus'] = contentLocked
+      ? 'content_locked'
+      : attempt.answers.length === quiz.questions.length
+        ? 'complete'
+        : 'quiz_modified';
     const questions =
       historyStatus === 'complete'
         ? quiz.questions.map((question, index) =>

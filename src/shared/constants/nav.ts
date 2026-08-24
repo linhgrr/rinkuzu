@@ -71,6 +71,7 @@ export const DESKTOP_PRIMARY_NAV: DesktopNavGroupDef[] = [
     requiredRole: 'admin',
     items: [
       { href: ROUTES.ADMIN.QUIZZES, labelKey: 'quizManagement' },
+      { href: ROUTES.ADMIN.PREMIUM_SUBMISSIONS, labelKey: 'premiumReview' },
       { href: ROUTES.ADMIN.USERS, labelKey: 'userManagement' },
       { href: ROUTES.ADMIN.SUBSCRIPTIONS, labelKey: 'subscriptions' },
       { href: ROUTES.ADMIN.PLANS, labelKey: 'pricingPlans' },
@@ -82,7 +83,13 @@ export const DESKTOP_PRIMARY_NAV: DesktopNavGroupDef[] = [
       { href: ROUTES.ADAPTIVE_PIPELINE_DEBUG, labelKey: 'pipelineDebug' },
     ],
   },
-  { id: 'explore', labelKey: 'explore', href: ROUTES.QUIZZES },
+  {
+    id: 'premium',
+    labelKey: 'premiumQuizzes',
+    href: ROUTES.PREMIUM_QUIZZES,
+    matchPrefix: ROUTES.PREMIUM_QUIZZES,
+  },
+  { id: 'explore', labelKey: 'quizzes', href: ROUTES.QUIZZES },
 ];
 
 export const DESKTOP_BOTTOM_NAV: DesktopNavGroupDef[] = [

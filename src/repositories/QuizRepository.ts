@@ -76,7 +76,7 @@ const QUIZ_LIST_PROJECTION = {
   author: 1,
   questions: { $literal: [] },
   questionCount: { $size: { $ifNull: ['$questions', []] } },
-  isPrivate: 1,
+  visibility: 1,
   createdAt: 1,
   updatedAt: 1,
 };
@@ -102,7 +102,7 @@ const QUIZ_WITH_AUTHOR_PROJECTION = {
     avatar: { $first: '$authorDoc.avatar' },
   },
   folder: 1,
-  isPrivate: 1,
+  visibility: 1,
   pdfUrl: 1,
   tags: 1,
   sourceDraftId: 1,
@@ -220,17 +220,17 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     return record ? QuizPersistenceMapper.toEntity(record) : null;
   }
 
-  async findAccessById(id: string): Promise<Pick<Quiz, 'id' | 'author' | 'isPrivate'> | null> {
+  async findAccessById(id: string): Promise<Pick<Quiz, 'id' | 'author' | 'visibility'> | null> {
     await connectDB();
     const record = await QuizModel.findById(id)
-      .select('_id author isPrivate')
-      .lean<Pick<QuizPersistenceRecord, '_id' | 'author' | 'isPrivate'>>();
+      .select('_id author visibility')
+      .lean<Pick<QuizPersistenceRecord, '_id' | 'author' | 'visibility'>>();
 
     return record
       ? {
           id: serializeId(record._id, 'quiz._id'),
           author: serializeId(record.author, 'quiz.author'),
-          isPrivate: record.isPrivate,
+          visibility: record.visibility,
         }
       : null;
   }
@@ -402,7 +402,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     await connectDB();
     const record = await QuizModel.findOne({ slug })
       .select(
-        '_id title description slug author folder questions isPrivate pdfUrl tags sourceDraftId createdAt updatedAt',
+        '_id title description slug author folder questions visibility pdfUrl tags sourceDraftId createdAt updatedAt',
       )
       .lean<QuizPersistenceRecord>();
     return record ? QuizPersistenceMapper.toEntity(record) : null;
@@ -428,7 +428,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Quiz>> {
     await connectDB();
-    const filter = { author: new Types.ObjectId(userId), isPrivate: false };
+    const filter = { author: new Types.ObjectId(userId), visibility: 'public' as const };
     return findPaginatedQuizList(filter, {
       ...options,
       projection: QUIZ_LIST_PROJECTION,

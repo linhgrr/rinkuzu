@@ -10,7 +10,7 @@ export class QuizDraftMapper {
       folderId: draft.category_id,
       prompt: draft.prompt,
       sourceType: draft.source_type,
-      isPrivate: draft.is_private,
+      submitToPremium: draft.submit_to_premium,
       revision: draft.revision,
       questionCount: draft.question_count,
       pdf: {
@@ -18,6 +18,8 @@ export class QuizDraftMapper {
         fileName: draft.pdf.file_name,
         fileSize: draft.pdf.file_size,
         pageCount: draft.pdf.page_count,
+        fileHash: draft.pdf.file_hash,
+        retainedForPremium: draft.pdf.retained_for_premium,
       },
       status: draft.status,
       progress: draft.progress,

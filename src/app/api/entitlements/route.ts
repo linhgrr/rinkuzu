@@ -64,7 +64,10 @@ export const GET = withAuth(async (_request, { userId, session }) => {
         ),
       },
       capabilities: {
-        private_quiz: { kind: 'boolean', enabled: isAdmin || can(entitlements, 'private_quiz') },
+        premium_catalog: {
+          kind: 'boolean',
+          enabled: isAdmin || can(entitlements, 'premium_catalog'),
+        },
         ...Object.fromEntries(meteredEntries),
       } as EntitlementSnapshot['capabilities'],
     };

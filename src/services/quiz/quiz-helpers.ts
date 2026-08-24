@@ -1,8 +1,5 @@
 import type { Quiz } from '@/entities/Quiz';
-import { can, resolveEntitlements } from '@/lib/entitlements';
 import { ServiceResult } from '@/interfaces/services/types';
-
-export const PREMIUM_REQUIRED_CODE = 'premium_required';
 
 export function getAuthorId(author: Quiz['author'] | undefined): string | undefined {
   if (!author) return undefined;
@@ -10,17 +7,17 @@ export function getAuthorId(author: Quiz['author'] | undefined): string | undefi
   return author.id;
 }
 
-export async function checkPrivateQuizAccess(
+export async function checkQuizSourceAccess(
   quiz: Quiz,
   userId?: string,
   userRole?: string,
 ): Promise<ServiceResult<never> | null> {
-  if (!quiz.isPrivate) return null;
+  if (quiz.visibility === 'public') return null;
 
   if (!userId) {
     return {
       success: false,
-      error: 'Authentication required to access private quiz',
+      error: 'Authentication required to access personal quiz source',
       statusCode: 401,
     };
   }
@@ -28,14 +25,10 @@ export async function checkPrivateQuizAccess(
   const authorId = getAuthorId(quiz.author);
   if (userRole === 'admin' || authorId === userId) return null;
 
-  const entitlements = await resolveEntitlements(userId);
-  if (can(entitlements, 'private_quiz')) return null;
-
   return {
     success: false,
-    error: 'Premium subscription required to access private quizzes',
+    error: 'Personal quiz sources are only available to their owner or an admin',
     statusCode: 403,
-    code: PREMIUM_REQUIRED_CODE,
   };
 }
 
@@ -52,6 +45,6 @@ export async function requireQuizReadAccess(
     };
   }
 
-  const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
-  return privateAccessError ?? { success: true, data: quiz };
+  const sourceAccessError = await checkQuizSourceAccess(quiz, userId, userRole);
+  return sourceAccessError ?? { success: true, data: quiz };
 }

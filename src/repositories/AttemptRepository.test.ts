@@ -109,6 +109,8 @@ describe('AttemptRepository', () => {
       expect(pipeline?.[2]?.$project).toEqual(
         expect.objectContaining({
           answers: 1,
+          premiumSubmission: 1,
+          premiumSnapshotHash: 1,
           quiz: expect.objectContaining({
             title: '$quizSnapshot.title',
             questions: '$quizSnapshot.questions',

@@ -120,7 +120,7 @@ export class DashboardService implements IDashboardService {
           warningMessage: 'Failed fetching recent owned quizzes for home dashboard',
         }),
         this.getRecentQuizzes({
-          filter: { isPrivate: false, excludeAuthor: userId },
+          filter: { visibility: 'public', excludeAuthor: userId },
           warningMessage: 'Failed fetching recent public quizzes for home dashboard',
         }),
       ]);

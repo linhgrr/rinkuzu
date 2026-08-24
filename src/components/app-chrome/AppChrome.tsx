@@ -5,7 +5,9 @@ import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import { useSession } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
+import useSWR from 'swr';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { fetchCreditWallet } from '@/features/profile/api/credit-wallet-api';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
 import { ROUTES } from '@/shared/constants/routes';
@@ -26,6 +28,7 @@ const ICON = {
   lang: 'lets-icons:world-2-light',
   sidebar: 'mynaui:sidebar',
   admin: 'material-symbols:shield-outline-rounded',
+  premium: 'solar:medal-ribbons-star-bold-duotone',
   user: 'solar:user-circle-linear',
   logout: 'solar:logout-2-linear',
   search: 'iconoir:search',
@@ -117,6 +120,14 @@ interface AppTopbarProps extends UserMenuDropdownProps {
   onToggleMobileMenu: () => void;
   currentLocale: string;
   onSelectLocale: (locale: AppLocale) => void;
+  creditBalance?: number;
+  creditLoading: boolean;
+}
+
+interface CreditBalanceBadgeProps {
+  balance?: number;
+  loading: boolean;
+  t: NavTranslate;
 }
 
 interface MobileMenuItemProps {
@@ -151,6 +162,7 @@ const NAV_ICON_BY_ID: Record<string, string> = {
   quiz: ICON.quiz,
   adaptive: ICON.ai,
   admin: ICON.admin,
+  premium: ICON.premium,
   explore: ICON.explore,
   account: ICON.setting,
   help: ICON.help,
@@ -521,6 +533,35 @@ function LogoutButton({ className, t }: LogoutButtonProps) {
   );
 }
 
+function CreditBalanceBadge({ balance, loading, t }: CreditBalanceBadgeProps) {
+  const formattedBalance = balance?.toLocaleString();
+  const label = loading
+    ? t('creditBalanceLoading')
+    : balance === undefined
+      ? t('creditBalanceUnavailable')
+      : `${formattedBalance} ${t('credits')}`;
+
+  return (
+    <Link
+      href={ROUTES.PREMIUM_QUIZZES}
+      aria-label={label}
+      title={label}
+      className="flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-control border border-accent/25 bg-accent-soft/45 px-2.5 font-home text-sm font-bold tabular-nums text-ink transition-[background-color,border-color,transform] hover:border-accent/50 hover:bg-accent-soft/70 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    >
+      <Image
+        src="/images/premium-credit-coin.png"
+        alt=""
+        width={32}
+        height={32}
+        sizes="32px"
+        className="size-8 shrink-0 object-contain"
+        aria-hidden="true"
+      />
+      <span>{loading ? '…' : (formattedBalance ?? '—')}</span>
+    </Link>
+  );
+}
+
 function AppTopbar({
   collapsed,
   onToggleSidebar,
@@ -528,6 +569,8 @@ function AppTopbar({
   onToggleMobileMenu,
   currentLocale,
   onSelectLocale,
+  creditBalance,
+  creditLoading,
   avatar,
   avatarInitial,
   displayName,
@@ -633,32 +676,35 @@ function AppTopbar({
           />
         </Link>
 
-        <ButtonBase
-          type="button"
-          onClick={onToggleMobileMenu}
-          className="flex size-11 items-center justify-center rounded-lg border border-line bg-surface-warm text-ink transition-colors hover:bg-accent-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          aria-label={mobileMenuOpen ? t('closeMenu') : t('openMenu')}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="mobile-app-menu"
-        >
-          <span className="relative flex size-6 items-center justify-center" aria-hidden="true">
-            <span
-              className={`absolute h-0.5 w-6 rounded-full bg-current transition-transform duration-200 ${
-                mobileMenuOpen ? 'translate-y-0 rotate-45' : '-translate-y-2'
-              }`}
-            />
-            <span
-              className={`absolute h-0.5 w-6 rounded-full bg-current transition-opacity duration-200 ${
-                mobileMenuOpen ? 'opacity-0' : 'opacity-100'
-              }`}
-            />
-            <span
-              className={`absolute h-0.5 w-6 rounded-full bg-current transition-transform duration-200 ${
-                mobileMenuOpen ? 'translate-y-0 -rotate-45' : 'translate-y-2'
-              }`}
-            />
-          </span>
-        </ButtonBase>
+        <div className="flex items-center gap-2">
+          <CreditBalanceBadge balance={creditBalance} loading={creditLoading} t={t} />
+          <ButtonBase
+            type="button"
+            onClick={onToggleMobileMenu}
+            className="flex size-11 items-center justify-center rounded-lg border border-line bg-surface-warm text-ink transition-colors hover:bg-accent-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            aria-label={mobileMenuOpen ? t('closeMenu') : t('openMenu')}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-app-menu"
+          >
+            <span className="relative flex size-6 items-center justify-center" aria-hidden="true">
+              <span
+                className={`absolute h-0.5 w-6 rounded-full bg-current transition-transform duration-200 ${
+                  mobileMenuOpen ? 'translate-y-0 rotate-45' : '-translate-y-2'
+                }`}
+              />
+              <span
+                className={`absolute h-0.5 w-6 rounded-full bg-current transition-opacity duration-200 ${
+                  mobileMenuOpen ? 'opacity-0' : 'opacity-100'
+                }`}
+              />
+              <span
+                className={`absolute h-0.5 w-6 rounded-full bg-current transition-transform duration-200 ${
+                  mobileMenuOpen ? 'translate-y-0 -rotate-45' : 'translate-y-2'
+                }`}
+              />
+            </span>
+          </ButtonBase>
+        </div>
       </div>
 
       <div className="hidden flex-1 lg:flex">
@@ -688,6 +734,8 @@ function AppTopbar({
           </form>
 
           <div className="flex shrink-0 items-center gap-3">
+            <CreditBalanceBadge balance={creditBalance} loading={creditLoading} t={t} />
+
             <ButtonBase
               type="button"
               className="flex h-11 w-12 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
@@ -825,6 +873,14 @@ export function AppChrome({ children }: AppChromeProps) {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const router = useRouter();
+  const { data: creditData, isLoading: creditLoading } = useSWR(
+    session?.user ? '/api/credits' : null,
+    fetchCreditWallet,
+    {
+      refreshInterval: 30_000,
+      revalidateOnFocus: true,
+    },
+  );
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuState, setMobileMenuState] = useState({ pathname, open: false });
@@ -875,6 +931,8 @@ export function AppChrome({ children }: AppChromeProps) {
         }
         currentLocale={currentLocale}
         onSelectLocale={selectLocale}
+        creditBalance={creditData?.wallet.balance}
+        creditLoading={creditLoading}
         {...(avatar !== undefined ? { avatar } : {})}
         avatarInitial={avatarInitial}
         {...(session?.user?.displayName !== undefined

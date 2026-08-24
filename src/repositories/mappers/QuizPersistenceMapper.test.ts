@@ -31,7 +31,7 @@ const record: QuizPersistenceRecord = {
   },
   folder: 'folder-1',
   questions: [singleQuestion],
-  isPrivate: false,
+  visibility: 'public',
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
   updatedAt: new Date('2026-07-01T01:00:00.000Z'),
 };
@@ -63,7 +63,7 @@ describe('QuizPersistenceMapper', () => {
           optionImages: undefined,
         },
       ],
-      isPrivate: false,
+      visibility: 'public',
       pdfUrl: undefined,
       tags: undefined,
       questionCount: undefined,

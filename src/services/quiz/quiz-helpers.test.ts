@@ -1,75 +1,48 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { Quiz } from '@/entities/Quiz';
-import { checkPrivateQuizAccess, PREMIUM_REQUIRED_CODE } from './quiz-helpers';
-
-const entitlementMocks = vi.hoisted(() => ({
-  resolveEntitlements: vi.fn(),
-}));
-
-vi.mock('@/lib/entitlements', () => ({
-  can: (entitlements: { tier: string }) => entitlements.tier === 'premium',
-  resolveEntitlements: entitlementMocks.resolveEntitlements,
-}));
+import { checkQuizSourceAccess } from './quiz-helpers';
 
 function quiz(overrides: Partial<Quiz> = {}): Quiz {
   return {
     id: '507f191e810c19729de860ea',
-    title: 'Private quiz',
-    slug: 'private-quiz',
+    title: 'Personal source',
+    slug: 'personal-source',
     author: '507f191e810c19729de860eb',
     questions: [],
-    isPrivate: true,
+    visibility: 'personal',
     createdAt: new Date('2026-07-01T00:00:00.000Z'),
     updatedAt: new Date('2026-07-01T00:00:00.000Z'),
     ...overrides,
   };
 }
 
-describe('checkPrivateQuizAccess', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe('checkQuizSourceAccess', () => {
+  it('allows public quizzes', async () => {
+    await expect(checkQuizSourceAccess(quiz({ visibility: 'public' }))).resolves.toBeNull();
   });
 
-  it('allows public quizzes without resolving entitlements', async () => {
-    await expect(checkPrivateQuizAccess(quiz({ isPrivate: false }))).resolves.toBeNull();
-    expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
-  });
-
-  it('requires authentication before accessing private quiz content', async () => {
-    await expect(checkPrivateQuizAccess(quiz())).resolves.toEqual({
+  it('requires authentication for personal sources', async () => {
+    await expect(checkQuizSourceAccess(quiz())).resolves.toEqual({
       success: false,
-      error: 'Authentication required to access private quiz',
+      error: 'Authentication required to access personal quiz source',
       statusCode: 401,
     });
-    expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
   });
 
   it.each([
     ['author', 'user', '507f191e810c19729de860eb'],
     ['admin', 'admin', '507f191e810c19729de860ec'],
-  ])('allows the %s without resolving entitlements', async (_label, role, userId) => {
-    await expect(checkPrivateQuizAccess(quiz(), userId, role)).resolves.toBeNull();
-    expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
+  ])('allows the %s', async (_label, role, userId) => {
+    await expect(checkQuizSourceAccess(quiz(), userId, role)).resolves.toBeNull();
   });
 
-  it('blocks a free user with the canonical premium error', async () => {
-    entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
-
+  it('never exposes a personal source to another user, including Premium users', async () => {
     await expect(
-      checkPrivateQuizAccess(quiz(), '507f191e810c19729de860ec', 'user'),
+      checkQuizSourceAccess(quiz(), '507f191e810c19729de860ec', 'user'),
     ).resolves.toEqual({
       success: false,
-      error: 'Premium subscription required to access private quizzes',
+      error: 'Personal quiz sources are only available to their owner or an admin',
       statusCode: 403,
-      code: PREMIUM_REQUIRED_CODE,
     });
-  });
-
-  it('allows an entitled Premium user', async () => {
-    entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'premium' });
-
-    await expect(
-      checkPrivateQuizAccess(quiz(), '507f191e810c19729de860ec', 'user'),
-    ).resolves.toBeNull();
   });
 });

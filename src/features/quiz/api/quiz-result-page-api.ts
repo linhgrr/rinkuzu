@@ -58,6 +58,10 @@ export async function fetchQuizResultPageData(
     return { result, bookmarks: EMPTY_BOOKMARK_LOOKUP };
   }
 
+  if (result.historyStatus === 'content_locked') {
+    return { result, bookmarks: EMPTY_BOOKMARK_LOOKUP };
+  }
+
   const bookmarks = await fetchBookmarkLookup(result);
   return { result, bookmarks };
 }

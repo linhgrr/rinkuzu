@@ -8,16 +8,6 @@ import type { IReportRepository } from '@/interfaces/repositories/IReportReposit
 import { QuizDiscussionService } from '@/services/quiz/QuizDiscussionService';
 import { logger } from '@/lib/logger';
 import type { Session } from 'next-auth';
-import { PREMIUM_REQUIRED_CODE } from '@/services/quiz/quiz-helpers';
-
-const entitlementMocks = vi.hoisted(() => ({
-  resolveEntitlements: vi.fn(),
-}));
-
-vi.mock('@/lib/entitlements', () => ({
-  can: (entitlements: { tier: string }) => entitlements.tier === 'premium',
-  resolveEntitlements: entitlementMocks.resolveEntitlements,
-}));
 
 vi.mock('@/lib/logger', () => ({
   logger: {
@@ -56,7 +46,7 @@ function quizSummary(overrides: Partial<Quiz> = {}): Quiz {
       },
     ],
     questionCount: 3,
-    isPrivate: false,
+    visibility: 'public',
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -249,20 +239,20 @@ describe('QuizDiscussionService mutation coverage', () => {
       expect(discussionRepository.findByQuiz).toHaveBeenCalledTimes(1);
     });
 
-    it('requires auth for private quizzes and still works without a session for public ones', async () => {
+    it('requires auth for personal sources and still works without a session for public ones', async () => {
       const { service, quizRepository, discussionRepository } = createService();
       quizRepository.findSummaryBySlug.mockResolvedValue(
-        quizSummary({ isPrivate: true, author: authorId }),
+        quizSummary({ visibility: 'personal', author: authorId }),
       );
 
       await expect(service.getQuizDiscussions('algorithms')).resolves.toEqual({
         success: false,
-        error: 'Authentication required to access private quiz',
+        error: 'Authentication required to access personal quiz source',
         statusCode: 401,
       });
       expect(discussionRepository.findByQuiz).not.toHaveBeenCalled();
 
-      quizRepository.findSummaryBySlug.mockResolvedValue(quizSummary({ isPrivate: false }));
+      quizRepository.findSummaryBySlug.mockResolvedValue(quizSummary({ visibility: 'public' }));
       await expect(service.getQuizDiscussions('algorithms', null)).resolves.toMatchObject({
         success: true,
       });
@@ -462,13 +452,11 @@ describe('QuizDiscussionService mutation coverage', () => {
       });
     });
 
-    it('denies free non-owners reporting private quizzes', async () => {
+    it('denies non-owners reporting personal quiz sources', async () => {
       const { service, quizRepository, reportRepository } = createService();
       quizRepository.findForPlay.mockResolvedValue(
-        quizSummary({ isPrivate: true, author: authorId }),
+        quizSummary({ visibility: 'personal', author: authorId }),
       );
-      entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
-
       await expect(
         service.reportQuiz(
           'algorithms',
@@ -480,26 +468,20 @@ describe('QuizDiscussionService mutation coverage', () => {
         ),
       ).resolves.toEqual({
         success: false,
-        error: 'Premium subscription required to access private quizzes',
+        error: 'Personal quiz sources are only available to their owner or an admin',
         statusCode: 403,
-        code: PREMIUM_REQUIRED_CODE,
       });
       expect(reportRepository.create).not.toHaveBeenCalled();
     });
 
     it.each([
-      ['author', authorId, 'user' as const, undefined],
-      ['admin', userId, 'admin' as const, undefined],
-      ['premium non-owner', userId, 'user' as const, { tier: 'premium' }],
-    ])('allows %s to report a private quiz', async (_label, reporterId, role, entitlements) => {
+      ['author', authorId, 'user' as const],
+      ['admin', userId, 'admin' as const],
+    ])('allows %s to report a personal quiz source', async (_label, reporterId, role) => {
       const { service, quizRepository, reportRepository } = createService();
       quizRepository.findForPlay.mockResolvedValue(
-        quizSummary({ isPrivate: true, author: authorId }),
+        quizSummary({ visibility: 'personal', author: authorId }),
       );
-      if (entitlements) {
-        entitlementMocks.resolveEntitlements.mockResolvedValue(entitlements);
-      }
-
       await expect(
         service.reportQuiz(
           'algorithms',

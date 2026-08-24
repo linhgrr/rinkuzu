@@ -36,6 +36,12 @@ export const updateAdminUserStatusRequestSchema = z.strictObject({
   disable: accountDisableSchema,
 });
 
+export const addAdminUserCreditsRequestSchema = z.strictObject({
+  amount: z.number().int().min(1).max(1000),
+  note: z.string().trim().min(3).max(500),
+  idempotencyKey: z.string().uuid(),
+});
+
 export interface AdminUserSubscriptionDto {
   plan: {
     id: string;
@@ -74,6 +80,15 @@ export interface AdminUserStatusDto {
   message: string;
 }
 
+export interface AdminUserCreditGrantDto {
+  userId: string;
+  amount: number;
+  balance: number;
+  ledgerEntryId: string;
+  alreadyApplied: boolean;
+}
+
 export type AdminUserListQueryDto = z.infer<typeof adminUserListQuerySchema>;
 export type UpdateAdminUserRoleRequestDto = z.infer<typeof updateAdminUserRoleRequestSchema>;
 export type UpdateAdminUserStatusRequestDto = z.infer<typeof updateAdminUserStatusRequestSchema>;
+export type AddAdminUserCreditsRequestDto = z.infer<typeof addAdminUserCreditsRequestSchema>;

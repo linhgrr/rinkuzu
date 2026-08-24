@@ -5,6 +5,8 @@ import type { QuizPlayAuthorViewModel } from '@/features/quiz/types/quiz-play-vi
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
 import { getUserDisplayName } from '@/components/user/user-identity';
 import QuizPlayerClient from './QuizPlayerClient';
+import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
+import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +16,18 @@ export default async function QuizPlayerPage({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const [{ locale, slug }, session] = await Promise.all([params, getCurrentSession()]);
+  const premiumMetadata = await getPremiumQuizService().getCatalogMetadataBySlug(slug);
+  if (premiumMetadata) {
+    return (
+      <PremiumQuizPlayerClient
+        quizId={premiumMetadata.quizId}
+        slug={slug}
+        title={premiumMetadata.title}
+        questionCount={premiumMetadata.questionCount}
+        {...(premiumMetadata.description ? { description: premiumMetadata.description } : {})}
+      />
+    );
+  }
   const result = await getQuizService().getQuizForPlay(
     slug,
     session?.user?.role,
@@ -41,7 +55,7 @@ export default async function QuizPlayerPage({
 
   return (
     <>
-      {!quiz.isPrivate ? (
+      {quiz.visibility === 'public' ? (
         <>
           <section className="sr-only" aria-labelledby="quiz-page-title">
             <h1 id="quiz-page-title">{quiz.title}</h1>

@@ -11,7 +11,7 @@ export class QuizListDtoMapper {
       slug: quiz.slug,
       author: toQuizAuthorDto(quiz.author),
       folder: quiz.folder ?? null,
-      isPrivate: quiz.isPrivate,
+      visibility: quiz.visibility,
       questionCount: quiz.questionCount ?? quiz.questions.length,
       createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),
       updatedAt: serializeDate(quiz.updatedAt, 'quiz.updatedAt'),

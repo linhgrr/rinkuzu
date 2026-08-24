@@ -11,16 +11,6 @@ import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
 import type { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 
-const subscriptionMocks = vi.hoisted(() => ({
-  isUserPremium: vi.fn(),
-}));
-
-vi.mock('@/lib/subscription-factory', () => ({
-  createSubscriptionService: () => ({
-    isUserPremium: subscriptionMocks.isUserPremium,
-  }),
-}));
-
 function createQuizService(quiz: Quiz) {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
@@ -88,12 +78,12 @@ function createQuizService(quiz: Quiz) {
   return { service, quizRepository, discussionRepository };
 }
 
-const privateQuiz: Quiz = {
+const personalQuiz: Quiz = {
   id: 'quiz-1',
-  title: 'Private quiz',
-  slug: 'private-quiz',
+  title: 'Personal quiz source',
+  slug: 'personal-quiz-source',
   author: { id: 'author-1' },
-  isPrivate: true,
+  visibility: 'personal',
   questions: [
     {
       id: 'question-1',
@@ -107,16 +97,16 @@ const privateQuiz: Quiz = {
   updatedAt: new Date('2026-07-01T00:00:00Z'),
 };
 
-describe('QuizService subscription access gates', () => {
+describe('QuizService personal source access gates', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('blocks anonymous attempts against private quizzes', async () => {
-    const { service } = createQuizService(privateQuiz);
+  it('blocks anonymous attempts against personal sources', async () => {
+    const { service } = createQuizService(personalQuiz);
 
     const result = await service.submitQuizAttempt(
-      'private-quiz',
+      'personal-quiz-source',
       [0],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       null,
@@ -125,27 +115,27 @@ describe('QuizService subscription access gates', () => {
 
     assertFail(result);
     expect(result.statusCode).toBe(401);
-    expect(result.error).toBe('Authentication required to access private quiz');
+    expect(result.error).toBe('Authentication required to access personal quiz source');
   });
 
-  it('blocks discussion reads for non-premium users on private quizzes', async () => {
-    subscriptionMocks.isUserPremium.mockResolvedValue(false);
-    const { service, discussionRepository } = createQuizService(privateQuiz);
+  it('blocks discussion reads for non-owners on personal sources', async () => {
+    const { service, discussionRepository } = createQuizService(personalQuiz);
 
-    const result = await service.getQuizDiscussions('private-quiz', {
-      user: { id: 'user-1', role: 'user' },
+    const result = await service.getQuizDiscussions('personal-quiz-source', {
+      user: { id: 'user-1', role: 'user', emailVerified: true },
       expires: '2099-01-01',
     });
 
     assertFail(result);
     expect(result.statusCode).toBe(403);
-    expect(result.error).toBe('Premium subscription required to access private quizzes');
+    expect(result.error).toBe(
+      'Personal quiz sources are only available to their owner or an admin',
+    );
     expect(discussionRepository.findByQuiz).not.toHaveBeenCalled();
   });
 
-  it('allows discussion reads for premium users on private quizzes', async () => {
-    subscriptionMocks.isUserPremium.mockResolvedValue(true);
-    const { service, discussionRepository } = createQuizService(privateQuiz);
+  it('allows discussion reads for the owner of a personal source', async () => {
+    const { service, discussionRepository } = createQuizService(personalQuiz);
     const createdDiscussion: Discussion = {
       id: 'discussion-1',
       quiz: 'quiz-1',
@@ -156,8 +146,8 @@ describe('QuizService subscription access gates', () => {
     };
     discussionRepository.findByQuiz.mockResolvedValue([createdDiscussion]);
 
-    const result = await service.getQuizDiscussions('private-quiz', {
-      user: { id: 'user-1', role: 'user' },
+    const result = await service.getQuizDiscussions('personal-quiz-source', {
+      user: { id: 'author-1', role: 'user', emailVerified: true },
       expires: '2099-01-01',
     });
 

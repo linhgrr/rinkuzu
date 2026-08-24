@@ -38,7 +38,7 @@ export type QuizEditorWorkspaceSubmitPayload = {
   title: string;
   description: string;
   selectedFolderId: string | null;
-  isPrivate: boolean;
+  submitToPremium: boolean;
   /** API-ready questions (single | multiple + optional images). */
   questions: QuizEditorQuestionInputViewModel[];
 };
@@ -54,11 +54,17 @@ type QuizEditorWorkspaceLabels = {
   description: string;
   descriptionPlaceholder: string;
   folder: string;
-  privateLabel: string;
-  privateDescription: string;
+  premiumLabel: string;
+  premiumDescription: string;
+  premiumRightsLabel?: string;
+  premiumRightsDescription?: string;
+  premiumVerificationRequired?: string;
+  verifyEmailCta?: string;
   cancel: string;
   submit: string;
   submitting: string;
+  premiumSubmit?: string;
+  premiumSubmitting?: string;
   hidePdf: string;
   showPdf: string;
   validationTitle?: string;
@@ -73,7 +79,7 @@ type QuizEditorWorkspaceProps = {
     title: string;
     description?: string | null;
     selectedFolderId?: string | null;
-    isPrivate?: boolean;
+    submitToPremium?: boolean;
     questions: QuizEditorQuestionViewModel[];
   };
   pdfUrl?: string | null;
@@ -81,7 +87,8 @@ type QuizEditorWorkspaceProps = {
   /** draft = flush side panel; published = card panel (existing edit chrome) */
   pdfLayout?: 'flush' | 'card';
   canEdit: boolean;
-  showPrivateToggle: boolean;
+  showPremiumToggle: boolean;
+  premiumEligible?: boolean;
   labels: QuizEditorWorkspaceLabels;
   statusError?: string;
   statusSuccess?: string;
@@ -96,6 +103,10 @@ type QuizEditorWorkspaceProps = {
   banner?: ReactNode;
   headerExtra?: ReactNode;
   onChange?: (payload: QuizEditorWorkspaceSubmitPayload) => void;
+  premiumAttestation?: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+  };
 };
 
 function WorkspacePdfPanel({
@@ -141,7 +152,8 @@ export function QuizEditorWorkspace({
   pdfDataUrl,
   pdfLayout = 'card',
   canEdit,
-  showPrivateToggle,
+  showPremiumToggle,
+  premiumEligible = true,
   labels,
   statusError,
   statusSuccess,
@@ -155,6 +167,7 @@ export function QuizEditorWorkspace({
   banner,
   headerExtra,
   onChange,
+  premiumAttestation,
 }: QuizEditorWorkspaceProps) {
   const [state, dispatch] = useReducer(
     quizEditorWorkspaceReducer,
@@ -164,7 +177,9 @@ export function QuizEditorWorkspace({
         questions: initial.questions,
         title: initial.title,
         ...(initial.description !== undefined ? { description: initial.description } : {}),
-        ...(initial.isPrivate !== undefined ? { isPrivate: initial.isPrivate } : {}),
+        ...(initial.submitToPremium !== undefined
+          ? { submitToPremium: initial.submitToPremium }
+          : {}),
         ...(initial.selectedFolderId !== undefined
           ? { selectedFolderId: initial.selectedFolderId }
           : {}),
@@ -180,7 +195,7 @@ export function QuizEditorWorkspace({
       title: nextState.title,
       description: nextState.description,
       selectedFolderId: nextState.selectedFolderId,
-      isPrivate: nextState.isPrivate,
+      submitToPremium: nextState.submitToPremium,
       questions: toQuestionInputs(nextState.questions),
     });
   };
@@ -219,7 +234,7 @@ export function QuizEditorWorkspace({
         title: state.title.trim(),
         description: state.description.trim(),
         selectedFolderId: state.selectedFolderId,
-        isPrivate: state.isPrivate,
+        submitToPremium: state.submitToPremium,
         questions,
       });
     } catch {
@@ -320,14 +335,25 @@ export function QuizEditorWorkspace({
                     description: labels.description,
                     descriptionPlaceholder: labels.descriptionPlaceholder,
                     folder: labels.folder,
-                    privateLabel: labels.privateLabel,
-                    privateDescription: labels.privateDescription,
+                    premiumLabel: labels.premiumLabel,
+                    premiumDescription: labels.premiumDescription,
+                    premiumRightsLabel: labels.premiumRightsLabel,
+                    premiumRightsDescription: labels.premiumRightsDescription,
                   }}
-                  {...(showPrivateToggle ? { isPrivate: state.isPrivate } : {})}
-                  {...(showPrivateToggle
+                  {...(showPremiumToggle ? { submitToPremium: state.submitToPremium } : {})}
+                  premiumEligible={premiumEligible}
+                  premiumEligibilityMessage={labels.premiumVerificationRequired}
+                  premiumEligibilityCta={labels.verifyEmailCta}
+                  {...(showPremiumToggle
                     ? {
-                        onPrivateChange: (value: boolean) =>
-                          dispatchEditorAction({ type: 'setIsPrivate', value }),
+                        onPremiumChange: (value: boolean) =>
+                          dispatchEditorAction({ type: 'setSubmitToPremium', value }),
+                        ...(premiumAttestation === undefined
+                          ? {}
+                          : {
+                              premiumRightsAttested: premiumAttestation.checked,
+                              onPremiumRightsChange: premiumAttestation.onChange,
+                            }),
                       }
                     : {})}
                   disabled={!canEdit || state.isSubmitting}
@@ -438,16 +464,25 @@ export function QuizEditorWorkspace({
                     disabled={
                       !state.title.trim() ||
                       (requireQuestions && state.questions.length === 0) ||
+                      (state.submitToPremium &&
+                        premiumAttestation !== undefined &&
+                        !premiumAttestation.checked) ||
                       isDeleting
                     }
                     className="flex items-center gap-2"
                   >
                     {state.isSubmitting ? (
-                      labels.submitting
+                      state.submitToPremium && labels.premiumSubmitting ? (
+                        labels.premiumSubmitting
+                      ) : (
+                        labels.submitting
+                      )
                     ) : (
                       <>
                         <HiOutlineSave className="size-4" />
-                        {labels.submit}
+                        {state.submitToPremium && labels.premiumSubmit
+                          ? labels.premiumSubmit
+                          : labels.submit}
                       </>
                     )}
                   </Button>

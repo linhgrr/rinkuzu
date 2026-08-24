@@ -3,6 +3,9 @@
 import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+
+const PREMIUM_CONTRIBUTION_ENABLED =
+  process.env.NEXT_PUBLIC_PREMIUM_CONTRIBUTION_ENABLED === 'true';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -131,6 +134,7 @@ export function EditQuizPage() {
   const [statusError, setStatusError] = useState('');
   const [statusSuccess, setStatusSuccess] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [rightsAttested, setRightsAttested] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -193,13 +197,22 @@ export function EditQuizPage() {
             title: quiz.title,
             ...(quiz.description !== undefined ? { description: quiz.description } : {}),
             selectedFolderId: quiz.folder,
-            isPrivate: quiz.isPrivate,
+            submitToPremium: PREMIUM_CONTRIBUTION_ENABLED && quiz.visibility === 'personal',
             questions: quiz.questions,
           }}
           {...(quiz.pdfUrl !== undefined ? { pdfUrl: quiz.pdfUrl } : {})}
           pdfLayout="card"
           canEdit={canEdit}
-          showPrivateToggle={canEdit}
+          showPremiumToggle={canEdit && PREMIUM_CONTRIBUTION_ENABLED}
+          premiumEligible={session?.user?.emailVerified === true}
+          {...(canEdit
+            ? {
+                premiumAttestation: {
+                  checked: rightsAttested,
+                  onChange: setRightsAttested,
+                },
+              }
+            : {})}
           {...(statusError ? { statusError } : {})}
           {...(statusSuccess ? { statusSuccess } : {})}
           labels={{
@@ -213,11 +226,17 @@ export function EditQuizPage() {
             description: t('descriptionOptional'),
             descriptionPlaceholder: t('descriptionPlaceholderEdit'),
             folder: t('folderLabel'),
-            privateLabel: t('privateQuiz'),
-            privateDescription: t('privateQuizDescription'),
+            premiumLabel: t('premiumQuiz'),
+            premiumDescription: t('premiumQuizDescription'),
+            premiumRightsLabel: t('premiumRightsLabel'),
+            premiumRightsDescription: t('premiumRightsDescription'),
+            premiumVerificationRequired: t('premiumVerificationRequired'),
+            verifyEmailCta: t('verifyEmailCta'),
             cancel: tCommon('cancel'),
             submit: t('saveChanges'),
             submitting: t('savingChanges'),
+            premiumSubmit: t('submitPremiumQuiz'),
+            premiumSubmitting: t('submittingPremiumQuiz'),
             hidePdf: t('hidePdfShort'),
             showPdf: t('showPdfShort'),
             validationTitle: t('validationTitle'),
@@ -275,7 +294,8 @@ export function EditQuizPage() {
                 description: payload.description,
                 folder: payload.selectedFolderId,
                 questions: payload.questions,
-                isPrivate: payload.isPrivate,
+                submitToPremium: payload.submitToPremium,
+                ...(payload.submitToPremium ? { rightsAttested: true } : {}),
               });
               setQuiz(updatedQuiz);
               setStatusSuccess(t('updateSuccess'));

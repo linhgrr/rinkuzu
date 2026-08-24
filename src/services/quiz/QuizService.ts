@@ -31,6 +31,14 @@ import { QuizCrudService } from './QuizCrudService';
 import { QuizPlayService } from './QuizPlayService';
 import { QuizAdminService } from './QuizAdminService';
 import { QuizDiscussionService } from './QuizDiscussionService';
+import type { PremiumAccessContext, PremiumAccessDecision } from '@/entities/PremiumQuiz';
+
+interface PremiumDiscussionAccessPolicy {
+  canAccessPublishedQuiz(
+    context: PremiumAccessContext,
+    quizId: string,
+  ): Promise<PremiumAccessDecision>;
+}
 
 export class QuizService implements IQuizService {
   private crudService: QuizCrudService;
@@ -46,8 +54,9 @@ export class QuizService implements IQuizService {
     quizProgressRepository: IQuizProgressRepository,
     quizAttemptProgressRepository: IQuizAttemptProgressRepository,
     folderRepository?: IFolderRepository,
+    premiumAccessPolicy?: PremiumDiscussionAccessPolicy,
   ) {
-    this.crudService = new QuizCrudService(quizRepository, userRepository, folderRepository);
+    this.crudService = new QuizCrudService(quizRepository, folderRepository);
     this.playService = new QuizPlayService(
       quizRepository,
       userRepository,
@@ -59,6 +68,7 @@ export class QuizService implements IQuizService {
       quizRepository,
       discussionRepository,
       reportRepository,
+      premiumAccessPolicy,
     );
   }
 

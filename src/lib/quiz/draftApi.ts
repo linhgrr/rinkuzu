@@ -30,7 +30,7 @@ export async function createQuizDraft(input: CreateQuizDraftInputDto): Promise<Q
       category_id: input.folderId,
       description: input.description,
       prompt: input.prompt,
-      is_private: input.isPrivate ?? false,
+      submit_to_premium: input.submitToPremium ?? false,
     }),
   });
   return QuizDraftMapper.toViewModel(draft);
@@ -46,7 +46,7 @@ export async function createManualQuizDraft(
       title: input.title,
       description: input.description,
       category_id: input.folderId,
-      is_private: input.isPrivate ?? false,
+      submit_to_premium: input.submitToPremium ?? false,
     }),
   });
   return QuizDraftMapper.toViewModel(draft);
@@ -83,7 +83,7 @@ export async function patchQuizDraft(
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.folderId !== undefined ? { category_id: input.folderId } : {}),
-      ...(input.isPrivate !== undefined ? { is_private: input.isPrivate } : {}),
+      ...(input.submitToPremium !== undefined ? { submit_to_premium: input.submitToPremium } : {}),
       ...(input.questions !== undefined ? { questions: input.questions } : {}),
       expected_revision: input.expectedRevision,
     }),

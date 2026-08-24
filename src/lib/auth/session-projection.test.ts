@@ -53,6 +53,7 @@ describe('applySessionUser', () => {
       id: 'user-1',
       email: 'user@example.com',
       role: 'user',
+      emailVerified: true,
       displayName: 'Rin',
       passwordChangedAt: 1_700_000_000_000,
       authVersion: 3,
@@ -70,6 +71,7 @@ describe('applySessionUser', () => {
       id: 'user-1',
       email: 'user@example.com',
       role: 'user',
+      emailVerified: true,
       passwordChangedAt: 1_800_000_000_000,
       authVersion: 3,
     });
@@ -91,6 +93,7 @@ describe('applySessionUser', () => {
         id: 'user-1',
         email: 'user@example.com',
         role: 'user',
+        emailVerified: true,
         passwordChangedAt: null,
         authVersion: 0,
       },
@@ -104,6 +107,7 @@ describe('applySessionUser', () => {
       id: 'user-1',
       email: 'user@example.com',
       role: 'user',
+      emailVerified: true,
       passwordChangedAt: 1_700_000_000_000,
       authVersion: 4,
     });
@@ -117,6 +121,7 @@ describe('applySessionUser', () => {
       id: 'user-1',
       email: 'user@example.com',
       role: 'user',
+      emailVerified: true,
       passwordChangedAt: null,
       authVersion: 5,
     });

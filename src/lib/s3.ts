@@ -1,4 +1,11 @@
-import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  CopyObjectCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
+import { createHash } from 'node:crypto';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '@/lib/env';
 
@@ -18,6 +25,9 @@ const s3Client = new S3Client({
 
 const BUCKET_NAME = env.OBJECT_STORAGE_BUCKET;
 const QUIZ_PDF_OBJECT_ROOT = 'uploads/quiz_extract';
+const PREMIUM_ASSET_OBJECT_ROOT = 'premium/assets';
+const PREMIUM_SOURCE_OBJECT_ROOT = 'uploads/premium_sources';
+const MAX_PREMIUM_ASSET_BYTES = 10 * 1024 * 1024;
 
 /**
  * Return the only object-storage namespace a user-owned quiz PDF may occupy.
@@ -54,7 +64,7 @@ export async function getSignedPDFUrl(key: string, expiresIn: number = 3600): Pr
  * Returns null when the URL does not reference this bucket or the key is unsafe.
  * Query/hash suffixes from signed URLs are stripped.
  */
-function extractOwnedObjectKeyFromUrl(url: string): string | null {
+export function extractOwnedObjectKeyFromUrl(url: string): string | null {
   if (typeof url !== 'string' || url.length === 0) return null;
 
   let parsed: URL;
@@ -95,6 +105,115 @@ function extractOwnedObjectKeyFromUrl(url: string): string | null {
   }
 
   return key;
+}
+
+function premiumAssetKey(quizId: string, sourceIdentity: string, contentType?: string): string {
+  if (!/^[a-f0-9]{24}$/i.test(quizId)) throw new Error('Invalid Premium quiz id');
+  const extension =
+    contentType === 'image/png'
+      ? '.png'
+      : contentType === 'image/webp'
+        ? '.webp'
+        : contentType === 'image/gif'
+          ? '.gif'
+          : contentType === 'image/svg+xml'
+            ? '.svg'
+            : '.jpg';
+  const digest = createHash('sha256').update(sourceIdentity).digest('hex');
+  return `${PREMIUM_ASSET_OBJECT_ROOT}/${quizId}/${digest}${extension}`;
+}
+
+/** Copy an allowlisted quiz image into the platform-owned private Premium namespace. */
+export async function copyPremiumAssetToPrivateStorage(
+  sourceUrl: string,
+  quizId: string,
+): Promise<string> {
+  const ownedKey = extractOwnedObjectKeyFromUrl(sourceUrl);
+  if (ownedKey) {
+    const destination = premiumAssetKey(quizId, ownedKey);
+    await s3Client.send(
+      new CopyObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: destination,
+        CopySource: encodeURIComponent(`${BUCKET_NAME}/${ownedKey}`),
+      }),
+    );
+    return destination;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(sourceUrl);
+  } catch {
+    throw new Error('Premium quiz image URL is invalid');
+  }
+  if (parsed.protocol !== 'https:' || parsed.hostname.toLowerCase() !== 'i.ibb.co') {
+    throw new Error('Premium quiz images must come from managed image storage');
+  }
+
+  const response = await fetch(parsed, { redirect: 'error', cache: 'no-store' });
+  if (!response.ok) throw new Error('Premium quiz image could not be copied');
+  const contentType = response.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase();
+  if (!contentType?.startsWith('image/')) throw new Error('Premium quiz asset is not an image');
+  const declaredLength = Number(response.headers.get('content-length') ?? '0');
+  if (declaredLength > MAX_PREMIUM_ASSET_BYTES) throw new Error('Premium quiz image is too large');
+  const body = new Uint8Array(await response.arrayBuffer());
+  if (body.byteLength === 0 || body.byteLength > MAX_PREMIUM_ASSET_BYTES) {
+    throw new Error('Premium quiz image is empty or too large');
+  }
+  const destination = premiumAssetKey(quizId, sourceUrl, contentType);
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: destination,
+      Body: body,
+      ContentType: contentType,
+      CacheControl: 'private, no-store, max-age=0',
+    }),
+  );
+  return destination;
+}
+
+/** Create a short-lived read URL only for objects in the private Premium namespace. */
+export async function getSignedPremiumAssetUrl(key: string, expiresIn = 300): Promise<string> {
+  if (
+    !key.startsWith(`${PREMIUM_ASSET_OBJECT_ROOT}/`) ||
+    key.includes('..') ||
+    key.includes('\\')
+  ) {
+    throw new Error('Invalid Premium asset key');
+  }
+  return getSignedUrl(
+    s3Client,
+    new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      ResponseCacheControl: 'private, no-store, max-age=0',
+    }),
+    { expiresIn },
+  );
+}
+
+/** Create a short-lived admin URL for a retained Premium source PDF. */
+export async function getSignedPremiumSourceUrl(key: string, expiresIn = 300): Promise<string> {
+  if (
+    !key.startsWith(`${PREMIUM_SOURCE_OBJECT_ROOT}/`) ||
+    key.includes('..') ||
+    key.includes('\\')
+  ) {
+    throw new Error('Invalid Premium source key');
+  }
+  return getSignedUrl(
+    s3Client,
+    new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      ResponseContentDisposition: 'inline',
+      ResponseContentType: 'application/pdf',
+      ResponseCacheControl: 'private, no-store, max-age=0',
+    }),
+    { expiresIn },
+  );
 }
 
 /**

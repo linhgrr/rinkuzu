@@ -10,9 +10,9 @@ import { invalidateEntitlements } from './cache';
 import { can, getConstraint, getMeteredWindows, resolveEntitlements } from './index';
 
 describe('entitlements registry', () => {
-  it('grants private quizzes to premium only', () => {
-    expect(can({ tier: 'premium' }, 'private_quiz')).toBe(true);
-    expect(can({ tier: 'free' }, 'private_quiz')).toBe(false);
+  it('grants the curated Premium catalog to paid accounts only', () => {
+    expect(can({ tier: 'premium' }, 'premium_catalog')).toBe(true);
+    expect(can({ tier: 'free' }, 'premium_catalog')).toBe(false);
   });
 
   it('returns the agreed extraction and Ask Rin-chan limits', () => {

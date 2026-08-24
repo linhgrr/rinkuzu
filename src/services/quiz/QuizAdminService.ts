@@ -32,10 +32,8 @@ export class QuizAdminService {
       const { search, visibility, page, limit } = query;
       const filter: QuizFindFilter = {};
 
-      if (visibility === 'public') {
-        filter.isPrivate = false;
-      } else if (visibility === 'private') {
-        filter.isPrivate = true;
+      if (visibility !== 'all') {
+        filter.visibility = visibility;
       }
 
       applyQuizSearchFilter(filter, search);
@@ -114,11 +112,15 @@ export class QuizAdminService {
   }
 
   async getQuizzes(options: QuizListOptionsDto): Promise<QuizListDto> {
-    const { search, folder, page, limit, isPrivate, userId, onlyMine } = options;
+    const { search, folder, page, limit, visibility, userId, onlyMine } = options;
 
     const filter: QuizFindFilter = {};
 
-    if (typeof isPrivate === 'boolean') filter.isPrivate = isPrivate;
+    if (onlyMine) {
+      if (visibility !== undefined) filter.visibility = visibility;
+    } else {
+      filter.visibility = 'public';
+    }
 
     // If caller wants only their own quizzes
     if (onlyMine && userId) {

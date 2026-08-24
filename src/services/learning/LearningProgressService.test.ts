@@ -23,7 +23,7 @@ function libraryQuiz(overrides: Partial<LibraryQuiz> = {}): LibraryQuiz {
     description: 'Practice',
     author: { id: userId },
     folder: null,
-    isPrivate: false,
+    visibility: 'public',
     questionCount: 2,
     ownedByMe: true,
     createdAt: new Date('2026-06-29T10:00:00.000Z'),

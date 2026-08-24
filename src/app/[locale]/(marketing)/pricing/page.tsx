@@ -221,7 +221,8 @@ function buildPricingSchema(premiumPlans: PremiumPlanView[]) {
           position: index + 2,
           name: plan.name,
           url: `${siteUrl.origin}/pricing#premium`,
-          description: 'Private quizzes, higher AI limits, and advanced statistics.',
+          description:
+            'Full access to the curated Quiz Premium catalog, higher AI limits, and advanced statistics.',
           offers: {
             '@type': 'Offer',
             price: String(plan.price),

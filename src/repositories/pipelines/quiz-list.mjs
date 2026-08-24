@@ -26,7 +26,7 @@ function buildCompactQuizProjectionStages(populateAuthor) {
       title: 1,
       description: 1,
       slug: 1,
-      isPrivate: 1,
+      visibility: 1,
       author: populateAuthor
         ? {
             _id: { $ifNull: ['$authorDoc._id', '$author'] },

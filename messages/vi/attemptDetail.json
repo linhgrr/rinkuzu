@@ -18,6 +18,8 @@
   "loadError": "Không thể tải chi tiết lượt làm",
   "historyUnavailableTitle": "Không thể hiển thị chi tiết câu hỏi của lượt làm này",
   "historyUnavailableDescription": "Bộ câu hỏi đã được thay đổi sau khi bạn làm bài. Điểm và số câu ban đầu vẫn được giữ, nhưng ghép câu hỏi hiện tại vào câu trả lời cũ sẽ cho kết quả sai.",
+  "premiumContentLockedTitle": "Chi tiết câu hỏi Premium đang bị khóa",
+  "premiumContentLockedDescription": "Điểm và tóm tắt lượt làm vẫn được giữ. Hãy gia hạn Premium hoặc dùng 1 credit để mở vĩnh viễn quiz này và xem lại câu hỏi, đáp án, giải thích.",
   "retryQuiz": "Làm lại Quiz",
   "backToHistory": "Quay lại lịch sử",
   "questionPrompt": "Câu hỏi",

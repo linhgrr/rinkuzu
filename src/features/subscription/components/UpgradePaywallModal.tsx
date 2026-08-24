@@ -217,7 +217,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
               tPricing('premium.features.askRinChan'),
               tPricing('premium.features.pdfQuiz'),
               tPricing('premium.features.adaptivePath'),
-              tPricing('premium.features.privateQuizzes'),
+              tPricing('premium.features.premiumCatalog'),
             ].map((benefit) => (
               <div key={benefit} className="flex items-start gap-2 text-sm text-neutral-700">
                 <HiOutlineCheck

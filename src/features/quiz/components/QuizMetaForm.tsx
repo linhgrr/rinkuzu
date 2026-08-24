@@ -2,6 +2,7 @@
 
 import { Input, Textarea } from '@/components/ui/Input';
 import { FolderSelector } from '@/features/folders/components/FolderSelector';
+import { Link } from '@/i18n/navigation';
 import { HiOutlineLockClosed, HiOutlineTag } from 'react-icons/hi';
 
 type QuizMetaLabels = {
@@ -10,8 +11,10 @@ type QuizMetaLabels = {
   description: string;
   descriptionPlaceholder: string;
   folder: string;
-  privateLabel?: string;
-  privateDescription?: string;
+  premiumLabel?: string;
+  premiumDescription?: string;
+  premiumRightsLabel?: string;
+  premiumRightsDescription?: string;
   promptLabel?: string;
   promptPlaceholder?: string;
   promptHelper?: string;
@@ -28,9 +31,14 @@ type QuizMetaFormProps = {
   disabled?: boolean;
   titleMaxLength?: number;
   descriptionMaxLength?: number;
-  isPrivate?: boolean;
-  onPrivateChange?: (checked: boolean) => void;
-  privateCheckboxId?: string;
+  submitToPremium?: boolean;
+  onPremiumChange?: (checked: boolean) => void;
+  premiumCheckboxId?: string;
+  premiumEligible?: boolean;
+  premiumEligibilityMessage?: string;
+  premiumEligibilityCta?: string;
+  premiumRightsAttested?: boolean;
+  onPremiumRightsChange?: (checked: boolean) => void;
   aiPrompt?: string;
   onAiPromptChange?: (value: string) => void;
   aiPromptMaxLength?: number;
@@ -47,14 +55,19 @@ export default function QuizMetaForm({
   disabled = false,
   titleMaxLength = 200,
   descriptionMaxLength = 1000,
-  isPrivate,
-  onPrivateChange,
-  privateCheckboxId = 'isPrivateQuiz',
+  submitToPremium,
+  onPremiumChange,
+  premiumCheckboxId = 'submitToPremiumQuiz',
+  premiumEligible = true,
+  premiumEligibilityMessage,
+  premiumEligibilityCta,
+  premiumRightsAttested,
+  onPremiumRightsChange,
   aiPrompt,
   onAiPromptChange,
   aiPromptMaxLength = 2000,
 }: QuizMetaFormProps) {
-  const showPrivate = typeof isPrivate === 'boolean' && typeof onPrivateChange === 'function';
+  const showPremium = typeof submitToPremium === 'boolean' && typeof onPremiumChange === 'function';
   const showPrompt = typeof aiPrompt === 'string' && typeof onAiPromptChange === 'function';
 
   return (
@@ -116,29 +129,66 @@ export default function QuizMetaForm({
         />
       </div>
 
-      {showPrivate && (
+      {showPremium && (
         <div className="bg-gradient-to-r from-green-50 to-green-50/50 p-4 rounded-xl border border-green-100">
-          <label htmlFor={privateCheckboxId} className="flex items-start gap-x-3 cursor-pointer">
-            <div className="flex items-center h-5">
+          <div className="flex items-start gap-x-3">
+            <div className="flex h-5 items-center">
               <input
                 type="checkbox"
-                id={privateCheckboxId}
-                checked={isPrivate}
-                onChange={(e) => onPrivateChange(e.target.checked)}
-                disabled={disabled}
-                className="size-4 text-brand-trust bg-white border-control-border rounded focus:ring-brand-trust focus:ring-2"
+                id={premiumCheckboxId}
+                checked={submitToPremium}
+                onChange={(e) => onPremiumChange(e.target.checked)}
+                disabled={disabled || !premiumEligible}
+                className="size-4 border-control-border rounded focus:ring-brand-trust bg-white text-brand-trust focus:ring-2"
               />
             </div>
             <div className="flex-1">
-              <span className="text-sm font-semibold text-neutral-900 flex items-center">
-                <HiOutlineLockClosed className="size-4 mr-1 text-brand-trust" />
-                {labels.privateLabel}
-              </span>
-              {labels.privateDescription && (
-                <p className="text-xs text-neutral-600 mt-1">{labels.privateDescription}</p>
-              )}
+              <label htmlFor={premiumCheckboxId} className="block cursor-pointer">
+                <span className="flex items-center text-sm font-semibold text-neutral-900">
+                  <HiOutlineLockClosed className="mr-1 size-4 text-brand-trust" />
+                  {labels.premiumLabel}
+                </span>
+                {labels.premiumDescription && (
+                  <span className="mt-1 block text-xs text-neutral-600">
+                    {labels.premiumDescription}
+                  </span>
+                )}
+                {!premiumEligible && premiumEligibilityMessage ? (
+                  <span className="mt-2 block text-xs font-semibold text-amber-700">
+                    {premiumEligibilityMessage}{' '}
+                    {premiumEligibilityCta ? (
+                      <Link href="/check-email" className="underline underline-offset-2">
+                        {premiumEligibilityCta}
+                      </Link>
+                    ) : null}
+                  </span>
+                ) : null}
+              </label>
+              {submitToPremium &&
+                typeof premiumRightsAttested === 'boolean' &&
+                typeof onPremiumRightsChange === 'function' && (
+                  <label className="mt-3 flex cursor-pointer items-start gap-2 border-t border-green-200 pt-3">
+                    <input
+                      type="checkbox"
+                      checked={premiumRightsAttested}
+                      onChange={(event) => onPremiumRightsChange(event.target.checked)}
+                      disabled={disabled}
+                      className="mt-0.5 size-4 rounded border-control-border text-brand-trust focus:ring-2 focus:ring-brand-trust"
+                    />
+                    <span>
+                      <span className="block text-xs font-semibold text-neutral-800">
+                        {labels.premiumRightsLabel}
+                      </span>
+                      {labels.premiumRightsDescription ? (
+                        <span className="mt-1 block text-xs text-neutral-600">
+                          {labels.premiumRightsDescription}
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                )}
             </div>
-          </label>
+          </div>
         </div>
       )}
     </div>

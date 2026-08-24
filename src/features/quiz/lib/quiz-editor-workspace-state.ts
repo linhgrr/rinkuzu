@@ -25,7 +25,7 @@ export interface QuizEditorWorkspaceState {
   questions: QuizEditorQuestionViewModel[];
   title: string;
   description: string;
-  isPrivate: boolean;
+  submitToPremium: boolean;
   selectedFolderId: string | null;
   showPDFViewer: boolean;
   questionToRemove: number | null;
@@ -35,7 +35,7 @@ export interface QuizEditorWorkspaceState {
 export type QuizEditorWorkspaceAction =
   | { type: 'setTitle'; value: string }
   | { type: 'setDescription'; value: string }
-  | { type: 'setIsPrivate'; value: boolean }
+  | { type: 'setSubmitToPremium'; value: boolean }
   | { type: 'setSelectedFolder'; value: string | null }
   | { type: 'setShowPDFViewer'; value: boolean }
   | { type: 'togglePdfViewer' }
@@ -63,7 +63,7 @@ export function createQuizEditorWorkspaceState(input: {
   questions: QuizEditorQuestionViewModel[];
   title: string;
   description?: string | null;
-  isPrivate?: boolean;
+  submitToPremium?: boolean;
   selectedFolderId?: string | null;
   showPDFViewer?: boolean;
 }): QuizEditorWorkspaceState {
@@ -71,7 +71,7 @@ export function createQuizEditorWorkspaceState(input: {
     questions: input.questions,
     title: input.title,
     description: input.description ?? '',
-    isPrivate: input.isPrivate ?? false,
+    submitToPremium: input.submitToPremium ?? false,
     selectedFolderId: input.selectedFolderId ?? null,
     showPDFViewer: input.showPDFViewer ?? true,
     questionToRemove: null,
@@ -88,8 +88,8 @@ export function quizEditorWorkspaceReducer(
       return { ...state, title: action.value };
     case 'setDescription':
       return { ...state, description: action.value };
-    case 'setIsPrivate':
-      return { ...state, isPrivate: action.value };
+    case 'setSubmitToPremium':
+      return { ...state, submitToPremium: action.value };
     case 'setSelectedFolder':
       return { ...state, selectedFolderId: action.value };
     case 'setShowPDFViewer':

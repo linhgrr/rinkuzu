@@ -225,7 +225,7 @@ describe('AdminService report and stats contracts', () => {
             correctIndex: 1,
           },
         ],
-        isPrivate: false,
+        visibility: 'public',
         createdAt: new Date('2026-07-01T00:00:00Z'),
         updatedAt: new Date('2026-07-01T00:00:00Z'),
       }),

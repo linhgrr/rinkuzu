@@ -8,6 +8,12 @@ import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
 import { AppChrome } from './AppChrome';
 
+const { swrMock } = vi.hoisted(() => ({ swrMock: vi.fn() }));
+
+vi.mock('swr', () => ({
+  default: (...args: unknown[]) => swrMock(...args),
+}));
+
 vi.mock('@/i18n/navigation', () => ({
   Link: ({
     href,
@@ -47,6 +53,10 @@ vi.mock('@/lib/analytics/client', () => ({
 
 describe('AppChrome', () => {
   it('provides a skip link and semantic active navigation', async () => {
+    swrMock.mockReturnValue({
+      data: { wallet: { balance: 7 } },
+      isLoading: false,
+    });
     const { container } = render(
       <AppChrome>
         <main>Dashboard content</main>
@@ -58,6 +68,9 @@ describe('AppChrome', () => {
       '#app-main-content',
     );
     expect(screen.getByRole('link', { name: 'home' })).toHaveAttribute('aria-current', 'page');
+    const creditLinks = screen.getAllByRole('link', { name: '7 credits' });
+    expect(creditLinks).toHaveLength(2);
+    creditLinks.forEach((link) => expect(link).toHaveAttribute('href', '/premium-quizzes'));
     expect(container.querySelector('#app-main-content')).toHaveAttribute('tabindex', '-1');
     expect((await axe(container)).violations).toEqual([]);
   });

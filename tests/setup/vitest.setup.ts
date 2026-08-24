@@ -43,6 +43,10 @@ const testEnvDefaults: Record<string, string> = {
   PAYOS_CLIENT_ID: 'test-payos-client-id',
   PAYOS_API_KEY: 'test-payos-api-key',
   PAYOS_CHECKSUM_KEY: 'test-payos-checksum-key',
+  NEXT_PUBLIC_PREMIUM_CONTRIBUTION_ENABLED: 'true',
+  PREMIUM_REVIEW_ENABLED: 'true',
+  PREMIUM_CREDIT_UNLOCK_ENABLED: 'true',
+  PREMIUM_STRICT_DELIVERY_ENABLED: 'true',
 };
 
 for (const [key, value] of Object.entries(testEnvDefaults)) {

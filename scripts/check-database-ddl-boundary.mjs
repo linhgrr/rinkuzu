@@ -13,6 +13,7 @@ try {
         allowedDdlWriters: [
           'scripts/sync-performance-indexes.mjs',
           'scripts/migrate-first-purchase-eligibility.mjs',
+          'scripts/migrate-premium-quiz-catalog.mjs',
         ],
         violationCount: violations.length,
         violations,

@@ -51,7 +51,7 @@ describe('quiz play DTO mappers', () => {
       title: 'Algebra',
       slug: 'algebra',
       author: 'user-1',
-      isPrivate: false,
+      visibility: 'public',
       questions: [
         {
           id: 'question-1',

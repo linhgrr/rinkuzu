@@ -15,6 +15,7 @@ export const ROUTES = {
   HISTORY: '/profile', // Consolidated
   EXPLORE: '/explore',
   QUIZZES: '/quizzes',
+  PREMIUM_QUIZZES: '/premium-quizzes',
   SUBSCRIPTION: '/subscription',
 
   // Dynamic routes
@@ -48,6 +49,7 @@ export const ROUTES = {
     PLANS: '/admin/plans',
     PROMOTIONS: '/admin/promotions',
     QUIZZES: '/admin/quizzes',
+    PREMIUM_SUBMISSIONS: '/admin/premium-submissions',
     REPORTS: '/admin/reports',
     STATS: '/admin/stats',
     SUBSCRIPTIONS: '/admin/subscriptions',

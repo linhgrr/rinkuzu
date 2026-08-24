@@ -10,6 +10,7 @@ vi.mock('@/lib/api/client', () => ({
 
 import {
   fetchAdminUserListViewModel,
+  grantAdminUserCredits,
   grantAdminUserSubscription,
   updateAdminUserRole,
   updateAdminUserStatus,
@@ -81,5 +82,37 @@ describe('admin-users-api', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: '507f191e810c19729de860ea', planId: 'plan-1' }),
     });
+  });
+
+  it('POSTs an idempotent credit grant to the selected user', async () => {
+    const result = {
+      userId: '507f191e810c19729de860ea',
+      amount: 5,
+      balance: 12,
+      ledgerEntryId: '507f191e810c19729de860eb',
+      alreadyApplied: false,
+    };
+    fetchApiDataMock.mockResolvedValue(result);
+
+    await expect(
+      grantAdminUserCredits({
+        userId: result.userId,
+        amount: 5,
+        note: 'Verified contribution',
+        idempotencyKey: '0aa7c561-a366-4abf-81ec-fb90e64c237c',
+      }),
+    ).resolves.toEqual(result);
+    expect(fetchApiDataMock).toHaveBeenCalledWith(
+      '/api/admin/users/507f191e810c19729de860ea/credits',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 5,
+          note: 'Verified contribution',
+          idempotencyKey: '0aa7c561-a366-4abf-81ec-fb90e64c237c',
+        }),
+      },
+    );
   });
 });

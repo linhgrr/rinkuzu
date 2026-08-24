@@ -11,6 +11,8 @@ const {
   buildAdaptiveUrlMock,
   buildAdaptiveServiceHeadersMock,
   resolveAdaptiveProxyTimeoutMsMock,
+  assertCanContributeMock,
+  createPremiumSubmissionMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   createQuizFromDraftMock: vi.fn(),
@@ -23,6 +25,8 @@ const {
     ...(userRole ? { 'X-User-Role': userRole } : {}),
   })),
   resolveAdaptiveProxyTimeoutMsMock: vi.fn(() => 5_000),
+  assertCanContributeMock: vi.fn(),
+  createPremiumSubmissionMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
@@ -39,6 +43,12 @@ vi.mock('@/lib/quiz-factory', () => ({
   getQuizService: () => ({
     createQuizFromDraft: createQuizFromDraftMock,
     getQuizById: getQuizByIdMock,
+  }),
+}));
+vi.mock('@/lib/premium-quiz-factory', () => ({
+  getPremiumQuizService: () => ({
+    assertCanContribute: assertCanContributeMock,
+    createSubmission: createPremiumSubmissionMock,
   }),
 }));
 
@@ -60,7 +70,7 @@ const validBody = {
       correctIndex: 1,
     },
   ],
-  isPrivate: false,
+  submitToPremium: false,
 };
 
 function authSession(role: 'user' | 'admin' = 'user') {
@@ -98,6 +108,8 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
       id: QUIZ_ID,
       slug: 'arithmetic',
     });
+    createPremiumSubmissionMock.mockResolvedValue({ id: 'premium-submission-1' });
+    assertCanContributeMock.mockResolvedValue(undefined);
     getQuizByIdMock.mockResolvedValue({
       success: true,
       data: { id: QUIZ_ID, slug: 'arithmetic' },
@@ -203,7 +215,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
 
     it('rejects incomplete submit payloads', async () => {
       const response = await POST(
-        submitRequest({ title: '', questions: [], isPrivate: false }),
+        submitRequest({ title: '', questions: [], submitToPremium: false }),
         routeContext(),
       );
 
@@ -256,7 +268,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
           title: 'Arithmetic',
           description: 'Basic addition',
           folderId: null,
-          isPrivate: false,
+          submitToPremium: false,
         }),
       );
     });
@@ -400,7 +412,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
             correctIndex: 1,
           },
         ],
-        isPrivate: false,
+        submitToPremium: false,
       });
       expect(buildAdaptiveUrlMock).toHaveBeenCalledWith(`/quiz/drafts/${DRAFT_ID}/submit`);
       expect(buildAdaptiveServiceHeadersMock).toHaveBeenCalledWith(USER_ID, 'user');
@@ -409,7 +421,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         expect.objectContaining({
           method: 'POST',
           cache: 'no-store',
-          body: JSON.stringify({ quiz_id: QUIZ_ID }),
+          body: JSON.stringify({ quiz_id: QUIZ_ID, retain_source: false }),
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'X-User-Id': USER_ID,
@@ -434,12 +446,29 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         id: QUIZ_ID,
         slug: 'private-quiz',
       });
+      fetchQuizDraftServerMock
+        .mockResolvedValueOnce({
+          id: DRAFT_ID,
+          status: 'ready',
+          submittedQuizId: null,
+        })
+        .mockResolvedValueOnce({
+          id: DRAFT_ID,
+          status: 'submitted',
+          submittedQuizId: QUIZ_ID,
+          pdf: {
+            s3Key: `uploads/premium_sources/${DRAFT_ID}/source.pdf`,
+            fileHash: 'a'.repeat(64),
+            retainedForPremium: true,
+          },
+        });
 
       const response = await POST(
         submitRequest({
           ...validBody,
           folderId,
-          isPrivate: true,
+          submitToPremium: true,
+          rightsAttested: true,
           questions: Array.from({ length: 5 }, (_, index) => ({
             question: `Q${index + 1}?`,
             options: ['A', 'B'],
@@ -456,7 +485,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         DRAFT_ID,
         expect.objectContaining({
           folderId,
-          isPrivate: true,
+          submitToPremium: true,
         }),
       );
       expect(buildAdaptiveServiceHeadersMock).toHaveBeenCalledWith(USER_ID, 'admin');
@@ -472,6 +501,10 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         }),
       );
       const fetchInit = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(JSON.parse(String(fetchInit?.body))).toEqual({
+        quiz_id: QUIZ_ID,
+        retain_source: true,
+      });
       expect(fetchInit?.headers).toEqual(
         expect.objectContaining({
           'X-User-Id': USER_ID,
@@ -479,6 +512,12 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
           'Content-Type': 'application/json',
         }),
       );
+      expect(createPremiumSubmissionMock).toHaveBeenCalledWith(USER_ID, {
+        quizId: QUIZ_ID,
+        rightsAttested: true,
+        documentFingerprint: 'a'.repeat(64),
+        sourceObjectKey: `uploads/premium_sources/${DRAFT_ID}/source.pdf`,
+      });
       await expect(response.json()).resolves.toMatchObject({
         success: true,
         data: {
@@ -511,7 +550,6 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
       const response = await POST(submitRequest(), routeContext());
 
       expect(response.status).toBe(200);
-      expect(resolveAdaptiveProxyTimeoutMsMock).toHaveBeenCalled();
       expect(fetch).toHaveBeenCalledWith(
         `https://adaptive.test/api/v1/quiz/drafts/${DRAFT_ID}/submit`,
         expect.objectContaining({

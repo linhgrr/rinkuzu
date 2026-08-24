@@ -2,18 +2,8 @@ import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import type { Quiz } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { QuizCrudService } from '@/services/quiz/QuizCrudService';
-
-const entitlementMocks = vi.hoisted(() => ({
-  resolveEntitlements: vi.fn(),
-}));
-
-vi.mock('@/lib/entitlements', () => ({
-  can: (entitlements: { tier: string }) => entitlements.tier === 'premium',
-  resolveEntitlements: entitlementMocks.resolveEntitlements,
-}));
 
 vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn() },
@@ -35,7 +25,7 @@ const quizSummary: Quiz = {
   },
   questions: [],
   questionCount: 12,
-  isPrivate: false,
+  visibility: 'public',
   createdAt: new Date('2026-07-01T00:00:00Z'),
   updatedAt: new Date('2026-07-01T01:00:00Z'),
 };
@@ -57,7 +47,7 @@ const createRequest = {
       correctIndexes: [0, 1],
     },
   ],
-  isPrivate: false,
+  submitToPremium: false,
 };
 
 function createQuizEntity(overrides: Partial<Quiz> = {}): Quiz {
@@ -75,7 +65,7 @@ function createQuizEntity(overrides: Partial<Quiz> = {}): Quiz {
         correctIndex: 1,
       },
     ],
-    isPrivate: false,
+    visibility: 'public',
     createdAt: new Date('2026-07-01T00:00:00Z'),
     updatedAt: new Date('2026-07-01T00:00:00Z'),
     ...overrides,
@@ -104,28 +94,6 @@ function createQuizRepository(overrides: Partial<IQuizRepository> = {}): Mocked<
   } as Mocked<IQuizRepository>;
 }
 
-function createUserRepository(overrides: Partial<IUserRepository> = {}): Mocked<IUserRepository> {
-  return {
-    findByEmail: vi.fn(),
-    findById: vi.fn().mockResolvedValue({
-      id: authorId,
-      email: 'teacher@example.com',
-      role: 'user',
-      disable: 0,
-      createdAt: new Date('2026-01-01T00:00:00Z'),
-    }),
-    findByIdIncludingDisabled: vi.fn(),
-    findSubscriptionById: vi.fn(),
-    findPublicProfileById: vi.fn(),
-    applyAdminMutation: vi.fn(),
-    findAll: vi.fn(),
-    count: vi.fn(),
-    countByCreatedAtBuckets: vi.fn(),
-    countByRole: vi.fn(),
-    ...overrides,
-  } as Mocked<IUserRepository>;
-}
-
 function createFolderRepository(
   overrides: Partial<IFolderRepository> = {},
 ): Mocked<IFolderRepository> {
@@ -145,7 +113,6 @@ function createFolderRepository(
 describe('QuizCrudService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
   });
 
   describe('metadata reads', () => {
@@ -153,7 +120,7 @@ describe('QuizCrudService', () => {
       const quizRepository = createQuizRepository({
         findSummaryBySlug: vi.fn().mockResolvedValue(quizSummary),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(service.getQuizMetadataBySlug('algebra-basics')).resolves.toMatchObject({
         id: quizSummary.id,
@@ -168,7 +135,7 @@ describe('QuizCrudService', () => {
       const quizRepository = createQuizRepository({
         findSummaryBySlug: vi.fn().mockResolvedValue(null),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(service.getQuizMetadataBySlug('missing')).resolves.toBeNull();
     });
@@ -180,7 +147,7 @@ describe('QuizCrudService', () => {
       const quizRepository = createQuizRepository({
         create: vi.fn().mockResolvedValue(created),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       const detail = await service.createQuiz(authorId, createRequest);
 
@@ -190,7 +157,7 @@ describe('QuizCrudService', () => {
           title: 'Algebra Basics',
           author: authorId,
           folder: null,
-          isPrivate: false,
+          visibility: 'public',
           questions: [
             expect.objectContaining({ type: 'single', correctIndex: 1 }),
             expect.objectContaining({ type: 'multiple', correctIndexes: [0, 1] }),
@@ -203,36 +170,16 @@ describe('QuizCrudService', () => {
       expect(payload).not.toHaveProperty('sourceDraftId');
     });
 
-    it('rejects private creation for free users and allows premium or admin', async () => {
+    it('allows every account to create a personal source quiz for Premium review', async () => {
       const quizRepository = createQuizRepository({
-        create: vi.fn().mockResolvedValue(createQuizEntity({ isPrivate: true })),
+        create: vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'personal' })),
       });
-      const userRepository = createUserRepository();
-      const service = new QuizCrudService(quizRepository, userRepository);
+      const service = new QuizCrudService(quizRepository);
 
-      await expect(
-        service.createQuiz(authorId, { ...createRequest, isPrivate: true }),
-      ).rejects.toMatchObject({
-        code: 'premium_required',
-      });
-      expect(quizRepository.create).not.toHaveBeenCalled();
-
-      entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'premium' });
-      await service.createQuiz(authorId, { ...createRequest, isPrivate: true });
+      await service.createQuiz(authorId, { ...createRequest, submitToPremium: true });
       expect(quizRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ isPrivate: true }),
+        expect.objectContaining({ visibility: 'personal' }),
       );
-
-      vi.mocked(userRepository.findById).mockResolvedValue({
-        id: authorId,
-        email: 'admin@example.com',
-        role: 'admin',
-        disable: 0,
-        createdAt: new Date('2026-01-01T00:00:00Z'),
-      });
-      entitlementMocks.resolveEntitlements.mockClear();
-      await service.createQuiz(authorId, { ...createRequest, isPrivate: true });
-      expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
     });
 
     it('rejects folder ownership failures and accepts owned folders', async () => {
@@ -242,7 +189,7 @@ describe('QuizCrudService', () => {
       const quizRepository = createQuizRepository({
         create: vi.fn().mockResolvedValue(createQuizEntity({ folder: 'folder-1' })),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository(), folderRepository);
+      const service = new QuizCrudService(quizRepository, folderRepository);
 
       await expect(
         service.createQuiz(authorId, { ...createRequest, folderId: 'folder-1' }),
@@ -263,7 +210,7 @@ describe('QuizCrudService', () => {
           .mockRejectedValueOnce(slugConflict)
           .mockResolvedValueOnce(createQuizEntity({ slug: 'algebra-basics-1' })),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(service.createQuiz(authorId, createRequest)).resolves.toMatchObject({
         slug: 'algebra-basics-1',
@@ -274,10 +221,7 @@ describe('QuizCrudService', () => {
         create: vi.fn().mockRejectedValue(slugConflict),
       });
       await expect(
-        new QuizCrudService(alwaysConflict, createUserRepository()).createQuiz(
-          authorId,
-          createRequest,
-        ),
+        new QuizCrudService(alwaysConflict).createQuiz(authorId, createRequest),
       ).rejects.toMatchObject({ code: 'slug_conflict' });
       expect(alwaysConflict.create).toHaveBeenCalledTimes(20);
     });
@@ -287,7 +231,7 @@ describe('QuizCrudService', () => {
       const quizRepository = createQuizRepository({
         create: vi.fn().mockRejectedValue(otherConflict),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(service.createQuiz(authorId, createRequest)).rejects.toEqual(otherConflict);
       expect(quizRepository.create).toHaveBeenCalledTimes(1);
@@ -301,7 +245,7 @@ describe('QuizCrudService', () => {
         findBySourceDraftId: vi.fn().mockResolvedValue(existing),
         create: vi.fn(),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(
         service.createQuizFromDraft(authorId, 'draft-1', createRequest),
@@ -314,7 +258,7 @@ describe('QuizCrudService', () => {
       const quizRepository = createQuizRepository({
         findBySourceDraftId: vi.fn().mockResolvedValue(existing),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(
         service.createQuizFromDraft(authorId, 'draft-1', createRequest),
@@ -327,7 +271,7 @@ describe('QuizCrudService', () => {
         findBySourceDraftId: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(concurrent),
         create: vi.fn().mockRejectedValue({ code: 11000, keyPattern: { sourceDraftId: 1 } }),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(
         service.createQuizFromDraft(authorId, 'draft-2', createRequest),
@@ -340,7 +284,7 @@ describe('QuizCrudService', () => {
         findBySourceDraftId: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockRejectedValue(conflict),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(service.createQuizFromDraft(authorId, 'draft-3', createRequest)).rejects.toEqual(
         conflict,
@@ -350,8 +294,8 @@ describe('QuizCrudService', () => {
 
   describe('getQuizById', () => {
     it('returns full detail for author and admin only; denies non-authors without answer keys', async () => {
-      const publicQuiz = createQuizEntity({ isPrivate: false });
-      const privateQuiz = createQuizEntity({ isPrivate: true });
+      const publicQuiz = createQuizEntity({ visibility: 'public' });
+      const personalQuiz = createQuizEntity({ visibility: 'personal' });
       const quizRepository = createQuizRepository({
         findById: vi
           .fn()
@@ -362,13 +306,13 @@ describe('QuizCrudService', () => {
           // public non-author denied
           .mockResolvedValueOnce(publicQuiz)
           // premium private non-author denied
-          .mockResolvedValueOnce(privateQuiz)
+          .mockResolvedValueOnce(personalQuiz)
           // missing
           .mockResolvedValueOnce(null)
           // error path
           .mockRejectedValueOnce(new Error('db down')),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       const authorResult = await service.getQuizById(quizId, authorId, 'user');
       expect(authorResult).toEqual({
@@ -388,8 +332,6 @@ describe('QuizCrudService', () => {
         }),
       });
 
-      entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'premium' });
-
       const publicNonAuthor = await service.getQuizById(quizId, otherUserId, 'user');
       expect(publicNonAuthor).toMatchObject({
         success: false,
@@ -405,8 +347,6 @@ describe('QuizCrudService', () => {
         error: 'Access denied',
       });
       expect(privatePremiumNonAuthor).not.toHaveProperty('data');
-      // Denial must not consult entitlements — answer keys are never for non-authors.
-      expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
 
       await expect(service.getQuizById(quizId)).resolves.toMatchObject({
         success: false,
@@ -421,13 +361,13 @@ describe('QuizCrudService', () => {
   });
 
   describe('updateQuiz', () => {
-    it('denies non-authors, allows authors, and enforces premium on private flips', async () => {
+    it('denies non-authors and lets authors submit a personal Premium revision', async () => {
       const access = {
         id: quizId,
         author: authorId,
-        isPrivate: false,
+        visibility: 'public',
       };
-      const updated = createQuizEntity({ isPrivate: true, title: 'Renamed' });
+      const updated = createQuizEntity({ visibility: 'personal', title: 'Renamed' });
       const quizRepository = createQuizRepository({
         findAccessById: vi
           .fn()
@@ -436,7 +376,7 @@ describe('QuizCrudService', () => {
           .mockResolvedValue(access),
         update: vi.fn().mockResolvedValue(updated),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(service.updateQuiz(quizId, { title: 'X' }, otherUserId)).resolves.toMatchObject({
         success: false,
@@ -449,21 +389,12 @@ describe('QuizCrudService', () => {
       });
 
       await expect(
-        service.updateQuiz(quizId, { isPrivate: true }, authorId),
-      ).resolves.toMatchObject({
-        success: false,
-        statusCode: 403,
-        code: 'premium_required',
-      });
-
-      entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'premium' });
-      await expect(
         service.updateQuiz(
           quizId,
           {
             title: 'Renamed',
             description: 'desc',
-            isPrivate: true,
+            submitToPremium: true,
             questions: createRequest.questions,
             pdfUrl: 'https://example.com/q.pdf',
           },
@@ -478,7 +409,7 @@ describe('QuizCrudService', () => {
         expect.objectContaining({
           title: 'Renamed',
           description: 'desc',
-          isPrivate: true,
+          visibility: 'personal',
           pdfUrl: 'https://example.com/q.pdf',
           questions: [
             expect.objectContaining({ type: 'single', correctIndex: 1 }),
@@ -489,7 +420,7 @@ describe('QuizCrudService', () => {
     });
 
     it('lets admins flip privacy without premium and validates folder ownership', async () => {
-      const access = { id: quizId, author: otherUserId, isPrivate: false };
+      const access = { id: quizId, author: otherUserId, visibility: 'public' };
       const folderRepository = createFolderRepository({
         existsOwnedById: vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true),
       });
@@ -497,12 +428,11 @@ describe('QuizCrudService', () => {
         findAccessById: vi.fn().mockResolvedValue(access),
         update: vi.fn().mockResolvedValue(createQuizEntity({ folder: 'folder-9' })),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository(), folderRepository);
+      const service = new QuizCrudService(quizRepository, folderRepository);
 
       await expect(
-        service.updateQuiz(quizId, { isPrivate: true }, authorId, 'admin'),
+        service.updateQuiz(quizId, { submitToPremium: true }, authorId, 'admin'),
       ).resolves.toMatchObject({ success: true });
-      expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
 
       await expect(
         service.updateQuiz(quizId, { folder: 'folder-9' }, authorId, 'admin'),
@@ -518,7 +448,7 @@ describe('QuizCrudService', () => {
     });
 
     it('returns 404 when update races to a missing quiz and 500 on unexpected errors', async () => {
-      const access = { id: quizId, author: authorId, isPrivate: false };
+      const access = { id: quizId, author: authorId, visibility: 'public' };
       const quizRepository = createQuizRepository({
         findAccessById: vi
           .fn()
@@ -526,7 +456,7 @@ describe('QuizCrudService', () => {
           .mockRejectedValueOnce(new Error('boom')),
         update: vi.fn().mockResolvedValue(null),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(service.updateQuiz(quizId, { title: 'Gone' }, authorId)).resolves.toMatchObject({
         success: false,
@@ -542,7 +472,7 @@ describe('QuizCrudService', () => {
 
   describe('deleteQuiz', () => {
     it('authorizes, deletes, and maps not-found / unexpected failures', async () => {
-      const access = { id: quizId, author: authorId, isPrivate: false };
+      const access = { id: quizId, author: authorId, visibility: 'public' };
       const quizRepository = createQuizRepository({
         findAccessById: vi
           .fn()
@@ -556,7 +486,7 @@ describe('QuizCrudService', () => {
           .mockResolvedValueOnce(false)
           .mockRejectedValueOnce(new Error('delete failed')),
       });
-      const service = new QuizCrudService(quizRepository, createUserRepository());
+      const service = new QuizCrudService(quizRepository);
 
       await expect(service.deleteQuiz(quizId, authorId)).resolves.toEqual({
         success: true,

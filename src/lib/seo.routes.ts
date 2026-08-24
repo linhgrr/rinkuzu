@@ -2,6 +2,7 @@ export const INDEXABLE_STATIC_PUBLIC_ROUTES = [
   '/',
   '/explore',
   '/quizzes',
+  '/premium-quizzes',
   '/adaptive',
   '/faq',
   '/pricing',

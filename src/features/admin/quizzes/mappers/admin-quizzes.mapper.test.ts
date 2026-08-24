@@ -10,10 +10,10 @@ describe('admin quizzes mapper', () => {
       quizzes: [
         {
           id: 'quiz-1',
-          title: 'Private quiz',
+          title: 'Personal quiz source',
           slug: 'private-quiz',
           author: { id: 'author-1', email: 'author@example.com' },
-          isPrivate: true,
+          visibility: 'personal',
           questionCount: 3,
           createdAt: '2026-07-02T00:00:00.000Z',
           updatedAt: '2026-07-02T01:00:00.000Z',
@@ -31,7 +31,7 @@ describe('admin quizzes mapper', () => {
 
     expect(result.quizzes[0]).toMatchObject({
       id: 'quiz-1',
-      visibilityLabelKey: 'private',
+      visibilityLabelKey: 'personal',
     });
     expect(result.pagination).toEqual({
       page: 1,
@@ -49,7 +49,7 @@ describe('admin quizzes mapper', () => {
       title: 'Quiz',
       slug: 'quiz',
       author: { id: 'author-1' },
-      isPrivate: false,
+      visibility: 'public',
       questionCount: 1,
       createdAt: '2026-07-02T00:00:00.000Z',
       updatedAt: '2026-07-02T01:00:00.000Z',
@@ -92,7 +92,7 @@ describe('admin quizzes mapper', () => {
             slug: 'public-quiz',
             author: { id: 'author-1', email: 'author@example.com' },
             folder: 'folder-1',
-            isPrivate: false,
+            visibility: 'public',
             questionCount: 2,
             createdAt: '2026-07-02T00:00:00.000Z',
             updatedAt: '2026-07-02T01:00:00.000Z',
@@ -107,7 +107,7 @@ describe('admin quizzes mapper', () => {
         description: 'Listed description',
         folder: 'folder-1',
         visibilityLabelKey: 'public',
-        isPrivate: false,
+        visibility: 'public',
       });
       expect(quiz.description).toBe('Listed description');
       expect(quiz.folder).toBe('folder-1');
@@ -122,7 +122,7 @@ describe('admin quizzes mapper', () => {
             slug: 'unfiled-quiz',
             author: { id: 'author-1' },
             folder: null,
-            isPrivate: true,
+            visibility: 'personal',
             questionCount: 0,
             createdAt: '2026-07-02T00:00:00.000Z',
             updatedAt: '2026-07-02T01:00:00.000Z',
@@ -134,7 +134,7 @@ describe('admin quizzes mapper', () => {
       const [quiz] = result.quizzes;
       expect(quiz.folder).toBeNull();
       expect(quiz).not.toHaveProperty('description');
-      expect(quiz.visibilityLabelKey).toBe('private');
+      expect(quiz.visibilityLabelKey).toBe('personal');
     });
 
     it('preserves questionCount 0 as a present zero value', () => {
@@ -145,7 +145,7 @@ describe('admin quizzes mapper', () => {
             title: 'Empty quiz',
             slug: 'empty-quiz',
             author: { id: 'author-1' },
-            isPrivate: false,
+            visibility: 'public',
             questionCount: 0,
             createdAt: '2026-07-02T00:00:00.000Z',
             updatedAt: '2026-07-02T01:00:00.000Z',
@@ -169,7 +169,7 @@ describe('admin quizzes mapper', () => {
             description: '',
             slug: 'blank-description-quiz',
             author: { id: 'author-1' },
-            isPrivate: false,
+            visibility: 'public',
             questionCount: 1,
             createdAt: '2026-07-02T00:00:00.000Z',
             updatedAt: '2026-07-02T01:00:00.000Z',
@@ -192,7 +192,7 @@ describe('admin quizzes mapper', () => {
             title: 'Sparse quiz',
             slug: 'sparse-quiz',
             author: { id: 'author-1' },
-            isPrivate: false,
+            visibility: 'public',
             questionCount: 1,
             createdAt: '2026-07-02T00:00:00.000Z',
             updatedAt: '2026-07-02T01:00:00.000Z',
@@ -215,7 +215,7 @@ describe('admin quizzes mapper', () => {
       title: 'Quiz',
       slug: 'quiz',
       author: { id: 'author-1' },
-      isPrivate: false,
+      visibility: 'public',
       questionCount: 2,
       createdAt: '2026-07-02T00:00:00.000Z',
       updatedAt: '2026-07-02T01:00:00.000Z',
@@ -409,7 +409,7 @@ describe('admin quizzes mapper', () => {
         slug: 'full-quiz',
         author: { id: 'author-1', name: 'Ada' },
         folder: 'folder-9',
-        isPrivate: true,
+        visibility: 'personal',
         questionCount: 1,
         createdAt: '2026-07-02T00:00:00.000Z',
         updatedAt: '2026-07-02T01:00:00.000Z',
@@ -430,7 +430,7 @@ describe('admin quizzes mapper', () => {
       expect(result.folder).toBe('folder-9');
       expect(result.pdfUrl).toBe('https://example.com/quiz.pdf');
       expect(result.tags).toEqual(['algebra', 'exam']);
-      expect(result.visibilityLabelKey).toBe('private');
+      expect(result.visibilityLabelKey).toBe('personal');
       expect(result).toHaveProperty('pdfUrl', 'https://example.com/quiz.pdf');
       expect(result).toHaveProperty('tags', ['algebra', 'exam']);
       expect(result.questions[0]).toMatchObject({
@@ -446,7 +446,7 @@ describe('admin quizzes mapper', () => {
         title: 'No extras',
         slug: 'no-extras',
         author: { id: 'author-1' },
-        isPrivate: false,
+        visibility: 'public',
         questionCount: 1,
         createdAt: '2026-07-02T00:00:00.000Z',
         updatedAt: '2026-07-02T01:00:00.000Z',
@@ -480,7 +480,7 @@ describe('admin quizzes mapper', () => {
         title: 'Empty tags',
         slug: 'empty-tags',
         author: { id: 'author-1' },
-        isPrivate: false,
+        visibility: 'public',
         questionCount: 1,
         createdAt: '2026-07-02T00:00:00.000Z',
         updatedAt: '2026-07-02T01:00:00.000Z',
@@ -510,7 +510,7 @@ describe('admin quizzes mapper', () => {
         description: '',
         slug: 'detail-zeros',
         author: { id: 'author-1' },
-        isPrivate: false,
+        visibility: 'public',
         questionCount: 0,
         createdAt: '2026-07-02T00:00:00.000Z',
         updatedAt: '2026-07-02T01:00:00.000Z',

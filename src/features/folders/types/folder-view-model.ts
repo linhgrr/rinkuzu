@@ -21,7 +21,7 @@ export interface FolderLibraryQuizViewModel {
   description?: string;
   author: UserIdentity | null;
   folder: string | null;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   questionCount: number;
   ownedByMe: boolean;
   createdAt: string;

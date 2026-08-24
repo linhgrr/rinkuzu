@@ -18,6 +18,8 @@
   "loadError": "Failed to load attempt details",
   "historyUnavailableTitle": "Question details are unavailable for this attempt",
   "historyUnavailableDescription": "The quiz questions were changed after this attempt. The original score and question count are preserved, but showing the current questions as historical answers would be inaccurate.",
+  "premiumContentLockedTitle": "Premium question details are locked",
+  "premiumContentLockedDescription": "Your score and attempt summary remain available. Renew Premium or permanently unlock this quiz with 1 credit to view its questions, answers, and explanations again.",
   "retryQuiz": "Retake Quiz",
   "backToHistory": "Back to history",
   "questionPrompt": "Question",

@@ -1,6 +1,6 @@
 import type { QuizPreviewQuestionViewModel } from '@/features/quiz/types/quiz-preview-view-model';
 
-export type AdminQuizVisibilityViewModel = 'all' | 'public' | 'private';
+export type AdminQuizVisibilityViewModel = 'all' | 'public' | 'personal';
 
 export interface AdminQuizAuthorViewModel {
   id: string;
@@ -17,8 +17,8 @@ export interface AdminQuizListItemViewModel {
   slug: string;
   author: AdminQuizAuthorViewModel;
   folder?: string | null;
-  isPrivate: boolean;
-  visibilityLabelKey: 'private' | 'public';
+  visibility: 'public' | 'personal';
+  visibilityLabelKey: 'public' | 'personal';
   questionCount: number;
   createdAt: string;
   updatedAt: string;

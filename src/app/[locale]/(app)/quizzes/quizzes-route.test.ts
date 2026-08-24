@@ -32,7 +32,7 @@ describe('/[locale]/quizzes route contract', () => {
     expect(INDEXABLE_STATIC_PUBLIC_ROUTES).toContain('/quizzes');
     expect(APP_MESSAGE_NAMESPACES).toContain('quizzes');
     expect(DESKTOP_PRIMARY_NAV).toContainEqual(
-      expect.objectContaining({ href: ROUTES.QUIZZES, labelKey: 'explore' }),
+      expect.objectContaining({ href: ROUTES.QUIZZES, labelKey: 'quizzes' }),
     );
     expect(MOBILE_TABS_BY_SCOPE.quiz).toContainEqual(
       expect.objectContaining({ href: ROUTES.QUIZZES, labelKey: 'tabQuizzes' }),
@@ -50,12 +50,7 @@ describe('/[locale]/quizzes route contract', () => {
     expect(deepKeys(en).sort()).toEqual(deepKeys(vi).sort());
   });
 
-  it('lists both public and private quizzes by default (all filter)', () => {
-    expect(buildQuizzesListApiKey({ query: '', page: 1, visibility: 'all' })).not.toContain(
-      'visibility=',
-    );
-    expect(buildQuizzesListApiKey({ query: '', page: 1, visibility: 'private' })).toContain(
-      'visibility=private',
-    );
+  it('lists only the public community catalog without a personal visibility query', () => {
+    expect(buildQuizzesListApiKey({ query: '', page: 1 })).toBe('/api/quizzes?page=1&limit=12');
   });
 });

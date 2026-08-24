@@ -78,6 +78,7 @@ export class AuthAccountPersistenceMapper {
   static toAuthenticatedUser(record: AuthAccountPersistenceRecord): AuthenticatedUser {
     return {
       ...AuthAccountPersistenceMapper.toIdentity(record),
+      emailVerified: record.emailVerified instanceof Date,
       authVersion: requireAuthVersion(record.authVersion),
       ...(record.avatar == null ? {} : { avatar: record.avatar }),
       ...(record.displayName == null ? {} : { displayName: record.displayName }),

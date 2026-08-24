@@ -22,7 +22,7 @@ vi.mock('swr', () => ({
 const entitlements: EntitlementSnapshot = {
   tier: 'premium',
   capabilities: {
-    private_quiz: { kind: 'boolean', enabled: true },
+    premium_catalog: { kind: 'boolean', enabled: true },
     ask_rin_chan: {
       kind: 'metered',
       enabled: true,

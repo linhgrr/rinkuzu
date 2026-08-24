@@ -57,4 +57,11 @@ export interface AdminUserSubscriptionGrantInput {
   planId: string;
 }
 
+export interface AdminUserCreditGrantInput {
+  userId: string;
+  amount: number;
+  note: string;
+  idempotencyKey: string;
+}
+
 export type AdminUserStatusFilter = 'active' | 'disabled' | 'all';

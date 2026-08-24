@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -10,6 +10,11 @@ import { FlashcardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { QuestionExcerpt } from '@/components/ui/QuestionContent';
 import { Flashcard } from '@/features/quiz/components/Flashcard';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
+import { PremiumFlashcardClient } from '@/features/quiz/components/PremiumFlashcardClient';
+import {
+  fetchPremiumCatalogMetadata,
+  type PremiumCatalogMetadataViewModel,
+} from '@/features/quiz/api/premium-quiz-api';
 import { ApiResponseError } from '@/lib/api/client';
 import {
   fetchFlashcardQuizViewModel,
@@ -414,12 +419,27 @@ export default function FlashcardPage() {
   const tCommon = useTranslations('common');
   const slug = useRequiredRouteParam('slug');
   const [state, dispatch] = useReducer(flashcardPageReducer, initialFlashcardPageState);
+  const [premiumMetadata, setPremiumMetadata] = useState<PremiumCatalogMetadataViewModel | null>(
+    null,
+  );
 
   useEffect(() => {
     let isActive = true;
 
     const loadQuiz = async () => {
       try {
+        try {
+          const metadata = await fetchPremiumCatalogMetadata(slug);
+          if (isActive) setPremiumMetadata(metadata);
+          return;
+        } catch (metadataError) {
+          if (
+            !(metadataError instanceof ApiResponseError) ||
+            ![401, 404].includes(metadataError.status)
+          ) {
+            throw metadataError;
+          }
+        }
         const data = await fetchFlashcardQuizViewModel(slug);
 
         if (isActive) {
@@ -447,6 +467,10 @@ export default function FlashcardPage() {
       isActive = false;
     };
   }, [slug]);
+
+  if (premiumMetadata) {
+    return <PremiumFlashcardClient metadata={premiumMetadata} />;
+  }
 
   const quiz = state.quiz;
   const currentQuestion = state.currentQuestions[state.progress.currentIndex] || null;

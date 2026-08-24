@@ -4,6 +4,8 @@ const sendMock = vi.hoisted(() => vi.fn());
 const getSignedUrlMock = vi.hoisted(() => vi.fn());
 const deleteObjectInputs = vi.hoisted(() => [] as Array<{ Bucket: string; Key: string }>);
 const getObjectInputs = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+const copyObjectInputs = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+const putObjectInputs = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 
 vi.mock('@aws-sdk/client-s3', () => ({
   S3Client: class {
@@ -21,6 +23,20 @@ vi.mock('@aws-sdk/client-s3', () => ({
     constructor(input: { Bucket: string; Key: string }) {
       Object.assign(this, input);
       deleteObjectInputs.push(input);
+    }
+  },
+  CopyObjectCommand: class {
+    _type = 'CopyObject' as const;
+    constructor(input: Record<string, unknown>) {
+      Object.assign(this, input);
+      copyObjectInputs.push(input);
+    }
+  },
+  PutObjectCommand: class {
+    _type = 'PutObject' as const;
+    constructor(input: Record<string, unknown>) {
+      Object.assign(this, input);
+      putObjectInputs.push(input);
     }
   },
 }));
@@ -42,9 +58,12 @@ vi.mock('@/lib/env', () => ({
 
 import {
   BUCKET_NAME,
+  copyPremiumAssetToPrivateStorage,
   deleteOwnedPdfUrlsBestEffort,
   getQuizPdfObjectPrefix,
   getSignedPDFUrl,
+  getSignedPremiumAssetUrl,
+  getSignedPremiumSourceUrl,
 } from '@/lib/s3';
 
 describe('s3 object storage helpers', () => {
@@ -52,6 +71,8 @@ describe('s3 object storage helpers', () => {
     vi.clearAllMocks();
     deleteObjectInputs.length = 0;
     getObjectInputs.length = 0;
+    copyObjectInputs.length = 0;
+    putObjectInputs.length = 0;
     sendMock.mockResolvedValue({});
     getSignedUrlMock.mockResolvedValue('https://cdn.example.com/signed.pdf');
   });
@@ -82,6 +103,67 @@ describe('s3 object storage helpers', () => {
       expect.objectContaining({ _type: 'GetObject' }),
       { expiresIn: 120 },
     );
+  });
+
+  it('copies owned images into the private Premium namespace', async () => {
+    const key = await copyPremiumAssetToPrivateStorage(
+      'https://cdn.example.com/test-bucket/uploads/quiz_images/source.jpg',
+      '507f191e810c19729de860ea',
+    );
+
+    expect(key).toMatch(/^premium\/assets\/507f191e810c19729de860ea\/[a-f0-9]{64}\.jpg$/);
+    expect(copyObjectInputs).toEqual([
+      {
+        Bucket: 'test-bucket',
+        Key: key,
+        CopySource: encodeURIComponent('test-bucket/uploads/quiz_images/source.jpg'),
+      },
+    ]);
+  });
+
+  it('signs only private Premium asset keys with no-store response caching', async () => {
+    await expect(
+      getSignedPremiumAssetUrl('premium/assets/507f191e810c19729de860ea/image.jpg', 90),
+    ).resolves.toBe('https://cdn.example.com/signed.pdf');
+    expect(getObjectInputs.at(-1)).toEqual({
+      Bucket: 'test-bucket',
+      Key: 'premium/assets/507f191e810c19729de860ea/image.jpg',
+      ResponseCacheControl: 'private, no-store, max-age=0',
+    });
+    expect(getSignedUrlMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ send: sendMock }),
+      expect.objectContaining({ _type: 'GetObject' }),
+      { expiresIn: 90 },
+    );
+    await expect(getSignedPremiumAssetUrl('uploads/quiz_images/source.jpg')).rejects.toThrow(
+      'Invalid Premium asset key',
+    );
+  });
+
+  it('signs retained Premium source PDFs only inside the admin source namespace', async () => {
+    await expect(
+      getSignedPremiumSourceUrl('uploads/premium_sources/quiz-1/source.pdf', 60),
+    ).resolves.toBe('https://cdn.example.com/signed.pdf');
+    expect(getObjectInputs.at(-1)).toEqual({
+      Bucket: 'test-bucket',
+      Key: 'uploads/premium_sources/quiz-1/source.pdf',
+      ResponseContentDisposition: 'inline',
+      ResponseContentType: 'application/pdf',
+      ResponseCacheControl: 'private, no-store, max-age=0',
+    });
+    await expect(getSignedPremiumSourceUrl('uploads/quiz_extract/source.pdf')).rejects.toThrow(
+      'Invalid Premium source key',
+    );
+  });
+
+  it('rejects external Premium image hosts outside the migration allowlist', async () => {
+    await expect(
+      copyPremiumAssetToPrivateStorage(
+        'https://images.example.com/source.jpg',
+        '507f191e810c19729de860ea',
+      ),
+    ).rejects.toThrow('Premium quiz images must come from managed image storage');
+    expect(putObjectInputs).toEqual([]);
   });
 
   it('best-effort deletes owned URLs only, dedupes keys, and never throws on upstream failure', async () => {

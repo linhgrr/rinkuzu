@@ -11,7 +11,7 @@ const DASHBOARD_QUIZ_PROJECTION = {
   title: 1,
   description: 1,
   slug: 1,
-  isPrivate: 1,
+  visibility: 1,
   author: {
     _id: { $ifNull: ['$authorDoc._id', '$author'] },
     email: '$authorDoc.email',
@@ -34,7 +34,7 @@ const PUBLIC_PROFILE_QUIZ_PROJECTION = {
   author: 1,
   questions: { $literal: [] },
   questionCount: { $size: { $ifNull: ['$questions', []] } },
-  isPrivate: 1,
+  visibility: 1,
   createdAt: 1,
   updatedAt: 1,
 };
@@ -110,7 +110,7 @@ try {
       author: dashboardOwnerId,
       slug: `ci-dashboard-owned-${index}`,
       title: `Owned quiz ${index}`,
-      isPrivate: index % 2 === 0,
+      visibility: index % 2 === 0 ? 'personal' : 'public',
       questions: [],
       createdAt: new Date(now.getTime() - index * 1_000),
       updatedAt: now,
@@ -121,7 +121,7 @@ try {
       author,
       slug: `ci-dashboard-public-${index}`,
       title: `Public quiz ${index}`,
-      isPrivate: false,
+      visibility: 'public',
       questions: [],
       createdAt: new Date(now.getTime() - index * 1_000),
       updatedAt: now,
@@ -430,7 +430,7 @@ try {
     });
     evidence.push(allQuizCountRow);
 
-    const publicQuizFilter = { isPrivate: false };
+    const publicQuizFilter = { visibility: 'public' };
     const publicQuizListPipeline = buildCompactQuizPipeline(publicQuizFilter, {
       limit: 4,
       populateAuthor: true,
@@ -480,10 +480,10 @@ try {
     if (
       !publicQuizListStages.has('IXSCAN') ||
       publicQuizListStages.has('SORT') ||
-      !publicQuizListIndexes.has('isPrivate_1_createdAt_-1')
+      !publicQuizListIndexes.has('visibility_1_createdAt_-1')
     ) {
       throw new Error(
-        `public-quiz-list did not use isPrivate_1_createdAt_-1 without a blocking sort; stages=${publicQuizListRow.stages.join(',')}; indexes=${publicQuizListRow.indexes.join(',')}`,
+        `public-quiz-list did not use visibility_1_createdAt_-1 without a blocking sort; stages=${publicQuizListRow.stages.join(',')}; indexes=${publicQuizListRow.indexes.join(',')}`,
       );
     }
     if (
@@ -504,7 +504,7 @@ try {
         documentsExamined: publicQuizListRow.countDocumentsExamined,
         returnedRows: publicQuizListRow.countReturnedRows,
       },
-      { totalItems: 600, expectedIndex: 'isPrivate_1_createdAt_-1' },
+      { totalItems: 600, expectedIndex: 'visibility_1_createdAt_-1' },
     );
     if (
       publicQuizListRow.lookupDocumentsExamined !== 4 ||
@@ -519,7 +519,7 @@ try {
       publicQuizListRows.length !== 4 ||
       !publicQuizListRows.every(
         (item) =>
-          item.isPrivate === false &&
+          item.visibility === 'public' &&
           item.questionCount === 0 &&
           Array.isArray(item.questions) &&
           item.questions.length === 0 &&
@@ -541,13 +541,13 @@ try {
       },
       {
         name: 'dashboard-recent-public-quizzes',
-        match: { isPrivate: false, author: { $ne: dashboardOwnerId } },
+        match: { visibility: 'public', author: { $ne: dashboardOwnerId } },
         limit: 4,
         // The fixture deliberately interleaves recent public quizzes from the owner.
         // `$ne` is a range predicate, so the visibility/sort index must scan and reject them.
         maxKeysExamined: 8,
         maxDocumentsExamined: 8,
-        expectedIndex: 'isPrivate_1_createdAt_-1',
+        expectedIndex: 'visibility_1_createdAt_-1',
       },
       {
         name: 'admin-recent-quizzes',
@@ -644,7 +644,7 @@ try {
       !publicProfileQuizRows.every(
         (row) =>
           String(row.author) === String(dashboardOwnerId) &&
-          row.isPrivate === false &&
+          row.visibility === 'public' &&
           row.questionCount === 0 &&
           Array.isArray(row.questions) &&
           row.questions.length === 0,
@@ -886,7 +886,7 @@ function buildDashboardRecentQuizPipeline(match, limit) {
 
 function buildPublicProfileQuizPipeline(authorId, limit) {
   return [
-    { $match: { author: authorId, isPrivate: false } },
+    { $match: { author: authorId, visibility: 'public' } },
     { $sort: { createdAt: -1 } },
     { $skip: 0 },
     { $limit: limit },

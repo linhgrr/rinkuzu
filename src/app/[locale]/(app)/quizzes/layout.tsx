@@ -14,8 +14,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/quizzes',
     title: isVi ? 'Thư viện quiz | RinKuzu' : 'Browse Quizzes | RinKuzu',
     description: isVi
-      ? 'Khám phá quiz công khai và nội dung Premium từ cộng đồng RinKuzu để bắt đầu luyện tập.'
-      : 'Browse public and Premium private quizzes from the RinKuzu community and start practicing right away.',
+      ? 'Khám phá quiz công khai từ cộng đồng RinKuzu để bắt đầu luyện tập.'
+      : 'Browse public quizzes shared by the RinKuzu community.',
   });
 }
 

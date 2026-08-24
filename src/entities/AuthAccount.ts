@@ -40,6 +40,7 @@ export interface AuthLoginAccount extends AuthAccountIdentity {
 }
 
 export interface AuthenticatedUser extends AuthAccountIdentity {
+  emailVerified: boolean;
   avatar?: string;
   displayName?: string;
   passwordChangedAt: number | null;

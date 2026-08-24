@@ -21,6 +21,8 @@ interface QuizAttemptSubmissionData {
   correctAnswers: number;
   wrongQuestions: WrongQuizAttemptQuestion[];
   takenAt: Date;
+  premiumSubmissionId?: string;
+  premiumSnapshotHash?: string;
 }
 
 export type RecordQuizAttemptProgressData =

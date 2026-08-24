@@ -10,13 +10,13 @@ describe('admin quiz controller schemas', () => {
         page: '2',
         limit: '24',
         search: '  algebra  ',
-        visibility: 'private',
+        visibility: 'personal',
       }),
     ).toEqual({
       page: 2,
       limit: 24,
       search: 'algebra',
-      visibility: 'private',
+      visibility: 'personal',
     });
   });
 

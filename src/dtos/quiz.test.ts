@@ -174,7 +174,7 @@ describe('quiz DTO schemas', () => {
             correctIndex: 1,
           },
         ],
-        isPrivate: false,
+        submitToPremium: false,
       }),
     ).toEqual({
       title: 'Algebra basics',
@@ -188,12 +188,31 @@ describe('quiz DTO schemas', () => {
           correctIndex: 1,
         },
       ],
-      isPrivate: false,
+      submitToPremium: false,
     });
   });
 
   it('validates update quiz request payloads and rejects empty updates', () => {
     expect(updateQuizRequestSchema.parse({ folder: null })).toEqual({ folder: null });
     expect(() => updateQuizRequestSchema.parse({})).toThrow('No quiz fields provided');
+  });
+
+  it('requires rights attestation only when submitting to Quiz Premium', () => {
+    const base = {
+      title: 'Premium quiz',
+      questions: [
+        {
+          question: '2 + 2?',
+          options: ['3', '4'],
+          type: 'single' as const,
+          correctIndex: 1,
+        },
+      ],
+      submitToPremium: true,
+    };
+    expect(createQuizRequestSchema.safeParse(base).success).toBe(false);
+    expect(createQuizRequestSchema.parse({ ...base, rightsAttested: true }).rightsAttested).toBe(
+      true,
+    );
   });
 });

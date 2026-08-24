@@ -6,8 +6,11 @@ import { MEDIA_MAX_MD } from '@/shared/constants/breakpoints';
 import { useCallback, useEffect, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
-import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
+import { useSession } from 'next-auth/react';
+
+const PREMIUM_CONTRIBUTION_ENABLED =
+  process.env.NEXT_PUBLIC_PREMIUM_CONTRIBUTION_ENABLED === 'true';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { PdfPanelSkeleton, RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
@@ -17,7 +20,6 @@ import { useDraftStore } from '@/store/useDraftStore';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { toast } from 'sonner';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { fetchSubscriptionStatusViewModel } from '@/features/subscription/api/subscription-page-api';
 import {
   deletePendingPdfUpload,
   getPdfPageCount,
@@ -48,7 +50,8 @@ interface CreateQuizState {
   description: string;
   aiPrompt: string;
   selectedFolderId: string | null;
-  isPrivate: boolean;
+  submitToPremium: boolean;
+  rightsAttested: boolean;
   pdfFile: File | null;
   showPDFViewer: boolean;
   extracting: boolean;
@@ -72,7 +75,8 @@ const initialCreateQuizState: CreateQuizState = {
   description: '',
   aiPrompt: '',
   selectedFolderId: null,
-  isPrivate: false,
+  submitToPremium: false,
+  rightsAttested: false,
   pdfFile: null,
   showPDFViewer: false,
   extracting: false,
@@ -355,8 +359,11 @@ interface FormCardProps {
   onFolderChange: (value: string | null) => void;
   onDescriptionChange: (value: string) => void;
   privacyControl?: {
-    isPrivate: boolean;
-    onPrivateChange: (value: boolean) => void;
+    submitToPremium: boolean;
+    eligible: boolean;
+    onPremiumChange: (value: boolean) => void;
+    rightsAttested: boolean;
+    onRightsChange: (value: boolean) => void;
   };
   onRemoveFile: () => void;
   onSubmit: (event: React.FormEvent) => void;
@@ -426,19 +433,26 @@ function CreateQuizFormCard({
                 description: t('descriptionOptional'),
                 descriptionPlaceholder: t('provideContext'),
                 folder: t('folderLabel'),
-                privateLabel: t('privateQuiz'),
-                privateDescription: t('privateQuizDescription'),
+                premiumLabel: t('premiumQuiz'),
+                premiumDescription: t('premiumQuizDescription'),
+                premiumRightsLabel: t('premiumRightsLabel'),
+                premiumRightsDescription: t('premiumRightsDescription'),
                 promptLabel: t('aiPromptLabel'),
                 promptPlaceholder: t('aiPromptPlaceholder'),
                 promptHelper: t('aiPromptHelper'),
               }}
               {...(privacyControl !== undefined
                 ? {
-                    isPrivate: privacyControl.isPrivate,
-                    onPrivateChange: privacyControl.onPrivateChange,
+                    submitToPremium: privacyControl.submitToPremium,
+                    premiumEligible: privacyControl.eligible,
+                    premiumEligibilityMessage: t('premiumVerificationRequired'),
+                    premiumEligibilityCta: t('verifyEmailCta'),
+                    onPremiumChange: privacyControl.onPremiumChange,
+                    premiumRightsAttested: privacyControl.rightsAttested,
+                    onPremiumRightsChange: privacyControl.onRightsChange,
                   }
                 : {})}
-              privateCheckboxId="isPrivateUpload"
+              premiumCheckboxId="submitToPremiumUpload"
               aiPrompt={aiPrompt}
               onAiPromptChange={onAiPromptChange}
               disabled={extracting}
@@ -487,7 +501,11 @@ function CreateQuizFormCard({
                   variant="gradient"
                   size="lg"
                   loading={extracting}
-                  disabled={!title.trim() || !pdfFile}
+                  disabled={
+                    !title.trim() ||
+                    !pdfFile ||
+                    (privacyControl?.submitToPremium === true && !privacyControl.rightsAttested)
+                  }
                   className="w-full sm:w-auto"
                 >
                   {extracting ? (
@@ -550,18 +568,12 @@ function PreviewPanel({
 export function CreateQuizPage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
+  const { data: session } = useSession();
   const { push, replace } = useRouter();
   const { addDraft } = useDraftStore();
-  const { data: session } = useSession();
   const consumePendingFile = usePendingQuizUploadStore((s) => s.consumeFile);
   const [state, dispatch] = useReducer(createQuizReducer, initialCreateQuizState);
   const isRedirecting = useCreateResponsiveRedirect('desktop');
-  const { data: subscriptionStatus } = useSWR(
-    session?.user?.role === 'admin' ? null : 'subscription-status',
-    fetchSubscriptionStatusViewModel,
-  );
-  const canCreatePrivateQuiz =
-    session?.user?.role === 'admin' || subscriptionStatus?.isPremium === true;
   const uploadPolicy = usePdfUploadPolicy('quiz');
 
   const selectPdf = useCallback(
@@ -718,12 +730,22 @@ export function CreateQuizPage() {
                 dispatch({ type: 'patch', value: { showPDFViewer: !state.showPDFViewer } })
               }
               pdfFile={state.pdfFile}
-              {...(canCreatePrivateQuiz
+              {...(PREMIUM_CONTRIBUTION_ENABLED
                 ? {
                     privacyControl: {
-                      isPrivate: state.isPrivate,
-                      onPrivateChange: (value: boolean) =>
-                        dispatch({ type: 'patch', value: { isPrivate: value } }),
+                      submitToPremium: state.submitToPremium,
+                      eligible: session?.user?.emailVerified === true,
+                      rightsAttested: state.rightsAttested,
+                      onPremiumChange: (value: boolean) =>
+                        dispatch({
+                          type: 'patch',
+                          value: {
+                            submitToPremium: value,
+                            ...(!value ? { rightsAttested: false } : {}),
+                          },
+                        }),
+                      onRightsChange: (value: boolean) =>
+                        dispatch({ type: 'patch', value: { rightsAttested: value } }),
                     },
                   }
                 : {})}

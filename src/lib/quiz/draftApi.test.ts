@@ -10,7 +10,7 @@ const transportDraft: QuizDraftTransportDto = {
   category_id: 'folder-1',
   prompt: null,
   source_type: 'pdf',
-  is_private: false,
+  submit_to_premium: false,
   revision: 2,
   question_count: 2,
   pdf: {
@@ -18,6 +18,8 @@ const transportDraft: QuizDraftTransportDto = {
     file_name: 'source.pdf',
     file_size: 1024,
     page_count: 3,
+    file_hash: null,
+    retained_for_premium: false,
   },
   status: 'completed',
   progress: {
@@ -68,6 +70,8 @@ describe('QuizDraftMapper', () => {
           fileName: 'source.pdf',
           fileSize: 1024,
           pageCount: 3,
+          fileHash: null,
+          retainedForPremium: false,
         }),
       }),
     );

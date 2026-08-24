@@ -16,7 +16,7 @@ export interface LibraryQuiz {
   description?: string;
   author: LibraryQuizAuthor | null;
   folder: string | null;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   pdfUrl?: string;
   questionCount: number;
   ownedByMe: boolean;

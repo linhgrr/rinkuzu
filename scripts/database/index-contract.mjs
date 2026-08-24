@@ -21,6 +21,10 @@ export const INDEX_CONTRACT = Object.freeze([
   required('attempts.user-recent', 'attempts', { user: 1, takenAt: -1 }),
   required('attempts.guest-recent', 'attempts', { guestEmail: 1, takenAt: -1 }),
   required('attempts.quiz-recent', 'attempts', { quiz: 1, takenAt: -1 }),
+  required('attempts.premium-submission-recent', 'attempts', {
+    premiumSubmission: 1,
+    takenAt: -1,
+  }),
   required('attempts.user-quiz', 'attempts', { user: 1, quiz: 1 }),
   required('attempts.recent', 'attempts', { takenAt: -1 }),
   required(
@@ -332,11 +336,11 @@ export const INDEX_CONTRACT = Object.freeze([
   // quizzes
   required('quizzes.slug', 'quizzes', { slug: 1 }, { unique: true }),
   required('quizzes.recent', 'quizzes', { createdAt: -1 }),
-  required('quizzes.visibility-recent', 'quizzes', { isPrivate: 1, createdAt: -1 }),
+  required('quizzes.visibility-recent', 'quizzes', { visibility: 1, createdAt: -1 }),
   required('quizzes.author-recent', 'quizzes', { author: 1, createdAt: -1 }),
   required('quizzes.author-visibility-recent', 'quizzes', {
     author: 1,
-    isPrivate: 1,
+    visibility: 1,
     createdAt: -1,
   }),
   required('quizzes.author-folder-recent', 'quizzes', {
@@ -352,6 +356,80 @@ export const INDEX_CONTRACT = Object.freeze([
       unique: true,
       partialFilterExpression: { sourceDraftId: { $type: 'string' } },
     },
+  ),
+
+  // Premium quiz submissions, reviews, credits, and protected play sessions
+  required('premium-submissions.author-recent', 'premiumquizsubmissions', {
+    author: 1,
+    createdAt: -1,
+  }),
+  required('premium-submissions.review-queue', 'premiumquizsubmissions', {
+    status: 1,
+    createdAt: 1,
+  }),
+  required(
+    'premium-submissions.source-version',
+    'premiumquizsubmissions',
+    { sourceQuiz: 1, version: 1 },
+    { unique: true },
+  ),
+  required(
+    'premium-submissions.source-snapshot',
+    'premiumquizsubmissions',
+    { sourceQuiz: 1, snapshotHash: 1 },
+    { unique: true },
+  ),
+  required('premium-submissions.snapshot-status', 'premiumquizsubmissions', {
+    snapshotHash: 1,
+    status: 1,
+  }),
+  required('premium-submissions.question-status', 'premiumquizsubmissions', {
+    questionHashes: 1,
+    status: 1,
+  }),
+  required('premium-submissions.document-status', 'premiumquizsubmissions', {
+    documentFingerprint: 1,
+    status: 1,
+  }),
+  required(
+    'premium-submissions.active-publication',
+    'premiumquizsubmissions',
+    { sourceQuiz: 1, active: 1 },
+    { unique: true, partialFilterExpression: { active: true } },
+  ),
+  required('premium-review-jobs.submission-recent', 'premiumreviewjobs', {
+    submission: 1,
+    createdAt: -1,
+  }),
+  required('premium-review-jobs.work', 'premiumreviewjobs', { status: 1, updatedAt: 1 }),
+  required('credit-wallets.user', 'creditwallets', { user: 1 }, { unique: true }),
+  required('credit-ledgers.user-recent', 'creditledgers', { user: 1, createdAt: -1 }),
+  required('credit-ledgers.idempotency', 'creditledgers', { idempotencyKey: 1 }, { unique: true }),
+  required('credit-ledgers.reference', 'creditledgers', {
+    referenceType: 1,
+    referenceId: 1,
+    type: 1,
+  }),
+  required(
+    'premium-access-grants.user-quiz',
+    'premiumquizaccessgrants',
+    { user: 1, quiz: 1 },
+    { unique: true },
+  ),
+  required('premium-access-grants.quiz-recent', 'premiumquizaccessgrants', {
+    quiz: 1,
+    createdAt: -1,
+  }),
+  required('premium-play-sessions.user-quiz-recent', 'premiumplaysessions', {
+    user: 1,
+    quiz: 1,
+    createdAt: -1,
+  }),
+  required(
+    'premium-play-sessions.retention-expiration',
+    'premiumplaysessions',
+    { purgeAt: 1 },
+    { expireAfterSeconds: 0 },
   ),
 
   // quizprogresses
@@ -445,12 +523,6 @@ export const INDEX_CONTRACT = Object.freeze([
     category: 1,
   }),
   deprecated('quizzes.legacy-creator-status', 'quizzes', { createdBy: 1, status: 1 }),
-  deprecated('quizzes.legacy-category-status-private-recent', 'quizzes', {
-    category: 1,
-    status: 1,
-    isPrivate: 1,
-    createdAt: -1,
-  }),
   deprecated('quizzes.legacy-category-status-recent', 'quizzes', {
     category: 1,
     status: 1,
@@ -459,11 +531,6 @@ export const INDEX_CONTRACT = Object.freeze([
   deprecated('quizzes.legacy-author-status-recent', 'quizzes', {
     author: 1,
     status: 1,
-    createdAt: -1,
-  }),
-  deprecated('quizzes.legacy-status-private-recent', 'quizzes', {
-    status: 1,
-    isPrivate: 1,
     createdAt: -1,
   }),
   // MongoDB exposes text indexes through their internal key representation.

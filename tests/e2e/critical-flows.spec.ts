@@ -182,7 +182,6 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
       author: regular.id,
       createdAt: now,
       description: 'A production E2E quiz fixture',
-      isPrivate: false,
       questions: [
         {
           _id: questionId,
@@ -195,6 +194,7 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
       slug: quizSlug,
       title: 'Production Critical Quiz',
       updatedAt: now,
+      visibility: 'public',
     });
 
     await db

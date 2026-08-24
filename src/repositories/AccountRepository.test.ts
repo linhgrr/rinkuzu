@@ -222,6 +222,7 @@ describe('AccountRepository', () => {
           id: 'user-1',
           email,
           role: 'user',
+          emailVerified: true,
           passwordChangedAt: writtenAt,
           authVersion: 0,
         });

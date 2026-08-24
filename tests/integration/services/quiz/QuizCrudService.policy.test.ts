@@ -1,21 +1,9 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import type { Quiz } from '@/entities/Quiz';
-import type { User } from '@/entities/User';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { QuizCrudService } from '@/services/quiz/QuizCrudService';
 
-const subscriptionMocks = vi.hoisted(() => ({
-  isUserPremium: vi.fn(),
-}));
-
-vi.mock('@/lib/subscription-factory', () => ({
-  createSubscriptionService: () => ({
-    isUserPremium: subscriptionMocks.isUserPremium,
-  }),
-}));
-
-describe('QuizCrudService quiz publication policy', () => {
+describe('QuizCrudService Premium source publication policy', () => {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
     findAccessById: vi.fn(),
@@ -34,18 +22,6 @@ describe('QuizCrudService quiz publication policy', () => {
     countByCreatedAtBuckets: vi.fn(),
     findTopCreators: vi.fn(),
   };
-  const userRepository: Mocked<IUserRepository> = {
-    findByEmail: vi.fn(),
-    findById: vi.fn(),
-    findByIdIncludingDisabled: vi.fn(),
-    findSubscriptionById: vi.fn(),
-    findPublicProfileById: vi.fn(),
-    applyAdminMutation: vi.fn(),
-    findAll: vi.fn(),
-    count: vi.fn(),
-    countByCreatedAtBuckets: vi.fn(),
-    countByRole: vi.fn(),
-  };
 
   const request = {
     title: 'Published immediately',
@@ -58,14 +34,13 @@ describe('QuizCrudService quiz publication policy', () => {
         correctIndex: 0,
       },
     ],
-    isPrivate: false,
+    submitToPremium: false,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(quizRepository.findBySlug).mockResolvedValue(null);
-    vi.mocked(quizRepository.findBySourceDraftId).mockResolvedValue(null);
-    vi.mocked(quizRepository.create).mockImplementation(
+    quizRepository.findBySourceDraftId.mockResolvedValue(null);
+    quizRepository.create.mockImplementation(
       async (quizData): Promise<Quiz> => ({
         id: 'quiz-1',
         title: quizData.title,
@@ -75,203 +50,58 @@ describe('QuizCrudService quiz publication policy', () => {
           ...question,
           id: `question-${index + 1}`,
         })),
-        isPrivate: quizData.isPrivate,
-        ...(quizData.description !== undefined && { description: quizData.description }),
-        ...(quizData.folder !== undefined && { folder: quizData.folder }),
-        ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
-        ...(quizData.sourceDraftId !== undefined && { sourceDraftId: quizData.sourceDraftId }),
+        visibility: quizData.visibility,
         createdAt: new Date('2026-07-01T00:00:00Z'),
         updatedAt: new Date('2026-07-01T00:00:00Z'),
       }),
     );
-    const user: User = {
-      id: 'user-1',
-      email: 'user@example.com',
-      role: 'user',
-      disable: 0,
-      createdAt: new Date('2026-01-01T00:00:00Z'),
-    };
-    vi.mocked(userRepository.findById).mockResolvedValue(user);
-    subscriptionMocks.isUserPremium.mockResolvedValue(false);
   });
 
-  it('creates a public quiz immediately', async () => {
-    const service = new QuizCrudService(quizRepository, userRepository);
-
-    await service.createQuiz('user-1', request);
+  it('creates an ordinary quiz as public', async () => {
+    await new QuizCrudService(quizRepository).createQuiz('user-1', request);
 
     expect(quizRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        isPrivate: false,
-      }),
+      expect.objectContaining({ visibility: 'public' }),
     );
-    const createInput = vi.mocked(quizRepository.create).mock.calls[0]?.[0];
-    expect(createInput).not.toHaveProperty('description');
-    expect(createInput).not.toHaveProperty('pdfUrl');
-    expect(createInput).not.toHaveProperty('sourceDraftId');
-    expect(createInput?.questions[0]).not.toHaveProperty('questionImage');
-    expect(createInput?.questions[0]).not.toHaveProperty('optionImages');
   });
 
-  it('rejects private quiz creation for a free user', async () => {
-    const service = new QuizCrudService(quizRepository, userRepository);
-
-    await expect(service.createQuiz('user-1', { ...request, isPrivate: true })).rejects.toThrow(
-      'Premium subscription required to create private quizzes',
-    );
-    expect(quizRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('allows a premium user to create a private quiz', async () => {
-    subscriptionMocks.isUserPremium.mockResolvedValue(true);
-    const service = new QuizCrudService(quizRepository, userRepository);
-
-    await service.createQuiz('user-1', { ...request, isPrivate: true });
+  it('creates a Premium contribution as a personal source without a subscription gate', async () => {
+    await new QuizCrudService(quizRepository).createQuiz('user-1', {
+      ...request,
+      submitToPremium: true,
+      rightsAttested: true,
+    });
 
     expect(quizRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        isPrivate: true,
-      }),
+      expect.objectContaining({ visibility: 'personal' }),
     );
   });
 
-  it('allows an admin to create a private quiz without a subscription lookup', async () => {
-    vi.mocked(userRepository.findById).mockResolvedValue({
-      id: 'admin-1',
-      email: 'admin@example.com',
-      role: 'admin',
-      disable: 0,
-      createdAt: new Date('2026-01-01T00:00:00Z'),
-    });
-    const service = new QuizCrudService(quizRepository, userRepository);
-
-    await service.createQuiz('admin-1', { ...request, isPrivate: true });
-
-    expect(subscriptionMocks.isUserPremium).not.toHaveBeenCalled();
-    expect(quizRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({ isPrivate: true }),
-    );
-  });
-
-  it('retries slug creation from the database unique index instead of pre-querying slugs', async () => {
-    vi.mocked(quizRepository.create).mockRejectedValueOnce({
-      code: 11000,
-      keyPattern: { slug: 1 },
-      keyValue: { slug: 'published-immediately' },
-    });
-    const service = new QuizCrudService(quizRepository, userRepository);
-
-    const created = await service.createQuiz('user-1', request);
-
-    const firstAttempt = vi.mocked(quizRepository.create).mock.calls[0]?.[0];
-    const secondAttempt = vi.mocked(quizRepository.create).mock.calls[1]?.[0];
-    expect(firstAttempt?.slug).toMatch(/^published-immediately-\d{6}$/);
-    expect(secondAttempt?.slug).toBe(`${firstAttempt?.slug}-1`);
-    expect(created.slug).toBe(secondAttempt?.slug);
-    expect(quizRepository.findBySlug).not.toHaveBeenCalled();
-  });
-
-  it('reuses the quiz already created for a draft', async () => {
-    const existing = await quizRepository.create({
-      title: request.title,
-      slug: 'published-immediately',
-      author: 'user-1',
-      folder: null,
-      questions: request.questions,
-      isPrivate: false,
-      sourceDraftId: 'draft-1',
-    });
-    vi.mocked(quizRepository.findBySourceDraftId).mockResolvedValue(existing);
-    vi.mocked(quizRepository.create).mockClear();
-    const service = new QuizCrudService(quizRepository, userRepository);
-
-    await expect(service.createQuizFromDraft('user-1', 'draft-1', request)).resolves.toEqual(
-      expect.objectContaining({
-        id: existing.id,
-        title: existing.title,
-        slug: existing.slug,
-        questionCount: existing.questions.length,
-      }),
-    );
-    expect(quizRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('recovers the concurrently-created quiz after the unique draft key wins', async () => {
-    const concurrentlyCreated: Quiz = {
-      id: 'quiz-concurrent',
-      title: request.title,
-      slug: 'published-immediately',
-      author: 'user-1',
-      folder: null,
-      questions: request.questions.map((question, index) => ({
-        ...question,
-        id: `question-${index + 1}`,
-      })),
-      isPrivate: false,
-      sourceDraftId: 'draft-1',
-      createdAt: new Date('2026-07-01T00:00:00Z'),
-      updatedAt: new Date('2026-07-01T00:00:00Z'),
-    };
-    vi.mocked(quizRepository.findBySourceDraftId)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(concurrentlyCreated);
-    vi.mocked(quizRepository.create).mockRejectedValue({ code: 11000 });
-    const service = new QuizCrudService(quizRepository, userRepository);
-
-    await expect(service.createQuizFromDraft('user-1', 'draft-1', request)).resolves.toEqual(
-      expect.objectContaining({
-        id: concurrentlyCreated.id,
-        title: concurrentlyCreated.title,
-        slug: concurrentlyCreated.slug,
-        questionCount: concurrentlyCreated.questions.length,
-      }),
-    );
-  });
-
-  it('uses the access projection before updating a quiz', async () => {
-    vi.mocked(quizRepository.findAccessById).mockResolvedValue({
+  it('records a personal visibility update when submitting an edited source', async () => {
+    quizRepository.findAccessById.mockResolvedValue({
       id: 'quiz-1',
       author: 'user-1',
-      isPrivate: false,
+      visibility: 'public',
     });
-    vi.mocked(quizRepository.update).mockResolvedValue({
+    quizRepository.update.mockResolvedValue({
       id: 'quiz-1',
-      title: 'Updated title',
-      slug: 'published-immediately',
+      title: 'Updated',
+      slug: 'updated',
       author: 'user-1',
       questions: [],
-      isPrivate: false,
+      visibility: 'personal',
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-02T00:00:00Z'),
     });
-    const service = new QuizCrudService(quizRepository, userRepository);
 
-    const result = await service.updateQuiz('quiz-1', { title: 'Updated title' }, 'user-1');
+    await new QuizCrudService(quizRepository).updateQuiz(
+      'quiz-1',
+      { submitToPremium: true, rightsAttested: true },
+      'user-1',
+    );
 
-    expect(result.success).toBe(true);
-    expect(quizRepository.findAccessById).toHaveBeenCalledWith('quiz-1');
-    expect(quizRepository.findById).not.toHaveBeenCalled();
     expect(quizRepository.update).toHaveBeenCalledWith('quiz-1', {
-      title: 'Updated title',
+      visibility: 'personal',
     });
-  });
-
-  it('uses the access projection before deleting a quiz', async () => {
-    vi.mocked(quizRepository.findAccessById).mockResolvedValue({
-      id: 'quiz-1',
-      author: 'user-1',
-      isPrivate: false,
-    });
-    vi.mocked(quizRepository.delete).mockResolvedValue(true);
-    const service = new QuizCrudService(quizRepository, userRepository);
-
-    const result = await service.deleteQuiz('quiz-1', 'user-1');
-
-    expect(result).toEqual({
-      success: true,
-      data: { id: 'quiz-1', deleted: true },
-    });
-    expect(quizRepository.findAccessById).toHaveBeenCalledWith('quiz-1');
-    expect(quizRepository.findById).not.toHaveBeenCalled();
   });
 });

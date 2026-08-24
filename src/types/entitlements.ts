@@ -1,5 +1,5 @@
 export type Tier = 'free' | 'premium';
-export type BooleanCapability = 'private_quiz';
+export type BooleanCapability = 'premium_catalog';
 export type EntitlementConstraint = 'quiz_pdf_pages' | 'adaptive_pdf_pages' | 'pdf_upload_bytes';
 export type MeteredCapability =
   | 'ask_rin_chan'

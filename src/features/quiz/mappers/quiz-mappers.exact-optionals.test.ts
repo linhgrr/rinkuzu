@@ -33,7 +33,7 @@ describe('quiz mapper optional fields', () => {
       slug: 'algebra',
       author: null,
       folder: null,
-      isPrivate: false,
+      visibility: 'public' as const,
       questionCount: 1,
       createdAt: '2026-07-02T00:00:00.000Z',
       updatedAt: '2026-07-02T00:00:00.000Z',

@@ -14,6 +14,7 @@
   "signOut": "Sign Out",
   "getStarted": "Get Started",
   "premium": "Premium",
+  "premiumQuizzes": "Quiz Premium",
   "history": "History",
   "review": "Review",
   "bookmarks": "Bookmarks",
@@ -26,6 +27,7 @@
   "expandSidebar": "Expand sidebar",
   "exploreQuizzes": "Explore Quizzes",
   "quizManagement": "Quiz Management",
+  "premiumReview": "Premium Quiz Review",
   "userManagement": "User Management",
   "subscriptions": "Subscriptions",
   "pricingPlans": "Pricing Plans",
@@ -59,5 +61,8 @@
   "uploadSubjectAria": "Upload subject",
   "toggleUserMenu": "Toggle user menu",
   "helpSupport": "Help & Supporting",
-  "skipToContent": "Skip to main content"
+  "skipToContent": "Skip to main content",
+  "credits": "credits",
+  "creditBalanceLoading": "Loading credit balance",
+  "creditBalanceUnavailable": "Credit balance unavailable"
 }

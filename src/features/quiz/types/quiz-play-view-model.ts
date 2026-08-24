@@ -16,7 +16,7 @@ export interface QuizPlayViewModel {
   slug: string;
   author: QuizPlayAuthorViewModel | null;
   folder: string | null;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   questionCount: number;
   createdAt: string;
   updatedAt: string;

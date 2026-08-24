@@ -3,17 +3,9 @@ import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/I
 import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import type { Quiz } from '@/entities/Quiz';
 import { assertFail, assertOk } from '../../../tests/helpers/service-result-assert';
 import { QuizPlayService } from '@/services/quiz/QuizPlayService';
-
-const entitlementMocks = vi.hoisted(() => ({
-  resolveEntitlements: vi.fn(),
-}));
-
-vi.mock('@/lib/entitlements', () => ({
-  can: (entitlements: { tier: string }) => entitlements.tier === 'premium',
-  resolveEntitlements: entitlementMocks.resolveEntitlements,
-}));
 
 const quizId = '507f191e810c19729de860ea';
 const userId = '507f191e810c19729de860eb';
@@ -39,7 +31,7 @@ function createService() {
       slug: 'quiz',
       author: userId,
       questions: [],
-      isPrivate: false,
+      visibility: 'public' as const,
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     }),
@@ -49,7 +41,7 @@ function createService() {
       slug: 'quiz',
       author: userId,
       questions: [],
-      isPrivate: false,
+      visibility: 'public',
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     }),
@@ -104,7 +96,6 @@ function createService() {
 describe('QuizPlayService progress operations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
   });
 
   it('maps saved progress to the response DTO', async () => {
@@ -168,15 +159,15 @@ describe('QuizPlayService progress operations', () => {
     expect(progressRepository.deleteByUserAndQuiz).not.toHaveBeenCalled();
   });
 
-  it('blocks free users from all progress operations on private quizzes', async () => {
+  it('blocks non-owners from all progress operations on personal quiz sources', async () => {
     const { service, quizRepository, progressRepository } = createService();
     vi.mocked(quizRepository.findSummaryBySlug).mockResolvedValue({
       id: quizId,
-      title: 'Private quiz',
+      title: 'Personal quiz source',
       slug: 'private-quiz',
       author: 'another-user',
       questions: [],
-      isPrivate: true,
+      visibility: 'personal',
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     });
@@ -190,24 +181,23 @@ describe('QuizPlayService progress operations', () => {
     assertFail(getResult);
     assertFail(saveResult);
     assertFail(deleteResult);
-    expect(getResult).toMatchObject({ statusCode: 403, code: 'premium_required' });
-    expect(saveResult).toMatchObject({ statusCode: 403, code: 'premium_required' });
-    expect(deleteResult).toMatchObject({ statusCode: 403, code: 'premium_required' });
-    expect(entitlementMocks.resolveEntitlements).toHaveBeenCalledTimes(3);
+    expect(getResult).toMatchObject({ statusCode: 403 });
+    expect(saveResult).toMatchObject({ statusCode: 403 });
+    expect(deleteResult).toMatchObject({ statusCode: 403 });
     expect(progressRepository.findByUserAndQuiz).not.toHaveBeenCalled();
     expect(progressRepository.upsert).not.toHaveBeenCalled();
     expect(progressRepository.deleteByUserAndQuiz).not.toHaveBeenCalled();
   });
 
-  it('allows admins to manage private quiz progress without premium entitlement lookup', async () => {
+  it('allows admins to manage personal source progress', async () => {
     const { service, quizRepository, progressRepository } = createService();
     vi.mocked(quizRepository.findSummaryBySlug).mockResolvedValue({
       id: quizId,
-      title: 'Private quiz',
+      title: 'Personal quiz source',
       slug: 'private-quiz',
       author: 'another-user',
       questions: [],
-      isPrivate: true,
+      visibility: 'personal',
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     });
@@ -217,18 +207,17 @@ describe('QuizPlayService progress operations', () => {
 
     assertOk(result);
     expect(result.data).toEqual({ progress: null });
-    expect(entitlementMocks.resolveEntitlements).not.toHaveBeenCalled();
     expect(progressRepository.findByUserAndQuiz).toHaveBeenCalledWith(userId, quizId);
   });
 
-  it('never exposes correct answers when a private quiz author starts playing', async () => {
+  it('never exposes correct answers when a personal source author starts playing', async () => {
     const { service, quizRepository } = createService();
     vi.mocked(quizRepository.findBySlug).mockResolvedValue({
       id: quizId,
-      title: 'Private quiz',
+      title: 'Personal quiz source',
       slug: 'private-quiz',
       author: userId,
-      isPrivate: true,
+      visibility: 'personal',
       questions: [
         {
           id: 'question-1',
@@ -249,14 +238,14 @@ describe('QuizPlayService progress operations', () => {
     expect(result.data.questions[0]).not.toHaveProperty('correctIndexes');
   });
 
-  it('blocks private quiz content for a free non-owner', async () => {
+  it('blocks personal source content for a non-owner', async () => {
     const { service, quizRepository } = createService();
     vi.mocked(quizRepository.findBySlug).mockResolvedValue({
       id: quizId,
-      title: 'Private quiz',
+      title: 'Personal quiz source',
       slug: 'private-quiz',
       author: '507f191e810c19729de860ec',
-      isPrivate: true,
+      visibility: 'personal',
       questions: [
         {
           id: 'question-1',
@@ -273,8 +262,7 @@ describe('QuizPlayService progress operations', () => {
     const result = await service.getQuizForPlay('private-quiz', 'user', userId);
 
     assertFail(result);
-    expect(result).toMatchObject({ statusCode: 403, code: 'premium_required' });
-    expect(entitlementMocks.resolveEntitlements).toHaveBeenCalledWith(userId);
+    expect(result).toMatchObject({ statusCode: 403 });
   });
 
   it('uses the authenticated session id when submitting attempts', async () => {
@@ -284,7 +272,7 @@ describe('QuizPlayService progress operations', () => {
       title: 'Quiz',
       slug: 'quiz',
       author: userId,
-      isPrivate: false,
+      visibility: 'public',
       questions: [
         {
           id: 'question-1',
@@ -351,7 +339,7 @@ describe('QuizPlayService progress operations', () => {
       title: 'Quiz',
       slug: 'quiz',
       author: userId,
-      isPrivate: false,
+      visibility: 'public',
       questions: [
         {
           id: 'question-1',
@@ -386,7 +374,7 @@ describe('QuizPlayService progress operations', () => {
       title: 'Quiz',
       slug: 'quiz',
       author: userId,
-      isPrivate: false,
+      visibility: 'public',
       questions: [
         {
           id: 'question-1',
@@ -415,7 +403,7 @@ describe('QuizPlayService progress operations', () => {
       title: 'Quiz',
       slug: 'quiz',
       author: userId,
-      isPrivate: false,
+      visibility: 'public',
       questions: [
         {
           id: 'question-1',
@@ -465,7 +453,7 @@ describe('QuizPlayService progress operations', () => {
       title: 'Quiz',
       slug: 'quiz',
       author: userId,
-      isPrivate: false,
+      visibility: 'public',
       questions: [
         {
           id: 'question-1',
@@ -538,7 +526,7 @@ describe('QuizPlayService progress operations', () => {
       slug: 'quiz',
       author: userId,
       questions: [],
-      isPrivate: false,
+      visibility: 'public',
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     });
@@ -591,15 +579,15 @@ describe('QuizPlayService progress operations', () => {
     expect(attemptProgressRepository.recordSubmittedAttempt).not.toHaveBeenCalled();
   });
 
-  it('blocks private quiz submissions for non-owners and includes optional description snapshots', async () => {
+  it('blocks personal source submissions for non-owners and includes optional description snapshots', async () => {
     const { service, quizRepository, attemptProgressRepository } = createService();
     vi.mocked(quizRepository.findForPlay)
       .mockResolvedValueOnce({
         id: quizId,
-        title: 'Private quiz',
+        title: 'Personal quiz source',
         slug: 'private-quiz',
         author: '507f191e810c19729de860ec',
-        isPrivate: true,
+        visibility: 'personal',
         questions: [
           {
             id: 'question-1',
@@ -618,7 +606,7 @@ describe('QuizPlayService progress operations', () => {
         slug: 'public-quiz',
         description: 'Snapshot me',
         author: userId,
-        isPrivate: false,
+        visibility: 'public',
         questions: [
           {
             id: 'question-1',
@@ -648,7 +636,7 @@ describe('QuizPlayService progress operations', () => {
       },
     );
     assertFail(blocked);
-    expect(blocked).toMatchObject({ statusCode: 403, code: 'premium_required' });
+    expect(blocked).toMatchObject({ statusCode: 403 });
     expect(attemptProgressRepository.recordSubmittedAttempt).not.toHaveBeenCalled();
 
     const withDescription = await service.submitQuizAttempt(
@@ -673,12 +661,12 @@ describe('QuizPlayService progress operations', () => {
 
   it('maps idempotency conflicts to 409 and unexpected submit failures to 500', async () => {
     const { service, quizRepository, attemptProgressRepository } = createService();
-    const playable = {
+    const playable: Quiz = {
       id: quizId,
       title: 'Quiz',
       slug: 'quiz',
       author: userId,
-      isPrivate: false,
+      visibility: 'public',
       questions: [
         {
           id: 'question-1',
@@ -733,10 +721,10 @@ describe('QuizPlayService progress operations', () => {
     const { service, quizRepository } = createService();
     vi.mocked(quizRepository.findForPlay).mockResolvedValue({
       id: quizId,
-      title: 'Private quiz',
+      title: 'Personal quiz source',
       slug: 'private-quiz',
       author: '507f191e810c19729de860ec',
-      isPrivate: true,
+      visibility: 'personal',
       questions: [
         {
           id: 'question-1',
@@ -756,6 +744,6 @@ describe('QuizPlayService progress operations', () => {
     });
 
     assertFail(result);
-    expect(result).toMatchObject({ statusCode: 403, code: 'premium_required' });
+    expect(result).toMatchObject({ statusCode: 403 });
   });
 });

@@ -30,7 +30,8 @@ const LOGIN_FIELDS =
   'email role password emailVerified avatar displayName passwordChangedAt authVersion ' +
   'failedLoginAttempts failedLoginWindowStart lockedUntil';
 
-const AUTHENTICATED_USER_FIELDS = 'email role avatar displayName passwordChangedAt authVersion';
+const AUTHENTICATED_USER_FIELDS =
+  'email role emailVerified avatar displayName passwordChangedAt authVersion';
 
 interface GoogleProfileUpdates {
   emailVerified: Date;

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Bảng giá | RinKuzu",
-    "description": "Bảng giá RinKuzu: gói miễn phí để học với Ask Rin-chan, tạo quiz từ PDF và luyện tập thích ứng; Premium mở khóa quiz riêng tư cùng hạn mức cao hơn."
+    "description": "Bảng giá RinKuzu: gói miễn phí để học với Ask Rin-chan, tạo quiz từ PDF và luyện tập thích ứng; Premium mở khóa toàn bộ kho Quiz Premium tuyển chọn cùng hạn mức cao hơn."
   },
   "hero": {
     "title": "Giá đơn giản, minh bạch",
@@ -25,7 +25,7 @@
     "everythingInFree": "Mọi thứ trong gói Miễn phí, và thêm:",
     "cta": "Nâng cấp",
     "features": {
-      "privateQuizzes": "Tạo quiz riêng tư",
+      "premiumCatalog": "Toàn bộ kho Quiz Premium tuyển chọn",
       "askRinChan": "Ask Rin-chan tối đa 150 lượt mỗi ngày",
       "pdfQuiz": "Tạo 50 quiz từ PDF mỗi tháng, tối đa 100 trang mỗi tệp",
       "adaptivePath": "Tạo 12 lộ trình học thích ứng mỗi tháng",
@@ -40,7 +40,7 @@
     },
     {
       "q": "Gói Premium hoạt động thế nào?",
-      "a": "Premium mở khóa quiz riêng tư và tăng hạn mức sử dụng AI. Bạn thanh toán một lần cho thời hạn hiển thị tại trang thanh toán; gói không tự động gia hạn và quyền Premium duy trì đến ngày hết hạn được hiển thị."
+      "a": "Premium mở khóa toàn bộ kho Quiz Premium tuyển chọn và tăng hạn mức sử dụng AI. Tài khoản miễn phí có thể mở vĩnh viễn từng quiz bằng credit nhận từ đóng góp được duyệt. Bạn thanh toán một lần cho thời hạn hiển thị tại trang thanh toán; gói không tự động gia hạn và quyền Premium duy trì đến ngày hết hạn được hiển thị."
     },
     {
       "q": "Tôi có thể đổi gói bất cứ lúc nào không?",

@@ -18,6 +18,8 @@ import {
   buildAdaptiveUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
+import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
+import { premiumQuizErrorResponse } from '@/lib/api/premium-quiz';
 
 const quizService = getQuizService();
 
@@ -26,6 +28,7 @@ async function markDraftSubmitted(
   quizId: string,
   userId: string,
   userRole: 'admin' | 'user' | null | undefined,
+  retainSource: boolean,
 ): Promise<void> {
   try {
     const response = await fetch(buildAdaptiveUrl(`/quiz/drafts/${draftId}/submit`), {
@@ -34,7 +37,7 @@ async function markDraftSubmitted(
         ...buildAdaptiveServiceHeaders(userId, userRole),
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ quiz_id: quizId }),
+      body: JSON.stringify({ quiz_id: quizId, retain_source: retainSource }),
       cache: 'no-store',
       signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
     });
@@ -63,7 +66,11 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
         fields: input.fields,
       });
     }
-    const { title, folderId, description, questions, isPrivate } = input.data;
+    const { title, folderId, description, questions, submitToPremium } = input.data;
+    const premiumService = getPremiumQuizService();
+    if (submitToPremium) {
+      await premiumService.assertCanContribute(userId);
+    }
     const warnings = getQuestionListWarnings(questions.length);
 
     // Idempotency guard: if the draft was already submitted (e.g. a retried
@@ -78,6 +85,18 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
         session.user.role,
       );
       if (existing.success && existing.data) {
+        if (submitToPremium) {
+          await premiumService.createSubmission(userId, {
+            quizId: existingDraft.submittedQuizId,
+            rightsAttested: true,
+            ...(existingDraft.pdf.fileHash
+              ? { documentFingerprint: existingDraft.pdf.fileHash }
+              : {}),
+            ...(existingDraft.pdf.retainedForPremium && existingDraft.pdf.s3Key
+              ? { sourceObjectKey: existingDraft.pdf.s3Key }
+              : {}),
+          });
+        }
         return apiOk({
           quizId: existingDraft.submittedQuizId,
           slug: existing.data.slug,
@@ -92,11 +111,23 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
       description,
       folderId: folderId ?? null,
       questions,
-      isPrivate,
+      submitToPremium,
     });
 
     const quizId = quiz.id;
-    await markDraftSubmitted(id, quizId, userId, session.user.role);
+    await markDraftSubmitted(id, quizId, userId, session.user.role, submitToPremium);
+    if (submitToPremium) {
+      const retainedDraft = await fetchQuizDraftServer(id, userId);
+      if (!retainedDraft || !retainedDraft.pdf.retainedForPremium || !retainedDraft.pdf.s3Key) {
+        throw new QuizDraftSynchronizationError(id, quizId);
+      }
+      await premiumService.createSubmission(userId, {
+        quizId,
+        rightsAttested: true,
+        sourceObjectKey: retainedDraft.pdf.s3Key,
+        ...(retainedDraft.pdf.fileHash ? { documentFingerprint: retainedDraft.pdf.fileHash } : {}),
+      });
+    }
 
     return apiOk({
       quizId,
@@ -105,6 +136,9 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
     });
   } catch (error) {
     logger.error({ error }, 'Submit draft error');
+    if (error instanceof Error && error.name === 'PremiumQuizError') {
+      return premiumQuizErrorResponse(error);
+    }
     if (error instanceof QuizCreationError) {
       const status = error.code === 'premium_required' ? 403 : 400;
       const code = error.code === 'premium_required' ? 'premium_required' : 'validation_error';

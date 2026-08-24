@@ -28,6 +28,8 @@ export interface AttemptPersistenceRecord {
   user?: MongoIdLike | AttemptUserPersistenceRecord | null;
   guestEmail?: string;
   quiz: MongoIdLike | AttemptQuizPersistenceRecord;
+  premiumSubmission?: MongoIdLike;
+  premiumSnapshotHash?: string;
   /** Present on stored attempts; read pipelines project it into `quiz`. */
   quizSnapshot?: EmbeddedAttemptQuizSnapshotPersistenceRecord;
   answers: SelectedAnswerPersistenceRecord[];

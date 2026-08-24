@@ -18,21 +18,21 @@ export interface CreateQuizDraftInputDto {
   folderId?: QuizDraftCreateTransportDto['category_id'];
   description?: QuizDraftCreateTransportDto['description'];
   prompt?: QuizDraftCreateTransportDto['prompt'];
-  isPrivate?: boolean;
+  submitToPremium?: boolean;
 }
 
 export interface CreateManualQuizDraftInputDto {
   title: AdaptiveSchemas['QuizManualDraftCreateRequest']['title'];
   description?: AdaptiveSchemas['QuizManualDraftCreateRequest']['description'];
   folderId?: AdaptiveSchemas['QuizManualDraftCreateRequest']['category_id'];
-  isPrivate?: AdaptiveSchemas['QuizManualDraftCreateRequest']['is_private'];
+  submitToPremium?: AdaptiveSchemas['QuizManualDraftCreateRequest']['submit_to_premium'];
 }
 
 export interface PatchQuizDraftInputDto {
   title?: string;
   description?: string;
   folderId?: string | null;
-  isPrivate?: boolean;
+  submitToPremium?: boolean;
   questions?: SubmitQuizDraftRequestDto['questions'];
   expectedRevision: number;
 }
@@ -43,12 +43,23 @@ export interface SubmitQuizDraftResultDto {
   warnings: string[];
 }
 
-export const submitQuizDraftRequestSchema = z.object({
-  title: z.string().trim().min(1, 'Title is required').max(200),
-  description: z.string().trim().max(1000).optional(),
-  folderId: objectIdSchema.nullable().optional(),
-  questions: questionListSchema,
-  isPrivate: z.boolean(),
-});
+export const submitQuizDraftRequestSchema = z
+  .strictObject({
+    title: z.string().trim().min(1, 'Title is required').max(200),
+    description: z.string().trim().max(1000).optional(),
+    folderId: objectIdSchema.nullable().optional(),
+    questions: questionListSchema,
+    submitToPremium: z.boolean(),
+    rightsAttested: z.boolean().optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.submitToPremium && value.rightsAttested !== true) {
+      context.addIssue({
+        code: 'custom',
+        path: ['rightsAttested'],
+        message: 'You must confirm you have the right to share Premium quiz content',
+      });
+    }
+  });
 
 export type SubmitQuizDraftRequestDto = z.infer<typeof submitQuizDraftRequestSchema>;

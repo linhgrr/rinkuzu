@@ -65,7 +65,7 @@ describe('SubscriptionPage plan comparison', () => {
     await user.click(screen.getByRole('button', { name: 'subscription:subscribe' }));
     expect(routerPushMock).toHaveBeenCalledWith('/checkout?plan=premium-monthly');
     expect(screen.getByText('pricing:free.features.askRinChan')).toBeTruthy();
-    expect(screen.getByText('pricing:premium.features.privateQuizzes')).toBeTruthy();
+    expect(screen.getByText('pricing:premium.features.premiumCatalog')).toBeTruthy();
   });
 
   it('marks the paid card as current for an active Premium user', async () => {

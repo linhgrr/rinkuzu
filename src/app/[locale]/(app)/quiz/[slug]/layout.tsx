@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       return defaultMetadata;
     }
 
-    const isIndexable = !quiz.isPrivate;
+    const isIndexable = quiz.visibility === 'public';
     return buildLocalizedMetadata({
       locale,
       path: `/quiz/${slug}`,

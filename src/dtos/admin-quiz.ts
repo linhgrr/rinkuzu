@@ -3,7 +3,7 @@ import type { PaginationMeta } from '@/dtos/common';
 import type { QuizQuestionDto } from '@/dtos/quiz';
 import { objectIdSchema } from '@/lib/validation/common';
 
-const adminQuizVisibilitySchema = z.enum(['all', 'public', 'private']);
+const adminQuizVisibilitySchema = z.enum(['all', 'public', 'personal']);
 
 export const adminQuizListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -33,7 +33,7 @@ export interface AdminQuizListItemDto {
   slug: string;
   author: AdminQuizAuthorDto;
   folder?: string | null;
-  isPrivate: boolean;
+  visibility: 'public' | 'personal';
   questionCount: number;
   createdAt: string;
   updatedAt: string;

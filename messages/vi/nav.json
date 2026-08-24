@@ -14,6 +14,7 @@
   "signOut": "Đăng xuất",
   "getStarted": "Bắt đầu",
   "premium": "Premium",
+  "premiumQuizzes": "Quiz Premium",
   "history": "Lịch sử",
   "review": "Ôn tập",
   "bookmarks": "Đã lưu",
@@ -26,6 +27,7 @@
   "expandSidebar": "Mở rộng thanh bên",
   "exploreQuizzes": "Khám phá Quiz",
   "quizManagement": "Quản lý Quiz",
+  "premiumReview": "Duyệt Quiz Premium",
   "userManagement": "Quản lý người dùng",
   "subscriptions": "Gói đăng ký",
   "pricingPlans": "Bảng giá",
@@ -59,5 +61,8 @@
   "uploadSubjectAria": "Tải lên môn học",
   "toggleUserMenu": "Mở menu người dùng",
   "helpSupport": "Trợ giúp & Hỗ trợ",
-  "skipToContent": "Chuyển đến nội dung chính"
+  "skipToContent": "Chuyển đến nội dung chính",
+  "credits": "credit",
+  "creditBalanceLoading": "Đang tải số dư credit",
+  "creditBalanceUnavailable": "Không tải được số dư credit"
 }

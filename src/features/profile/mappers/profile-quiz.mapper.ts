@@ -18,7 +18,7 @@ function toProfileQuizViewModel(quiz: LibraryQuizDto): ProfileQuizViewModel {
     title: quiz.title,
     slug: quiz.slug,
     author: quiz.author,
-    isPrivate: quiz.isPrivate,
+    visibility: quiz.visibility,
     questionCount: quiz.questionCount,
     ownedByMe: quiz.ownedByMe,
     createdAt: quiz.createdAt,

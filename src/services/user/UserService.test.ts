@@ -11,6 +11,14 @@ interface ServiceOverrides {
   userRepository?: Partial<Mocked<IUserRepository>>;
   attemptRepository?: Partial<Mocked<IAttemptRepository>>;
   quizRepository?: Partial<Mocked<IQuizRepository>>;
+  premiumAccessPolicy?: {
+    canAccessAttempt: (
+      context: { userId: string; role?: string },
+      quizId: string,
+      submissionId: string,
+      snapshotHash: string,
+    ) => Promise<boolean>;
+  };
 }
 
 function questionFixture(id: string, correctIndex = 0): QuizQuestion {
@@ -87,7 +95,12 @@ function createService(overrides: ServiceOverrides = {}) {
     userRepository,
     attemptRepository,
     quizRepository,
-    service: new UserService(userRepository, attemptRepository, quizRepository),
+    service: new UserService(
+      userRepository,
+      attemptRepository,
+      quizRepository,
+      overrides.premiumAccessPolicy,
+    ),
   };
 }
 
@@ -122,7 +135,7 @@ describe('UserService', () => {
                 type: 'single',
               },
             ],
-            isPrivate: false,
+            visibility: 'public',
             createdAt: new Date('2026-07-02T00:00:00Z'),
             updatedAt: new Date('2026-07-02T00:00:00Z'),
           },
@@ -421,6 +434,73 @@ describe('UserService', () => {
       expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', {
         guestEmail: 'anon@test.com',
       });
+    });
+
+    it('keeps Premium score visible but locks questions when access has expired', async () => {
+      const canAccessAttempt = vi.fn().mockResolvedValue(false);
+      const { service, attemptRepository } = createService({
+        premiumAccessPolicy: { canAccessAttempt },
+      });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          premiumSubmissionId: 'submission-1',
+          premiumSnapshotHash: 'a'.repeat(64),
+          score: 75,
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Premium Quiz',
+            slug: 'premium-quiz',
+            questions: [questionFixture('question-1')],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
+
+      assertOk(result);
+      expect(canAccessAttempt).toHaveBeenCalledWith(
+        { userId: 'user-1' },
+        'quiz-1',
+        'submission-1',
+        'a'.repeat(64),
+      );
+      expect(result.data).toMatchObject({
+        score: 75,
+        totalQuestions: 1,
+        historyStatus: 'content_locked',
+        answers: [],
+        quiz: { questions: [] },
+      });
+    });
+
+    it('returns the immutable Premium snapshot when entitlement or grant is active', async () => {
+      const canAccessAttempt = vi.fn().mockResolvedValue(true);
+      const { service, attemptRepository } = createService({
+        premiumAccessPolicy: { canAccessAttempt },
+      });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          premiumSubmissionId: 'submission-1',
+          premiumSnapshotHash: 'b'.repeat(64),
+          score: 100,
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Premium Quiz',
+            slug: 'premium-quiz',
+            questions: [questionFixture('question-1')],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
+
+      assertOk(result);
+      expect(result.data.historyStatus).toBe('complete');
+      expect(result.data.quiz.questions).toHaveLength(1);
     });
 
     it('returns 404 when attempt is not found', async () => {

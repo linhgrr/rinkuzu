@@ -10,6 +10,8 @@ declare module 'next-auth' {
     user?: {
       id: string;
       role: UserRole;
+      /** Present after the database-backed session callback; absent on edge-only projection. */
+      emailVerified?: boolean;
       avatar?: string;
       displayName?: string;
     } & DefaultSession['user'];

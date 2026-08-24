@@ -4,6 +4,9 @@ import { logger } from '@/lib/logger';
 import { readAndValidateJson } from '@/lib/api/request';
 import { updateQuizRequestSchema } from '@/dtos/quiz';
 import { createQuizIdRoute } from './quiz-id-route';
+import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
+import { premiumQuizErrorResponse } from '@/lib/api/premium-quiz';
+import { premiumFeatureFlags } from '@/lib/premium-feature-flags';
 
 // GET /api/quizzes/[id] - Get answer-bearing quiz detail for author/admin editing
 export const GET = createQuizIdRoute({
@@ -52,6 +55,9 @@ export const PUT = createQuizIdRoute({
       if (!input.success) {
         return apiErr('validation_error', input.error, 400, input.fields);
       }
+      if (input.data.submitToPremium && !premiumFeatureFlags.contribution) {
+        return apiErr('not_found', 'Premium contributions are not enabled', 404);
+      }
       const quizService = getQuizService();
 
       const result = await quizService.updateQuiz(quizId, input.data, userId, session.user.role);
@@ -60,9 +66,19 @@ export const PUT = createQuizIdRoute({
         return apiServiceErr(result);
       }
 
+      if (input.data.submitToPremium === true) {
+        await getPremiumQuizService().createSubmission(userId, {
+          quizId,
+          rightsAttested: true,
+        });
+      }
+
       return apiOk(result.data);
     } catch (error: unknown) {
       logger.error({ error }, 'Update quiz error');
+      if (error instanceof Error && error.name === 'PremiumQuizError') {
+        return premiumQuizErrorResponse(error);
+      }
       return apiErr('internal_error', 'Internal server error', 500);
     }
   },

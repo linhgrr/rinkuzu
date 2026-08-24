@@ -9,7 +9,7 @@ export interface AttemptDetailViewModel {
   takenAt: string;
   takenAtLabel: string;
   answers: (number | number[])[];
-  historyStatus: 'complete' | 'quiz_modified';
+  historyStatus: 'complete' | 'quiz_modified' | 'content_locked';
   quiz: {
     title: string;
     slug: string;

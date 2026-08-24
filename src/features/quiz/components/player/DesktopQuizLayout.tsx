@@ -6,12 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { QuestionContent } from '@/components/ui/QuestionContent';
-import { OptionImage, QuestionImage } from '@/components/ui/ImageDisplay';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
 import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from 'react-icons/hi';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
+import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
@@ -32,12 +31,6 @@ const QuestionDiscussion = dynamic(
 );
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
-
-interface OptionPreviewProps {
-  src?: string;
-  alt: string;
-  className?: string;
-}
 
 interface DesktopQuizDiscussionControls {
   collapsed: boolean;
@@ -96,23 +89,6 @@ interface DesktopQuizHeaderProps {
   t: TranslateFn;
 }
 
-interface DesktopQuestionCardProps {
-  slug: string;
-  quizTitle: string;
-  currentQuestion: QuizPlayQuestionViewModel;
-  currentQuestionIndex: number;
-  currentAnswer: QuizAnswer | undefined;
-  questionCount: number;
-  onToggleDiscussion: () => void;
-  onSelectAnswer: (index: number) => void;
-  onPrevious: () => void;
-  onNext: () => void;
-  onSubmit: () => Promise<boolean>;
-  submitting: boolean;
-  error: string;
-  t: TranslateFn;
-}
-
 interface DesktopQuestionOverviewProps {
   questions: QuizPlayQuestionViewModel[];
   userAnswers: QuizAnswer[];
@@ -136,24 +112,6 @@ interface DesktopExitModalProps {
   answeredQuestions: number;
   questionCount: number;
   t: TranslateFn;
-}
-
-function isSelectedOption(
-  question: QuizPlayQuestionViewModel,
-  answer: QuizAnswer | undefined,
-  optionIndex: number,
-) {
-  return question.type === 'single'
-    ? answer === optionIndex
-    : Array.isArray(answer) && answer.includes(optionIndex);
-}
-
-function OptionPreview({ src, alt, className }: OptionPreviewProps) {
-  if (!src) {
-    return null;
-  }
-
-  return <OptionImage src={src} alt={alt} {...(className !== undefined ? { className } : {})} />;
 }
 
 function DesktopQuizHeader({
@@ -226,149 +184,6 @@ function DesktopQuizHeader({
         </div>
       </div>
     </div>
-  );
-}
-
-function DesktopQuestionCard({
-  slug,
-  quizTitle,
-  currentQuestion,
-  currentQuestionIndex,
-  currentAnswer,
-  questionCount,
-  onToggleDiscussion,
-  onSelectAnswer,
-  onPrevious,
-  onNext,
-  onSubmit,
-  submitting,
-  error,
-  t,
-}: DesktopQuestionCardProps) {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="text-xl font-semibold [&_p]:m-0 [&_p]:text-xl [&_p]:text-neutral-900">
-              <QuestionContent content={currentQuestion.question} />
-            </div>
-          </div>
-          <div className="ml-4 flex items-center gap-x-2">
-            <ReportQuiz
-              quizSlug={slug}
-              quizTitle={quizTitle}
-              questionId={currentQuestion.id}
-              questionNumber={currentQuestionIndex + 1}
-              questionText={currentQuestion.question}
-            />
-            <Button
-              variant="outline"
-              onClick={onToggleDiscussion}
-              className="border-green-200 text-brand-trust hover:border-green-300 hover:bg-green-50"
-              title={t('discussion')}
-            >
-              {t('discussion')}
-            </Button>
-          </div>
-        </div>
-
-        {currentQuestion.questionImage ? (
-          <div className="mt-4">
-            <QuestionImage
-              src={currentQuestion.questionImage}
-              alt={`Question ${currentQuestionIndex + 1} image`}
-            />
-          </div>
-        ) : null}
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {currentQuestion.options.map((option, index) => {
-            const isSelected = isSelectedOption(currentQuestion, currentAnswer, index);
-
-            return (
-              <label
-                key={option}
-                className={`flex cursor-pointer items-center rounded-lg border-2 p-4 transition-colors ${
-                  isSelected
-                    ? 'border-brand-action bg-orange-50'
-                    : 'border-line hover:border-line-blue'
-                }`}
-              >
-                <input
-                  type={currentQuestion.type === 'single' ? 'radio' : 'checkbox'}
-                  aria-label={`Option ${String.fromCharCode(65 + index)}`}
-                  name={`question-${currentQuestionIndex}`}
-                  value={index}
-                  checked={isSelected}
-                  onChange={() => onSelectAnswer(index)}
-                  className="sr-only"
-                />
-                <div
-                  className={`mr-3 flex size-4 items-center justify-center border-2 ${
-                    currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
-                  } ${isSelected ? 'border-brand-action bg-brand-action' : 'border-control-border'}`}
-                >
-                  {isSelected ? (
-                    currentQuestion.type === 'single' ? (
-                      <div className="size-2 rounded-full bg-white" />
-                    ) : (
-                      <svg className="size-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    )
-                  ) : null}
-                </div>
-                <div className="flex-1">
-                  <div className="text-neutral-900 [&_p]:m-0 [&_p]:text-base [&_p]:text-neutral-900">
-                    <QuestionContent content={option} variant="option" />
-                  </div>
-                  <div className="mt-2">
-                    <OptionPreview
-                      {...(currentQuestion.optionImages?.[index] !== undefined
-                        ? { src: currentQuestion.optionImages[index] }
-                        : {})}
-                      alt={`Option ${String.fromCharCode(65 + index)} image`}
-                    />
-                  </div>
-                </div>
-              </label>
-            );
-          })}
-        </div>
-
-        {error ? (
-          <div className="mt-4 rounded-md bg-red-50 p-3">
-            <div className="text-sm text-red-700">{error}</div>
-          </div>
-        ) : null}
-
-        <div className="mt-8 flex items-center justify-between">
-          <Button variant="outline" onClick={onPrevious} disabled={currentQuestionIndex === 0}>
-            {t('previous')}
-          </Button>
-
-          <div className="text-sm text-neutral-600">
-            {currentQuestionIndex + 1} / {questionCount}
-          </div>
-
-          {currentQuestionIndex === questionCount - 1 ? (
-            <Button onClick={onSubmit} loading={submitting}>
-              {t('submitQuiz')}
-            </Button>
-          ) : (
-            <Button onClick={onNext} disabled={currentQuestionIndex === questionCount - 1}>
-              {t('next')}
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -557,14 +372,30 @@ export function DesktopQuizLayout({
       >
         <div className="flex">
           <div className={`flex-1 ${discussion.collapsed ? '' : 'pr-6'}`}>
-            <DesktopQuestionCard
-              slug={slug}
-              quizTitle={quizTitle}
-              currentQuestion={currentQuestion}
-              currentQuestionIndex={currentQuestionIndex}
-              currentAnswer={userAnswers[currentQuestionIndex]}
+            <QuizQuestionCard
+              question={currentQuestion}
+              questionIndex={currentQuestionIndex}
+              answer={userAnswers[currentQuestionIndex]}
               questionCount={questions.length}
-              onToggleDiscussion={() => setDiscussionCollapsed(!discussion.collapsed)}
+              headerActions={
+                <>
+                  <ReportQuiz
+                    quizSlug={slug}
+                    quizTitle={quizTitle}
+                    questionId={currentQuestion.id}
+                    questionNumber={currentQuestionIndex + 1}
+                    questionText={currentQuestion.question}
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => setDiscussionCollapsed(!discussion.collapsed)}
+                    className="border-green-200 text-brand-trust hover:border-green-300 hover:bg-green-50"
+                    title={t('discussion')}
+                  >
+                    {t('discussion')}
+                  </Button>
+                </>
+              }
               onSelectAnswer={selectAnswer}
               onPrevious={previousQuestion}
               onNext={nextQuestion}

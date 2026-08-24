@@ -529,6 +529,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/premium-quiz/reviews': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Premium Review */
+    post: operations['create_premium_review_api_v1_premium_quiz_reviews_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/premium-quiz/reviews/{job_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Premium Review */
+    get: operations['get_premium_review_api_v1_premium_quiz_reviews__job_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/ocr-keys': {
     parameters: {
       query?: never;
@@ -3159,6 +3193,144 @@ export interface components {
       | 'saint_embeddings'
       | 'theory_generation'
       | 'result_assembly';
+    /** PremiumDuplicateMatchInput */
+    PremiumDuplicateMatchInput: {
+      /** Submissionid */
+      submissionId: string;
+      /** Quizid */
+      quizId: string;
+      /** Title */
+      title: string;
+      /** Similarity */
+      similarity: number;
+      /**
+       * Reason
+       * @enum {string}
+       */
+      reason: 'exact_quiz' | 'shared_questions' | 'fuzzy';
+    };
+    /** PremiumDuplicateReportInput */
+    PremiumDuplicateReportInput: {
+      /** Exactdocumentrewarded */
+      exactDocumentRewarded: boolean;
+      /** Exactquiz */
+      exactQuiz: boolean;
+      /** Sharedquestioncount */
+      sharedQuestionCount: number;
+      /** Highestsimilarity */
+      highestSimilarity: number;
+      /** Matches */
+      matches: components['schemas']['PremiumDuplicateMatchInput'][];
+    };
+    /** PremiumQuestionInput */
+    PremiumQuestionInput: {
+      /** Id */
+      id: string;
+      /** Question */
+      question: string;
+      /** Options */
+      options: string[];
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: 'single' | 'multiple';
+      /** Correctindex */
+      correctIndex?: number | null;
+      /** Correctindexes */
+      correctIndexes?: number[];
+    };
+    /** PremiumReviewCreateRequest */
+    PremiumReviewCreateRequest: {
+      /** Submissionid */
+      submissionId: string;
+      /** Snapshothash */
+      snapshotHash: string;
+      /**
+       * Sourcetype
+       * @enum {string}
+       */
+      sourceType: 'pdf' | 'manual';
+      /** Documentfingerprint */
+      documentFingerprint?: string | null;
+      snapshot: components['schemas']['PremiumSnapshotInput'];
+      duplicateReport: components['schemas']['PremiumDuplicateReportInput'];
+    };
+    /** PremiumReviewCreateResponse */
+    PremiumReviewCreateResponse: {
+      job: components['schemas']['PremiumReviewJobResponse'];
+    };
+    /** PremiumReviewCriterion */
+    PremiumReviewCriterion: {
+      /** Key */
+      key: string;
+      /** Score */
+      score: number;
+      /** Note */
+      note: string;
+    };
+    /** PremiumReviewIssue */
+    PremiumReviewIssue: {
+      /** Questionindex */
+      questionIndex?: number | null;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: 'info' | 'warning' | 'error';
+      /** Code */
+      code: string;
+      /** Message */
+      message: string;
+    };
+    /** PremiumReviewJobResponse */
+    PremiumReviewJobResponse: {
+      /** Jobid */
+      jobId: string;
+      /** Submissionid */
+      submissionId: string;
+      /** Snapshothash */
+      snapshotHash: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'queued' | 'running' | 'completed' | 'failed';
+      result?: components['schemas']['PremiumReviewResult'] | null;
+      /** Error */
+      error?: string | null;
+    };
+    /** PremiumReviewResult */
+    PremiumReviewResult: {
+      /**
+       * Verdict
+       * @enum {string}
+       */
+      verdict: 'pass' | 'needs_review' | 'fail';
+      /** Score */
+      score: number;
+      /** Suggestedcredits */
+      suggestedCredits: number;
+      /** Groundingavailable */
+      groundingAvailable: boolean;
+      /** Summary */
+      summary: string;
+      /** Criteria */
+      criteria: components['schemas']['PremiumReviewCriterion'][];
+      /** Issues */
+      issues: components['schemas']['PremiumReviewIssue'][];
+    };
+    /** PremiumSnapshotInput */
+    PremiumSnapshotInput: {
+      /** Title */
+      title: string;
+      /** Slug */
+      slug: string;
+      /** Description */
+      description?: string | null;
+      /** Questions */
+      questions: components['schemas']['PremiumQuestionInput'][];
+    };
     /** ProcessDocumentRequest */
     ProcessDocumentRequest: {
       /** File Url */
@@ -3273,10 +3445,10 @@ export interface components {
        */
       prompt?: string | null;
       /**
-       * Is Private
+       * Submit To Premium
        * @default false
        */
-      is_private: boolean;
+      submit_to_premium: boolean;
     };
     /** QuizDraftListResponse */
     QuizDraftListResponse: {
@@ -3293,8 +3465,8 @@ export interface components {
       category_id?: string | null;
       /** Questions */
       questions?: components['schemas']['QuizDraftQuestion'][] | null;
-      /** Is Private */
-      is_private?: boolean | null;
+      /** Submit To Premium */
+      submit_to_premium?: boolean | null;
       /** Expected Revision */
       expected_revision?: number | null;
     };
@@ -3308,6 +3480,13 @@ export interface components {
       file_size: number | null;
       /** Page Count */
       page_count: number | null;
+      /** File Hash */
+      file_hash?: string | null;
+      /**
+       * Retained For Premium
+       * @default false
+       */
+      retained_for_premium: boolean;
     };
     /** QuizDraftProgress */
     QuizDraftProgress: {
@@ -3367,8 +3546,8 @@ export interface components {
        * @enum {string}
        */
       source_type: 'pdf' | 'manual';
-      /** Is Private */
-      is_private: boolean;
+      /** Submit To Premium */
+      submit_to_premium: boolean;
       /** Revision */
       revision: number;
       /** Question Count */
@@ -3415,6 +3594,11 @@ export interface components {
     QuizDraftSubmitRequest: {
       /** Quiz Id */
       quiz_id: string;
+      /**
+       * Retain Source
+       * @default false
+       */
+      retain_source: boolean;
     };
     /** QuizManualDraftCreateRequest */
     QuizManualDraftCreateRequest: {
@@ -3425,10 +3609,10 @@ export interface components {
       /** Category Id */
       category_id?: string | null;
       /**
-       * Is Private
+       * Submit To Premium
        * @default false
        */
-      is_private: boolean;
+      submit_to_premium: boolean;
     };
     /** ReadinessResponse */
     ReadinessResponse: {
@@ -4082,6 +4266,19 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['PipelineSessionCreateResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[PremiumReviewCreateResponse] */
+    StandardResponse_PremiumReviewCreateResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PremiumReviewCreateResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -5714,6 +5911,78 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_premium_review_api_v1_premium_quiz_reviews_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PremiumReviewCreateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_PremiumReviewCreateResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_premium_review_api_v1_premium_quiz_reviews__job_id__get: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        job_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_PremiumReviewCreateResponse_'];
         };
       };
       /** @description Validation Error */

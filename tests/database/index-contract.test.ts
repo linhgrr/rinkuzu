@@ -34,6 +34,12 @@ import FolderQuiz from '@/models/FolderQuiz';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
 import QuizProgress from '@/models/QuizProgress';
+import CreditLedger from '@/models/CreditLedger';
+import CreditWallet from '@/models/CreditWallet';
+import PremiumPlaySession from '@/models/PremiumPlaySession';
+import PremiumQuizAccessGrant from '@/models/PremiumQuizAccessGrant';
+import PremiumQuizSubmission from '@/models/PremiumQuizSubmission';
+import PremiumReviewJob from '@/models/PremiumReviewJob';
 import Report from '@/models/Report';
 import Subscription from '@/models/Subscription';
 import User from '@/models/User';
@@ -63,6 +69,12 @@ const MODELS = {
   promotionredemptions: PromotionRedemption,
   promotionusercounters: PromotionUserCounter,
   questionprogresses: QuestionProgress,
+  creditledgers: CreditLedger,
+  creditwallets: CreditWallet,
+  premiumplaysessions: PremiumPlaySession,
+  premiumquizaccessgrants: PremiumQuizAccessGrant,
+  premiumquizsubmissions: PremiumQuizSubmission,
+  premiumreviewjobs: PremiumReviewJob,
   quizzes: Quiz,
   quizprogresses: QuizProgress,
   reports: Report,
@@ -137,7 +149,7 @@ describe('database index contract registry', () => {
   it('keeps every legacy removal in hide-before-drop lifecycle', () => {
     const deprecated = INDEX_CONTRACT.filter((entry) => entry.lifecycle === 'deprecated_hidden');
 
-    expect(deprecated).toHaveLength(12);
+    expect(deprecated).toHaveLength(10);
     expect(deprecated.every((entry) => !('hiddenSince' in entry))).toBe(true);
     expect(deprecated.every((entry) => !('dropAfter' in entry))).toBe(true);
     expect(deprecated).toContainEqual(

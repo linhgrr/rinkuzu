@@ -139,7 +139,7 @@ describe('toDashboardViewModel', () => {
       slug: 'algebra',
       author: null,
       folder: null,
-      isPrivate: false,
+      visibility: 'public' as const,
       questionCount: 4,
       createdAt: '2026-07-01T00:00:00.000Z',
       updatedAt: '2026-07-01T00:00:00.000Z',

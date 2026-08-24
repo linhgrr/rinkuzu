@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
+
+const PREMIUM_CONTRIBUTION_ENABLED =
+  process.env.NEXT_PUBLIC_PREMIUM_CONTRIBUTION_ENABLED === 'true';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
@@ -11,7 +14,6 @@ import { Button } from '@/components/ui/Button';
 import { useQuizDraftAutosave } from '@/features/quiz/hooks/useQuizDraftAutosave';
 import { toEditorQuestions } from '@/features/quiz/lib/question-editor-mutations';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
-import { fetchSubscriptionStatusViewModel } from '@/features/subscription/api/subscription-page-api';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { createPdfObjectUrlFromUrl } from '@/lib/pdf';
 import { submitQuizDraft } from '@/lib/quiz/draftApi';
@@ -26,22 +28,16 @@ interface DraftEditPageProps {
 export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
-  const { push } = useRouter();
   const { data: session } = useSession();
+  const { push } = useRouter();
   const removeDraft = useDraftStore((store) => store.removeDraft);
   const [restoredPayload, setRestoredPayload] = useState<
     ReturnType<typeof toInitialAutosavePayload> | undefined
   >();
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
+  const [rightsAttested, setRightsAttested] = useState(false);
   const autosave = useQuizDraftAutosave(initialDraft.id, initialDraft.revision);
   const isManualDraft = initialDraft.sourceType === 'manual';
-
-  const { data: subscriptionStatus } = useSWR(
-    session?.user?.role === 'admin' ? null : 'subscription-status',
-    fetchSubscriptionStatusViewModel,
-  );
-  const canCreatePrivateQuiz =
-    session?.user?.role === 'admin' || subscriptionStatus?.isPremium === true;
 
   const { data: pdfDataUrl } = useSWR(
     pdfUrl ? (['draft-edit-pdf', pdfUrl] as const) : null,
@@ -67,14 +63,18 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
         title: restoredPayload?.title ?? initialDraft.title,
         description: restoredPayload?.description ?? initialDraft.description,
         selectedFolderId: restoredPayload?.selectedFolderId ?? initialDraft.folderId ?? null,
-        isPrivate: restoredPayload?.isPrivate ?? initialDraft.isPrivate,
+        submitToPremium: PREMIUM_CONTRIBUTION_ENABLED
+          ? (restoredPayload?.submitToPremium ?? initialDraft.submitToPremium)
+          : false,
         questions: initialQuestions,
       }}
       {...(pdfUrl !== undefined ? { pdfUrl } : {})}
       {...(pdfDataUrl !== undefined ? { pdfDataUrl } : {})}
       pdfLayout="flush"
       canEdit
-      showPrivateToggle={canCreatePrivateQuiz}
+      showPremiumToggle={PREMIUM_CONTRIBUTION_ENABLED}
+      premiumEligible={session?.user?.emailVerified === true}
+      premiumAttestation={{ checked: rightsAttested, onChange: setRightsAttested }}
       requireQuestions
       headerExtra={
         <span className="text-sm text-neutral-500" aria-live="polite">
@@ -139,11 +139,17 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
         description: t('descriptionOptional'),
         descriptionPlaceholder: t('provideContext'),
         folder: t('folderLabel'),
-        privateLabel: t('privateQuiz'),
-        privateDescription: t('privateQuizDescription'),
+        premiumLabel: t('premiumQuiz'),
+        premiumDescription: t('premiumQuizDescription'),
+        premiumRightsLabel: t('premiumRightsLabel'),
+        premiumRightsDescription: t('premiumRightsDescription'),
+        premiumVerificationRequired: t('premiumVerificationRequired'),
+        verifyEmailCta: t('verifyEmailCta'),
         cancel: tCommon('cancel'),
         submit: t('publishQuiz'),
         submitting: t('publishingQuiz'),
+        premiumSubmit: t('submitPremiumQuiz'),
+        premiumSubmitting: t('submittingPremiumQuiz'),
         hidePdf: t('hidePDFReference'),
         showPdf: t('showPDFReference'),
         validationTitle: t('validationTitle'),
@@ -169,7 +175,8 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
             folderId: payload.selectedFolderId,
             description: payload.description,
             questions: payload.questions,
-            isPrivate: payload.isPrivate,
+            submitToPremium: payload.submitToPremium,
+            ...(payload.submitToPremium ? { rightsAttested: true } : {}),
           });
           autosave.discardRecovery();
           removeDraft(initialDraft.id);
@@ -192,7 +199,7 @@ function toInitialAutosavePayload(payload: {
   title: string;
   description: string;
   selectedFolderId: string | null;
-  isPrivate: boolean;
+  submitToPremium: boolean;
   questions: QuizDraft['questions'];
 }) {
   return payload;

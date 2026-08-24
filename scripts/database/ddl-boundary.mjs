@@ -91,6 +91,7 @@ export async function scanDatabaseDdlBoundary({
   allowedFiles = [
     'scripts/sync-performance-indexes.mjs',
     'scripts/migrate-first-purchase-eligibility.mjs',
+    'scripts/migrate-premium-quiz-catalog.mjs',
   ],
 }) {
   const allowed = new Set(allowedFiles.map(normalizePath));

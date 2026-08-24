@@ -14,7 +14,7 @@ import type {
   SaveQuizProgressResponseDto,
 } from '@/dtos/quiz';
 import type { Session } from 'next-auth';
-import { checkPrivateQuizAccess, requireQuizReadAccess } from './quiz-helpers';
+import { checkQuizSourceAccess, requireQuizReadAccess } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { QuizProgressDtoMapper } from '@/mappers/quiz/QuizProgressDtoMapper';
@@ -176,8 +176,8 @@ export class QuizPlayService {
       const userIdFromSession = session?.user?.id;
       const userRole = session?.user?.role;
 
-      const privateAccessError = await checkPrivateQuizAccess(quiz, userIdFromSession, userRole);
-      if (privateAccessError) return privateAccessError;
+      const sourceAccessError = await checkQuizSourceAccess(quiz, userIdFromSession, userRole);
+      if (sourceAccessError) return sourceAccessError;
 
       let authenticatedUserId: string | undefined;
       let guestEmail: string | undefined;

@@ -81,7 +81,7 @@ export function useQuizDraftAutosave(draftId: string, initialRevision: number) {
           title: payload.title,
           description: payload.description,
           folderId: payload.selectedFolderId,
-          isPrivate: payload.isPrivate,
+          submitToPremium: payload.submitToPremium,
           questions: payload.questions,
           expectedRevision: revisionRef.current,
         });

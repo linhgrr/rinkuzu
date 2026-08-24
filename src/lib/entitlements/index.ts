@@ -42,7 +42,7 @@ interface TierEntitlements {
 
 const ENTITLEMENT_REGISTRY: Record<Tier, TierEntitlements> = {
   free: {
-    boolean: { private_quiz: false },
+    boolean: { premium_catalog: false },
     constraints: {
       quiz_pdf_pages: 30,
       adaptive_pdf_pages: 30,
@@ -56,7 +56,7 @@ const ENTITLEMENT_REGISTRY: Record<Tier, TierEntitlements> = {
     },
   },
   premium: {
-    boolean: { private_quiz: true },
+    boolean: { premium_catalog: true },
     constraints: {
       quiz_pdf_pages: 100,
       adaptive_pdf_pages: 100,

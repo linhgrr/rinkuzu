@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Pricing | RinKuzu",
-    "description": "RinKuzu pricing: learn with Ask Rin-chan, generate quizzes from PDFs, and practice adaptively for free; Premium unlocks private quizzes and higher limits."
+    "description": "RinKuzu pricing: learn with Ask Rin-chan, generate quizzes from PDFs, and practice adaptively for free; Premium unlocks the full curated Quiz Premium catalog and higher limits."
   },
   "hero": {
     "title": "Simple, Transparent Pricing",
@@ -25,7 +25,7 @@
     "everythingInFree": "Everything in Free, and:",
     "cta": "Upgrade",
     "features": {
-      "privateQuizzes": "Create private quizzes",
+      "premiumCatalog": "Full curated Quiz Premium catalog",
       "askRinChan": "Up to 150 Ask Rin-chan messages per day",
       "pdfQuiz": "50 PDF-to-quiz generations per month, up to 100 pages per file",
       "adaptivePath": "12 adaptive learning paths per month",
@@ -40,7 +40,7 @@
     },
     {
       "q": "How does Premium work?",
-      "a": "Premium unlocks private quizzes and higher AI usage limits. You make a one-time payment for the access period shown at checkout; it does not renew automatically, and your Premium access remains active until the displayed expiry date."
+      "a": "Premium unlocks the full curated Quiz Premium catalog and higher AI usage limits. Free accounts can permanently unlock individual Premium quizzes with credits earned from approved contributions. You make a one-time payment for the access period shown at checkout; it does not renew automatically, and your Premium access remains active until the displayed expiry date."
     },
     {
       "q": "Can I switch plans at any time?",

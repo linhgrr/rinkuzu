@@ -22,7 +22,7 @@ const quiz: Quiz = {
       type: 'single',
     },
   ],
-  isPrivate: true,
+  visibility: 'personal',
   createdAt: new Date('2026-07-01T00:00:00Z'),
   updatedAt: new Date('2026-07-01T01:00:00Z'),
 };
@@ -74,14 +74,14 @@ describe('QuizAdminService', () => {
       page: 1,
       limit: 12,
       search: 'algebra',
-      visibility: 'private',
+      visibility: 'personal',
     });
 
     expect(result.success).toBe(true);
     if (!result.success) return;
     expect(repository.findAll).toHaveBeenCalledWith(
       {
-        isPrivate: true,
+        visibility: 'personal',
         $or: [{ title: expect.any(RegExp) }, { description: expect.any(RegExp) }],
       },
       {
@@ -124,12 +124,41 @@ describe('QuizAdminService', () => {
       questionCount: 1,
     });
     expect(repository.findAll).toHaveBeenCalledWith(
-      {},
+      { visibility: 'public' },
       {
         page: 1,
         limit: 10,
         sort: { createdAt: -1 },
       },
+    );
+  });
+
+  it('never enumerates personal source metadata in community listings', async () => {
+    const repository = createRepository({
+      findAll: vi.fn().mockResolvedValue({
+        items: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: 10,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      }),
+    });
+    const service = new QuizAdminService(repository);
+
+    await service.getQuizzes({
+      page: 1,
+      limit: 10,
+      onlyMine: false,
+      visibility: 'personal',
+    });
+
+    expect(repository.findAll).toHaveBeenCalledWith(
+      { visibility: 'public' },
+      expect.objectContaining({ page: 1, limit: 10 }),
     );
   });
 
@@ -161,7 +190,7 @@ describe('QuizAdminService', () => {
       findAccessById: vi.fn().mockResolvedValue({
         id: quiz.id,
         author: quiz.author,
-        isPrivate: quiz.isPrivate,
+        visibility: quiz.visibility,
       }),
       delete: vi.fn().mockResolvedValue(true),
     });

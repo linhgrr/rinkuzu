@@ -8,7 +8,7 @@ export const FREE_PRICING_FEATURE_KEYS = [
 ] as const;
 
 export const PREMIUM_PRICING_FEATURE_KEYS = [
-  'privateQuizzes',
+  'premiumCatalog',
   'askRinChan',
   'pdfQuiz',
   'adaptivePath',

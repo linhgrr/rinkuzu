@@ -167,7 +167,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
     submitQuizAttemptMock.mockResolvedValueOnce({
       success: false,
       code: 'premium_required',
-      error: 'Premium subscription required to access private quizzes',
+      error: 'Personal quiz sources are only available to their owner or an admin',
       statusCode: 403,
     });
 

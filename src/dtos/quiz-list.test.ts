@@ -15,14 +15,14 @@ describe('quizListQuerySchema', () => {
       quizListQuerySchema.parse({
         folder: 'unfiled',
         mine: 'true',
-        visibility: 'private',
+        visibility: 'personal',
       }),
     ).toEqual({
       folder: 'unfiled',
       page: 1,
       limit: 10,
       mine: true,
-      visibility: 'private',
+      visibility: 'personal',
     });
   });
 

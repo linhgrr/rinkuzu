@@ -55,7 +55,7 @@ export class LearningProgressDtoMapper {
       author,
       folder: quiz.folder,
       questions: [],
-      isPrivate: quiz.isPrivate,
+      visibility: quiz.visibility,
       ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
       questionCount: quiz.questionCount,
       ownedByMe: quiz.ownedByMe,

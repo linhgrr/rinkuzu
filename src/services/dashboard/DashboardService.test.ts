@@ -68,7 +68,7 @@ describe('DashboardService', () => {
     );
     expect(quizRepository.findRecent).toHaveBeenNthCalledWith(
       2,
-      { isPrivate: false, excludeAuthor: 'user-1' },
+      { visibility: 'public', excludeAuthor: 'user-1' },
       expect.objectContaining({ limit: 4, populate: ['author'] }),
     );
   });

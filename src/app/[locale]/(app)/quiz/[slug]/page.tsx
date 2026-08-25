@@ -24,7 +24,6 @@ export default async function QuizPlayerPage({
         slug={slug}
         title={premiumMetadata.title}
         questionCount={premiumMetadata.questionCount}
-        {...(premiumMetadata.description ? { description: premiumMetadata.description } : {})}
       />
     );
   }

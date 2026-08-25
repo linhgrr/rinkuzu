@@ -3,14 +3,18 @@
 import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiResponseError } from '@/lib/api/client';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 
-const { pushMock, saveAnswerMock, startSessionMock, submitSessionMock } = vi.hoisted(() => ({
-  pushMock: vi.fn(),
-  saveAnswerMock: vi.fn(),
-  startSessionMock: vi.fn(),
-  submitSessionMock: vi.fn(),
-}));
+const { pushMock, saveAnswerMock, startSessionMock, submitSessionMock, unlockMock } = vi.hoisted(
+  () => ({
+    pushMock: vi.fn(),
+    saveAnswerMock: vi.fn(),
+    startSessionMock: vi.fn(),
+    submitSessionMock: vi.fn(),
+    unlockMock: vi.fn(),
+  }),
+);
 
 vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
@@ -25,7 +29,7 @@ vi.mock('@/features/quiz/api/premium-quiz-api', () => ({
   savePremiumAnswer: (...args: unknown[]) => saveAnswerMock(...args),
   startPremiumSession: (...args: unknown[]) => startSessionMock(...args),
   submitPremiumSession: (...args: unknown[]) => submitSessionMock(...args),
-  unlockPremiumQuiz: vi.fn(),
+  unlockPremiumQuiz: (...args: unknown[]) => unlockMock(...args),
 }));
 
 describe('PremiumQuizPlayerClient', () => {
@@ -54,6 +58,7 @@ describe('PremiumQuizPlayerClient', () => {
       answers: [null],
     });
     saveAnswerMock.mockResolvedValue({ saved: true });
+    unlockMock.mockResolvedValue({ granted: true, alreadyGranted: false, balance: 0 });
     submitSessionMock.mockResolvedValue({
       attemptId: 'attempt-1',
       score: 100,
@@ -81,5 +86,34 @@ describe('PremiumQuizPlayerClient', () => {
     await waitFor(() =>
       expect(pushMock).toHaveBeenCalledWith('/quiz/premium-quiz/result?attemptId=attempt-1'),
     );
+  });
+
+  it('hides the source subtitle and renders the unlock cost as a credit icon with -1', async () => {
+    startSessionMock.mockRejectedValueOnce(
+      new ApiResponseError({
+        message: 'Premium access required',
+        status: 403,
+        payload: { code: 'premium_required' },
+      }),
+    );
+
+    render(
+      <PremiumQuizPlayerClient
+        quizId="quiz-1"
+        slug="premium-quiz"
+        title="Premium quiz"
+        questionCount={1}
+      />,
+    );
+
+    const unlockButton = await screen.findByRole('button', { name: 'premiumUnlockButton' });
+    expect(screen.queryByText(/LMS HUST Attempt review/i)).not.toBeInTheDocument();
+    expect(unlockButton).toHaveTextContent('-1');
+    expect(unlockButton.querySelector('img')?.getAttribute('src')).toContain(
+      'premium-credit-coin.png',
+    );
+
+    fireEvent.click(unlockButton);
+    await waitFor(() => expect(unlockMock).toHaveBeenCalledWith('quiz-1'));
   });
 });

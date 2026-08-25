@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/Button';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
+import { PremiumCreditCost } from '@/features/quiz/components/PremiumCreditCost';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
 import { ApiResponseError } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -23,7 +24,6 @@ interface PremiumQuizPlayerClientProps {
   quizId: string;
   slug: string;
   title: string;
-  description?: string;
   questionCount: number;
 }
 
@@ -31,7 +31,6 @@ export default function PremiumQuizPlayerClient({
   quizId,
   slug,
   title,
-  description,
   questionCount,
 }: PremiumQuizPlayerClientProps) {
   const t = useTranslations('quiz');
@@ -190,13 +189,18 @@ export default function PremiumQuizPlayerClient({
       <main className="mx-auto max-w-xl px-4 py-16">
         <SurfaceCard className="p-8 text-center">
           <h1 className="text-2xl font-semibold text-ink">{title}</h1>
-          <p className="mt-3 text-sm text-ink-muted">{description}</p>
           <p className="mt-5 rounded-xl bg-brand-trust/5 p-4 text-sm text-ink">
             {t('premiumUnlockDescription')}
           </p>
           {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
-          <Button className="mt-5" loading={loading} onClick={() => void unlock()}>
-            {t('premiumUnlockButton')}
+          <Button
+            className="mt-5"
+            loading={loading}
+            aria-label={t('premiumUnlockButton')}
+            title={t('premiumUnlockButton')}
+            onClick={() => void unlock()}
+          >
+            <PremiumCreditCost />
           </Button>
         </SurfaceCard>
       </main>

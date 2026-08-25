@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { QuestionContent } from '@/components/ui/QuestionContent';
+import { PremiumCreditCost } from '@/features/quiz/components/PremiumCreditCost';
 import {
   fetchPremiumFlashcard,
   revealPremiumFlashcard,
@@ -125,8 +126,14 @@ export function PremiumFlashcardClient({
           <h1 className="text-2xl font-semibold text-ink">{metadata.title}</h1>
           <p className="mt-4 text-sm text-ink-muted">{t('premiumUnlockDescription')}</p>
           {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
-          <Button className="mt-5" loading={loading} onClick={() => void unlock()}>
-            {t('premiumUnlockButton')}
+          <Button
+            className="mt-5"
+            loading={loading}
+            aria-label={t('premiumUnlockButton')}
+            title={t('premiumUnlockButton')}
+            onClick={() => void unlock()}
+          >
+            <PremiumCreditCost />
           </Button>
         </SurfaceCard>
       </main>

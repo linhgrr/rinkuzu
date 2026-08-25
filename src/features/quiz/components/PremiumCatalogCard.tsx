@@ -12,7 +12,6 @@ export function PremiumCatalogCard({ item }: { item: PremiumCatalogItemViewModel
         visibility: 'public',
         questionCount: item.questionCount,
       }}
-      variant="premium"
     />
   );
 }

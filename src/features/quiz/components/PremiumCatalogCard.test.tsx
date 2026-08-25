@@ -22,15 +22,13 @@ vi.mock('@/i18n/navigation', () => ({
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string, values?: { count?: number }) => {
-    if (key === 'catalogQuestionCount') return `${values?.count ?? 0} questions`;
-    if (key === 'catalogBadge') return 'Quiz Premium';
-    if (key === 'catalogAccessHint') return 'Premium or 1 credit to unlock forever';
+    if (key === 'questionCount') return `${values?.count ?? 0} questions`;
     return key;
   },
 }));
 
 describe('PremiumCatalogCard', () => {
-  it('advertises curated access without exposing questions or answers', async () => {
+  it('matches the Explore card without exposing questions or answers', async () => {
     const { container } = render(
       <PremiumCatalogCard
         item={{
@@ -43,9 +41,9 @@ describe('PremiumCatalogCard', () => {
       />,
     );
 
-    expect(screen.getByText('Quiz Premium')).toBeVisible();
     expect(screen.getByText('20 questions')).toBeVisible();
-    expect(screen.getByText('Premium or 1 credit to unlock forever')).toBeVisible();
+    expect(screen.getByText('RinKuzu learner')).toBeVisible();
+    expect(screen.queryByText('Quiz Premium')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Curated algebra/i })).toHaveAttribute(
       'href',
       '/quiz/curated-algebra',

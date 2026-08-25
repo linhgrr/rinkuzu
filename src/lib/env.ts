@@ -126,10 +126,6 @@ const envSchema = z
     NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.url().optional(),
     NEXT_IMAGE_UNOPTIMIZED: z.enum(['true', 'false']).optional(),
-    NEXT_PUBLIC_PREMIUM_CONTRIBUTION_ENABLED: z.enum(['true', 'false']).default('false'),
-    PREMIUM_REVIEW_ENABLED: z.enum(['true', 'false']).default('false'),
-    PREMIUM_CREDIT_UNLOCK_ENABLED: z.enum(['true', 'false']).default('false'),
-    PREMIUM_STRICT_DELIVERY_ENABLED: z.enum(['true', 'false']).default('false'),
   })
   .superRefine((data, ctx) => {
     const mongoDatabaseName = readMongoDatabaseName(data.MONGODB_URI);

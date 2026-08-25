@@ -3,9 +3,6 @@
 import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-
-const PREMIUM_CONTRIBUTION_ENABLED =
-  process.env.NEXT_PUBLIC_PREMIUM_CONTRIBUTION_ENABLED === 'true';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -197,13 +194,13 @@ export function EditQuizPage() {
             title: quiz.title,
             ...(quiz.description !== undefined ? { description: quiz.description } : {}),
             selectedFolderId: quiz.folder,
-            submitToPremium: PREMIUM_CONTRIBUTION_ENABLED && quiz.visibility === 'personal',
+            submitToPremium: quiz.visibility === 'personal',
             questions: quiz.questions,
           }}
           {...(quiz.pdfUrl !== undefined ? { pdfUrl: quiz.pdfUrl } : {})}
           pdfLayout="card"
           canEdit={canEdit}
-          showPremiumToggle={canEdit && PREMIUM_CONTRIBUTION_ENABLED}
+          showPremiumToggle={canEdit}
           premiumEligible={session?.user?.emailVerified === true}
           {...(canEdit
             ? {

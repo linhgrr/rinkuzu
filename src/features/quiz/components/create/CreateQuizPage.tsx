@@ -8,9 +8,6 @@ import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
-
-const PREMIUM_CONTRIBUTION_ENABLED =
-  process.env.NEXT_PUBLIC_PREMIUM_CONTRIBUTION_ENABLED === 'true';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { PdfPanelSkeleton, RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
@@ -730,25 +727,21 @@ export function CreateQuizPage() {
                 dispatch({ type: 'patch', value: { showPDFViewer: !state.showPDFViewer } })
               }
               pdfFile={state.pdfFile}
-              {...(PREMIUM_CONTRIBUTION_ENABLED
-                ? {
-                    privacyControl: {
-                      submitToPremium: state.submitToPremium,
-                      eligible: session?.user?.emailVerified === true,
-                      rightsAttested: state.rightsAttested,
-                      onPremiumChange: (value: boolean) =>
-                        dispatch({
-                          type: 'patch',
-                          value: {
-                            submitToPremium: value,
-                            ...(!value ? { rightsAttested: false } : {}),
-                          },
-                        }),
-                      onRightsChange: (value: boolean) =>
-                        dispatch({ type: 'patch', value: { rightsAttested: value } }),
+              privacyControl={{
+                submitToPremium: state.submitToPremium,
+                eligible: session?.user?.emailVerified === true,
+                rightsAttested: state.rightsAttested,
+                onPremiumChange: (value: boolean) =>
+                  dispatch({
+                    type: 'patch',
+                    value: {
+                      submitToPremium: value,
+                      ...(!value ? { rightsAttested: false } : {}),
                     },
-                  }
-                : {})}
+                  }),
+                onRightsChange: (value: boolean) =>
+                  dispatch({ type: 'patch', value: { rightsAttested: value } }),
+              }}
               selectedFolderId={state.selectedFolderId}
               maxPages={uploadPolicy.maxPages}
               t={t}

@@ -3,9 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
-
-const PREMIUM_CONTRIBUTION_ENABLED =
-  process.env.NEXT_PUBLIC_PREMIUM_CONTRIBUTION_ENABLED === 'true';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
@@ -63,16 +60,14 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
         title: restoredPayload?.title ?? initialDraft.title,
         description: restoredPayload?.description ?? initialDraft.description,
         selectedFolderId: restoredPayload?.selectedFolderId ?? initialDraft.folderId ?? null,
-        submitToPremium: PREMIUM_CONTRIBUTION_ENABLED
-          ? (restoredPayload?.submitToPremium ?? initialDraft.submitToPremium)
-          : false,
+        submitToPremium: restoredPayload?.submitToPremium ?? initialDraft.submitToPremium,
         questions: initialQuestions,
       }}
       {...(pdfUrl !== undefined ? { pdfUrl } : {})}
       {...(pdfDataUrl !== undefined ? { pdfDataUrl } : {})}
       pdfLayout="flush"
       canEdit
-      showPremiumToggle={PREMIUM_CONTRIBUTION_ENABLED}
+      showPremiumToggle
       premiumEligible={session?.user?.emailVerified === true}
       premiumAttestation={{ checked: rightsAttested, onChange: setRightsAttested }}
       requireQuestions

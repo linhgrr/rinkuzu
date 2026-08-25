@@ -6,7 +6,6 @@ import { updateQuizRequestSchema } from '@/dtos/quiz';
 import { createQuizIdRoute } from './quiz-id-route';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 import { premiumQuizErrorResponse } from '@/lib/api/premium-quiz';
-import { premiumFeatureFlags } from '@/lib/premium-feature-flags';
 
 // GET /api/quizzes/[id] - Get answer-bearing quiz detail for author/admin editing
 export const GET = createQuizIdRoute({
@@ -54,9 +53,6 @@ export const PUT = createQuizIdRoute({
       const input = await readAndValidateJson(request, updateQuizRequestSchema);
       if (!input.success) {
         return apiErr('validation_error', input.error, 400, input.fields);
-      }
-      if (input.data.submitToPremium && !premiumFeatureFlags.contribution) {
-        return apiErr('not_found', 'Premium contributions are not enabled', 404);
       }
       const quizService = getQuizService();
 

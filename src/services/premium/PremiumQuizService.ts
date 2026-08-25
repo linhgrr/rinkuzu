@@ -32,7 +32,6 @@ import type {
 import { PremiumQuizError } from '@/entities/PremiumQuizError';
 import { getAuthorId } from '@/services/quiz/quiz-helpers';
 import { can, resolveEntitlements } from '@/lib/entitlements';
-import { premiumFeatureFlags } from '@/lib/premium-feature-flags';
 import { env } from '@/lib/env';
 import {
   copyPremiumAssetToPrivateStorage,
@@ -302,9 +301,6 @@ export class PremiumQuizService {
   ) {}
 
   async assertCanContribute(userId: string): Promise<void> {
-    if (!premiumFeatureFlags.contribution) {
-      throw new PremiumQuizError('not_found', 'Premium contributions are not enabled');
-    }
     if (!(await this.premiumRepository.isVerifiedUser(userId))) {
       throw new PremiumQuizError(
         'email_verification_required',
@@ -377,15 +373,6 @@ export class PremiumQuizService {
   }
 
   async listCatalog(options: PremiumCatalogListOptions): Promise<PremiumCatalogListResult> {
-    if (!premiumFeatureFlags.strictDelivery) {
-      return {
-        items: [],
-        page: options.page,
-        limit: options.limit,
-        totalItems: 0,
-        totalPages: 0,
-      };
-    }
     return this.premiumRepository.listCatalog(options);
   }
 
@@ -396,9 +383,6 @@ export class PremiumQuizService {
   }
 
   async getAdminSourceUrl(id: string): Promise<PremiumSourceUrl> {
-    if (!premiumFeatureFlags.review) {
-      throw new PremiumQuizError('not_found', 'Premium review is not enabled');
-    }
     const submission = await this.getAdminSubmission(id);
     if (!submission.sourceObjectKey) {
       throw new PremiumQuizError('not_found', 'This submission has no retained source PDF');
@@ -415,9 +399,6 @@ export class PremiumQuizService {
     submissionId: string,
     input: DecidePremiumSubmissionRequestDto,
   ): Promise<PremiumDecisionResult> {
-    if (!premiumFeatureFlags.review) {
-      throw new PremiumQuizError('not_found', 'Premium review is not enabled');
-    }
     return this.premiumRepository.decide({
       submissionId,
       reviewerId,
@@ -432,9 +413,6 @@ export class PremiumQuizService {
     requestedBy: string,
     submissionId: string,
   ): Promise<PremiumReviewDispatchPayload> {
-    if (!premiumFeatureFlags.review) {
-      throw new PremiumQuizError('not_found', 'Premium review is not enabled');
-    }
     const submission = await this.getAdminSubmission(submissionId);
     if (!['pending', 'changes_requested'].includes(submission.status)) {
       throw new PremiumQuizError('invalid_state', 'Only reviewable submissions can be evaluated');
@@ -465,9 +443,6 @@ export class PremiumQuizService {
     reviewRequestId: string,
     input: PremiumReviewCallbackRequestDto,
   ): Promise<PremiumQuizSubmission> {
-    if (!premiumFeatureFlags.review) {
-      throw new PremiumQuizError('not_found', 'Premium review is not enabled');
-    }
     return this.premiumRepository.updateReview({
       submissionId,
       snapshotHash: input.snapshotHash,
@@ -494,9 +469,6 @@ export class PremiumQuizService {
     quizId: string,
     idempotencyKey: string,
   ): Promise<PremiumUnlockResult> {
-    if (!premiumFeatureFlags.creditUnlock) {
-      throw new PremiumQuizError('not_found', 'Premium credit unlock is not enabled');
-    }
     return this.premiumRepository.unlock({ userId, quizId, idempotencyKey });
   }
 
@@ -537,7 +509,6 @@ export class PremiumQuizService {
   }
 
   async getCatalogMetadataBySlug(slug: string): Promise<PremiumCatalogMetadata | null> {
-    if (!premiumFeatureFlags.strictDelivery) return null;
     const publication = await this.premiumRepository.findActivePublicationBySlug(slug);
     if (!publication) return null;
     return {
@@ -554,9 +525,6 @@ export class PremiumQuizService {
     context: PremiumAccessContext,
     quizId: string,
   ): Promise<PremiumFlashcardResponse> {
-    if (!premiumFeatureFlags.strictDelivery) {
-      throw new PremiumQuizError('not_found', 'Premium delivery is not enabled');
-    }
     const publication = await this.premiumRepository.findActivePublicationByQuizId(quizId);
     if (!publication) throw new PremiumQuizError('not_found', 'Premium quiz not found');
     if (!(await this.canAccess(context, quizId, publication.authorId))) {
@@ -581,9 +549,6 @@ export class PremiumQuizService {
     sessionId: string,
     cursor: string,
   ): Promise<PremiumFlashcardResponse> {
-    if (!premiumFeatureFlags.strictDelivery) {
-      throw new PremiumQuizError('not_found', 'Premium delivery is not enabled');
-    }
     const decoded = decodeCursor(cursor);
     if (decoded.sessionId !== sessionId || decoded.userId !== userId) {
       throw new PremiumQuizError('invalid_cursor', 'Cursor does not belong to this session');
@@ -607,9 +572,6 @@ export class PremiumQuizService {
     sessionId: string,
     cursor: string,
   ): Promise<PremiumFlashcardRevealResponse> {
-    if (!premiumFeatureFlags.strictDelivery) {
-      throw new PremiumQuizError('not_found', 'Premium delivery is not enabled');
-    }
     const decoded = decodeCursor(cursor);
     if (decoded.sessionId !== sessionId || decoded.userId !== userId) {
       throw new PremiumQuizError('invalid_cursor', 'Cursor does not belong to this session');
@@ -633,9 +595,6 @@ export class PremiumQuizService {
   }
 
   async startSession(context: PremiumAccessContext, quizId: string): Promise<PremiumBatchResponse> {
-    if (!premiumFeatureFlags.strictDelivery) {
-      throw new PremiumQuizError('not_found', 'Premium delivery is not enabled');
-    }
     const publication = await this.premiumRepository.findActivePublicationByQuizId(quizId);
     if (!publication) throw new PremiumQuizError('not_found', 'Premium quiz not found');
     if (!(await this.canAccess(context, quizId, publication.authorId))) {
@@ -660,9 +619,6 @@ export class PremiumQuizService {
     sessionId: string,
     cursor: string,
   ): Promise<PremiumBatchResponse> {
-    if (!premiumFeatureFlags.strictDelivery) {
-      throw new PremiumQuizError('not_found', 'Premium delivery is not enabled');
-    }
     const decoded = decodeCursor(cursor);
     if (decoded.sessionId !== sessionId || decoded.userId !== context.userId) {
       throw new PremiumQuizError('invalid_cursor', 'Cursor does not belong to this session');
@@ -687,9 +643,6 @@ export class PremiumQuizService {
     questionIndex: number,
     answer: PremiumAnswer,
   ): Promise<PremiumPlaySession> {
-    if (!premiumFeatureFlags.strictDelivery) {
-      throw new PremiumQuizError('not_found', 'Premium delivery is not enabled');
-    }
     const session = await this.requireActiveSession(sessionId, userId);
     const publication = await this.premiumRepository.findSubmissionById(session.submissionId);
     const question = publication?.snapshot.questions[questionIndex];
@@ -718,9 +671,6 @@ export class PremiumQuizService {
     sessionId: string,
     idempotencyKey: string,
   ): Promise<PremiumSessionSubmitResult> {
-    if (!premiumFeatureFlags.strictDelivery) {
-      throw new PremiumQuizError('not_found', 'Premium delivery is not enabled');
-    }
     const session = await this.premiumRepository.findSession(sessionId, userId);
     if (!session) throw new PremiumQuizError('session_expired', 'Premium session expired');
     const claim = await this.premiumRepository.claimSessionSubmission(

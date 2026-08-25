@@ -25,7 +25,6 @@ function questionProgress(
     totalReviews: 1,
     totalCorrect: 1,
     history: [],
-    isBookmarked: false,
     notes: '',
     createdAt: now,
     updatedAt: now,

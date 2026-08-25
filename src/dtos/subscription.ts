@@ -1,31 +1,3 @@
-import { z } from 'zod';
-
-export const verifySubscriptionRequestSchema = z.strictObject({
-  orderCode: z.union([
-    z.number().int().positive().safe(),
-    z.string().trim().regex(/^\d+$/, 'Order code must be a positive integer'),
-  ]),
-});
-
-const payosWebhookScalarSchema = z.union([z.string(), z.number()]);
-
-const payosWebhookDataSchema = z
-  .object({
-    orderCode: payosWebhookScalarSchema.optional(),
-    amount: payosWebhookScalarSchema.optional(),
-    reference: z.string().optional(),
-    code: z.string().optional(),
-  })
-  .catchall(z.unknown());
-
-export const payosWebhookRequestSchema = z.strictObject({
-  code: z.string(),
-  desc: z.string(),
-  success: z.boolean(),
-  data: payosWebhookDataSchema,
-  signature: z.string().regex(/^[a-fA-F0-9]{64}$/, 'Signature must be a SHA-256 hex digest'),
-});
-
 interface SubscriptionPlanIdentityDto {
   id: string;
   name: string;
@@ -34,38 +6,6 @@ interface SubscriptionPlanIdentityDto {
 export interface SubscriptionPlanDto extends SubscriptionPlanIdentityDto {
   price: number;
   duration: string;
-}
-
-export interface PaymentRequestDto {
-  orderCode: number;
-  paymentUrl: string;
-  qrCode?: string;
-  amount: number;
-  plan: SubscriptionPlanDto;
-}
-
-export interface VerifiedPaymentDto {
-  orderCode: number;
-  amount: number;
-  reference: string;
-}
-
-export interface SubscriptionActivationDto {
-  success: boolean;
-  subscription: {
-    plan: SubscriptionPlanIdentityDto;
-    startDate: Date;
-    endDate?: Date;
-    isActive: boolean;
-  };
-}
-
-export interface SubscriptionCancellationDto {
-  success: boolean;
-}
-
-export interface PaymentCancellationReconciliationDto {
-  status: 'pending' | 'cancelled' | 'expired' | 'failed' | 'paid';
 }
 
 interface SubscriptionPlanViewDto extends SubscriptionPlanDto {

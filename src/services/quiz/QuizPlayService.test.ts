@@ -62,7 +62,6 @@ function createService() {
     findByEmail: vi.fn(),
     findById: vi.fn(),
     findByIdIncludingDisabled: vi.fn(),
-    findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
     applyAdminMutation: vi.fn(),
     findAll: vi.fn(),

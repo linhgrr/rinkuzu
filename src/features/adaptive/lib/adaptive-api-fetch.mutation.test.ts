@@ -61,7 +61,7 @@ describe('adaptive-api-fetch mutation coverage', () => {
         vi.fn().mockRejectedValue(new DOMException('Timed out', 'TimeoutError')),
       );
 
-      await expect(timedFetch('/api/adaptive/health', { timeoutMs: 5 })).rejects.toMatchObject({
+      await expect(timedFetch('/api/adaptive/ready', { timeoutMs: 5 })).rejects.toMatchObject({
         name: 'AdaptiveApiError',
         code: 'request_aborted',
         message: 'Request timed out or was interrupted',
@@ -121,7 +121,7 @@ describe('adaptive-api-fetch mutation coverage', () => {
         }),
       );
 
-      const pending = timedFetch('/health', { timeoutMs: 30_000, signal: caller.signal });
+      const pending = timedFetch('/ready', { timeoutMs: 30_000, signal: caller.signal });
       caller.abort();
 
       await expect(pending).rejects.toMatchObject({ code: 'request_aborted' });

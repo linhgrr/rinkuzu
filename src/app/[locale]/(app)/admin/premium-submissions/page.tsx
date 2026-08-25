@@ -11,13 +11,10 @@ import {
   decidePremiumSubmission,
   fetchPremiumSubmissions,
   fetchPremiumSourceUrl,
-  pollPremiumReview,
   startPremiumReview,
   type PremiumSubmissionStatusViewModel,
   type PremiumSubmissionViewModel,
 } from '@/features/admin/premium-submissions/api/premium-submissions-api';
-
-const REVIEW_POLL_MS = 1_500;
 
 export default function PremiumSubmissionReviewPage() {
   const t = useTranslations('admin');
@@ -59,13 +56,8 @@ export default function PremiumSubmissionReviewPage() {
     setBusy(`review:${submission.id}`);
     setError('');
     try {
-      const dispatch = await startPremiumReview(submission.id);
-      for (;;) {
-        await new Promise((resolve) => window.setTimeout(resolve, REVIEW_POLL_MS));
-        const updated = await pollPremiumReview(submission.id, dispatch);
-        setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-        if (updated.reviewStatus === 'completed' || updated.reviewStatus === 'failed') break;
-      }
+      const updated = await startPremiumReview(submission.id);
+      setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (reviewError) {
       setError(extractUnknownErrorMessage(reviewError, t('premiumReviewAiError')));
     } finally {

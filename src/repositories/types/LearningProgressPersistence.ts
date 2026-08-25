@@ -46,7 +46,6 @@ export interface QuestionProgressPersistenceRecord {
   totalReviews: number;
   totalCorrect: number;
   history: QuestionReviewProgress['history'];
-  isBookmarked: boolean;
   notes: string;
   createdAt: Date;
   updatedAt: Date;

@@ -22,38 +22,20 @@ export class FolderRepository implements IFolderRepository {
   async listOverviewByOwner(ownerId: string): Promise<FolderOverviewResult> {
     await connectDB();
     const ownerObjectId = new Types.ObjectId(ownerId);
-    const [folders, ownedUnfiledCount, linkedCounts, externalUnfiledCounts] = await Promise.all([
+    const [folders, linkedCounts, unfiledCounts] = await Promise.all([
       FolderModel.aggregate<FolderOverviewPersistenceRecord>([
         { $match: { owner: ownerObjectId } },
-        {
-          $lookup: {
-            from: 'quizzes',
-            let: { folderId: '$_id', ownerId: '$owner' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [{ $eq: ['$folder', '$$folderId'] }, { $eq: ['$author', '$$ownerId'] }],
-                  },
-                },
-              },
-              { $count: 'count' },
-            ],
-            as: 'quizStats',
-          },
-        },
         {
           $project: {
             name: 1,
             owner: 1,
             createdAt: 1,
             updatedAt: 1,
-            quizCount: { $ifNull: [{ $first: '$quizStats.count' }, 0] },
+            quizCount: { $literal: 0 },
           },
         },
         { $sort: { name: 1 } },
       ]),
-      Quiz.countDocuments({ author: ownerObjectId, folder: null }),
       FolderQuiz.aggregate<{ _id: Types.ObjectId; count: number }>([
         { $match: { owner: ownerObjectId } },
         { $group: { _id: '$folder', count: { $sum: 1 } } },
@@ -63,21 +45,17 @@ export class FolderRepository implements IFolderRepository {
         { $group: { _id: '$quiz' } },
         {
           $unionWith: {
+            coll: 'quizzes',
+            pipeline: [{ $match: { author: ownerObjectId } }, { $project: { _id: 1 } }],
+          },
+        },
+        {
+          $unionWith: {
             coll: 'quizprogresses',
             pipeline: [{ $match: { userId: ownerObjectId } }, { $group: { _id: '$quiz' } }],
           },
         },
         { $group: { _id: '$_id' } },
-        {
-          $lookup: {
-            from: 'quizzes',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'quiz',
-          },
-        },
-        { $unwind: '$quiz' },
-        { $match: { 'quiz.author': { $ne: ownerObjectId } } },
         {
           $lookup: {
             from: 'folderquizzes',
@@ -99,17 +77,17 @@ export class FolderRepository implements IFolderRepository {
         { $count: 'count' },
       ]),
     ]);
-    const externalUnfiledCount = externalUnfiledCounts[0]?.count ?? 0;
+    const unfiledCount = unfiledCounts[0]?.count ?? 0;
     const linkedCountByFolder = new Map(linkedCounts.map((item) => [String(item._id), item.count]));
 
     return {
       folders: folders.map((folder) =>
         FolderPersistenceMapper.toOverview({
           ...folder,
-          quizCount: folder.quizCount + (linkedCountByFolder.get(String(folder._id)) ?? 0),
+          quizCount: linkedCountByFolder.get(String(folder._id)) ?? 0,
         }),
       ),
-      unfiledCount: ownedUnfiledCount + externalUnfiledCount,
+      unfiledCount,
     };
   }
 
@@ -186,10 +164,6 @@ export class FolderRepository implements IFolderRepository {
           .lean<{ _id: Types.ObjectId }>();
         if (!folder) return;
 
-        await Quiz.updateMany(
-          { author: ownerObjectId, folder: folderObjectId },
-          { $set: { folder: null } },
-        ).session(session);
         await FolderQuiz.deleteMany({ owner: ownerObjectId, folder: folderObjectId }).session(
           session,
         );
@@ -230,24 +204,13 @@ export class FolderRepository implements IFolderRepository {
   async saveQuizPlacement(
     userId: string,
     quizId: string,
-    quizOwnerId: string,
+    _quizOwnerId: string,
     folderId: string | null,
   ): Promise<void> {
     await connectDB();
     const ownerObjectId = new Types.ObjectId(userId);
     const quizObjectId = new Types.ObjectId(quizId);
     const folderObjectId = folderId ? new Types.ObjectId(folderId) : null;
-
-    if (quizOwnerId === userId) {
-      await Promise.all([
-        Quiz.updateOne(
-          { _id: quizObjectId, author: ownerObjectId },
-          { $set: { folder: folderObjectId } },
-        ),
-        FolderQuiz.deleteOne({ owner: ownerObjectId, quiz: quizObjectId }),
-      ]);
-      return;
-    }
 
     if (!folderObjectId) {
       await FolderQuiz.deleteOne({ owner: ownerObjectId, quiz: quizObjectId });

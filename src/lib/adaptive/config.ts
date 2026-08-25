@@ -2,31 +2,29 @@ import { env } from '@/lib/env';
 import { publicEnv } from '@/lib/public-env';
 import type { UserRole } from '@/types/next-auth';
 
-// Single source of truth for the adaptive service API version. Every upstream
-// path is joined through buildAdaptiveUrl, so bumping the version is a one-line
-// change here. NEXT_PUBLIC_API_URL stays the bare host (no /api).
-const ADAPTIVE_API_BASE_PATH = '/api/v1';
+// Canonical first-party API root. Internal routes are deliberately unversioned:
+// a contract change cuts every caller over atomically instead of keeping
+// multiple runtime generations alive.
+const ADAPTIVE_API_BASE_PATH = '/api';
 
 function resolveAdaptiveApiUrl(): string {
   return publicEnv.NEXT_PUBLIC_API_URL;
 }
 
-// Infra endpoints (health/ready/live/info) live at /api on the backend, NOT
-// under the versioned /api/v1 surface — they describe the service itself, not
-// the versioned contract.
+// Infra endpoints (health/ready/live/info) share the same canonical /api root.
 const ADAPTIVE_API_INFRA_BASE_PATH = '/api';
 
 /**
  * Build a full upstream URL for the adaptive service.
- * @param path version-relative path beginning with "/", e.g. "/history/subjects".
+ * @param path API-relative path beginning with "/", e.g. "/history/subjects".
  */
 export function buildAdaptiveUrl(path: string): string {
   return new URL(`${ADAPTIVE_API_BASE_PATH}${path}`, resolveAdaptiveApiUrl()).toString();
 }
 
 /**
- * Build a full upstream URL for an unversioned infra endpoint.
- * @param path infra path beginning with "/", e.g. "/health".
+ * Build a full upstream URL for an infra endpoint.
+ * @param path infra path beginning with "/", e.g. "/ready".
  */
 export function buildAdaptiveInfraUrl(path: string): string {
   return new URL(`${ADAPTIVE_API_INFRA_BASE_PATH}${path}`, resolveAdaptiveApiUrl()).toString();

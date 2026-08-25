@@ -11,7 +11,7 @@ vi.mock('@/lib/adaptive/proxy', () => ({ proxyAdaptiveRequest: proxyAdaptiveRequ
 
 import { createAdaptiveCachedReadRoute } from '@/app/api/adaptive/cached-read-route';
 
-const request = new NextRequest('http://localhost/api/adaptive/health');
+const request = new NextRequest('http://localhost/api/adaptive/ready');
 const routeContext = { params: Promise.resolve({}) };
 
 describe('createAdaptiveCachedReadRoute', () => {
@@ -25,7 +25,7 @@ describe('createAdaptiveCachedReadRoute', () => {
 
   it('forwards the authenticated health cache policy and infra target', async () => {
     const route = createAdaptiveCachedReadRoute({
-      targetPath: '/health',
+      targetPath: '/ready',
       infra: true,
       revalidateSeconds: 15,
       cacheTag: 'adaptive-health',
@@ -35,7 +35,7 @@ describe('createAdaptiveCachedReadRoute', () => {
 
     expect(proxyAdaptiveRequestMock).toHaveBeenCalledWith(
       request,
-      '/health',
+      '/ready',
       {
         userId: 'user-1',
         userRole: 'user',

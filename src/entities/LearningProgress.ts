@@ -53,16 +53,11 @@ export interface QuestionReviewProgressDraft {
   totalReviews: number;
   totalCorrect: number;
   history: ReviewHistoryEntry[];
-  isBookmarked?: boolean;
   notes?: string;
 }
 
-export interface QuestionReviewProgress extends Omit<
-  QuestionReviewProgressDraft,
-  'isBookmarked' | 'notes'
-> {
+export interface QuestionReviewProgress extends Omit<QuestionReviewProgressDraft, 'notes'> {
   id: string;
-  isBookmarked: boolean;
   notes: string;
   createdAt: Date;
   updatedAt: Date;

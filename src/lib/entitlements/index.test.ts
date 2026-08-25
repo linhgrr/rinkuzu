@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const isUserPremium = vi.fn();
 
-vi.mock('@/lib/subscription-factory', () => ({
-  createSubscriptionService: () => ({ isUserPremium }),
+vi.mock('@/lib/entitlement-factory', () => ({
+  createEntitlementService: () => ({ isUserPremium }),
 }));
 
 import { invalidateEntitlements } from './cache';

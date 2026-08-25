@@ -9,7 +9,7 @@ import type {
   PremiumCatalogListOptions,
   PremiumCatalogListResult,
   PremiumDecisionResult,
-  PremiumReviewJobRecord,
+  PremiumReviewRequestRecord,
   PremiumSubmissionListOptions,
   PremiumSubmissionListResult,
   PremiumUnlockResult,
@@ -139,7 +139,7 @@ interface PremiumSessionSubmitResult {
 }
 
 interface PremiumReviewDispatchPayload {
-  localJob: PremiumReviewJobRecord;
+  reviewRequest: PremiumReviewRequestRecord;
   submissionId: string;
   snapshotHash: string;
   sourceType: PremiumQuizSubmission['sourceType'];
@@ -439,13 +439,13 @@ export class PremiumQuizService {
     if (!['pending', 'changes_requested'].includes(submission.status)) {
       throw new PremiumQuizError('invalid_state', 'Only reviewable submissions can be evaluated');
     }
-    const localJob = await this.premiumRepository.createReviewJob({
+    const reviewRequest = await this.premiumRepository.beginReview({
       submissionId,
       requestedBy,
       snapshotHash: submission.snapshotHash,
     });
     return {
-      localJob,
+      reviewRequest,
       submissionId,
       snapshotHash: submission.snapshotHash,
       sourceType: submission.sourceType,
@@ -460,13 +460,9 @@ export class PremiumQuizService {
     };
   }
 
-  async attachUpstreamReviewJob(localJobId: string, upstreamJobId: string): Promise<void> {
-    await this.premiumRepository.attachUpstreamReviewJob(localJobId, upstreamJobId);
-  }
-
   async syncReview(
     submissionId: string,
-    localJobId: string,
+    reviewRequestId: string,
     input: PremiumReviewCallbackRequestDto,
   ): Promise<PremiumQuizSubmission> {
     if (!premiumFeatureFlags.review) {
@@ -475,7 +471,7 @@ export class PremiumQuizService {
     return this.premiumRepository.updateReview({
       submissionId,
       snapshotHash: input.snapshotHash,
-      jobId: localJobId,
+      jobId: reviewRequestId,
       status: input.status,
       ...(input.result === undefined ? {} : { result: input.result }),
       ...(input.error === undefined ? {} : { error: input.error }),

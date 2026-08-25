@@ -18,10 +18,6 @@ const durationSchema = z
   .trim()
   .refine((value) => DurationUtils.isValidISO8601Duration(value), 'Invalid duration format');
 
-export const createPaymentRequestSchema = z.object({
-  planId: planIdSchema,
-});
-
 export const createPlanRequestSchema = z.strictObject({
   name: z.string().trim().min(1, 'Plan name is required').max(80),
   price: z.number().finite().positive('Plan price must be greater than 0'),

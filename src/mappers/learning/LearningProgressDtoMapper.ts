@@ -87,7 +87,6 @@ export class LearningProgressDtoMapper {
         date: serializeDate(entry.date, 'question.history.date'),
         rating: entry.rating,
       })),
-      isBookmarked: question.isBookmarked,
       notes: question.notes,
       createdAt: serializeDate(question.createdAt, 'question.createdAt'),
       updatedAt: serializeDate(question.updatedAt, 'question.updatedAt'),

@@ -40,7 +40,7 @@ This is an automated/static score, not a WCAG certification.
 
 ### Pipeline polling
 
-- Default `GET /api/v1/pipeline/jobs/{job_id}` uses a compact Beanie projection and excludes `result`, `debug_trace`, and embeddings.
+- Default `GET /api/pipeline/jobs/{job_id}` uses a compact Beanie projection and excludes `result`, `debug_trace`, and embeddings.
 - `include_debug=true` is opt-in. It preserves debug artifacts and result data but replaces embeddings with `concept_embedding_count`.
 - The full loader remains unchanged for create-session/exercise flows that need the complete graph payload.
 

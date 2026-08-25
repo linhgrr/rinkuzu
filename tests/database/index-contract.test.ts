@@ -39,9 +39,7 @@ import CreditWallet from '@/models/CreditWallet';
 import PremiumPlaySession from '@/models/PremiumPlaySession';
 import PremiumQuizAccessGrant from '@/models/PremiumQuizAccessGrant';
 import PremiumQuizSubmission from '@/models/PremiumQuizSubmission';
-import PremiumReviewJob from '@/models/PremiumReviewJob';
 import Report from '@/models/Report';
-import Subscription from '@/models/Subscription';
 import User from '@/models/User';
 import UserProgress from '@/models/UserProgress';
 
@@ -74,11 +72,9 @@ const MODELS = {
   premiumplaysessions: PremiumPlaySession,
   premiumquizaccessgrants: PremiumQuizAccessGrant,
   premiumquizsubmissions: PremiumQuizSubmission,
-  premiumreviewjobs: PremiumReviewJob,
   quizzes: Quiz,
   quizprogresses: QuizProgress,
   reports: Report,
-  subscriptions: Subscription,
   users: User,
   userprogresses: UserProgress,
 };

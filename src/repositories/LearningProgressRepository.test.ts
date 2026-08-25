@@ -142,7 +142,6 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
               slug: 1,
               description: 1,
               author: 1,
-              folder: 1,
               visibility: 1,
               pdfUrl: 1,
               createdAt: 1,
@@ -210,18 +209,13 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
     expect(pipeline).toContainEqual({
       $addFields: {
         authorDoc: { $first: '$authorDoc' },
-        ownedByMe: { $eq: ['$author', expect.any(mongoose.Types.ObjectId)] },
         externalFolder: { $first: '$folderLinks.folder' },
       },
     });
     expect(pipeline).toContainEqual({
       $addFields: {
         effectiveFolder: {
-          $cond: [
-            '$ownedByMe',
-            { $ifNull: ['$folder', null] },
-            { $ifNull: ['$externalFolder', null] },
-          ],
+          $ifNull: ['$externalFolder', null],
         },
         displayDateSort: {
           $ifNull: ['$lastProgressAt', { $ifNull: ['$lastAttemptAt', '$createdAt'] }],
@@ -330,7 +324,6 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
         'author',
         'createdAt',
         'description',
-        'folder',
         'visibility',
         'pdfUrl',
         'questionCount',
@@ -486,7 +479,6 @@ describe('LearningProgressRepository.mutateReviewProgress', () => {
       totalReviews: 0,
       totalCorrect: 0,
       history: [],
-      isBookmarked: false,
       notes: '',
       createdAt: now,
       updatedAt: now,
@@ -607,7 +599,6 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
     totalReviews: 1,
     totalCorrect: 1,
     history: [],
-    isBookmarked: false,
     notes: '',
     createdAt: now,
     updatedAt: now,
@@ -719,7 +710,6 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
         totalReviews: 1,
         totalCorrect: 1,
         history: [],
-        isBookmarked: true,
         notes: 'keep',
       }),
     ).resolves.toMatchObject({ questionId: 'question-1' });
@@ -738,7 +728,6 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
             correctIndexes: [1],
           },
           srsLevel: 1,
-          isBookmarked: true,
           notes: 'keep',
         }),
         $setOnInsert: {
@@ -770,7 +759,6 @@ describe('LearningProgressRepository progress CRUD helpers', () => {
       $set: Record<string, unknown>;
     };
     expect(omittedOptionalUpdate.$set).not.toHaveProperty('questionRef');
-    expect(omittedOptionalUpdate.$set).not.toHaveProperty('isBookmarked');
     expect(omittedOptionalUpdate.$set).not.toHaveProperty('notes');
 
     await expect(

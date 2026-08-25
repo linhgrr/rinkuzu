@@ -82,7 +82,6 @@ export interface DueReviewQuestionDto {
     date: string;
     rating: SRSRating;
   }>;
-  isBookmarked: boolean;
   notes: string;
   createdAt: string;
   updatedAt: string;

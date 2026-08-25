@@ -100,7 +100,7 @@ describe('FolderRepository.listOverviewByOwner', () => {
 
     await expect(repository.listOverviewByOwner(ownerId)).resolves.toEqual({
       folders: [],
-      unfiledCount: 5,
+      unfiledCount: 3,
     });
 
     expect(modelMocks.quizFind).not.toHaveBeenCalled();
@@ -138,10 +138,10 @@ describe('FolderRepository.listOverviewByOwner', () => {
         expect.objectContaining({
           id: folderId,
           name: 'Algorithms',
-          quizCount: 5,
+          quizCount: 3,
         }),
       ],
-      unfiledCount: 4,
+      unfiledCount: 0,
     });
   });
 });
@@ -257,20 +257,17 @@ describe('FolderRepository.saveQuizPlacement ownership paths', () => {
     modelMocks.folderQuizUpdateOne.mockResolvedValue({ acknowledged: true });
   });
 
-  it('moves owned quizzes by updating Quiz.folder and clearing FolderQuiz links', async () => {
+  it('moves owned quizzes through the canonical FolderQuiz relation', async () => {
     const repository = new FolderRepository();
 
     await repository.saveQuizPlacement(ownerId, quizId, ownerId, folderId);
 
-    expect(modelMocks.quizUpdateOne).toHaveBeenCalledWith(
-      { _id: new Types.ObjectId(quizId), author: new Types.ObjectId(ownerId) },
+    expect(modelMocks.folderQuizUpdateOne).toHaveBeenCalledWith(
+      { owner: new Types.ObjectId(ownerId), quiz: new Types.ObjectId(quizId) },
       { $set: { folder: new Types.ObjectId(folderId) } },
+      { upsert: true },
     );
-    expect(modelMocks.folderQuizDeleteOne).toHaveBeenCalledWith({
-      owner: new Types.ObjectId(ownerId),
-      quiz: new Types.ObjectId(quizId),
-    });
-    expect(modelMocks.folderQuizUpdateOne).not.toHaveBeenCalled();
+    expect(modelMocks.quizUpdateOne).not.toHaveBeenCalled();
   });
 
   it('unfiles non-owned quizzes by deleting FolderQuiz links only', async () => {
@@ -321,7 +318,7 @@ describe('FolderRepository.deleteOwned cascade', () => {
     });
   });
 
-  it('unfiles owned quizzes, drops FolderQuiz links, and deletes the folder in one transaction', async () => {
+  it('drops canonical FolderQuiz links and deletes the folder in one transaction', async () => {
     const folderObjectId = new Types.ObjectId(folderId);
     const ownerObjectId = new Types.ObjectId(ownerId);
     modelMocks.folderFindOne.mockReturnValueOnce({
@@ -336,10 +333,7 @@ describe('FolderRepository.deleteOwned cascade', () => {
     await expect(repository.deleteOwned(folderId, ownerId)).resolves.toBe(true);
 
     const session = await modelMocks.startSession.mock.results[0]?.value;
-    expect(modelMocks.quizUpdateMany).toHaveBeenCalledWith(
-      { author: ownerObjectId, folder: folderObjectId },
-      { $set: { folder: null } },
-    );
+    expect(modelMocks.quizUpdateMany).not.toHaveBeenCalled();
     expect(modelMocks.folderQuizDeleteMany).toHaveBeenCalledWith({
       owner: ownerObjectId,
       folder: folderObjectId,

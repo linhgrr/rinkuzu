@@ -30,7 +30,6 @@ interface IQuestionProgress extends Document {
     rating: SRSRating;
   }>;
 
-  isBookmarked: boolean;
   notes: string;
 }
 
@@ -68,7 +67,6 @@ const QuestionProgressSchema = new Schema<IQuestionProgress>(
       },
     ],
 
-    isBookmarked: { type: Boolean, default: false },
     notes: { type: String, default: '' },
   },
   {

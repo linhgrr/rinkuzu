@@ -37,7 +37,7 @@ export interface CheckoutOrder {
 }
 
 async function getCsrfToken(): Promise<string> {
-  return (await fetchApiData<{ token: string }>('/api/v1/billing/csrf', { method: 'POST' })).token;
+  return (await fetchApiData<{ token: string }>('/api/billing/csrf', { method: 'POST' })).token;
 }
 
 async function billingMutation<T>(
@@ -61,7 +61,7 @@ export function requestCheckoutQuote(
   planId: string,
   promoCode: string | null,
 ): Promise<CheckoutQuote> {
-  return billingMutation<CheckoutQuote>('/api/v1/billing/quotes', { planId, promoCode });
+  return billingMutation<CheckoutQuote>('/api/billing/quotes', { planId, promoCode });
 }
 
 export function createCheckoutOrder(
@@ -69,26 +69,26 @@ export function createCheckoutOrder(
   idempotencyKey: string,
 ): Promise<CheckoutOrder> {
   return billingMutation<CheckoutOrder>(
-    '/api/v1/billing/orders',
+    '/api/billing/orders',
     { quoteToken },
     { 'Idempotency-Key': idempotencyKey },
   );
 }
 
 export function getCheckoutOrder(orderId: string): Promise<CheckoutOrder> {
-  return fetchApiData<CheckoutOrder>(`/api/v1/billing/orders/${encodeURIComponent(orderId)}`);
+  return fetchApiData<CheckoutOrder>(`/api/billing/orders/${encodeURIComponent(orderId)}`);
 }
 
 export function verifyCheckoutOrder(orderId: string): Promise<CheckoutOrder> {
   return billingMutation<CheckoutOrder>(
-    `/api/v1/billing/orders/${encodeURIComponent(orderId)}/verify`,
+    `/api/billing/orders/${encodeURIComponent(orderId)}/verify`,
     {},
   );
 }
 
 export function cancelCheckoutOrder(orderId: string): Promise<CheckoutOrder> {
   return billingMutation<CheckoutOrder>(
-    `/api/v1/billing/orders/${encodeURIComponent(orderId)}/cancel`,
+    `/api/billing/orders/${encodeURIComponent(orderId)}/cancel`,
     {},
   );
 }

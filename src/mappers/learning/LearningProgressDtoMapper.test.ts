@@ -49,7 +49,6 @@ function dueQuestion(overrides: Partial<QuestionReviewProgress> = {}): QuestionR
     totalReviews: 1,
     totalCorrect: 1,
     history: [{ date: now, rating: 'good' }],
-    isBookmarked: false,
     notes: '',
     createdAt: now,
     updatedAt: now,

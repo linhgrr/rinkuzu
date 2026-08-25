@@ -1,15 +1,15 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, updateSubscriptionByIdMock } = vi.hoisted(() => ({
+const { authMock, revokeEntitlementMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
-  updateSubscriptionByIdMock: vi.fn(),
+  revokeEntitlementMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/subscription-factory', () => ({
-  createSubscriptionService: () => ({
-    updateSubscriptionById: updateSubscriptionByIdMock,
+vi.mock('@/lib/entitlement-admin-factory', () => ({
+  createEntitlementAdminService: () => ({
+    revoke: revokeEntitlementMock,
   }),
 }));
 
@@ -47,30 +47,28 @@ describe('PATCH /api/admin/subscriptions/[id]', () => {
       params: Promise.resolve({ id: 'bad-id' }),
     });
     expect(badId.status).toBe(400);
-    expect(updateSubscriptionByIdMock).not.toHaveBeenCalled();
+    expect(revokeEntitlementMock).not.toHaveBeenCalled();
 
     const badBody = await PATCH(request({ status: 'completed' }), routeContext);
     expect(badBody.status).toBe(400);
-    expect(updateSubscriptionByIdMock).not.toHaveBeenCalled();
+    expect(revokeEntitlementMock).not.toHaveBeenCalled();
   });
 
   it('updates subscription status and maps service failures', async () => {
-    updateSubscriptionByIdMock
+    revokeEntitlementMock
       .mockResolvedValueOnce({
         success: true,
         data: { id: subscriptionId, status: 'cancelled' },
       })
       .mockResolvedValueOnce({
         success: false,
-        error: 'Subscription not found',
+        error: 'Entitlement account not found',
         statusCode: 404,
       });
 
     const ok = await PATCH(request({ status: 'cancelled' }), routeContext);
     expect(ok.status).toBe(200);
-    expect(updateSubscriptionByIdMock).toHaveBeenCalledWith(subscriptionId, {
-      status: 'cancelled',
-    });
+    expect(revokeEntitlementMock).toHaveBeenCalledWith(subscriptionId, 'cancelled');
 
     const missing = await PATCH(request({ status: 'expired' }), routeContext);
     expect(missing.status).toBe(404);

@@ -167,26 +167,6 @@ export function SubscriptionPageSkeleton({ label }: PageSkeletonProps) {
   );
 }
 
-export function PaymentStatusPageSkeleton({ label }: PageSkeletonProps) {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center bg-surface-page px-4 py-8"
-      aria-busy="true"
-      aria-label={label}
-    >
-      <div className="w-full max-w-md rounded-2xl border border-line-blue/30 bg-white p-8 text-center">
-        <Skeleton className="mx-auto size-16 rounded-full" />
-        <Skeleton className="mx-auto mt-6 h-7 w-56 max-w-full rounded-md" />
-        <Skeleton className="mx-auto mt-3 h-5 w-72 max-w-full rounded-md" />
-        <div className="mt-8 space-y-3">
-          <Skeleton className="h-11 rounded-full" />
-          <Skeleton className="h-11 rounded-full" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function QuizResultPageSkeleton({ label }: PageSkeletonProps) {
   return (
     <div className="min-h-screen bg-surface-page px-4 py-8" aria-busy="true" aria-label={label}>

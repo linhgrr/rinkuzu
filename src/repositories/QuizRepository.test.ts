@@ -146,7 +146,7 @@ describe('QuizRepository.findUserQuizzes', () => {
     });
     expect(quizModelMocks.findOne).toHaveBeenCalledWith({ slug: 'algebra-basics' });
     expect(quizModelMocks.select).toHaveBeenCalledWith(
-      '_id title description slug author folder questions visibility pdfUrl tags sourceDraftId createdAt updatedAt',
+      '_id title description slug author questions visibility pdfUrl tags sourceDraftId createdAt updatedAt',
     );
     expect(quizModelMocks.lean).toHaveBeenCalledOnce();
   });
@@ -229,25 +229,28 @@ describe('QuizRepository.findUserQuizzes', () => {
       totalItems: 1,
       itemsPerPage: 10,
     });
-    expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
-      { $match: { author: new Types.ObjectId(userId) } },
-      { $sort: { createdAt: -1 } },
-      {
-        $facet: {
-          items: [
-            { $skip: 10 },
-            { $limit: 10 },
-            {
-              $project: expect.objectContaining({
-                questions: { $literal: [] },
-                questionCount: { $size: { $ifNull: ['$questions', []] } },
-              }),
-            },
-          ],
-          meta: [{ $count: 'totalItems' }],
+    expect(quizModelMocks.aggregate).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ $lookup: expect.objectContaining({ from: 'folderquizzes' }) }),
+        { $match: { author: new Types.ObjectId(userId) } },
+        { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            items: [
+              { $skip: 10 },
+              { $limit: 10 },
+              {
+                $project: expect.objectContaining({
+                  questions: { $literal: [] },
+                  questionCount: { $size: { $ifNull: ['$questions', []] } },
+                }),
+              },
+            ],
+            meta: [{ $count: 'totalItems' }],
+          },
         },
-      },
-    ]);
+      ]),
+    );
     expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
   });
 

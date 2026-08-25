@@ -9,7 +9,7 @@ const configMocks = vi.hoisted(() => ({
       ...(userRole ? { 'X-User-Role': userRole } : {}),
     }),
   ),
-  buildAdaptiveUrl: vi.fn((path: string) => `https://adaptive.test/api/v1/${path}`),
+  buildAdaptiveUrl: vi.fn((path: string) => `https://adaptive.test/api/${path}`),
   resolveAdaptiveProxyTimeoutMs: vi.fn(() => 30_000),
 }));
 
@@ -193,7 +193,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
 
       expect(configMocks.buildAdaptiveUrl).toHaveBeenCalledWith('subjects');
       expect(configMocks.buildAdaptiveInfraUrl).not.toHaveBeenCalled();
-      expect(getFetchUrl()).toBe('https://adaptive.test/api/v1/subjects?page=2&q=math');
+      expect(getFetchUrl()).toBe('https://adaptive.test/api/subjects?page=2&q=math');
       expect(getFetchInit()).toMatchObject({
         method: 'GET',
         cache: 'no-store',
@@ -205,14 +205,14 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
 
     it('routes infra targets through the unversioned adaptive base URL', async () => {
       await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
-        'health',
+        new Request('https://app.test/api/adaptive/ready'),
+        'ready',
         {},
         { infra: true },
       );
 
-      expect(configMocks.buildAdaptiveInfraUrl).toHaveBeenCalledWith('health');
-      expect(getFetchUrl()).toBe('https://adaptive.test/api/health');
+      expect(configMocks.buildAdaptiveInfraUrl).toHaveBeenCalledWith('ready');
+      expect(getFetchUrl()).toBe('https://adaptive.test/api/ready');
     });
 
     it('adds only explicit server-generated internal headers', async () => {
@@ -293,7 +293,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
 
     it('uses a positive options.timeoutMs instead of the configured default', async () => {
       await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
         { timeoutMs: 1_500 },
@@ -305,7 +305,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
 
     it('falls back to the configured timeout when options.timeoutMs is zero or negative', async () => {
       await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
         { timeoutMs: 0 },
@@ -313,7 +313,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
       expect(configMocks.resolveAdaptiveProxyTimeoutMs).toHaveBeenCalledOnce();
 
       await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
         { timeoutMs: -5 },
@@ -544,7 +544,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
         }),
       );
       const okHtml = await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
       );
@@ -565,7 +565,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
         }),
       );
       const badHtml = await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
       );
@@ -670,7 +670,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
       );
 
       const response = await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
       );
@@ -779,7 +779,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
       );
 
       const clientAbort = await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health', { signal: controller.signal }),
+        new Request('https://app.test/api/adaptive/ready', { signal: controller.signal }),
         'health',
         {},
       );
@@ -799,7 +799,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
         Object.assign(new Error('timeout'), { name: 'AbortError' }),
       );
       const timeout = await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
       );
@@ -819,7 +819,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
         new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
       );
       const timeout = await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
       );
@@ -841,7 +841,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
         new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
       );
       const response = await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health', { signal: controller.signal }),
+        new Request('https://app.test/api/adaptive/ready', { signal: controller.signal }),
         'health',
         {},
       );
@@ -856,7 +856,7 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
       vi.mocked(fetch).mockRejectedValueOnce(new Error('network down'));
 
       const response = await proxyAdaptiveRequest(
-        new Request('https://app.test/api/adaptive/health'),
+        new Request('https://app.test/api/adaptive/ready'),
         'health',
         {},
       );

@@ -50,11 +50,7 @@ export class LearningProgressPersistenceMapper {
     const id = serializeId(record._id, 'quiz._id');
     const author = mapAuthor(record.author);
     const ownedByMe = author?.id === context.userId;
-    const folder = ownedByMe
-      ? record.folder
-        ? String(record.folder)
-        : null
-      : context.linkedFolderId;
+    const folder = context.linkedFolderId;
     const activity = resolveQuizLibraryActivity(
       record.createdAt,
       context.lastAttemptAt ?? undefined,
@@ -95,7 +91,6 @@ export class LearningProgressPersistenceMapper {
       totalReviews: record.totalReviews,
       totalCorrect: record.totalCorrect,
       history: record.history,
-      isBookmarked: record.isBookmarked,
       notes: record.notes,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

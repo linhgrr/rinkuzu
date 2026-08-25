@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   connectDB: vi.fn(),
   updateOne: vi.fn(),
+  aggregate: vi.fn(),
   findOne: vi.fn(),
   findOneAndUpdate: vi.fn(),
 }));
@@ -11,6 +12,7 @@ vi.mock('@/lib/mongoose', () => ({ default: mocks.connectDB }));
 vi.mock('@/models/User', () => ({
   default: {
     updateOne: mocks.updateOne,
+    aggregate: mocks.aggregate,
     findOne: mocks.findOne,
     findOneAndUpdate: mocks.findOneAndUpdate,
   },
@@ -30,14 +32,6 @@ function leanChain(result: unknown) {
   };
 }
 
-function findOneAndUpdateChain(result: unknown) {
-  return {
-    select: vi.fn().mockReturnValue({
-      lean: vi.fn().mockResolvedValue(result),
-    }),
-  };
-}
-
 const email = 'user@example.com';
 const activeEmailFilter = { email, ...ACTIVE_ACCOUNT_FILTER };
 
@@ -49,38 +43,37 @@ describe('AccountRepository', () => {
 
   describe('active-state filters on every read/write', () => {
     it('findProfileByEmail filters email + disable:0', async () => {
-      mocks.findOne.mockReturnValue(
-        leanChain({
+      mocks.aggregate.mockResolvedValue([
+        {
           _id: '507f191e810c19729de860ea',
           email,
           role: 'user',
           createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        }),
-      );
+        },
+      ]);
 
       await new AccountRepository().findProfileByEmail(email);
 
-      expect(mocks.findOne).toHaveBeenCalledWith(activeEmailFilter);
+      expect(mocks.aggregate.mock.calls[0]?.[0]?.[0]).toEqual({ $match: activeEmailFilter });
     });
 
     it('updateProfileByEmail filters email + disable:0', async () => {
-      mocks.findOneAndUpdate.mockReturnValue(
-        findOneAndUpdateChain({
+      mocks.updateOne.mockResolvedValue({ matchedCount: 1 });
+      mocks.aggregate.mockResolvedValue([
+        {
           _id: '507f191e810c19729de860ea',
           email,
           role: 'user',
           displayName: 'Rin',
           createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        }),
-      );
+        },
+      ]);
 
       await new AccountRepository().updateProfileByEmail(email, { displayName: 'Rin' });
 
-      expect(mocks.findOneAndUpdate).toHaveBeenCalledWith(
-        activeEmailFilter,
-        { $set: { displayName: 'Rin' } },
-        { new: true },
-      );
+      expect(mocks.updateOne).toHaveBeenCalledWith(activeEmailFilter, {
+        $set: { displayName: 'Rin' },
+      });
     });
 
     it('findCredentialsByEmail filters email + disable:0', async () => {

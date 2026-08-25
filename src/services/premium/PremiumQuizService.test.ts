@@ -116,8 +116,7 @@ function setup() {
     listAdmin: vi.fn(),
     listCatalog: vi.fn(),
     decide: vi.fn(),
-    createReviewJob: vi.fn(),
-    attachUpstreamReviewJob: vi.fn(),
+    beginReview: vi.fn(),
     updateReview: vi.fn(),
     getWalletAndLedger: vi.fn(),
     grantAdminCredits: vi.fn(),
@@ -285,7 +284,7 @@ describe('PremiumQuizService', () => {
     const { service, premiumRepository } = setup();
     const pending = { ...publication(), status: 'pending' as const, active: false };
     premiumRepository.findSubmissionById.mockResolvedValue(pending);
-    premiumRepository.createReviewJob.mockResolvedValue({
+    premiumRepository.beginReview.mockResolvedValue({
       id: '507f191e810c19729de860f1',
       submissionId: pending.id,
       snapshotHash: pending.snapshotHash,
@@ -295,7 +294,7 @@ describe('PremiumQuizService', () => {
     const dispatch = await service.createReviewDispatch('507f191e810c19729de860ef', pending.id);
     expect(dispatch.snapshotHash).toBe(pending.snapshotHash);
     expect(dispatch.snapshot).toEqual(pending.snapshot);
-    expect(premiumRepository.createReviewJob).toHaveBeenCalledWith({
+    expect(premiumRepository.beginReview).toHaveBeenCalledWith({
       submissionId: pending.id,
       requestedBy: '507f191e810c19729de860ef',
       snapshotHash: pending.snapshotHash,

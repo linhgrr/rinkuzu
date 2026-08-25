@@ -23,7 +23,3 @@ export interface SubscriptionPageViewModel {
   currentSubscription: CurrentSubscriptionViewModel | null;
   isPremium: boolean;
 }
-
-export interface SubscriptionStatusViewModel {
-  isPremium: boolean;
-}

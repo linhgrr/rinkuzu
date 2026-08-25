@@ -1,6 +1,6 @@
 import type { PublicProfileUser, User, UserSubscriptionSnapshot } from '@/entities/User';
 import { serializeId } from '@/lib/mongo-id';
-import { mapEmbeddedSubscription } from '@/repositories/mappers/SubscriptionPersistenceMapper';
+import { mapEntitlementProjection } from '@/repositories/mappers/EntitlementProjectionPersistenceMapper';
 import { mapOptionalEditableProfileFields } from '@/repositories/mappers/mapOptionalEditableProfileFields';
 import type {
   PublicProfileUserPersistenceRecord,
@@ -15,7 +15,7 @@ import {
 export function toUserSubscription(
   record: UserSubscriptionPersistenceRecord,
 ): UserSubscriptionSnapshot {
-  return mapEmbeddedSubscription(record);
+  return mapEntitlementProjection(record);
 }
 
 function requireDisable(value: unknown): AccountDisableState {

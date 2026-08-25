@@ -58,7 +58,7 @@ const doctorConfig = {
           'src/repositories/AdminBillingRepository.ts',
           'src/repositories/BillingRepository.ts',
           'src/repositories/LearningProgressRepository.ts',
-          'src/repositories/SubscriptionRepository.ts',
+          'src/repositories/EntitlementLedgerRepository.ts',
         ],
         rules: ['react-doctor/server-sequential-independent-await'],
       },

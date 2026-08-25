@@ -75,18 +75,17 @@ export interface PremiumDecisionResult {
   rewardLocked: boolean;
 }
 
-export interface PremiumReviewJobData {
+export interface PremiumReviewRequestData {
   submissionId: string;
   requestedBy: string;
   snapshotHash: string;
 }
 
-export interface PremiumReviewJobRecord {
+export interface PremiumReviewRequestRecord {
   id: string;
   submissionId: string;
   snapshotHash: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
-  upstreamJobId?: string;
 }
 
 export interface UpdatePremiumReviewData {
@@ -161,8 +160,7 @@ export interface IPremiumQuizRepository {
   listAdmin(options: PremiumSubmissionListOptions): Promise<PremiumSubmissionListResult>;
   listCatalog(options: PremiumCatalogListOptions): Promise<PremiumCatalogListResult>;
   decide(data: PremiumDecisionData): Promise<PremiumDecisionResult>;
-  createReviewJob(data: PremiumReviewJobData): Promise<PremiumReviewJobRecord>;
-  attachUpstreamReviewJob(jobId: string, upstreamJobId: string): Promise<void>;
+  beginReview(data: PremiumReviewRequestData): Promise<PremiumReviewRequestRecord>;
   updateReview(data: UpdatePremiumReviewData): Promise<PremiumQuizSubmission>;
   getWalletAndLedger(userId: string, limit: number): Promise<CreditLedgerListResult>;
   grantAdminCredits(data: AdminCreditGrantData): Promise<AdminCreditGrantResult>;

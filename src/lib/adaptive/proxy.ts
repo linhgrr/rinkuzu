@@ -36,7 +36,7 @@ type ProxyOptions = {
     tags: string[];
   };
   // Target an unversioned infra endpoint (/api/<path>) instead of the
-  // versioned /api/v1 surface. Used for health/ready/live/info.
+  // canonical /api surface. Used for health/ready/live/info.
   infra?: boolean;
   // Trusted server-generated headers only. Never populate this from request headers.
   internalHeaders?: Readonly<Record<string, string>>;

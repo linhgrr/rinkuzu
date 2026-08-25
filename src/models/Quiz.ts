@@ -5,7 +5,6 @@ import { MAX_QUESTIONS_PER_QUIZ } from '@/lib/validation/question';
 interface QuizDocument extends Document {
   title: string;
   description?: string;
-  folder?: Types.ObjectId | null;
   author: Types.ObjectId;
   slug: string;
   questions: QuizQuestionDocument[];
@@ -28,11 +27,6 @@ const QuizSchema = new Schema<QuizDocument>(
       type: String,
       trim: true,
       maxlength: [1000, 'Description cannot exceed 1000 characters'],
-    },
-    folder: {
-      type: Schema.Types.ObjectId,
-      ref: 'Folder',
-      default: null,
     },
     author: {
       type: Schema.Types.ObjectId,
@@ -80,7 +74,6 @@ QuizSchema.index({ createdAt: -1 });
 QuizSchema.index({ visibility: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, visibility: 1, createdAt: -1 });
-QuizSchema.index({ author: 1, folder: 1, createdAt: -1 });
 QuizSchema.index(
   { sourceDraftId: 1 },
   {

@@ -7,7 +7,7 @@ import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
 import { buildFaqSchema } from '@/lib/structured-data';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { createSubscriptionService } from '@/lib/subscription-factory';
+import { createPlanCatalogService } from '@/lib/plan-catalog-factory';
 import { formatVndCurrency } from '@/lib/formatters';
 import { DurationUtils } from '@/types/subscription';
 import {
@@ -173,7 +173,7 @@ export default async function PricingPage({ params }: Props) {
 
 async function loadPremiumPlans(): Promise<PremiumPlanView[]> {
   try {
-    const plans = await createSubscriptionService().getSubscriptionPlans();
+    const plans = await createPlanCatalogService().listActive();
     const premiumPlans: PremiumPlanView[] = [];
     for (const plan of plans) {
       if (plan.price <= 0) continue;

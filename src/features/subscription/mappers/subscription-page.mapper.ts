@@ -6,7 +6,6 @@ import type {
   CurrentSubscriptionViewModel,
   SubscriptionPageViewModel,
   SubscriptionPlanViewModel,
-  SubscriptionStatusViewModel,
 } from '@/features/subscription/types/subscription-page-view-model';
 import { formatDate, formatVndCurrency } from '@/lib/formatters';
 
@@ -45,14 +44,6 @@ export function toSubscriptionPageViewModel(
   return {
     plans: plans.plans.map(toSubscriptionPlanViewModel),
     currentSubscription: toCurrentSubscriptionViewModel(status),
-    isPremium: status.isPremium,
-  };
-}
-
-export function toSubscriptionStatusViewModel(
-  status: SubscriptionStatusResponseDto,
-): SubscriptionStatusViewModel {
-  return {
     isPremium: status.isPremium,
   };
 }

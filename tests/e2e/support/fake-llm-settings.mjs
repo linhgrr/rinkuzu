@@ -88,7 +88,7 @@ export async function handleFakeLlmSettingsRequest({
   url,
   userId,
 }) {
-  const prefix = '/api/v1/admin/llm-settings';
+  const prefix = '/api/admin/llm-settings';
   if (!url.pathname.startsWith(prefix)) return false;
 
   const state = stateFor(userId);
@@ -117,7 +117,7 @@ export async function handleFakeLlmSettingsRequest({
   }
 
   const keyCollectionMatch = url.pathname.match(
-    /^\/api\/v1\/admin\/llm-settings\/providers\/([^/]+)\/keys$/,
+    /^\/api\/admin\/llm-settings\/providers\/([^/]+)\/keys$/,
   );
   if (request.method === 'POST' && keyCollectionMatch) {
     const providerId = decodeURIComponent(keyCollectionMatch[1]);
@@ -144,7 +144,7 @@ export async function handleFakeLlmSettingsRequest({
   }
 
   const modelCollectionMatch = url.pathname.match(
-    /^\/api\/v1\/admin\/llm-settings\/providers\/([^/]+)\/models$/,
+    /^\/api\/admin\/llm-settings\/providers\/([^/]+)\/models$/,
   );
   if (request.method === 'POST' && modelCollectionMatch) {
     const providerId = decodeURIComponent(modelCollectionMatch[1]);

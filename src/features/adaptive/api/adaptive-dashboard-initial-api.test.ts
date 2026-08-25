@@ -10,7 +10,7 @@ const {
 } = vi.hoisted(() => ({
   fetchApiDataMock: vi.fn(),
   buildAdaptiveServiceHeadersMock: vi.fn(),
-  buildAdaptiveUrlMock: vi.fn((path: string) => `https://adaptive.test/api/v1${path}`),
+  buildAdaptiveUrlMock: vi.fn((path: string) => `https://adaptive.test/api${path}`),
   resolveAdaptiveProxyTimeoutMsMock: vi.fn(),
   loggerErrorMock: vi.fn(),
 }));
@@ -108,7 +108,7 @@ beforeEach(() => {
     'x-user-id': USER_ID,
     authorization: 'Bearer test',
   });
-  buildAdaptiveUrlMock.mockImplementation((path: string) => `https://adaptive.test/api/v1${path}`);
+  buildAdaptiveUrlMock.mockImplementation((path: string) => `https://adaptive.test/api${path}`);
   resolveAdaptiveProxyTimeoutMsMock.mockReturnValue(30_000);
 });
 
@@ -135,8 +135,8 @@ describe('fetchAdaptiveDashboardData', () => {
     const [subjectsUrl, subjectsInit] = getCallForPath('/history/subjects');
     const [progressUrl, progressInit] = getCallForPath('/history/subjects/progress?limit=50');
 
-    expect(subjectsUrl).toBe('https://adaptive.test/api/v1/history/subjects');
-    expect(progressUrl).toBe('https://adaptive.test/api/v1/history/subjects/progress?limit=50');
+    expect(subjectsUrl).toBe('https://adaptive.test/api/history/subjects');
+    expect(progressUrl).toBe('https://adaptive.test/api/history/subjects/progress?limit=50');
     expect(subjectsInit).toMatchObject({
       headers: { 'x-user-id': USER_ID, authorization: 'Bearer test' },
       cache: 'no-store',

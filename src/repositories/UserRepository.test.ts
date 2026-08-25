@@ -116,9 +116,6 @@ const userFindOneSelect = userModelMocks.findOneSelect as LooseMock;
 const userFindByIdSelect = userModelMocks.findByIdSelect as LooseMock;
 const userFindOneAndUpdate = userModelMocks.findOneAndUpdate as LooseMock;
 
-const USER_ENTITY_PROJECTION =
-  '_id email name displayName bio avatar role subscription createdAt disable disabledAt disabledBy';
-
 const actorId = '507f191e810c19729de860ea';
 const targetId = '507f191e810c19729de860eb';
 const otherAdminId = '507f191e810c19729de860ec';
@@ -153,13 +150,12 @@ const targetAdminRecord = {
 describe('UserRepository entity projections', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    userModelMocks.findByIdLean.mockResolvedValue(targetUserRecord);
+    userModelMocks.aggregate.mockResolvedValue([targetUserRecord]);
     userModelMocks.findOneLean.mockResolvedValue(targetUserRecord);
-    userModelMocks.listLean.mockResolvedValue([targetUserRecord]);
     userModelMocks.countDocuments.mockResolvedValue(1);
   });
 
-  it('allowlists entity fields and requires disable 0 for single-user reads', async () => {
+  it('projects canonical entitlement accounts and requires disable 0 for single-user reads', async () => {
     const repository = new UserRepository();
     const id = String(targetUserRecord._id);
 
@@ -172,17 +168,20 @@ describe('UserRepository entity projections', () => {
       disable: 0,
     });
 
-    expect(userModelMocks.findOne).toHaveBeenCalledWith({ _id: id, disable: 0 });
-    expect(userModelMocks.findOne).toHaveBeenCalledWith({
-      email: targetUserRecord.email,
-      disable: 0,
+    const firstPipeline = userModelMocks.aggregate.mock.calls[0]?.[0];
+    const secondPipeline = userModelMocks.aggregate.mock.calls[1]?.[0];
+    expect(firstPipeline[0]).toEqual({
+      $match: { _id: new Types.ObjectId(id), disable: 0 },
     });
-    expect(userModelMocks.findOneSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
-    expect(USER_ENTITY_PROJECTION).not.toMatch(/authVersion/);
+    expect(secondPipeline[0]).toEqual({
+      $match: { email: targetUserRecord.email, disable: 0 },
+    });
+    expect(JSON.stringify(firstPipeline)).toContain('entitlementaccounts');
+    expect(JSON.stringify(firstPipeline)).not.toContain('authVersion');
   });
 
   it('returns null when findById or findByEmail misses', async () => {
-    userModelMocks.findOneLean.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    userModelMocks.aggregate.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     const repository = new UserRepository();
 
     await expect(repository.findById(String(targetUserRecord._id))).resolves.toBeNull();
@@ -197,8 +196,11 @@ describe('UserRepository entity projections', () => {
       pagination: { totalItems: 1 },
     });
 
-    expect(userModelMocks.listSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
-    expect(USER_ENTITY_PROJECTION).not.toMatch(/password|token|failedLogin|lockedUntil|lastLogin/i);
+    const pipeline = userModelMocks.aggregate.mock.calls[0]?.[0];
+    expect(JSON.stringify(pipeline)).toContain('entitlementaccounts');
+    expect(JSON.stringify(pipeline)).not.toMatch(
+      /password|token|failedLogin|lockedUntil|lastLogin/i,
+    );
   });
 
   it('loads recent users without a count query and sorts newest first', async () => {
@@ -208,10 +210,9 @@ describe('UserRepository entity projections', () => {
       { email: targetUserRecord.email },
     ]);
 
-    expect(userModelMocks.find).toHaveBeenCalledWith({});
-    expect(userModelMocks.listSelect).toHaveBeenCalledWith(USER_ENTITY_PROJECTION);
-    expect(userModelMocks.sort).toHaveBeenCalledWith({ createdAt: -1 });
-    expect(userModelMocks.limit).toHaveBeenCalledWith(5);
+    const pipeline = userModelMocks.aggregate.mock.calls[0]?.[0];
+    expect(pipeline).toContainEqual({ $sort: { createdAt: -1 } });
+    expect(pipeline).toContainEqual({ $limit: 5 });
     expect(userModelMocks.countDocuments).not.toHaveBeenCalled();
   });
 
@@ -226,13 +227,16 @@ describe('UserRepository entity projections', () => {
       disable: 1,
     });
 
-    expect(userModelMocks.find).toHaveBeenCalledWith({
-      email: { $regex: 'learner', $options: 'i' },
-      role: 'admin',
-      disable: 1,
+    const pipeline = userModelMocks.aggregate.mock.calls[0]?.[0];
+    expect(pipeline[0]).toEqual({
+      $match: {
+        email: { $regex: 'learner', $options: 'i' },
+        role: 'admin',
+        disable: 1,
+      },
     });
-    expect(userModelMocks.skip).toHaveBeenCalledWith(10);
-    expect(userModelMocks.limit).toHaveBeenCalledWith(10);
+    expect(pipeline).toContainEqual({ $skip: 10 });
+    expect(pipeline).toContainEqual({ $limit: 10 });
   });
 
   it('escapes regex metacharacters so admin search is a literal match', async () => {
@@ -244,34 +248,31 @@ describe('UserRepository entity projections', () => {
       search: 'a.b+c*d[e]f^g$h(i)j',
     });
 
-    expect(userModelMocks.find).toHaveBeenCalledWith({
-      email: {
-        $regex: 'a\\.b\\+c\\*d\\[e\\]f\\^g\\$h\\(i\\)j',
-        $options: 'i',
+    expect(userModelMocks.aggregate.mock.calls[0]?.[0]?.[0]).toEqual({
+      $match: {
+        email: {
+          $regex: 'a\\.b\\+c\\*d\\[e\\]f\\^g\\$h\\(i\\)j',
+          $options: 'i',
+        },
       },
     });
 
-    userModelMocks.find.mockClear();
+    userModelMocks.aggregate.mockClear();
     await repository.findAll({ page: 1, limit: 5, search: 'user+admin@example.com' });
-    expect(userModelMocks.find).toHaveBeenCalledWith({
-      email: { $regex: 'user\\+admin@example\\.com', $options: 'i' },
+    expect(userModelMocks.aggregate.mock.calls[0]?.[0]?.[0]).toEqual({
+      $match: { email: { $regex: 'user\\+admin@example\\.com', $options: 'i' } },
     });
   });
 
-  it('requires active disable filter for subscription and public profile reads', async () => {
+  it('requires active disable filter for public profile reads', async () => {
     const repository = new UserRepository();
     const id = String(targetUserRecord._id);
-    userModelMocks.findOneLean
-      .mockResolvedValueOnce({
-        subscription: { planId: 'premium', planName: 'Premium', isActive: true },
-      })
-      .mockResolvedValueOnce({
-        _id: targetUserRecord._id,
-        email: targetUserRecord.email,
-        createdAt: targetUserRecord.createdAt,
-      });
+    userModelMocks.findOneLean.mockResolvedValueOnce({
+      _id: targetUserRecord._id,
+      email: targetUserRecord.email,
+      createdAt: targetUserRecord.createdAt,
+    });
 
-    await repository.findSubscriptionById(id);
     await repository.findPublicProfileById(id);
 
     expect(userModelMocks.findOne).toHaveBeenCalledWith({ _id: id, disable: 0 });

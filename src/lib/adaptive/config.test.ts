@@ -14,16 +14,15 @@ vi.mock('@/lib/env', () => ({
 import { buildAdaptiveInfraUrl, buildAdaptiveServiceHeaders, buildAdaptiveUrl } from './config';
 
 describe('adaptive URL builders', () => {
-  it('versioned paths get the /api/v1 prefix', () => {
+  it('versioned paths get the /api prefix', () => {
     expect(buildAdaptiveUrl('/history/subjects')).toBe(
-      'https://adaptive.example.test/api/v1/history/subjects',
+      'https://adaptive.example.test/api/history/subjects',
     );
   });
 
   it('infra paths get the bare /api prefix (no version)', () => {
-    // Regression guard: health/ready/live/info are unversioned on the backend.
-    // Routing them through buildAdaptiveUrl produced /api/v1/health → 404.
-    expect(buildAdaptiveInfraUrl('/health')).toBe('https://adaptive.example.test/api/health');
+    // Regression guard: ready/live/info are unversioned on the backend.
+    expect(buildAdaptiveInfraUrl('/ready')).toBe('https://adaptive.example.test/api/ready');
   });
 });
 

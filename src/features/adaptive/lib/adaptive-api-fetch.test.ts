@@ -12,7 +12,7 @@ describe('timedFetch', () => {
       vi.fn().mockRejectedValue(new DOMException('Timed out', 'TimeoutError')),
     );
 
-    await expect(timedFetch('/api/adaptive/health', { timeoutMs: 10 })).rejects.toMatchObject({
+    await expect(timedFetch('/api/adaptive/ready', { timeoutMs: 10 })).rejects.toMatchObject({
       code: 'request_aborted',
       retryable: true,
     });
@@ -29,7 +29,7 @@ describe('timedFetch', () => {
       }),
     );
 
-    const request = timedFetch('/api/adaptive/health', {
+    const request = timedFetch('/api/adaptive/ready', {
       timeoutMs: 10_000,
       signal: caller.signal,
     });

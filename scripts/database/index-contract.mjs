@@ -343,11 +343,6 @@ export const INDEX_CONTRACT = Object.freeze([
     visibility: 1,
     createdAt: -1,
   }),
-  required('quizzes.author-folder-recent', 'quizzes', {
-    author: 1,
-    folder: 1,
-    createdAt: -1,
-  }),
   required(
     'quizzes.source-draft',
     'quizzes',
@@ -397,11 +392,6 @@ export const INDEX_CONTRACT = Object.freeze([
     { sourceQuiz: 1, active: 1 },
     { unique: true, partialFilterExpression: { active: true } },
   ),
-  required('premium-review-jobs.submission-recent', 'premiumreviewjobs', {
-    submission: 1,
-    createdAt: -1,
-  }),
-  required('premium-review-jobs.work', 'premiumreviewjobs', { status: 1, updatedAt: 1 }),
   required('credit-wallets.user', 'creditwallets', { user: 1 }, { unique: true }),
   required('credit-ledgers.user-recent', 'creditledgers', { user: 1, createdAt: -1 }),
   required('credit-ledgers.idempotency', 'creditledgers', { idempotencyKey: 1 }, { unique: true }),
@@ -441,26 +431,6 @@ export const INDEX_CONTRACT = Object.freeze([
   required('reports.recent', 'reports', { createdAt: -1 }),
   required('reports.quiz', 'reports', { quizId: 1 }),
 
-  // subscriptions
-  required('subscriptions.user-recent', 'subscriptions', { user: 1, createdAt: -1 }),
-  required('subscriptions.status-recent', 'subscriptions', { status: 1, createdAt: -1 }),
-  required('subscriptions.recent', 'subscriptions', { createdAt: -1 }),
-  required('subscriptions.expiration-scan', 'subscriptions', {
-    status: 1,
-    isActive: 1,
-    endDate: 1,
-  }),
-  required('subscriptions.payos-order', 'subscriptions', { payosOrderId: 1 }, { unique: true }),
-  required(
-    'subscriptions.payos-transaction',
-    'subscriptions',
-    { payosTransactionId: 1 },
-    {
-      unique: true,
-      partialFilterExpression: { payosTransactionId: { $type: 'string' } },
-    },
-  ),
-
   // users
   required('users.email', 'users', { email: 1 }, { unique: true }),
   required('users.role-recent', 'users', { role: 1, createdAt: -1 }),
@@ -494,12 +464,6 @@ export const INDEX_CONTRACT = Object.freeze([
     { partialFilterExpression: { emailVerificationTokenHash: { $type: 'string' } } },
   ),
   required('users.locked-until', 'users', { lockedUntil: 1 }, { sparse: true }),
-  required(
-    'users.active-subscription-expiration',
-    'users',
-    { 'subscription.isActive': 1, 'subscription.endDate': 1 },
-    { partialFilterExpression: { 'subscription.isActive': true } },
-  ),
   // userprogresses
   required('userprogresses.user', 'userprogresses', { userId: 1 }, { unique: true }),
 

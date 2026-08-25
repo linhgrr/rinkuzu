@@ -10,7 +10,7 @@ vi.mock('@/lib/api/client', () => ({
 
 vi.mock('@/lib/adaptive/config', () => ({
   buildAdaptiveServiceHeaders: vi.fn(() => ({ 'x-user-id': 'user-1' })),
-  buildAdaptiveUrl: vi.fn((path: string) => `https://adaptive.example.test/api/v1${path}`),
+  buildAdaptiveUrl: vi.fn((path: string) => `https://adaptive.example.test/api${path}`),
   resolveAdaptiveProxyTimeoutMs: vi.fn(() => 1_500),
 }));
 

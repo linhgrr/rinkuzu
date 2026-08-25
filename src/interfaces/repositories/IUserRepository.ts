@@ -1,4 +1,4 @@
-import type { PublicProfileUser, User, UserSubscriptionSnapshot } from '@/entities/User';
+import type { PublicProfileUser, User } from '@/entities/User';
 import type { AdminMutationInput, AdminMutationResult } from '@/entities/AdminMutation';
 import type {
   CountBuckets,
@@ -28,8 +28,6 @@ export interface IUserRepository {
   findById(id: string): Promise<User | null>;
   /** Admin-inclusive read; returns active and disabled accounts. */
   findByIdIncludingDisabled(id: string): Promise<User | null>;
-  /** Active accounts only — subscription eligibility. */
-  findSubscriptionById(id: string): Promise<UserSubscriptionSnapshot | null>;
   /** Active accounts only — public profile. */
   findPublicProfileById(id: string): Promise<PublicProfileUser | null>;
   /**

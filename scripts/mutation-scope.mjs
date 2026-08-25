@@ -19,10 +19,9 @@ export const CRITICAL_MUTATION_PATTERNS = [
   // Trusted URL / navigation guards and other security helpers.
   'src/lib/security/**/*.ts',
   'src/lib/entitlements/**/*.ts',
-  'src/lib/integrations/payos.ts',
   'src/models/**/*.ts',
   'src/repositories/**/*.ts',
-  'src/services/{auth,admin,payment,quiz,subscription}/**/*.ts',
+  'src/services/{auth,admin,payment,quiz,entitlement}/**/*.ts',
   'src/features/{admin,adaptive,quiz}/**/*.ts',
   'src/lib/{adaptive,adaptive-learning}/**/*.ts',
 ];
@@ -39,10 +38,9 @@ const CRITICAL_MUTATION_PATHS = [
   /^src\/shared\/constants\/admin-invariant\.ts$/,
   /^src\/lib\/security\/.+\.ts$/,
   /^src\/lib\/entitlements\/.+\.ts$/,
-  /^src\/lib\/integrations\/payos\.ts$/,
   /^src\/models\/.+\.ts$/,
   /^src\/repositories\/.+\.ts$/,
-  /^src\/services\/(?:auth|admin|payment|quiz|subscription)\/.+\.ts$/,
+  /^src\/services\/(?:auth|admin|payment|quiz|entitlement)\/.+\.ts$/,
   /^src\/features\/(?:admin|adaptive|quiz)\/.+\.ts$/,
   /^src\/lib\/(?:adaptive|adaptive-learning)\/.+\.ts$/,
 ];

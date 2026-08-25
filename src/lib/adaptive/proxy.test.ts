@@ -6,7 +6,7 @@ vi.mock('next/server', () => ({
 vi.mock('@/lib/adaptive/config', () => ({
   buildAdaptiveInfraUrl: (path: string) => `https://adaptive.test/api/${path}`,
   buildAdaptiveServiceHeaders: () => ({}),
-  buildAdaptiveUrl: (path: string) => `https://adaptive.test/api/v1/${path}`,
+  buildAdaptiveUrl: (path: string) => `https://adaptive.test/api/${path}`,
   resolveAdaptiveProxyTimeoutMs: () => 30_000,
 }));
 vi.mock('@/lib/adaptive/cache-policy', () => ({
@@ -23,7 +23,7 @@ describe('proxyAdaptiveRequest', () => {
 
   it('omits absent body and Next cache options for uncached GET requests', async () => {
     const response = await proxyAdaptiveRequest(
-      new Request('https://app.test/api/adaptive/health'),
+      new Request('https://app.test/api/adaptive/ready'),
       'health',
       {},
     );

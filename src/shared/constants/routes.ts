@@ -39,11 +39,6 @@ export const ROUTES = {
 
   HISTORY_DETAIL: (attemptId: string) => `/history/${attemptId}`,
 
-  PAYMENT: {
-    SUCCESS: '/payment/success',
-    CANCEL: '/payment/cancel',
-  },
-
   // Admin routes
   ADMIN: {
     PLANS: '/admin/plans',

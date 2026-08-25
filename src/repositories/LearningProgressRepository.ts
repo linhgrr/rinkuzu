@@ -57,7 +57,6 @@ function questionProgressUpdate(
       totalReviews: progress.totalReviews,
       totalCorrect: progress.totalCorrect,
       history: retainRecentReviewHistory(progress.history),
-      ...(progress.isBookmarked !== undefined ? { isBookmarked: progress.isBookmarked } : {}),
       ...(progress.notes !== undefined ? { notes: progress.notes } : {}),
     },
     $setOnInsert: {
@@ -176,7 +175,6 @@ export class LearningProgressRepository implements ILearningProgressRepository {
                 slug: 1,
                 description: 1,
                 author: 1,
-                folder: 1,
                 visibility: 1,
                 pdfUrl: 1,
                 createdAt: 1,
@@ -241,19 +239,12 @@ export class LearningProgressRepository implements ILearningProgressRepository {
       {
         $addFields: {
           authorDoc: { $first: '$authorDoc' },
-          ownedByMe: { $eq: ['$author', userObjectId] },
           externalFolder: { $first: '$folderLinks.folder' },
         },
       },
       {
         $addFields: {
-          effectiveFolder: {
-            $cond: [
-              '$ownedByMe',
-              { $ifNull: ['$folder', null] },
-              { $ifNull: ['$externalFolder', null] },
-            ],
-          },
+          effectiveFolder: { $ifNull: ['$externalFolder', null] },
           displayDateSort: {
             $ifNull: ['$lastProgressAt', { $ifNull: ['$lastAttemptAt', '$createdAt'] }],
           },

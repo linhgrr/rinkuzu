@@ -2,11 +2,10 @@ import type { components } from '@/generated/adaptive-api';
 import { withAdmin } from '@/lib/api/auth';
 import { fetchApiData } from '@/lib/api/client';
 import { apiErr, apiOk } from '@/lib/api/response';
-import { readAndValidateRouteParams, readAndValidateSearchParams } from '@/lib/api/request';
+import { readAndValidateRouteParams } from '@/lib/api/request';
 import { premiumQuizErrorResponse, PREMIUM_PRIVATE_HEADERS } from '@/lib/api/premium-quiz';
 import {
   premiumReviewCallbackRequestSchema,
-  premiumReviewStatusQuerySchema,
   premiumSubmissionIdParamsSchema,
 } from '@/dtos/premium-quiz';
 import {
@@ -49,22 +48,26 @@ export const POST = withAdmin<{ id: string }>(async (_request, { params, userId,
       cache: 'no-store',
       signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
     });
-    await service.attachUpstreamReviewJob(dispatch.localJob.id, upstream.job.jobId);
-    return apiOk(
-      {
-        localJobId: dispatch.localJob.id,
-        upstreamJobId: upstream.job.jobId,
-        status: upstream.job.status,
-        snapshotHash: dispatch.snapshotHash,
-      },
-      202,
-      { headers: PREMIUM_PRIVATE_HEADERS },
+    const callback = premiumReviewCallbackRequestSchema.safeParse({
+      jobId: dispatch.reviewRequest.id,
+      snapshotHash: dispatch.snapshotHash,
+      status: 'completed',
+      result: upstream.result,
+    });
+    if (!callback.success) {
+      return apiErr('upstream_error', 'Invalid Premium review response', 502);
+    }
+    const submission = await service.syncReview(
+      dispatch.submissionId,
+      dispatch.reviewRequest.id,
+      callback.data,
     );
+    return apiOk(submission, 200, { headers: PREMIUM_PRIVATE_HEADERS });
   } catch (error) {
     if (dispatch) {
       await service
-        .syncReview(dispatch.submissionId, dispatch.localJob.id, {
-          jobId: dispatch.localJob.id,
+        .syncReview(dispatch.submissionId, dispatch.reviewRequest.id, {
+          jobId: dispatch.reviewRequest.id,
           snapshotHash: dispatch.snapshotHash,
           status: 'failed',
           error: 'Unable to dispatch Premium AI review',
@@ -72,46 +75,6 @@ export const POST = withAdmin<{ id: string }>(async (_request, { params, userId,
         .catch(() => undefined);
     }
     logger.error({ error }, 'Dispatch Premium AI review failed');
-    return premiumQuizErrorResponse(error);
-  }
-});
-
-export const GET = withAdmin<{ id: string }>(async (request, { params, userId, session }) => {
-  try {
-    const parsed = readAndValidateRouteParams(params, premiumSubmissionIdParamsSchema);
-    if (!parsed.success) {
-      return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
-    }
-    const query = readAndValidateSearchParams(request, premiumReviewStatusQuerySchema);
-    if (!query.success) {
-      return apiErr('validation_error', query.error, 400, { fields: query.fields });
-    }
-    const upstream = await fetchApiData<ReviewResponse>(
-      buildAdaptiveUrl(`/premium-quiz/reviews/${query.data.upstreamJobId}`),
-      {
-        headers: buildAdaptiveServiceHeaders(userId, session.user.role),
-        cache: 'no-store',
-        signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
-      },
-    );
-    const callback = premiumReviewCallbackRequestSchema.safeParse({
-      jobId: query.data.localJobId,
-      snapshotHash: upstream.job.snapshotHash,
-      status: upstream.job.status,
-      ...(upstream.job.result ? { result: upstream.job.result } : {}),
-      ...(upstream.job.error ? { error: upstream.job.error } : {}),
-    });
-    if (!callback.success) {
-      return apiErr('upstream_error', 'Invalid Premium review response', 502);
-    }
-    const submission = await getPremiumQuizService().syncReview(
-      parsed.data.id,
-      query.data.localJobId,
-      callback.data,
-    );
-    return apiOk(submission, 200, { headers: PREMIUM_PRIVATE_HEADERS });
-  } catch (error) {
-    logger.error({ error }, 'Poll Premium AI review failed');
     return premiumQuizErrorResponse(error);
   }
 });

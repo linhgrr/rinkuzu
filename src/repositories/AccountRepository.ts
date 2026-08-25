@@ -11,15 +11,27 @@ import type {
   AccountProfilePersistenceRecord,
 } from '@/repositories/types/AccountPersistence';
 import { ACTIVE_ACCOUNT_FILTER } from '@/shared/constants/account-disable';
+import { buildEntitlementAccountProjection } from '@/repositories/pipelines/entitlement-account-projection';
 
-const PROFILE_FIELDS = 'email displayName bio avatar role createdAt subscription';
+const PROFILE_PROJECTION = {
+  email: 1,
+  displayName: 1,
+  bio: 1,
+  avatar: 1,
+  role: 1,
+  createdAt: 1,
+  subscription: 1,
+} as const;
 
 export class AccountRepository implements IAccountRepository {
   async findProfileByEmail(email: string): Promise<AccountProfile | null> {
     await connectDB();
-    const record = await User.findOne({ email, ...ACTIVE_ACCOUNT_FILTER })
-      .select(PROFILE_FIELDS)
-      .lean<AccountProfilePersistenceRecord>();
+    const [record] = await User.aggregate<AccountProfilePersistenceRecord>([
+      { $match: { email, ...ACTIVE_ACCOUNT_FILTER } },
+      { $limit: 1 },
+      ...buildEntitlementAccountProjection(),
+      { $project: PROFILE_PROJECTION },
+    ]);
     return record ? AccountPersistenceMapper.toProfile(record) : null;
   }
 
@@ -28,14 +40,9 @@ export class AccountRepository implements IAccountRepository {
     update: AccountProfileUpdate,
   ): Promise<AccountProfile | null> {
     await connectDB();
-    const record = await User.findOneAndUpdate(
-      { email, ...ACTIVE_ACCOUNT_FILTER },
-      { $set: update },
-      { new: true },
-    )
-      .select(PROFILE_FIELDS)
-      .lean<AccountProfilePersistenceRecord>();
-    return record ? AccountPersistenceMapper.toProfile(record) : null;
+    const result = await User.updateOne({ email, ...ACTIVE_ACCOUNT_FILTER }, { $set: update });
+    if (result.matchedCount !== 1) return null;
+    return this.findProfileByEmail(email);
   }
 
   async findCredentialsByEmail(email: string): Promise<AccountCredentials | null> {

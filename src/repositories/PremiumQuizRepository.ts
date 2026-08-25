@@ -1,9 +1,8 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import mongoose, { Types, type ClientSession, type FilterQuery } from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import PremiumQuizSubmissionModel from '@/models/PremiumQuizSubmission';
-import PremiumReviewJob from '@/models/PremiumReviewJob';
 import CreditWalletModel from '@/models/CreditWallet';
 import CreditLedgerModel from '@/models/CreditLedger';
 import PremiumQuizAccessGrant from '@/models/PremiumQuizAccessGrant';
@@ -20,8 +19,8 @@ import type {
   PremiumCatalogListResult,
   PremiumDecisionData,
   PremiumDecisionResult,
-  PremiumReviewJobData,
-  PremiumReviewJobRecord,
+  PremiumReviewRequestData,
+  PremiumReviewRequestRecord,
   PremiumSubmissionListOptions,
   PremiumSubmissionListResult,
   PremiumUnlockData,
@@ -391,45 +390,34 @@ export class PremiumQuizRepository implements IPremiumQuizRepository {
     }
   }
 
-  async createReviewJob(data: PremiumReviewJobData): Promise<PremiumReviewJobRecord> {
+  async beginReview(data: PremiumReviewRequestData): Promise<PremiumReviewRequestRecord> {
     await connectDB();
     const submission = await this.findSubmissionById(data.submissionId);
     if (!submission) throw new PremiumQuizError('not_found', 'Submission not found');
     if (submission.snapshotHash !== data.snapshotHash) {
       throw new PremiumQuizError('conflict', 'Submission snapshot changed');
     }
-    const job = await PremiumReviewJob.create({
-      submission: objectId(data.submissionId, 'Submission'),
-      requestedBy: objectId(data.requestedBy, 'User'),
-      snapshotHash: data.snapshotHash,
-      status: 'queued',
-    });
-    await PremiumQuizSubmissionModel.updateOne(
-      { _id: job.submission, snapshotHash: data.snapshotHash },
+    const requestId = randomUUID();
+    const updated = await PremiumQuizSubmissionModel.updateOne(
+      { _id: objectId(data.submissionId, 'Submission'), snapshotHash: data.snapshotHash },
       {
         $set: {
           reviewStatus: 'queued',
-          reviewJobId: String(job._id),
+          reviewJobId: requestId,
           reviewSnapshotHash: data.snapshotHash,
         },
         $unset: { reviewError: 1, reviewResult: 1 },
       },
     );
+    if (updated.matchedCount !== 1) {
+      throw new PremiumQuizError('conflict', 'Submission snapshot changed');
+    }
     return {
-      id: String(job._id),
+      id: requestId,
       submissionId: data.submissionId,
       snapshotHash: data.snapshotHash,
       status: 'queued',
     };
-  }
-
-  async attachUpstreamReviewJob(jobId: string, upstreamJobId: string): Promise<void> {
-    await connectDB();
-    const updated = await PremiumReviewJob.updateOne(
-      { _id: objectId(jobId, 'Review job') },
-      { $set: { upstreamJobId } },
-    );
-    if (updated.matchedCount !== 1) throw new PremiumQuizError('not_found', 'Review job not found');
   }
 
   async updateReview(data: UpdatePremiumReviewData): Promise<PremiumQuizSubmission> {
@@ -451,10 +439,6 @@ export class PremiumQuizRepository implements IPremiumQuizRepository {
       { new: true },
     ).lean<PremiumQuizSubmissionPersistenceRecord>();
     if (!updated) throw new PremiumQuizError('conflict', 'Review no longer matches submission');
-    await PremiumReviewJob.updateOne(
-      { _id: objectId(data.jobId, 'Review job'), submission: submissionId },
-      { $set: { status: data.status, error: data.error } },
-    );
     return PremiumQuizPersistenceMapper.toSubmission(updated);
   }
 

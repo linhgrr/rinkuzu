@@ -26,7 +26,7 @@ const CSRF_EXEMPT_API_PREFIXES = [
   '/api/auth/',
   // PayOS calls this endpoint server-to-server with HMAC-signed body; CSRF
   // does not apply because there is no browser session.
-  '/api/subscription/webhook',
+  '/api/billing/webhooks/',
 ];
 
 function isStateChangingApiRequest(pathname: string, method: string): boolean {

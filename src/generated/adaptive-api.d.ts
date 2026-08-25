@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-  '/api/v1/session/start': {
+  '/api/session/start': {
     parameters: {
       query?: never;
       header?: never;
@@ -17,14 +17,14 @@ export interface paths {
      * Start Session
      * @description Create a new adaptive learning session.
      */
-    post: operations['start_session_api_v1_session_start_post'];
+    post: operations['start_session_api_session_start_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/next-concept': {
+  '/api/session/{session_id}/next-concept': {
     parameters: {
       query?: never;
       header?: never;
@@ -37,14 +37,14 @@ export interface paths {
      * Next Concept
      * @description Recommend the next concept to study based on mastery and prerequisites.
      */
-    post: operations['next_concept_api_v1_session__session_id__next_concept_post'];
+    post: operations['next_concept_api_session__session_id__next_concept_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/theory': {
+  '/api/session/{session_id}/theory': {
     parameters: {
       query?: never;
       header?: never;
@@ -55,7 +55,7 @@ export interface paths {
      * Theory
      * @description Retrieve theory content for the current pending concept.
      */
-    get: operations['theory_api_v1_session__session_id__theory_get'];
+    get: operations['theory_api_session__session_id__theory_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -64,7 +64,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/exercise': {
+  '/api/session/{session_id}/exercise': {
     parameters: {
       query?: never;
       header?: never;
@@ -77,14 +77,14 @@ export interface paths {
      * Generate Exercise
      * @description Generate an exercise for the current concept at the appropriate Bloom level.
      */
-    post: operations['generate_exercise_api_v1_session__session_id__exercise_post'];
+    post: operations['generate_exercise_api_session__session_id__exercise_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/step': {
+  '/api/session/{session_id}/step': {
     parameters: {
       query?: never;
       header?: never;
@@ -97,14 +97,14 @@ export interface paths {
      * Learning Step
      * @description Return the current learning step, creating and persisting one when needed.
      */
-    post: operations['learning_step_api_v1_session__session_id__step_post'];
+    post: operations['learning_step_api_session__session_id__step_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/submit': {
+  '/api/session/{session_id}/submit': {
     parameters: {
       query?: never;
       header?: never;
@@ -117,14 +117,14 @@ export interface paths {
      * Submit Answer
      * @description Evaluate the user's answer and update BKT mastery estimates.
      */
-    post: operations['submit_answer_api_v1_session__session_id__submit_post'];
+    post: operations['submit_answer_api_session__session_id__submit_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/status': {
+  '/api/session/{session_id}/status': {
     parameters: {
       query?: never;
       header?: never;
@@ -135,7 +135,7 @@ export interface paths {
      * Session Status
      * @description Return the current status and progress of a learning session.
      */
-    get: operations['session_status_api_v1_session__session_id__status_get'];
+    get: operations['session_status_api_session__session_id__status_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -144,7 +144,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/graph': {
+  '/api/session/{session_id}/graph': {
     parameters: {
       query?: never;
       header?: never;
@@ -155,7 +155,7 @@ export interface paths {
      * Get Knowledge Graph
      * @description Return the prerequisite knowledge graph for a session.
      */
-    get: operations['get_knowledge_graph_api_v1_session__session_id__graph_get'];
+    get: operations['get_knowledge_graph_api_session__session_id__graph_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -164,7 +164,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/mastery-matrix': {
+  '/api/session/{session_id}/mastery-matrix': {
     parameters: {
       query?: never;
       header?: never;
@@ -175,7 +175,7 @@ export interface paths {
      * Get Mastery Matrix
      * @description Return the concept x Bloom-level mastery matrix for a session.
      */
-    get: operations['get_mastery_matrix_api_v1_session__session_id__mastery_matrix_get'];
+    get: operations['get_mastery_matrix_api_session__session_id__mastery_matrix_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -184,7 +184,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/session/{session_id}/concept/{concept_id}': {
+  '/api/session/{session_id}/concept/{concept_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -195,7 +195,7 @@ export interface paths {
      * Get Concept Detail
      * @description Return detailed information about a specific concept.
      */
-    get: operations['get_concept_detail_api_v1_session__session_id__concept__concept_id__get'];
+    get: operations['get_concept_detail_api_session__session_id__concept__concept_id__get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -204,7 +204,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/pipeline/status': {
+  '/api/pipeline/status': {
     parameters: {
       query?: never;
       header?: never;
@@ -215,7 +215,7 @@ export interface paths {
      * Pipeline Status
      * @description Check if content pipeline runtime modules are available.
      */
-    get: operations['pipeline_status_api_v1_pipeline_status_get'];
+    get: operations['pipeline_status_api_pipeline_status_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -224,7 +224,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/pipeline/process': {
+  '/api/pipeline/process': {
     parameters: {
       query?: never;
       header?: never;
@@ -237,14 +237,14 @@ export interface paths {
      * Process Document
      * @description Run the full content processing pipeline from an S3 uploaded file.
      */
-    post: operations['process_document_api_v1_pipeline_process_post'];
+    post: operations['process_document_api_pipeline_process_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/pipeline/jobs': {
+  '/api/pipeline/jobs': {
     parameters: {
       query?: never;
       header?: never;
@@ -258,7 +258,7 @@ export interface paths {
      *     Returns per-job live fields the frontend library needs: progress, retryable,
      *     eta_seconds, retry_after_seconds, is_terminal, is_delayed.
      */
-    get: operations['list_jobs_api_v1_pipeline_jobs_get'];
+    get: operations['list_jobs_api_pipeline_jobs_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -267,7 +267,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/pipeline/jobs/{job_id}': {
+  '/api/pipeline/jobs/{job_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -275,7 +275,7 @@ export interface paths {
       cookie?: never;
     };
     /** Get Job Status */
-    get: operations['get_job_status_api_v1_pipeline_jobs__job_id__get'];
+    get: operations['get_job_status_api_pipeline_jobs__job_id__get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -284,7 +284,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/pipeline/jobs/{job_id}/create-session': {
+  '/api/pipeline/jobs/{job_id}/create-session': {
     parameters: {
       query?: never;
       header?: never;
@@ -297,14 +297,14 @@ export interface paths {
      * Create Session From Pipeline
      * @description Create a learning session from a completed pipeline job.
      */
-    post: operations['create_session_from_pipeline_api_v1_pipeline_jobs__job_id__create_session_post'];
+    post: operations['create_session_from_pipeline_api_pipeline_jobs__job_id__create_session_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/pipeline/jobs/{job_id}/cancel': {
+  '/api/pipeline/jobs/{job_id}/cancel': {
     parameters: {
       query?: never;
       header?: never;
@@ -321,14 +321,14 @@ export interface paths {
      *     be cancelled. Uses an owner-scoped atomic Mongo transition (not load-full-save).
      *     Terminal jobs are idempotent no-ops.
      */
-    post: operations['cancel_job_api_v1_pipeline_jobs__job_id__cancel_post'];
+    post: operations['cancel_job_api_pipeline_jobs__job_id__cancel_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/pipeline/jobs/{job_id}/retry': {
+  '/api/pipeline/jobs/{job_id}/retry': {
     parameters: {
       query?: never;
       header?: never;
@@ -341,14 +341,14 @@ export interface paths {
      * Retry Job Endpoint
      * @description Retry a terminal, retryable pipeline job by re-fetching its S3 source.
      */
-    post: operations['retry_job_endpoint_api_v1_pipeline_jobs__job_id__retry_post'];
+    post: operations['retry_job_endpoint_api_pipeline_jobs__job_id__retry_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/history/subjects': {
+  '/api/history/subjects': {
     parameters: {
       query?: never;
       header?: never;
@@ -356,7 +356,7 @@ export interface paths {
       cookie?: never;
     };
     /** List Subjects */
-    get: operations['list_subjects_api_v1_history_subjects_get'];
+    get: operations['list_subjects_api_history_subjects_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -365,7 +365,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/history/subjects/progress': {
+  '/api/history/subjects/progress': {
     parameters: {
       query?: never;
       header?: never;
@@ -373,7 +373,7 @@ export interface paths {
       cookie?: never;
     };
     /** List Subject Progress */
-    get: operations['list_subject_progress_api_v1_history_subjects_progress_get'];
+    get: operations['list_subject_progress_api_history_subjects_progress_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -382,7 +382,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/history/subjects/{job_id}': {
+  '/api/history/subjects/{job_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -390,17 +390,17 @@ export interface paths {
       cookie?: never;
     };
     /** Get Subject History */
-    get: operations['get_subject_history_api_v1_history_subjects__job_id__get'];
+    get: operations['get_subject_history_api_history_subjects__job_id__get'];
     put?: never;
     post?: never;
     /** Delete Subject */
-    delete: operations['delete_subject_api_v1_history_subjects__job_id__delete'];
+    delete: operations['delete_subject_api_history_subjects__job_id__delete'];
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/history/pipeline-jobs': {
+  '/api/history/pipeline-jobs': {
     parameters: {
       query?: never;
       header?: never;
@@ -408,7 +408,7 @@ export interface paths {
       cookie?: never;
     };
     /** List Pipeline Jobs */
-    get: operations['list_pipeline_jobs_api_v1_history_pipeline_jobs_get'];
+    get: operations['list_pipeline_jobs_api_history_pipeline_jobs_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -417,7 +417,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/history/pipeline-jobs/{job_id}': {
+  '/api/history/pipeline-jobs/{job_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -425,7 +425,7 @@ export interface paths {
       cookie?: never;
     };
     /** Get Pipeline Job */
-    get: operations['get_pipeline_job_api_v1_history_pipeline_jobs__job_id__get'];
+    get: operations['get_pipeline_job_api_history_pipeline_jobs__job_id__get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -434,7 +434,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/quiz/drafts': {
+  '/api/quiz/drafts': {
     parameters: {
       query?: never;
       header?: never;
@@ -445,20 +445,20 @@ export interface paths {
      * List Quiz Drafts
      * @description List recent quiz drafts for the authenticated user.
      */
-    get: operations['list_quiz_drafts_api_v1_quiz_drafts_get'];
+    get: operations['list_quiz_drafts_api_quiz_drafts_get'];
     put?: never;
     /**
      * Create Quiz Draft
      * @description Create a new quiz draft and enqueue AI processing.
      */
-    post: operations['create_quiz_draft_api_v1_quiz_drafts_post'];
+    post: operations['create_quiz_draft_api_quiz_drafts_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/quiz/drafts/manual': {
+  '/api/quiz/drafts/manual': {
     parameters: {
       query?: never;
       header?: never;
@@ -471,14 +471,14 @@ export interface paths {
      * Create Manual Quiz Draft
      * @description Create a durable manual draft without scheduling an AI worker.
      */
-    post: operations['create_manual_quiz_draft_api_v1_quiz_drafts_manual_post'];
+    post: operations['create_manual_quiz_draft_api_quiz_drafts_manual_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/quiz/drafts/{draft_id}': {
+  '/api/quiz/drafts/{draft_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -489,7 +489,7 @@ export interface paths {
      * Get Quiz Draft
      * @description Retrieve a single quiz draft by ID.
      */
-    get: operations['get_quiz_draft_api_v1_quiz_drafts__draft_id__get'];
+    get: operations['get_quiz_draft_api_quiz_drafts__draft_id__get'];
     put?: never;
     post?: never;
     /**
@@ -499,17 +499,17 @@ export interface paths {
      *     Observed delete is 200; genuine absence is 404; infrastructure errors are
      *     503. Not universally idempotent after metadata removal.
      */
-    delete: operations['delete_quiz_draft_api_v1_quiz_drafts__draft_id__delete'];
+    delete: operations['delete_quiz_draft_api_quiz_drafts__draft_id__delete'];
     options?: never;
     head?: never;
     /**
      * Patch Quiz Draft
      * @description Update fields of an existing quiz draft.
      */
-    patch: operations['patch_quiz_draft_api_v1_quiz_drafts__draft_id__patch'];
+    patch: operations['patch_quiz_draft_api_quiz_drafts__draft_id__patch'];
     trace?: never;
   };
-  '/api/v1/quiz/drafts/{draft_id}/submit': {
+  '/api/quiz/drafts/{draft_id}/submit': {
     parameters: {
       query?: never;
       header?: never;
@@ -522,14 +522,14 @@ export interface paths {
      * Submit Quiz Draft
      * @description Finalize a quiz draft and persist it as a published quiz.
      */
-    post: operations['submit_quiz_draft_api_v1_quiz_drafts__draft_id__submit_post'];
+    post: operations['submit_quiz_draft_api_quiz_drafts__draft_id__submit_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/premium-quiz/reviews': {
+  '/api/premium-quiz/reviews': {
     parameters: {
       query?: never;
       header?: never;
@@ -539,31 +539,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create Premium Review */
-    post: operations['create_premium_review_api_v1_premium_quiz_reviews_post'];
+    post: operations['create_premium_review_api_premium_quiz_reviews_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/premium-quiz/reviews/{job_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Premium Review */
-    get: operations['get_premium_review_api_v1_premium_quiz_reviews__job_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/admin/ocr-keys': {
+  '/api/admin/ocr-keys': {
     parameters: {
       query?: never;
       header?: never;
@@ -571,17 +554,17 @@ export interface paths {
       cookie?: never;
     };
     /** List Admin Ocr Keys */
-    get: operations['list_admin_ocr_keys_api_v1_admin_ocr_keys_get'];
+    get: operations['list_admin_ocr_keys_api_admin_ocr_keys_get'];
     put?: never;
     /** Create Admin Ocr Key */
-    post: operations['create_admin_ocr_key_api_v1_admin_ocr_keys_post'];
+    post: operations['create_admin_ocr_key_api_admin_ocr_keys_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/ocr-keys/model': {
+  '/api/admin/ocr-keys/model': {
     parameters: {
       query?: never;
       header?: never;
@@ -589,17 +572,17 @@ export interface paths {
       cookie?: never;
     };
     /** Get Admin Ocr Model */
-    get: operations['get_admin_ocr_model_api_v1_admin_ocr_keys_model_get'];
+    get: operations['get_admin_ocr_model_api_admin_ocr_keys_model_get'];
     put?: never;
     post?: never;
     delete?: never;
     options?: never;
     head?: never;
     /** Update Admin Ocr Model */
-    patch: operations['update_admin_ocr_model_api_v1_admin_ocr_keys_model_patch'];
+    patch: operations['update_admin_ocr_model_api_admin_ocr_keys_model_patch'];
     trace?: never;
   };
-  '/api/v1/admin/ocr-keys/{key_id}': {
+  '/api/admin/ocr-keys/{key_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -610,14 +593,14 @@ export interface paths {
     put?: never;
     post?: never;
     /** Delete Admin Ocr Key */
-    delete: operations['delete_admin_ocr_key_api_v1_admin_ocr_keys__key_id__delete'];
+    delete: operations['delete_admin_ocr_key_api_admin_ocr_keys__key_id__delete'];
     options?: never;
     head?: never;
     /** Update Admin Ocr Key */
-    patch: operations['update_admin_ocr_key_api_v1_admin_ocr_keys__key_id__patch'];
+    patch: operations['update_admin_ocr_key_api_admin_ocr_keys__key_id__patch'];
     trace?: never;
   };
-  '/api/v1/admin/ocr-keys/{key_id}/test': {
+  '/api/admin/ocr-keys/{key_id}/test': {
     parameters: {
       query?: never;
       header?: never;
@@ -627,14 +610,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Run Admin Ocr Key Test */
-    post: operations['run_admin_ocr_key_test_api_v1_admin_ocr_keys__key_id__test_post'];
+    post: operations['run_admin_ocr_key_test_api_admin_ocr_keys__key_id__test_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/snapshot': {
+  '/api/admin/llm-settings/snapshot': {
     parameters: {
       query?: never;
       header?: never;
@@ -642,7 +625,7 @@ export interface paths {
       cookie?: never;
     };
     /** Get Llm Settings Snapshot */
-    get: operations['get_llm_settings_snapshot_api_v1_admin_llm_settings_snapshot_get'];
+    get: operations['get_llm_settings_snapshot_api_admin_llm_settings_snapshot_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -651,7 +634,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers': {
+  '/api/admin/llm-settings/providers': {
     parameters: {
       query?: never;
       header?: never;
@@ -661,14 +644,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create Provider */
-    post: operations['create_provider_api_v1_admin_llm_settings_providers_post'];
+    post: operations['create_provider_api_admin_llm_settings_providers_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}': {
+  '/api/admin/llm-settings/providers/{provider_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -679,14 +662,14 @@ export interface paths {
     put?: never;
     post?: never;
     /** Delete Provider */
-    delete: operations['delete_provider_api_v1_admin_llm_settings_providers__provider_id__delete'];
+    delete: operations['delete_provider_api_admin_llm_settings_providers__provider_id__delete'];
     options?: never;
     head?: never;
     /** Patch Provider */
-    patch: operations['patch_provider_api_v1_admin_llm_settings_providers__provider_id__patch'];
+    patch: operations['patch_provider_api_admin_llm_settings_providers__provider_id__patch'];
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/keys': {
+  '/api/admin/llm-settings/providers/{provider_id}/keys': {
     parameters: {
       query?: never;
       header?: never;
@@ -696,14 +679,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create Credential */
-    post: operations['create_credential_api_v1_admin_llm_settings_providers__provider_id__keys_post'];
+    post: operations['create_credential_api_admin_llm_settings_providers__provider_id__keys_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}': {
+  '/api/admin/llm-settings/providers/{provider_id}/keys/{key_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -714,14 +697,14 @@ export interface paths {
     put?: never;
     post?: never;
     /** Delete Credential */
-    delete: operations['delete_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__delete'];
+    delete: operations['delete_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__delete'];
     options?: never;
     head?: never;
     /** Patch Credential */
-    patch: operations['patch_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__patch'];
+    patch: operations['patch_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__patch'];
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}/secret': {
+  '/api/admin/llm-settings/providers/{provider_id}/keys/{key_id}/secret': {
     parameters: {
       query?: never;
       header?: never;
@@ -730,7 +713,7 @@ export interface paths {
     };
     get?: never;
     /** Replace Credential Secret */
-    put: operations['replace_credential_secret_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__secret_put'];
+    put: operations['replace_credential_secret_api_admin_llm_settings_providers__provider_id__keys__key_id__secret_put'];
     post?: never;
     delete?: never;
     options?: never;
@@ -738,7 +721,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/models': {
+  '/api/admin/llm-settings/providers/{provider_id}/models': {
     parameters: {
       query?: never;
       header?: never;
@@ -748,14 +731,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create Model */
-    post: operations['create_model_api_v1_admin_llm_settings_providers__provider_id__models_post'];
+    post: operations['create_model_api_admin_llm_settings_providers__provider_id__models_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/models/{model_id}': {
+  '/api/admin/llm-settings/providers/{provider_id}/models/{model_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -766,14 +749,14 @@ export interface paths {
     put?: never;
     post?: never;
     /** Delete Model */
-    delete: operations['delete_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__delete'];
+    delete: operations['delete_model_api_admin_llm_settings_providers__provider_id__models__model_id__delete'];
     options?: never;
     head?: never;
     /** Patch Model */
-    patch: operations['patch_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__patch'];
+    patch: operations['patch_model_api_admin_llm_settings_providers__provider_id__models__model_id__patch'];
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/routing': {
+  '/api/admin/llm-settings/routing': {
     parameters: {
       query?: never;
       header?: never;
@@ -782,7 +765,7 @@ export interface paths {
     };
     get?: never;
     /** Replace Routing */
-    put: operations['replace_routing_api_v1_admin_llm_settings_routing_put'];
+    put: operations['replace_routing_api_admin_llm_settings_routing_put'];
     post?: never;
     delete?: never;
     options?: never;
@@ -790,7 +773,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/test': {
+  '/api/admin/llm-settings/providers/{provider_id}/test': {
     parameters: {
       query?: never;
       header?: never;
@@ -800,14 +783,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Test Provider */
-    post: operations['test_provider_api_v1_admin_llm_settings_providers__provider_id__test_post'];
+    post: operations['test_provider_api_admin_llm_settings_providers__provider_id__test_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}/test': {
+  '/api/admin/llm-settings/providers/{provider_id}/keys/{key_id}/test': {
     parameters: {
       query?: never;
       header?: never;
@@ -817,14 +800,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Test Credential */
-    post: operations['test_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__test_post'];
+    post: operations['test_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__test_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/models/discover': {
+  '/api/admin/llm-settings/providers/{provider_id}/models/discover': {
     parameters: {
       query?: never;
       header?: never;
@@ -834,14 +817,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Discover Models */
-    post: operations['discover_models_api_v1_admin_llm_settings_providers__provider_id__models_discover_post'];
+    post: operations['discover_models_api_admin_llm_settings_providers__provider_id__models_discover_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-settings/providers/{provider_id}/models/{model_id}/test': {
+  '/api/admin/llm-settings/providers/{provider_id}/models/{model_id}/test': {
     parameters: {
       query?: never;
       header?: never;
@@ -851,14 +834,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Test Model */
-    post: operations['test_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__test_post'];
+    post: operations['test_model_api_admin_llm_settings_providers__provider_id__models__model_id__test_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-usage/summary': {
+  '/api/admin/llm-usage/summary': {
     parameters: {
       query?: never;
       header?: never;
@@ -869,7 +852,7 @@ export interface paths {
      * Get Llm Usage Summary
      * @description Return operation-aware usage totals and bounded breakdowns.
      */
-    get: operations['get_llm_usage_summary_api_v1_admin_llm_usage_summary_get'];
+    get: operations['get_llm_usage_summary_api_admin_llm_usage_summary_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -878,7 +861,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/admin/llm-usage/events': {
+  '/api/admin/llm-usage/events': {
     parameters: {
       query?: never;
       header?: never;
@@ -889,7 +872,7 @@ export interface paths {
      * Get Llm Usage Events
      * @description Return a signed-cursor page of safe physical-attempt diagnostics.
      */
-    get: operations['get_llm_usage_events_api_v1_admin_llm_usage_events_get'];
+    get: operations['get_llm_usage_events_api_admin_llm_usage_events_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -898,7 +881,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/ask-rin-chan/contexts': {
+  '/api/ask-rin-chan/contexts': {
     parameters: {
       query?: never;
       header?: never;
@@ -908,14 +891,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Register Exercise Context */
-    post: operations['register_exercise_context_api_v1_ask_rin_chan_contexts_post'];
+    post: operations['register_exercise_context_api_ask_rin_chan_contexts_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/ask-rin-chan/chat': {
+  '/api/ask-rin-chan/chat': {
     parameters: {
       query?: never;
       header?: never;
@@ -925,14 +908,14 @@ export interface paths {
     get?: never;
     put?: never;
     /** Ask Rin Chan */
-    post: operations['ask_rin_chan_api_v1_ask_rin_chan_chat_post'];
+    post: operations['ask_rin_chan_api_ask_rin_chan_chat_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/ask-rin-chan/agent': {
+  '/api/ask-rin-chan/agent': {
     parameters: {
       query?: never;
       header?: never;
@@ -945,14 +928,14 @@ export interface paths {
      * Run Ask Rin Chan Agent
      * @description Run Ask Rin-chan using the official AG-UI input and event protocol.
      */
-    post: operations['run_ask_rin_chan_agent_api_v1_ask_rin_chan_agent_post'];
+    post: operations['run_ask_rin_chan_agent_api_ask_rin_chan_agent_post'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/ask-rin-chan/conversations/{exercise_context_id}': {
+  '/api/ask-rin-chan/conversations/{exercise_context_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -960,11 +943,11 @@ export interface paths {
       cookie?: never;
     };
     /** Read Conversation */
-    get: operations['read_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__get'];
+    get: operations['read_conversation_api_ask_rin_chan_conversations__exercise_context_id__get'];
     put?: never;
     post?: never;
     /** Clear Conversation */
-    delete: operations['clear_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__delete'];
+    delete: operations['clear_conversation_api_ask_rin_chan_conversations__exercise_context_id__delete'];
     options?: never;
     head?: never;
     patch?: never;
@@ -982,26 +965,6 @@ export interface paths {
      * @description Kubernetes readiness probe — 503 until all dependencies are up.
      */
     get: operations['readiness_api_ready_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/health': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Health
-     * @description Backwards-compat alias for /api/ready.
-     */
-    get: operations['health_api_health_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -3258,7 +3221,7 @@ export interface components {
     };
     /** PremiumReviewCreateResponse */
     PremiumReviewCreateResponse: {
-      job: components['schemas']['PremiumReviewJobResponse'];
+      result: components['schemas']['PremiumReviewResult'];
     };
     /** PremiumReviewCriterion */
     PremiumReviewCriterion: {
@@ -3282,23 +3245,6 @@ export interface components {
       code: string;
       /** Message */
       message: string;
-    };
-    /** PremiumReviewJobResponse */
-    PremiumReviewJobResponse: {
-      /** Jobid */
-      jobId: string;
-      /** Submissionid */
-      submissionId: string;
-      /** Snapshothash */
-      snapshotHash: string;
-      /**
-       * Status
-       * @enum {string}
-       */
-      status: 'queued' | 'running' | 'completed' | 'failed';
-      result?: components['schemas']['PremiumReviewResult'] | null;
-      /** Error */
-      error?: string | null;
     };
     /** PremiumReviewResult */
     PremiumReviewResult: {
@@ -4868,7 +4814,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  start_session_api_v1_session_start_post: {
+  start_session_api_session_start_post: {
     parameters: {
       query?: never;
       header: {
@@ -4904,7 +4850,7 @@ export interface operations {
       };
     };
   };
-  next_concept_api_v1_session__session_id__next_concept_post: {
+  next_concept_api_session__session_id__next_concept_post: {
     parameters: {
       query?: never;
       header: {
@@ -4939,7 +4885,7 @@ export interface operations {
       };
     };
   };
-  theory_api_v1_session__session_id__theory_get: {
+  theory_api_session__session_id__theory_get: {
     parameters: {
       query?: never;
       header: {
@@ -4974,7 +4920,7 @@ export interface operations {
       };
     };
   };
-  generate_exercise_api_v1_session__session_id__exercise_post: {
+  generate_exercise_api_session__session_id__exercise_post: {
     parameters: {
       query?: never;
       header: {
@@ -5009,7 +4955,7 @@ export interface operations {
       };
     };
   };
-  learning_step_api_v1_session__session_id__step_post: {
+  learning_step_api_session__session_id__step_post: {
     parameters: {
       query?: never;
       header: {
@@ -5044,7 +4990,7 @@ export interface operations {
       };
     };
   };
-  submit_answer_api_v1_session__session_id__submit_post: {
+  submit_answer_api_session__session_id__submit_post: {
     parameters: {
       query?: never;
       header: {
@@ -5083,7 +5029,7 @@ export interface operations {
       };
     };
   };
-  session_status_api_v1_session__session_id__status_get: {
+  session_status_api_session__session_id__status_get: {
     parameters: {
       query?: never;
       header: {
@@ -5118,7 +5064,7 @@ export interface operations {
       };
     };
   };
-  get_knowledge_graph_api_v1_session__session_id__graph_get: {
+  get_knowledge_graph_api_session__session_id__graph_get: {
     parameters: {
       query?: never;
       header: {
@@ -5153,7 +5099,7 @@ export interface operations {
       };
     };
   };
-  get_mastery_matrix_api_v1_session__session_id__mastery_matrix_get: {
+  get_mastery_matrix_api_session__session_id__mastery_matrix_get: {
     parameters: {
       query?: never;
       header: {
@@ -5188,7 +5134,7 @@ export interface operations {
       };
     };
   };
-  get_concept_detail_api_v1_session__session_id__concept__concept_id__get: {
+  get_concept_detail_api_session__session_id__concept__concept_id__get: {
     parameters: {
       query?: never;
       header: {
@@ -5225,7 +5171,7 @@ export interface operations {
       };
     };
   };
-  pipeline_status_api_v1_pipeline_status_get: {
+  pipeline_status_api_pipeline_status_get: {
     parameters: {
       query?: never;
       header?: never;
@@ -5245,7 +5191,7 @@ export interface operations {
       };
     };
   };
-  process_document_api_v1_pipeline_process_post: {
+  process_document_api_pipeline_process_post: {
     parameters: {
       query?: never;
       header: {
@@ -5282,7 +5228,7 @@ export interface operations {
       };
     };
   };
-  list_jobs_api_v1_pipeline_jobs_get: {
+  list_jobs_api_pipeline_jobs_get: {
     parameters: {
       query?: {
         limit?: number;
@@ -5316,7 +5262,7 @@ export interface operations {
       };
     };
   };
-  get_job_status_api_v1_pipeline_jobs__job_id__get: {
+  get_job_status_api_pipeline_jobs__job_id__get: {
     parameters: {
       query?: {
         include_debug?: boolean;
@@ -5353,7 +5299,7 @@ export interface operations {
       };
     };
   };
-  create_session_from_pipeline_api_v1_pipeline_jobs__job_id__create_session_post: {
+  create_session_from_pipeline_api_pipeline_jobs__job_id__create_session_post: {
     parameters: {
       query?: {
         max_steps?: number;
@@ -5390,7 +5336,7 @@ export interface operations {
       };
     };
   };
-  cancel_job_api_v1_pipeline_jobs__job_id__cancel_post: {
+  cancel_job_api_pipeline_jobs__job_id__cancel_post: {
     parameters: {
       query?: never;
       header: {
@@ -5425,7 +5371,7 @@ export interface operations {
       };
     };
   };
-  retry_job_endpoint_api_v1_pipeline_jobs__job_id__retry_post: {
+  retry_job_endpoint_api_pipeline_jobs__job_id__retry_post: {
     parameters: {
       query?: never;
       header: {
@@ -5460,7 +5406,7 @@ export interface operations {
       };
     };
   };
-  list_subjects_api_v1_history_subjects_get: {
+  list_subjects_api_history_subjects_get: {
     parameters: {
       query?: {
         limit?: number;
@@ -5494,7 +5440,7 @@ export interface operations {
       };
     };
   };
-  list_subject_progress_api_v1_history_subjects_progress_get: {
+  list_subject_progress_api_history_subjects_progress_get: {
     parameters: {
       query?: {
         limit?: number;
@@ -5528,7 +5474,7 @@ export interface operations {
       };
     };
   };
-  get_subject_history_api_v1_history_subjects__job_id__get: {
+  get_subject_history_api_history_subjects__job_id__get: {
     parameters: {
       query?: never;
       header: {
@@ -5563,7 +5509,7 @@ export interface operations {
       };
     };
   };
-  delete_subject_api_v1_history_subjects__job_id__delete: {
+  delete_subject_api_history_subjects__job_id__delete: {
     parameters: {
       query?: {
         delete_sessions?: boolean;
@@ -5600,7 +5546,7 @@ export interface operations {
       };
     };
   };
-  list_pipeline_jobs_api_v1_history_pipeline_jobs_get: {
+  list_pipeline_jobs_api_history_pipeline_jobs_get: {
     parameters: {
       query?: {
         limit?: number;
@@ -5634,7 +5580,7 @@ export interface operations {
       };
     };
   };
-  get_pipeline_job_api_v1_history_pipeline_jobs__job_id__get: {
+  get_pipeline_job_api_history_pipeline_jobs__job_id__get: {
     parameters: {
       query?: never;
       header: {
@@ -5669,7 +5615,7 @@ export interface operations {
       };
     };
   };
-  list_quiz_drafts_api_v1_quiz_drafts_get: {
+  list_quiz_drafts_api_quiz_drafts_get: {
     parameters: {
       query?: {
         limit?: number;
@@ -5703,7 +5649,7 @@ export interface operations {
       };
     };
   };
-  create_quiz_draft_api_v1_quiz_drafts_post: {
+  create_quiz_draft_api_quiz_drafts_post: {
     parameters: {
       query?: never;
       header: {
@@ -5740,7 +5686,7 @@ export interface operations {
       };
     };
   };
-  create_manual_quiz_draft_api_v1_quiz_drafts_manual_post: {
+  create_manual_quiz_draft_api_quiz_drafts_manual_post: {
     parameters: {
       query?: never;
       header: {
@@ -5776,7 +5722,7 @@ export interface operations {
       };
     };
   };
-  get_quiz_draft_api_v1_quiz_drafts__draft_id__get: {
+  get_quiz_draft_api_quiz_drafts__draft_id__get: {
     parameters: {
       query?: never;
       header: {
@@ -5811,7 +5757,7 @@ export interface operations {
       };
     };
   };
-  delete_quiz_draft_api_v1_quiz_drafts__draft_id__delete: {
+  delete_quiz_draft_api_quiz_drafts__draft_id__delete: {
     parameters: {
       query?: never;
       header: {
@@ -5846,7 +5792,7 @@ export interface operations {
       };
     };
   };
-  patch_quiz_draft_api_v1_quiz_drafts__draft_id__patch: {
+  patch_quiz_draft_api_quiz_drafts__draft_id__patch: {
     parameters: {
       query?: never;
       header: {
@@ -5885,7 +5831,7 @@ export interface operations {
       };
     };
   };
-  submit_quiz_draft_api_v1_quiz_drafts__draft_id__submit_post: {
+  submit_quiz_draft_api_quiz_drafts__draft_id__submit_post: {
     parameters: {
       query?: never;
       header: {
@@ -5924,7 +5870,7 @@ export interface operations {
       };
     };
   };
-  create_premium_review_api_v1_premium_quiz_reviews_post: {
+  create_premium_review_api_premium_quiz_reviews_post: {
     parameters: {
       query?: never;
       header: {
@@ -5961,42 +5907,7 @@ export interface operations {
       };
     };
   };
-  get_premium_review_api_v1_premium_quiz_reviews__job_id__get: {
-    parameters: {
-      query?: never;
-      header: {
-        'x-user-id': string;
-        'x-user-role': string;
-        'x-service-token': string;
-      };
-      path: {
-        job_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StandardResponse_PremiumReviewCreateResponse_'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_admin_ocr_keys_api_v1_admin_ocr_keys_get: {
+  list_admin_ocr_keys_api_admin_ocr_keys_get: {
     parameters: {
       query?: never;
       header: {
@@ -6029,7 +5940,7 @@ export interface operations {
       };
     };
   };
-  create_admin_ocr_key_api_v1_admin_ocr_keys_post: {
+  create_admin_ocr_key_api_admin_ocr_keys_post: {
     parameters: {
       query?: never;
       header: {
@@ -6066,7 +5977,7 @@ export interface operations {
       };
     };
   };
-  get_admin_ocr_model_api_v1_admin_ocr_keys_model_get: {
+  get_admin_ocr_model_api_admin_ocr_keys_model_get: {
     parameters: {
       query?: never;
       header: {
@@ -6099,7 +6010,7 @@ export interface operations {
       };
     };
   };
-  update_admin_ocr_model_api_v1_admin_ocr_keys_model_patch: {
+  update_admin_ocr_model_api_admin_ocr_keys_model_patch: {
     parameters: {
       query?: never;
       header: {
@@ -6136,7 +6047,7 @@ export interface operations {
       };
     };
   };
-  delete_admin_ocr_key_api_v1_admin_ocr_keys__key_id__delete: {
+  delete_admin_ocr_key_api_admin_ocr_keys__key_id__delete: {
     parameters: {
       query?: never;
       header: {
@@ -6171,7 +6082,7 @@ export interface operations {
       };
     };
   };
-  update_admin_ocr_key_api_v1_admin_ocr_keys__key_id__patch: {
+  update_admin_ocr_key_api_admin_ocr_keys__key_id__patch: {
     parameters: {
       query?: never;
       header: {
@@ -6210,7 +6121,7 @@ export interface operations {
       };
     };
   };
-  run_admin_ocr_key_test_api_v1_admin_ocr_keys__key_id__test_post: {
+  run_admin_ocr_key_test_api_admin_ocr_keys__key_id__test_post: {
     parameters: {
       query?: never;
       header: {
@@ -6245,7 +6156,7 @@ export interface operations {
       };
     };
   };
-  get_llm_settings_snapshot_api_v1_admin_llm_settings_snapshot_get: {
+  get_llm_settings_snapshot_api_admin_llm_settings_snapshot_get: {
     parameters: {
       query?: never;
       header: {
@@ -6278,7 +6189,7 @@ export interface operations {
       };
     };
   };
-  create_provider_api_v1_admin_llm_settings_providers_post: {
+  create_provider_api_admin_llm_settings_providers_post: {
     parameters: {
       query?: never;
       header: {
@@ -6318,7 +6229,7 @@ export interface operations {
       };
     };
   };
-  delete_provider_api_v1_admin_llm_settings_providers__provider_id__delete: {
+  delete_provider_api_admin_llm_settings_providers__provider_id__delete: {
     parameters: {
       query?: never;
       header: {
@@ -6356,7 +6267,7 @@ export interface operations {
       };
     };
   };
-  patch_provider_api_v1_admin_llm_settings_providers__provider_id__patch: {
+  patch_provider_api_admin_llm_settings_providers__provider_id__patch: {
     parameters: {
       query?: never;
       header: {
@@ -6398,7 +6309,7 @@ export interface operations {
       };
     };
   };
-  create_credential_api_v1_admin_llm_settings_providers__provider_id__keys_post: {
+  create_credential_api_admin_llm_settings_providers__provider_id__keys_post: {
     parameters: {
       query?: never;
       header: {
@@ -6440,7 +6351,7 @@ export interface operations {
       };
     };
   };
-  delete_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__delete: {
+  delete_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__delete: {
     parameters: {
       query?: never;
       header: {
@@ -6479,7 +6390,7 @@ export interface operations {
       };
     };
   };
-  patch_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__patch: {
+  patch_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__patch: {
     parameters: {
       query?: never;
       header: {
@@ -6522,7 +6433,7 @@ export interface operations {
       };
     };
   };
-  replace_credential_secret_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__secret_put: {
+  replace_credential_secret_api_admin_llm_settings_providers__provider_id__keys__key_id__secret_put: {
     parameters: {
       query?: never;
       header: {
@@ -6565,7 +6476,7 @@ export interface operations {
       };
     };
   };
-  create_model_api_v1_admin_llm_settings_providers__provider_id__models_post: {
+  create_model_api_admin_llm_settings_providers__provider_id__models_post: {
     parameters: {
       query?: never;
       header: {
@@ -6607,7 +6518,7 @@ export interface operations {
       };
     };
   };
-  delete_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__delete: {
+  delete_model_api_admin_llm_settings_providers__provider_id__models__model_id__delete: {
     parameters: {
       query?: never;
       header: {
@@ -6646,7 +6557,7 @@ export interface operations {
       };
     };
   };
-  patch_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__patch: {
+  patch_model_api_admin_llm_settings_providers__provider_id__models__model_id__patch: {
     parameters: {
       query?: never;
       header: {
@@ -6689,7 +6600,7 @@ export interface operations {
       };
     };
   };
-  replace_routing_api_v1_admin_llm_settings_routing_put: {
+  replace_routing_api_admin_llm_settings_routing_put: {
     parameters: {
       query?: never;
       header: {
@@ -6729,7 +6640,7 @@ export interface operations {
       };
     };
   };
-  test_provider_api_v1_admin_llm_settings_providers__provider_id__test_post: {
+  test_provider_api_admin_llm_settings_providers__provider_id__test_post: {
     parameters: {
       query?: never;
       header: {
@@ -6770,7 +6681,7 @@ export interface operations {
       };
     };
   };
-  test_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__test_post: {
+  test_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__test_post: {
     parameters: {
       query?: never;
       header: {
@@ -6808,7 +6719,7 @@ export interface operations {
       };
     };
   };
-  discover_models_api_v1_admin_llm_settings_providers__provider_id__models_discover_post: {
+  discover_models_api_admin_llm_settings_providers__provider_id__models_discover_post: {
     parameters: {
       query?: never;
       header: {
@@ -6849,7 +6760,7 @@ export interface operations {
       };
     };
   };
-  test_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__test_post: {
+  test_model_api_admin_llm_settings_providers__provider_id__models__model_id__test_post: {
     parameters: {
       query?: never;
       header: {
@@ -6891,7 +6802,7 @@ export interface operations {
       };
     };
   };
-  get_llm_usage_summary_api_v1_admin_llm_usage_summary_get: {
+  get_llm_usage_summary_api_admin_llm_usage_summary_get: {
     parameters: {
       query?: {
         window?: '1d' | '7d' | '30d' | '90d' | '180d';
@@ -6932,7 +6843,7 @@ export interface operations {
       };
     };
   };
-  get_llm_usage_events_api_v1_admin_llm_usage_events_get: {
+  get_llm_usage_events_api_admin_llm_usage_events_get: {
     parameters: {
       query?: {
         window?: '1d' | '7d' | '30d' | '90d' | '180d';
@@ -6975,7 +6886,7 @@ export interface operations {
       };
     };
   };
-  register_exercise_context_api_v1_ask_rin_chan_contexts_post: {
+  register_exercise_context_api_ask_rin_chan_contexts_post: {
     parameters: {
       query?: never;
       header: {
@@ -7011,7 +6922,7 @@ export interface operations {
       };
     };
   };
-  ask_rin_chan_api_v1_ask_rin_chan_chat_post: {
+  ask_rin_chan_api_ask_rin_chan_chat_post: {
     parameters: {
       query?: never;
       header: {
@@ -7047,7 +6958,7 @@ export interface operations {
       };
     };
   };
-  run_ask_rin_chan_agent_api_v1_ask_rin_chan_agent_post: {
+  run_ask_rin_chan_agent_api_ask_rin_chan_agent_post: {
     parameters: {
       query?: never;
       header: {
@@ -7083,7 +6994,7 @@ export interface operations {
       };
     };
   };
-  read_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__get: {
+  read_conversation_api_ask_rin_chan_conversations__exercise_context_id__get: {
     parameters: {
       query?: never;
       header: {
@@ -7118,7 +7029,7 @@ export interface operations {
       };
     };
   };
-  clear_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__delete: {
+  clear_conversation_api_ask_rin_chan_conversations__exercise_context_id__delete: {
     parameters: {
       query?: never;
       header: {
@@ -7154,26 +7065,6 @@ export interface operations {
     };
   };
   readiness_api_ready_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StandardResponse_ReadinessResponse_'];
-        };
-      };
-    };
-  };
-  health_api_health_get: {
     parameters: {
       query?: never;
       header?: never;

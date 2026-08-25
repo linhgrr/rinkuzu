@@ -2,13 +2,11 @@ import crypto from 'crypto';
 import mongoose, { Types, type ClientSession } from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
-import Subscription from '@/models/Subscription';
 import User from '@/models/User';
 import {
   BillingCounter,
   BillingOrder,
   EntitlementAccount,
-  EntitlementAdjustment,
   EntitlementGrant,
   ExternalMoneyAdjustment,
   FirstPurchaseClaim,
@@ -37,14 +35,12 @@ import type {
   VerifiedPayOSWebhookInput,
 } from '@/interfaces/repositories/IBillingRepository';
 import {
-  addCalendarMonths,
   BillingDomainError,
   calculateDiscount,
   canApplyCollectionTransition,
   hashIdempotencyRequest,
   normalizePromoCode,
   reconciliationDelayMs,
-  replayEntitlement,
   withJitter,
 } from '@/services/billing/billing-domain';
 import { billingConfig } from '@/services/billing/billing-config';
@@ -58,6 +54,7 @@ import {
   type ProviderCreateOutcome,
   type ProviderPaymentSnapshot,
 } from '@/services/billing/payos-adapter';
+import { EntitlementLedgerRepository } from '@/repositories/EntitlementLedgerRepository';
 
 type PlanLean = {
   _id: string;
@@ -150,15 +147,6 @@ type AttemptLean = {
 interface PlanDuration {
   durationUnit: 'month';
   durationValue: number;
-}
-
-interface UserSubscriptionLean {
-  isActive?: boolean;
-  endDate?: Date;
-}
-
-interface UserBillingStateLean {
-  subscription?: UserSubscriptionLean;
 }
 
 interface IdempotencyResponseSnapshotLean {
@@ -281,6 +269,8 @@ function payosStatus(snapshot: ProviderPaymentSnapshot): string {
 }
 
 export class BillingRepository implements IBillingRepository {
+  private readonly entitlementLedger = new EntitlementLedgerRepository();
+
   constructor(private readonly payos = new BillingPayOSAdapter()) {}
 
   private async ensureFirstPurchaseEligibility(user: Types.ObjectId): Promise<void> {
@@ -290,7 +280,7 @@ export class BillingRepository implements IBillingRepository {
     });
     if (existing) return;
 
-    const [consumedClaim, reservedClaim] = await Promise.all([
+    const [consumedClaim, reservedClaim, entitlementGrant] = await Promise.all([
       FirstPurchaseClaim.findOne({
         user,
         eligibilityClass: 'first_purchase',
@@ -309,12 +299,14 @@ export class BillingRepository implements IBillingRepository {
         .select({ order: 1, reservedAt: 1 })
         .lean<{ order: Types.ObjectId; reservedAt: Date }>()
         .exec(),
+      EntitlementGrant.findOne({ user })
+        .sort({ committedAt: 1, sequence: 1 })
+        .select({ committedAt: 1 })
+        .lean<{ committedAt: Date }>()
+        .exec(),
     ]);
-    const status: FirstPurchaseEligibilityStatus = consumedClaim
-      ? 'consumed'
-      : reservedClaim
-        ? 'reserved'
-        : 'available';
+    const status: FirstPurchaseEligibilityStatus =
+      consumedClaim || entitlementGrant ? 'consumed' : reservedClaim ? 'reserved' : 'available';
     const activeOrder = consumedClaim?.order ?? reservedClaim?.order;
 
     try {
@@ -330,7 +322,10 @@ export class BillingRepository implements IBillingRepository {
               ? { reservedAt: reservedClaim.reservedAt }
               : {}),
             ...(status === 'consumed'
-              ? { consumedAt: consumedClaim?.consumedAt ?? new Date() }
+              ? {
+                  consumedAt:
+                    consumedClaim?.consumedAt ?? entitlementGrant?.committedAt ?? new Date(),
+                }
               : {}),
             version: 0,
           },
@@ -378,19 +373,12 @@ export class BillingRepository implements IBillingRepository {
   ): Promise<ComputedQuote> {
     await connectDB();
     const userObjectId = objectId(userId);
-    const [plan, entitlement, user] = await Promise.all([
+    const [plan, entitlement] = await Promise.all([
       Plan.findOne({ _id: planId, isActive: true }).lean<PlanLean>().exec(),
       EntitlementAccount.findOne({ user: userObjectId }).lean<{ perpetual: boolean }>().exec(),
-      User.findById(userObjectId)
-        .select({ 'subscription.isActive': 1, 'subscription.endDate': 1 })
-        .lean<UserBillingStateLean>()
-        .exec(),
     ]);
     if (!plan) throw new BillingDomainError('plan_not_found', 'Plan is not available', 404);
-    if (
-      entitlement?.perpetual === true ||
-      (user?.subscription?.isActive === true && !user.subscription.endDate)
-    ) {
+    if (entitlement?.perpetual === true) {
       throw new BillingDomainError(
         'already_has_perpetual_entitlement',
         'This account already has perpetual Premium',
@@ -429,12 +417,11 @@ export class BillingRepository implements IBillingRepository {
         throw new BillingDomainError('promo_not_applicable', 'Promo code is not applicable');
       }
       if (promotion.eligibilityClass === 'first_purchase') {
-        const [paidOrder, legacyPaidSubscription, claim, eligibility] = await Promise.all([
+        const [paidOrder, claim, eligibility, entitlementGrant] = await Promise.all([
           BillingOrder.exists({
             user: userObjectId,
             receivedAmount: { $gt: 0 },
           }),
-          Subscription.exists({ user: userObjectId, status: 'completed' }),
           FirstPurchaseClaim.exists({
             user: userObjectId,
             eligibilityClass: 'first_purchase',
@@ -445,8 +432,9 @@ export class BillingRepository implements IBillingRepository {
             eligibilityClass: 'first_purchase',
             status: { $in: ['reserved', 'consumed'] },
           }),
+          EntitlementGrant.exists({ user: userObjectId }),
         ]);
-        if (paidOrder || legacyPaidSubscription || claim || eligibility) {
+        if (paidOrder || claim || eligibility || entitlementGrant) {
           throw new BillingDomainError('promo_not_applicable', 'Promo code is not applicable');
         }
       }
@@ -642,13 +630,13 @@ export class BillingRepository implements IBillingRepository {
     await connectDB();
     const user = objectId(input.userId);
     const requestHash = hashIdempotencyRequest({
-      endpoint: '/api/v1/billing/orders',
+      endpoint: '/api/billing/orders',
       apiVersion: 'v1',
       payload: { quoteToken: input.quoteToken },
     });
     const existing = await IdempotencyRecord.findOne({
       user,
-      endpoint: '/api/v1/billing/orders',
+      endpoint: '/api/billing/orders',
       apiVersion: 'v1',
       idempotencyKey: input.idempotencyKey,
     })
@@ -720,7 +708,7 @@ export class BillingRepository implements IBillingRepository {
           [
             {
               user,
-              endpoint: '/api/v1/billing/orders',
+              endpoint: '/api/billing/orders',
               apiVersion: 'v1',
               idempotencyKey: input.idempotencyKey,
               requestHash,
@@ -800,7 +788,7 @@ export class BillingRepository implements IBillingRepository {
       if ((error as { code?: number }).code === 11000) {
         const raced = await IdempotencyRecord.findOne({
           user,
-          endpoint: '/api/v1/billing/orders',
+          endpoint: '/api/billing/orders',
           apiVersion: 'v1',
           idempotencyKey: input.idempotencyKey,
         })
@@ -1905,26 +1893,6 @@ export class BillingRepository implements IBillingRepository {
     }
   }
 
-  private async ensureEntitlementAccount(userId: Types.ObjectId): Promise<void> {
-    try {
-      await EntitlementAccount.updateOne(
-        { user: userId },
-        {
-          $setOnInsert: {
-            user: userId,
-            version: 0,
-            nextSequence: 1,
-            perpetual: false,
-            lastCheckpointSequence: 0,
-          },
-        },
-        { upsert: true },
-      );
-    } catch (error) {
-      if ((error as { code?: number }).code !== 11000) throw error;
-    }
-  }
-
   private async fulfillOrder(orderId: Types.ObjectId): Promise<void> {
     if (!billingConfig.entitlementAutoActivationEnabled()) {
       await BillingOrder.updateOne(
@@ -1935,7 +1903,6 @@ export class BillingRepository implements IBillingRepository {
     }
     const order = await BillingOrder.findById(orderId).lean<OrderLean>().exec();
     if (!order || order.fulfillmentStatus === 'fulfilled') return;
-    await this.ensureEntitlementAccount(order.user);
     if (order.eligibilityClass === 'first_purchase') {
       await this.ensureFirstPurchaseEligibility(order.user);
     }
@@ -1954,27 +1921,28 @@ export class BillingRepository implements IBillingRepository {
           .lean<OrderLean>()
           .exec();
         if (!currentOrder) return;
-        const existingGrant = await EntitlementGrant.findOne({
-          sourceType: 'billing_order',
-          sourceId: orderId.toString(),
-        })
-          .session(session)
-          .lean<{ _id: Types.ObjectId }>()
-          .exec();
-        if (!existingGrant) {
-          const account = await EntitlementAccount.findOneAndUpdate(
-            { user: currentOrder.user },
-            { $inc: { version: 1, nextSequence: 1 } },
-            { new: true, session },
-          )
-            .lean<{
-              nextSequence: number;
-              currentEndAt?: Date;
-              perpetual: boolean;
-            }>()
-            .exec();
-          if (!account) throw new Error('Entitlement account disappeared');
-          if (account.perpetual) {
+        try {
+          await this.entitlementLedger.appendGrant(
+            {
+              user: currentOrder.user,
+              sourceType: 'billing_order',
+              sourceId: orderId.toString(),
+              planId: currentOrder.planId,
+              planName: currentOrder.planName,
+              durationUnit: currentOrder.durationUnit,
+              durationValue: currentOrder.durationValue,
+              committedAt: new Date(),
+              ...(currentOrder.providerPaidAt === undefined
+                ? {}
+                : { providerPaidAt: currentOrder.providerPaidAt }),
+            },
+            session,
+          );
+        } catch (error) {
+          if (
+            error instanceof BillingDomainError &&
+            ['already_has_perpetual_entitlement', 'entitlement_replay_limit'].includes(error.code)
+          ) {
             await BillingOrder.updateOne(
               { _id: orderId },
               { $set: { fulfillmentStatus: 'review' } },
@@ -1982,143 +1950,8 @@ export class BillingRepository implements IBillingRepository {
             );
             return;
           }
-          const committedAt = new Date();
-          const active =
-            account.currentEndAt && account.currentEndAt.getTime() > committedAt.getTime();
-          const lastGrant = active
-            ? await EntitlementGrant.findOne({ user: currentOrder.user })
-                .sort({ sequence: -1 })
-                .session(session)
-                .lean<{
-                  segmentId: string;
-                  segmentBaselineStartAt: Date;
-                  segmentAnchorDay: number;
-                }>()
-                .exec()
-            : null;
-          const baseline = active && account.currentEndAt ? account.currentEndAt : committedAt;
-          const segmentId = lastGrant?.segmentId ?? crypto.randomUUID();
-          const segmentBaseline = lastGrant?.segmentBaselineStartAt ?? baseline;
-          const anchorDay = lastGrant?.segmentAnchorDay ?? baseline.getUTCDate();
-          const projectionEnd =
-            currentOrder.durationUnit === 'month'
-              ? addCalendarMonths(baseline, currentOrder.durationValue, anchorDay)
-              : new Date(baseline.getTime() + currentOrder.durationValue * 86_400_000);
-          await EntitlementGrant.create(
-            [
-              {
-                user: currentOrder.user,
-                sourceType: 'billing_order',
-                sourceId: orderId.toString(),
-                sequence: account.nextSequence - 1,
-                segmentId,
-                planId: currentOrder.planId,
-                planName: currentOrder.planName,
-                durationUnit: currentOrder.durationUnit,
-                durationValue: currentOrder.durationValue,
-                segmentBaselineStartAt: segmentBaseline,
-                segmentAnchorDay: anchorDay,
-                committedAt,
-                providerPaidAt: currentOrder.providerPaidAt,
-                originalEffectiveStartAt: baseline,
-                originalEffectiveEndAt: projectionEnd,
-              },
-            ],
-            { session },
-          );
+          throw error;
         }
-
-        const grants = await EntitlementGrant.find({ user: currentOrder.user })
-          .sort({ sequence: 1 })
-          .session(session)
-          .lean<
-            Array<{
-              _id: Types.ObjectId;
-              sequence: number;
-              segmentId: string;
-              segmentBaselineStartAt: Date;
-              segmentAnchorDay: number;
-              durationUnit: 'day' | 'month' | 'perpetual';
-              durationValue?: number;
-            }>
-          >()
-          .exec();
-        const adjustments = await EntitlementAdjustment.find({ user: currentOrder.user })
-          .sort({ sequence: 1 })
-          .session(session)
-          .lean<
-            Array<{
-              sequence: number;
-              grant: Types.ObjectId;
-              type: 'revoke' | 'restore';
-            }>
-          >()
-          .exec();
-        if (grants.length > 500) {
-          await BillingOrder.updateOne(
-            { _id: orderId },
-            { $set: { fulfillmentStatus: 'review' } },
-            { session },
-          );
-          return;
-        }
-        const projection = replayEntitlement(
-          grants.map((grant) => ({
-            id: grant._id.toString(),
-            sequence: grant.sequence,
-            segmentId: grant.segmentId,
-            segmentBaselineStartAt: grant.segmentBaselineStartAt,
-            segmentAnchorDay: grant.segmentAnchorDay,
-            durationUnit: grant.durationUnit,
-            ...(grant.durationValue !== undefined ? { durationValue: grant.durationValue } : {}),
-          })),
-          adjustments.map((adjustment) => ({
-            sequence: adjustment.sequence,
-            grantId: adjustment.grant.toString(),
-            type: adjustment.type,
-          })),
-        );
-        if (!projection.startAt) throw new Error('Entitlement projection is empty');
-        const checksum = crypto
-          .createHash('sha256')
-          .update(
-            JSON.stringify({
-              startAt: projection.startAt.toISOString(),
-              endAt: projection.endAt?.toISOString() ?? null,
-              perpetual: projection.perpetual,
-            }),
-          )
-          .digest('hex');
-        await EntitlementAccount.updateOne(
-          { user: currentOrder.user },
-          {
-            $set: {
-              planId: currentOrder.planId,
-              planName: currentOrder.planName,
-              currentStartAt: projection.startAt,
-              currentEndAt: projection.endAt,
-              perpetual: projection.perpetual,
-              projectionChecksum: checksum,
-            },
-          },
-          { session },
-        );
-        await User.updateOne(
-          { _id: currentOrder.user, disable: 0 },
-          {
-            $set: {
-              subscription: {
-                planId: currentOrder.planId,
-                planName: currentOrder.planName,
-                startDate: projection.startAt,
-                ...(projection.endAt ? { endDate: projection.endAt } : {}),
-                isActive: true,
-                payosOrderId: currentOrder.orderCode.toString(),
-              },
-            },
-          },
-          { session },
-        );
         await this.consumePromotion(currentOrder, session);
         await BillingOrder.updateOne(
           { _id: orderId, fulfillmentStatus: 'processing' },

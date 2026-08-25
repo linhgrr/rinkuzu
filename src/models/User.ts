@@ -42,30 +42,8 @@ interface UserDocument extends Document {
   lastLoginAt?: Date | null;
   lastLoginIp?: string | null;
 
-  subscription?: {
-    planId: string;
-    planName: string;
-    startDate?: Date;
-    endDate?: Date;
-    isActive: boolean;
-    payosOrderId?: string;
-    payosTransactionId?: string;
-  };
   createdAt: Date;
 }
-
-const UserSubscriptionSchema = new Schema(
-  {
-    planId: { type: String, required: true },
-    planName: { type: String, required: true, trim: true },
-    startDate: { type: Date },
-    endDate: { type: Date },
-    isActive: { type: Boolean, required: true, default: false },
-    payosOrderId: { type: String },
-    payosTransactionId: { type: String },
-  },
-  { _id: false },
-);
 
 const AuthIdentitySchema = new Schema(
   {
@@ -137,7 +115,6 @@ const UserSchema = new Schema<UserDocument>({
   lastLoginAt: { type: Date, default: null },
   lastLoginIp: { type: String, default: null },
 
-  subscription: { type: UserSubscriptionSchema, required: false, default: undefined },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -165,10 +142,6 @@ UserSchema.index(
       'authIdentities.subject': { $type: 'string' },
     },
   },
-);
-UserSchema.index(
-  { 'subscription.isActive': 1, 'subscription.endDate': 1 },
-  { partialFilterExpression: { 'subscription.isActive': true } },
 );
 UserSchema.pre('save', function (next) {
   if (this.isModified('password') && this.password) {

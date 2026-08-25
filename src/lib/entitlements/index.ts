@@ -10,7 +10,7 @@
  * B2C, per-user, 2 tiers — a code registry is enough (no DB entitlements table,
  * no org overrides, no RBAC). Add those only when trials/enterprise arrive.
  */
-import { createSubscriptionService } from '@/lib/subscription-factory';
+import { createEntitlementService } from '@/lib/entitlement-factory';
 import { getCachedTier, setCachedTier } from './cache';
 import type {
   BooleanCapability,
@@ -136,7 +136,7 @@ export async function resolveEntitlements(userId: string): Promise<Entitlements>
 
   let tier: Tier = 'free';
   try {
-    const isPremium = await createSubscriptionService().isUserPremium(userId);
+    const isPremium = await createEntitlementService().isUserPremium(userId);
     tier = isPremium ? 'premium' : 'free';
   } catch {
     tier = 'free';

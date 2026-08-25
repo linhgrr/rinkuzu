@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createSubscriptionService } from '@/lib/subscription-factory';
+import { createEntitlementAdminService } from '@/lib/entitlement-admin-factory';
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
@@ -24,7 +24,9 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
     return apiErr('validation_error', input.error, 400, { fields: input.fields });
   }
 
-  const subscriptionService = createSubscriptionService();
-  const result = await subscriptionService.updateSubscriptionById(parsedParams.data.id, input.data);
+  const result = await createEntitlementAdminService().revoke(
+    parsedParams.data.id,
+    input.data.status,
+  );
   return result.success ? apiOk(result.data) : apiServiceErr(result);
 });

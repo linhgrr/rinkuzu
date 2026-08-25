@@ -50,7 +50,7 @@ describe('critical mutation scope', () => {
     'src/lib/security/trusted-navigation.ts',
     'src/models/User.ts',
     'src/repositories/UserRepository.ts',
-    'src/services/subscription/SubscriptionService.ts',
+    'src/services/entitlement/EntitlementService.ts',
     'src/features/quiz/hooks/useQuizProgress.ts',
   ])('includes production control logic: %s', (file) => {
     expect(isCriticalMutationFile(file)).toBe(true);

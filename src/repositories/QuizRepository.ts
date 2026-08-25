@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import QuizModel from '@/models/Quiz';
+import FolderQuiz from '@/models/FolderQuiz';
 import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
 import {
   IQuizRepository,
@@ -60,11 +61,13 @@ interface QuizCreatorAggregateResult {
 
 interface PaginatedQuizListPipelineOptions {
   limit: number;
+  placementOwnerId?: Types.ObjectId;
   projection: PipelineStage.Project['$project'];
   skip: number;
 }
 
 interface PaginatedQuizListQueryOptions extends RepositoryPaginationOptions {
+  placementOwnerId?: Types.ObjectId;
   projection: PipelineStage.Project['$project'];
 }
 
@@ -121,11 +124,37 @@ const QUIZ_SUMMARY_PROJECTION = {
   questionCount: { $size: { $ifNull: ['$questions', []] } },
 } satisfies PipelineStage.Project['$project'];
 
+function buildFolderPlacementStages(ownerId: Types.ObjectId): PipelineStage[] {
+  return [
+    {
+      $lookup: {
+        from: 'folderquizzes',
+        let: { quizId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [{ $eq: ['$quiz', '$$quizId'] }, { $eq: ['$owner', ownerId] }],
+              },
+            },
+          },
+          { $project: { _id: 0, folder: 1 } },
+          { $limit: 1 },
+        ],
+        as: 'folderPlacement',
+      },
+    },
+    { $set: { folder: { $ifNull: [{ $first: '$folderPlacement.folder' }, null] } } },
+    { $unset: 'folderPlacement' },
+  ];
+}
+
 function buildPaginatedQuizListPipeline(
   filter: FilterQuery<QuizPersistenceRecord>,
   options: PaginatedQuizListPipelineOptions,
 ): PipelineStage[] {
   return [
+    ...(options.placementOwnerId ? buildFolderPlacementStages(options.placementOwnerId) : []),
     { $match: filter },
     { $sort: { createdAt: -1 } },
     {
@@ -145,10 +174,11 @@ async function findPaginatedQuizList(
   filter: FilterQuery<QuizPersistenceRecord>,
   options: PaginatedQuizListQueryOptions,
 ): Promise<PaginatedRepositoryResult<Quiz>> {
-  const { page, limit, projection } = options;
+  const { page, limit, placementOwnerId, projection } = options;
   const [result] = await QuizModel.aggregate<QuizListAggregateResult>(
     buildPaginatedQuizListPipeline(filter, {
       limit,
+      ...(placementOwnerId ? { placementOwnerId } : {}),
       projection,
       skip: (page - 1) * limit,
     }),
@@ -184,6 +214,26 @@ async function findQuizBySlugWithProjection(
   return record ? QuizPersistenceMapper.toEntity(record) : null;
 }
 
+function persistenceAuthorId(author: QuizPersistenceRecord['author']): string {
+  return serializeId(
+    typeof author === 'object' && '_id' in author ? author._id : author,
+    'quiz.author',
+  );
+}
+
+async function mapQuizWithOwnerPlacement(record: QuizPersistenceRecord): Promise<Quiz> {
+  const placement = await FolderQuiz.findOne({
+    owner: new Types.ObjectId(persistenceAuthorId(record.author)),
+    quiz: new Types.ObjectId(serializeId(record._id, 'quiz._id')),
+  })
+    .select('folder')
+    .lean<{ folder: Types.ObjectId }>();
+  return {
+    ...QuizPersistenceMapper.toEntity(record),
+    folder: placement ? String(placement.folder) : null,
+  };
+}
+
 function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenceRecord> {
   const { excludeAuthor, ...rest } = filter;
   const normalizedFilter: FilterQuery<QuizPersistenceRecord> = { ...rest };
@@ -217,7 +267,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const record = await QuizModel.findById(id)
       .populate('author', 'email name displayName avatar')
       .lean<QuizPersistenceRecord>();
-    return record ? QuizPersistenceMapper.toEntity(record) : null;
+    return record ? mapQuizWithOwnerPlacement(record) : null;
   }
 
   async findAccessById(id: string): Promise<Pick<Quiz, 'id' | 'author' | 'visibility'> | null> {
@@ -254,26 +304,78 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const record = await QuizModel.findOne({ sourceDraftId })
       .populate('author', 'email name displayName avatar')
       .lean<QuizPersistenceRecord>();
-    return record ? QuizPersistenceMapper.toEntity(record) : null;
+    return record ? mapQuizWithOwnerPlacement(record) : null;
   }
 
   async create(quizData: CreateQuizData): Promise<Quiz> {
     await connectDB();
-    const document = new QuizModel(quizData);
-    await document.save();
-    const record: QuizPersistenceRecord = document.toObject();
-    return QuizPersistenceMapper.toEntity(record);
+    const { folder, ...quizFields } = quizData;
+    const session = await mongoose.startSession();
+    let record: QuizPersistenceRecord | null = null;
+    try {
+      await session.withTransaction(async () => {
+        const document = new QuizModel(quizFields);
+        await document.save({ session });
+        if (folder) {
+          await FolderQuiz.updateOne(
+            { owner: new Types.ObjectId(quizData.author), quiz: document._id },
+            { $set: { folder: new Types.ObjectId(folder) } },
+            { upsert: true, session },
+          );
+        }
+        record = document.toObject() as QuizPersistenceRecord;
+      });
+    } finally {
+      await session.endSession();
+    }
+    if (!record) throw new Error('Quiz creation transaction did not commit');
+    return { ...QuizPersistenceMapper.toEntity(record), folder: folder ?? null };
   }
 
   async update(id: string, quizData: UpdateQuizData): Promise<Quiz | null> {
     await connectDB();
-    const record = await QuizModel.findByIdAndUpdate(id, quizData, {
-      new: true,
-      runValidators: true,
-    })
-      .populate('author', 'email name displayName avatar')
-      .lean<QuizPersistenceRecord>();
-    return record ? QuizPersistenceMapper.toEntity(record) : null;
+    const hasFolderCommand = Object.hasOwn(quizData, 'folder');
+    const { folder, ...quizFields } = quizData;
+    if (!hasFolderCommand) {
+      const record = await QuizModel.findByIdAndUpdate(id, quizFields, {
+        new: true,
+        runValidators: true,
+      })
+        .populate('author', 'email name displayName avatar')
+        .lean<QuizPersistenceRecord>();
+      return record ? mapQuizWithOwnerPlacement(record) : null;
+    }
+    const session = await mongoose.startSession();
+    let record: QuizPersistenceRecord | null = null;
+    try {
+      await session.withTransaction(async () => {
+        record = await QuizModel.findByIdAndUpdate(id, quizFields, {
+          new: true,
+          runValidators: true,
+          session,
+        })
+          .populate('author', 'email name displayName avatar')
+          .lean<QuizPersistenceRecord>();
+        if (!record || !hasFolderCommand) return;
+
+        const placementFilter = {
+          owner: new Types.ObjectId(persistenceAuthorId(record.author)),
+          quiz: new Types.ObjectId(id),
+        };
+        if (folder) {
+          await FolderQuiz.updateOne(
+            placementFilter,
+            { $set: { folder: new Types.ObjectId(folder) } },
+            { upsert: true, session },
+          );
+        } else {
+          await FolderQuiz.deleteOne(placementFilter).session(session);
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
+    return record ? mapQuizWithOwnerPlacement(record) : null;
   }
 
   async updateQuestionById(
@@ -363,6 +465,37 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const skip = (page - 1) * limit;
     const sort = options.sort || { createdAt: -1 };
     const normalizedFilter = toPersistenceFilter(filter);
+    const placementOwnerId =
+      filter.folder !== undefined &&
+      typeof filter.author === 'string' &&
+      Types.ObjectId.isValid(filter.author)
+        ? new Types.ObjectId(filter.author)
+        : null;
+    if (filter.folder !== undefined && !placementOwnerId) {
+      throw new TypeError('Folder-filtered quiz queries require a concrete owner');
+    }
+    if (placementOwnerId) {
+      const [records, totals] = await Promise.all([
+        QuizModel.aggregate<QuizPersistenceRecord>([
+          ...buildFolderPlacementStages(placementOwnerId),
+          ...buildCompactQuizPipeline(normalizedFilter, {
+            limit,
+            populateAuthor: true,
+            skip,
+            sort,
+          }),
+        ]),
+        QuizModel.aggregate<{ total: number }>([
+          ...buildFolderPlacementStages(placementOwnerId),
+          { $match: normalizedFilter },
+          { $count: 'total' },
+        ]),
+      ]);
+      return {
+        items: records.map(QuizPersistenceMapper.toEntity),
+        pagination: buildPaginationMeta(page, limit, totals[0]?.total ?? 0),
+      };
+    }
     const totalPromise =
       Object.keys(normalizedFilter).length === 0
         ? QuizModel.countDocuments(normalizedFilter, { hint: '_id_' })
@@ -402,7 +535,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     await connectDB();
     const record = await QuizModel.findOne({ slug })
       .select(
-        '_id title description slug author folder questions visibility pdfUrl tags sourceDraftId createdAt updatedAt',
+        '_id title description slug author questions visibility pdfUrl tags sourceDraftId createdAt updatedAt',
       )
       .lean<QuizPersistenceRecord>();
     return record ? QuizPersistenceMapper.toEntity(record) : null;
@@ -419,6 +552,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     };
     return findPaginatedQuizList(filter, {
       ...options,
+      placementOwnerId: new Types.ObjectId(userId),
       projection: USER_QUIZ_LIST_PROJECTION,
     });
   }

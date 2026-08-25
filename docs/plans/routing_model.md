@@ -943,7 +943,7 @@ Skipped steps still advance their progress checkpoint so the UI does not appear 
 
 ## 12. FastAPI Admin API Contract
 
-Create `api/schemas/admin_llm_settings.py` and `api/routers/admin_llm_settings.py`. Prefix: `/api/v1/admin/llm-settings`.
+Create `api/schemas/admin_llm_settings.py` and `api/routers/admin_llm_settings.py`. Prefix: `/api/admin/llm-settings`.
 
 All endpoints require `get_current_admin_user` plus the optional production `LLM_CONFIG_ADMIN_USER_IDS` allowlist. All successful reads return `meta.revision` and `ETag: "llm-config-<revision>"`. All configuration mutations require `If-Match`.
 
@@ -1046,7 +1046,7 @@ Never return a raw provider exception or response body.
 
 ### 12.7 Usage Accounting API
 
-Keep the existing prefix `/api/v1/admin/llm-usage` and require `get_current_admin_user` plus the same optional production admin allowlist used by AI settings.
+Use `/api/admin/llm-usage` and require `get_current_admin_user` plus the same optional production admin allowlist used by AI settings.
 
 ```text
 GET /summary

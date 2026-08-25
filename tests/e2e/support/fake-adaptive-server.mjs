@@ -168,7 +168,7 @@ async function handleAdaptiveRequest(request, response, url) {
     return;
   }
 
-  if (request.method === 'GET' && url.pathname === '/api/health') {
+  if (request.method === 'GET' && url.pathname === '/api/ready') {
     sendOk(response, {
       status: 'ready',
       ready: true,
@@ -181,7 +181,7 @@ async function handleAdaptiveRequest(request, response, url) {
     return;
   }
 
-  if (request.method === 'POST' && url.pathname === '/api/v1/pipeline/process') {
+  if (request.method === 'POST' && url.pathname === '/api/pipeline/process') {
     const body = await readJsonBody(request);
     if (
       typeof body.filename !== 'string' ||
@@ -208,7 +208,7 @@ async function handleAdaptiveRequest(request, response, url) {
       file_size: 16,
       subject_id: state.subjectId,
       status: 'queued',
-      status_url: `/api/v1/pipeline/jobs/${state.jobId}`,
+      status_url: `/api/pipeline/jobs/${state.jobId}`,
       page_batch_size: 10,
       retry_after_seconds: 1,
     });
@@ -216,24 +216,22 @@ async function handleAdaptiveRequest(request, response, url) {
   }
 
   const state = statesByUserId.get(userId);
-  if (request.method === 'GET' && url.pathname === '/api/v1/history/subjects') {
+  if (request.method === 'GET' && url.pathname === '/api/history/subjects') {
     const subjects = state?.status === 'completed' ? [toCompletedSubject(state)] : [];
     sendOk(response, { subjects, count: subjects.length });
     return;
   }
-  if (request.method === 'GET' && url.pathname === '/api/v1/history/subjects/progress') {
+  if (request.method === 'GET' && url.pathname === '/api/history/subjects/progress') {
     sendOk(response, { subjects: [], count: 0 });
     return;
   }
-  if (request.method === 'GET' && url.pathname === '/api/v1/pipeline/jobs') {
+  if (request.method === 'GET' && url.pathname === '/api/pipeline/jobs') {
     const jobs = state ? [toJobListItem(state)] : [];
     sendOk(response, { jobs, count: jobs.length });
     return;
   }
 
-  const createSessionMatch = url.pathname.match(
-    /^\/api\/v1\/pipeline\/jobs\/([^/]+)\/create-session$/,
-  );
+  const createSessionMatch = url.pathname.match(/^\/api\/pipeline\/jobs\/([^/]+)\/create-session$/);
   if (request.method === 'POST' && createSessionMatch) {
     if (!state || createSessionMatch[1] !== state.jobId || state.status !== 'completed') {
       sendError(response, 409, 'conflict', 'Pipeline job is not ready');
@@ -249,7 +247,7 @@ async function handleAdaptiveRequest(request, response, url) {
     return;
   }
 
-  const sessionStatusMatch = url.pathname.match(/^\/api\/v1\/session\/([^/]+)\/status$/);
+  const sessionStatusMatch = url.pathname.match(/^\/api\/session\/([^/]+)\/status$/);
   if (request.method === 'GET' && sessionStatusMatch) {
     if (!state || sessionStatusMatch[1] !== state.sessionId) {
       sendError(response, 404, 'not_found', 'Session not found');
@@ -259,7 +257,7 @@ async function handleAdaptiveRequest(request, response, url) {
     return;
   }
 
-  const sessionGraphMatch = url.pathname.match(/^\/api\/v1\/session\/([^/]+)\/graph$/);
+  const sessionGraphMatch = url.pathname.match(/^\/api\/session\/([^/]+)\/graph$/);
   if (request.method === 'GET' && sessionGraphMatch) {
     if (!state || sessionGraphMatch[1] !== state.sessionId) {
       sendError(response, 404, 'not_found', 'Session not found');

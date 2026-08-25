@@ -86,13 +86,6 @@ export interface PremiumSubmissionListViewModel {
   totalPages: number;
 }
 
-export interface PremiumReviewDispatchViewModel {
-  localJobId: string;
-  upstreamJobId: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
-  snapshotHash: string;
-}
-
 export interface PremiumDecisionInput {
   decision: 'approve' | 'request_changes' | 'reject';
   credits: number;
@@ -119,8 +112,8 @@ export function fetchPremiumSubmissions(
   return fetchApiData<PremiumSubmissionListViewModel>(`/api/admin/premium-submissions?${params}`);
 }
 
-export function startPremiumReview(id: string): Promise<PremiumReviewDispatchViewModel> {
-  return fetchApiData<PremiumReviewDispatchViewModel>(
+export function startPremiumReview(id: string): Promise<PremiumSubmissionViewModel> {
+  return fetchApiData<PremiumSubmissionViewModel>(
     `/api/admin/premium-submissions/${id}/llm-review`,
     { method: 'POST' },
   );
@@ -128,19 +121,6 @@ export function startPremiumReview(id: string): Promise<PremiumReviewDispatchVie
 
 export function fetchPremiumSourceUrl(id: string): Promise<PremiumSourceUrlViewModel> {
   return fetchApiData<PremiumSourceUrlViewModel>(`/api/admin/premium-submissions/${id}/source`);
-}
-
-export function pollPremiumReview(
-  id: string,
-  dispatch: PremiumReviewDispatchViewModel,
-): Promise<PremiumSubmissionViewModel> {
-  const params = new URLSearchParams({
-    localJobId: dispatch.localJobId,
-    upstreamJobId: dispatch.upstreamJobId,
-  });
-  return fetchApiData<PremiumSubmissionViewModel>(
-    `/api/admin/premium-submissions/${id}/llm-review?${params}`,
-  );
 }
 
 export function decidePremiumSubmission(

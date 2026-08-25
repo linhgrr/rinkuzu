@@ -27,6 +27,7 @@ import { logger } from '@/lib/logger';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { AdminBillingDtoMapper } from '@/mappers/admin/AdminBillingDtoMapper';
 import { DurationUtils } from '@/types/subscription';
+import { invalidateEntitlements } from '@/lib/entitlements/cache';
 
 function createPlanId(): string {
   return `plan_${randomUUID()}`;
@@ -155,6 +156,7 @@ export class AdminBillingService implements IAdminBillingService {
         startDate: grant.startDate,
         ...(endDate !== undefined && { endDate }),
       });
+      invalidateEntitlements(grant.userId);
       return { success: true, data: AdminBillingDtoMapper.toGrantDto(grant) };
     } catch (error) {
       if (error instanceof AdminBillingUserNotFoundError) {

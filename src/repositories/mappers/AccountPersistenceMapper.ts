@@ -1,6 +1,6 @@
 import type { AccountCredentials, AccountProfile, AccountSubscription } from '@/entities/Account';
 import { serializeId } from '@/lib/mongo-id';
-import { mapEmbeddedSubscription } from '@/repositories/mappers/SubscriptionPersistenceMapper';
+import { mapEntitlementProjection } from '@/repositories/mappers/EntitlementProjectionPersistenceMapper';
 import { mapOptionalEditableProfileFields } from '@/repositories/mappers/mapOptionalEditableProfileFields';
 import type {
   AccountCredentialsPersistenceRecord,
@@ -9,7 +9,7 @@ import type {
 } from '@/repositories/types/AccountPersistence';
 
 function toSubscription(subscription: AccountSubscriptionPersistenceRecord): AccountSubscription {
-  return mapEmbeddedSubscription(subscription);
+  return mapEntitlementProjection(subscription);
 }
 
 export class AccountPersistenceMapper {

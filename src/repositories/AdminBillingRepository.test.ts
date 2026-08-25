@@ -11,14 +11,14 @@ const mocks = vi.hoisted(() => ({
   connectDB: vi.fn(),
   planFind: vi.fn(),
   planFindById: vi.fn(),
+  planFindOne: vi.fn(),
   planCreate: vi.fn(),
   planFindByIdAndUpdate: vi.fn(),
   planDeleteOne: vi.fn(),
   planExists: vi.fn(),
-  subscriptionFind: vi.fn(),
-  subscriptionCountDocuments: vi.fn(),
-  subscriptionExists: vi.fn(),
-  subscriptionCreate: vi.fn(),
+  entitlementAccountAggregate: vi.fn(),
+  entitlementGrantExists: vi.fn(),
+  appendGrant: vi.fn(),
   userFindById: vi.fn(),
   userFindOne: vi.fn(),
   userExists: vi.fn(),
@@ -38,18 +38,20 @@ vi.mock('@/models/Plan', () => ({
   default: {
     find: mocks.planFind,
     findById: mocks.planFindById,
+    findOne: mocks.planFindOne,
     create: mocks.planCreate,
     findByIdAndUpdate: mocks.planFindByIdAndUpdate,
     deleteOne: mocks.planDeleteOne,
     exists: mocks.planExists,
   },
 }));
-vi.mock('@/models/Subscription', () => ({
-  default: {
-    find: mocks.subscriptionFind,
-    countDocuments: mocks.subscriptionCountDocuments,
-    exists: mocks.subscriptionExists,
-    create: mocks.subscriptionCreate,
+vi.mock('@/models/Billing', () => ({
+  EntitlementAccount: { aggregate: mocks.entitlementAccountAggregate },
+  EntitlementGrant: { exists: mocks.entitlementGrantExists },
+}));
+vi.mock('@/repositories/EntitlementLedgerRepository', () => ({
+  EntitlementLedgerRepository: class {
+    appendGrant = mocks.appendGrant;
   },
 }));
 vi.mock('@/models/User', () => ({
@@ -254,27 +256,8 @@ describe('AdminBillingRepository', () => {
         }),
       }),
     });
-    mocks.subscriptionExists.mockReturnValueOnce({
+    mocks.entitlementGrantExists.mockReturnValueOnce({
       session: vi.fn().mockResolvedValue({ _id: 'sub' }),
-    });
-    mocks.userExists.mockReturnValueOnce({
-      session: vi.fn().mockResolvedValue(null),
-    });
-
-    await expect(repository.deletePlan(planId)).rejects.toBeInstanceOf(BillingPlanInUseError);
-
-    mocks.planFindById.mockReturnValueOnce({
-      select: () => ({
-        session: () => ({
-          lean: vi.fn().mockResolvedValue({ _id: planId }),
-        }),
-      }),
-    });
-    mocks.subscriptionExists.mockReturnValueOnce({
-      session: vi.fn().mockResolvedValue(null),
-    });
-    mocks.userExists.mockReturnValueOnce({
-      session: vi.fn().mockResolvedValue({ _id: userId }),
     });
 
     await expect(repository.deletePlan(planId)).rejects.toBeInstanceOf(BillingPlanInUseError);
@@ -288,10 +271,7 @@ describe('AdminBillingRepository', () => {
         }),
       }),
     });
-    mocks.subscriptionExists.mockReturnValue({
-      session: vi.fn().mockResolvedValue(null),
-    });
-    mocks.userExists.mockReturnValue({
+    mocks.entitlementGrantExists.mockReturnValue({
       session: vi.fn().mockResolvedValue(null),
     });
     mocks.planDeleteOne
@@ -305,15 +285,9 @@ describe('AdminBillingRepository', () => {
   });
 
   it('lists subscriptions with status/search filters, escaped regex, and pagination', async () => {
-    const sort = vi.fn().mockReturnValue({
-      skip: vi.fn().mockReturnValue({
-        limit: vi.fn().mockReturnValue({
-          lean: vi.fn().mockResolvedValue([subscriptionRecord()]),
-        }),
-      }),
-    });
-    mocks.subscriptionFind.mockReturnValue({ sort });
-    mocks.subscriptionCountDocuments.mockResolvedValue(1);
+    mocks.entitlementAccountAggregate.mockResolvedValue([
+      { items: [subscriptionRecord()], meta: [{ totalItems: 1 }] },
+    ]);
 
     const result = await new AdminBillingRepository().listSubscriptions({
       page: 2,
@@ -322,11 +296,21 @@ describe('AdminBillingRepository', () => {
       search: 'alpha.+@example.com',
     });
 
-    expect(mocks.subscriptionFind).toHaveBeenCalledWith({
-      status: 'completed',
-      $or: [{ userEmail: /alpha\.\+@example\.com/i }, { payosOrderId: /alpha\.\+@example\.com/i }],
-    });
-    expect(sort).toHaveBeenCalledWith({ createdAt: -1 });
+    const pipeline = mocks.entitlementAccountAggregate.mock.calls[0]?.[0];
+    expect(pipeline).toEqual(
+      expect.arrayContaining([
+        {
+          $match: {
+            status: 'completed',
+            $or: [
+              { userEmail: /alpha\.\+@example\.com/i },
+              { payosOrderId: /alpha\.\+@example\.com/i },
+            ],
+          },
+        },
+        { $sort: { updatedAt: -1 } },
+      ]),
+    );
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
       id: subscriptionId,
@@ -344,15 +328,7 @@ describe('AdminBillingRepository', () => {
   });
 
   it('lists subscriptions without optional filters when omitted or blank', async () => {
-    const sort = vi.fn().mockReturnValue({
-      skip: vi.fn().mockReturnValue({
-        limit: vi.fn().mockReturnValue({
-          lean: vi.fn().mockResolvedValue([]),
-        }),
-      }),
-    });
-    mocks.subscriptionFind.mockReturnValue({ sort });
-    mocks.subscriptionCountDocuments.mockResolvedValue(0);
+    mocks.entitlementAccountAggregate.mockResolvedValue([{ items: [], meta: [] }]);
 
     await new AdminBillingRepository().listSubscriptions({
       page: 1,
@@ -360,7 +336,10 @@ describe('AdminBillingRepository', () => {
       search: '   ',
     });
 
-    expect(mocks.subscriptionFind).toHaveBeenCalledWith({});
+    const pipeline = mocks.entitlementAccountAggregate.mock.calls[0]?.[0] as Array<
+      Record<string, unknown>
+    >;
+    expect(pipeline.some((stage) => '$match' in stage)).toBe(false);
   });
 
   it('finds billing user identity by id with exact-active filter', async () => {
@@ -386,15 +365,17 @@ describe('AdminBillingRepository', () => {
   });
 
   it('grants a subscription only for an active plan and existing active user', async () => {
-    mocks.planExists.mockReturnValue({
-      session: vi.fn().mockResolvedValue({ _id: planId }),
-    });
-    mocks.userFindOneAndUpdate.mockReturnValue({
+    mocks.planFindOne.mockReturnValue({
       select: () => ({
-        lean: vi.fn().mockResolvedValue({ _id: new Types.ObjectId(userId) }),
+        session: () => leanChain({ duration: 'P1M' }),
       }),
     });
-    mocks.subscriptionCreate.mockResolvedValue([]);
+    mocks.userFindOne.mockReturnValue({
+      select: () => ({
+        session: () => leanChain({ _id: new Types.ObjectId(userId) }),
+      }),
+    });
+    mocks.appendGrant.mockResolvedValue(undefined);
 
     const startDate = new Date('2026-07-01T00:00:00.000Z');
     const endDate = new Date('2026-08-01T00:00:00.000Z');
@@ -409,47 +390,27 @@ describe('AdminBillingRepository', () => {
       endDate,
     });
 
-    expect(mocks.planExists).toHaveBeenCalledWith({ _id: planId, isActive: true });
-    expect(mocks.userFindOneAndUpdate).toHaveBeenCalledWith(
-      { _id: userId, disable: 0 },
-      {
-        subscription: {
-          planId,
-          planName: 'Premium',
-          startDate,
-          endDate,
-          isActive: true,
-          payosOrderId: 'admin_11111111-2222-3333-4444-555555555555',
-          payosTransactionId: 'admin_11111111-2222-3333-4444-555555555555',
-        },
-      },
-      expect.objectContaining({ session: expect.any(Object) }),
-    );
-    expect(mocks.subscriptionCreate).toHaveBeenCalledWith(
-      [
-        expect.objectContaining({
-          user: expect.any(Types.ObjectId),
-          userEmail: 'user@example.com',
-          planId,
-          planName: 'Premium',
-          amount: 99_000,
-          currency: 'VND',
-          status: 'completed',
-          payosOrderId: 'admin_11111111-2222-3333-4444-555555555555',
-          payosTransactionId: 'admin_11111111-2222-3333-4444-555555555555',
-          startDate,
-          endDate,
-          isActive: true,
-        }),
-      ],
-      expect.objectContaining({ session: expect.any(Object) }),
+    expect(mocks.planFindOne).toHaveBeenCalledWith({ _id: planId, isActive: true });
+    expect(mocks.userFindOne).toHaveBeenCalledWith({ _id: userId, disable: 0 });
+    expect(mocks.appendGrant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: expect.any(Types.ObjectId),
+        sourceType: 'manual',
+        sourceId: 'admin_11111111-2222-3333-4444-555555555555',
+        planId,
+        planName: 'Premium',
+        durationUnit: 'month',
+        durationValue: 1,
+        committedAt: startDate,
+      }),
+      expect.any(Object),
     );
     expect(mocks.endSession).toHaveBeenCalledOnce();
   });
 
   it('maps grant races for unavailable plan and missing/disabled user', async () => {
-    mocks.planExists.mockReturnValueOnce({
-      session: vi.fn().mockResolvedValue(null),
+    mocks.planFindOne.mockReturnValueOnce({
+      select: () => ({ session: () => leanChain(null) }),
     });
 
     await expect(
@@ -463,13 +424,11 @@ describe('AdminBillingRepository', () => {
       }),
     ).rejects.toBeInstanceOf(BillingPlanUnavailableError);
 
-    mocks.planExists.mockReturnValueOnce({
-      session: vi.fn().mockResolvedValue({ _id: planId }),
+    mocks.planFindOne.mockReturnValueOnce({
+      select: () => ({ session: () => leanChain({ duration: 'P1M' }) }),
     });
-    mocks.userFindOneAndUpdate.mockReturnValueOnce({
-      select: () => ({
-        lean: vi.fn().mockResolvedValue(null),
-      }),
+    mocks.userFindOne.mockReturnValueOnce({
+      select: () => ({ session: () => leanChain(null) }),
     });
 
     await expect(

@@ -19,7 +19,7 @@ const {
   getQuizByIdMock: vi.fn(),
   fetchQuizDraftServerMock: vi.fn(),
   loggerErrorMock: vi.fn(),
-  buildAdaptiveUrlMock: vi.fn((path: string) => `https://adaptive.test/api/v1${path}`),
+  buildAdaptiveUrlMock: vi.fn((path: string) => `https://adaptive.test/api${path}`),
   buildAdaptiveServiceHeadersMock: vi.fn((userId: string, userRole?: string | null) => ({
     'X-User-Id': userId,
     ...(userRole ? { 'X-User-Role': userRole } : {}),
@@ -114,9 +114,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
       success: true,
       data: { id: QUIZ_ID, slug: 'arithmetic' },
     });
-    buildAdaptiveUrlMock.mockImplementation(
-      (path: string) => `https://adaptive.test/api/v1${path}`,
-    );
+    buildAdaptiveUrlMock.mockImplementation((path: string) => `https://adaptive.test/api${path}`);
     buildAdaptiveServiceHeadersMock.mockImplementation(
       (userId: string, userRole?: string | null) => ({
         'X-User-Id': userId,
@@ -417,7 +415,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
       expect(buildAdaptiveUrlMock).toHaveBeenCalledWith(`/quiz/drafts/${DRAFT_ID}/submit`);
       expect(buildAdaptiveServiceHeadersMock).toHaveBeenCalledWith(USER_ID, 'user');
       expect(fetch).toHaveBeenCalledWith(
-        `https://adaptive.test/api/v1/quiz/drafts/${DRAFT_ID}/submit`,
+        `https://adaptive.test/api/quiz/drafts/${DRAFT_ID}/submit`,
         expect.objectContaining({
           method: 'POST',
           cache: 'no-store',
@@ -490,7 +488,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
       );
       expect(buildAdaptiveServiceHeadersMock).toHaveBeenCalledWith(USER_ID, 'admin');
       expect(fetch).toHaveBeenCalledWith(
-        `https://adaptive.test/api/v1/quiz/drafts/${DRAFT_ID}/submit`,
+        `https://adaptive.test/api/quiz/drafts/${DRAFT_ID}/submit`,
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -551,7 +549,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
 
       expect(response.status).toBe(200);
       expect(fetch).toHaveBeenCalledWith(
-        `https://adaptive.test/api/v1/quiz/drafts/${DRAFT_ID}/submit`,
+        `https://adaptive.test/api/quiz/drafts/${DRAFT_ID}/submit`,
         expect.objectContaining({
           method: 'POST',
           signal: expect.any(AbortSignal),

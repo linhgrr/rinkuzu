@@ -1,13 +1,10 @@
-import type { AdminSubscriptionDto, AdminSubscriptionListDto } from '@/dtos/admin-billing';
+import type { AdminSubscriptionListDto } from '@/dtos/admin-billing';
 import { fetchApiData } from '@/lib/api/client';
-import {
-  toAdminSubscriptionsListViewModel,
-  toAdminSubscriptionViewModel,
-} from '@/features/admin/subscriptions/mappers/admin-subscriptions.mapper';
+import { toAdminSubscriptionsListViewModel } from '@/features/admin/subscriptions/mappers/admin-subscriptions.mapper';
 import type {
   AdminSubscriptionsQueryInput,
-  AdminSubscriptionViewModel,
   AdminSubscriptionStatusUpdateInput,
+  AdminMutableSubscriptionStatusViewModel,
   AdminSubscriptionsListViewModel,
 } from '@/features/admin/subscriptions/types/admin-subscriptions-view-model';
 
@@ -37,8 +34,8 @@ export async function fetchAdminSubscriptionsViewModel({
 export async function updateAdminSubscriptionStatus({
   subscriptionId,
   status,
-}: AdminSubscriptionStatusUpdateInput): Promise<AdminSubscriptionViewModel> {
-  const data = await fetchApiData<AdminSubscriptionDto>(
+}: AdminSubscriptionStatusUpdateInput): Promise<void> {
+  await fetchApiData<{ id: string; status: AdminMutableSubscriptionStatusViewModel }>(
     `/api/admin/subscriptions/${subscriptionId}`,
     {
       method: 'PATCH',
@@ -48,5 +45,4 @@ export async function updateAdminSubscriptionStatus({
       body: JSON.stringify({ status }),
     },
   );
-  return toAdminSubscriptionViewModel(data);
 }

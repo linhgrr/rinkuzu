@@ -65,7 +65,6 @@ describe('User model mutation coverage', () => {
     expect(user.lockedUntil).toBeNull();
     expect(user.lastLoginAt).toBeNull();
     expect(user.lastLoginIp).toBeNull();
-    expect(user.subscription).toBeUndefined();
     expect(user.createdAt).toBeInstanceOf(Date);
   });
 
@@ -173,22 +172,9 @@ describe('User model mutation coverage', () => {
       lockedUntil: end,
       lastLoginAt: start,
       lastLoginIp: '203.0.113.10',
-      subscription: {
-        planId: 'premium',
-        planName: 'Premium',
-        startDate: start,
-        endDate: end,
-        isActive: true,
-        payosOrderId: 'order-1',
-        payosTransactionId: 'tx-1',
-      },
     });
 
     await expect(user.validate()).resolves.toBeUndefined();
-    expect(user.subscription?.planId).toBe('premium');
-    expect(user.subscription?.isActive).toBe(true);
-    expect(user.subscription?.payosOrderId).toBe('order-1');
-    expect(user.subscription?.payosTransactionId).toBe('tx-1');
     expect(user.failedLoginAttempts).toBe(3);
     expect(user.lastLoginIp).toBe('203.0.113.10');
   });
@@ -274,12 +260,7 @@ describe('User model mutation coverage', () => {
       ),
     ).toBe(true);
     expect(
-      indexes.some(
-        ([spec]) =>
-          spec['subscription.isActive'] === 1 &&
-          spec['subscription.endDate'] === 1 &&
-          Object.keys(spec).length === 2,
-      ),
-    ).toBe(true);
+      indexes.some(([spec]) => Object.keys(spec).some((field) => field.startsWith('subscription'))),
+    ).toBe(false);
   });
 });

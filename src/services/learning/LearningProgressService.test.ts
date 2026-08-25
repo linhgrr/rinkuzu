@@ -56,7 +56,6 @@ function questionProgress(overrides: Partial<QuestionReviewProgress> = {}): Ques
     totalReviews: 0,
     totalCorrect: 0,
     history: [],
-    isBookmarked: false,
     notes: '',
     createdAt: now,
     updatedAt: now,
@@ -263,7 +262,6 @@ describe('LearningProgressService', () => {
     repository.saveQuestionProgress.mockImplementation(async (progress) => ({
       ...progress,
       id: '507f1f77bcf86cd799439012',
-      isBookmarked: progress.isBookmarked ?? false,
       notes: progress.notes ?? '',
       createdAt: now,
       updatedAt: now,
@@ -319,7 +317,6 @@ describe('LearningProgressService', () => {
     repository.saveQuestionProgress.mockImplementation(async (progress) => ({
       ...progress,
       id: '507f1f77bcf86cd799439012',
-      isBookmarked: progress.isBookmarked ?? false,
       notes: progress.notes ?? '',
       createdAt: now,
       updatedAt: now,
@@ -346,7 +343,6 @@ describe('LearningProgressService', () => {
     repository.saveQuestionProgress.mockImplementation(async (progress) => ({
       ...progress,
       id: '507f1f77bcf86cd799439012',
-      isBookmarked: progress.isBookmarked ?? false,
       notes: progress.notes ?? '',
       createdAt: now,
       updatedAt: now,

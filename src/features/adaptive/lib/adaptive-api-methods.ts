@@ -475,7 +475,7 @@ export async function getConceptDetail(
 
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const health = await apiFetch<ReadinessResponse>('/api/adaptive/health', { cache: 'no-store' });
+    const health = await apiFetch<ReadinessResponse>('/api/adaptive/ready', { cache: 'no-store' });
     return health.ready;
   } catch {
     return false;

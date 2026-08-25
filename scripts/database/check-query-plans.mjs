@@ -58,12 +58,11 @@ try {
   const db = client.db();
   const now = new Date('2026-07-15T00:00:00.000Z');
   const attempts = db.collection('attempts');
-  const subscriptions = db.collection('subscriptions');
   const users = db.collection('users');
   const quizzes = db.collection('quizzes');
   const discussions = db.collection('discussions');
   const marker = { _ciQueryPlanProbe: true };
-  const probeCollections = [attempts, quizzes, subscriptions, users, discussions];
+  const probeCollections = [attempts, quizzes, users, discussions];
 
   await withCleanProbeRows(probeCollections, marker, async () => {
     const dashboardOwnerId = new ObjectId();
@@ -72,16 +71,6 @@ try {
     const discussionQuizId = new ObjectId();
     const discussionNoiseQuizId = new ObjectId();
     const historyUserId = new ObjectId();
-    const subscriptionRows = Array.from({ length: 400 }, (_, index) => ({
-      ...marker,
-      user: new ObjectId(),
-      status: 'completed',
-      isActive: true,
-      endDate:
-        index === 0 ? new Date('2026-07-14T00:00:00.000Z') : new Date('2026-08-01T00:00:00.000Z'),
-      payosOrderId: `ci-plan-subscription-${index}`,
-      ...(index === 0 ? { payosTransactionId: 'ci-plan-transaction-reference' } : {}),
-    }));
     const userRows = Array.from({ length: 400 }, (_, index) => ({
       ...marker,
       email: `ci-plan-user-${index}@example.com`,
@@ -91,11 +80,6 @@ try {
       createdAt: new Date(now.getTime() - index * 1_000),
       ...(index === 0 ? { emailVerificationTokenHash: 'ci-plan-email-verification-token' } : {}),
       ...(index === 1 ? { passwordResetTokenHash: 'ci-plan-password-reset-token' } : {}),
-      subscription: {
-        isActive: true,
-        endDate:
-          index === 0 ? new Date('2026-07-14T00:00:00.000Z') : new Date('2026-08-01T00:00:00.000Z'),
-      },
     }));
     const dashboardUserRows = [dashboardOwnerId, ...dashboardPublicAuthorIds].map(
       (userId, index) => ({
@@ -191,59 +175,11 @@ try {
     await Promise.all([
       attempts.insertMany([...attemptRows, ...historyAttemptRows, ...historyNoiseAttemptRows]),
       quizzes.insertMany([...ownedQuizRows, ...publicQuizRows]),
-      subscriptions.insertMany(subscriptionRows),
       users.insertMany([...userRows, ...dashboardUserRows]),
       discussions.insertMany([...discussionRows, ...discussionNoiseRows]),
     ]);
 
-    const checks = [
-      {
-        name: 'subscriptions-expiration-scan',
-        collection: subscriptions,
-        filter: { status: 'completed', isActive: true, endDate: { $exists: true, $lte: now } },
-        projection: { _id: 1, user: 1 },
-        hint: { status: 1, isActive: 1, endDate: 1 },
-      },
-      {
-        name: 'users-expiration-scan',
-        collection: users,
-        filter: {
-          'subscription.isActive': true,
-          'subscription.endDate': { $exists: true, $lte: now },
-        },
-        projection: { _id: 1 },
-        hint: { 'subscription.isActive': 1, 'subscription.endDate': 1 },
-      },
-    ];
-
     const evidence = [];
-    for (const check of checks) {
-      const explain = await check.collection
-        .find(check.filter, { projection: check.projection })
-        .hint(check.hint)
-        .explain('executionStats');
-      const stats = explain.executionStats;
-      const stages = collectStageNames(stats.executionStages);
-      const row = {
-        name: check.name,
-        stages: [...stages].sort(),
-        keysExamined: stats.totalKeysExamined,
-        documentsExamined: stats.totalDocsExamined,
-        returnedRows: stats.nReturned,
-        projection: check.projection,
-      };
-      if (!stages.has('IXSCAN')) throw new Error(`${check.name} did not use IXSCAN`);
-      if (row.returnedRows !== 1) {
-        throw new Error(`${check.name} returned ${row.returnedRows} rows; expected 1`);
-      }
-      if (row.keysExamined > 2 || row.documentsExamined > 2) {
-        throw new Error(
-          `${check.name} examined ${row.keysExamined} keys/${row.documentsExamined} documents for one row`,
-        );
-      }
-      evidence.push(row);
-    }
-
     const indexedStringChecks = [
       {
         name: 'email-verification-token-lookup',
@@ -263,14 +199,6 @@ try {
           passwordResetTokenHash: { $eq: 'ci-plan-password-reset-token', $type: 'string' },
         },
         expectedIndex: 'passwordResetTokenHash_1',
-      },
-      {
-        name: 'subscription-transaction-reference-lookup',
-        collection: subscriptions,
-        filter: {
-          payosTransactionId: { $eq: 'ci-plan-transaction-reference', $type: 'string' },
-        },
-        expectedIndex: 'payosTransactionId_1',
       },
     ];
 

@@ -24,6 +24,13 @@ const deleteQuizDependentsMock = vi.hoisted(() => vi.fn());
 const deleteOwnedPdfUrlsBestEffortMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const connectDBMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const startSessionMock = vi.hoisted(() => vi.fn());
+const folderQuizMocks = vi.hoisted(() => ({
+  findOne: vi.fn(),
+  updateOne: vi.fn(),
+  deleteOne: vi.fn(),
+  select: vi.fn(),
+  lean: vi.fn(),
+}));
 
 vi.mock('@/lib/mongoose', () => ({
   default: connectDBMock,
@@ -49,6 +56,14 @@ vi.mock('@/models/Quiz', () => {
   });
   return { default: QuizModel };
 });
+
+vi.mock('@/models/FolderQuiz', () => ({
+  default: {
+    findOne: folderQuizMocks.findOne,
+    updateOne: folderQuizMocks.updateOne,
+    deleteOne: folderQuizMocks.deleteOne,
+  },
+}));
 
 vi.mock('mongoose', async () => {
   const actual = await vi.importActual<typeof import('mongoose')>('mongoose');
@@ -146,6 +161,18 @@ describe('QuizRepository mutation coverage', () => {
     });
     quizModelMocks.updatePopulate.mockReturnValue({ lean: quizModelMocks.updateLean });
     quizModelMocks.updateLean.mockResolvedValue(null);
+    const session = {
+      withTransaction: vi.fn(async (callback: () => Promise<void>) => callback()),
+      endSession: vi.fn().mockResolvedValue(undefined),
+    };
+    startSessionMock.mockResolvedValue(session);
+    folderQuizMocks.lean.mockResolvedValue(null);
+    folderQuizMocks.select.mockReturnValue({ lean: folderQuizMocks.lean });
+    folderQuizMocks.findOne.mockReturnValue({ select: folderQuizMocks.select });
+    folderQuizMocks.updateOne.mockResolvedValue({ acknowledged: true });
+    folderQuizMocks.deleteOne.mockReturnValue({
+      session: vi.fn().mockResolvedValue({ acknowledged: true }),
+    });
   });
 
   describe('read by id / slug / source draft', () => {
@@ -421,11 +448,12 @@ describe('QuizRepository mutation coverage', () => {
           { $limit: 4 },
         ]),
       );
-      expect(quizModelMocks.countDocuments).toHaveBeenCalledWith({
-        folder: new Types.ObjectId(FOLDER_ID),
-        author: new Types.ObjectId(AUTHOR_ID),
-        visibility: 'personal',
-      });
+      expect(quizModelMocks.aggregate).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ $lookup: expect.objectContaining({ from: 'folderquizzes' }) }),
+          { $count: 'total' },
+        ]),
+      );
 
       await repository.findRecent(
         { excludeAuthor: AUTHOR_ID, visibility: 'public' },
@@ -454,36 +482,24 @@ describe('QuizRepository mutation coverage', () => {
       );
     });
 
-    it('does not cast non-ObjectId folder/author strings and defaults findAll sort', async () => {
+    it('rejects folder filters without a concrete ObjectId owner', async () => {
       const repository = new QuizRepository();
 
-      await repository.findAll(
-        { folder: 'unfiled', author: 'legacy-author' },
-        { page: 1, limit: 2 },
-      );
-
-      expect(quizModelMocks.aggregate).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          {
-            $match: {
-              folder: 'unfiled',
-              author: 'legacy-author',
-            },
-          },
-          { $sort: { createdAt: -1 } },
-          { $skip: 0 },
-          { $limit: 2 },
-        ]),
-      );
+      await expect(
+        repository.findAll({ folder: 'unfiled', author: 'legacy-author' }, { page: 1, limit: 2 }),
+      ).rejects.toThrow('Folder-filtered quiz queries require a concrete owner');
     });
 
-    it('accepts non-ObjectId user ids in findUserQuizzes filters', async () => {
+    it('joins canonical folder placements in user quiz lists', async () => {
       quizModelMocks.aggregate.mockResolvedValueOnce([{ items: [], meta: [{ totalItems: 0 }] }]);
       const repository = new QuizRepository();
 
-      await repository.findUserQuizzes('legacy-user', { page: 1, limit: 10 });
+      await repository.findUserQuizzes(AUTHOR_ID, { page: 1, limit: 10 });
       expect(quizModelMocks.aggregate).toHaveBeenCalledWith(
-        expect.arrayContaining([{ $match: { author: 'legacy-user' } }]),
+        expect.arrayContaining([
+          expect.objectContaining({ $lookup: expect.objectContaining({ from: 'folderquizzes' }) }),
+          { $match: { author: new Types.ObjectId(AUTHOR_ID) } },
+        ]),
       );
     });
   });

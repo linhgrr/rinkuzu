@@ -6,12 +6,12 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/api/v1/session/start": {
+    "/api/session/start": {
       "post": {
         "tags": ["session"],
         "summary": "Start Session",
         "description": "Create a new adaptive learning session.",
-        "operationId": "start_session_api_v1_session_start_post",
+        "operationId": "start_session_api_session_start_post",
         "parameters": [
           {
             "name": "x-user-id",
@@ -66,12 +66,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/next-concept": {
+    "/api/session/{session_id}/next-concept": {
       "post": {
         "tags": ["session"],
         "summary": "Next Concept",
         "description": "Recommend the next concept to study based on mastery and prerequisites.",
-        "operationId": "next_concept_api_v1_session__session_id__next_concept_post",
+        "operationId": "next_concept_api_session__session_id__next_concept_post",
         "parameters": [
           {
             "name": "session_id",
@@ -130,12 +130,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/theory": {
+    "/api/session/{session_id}/theory": {
       "get": {
         "tags": ["session"],
         "summary": "Theory",
         "description": "Retrieve theory content for the current pending concept.",
-        "operationId": "theory_api_v1_session__session_id__theory_get",
+        "operationId": "theory_api_session__session_id__theory_get",
         "parameters": [
           {
             "name": "session_id",
@@ -194,12 +194,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/exercise": {
+    "/api/session/{session_id}/exercise": {
       "post": {
         "tags": ["session"],
         "summary": "Generate Exercise",
         "description": "Generate an exercise for the current concept at the appropriate Bloom level.",
-        "operationId": "generate_exercise_api_v1_session__session_id__exercise_post",
+        "operationId": "generate_exercise_api_session__session_id__exercise_post",
         "parameters": [
           {
             "name": "session_id",
@@ -258,12 +258,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/step": {
+    "/api/session/{session_id}/step": {
       "post": {
         "tags": ["session"],
         "summary": "Learning Step",
         "description": "Return the current learning step, creating and persisting one when needed.",
-        "operationId": "learning_step_api_v1_session__session_id__step_post",
+        "operationId": "learning_step_api_session__session_id__step_post",
         "parameters": [
           {
             "name": "session_id",
@@ -322,12 +322,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/submit": {
+    "/api/session/{session_id}/submit": {
       "post": {
         "tags": ["session"],
         "summary": "Submit Answer",
         "description": "Evaluate the user's answer and update BKT mastery estimates.",
-        "operationId": "submit_answer_api_v1_session__session_id__submit_post",
+        "operationId": "submit_answer_api_session__session_id__submit_post",
         "parameters": [
           {
             "name": "session_id",
@@ -396,12 +396,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/status": {
+    "/api/session/{session_id}/status": {
       "get": {
         "tags": ["session"],
         "summary": "Session Status",
         "description": "Return the current status and progress of a learning session.",
-        "operationId": "session_status_api_v1_session__session_id__status_get",
+        "operationId": "session_status_api_session__session_id__status_get",
         "parameters": [
           {
             "name": "session_id",
@@ -460,12 +460,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/graph": {
+    "/api/session/{session_id}/graph": {
       "get": {
         "tags": ["knowledge"],
         "summary": "Get Knowledge Graph",
         "description": "Return the prerequisite knowledge graph for a session.",
-        "operationId": "get_knowledge_graph_api_v1_session__session_id__graph_get",
+        "operationId": "get_knowledge_graph_api_session__session_id__graph_get",
         "parameters": [
           {
             "name": "session_id",
@@ -524,12 +524,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/mastery-matrix": {
+    "/api/session/{session_id}/mastery-matrix": {
       "get": {
         "tags": ["knowledge"],
         "summary": "Get Mastery Matrix",
         "description": "Return the concept x Bloom-level mastery matrix for a session.",
-        "operationId": "get_mastery_matrix_api_v1_session__session_id__mastery_matrix_get",
+        "operationId": "get_mastery_matrix_api_session__session_id__mastery_matrix_get",
         "parameters": [
           {
             "name": "session_id",
@@ -588,12 +588,12 @@
         }
       }
     },
-    "/api/v1/session/{session_id}/concept/{concept_id}": {
+    "/api/session/{session_id}/concept/{concept_id}": {
       "get": {
         "tags": ["knowledge"],
         "summary": "Get Concept Detail",
         "description": "Return detailed information about a specific concept.",
-        "operationId": "get_concept_detail_api_v1_session__session_id__concept__concept_id__get",
+        "operationId": "get_concept_detail_api_session__session_id__concept__concept_id__get",
         "parameters": [
           {
             "name": "session_id",
@@ -666,12 +666,12 @@
         }
       }
     },
-    "/api/v1/pipeline/status": {
+    "/api/pipeline/status": {
       "get": {
         "tags": ["pipeline"],
         "summary": "Pipeline Status",
         "description": "Check if content pipeline runtime modules are available.",
-        "operationId": "pipeline_status_api_v1_pipeline_status_get",
+        "operationId": "pipeline_status_api_pipeline_status_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -687,12 +687,12 @@
         "security": []
       }
     },
-    "/api/v1/pipeline/process": {
+    "/api/pipeline/process": {
       "post": {
         "tags": ["pipeline"],
         "summary": "Process Document",
         "description": "Run the full content processing pipeline from an S3 uploaded file.",
-        "operationId": "process_document_api_v1_pipeline_process_post",
+        "operationId": "process_document_api_pipeline_process_post",
         "parameters": [
           {
             "name": "x-rinkuzu-pdf-page-limit",
@@ -759,12 +759,12 @@
         }
       }
     },
-    "/api/v1/pipeline/jobs": {
+    "/api/pipeline/jobs": {
       "get": {
         "tags": ["pipeline"],
         "summary": "List Jobs",
         "description": "List recent pipeline jobs of all statuses for the current user.\n\nReturns per-job live fields the frontend library needs: progress, retryable,\neta_seconds, retry_after_seconds, is_terminal, is_delayed.",
-        "operationId": "list_jobs_api_v1_pipeline_jobs_get",
+        "operationId": "list_jobs_api_pipeline_jobs_get",
         "parameters": [
           {
             "name": "limit",
@@ -821,11 +821,11 @@
         }
       }
     },
-    "/api/v1/pipeline/jobs/{job_id}": {
+    "/api/pipeline/jobs/{job_id}": {
       "get": {
         "tags": ["pipeline"],
         "summary": "Get Job Status",
-        "operationId": "get_job_status_api_v1_pipeline_jobs__job_id__get",
+        "operationId": "get_job_status_api_pipeline_jobs__job_id__get",
         "parameters": [
           {
             "name": "job_id",
@@ -894,12 +894,12 @@
         }
       }
     },
-    "/api/v1/pipeline/jobs/{job_id}/create-session": {
+    "/api/pipeline/jobs/{job_id}/create-session": {
       "post": {
         "tags": ["pipeline"],
         "summary": "Create Session From Pipeline",
         "description": "Create a learning session from a completed pipeline job.",
-        "operationId": "create_session_from_pipeline_api_v1_pipeline_jobs__job_id__create_session_post",
+        "operationId": "create_session_from_pipeline_api_pipeline_jobs__job_id__create_session_post",
         "parameters": [
           {
             "name": "job_id",
@@ -970,12 +970,12 @@
         }
       }
     },
-    "/api/v1/pipeline/jobs/{job_id}/cancel": {
+    "/api/pipeline/jobs/{job_id}/cancel": {
       "post": {
         "tags": ["pipeline"],
         "summary": "Cancel Job",
         "description": "Request cancellation of a pipeline job.\n\nWorks regardless of pipeline runtime availability so a stuck job can always\nbe cancelled. Uses an owner-scoped atomic Mongo transition (not load-full-save).\nTerminal jobs are idempotent no-ops.",
-        "operationId": "cancel_job_api_v1_pipeline_jobs__job_id__cancel_post",
+        "operationId": "cancel_job_api_pipeline_jobs__job_id__cancel_post",
         "parameters": [
           {
             "name": "job_id",
@@ -1034,12 +1034,12 @@
         }
       }
     },
-    "/api/v1/pipeline/jobs/{job_id}/retry": {
+    "/api/pipeline/jobs/{job_id}/retry": {
       "post": {
         "tags": ["pipeline"],
         "summary": "Retry Job Endpoint",
         "description": "Retry a terminal, retryable pipeline job by re-fetching its S3 source.",
-        "operationId": "retry_job_endpoint_api_v1_pipeline_jobs__job_id__retry_post",
+        "operationId": "retry_job_endpoint_api_pipeline_jobs__job_id__retry_post",
         "parameters": [
           {
             "name": "job_id",
@@ -1098,11 +1098,11 @@
         }
       }
     },
-    "/api/v1/history/subjects": {
+    "/api/history/subjects": {
       "get": {
         "tags": ["history"],
         "summary": "List Subjects",
-        "operationId": "list_subjects_api_v1_history_subjects_get",
+        "operationId": "list_subjects_api_history_subjects_get",
         "parameters": [
           {
             "name": "limit",
@@ -1159,11 +1159,11 @@
         }
       }
     },
-    "/api/v1/history/subjects/progress": {
+    "/api/history/subjects/progress": {
       "get": {
         "tags": ["history"],
         "summary": "List Subject Progress",
-        "operationId": "list_subject_progress_api_v1_history_subjects_progress_get",
+        "operationId": "list_subject_progress_api_history_subjects_progress_get",
         "parameters": [
           {
             "name": "limit",
@@ -1220,11 +1220,11 @@
         }
       }
     },
-    "/api/v1/history/subjects/{job_id}": {
+    "/api/history/subjects/{job_id}": {
       "get": {
         "tags": ["history"],
         "summary": "Get Subject History",
-        "operationId": "get_subject_history_api_v1_history_subjects__job_id__get",
+        "operationId": "get_subject_history_api_history_subjects__job_id__get",
         "parameters": [
           {
             "name": "job_id",
@@ -1285,7 +1285,7 @@
       "delete": {
         "tags": ["history"],
         "summary": "Delete Subject",
-        "operationId": "delete_subject_api_v1_history_subjects__job_id__delete",
+        "operationId": "delete_subject_api_history_subjects__job_id__delete",
         "parameters": [
           {
             "name": "job_id",
@@ -1354,11 +1354,11 @@
         }
       }
     },
-    "/api/v1/history/pipeline-jobs": {
+    "/api/history/pipeline-jobs": {
       "get": {
         "tags": ["history"],
         "summary": "List Pipeline Jobs",
-        "operationId": "list_pipeline_jobs_api_v1_history_pipeline_jobs_get",
+        "operationId": "list_pipeline_jobs_api_history_pipeline_jobs_get",
         "parameters": [
           {
             "name": "limit",
@@ -1415,11 +1415,11 @@
         }
       }
     },
-    "/api/v1/history/pipeline-jobs/{job_id}": {
+    "/api/history/pipeline-jobs/{job_id}": {
       "get": {
         "tags": ["history"],
         "summary": "Get Pipeline Job",
-        "operationId": "get_pipeline_job_api_v1_history_pipeline_jobs__job_id__get",
+        "operationId": "get_pipeline_job_api_history_pipeline_jobs__job_id__get",
         "parameters": [
           {
             "name": "job_id",
@@ -1478,12 +1478,12 @@
         }
       }
     },
-    "/api/v1/quiz/drafts": {
+    "/api/quiz/drafts": {
       "post": {
         "tags": ["quiz-drafts"],
         "summary": "Create Quiz Draft",
         "description": "Create a new quiz draft and enqueue AI processing.",
-        "operationId": "create_quiz_draft_api_v1_quiz_drafts_post",
+        "operationId": "create_quiz_draft_api_quiz_drafts_post",
         "parameters": [
           {
             "name": "x-rinkuzu-pdf-page-limit",
@@ -1553,7 +1553,7 @@
         "tags": ["quiz-drafts"],
         "summary": "List Quiz Drafts",
         "description": "List recent quiz drafts for the authenticated user.",
-        "operationId": "list_quiz_drafts_api_v1_quiz_drafts_get",
+        "operationId": "list_quiz_drafts_api_quiz_drafts_get",
         "parameters": [
           {
             "name": "limit",
@@ -1610,12 +1610,12 @@
         }
       }
     },
-    "/api/v1/quiz/drafts/manual": {
+    "/api/quiz/drafts/manual": {
       "post": {
         "tags": ["quiz-drafts"],
         "summary": "Create Manual Quiz Draft",
         "description": "Create a durable manual draft without scheduling an AI worker.",
-        "operationId": "create_manual_quiz_draft_api_v1_quiz_drafts_manual_post",
+        "operationId": "create_manual_quiz_draft_api_quiz_drafts_manual_post",
         "parameters": [
           {
             "name": "x-user-id",
@@ -1670,12 +1670,12 @@
         }
       }
     },
-    "/api/v1/quiz/drafts/{draft_id}": {
+    "/api/quiz/drafts/{draft_id}": {
       "get": {
         "tags": ["quiz-drafts"],
         "summary": "Get Quiz Draft",
         "description": "Retrieve a single quiz draft by ID.",
-        "operationId": "get_quiz_draft_api_v1_quiz_drafts__draft_id__get",
+        "operationId": "get_quiz_draft_api_quiz_drafts__draft_id__get",
         "parameters": [
           {
             "name": "draft_id",
@@ -1737,7 +1737,7 @@
         "tags": ["quiz-drafts"],
         "summary": "Patch Quiz Draft",
         "description": "Update fields of an existing quiz draft.",
-        "operationId": "patch_quiz_draft_api_v1_quiz_drafts__draft_id__patch",
+        "operationId": "patch_quiz_draft_api_quiz_drafts__draft_id__patch",
         "parameters": [
           {
             "name": "draft_id",
@@ -1809,7 +1809,7 @@
         "tags": ["quiz-drafts"],
         "summary": "Delete Quiz Draft",
         "description": "Delete a quiz draft owned by the authenticated user.\n\nObserved delete is 200; genuine absence is 404; infrastructure errors are\n503. Not universally idempotent after metadata removal.",
-        "operationId": "delete_quiz_draft_api_v1_quiz_drafts__draft_id__delete",
+        "operationId": "delete_quiz_draft_api_quiz_drafts__draft_id__delete",
         "parameters": [
           {
             "name": "draft_id",
@@ -1868,12 +1868,12 @@
         }
       }
     },
-    "/api/v1/quiz/drafts/{draft_id}/submit": {
+    "/api/quiz/drafts/{draft_id}/submit": {
       "post": {
         "tags": ["quiz-drafts"],
         "summary": "Submit Quiz Draft",
         "description": "Finalize a quiz draft and persist it as a published quiz.",
-        "operationId": "submit_quiz_draft_api_v1_quiz_drafts__draft_id__submit_post",
+        "operationId": "submit_quiz_draft_api_quiz_drafts__draft_id__submit_post",
         "parameters": [
           {
             "name": "draft_id",
@@ -1942,11 +1942,11 @@
         }
       }
     },
-    "/api/v1/premium-quiz/reviews": {
+    "/api/premium-quiz/reviews": {
       "post": {
         "tags": ["premium-quiz-reviews"],
         "summary": "Create Premium Review",
-        "operationId": "create_premium_review_api_v1_premium_quiz_reviews_post",
+        "operationId": "create_premium_review_api_premium_quiz_reviews_post",
         "parameters": [
           {
             "name": "x-user-id",
@@ -2010,78 +2010,11 @@
         }
       }
     },
-    "/api/v1/premium-quiz/reviews/{job_id}": {
-      "get": {
-        "tags": ["premium-quiz-reviews"],
-        "summary": "Get Premium Review",
-        "operationId": "get_premium_review_api_v1_premium_quiz_reviews__job_id__get",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          },
-          {
-            "name": "x-user-id",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-User-Id"
-            }
-          },
-          {
-            "name": "x-user-role",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-User-Role"
-            }
-          },
-          {
-            "name": "x-service-token",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-Service-Token"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StandardResponse_PremiumReviewCreateResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/ocr-keys": {
+    "/api/admin/ocr-keys": {
       "get": {
         "tags": ["admin-ocr-keys"],
         "summary": "List Admin Ocr Keys",
-        "operationId": "list_admin_ocr_keys_api_v1_admin_ocr_keys_get",
+        "operationId": "list_admin_ocr_keys_api_admin_ocr_keys_get",
         "parameters": [
           {
             "name": "x-user-id",
@@ -2137,7 +2070,7 @@
       "post": {
         "tags": ["admin-ocr-keys"],
         "summary": "Create Admin Ocr Key",
-        "operationId": "create_admin_ocr_key_api_v1_admin_ocr_keys_post",
+        "operationId": "create_admin_ocr_key_api_admin_ocr_keys_post",
         "parameters": [
           {
             "name": "x-user-id",
@@ -2201,11 +2134,11 @@
         }
       }
     },
-    "/api/v1/admin/ocr-keys/model": {
+    "/api/admin/ocr-keys/model": {
       "get": {
         "tags": ["admin-ocr-keys"],
         "summary": "Get Admin Ocr Model",
-        "operationId": "get_admin_ocr_model_api_v1_admin_ocr_keys_model_get",
+        "operationId": "get_admin_ocr_model_api_admin_ocr_keys_model_get",
         "parameters": [
           {
             "name": "x-user-id",
@@ -2261,7 +2194,7 @@
       "patch": {
         "tags": ["admin-ocr-keys"],
         "summary": "Update Admin Ocr Model",
-        "operationId": "update_admin_ocr_model_api_v1_admin_ocr_keys_model_patch",
+        "operationId": "update_admin_ocr_model_api_admin_ocr_keys_model_patch",
         "parameters": [
           {
             "name": "x-user-id",
@@ -2325,11 +2258,11 @@
         }
       }
     },
-    "/api/v1/admin/ocr-keys/{key_id}": {
+    "/api/admin/ocr-keys/{key_id}": {
       "patch": {
         "tags": ["admin-ocr-keys"],
         "summary": "Update Admin Ocr Key",
-        "operationId": "update_admin_ocr_key_api_v1_admin_ocr_keys__key_id__patch",
+        "operationId": "update_admin_ocr_key_api_admin_ocr_keys__key_id__patch",
         "parameters": [
           {
             "name": "key_id",
@@ -2404,7 +2337,7 @@
       "delete": {
         "tags": ["admin-ocr-keys"],
         "summary": "Delete Admin Ocr Key",
-        "operationId": "delete_admin_ocr_key_api_v1_admin_ocr_keys__key_id__delete",
+        "operationId": "delete_admin_ocr_key_api_admin_ocr_keys__key_id__delete",
         "parameters": [
           {
             "name": "key_id",
@@ -2467,11 +2400,11 @@
         }
       }
     },
-    "/api/v1/admin/ocr-keys/{key_id}/test": {
+    "/api/admin/ocr-keys/{key_id}/test": {
       "post": {
         "tags": ["admin-ocr-keys"],
         "summary": "Run Admin Ocr Key Test",
-        "operationId": "run_admin_ocr_key_test_api_v1_admin_ocr_keys__key_id__test_post",
+        "operationId": "run_admin_ocr_key_test_api_admin_ocr_keys__key_id__test_post",
         "parameters": [
           {
             "name": "key_id",
@@ -2534,11 +2467,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/snapshot": {
+    "/api/admin/llm-settings/snapshot": {
       "get": {
         "tags": ["admin-llm-settings"],
         "summary": "Get Llm Settings Snapshot",
-        "operationId": "get_llm_settings_snapshot_api_v1_admin_llm_settings_snapshot_get",
+        "operationId": "get_llm_settings_snapshot_api_admin_llm_settings_snapshot_get",
         "parameters": [
           {
             "name": "x-user-id",
@@ -2592,11 +2525,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers": {
+    "/api/admin/llm-settings/providers": {
       "post": {
         "tags": ["admin-llm-settings"],
         "summary": "Create Provider",
-        "operationId": "create_provider_api_v1_admin_llm_settings_providers_post",
+        "operationId": "create_provider_api_admin_llm_settings_providers_post",
         "parameters": [
           {
             "name": "If-Match",
@@ -2660,7 +2593,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Create Provider Api V1 Admin Llm Settings Providers Post"
+                  "title": "Response Create Provider Api Admin Llm Settings Providers Post"
                 }
               }
             }
@@ -2678,11 +2611,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}": {
+    "/api/admin/llm-settings/providers/{provider_id}": {
       "patch": {
         "tags": ["admin-llm-settings"],
         "summary": "Patch Provider",
-        "operationId": "patch_provider_api_v1_admin_llm_settings_providers__provider_id__patch",
+        "operationId": "patch_provider_api_admin_llm_settings_providers__provider_id__patch",
         "parameters": [
           {
             "name": "provider_id",
@@ -2755,7 +2688,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Patch Provider Api V1 Admin Llm Settings Providers  Provider Id  Patch"
+                  "title": "Response Patch Provider Api Admin Llm Settings Providers  Provider Id  Patch"
                 }
               }
             }
@@ -2775,7 +2708,7 @@
       "delete": {
         "tags": ["admin-llm-settings"],
         "summary": "Delete Provider",
-        "operationId": "delete_provider_api_v1_admin_llm_settings_providers__provider_id__delete",
+        "operationId": "delete_provider_api_admin_llm_settings_providers__provider_id__delete",
         "parameters": [
           {
             "name": "provider_id",
@@ -2838,7 +2771,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Delete Provider Api V1 Admin Llm Settings Providers  Provider Id  Delete"
+                  "title": "Response Delete Provider Api Admin Llm Settings Providers  Provider Id  Delete"
                 }
               }
             }
@@ -2856,11 +2789,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/keys": {
+    "/api/admin/llm-settings/providers/{provider_id}/keys": {
       "post": {
         "tags": ["admin-llm-settings"],
         "summary": "Create Credential",
-        "operationId": "create_credential_api_v1_admin_llm_settings_providers__provider_id__keys_post",
+        "operationId": "create_credential_api_admin_llm_settings_providers__provider_id__keys_post",
         "parameters": [
           {
             "name": "provider_id",
@@ -2933,7 +2866,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Create Credential Api V1 Admin Llm Settings Providers  Provider Id  Keys Post"
+                  "title": "Response Create Credential Api Admin Llm Settings Providers  Provider Id  Keys Post"
                 }
               }
             }
@@ -2951,11 +2884,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}": {
+    "/api/admin/llm-settings/providers/{provider_id}/keys/{key_id}": {
       "patch": {
         "tags": ["admin-llm-settings"],
         "summary": "Patch Credential",
-        "operationId": "patch_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__patch",
+        "operationId": "patch_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__patch",
         "parameters": [
           {
             "name": "provider_id",
@@ -3037,7 +2970,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Patch Credential Api V1 Admin Llm Settings Providers  Provider Id  Keys  Key Id  Patch"
+                  "title": "Response Patch Credential Api Admin Llm Settings Providers  Provider Id  Keys  Key Id  Patch"
                 }
               }
             }
@@ -3057,7 +2990,7 @@
       "delete": {
         "tags": ["admin-llm-settings"],
         "summary": "Delete Credential",
-        "operationId": "delete_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__delete",
+        "operationId": "delete_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__delete",
         "parameters": [
           {
             "name": "provider_id",
@@ -3129,7 +3062,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Delete Credential Api V1 Admin Llm Settings Providers  Provider Id  Keys  Key Id  Delete"
+                  "title": "Response Delete Credential Api Admin Llm Settings Providers  Provider Id  Keys  Key Id  Delete"
                 }
               }
             }
@@ -3147,11 +3080,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}/secret": {
+    "/api/admin/llm-settings/providers/{provider_id}/keys/{key_id}/secret": {
       "put": {
         "tags": ["admin-llm-settings"],
         "summary": "Replace Credential Secret",
-        "operationId": "replace_credential_secret_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__secret_put",
+        "operationId": "replace_credential_secret_api_admin_llm_settings_providers__provider_id__keys__key_id__secret_put",
         "parameters": [
           {
             "name": "provider_id",
@@ -3233,7 +3166,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Replace Credential Secret Api V1 Admin Llm Settings Providers  Provider Id  Keys  Key Id  Secret Put"
+                  "title": "Response Replace Credential Secret Api Admin Llm Settings Providers  Provider Id  Keys  Key Id  Secret Put"
                 }
               }
             }
@@ -3251,11 +3184,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/models": {
+    "/api/admin/llm-settings/providers/{provider_id}/models": {
       "post": {
         "tags": ["admin-llm-settings"],
         "summary": "Create Model",
-        "operationId": "create_model_api_v1_admin_llm_settings_providers__provider_id__models_post",
+        "operationId": "create_model_api_admin_llm_settings_providers__provider_id__models_post",
         "parameters": [
           {
             "name": "provider_id",
@@ -3328,7 +3261,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Create Model Api V1 Admin Llm Settings Providers  Provider Id  Models Post"
+                  "title": "Response Create Model Api Admin Llm Settings Providers  Provider Id  Models Post"
                 }
               }
             }
@@ -3346,11 +3279,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/models/{model_id}": {
+    "/api/admin/llm-settings/providers/{provider_id}/models/{model_id}": {
       "patch": {
         "tags": ["admin-llm-settings"],
         "summary": "Patch Model",
-        "operationId": "patch_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__patch",
+        "operationId": "patch_model_api_admin_llm_settings_providers__provider_id__models__model_id__patch",
         "parameters": [
           {
             "name": "provider_id",
@@ -3432,7 +3365,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Patch Model Api V1 Admin Llm Settings Providers  Provider Id  Models  Model Id  Patch"
+                  "title": "Response Patch Model Api Admin Llm Settings Providers  Provider Id  Models  Model Id  Patch"
                 }
               }
             }
@@ -3452,7 +3385,7 @@
       "delete": {
         "tags": ["admin-llm-settings"],
         "summary": "Delete Model",
-        "operationId": "delete_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__delete",
+        "operationId": "delete_model_api_admin_llm_settings_providers__provider_id__models__model_id__delete",
         "parameters": [
           {
             "name": "provider_id",
@@ -3524,7 +3457,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Delete Model Api V1 Admin Llm Settings Providers  Provider Id  Models  Model Id  Delete"
+                  "title": "Response Delete Model Api Admin Llm Settings Providers  Provider Id  Models  Model Id  Delete"
                 }
               }
             }
@@ -3542,11 +3475,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/routing": {
+    "/api/admin/llm-settings/routing": {
       "put": {
         "tags": ["admin-llm-settings"],
         "summary": "Replace Routing",
-        "operationId": "replace_routing_api_v1_admin_llm_settings_routing_put",
+        "operationId": "replace_routing_api_admin_llm_settings_routing_put",
         "parameters": [
           {
             "name": "If-Match",
@@ -3610,7 +3543,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Replace Routing Api V1 Admin Llm Settings Routing Put"
+                  "title": "Response Replace Routing Api Admin Llm Settings Routing Put"
                 }
               }
             }
@@ -3628,11 +3561,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/test": {
+    "/api/admin/llm-settings/providers/{provider_id}/test": {
       "post": {
         "tags": ["admin-llm-settings"],
         "summary": "Test Provider",
-        "operationId": "test_provider_api_v1_admin_llm_settings_providers__provider_id__test_post",
+        "operationId": "test_provider_api_admin_llm_settings_providers__provider_id__test_post",
         "parameters": [
           {
             "name": "provider_id",
@@ -3689,7 +3622,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Test Provider Api V1 Admin Llm Settings Providers  Provider Id  Test Post"
+                  "title": "Response Test Provider Api Admin Llm Settings Providers  Provider Id  Test Post"
                 }
               }
             }
@@ -3707,11 +3640,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/keys/{key_id}/test": {
+    "/api/admin/llm-settings/providers/{provider_id}/keys/{key_id}/test": {
       "post": {
         "tags": ["admin-llm-settings"],
         "summary": "Test Credential",
-        "operationId": "test_credential_api_v1_admin_llm_settings_providers__provider_id__keys__key_id__test_post",
+        "operationId": "test_credential_api_admin_llm_settings_providers__provider_id__keys__key_id__test_post",
         "parameters": [
           {
             "name": "provider_id",
@@ -3767,7 +3700,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Test Credential Api V1 Admin Llm Settings Providers  Provider Id  Keys  Key Id  Test Post"
+                  "title": "Response Test Credential Api Admin Llm Settings Providers  Provider Id  Keys  Key Id  Test Post"
                 }
               }
             }
@@ -3785,11 +3718,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/models/discover": {
+    "/api/admin/llm-settings/providers/{provider_id}/models/discover": {
       "post": {
         "tags": ["admin-llm-settings"],
         "summary": "Discover Models",
-        "operationId": "discover_models_api_v1_admin_llm_settings_providers__provider_id__models_discover_post",
+        "operationId": "discover_models_api_admin_llm_settings_providers__provider_id__models_discover_post",
         "parameters": [
           {
             "name": "provider_id",
@@ -3846,7 +3779,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Discover Models Api V1 Admin Llm Settings Providers  Provider Id  Models Discover Post"
+                  "title": "Response Discover Models Api Admin Llm Settings Providers  Provider Id  Models Discover Post"
                 }
               }
             }
@@ -3864,11 +3797,11 @@
         }
       }
     },
-    "/api/v1/admin/llm-settings/providers/{provider_id}/models/{model_id}/test": {
+    "/api/admin/llm-settings/providers/{provider_id}/models/{model_id}/test": {
       "post": {
         "tags": ["admin-llm-settings"],
         "summary": "Test Model",
-        "operationId": "test_model_api_v1_admin_llm_settings_providers__provider_id__models__model_id__test_post",
+        "operationId": "test_model_api_admin_llm_settings_providers__provider_id__models__model_id__test_post",
         "parameters": [
           {
             "name": "provider_id",
@@ -3934,7 +3867,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Test Model Api V1 Admin Llm Settings Providers  Provider Id  Models  Model Id  Test Post"
+                  "title": "Response Test Model Api Admin Llm Settings Providers  Provider Id  Models  Model Id  Test Post"
                 }
               }
             }
@@ -3952,12 +3885,12 @@
         }
       }
     },
-    "/api/v1/admin/llm-usage/summary": {
+    "/api/admin/llm-usage/summary": {
       "get": {
         "tags": ["admin-usage"],
         "summary": "Get Llm Usage Summary",
         "description": "Return operation-aware usage totals and bounded breakdowns.",
-        "operationId": "get_llm_usage_summary_api_v1_admin_llm_usage_summary_get",
+        "operationId": "get_llm_usage_summary_api_admin_llm_usage_summary_get",
         "parameters": [
           {
             "name": "window",
@@ -4115,12 +4048,12 @@
         }
       }
     },
-    "/api/v1/admin/llm-usage/events": {
+    "/api/admin/llm-usage/events": {
       "get": {
         "tags": ["admin-usage"],
         "summary": "Get Llm Usage Events",
         "description": "Return a signed-cursor page of safe physical-attempt diagnostics.",
-        "operationId": "get_llm_usage_events_api_v1_admin_llm_usage_events_get",
+        "operationId": "get_llm_usage_events_api_admin_llm_usage_events_get",
         "parameters": [
           {
             "name": "window",
@@ -4307,11 +4240,11 @@
         }
       }
     },
-    "/api/v1/ask-rin-chan/contexts": {
+    "/api/ask-rin-chan/contexts": {
       "post": {
         "tags": ["ask-rin-chan"],
         "summary": "Register Exercise Context",
-        "operationId": "register_exercise_context_api_v1_ask_rin_chan_contexts_post",
+        "operationId": "register_exercise_context_api_ask_rin_chan_contexts_post",
         "parameters": [
           {
             "name": "x-user-id",
@@ -4366,11 +4299,11 @@
         }
       }
     },
-    "/api/v1/ask-rin-chan/chat": {
+    "/api/ask-rin-chan/chat": {
       "post": {
         "tags": ["ask-rin-chan"],
         "summary": "Ask Rin Chan",
-        "operationId": "ask_rin_chan_api_v1_ask_rin_chan_chat_post",
+        "operationId": "ask_rin_chan_api_ask_rin_chan_chat_post",
         "parameters": [
           {
             "name": "x-user-id",
@@ -4407,7 +4340,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Ask Rin Chan Api V1 Ask Rin Chan Chat Post"
+                  "title": "Response Ask Rin Chan Api Ask Rin Chan Chat Post"
                 }
               }
             }
@@ -4425,12 +4358,12 @@
         }
       }
     },
-    "/api/v1/ask-rin-chan/agent": {
+    "/api/ask-rin-chan/agent": {
       "post": {
         "tags": ["ask-rin-chan"],
         "summary": "Run Ask Rin Chan Agent",
         "description": "Run Ask Rin-chan using the official AG-UI input and event protocol.",
-        "operationId": "run_ask_rin_chan_agent_api_v1_ask_rin_chan_agent_post",
+        "operationId": "run_ask_rin_chan_agent_api_ask_rin_chan_agent_post",
         "parameters": [
           {
             "name": "x-user-id",
@@ -4467,7 +4400,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Run Ask Rin Chan Agent Api V1 Ask Rin Chan Agent Post"
+                  "title": "Response Run Ask Rin Chan Agent Api Ask Rin Chan Agent Post"
                 }
               }
             }
@@ -4485,11 +4418,11 @@
         }
       }
     },
-    "/api/v1/ask-rin-chan/conversations/{exercise_context_id}": {
+    "/api/ask-rin-chan/conversations/{exercise_context_id}": {
       "get": {
         "tags": ["ask-rin-chan"],
         "summary": "Read Conversation",
-        "operationId": "read_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__get",
+        "operationId": "read_conversation_api_ask_rin_chan_conversations__exercise_context_id__get",
         "parameters": [
           {
             "name": "exercise_context_id",
@@ -4550,7 +4483,7 @@
       "delete": {
         "tags": ["ask-rin-chan"],
         "summary": "Clear Conversation",
-        "operationId": "clear_conversation_api_v1_ask_rin_chan_conversations__exercise_context_id__delete",
+        "operationId": "clear_conversation_api_ask_rin_chan_conversations__exercise_context_id__delete",
         "parameters": [
           {
             "name": "exercise_context_id",
@@ -4591,7 +4524,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Clear Conversation Api V1 Ask Rin Chan Conversations  Exercise Context Id  Delete"
+                  "title": "Response Clear Conversation Api Ask Rin Chan Conversations  Exercise Context Id  Delete"
                 }
               }
             }
@@ -4614,26 +4547,6 @@
         "summary": "Readiness",
         "description": "Kubernetes readiness probe — 503 until all dependencies are up.",
         "operationId": "readiness_api_ready_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StandardResponse_ReadinessResponse_"
-                }
-              }
-            }
-          }
-        },
-        "security": []
-      }
-    },
-    "/api/health": {
-      "get": {
-        "summary": "Health",
-        "description": "Backwards-compat alias for /api/ready.",
-        "operationId": "health_api_health_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -9625,12 +9538,12 @@
       },
       "PremiumReviewCreateResponse": {
         "properties": {
-          "job": {
-            "$ref": "#/components/schemas/PremiumReviewJobResponse"
+          "result": {
+            "$ref": "#/components/schemas/PremiumReviewResult"
           }
         },
         "type": "object",
-        "required": ["job"],
+        "required": ["result"],
         "title": "PremiumReviewCreateResponse"
       },
       "PremiumReviewCriterion": {
@@ -9693,51 +9606,6 @@
         "type": "object",
         "required": ["severity", "code", "message"],
         "title": "PremiumReviewIssue"
-      },
-      "PremiumReviewJobResponse": {
-        "properties": {
-          "jobId": {
-            "type": "string",
-            "title": "Jobid"
-          },
-          "submissionId": {
-            "type": "string",
-            "title": "Submissionid"
-          },
-          "snapshotHash": {
-            "type": "string",
-            "title": "Snapshothash"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["queued", "running", "completed", "failed"],
-            "title": "Status"
-          },
-          "result": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PremiumReviewResult"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          }
-        },
-        "type": "object",
-        "required": ["jobId", "submissionId", "snapshotHash", "status"],
-        "title": "PremiumReviewJobResponse"
       },
       "PremiumReviewResult": {
         "properties": {

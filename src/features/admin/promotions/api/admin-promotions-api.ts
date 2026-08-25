@@ -1,7 +1,7 @@
 import { fetchApiData } from '@/lib/api/client';
 
 async function getBillingCsrfToken(): Promise<string> {
-  return (await fetchApiData<{ token: string }>('/api/v1/billing/csrf', { method: 'POST' })).token;
+  return (await fetchApiData<{ token: string }>('/api/billing/csrf', { method: 'POST' })).token;
 }
 
 async function adminPromotionMutation<T>(method: 'POST' | 'PATCH', body: object): Promise<T> {

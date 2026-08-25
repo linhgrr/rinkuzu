@@ -508,22 +508,19 @@ test.describe('production critical paths', () => {
     });
   });
 
-  test('starts PayOS checkout and verifies success and cancellation @critical-subscription', async ({
-    page,
-  }, testInfo) => {
+  test('starts the canonical PayOS checkout @critical-subscription', async ({ page }, testInfo) => {
     await withDatabaseFixture(testInfo, async (fixture) => {
       await login(page, fixture.regular);
       let quotePayload: unknown = null;
       let createOrderPayload: unknown = null;
-      let verifyPaymentPayload: unknown = null;
 
-      await page.route('**/api/v1/billing/csrf', async (route) => {
+      await page.route('**/api/billing/csrf', async (route) => {
         await route.fulfill({
           contentType: 'application/json',
           body: JSON.stringify({ success: true, data: { token: 'e2e-billing-csrf' } }),
         });
       });
-      await page.route('**/api/v1/billing/quotes', async (route) => {
+      await page.route('**/api/billing/quotes', async (route) => {
         quotePayload = route.request().postDataJSON();
         await route.fulfill({
           contentType: 'application/json',
@@ -545,7 +542,7 @@ test.describe('production critical paths', () => {
           }),
         });
       });
-      await page.route('**/api/v1/billing/orders', async (route) => {
+      await page.route('**/api/billing/orders', async (route) => {
         createOrderPayload = route.request().postDataJSON();
         await route.fulfill({
           contentType: 'application/json',
@@ -588,40 +585,6 @@ test.describe('production critical paths', () => {
       ).toBeVisible();
       expect(quotePayload).toEqual({ planId: fixture.planId, promoCode: null });
       expect(createOrderPayload).toEqual({ quoteToken: 'e2e-quote-token' });
-
-      await page.route('**/api/subscription/verify', async (route) => {
-        verifyPaymentPayload = route.request().postDataJSON();
-        await route.fulfill({
-          contentType: 'application/json',
-          body: JSON.stringify({
-            success: true,
-            data: {
-              success: true,
-              subscription: {
-                isActive: true,
-                startDate: new Date().toISOString(),
-                type: fixture.planId,
-              },
-            },
-          }),
-        });
-      });
-      await page.goto('/en/payment/success?orderCode=424242');
-      await expect(page.getByRole('heading', { name: 'Payment Successful!' })).toBeVisible();
-      expect(verifyPaymentPayload).toEqual({ orderCode: '424242' });
-
-      await page.route('**/api/subscription/cancel-payment', async (route) => {
-        await route.fulfill({
-          contentType: 'application/json',
-          body: JSON.stringify({
-            success: true,
-            data: { status: 'cancelled' },
-          }),
-        });
-      });
-      await page.goto('/en/payment/cancel?orderCode=424242');
-      await expect(page.getByRole('heading', { name: 'Payment Cancelled' })).toBeVisible();
-      await expect(page.getByText('Order Code: 424242', { exact: true })).toBeVisible();
     });
   });
 

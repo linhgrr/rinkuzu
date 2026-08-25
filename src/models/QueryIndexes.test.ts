@@ -5,7 +5,6 @@ import Discussion from '@/models/Discussion';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
 import Report from '@/models/Report';
-import Subscription from '@/models/Subscription';
 import User from '@/models/User';
 
 function hasIndex(
@@ -56,9 +55,8 @@ describe('query performance indexes', () => {
     expect(hasIndex(Bookmark, { userId: 1, 'quiz.slug': 1, createdAt: -1 })).toBe(true);
   });
 
-  it('indexes unfiltered report and subscription admin lists by recency', () => {
+  it('indexes unfiltered report admin lists by recency', () => {
     expect(hasIndex(Report, { createdAt: -1 })).toBe(true);
-    expect(hasIndex(Subscription, { createdAt: -1 })).toBe(true);
   });
 
   it('enforces one discussion per quiz question', () => {

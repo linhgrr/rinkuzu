@@ -3,11 +3,7 @@ import connectDB from '@/lib/mongoose';
 import { logger } from '@/lib/logger';
 import User from '@/models/User';
 import AdminMutationFence from '@/models/AdminMutationFence';
-import type {
-  PublicProfileUser,
-  User as UserEntity,
-  UserSubscriptionSnapshot,
-} from '@/entities/User';
+import type { PublicProfileUser, User as UserEntity } from '@/entities/User';
 import {
   ActorNotActiveAdminError,
   AdminInvariantUnavailableError,
@@ -29,14 +25,10 @@ import type {
   CreatedAtCountFilter,
   PaginatedRepositoryResult,
 } from '@/interfaces/repositories/types';
-import {
-  toUserSubscription,
-  UserPersistenceMapper,
-} from '@/repositories/mappers/UserPersistenceMapper';
+import { UserPersistenceMapper } from '@/repositories/mappers/UserPersistenceMapper';
 import type {
   PublicProfileUserPersistenceRecord,
   UserPersistenceRecord,
-  UserSubscriptionProjection,
 } from '@/repositories/types/UserPersistence';
 import {
   buildCountBucketsPipeline,
@@ -51,9 +43,41 @@ import {
   type AccountDisableState,
 } from '@/shared/constants/account-disable';
 import { ACTIVE_ADMIN_FENCE_ID, ACTIVE_ADMIN_FILTER } from '@/shared/constants/admin-invariant';
+import { buildEntitlementAccountProjection } from '@/repositories/pipelines/entitlement-account-projection';
 
-const USER_ENTITY_PROJECTION =
-  '_id email name displayName bio avatar role subscription createdAt disable disabledAt disabledBy';
+const USER_ENTITY_PROJECTION = {
+  _id: 1,
+  email: 1,
+  name: 1,
+  displayName: 1,
+  bio: 1,
+  avatar: 1,
+  role: 1,
+  subscription: 1,
+  createdAt: 1,
+  disable: 1,
+  disabledAt: 1,
+  disabledBy: 1,
+} as const;
+
+interface ProjectedUserQueryOptions {
+  limit?: number;
+  skip?: number;
+}
+
+async function findProjectedUsers(
+  match: Record<string, unknown>,
+  options: ProjectedUserQueryOptions = {},
+): Promise<UserPersistenceRecord[]> {
+  return User.aggregate<UserPersistenceRecord>([
+    { $match: match },
+    { $sort: { createdAt: -1 } },
+    ...(options.skip === undefined ? [] : [{ $skip: options.skip }]),
+    ...(options.limit === undefined ? [] : [{ $limit: options.limit }]),
+    ...buildEntitlementAccountProjection(),
+    { $project: USER_ENTITY_PROJECTION },
+  ]);
+}
 
 /**
  * Escape user-provided search so Mongo `$regex` treats it as a literal.
@@ -139,36 +163,24 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
   async findById(id: string): Promise<UserEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     await connectDB();
-    const record = await User.findOne({ _id: id, ...ACTIVE_ACCOUNT_FILTER })
-      .select(USER_ENTITY_PROJECTION)
-      .lean<UserPersistenceRecord>();
+    const [record] = await findProjectedUsers(
+      { _id: new Types.ObjectId(id), ...ACTIVE_ACCOUNT_FILTER },
+      { limit: 1 },
+    );
     return record ? UserPersistenceMapper.toEntity(record) : null;
   }
 
   async findByIdIncludingDisabled(id: string): Promise<UserEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     await connectDB();
-    const record = await User.findById(id)
-      .select(USER_ENTITY_PROJECTION)
-      .lean<UserPersistenceRecord>();
+    const [record] = await findProjectedUsers({ _id: new Types.ObjectId(id) }, { limit: 1 });
     return record ? UserPersistenceMapper.toEntity(record) : null;
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
     await connectDB();
-    const record = await User.findOne({ email, ...ACTIVE_ACCOUNT_FILTER })
-      .select(USER_ENTITY_PROJECTION)
-      .lean<UserPersistenceRecord>();
+    const [record] = await findProjectedUsers({ email, ...ACTIVE_ACCOUNT_FILTER }, { limit: 1 });
     return record ? UserPersistenceMapper.toEntity(record) : null;
-  }
-
-  async findSubscriptionById(id: string): Promise<UserSubscriptionSnapshot | null> {
-    if (!Types.ObjectId.isValid(id)) return null;
-    await connectDB();
-    const record = await User.findOne({ _id: id, ...ACTIVE_ACCOUNT_FILTER })
-      .select('subscription disable')
-      .lean<UserSubscriptionProjection>();
-    return record?.subscription ? toUserSubscription(record.subscription) : null;
   }
 
   async findPublicProfileById(id: string): Promise<PublicProfileUser | null> {
@@ -182,11 +194,7 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
 
   async findRecent(limit: number): Promise<UserEntity[]> {
     await connectDB();
-    const records = await User.find({})
-      .select(USER_ENTITY_PROJECTION)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean<UserPersistenceRecord[]>();
+    const records = await findProjectedUsers({}, { limit });
     return records.map(UserPersistenceMapper.toEntity);
   }
 
@@ -211,12 +219,7 @@ export class UserRepository implements IUserRepository, IRecentUserRepository {
     }
 
     const [records, totalItems] = await Promise.all([
-      User.find(query)
-        .select(USER_ENTITY_PROJECTION)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean<UserPersistenceRecord[]>(),
+      findProjectedUsers(query, { skip, limit }),
       User.countDocuments(query),
     ]);
 

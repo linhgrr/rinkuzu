@@ -72,11 +72,6 @@ export const premiumReviewCallbackRequestSchema = z.strictObject({
   error: z.string().trim().min(1).max(4000).optional(),
 });
 
-export const premiumReviewStatusQuerySchema = z.strictObject({
-  localJobId: objectIdRouteParamSchema,
-  upstreamJobId: z.string().trim().min(1).max(200),
-});
-
 export const decidePremiumSubmissionRequestSchema = z
   .strictObject({
     decision: z.enum(['approve', 'request_changes', 'reject']),

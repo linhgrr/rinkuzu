@@ -50,6 +50,12 @@ describe('PremiumCatalogCard', () => {
       'href',
       '/quiz/curated-algebra',
     );
+    expect(container.querySelector('article')).toHaveClass(
+      'min-h-[146px]',
+      'border-secondary-2',
+      'bg-surface-blue',
+      'shadow-quiz-card',
+    );
     expect(container).not.toHaveTextContent('correctIndex');
     expect((await axe(container)).violations).toEqual([]);
   });

@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { HiOutlineDotsVertical, HiOutlineLockClosed } from 'react-icons/hi';
+import { HiOutlineDotsVertical, HiOutlineLockClosed, HiOutlineSparkles } from 'react-icons/hi';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import type { UserIdentity } from '@/components/user/user-identity';
@@ -22,6 +22,7 @@ interface QuizCardProps {
   quiz: QuizCardQuiz;
   quizId: string;
   onDelete?: (quiz: QuizCardQuiz, quizId: string) => void;
+  variant?: 'standard' | 'premium';
 }
 
 function getAuthor(quiz: QuizCardQuiz): UserIdentity {
@@ -29,15 +30,21 @@ function getAuthor(quiz: QuizCardQuiz): UserIdentity {
   return quiz.author;
 }
 
-export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
+export function QuizCard({ quiz, quizId, onDelete, variant = 'standard' }: QuizCardProps) {
   const t = useTranslations('profile');
+  const tPremium = useTranslations('premium');
   const author = getAuthor(quiz);
+  const isPremium = variant === 'premium';
 
   return (
     <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none">
       <div className="flex items-center justify-between text-sm text-ink/40">
         <div className="flex flex-wrap items-center gap-2">
-          <span>{t('questionCount', { count: quiz.questionCount })}</span>
+          <span>
+            {isPremium
+              ? tPremium('catalogQuestionCount', { count: quiz.questionCount })
+              : t('questionCount', { count: quiz.questionCount })}
+          </span>
           {quiz.premiumSubmissionStatus ? (
             <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-ink/65">
               {t(`premiumStatus_${quiz.premiumSubmissionStatus}`)}
@@ -47,7 +54,12 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
             </span>
           ) : null}
         </div>
-        {onDelete ? (
+        {isPremium ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 font-semibold text-accent">
+            <HiOutlineSparkles className="size-4" aria-hidden="true" />
+            {tPremium('catalogBadge')}
+          </span>
+        ) : onDelete ? (
           <details className="relative">
             <summary
               className="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-ink/55 opacity-70 transition-[color,background-color,opacity] hover:bg-accent-soft hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent group-hover:opacity-100 group-focus-within:opacity-100"
@@ -79,18 +91,25 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
         className="mt-2 flex flex-1 flex-col rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <h3 className="line-clamp-2 font-home text-body font-semibold text-ink">{quiz.title}</h3>
-        <div className="mt-auto flex items-center gap-2 pt-3 text-sm text-ink">
-          <UserAvatar user={author} size={26} />
-          <span className="min-w-0 truncate">
-            {author.displayName || author.name || 'RinKuzu learner'}
+        {isPremium ? (
+          <span className="mt-auto inline-flex items-center gap-1.5 pt-3 font-home text-sm font-medium text-ink">
+            <HiOutlineLockClosed className="size-4 text-accent" aria-hidden="true" />
+            {tPremium('catalogAccessHint')}
           </span>
-          {quiz.visibility === 'personal' ? (
-            <HiOutlineLockClosed
-              className="ml-auto size-4 shrink-0 text-ink/45"
-              aria-label={t('personalSource')}
-            />
-          ) : null}
-        </div>
+        ) : (
+          <div className="mt-auto flex items-center gap-2 pt-3 text-sm text-ink">
+            <UserAvatar user={author} size={26} />
+            <span className="min-w-0 truncate">
+              {author.displayName || author.name || 'RinKuzu learner'}
+            </span>
+            {quiz.visibility === 'personal' ? (
+              <HiOutlineLockClosed
+                className="ml-auto size-4 shrink-0 text-ink/45"
+                aria-label={t('personalSource')}
+              />
+            ) : null}
+          </div>
+        )}
       </Link>
     </article>
   );

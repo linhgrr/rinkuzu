@@ -259,16 +259,15 @@ No compatibility alias is retained. Rollback is a full application release rollb
 
 ## Production actions status
 
-The owner approved deleting legacy subscription data and discarding the identified `Eco Plus` snapshot on 2026-08-25. Execution is still pending a coordinated Web + AI release so production never serves old code against already-retired fields.
+The owner approved deleting legacy subscription data and discarding the identified `Eco Plus` snapshot on 2026-08-25. The Web cutover was deployed to production at commit `f5ae49ce`, then migration checksum `0edda77cc6fbd41360665cb9eda95c94e5831c0d4ad5639fe025236032d42567` was applied.
 
-1. Backfill/migrate `users.subscription` and `subscriptions` into canonical entitlement facts where evidence validates them.
-2. Rebuild entitlement projections in production.
-3. Rebuild credit wallet projections in production.
-4. Reconcile/remove duplicate bookmark projection fields in production.
-5. Repair or delete orphan production references.
-6. Delete obsolete production collections/fields or object-storage keys.
-7. Deploy any cutover release.
-8. Run any provider-side mutation or webhook replay with side effects.
+- The canonical `Plus` entitlement for `hantram3012@gmail.com` was retained; its conflicting embedded `Eco Plus` snapshot was removed.
+- `users.subscription`, `questionprogresses.isBookmarked`, and `quizzes.folder` now have zero remaining fields.
+- `subscriptions` and `premiumreviewjobs` were deleted rather than archived.
+- Valid folder placement was moved to `folderquizzes`; canonical bookmarks were preserved.
+- The post-cutover verifier passed and production HTTP smoke checks returned 200 for the home, pricing, Premium catalog, and billing-plan endpoints.
+- HF Space remains unavailable because billing is disabled, but it is not an authority for Web identity, billing, entitlements, credits, or Premium quiz delivery.
+- A plan-SHA-locked transactional cleanup deleted 23 attempts whose source quizzes no longer existed; the post-cleanup orphan graph is empty.
 
 ## Files added in Wave A
 

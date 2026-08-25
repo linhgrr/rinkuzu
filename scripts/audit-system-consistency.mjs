@@ -328,7 +328,25 @@ async function auditWeb(db) {
   );
 
   const now = new Date();
+  const embeddedSubscriptions = await safeFind(
+    collections,
+    db,
+    'users',
+    { subscription: { $exists: true } },
+    { projection: { _id: 1 } },
+  );
+  anomalies.push(
+    anomaly(
+      'legacy_user_subscription_present',
+      ['users.subscription'],
+      embeddedSubscriptions,
+      'A retired entitlement snapshot can be mistaken for current Premium authority.',
+      'Remove the embedded snapshot; entitlement grants and their account projection are canonical.',
+    ),
+  );
+
   const legacyCanonicalEntitlementDrift = await safeAggregate(collections, db, 'users', [
+    { $match: { subscription: { $exists: true } } },
     {
       $lookup: {
         from: 'entitlementaccounts',

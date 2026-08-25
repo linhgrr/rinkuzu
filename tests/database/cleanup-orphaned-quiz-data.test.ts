@@ -176,6 +176,19 @@ describe('orphaned quiz data check session propagation', () => {
     }
   });
 
+  it('can skip collection discovery inside a transaction after preflight validation', async () => {
+    const session = createMockSession('txn-session');
+    const mock = createInspectMockDb({});
+
+    await inspectOrphanedQuizData(mock.db, { session, skipCollectionCheck: true });
+
+    expect(mock.listOptions).toEqual([]);
+    expect(mock.aggregateCalls).toHaveLength(ORPHAN_QUIZ_DATA_REFERENCES.length);
+    for (const call of mock.aggregateCalls) {
+      expect(call.options).toEqual({ session });
+    }
+  });
+
   it('propagates session through findOrphanIds aggregate options', async () => {
     const session = createMockSession('read-session');
     const aggregateOptions: unknown[] = [];

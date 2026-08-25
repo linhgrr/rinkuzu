@@ -135,26 +135,28 @@ export function getOrphanedQuizDataCheckExitCode(plan) {
  * Optional session is propagated to listCollections and aggregation (read-only).
  * Internal orphanIds are retained only for exact fingerprinting — never print them.
  * @param {import('mongodb').Db} db
- * @param {{ session?: import('mongodb').ClientSession }} [options]
+ * @param {{ session?: import('mongodb').ClientSession, skipCollectionCheck?: boolean }} [options]
  */
 export async function inspectOrphanedQuizData(db, options = {}) {
-  const { session } = options;
+  const { session, skipCollectionCheck = false } = options;
   /** @type {import('mongodb').ListCollectionsOptions} */
   const listOptions = session ? { nameOnly: true, session } : { nameOnly: true };
 
-  const existingCollections = new Set(
-    (await db.listCollections({}, listOptions).toArray()).map(({ name }) => name),
-  );
+  if (!skipCollectionCheck) {
+    const existingCollections = new Set(
+      (await db.listCollections({}, listOptions).toArray()).map(({ name }) => name),
+    );
 
-  if (!existingCollections.has('quizzes')) {
-    throw new Error('quizzes collection is required');
-  }
+    if (!existingCollections.has('quizzes')) {
+      throw new Error('quizzes collection is required');
+    }
 
-  const missing = ORPHAN_QUIZ_DATA_REFERENCES.map((reference) => reference.collection).filter(
-    (name) => !existingCollections.has(name),
-  );
-  if (missing.length > 0) {
-    throw new Error(`Missing required collections: ${missing.join(', ')}`);
+    const missing = ORPHAN_QUIZ_DATA_REFERENCES.map((reference) => reference.collection).filter(
+      (name) => !existingCollections.has(name),
+    );
+    if (missing.length > 0) {
+      throw new Error(`Missing required collections: ${missing.join(', ')}`);
+    }
   }
 
   /** @type {Array<{ collection: string, orphanIds: unknown[], count: number }>} */

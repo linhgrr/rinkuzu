@@ -31,6 +31,7 @@
     "lint-staged": "lint-staged",
     "prepare": "husky",
     "check:orphaned-quiz-data": "node scripts/cleanup-orphaned-quiz-data.mjs",
+    "cleanup:orphaned-quiz-data:apply": "node scripts/delete-orphaned-quiz-data.mjs --apply",
     "cleanup:invalid-attempt-identities": "node scripts/cleanup-invalid-attempt-identities.mjs",
     "cleanup:invalid-attempt-identities:apply": "node scripts/cleanup-invalid-attempt-identities.mjs --apply",
     "migrate:canonical-quiz-question-discriminator": "node scripts/migrate-canonical-quiz-question-discriminator.mjs",

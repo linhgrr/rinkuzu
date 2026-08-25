@@ -209,7 +209,7 @@
     "jscpd": "5.0.12",
     "jsdom": "29.1.1",
     "knip": "6.26.0",
-    "lint-staged": "^16.4.0",
+    "lint-staged": "^17.3.0",
     "madge": "^8.0.0",
     "mongodb": "6.20.0",
     "openapi-typescript": "^7.13.0",

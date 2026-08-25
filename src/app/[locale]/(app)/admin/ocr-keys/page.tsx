@@ -450,7 +450,7 @@ function AdminOcrKeysContent() {
               <div className="p-8 text-center text-sm text-ink/60">{t('ocrKeysEmpty')}</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-[980px] w-full text-left text-sm">
+                <table className="w-full min-w-full text-left text-sm">
                   <thead className="bg-neutral-50 text-xs uppercase text-ink/50">
                     <tr>
                       <th className="px-5 py-3 font-semibold">{t('ocrKeysKey')}</th>
@@ -486,7 +486,7 @@ function AdminOcrKeysContent() {
                               {t(`ocrKeyStatus.${key.status}`)}
                             </Badge>
                             {key.lastErrorMessage ? (
-                              <div className="max-w-[220px] text-xs text-red-600">
+                              <div className="max-w-56 text-xs text-red-600">
                                 {key.lastErrorCode ? `${key.lastErrorCode}: ` : ''}
                                 {key.lastErrorMessage}
                               </div>
@@ -501,7 +501,7 @@ function AdminOcrKeysContent() {
                           <div>{formatDate(key.lastUsedAt, locale)}</div>
                         </td>
                         <td className="px-5 py-4">
-                          <div className="flex min-w-[250px] gap-2">
+                          <div className="flex min-w-64 gap-2">
                             <input
                               value={state.replacementKeyById[key.id] ?? ''}
                               onChange={(event) =>

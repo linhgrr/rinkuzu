@@ -274,7 +274,7 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
             </div>
             <div className="flex items-center gap-x-2">
               <span
-                className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
+                className={`inline-flex min-h-7 items-center rounded-full px-3 text-sm font-medium ${
                   plan.isActive ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-neutral-800'
                 }`}
               >
@@ -333,7 +333,7 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
               <div className="mt-6 flex gap-x-2">
                 <Button
                   onClick={handleSave}
-                  className="min-h-[40px] flex-1 px-4"
+                  className="min-h-10 flex-1 px-4"
                   variant="gradient"
                   disabled={!form.name.trim() || !form.price || form.price <= 0}
                 >
@@ -342,7 +342,7 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
                 <Button
                   onClick={handleCancelEdit}
                   variant="outline"
-                  className="min-h-[40px] flex-1 px-4"
+                  className="min-h-10 flex-1 px-4"
                 >
                   Cancel
                 </Button>
@@ -350,17 +350,13 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
             </>
           ) : (
             <div className="mt-6 flex gap-x-2">
-              <Button
-                onClick={handleStartEdit}
-                variant="outline"
-                className="min-h-[40px] flex-1 px-4"
-              >
+              <Button onClick={handleStartEdit} variant="outline" className="min-h-10 flex-1 px-4">
                 Edit Plan
               </Button>
               <Button
                 onClick={() => setUiState((prev) => ({ ...prev, showDeleteConfirm: true }))}
                 variant="outline"
-                className="min-h-[40px] px-4 text-red-600 hover:text-red-700"
+                className="min-h-10 px-4 text-red-600 hover:text-red-700"
               >
                 Delete
               </Button>
@@ -502,7 +498,7 @@ export default function AdminPlansPage() {
                 <Button
                   onClick={() => setShowCreateForm(true)}
                   variant="default"
-                  className="flex min-h-[44px] items-center gap-2 rounded-full px-5 shadow-md"
+                  className="flex min-h-11 items-center gap-2 rounded-full px-5 shadow-md"
                   title="Create New Plan"
                 >
                   <HiOutlinePlus className="size-5" />

@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-07-26.1';
+export const INDEX_CONTRACT_VERSION = '2026-08-25.1';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -430,6 +430,159 @@ export const INDEX_CONTRACT = Object.freeze([
   required('reports.status-recent', 'reports', { status: 1, createdAt: -1 }),
   required('reports.recent', 'reports', { createdAt: -1 }),
   required('reports.quiz', 'reports', { quizId: 1 }),
+
+  // Support, feedback outreach and marketing communications.
+  required('supporttickets.user-recent', 'supporttickets', { userId: 1, lastMessageAt: -1 }),
+  required('supporttickets.user-created', 'supporttickets', { userId: 1, createdAt: -1 }),
+  required('supporttickets.queue', 'supporttickets', { status: 1, lastMessageAt: -1 }),
+  required('supportmessages.thread', 'supportmessages', { ticketId: 1, createdAt: 1 }),
+  required(
+    'supportmessages.idempotency',
+    'supportmessages',
+    { ticketId: 1, clientMessageId: 1 },
+    { unique: true },
+  ),
+  required(
+    'supportattachments.storage-key',
+    'supportattachments',
+    { storageKey: 1 },
+    { unique: true },
+  ),
+  required('supportattachments.expiration', 'supportattachments', { expiresAt: 1 }),
+  required(
+    'feedbackoutreachpreferences.user',
+    'feedbackoutreachpreferences',
+    { userId: 1 },
+    { unique: true },
+  ),
+  required(
+    'feedbackconversations.reply-token',
+    'feedbackconversations',
+    { replyTokenHash: 1 },
+    { unique: true },
+  ),
+  required('feedbackconversations.user-recent', 'feedbackconversations', {
+    userId: 1,
+    createdAt: -1,
+  }),
+  required('feedbackconversations.user-sent', 'feedbackconversations', {
+    userId: 1,
+    sentAt: -1,
+  }),
+  required('feedbackconversations.sent', 'feedbackconversations', { sentAt: -1 }),
+  required('feedbackconversations.queue', 'feedbackconversations', {
+    status: 1,
+    lastMessageAt: -1,
+  }),
+  required('feedbackconversations.expiration', 'feedbackconversations', {
+    status: 1,
+    expiresAt: 1,
+  }),
+  required('feedbackmessages.thread', 'feedbackmessages', { conversationId: 1, createdAt: 1 }),
+  required(
+    'feedbackmessages.idempotency',
+    'feedbackmessages',
+    { conversationId: 1, clientMessageId: 1 },
+    { unique: true },
+  ),
+  required(
+    'feedbackmessages.email',
+    'feedbackmessages',
+    { emailId: 1 },
+    { unique: true, partialFilterExpression: { emailId: { $type: 'string' } } },
+  ),
+  required('marketingpreferences.user', 'marketingpreferences', { userId: 1 }, { unique: true }),
+  required('marketingconsentevents.user-topic-recent', 'marketingconsentevents', {
+    userId: 1,
+    topic: 1,
+    createdAt: -1,
+  }),
+  required(
+    'marketingconsentevents.retention',
+    'marketingconsentevents',
+    { createdAt: 1 },
+    { expireAfterSeconds: 5 * 365 * 24 * 60 * 60 },
+  ),
+  required(
+    'marketingcontactstates.user',
+    'marketingcontactstates',
+    { userId: 1 },
+    { unique: true },
+  ),
+  required('marketingcontactstates.email', 'marketingcontactstates', { email: 1 }),
+  required('emailcampaigns.schedule', 'emailcampaigns', { status: 1, scheduledAt: 1 }),
+  required('emailcampaigns.recent', 'emailcampaigns', { createdAt: -1 }),
+  required(
+    'emailcampaigns.broadcast',
+    'emailcampaigns',
+    { resendBroadcastId: 1 },
+    { sparse: true },
+  ),
+  required(
+    'emailcampaignaudiences.member',
+    'emailcampaignaudiences',
+    { campaignId: 1, userId: 1 },
+    { unique: true },
+  ),
+  required('emailcampaignaudiences.work', 'emailcampaignaudiences', {
+    campaignId: 1,
+    status: 1,
+    availableAt: 1,
+    leaseUntil: 1,
+  }),
+  required(
+    'emaildeliveryevents.email-type',
+    'emaildeliveryevents',
+    { emailId: 1, eventType: 1 },
+    { unique: true, partialFilterExpression: { emailId: { $type: 'string' } } },
+  ),
+  required(
+    'emaildeliveryevents.external-event',
+    'emaildeliveryevents',
+    { externalEventId: 1 },
+    { unique: true },
+  ),
+  required(
+    'emaildeliveryevents.expiration',
+    'emaildeliveryevents',
+    { expiresAt: 1 },
+    { expireAfterSeconds: 0 },
+  ),
+  required('emailoutboxes.dedupe', 'emailoutboxes', { dedupeKey: 1 }, { unique: true }),
+  required('emailoutboxes.work', 'emailoutboxes', {
+    status: 1,
+    availableAt: 1,
+    leaseUntil: 1,
+  }),
+  required(
+    'emailoutboxes.external-email',
+    'emailoutboxes',
+    { externalEmailId: 1 },
+    { sparse: true },
+  ),
+  required('webhookevents.external-event', 'webhookevents', { externalId: 1 }, { unique: true }),
+  required(
+    'webhookevents.expiration',
+    'webhookevents',
+    { expiresAt: 1 },
+    { expireAfterSeconds: 0 },
+  ),
+  required('webhookevents.work', 'webhookevents', { status: 1, leaseUntil: 1 }),
+  required('adminactionaudits.actor-recent', 'adminactionaudits', {
+    actorId: 1,
+    createdAt: -1,
+  }),
+  required('adminactionaudits.entity-recent', 'adminactionaudits', {
+    entityType: 1,
+    entityId: 1,
+    createdAt: -1,
+  }),
+  required(
+    'adminactionaudits.expiration',
+    'adminactionaudits',
+    { expiresAt: 1 },
+    { expireAfterSeconds: 0 },
+  ),
 
   // users
   required('users.email', 'users', { email: 1 }, { unique: true }),

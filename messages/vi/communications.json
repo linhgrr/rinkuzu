@@ -1,0 +1,76 @@
+{
+  "floatingSupport": {
+    "label": "Mở trung tâm hỗ trợ",
+    "title": "Hỗ trợ"
+  },
+  "marketingPrompt": {
+    "label": "Lựa chọn email",
+    "title": "Bạn muốn nhận email nào từ RinKuzu?",
+    "description": "Mặc định bạn không được đăng ký. Bạn có thể đổi lựa chọn bất kỳ lúc nào.",
+    "productUpdates": "Nhận cập nhật sản phẩm",
+    "all": "Nhận cả ưu đãi",
+    "later": "Để sau",
+    "saveError": "Không thể lưu lựa chọn email."
+  },
+  "marketingPreferences": {
+    "loadError": "Không thể tải lựa chọn email.",
+    "loading": "Đang tải…",
+    "title": "Email bạn muốn nhận",
+    "description": "Mỗi chủ đề là lựa chọn độc lập. Bỏ chọn có hiệu lực ngay cho các campaign tương lai.",
+    "productUpdates": "Cập nhật sản phẩm",
+    "productUpdatesDescription": "Tính năng mới và thay đổi quan trọng của RinKuzu.",
+    "promotions": "Ưu đãi",
+    "promotionsDescription": "Khuyến mãi và ưu đãi thương mại.",
+    "saved": "Đã lưu lựa chọn.",
+    "save": "Lưu lựa chọn",
+    "saveError": "Không thể lưu lựa chọn email."
+  },
+  "support": {
+    "title": "Liên hệ hỗ trợ",
+    "subject": "Tiêu đề",
+    "category": "Loại yêu cầu",
+    "categories": {
+      "general": "Chung",
+      "account": "Tài khoản",
+      "billing": "Thanh toán",
+      "technical": "Kỹ thuật",
+      "feedback": "Góp ý"
+    },
+    "body": "Nội dung",
+    "attachments": "Ảnh minh họa (tối đa 3 ảnh, 5 MB/ảnh)",
+    "submit": "Gửi yêu cầu",
+    "createError": "Không thể tạo ticket hỗ trợ",
+    "listTitle": "Yêu cầu của bạn",
+    "loading": "Đang tải…",
+    "listError": "Không thể tải danh sách hỗ trợ.",
+    "emptyTitle": "Chưa có yêu cầu hỗ trợ",
+    "emptyDescription": "Các cuộc trao đổi với RinKuzu sẽ xuất hiện tại đây.",
+    "previous": "Trang trước",
+    "next": "Trang sau",
+    "conversationLoading": "Đang tải cuộc trao đổi…",
+    "conversationError": "Không thể tải ticket hỗ trợ.",
+    "history": "Lịch sử trao đổi",
+    "attachmentAlt": "Ảnh đính kèm hỗ trợ",
+    "reply": "Phản hồi",
+    "sendReply": "Gửi phản hồi",
+    "sendError": "Không thể gửi phản hồi",
+    "reopen": "Mở lại",
+    "reopenError": "Không thể mở lại ticket",
+    "statuses": {
+      "open": "Đang mở",
+      "waiting_for_admin": "Chờ hỗ trợ viên",
+      "waiting_for_user": "Chờ bạn phản hồi",
+      "resolved": "Đã xử lý",
+      "closed": "Đã đóng"
+    }
+  },
+  "feedbackPreference": {
+    "title": "Lựa chọn lời mời phản hồi",
+    "done": "Đã ghi nhận lựa chọn của bạn. Cảm ơn bạn.",
+    "description": "Bạn có thể từ chối cuộc trao đổi hiện tại hoặc không nhận bất kỳ lời mời nghiên cứu trải nghiệm nào trong tương lai.",
+    "decline": "Từ chối lời mời này",
+    "optOut": "Không nhận lời mời trong tương lai",
+    "optOutAll": "Từ chối tất cả lời mời sau này",
+    "error": "Không thể cập nhật"
+  }
+}

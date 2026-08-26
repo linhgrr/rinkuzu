@@ -17,6 +17,8 @@ export const ROUTES = {
   QUIZZES: '/quizzes',
   PREMIUM_QUIZZES: '/premium-quizzes',
   SUBSCRIPTION: '/subscription',
+  SUPPORT: '/support',
+  EMAIL_PREFERENCES: '/profile?tab=email',
 
   // Dynamic routes
   QUIZ: {
@@ -50,5 +52,8 @@ export const ROUTES = {
     SUBSCRIPTIONS: '/admin/subscriptions',
     USERS: '/admin/users',
     AI_SETTINGS: '/admin/ai-settings',
+    SUPPORT: '/admin/support',
+    FEEDBACK: '/admin/feedback',
+    CAMPAIGNS: '/admin/campaigns',
   },
 } as const;

@@ -4,6 +4,7 @@ import { useReducer } from 'react';
 import type { FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import useSWR from 'swr';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { AdminUsersPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
@@ -427,6 +428,18 @@ function UserRow({
       </td>
       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
         <div className="flex justify-end gap-x-2">
+          <Link
+            href={`/admin/support?userId=${encodeURIComponent(user.id)}`}
+            className="btn btn-secondary h-9 px-3 text-xs font-medium"
+          >
+            Hỗ trợ
+          </Link>
+          <Link
+            href={`/admin/feedback?userId=${encodeURIComponent(user.id)}`}
+            className="btn btn-secondary h-9 px-3 text-xs font-medium"
+          >
+            Mời phản hồi
+          </Link>
           <Button
             variant="outline"
             size="sm"
@@ -633,7 +646,7 @@ function SubscriptionPlanButton({ plan, selectedPlanId, onSelect }: Subscription
       className={`min-h-[72px] w-full justify-start rounded-lg border p-4 transition-colors ${
         selectedPlanId === plan.id
           ? 'border-green-500 bg-green-50'
-          : 'border-neutral-200 hover:border-neutral-300'
+          : 'border-line hover:border-accent'
       }`}
       onClick={() => onSelect(plan)}
     >

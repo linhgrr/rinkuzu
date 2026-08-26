@@ -30,6 +30,7 @@ vi.mock('@/i18n/navigation', () => ({
       {children}
     </a>
   ),
+  useRouter: () => ({ replace: vi.fn() }),
 }));
 
 vi.mock('sonner', () => ({
@@ -54,13 +55,17 @@ vi.mock('@/features/profile/components/ProfileQuotaCard', () => ({
   ),
 }));
 
+vi.mock('@/features/communications/components/MarketingPreferencesPage', () => ({
+  MarketingPreferencesPage: () => <div data-testid="email-preferences" />,
+}));
+
 describe('ProfileSettings control center', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
   });
 
-  it('opens on overview and exposes focused personal, plan, and security panels', async () => {
+  it('opens on overview and exposes each focused profile panel', async () => {
     const user = userEvent.setup();
     fetchProfileMock.mockResolvedValue({
       email: 'learner@example.com',
@@ -92,6 +97,10 @@ describe('ProfileSettings control center', () => {
     await user.click(screen.getByRole('tab', { name: 'securityTab' }));
     expect(screen.getByLabelText('currentPassword')).toBeTruthy();
     expect(screen.queryByTestId('quota-full')).toBeNull();
+
+    await user.click(screen.getByRole('tab', { name: 'emailPreferencesTab' }));
+    expect(screen.getByTestId('email-preferences')).toBeTruthy();
+    expect(screen.queryByLabelText('currentPassword')).toBeNull();
   });
 
   it('moves from the overview hero to personal editing', async () => {

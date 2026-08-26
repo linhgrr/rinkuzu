@@ -1,6 +1,6 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useReducer, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -26,8 +26,9 @@ import {
   ProfileHero,
   ProfileTabNavigation,
   QuickAccessCard,
-  type ProfileTab,
 } from '@/features/profile/components/ProfileControlCenter';
+import type { ProfileTab } from '@/features/profile/lib/profile-tabs';
+import { MarketingPreferencesPage } from '@/features/communications/components/MarketingPreferencesPage';
 import {
   HiOutlineUser,
   HiOutlineLockClosed,
@@ -440,13 +441,27 @@ function AccountSection({ profile, t }: AccountSectionProps) {
   );
 }
 
-export default function ProfileSettings() {
+export default function ProfileSettings({ initialTab = 'overview' }: { initialTab?: ProfileTab }) {
   const { data: session } = useSession();
+  const router = useRouter();
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [state, dispatch] = useReducer(profileSettingsReducer, initialState);
-  const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
+  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
+
+  const selectTab = (tab: ProfileTab) => {
+    setActiveTab(tab);
+    router.replace(
+      tab === 'overview'
+        ? '/profile'
+        : {
+            pathname: '/profile',
+            query: { tab },
+          },
+      { scroll: false },
+    );
+  };
 
   useEffect(() => {
     if (!session) {
@@ -584,12 +599,12 @@ export default function ProfileSettings() {
     <div className="space-y-6">
       <ProfileHero
         initials={initials}
-        onEditProfile={() => setActiveTab('personal')}
+        onEditProfile={() => selectTab('personal')}
         profile={state.profile}
         t={t}
       />
 
-      <ProfileTabNavigation activeTab={activeTab} onChange={setActiveTab} t={t} />
+      <ProfileTabNavigation activeTab={activeTab} onChange={selectTab} t={t} />
 
       <section
         id={`profile-panel-${activeTab}`}
@@ -660,6 +675,8 @@ export default function ProfileSettings() {
             />
           </div>
         ) : null}
+
+        {activeTab === 'email' ? <MarketingPreferencesPage embedded /> : null}
       </section>
 
       <ConfirmModal

@@ -23,6 +23,7 @@ export const AUTH_REQUIRED_PATH_PREFIXES = [
   '/my-quizzes',
   '/draft',
   '/edit',
+  ROUTES.SUPPORT,
 ] as const;
 
 type NavItemDef = {
@@ -80,6 +81,9 @@ export const DESKTOP_PRIMARY_NAV: DesktopNavGroupDef[] = [
       { href: ROUTES.ADMIN.REPORTS, labelKey: 'quizReports' },
       { href: '/admin/ocr-keys', labelKey: 'ocrKeys' },
       { href: ROUTES.ADMIN.AI_SETTINGS, labelKey: 'aiSettings' },
+      { href: ROUTES.ADMIN.SUPPORT, labelKey: 'supportInbox' },
+      { href: ROUTES.ADMIN.FEEDBACK, labelKey: 'feedbackOutreach' },
+      { href: ROUTES.ADMIN.CAMPAIGNS, labelKey: 'emailCampaigns' },
       { href: ROUTES.ADAPTIVE_PIPELINE_DEBUG, labelKey: 'pipelineDebug' },
     ],
   },
@@ -102,7 +106,7 @@ export const DESKTOP_BOTTOM_NAV: DesktopNavGroupDef[] = [
       { href: ROUTES.SUBSCRIPTION, labelKey: 'subscription' },
     ],
   },
-  { id: 'help', labelKey: 'helpSupport', href: '/contact' },
+  { id: 'help', labelKey: 'helpSupport', href: ROUTES.SUPPORT },
 ];
 
 /** Mobile bottom-tab hrefs by product scope (icons stay in BottomNav). */

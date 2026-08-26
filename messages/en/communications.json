@@ -1,0 +1,76 @@
+{
+  "floatingSupport": {
+    "label": "Open support center",
+    "title": "Support"
+  },
+  "marketingPrompt": {
+    "label": "Email choices",
+    "title": "Which emails would you like from RinKuzu?",
+    "description": "You are opted out by default and can change your choices at any time.",
+    "productUpdates": "Get product updates",
+    "all": "Get updates and offers",
+    "later": "Maybe later",
+    "saveError": "Could not save your email choices."
+  },
+  "marketingPreferences": {
+    "loadError": "Could not load your email choices.",
+    "loading": "Loading…",
+    "title": "Emails you want to receive",
+    "description": "Each topic is independent. Unsubscribing takes effect immediately for future campaigns.",
+    "productUpdates": "Product updates",
+    "productUpdatesDescription": "New features and important changes to RinKuzu.",
+    "promotions": "Offers",
+    "promotionsDescription": "Promotions and commercial offers.",
+    "saved": "Your choices were saved.",
+    "save": "Save choices",
+    "saveError": "Could not save your email choices."
+  },
+  "support": {
+    "title": "Contact support",
+    "subject": "Subject",
+    "category": "Request type",
+    "categories": {
+      "general": "General",
+      "account": "Account",
+      "billing": "Billing",
+      "technical": "Technical",
+      "feedback": "Feedback"
+    },
+    "body": "Message",
+    "attachments": "Screenshots (up to 3 images, 5 MB each)",
+    "submit": "Send request",
+    "createError": "Could not create the support ticket",
+    "listTitle": "Your requests",
+    "loading": "Loading…",
+    "listError": "Could not load your support requests.",
+    "emptyTitle": "No support requests yet",
+    "emptyDescription": "Your conversations with RinKuzu will appear here.",
+    "previous": "Previous",
+    "next": "Next",
+    "conversationLoading": "Loading conversation…",
+    "conversationError": "Could not load this support ticket.",
+    "history": "Conversation history",
+    "attachmentAlt": "Support attachment",
+    "reply": "Reply",
+    "sendReply": "Send reply",
+    "sendError": "Could not send your reply",
+    "reopen": "Reopen",
+    "reopenError": "Could not reopen the ticket",
+    "statuses": {
+      "open": "Open",
+      "waiting_for_admin": "Waiting for support",
+      "waiting_for_user": "Waiting for your reply",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    }
+  },
+  "feedbackPreference": {
+    "title": "Feedback invitation choices",
+    "done": "Your choice has been recorded. Thank you.",
+    "description": "You can decline this conversation or opt out of all future experience-research invitations.",
+    "decline": "Decline this invitation",
+    "optOut": "Do not send future invitations",
+    "optOutAll": "Decline all future invitations",
+    "error": "Could not update your choice"
+  }
+}

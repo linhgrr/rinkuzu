@@ -13,7 +13,11 @@
   },
   "allowedIconFamilies": ["react-icons/hi", "react-icons/hi2", "lucide-react", "@iconify/react"],
   "ruleExclusions": {
-    "consumer-hardcoded-color": ["src/emails/**", "src/app/api/email/**"],
+    "consumer-hardcoded-color": [
+      "src/emails/**",
+      "src/app/api/email/**",
+      "src/lib/communication/templates.tsx"
+    ],
     "standalone-raw-button": ["src/components/ui/Button.tsx", "src/components/ui/ButtonBase.tsx"],
     "raw-select": ["src/components/ui/Select.tsx"]
   },

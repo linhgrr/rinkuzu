@@ -18,6 +18,13 @@ vi.mock('next-auth/react', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }));
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock('@/features/admin/users/api/admin-users-api', () => ({
   fetchAdminUserListViewModel: vi.fn(),
   grantAdminUserCredits: (...args: unknown[]) => grantCreditsMock(...args),
@@ -93,5 +100,18 @@ describe('AdminUsersPage credit action', () => {
       }),
     );
     expect(await screen.findByText('creditAddedSuccess')).toBeInTheDocument();
+  });
+
+  it('offers direct one-user support and feedback outreach actions', () => {
+    render(<AdminUsersPage />);
+
+    expect(screen.getByRole('link', { name: 'Hỗ trợ' })).toHaveAttribute(
+      'href',
+      `/admin/support?userId=${user.id}`,
+    );
+    expect(screen.getByRole('link', { name: 'Mời phản hồi' })).toHaveAttribute(
+      'href',
+      `/admin/feedback?userId=${user.id}`,
+    );
   });
 });

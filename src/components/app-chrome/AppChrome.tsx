@@ -14,6 +14,8 @@ import { ROUTES } from '@/shared/constants/routes';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 import { resetAnalyticsIdentity } from '@/lib/analytics/client';
+import { FloatingSupportButton } from '@/features/communications/components/FloatingSupportButton';
+import { MarketingPreferencePrompt } from '@/features/communications/components/MarketingPreferencePrompt';
 import styles from './AppChromeLayout.module.css';
 
 const ICON = {
@@ -869,7 +871,7 @@ function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenu
 }
 
 export function AppChrome({ children }: AppChromeProps) {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const t = useTranslations('nav');
   const pathname = usePathname();
   const router = useRouter();
@@ -965,6 +967,12 @@ export function AppChrome({ children }: AppChromeProps) {
       >
         {children}
       </div>
+      {sessionStatus === 'authenticated' && userRole !== 'admin' ? (
+        <>
+          <FloatingSupportButton />
+          <MarketingPreferencePrompt />
+        </>
+      ) : null}
     </>
   );
 }

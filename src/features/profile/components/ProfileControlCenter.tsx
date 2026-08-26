@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TabBar } from '@/components/ui/TabBar';
 import type { ProfileSettingsViewModel } from '@/features/profile/types/profile-settings-view-model';
+import type { ProfileTab } from '@/features/profile/lib/profile-tabs';
 import {
   HiOutlineBookmark,
   HiOutlineCalendar,
@@ -16,12 +17,11 @@ import {
   HiOutlineCollection,
   HiOutlineHome,
   HiOutlineLockClosed,
+  HiOutlineMail,
   HiOutlinePencilAlt,
   HiOutlineShieldCheck,
   HiOutlineUser,
 } from 'react-icons/hi';
-
-export type ProfileTab = 'overview' | 'personal' | 'plan' | 'security';
 
 type ProfileTranslate = (key: string) => string;
 
@@ -47,6 +47,7 @@ const PROFILE_TABS = [
   { id: 'personal', labelKey: 'personalTab', icon: HiOutlineUser },
   { id: 'plan', labelKey: 'planQuotaTab', icon: HiOutlineChartBar },
   { id: 'security', labelKey: 'securityTab', icon: HiOutlineLockClosed },
+  { id: 'email', labelKey: 'emailPreferencesTab', icon: HiOutlineMail },
 ] as const;
 
 const QUICK_LINKS = [

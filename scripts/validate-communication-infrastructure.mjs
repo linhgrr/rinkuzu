@@ -37,6 +37,7 @@ const outboundDomains = [
   senderDomain(process.env.FEEDBACK_MAIL_FROM, 'FEEDBACK_MAIL_FROM'),
   senderDomain(process.env.MARKETING_MAIL_FROM, 'MARKETING_MAIL_FROM'),
 ];
+const outboundDomainSet = new Set(outboundDomains);
 const errors = [];
 
 for (const name of ['MARKETING_COMPLAINT_STOP_RATE', 'MARKETING_HARD_BOUNCE_STOP_RATE']) {
@@ -107,6 +108,25 @@ try {
       errors.push(`${name} Resend verification lookup failed: ${details.error.message}`);
       continue;
     }
+    if (outboundDomainSet.has(name)) {
+      if (details.data?.capabilities.sending !== 'enabled') {
+        errors.push(`${name} does not have Resend sending enabled`);
+      }
+      if (
+        !details.data?.records.some(
+          (record) => record.record === 'SPF' && record.status === 'verified',
+        )
+      ) {
+        errors.push(`${name} SPF/return-path is not verified by Resend`);
+      }
+      if (
+        !details.data?.records.some(
+          (record) => record.record === 'DKIM' && record.status === 'verified',
+        )
+      ) {
+        errors.push(`${name} DKIM is not verified by Resend`);
+      }
+    }
     if (name === replyDomain) {
       if (details.data?.capabilities.receiving !== 'enabled') {
         errors.push(`${name} does not have Resend Receiving enabled`);
@@ -118,17 +138,6 @@ try {
       ) {
         errors.push(`${name} Receiving MX is not verified by Resend`);
       }
-    } else {
-      if (details.data?.capabilities.sending !== 'enabled') {
-        errors.push(`${name} does not have Resend sending enabled`);
-      }
-      if (
-        !details.data?.records.some(
-          (record) => record.record === 'DKIM' && record.status === 'verified',
-        )
-      ) {
-        errors.push(`${name} DKIM is not verified by Resend`);
-      }
     }
   }
 } catch (error) {
@@ -139,7 +148,9 @@ try {
 
 try {
   const mx = await resolveMx(replyDomain);
-  if (!mx.some((record) => /resend/i.test(record.exchange))) {
+  if (
+    !mx.some((record) => /^inbound-smtp\.[a-z0-9-]+\.amazonaws\.com\.?$/i.test(record.exchange))
+  ) {
     errors.push(`${replyDomain} MX does not point to Resend`);
   }
 } catch (error) {
@@ -149,14 +160,6 @@ try {
 }
 
 for (const domain of outboundDomains) {
-  try {
-    const txt = (await resolveTxt(domain)).flat().join(' ');
-    if (!/v=spf1/i.test(txt)) errors.push(`${domain} has no SPF record`);
-  } catch (error) {
-    errors.push(
-      `${domain} SPF lookup failed: ${error instanceof Error ? error.message : 'unknown'}`,
-    );
-  }
   try {
     const dmarc = (await resolveTxt(`_dmarc.${domain}`)).flat().join(' ');
     if (!/v=DMARC1/i.test(dmarc)) errors.push(`${domain} has no DMARC record`);

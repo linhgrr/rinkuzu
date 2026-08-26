@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "rinkuzu-communications-scheduler",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-26",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "vars": {
+    "TARGET_URL": "https://rinkuzu.app/api/internal/communications/worker",
+  },
+  "secrets": {
+    "required": ["CRON_SECRET"],
+  },
+  "triggers": {
+    "crons": ["*/2 * * * *"],
+  },
+}

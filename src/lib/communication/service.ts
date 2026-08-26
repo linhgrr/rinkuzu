@@ -1277,15 +1277,20 @@ export async function applyFeedbackPreference(token: string, action: 'decline' |
       { $set: { optedOutAt: now, reason: 'user_opt_out' } },
       { upsert: true },
     );
+    const openStatuses = ['draft', ...OPEN_FEEDBACK_STATUSES];
     const affected = await FeedbackConversation.find({
       userId: conversation.userId,
-      status: { $in: ['draft', ...OPEN_FEEDBACK_STATUSES] },
+      status: { $in: openStatuses },
     }).select('_id');
+    const affectedIds = affected.map((entry) => entry._id);
     await FeedbackConversation.updateMany(
-      { _id: { $in: affected.map((entry) => entry._id) } },
+      // The ids come from a separate read, so the write repeats the status
+      // predicate: a conversation completed in between must not be reopened
+      // into `opted_out`.
+      { _id: { $in: affectedIds }, status: { $in: openStatuses } },
       { $set: { status: 'opted_out', declinedAt: now }, $inc: { revision: 1 } },
     );
-    await cancelQueuedFeedbackMail(affected.map((entry) => entry._id));
+    await cancelQueuedFeedbackMail(affectedIds);
   } else if (!['completed', 'opted_out'].includes(conversation.status)) {
     conversation.status = 'declined';
     conversation.declinedAt = now;
@@ -2456,13 +2461,12 @@ async function processOutbox(
         entityId: item.entityId.toString(),
       });
       const acceptedAt = new Date();
-      await EmailOutbox.updateOne(
-        { _id: item._id, leaseToken },
-        {
-          $set: { status: 'completed', externalEmailId },
-          $unset: { leaseToken: '', leaseUntil: '', lastError: '' },
-        },
-      );
+      // Everything derived from the accepted email is written before the outbox
+      // row is closed. Only a `pending`/`processing` row is ever re-claimed, so
+      // closing it first would make an interruption here permanent; this way an
+      // interruption just replays, and the replay is idempotent in every step:
+      // Resend returns the same id for the same key, and both writes below are
+      // guarded so the second pass is a no-op.
       const messageId = item.dedupeKey.split('/').at(-1);
       if (
         item.entityType === 'feedback_conversation' &&
@@ -2475,6 +2479,13 @@ async function processOutbox(
         );
       }
       await markInvitationSent(item, externalEmailId, acceptedAt);
+      await EmailOutbox.updateOne(
+        { _id: item._id, leaseToken },
+        {
+          $set: { status: 'completed', externalEmailId },
+          $unset: { leaseToken: '', leaseUntil: '', lastError: '' },
+        },
+      );
       completed += 1;
     } catch (error) {
       const lastError = sanitizeOutboxError(error);
@@ -2767,13 +2778,17 @@ async function processCommunicationRetention(limit: number): Promise<{
 /**
  * Close invitations nobody answered inside the 30 day window. `expiresAt` is
  * rebased on real acceptance, so this can only fire against emails Resend
- * actually took.
+ * actually took. Bounded per tick: a backlog would otherwise build one `$in`
+ * large enough to slow the whole worker, and the remainder is simply picked up
+ * by the next run.
  */
-async function expireUnansweredFeedback(): Promise<number> {
+async function expireUnansweredFeedback(limit: number): Promise<number> {
   const due = await FeedbackConversation.find({
     status: 'sent',
     expiresAt: { $lte: new Date() },
-  }).select('_id');
+  })
+    .select('_id')
+    .limit(limit);
   if (!due.length) return 0;
   const ids = due.map((entry) => entry._id);
   const expired = await FeedbackConversation.updateMany(
@@ -2790,7 +2805,7 @@ export async function runCommunicationWorker(limit = 50) {
     processOutbox(Math.min(limit, 50)),
     processCampaignAudience(Math.min(limit, 100)),
     processPendingCampaignCancellations(Math.min(limit, 25)),
-    expireUnansweredFeedback(),
+    expireUnansweredFeedback(Math.min(limit, 100)),
     processCommunicationRetention(Math.min(limit, 25)),
   ]);
   await EmailCampaign.updateMany(
@@ -2832,7 +2847,7 @@ export async function communicationHealth() {
     // Operational detail only: no recipient, subject, body or token ever leaves
     // this endpoint, and stored provider errors are re-sanitized on read so rows
     // written before redaction existed cannot leak either.
-    pendingDetails: stuckDetails.map((item) => ({
+    stuckDetails: stuckDetails.map((item) => ({
       id: item._id.toString(),
       kind: item.kind,
       entityType: item.entityType,

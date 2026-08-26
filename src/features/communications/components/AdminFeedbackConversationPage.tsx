@@ -66,7 +66,9 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
   const closed = isFeedbackConversationClosed(data.conversation.status);
   // The invitation is in the outbox but the provider has not accepted it yet.
   // Replying or reminding now would race the invitation itself, so both are
-  // withheld until the send is confirmed.
+  // withheld until the send is confirmed. Completing stays available: it is the
+  // only way to abandon an invitation that keeps failing, and it also cancels
+  // the queued email.
   const queued = data.conversation.status === 'queued';
 
   return (
@@ -86,17 +88,19 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                 </p>
               ) : null}
             </div>
-            {!closed && !queued ? (
+            {!closed ? (
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  loading={loading}
-                  disabled={loading}
-                  onClick={() => void action(() => remindFeedback(id), 'Không thể gửi lời nhắc')}
-                >
-                  Nhắc lại
-                </Button>
+                {!queued ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={loading}
+                    disabled={loading}
+                    onClick={() => void action(() => remindFeedback(id), 'Không thể gửi lời nhắc')}
+                  >
+                    Nhắc lại
+                  </Button>
+                ) : null}
                 <Button
                   size="sm"
                   loading={loading}

@@ -212,6 +212,26 @@ describe('communication outbox delivery', () => {
     expect(expiresAt.getTime() - sentAt.getTime()).toBe(30 * 86_400_000);
   });
 
+  it('promotes the conversation before closing the outbox row', async () => {
+    queueOne(outboxItem());
+    mocks.sendCommunicationEmail.mockResolvedValue('re_email_1');
+    const order: string[] = [];
+    mocks.conversation.updateOne.mockImplementation(async (_filter, update) => {
+      if (update?.['$set']?.['status'] === 'sent') order.push('conversation:sent');
+      return { matchedCount: 1, modifiedCount: 1 };
+    });
+    mocks.outbox.updateOne.mockImplementation(async (_filter, update) => {
+      if (update?.['$set']?.['status'] === 'completed') order.push('outbox:completed');
+      return { matchedCount: 1, modifiedCount: 1 };
+    });
+
+    await runCommunicationWorker();
+
+    // Only a pending/processing row is ever re-claimed, so closing the row
+    // first would make an interruption between the two writes permanent.
+    expect(order).toEqual(['conversation:sent', 'outbox:completed']);
+  });
+
   it('keeps the conversation queued while retries are still available', async () => {
     queueOne(outboxItem({ attempts: 5 }));
     mocks.sendCommunicationEmail.mockRejectedValue(
@@ -394,6 +414,28 @@ describe('feedback opt-out stops queued mail', () => {
         status: 'pending',
       },
       { $set: { status: 'canceled', lastError: 'conversation_closed' } },
+    );
+  });
+
+  it('repeats the status predicate on the write so a completed conversation is not reopened', async () => {
+    const token = feedbackPreferenceToken(CONVERSATION_ID, AUTH_SECRET);
+    mocks.conversation.findOne.mockResolvedValue({
+      _id: CONVERSATION_ID,
+      userId: 'user-1',
+      status: 'queued',
+    });
+    mocks.conversation.find.mockReturnValue(query([{ _id: CONVERSATION_ID }]));
+
+    await applyFeedbackPreference(token, 'opt_out');
+
+    // The ids come from a separate read; without the predicate a conversation
+    // completed in between would be rewritten to opted_out.
+    expect(mocks.conversation.updateMany).toHaveBeenCalledWith(
+      {
+        _id: { $in: [CONVERSATION_ID] },
+        status: { $in: ['draft', 'queued', 'sent', 'replied', 'in_conversation'] },
+      },
+      expect.objectContaining({ $set: { status: 'opted_out', declinedAt: expect.any(Date) } }),
     );
   });
 });

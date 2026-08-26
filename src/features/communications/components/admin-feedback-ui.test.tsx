@@ -62,6 +62,9 @@ describe('admin feedback conversation status honesty', () => {
     expect(screen.getByRole('status')).toHaveTextContent('chưa được gửi đi');
     expect(screen.queryByRole('button', { name: 'Nhắc lại' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Gửi email' })).not.toBeInTheDocument();
+    // Abandoning a queued invitation must stay possible: it is the only way to
+    // stop one that keeps failing to send.
+    expect(screen.getByRole('button', { name: 'Hoàn tất' })).toBeInTheDocument();
   });
 
   it('enables outreach once the provider accepted the invitation', () => {
@@ -86,5 +89,6 @@ describe('admin feedback conversation status honesty', () => {
 
     expect(screen.getByText(/User đã opt-out/u)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nhắc lại' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hoàn tất' })).not.toBeInTheDocument();
   });
 });

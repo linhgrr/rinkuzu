@@ -10,30 +10,10 @@ import { routing } from './i18n/routing';
 import { isRscOrPrefetchRequest, usesSecureAuthCookie } from './lib/auth/session-cookie';
 import { getLocaleFromPath, toBrowserPath } from './lib/routing/pathname';
 import { getAuthRoutePolicy } from './lib/routing/auth-route-policy';
+import { isStateChangingApiRequest } from './lib/security/csrf-policy';
 import { ROUTES } from './shared/constants/routes';
 
 const intlMiddleware = createMiddleware(routing);
-
-const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-
-/**
- * API paths that legitimately accept cross-origin or server-to-server traffic
- * and therefore must NOT be CSRF-checked. Keep this list small and document
- * each entry — every exemption is a surface that must be hardened separately.
- */
-const CSRF_EXEMPT_API_PREFIXES = [
-  // NextAuth handles its own CSRF token for credentials flow.
-  '/api/auth/',
-  // PayOS calls this endpoint server-to-server with HMAC-signed body; CSRF
-  // does not apply because there is no browser session.
-  '/api/billing/webhooks/',
-];
-
-function isStateChangingApiRequest(pathname: string, method: string): boolean {
-  if (!pathname.startsWith('/api/')) return false;
-  if (!STATE_CHANGING_METHODS.has(method.toUpperCase())) return false;
-  return !CSRF_EXEMPT_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
 
 /**
  * Same-origin / CSRF guard.

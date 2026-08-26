@@ -1,4 +1,4 @@
-const EXPECTED_ORIGIN = 'https://rinkuzu.app';
+const EXPECTED_ORIGIN = 'https://www.rinkuzu.app';
 const EXPECTED_PATH = '/api/internal/communications/worker';
 const REQUEST_TIMEOUT_MS = 25_000;
 
@@ -45,7 +45,7 @@ export async function invokeCommunicationWorker(
       'user-agent': 'rinkuzu-cloudflare-scheduler/1.0',
       'x-request-id': `cloudflare-cron-${scheduledTime}`,
     },
-    redirect: 'error',
+    redirect: 'manual',
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 

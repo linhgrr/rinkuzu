@@ -6,7 +6,7 @@ import {
 
 const VALID_ENVIRONMENT: SchedulerEnvironment = {
   CRON_SECRET: 'a-production-cron-secret-that-is-long-enough',
-  TARGET_URL: 'https://rinkuzu.app/api/internal/communications/worker',
+  TARGET_URL: 'https://www.rinkuzu.app/api/internal/communications/worker',
 };
 
 describe('Cloudflare communications scheduler', () => {
@@ -23,7 +23,7 @@ describe('Cloudflare communications scheduler', () => {
 
     expect(fetcher).toHaveBeenCalledOnce();
     expect(capturedTarget?.toString()).toBe(VALID_ENVIRONMENT.TARGET_URL);
-    expect(capturedRequest).toMatchObject({ method: 'POST', redirect: 'error' });
+    expect(capturedRequest).toMatchObject({ method: 'POST', redirect: 'manual' });
     expect(new Headers(capturedRequest?.headers).get('authorization')).toBe(
       `Bearer ${VALID_ENVIRONMENT.CRON_SECRET}`,
     );
@@ -43,9 +43,10 @@ describe('Cloudflare communications scheduler', () => {
 
   it.each([
     'http://rinkuzu.app/api/internal/communications/worker',
+    'https://rinkuzu.app/api/internal/communications/worker',
     'https://example.com/api/internal/communications/worker',
-    'https://rinkuzu.app/api/internal/communications/worker?redirect=1',
-    'https://rinkuzu.app/api/internal/communications/other',
+    'https://www.rinkuzu.app/api/internal/communications/worker?redirect=1',
+    'https://www.rinkuzu.app/api/internal/communications/other',
   ])('rejects an unexpected target: %s', async (target) => {
     await expect(
       invokeCommunicationWorker({ ...VALID_ENVIRONMENT, TARGET_URL: target }, 1),
@@ -60,5 +61,15 @@ describe('Cloudflare communications scheduler', () => {
         vi.fn(async () => new Response(null, { status: 503 })),
       ),
     ).rejects.toThrow('Communications worker returned HTTP 503');
+  });
+
+  it('rejects redirects instead of following them', async () => {
+    await expect(
+      invokeCommunicationWorker(
+        VALID_ENVIRONMENT,
+        1,
+        vi.fn(async () => new Response(null, { status: 307 })),
+      ),
+    ).rejects.toThrow('Communications worker returned HTTP 307');
   });
 });

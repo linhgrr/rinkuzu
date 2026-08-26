@@ -9,7 +9,7 @@
     "head_sampling_rate": 1,
   },
   "vars": {
-    "TARGET_URL": "https://rinkuzu.app/api/internal/communications/worker",
+    "TARGET_URL": "https://www.rinkuzu.app/api/internal/communications/worker",
   },
   "secrets": {
     "required": ["CRON_SECRET"],

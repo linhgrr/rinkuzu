@@ -7,7 +7,11 @@ import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Textarea } from '@/components/ui/Input';
-import { formatCommunicationTimestamp } from '../lib/format';
+import {
+  formatCommunicationTimestamp,
+  formatFeedbackStatus,
+  isFeedbackConversationClosed,
+} from '../lib/format';
 import {
   completeFeedback,
   fetchFeedbackDetail,
@@ -59,9 +63,11 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
       </div>
     );
   if (!data) return <div className="p-8">Đang tải…</div>;
-  const closed = ['declined', 'opted_out', 'completed', 'expired', 'failed'].includes(
-    data.conversation.status,
-  );
+  const closed = isFeedbackConversationClosed(data.conversation.status);
+  // The invitation is in the outbox but the provider has not accepted it yet.
+  // Replying or reminding now would race the invitation itself, so both are
+  // withheld until the send is confirmed.
+  const queued = data.conversation.status === 'queued';
 
   return (
     <AdminPageShell>
@@ -71,10 +77,16 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
             <div>
               <CardTitle>{data.conversation.subject}</CardTitle>
               <p className="text-sm text-ink-muted">
-                {data.conversation.userEmail} · {data.conversation.status}
+                {data.conversation.userEmail} · {formatFeedbackStatus(data.conversation.status)}
               </p>
+              {queued ? (
+                <p role="status" className="mt-1 text-sm text-warning">
+                  Email mời chưa được gửi đi. Hệ thống đang thử gửi lại; trạng thái sẽ chuyển sang
+                  “Đã gửi” khi nhà cung cấp email xác nhận.
+                </p>
+              ) : null}
             </div>
-            {!closed ? (
+            {!closed && !queued ? (
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -123,7 +135,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
           </ol>
         </CardContent>
       </Card>
-      {!closed ? (
+      {!closed && !queued ? (
         <Card className="mt-6">
           <CardContent className="pt-6">
             <form className="space-y-4" onSubmit={reply}>

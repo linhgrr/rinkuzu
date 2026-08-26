@@ -20,9 +20,11 @@ vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
-}));
+// next-intl memoizes `t` per namespace. Returning a fresh function here would
+// change the identity of the player's effect dependency on every render, which
+// re-runs the session bootstrap and races the assertions below.
+const translate = (key: string) => key;
+vi.mock('next-intl', () => ({ useTranslations: () => translate }));
 
 vi.mock('@/features/quiz/api/premium-quiz-api', () => ({
   fetchPremiumBatch: vi.fn(),

@@ -1,6 +1,7 @@
 import EmailReplyParser from 'email-reply-parser';
 import { convert } from 'html-to-text';
 import { canonicalizeEmail } from '@/shared/email/canonical-email';
+import { isFeedbackReplyToken } from './feedback-address';
 
 export function parseInboundSenderAddress(value: string): string {
   const bracket = value.match(/<([^<>]+)>/u)?.[1];
@@ -14,7 +15,8 @@ export function extractFeedbackReplyToken(
   const destination = addresses.find((address) =>
     address.toLowerCase().endsWith(`@${replyDomain.toLowerCase()}`),
   );
-  return destination?.match(/^feedback\+([^@]+)@/iu)?.[1] ?? null;
+  const token = destination?.match(/^feedback\+([^@]+)@/iu)?.[1] ?? null;
+  return token && isFeedbackReplyToken(token) ? token : null;
 }
 
 export function normalizeInboundFeedbackBody(text: string | null, html: string | null): string {

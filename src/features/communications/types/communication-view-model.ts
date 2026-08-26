@@ -40,12 +40,25 @@ export interface SupportDetailViewModel {
   messages: SupportMessageViewModel[];
 }
 
+export type FeedbackStatusViewModel =
+  | 'draft'
+  | 'queued'
+  | 'sent'
+  | 'replied'
+  | 'in_conversation'
+  | 'declined'
+  | 'opted_out'
+  | 'completed'
+  | 'expired'
+  | 'failed';
+
 export interface FeedbackConversationViewModel {
   id: string;
   userId: string;
   userEmail: string;
   subject: string;
-  status: string;
+  status: FeedbackStatusViewModel;
+  queuedAt: string | null;
   sentAt: string | null;
   repliedAt: string | null;
   remindedAt: string | null;

@@ -11,6 +11,7 @@ import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input, Textarea } from '@/components/ui/Input';
 import { createFeedbackInvitation, fetchFeedbackList } from '../api/communications-api';
+import { formatFeedbackStatus } from '../lib/format';
 
 export function AdminFeedbackPage() {
   const params = useSearchParams();
@@ -105,7 +106,7 @@ export function AdminFeedbackPage() {
               >
                 <span className="font-semibold">{conversation.subject}</span>
                 <span className="mt-1 block text-sm text-ink-muted">
-                  {conversation.userEmail} · {conversation.status.replaceAll('_', ' ')}
+                  {conversation.userEmail} · {formatFeedbackStatus(conversation.status)}
                 </span>
               </ButtonBase>
             ))}

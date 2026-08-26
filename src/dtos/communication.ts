@@ -53,6 +53,7 @@ export const feedbackListQuerySchema = z.strictObject({
     .enum([
       'all',
       'draft',
+      'queued',
       'sent',
       'replied',
       'in_conversation',

@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-08-25.1';
+export const INDEX_CONTRACT_VERSION = '2026-08-26.1';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -460,6 +460,13 @@ export const INDEX_CONTRACT = Object.freeze([
     'feedbackconversations',
     { replyTokenHash: 1 },
     { unique: true },
+  ),
+  // Inbound Resend replies are routed by this hash, so it is a read hot path.
+  required(
+    'feedbackconversations.reply-address-token',
+    'feedbackconversations',
+    { replyAddressTokenHash: 1 },
+    { unique: true, partialFilterExpression: { replyAddressTokenHash: { $type: 'string' } } },
   ),
   required('feedbackconversations.user-recent', 'feedbackconversations', {
     userId: 1,

@@ -11,6 +11,7 @@ export type SupportStatus = (typeof SUPPORT_STATUSES)[number];
 
 const FEEDBACK_STATUSES = [
   'draft',
+  'queued',
   'sent',
   'replied',
   'in_conversation',
@@ -93,7 +94,9 @@ interface FeedbackConversationDocument extends Document {
   subject: string;
   status: FeedbackStatus;
   replyTokenHash: string;
+  replyAddressTokenHash?: string | null;
   createdBy: Types.ObjectId;
+  queuedAt?: Date | null;
   sentAt?: Date | null;
   repliedAt?: Date | null;
   remindedAt?: Date | null;
@@ -229,7 +232,8 @@ interface EmailOutboxDocument extends Document {
   inReplyTo?: string | null;
   references: string[];
   dedupeKey: string;
-  status: 'pending' | 'processing' | 'completed' | 'dead';
+  idempotencyKey?: string | null;
+  status: 'pending' | 'processing' | 'completed' | 'dead' | 'canceled';
   attempts: number;
   availableAt: Date;
   leaseUntil?: Date | null;
@@ -337,7 +341,9 @@ const FeedbackConversationSchema = new Schema<FeedbackConversationDocument>(
     subject: { type: String, required: true, trim: true, maxlength: 160 },
     status: { type: String, enum: FEEDBACK_STATUSES, required: true, default: 'draft' },
     replyTokenHash: { type: String, required: true, unique: true },
+    replyAddressTokenHash: { type: String, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    queuedAt: { type: Date, default: null },
     sentAt: { type: Date, default: null },
     repliedAt: { type: Date, default: null },
     remindedAt: { type: Date, default: null },
@@ -350,6 +356,10 @@ const FeedbackConversationSchema = new Schema<FeedbackConversationDocument>(
     revision: { type: Number, required: true, default: 0, min: 0 },
   },
   { timestamps: true, versionKey: false },
+);
+FeedbackConversationSchema.index(
+  { replyAddressTokenHash: 1 },
+  { unique: true, partialFilterExpression: { replyAddressTokenHash: { $type: 'string' } } },
 );
 FeedbackConversationSchema.index({ userId: 1, createdAt: -1 });
 FeedbackConversationSchema.index({ userId: 1, sentAt: -1 });
@@ -540,9 +550,10 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     inReplyTo: { type: String, default: null },
     references: { type: [String], required: true, default: [] },
     dedupeKey: { type: String, required: true, unique: true, maxlength: 256 },
+    idempotencyKey: { type: String, default: null, maxlength: 256 },
     status: {
       type: String,
-      enum: ['pending', 'processing', 'completed', 'dead'],
+      enum: ['pending', 'processing', 'completed', 'dead', 'canceled'],
       required: true,
       default: 'pending',
     },

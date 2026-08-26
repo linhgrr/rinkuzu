@@ -3,6 +3,12 @@ import process from 'node:process';
 import 'dotenv/config';
 import { Resend } from 'resend';
 
+import {
+  EMAIL_LOCAL_PART_MAX_LENGTH,
+  feedbackReplyAddress,
+  feedbackReplyToken,
+} from './feedback-address.shared.mjs';
+
 const required = [
   'RESEND_API_KEY',
   'SUPPORT_MAIL_FROM',
@@ -39,6 +45,39 @@ const outboundDomains = [
 ];
 const outboundDomainSet = new Set(outboundDomains);
 const errors = [];
+
+/**
+ * Feedback replies are routed by an address of the form
+ * `feedback+<token>@<FEEDBACK_REPLY_DOMAIN>`. RFC 5321 caps a local part at 64
+ * octets and Resend rejects the whole send when it is longer, so a
+ * representative address is built here with the same derivation the runtime
+ * uses and validated before anything ships. No email is sent.
+ */
+{
+  // A 24 hex character id is the longest conversation id Mongo can produce, so
+  // it is the worst case for the derived address.
+  const sampleConversationId = 'f'.repeat(24);
+  try {
+    // The HMAC output length does not depend on the secret, so the check stays
+    // valid without pulling a runtime secret into the build environment.
+    const secret = process.env.AUTH_SECRET?.trim() || 'communication-validation-placeholder';
+    const token = feedbackReplyToken(sampleConversationId, secret);
+    const address = feedbackReplyAddress(token, replyDomain);
+    const [localPart, domainPart] = address.split('@');
+    if (localPart.length > EMAIL_LOCAL_PART_MAX_LENGTH) {
+      errors.push(
+        `Feedback Reply-To local part is ${localPart.length} characters; the limit is ${EMAIL_LOCAL_PART_MAX_LENGTH}`,
+      );
+    }
+    if (domainPart !== replyDomain.trim().toLowerCase()) {
+      errors.push(`Feedback Reply-To domain ${domainPart} does not match FEEDBACK_REPLY_DOMAIN`);
+    }
+  } catch (error) {
+    errors.push(
+      `Feedback Reply-To generation failed: ${error instanceof Error ? error.message : 'unknown'}`,
+    );
+  }
+}
 
 for (const name of ['MARKETING_COMPLAINT_STOP_RATE', 'MARKETING_HARD_BOUNCE_STOP_RATE']) {
   const value = process.env[name]?.trim();

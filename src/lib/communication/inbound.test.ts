@@ -5,15 +5,31 @@ import {
   parseInboundSenderAddress,
 } from './inbound';
 
+const TOKEN = 'k1QwErTy_uIoPaSdFgHjKlZxCvBnM-1234567890abc';
+
 describe('feedback email receiving policy', () => {
   it('extracts only a token addressed to the configured reply domain', () => {
     expect(
       extractFeedbackReplyToken(
-        ['other@example.com', 'feedback+abc_123@reply.rinkuzu.app'],
+        ['other@example.com', `feedback+${TOKEN}@reply.rinkuzu.app`],
         'reply.rinkuzu.app',
       ),
-    ).toBe('abc_123');
-    expect(extractFeedbackReplyToken(['feedback+abc@evil.test'], 'reply.rinkuzu.app')).toBeNull();
+    ).toBe(TOKEN);
+    expect(
+      extractFeedbackReplyToken([`feedback+${TOKEN}@evil.test`], 'reply.rinkuzu.app'),
+    ).toBeNull();
+  });
+
+  it('rejects a destination whose token does not have the reply-token shape', () => {
+    expect(
+      extractFeedbackReplyToken(['feedback+abc_123@reply.rinkuzu.app'], 'reply.rinkuzu.app'),
+    ).toBeNull();
+    expect(
+      extractFeedbackReplyToken(
+        [`feedback+${'6a8ed209f04328ac17443d91'}_${TOKEN}@reply.rinkuzu.app`],
+        'reply.rinkuzu.app',
+      ),
+    ).toBeNull();
   });
 
   it('canonicalizes named senders without provider-specific rewriting', () => {

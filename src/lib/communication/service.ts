@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import mongoose, { Types, type ClientSession } from 'mongoose';
@@ -78,6 +78,11 @@ import {
   normalizeInboundFeedbackBody,
   parseInboundSenderAddress,
 } from './inbound';
+import {
+  feedbackPreferenceToken,
+  feedbackReplyAddress as buildFeedbackReplyAddress,
+  feedbackReplyToken,
+} from './feedback-address';
 
 type SupportListQuery = z.infer<typeof supportListQuerySchema>;
 type CreateSupportTicketInput = z.infer<typeof createSupportTicketSchema>;
@@ -197,6 +202,7 @@ function feedbackConversationView(conversation: InstanceType<typeof FeedbackConv
     userEmail: conversation.userEmail,
     subject: conversation.subject,
     status: conversation.status,
+    queuedAt: conversation.queuedAt?.toISOString() ?? null,
     sentAt: conversation.sentAt?.toISOString() ?? null,
     repliedAt: conversation.repliedAt?.toISOString() ?? null,
     remindedAt: conversation.remindedAt?.toISOString() ?? null,
@@ -246,6 +252,18 @@ function digest(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
+/**
+ * Provider errors are surfaced to admins and to logs, so anything that could
+ * carry a reply token or a recipient address is redacted before it is stored.
+ */
+export function sanitizeOutboxError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : 'Email send failed';
+  return raw
+    .replaceAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/gu, '[email]')
+    .replaceAll(/\b[A-Za-z0-9_-]{24,}\b/gu, '[redacted]')
+    .slice(0, 2_000);
+}
+
 function isMongoDuplicateKeyError(error: unknown): boolean {
   return (
     typeof error === 'object' &&
@@ -255,11 +273,33 @@ function isMongoDuplicateKeyError(error: unknown): boolean {
   );
 }
 
+/** Statuses after which no further outreach email may leave the system. */
+const CLOSED_FEEDBACK_STATUSES = [
+  'declined',
+  'opted_out',
+  'completed',
+  'expired',
+  'failed',
+] as const satisfies readonly FeedbackStatus[];
+
+/** Statuses an in-flight invitation can still be moved out of by a delivery failure. */
+const OPEN_FEEDBACK_STATUSES = [
+  'queued',
+  'sent',
+  'replied',
+  'in_conversation',
+] as const satisfies readonly FeedbackStatus[];
+
+function isClosedFeedbackStatus(status: FeedbackStatus): boolean {
+  return (CLOSED_FEEDBACK_STATUSES as readonly string[]).includes(status);
+}
+
 function feedbackToken(conversationId: string): string {
-  const signature = createHmac('sha256', communicationEnvironment('AUTH_SECRET'))
-    .update(`feedback:${conversationId}`)
-    .digest('base64url');
-  return `${conversationId}_${signature}`;
+  return feedbackPreferenceToken(conversationId, communicationEnvironment('AUTH_SECRET'));
+}
+
+function compactFeedbackReplyToken(conversationId: string): string {
+  return feedbackReplyToken(conversationId, communicationEnvironment('AUTH_SECRET'));
 }
 
 function feedbackLinks(token: string): { declineUrl: string; optOutUrl: string } {
@@ -271,7 +311,7 @@ function feedbackLinks(token: string): { declineUrl: string; optOutUrl: string }
 }
 
 function feedbackReplyAddress(token: string): string {
-  return `feedback+${token}@${communicationEnvironment('FEEDBACK_REPLY_DOMAIN')}`;
+  return buildFeedbackReplyAddress(token, communicationEnvironment('FEEDBACK_REPLY_DOMAIN'));
 }
 
 function rejectPromotionalFeedback(subject: string, body: string): void {
@@ -886,8 +926,8 @@ export async function createFeedback(actor: AdminActor, input: CreateFeedbackInp
   if (
     await FeedbackConversation.exists({
       userId,
-      sentAt: { $gte: ninetyDaysAgo },
-      status: { $ne: 'draft' },
+      createdAt: { $gte: ninetyDaysAgo },
+      status: { $nin: ['draft', 'failed'] },
     })
   ) {
     throw new CommunicationError(
@@ -898,7 +938,12 @@ export async function createFeedback(actor: AdminActor, input: CreateFeedbackInp
   }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if ((await FeedbackConversation.countDocuments({ sentAt: { $gte: today } })) >= 20) {
+  if (
+    (await FeedbackConversation.countDocuments({
+      createdAt: { $gte: today },
+      status: { $nin: ['draft', 'failed'] },
+    })) >= 20
+  ) {
     throw new CommunicationError(
       'rate_limit_exceeded',
       'Daily feedback invitation limit reached',
@@ -909,6 +954,7 @@ export async function createFeedback(actor: AdminActor, input: CreateFeedbackInp
   const messageId = new Types.ObjectId();
   const token = feedbackToken(conversationId.toString());
   const tokenHash = digest(token);
+  const replyToken = compactFeedbackReplyToken(conversationId.toString());
   const now = new Date();
   const links = feedbackLinks(token);
   const rendered = await renderFeedbackInvitation({
@@ -926,10 +972,11 @@ export async function createFeedback(actor: AdminActor, input: CreateFeedbackInp
             userId,
             userEmail: user.email,
             subject: input.subject,
-            status: 'sent',
+            status: 'queued',
             replyTokenHash: tokenHash,
+            replyAddressTokenHash: digest(replyToken),
             createdBy: requiredObjectId(actor.id, 'actor id'),
-            sentAt: now,
+            queuedAt: now,
             expiresAt: new Date(now.getTime() + 30 * DAY),
             lastMessageAt: now,
           },
@@ -957,7 +1004,7 @@ export async function createFeedback(actor: AdminActor, input: CreateFeedbackInp
           entityId: conversationId,
           to: user.email,
           from: communicationEnvironment('FEEDBACK_MAIL_FROM'),
-          replyTo: feedbackReplyAddress(token),
+          replyTo: feedbackReplyAddress(replyToken),
           subject: input.subject,
           ...rendered,
           dedupeKey: `feedback/${conversationId.toString()}/message/${messageId.toString()}`,
@@ -1000,10 +1047,14 @@ export async function addFeedbackMessage(
     clientMessageId: input.clientMessageId,
   });
   if (existing) return getFeedback(conversation.id);
-  if (['declined', 'opted_out', 'completed', 'expired', 'failed'].includes(conversation.status)) {
+  if (isClosedFeedbackStatus(conversation.status)) {
     throw new CommunicationError('conflict', 'Feedback conversation is not open', 409);
   }
+  if (conversation.status === 'queued') {
+    throw new CommunicationError('conflict', 'Wait until the invitation email is sent', 409);
+  }
   const token = feedbackToken(conversation.id);
+  const replyToken = compactFeedbackReplyToken(conversation.id);
   const links = feedbackLinks(token);
   const rendered = await renderFeedbackReply({
     subject: conversation.subject,
@@ -1035,10 +1086,14 @@ export async function addFeedbackMessage(
         {
           _id: conversation._id,
           revision: conversation.revision,
-          status: { $nin: ['declined', 'opted_out', 'completed', 'expired', 'failed'] },
+          status: { $nin: CLOSED_FEEDBACK_STATUSES },
         },
         {
-          $set: { status: 'in_conversation', lastMessageAt: messageCreatedAt },
+          $set: {
+            status: 'in_conversation',
+            lastMessageAt: messageCreatedAt,
+            replyAddressTokenHash: digest(replyToken),
+          },
           $inc: { revision: 1 },
         },
         { session: dbSession },
@@ -1053,7 +1108,7 @@ export async function addFeedbackMessage(
           entityId: conversation._id,
           to: conversation.userEmail,
           from: communicationEnvironment('FEEDBACK_MAIL_FROM'),
-          replyTo: feedbackReplyAddress(token),
+          replyTo: feedbackReplyAddress(replyToken),
           subject: `Re: ${conversation.subject.replace(/^Re:\s*/iu, '')}`,
           ...rendered,
           ...(conversation.lastMessageIdHeader
@@ -1107,6 +1162,7 @@ export async function remindFeedback(id: string, actor: AdminActor, input: Remin
     input.body ??
     'Mình xin phép nhắc lại lời mời chia sẻ trải nghiệm trước đó. Nếu không tiện, bạn không cần trả lời.';
   const token = feedbackToken(conversation.id);
+  const replyToken = compactFeedbackReplyToken(conversation.id);
   const rendered = await renderFeedbackInvitation({
     subject: conversation.subject,
     body,
@@ -1141,7 +1197,11 @@ export async function remindFeedback(id: string, actor: AdminActor, input: Remin
           remindedAt: null,
         },
         {
-          $set: { remindedAt: messageCreatedAt, lastMessageAt: messageCreatedAt },
+          $set: {
+            remindedAt: messageCreatedAt,
+            lastMessageAt: messageCreatedAt,
+            replyAddressTokenHash: digest(replyToken),
+          },
           $inc: { revision: 1 },
         },
         { session: dbSession },
@@ -1156,7 +1216,7 @@ export async function remindFeedback(id: string, actor: AdminActor, input: Remin
           entityId: conversation._id,
           to: conversation.userEmail,
           from: communicationEnvironment('FEEDBACK_MAIL_FROM'),
-          replyTo: feedbackReplyAddress(token),
+          replyTo: feedbackReplyAddress(replyToken),
           subject: `Re: ${conversation.subject.replace(/^Re:\s*/iu, '')}`,
           ...rendered,
           ...(conversation.lastMessageIdHeader
@@ -1194,13 +1254,14 @@ export async function completeFeedback(id: string, actor: AdminActor, revision: 
     {
       _id: requiredObjectId(id),
       revision,
-      status: { $nin: ['declined', 'opted_out', 'completed', 'expired', 'failed'] },
+      status: { $nin: CLOSED_FEEDBACK_STATUSES },
     },
     { $set: { status: 'completed', completedAt: new Date() }, $inc: { revision: 1 } },
     { new: true },
   );
   if (!conversation)
     throw new CommunicationError('conflict', 'Conversation changed or is closed', 409);
+  await cancelQueuedFeedbackMail([conversation._id]);
   await audit(actor, 'feedback.complete', 'feedback_conversation', conversation.id);
   return feedbackConversationView(conversation);
 }
@@ -1216,20 +1277,42 @@ export async function applyFeedbackPreference(token: string, action: 'decline' |
       { $set: { optedOutAt: now, reason: 'user_opt_out' } },
       { upsert: true },
     );
+    const affected = await FeedbackConversation.find({
+      userId: conversation.userId,
+      status: { $in: ['draft', ...OPEN_FEEDBACK_STATUSES] },
+    }).select('_id');
     await FeedbackConversation.updateMany(
-      {
-        userId: conversation.userId,
-        status: { $in: ['draft', 'sent', 'replied', 'in_conversation'] },
-      },
+      { _id: { $in: affected.map((entry) => entry._id) } },
       { $set: { status: 'opted_out', declinedAt: now }, $inc: { revision: 1 } },
     );
+    await cancelQueuedFeedbackMail(affected.map((entry) => entry._id));
   } else if (!['completed', 'opted_out'].includes(conversation.status)) {
     conversation.status = 'declined';
     conversation.declinedAt = now;
     conversation.revision += 1;
     await conversation.save();
+    await cancelQueuedFeedbackMail([conversation._id]);
   }
   return { action, applied: true };
+}
+
+/**
+ * Stop invitations that have not left the queue yet. Cancelling the row keeps
+ * the queue depth honest instead of letting a doomed email retry for hours; the
+ * worker performs the same check again immediately before sending, so a race
+ * cannot slip an email past an opt-out.
+ */
+async function cancelQueuedFeedbackMail(conversationIds: Types.ObjectId[]): Promise<number> {
+  if (!conversationIds.length) return 0;
+  const canceled = await EmailOutbox.updateMany(
+    {
+      entityType: 'feedback_conversation',
+      entityId: { $in: conversationIds },
+      status: 'pending',
+    },
+    { $set: { status: 'canceled', lastError: 'conversation_closed' } },
+  );
+  return canceled.modifiedCount;
 }
 
 export async function getMarketingPreferences(userId: string) {
@@ -1733,9 +1816,11 @@ async function processInboundFeedback(
   if (!destination || !token) {
     return quarantineWebhook(externalId, 'unknown_reply_destination');
   }
-  const conversation = await FeedbackConversation.findOne({ replyTokenHash: digest(token) });
+  const conversation = await FeedbackConversation.findOne({
+    replyAddressTokenHash: digest(token),
+  });
   if (!conversation) return quarantineWebhook(externalId, 'unknown_reply_token');
-  if (['declined', 'opted_out', 'completed', 'expired', 'failed'].includes(conversation.status)) {
+  if (isClosedFeedbackStatus(conversation.status)) {
     return quarantineWebhook(externalId, 'conversation_closed');
   }
   const user = await User.findOne({
@@ -1942,6 +2027,11 @@ async function campaignTerminalDeliverySummary(campaignId: Types.ObjectId): Prom
   return summary ?? { terminalRecipients: 0, failedRecipients: 0 };
 }
 
+/** The provider email id an event refers to, when it carries one. */
+function webhookEmailId(event: WebhookEventPayload): string | null {
+  return 'email_id' in event.data ? event.data.email_id : null;
+}
+
 async function processDeliveryEvent(
   externalId: string,
   event: Exclude<WebhookEventPayload, { type: 'email.received' }>,
@@ -2021,7 +2111,7 @@ async function processDeliveryEvent(
     const outbox = await EmailOutbox.findOne({ externalEmailId: emailData.email_id });
     if (outbox?.entityType === 'feedback_conversation') {
       await FeedbackConversation.updateOne(
-        { _id: outbox.entityId, status: { $in: ['sent', 'in_conversation'] } },
+        { _id: outbox.entityId, status: { $in: ['queued', 'sent', 'in_conversation'] } },
         { $set: { status: 'failed' }, $inc: { revision: 1 } },
       );
     }
@@ -2142,9 +2232,19 @@ export async function processResendWebhook(
     if (event.type === 'email.received') return processInboundFeedback(externalId, event);
     if (event.type === 'contact.updated') await syncUnsubscribeEvent(event);
     if (event.type.startsWith('email.')) await processDeliveryEvent(externalId, event);
+    const emailId = webhookEmailId(event);
     await WebhookEvent.updateOne(
       { externalId },
-      { $set: { status: 'processed', processedAt: new Date(), leaseUntil: null } },
+      {
+        // Recording the provider email id is what makes a stored webhook
+        // traceable back to the outbox row it describes.
+        $set: {
+          status: 'processed',
+          processedAt: new Date(),
+          leaseUntil: null,
+          ...(emailId ? { emailId } : {}),
+        },
+      },
     );
     return { status: 'processed' as const };
   } catch (error) {
@@ -2165,12 +2265,155 @@ export async function processResendWebhook(
   }
 }
 
+type OutboxItem = InstanceType<typeof EmailOutbox>;
+
+/**
+ * Resend rejects a reused idempotency key when the payload changed, so a
+ * repaired email needs its own key. The key stays deterministic in the repaired
+ * address, which keeps retries after a repair idempotent.
+ */
+function outboxIdempotencyKey(dedupeKey: string, replyTo: string): string {
+  return `${dedupeKey}#${digest(replyTo).slice(0, 12)}`;
+}
+
+async function cancelOutbox(item: OutboxItem, leaseToken: string, reason: string): Promise<void> {
+  logger.warn(
+    {
+      outboxId: item.id,
+      kind: item.kind,
+      entityType: item.entityType,
+      attempts: item.attempts,
+      reason,
+    },
+    'Communication outbox delivery canceled',
+  );
+  await EmailOutbox.updateOne(
+    { _id: item._id, leaseToken },
+    {
+      $set: { status: 'canceled', lastError: reason },
+      $unset: { leaseToken: '', leaseUntil: '' },
+    },
+  );
+}
+
+/**
+ * An invitation whose outbox row has not completed cannot have been accepted by
+ * the provider, so a `sent` status on it is left over from when the state was
+ * written at queue time. Reset it to the truth before the retry so `sentAt` can
+ * be rebased on the real acceptance.
+ */
+async function demoteUnsentInvitation(
+  item: OutboxItem,
+  conversation: {
+    _id: unknown;
+    status: FeedbackStatus;
+    queuedAt?: Date | null;
+    sentAt?: Date | null;
+  },
+): Promise<void> {
+  if (item.kind !== 'feedback_invitation' || conversation.status !== 'sent') return;
+  if (item.externalEmailId) return;
+  await FeedbackConversation.updateOne(
+    { _id: conversation._id, status: 'sent' },
+    {
+      $set: {
+        status: 'queued',
+        queuedAt: conversation.queuedAt ?? conversation.sentAt ?? new Date(),
+        sentAt: null,
+      },
+      $inc: { revision: 1 },
+    },
+  );
+  conversation.status = 'queued';
+  logger.warn(
+    { outboxId: item.id, kind: item.kind, entityType: item.entityType },
+    'Feedback conversation reset to queued because its invitation was never accepted',
+  );
+}
+
+/**
+ * Guard and self-heal a feedback email immediately before it is handed to Resend.
+ *
+ * Emails queued before the compact Reply-To format existed carry a local part
+ * longer than 64 octets, which Resend rejects outright. Rather than queue a
+ * second email, the stored row is repaired in place: the dedupe key never
+ * changes, so no duplicate row is ever created, and the conversation's inbound
+ * routing hash is re-pointed at the address that is actually going out.
+ */
+async function prepareFeedbackDelivery(
+  item: OutboxItem,
+  leaseToken: string,
+): Promise<'send' | 'canceled' | 'lease_lost'> {
+  const conversation = await FeedbackConversation.findById(item.entityId).select(
+    'status replyAddressTokenHash queuedAt sentAt',
+  );
+  if (!conversation) {
+    await cancelOutbox(item, leaseToken, 'conversation_missing');
+    return 'canceled';
+  }
+  if (isClosedFeedbackStatus(conversation.status)) {
+    await cancelOutbox(item, leaseToken, `conversation_${conversation.status}`);
+    return 'canceled';
+  }
+  await demoteUnsentInvitation(item, conversation);
+  const replyToken = compactFeedbackReplyToken(item.entityId.toString());
+  const replyTo = feedbackReplyAddress(replyToken);
+  const replyAddressTokenHash = digest(replyToken);
+  if (item.replyTo !== replyTo) {
+    const idempotencyKey = outboxIdempotencyKey(item.dedupeKey, replyTo);
+    const repaired = await EmailOutbox.updateOne(
+      { _id: item._id, leaseToken },
+      { $set: { replyTo, idempotencyKey } },
+    );
+    // The lease was stolen by another worker; that worker owns the send now.
+    if (repaired.matchedCount !== 1) return 'lease_lost';
+    item.replyTo = replyTo;
+    item.idempotencyKey = idempotencyKey;
+    logger.info(
+      { outboxId: item.id, kind: item.kind, entityType: item.entityType },
+      'Communication outbox Reply-To repaired',
+    );
+  }
+  if (conversation.replyAddressTokenHash !== replyAddressTokenHash) {
+    await FeedbackConversation.updateOne(
+      { _id: conversation._id },
+      { $set: { replyAddressTokenHash } },
+    );
+  }
+  return 'send';
+}
+
+/**
+ * Promote a conversation only once Resend has accepted the invitation and
+ * returned an email id, so `sent`/`sentAt` can never describe an email that
+ * does not exist. The 30 day window is rebased on the real acceptance time.
+ */
+async function markInvitationSent(
+  item: OutboxItem,
+  externalEmailId: string,
+  sentAt: Date,
+): Promise<void> {
+  if (item.kind !== 'feedback_invitation') return;
+  await FeedbackConversation.updateOne(
+    { _id: item.entityId, status: 'queued' },
+    {
+      $set: { status: 'sent', sentAt, expiresAt: new Date(sentAt.getTime() + 30 * DAY) },
+      $inc: { revision: 1 },
+    },
+  );
+  logger.info(
+    { outboxId: item.id, kind: item.kind, entityType: item.entityType, externalEmailId },
+    'Feedback invitation accepted by the email provider',
+  );
+}
+
 async function processOutbox(
   limit: number,
-): Promise<{ completed: number; retried: number; dead: number }> {
+): Promise<{ completed: number; retried: number; dead: number; canceled: number }> {
   let completed = 0;
   let retried = 0;
   let dead = 0;
+  let canceled = 0;
   for (let index = 0; index < limit; index += 1) {
     const now = new Date();
     const leaseToken = randomBytes(24).toString('base64url');
@@ -2191,6 +2434,14 @@ async function processOutbox(
     );
     if (!item) break;
     try {
+      if (item.entityType === 'feedback_conversation') {
+        const outcome = await prepareFeedbackDelivery(item, leaseToken);
+        if (outcome === 'canceled') {
+          canceled += 1;
+          continue;
+        }
+        if (outcome === 'lease_lost') continue;
+      }
       const externalEmailId = await sendCommunicationEmail({
         to: item.to,
         from: item.from,
@@ -2200,10 +2451,11 @@ async function processOutbox(
         text: item.text,
         inReplyTo: item.inReplyTo,
         references: item.references,
-        idempotencyKey: item.dedupeKey,
+        idempotencyKey: item.idempotencyKey ?? item.dedupeKey,
         entityType: item.entityType,
         entityId: item.entityId.toString(),
       });
+      const acceptedAt = new Date();
       await EmailOutbox.updateOne(
         { _id: item._id, leaseToken },
         {
@@ -2222,12 +2474,23 @@ async function processOutbox(
           { $set: { emailId: externalEmailId } },
         );
       }
+      await markInvitationSent(item, externalEmailId, acceptedAt);
       completed += 1;
     } catch (error) {
-      const lastError =
-        error instanceof Error ? error.message.slice(0, 2_000) : 'Email send failed';
+      const lastError = sanitizeOutboxError(error);
       const isDead = item.attempts >= 12;
       const delay = Math.min(6 * 60 * 60 * 1000, 30_000 * 2 ** Math.min(item.attempts, 10));
+      logger.warn(
+        {
+          outboxId: item.id,
+          kind: item.kind,
+          entityType: item.entityType,
+          attempts: item.attempts,
+          isDead,
+          lastError,
+        },
+        'Communication outbox delivery failed',
+      );
       await EmailOutbox.updateOne(
         { _id: item._id, leaseToken },
         {
@@ -2241,7 +2504,7 @@ async function processOutbox(
       );
       if (isDead && item.entityType === 'feedback_conversation') {
         await FeedbackConversation.updateOne(
-          { _id: item.entityId },
+          { _id: item.entityId, status: { $in: OPEN_FEEDBACK_STATUSES } },
           { $set: { status: 'failed' }, $inc: { revision: 1 } },
         );
       }
@@ -2249,7 +2512,7 @@ async function processOutbox(
       else retried += 1;
     }
   }
-  return { completed, retried, dead };
+  return { completed, retried, dead, canceled };
 }
 
 async function processCampaignAudience(limit: number): Promise<{ synced: number; failed: number }> {
@@ -2477,7 +2740,7 @@ async function processCommunicationRetention(limit: number): Promise<{
   }
 
   const feedbackConversations = await FeedbackConversation.find({
-    status: { $in: ['declined', 'opted_out', 'completed', 'expired', 'failed'] },
+    status: { $in: CLOSED_FEEDBACK_STATUSES },
     updatedAt: { $lte: cutoff },
   })
     .select('_id')
@@ -2501,16 +2764,33 @@ async function processCommunicationRetention(limit: number): Promise<{
   };
 }
 
+/**
+ * Close invitations nobody answered inside the 30 day window. `expiresAt` is
+ * rebased on real acceptance, so this can only fire against emails Resend
+ * actually took.
+ */
+async function expireUnansweredFeedback(): Promise<number> {
+  const due = await FeedbackConversation.find({
+    status: 'sent',
+    expiresAt: { $lte: new Date() },
+  }).select('_id');
+  if (!due.length) return 0;
+  const ids = due.map((entry) => entry._id);
+  const expired = await FeedbackConversation.updateMany(
+    { _id: { $in: ids }, status: 'sent' },
+    { $set: { status: 'expired' }, $inc: { revision: 1 } },
+  );
+  await cancelQueuedFeedbackMail(ids);
+  return expired.modifiedCount;
+}
+
 export async function runCommunicationWorker(limit = 50) {
   await connectDB();
   const [outbox, campaignAudience, campaignCancellations, expired, retention] = await Promise.all([
     processOutbox(Math.min(limit, 50)),
     processCampaignAudience(Math.min(limit, 100)),
     processPendingCampaignCancellations(Math.min(limit, 25)),
-    FeedbackConversation.updateMany(
-      { status: 'sent', expiresAt: { $lte: new Date() } },
-      { $set: { status: 'expired' }, $inc: { revision: 1 } },
-    ),
+    expireUnansweredFeedback(),
     processCommunicationRetention(Math.min(limit, 25)),
   ]);
   await EmailCampaign.updateMany(
@@ -2521,19 +2801,46 @@ export async function runCommunicationWorker(limit = 50) {
     outbox,
     campaignAudience,
     campaignCancellations,
-    expiredFeedback: expired.modifiedCount,
+    expiredFeedback: expired,
     retention,
   };
 }
 
 export async function communicationHealth() {
   await connectDB();
-  const [pending, processing, dead, quarantined, preparingCampaigns] = await Promise.all([
-    EmailOutbox.countDocuments({ status: 'pending' }),
-    EmailOutbox.countDocuments({ status: 'processing' }),
-    EmailOutbox.countDocuments({ status: 'dead' }),
-    WebhookEvent.countDocuments({ status: 'quarantined' }),
-    EmailCampaign.countDocuments({ status: 'preparing_audience' }),
-  ]);
-  return { pending, processing, dead, quarantined, preparingCampaigns };
+  const [pending, processing, dead, canceled, quarantined, preparingCampaigns, stuckDetails] =
+    await Promise.all([
+      EmailOutbox.countDocuments({ status: 'pending' }),
+      EmailOutbox.countDocuments({ status: 'processing' }),
+      EmailOutbox.countDocuments({ status: 'dead' }),
+      EmailOutbox.countDocuments({ status: 'canceled' }),
+      WebhookEvent.countDocuments({ status: 'quarantined' }),
+      EmailCampaign.countDocuments({ status: 'preparing_audience' }),
+      EmailOutbox.find({ status: { $in: ['pending', 'processing', 'dead'] } })
+        .sort({ updatedAt: -1 })
+        .limit(10)
+        .select('kind entityType status attempts availableAt lastError updatedAt')
+        .lean(),
+    ]);
+  return {
+    pending,
+    processing,
+    dead,
+    canceled,
+    quarantined,
+    preparingCampaigns,
+    // Operational detail only: no recipient, subject, body or token ever leaves
+    // this endpoint, and stored provider errors are re-sanitized on read so rows
+    // written before redaction existed cannot leak either.
+    pendingDetails: stuckDetails.map((item) => ({
+      id: item._id.toString(),
+      kind: item.kind,
+      entityType: item.entityType,
+      status: item.status,
+      attempts: item.attempts,
+      availableAt: item.availableAt.toISOString(),
+      lastError: item.lastError ? sanitizeOutboxError(new Error(item.lastError)) : null,
+      updatedAt: item.updatedAt.toISOString(),
+    })),
+  };
 }

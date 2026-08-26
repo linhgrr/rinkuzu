@@ -61,6 +61,47 @@ function MailFrame({ preview, children, footer }: MailFrameProps) {
   );
 }
 
+const CONVERSATION_TEXT = { color: '#222222', fontSize: '15px', lineHeight: '24px' } as const;
+const CONVERSATION_FOOTNOTE = { color: '#666666', fontSize: '13px', lineHeight: '20px' } as const;
+
+/**
+ * Feedback outreach is a one-to-one conversation, not a campaign, and it is the
+ * only mail we ask people to reply to.
+ *
+ * Gmail classifies at delivery time per recipient, weighing HTML structure
+ * heavily while a sending domain still has no history. A bordered, coloured
+ * card with a wordmark, a rule and a display heading is the shape of a
+ * marketing template and reads as Promotions. This frame keeps the markup close
+ * to what a person would actually send: no background, no card, no heading, no
+ * preheader, and a single link.
+ */
+function ConversationMailFrame({ children, footer }: { children: ReactNode; footer: ReactNode }) {
+  return (
+    <Html lang="vi">
+      <Head />
+      <Body style={{ fontFamily: 'Arial, Helvetica, sans-serif', margin: 0 }}>
+        <Container style={{ margin: '0 auto', maxWidth: '600px', padding: '16px' }}>
+          {children}
+          {footer}
+        </Container>
+      </Body>
+    </Html>
+  );
+}
+
+/**
+ * One link, not two. Both choices live on the preferences page, so the footer
+ * stops looking like a newsletter's unsubscribe row while the user keeps the
+ * same control.
+ */
+function FeedbackPreferencesNote({ url, lead }: { url: string; lead: string }) {
+  return (
+    <Text style={CONVERSATION_FOOTNOTE}>
+      {lead} <Link href={url}>quản lý lời mời phản hồi tại đây</Link>.
+    </Text>
+  );
+}
+
 async function renderElement(element: React.ReactElement): Promise<RenderedCommunicationMail> {
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
   return { html, text };
@@ -98,64 +139,49 @@ export async function renderSupportNotification(input: {
 }
 
 export async function renderFeedbackInvitation(input: {
-  subject: string;
   body: string;
-  declineUrl: string;
-  optOutUrl: string;
+  preferencesUrl: string;
   reminder?: boolean;
 }): Promise<RenderedCommunicationMail> {
   return renderElement(
-    <MailFrame
-      preview={input.subject}
+    <ConversationMailFrame
       footer={
-        <Text style={{ color: '#736b63', fontSize: '12px', lineHeight: '18px' }}>
-          Việc trả lời hoàn toàn tự nguyện. Bạn có thể{' '}
-          <Link href={input.declineUrl}>từ chối lời mời này</Link> hoặc{' '}
-          <Link href={input.optOutUrl}>không nhận lời mời phản hồi trong tương lai</Link>.
-        </Text>
+        <FeedbackPreferencesNote
+          url={input.preferencesUrl}
+          lead="Việc trả lời hoàn toàn tự nguyện. Nếu không tiện, bạn có thể"
+        />
       }
     >
-      <Heading style={{ color: '#251b15', fontSize: '24px' }}>
-        {input.reminder ? 'Nhắc lại lời mời chia sẻ trải nghiệm' : 'RinKuzu muốn lắng nghe bạn'}
-      </Heading>
+      {input.reminder ? (
+        <Text style={CONVERSATION_TEXT}>
+          Mình xin phép nhắc lại lời mời chia sẻ trải nghiệm trước đó.
+        </Text>
+      ) : null}
       {input.body.split(/\n{2,}/u).map((paragraph) => (
-        <Text key={paragraph} style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>
+        <Text key={paragraph} style={CONVERSATION_TEXT}>
           {paragraph}
         </Text>
       ))}
-      <Text style={{ color: '#403832', fontSize: '14px', lineHeight: '22px' }}>
-        Bạn chỉ cần Reply email này như bình thường.
-      </Text>
-    </MailFrame>,
+      <Text style={CONVERSATION_TEXT}>Bạn chỉ cần Reply email này như bình thường.</Text>
+    </ConversationMailFrame>,
   );
 }
 
 export async function renderFeedbackReply(input: {
-  subject: string;
   body: string;
-  declineUrl: string;
-  optOutUrl: string;
+  preferencesUrl: string;
 }): Promise<RenderedCommunicationMail> {
   return renderElement(
-    <MailFrame
-      preview={input.subject}
-      footer={
-        <Text style={{ color: '#736b63', fontSize: '12px', lineHeight: '18px' }}>
-          Bạn có thể <Link href={input.declineUrl}>kết thúc cuộc trao đổi</Link> hoặc{' '}
-          <Link href={input.optOutUrl}>không nhận lời mời phản hồi trong tương lai</Link>.
-        </Text>
-      }
+    <ConversationMailFrame
+      footer={<FeedbackPreferencesNote url={input.preferencesUrl} lead="Bạn có thể" />}
     >
-      <Heading style={{ color: '#251b15', fontSize: '22px' }}>Phản hồi từ RinKuzu</Heading>
       {input.body.split(/\n{2,}/u).map((paragraph) => (
-        <Text key={paragraph} style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>
+        <Text key={paragraph} style={CONVERSATION_TEXT}>
           {paragraph}
         </Text>
       ))}
-      <Text style={{ color: '#736b63', fontSize: '12px' }}>
-        Reply email này để tiếp tục cuộc trao đổi.
-      </Text>
-    </MailFrame>,
+      <Text style={CONVERSATION_TEXT}>Reply email này để tiếp tục cuộc trao đổi.</Text>
+    </ConversationMailFrame>,
   );
 }
 

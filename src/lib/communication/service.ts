@@ -302,12 +302,14 @@ function compactFeedbackReplyToken(conversationId: string): string {
   return feedbackReplyToken(conversationId, communicationEnvironment('AUTH_SECRET'));
 }
 
-function feedbackLinks(token: string): { declineUrl: string; optOutUrl: string } {
-  const base = `${siteUrl()}/feedback/preferences`;
-  return {
-    declineUrl: `${base}?token=${encodeURIComponent(token)}&action=decline`,
-    optOutUrl: `${base}?token=${encodeURIComponent(token)}&action=opt_out`,
-  };
+/**
+ * A single preferences link. The page offers both declining this invitation and
+ * opting out of all future ones, so one link carries the same control while the
+ * email footer stops reading like a newsletter's unsubscribe row. Links already
+ * delivered still carry `action=` and the page still honours it.
+ */
+function feedbackPreferencesUrl(token: string): string {
+  return `${siteUrl()}/feedback/preferences?token=${encodeURIComponent(token)}`;
 }
 
 function feedbackReplyAddress(token: string): string {
@@ -956,11 +958,9 @@ export async function createFeedback(actor: AdminActor, input: CreateFeedbackInp
   const tokenHash = digest(token);
   const replyToken = compactFeedbackReplyToken(conversationId.toString());
   const now = new Date();
-  const links = feedbackLinks(token);
   const rendered = await renderFeedbackInvitation({
-    subject: input.subject,
     body: input.body,
-    ...links,
+    preferencesUrl: feedbackPreferencesUrl(token),
   });
   const dbSession = await mongoose.startSession();
   try {
@@ -1055,11 +1055,9 @@ export async function addFeedbackMessage(
   }
   const token = feedbackToken(conversation.id);
   const replyToken = compactFeedbackReplyToken(conversation.id);
-  const links = feedbackLinks(token);
   const rendered = await renderFeedbackReply({
-    subject: conversation.subject,
     body: input.body,
-    ...links,
+    preferencesUrl: feedbackPreferencesUrl(token),
   });
   const messageId = new Types.ObjectId();
   const messageCreatedAt = new Date();
@@ -1164,9 +1162,8 @@ export async function remindFeedback(id: string, actor: AdminActor, input: Remin
   const token = feedbackToken(conversation.id);
   const replyToken = compactFeedbackReplyToken(conversation.id);
   const rendered = await renderFeedbackInvitation({
-    subject: conversation.subject,
     body,
-    ...feedbackLinks(token),
+    preferencesUrl: feedbackPreferencesUrl(token),
     reminder: true,
   });
   const messageId = new Types.ObjectId();

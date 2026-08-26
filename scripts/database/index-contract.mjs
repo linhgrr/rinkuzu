@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-08-26.1';
+export const INDEX_CONTRACT_VERSION = '2026-08-26.2';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -660,6 +660,21 @@ export const INDEX_CONTRACT = Object.freeze([
   // MongoDB exposes text indexes through their internal key representation.
   // No production caller uses $text anymore, so evaluate removal by hiding it first.
   deprecated('quizzes.legacy-text-search', 'quizzes', { _fts: 'text', _ftsx: 1 }),
+
+  // Indexes that exist in production but belong to no Mongoose schema. They are
+  // recorded here so the planner stops reporting them as unclassified drift and
+  // the migration can run; classifying them does not create, hide or drop
+  // anything. Whether either should be retired is a separate decision that needs
+  // query evidence, and moving one to `deprecated` is what starts that path.
+  externallyManaged('quizzes.manual-author-folder-recent', 'quizzes', {
+    author: 1,
+    folder: 1,
+    createdAt: -1,
+  }),
+  externallyManaged('users.manual-legacy-subscription-window', 'users', {
+    'subscription.isActive': 1,
+    'subscription.endDate': 1,
+  }),
 ]);
 
 function required(id, collection, key, options = {}) {
@@ -669,6 +684,16 @@ function required(id, collection, key, options = {}) {
     key: Object.freeze(key),
     options: Object.freeze(options),
     lifecycle: 'required_active',
+  });
+}
+
+function externallyManaged(id, collection, key) {
+  return Object.freeze({
+    id,
+    collection,
+    key: Object.freeze(key),
+    options: Object.freeze({}),
+    lifecycle: 'externally_managed',
   });
 }
 

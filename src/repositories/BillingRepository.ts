@@ -59,6 +59,7 @@ import {
 } from '@/services/billing/payos-adapter';
 import { EntitlementLedgerRepository } from '@/repositories/EntitlementLedgerRepository';
 import { invalidateEntitlements } from '@/lib/entitlements/cache';
+import { logger } from '@/lib/logger';
 
 type PlanLean = {
   _id: string;
@@ -1519,6 +1520,7 @@ export class BillingRepository implements IBillingRepository {
       .lean<AttemptLean[]>()
       .exec();
     let reconciled = 0;
+    let failed = 0;
     let exhaustedBudget = false;
     for (const attempt of attempts) {
       // Each attempt costs one provider round trip; leaving the rest due is
@@ -1527,11 +1529,48 @@ export class BillingRepository implements IBillingRepository {
         exhaustedBudget = true;
         break;
       }
-      await this.reconcileAttempt(attempt);
-      reconciled += 1;
+      try {
+        await this.reconcileAttempt(attempt);
+        reconciled += 1;
+      } catch (error) {
+        // One unreconcilable attempt must not take the batch down with it.
+        // `reconcileAttempt` throws before it writes anything, so without this
+        // the same attempt is picked first every tick, fails again, and no
+        // other attempt is ever reconciled — a permanent head-of-line block
+        // that also stops promo reservations from being released.
+        failed += 1;
+        await this.rescheduleFailedAttempt(attempt, error);
+      }
     }
     const released = await this.releaseDuePromotionReservations(limit);
-    return { processed: reconciled + released, exhaustedBudget };
+    if (failed > 0) {
+      logger.warn({ failed, reconciled }, 'Some payment attempts could not be reconciled');
+    }
+    return { processed: reconciled + released, failed, exhaustedBudget };
+  }
+
+  /**
+   * Pushes a failed attempt's next check out with the standard backoff and
+   * records why, so the queue keeps moving and an operator can see the reason
+   * on the order in /admin/billing.
+   */
+  private async rescheduleFailedAttempt(attempt: AttemptLean, error: unknown): Promise<void> {
+    const age = Date.now() - attempt.createdAt.getTime();
+    const message = error instanceof Error ? error.message : 'Attempt reconciliation failed';
+    await PaymentAttempt.updateOne(
+      { _id: attempt._id },
+      {
+        $set: {
+          nextReconcileAt: new Date(Date.now() + withJitter(reconciliationDelayMs(age))),
+          lastProviderError: message.slice(0, 1_000),
+          // A day of failures is no longer a transient provider blip.
+          ...(age >= 24 * 60 * 60_000 && attempt.collectionStatus !== 'review'
+            ? { collectionStatus: 'review' }
+            : {}),
+        },
+        $inc: { reconcileCount: 1, version: 1 },
+      },
+    );
   }
 
   private releaseRetryDelay(reservedAt: Date, now = Date.now()): number {

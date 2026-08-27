@@ -81,6 +81,8 @@ export interface InboxProcessingResult {
 
 export interface ReconciliationResult {
   processed: number;
+  /** Attempts whose provider round trip threw; rescheduled, not lost. */
+  failed: number;
   exhaustedBudget: boolean;
 }
 

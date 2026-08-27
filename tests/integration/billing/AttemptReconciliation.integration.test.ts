@@ -62,6 +62,22 @@ describe('payment attempt reconciliation integration', () => {
     return new BillingRepository(provider);
   }
 
+  function repositoryThatFailsFor(failingOrderCode: number, ok: ProviderPaymentSnapshot) {
+    const provider: BillingPaymentProvider = {
+      getPayment: async (orderCode: number) => {
+        if (orderCode === failingOrderCode) {
+          throw new Error('PayOS responded with HTTP 400');
+        }
+        return ok;
+      },
+      createCheckout: async () => {
+        throw new Error('createCheckout is not exercised by these tests');
+      },
+      cancelPayment: async () => ok,
+    };
+    return new BillingRepository(provider);
+  }
+
   function snapshotFor(
     seeded: SeededAttempt,
     overrides: Partial<ProviderPaymentSnapshot>,
@@ -275,5 +291,45 @@ describe('payment attempt reconciliation integration', () => {
 
     const view = await repository.getOrderByPublicId(seeded.userId, seeded.publicId);
     expect(view.checkoutUrl).toBe(`https://pay.payos.vn/web/${seeded.paymentLinkId}`);
+  });
+
+  it('keeps draining after an attempt the provider cannot answer for', async () => {
+    // Reproduces a production incident: one attempt whose order code PayOS
+    // rejected made the whole batch return 500. `reconcileAttempt` throws before
+    // it writes anything, so that attempt stayed first in the queue and every
+    // later attempt — and the promo reservation release after the loop — was
+    // blocked, every minute, indefinitely.
+    const poisoned = await seedAttempt({
+      attemptStatus: 'pending',
+      activeForCheckout: true,
+      expiresAt: new Date(Date.now() + 10 * 60_000),
+    });
+    const healthy = await seedAttempt({
+      attemptStatus: 'pending',
+      activeForCheckout: true,
+      expiresAt: new Date(Date.now() + 10 * 60_000),
+    });
+
+    const repository = repositoryThatFailsFor(
+      poisoned.orderCode,
+      snapshotFor(healthy, { status: 'PENDING' }),
+    );
+
+    const result = await repository.reconcileDueAttempts({ limit: 50 });
+    expect(result.failed).toBeGreaterThanOrEqual(1);
+
+    // Pushed out with the reason recorded, no longer blocking the head.
+    const blocked = await PaymentAttempt.findById(poisoned.attemptId)
+      .lean<{ nextReconcileAt: Date; lastProviderError?: string; reconcileCount: number }>()
+      .exec();
+    expect(blocked?.lastProviderError).toContain('HTTP 400');
+    expect(blocked?.nextReconcileAt.getTime()).toBeGreaterThan(Date.now());
+    expect(blocked?.reconcileCount).toBe(1);
+
+    // The healthy attempt in the same batch was still reconciled.
+    const moved = await PaymentAttempt.findById(healthy.attemptId)
+      .lean<{ reconcileCount: number }>()
+      .exec();
+    expect(moved?.reconcileCount).toBeGreaterThanOrEqual(1);
   });
 });

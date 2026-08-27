@@ -21,6 +21,7 @@ import {
   InternalRequestNonce,
 } from '@/models/Billing';
 import type {
+  BillingBatchOptions,
   BillingOrderMutationResult,
   BillingOrderView,
   BillingQuoteResult,
@@ -37,10 +38,11 @@ import type {
 import {
   BillingDomainError,
   calculateDiscount,
-  canApplyCollectionTransition,
   hashIdempotencyRequest,
+  isLocallyExpiredAttempt,
   normalizePromoCode,
   reconciliationDelayMs,
+  resolveCollectionTransition,
   withJitter,
 } from '@/services/billing/billing-domain';
 import { billingConfig } from '@/services/billing/billing-config';
@@ -51,10 +53,12 @@ import {
 } from '@/services/billing/quote-token';
 import {
   BillingPayOSAdapter,
+  type BillingPaymentProvider,
   type ProviderCreateOutcome,
   type ProviderPaymentSnapshot,
 } from '@/services/billing/payos-adapter';
 import { EntitlementLedgerRepository } from '@/repositories/EntitlementLedgerRepository';
+import { invalidateEntitlements } from '@/lib/entitlements/cache';
 
 type PlanLean = {
   _id: string;
@@ -212,6 +216,17 @@ type CreateProviderCheckoutInput = {
 
 type FirstPurchaseEligibilityStatus = 'available' | 'reserved' | 'consumed';
 
+const DEFAULT_BATCH_LIMIT = 25;
+
+/**
+ * Wall-clock budget for one background drain. Kept under the serverless
+ * function ceiling so the batch always exits on its own terms.
+ */
+const DEFAULT_BATCH_BUDGET_MS = 45_000;
+
+/** Worst-case cost of the provider round trip each item performs. */
+const PROVIDER_CALL_BUDGET_MS = 16_000;
+
 function objectId(value: string): Types.ObjectId {
   if (!Types.ObjectId.isValid(value)) {
     throw new BillingDomainError('invalid_user', 'User identity is invalid', 401);
@@ -271,7 +286,7 @@ function payosStatus(snapshot: ProviderPaymentSnapshot): string {
 export class BillingRepository implements IBillingRepository {
   private readonly entitlementLedger = new EntitlementLedgerRepository();
 
-  constructor(private readonly payos = new BillingPayOSAdapter()) {}
+  constructor(private readonly payos: BillingPaymentProvider = new BillingPayOSAdapter()) {}
 
   private async ensureFirstPurchaseEligibility(user: Types.ObjectId): Promise<void> {
     const existing = await FirstPurchaseEligibility.exists({
@@ -1003,11 +1018,11 @@ export class BillingRepository implements IBillingRepository {
           },
           { session },
         );
-        await BillingOrder.updateOne(
-          { _id: orderId },
-          { $set: { collectionStatus: 'review' } },
-          { session },
-        );
+        // The order stays `unpaid`, which is what it is: no money was ever
+        // collected and the promo reservation was released. Marking it `review`
+        // put every ordinary provider rejection into the operator queue, where
+        // there is nothing to decide. The attempt carries the diagnosis
+        // (`definite_failure` plus `lastProviderError`).
         await IdempotencyRecord.updateOne(
           { order: orderId },
           {
@@ -1245,6 +1260,11 @@ export class BillingRepository implements IBillingRepository {
       .lean<AttemptLean>()
       .exec();
     const activeAttempt = latestAttempt?.activeForCheckout ? latestAttempt : null;
+    // A checkout link dies at the deadline the provider was given, which can be
+    // well before reconciliation notices. Withholding the URL keeps the client
+    // from sending anyone to a dead payment page.
+    const liveAttempt =
+      activeAttempt && activeAttempt.expiresAt.getTime() > Date.now() ? activeAttempt : null;
     return {
       id: order.publicId,
       plan: { id: order.planId, name: order.planName },
@@ -1259,8 +1279,9 @@ export class BillingRepository implements IBillingRepository {
       ...(latestAttempt ? { attemptCollectionStatus: latestAttempt.collectionStatus } : {}),
       fulfillmentStatus: order.fulfillmentStatus,
       settlementStatus: order.settlementStatus,
-      ...(activeAttempt?.checkoutUrl ? { checkoutUrl: activeAttempt.checkoutUrl } : {}),
+      ...(liveAttempt?.checkoutUrl ? { checkoutUrl: liveAttempt.checkoutUrl } : {}),
       ...(activeAttempt ? { activeAttemptId: activeAttempt._id.toString() } : {}),
+      ...(activeAttempt ? { attemptExpiresAt: activeAttempt.expiresAt.toISOString() } : {}),
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
     };
@@ -1375,11 +1396,20 @@ export class BillingRepository implements IBillingRepository {
     };
   }
 
-  async processInbox(limit = 25): Promise<InboxProcessingResult> {
+  async processInbox(options: BillingBatchOptions = {}): Promise<InboxProcessingResult> {
     await connectDB();
+    const limit = options.limit ?? DEFAULT_BATCH_LIMIT;
+    const deadline = Date.now() + (options.budgetMs ?? DEFAULT_BATCH_BUDGET_MS);
     let claimed = 0;
     let processed = 0;
+    let exhaustedBudget = false;
     for (let index = 0; index < limit; index += 1) {
+      // One provider round trip per event; stop before the platform kills the
+      // function so claimed events are left cleanly reschedulable.
+      if (Date.now() + PROVIDER_CALL_BUDGET_MS > deadline) {
+        exhaustedBudget = true;
+        break;
+      }
       const now = new Date();
       const event = await PaymentWebhookInbox.findOneAndUpdate(
         {
@@ -1443,10 +1473,15 @@ export class BillingRepository implements IBillingRepository {
         .lean<Array<{ _id: Types.ObjectId }>>()
         .exec();
       for (const order of fulfillmentBacklog) {
+        // Fulfilment is database-only, so a smaller reserve is enough here.
+        if (Date.now() > deadline) {
+          exhaustedBudget = true;
+          break;
+        }
         await this.fulfillOrder(order._id);
       }
     }
-    return { claimed, processed };
+    return { claimed, processed, exhaustedBudget };
   }
 
   private async rescheduleInbox(
@@ -1471,8 +1506,10 @@ export class BillingRepository implements IBillingRepository {
     );
   }
 
-  async reconcileDueAttempts(limit = 25): Promise<ReconciliationResult> {
+  async reconcileDueAttempts(options: BillingBatchOptions = {}): Promise<ReconciliationResult> {
     await connectDB();
+    const limit = options.limit ?? DEFAULT_BATCH_LIMIT;
+    const deadline = Date.now() + (options.budgetMs ?? DEFAULT_BATCH_BUDGET_MS);
     const attempts = await PaymentAttempt.find({
       collectionStatus: { $in: ['creating', 'pending', 'partial', 'review'] },
       nextReconcileAt: { $lte: new Date() },
@@ -1481,9 +1518,20 @@ export class BillingRepository implements IBillingRepository {
       .limit(limit)
       .lean<AttemptLean[]>()
       .exec();
-    for (const attempt of attempts) await this.reconcileAttempt(attempt);
+    let reconciled = 0;
+    let exhaustedBudget = false;
+    for (const attempt of attempts) {
+      // Each attempt costs one provider round trip; leaving the rest due is
+      // safe because `nextReconcileAt` still selects them next tick.
+      if (Date.now() + PROVIDER_CALL_BUDGET_MS > deadline) {
+        exhaustedBudget = true;
+        break;
+      }
+      await this.reconcileAttempt(attempt);
+      reconciled += 1;
+    }
     const released = await this.releaseDuePromotionReservations(limit);
-    return { processed: attempts.length + released };
+    return { processed: reconciled + released, exhaustedBudget };
   }
 
   private releaseRetryDelay(reservedAt: Date, now = Date.now()): number {
@@ -1650,8 +1698,20 @@ export class BillingRepository implements IBillingRepository {
       }
     }
 
-    const nextStatus = payosStatus(snapshot);
-    if (!canApplyCollectionTransition(attempt.collectionStatus, nextStatus)) return;
+    const observedStatus = payosStatus(snapshot);
+    const effectiveStatus = isLocallyExpiredAttempt({
+      observed: observedStatus,
+      amountPaid: snapshot.amountPaid,
+      expiresAt: attempt.expiresAt,
+    })
+      ? 'expired'
+      : observedStatus;
+    const nextStatus = resolveCollectionTransition(
+      attempt.collectionStatus,
+      effectiveStatus,
+      snapshot.amountPaid,
+    );
+    if (nextStatus === null) return;
     const terminal = ['paid', 'cancelled', 'expired', 'failed'].includes(nextStatus);
     const transitioned = await PaymentAttempt.updateOne(
       {
@@ -1665,7 +1725,9 @@ export class BillingRepository implements IBillingRepository {
           amountPaid: snapshot.amountPaid,
           amountRemaining: snapshot.amountRemaining,
           collectionStatus: nextStatus,
-          activeForCheckout: !terminal,
+          // Reconciliation never re-opens a closed attempt: a replacement may
+          // already hold the unique active-for-checkout slot on this order.
+          activeForCheckout: attempt.activeForCheckout && !terminal,
           ...(terminal ? { terminalConfirmedAt: new Date() } : {}),
           nextReconcileAt: new Date(
             Date.now() +
@@ -2152,7 +2214,8 @@ export class BillingRepository implements IBillingRepository {
     input: CreateExternalMoneyAdjustmentInput,
   ): Promise<BillingOrderView> {
     await connectDB();
-    const orderId = objectId(input.orderId);
+    // `input.orderId` is the order's public UUID, not its ObjectId: the admin
+    // route validates it with `z.uuid()` and admins only ever see publicIds.
     const recordedBy = objectId(input.recordedBy);
     const occurredAt = new Date(input.occurredAt);
     if (
@@ -2162,6 +2225,12 @@ export class BillingRepository implements IBillingRepository {
     ) {
       throw new BillingDomainError('validation_error', 'Invalid money adjustment', 400);
     }
+    const target = await BillingOrder.findOne({ publicId: input.orderId })
+      .select({ _id: 1 })
+      .lean<{ _id: Types.ObjectId }>()
+      .exec();
+    if (!target) throw new BillingDomainError('order_not_found', 'Order not found', 404);
+    const orderId = target._id;
     const namespace = {
       provider: 'payos',
       providerAccountId: billingConfig.providerAccountId(),
@@ -2179,12 +2248,15 @@ export class BillingRepository implements IBillingRepository {
     }
 
     const session = await mongoose.startSession();
+    let revokedUser: string | null = null;
     try {
       await session.withTransaction(async () => {
         const order = await BillingOrder.findById(orderId)
           .session(session)
           .lean<{
+            user: Types.ObjectId;
             currency: 'VND';
+            finalAmount: number;
             receivedAmount: number;
             settlementStatus: string;
           }>()
@@ -2227,26 +2299,47 @@ export class BillingRepository implements IBillingRepository {
           ],
           { session },
         );
+        // A refund is only "partial" when principal remains. Refunding the
+        // whole captured principal must not read as partially refunded.
+        const refundedPrincipal =
+          input.allocation === 'principal' ? await this.principalRefundTotal(orderId, session) : 0;
         const settlementStatus =
           input.type === 'chargeback'
             ? 'charged_back'
             : input.type === 'chargeback_reversal'
               ? 'reversed'
               : input.type === 'refund'
-                ? 'partially_refunded'
+                ? refundedPrincipal >= order.finalAmount
+                  ? 'refunded'
+                  : 'partially_refunded'
                 : order.settlementStatus;
+        const revokesEntitlement = input.type === 'chargeback' || input.type === 'refund';
         await BillingOrder.updateOne(
           { _id: orderId },
           {
             $set: {
               settlementStatus,
-              ...(input.type === 'chargeback' || input.type === 'refund'
-                ? { fulfillmentStatus: 'review' }
-                : {}),
+              ...(revokesEntitlement ? { fulfillmentStatus: 'review' } : {}),
             },
           },
           { session },
         );
+
+        // Money left; access must leave with it. Only the grant this order
+        // created is revoked — never the account's other grants.
+        if (revokesEntitlement && billingConfig.externalRefundAutoRevocationEnabled()) {
+          revokedUser = await this.entitlementLedger.revokeGrantBySource(
+            {
+              user: order.user,
+              sourceType: 'billing_order',
+              sourceId: orderId.toString(),
+              adjustmentSourceType: input.type === 'chargeback' ? 'chargeback' : 'refund',
+              adjustmentSourceId: `${namespace.type}:${namespace.externalReference}`,
+              reason: `External ${input.type} recorded by admin`,
+            },
+            session,
+          );
+        }
       });
     } catch (error) {
       if ((error as { code?: number }).code === 11000) {
@@ -2258,7 +2351,32 @@ export class BillingRepository implements IBillingRepository {
     } finally {
       await session.endSession();
     }
-    return this.getOrderByPublicId(input.recordedBy, input.orderId);
+    // The tier cache is keyed by the order's owner, never by the acting admin.
+    if (revokedUser) invalidateEntitlements(revokedUser);
+    const updated = await BillingOrder.findById(orderId).lean<OrderLean>().exec();
+    if (!updated) throw new BillingDomainError('order_not_found', 'Order not found', 404);
+    return this.toOrderView(updated);
+  }
+
+  /** Principal refunded so far, including the row written in this transaction. */
+  private async principalRefundTotal(
+    orderId: Types.ObjectId,
+    session: ClientSession,
+  ): Promise<number> {
+    const totals = await ExternalMoneyAdjustment.aggregate<{ _id: null; refunded: number }>(
+      [
+        {
+          $match: {
+            order: orderId,
+            type: { $in: ['refund', 'chargeback'] },
+            allocation: 'principal',
+          },
+        },
+        { $group: { _id: null, refunded: { $sum: '$amount' } } },
+      ],
+      { session },
+    );
+    return totals[0]?.refunded ?? 0;
   }
 
   async consumeInternalNonce(nonce: string, expiresAt: Date): Promise<void> {

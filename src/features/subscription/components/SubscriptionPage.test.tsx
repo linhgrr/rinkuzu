@@ -68,7 +68,7 @@ describe('SubscriptionPage plan comparison', () => {
     expect(screen.getByText('pricing:premium.features.premiumCatalog')).toBeTruthy();
   });
 
-  it('marks the paid card as current for an active Premium user', async () => {
+  it('offers an extension to an active Premium user instead of blocking the card', async () => {
     fetchSubscriptionPageMock.mockResolvedValue({
       plans: [
         {
@@ -89,10 +89,18 @@ describe('SubscriptionPage plan comparison', () => {
       isPremium: true,
     });
 
+    const user = userEvent.setup();
     render(<SubscriptionPage />);
 
-    expect(await screen.findByRole('button', { name: 'subscription:currentPlan' })).toBeTruthy();
+    // The entitlement ledger stacks a renewal onto the live period, so an
+    // active subscriber must still be able to buy more time.
+    const extend = await screen.findByRole('button', { name: 'subscription:extend' });
+    expect((extend as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByText('subscription:extendNote')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'subscription:freePlan' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'subscription:subscribe' })).toBeNull();
+
+    await user.click(extend);
+    expect(routerPushMock).toHaveBeenCalledWith('/checkout?plan=premium-monthly');
   });
 });

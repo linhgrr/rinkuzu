@@ -42,5 +42,7 @@
   "confirmingCancellation": "Confirming payment cancellation...",
   "paymentCancellationPending": "The payment provider has not confirmed the cancellation yet. Please try again shortly.",
   "paymentCancellationError": "We could not confirm the cancellation. Check the payment status before trying again.",
-  "orderCode": "Order Code"
+  "orderCode": "Order Code",
+  "extend": "Extend",
+  "extendNote": "Extra time is added to the end of your current period — you keep the remainder."
 }

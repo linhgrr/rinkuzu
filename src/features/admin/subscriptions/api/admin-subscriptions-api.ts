@@ -3,8 +3,7 @@ import { fetchApiData } from '@/lib/api/client';
 import { toAdminSubscriptionsListViewModel } from '@/features/admin/subscriptions/mappers/admin-subscriptions.mapper';
 import type {
   AdminSubscriptionsQueryInput,
-  AdminSubscriptionStatusUpdateInput,
-  AdminMutableSubscriptionStatusViewModel,
+  AdminSubscriptionRevokeInput,
   AdminSubscriptionsListViewModel,
 } from '@/features/admin/subscriptions/types/admin-subscriptions-view-model';
 
@@ -31,18 +30,24 @@ export async function fetchAdminSubscriptionsViewModel({
   return toAdminSubscriptionsListViewModel(data);
 }
 
-export async function updateAdminSubscriptionStatus({
+async function getBillingCsrfToken(): Promise<string> {
+  return (await fetchApiData<{ token: string }>('/api/billing/csrf', { method: 'POST' })).token;
+}
+
+export async function revokeAdminSubscription({
   subscriptionId,
-  status,
-}: AdminSubscriptionStatusUpdateInput): Promise<void> {
-  await fetchApiData<{ id: string; status: AdminMutableSubscriptionStatusViewModel }>(
+  reason,
+}: AdminSubscriptionRevokeInput): Promise<void> {
+  const csrfToken = await getBillingCsrfToken();
+  await fetchApiData<{ id: string; status: 'expired'; isActive: false }>(
     `/api/admin/subscriptions/${subscriptionId}`,
     {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'X-Billing-CSRF': csrfToken,
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ action: 'revoke', reason }),
     },
   );
 }

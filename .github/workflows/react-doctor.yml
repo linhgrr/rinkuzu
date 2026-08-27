@@ -1,0 +1,67 @@
+# React Doctor — finds security, performance, correctness, accessibility,
+# bundle-size, and architecture issues in React codebases.
+#
+# Docs: https://www.react.doctor/ci
+# Source: https://github.com/millionco/react-doctor
+
+name: React Doctor
+
+on:
+  # Scans the PR's changed files and posts a sticky summary comment listing only the new issues introduced relative to the merge base of the target branch.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  # Scans `master` on every push to track the health-score trend and catch regressions that slipped past PR review.
+  push:
+    branches: ['master']
+
+permissions:
+  contents: read
+
+# Cancels any in-flight scan for the same PR (or branch, on push) the moment a new commit arrives, so reviewers only ever see the latest run.
+concurrency:
+  group: react-doctor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  react-doctor:
+    runs-on: ubuntu-latest
+    # Scoped here rather than at the top level: the sticky summary comment,
+    # inline review comments and commit status each need one of these.
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      statuses: write
+    # Every job in this repository carries an explicit bounded timeout.
+    timeout-minutes: 15
+    steps:
+      # fetch-depth: 0 gives React Doctor the full git history it needs to find the merge base with the target branch. Without it a shallow checkout has no merge base, so PR runs can't compare against the base and fall back to reporting every issue in the changed files (pre-existing ones included) instead of only the ones the PR introduced.
+      # Pinned to the same immutable checkout revision as the production CI workflow.
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+
+      # millionco/react-doctor v2, resolved to its immutable commit.
+      - uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2
+        with:
+          # Pinned to the devDependency in package.json. An unpinned "latest"
+          # here would report against a different analyser than the pre-commit
+          # hook and `npm run doctor`, so a clean local run could still be red
+          # in CI (and vice versa).
+          version: '0.9.12'
+        # Advisory by default: React Doctor reports findings on every PR — a
+        # sticky summary comment, inline review comments, and a commit status
+        # with the health score — but never fails the check, so it won't red-X
+        # a teammate's PR on day one. When your team trusts the signal, graduate
+        # the gate: uncomment the block below and set blocking to "error" (fail
+        # on new error-severity findings) or "warning" (fail on any finding).
+        # Full reference: https://www.react.doctor/ci
+        # with:
+        #   blocking: error          # Gate level: "none" (advisory, the default) | "warning" | "error"
+        #   scope: full              # On PRs, scan the whole project instead of just changed files
+        #   comment: false           # Disable the sticky PR summary comment
+        #   review-comments: false   # Disable inline review comments on changed lines
+        #   commit-status: false     # Disable the commit status (score + counts, links to the run)
+        #   version: "0.4.0"         # Pin to a specific react-doctor version instead of "latest"
+        #   directory: apps/web      # Scan a sub-directory (default: ".")
+        #   project: "web,admin"     # In a monorepo, scan specific workspace project(s)

@@ -55,7 +55,9 @@
     "partial": "Đã nhận một phần thanh toán",
     "paidProcessing": "Đã nhận tiền, đang kích hoạt",
     "pending": "Đang chờ thanh toán",
-    "cancelledDescription": "Hiện chưa có khoản thanh toán nào được xác nhận. Nếu bạn đã bắt đầu chuyển khoản, hãy kiểm tra lại trạng thái."
+    "cancelledDescription": "Hiện chưa có khoản thanh toán nào được xác nhận. Nếu bạn đã bắt đầu chuyển khoản, hãy kiểm tra lại trạng thái.",
+    "linkExpired": "Liên kết thanh toán đã hết hạn",
+    "linkExpiredDescription": "Liên kết chỉ có hiệu lực trong 15 phút. Chưa có khoản thanh toán nào được ghi nhận — hãy chọn gói lại để tạo giao dịch mới."
   },
   "actions": {
     "continuePayment": "Tiếp tục đến PayOS · {amount}",

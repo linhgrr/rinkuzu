@@ -8,6 +8,7 @@ import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { AdminSearchInput } from '@/features/admin/components/AdminSearchInput';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import {
   Badge,
   Card,
@@ -23,22 +24,23 @@ import Pagination from '@/components/ui/Pagination';
 import { HiOutlineEye } from 'react-icons/hi';
 import {
   fetchAdminSubscriptionsViewModel,
-  updateAdminSubscriptionStatus,
+  revokeAdminSubscription,
 } from '@/features/admin/subscriptions/api/admin-subscriptions-api';
 import type {
-  AdminMutableSubscriptionStatusViewModel,
+  AdminFilterableSubscriptionStatusViewModel,
   AdminSubscriptionStatusViewModel,
   AdminSubscriptionViewModel,
   AdminSubscriptionsPaginationViewModel,
 } from '@/features/admin/subscriptions/types/admin-subscriptions-view-model';
+import { DERIVED_SUBSCRIPTION_STATUSES } from '@/shared/constants/subscription-status';
 
-const STATUS_OPTIONS: AdminSubscriptionStatusViewModel[] = [
-  'pending',
-  'completed',
-  'failed',
-  'cancelled',
-  'expired',
+// Entitlement status is derived from the projection window, so these are the
+// only values a row can report — and therefore the only ones worth filtering.
+const STATUS_OPTIONS: AdminFilterableSubscriptionStatusViewModel[] = [
+  ...DERIVED_SUBSCRIPTION_STATUSES,
 ];
+
+const REVOKE_CONFIRMATION = 'REVOKE';
 
 interface AdminSubscriptionsState {
   status: 'loading' | 'ready';
@@ -48,9 +50,11 @@ interface AdminSubscriptionsState {
   success: string;
   searchInput: string;
   searchTerm: string;
-  statusFilter: '' | AdminSubscriptionStatusViewModel;
+  statusFilter: '' | AdminFilterableSubscriptionStatusViewModel;
   pagination: AdminSubscriptionsPaginationViewModel;
   selectedSubscription: AdminSubscriptionViewModel | null;
+  revokeReason: string;
+  revokeConfirmation: string;
 }
 
 type AdminSubscriptionsAction =
@@ -62,11 +66,7 @@ type AdminSubscriptionsAction =
         pagination: AdminSubscriptionsPaginationViewModel;
       };
     }
-  | {
-      type: 'updateStatus';
-      subscriptionId: string;
-      status: AdminMutableSubscriptionStatusViewModel;
-    };
+  | { type: 'revoked'; subscriptionId: string };
 
 const initialPagination: AdminSubscriptionsPaginationViewModel = {
   page: 1,
@@ -86,6 +86,8 @@ const initialState: AdminSubscriptionsState = {
   statusFilter: '',
   pagination: initialPagination,
   selectedSubscription: null,
+  revokeReason: '',
+  revokeConfirmation: '',
 };
 
 interface SubscriptionSearchBarProps {
@@ -99,8 +101,8 @@ interface SubscriptionSearchBarProps {
 }
 
 interface SubscriptionStatusFiltersProps {
-  currentFilter: '' | AdminSubscriptionStatusViewModel;
-  onChange: (value: '' | AdminSubscriptionStatusViewModel) => void;
+  currentFilter: '' | AdminFilterableSubscriptionStatusViewModel;
+  onChange: (value: '' | AdminFilterableSubscriptionStatusViewModel) => void;
 }
 
 interface SubscriptionsTableProps {
@@ -114,8 +116,12 @@ interface SubscriptionsTableProps {
 interface SubscriptionDetailModalProps {
   subscription: AdminSubscriptionViewModel | null;
   actionLoadingId: string | null;
+  reason: string;
+  confirmation: string;
+  onReasonChange: (value: string) => void;
+  onConfirmationChange: (value: string) => void;
   onClose: () => void;
-  onUpdateStatus: (subscriptionId: string, status: AdminMutableSubscriptionStatusViewModel) => void;
+  onRevoke: (subscriptionId: string) => void;
 }
 
 interface SubscriptionDetailFieldProps {
@@ -138,21 +144,21 @@ function adminSubscriptionsReducer(
         pagination: action.value.pagination,
         error: '',
       };
-    case 'updateStatus': {
+    case 'revoked': {
+      // The ledger holds no grants after a revoke, so the derived status is
+      // always `expired`.
       const subscriptions = state.subscriptions.map((subscription) =>
         subscription.id === action.subscriptionId
-          ? { ...subscription, status: action.status, isActive: false }
+          ? { ...subscription, status: 'expired' as const, isActive: false, endDateLabel: '—' }
           : subscription,
       );
-      const selectedSubscription =
-        state.selectedSubscription?.id === action.subscriptionId
-          ? { ...state.selectedSubscription, status: action.status, isActive: false }
-          : state.selectedSubscription;
 
       return {
         ...state,
         subscriptions,
-        selectedSubscription,
+        selectedSubscription: null,
+        revokeReason: '',
+        revokeConfirmation: '',
       };
     }
     default:
@@ -176,16 +182,6 @@ function getStatusBadge(status: AdminSubscriptionStatusViewModel) {
 
 function getPlanBadge(planName: string) {
   return <Badge variant="default">{planName}</Badge>;
-}
-
-function getAvailableStatusTransitions(
-  subscription: AdminSubscriptionViewModel,
-): AdminMutableSubscriptionStatusViewModel[] {
-  if (subscription.status === 'pending') return ['failed', 'cancelled'];
-  if (subscription.status === 'completed') {
-    return subscription.endDate ? ['cancelled', 'expired'] : ['cancelled'];
-  }
-  return [];
 }
 
 function SubscriptionSearchBar({
@@ -340,10 +336,20 @@ function SubscriptionsTable({
 function SubscriptionDetailModal({
   subscription,
   actionLoadingId,
+  reason,
+  confirmation,
+  onReasonChange,
+  onConfirmationChange,
   onClose,
-  onUpdateStatus,
+  onRevoke,
 }: SubscriptionDetailModalProps) {
-  const availableTransitions = subscription ? getAvailableStatusTransitions(subscription) : [];
+  const busy = actionLoadingId === subscription?.id;
+  const canRevoke =
+    subscription !== null &&
+    subscription.isActive &&
+    reason.trim().length >= 3 &&
+    confirmation.trim() === REVOKE_CONFIRMATION &&
+    !busy;
 
   return (
     <Modal isOpen={!!subscription} onClose={onClose} title="Subscription Details">
@@ -370,25 +376,47 @@ function SubscriptionDetailModal({
             <SubscriptionDetailField label="Updated At" value={subscription.updatedAtLabel} />
           </div>
 
-          {availableTransitions.length > 0 ? (
-            <div className="border-t pt-4">
-              <p className="mb-3 text-sm font-medium text-neutral-700">Update Status</p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {availableTransitions.map((status) => (
-                  <Button
-                    key={status}
-                    variant="outline"
-                    size="sm"
-                    disabled={actionLoadingId === subscription.id}
-                    onClick={() => onUpdateStatus(subscription.id, status)}
-                    className="min-h-[40px] w-full justify-center px-3 text-sm font-medium capitalize"
-                  >
-                    {actionLoadingId === subscription.id ? 'Updating…' : `Mark as ${status}`}
-                  </Button>
-                ))}
+          {subscription.isActive ? (
+            <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-4">
+              <div>
+                <p className="text-sm font-semibold text-red-800">Revoke Premium</p>
+                <p className="mt-1 text-sm text-red-700">
+                  This revokes <strong>every</strong> grant on this account, including any renewal
+                  the customer paid for separately, and cannot be undone from this page. To claw
+                  back a single order, record a refund or chargeback on that order instead.
+                </p>
               </div>
+              <Input
+                label="Reason (recorded in the entitlement ledger)"
+                value={reason}
+                maxLength={500}
+                disabled={busy}
+                onChange={(event) => onReasonChange(event.target.value)}
+                placeholder="e.g. confirmed fraudulent payment, ticket RIN-1234"
+              />
+              <Input
+                label={`Type ${REVOKE_CONFIRMATION} to confirm`}
+                value={confirmation}
+                maxLength={16}
+                disabled={busy}
+                onChange={(event) => onConfirmationChange(event.target.value)}
+                placeholder={REVOKE_CONFIRMATION}
+              />
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!canRevoke}
+                onClick={() => onRevoke(subscription.id)}
+                className="min-h-[40px] w-full justify-center px-3 text-sm font-medium"
+              >
+                {busy ? 'Revoking…' : 'Revoke Premium'}
+              </Button>
             </div>
-          ) : null}
+          ) : (
+            <p className="border-t pt-4 text-sm text-neutral-500">
+              This account has no active Premium, so there is nothing to revoke.
+            </p>
+          )}
         </div>
       ) : null}
     </Modal>
@@ -442,7 +470,7 @@ export default function AdminSubscriptionsPage() {
     });
   };
 
-  const setStatusFilter = (statusFilter: '' | AdminSubscriptionStatusViewModel) => {
+  const setStatusFilter = (statusFilter: '' | AdminFilterableSubscriptionStatusViewModel) => {
     dispatch({
       type: 'patch',
       value: {
@@ -487,26 +515,17 @@ export default function AdminSubscriptionsPage() {
     });
   };
 
-  const handleUpdateStatus = async (
-    subscriptionId: string,
-    status: AdminMutableSubscriptionStatusViewModel,
-  ) => {
-    dispatch({ type: 'patch', value: { actionLoading: subscriptionId } });
+  const handleRevoke = async (subscriptionId: string) => {
+    dispatch({ type: 'patch', value: { actionLoading: subscriptionId, error: '' } });
     try {
-      await updateAdminSubscriptionStatus({ subscriptionId, status });
-      dispatch({ type: 'updateStatus', subscriptionId, status });
-      dispatch({
-        type: 'patch',
-        value: {
-          success: `Subscription status updated to ${status}`,
-          selectedSubscription: null,
-        },
-      });
+      await revokeAdminSubscription({ subscriptionId, reason: state.revokeReason.trim() });
+      dispatch({ type: 'revoked', subscriptionId });
+      dispatch({ type: 'patch', value: { success: 'Premium revoked for this account' } });
     } catch (error) {
       dispatch({
         type: 'patch',
         value: {
-          error: error instanceof Error ? error.message : 'Failed to update subscription',
+          error: error instanceof Error ? error.message : 'Failed to revoke Premium',
         },
       });
     }
@@ -550,7 +569,14 @@ export default function AdminSubscriptionsPage() {
               noResultsLabel={t('noSubscriptionsFound')}
               loadingLabel={t('loadingStatistics')}
               onViewDetails={(subscription) =>
-                dispatch({ type: 'patch', value: { selectedSubscription: subscription } })
+                dispatch({
+                  type: 'patch',
+                  value: {
+                    selectedSubscription: subscription,
+                    revokeReason: '',
+                    revokeConfirmation: '',
+                  },
+                })
               }
             />
 
@@ -569,10 +595,19 @@ export default function AdminSubscriptionsPage() {
         <SubscriptionDetailModal
           subscription={state.selectedSubscription}
           actionLoadingId={state.actionLoading}
-          onClose={() => dispatch({ type: 'patch', value: { selectedSubscription: null } })}
-          onUpdateStatus={(subscriptionId, status) =>
-            void handleUpdateStatus(subscriptionId, status)
+          reason={state.revokeReason}
+          confirmation={state.revokeConfirmation}
+          onReasonChange={(revokeReason) => dispatch({ type: 'patch', value: { revokeReason } })}
+          onConfirmationChange={(revokeConfirmation) =>
+            dispatch({ type: 'patch', value: { revokeConfirmation } })
           }
+          onClose={() =>
+            dispatch({
+              type: 'patch',
+              value: { selectedSubscription: null, revokeReason: '', revokeConfirmation: '' },
+            })
+          }
+          onRevoke={(subscriptionId) => void handleRevoke(subscriptionId)}
         />
       </div>
     </AdminPageShell>

@@ -1,4 +1,5 @@
 import type {
+  BillingBatchOptions,
   BillingOrderMutationResult,
   BillingOrderView,
   BillingQuoteResult,
@@ -48,12 +49,12 @@ export class BillingService {
     return this.repository.persistUnsupportedPayOSWebhook(rawPayloadHash);
   }
 
-  processInbox(limit?: number): Promise<InboxProcessingResult> {
-    return this.repository.processInbox(limit);
+  processInbox(options?: BillingBatchOptions): Promise<InboxProcessingResult> {
+    return this.repository.processInbox(options);
   }
 
-  reconcileDueAttempts(limit?: number): Promise<ReconciliationResult> {
-    return this.repository.reconcileDueAttempts(limit);
+  reconcileDueAttempts(options?: BillingBatchOptions): Promise<ReconciliationResult> {
+    return this.repository.reconcileDueAttempts(options);
   }
 
   consumeInternalNonce(nonce: string, expiresAt: Date): Promise<void> {

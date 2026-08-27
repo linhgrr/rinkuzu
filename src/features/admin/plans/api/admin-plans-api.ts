@@ -20,14 +20,23 @@ export async function fetchAdminBillingPlanViewModels(
   return toAdminBillingPlanViewModels(plans);
 }
 
+async function getBillingCsrfToken(): Promise<string> {
+  return (await fetchApiData<{ token: string }>('/api/billing/csrf', { method: 'POST' })).token;
+}
+
+async function planMutationHeaders(): Promise<Record<string, string>> {
+  return {
+    'Content-Type': 'application/json',
+    'X-Billing-CSRF': await getBillingCsrfToken(),
+  };
+}
+
 export async function createAdminBillingPlan(
   payload: AdminBillingPlanMutationInput,
 ): Promise<AdminBillingPlanViewModel> {
   const plan = await fetchApiData<BillingPlanDto>('/api/admin/plans', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: await planMutationHeaders(),
     body: JSON.stringify(payload),
   });
   return toAdminBillingPlanViewModel(plan);
@@ -39,9 +48,7 @@ export async function updateAdminBillingPlan({
 }: AdminBillingPlanUpdateInput): Promise<AdminBillingPlanViewModel> {
   const plan = await fetchApiData<BillingPlanDto>('/api/admin/plans', {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: await planMutationHeaders(),
     body: JSON.stringify({
       id: planId,
       ...payload,
@@ -53,9 +60,7 @@ export async function updateAdminBillingPlan({
 export async function deleteAdminBillingPlan(planId: string): Promise<DeleteResultDto> {
   return fetchApiData<DeleteResultDto>('/api/admin/plans', {
     method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: await planMutationHeaders(),
     body: JSON.stringify({ id: planId }),
   });
 }

@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { DurationUtils } from '@/types/subscription';
+import { VND_MINIMUM_PAYABLE } from '@/services/billing/billing-domain';
 import { objectIdRouteParamSchema, objectIdSchema } from '@/lib/validation/common';
 import type { PaginationMeta } from '@/dtos/common';
 import {
-  ADMIN_MUTABLE_SUBSCRIPTION_STATUSES,
+  DERIVED_SUBSCRIPTION_STATUSES,
   SUBSCRIPTION_STATUSES,
 } from '@/shared/constants/subscription-status';
 
@@ -20,7 +21,11 @@ const durationSchema = z
 
 export const createPlanRequestSchema = z.strictObject({
   name: z.string().trim().min(1, 'Plan name is required').max(80),
-  price: z.number().finite().positive('Plan price must be greater than 0'),
+  price: z
+    .number()
+    .int('Plan price must be a whole number of dong')
+    .min(VND_MINIMUM_PAYABLE, `Plan price must be at least ${VND_MINIMUM_PAYABLE} VND`)
+    .safe(),
   duration: durationSchema,
   isActive: z.boolean().default(true),
 });
@@ -29,7 +34,12 @@ export const updatePlanRequestSchema = z
   .strictObject({
     id: planIdSchema,
     name: z.string().trim().min(1, 'Plan name is required').max(80).optional(),
-    price: z.number().finite().positive('Plan price must be greater than 0').optional(),
+    price: z
+      .number()
+      .int('Plan price must be a whole number of dong')
+      .min(VND_MINIMUM_PAYABLE, `Plan price must be at least ${VND_MINIMUM_PAYABLE} VND`)
+      .safe()
+      .optional(),
     duration: durationSchema.optional(),
     isActive: z.boolean().optional(),
   })
@@ -47,19 +57,27 @@ export const grantUserSubscriptionRequestSchema = z.object({
   planId: planIdSchema,
 });
 
-const subscriptionStatusSchema = z.enum(SUBSCRIPTION_STATUSES);
-
-type SubscriptionStatusDto = z.infer<typeof subscriptionStatusSchema>;
+// The row DTO still carries the full status union: historical rows and other
+// producers may report values the list filter no longer accepts.
+type SubscriptionStatusDto = (typeof SUBSCRIPTION_STATUSES)[number];
 
 export const adminSubscriptionListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
-  status: subscriptionStatusSchema.optional(),
+  // Only derived statuses are filterable; see DERIVED_SUBSCRIPTION_STATUSES.
+  status: z.enum(DERIVED_SUBSCRIPTION_STATUSES).optional(),
   search: z.string().trim().max(200).optional(),
 });
 
-export const updateSubscriptionRequestSchema = z.strictObject({
-  status: z.enum(ADMIN_MUTABLE_SUBSCRIPTION_STATUSES),
+/**
+ * Revoking is the only entitlement mutation the admin surface exposes, and it
+ * is irreversible, so the intent is named explicitly and an operator reason is
+ * mandatory for the audit trail. It previously accepted a target status that
+ * was never stored anywhere.
+ */
+export const revokeSubscriptionRequestSchema = z.strictObject({
+  action: z.literal('revoke'),
+  reason: z.string().trim().min(3).max(500),
 });
 
 export interface BillingPlanDto {
@@ -110,4 +128,3 @@ export type CreatePlanRequestDto = z.infer<typeof createPlanRequestSchema>;
 export type UpdatePlanRequestDto = z.infer<typeof updatePlanRequestSchema>;
 export type GrantUserSubscriptionRequestDto = z.infer<typeof grantUserSubscriptionRequestSchema>;
 export type AdminSubscriptionListQueryDto = z.infer<typeof adminSubscriptionListQuerySchema>;
-export type UpdateSubscriptionRequestDto = z.infer<typeof updateSubscriptionRequestSchema>;

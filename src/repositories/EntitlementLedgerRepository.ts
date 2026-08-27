@@ -22,6 +22,16 @@ export interface AppendEntitlementGrantInput {
   providerPaidAt?: Date;
 }
 
+export interface RevokeEntitlementGrantInput {
+  user: Types.ObjectId;
+  sourceType: 'billing_order' | 'manual' | 'migration';
+  sourceId: string;
+  adjustmentSourceType: 'refund' | 'chargeback' | 'reversal' | 'admin';
+  /** Must be unique per adjustment: the ledger dedupes on source identity. */
+  adjustmentSourceId: string;
+  reason?: string;
+}
+
 interface GrantLean {
   _id: Types.ObjectId;
   sequence: number;
@@ -121,6 +131,71 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
     return userId;
   }
 
+  /**
+   * Revoke exactly the grant a single source produced — the refund/chargeback
+   * counterpart to `appendGrant`. Unlike `revokeAccount` this leaves every
+   * other grant standing, so clawing back one order cannot delete a renewal
+   * the customer paid for separately.
+   *
+   * Returns the affected user id when a revocation was appended, so the caller
+   * can invalidate that user's tier cache; null when there was nothing to
+   * revoke (no grant for the source, or already revoked).
+   */
+  async revokeGrantBySource(
+    input: RevokeEntitlementGrantInput,
+    session: ClientSession,
+  ): Promise<string | null> {
+    const grant = await EntitlementGrant.findOne({
+      user: input.user,
+      sourceType: input.sourceType,
+      sourceId: input.sourceId,
+    })
+      .session(session)
+      .lean<{ _id: Types.ObjectId }>()
+      .exec();
+    if (!grant) return null;
+
+    const latest = await EntitlementAdjustment.findOne({ user: input.user, grant: grant._id })
+      .sort({ sequence: -1 })
+      .session(session)
+      .lean<{ type: 'revoke' | 'restore' }>()
+      .exec();
+    if (latest?.type === 'revoke') return null;
+
+    const sequenced = await EntitlementAccount.findOneAndUpdate(
+      { user: input.user },
+      { $inc: { version: 1, nextSequence: 1 } },
+      { new: true, session },
+    )
+      .lean<{ nextSequence: number; planId?: string; planName?: string }>()
+      .exec();
+    if (!sequenced) throw new Error('Entitlement account disappeared');
+
+    await EntitlementAdjustment.create(
+      [
+        {
+          user: input.user,
+          grant: grant._id,
+          sequence: sequenced.nextSequence - 1,
+          type: 'revoke',
+          sourceType: input.adjustmentSourceType,
+          sourceId: input.adjustmentSourceId,
+          ...(input.reason === undefined ? {} : { reason: input.reason }),
+          committedAt: new Date(),
+        },
+      ],
+      { session },
+    );
+
+    await this.rebuildProjection(
+      input.user,
+      sequenced.planId ?? 'revoked',
+      sequenced.planName ?? 'Revoked',
+      session,
+    );
+    return input.user.toString();
+  }
+
   async appendGrant(
     input: AppendEntitlementGrantInput,
     session: ClientSession,
@@ -141,7 +216,11 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
     }
 
     if (!existing) {
-      const account = await EntitlementAccount.findOneAndUpdate(
+      // Seed and sequence in two steps: MongoDB rejects an update that touches
+      // the same path from both `$setOnInsert` and `$inc` (ConflictingUpdate-
+      // Operators, code 40), and `$inc` alone on insert would allocate
+      // sequence 0, which `EntitlementGrant.sequence` (min: 1) refuses.
+      await EntitlementAccount.updateOne(
         { user: input.user },
         {
           $setOnInsert: {
@@ -151,9 +230,13 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
             perpetual: false,
             lastCheckpointSequence: 0,
           },
-          $inc: { version: 1, nextSequence: 1 },
         },
-        { new: true, upsert: true, session },
+        { upsert: true, session },
+      );
+      const account = await EntitlementAccount.findOneAndUpdate(
+        { user: input.user },
+        { $inc: { version: 1, nextSequence: 1 } },
+        { new: true, session },
       )
         .lean<{ nextSequence: number; currentEndAt?: Date; perpetual: boolean }>()
         .exec();

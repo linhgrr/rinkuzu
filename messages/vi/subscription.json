@@ -42,5 +42,7 @@
   "confirmingCancellation": "Đang xác nhận hủy thanh toán...",
   "paymentCancellationPending": "Cổng thanh toán chưa xác nhận việc hủy. Vui lòng thử lại sau ít phút.",
   "paymentCancellationError": "Chưa thể xác nhận việc hủy. Hãy kiểm tra trạng thái thanh toán trước khi thử lại.",
-  "orderCode": "Mã đơn hàng"
+  "orderCode": "Mã đơn hàng",
+  "extend": "Gia hạn",
+  "extendNote": "Thời gian mua thêm sẽ được cộng vào cuối kỳ hiện tại, không mất phần còn lại."
 }

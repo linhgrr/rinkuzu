@@ -43,6 +43,7 @@ export const ROUTES = {
 
   // Admin routes
   ADMIN: {
+    BILLING: '/admin/billing',
     PLANS: '/admin/plans',
     PROMOTIONS: '/admin/promotions',
     QUIZZES: '/admin/quizzes',

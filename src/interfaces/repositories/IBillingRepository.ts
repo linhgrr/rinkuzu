@@ -25,8 +25,10 @@ export interface BillingOrderView {
   attemptCollectionStatus?: string;
   fulfillmentStatus: string;
   settlementStatus: string;
+  /** Absent once the active attempt's deadline has passed. */
   checkoutUrl?: string;
   activeAttemptId?: string;
+  attemptExpiresAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -59,13 +61,27 @@ export interface PersistedWebhookResult {
   inboxId: string;
 }
 
+/**
+ * Both background drains call the payment provider once per item, so a batch
+ * is bounded by wall-clock budget as well as item count: the scheduler runs on
+ * a serverless function with a hard timeout, and a batch killed mid-flight
+ * burns inbox attempt counts toward the dead-letter threshold.
+ */
+export interface BillingBatchOptions {
+  limit?: number;
+  budgetMs?: number;
+}
+
 export interface InboxProcessingResult {
   claimed: number;
   processed: number;
+  /** True when the batch stopped on its time budget with work still due. */
+  exhaustedBudget: boolean;
 }
 
 export interface ReconciliationResult {
   processed: number;
+  exhaustedBudget: boolean;
 }
 
 export interface PromotionAdminView {
@@ -125,8 +141,8 @@ export interface IBillingRepository {
   createReplacementAttempt(userId: string, publicId: string): Promise<BillingOrderMutationResult>;
   persistVerifiedPayOSWebhook(input: VerifiedPayOSWebhookInput): Promise<PersistedWebhookResult>;
   persistUnsupportedPayOSWebhook(rawPayloadHash: string): Promise<PersistedWebhookResult>;
-  processInbox(limit?: number): Promise<InboxProcessingResult>;
-  reconcileDueAttempts(limit?: number): Promise<ReconciliationResult>;
+  processInbox(options?: BillingBatchOptions): Promise<InboxProcessingResult>;
+  reconcileDueAttempts(options?: BillingBatchOptions): Promise<ReconciliationResult>;
   consumeInternalNonce(nonce: string, expiresAt: Date): Promise<void>;
   listPromotions(): Promise<PromotionAdminView[]>;
   createPromotion(input: CreatePromotionInput): Promise<PromotionAdminView>;

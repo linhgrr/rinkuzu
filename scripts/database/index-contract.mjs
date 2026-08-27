@@ -1,4 +1,4 @@
-export const INDEX_CONTRACT_VERSION = '2026-08-26.2';
+export const INDEX_CONTRACT_VERSION = '2026-08-27.1';
 
 export const INDEX_LIFECYCLE_STATUSES = Object.freeze([
   'required_active',
@@ -72,6 +72,16 @@ export const INDEX_CONTRACT = Object.freeze([
     { expireAfterSeconds: 0 },
   ),
   required('auth-rate-limits.key', 'auth_rate_limits', { key: 1 }, { unique: true }),
+
+  // billing_rate_limits is owned by rate-limiter-flexible, same contract as
+  // auth_rate_limits: production disables request-path index creation.
+  required(
+    'billing-rate-limits.expiration',
+    'billing_rate_limits',
+    { expire: -1 },
+    { expireAfterSeconds: 0 },
+  ),
+  required('billing-rate-limits.key', 'billing_rate_limits', { key: 1 }, { unique: true }),
 
   // billingorders
   required('billingorders.public-id', 'billingorders', { publicId: 1 }, { unique: true }),

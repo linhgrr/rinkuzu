@@ -37,7 +37,21 @@ type CheckoutStatusKey =
   | 'status.attemptReview'
   | 'status.partial'
   | 'status.paidProcessing'
+  | 'status.linkExpired'
   | 'status.pending';
+
+/**
+ * The attempt's own deadline passes before reconciliation observes it, so the
+ * link can be dead while the attempt still reads `pending`. Treated as ended so
+ * the page stops offering a payment button that leads nowhere.
+ */
+function hasExpiredLink(order: CheckoutOrder): boolean {
+  return (
+    order.attemptCollectionStatus === 'pending' &&
+    order.attemptExpiresAt !== undefined &&
+    new Date(order.attemptExpiresAt).getTime() <= Date.now()
+  );
+}
 
 type CheckoutErrorKey =
   | 'errors.quote'
@@ -54,6 +68,7 @@ type CheckoutErrorKey =
 function statusMessageKey(order: CheckoutOrder): CheckoutStatusKey {
   if (order.fulfillmentStatus === 'fulfilled') return 'status.fulfilled';
   if (order.fulfillmentStatus === 'review') return 'status.fulfillmentReview';
+  if (order.collectionStatus === 'unpaid' && hasExpiredLink(order)) return 'status.linkExpired';
   if (order.attemptCollectionStatus === 'cancelled') return 'status.cancelled';
   if (order.attemptCollectionStatus === 'expired') return 'status.expired';
   if (order.attemptCollectionStatus === 'failed') return 'status.failed';
@@ -133,11 +148,16 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
       .finally(() => setLoading(false));
   }, [hasProviderCallback, orderId, planId, t]);
 
+  const linkExpired =
+    order !== null && order.collectionStatus === 'unpaid' && hasExpiredLink(order);
+
   useEffect(() => {
+    // Nothing changes on its own once the link is dead or the attempt closed.
     if (
       !orderId ||
       order?.fulfillmentStatus === 'fulfilled' ||
-      ['cancelled', 'expired', 'failed'].includes(order?.attemptCollectionStatus ?? '')
+      ['cancelled', 'expired', 'failed'].includes(order?.attemptCollectionStatus ?? '') ||
+      linkExpired
     ) {
       return;
     }
@@ -147,16 +167,22 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
         .catch(() => undefined);
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [order?.attemptCollectionStatus, order?.fulfillmentStatus, orderId]);
+  }, [linkExpired, order?.attemptCollectionStatus, order?.fulfillmentStatus, orderId]);
 
   const submit = async () => {
     if (!quote || !termsAccepted || submitting) return;
     setSubmitting(true);
+    // The pending state may only survive when the browser is genuinely leaving
+    // for the provider. Every other exit — including a rejected checkout URL —
+    // has to clear it, or the pay button stays stuck mid-spin.
+    let leavingForProvider = false;
     try {
       const created = await createCheckoutOrder(quote.token, idempotencyKey);
       setOrder(created);
       if (created.checkoutUrl) {
-        window.location.assign(assertTrustedPayosCheckoutUrl(created.checkoutUrl));
+        const target = assertTrustedPayosCheckoutUrl(created.checkoutUrl);
+        leavingForProvider = true;
+        window.location.assign(target);
         return;
       }
       router.replace(`/checkout?order=${encodeURIComponent(created.id)}`);
@@ -165,7 +191,8 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
       if (error instanceof ApiResponseError && error.status >= 400 && error.status < 500) {
         setIdempotencyKey(crypto.randomUUID());
       }
-      setSubmitting(false);
+    } finally {
+      if (!leavingForProvider) setSubmitting(false);
     }
   };
 
@@ -192,7 +219,8 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
     const checkoutUrl = order.checkoutUrl;
     const attemptStatus = order.attemptCollectionStatus;
     const checkoutCancelled = attemptStatus === 'cancelled';
-    const checkoutEnded = ['cancelled', 'expired', 'failed'].includes(attemptStatus ?? '');
+    const checkoutEnded =
+      ['cancelled', 'expired', 'failed'].includes(attemptStatus ?? '') || linkExpired;
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
         <Card className="p-6 md:p-8">
@@ -209,6 +237,9 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
           </p>
           {checkoutCancelled && (
             <p className="mt-3 text-sm text-ink-muted">{t('status.cancelledDescription')}</p>
+          )}
+          {linkExpired && (
+            <p className="mt-3 text-sm text-ink-muted">{t('status.linkExpiredDescription')}</p>
           )}
           <div className="mt-6 flex flex-wrap gap-3">
             {checkoutUrl &&

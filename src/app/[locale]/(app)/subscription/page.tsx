@@ -176,12 +176,16 @@ export default function SubscriptionPage() {
 
                 <Button
                   onClick={() => handlePurchase(plan)}
-                  disabled={state.isPremium}
                   className="w-full"
                   variant={index === 0 ? 'default' : 'outline'}
                 >
-                  {state.isPremium ? t('currentPlan') : t('subscribe')}
+                  {hasActivePremium ? t('extend') : t('subscribe')}
                 </Button>
+                {hasActivePremium && (
+                  <p className="mt-2 text-center text-xs leading-5 text-ink-muted">
+                    {t('extendNote')}
+                  </p>
+                )}
               </Card>
             ))}
           </div>

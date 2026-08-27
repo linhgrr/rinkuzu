@@ -1,10 +1,11 @@
 import type {
-  AdminMutableSubscriptionStatus,
+  DerivedSubscriptionStatus,
   SubscriptionStatus,
 } from '@/shared/constants/subscription-status';
 
 export type AdminSubscriptionStatusViewModel = SubscriptionStatus;
-export type AdminMutableSubscriptionStatusViewModel = AdminMutableSubscriptionStatus;
+/** Statuses the list can actually return, and therefore filter by. */
+export type AdminFilterableSubscriptionStatusViewModel = DerivedSubscriptionStatus;
 
 export interface AdminSubscriptionsPaginationViewModel {
   page: number;
@@ -49,11 +50,11 @@ export interface AdminSubscriptionsQueryInput {
   page: number;
   limit: number;
   searchTerm: string;
-  statusFilter: '' | AdminSubscriptionStatusViewModel;
+  statusFilter: '' | AdminFilterableSubscriptionStatusViewModel;
   signal: AbortSignal;
 }
 
-export interface AdminSubscriptionStatusUpdateInput {
+export interface AdminSubscriptionRevokeInput {
   subscriptionId: string;
-  status: AdminMutableSubscriptionStatusViewModel;
+  reason: string;
 }

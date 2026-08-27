@@ -1,15 +1,16 @@
-import type { AdminMutableSubscriptionStatus } from '@/shared/constants/subscription-status';
-
 export interface EntitlementAdminUpdateResult {
   id: string;
-  status: AdminMutableSubscriptionStatus;
+  /**
+   * The projection has no grants left, so the derived status is always
+   * `expired`. Reporting the operator's requested label here would claim a
+   * state the ledger does not hold.
+   */
+  status: 'expired';
+  isActive: false;
 }
 
 export class EntitlementAdminDtoMapper {
-  static toUpdateResult(
-    id: string,
-    status: AdminMutableSubscriptionStatus,
-  ): EntitlementAdminUpdateResult {
-    return { id, status };
+  static toRevokeResult(id: string): EntitlementAdminUpdateResult {
+    return { id, status: 'expired', isActive: false };
   }
 }

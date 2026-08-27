@@ -6,10 +6,12 @@ import { apiErr, apiOk } from '@/lib/api/response';
 import { createBillingService } from '@/lib/billing-factory';
 import { billingHttpError } from '@/services/billing/billing-http';
 import { assertBillingMutationRequest } from '@/services/billing/billing-security';
+import { consumeBillingRateLimit } from '@/lib/billing-rate-limit';
 
 export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
     assertBillingMutationRequest(request);
+    await consumeBillingRateLimit('quote_user', userId);
     const parsed = await readAndValidateJson(request, billingQuoteRequestSchema);
     if (!parsed.success) {
       return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });

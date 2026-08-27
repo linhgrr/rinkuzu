@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --require ./scripts/node-dns-bootstrap.cjs ./node_modules/next/dist/bin/next dev",
     "build": "next build",
-    "vercel-build": "npm run check:communications && next build",
+    "vercel-build": "npm run check:communications && npm run check:billing && next build",
     "build:analyze": "ANALYZE=true next build --webpack",
     "start": "node scripts/start-standalone.mjs",
     "lint": "npm run check:api-error-codes && npm run check:internal-api-fetch && npm run check:architecture && npm run check:no-nextauth-v4 && npm run check:design-system && npm run check:question-content && eslint . --max-warnings 0",
@@ -92,6 +92,11 @@
     "check:mutation-report": "node scripts/check-mutation-report.mjs",
     "mutation:gate": "node scripts/run-mutation-gate.mjs",
     "check:database-ddl": "node scripts/check-database-ddl-boundary.mjs",
+    "check:billing": "node scripts/validate-billing-infrastructure.mjs",
+    "generate:billing-secret": "node scripts/generate-billing-secret.mjs",
+    "copy:billing-secret": "node scripts/copy-billing-secret.mjs",
+    "deploy:schedulers": "node scripts/deploy-schedulers.mjs",
+    "deploy:schedulers:dry-run": "node scripts/deploy-schedulers.mjs --dry-run",
     "check:communications": "node scripts/validate-communication-infrastructure.mjs",
     "check:ci-security": "node scripts/check-ci-security.mjs",
     "check:governance": "node scripts/check-repository-governance.mjs",
@@ -102,7 +107,8 @@
     "perf:fe": "bash scripts/perf-fe.sh",
     "perf:lighthouse": "node scripts/run-lighthouse.mjs",
     "perf:size-baseline": "node scripts/create-performance-size-baseline.mjs",
-    "check:perf-budget": "node scripts/check-perf-budget.mjs"
+    "check:perf-budget": "node scripts/check-perf-budget.mjs",
+    "doctor": "react-doctor"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
@@ -221,7 +227,7 @@
     "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.13",
     "prettier": "^3.8.3",
-    "react-doctor": "0.7.8",
+    "react-doctor": "0.9.12",
     "size-limit": "^12.1.0",
     "tailwindcss": "^3.4.19",
     "typescript": "^5",

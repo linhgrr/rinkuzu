@@ -1,5 +1,6 @@
 import mongoose, { type HydratedDocument, type Model, Schema } from 'mongoose';
 import { DurationUtils } from '@/types/subscription';
+import { VND_MINIMUM_PAYABLE } from '@/services/billing/billing-domain';
 
 interface IPlan {
   _id: string;
@@ -33,6 +34,14 @@ const PlanSchema = new Schema<IPlan>(
     price: {
       type: Number,
       required: true,
+      // A plan cheaper than the provider minimum, or priced in fractional dong,
+      // quotes fine and then fails inside the order-create transaction. Fail at
+      // the write instead, so a bad plan can never reach checkout.
+      min: VND_MINIMUM_PAYABLE,
+      validate: {
+        validator: Number.isSafeInteger,
+        message: 'Plan price must be a whole number of dong',
+      },
     },
     duration: {
       type: String,

@@ -34,6 +34,7 @@ export interface CheckoutOrder {
   fulfillmentStatus: string;
   settlementStatus: string;
   checkoutUrl?: string;
+  attemptExpiresAt?: string;
 }
 
 async function getCsrfToken(): Promise<string> {

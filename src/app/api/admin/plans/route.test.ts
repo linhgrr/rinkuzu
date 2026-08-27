@@ -38,10 +38,19 @@ function adminSession() {
   return { user: { id: 'admin-1', email: 'admin@example.com', role: 'admin' } };
 }
 
-function jsonRequest(method: string, body: unknown): NextRequest {
+const CSRF_TOKEN = 'billing-csrf-token-for-tests';
+
+function jsonRequest(method: string, body: unknown, csrf = true): NextRequest {
+  const headers = new Headers({ 'content-type': 'application/json' });
+  if (csrf) {
+    headers.set('origin', 'http://localhost');
+    headers.set('sec-fetch-site', 'same-origin');
+    headers.set('x-billing-csrf', CSRF_TOKEN);
+    headers.set('cookie', `rk_billing_csrf=${CSRF_TOKEN}`);
+  }
   return new NextRequest('http://localhost/api/admin/plans', {
     method,
-    headers: { 'content-type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   });
 }
@@ -60,6 +69,22 @@ describe('/api/admin/plans', () => {
     expect((await POST(jsonRequest('POST', {}), routeContext)).status).toBe(401);
     expect((await PATCH(jsonRequest('PATCH', {}), routeContext)).status).toBe(401);
     expect((await DELETE(jsonRequest('DELETE', {}), routeContext)).status).toBe(401);
+  });
+
+  it('rejects a plan mutation without the billing CSRF double submit', async () => {
+    // Plan price drives every future quote, so plan writes carry the same
+    // same-origin boundary as the rest of billing.
+    for (const [handler, method] of [
+      [POST, 'POST'],
+      [PATCH, 'PATCH'],
+      [DELETE, 'DELETE'],
+    ] as const) {
+      const response = await handler(jsonRequest(method, { id: 'plan_x' }, false), routeContext);
+      expect(response.status).toBe(403);
+    }
+    expect(createPlanMock).not.toHaveBeenCalled();
+    expect(updatePlanMock).not.toHaveBeenCalled();
+    expect(deletePlanMock).not.toHaveBeenCalled();
   });
 
   it('lists plans and maps service failures', async () => {

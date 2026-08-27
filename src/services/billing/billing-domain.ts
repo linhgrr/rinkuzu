@@ -1,7 +1,11 @@
 import crypto from 'crypto';
 
 const PROMO_CODE_PATTERN = /^[A-Z0-9_-]{3,32}$/;
-const VND_MINIMUM_PAYABLE = 2_000;
+/**
+ * PayOS refuses anything smaller, so a plan priced below this can be quoted but
+ * never paid for. Exported so plan validation and discount maths cannot drift.
+ */
+export const VND_MINIMUM_PAYABLE = 2_000;
 
 export class BillingDomainError extends Error {
   constructor(
@@ -204,12 +208,58 @@ const COLLECTION_RANK: Record<string, number> = {
   paid: 5,
 };
 
-export function canApplyCollectionTransition(current: string, next: string): boolean {
+/** Internal ladder. Callers go through `resolveCollectionTransition`, which
+ * also decides what to do when the ladder refuses a transition. */
+function canApplyCollectionTransition(current: string, next: string): boolean {
   if (current === next) return true;
   if (next === 'paid') return true;
   if (current === 'paid') return false;
   if (current === 'review') return next === 'paid';
   return (COLLECTION_RANK[next] ?? -1) >= (COLLECTION_RANK[current] ?? -1);
+}
+
+/**
+ * Resolves what an attempt's collection status should become after observing
+ * the provider, or null when there is nothing to apply.
+ *
+ * The rank ladder alone would silently drop money: a part payment landing on an
+ * attempt we already cancelled or expired ranks *below* the current status, so
+ * the transition is refused and the order's received amount is never refreshed.
+ * Observed money is never a no-op — it either advances the attempt or becomes an
+ * operator discrepancy.
+ */
+export function resolveCollectionTransition(
+  current: string,
+  observed: string,
+  amountPaid: number,
+): string | null {
+  if (canApplyCollectionTransition(current, observed)) return observed;
+  if (amountPaid > 0 && current !== 'review') return 'review';
+  return null;
+}
+
+/**
+ * True when an attempt's own deadline has passed with no money against it.
+ *
+ * `expiresAt` is a local fact recorded when the checkout link was created and
+ * handed to the provider as `expiredAt`. Closing the attempt on that deadline
+ * instead of waiting for the provider to agree unblocks the replacement-attempt
+ * path and releases the promo reservation. Money always wins over the deadline:
+ * a paid transition is still accepted afterwards.
+ */
+export interface LocalExpiryInput {
+  observed: string;
+  amountPaid: number;
+  expiresAt: Date;
+  now?: number;
+}
+
+export function isLocallyExpiredAttempt(input: LocalExpiryInput): boolean {
+  return (
+    input.amountPaid === 0 &&
+    input.expiresAt.getTime() < (input.now ?? Date.now()) &&
+    ['creating', 'pending'].includes(input.observed)
+  );
 }
 
 export function reconciliationDelayMs(ageMs: number): number {

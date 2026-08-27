@@ -55,7 +55,9 @@
     "partial": "Partial payment received",
     "paidProcessing": "Payment received, activating access",
     "pending": "Waiting for payment",
-    "cancelledDescription": "No payment is currently confirmed. If you already started a bank transfer, check the status again."
+    "cancelledDescription": "No payment is currently confirmed. If you already started a bank transfer, check the status again.",
+    "linkExpired": "The payment link has expired",
+    "linkExpiredDescription": "A link is only valid for 15 minutes. No payment was recorded — choose a plan again to start a new one."
   },
   "actions": {
     "continuePayment": "Continue to PayOS · {amount}",

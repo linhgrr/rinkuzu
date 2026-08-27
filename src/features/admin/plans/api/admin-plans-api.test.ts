@@ -49,7 +49,16 @@ describe('admin-plans-api', () => {
   });
 
   it('creates, updates, and deletes plans through the admin plans transport', async () => {
-    fetchApiDataMock.mockResolvedValue(planDto);
+    // Plan mutations carry the billing double-submit token, so each one first
+    // mints a CSRF token from the billing endpoint.
+    const CSRF_TOKEN = 'csrf-token';
+    fetchApiDataMock.mockImplementation(async (url: string) =>
+      url === '/api/billing/csrf' ? { token: CSRF_TOKEN } : planDto,
+    );
+    const mutationHeaders = {
+      'Content-Type': 'application/json',
+      'X-Billing-CSRF': CSRF_TOKEN,
+    };
     const createPayload = {
       name: 'Pro',
       price: 99000,
@@ -58,9 +67,10 @@ describe('admin-plans-api', () => {
     };
 
     await expect(createAdminBillingPlan(createPayload)).resolves.toMatchObject({ id: 'plan-1' });
+    expect(fetchApiDataMock).toHaveBeenCalledWith('/api/billing/csrf', { method: 'POST' });
     expect(fetchApiDataMock).toHaveBeenCalledWith('/api/admin/plans', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: mutationHeaders,
       body: JSON.stringify(createPayload),
     });
 
@@ -75,7 +85,7 @@ describe('admin-plans-api', () => {
     });
     expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/admin/plans', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: mutationHeaders,
       body: JSON.stringify({
         id: 'plan-1',
         name: 'Pro Plus',
@@ -85,11 +95,13 @@ describe('admin-plans-api', () => {
       }),
     });
 
-    fetchApiDataMock.mockResolvedValueOnce({ deleted: true });
+    fetchApiDataMock.mockImplementation(async (url: string) =>
+      url === '/api/billing/csrf' ? { token: CSRF_TOKEN } : { deleted: true },
+    );
     await expect(deleteAdminBillingPlan('plan-1')).resolves.toEqual({ deleted: true });
     expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/admin/plans', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: mutationHeaders,
       body: JSON.stringify({ id: 'plan-1' }),
     });
   });

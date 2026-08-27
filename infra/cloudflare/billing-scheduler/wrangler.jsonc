@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "rinkuzu-billing-scheduler",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-26",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "vars": {
+    "TARGET_ORIGIN": "https://www.rinkuzu.app",
+  },
+  "secrets": {
+    // Must match the Vercel BILLING_INTERNAL_HMAC_SECRET exactly.
+    "required": ["BILLING_INTERNAL_HMAC_SECRET"],
+  },
+  "triggers": {
+    // Every minute: a paid order should become Premium in seconds, not minutes,
+    // and the per-attempt backoff in the application decides real provider load.
+    "crons": ["* * * * *"],
+  },
+}

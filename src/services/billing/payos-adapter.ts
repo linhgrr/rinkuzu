@@ -68,7 +68,12 @@ interface PayOSCredentials {
 
 interface PayOSResponse {
   status: number;
-  body: z.infer<typeof envelopeSchema>;
+  /**
+   * Null when the response carried no parsable envelope — an empty 404 body, or
+   * an HTML error page from a gateway in front of the provider. Callers must
+   * branch on `status` first and treat a missing envelope as no information.
+   */
+  body: z.infer<typeof envelopeSchema> | null;
 }
 
 interface PaymentSignatureInput {
@@ -94,6 +99,21 @@ function credentials(): PayOSCredentials {
   return { clientId, apiKey, checksumKey };
 }
 
+function parseEnvelope(raw: string): z.infer<typeof envelopeSchema> | null {
+  if (raw.trim() === '') return null;
+  try {
+    const parsed = envelopeSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Provider-supplied reason, or the bare status when it sent none. */
+function describeResponse(response: PayOSResponse): string {
+  return response.body?.desc?.trim() || `PayOS responded with HTTP ${response.status}`;
+}
+
 async function request(endpoint: string, init: RequestInit): Promise<PayOSResponse> {
   const { clientId, apiKey } = credentials();
   const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -106,8 +126,12 @@ async function request(endpoint: string, init: RequestInit): Promise<PayOSRespon
     },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
-  const json: unknown = await response.json();
-  return { status: response.status, body: envelopeSchema.parse(json) };
+  // Read as text and parse defensively: consuming JSON before checking status
+  // turned an empty 404 or an HTML gateway error into a parse failure, which
+  // masked the status the caller actually needed. `getPayment` in particular
+  // must be able to see a 404 to report "no such payment".
+  const raw = await response.text();
+  return { status: response.status, body: parseEnvelope(raw) };
 }
 
 function paymentSignature(input: PaymentSignatureInput): string {
@@ -116,7 +140,18 @@ function paymentSignature(input: PaymentSignatureInput): string {
   return crypto.createHmac('sha256', checksumKey).update(data).digest('hex');
 }
 
-export class BillingPayOSAdapter {
+/**
+ * The provider surface the billing repository actually depends on. Narrowing it
+ * to an interface keeps the repository testable without casting a stub to the
+ * concrete HTTP adapter.
+ */
+export interface BillingPaymentProvider {
+  createCheckout(input: CreateCheckoutInput): Promise<ProviderCreateOutcome>;
+  getPayment(orderCode: number): Promise<ProviderPaymentSnapshot | null>;
+  cancelPayment(orderCode: number, reason: string): Promise<ProviderPaymentSnapshot>;
+}
+
+export class BillingPayOSAdapter implements BillingPaymentProvider {
   async createCheckout(input: CreateCheckoutInput): Promise<ProviderCreateOutcome> {
     const body = {
       ...input,
@@ -128,13 +163,17 @@ export class BillingPayOSAdapter {
         body: JSON.stringify(body),
       });
       if (response.status === 401 || response.status === 400) {
-        return { kind: 'definite_failure', message: response.body.desc };
+        return { kind: 'definite_failure', message: describeResponse(response) };
       }
       if (response.status === 429 || response.status >= 500) {
-        return { kind: 'indeterminate', message: response.body.desc };
+        return { kind: 'indeterminate', message: describeResponse(response) };
       }
       if (response.status !== 200) {
-        return { kind: 'indeterminate', message: response.body.desc };
+        return { kind: 'indeterminate', message: describeResponse(response) };
+      }
+      if (response.body === null) {
+        // A 200 we cannot read says nothing about whether a link was created.
+        return { kind: 'indeterminate', message: describeResponse(response) };
       }
       if (response.body.code !== '00') {
         try {
@@ -152,7 +191,7 @@ export class BillingPayOSAdapter {
         if (/tồn tại|đã tồn tại|exist/i.test(response.body.desc)) {
           return { kind: 'duplicate' };
         }
-        return { kind: 'indeterminate', message: response.body.desc };
+        return { kind: 'indeterminate', message: describeResponse(response) };
       }
       const data = createDataSchema.parse(response.body.data);
       return {
@@ -171,9 +210,10 @@ export class BillingPayOSAdapter {
 
   async getPayment(orderCode: number): Promise<ProviderPaymentSnapshot | null> {
     const response = await request(`/v2/payment-requests/${orderCode}`, { method: 'GET' });
+    // Checked before the body: an empty 404 must still read as "no payment".
     if (response.status === 404) return null;
-    if (response.status !== 200 || response.body.code !== '00' || !response.body.data) {
-      throw new Error(response.body.desc || 'Could not retrieve PayOS payment');
+    if (response.status !== 200 || response.body?.code !== '00' || !response.body.data) {
+      throw new Error(describeResponse(response));
     }
     return paymentDataSchema.parse(response.body.data);
   }
@@ -183,8 +223,8 @@ export class BillingPayOSAdapter {
       method: 'POST',
       body: JSON.stringify({ cancellationReason: reason }),
     });
-    if (response.status !== 200 || response.body.code !== '00' || !response.body.data) {
-      throw new Error(response.body.desc || 'Could not cancel PayOS payment');
+    if (response.status !== 200 || response.body?.code !== '00' || !response.body.data) {
+      throw new Error(describeResponse(response));
     }
     return paymentDataSchema.parse(response.body.data);
   }

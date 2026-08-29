@@ -186,7 +186,8 @@ async function processInboundFeedback(
       },
     },
   );
-  return { status: 'processed' as const, conversationId: conversation.id };
+  const conversationId: string = conversation.id;
+  return { status: 'processed' as const, conversationId };
 }
 
 const CAMPAIGN_METRIC_FIELD: Partial<Record<WebhookEventPayload['type'], string>> = {
@@ -457,9 +458,8 @@ export async function processResendWebhook(
   event: WebhookEventPayload,
 ): Promise<
   | { status: 'quarantined'; reason: string }
-  // Matches the inferred type exactly: mongoose's Document#id virtual is untyped.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { status: 'processed'; conversationId: any }
+  // Mongoose's Document#id type is `any`, but the runtime value is _id.toString(), a string.
+  | { status: 'processed'; conversationId: string }
   | { status: 'failed' | 'processing' | 'processed' | 'quarantined'; duplicate: boolean }
   | { status: 'processed'; duplicate?: undefined }
 > {

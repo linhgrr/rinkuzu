@@ -51,11 +51,18 @@ Each drain stops on a wall-clock budget (see `DEFAULT_BATCH_BUDGET_MS`) so the s
 
 ## Configuration fences
 
-`PAYOS_CREATE_ENABLED` and `ENTITLEMENT_AUTO_ACTIVATION_ENABLED` both default to OFF in production when unset. Enabling only the first collects money and grants nothing, so `npm run check:billing` fails that combination and runs as part of `vercel-build`.
+`PAYOS_CREATE_ENABLED` and `ENTITLEMENT_AUTO_ACTIVATION_ENABLED` both default to OFF in production when unset. Enabling only the first collects money and grants nothing, so `npm run check:billing` fails that combination and runs as part of `vercel-build`. The same gate validates the single `PAYOS_CHECKSUM_KEY` and the `BILLING_WEBHOOK_PAYLOAD_KEYS` list for shape and duplicate `kid`s, refuses key material shared between verification and payload encryption, requires `ABUSE_SIGNAL_HASH_SECRET` wherever payments are enabled, and refuses a production deploy with payments enabled against a database whose name marks it as non-production.
 
 ## Operator surface
 
-`/admin/billing` is the work queue for anything the pipeline parked: orders in review, part payments, unallocated overpayments, clawbacks, and stuck webhook inbox rows. Refunds and chargebacks are recorded there; when `EXTERNAL_REFUND_AUTO_REVOCATION_ENABLED` is on, recording one revokes **only** the grant that order created. `/admin/subscriptions` keeps a separate break-glass control that revokes an account's entire grant history.
+`/admin/billing` is the work queue for anything the pipeline parked: orders in review, part payments, unallocated overpayments, clawbacks, stuck webhook inbox rows, and inbound deliveries we could not read or authenticate. Refunds and chargebacks are recorded there; when `EXTERNAL_REFUND_AUTO_REVOCATION_ENABLED` is on, recording one revokes **only** the grant that order created and the order lands on `revoked`. `review` is reserved for the case where money and entitlement genuinely disagree and no automation may close the gap — with auto-revocation off, or on a provider disagreement. `/admin/subscriptions` keeps a separate break-glass control that revokes an account's entire grant history.
+
+Two transitions have no machine-checkable justification and therefore require an operator, a reason, and an audit row:
+
+- **Overpayments.** Automation can see that a customer paid too much but must never decide what happens to the surplus, so `unallocated` is a queue with no automatic exit. `POST /api/admin/billing/orders/{orderId}/excess-resolution` is that exit (`refund`, `credit`, `write_off`, each with a required reason). The verdict is terminal: reconciliation writes the derived resolution through a filter that only matches the two states automation owns, so the next provider observation cannot reopen a closed case.
+- **External money.** `POST /api/admin/billing/orders/{orderId}/external-adjustments` records money that moved outside the provider. Entitlement follows the net ledger — received plus signed adjustments against the order total — never the type of the latest event, so a reversed chargeback restores access and a second refund against an already-refunded order is refused.
+
+`GET /api/admin/billing/webhooks` is the read model for inbound deliveries. It is the only path to a retained webhook body; retention that nothing can read is a liability with no upside. See `docs/BILLING_WEBHOOK_RUNBOOK.md` for the verification classes, retention and replay policy, and the key-rotation procedures.
 
 ## Admin grants
 

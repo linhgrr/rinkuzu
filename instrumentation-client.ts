@@ -65,8 +65,27 @@ function preventDevtoolShortcut(event: KeyboardEvent) {
   event.stopImmediatePropagation();
 }
 
+/**
+ * Whether this bundle was built for the end-to-end suite.
+ *
+ * Playwright drives a real production build over the Chrome DevTools Protocol,
+ * which the detector below cannot tell apart from a person opening DevTools —
+ * so it blanks the page and every critical flow fails at the first input.
+ *
+ * The opt-out is deliberately build-time. `NEXT_PUBLIC_*` is inlined at compile
+ * time, so a deployment that does not set it has no bypass in its bundle at
+ * all: there is no runtime flag, header or cookie that can turn the protection
+ * off in production, and the only way to ship it disabled is to build with an
+ * explicitly named e2e command.
+ */
+const isEndToEndBuild = process.env.NEXT_PUBLIC_E2E === 'true';
+
 function initializeDevtoolProtection() {
   DisableDevtool({
+    // Everything else stays on for the suite — the menu, clipboard and shortcut
+    // guards are behaviour worth exercising. Only the detector that mistakes
+    // automation for a human with DevTools open is waived.
+    ignore: () => isEndToEndBuild,
     disableMenu: true,
     disableSelect: false,
     disableInputSelect: false,

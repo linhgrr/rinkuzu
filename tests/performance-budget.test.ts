@@ -301,8 +301,14 @@ describe('production performance workflow contract', () => {
         /uses: actions\/download-artifact@[^\n]+\n\s+with:\n\s+name: next-production-\$\{\{ github\.sha \}\}\n\s+path: ([^\n]+)/g,
       ),
     ];
-    expect(productionBuildDownloads).toHaveLength(2);
-    expect(productionBuildDownloads.map((match) => match[1]?.trim())).toEqual(['.next', '.next']);
+    // One consumer, not two. The artifact is the bundle that ships, and the
+    // performance job is the only one that may measure it. The E2E suite needs
+    // the DevTools-detector waiver inlined at build time — without it Playwright
+    // is read as an open DevTools panel and every flow dies at its first input
+    // — and a shipped bundle must never carry that, so the suite builds its own.
+    expect(productionBuildDownloads).toHaveLength(1);
+    expect(productionBuildDownloads.map((match) => match[1]?.trim())).toEqual(['.next']);
+    expect(workflow).toContain('run: npm run build:e2e');
     expect(workflow).toContain("steps.production_e2e.outcome != 'skipped'");
     expect(workflow).toContain("steps.performance_gate.outcome != 'skipped'");
     expect(workflow).toContain('if-no-files-found: error');

@@ -23,6 +23,7 @@ type DatabaseFixture = {
   client: MongoClient;
   db: Db;
   planId: string;
+  planName: string;
   quizId: ObjectId;
   quizSlug: string;
   regular: SeededUser;
@@ -121,6 +122,21 @@ async function ensureCanonicalActiveAdminFence(db: Db, now: Date): Promise<void>
   }
 }
 
+/**
+ * A real one-page PDF.
+ *
+ * The upload page counts pages before it will accept a file, so a handful of
+ * bytes that merely start with `%PDF` is rejected as unreadable and never
+ * reaches the upload at all — the flow then asserts against a form that is
+ * still empty.
+ */
+async function singlePagePdf(): Promise<Buffer> {
+  const { PDFDocument } = await import('pdf-lib');
+  const pdf = await PDFDocument.create();
+  pdf.addPage();
+  return Buffer.from(await pdf.save());
+}
+
 async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixture> {
   const { databaseName, uri } = requireCiMongoUri();
   const client = new MongoClient(uri);
@@ -147,6 +163,11 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
     const questionId = new ObjectId();
     const quizSlug = `e2e-critical-${runId}`.toLowerCase();
     const planId = `e2e-plan-${runId}`;
+    // Namespaced like the id and the slug above, and for the same reason: the
+    // subscription flow finds its plan by heading text, so a constant name
+    // makes two concurrently seeded fixtures indistinguishable. Every project
+    // in the matrix seeds into this one database, so that happens on any run.
+    const planName = `E2E Premium Monthly ${runId}`;
 
     // Shared singleton fence for admin mutations — insert-once, never cleaned up per-run.
     await ensureCanonicalActiveAdminFence(db, now);
@@ -214,12 +235,12 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
         createdAt: now,
         duration: 'P1M',
         isActive: true,
-        name: 'E2E Premium Monthly',
+        name: planName,
         price: 49_000,
         updatedAt: now,
       });
 
-    return { admin, client, db, planId, quizId, quizSlug, regular, runId, target };
+    return { admin, client, db, planId, planName, quizId, quizSlug, regular, runId, target };
   } catch (error) {
     await client.close();
     throw error;
@@ -332,7 +353,10 @@ async function login(page: Page, user: SeededUser): Promise<SessionPayload> {
 }
 
 test.describe('production critical paths', () => {
-  test('persists auth, enforces roles, and logs out @critical-auth', async ({ page }, testInfo) => {
+  test('persists auth, enforces roles, and logs out @critical-auth', async ({
+    browserName,
+    page,
+  }, testInfo) => {
     await withDatabaseFixture(testInfo, async (fixture) => {
       const session = await login(page, fixture.regular);
       expect(session.user?.role).toBe('user');
@@ -345,7 +369,15 @@ test.describe('production critical paths', () => {
 
       const skipLink = page.getByRole('link', { name: 'Skip to main content' });
       await expect(skipLink).toHaveAttribute('href', '#app-main-content');
-      await page.keyboard.press('Tab');
+      // Safari keeps links out of the tab sequence unless the user opts in, and
+      // WebKit here honours that default. Reaching the link by Tab is therefore
+      // a Chromium-only assertion; what the skip link is for — moving focus to
+      // the main region — is asserted on every browser.
+      if (browserName === 'webkit') {
+        await skipLink.focus();
+      } else {
+        await page.keyboard.press('Tab');
+      }
       await expect(skipLink).toBeFocused();
       await page.keyboard.press('Enter');
       await expect(page.locator('#app-main-content')).toBeFocused();
@@ -466,6 +498,13 @@ test.describe('production critical paths', () => {
               expiresIn: 300,
               s3Key: `uploads/adaptive_pipeline/${fixture.regular.id.toHexString()}/e2e-${fixture.runId}.pdf`,
               uploadUrl: `${origin}/__e2e-object-storage/${fixture.runId}`,
+              // The client rejects an envelope without these before it uploads
+              // anything, so a stub that omits them never exercises the upload
+              // it exists to exercise. `PUT` is what the byte counter observes;
+              // the field bag is empty because a presigned PUT carries none.
+              uploadMethod: 'PUT',
+              uploadHeaders: { 'Content-Type': 'application/pdf' },
+              uploadFields: {},
             },
           }),
         });
@@ -475,12 +514,35 @@ test.describe('production critical paths', () => {
       });
 
       await page.goto('/en/adaptive/upload');
-      await page.getByLabel('Subject Name').fill(subjectName);
-      await page.locator('input[type="file"]').setInputFiles({
+      // The page is interactive only once the entitlement policy that supplies
+      // its page and byte limits has loaded, and nothing may be typed before
+      // then: a controlled input written while React is still hydrating keeps
+      // the text in the DOM — long enough to satisfy an assertion — and loses
+      // it to the first render React does, after which the form refuses the
+      // upload for a subject name the test did set.
+      //
+      // The dropzone root is what says so. It is given a tab stop only when the
+      // policy has arrived, which cannot happen before hydration. Its file
+      // input cannot: react-dropzone never puts `disabled` on it, so asking
+      // whether that is enabled is answered `yes` by the server-rendered HTML
+      // and gates nothing.
+      const pdfInput = page.locator('input[type="file"]');
+      await expect(page.locator('.upload-dropzone')).toHaveAttribute('tabindex', '0');
+
+      const subjectInput = page.getByLabel('Subject Name');
+      await subjectInput.fill(subjectName);
+      await expect(subjectInput).toHaveValue(subjectName);
+      await pdfInput.setInputFiles({
         name: 'production-e2e.pdf',
         mimeType: 'application/pdf',
-        buffer: Buffer.from('%PDF-1.4\n%%EOF\n'),
+        buffer: await singlePagePdf(),
       });
+
+      // Choosing a file stages it; the upload is a deliberate second step so
+      // the page can show what is about to be processed before it starts.
+      const startProcessing = page.getByRole('button', { name: 'Create learning path' });
+      await expect(startProcessing).toBeEnabled();
+      await startProcessing.click();
 
       await page.waitForURL(/\/en\/adaptive\/?(?:[?#]|$)/);
       expect(presignedPayload).toMatchObject({ purpose: 'adaptive' });
@@ -537,7 +599,7 @@ test.describe('production critical paths', () => {
                 durationValue: 1,
                 expiresAt: Date.now() + 300_000,
               },
-              plan: { id: fixture.planId, name: 'E2E Premium Monthly' },
+              plan: { id: fixture.planId, name: fixture.planName },
             },
           }),
         });
@@ -550,7 +612,7 @@ test.describe('production critical paths', () => {
             success: true,
             data: {
               id: 'e2e-billing-order',
-              plan: { id: fixture.planId, name: 'E2E Premium Monthly' },
+              plan: { id: fixture.planId, name: fixture.planName },
               currency: 'VND',
               baseAmount: 49_000,
               discountAmount: 0,
@@ -573,8 +635,12 @@ test.describe('production critical paths', () => {
       });
 
       await page.goto('/en/subscription');
-      await expect(page.getByRole('heading', { name: 'E2E Premium Monthly' })).toBeVisible();
-      await page.getByRole('button', { name: 'Subscribe', exact: true }).click();
+      // Scoped to this run's own plan card. The catalogue is shared and every
+      // project seeds a plan of its own into it concurrently, so a page-wide
+      // "Subscribe" resolves to one button per plan in flight.
+      const planCard = page.getByTestId(`plan-card-${fixture.planId}`);
+      await expect(planCard.getByRole('heading', { name: fixture.planName })).toBeVisible();
+      await planCard.getByRole('button', { name: 'Subscribe', exact: true }).click();
       await page.waitForURL(/\/en\/checkout\?plan=/);
       await expect(page.getByRole('heading', { name: 'Review and pay' })).toBeVisible();
       await page.getByRole('checkbox').check();
@@ -652,56 +718,71 @@ test.describe('production critical paths', () => {
       await page.goto('/en/admin/ai-settings');
       await expect(page.getByRole('heading', { name: 'AI Providers & Routing' })).toBeVisible();
 
+      // The create form is behind a toggle. While it is closed the only control
+      // with this label is the toggle; once open the toggle reads "Cancel" and
+      // the label belongs solely to the form's submit, so one locator addresses
+      // the right control at each step.
+      await page.getByRole('button', { name: 'Add provider', exact: true }).click();
       const addProvider = page.getByRole('button', { name: 'Add provider', exact: true });
       const providerForm = page.locator('form').filter({ has: addProvider });
-      await providerForm.getByPlaceholder('Provider name').fill('E2E Provider');
+      // Labelled, not placeholdered: the label element wraps the input, so the
+      // accessible name is what identifies it. Same for every field below.
+      await providerForm.getByLabel('Provider name').fill('E2E Provider');
       await providerForm
         .getByPlaceholder('https://api.example.com/v1')
         .fill('https://api.e2e.example/v1');
       await addProvider.click();
       await expect(page.getByText('E2E Provider', { exact: true }).first()).toBeVisible();
 
-      await page.getByRole('button', { name: 'API keys', exact: true }).click();
+      // Tabs, not buttons: they sit in a tablist and expose the tab role.
+      await page.getByRole('tab', { name: 'API keys', exact: true }).click();
       const addKey = page.getByRole('button', { name: 'Add key', exact: true });
       const keyForm = page.locator('form').filter({ has: addKey });
 
-      await keyForm.getByPlaceholder('Key label').fill('Primary key');
-      await keyForm.getByPlaceholder('Paste API key').fill(primarySecret);
-      await keyForm.locator('input[type="number"]').fill('1');
+      await keyForm.getByLabel('Key label').fill('Primary key');
+      await keyForm.getByLabel('Paste API key').fill(primarySecret);
+      await keyForm.getByLabel('Key priority').fill('1');
       await addKey.click();
       await expect(page.getByText('••••LPHA', { exact: true })).toBeVisible();
 
-      await keyForm.getByPlaceholder('Key label').fill('Fallback key');
-      await keyForm.getByPlaceholder('Paste API key').fill(fallbackSecret);
-      await keyForm.locator('input[type="number"]').fill('10');
+      await keyForm.getByLabel('Key label').fill('Fallback key');
+      await keyForm.getByLabel('Paste API key').fill(fallbackSecret);
+      await keyForm.getByLabel('Key priority').fill('10');
       await addKey.click();
       await expect(page.getByText('••••BETA', { exact: true })).toBeVisible();
 
-      await page.getByRole('button', { name: 'Models', exact: true }).click();
+      await page.getByRole('tab', { name: 'Models', exact: true }).click();
       const addModel = page.getByRole('button', { name: 'Add model', exact: true });
       const modelForm = page.locator('form').filter({ has: addModel });
 
-      await modelForm.getByPlaceholder('Display name').fill('Primary Tutor');
-      await modelForm.getByPlaceholder('Upstream model name').fill('e2e-primary-model');
+      await modelForm.getByLabel('Display name').fill('Primary Tutor');
+      await modelForm.getByLabel('Upstream model name').fill('e2e-primary-model');
       await addModel.click();
       await expect(page.getByText('Primary Tutor', { exact: true })).toBeVisible();
 
-      await modelForm.getByPlaceholder('Display name').fill('Fallback Tutor');
-      await modelForm.getByPlaceholder('Upstream model name').fill('e2e-fallback-model');
+      await modelForm.getByLabel('Display name').fill('Fallback Tutor');
+      await modelForm.getByLabel('Upstream model name').fill('e2e-fallback-model');
       await addModel.click();
       await expect(page.getByText('Fallback Tutor', { exact: true })).toBeVisible();
 
-      await page.getByRole('button', { name: 'Routing', exact: true }).click();
-      const routeSelect = page.getByRole('combobox');
+      // Routing is a workspace of its own, not a tab on the provider: the
+      // fallback order it edits is global, not per-provider.
+      await page.getByRole('button', { name: 'Global routing', exact: true }).click();
+      const routeSelect = page.getByRole('combobox', {
+        name: 'Add a compatible model to Ask Rin-chan tutor chat',
+      });
       await routeSelect.selectOption({ label: 'Primary Tutor' });
       await routeSelect.selectOption({ label: 'Fallback Tutor' });
       await page.getByRole('button', { name: 'Save routing atomically', exact: true }).click();
-      await expect(page.getByText('1. Primary Tutor', { exact: true })).toBeVisible();
-      await expect(page.getByText('2. Fallback Tutor', { exact: true })).toBeVisible();
+      // Substring, not exact: each row carries the owning provider's badge in
+      // the same element, so the position and the model name are a prefix of
+      // its text rather than the whole of it.
+      await expect(page.getByText('1. Primary Tutor')).toBeVisible();
+      await expect(page.getByText('2. Fallback Tutor')).toBeVisible();
 
       await page.goto('/en/admin/ai-settings?tab=routing&provider=provider-1');
-      await expect(page.getByText('1. Primary Tutor', { exact: true })).toBeVisible();
-      await expect(page.getByText('2. Fallback Tutor', { exact: true })).toBeVisible();
+      await expect(page.getByText('1. Primary Tutor')).toBeVisible();
+      await expect(page.getByText('2. Fallback Tutor')).toBeVisible();
 
       const fallback = await request.post(
         'http://127.0.0.1:8000/__e2e/llm-settings/simulate-fallback',

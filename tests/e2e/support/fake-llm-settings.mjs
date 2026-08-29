@@ -28,7 +28,11 @@ function stateFor(userId) {
       credentials: [],
       models: [],
       providers: [],
-      revision: 0,
+      // Revisions are 1-based in the service contract: the proxy validates
+      // `If-Match` against /^"llm-config-[1-9][0-9]*"$/, so a stub that starts
+      // at 0 makes the very first mutation fail as a malformed header rather
+      // than reaching the stub at all.
+      revision: 1,
       routes: [{ action: 'ask_rin_chan', model_ids: [] }],
       secrets: new Map(),
     };

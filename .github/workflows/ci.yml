@@ -416,17 +416,17 @@ jobs:
       - name: Start pinned MongoDB replica set
         run: bash scripts/ci-mongodb.sh start
 
-      - name: Download the production build
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: next-production-${{ github.sha }}
-          path: .next
-
-      - name: Verify build identity
-        run: |
-          actual="$(node --input-type=module -e \
-            "import { computeNextBuildDigest } from './scripts/run-lighthouse.mjs'; process.stdout.write(computeNextBuildDigest())")"
-          test "$actual" = "${{ needs.build.outputs.digest }}"
+      # Deliberately not the shared `next-production` artifact. Playwright drives
+      # the browser over the DevTools Protocol, which the devtool detector reads
+      # as a person opening DevTools and answers by blanking the page; the waiver
+      # that stops it is inlined at build time, so a bundle built without it
+      # fails every flow at its first input. The shared artifact is the one that
+      # ships and must not carry the waiver, which leaves the suite building its
+      # own. Same bundler, same config — `NEXT_PUBLIC_E2E` is the only delta.
+      - name: Build the end-to-end production artifact
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: npm run build:e2e
 
       - name: Install pinned browser matrix
         run: ./node_modules/.bin/playwright install --with-deps chromium webkit

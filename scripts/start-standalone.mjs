@@ -32,7 +32,15 @@ const requireNonEmptyDirectory = async (directoryPath, label) => {
 };
 
 await access(serverPath).catch(() => {
-  throw new Error('Standalone server is missing; run `npm run build` first');
+  // A build that was interrupted, or one run before `output: 'standalone'` was
+  // configured, leaves the surrounding directory in place without the server
+  // entrypoint. That state is indistinguishable from a healthy build by a
+  // directory check alone, and starting from it is what once made the E2E suite
+  // look unrunnable, so the entrypoint itself is what this asserts on.
+  throw new Error(
+    'Standalone server is missing; run `npm run build` first ' +
+      '(a partial .next can carry a standalone directory without server.js)',
+  );
 });
 await Promise.all([
   requireNonEmptyDirectory(sourcePublicDir, 'Public asset directory'),

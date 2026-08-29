@@ -23,12 +23,14 @@
     "test:quality": "vitest run --config vitest.quality.config.ts && vitest run --config vitest.quality-eslint.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
+    "build:e2e": "node scripts/build-e2e.mjs",
+    "test:e2e:local": "npm run build:e2e && playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install --with-deps chromium webkit",
     "precommit:fast": "npm run check:node && npm run check:routes",
-    "prepush:full": "npm run typecheck && npm run typecheck:scripts && npm run lint && npm run test:node && npm run test:component && npm run build",
-    "verify:full": "npm run check:node && npm run check:install && npm run check:routes && npm run typecheck:strict && npm run typecheck:scripts && npm run format:check && npm run lint && npm run check:dead-code && npm run check:duplication && npm run test:quality && npm run test:unit",
+    "prepush:full": "npm run typecheck && npm run typecheck:scripts && npm run lint && npm run test:node && npm run test:component && npm run test:integration && npm run build",
+    "verify:full": "npm run check:node && npm run check:install && npm run check:routes && npm run typecheck:strict && npm run typecheck:scripts && npm run format:check && npm run lint && npm run check:dead-code && npm run check:duplication && npm run test:quality && npm run test:unit && npm run test:integration",
     "lint-staged": "lint-staged",
     "prepare": "husky",
     "check:orphaned-quiz-data": "node scripts/cleanup-orphaned-quiz-data.mjs",
@@ -107,7 +109,8 @@
     "perf:lighthouse": "node scripts/run-lighthouse.mjs",
     "perf:size-baseline": "node scripts/create-performance-size-baseline.mjs",
     "check:perf-budget": "node scripts/check-perf-budget.mjs",
-    "doctor": "react-doctor"
+    "doctor": "react-doctor",
+    "check:duplication:rebaseline": "node scripts/check-duplication.mjs --rebaseline"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [

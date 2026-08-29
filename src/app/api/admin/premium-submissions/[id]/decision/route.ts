@@ -1,6 +1,6 @@
 import { withAdmin } from '@/lib/api/auth';
-import { apiErr, apiOk } from '@/lib/api/response';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
+import { apiOk } from '@/lib/api/response';
+import { parseParamsAndBody } from '@/lib/api/validated';
 import {
   decidePremiumSubmissionRequestSchema,
   premiumSubmissionIdParamsSchema,
@@ -13,15 +13,12 @@ export const dynamic = 'force-dynamic';
 
 export const POST = withAdmin<{ id: string }>(async (request, { params, userId }) => {
   try {
-    const parsed = readAndValidateRouteParams(params, premiumSubmissionIdParamsSchema);
-    if (!parsed.success) {
-      return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
-    }
-    const input = await readAndValidateJson(request, decidePremiumSubmissionRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
-    }
-    const result = await getPremiumQuizService().decide(userId, parsed.data.id, input.data);
+    const parsed = await parseParamsAndBody(request, params, {
+      params: premiumSubmissionIdParamsSchema,
+      body: decidePremiumSubmissionRequestSchema,
+    });
+    if (!parsed.ok) return parsed.response;
+    const result = await getPremiumQuizService().decide(userId, parsed.params.id, parsed.body);
     return apiOk(result, 200, { headers: PREMIUM_PRIVATE_HEADERS });
   } catch (error) {
     logger.error({ error }, 'Decide Premium quiz submission failed');

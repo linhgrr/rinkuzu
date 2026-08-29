@@ -3,16 +3,18 @@ import { withOptionalAuth } from '@/lib/api/auth';
 import { getQuizService } from '@/lib/quiz-factory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
+import { readAndValidateJson } from '@/lib/api/request';
+import { parseRouteParams } from '@/lib/api/validated';
 import { quizSlugRouteParamsSchema, submitQuizAttemptRequestSchema } from '@/dtos/quiz';
 
 // Public + authenticated dual path: anonymous attempts pass `userEmail` in body.
 export const POST = withOptionalAuth(async (request: NextRequest, { params, session, email }) => {
   try {
-    const parsedParams = readAndValidateRouteParams(params, quizSlugRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
+    const parsedParams = parseRouteParams(params, quizSlugRouteParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
+    // NOTE: this body failure's meta is the raw field map (not wrapped under
+    // `fields`) — a pre-existing quirk of this route, so it cannot use
+    // parseJsonBody without changing behavior.
     const parsedBody = await readAndValidateJson(request, submitQuizAttemptRequestSchema);
     if (!parsedBody.success) {
       return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);

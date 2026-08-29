@@ -1,7 +1,6 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
 import { withAuth } from '@/lib/api/auth';
-import { apiErr } from '@/lib/api/response';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
+import { parseJsonBody, parseRouteParams } from '@/lib/api/validated';
 import {
   adaptiveSessionGetPathParamsSchema,
   adaptiveSessionPostPathParamsSchema,
@@ -11,10 +10,8 @@ import {
 export const dynamic = 'force-dynamic';
 
 export const GET = withAuth(async (req, { params, userId, session }) => {
-  const parsedParams = readAndValidateRouteParams(params, adaptiveSessionGetPathParamsSchema);
-  if (!parsedParams.success) {
-    return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-  }
+  const parsedParams = parseRouteParams(params, adaptiveSessionGetPathParamsSchema);
+  if (!parsedParams.ok) return parsedParams.response;
 
   const suffix =
     parsedParams.data.action === 'concept'
@@ -27,17 +24,13 @@ export const GET = withAuth(async (req, { params, userId, session }) => {
 });
 
 export const POST = withAuth(async (req, { params, userId, session }) => {
-  const parsedParams = readAndValidateRouteParams(params, adaptiveSessionPostPathParamsSchema);
-  if (!parsedParams.success) {
-    return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-  }
+  const parsedParams = parseRouteParams(params, adaptiveSessionPostPathParamsSchema);
+  if (!parsedParams.ok) return parsedParams.response;
 
   let body: string | undefined;
   if (parsedParams.data.action === 'submit') {
-    const parsedBody = await readAndValidateJson(req, adaptiveSubmitAnswerRequestSchema);
-    if (!parsedBody.success) {
-      return apiErr('validation_error', parsedBody.error, 400, { fields: parsedBody.fields });
-    }
+    const parsedBody = await parseJsonBody(req, adaptiveSubmitAnswerRequestSchema);
+    if (!parsedBody.ok) return parsedBody.response;
     body = JSON.stringify(parsedBody.data);
   }
 

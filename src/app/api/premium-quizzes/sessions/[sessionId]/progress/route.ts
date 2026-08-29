@@ -1,6 +1,6 @@
 import { withAuth } from '@/lib/api/auth';
-import { apiErr, apiOk } from '@/lib/api/response';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
+import { apiOk } from '@/lib/api/response';
+import { parseParamsAndBody } from '@/lib/api/validated';
 import {
   premiumSessionIdParamsSchema,
   premiumSessionProgressRequestSchema,
@@ -13,19 +13,16 @@ export const dynamic = 'force-dynamic';
 
 export const PUT = withAuth<{ sessionId: string }>(async (request, { params, userId }) => {
   try {
-    const parsed = readAndValidateRouteParams(params, premiumSessionIdParamsSchema);
-    if (!parsed.success) {
-      return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
-    }
-    const input = await readAndValidateJson(request, premiumSessionProgressRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
-    }
+    const parsed = await parseParamsAndBody(request, params, {
+      params: premiumSessionIdParamsSchema,
+      body: premiumSessionProgressRequestSchema,
+    });
+    if (!parsed.ok) return parsed.response;
     const result = await getPremiumQuizService().saveProgress(
       userId,
-      parsed.data.sessionId,
-      input.data.questionIndex,
-      input.data.answer,
+      parsed.params.sessionId,
+      parsed.body.questionIndex,
+      parsed.body.answer,
     );
     return apiOk(
       {

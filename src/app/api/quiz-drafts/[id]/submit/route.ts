@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { getQuizService } from '@/lib/quiz-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
+import { parseParamsAndBody } from '@/lib/api/validated';
 import { submitQuizDraftRequestSchema } from '@/dtos/quiz-draft';
 import { quizDraftIdRouteParamsSchema } from '@/dtos/quiz';
 import { getQuestionListWarnings } from '@/lib/validation/question';
@@ -54,19 +54,14 @@ async function markDraftSubmitted(
 
 export const POST = withAuth(async (request: NextRequest, { params, userId, session }) => {
   try {
-    const parsedParams = readAndValidateRouteParams(params, quizDraftIdRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
+    const parsed = await parseParamsAndBody(request, params, {
+      params: quizDraftIdRouteParamsSchema,
+      body: submitQuizDraftRequestSchema,
+    });
+    if (!parsed.ok) return parsed.response;
 
-    const { id } = parsedParams.data;
-    const input = await readAndValidateJson(request, submitQuizDraftRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, {
-        fields: input.fields,
-      });
-    }
-    const { title, folderId, description, questions, submitToPremium } = input.data;
+    const { id } = parsed.params;
+    const { title, folderId, description, questions, submitToPremium } = parsed.body;
     const premiumService = getPremiumQuizService();
     if (submitToPremium) {
       await premiumService.assertCanContribute(userId);

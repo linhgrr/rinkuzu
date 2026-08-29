@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { createSupportMessageSchema, supportTicketParamsSchema } from '@/dtos/communication';
 import { withAuth } from '@/lib/api/auth';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
-import { apiErr, apiOk } from '@/lib/api/response';
+import { parseParamsAndBody } from '@/lib/api/validated';
+import { apiOk } from '@/lib/api/response';
 import {
   assertCommunicationMutationRequest,
   communicationHttpError,
@@ -12,18 +12,17 @@ import { addSupportMessage } from '@/lib/communication/service';
 export const POST = withAuth<{ ticketId: string }>(async (request: NextRequest, context) => {
   try {
     assertCommunicationMutationRequest(request);
-    const params = readAndValidateRouteParams(context.params, supportTicketParamsSchema);
-    if (!params.success)
-      return apiErr('validation_error', params.error, 400, { fields: params.fields });
-    const input = await readAndValidateJson(request, createSupportMessageSchema);
-    if (!input.success)
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
+    const parsed = await parseParamsAndBody(request, context.params, {
+      params: supportTicketParamsSchema,
+      body: createSupportMessageSchema,
+    });
+    if (!parsed.ok) return parsed.response;
     return apiOk(
       await addSupportMessage(
-        params.data.ticketId,
+        parsed.params.ticketId,
         context.userId,
         context.email,
-        input.data,
+        parsed.body,
         false,
       ),
     );

@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { cancelCampaignSchema, communicationIdParamsSchema } from '@/dtos/communication';
 import { withAdmin } from '@/lib/api/auth';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
-import { apiErr, apiOk } from '@/lib/api/response';
+import { parseParamsAndBody } from '@/lib/api/validated';
+import { apiOk } from '@/lib/api/response';
 import {
   assertCommunicationMutationRequest,
   communicationHttpError,
@@ -12,18 +12,17 @@ import { cancelCampaign } from '@/lib/communication/service';
 export const POST = withAdmin<{ id: string }>(async (request: NextRequest, context) => {
   try {
     assertCommunicationMutationRequest(request);
-    const params = readAndValidateRouteParams(context.params, communicationIdParamsSchema);
-    if (!params.success)
-      return apiErr('validation_error', params.error, 400, { fields: params.fields });
-    const input = await readAndValidateJson(request, cancelCampaignSchema);
-    if (!input.success)
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
+    const parsed = await parseParamsAndBody(request, context.params, {
+      params: communicationIdParamsSchema,
+      body: cancelCampaignSchema,
+    });
+    if (!parsed.ok) return parsed.response;
     return apiOk(
       await cancelCampaign(
-        params.data.id,
+        parsed.params.id,
         { id: context.userId, email: context.email },
-        input.data.revision,
-        input.data.reason,
+        parsed.body.revision,
+        parsed.body.reason,
       ),
     );
   } catch (error) {

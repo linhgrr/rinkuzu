@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
+import { parseParamsAndBody } from '@/lib/api/validated';
 import {
   adminUserIdRouteParamsSchema,
   updateAdminUserStatusRequestSchema,
@@ -20,19 +20,13 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
       return apiErr('validation_error', 'Admin identity is required', 400);
     }
 
-    const parsedParams = readAndValidateRouteParams(context.params, adminUserIdRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, {
-        fields: parsedParams.fields,
-      });
-    }
+    const parsed = await parseParamsAndBody(request, context.params, {
+      params: adminUserIdRouteParamsSchema,
+      body: updateAdminUserStatusRequestSchema,
+    });
+    if (!parsed.ok) return parsed.response;
 
-    const input = await readAndValidateJson(request, updateAdminUserStatusRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
-    }
-
-    const result = await adminService.setUserDisable(parsedParams.data.userId, input.data.disable, {
+    const result = await adminService.setUserDisable(parsed.params.userId, parsed.body.disable, {
       id: context.userId,
       email: context.email,
     });

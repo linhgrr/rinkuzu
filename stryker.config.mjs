@@ -44,6 +44,12 @@ const config = {
   thresholds: mutationThresholdsForMode(process.env['MUTATION_GATE_MODE']),
   timeoutMS: 10_000,
   timeoutFactor: 1.5,
+  // Stryker's own default is five minutes, and the dry run here does not fit
+  // in it: `related: false` runs the whole unit corpus, instrumented, under
+  // perTest coverage, before a single mutant is scored. It timed out there
+  // every time, and a gate that cannot reach evaluation reports no score at
+  // all rather than a bad one. Bounded and explicit, not removed.
+  dryRunTimeoutMinutes: 20,
   tempDirName: '.stryker-tmp',
   cleanTempDir: true,
 };

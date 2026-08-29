@@ -1,50 +1,33 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-29T13:56:04.947Z",
-  "status": "failed",
-  "buildDigest": "c1f6d032216457b26e9779338b7f6d7ee74eb4b20b13857d7a9038ed426def53",
+  "generatedAt": "2026-08-29T16:32:53.746Z",
+  "status": "passed",
+  "buildDigest": "4740a59fe104ae4d5b3cd18d20a3926e55cec198aca6ccdfb2b18d4788c3ee15",
   "mode": "local",
   "expectedRuns": 3,
   "entries": [
     {
-      "url": "http://127.0.0.1:57086/en",
+      "url": "http://127.0.0.1:63792/en",
       "runs": 3,
-      "performanceScore": 0.94,
-      "accessibilityScore": 0.96,
+      "performanceScore": 1,
+      "accessibilityScore": 1,
       "bestPracticesScore": 1,
       "seoScore": 1,
-      "lcpMs": 2440.789,
+      "lcpMs": 601.467,
       "tbtMs": 0,
       "cls": 0
     },
     {
-      "url": "http://127.0.0.1:57086/en/login",
+      "url": "http://127.0.0.1:63792/en/login",
       "runs": 3,
       "performanceScore": 1,
-      "accessibilityScore": 0.96,
+      "accessibilityScore": 1,
       "bestPracticesScore": 1,
       "seoScore": 0.66,
-      "lcpMs": 1256.023,
+      "lcpMs": 348.867,
       "tbtMs": 0,
       "cls": 0
     }
   ],
-  "violations": [
-    {
-      "code": "lighthouse-accessibility",
-      "url": "http://127.0.0.1:57086/en",
-      "actual": 0.96,
-      "limit": 1
-    },
-    {
-      "code": "lighthouse-accessibility",
-      "url": "http://127.0.0.1:57086/en/login",
-      "actual": 0.96,
-      "limit": 1
-    },
-    {
-      "code": "lighthouse-ci-assertion-failed",
-      "exitCode": 1
-    }
-  ]
+  "violations": []
 }

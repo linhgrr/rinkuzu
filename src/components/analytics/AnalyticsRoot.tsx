@@ -74,7 +74,13 @@ export function AnalyticsRoot() {
         </button>
         <button
           type="button"
-          className="min-h-11 rounded-full bg-brand-action px-4 py-2 text-[19px] font-bold text-white hover:bg-brand-action-hover"
+          // Not `bg-brand-action`. White on that token is 2.57:1 against a 3:1
+          // floor for text this size, and the banner sits over the landing and
+          // login pages, so it failed the accessibility budget on both. A fixed
+          // value rather than a token because the token is lighter still in
+          // dark mode (2.26:1) — theming this colour is what made it
+          // inaccessible in two directions at once.
+          className="min-h-11 rounded-full bg-[#e67020] px-4 py-2 text-[19px] font-bold text-white hover:bg-brand-action-hover"
           onClick={() => {
             grantAnalyticsConsent();
           }}

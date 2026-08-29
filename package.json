@@ -86,6 +86,7 @@
     "check:react-doctor": "react-doctor . --yes --scope full --json --no-telemetry --no-dead-code --no-supply-chain --blocking error",
     "check:dead-code": "knip --strict && knip --production --strict --include files,dependencies,unlisted,binaries,unresolved,cycles",
     "check:duplication": "node scripts/check-duplication.mjs",
+    "baseline:duplication": "node scripts/update-duplication-baseline.mjs",
     "check:test-integrity": "node scripts/check-test-integrity.mjs",
     "check:coverage": "node scripts/check-coverage-gates.mjs",
     "check:runtime-cycles": "node scripts/check-runtime-cycles.mjs",

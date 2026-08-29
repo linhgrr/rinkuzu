@@ -33,7 +33,12 @@ export PERF_MODE
 rm -rf "$PERF_DIR" "$ROOT_DIR/.lighthouseci"
 mkdir -p "$PERF_DIR"
 
-export MONGODB_URI="${MONGODB_URI:-mongodb://127.0.0.1:27017/test}"
+# Anything but `test`: this build runs with NODE_ENV=production, and the
+# environment schema rejects that exact database name there, so the previous
+# fallback failed page-data collection before Lighthouse ever started. The
+# database is disposable and only has to exist — the pages measured here read
+# nothing from it.
+export MONGODB_URI="${MONGODB_URI:-mongodb://127.0.0.1:27017/rinkuzu_perf}"
 export AUTH_SECRET="${AUTH_SECRET:-test-auth-secret-at-least-32-characters}"
 export AUTH_URL="${AUTH_URL:-$PERF_ORIGIN}"
 export AUTH_TRUST_HOST="${AUTH_TRUST_HOST:-true}"

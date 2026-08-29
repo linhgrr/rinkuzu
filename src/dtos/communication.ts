@@ -46,26 +46,27 @@ export const createSupportAttachmentSchema = z.strictObject({
     .max(5 * 1024 * 1024),
 });
 
-export const feedbackListQuerySchema = z.strictObject({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-  status: z
-    .enum([
-      'all',
-      'draft',
-      'queued',
-      'sent',
-      'replied',
-      'in_conversation',
-      'declined',
-      'opted_out',
-      'completed',
-      'expired',
-      'failed',
-    ])
-    .default('all'),
-  userId: mongoId.optional(),
-});
+function pagedStatusQuery<const T extends readonly [string, ...string[]]>(statuses: T) {
+  return z.strictObject({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+    status: z.enum(statuses).default('all'),
+  });
+}
+
+export const feedbackListQuerySchema = pagedStatusQuery([
+  'all',
+  'draft',
+  'queued',
+  'sent',
+  'replied',
+  'in_conversation',
+  'declined',
+  'opted_out',
+  'completed',
+  'expired',
+  'failed',
+]).extend({ userId: mongoId.optional() });
 
 export const createFeedbackConversationSchema = z.strictObject({
   userId: mongoId,
@@ -139,24 +140,18 @@ export const campaignBlockSchema = z.discriminatedUnion('type', [
   spacerBlockSchema,
 ]);
 
-export const campaignListQuerySchema = z.strictObject({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-  status: z
-    .enum([
-      'all',
-      'draft',
-      'preparing_audience',
-      'ready',
-      'scheduled',
-      'sending',
-      'sent',
-      'partially_failed',
-      'failed',
-      'cancelled',
-    ])
-    .default('all'),
-});
+export const campaignListQuerySchema = pagedStatusQuery([
+  'all',
+  'draft',
+  'preparing_audience',
+  'ready',
+  'scheduled',
+  'sending',
+  'sent',
+  'partially_failed',
+  'failed',
+  'cancelled',
+]);
 
 export const createCampaignSchema = z.strictObject({
   name: z.string().trim().min(3).max(160),

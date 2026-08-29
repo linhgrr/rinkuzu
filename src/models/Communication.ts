@@ -491,6 +491,16 @@ EmailCampaignSchema.index({ status: 1, scheduledAt: 1 });
 EmailCampaignSchema.index({ createdAt: -1 });
 EmailCampaignSchema.index({ resendBroadcastId: 1 }, { sparse: true });
 
+function leaseQueueFields(lastErrorMaxLength: number) {
+  return {
+    attempts: { type: Number, required: true, default: 0, min: 0 },
+    availableAt: { type: Date, required: true, default: Date.now },
+    leaseUntil: { type: Date, default: null },
+    leaseToken: { type: String, default: null },
+    lastError: { type: String, default: null, maxlength: lastErrorMaxLength },
+  } as const;
+}
+
 const EmailCampaignAudienceSchema = new Schema<EmailCampaignAudienceDocument>(
   {
     campaignId: { type: Schema.Types.ObjectId, ref: 'EmailCampaign', required: true },
@@ -502,11 +512,7 @@ const EmailCampaignAudienceSchema = new Schema<EmailCampaignAudienceDocument>(
       required: true,
       default: 'prepared',
     },
-    attempts: { type: Number, required: true, default: 0, min: 0 },
-    availableAt: { type: Date, required: true, default: Date.now },
-    leaseUntil: { type: Date, default: null },
-    leaseToken: { type: String, default: null },
-    lastError: { type: String, default: null, maxlength: 1_000 },
+    ...leaseQueueFields(1_000),
   },
   { timestamps: true, versionKey: false },
 );
@@ -557,11 +563,7 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
       required: true,
       default: 'pending',
     },
-    attempts: { type: Number, required: true, default: 0, min: 0 },
-    availableAt: { type: Date, required: true, default: Date.now },
-    leaseUntil: { type: Date, default: null },
-    leaseToken: { type: String, default: null },
-    lastError: { type: String, default: null, maxlength: 2_000 },
+    ...leaseQueueFields(2_000),
     externalEmailId: { type: String, default: null },
   },
   { timestamps: true, versionKey: false },

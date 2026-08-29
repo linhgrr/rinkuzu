@@ -1,30 +1,9 @@
-import type { NextRequest } from 'next/server';
-import { communicationIdParamsSchema, testCampaignSchema } from '@/dtos/communication';
-import { withAdmin } from '@/lib/api/auth';
-import { parseParamsAndBody } from '@/lib/api/validated';
-import { apiOk } from '@/lib/api/response';
-import {
-  assertCommunicationMutationRequest,
-  communicationHttpError,
-} from '@/lib/communication/http';
+import { testCampaignSchema } from '@/dtos/communication';
+import { withCommunicationMutation } from '@/lib/api/communication-mutation';
 import { testCampaign } from '@/lib/communication/campaigns';
 
-export const POST = withAdmin<{ id: string }>(async (request: NextRequest, context) => {
-  try {
-    assertCommunicationMutationRequest(request);
-    const parsed = await parseParamsAndBody(request, context.params, {
-      params: communicationIdParamsSchema,
-      body: testCampaignSchema,
-    });
-    if (!parsed.ok) return parsed.response;
-    return apiOk(
-      await testCampaign(
-        parsed.params.id,
-        { id: context.userId, email: context.email },
-        parsed.body.revision,
-      ),
-    );
-  } catch (error) {
-    return communicationHttpError(error, 'admin-campaign-test');
-  }
-});
+export const POST = withCommunicationMutation(
+  testCampaignSchema,
+  'admin-campaign-test',
+  (id, body, actor) => testCampaign(id, actor, body.revision),
+);

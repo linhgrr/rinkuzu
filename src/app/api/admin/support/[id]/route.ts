@@ -1,12 +1,9 @@
-import type { NextRequest } from 'next/server';
 import { communicationIdParamsSchema, updateSupportTicketSchema } from '@/dtos/communication';
 import { withAdmin } from '@/lib/api/auth';
-import { parseParamsAndBody, parseRouteParams } from '@/lib/api/validated';
+import { withCommunicationMutation } from '@/lib/api/communication-mutation';
+import { parseRouteParams } from '@/lib/api/validated';
 import { apiOk } from '@/lib/api/response';
-import {
-  assertCommunicationMutationRequest,
-  communicationHttpError,
-} from '@/lib/communication/http';
+import { communicationHttpError } from '@/lib/communication/http';
 import { getSupportTicket, updateSupportTicket } from '@/lib/communication/support';
 
 export const GET = withAdmin<{ id: string }>(async (_request, { params, userId }) => {
@@ -19,22 +16,8 @@ export const GET = withAdmin<{ id: string }>(async (_request, { params, userId }
   }
 });
 
-export const PATCH = withAdmin<{ id: string }>(async (request: NextRequest, context) => {
-  try {
-    assertCommunicationMutationRequest(request);
-    const parsed = await parseParamsAndBody(request, context.params, {
-      params: communicationIdParamsSchema,
-      body: updateSupportTicketSchema,
-    });
-    if (!parsed.ok) return parsed.response;
-    return apiOk(
-      await updateSupportTicket(
-        parsed.params.id,
-        { id: context.userId, email: context.email },
-        parsed.body,
-      ),
-    );
-  } catch (error) {
-    return communicationHttpError(error, 'admin-support-update');
-  }
-});
+export const PATCH = withCommunicationMutation(
+  updateSupportTicketSchema,
+  'admin-support-update',
+  (id, body, actor) => updateSupportTicket(id, actor, body),
+);

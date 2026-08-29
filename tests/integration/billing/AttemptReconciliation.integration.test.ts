@@ -3,24 +3,15 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import mongoose, { Types } from 'mongoose';
 
 import { BillingOrder, PaymentAttempt, PaymentTransaction } from '@/models/Billing';
-import { BillingRepository } from '@/repositories/BillingRepository';
+import { BillingOrderRepository } from '@/repositories/billing/BillingOrderRepository';
+import { BillingPromotionRepository } from '@/repositories/billing/BillingPromotionRepository';
+import { BillingSettlementRepository } from '@/repositories/billing/BillingSettlementRepository';
+import { BillingService } from '@/services/billing/BillingService';
 import type {
   BillingPaymentProvider,
   ProviderPaymentSnapshot,
 } from '@/services/billing/payos-adapter';
-
-const uri = process.env['MONGODB_URI'];
-const databaseName = uri ? decodeURIComponent(new URL(uri).pathname.slice(1)) : '';
-const isSafeTestDb = /(^|[-_])(test|ci)($|[-_])/i.exec(databaseName) !== null;
-
-if (!uri) {
-  throw new Error('MONGODB_URI is required for attempt reconciliation integration tests');
-}
-if (!isSafeTestDb) {
-  throw new Error(
-    `Refusing integration tests against non-test database: ${databaseName || '<empty>'}`,
-  );
-}
+import { integrationDatabaseUri } from '../../setup/integration-db';
 
 const PROVIDER_ACCOUNT = 'reconcile-integration-account';
 const PRICE = 100_000;
@@ -51,19 +42,37 @@ describe('payment attempt reconciliation integration', () => {
   const orderIds: Types.ObjectId[] = [];
   let codeSeed = Date.now() * 100;
 
-  function repositoryReturning(snapshot: ProviderPaymentSnapshot): BillingRepository {
-    const provider: BillingPaymentProvider = {
+  /**
+   * Real adapters against the local replica set; the provider is the only seam
+   * these tests fake.
+   */
+  function serviceWith(provider: BillingPaymentProvider): BillingService {
+    return new BillingService(
+      new BillingOrderRepository(provider),
+      new BillingSettlementRepository(),
+      new BillingPromotionRepository(),
+      provider,
+    );
+  }
+
+  /** Reading an order back is the order port's job, not the service's. */
+  const orders = new BillingOrderRepository();
+
+  function serviceReturning(snapshot: ProviderPaymentSnapshot): BillingService {
+    return serviceWith({
       getPayment: async () => snapshot,
       createCheckout: async () => {
         throw new Error('createCheckout is not exercised by these tests');
       },
       cancelPayment: async () => snapshot,
-    };
-    return new BillingRepository(provider);
+    });
   }
 
-  function repositoryThatFailsFor(failingOrderCode: number, ok: ProviderPaymentSnapshot) {
-    const provider: BillingPaymentProvider = {
+  function serviceThatFailsFor(
+    failingOrderCode: number,
+    ok: ProviderPaymentSnapshot,
+  ): BillingService {
+    return serviceWith({
       getPayment: async (orderCode: number) => {
         if (orderCode === failingOrderCode) {
           throw new Error('PayOS responded with HTTP 400');
@@ -74,8 +83,7 @@ describe('payment attempt reconciliation integration', () => {
         throw new Error('createCheckout is not exercised by these tests');
       },
       cancelPayment: async () => ok,
-    };
-    return new BillingRepository(provider);
+    });
   }
 
   function snapshotFor(
@@ -152,7 +160,7 @@ describe('payment attempt reconciliation integration', () => {
 
   beforeAll(async () => {
     try {
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 2_000 });
+      await mongoose.connect(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
     } catch (error) {
       throw new Error('Reconciliation integration database is unavailable', { cause: error });
     }
@@ -182,7 +190,7 @@ describe('payment attempt reconciliation integration', () => {
       expiresAt: new Date(Date.now() - 60_000),
       terminalConfirmedAt: new Date(Date.now() - 60_000),
     });
-    const repository = repositoryReturning(
+    const billing = serviceReturning(
       snapshotFor(seeded, {
         status: 'CANCELLED',
         amountPaid: 40_000,
@@ -197,7 +205,7 @@ describe('payment attempt reconciliation integration', () => {
       }),
     );
 
-    const view = await repository.verifyOrder(seeded.userId, seeded.publicId);
+    const view = await billing.verifyOrder(seeded.userId, seeded.publicId);
 
     // Previously the rank ladder refused partial < cancelled, so the order kept
     // receivedAmount 0 while a real transaction sat in the ledger.
@@ -221,7 +229,7 @@ describe('payment attempt reconciliation integration', () => {
       expiresAt: new Date(Date.now() - 60_000),
       terminalConfirmedAt: new Date(Date.now() - 60_000),
     });
-    const repository = repositoryReturning(
+    const billing = serviceReturning(
       snapshotFor(seeded, {
         status: 'PAID',
         amountPaid: PRICE,
@@ -236,7 +244,7 @@ describe('payment attempt reconciliation integration', () => {
       }),
     );
 
-    const view = await repository.verifyOrder(seeded.userId, seeded.publicId);
+    const view = await billing.verifyOrder(seeded.userId, seeded.publicId);
 
     expect(view.receivedAmount).toBe(PRICE);
     expect(view.collectionStatus).toBe('paid');
@@ -252,9 +260,9 @@ describe('payment attempt reconciliation integration', () => {
       activeForCheckout: true,
       expiresAt: new Date(Date.now() - 60_000),
     });
-    const repository = repositoryReturning(snapshotFor(seeded, { status: 'PENDING' }));
+    const billing = serviceReturning(snapshotFor(seeded, { status: 'PENDING' }));
 
-    const view = await repository.verifyOrder(seeded.userId, seeded.publicId);
+    const view = await billing.verifyOrder(seeded.userId, seeded.publicId);
 
     expect(view.attemptCollectionStatus).toBe('expired');
     expect(view.checkoutUrl).toBeUndefined();
@@ -272,10 +280,8 @@ describe('payment attempt reconciliation integration', () => {
       activeForCheckout: true,
       expiresAt: new Date(Date.now() - 60_000),
     });
-    const repository = repositoryReturning(snapshotFor(seeded, {}));
-
     // Plain read, no provider call: the deadline alone must hide the link.
-    const view = await repository.getOrderByPublicId(seeded.userId, seeded.publicId);
+    const view = await orders.getOrderByPublicId(seeded.userId, seeded.publicId);
     expect(view.checkoutUrl).toBeUndefined();
     expect(view.attemptExpiresAt).toBeDefined();
     expect(view.activeAttemptId).toBe(seeded.attemptId.toString());
@@ -287,9 +293,7 @@ describe('payment attempt reconciliation integration', () => {
       activeForCheckout: true,
       expiresAt: new Date(Date.now() + 10 * 60_000),
     });
-    const repository = repositoryReturning(snapshotFor(seeded, {}));
-
-    const view = await repository.getOrderByPublicId(seeded.userId, seeded.publicId);
+    const view = await orders.getOrderByPublicId(seeded.userId, seeded.publicId);
     expect(view.checkoutUrl).toBe(`https://pay.payos.vn/web/${seeded.paymentLinkId}`);
   });
 
@@ -310,12 +314,12 @@ describe('payment attempt reconciliation integration', () => {
       expiresAt: new Date(Date.now() + 10 * 60_000),
     });
 
-    const repository = repositoryThatFailsFor(
+    const billing = serviceThatFailsFor(
       poisoned.orderCode,
       snapshotFor(healthy, { status: 'PENDING' }),
     );
 
-    const result = await repository.reconcileDueAttempts({ limit: 50 });
+    const result = await billing.reconcileDueAttempts({ limit: 50 });
     expect(result.failed).toBeGreaterThanOrEqual(1);
 
     // Pushed out with the reason recorded, no longer blocking the head.

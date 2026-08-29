@@ -5,19 +5,7 @@ import mongoose, { Types } from 'mongoose';
 import { EntitlementAccount, EntitlementAdjustment, EntitlementGrant } from '@/models/Billing';
 import { EntitlementLedgerRepository } from '@/repositories/EntitlementLedgerRepository';
 import { addCalendarMonths } from '@/services/billing/billing-domain';
-
-const uri = process.env['MONGODB_URI'];
-const databaseName = uri ? decodeURIComponent(new URL(uri).pathname.slice(1)) : '';
-const isSafeTestDb = /(^|[-_])(test|ci)($|[-_])/i.exec(databaseName) !== null;
-
-if (!uri) {
-  throw new Error('MONGODB_URI is required for entitlement ledger integration tests');
-}
-if (!isSafeTestDb) {
-  throw new Error(
-    `Refusing integration tests against non-test database: ${databaseName || '<empty>'}`,
-  );
-}
+import { integrationDatabaseUri } from '../../setup/integration-db';
 
 /**
  * The ledger is the single writer for Premium. Every grant path — billing
@@ -46,7 +34,7 @@ describe('entitlement ledger integration', () => {
 
   beforeAll(async () => {
     try {
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 2_000 });
+      await mongoose.connect(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
     } catch (error) {
       throw new Error('Entitlement ledger integration database is unavailable', { cause: error });
     }

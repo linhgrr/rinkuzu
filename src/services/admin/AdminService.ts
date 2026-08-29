@@ -34,7 +34,6 @@ import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository
 import type { IAdminStatsRepository } from '@/interfaces/repositories/IAdminStatsRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
-import { invalidateEntitlements } from '@/lib/entitlements/cache';
 import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
 import { AdminReportDtoMapper } from '@/mappers/admin/AdminReportDtoMapper';
 import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
@@ -214,10 +213,6 @@ export class AdminService implements IAdminService {
           statusCode: 500,
         };
       }
-
-      // Reconcile local cache after both changed and idempotent success. A client
-      // may be retrying after an ambiguous commit result from another instance.
-      invalidateEntitlements(userId);
 
       return {
         success: true,

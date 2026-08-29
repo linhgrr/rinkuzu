@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { z } from 'zod';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
+import { billingConfig } from './billing-config';
 
 const API_BASE = 'https://api-merchant.payos.vn';
 const TIMEOUT_MS = 15_000;
@@ -92,7 +93,10 @@ export interface CreateCheckoutInput extends PaymentSignatureInput {
 function credentials(): PayOSCredentials {
   const clientId = process.env['PAYOS_CLIENT_ID'];
   const apiKey = process.env['PAYOS_API_KEY'];
-  const checksumKey = process.env['PAYOS_CHECKSUM_KEY'];
+  // Read through the same accessor the inbound verifier uses. Two independent
+  // readings of one secret is how the two sides of a signature end up
+  // disagreeing about which key is in force.
+  const checksumKey = billingConfig.payosChecksumKey();
   if (!clientId || !apiKey || !checksumKey) {
     throw new Error('PayOS credentials are not configured');
   }

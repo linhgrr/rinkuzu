@@ -32,6 +32,44 @@ export interface AdminBillingHealthSnapshot {
   inboxOrphaned: number;
   inboxRetryable: number;
   inboxDeadLettered: number;
+  /**
+   * Signature-valid deliveries our parser could not read. Non-zero means the
+   * provider's contract moved and money events are being dropped on the floor;
+   * it is the one counter that indicts our code rather than an order.
+   */
+  webhooksUnsupportedSchema: number;
+  /** Deliveries we could not authenticate in the recent window. */
+  webhooksUnauthenticatedRecent: number;
+}
+
+/**
+ * One inbound delivery as an operator needs to see it.
+ *
+ * The decrypted body is present only where retention policy allowed one to be
+ * kept — a signature-valid payload we failed to parse — and only while the key
+ * that sealed it is still configured. Anything else exposes a hash and a size
+ * and nothing more.
+ */
+export interface AdminBillingWebhookDiagnosticRecord {
+  id: string;
+  provider: string;
+  environment: string;
+  verificationClass: string;
+  rejectionReason?: string;
+  status: string;
+  orderCode?: number;
+  eventCode?: string;
+  eventDesc?: string;
+  rawPayloadHash: string;
+  rawPayloadBytes?: number;
+  /** Whether a sealed body exists for this row. Never the body itself. */
+  retainedPayloadStored: boolean;
+  /** Which configured key sealed it, so an operator can see if it is retired. */
+  retainedPayloadKeyVersion?: string;
+  attemptCount: number;
+  lastError?: string;
+  retainUntil?: Date;
+  createdAt: Date;
 }
 
 export interface AdminBillingAttemptRecord {

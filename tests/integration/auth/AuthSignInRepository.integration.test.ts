@@ -3,19 +3,7 @@ import mongoose from 'mongoose';
 
 import { hashPassword } from '@/lib/password';
 import { AuthAccountRepository } from '@/repositories/AuthAccountRepository';
-
-const uri = process.env['MONGODB_URI'];
-const databaseName = uri ? decodeURIComponent(new URL(uri).pathname.slice(1)) : '';
-const isSafeTestDb = /(^|[-_])(test|ci)($|[-_])/i.exec(databaseName) !== null;
-
-if (!uri) {
-  throw new Error('MONGODB_URI is required for auth repository integration tests');
-}
-if (!isSafeTestDb) {
-  throw new Error(
-    `Refusing integration tests against non-test database: ${databaseName || '<empty>'}`,
-  );
-}
+import { integrationDatabaseUri } from '../../setup/integration-db';
 
 describe('AuthAccountRepository sign-in integration', () => {
   const repo = new AuthAccountRepository();
@@ -24,7 +12,7 @@ describe('AuthAccountRepository sign-in integration', () => {
 
   beforeAll(async () => {
     try {
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 2_000 });
+      await mongoose.connect(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
       const password = await hashPassword('Integration-Pass-123!');
       const created = await mongoose.connection.collection('users').insertOne({
         email,

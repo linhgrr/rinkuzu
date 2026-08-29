@@ -36,3 +36,35 @@ export interface AdminBillingAdjustmentPersistence {
   allocation: string;
   occurredAt: Date;
 }
+
+/**
+ * What the diagnostics list is allowed to know about a sealed body.
+ *
+ * The list renders "a body is retained, sealed under key X" and never the body
+ * itself, so the ciphertext has no reason to leave the database on this path.
+ * Narrowing the type is half of that; the projection in the repository is the
+ * other half, and the two are meant to be read together — a list query that
+ * loads the ciphertext is one careless mapper edit away from serialising it.
+ */
+interface RetainedPayloadMarkerPersistence {
+  keyVersion: string;
+}
+
+export interface AdminBillingWebhookPersistence {
+  _id: Types.ObjectId;
+  provider: string;
+  environment: string;
+  verificationClass: string;
+  rejectionReason?: string;
+  status: string;
+  orderCode?: number;
+  eventCode?: string;
+  eventDesc?: string;
+  rawPayloadHash: string;
+  rawPayloadBytes?: number;
+  encryptedRawPayload?: RetainedPayloadMarkerPersistence;
+  attemptCount: number;
+  lastError?: string;
+  retainUntil?: Date;
+  createdAt: Date;
+}

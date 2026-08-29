@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import { EXCESS_RESOLUTION_COMMANDS } from '@/services/billing/domain/excess-resolution';
+import {
+  MONEY_ADJUSTMENT_TYPES,
+  MONEY_ALLOCATIONS,
+} from '@/services/billing/domain/settlement-math';
 
 export const billingQuoteRequestSchema = z.strictObject({
   planId: z.string().trim().min(1).max(100),
@@ -15,12 +20,25 @@ export const billingOrderParamsSchema = z.strictObject({
 
 export const externalMoneyAdjustmentSchema = z.strictObject({
   orderId: z.uuid(),
-  type: z.enum(['refund', 'chargeback', 'chargeback_reversal', 'credit']),
+  // Taken from the money algebra rather than restated, so an adjustment type
+  // the ledger understands can never be one this endpoint silently refuses.
+  type: z.enum(MONEY_ADJUSTMENT_TYPES),
   externalReference: z.string().trim().min(1).max(200),
   amount: z.number().int().positive().safe(),
   currency: z.literal('VND'),
-  allocation: z.enum(['principal', 'excess']),
+  allocation: z.enum(MONEY_ALLOCATIONS),
   occurredAt: z.iso.datetime(),
+});
+
+/**
+ * An operator's verdict on an overpayment. The reason is required because this
+ * is the one billing transition with no machine-checkable justification: the
+ * audit trail is the only record of why the money went where it did.
+ */
+export const resolveOrderExcessSchema = z.strictObject({
+  orderId: z.uuid(),
+  command: z.enum(EXCESS_RESOLUTION_COMMANDS),
+  reason: z.string().trim().min(3).max(1_000),
 });
 
 export const billingWebhookParamsSchema = z.strictObject({

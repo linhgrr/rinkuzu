@@ -4,12 +4,12 @@ import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
 import { grantUserSubscriptionRequestSchema } from '@/dtos/admin-billing';
-import { getAdminBillingService } from '@/lib/admin-billing-factory';
+import { getAdminSubscriptionService } from '@/lib/admin-subscription-factory';
 import { logger } from '@/lib/logger';
 import { adminUserListQuerySchema, updateAdminUserRoleRequestSchema } from '@/dtos/admin-user';
 
 const adminService = getAdminService();
-const adminBillingService = getAdminBillingService();
+const adminSubscriptionService = getAdminSubscriptionService();
 
 // GET /api/admin/users - List users with filtering (admin-inclusive disable status)
 export const GET = withAdmin(async (request: NextRequest) => {
@@ -53,7 +53,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
     return apiErr('validation_error', input.error, 400, { fields: input.fields });
   }
 
-  const result = await adminBillingService.grantUserSubscription(input.data);
+  const result = await adminSubscriptionService.grantUserSubscription(input.data);
   return result.success
     ? apiOk(result.data, 200, { meta: { message: 'Subscription added successfully' } })
     : apiServiceErr(result);

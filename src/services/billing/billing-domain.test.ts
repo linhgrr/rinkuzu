@@ -3,8 +3,6 @@ import {
   addCalendarMonths,
   BillingDomainError,
   calculateDiscount,
-  isLocallyExpiredAttempt,
-  resolveCollectionTransition,
   hashIdempotencyRequest,
   normalizePromoCode,
   replayEntitlement,
@@ -132,75 +130,5 @@ describe('billing domain', () => {
         { sequence: 3, grantId: 'a', type: 'revoke' },
       ]).endAt?.toISOString(),
     ).toBe('2024-02-01T00:00:00.000Z');
-  });
-
-  it('never lets an out-of-order terminal event downgrade paid', () => {
-    expect(resolveCollectionTransition('paid', 'cancelled', 0)).toBeNull();
-    expect(resolveCollectionTransition('expired', 'paid', 0)).toBe('paid');
-  });
-
-  describe('resolveCollectionTransition', () => {
-    it('escalates a part payment landing on a closed attempt to review', () => {
-      // The rank ladder refuses partial(2) < cancelled(3); dropping it would
-      // leave real money invisible on the order.
-      expect(resolveCollectionTransition('cancelled', 'partial', 0)).toBeNull();
-      for (const closed of ['cancelled', 'expired', 'failed']) {
-        expect(resolveCollectionTransition(closed, 'partial', 40_000)).toBe('review');
-      }
-    });
-
-    it('still lets a full payment settle a closed attempt directly', () => {
-      expect(resolveCollectionTransition('cancelled', 'paid', 100_000)).toBe('paid');
-      expect(resolveCollectionTransition('expired', 'paid', 100_000)).toBe('paid');
-    });
-
-    it('applies an ordinary forward transition unchanged', () => {
-      expect(resolveCollectionTransition('pending', 'partial', 40_000)).toBe('partial');
-      expect(resolveCollectionTransition('creating', 'pending', 0)).toBe('pending');
-    });
-
-    it('is a no-op for a blocked transition with no money behind it', () => {
-      expect(resolveCollectionTransition('cancelled', 'pending', 0)).toBeNull();
-      expect(resolveCollectionTransition('paid', 'cancelled', 0)).toBeNull();
-    });
-
-    it('does not re-escalate an attempt already in review', () => {
-      expect(resolveCollectionTransition('review', 'partial', 40_000)).toBeNull();
-    });
-  });
-
-  describe('isLocallyExpiredAttempt', () => {
-    const past = new Date('2026-01-01T00:00:00.000Z');
-    const now = new Date('2026-01-01T00:20:00.000Z').getTime();
-
-    it('closes a lapsed unpaid link the provider still calls pending', () => {
-      expect(
-        isLocallyExpiredAttempt({ observed: 'pending', amountPaid: 0, expiresAt: past, now }),
-      ).toBe(true);
-      expect(
-        isLocallyExpiredAttempt({ observed: 'creating', amountPaid: 0, expiresAt: past, now }),
-      ).toBe(true);
-    });
-
-    it('never expires an attempt that has money against it', () => {
-      expect(
-        isLocallyExpiredAttempt({ observed: 'pending', amountPaid: 1, expiresAt: past, now }),
-      ).toBe(false);
-    });
-
-    it('leaves a link that has not lapsed yet alone', () => {
-      const future = new Date('2026-01-01T00:30:00.000Z');
-      expect(
-        isLocallyExpiredAttempt({ observed: 'pending', amountPaid: 0, expiresAt: future, now }),
-      ).toBe(false);
-    });
-
-    it('does not override a status the provider already settled', () => {
-      for (const observed of ['paid', 'cancelled', 'expired', 'failed', 'review']) {
-        expect(isLocallyExpiredAttempt({ observed, amountPaid: 0, expiresAt: past, now })).toBe(
-          false,
-        );
-      }
-    });
   });
 });

@@ -18,7 +18,7 @@ function formatOptionalDateLabel(value: string | undefined, emptyLabel: string):
     : emptyLabel;
 }
 
-export function toAdminSubscriptionViewModel(
+function toAdminSubscriptionViewModel(
   subscription: AdminSubscriptionDto,
 ): AdminSubscriptionViewModel {
   return {

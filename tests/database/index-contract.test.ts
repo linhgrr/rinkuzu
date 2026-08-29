@@ -10,6 +10,7 @@ import {
 import Attempt from '@/models/Attempt';
 import AuditLog from '@/models/AuditLog';
 import {
+  BillingAlert,
   BillingCounter,
   BillingOrder,
   EntitlementAccount,
@@ -46,6 +47,7 @@ import UserProgress from '@/models/UserProgress';
 const MODELS = {
   attempts: Attempt,
   auditlogs: AuditLog,
+  billingalerts: BillingAlert,
   billingcounters: BillingCounter,
   billingorders: BillingOrder,
   bookmarks: Bookmark,

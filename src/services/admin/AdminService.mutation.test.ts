@@ -34,14 +34,6 @@ const targetUser: User = {
   displayName: 'Learner',
 };
 
-const { invalidateEntitlementsMock } = vi.hoisted(() => ({
-  invalidateEntitlementsMock: vi.fn(),
-}));
-
-vi.mock('@/lib/entitlements/cache', () => ({
-  invalidateEntitlements: invalidateEntitlementsMock,
-}));
-
 function createUserRepository(
   overrides: Partial<IUserRepository & IRecentUserRepository> = {},
 ): IUserRepository & IRecentUserRepository {
@@ -309,11 +301,7 @@ describe('AdminService mutation coverage', () => {
   describe('setUserDisable', () => {
     const actor = { id: adminUser.id, email: adminUser.email };
 
-    beforeEach(() => {
-      invalidateEntitlementsMock.mockReset();
-    });
-
-    it('maps missing target without invalidating entitlements', async () => {
+    it('maps a missing target to 404', async () => {
       const { AdminMutationTargetNotFoundError } = await import('@/entities/AdminMutation');
       const userRepository = createUserRepository({
         applyAdminMutation: vi.fn().mockRejectedValue(new AdminMutationTargetNotFoundError()),
@@ -325,10 +313,9 @@ describe('AdminService mutation coverage', () => {
         error: 'User not found',
         statusCode: 404,
       });
-      expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
     });
 
-    it('disables users and invalidates entitlements only after successful changed transition', async () => {
+    it('disables users on a successful changed transition', async () => {
       const disabledUser: User = {
         ...targetUser,
         disable: 1,
@@ -359,10 +346,9 @@ describe('AdminService mutation coverage', () => {
         actor,
         now: expect.any(Date),
       });
-      expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith(targetUser.id);
     });
 
-    it('reconciles entitlements on idempotent already-disabled success', async () => {
+    it('reports an idempotent already-disabled call as unchanged success', async () => {
       const disabledUser: User = { ...targetUser, disable: 1 };
       const userRepository = createUserRepository({
         applyAdminMutation: vi.fn().mockResolvedValue({
@@ -378,7 +364,6 @@ describe('AdminService mutation coverage', () => {
         success: true,
         data: { changed: false, disable: 1 },
       });
-      expect(invalidateEntitlementsMock).toHaveBeenCalledExactlyOnceWith(targetUser.id);
     });
 
     it('maps last_active_admin 409 and admin_invariant_unavailable 503', async () => {
@@ -404,7 +389,6 @@ describe('AdminService mutation coverage', () => {
         statusCode: 503,
         code: 'admin_invariant_unavailable',
       });
-      expect(invalidateEntitlementsMock).not.toHaveBeenCalled();
     });
 
     it('returns 500 when applyAdminMutation throws unexpected error', async () => {

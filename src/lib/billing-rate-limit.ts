@@ -20,7 +20,9 @@ export type BillingRateLimitAction =
   | 'order_create_user'
   | 'order_verify_user'
   | 'order_cancel_user'
-  | 'order_attempt_user';
+  | 'order_attempt_user'
+  /** Keyed by source address, and only ever charged for traffic we could not authenticate. */
+  | 'webhook_unauthenticated';
 
 type Limit = {
   points: number;
@@ -35,6 +37,10 @@ const DEFAULTS: Record<BillingRateLimitAction, Limit> = {
   order_verify_user: { points: 20, durationSec: 60 * 10 },
   order_cancel_user: { points: 10, durationSec: 60 * 10 },
   order_attempt_user: { points: 5, durationSec: 60 * 10 },
+  // Signature-valid deliveries are never charged, so this cannot throttle the
+  // provider. It bounds how much unauthenticated traffic one source can make
+  // the endpoint hash, classify and write a diagnostic row for.
+  webhook_unauthenticated: { points: 20, durationSec: 60 * 5 },
 };
 
 const COLLECTION = 'billing_rate_limits';

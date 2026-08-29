@@ -91,6 +91,13 @@ export const INDEX_CONTRACT = Object.freeze([
     fulfillmentStatus: 1,
     updatedAt: 1,
   }),
+  // The fulfillment drain claims the oldest due order: it filters on
+  // fulfillmentStatus and ranges on fulfillmentNextAttemptAt, then sorts by the
+  // same field, so the range key must follow the equality key.
+  required('billingorders.fulfillment-due', 'billingorders', {
+    fulfillmentStatus: 1,
+    fulfillmentNextAttemptAt: 1,
+  }),
 
   // paymentattempts
   required('paymentattempts.order-recent', 'paymentattempts', { order: 1, createdAt: -1 }),
@@ -118,9 +125,14 @@ export const INDEX_CONTRACT = Object.freeze([
       partialFilterExpression: { paymentLinkId: { $type: 'string' } },
     },
   ),
+  // The attempt drain claims by lease: it filters on collectionStatus, ranges
+  // on nextReconcileAt and then requires the lease to have lapsed, so the
+  // lease field has to be in the key or every claim pays a fetch to discard a
+  // row another worker already holds.
   required('paymentattempts.reconciliation', 'paymentattempts', {
     collectionStatus: 1,
     nextReconcileAt: 1,
+    reconcileLeaseUntil: 1,
   }),
 
   // paymenttransactions
@@ -197,6 +209,38 @@ export const INDEX_CONTRACT = Object.freeze([
     nextAttemptAt: 1,
     leaseUntil: 1,
   }),
+  // The operator diagnostics read model: newest first, optionally narrowed to
+  // one verification class.
+  required('paymentwebhookinboxes.diagnostics', 'paymentwebhookinboxes', {
+    verificationClass: 1,
+    createdAt: -1,
+  }),
+  // The same read with no class chosen, which is how the panel opens. The
+  // compound index cannot serve it — an unnarrowed sort on `createdAt` would
+  // scan every row the endpoint has ever accepted, and that count is set by
+  // whoever is posting to it rather than by how many payments were taken.
+  required('paymentwebhookinboxes.recent', 'paymentwebhookinboxes', { createdAt: -1 }),
+  // Retained bodies age out on their own so an unauthenticated door cannot
+  // become an unbounded store of attacker-controlled text. Accounting rows
+  // carry no `retainUntil`, and the partial filter leaves them alone.
+  required(
+    'paymentwebhookinboxes.retention',
+    'paymentwebhookinboxes',
+    { retainUntil: 1 },
+    { expireAfterSeconds: 0, partialFilterExpression: { retainUntil: { $type: 'date' } } },
+  ),
+  // billingalerts
+  // One row per condition, which is the deduplication: raising is a conditional
+  // upsert against this key, so a scheduler running every minute announces a
+  // standing backlog once per cooldown and two schedulers racing announce it
+  // once between them.
+  required('billingalerts.key', 'billingalerts', { key: 1 }, { unique: true }),
+  // The delivery sweep reads what is still undelivered, oldest first, then
+  // narrows to what is past its retry backoff. `dispatchedAt` is the selective
+  // half; the unique key index above holds this collection to one row per alert
+  // key, so the residual narrowing wants no index of its own.
+  required('billingalerts.pending', 'billingalerts', { dispatchedAt: 1, raisedAt: 1 }),
+
   required('entitlementaccounts.user', 'entitlementaccounts', { user: 1 }, { unique: true }),
   required('entitlementaccounts.expiration', 'entitlementaccounts', { currentEndAt: 1 }),
   required(

@@ -3,7 +3,8 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isStateChangingApiRequest } from '@/lib/security/csrf-policy';
 
-const API_ROOT = path.join(process.cwd(), 'src/app/api');
+const SRC_ROOT = path.join(process.cwd(), 'src');
+const API_ROOT = path.join(SRC_ROOT, 'app/api');
 
 /**
  * A route that authenticates its caller with a signature instead of a session
@@ -24,22 +25,44 @@ function routeFiles(directory: string): string[] {
   });
 }
 
+function sourceFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(directory, entry.name);
+    if (entry.isDirectory()) return sourceFiles(full);
+    return /\.tsx?$/u.test(entry.name) ? [full] : [];
+  });
+}
+
 /** `src/app/api/internal/billing/process/route.ts` → `/api/internal/billing/process` */
 function pathnameFor(file: string): string {
   const relative = path.relative(API_ROOT, path.dirname(file)).split(path.sep).join('/');
   return `/api/${relative}`;
 }
 
-/** Guards that prove a route authenticates its own caller without a session. */
-const SELF_AUTHENTICATING_GUARDS = ['assertInternalBillingRequest', 'parseAndVerifyPayOSWebhook'];
+/**
+ * What a route has to name, in its own source, to be authenticating its caller
+ * without a session — either the check itself or the wrapper that applies it.
+ *
+ * The wrapper belongs on this list because the two internal drains share one
+ * now: scanning for the check alone would find neither route and report that
+ * nothing needs the exemption, while both would still be unreachable without
+ * it. `parseAndVerifyPayOSWebhook` used to sit here and had matched nothing
+ * since it was renamed, which is why the second test below exists.
+ */
+const SELF_AUTHENTICATING_GUARDS = [
+  'assertInternalBillingRequest',
+  'withInternalBillingTick',
+  'classifyPayOSWebhook',
+];
 
 describe('self-authenticating API routes and the proxy same-origin guard', () => {
-  const selfAuthenticating = routeFiles(API_ROOT)
-    .filter((file) => {
-      const source = readFileSync(file, 'utf8');
-      return SELF_AUTHENTICATING_GUARDS.some((guard) => source.includes(guard));
-    })
-    .map(pathnameFor)
+  const routes = routeFiles(API_ROOT).map((file) => ({
+    pathname: pathnameFor(file),
+    source: readFileSync(file, 'utf8'),
+  }));
+  const selfAuthenticating = routes
+    .filter((route) => SELF_AUTHENTICATING_GUARDS.some((guard) => route.source.includes(guard)))
+    .map((route) => route.pathname)
     .sort();
 
   it('finds the routes that carry their own request authenticity check', () => {
@@ -47,6 +70,20 @@ describe('self-authenticating API routes and the proxy same-origin guard', () =>
     expect(selfAuthenticating.length).toBeGreaterThan(0);
     expect(selfAuthenticating).toContain('/api/internal/billing/process');
     expect(selfAuthenticating).toContain('/api/internal/billing/reconcile');
+    expect(selfAuthenticating).toContain('/api/billing/webhooks/[provider]');
+  });
+
+  it('names only guards that still exist', () => {
+    // The list is the only thing between this suite and a false pass, so a name
+    // that outlives the symbol it was tracking has to fail rather than shrink
+    // the set of routes being checked. A guard may legitimately be applied
+    // through a wrapper and so appear in no route file, but it must exist
+    // somewhere.
+    for (const guard of SELF_AUTHENTICATING_GUARDS) {
+      expect(sourceFiles(SRC_ROOT).some((file) => readFileSync(file, 'utf8').includes(guard))).toBe(
+        true,
+      );
+    }
   });
 
   it.each(['POST', 'PUT', 'PATCH', 'DELETE'])(

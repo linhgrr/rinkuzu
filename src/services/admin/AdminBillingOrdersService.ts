@@ -2,9 +2,12 @@ import type {
   AdminBillingOrderDetailDto,
   AdminBillingOrderListDto,
   AdminBillingOrderListQueryDto,
+  AdminBillingWebhookListDto,
+  AdminBillingWebhookListQueryDto,
 } from '@/dtos/admin-billing-orders';
 import type {
   AdminBillingOrderListOptions,
+  AdminWebhookDiagnosticListOptions,
   IAdminBillingOrdersRepository,
 } from '@/interfaces/repositories/IAdminBillingOrdersRepository';
 import type { ServiceResult } from '@/interfaces/services/types';
@@ -36,6 +39,28 @@ export class AdminBillingOrdersService {
       };
     } catch (error) {
       logger.error({ error }, 'Admin billing order list error');
+      return { success: false, error: 'Internal server error', statusCode: 500 };
+    }
+  }
+
+  async listWebhookDiagnostics(
+    query: AdminBillingWebhookListQueryDto,
+  ): Promise<ServiceResult<AdminBillingWebhookListDto>> {
+    try {
+      const options: AdminWebhookDiagnosticListOptions = {
+        page: query.page,
+        limit: query.limit,
+        ...(query.verificationClass === undefined
+          ? {}
+          : { verificationClass: query.verificationClass }),
+      };
+      const result = await this.repository.listWebhookDiagnostics(options);
+      return {
+        success: true,
+        data: AdminBillingOrdersDtoMapper.toWebhookListDto(result.items, result.pagination),
+      };
+    } catch (error) {
+      logger.error({ error }, 'Admin billing webhook diagnostics error');
       return { success: false, error: 'Internal server error', statusCode: 500 };
     }
   }

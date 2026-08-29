@@ -11,21 +11,10 @@ import {
   PaymentAttempt,
   PaymentTransaction,
 } from '@/models/Billing';
-import { BillingRepository } from '@/repositories/BillingRepository';
+import { createAdjustmentDeps } from '@/lib/billing-factory';
+import { recordExternalMoneyAdjustment } from '@/services/billing/adjustments/record-adjustment';
 import { EntitlementLedgerRepository } from '@/repositories/EntitlementLedgerRepository';
-
-const uri = process.env['MONGODB_URI'];
-const databaseName = uri ? decodeURIComponent(new URL(uri).pathname.slice(1)) : '';
-const isSafeTestDb = /(^|[-_])(test|ci)($|[-_])/i.exec(databaseName) !== null;
-
-if (!uri) {
-  throw new Error('MONGODB_URI is required for external money adjustment integration tests');
-}
-if (!isSafeTestDb) {
-  throw new Error(
-    `Refusing integration tests against non-test database: ${databaseName || '<empty>'}`,
-  );
-}
+import { integrationDatabaseUri } from '../../setup/integration-db';
 
 const PROVIDER_ACCOUNT = 'integration-payos-account';
 
@@ -41,7 +30,9 @@ interface SeededOrder {
  * no coverage, and its order lookup was reading a public UUID as an ObjectId.
  */
 describe('external money adjustment integration', () => {
-  const repository = new BillingRepository();
+  // The real wiring, so the configuration switch these tests stub is the one
+  // production reads.
+  const deps = createAdjustmentDeps();
   const ledger = new EntitlementLedgerRepository();
   const admin = new Types.ObjectId();
   const users: Types.ObjectId[] = [];
@@ -129,7 +120,7 @@ describe('external money adjustment integration', () => {
 
   beforeAll(async () => {
     try {
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 2_000 });
+      await mongoose.connect(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
     } catch (error) {
       throw new Error('Billing adjustment integration database is unavailable', { cause: error });
     }
@@ -158,7 +149,7 @@ describe('external money adjustment integration', () => {
   it('records a full refund by public order id and revokes that order Premium', async () => {
     const seeded = await seedPaidFulfilledOrder();
 
-    const view = await repository.recordExternalMoneyAdjustment({
+    const view = await recordExternalMoneyAdjustment(deps, {
       recordedBy: admin.toString(),
       orderId: seeded.publicId,
       type: 'refund',
@@ -172,7 +163,11 @@ describe('external money adjustment integration', () => {
     // Previously this threw 401 "User identity is invalid" on a valid UUID.
     expect(view.id).toBe(seeded.publicId);
     expect(view.settlementStatus).toBe('refunded');
-    expect(view.fulfillmentStatus).toBe('review');
+    // `revoked`, not `review`: the machine was allowed to act and did. Parking
+    // every auto-revoked order in the review queue is what made that queue
+    // meaningless, and left an operator no way to tell the orders that need a
+    // person from the ones already settled.
+    expect(view.fulfillmentStatus).toBe('revoked');
 
     await expect(
       EntitlementAdjustment.countDocuments({ user: seeded.user, type: 'revoke' }),
@@ -184,10 +179,38 @@ describe('external money adjustment integration', () => {
     expect(account?.perpetual).toBe(false);
   });
 
+  it('parks the order for a person when it is not allowed to revoke', async () => {
+    // The other half of the same rule: `review` is reserved for a genuine gap
+    // between the money and the entitlement that no automation may close.
+    vi.stubEnv('EXTERNAL_REFUND_AUTO_REVOCATION_ENABLED', 'false');
+    const seeded = await seedPaidFulfilledOrder();
+
+    const view = await recordExternalMoneyAdjustment(deps, {
+      recordedBy: admin.toString(),
+      orderId: seeded.publicId,
+      type: 'refund',
+      externalReference: `refund-manual-${seeded.publicId}`,
+      amount: 100_000,
+      currency: 'VND',
+      allocation: 'principal',
+      occurredAt: new Date().toISOString(),
+    });
+
+    expect(view.settlementStatus).toBe('refunded');
+    expect(view.fulfillmentStatus).toBe('review');
+    // The money moved and was recorded; only the entitlement waits for a person.
+    await expect(ExternalMoneyAdjustment.countDocuments({ order: seeded.orderId })).resolves.toBe(
+      1,
+    );
+    await expect(
+      EntitlementAdjustment.countDocuments({ user: seeded.user, type: 'revoke' }),
+    ).resolves.toBe(0);
+  });
+
   it('marks a part refund partially_refunded and keeps Premium revoked once', async () => {
     const seeded = await seedPaidFulfilledOrder();
 
-    const view = await repository.recordExternalMoneyAdjustment({
+    const view = await recordExternalMoneyAdjustment(deps, {
       recordedBy: admin.toString(),
       orderId: seeded.publicId,
       type: 'refund',
@@ -217,8 +240,8 @@ describe('external money adjustment integration', () => {
       occurredAt: new Date().toISOString(),
     };
 
-    await repository.recordExternalMoneyAdjustment(input);
-    const second = await repository.recordExternalMoneyAdjustment(input);
+    await recordExternalMoneyAdjustment(deps, input);
+    const second = await recordExternalMoneyAdjustment(deps, input);
 
     expect(second.settlementStatus).toBe('charged_back');
     await expect(ExternalMoneyAdjustment.countDocuments({ order: seeded.orderId })).resolves.toBe(
@@ -254,7 +277,7 @@ describe('external money adjustment integration', () => {
       await session.endSession();
     }
 
-    await repository.recordExternalMoneyAdjustment({
+    await recordExternalMoneyAdjustment(deps, {
       recordedBy: admin.toString(),
       orderId: refunded.publicId,
       type: 'refund',
@@ -277,9 +300,126 @@ describe('external money adjustment integration', () => {
     ).resolves.toBe(1);
   });
 
+  it('gives Premium back when a chargeback is reversed', async () => {
+    // The rule the last-event-wins ledger could not express: the money came
+    // back, so the access must too. Leaving the customer revoked here is a
+    // silent, permanent penalty for the bank changing its mind.
+    const seeded = await seedPaidFulfilledOrder();
+    const shared = {
+      recordedBy: admin.toString(),
+      orderId: seeded.publicId,
+      currency: 'VND' as const,
+      allocation: 'principal' as const,
+      amount: 100_000,
+    };
+
+    const chargedBack = await recordExternalMoneyAdjustment(deps, {
+      ...shared,
+      type: 'chargeback',
+      externalReference: `cb-reversed-${seeded.publicId}`,
+      occurredAt: new Date().toISOString(),
+    });
+    expect(chargedBack.settlementStatus).toBe('charged_back');
+    expect(chargedBack.fulfillmentStatus).toBe('revoked');
+
+    const reversed = await recordExternalMoneyAdjustment(deps, {
+      ...shared,
+      type: 'chargeback_reversal',
+      externalReference: `cb-reversal-${seeded.publicId}`,
+      occurredAt: new Date().toISOString(),
+    });
+
+    // `settled`, not a status of its own: the reversal made the customer
+    // entitled again, and the whole point of deriving the status from the same
+    // ledger is that it cannot report anything else while that is true.
+    expect(reversed.settlementStatus).toBe('settled');
+    expect(reversed.fulfillmentStatus).toBe('fulfilled');
+    await expect(
+      EntitlementAdjustment.countDocuments({ user: seeded.user, type: 'restore' }),
+    ).resolves.toBe(1);
+    const account = await EntitlementAccount.findOne({ user: seeded.user })
+      .lean<{ currentEndAt?: Date }>()
+      .exec();
+    expect(account?.currentEndAt?.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it('does not restore twice when a reversal is replayed', async () => {
+    const seeded = await seedPaidFulfilledOrder();
+    const shared = {
+      recordedBy: admin.toString(),
+      orderId: seeded.publicId,
+      currency: 'VND' as const,
+      allocation: 'principal' as const,
+      amount: 100_000,
+      occurredAt: new Date().toISOString(),
+    };
+    await recordExternalMoneyAdjustment(deps, {
+      ...shared,
+      type: 'chargeback',
+      externalReference: `cb-twice-${seeded.publicId}`,
+    });
+    const reversal = {
+      ...shared,
+      type: 'chargeback_reversal' as const,
+      externalReference: `cb-reversal-twice-${seeded.publicId}`,
+    };
+    await recordExternalMoneyAdjustment(deps, reversal);
+    await recordExternalMoneyAdjustment(deps, reversal);
+
+    await expect(
+      EntitlementAdjustment.countDocuments({ user: seeded.user, type: 'restore' }),
+    ).resolves.toBe(1);
+  });
+
+  it('refuses a reference already recorded against another order', async () => {
+    // A mis-keyed entry. Reporting the untouched order back as if it had been
+    // adjusted is how money silently lands nowhere.
+    const first = await seedPaidFulfilledOrder();
+    const second = await seedPaidFulfilledOrder();
+    const reference = `shared-ref-${first.publicId}`;
+    const shared = {
+      recordedBy: admin.toString(),
+      type: 'refund' as const,
+      externalReference: reference,
+      amount: 10_000,
+      currency: 'VND' as const,
+      allocation: 'principal' as const,
+      occurredAt: new Date().toISOString(),
+    };
+
+    await recordExternalMoneyAdjustment(deps, { ...shared, orderId: first.publicId });
+    await expect(
+      recordExternalMoneyAdjustment(deps, { ...shared, orderId: second.publicId }),
+    ).rejects.toMatchObject({ code: 'adjustment_reference_conflict', status: 409 });
+    await expect(ExternalMoneyAdjustment.countDocuments({ order: second.orderId })).resolves.toBe(
+      0,
+    );
+  });
+
+  it('refuses the same reference carrying different money', async () => {
+    const seeded = await seedPaidFulfilledOrder();
+    const shared = {
+      recordedBy: admin.toString(),
+      orderId: seeded.publicId,
+      type: 'refund' as const,
+      externalReference: `ref-amount-${seeded.publicId}`,
+      currency: 'VND' as const,
+      allocation: 'principal' as const,
+      occurredAt: new Date().toISOString(),
+    };
+
+    await recordExternalMoneyAdjustment(deps, { ...shared, amount: 10_000 });
+    await expect(
+      recordExternalMoneyAdjustment(deps, { ...shared, amount: 20_000 }),
+    ).rejects.toMatchObject({ code: 'adjustment_reference_conflict', status: 409 });
+    await expect(ExternalMoneyAdjustment.countDocuments({ order: seeded.orderId })).resolves.toBe(
+      1,
+    );
+  });
+
   it('rejects an unknown public order id', async () => {
     await expect(
-      repository.recordExternalMoneyAdjustment({
+      recordExternalMoneyAdjustment(deps, {
         recordedBy: admin.toString(),
         orderId: randomUUID(),
         type: 'refund',

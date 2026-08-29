@@ -1,5 +1,9 @@
 import 'server-only';
 import { BillingDomainError } from './billing-domain';
+import {
+  clampUnsupportedRetentionDays,
+  UNSUPPORTED_RETENTION_DAYS_DEFAULT,
+} from './domain/webhook-diagnostics';
 
 function enabled(name: string, productionDefault = false): boolean {
   const value = process.env[name];
@@ -8,6 +12,60 @@ function enabled(name: string, productionDefault = false): boolean {
 }
 
 export type SigningKey = { kid: string; secret: string };
+
+function isSigningKey(item: unknown, minimumSecretLength: number): boolean {
+  if (typeof item !== 'object' || item === null) return false;
+  const record = item as Record<string, unknown>;
+  return (
+    typeof record['kid'] === 'string' &&
+    record['kid'].length > 0 &&
+    typeof record['secret'] === 'string' &&
+    record['secret'].length >= minimumSecretLength
+  );
+}
+
+/**
+ * A versioned key list, used wherever a secret has to be rotatable without a
+ * window in which one of the two sides is already using a key the other has
+ * not learned yet. Unset is not an error here: the caller decides whether a
+ * missing key list is fatal or simply means the feature is off.
+ */
+function parseKeyList(name: string, minimumSecretLength: number): SigningKey[] {
+  const encoded = process.env[name]?.trim();
+  if (!encoded) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(encoded);
+  } catch {
+    throw new BillingDomainError('billing_configuration_error', `${name} is not valid JSON`, 500);
+  }
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length === 0 ||
+    !parsed.every((item) => isSigningKey(item, minimumSecretLength))
+  ) {
+    throw new BillingDomainError(
+      'billing_configuration_error',
+      `${name} must be a non-empty array of { kid, secret }`,
+      500,
+    );
+  }
+  return parsed as SigningKey[];
+}
+
+/**
+ * The PayOS checksum key.
+ *
+ * One key, used to sign outbound requests and to verify inbound webhooks. PayOS
+ * issues a single checksum key per merchant and offers no overlap window, so a
+ * versioned list here bought nothing real and cost a second place for the two
+ * sides of the signature to disagree. Null means the provider is not
+ * configured, which the caller reports rather than treating as "verified".
+ */
+function parseChecksumKey(): string | null {
+  const key = process.env['PAYOS_CHECKSUM_KEY']?.trim();
+  return key ? key : null;
+}
 
 function parseSigningKeys(): SigningKey[] {
   const encoded = process.env['BILLING_QUOTE_SIGNING_KEYS'];
@@ -54,5 +112,29 @@ export const billingConfig = {
     process.env.NODE_ENV === 'production' ? 'production' : 'test',
   termsVersion: () => process.env['BILLING_TERMS_VERSION'] ?? '2026-07-23',
   quoteKeys: parseSigningKeys,
+  /**
+   * The one PayOS checksum key, for outbound signing and inbound verification
+   * alike. Null when the provider is not configured.
+   */
+  payosChecksumKey: parseChecksumKey,
+  /** Keys that seal retained webhook bodies; empty means keep no body at all. */
+  webhookPayloadKeys: (): SigningKey[] => parseKeyList('BILLING_WEBHOOK_PAYLOAD_KEYS', 32),
+  /**
+   * The secret that keys the abuse hashes. Required wherever live payment
+   * traffic is accepted: without it the webhook door has no per-source budget
+   * and no payer signal, and both used to fail silently to "off".
+   */
+  abuseSignalSecret: (): string | null => {
+    const secret = process.env['ABUSE_SIGNAL_HASH_SECRET']?.trim();
+    return secret && secret.length >= 32 ? secret : null;
+  },
+  abuseSignalKeyVersion: (): string => process.env['ABUSE_SIGNAL_HASH_KEY_VERSION'] ?? 'v1',
+  webhookUnsupportedRetentionDays: (): number =>
+    clampUnsupportedRetentionDays(
+      Number(
+        process.env['BILLING_WEBHOOK_UNSUPPORTED_RETENTION_DAYS'] ??
+          UNSUPPORTED_RETENTION_DAYS_DEFAULT,
+      ),
+    ),
   siteUrl: () => process.env['AUTH_URL'] ?? process.env['NEXT_PUBLIC_SITE_URL'] ?? '',
 };

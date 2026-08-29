@@ -4,11 +4,13 @@ import type {
   AdminBillingAttemptRecord,
   AdminBillingOrderRecord,
   AdminBillingTransactionRecord,
+  AdminBillingWebhookDiagnosticRecord,
 } from '@/entities/AdminBillingOrders';
 import type {
   AdminBillingAdjustmentPersistence,
   AdminBillingAttemptPersistence,
   AdminBillingTransactionPersistence,
+  AdminBillingWebhookPersistence,
 } from '@/repositories/types/AdminBillingOrdersPersistence';
 
 export interface AdminBillingOrderPersistenceRow {
@@ -93,6 +95,41 @@ export class AdminBillingOrdersPersistenceMapper {
       direction: transaction.direction,
       settlementState: transaction.settlementState,
       providerEventAt: transaction.providerEventAt,
+    };
+  }
+
+  /**
+   * A listing says whether a body is retained and under which key version. It
+   * never opens one.
+   *
+   * The retained body is provider text that may name a payer, kept only so a
+   * parser failure can be explained. Decrypting every one of them on the way
+   * past made a routine page load a bulk disclosure and left "who has seen
+   * this?" unanswerable; opening one is a separate, audited action against a
+   * single row.
+   */
+  static toWebhookDiagnostic(
+    row: AdminBillingWebhookPersistence,
+  ): AdminBillingWebhookDiagnosticRecord {
+    const sealed = row.encryptedRawPayload;
+    return {
+      id: row._id.toString(),
+      provider: row.provider,
+      environment: row.environment,
+      verificationClass: row.verificationClass,
+      ...(row.rejectionReason === undefined ? {} : { rejectionReason: row.rejectionReason }),
+      status: row.status,
+      ...(row.orderCode === undefined ? {} : { orderCode: row.orderCode }),
+      ...(row.eventCode === undefined ? {} : { eventCode: row.eventCode }),
+      ...(row.eventDesc === undefined ? {} : { eventDesc: row.eventDesc }),
+      rawPayloadHash: row.rawPayloadHash,
+      ...(row.rawPayloadBytes === undefined ? {} : { rawPayloadBytes: row.rawPayloadBytes }),
+      retainedPayloadStored: sealed !== undefined,
+      ...(sealed === undefined ? {} : { retainedPayloadKeyVersion: sealed.keyVersion }),
+      attemptCount: row.attemptCount,
+      ...(row.lastError === undefined ? {} : { lastError: row.lastError }),
+      ...(row.retainUntil === undefined ? {} : { retainUntil: row.retainUntil }),
+      createdAt: row.createdAt,
     };
   }
 

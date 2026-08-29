@@ -17,14 +17,17 @@ import type {
   AdminBillingOrderDetailRecord,
   AdminBillingOrderRecord,
   AdminBillingTransactionRecord,
+  AdminBillingWebhookDiagnosticRecord,
 } from '@/entities/AdminBillingOrders';
 import type {
   AdminBillingOrderListOptions,
+  AdminWebhookDiagnosticListOptions,
   IAdminBillingOrdersRepository,
 } from '@/interfaces/repositories/IAdminBillingOrdersRepository';
 import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import { buildPaginationMeta } from '@/lib/pagination';
 import type { AdminOrderBucket } from '@/shared/constants/billing-order-buckets';
+import type { SettlementState } from '@/services/billing/domain/settlement-math';
 import {
   AdminBillingOrdersPersistenceMapper,
   type AdminBillingOrderPersistenceRow,
@@ -33,7 +36,23 @@ import type {
   AdminBillingAdjustmentPersistence,
   AdminBillingAttemptPersistence,
   AdminBillingTransactionPersistence,
+  AdminBillingWebhookPersistence,
 } from '@/repositories/types/AdminBillingOrdersPersistence';
+
+/**
+ * Money that left after it arrived. Typed against the state union rather than
+ * written as bare strings, so a state that is removed from the domain is a
+ * compile error here instead of a filter that silently matches nothing —
+ * which is what `disputed` and `reversed` had become.
+ */
+const SETTLED_OUT_STATES: readonly SettlementState[] = [
+  'refunded',
+  'partially_refunded',
+  'charged_back',
+];
+
+/** The settlement states that put an order on the operator queue. */
+const NEEDS_A_PERSON_STATES: readonly SettlementState[] = ['charged_back'];
 
 /**
  * Everything the pipeline could not settle by itself. Built by a function so
@@ -45,7 +64,7 @@ function attentionFilter(): Record<string, unknown> {
       { collectionStatus: { $in: ['review', 'partial', 'overpaid'] } },
       { fulfillmentStatus: 'review' },
       { excessResolution: 'unallocated' },
-      { settlementStatus: { $in: ['charged_back', 'disputed', 'reversed'] } },
+      { settlementStatus: { $in: NEEDS_A_PERSON_STATES } },
     ],
   };
 }
@@ -60,7 +79,7 @@ function bucketFilter(bucket: AdminOrderBucket): Record<string, unknown> {
       return { collectionStatus: { $in: ['paid', 'overpaid'] } };
     case 'settled_out':
       return {
-        settlementStatus: { $in: ['refunded', 'partially_refunded', 'charged_back', 'reversed'] },
+        settlementStatus: { $in: SETTLED_OUT_STATES },
       };
     case 'all':
       return {};
@@ -75,6 +94,9 @@ interface OrderFacet {
   items: AdminBillingOrderPersistenceRow[];
   meta: OrderFacetCount[];
 }
+
+/** How far back an unauthenticated-delivery count is worth looking. */
+const UNAUTHENTICATED_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -183,6 +205,8 @@ export class AdminBillingOrdersRepository implements IAdminBillingOrdersReposito
       inboxOrphaned,
       inboxRetryable,
       inboxDeadLettered,
+      webhooksUnsupportedSchema,
+      webhooksUnauthenticatedRecent,
     ] = await Promise.all([
       BillingOrder.countDocuments(attentionFilter()),
       BillingOrder.countDocuments({
@@ -196,6 +220,17 @@ export class AdminBillingOrdersRepository implements IAdminBillingOrdersReposito
       PaymentWebhookInbox.countDocuments({ status: 'orphaned' }),
       PaymentWebhookInbox.countDocuments({ status: 'retryable_failure' }),
       PaymentWebhookInbox.countDocuments({ status: { $in: ['dead_letter', 'permanent_failure'] } }),
+      // A signature we accepted carrying a body we could not read. This is the
+      // provider changing its contract under us, and unlike every other counter
+      // here no amount of operator action on an order will clear it.
+      PaymentWebhookInbox.countDocuments({ verificationClass: 'unsupported_schema' }),
+      // Bounded to a recent window on purpose: the standing total only grows,
+      // and what an operator needs to know is whether the checksum key stopped
+      // matching *today*.
+      PaymentWebhookInbox.countDocuments({
+        verificationClass: 'unauthenticated',
+        createdAt: { $gte: new Date(Date.now() - UNAUTHENTICATED_WINDOW_MS) },
+      }),
     ]);
     return {
       ordersNeedingAttention,
@@ -205,6 +240,40 @@ export class AdminBillingOrdersRepository implements IAdminBillingOrdersReposito
       inboxOrphaned,
       inboxRetryable,
       inboxDeadLettered,
+      webhooksUnsupportedSchema,
+      webhooksUnauthenticatedRecent,
+    };
+  }
+
+  async listWebhookDiagnostics(
+    options: AdminWebhookDiagnosticListOptions,
+  ): Promise<PaginatedRepositoryResult<AdminBillingWebhookDiagnosticRecord>> {
+    await connectDB();
+    const filter: Record<string, unknown> = options.verificationClass
+      ? { verificationClass: options.verificationClass }
+      : {};
+    const [rows, totalItems] = await Promise.all([
+      PaymentWebhookInbox.find(filter)
+        // The sealed body never travels this path. The list needs to say that
+        // one exists and which key sealed it, so only the key version is
+        // projected: the ciphertext, iv and auth tag stay in the database and
+        // are read solely by the single-row reveal, which is separately
+        // authorised and audited.
+        .select(
+          'provider environment verificationClass rejectionReason status orderCode eventCode ' +
+            'eventDesc rawPayloadHash rawPayloadBytes encryptedRawPayload.keyVersion ' +
+            'attemptCount lastError retainUntil createdAt',
+        )
+        .sort({ createdAt: -1 })
+        .skip((options.page - 1) * options.limit)
+        .limit(options.limit)
+        .lean<AdminBillingWebhookPersistence[]>()
+        .exec(),
+      PaymentWebhookInbox.countDocuments(filter),
+    ]);
+    return {
+      items: rows.map(AdminBillingOrdersPersistenceMapper.toWebhookDiagnostic),
+      pagination: buildPaginationMeta(options.page, options.limit, totalItems),
     };
   }
 

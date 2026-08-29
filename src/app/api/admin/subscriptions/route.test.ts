@@ -7,8 +7,8 @@ const { authMock, listSubscriptionsMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/admin-billing-factory', () => ({
-  getAdminBillingService: () => ({
+vi.mock('@/lib/admin-subscription-factory', () => ({
+  getAdminSubscriptionService: () => ({
     listSubscriptions: listSubscriptionsMock,
   }),
 }));

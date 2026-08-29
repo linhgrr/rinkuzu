@@ -6,6 +6,8 @@ import type {
   AdminBillingOrderListDto,
   AdminBillingOrderRowDto,
   AdminBillingTransactionDto,
+  AdminBillingWebhookListDto,
+  AdminBillingWebhookRowDto,
 } from '@/dtos/admin-billing-orders';
 import { formatDateTime, formatVndCurrency } from '@/lib/formatters';
 import type {
@@ -16,6 +18,8 @@ import type {
   AdminBillingOrderListViewModel,
   AdminBillingOrderRowViewModel,
   AdminBillingTransactionViewModel,
+  AdminWebhookDiagnosticListViewModel,
+  AdminWebhookDiagnosticViewModel,
 } from '@/features/admin/billing/types/admin-billing-view-model';
 
 const EMPTY = '—';
@@ -42,6 +46,8 @@ function toAdminBillingOrderRowViewModel(
     fulfillmentStatus: order.fulfillmentStatus,
     settlementStatus: order.settlementStatus,
     attemptCollectionStatus: order.attemptCollectionStatus ?? EMPTY,
+    excessResolution: order.excessResolution,
+    excessResolvable: order.excessResolution === 'unallocated',
     ...(order.promotionCode === undefined ? {} : { promotionCode: order.promotionCode }),
     createdAtLabel: dateLabel(order.createdAt),
     updatedAtLabel: dateLabel(order.updatedAt),
@@ -119,6 +125,55 @@ function toEntitlementViewModel(
         ? 'Granted — perpetual'
         : `Granted — account access until ${dateLabel(entitlement.currentEndAt)}`;
   return { summary, granted: entitlement.granted, revoked: entitlement.revoked };
+}
+
+/** The statuses a replay is a meaningful action on; anything else is done. */
+const REPLAYABLE_WEBHOOK_STATUSES = [
+  'retryable_failure',
+  'dead_letter',
+  'orphaned',
+  'permanent_failure',
+];
+
+function toWebhookDiagnosticViewModel(
+  row: AdminBillingWebhookRowDto,
+): AdminWebhookDiagnosticViewModel {
+  return {
+    id: row.id,
+    verificationClass: row.verificationClass,
+    status: row.status,
+    ...(row.rejectionReason === undefined ? {} : { rejectionReason: row.rejectionReason }),
+    ...(row.orderCode === undefined ? {} : { orderCode: String(row.orderCode) }),
+    ...(row.eventCode === undefined ? {} : { eventCode: row.eventCode }),
+    ...(row.eventDesc === undefined ? {} : { eventDesc: row.eventDesc }),
+    // The hash is a correlation handle an operator reads out loud, not a value
+    // to compare by eye; the first twelve characters are enough to match a row
+    // against a provider dashboard entry.
+    payloadHashShort: row.rawPayloadHash.slice(0, 12),
+    sizeLabel: row.rawPayloadBytes === undefined ? EMPTY : `${row.rawPayloadBytes} B`,
+    retainedPayloadStored: row.retainedPayloadStored,
+    ...(row.retainedPayloadKeyVersion === undefined
+      ? {}
+      : { retainedPayloadKeyVersion: row.retainedPayloadKeyVersion }),
+    attemptCount: row.attemptCount,
+    ...(row.lastError === undefined ? {} : { lastError: row.lastError }),
+    createdAtLabel: dateLabel(row.createdAt),
+    replayable: REPLAYABLE_WEBHOOK_STATUSES.includes(row.status),
+  };
+}
+
+export function toAdminWebhookDiagnosticListViewModel(
+  dto: AdminBillingWebhookListDto,
+): AdminWebhookDiagnosticListViewModel {
+  return {
+    webhooks: dto.webhooks.map(toWebhookDiagnosticViewModel),
+    pagination: {
+      page: dto.pagination.currentPage,
+      limit: dto.pagination.itemsPerPage,
+      total: dto.pagination.totalItems,
+      totalPages: dto.pagination.totalPages,
+    },
+  };
 }
 
 export function toAdminBillingOrderDetailViewModel(

@@ -12,8 +12,8 @@ const { authMock, listPlansMock, createPlanMock, updatePlanMock, deletePlanMock 
 );
 
 vi.mock('@/auth', () => ({ auth: authMock }));
-vi.mock('@/lib/admin-billing-factory', () => ({
-  getAdminBillingService: () => ({
+vi.mock('@/lib/admin-subscription-factory', () => ({
+  getAdminSubscriptionService: () => ({
     listPlans: listPlansMock,
     createPlan: createPlanMock,
     updatePlan: updatePlanMock,

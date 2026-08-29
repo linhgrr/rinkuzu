@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PaginationMeta } from '@/dtos/common';
+import { WEBHOOK_VERIFICATION_CLASSES } from '@/services/billing/domain/webhook-diagnostics';
 import { ADMIN_ORDER_BUCKETS } from '@/shared/constants/billing-order-buckets';
 
 export const adminBillingOrderListQuerySchema = z.object({
@@ -46,6 +47,44 @@ export interface AdminBillingHealthDto {
   inboxOrphaned: number;
   inboxRetryable: number;
   inboxDeadLettered: number;
+  webhooksUnsupportedSchema: number;
+  webhooksUnauthenticatedRecent: number;
+}
+
+/** One webhook inbox row, named by its persistence id in the route. */
+export const adminWebhookRowParamsSchema = z.strictObject({
+  inboxId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Webhook id is invalid'),
+});
+
+export const adminBillingWebhookListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  verificationClass: z.enum(WEBHOOK_VERIFICATION_CLASSES).optional(),
+});
+
+export interface AdminBillingWebhookRowDto {
+  id: string;
+  provider: string;
+  environment: string;
+  verificationClass: string;
+  rejectionReason?: string;
+  status: string;
+  orderCode?: number;
+  eventCode?: string;
+  eventDesc?: string;
+  rawPayloadHash: string;
+  rawPayloadBytes?: number;
+  retainedPayloadStored: boolean;
+  retainedPayloadKeyVersion?: string;
+  attemptCount: number;
+  lastError?: string;
+  retainUntil?: string;
+  createdAt: string;
+}
+
+export interface AdminBillingWebhookListDto {
+  webhooks: AdminBillingWebhookRowDto[];
+  pagination: PaginationMeta;
 }
 
 export interface AdminBillingOrderListDto {
@@ -107,3 +146,4 @@ export interface AdminBillingOrderDetailDto {
 }
 
 export type AdminBillingOrderListQueryDto = z.infer<typeof adminBillingOrderListQuerySchema>;
+export type AdminBillingWebhookListQueryDto = z.infer<typeof adminBillingWebhookListQuerySchema>;

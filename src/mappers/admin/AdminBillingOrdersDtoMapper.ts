@@ -6,6 +6,7 @@ import type {
   AdminBillingOrderDetailRecord,
   AdminBillingOrderRecord,
   AdminBillingTransactionRecord,
+  AdminBillingWebhookDiagnosticRecord,
 } from '@/entities/AdminBillingOrders';
 import type {
   AdminBillingAdjustmentDto,
@@ -16,6 +17,8 @@ import type {
   AdminBillingOrderListDto,
   AdminBillingOrderRowDto,
   AdminBillingTransactionDto,
+  AdminBillingWebhookListDto,
+  AdminBillingWebhookRowDto,
 } from '@/dtos/admin-billing-orders';
 import type { PaginationMeta } from '@/dtos/common';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
@@ -44,6 +47,40 @@ export class AdminBillingOrdersDtoMapper {
       inboxOrphaned: health.inboxOrphaned,
       inboxRetryable: health.inboxRetryable,
       inboxDeadLettered: health.inboxDeadLettered,
+      webhooksUnsupportedSchema: health.webhooksUnsupportedSchema,
+      webhooksUnauthenticatedRecent: health.webhooksUnauthenticatedRecent,
+    };
+  }
+
+  static toWebhookListDto(
+    webhooks: AdminBillingWebhookDiagnosticRecord[],
+    pagination: PaginationMeta,
+  ): AdminBillingWebhookListDto {
+    return { webhooks: webhooks.map(AdminBillingOrdersDtoMapper.toWebhookRowDto), pagination };
+  }
+
+  static toWebhookRowDto(row: AdminBillingWebhookDiagnosticRecord): AdminBillingWebhookRowDto {
+    const retainUntil = serializeOptionalDate(row.retainUntil, 'paymentWebhookInbox.retainUntil');
+    return {
+      id: row.id,
+      provider: row.provider,
+      environment: row.environment,
+      verificationClass: row.verificationClass,
+      ...(row.rejectionReason === undefined ? {} : { rejectionReason: row.rejectionReason }),
+      status: row.status,
+      ...(row.orderCode === undefined ? {} : { orderCode: row.orderCode }),
+      ...(row.eventCode === undefined ? {} : { eventCode: row.eventCode }),
+      ...(row.eventDesc === undefined ? {} : { eventDesc: row.eventDesc }),
+      rawPayloadHash: row.rawPayloadHash,
+      ...(row.rawPayloadBytes === undefined ? {} : { rawPayloadBytes: row.rawPayloadBytes }),
+      retainedPayloadStored: row.retainedPayloadStored,
+      ...(row.retainedPayloadKeyVersion === undefined
+        ? {}
+        : { retainedPayloadKeyVersion: row.retainedPayloadKeyVersion }),
+      attemptCount: row.attemptCount,
+      ...(row.lastError === undefined ? {} : { lastError: row.lastError }),
+      ...(retainUntil === undefined ? {} : { retainUntil }),
+      createdAt: serializeDate(row.createdAt, 'paymentWebhookInbox.createdAt'),
     };
   }
 

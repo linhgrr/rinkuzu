@@ -9,19 +9,7 @@ import {
   PaymentWebhookInbox,
 } from '@/models/Billing';
 import { AdminBillingOrdersRepository } from '@/repositories/AdminBillingOrdersRepository';
-
-const uri = process.env['MONGODB_URI'];
-const databaseName = uri ? decodeURIComponent(new URL(uri).pathname.slice(1)) : '';
-const isSafeTestDb = /(^|[-_])(test|ci)($|[-_])/i.exec(databaseName) !== null;
-
-if (!uri) {
-  throw new Error('MONGODB_URI is required for admin billing order integration tests');
-}
-if (!isSafeTestDb) {
-  throw new Error(
-    `Refusing integration tests against non-test database: ${databaseName || '<empty>'}`,
-  );
-}
+import { integrationDatabaseUri } from '../../setup/integration-db';
 
 interface SeedOptions {
   collectionStatus?: string;
@@ -106,7 +94,7 @@ describe('admin billing orders integration', () => {
 
   beforeAll(async () => {
     try {
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 2_000 });
+      await mongoose.connect(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
     } catch (error) {
       throw new Error('Admin billing orders integration database is unavailable', { cause: error });
     }

@@ -7,14 +7,14 @@ import {
   deletePlanRequestSchema,
   updatePlanRequestSchema,
 } from '@/dtos/admin-billing';
-import { getAdminBillingService } from '@/lib/admin-billing-factory';
+import { getAdminSubscriptionService } from '@/lib/admin-subscription-factory';
 import { assertBillingMutationRequest } from '@/services/billing/billing-security';
 import { billingHttpError } from '@/services/billing/billing-http';
 
-const adminBillingService = getAdminBillingService();
+const adminSubscriptionService = getAdminSubscriptionService();
 
 export const GET = withAdmin(async () => {
-  const result = await adminBillingService.listPlans();
+  const result = await adminSubscriptionService.listPlans();
   return result.success ? apiOk(result.data) : apiServiceErr(result);
 });
 
@@ -29,7 +29,7 @@ export const PATCH = withAdmin(async (request: NextRequest) => {
       return apiErr('validation_error', input.error, 400, { fields: input.fields });
     }
 
-    const result = await adminBillingService.updatePlan(input.data);
+    const result = await adminSubscriptionService.updatePlan(input.data);
     return result.success ? apiOk(result.data) : apiServiceErr(result);
   } catch (error) {
     return billingHttpError(error, 'admin-update-plan');
@@ -45,7 +45,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
       return apiErr('validation_error', input.error, 400, { fields: input.fields });
     }
 
-    const result = await adminBillingService.createPlan(input.data);
+    const result = await adminSubscriptionService.createPlan(input.data);
     return result.success ? apiOk(result.data, 201) : apiServiceErr(result);
   } catch (error) {
     return billingHttpError(error, 'admin-create-plan');
@@ -61,7 +61,7 @@ export const DELETE = withAdmin(async (request: NextRequest) => {
       return apiErr('validation_error', input.error, 400, { fields: input.fields });
     }
 
-    const result = await adminBillingService.deletePlan(input.data.id);
+    const result = await adminSubscriptionService.deletePlan(input.data.id);
     return result.success
       ? apiOk(result.data, 200, { meta: { message: 'Plan deleted successfully' } })
       : apiServiceErr(result);

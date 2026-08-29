@@ -20,8 +20,8 @@ vi.mock('@/lib/admin-factory', () => ({
     updateUserRole: updateUserRoleMock,
   }),
 }));
-vi.mock('@/lib/admin-billing-factory', () => ({
-  getAdminBillingService: () => ({
+vi.mock('@/lib/admin-subscription-factory', () => ({
+  getAdminSubscriptionService: () => ({
     grantUserSubscription: grantUserSubscriptionMock,
   }),
 }));

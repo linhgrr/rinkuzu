@@ -4,7 +4,7 @@ import { promotionCreateSchema } from '@/dtos/billing';
 import { withAdmin } from '@/lib/api/auth';
 import { readAndValidateJson } from '@/lib/api/request';
 import { apiErr, apiOk } from '@/lib/api/response';
-import { createBillingService } from '@/lib/billing-factory';
+import { createBillingPromotionRepository } from '@/lib/billing-factory';
 import { billingHttpError } from '@/services/billing/billing-http';
 import { assertBillingMutationRequest } from '@/services/billing/billing-security';
 
@@ -12,7 +12,7 @@ const archivePromotionSchema = z.strictObject({ id: z.string().regex(/^[a-f\d]{2
 
 export const GET = withAdmin(async () => {
   try {
-    return apiOk(await createBillingService().listPromotions());
+    return apiOk(await createBillingPromotionRepository().listPromotions());
   } catch (error) {
     return billingHttpError(error, 'admin-list-promotions');
   }
@@ -25,7 +25,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
     if (!parsed.success) {
       return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
     }
-    return apiOk(await createBillingService().createPromotion(parsed.data), 201);
+    return apiOk(await createBillingPromotionRepository().createPromotion(parsed.data), 201);
   } catch (error) {
     return billingHttpError(error, 'admin-create-promotion');
   }
@@ -38,7 +38,7 @@ export const PATCH = withAdmin(async (request: NextRequest) => {
     if (!parsed.success) {
       return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
     }
-    return apiOk(await createBillingService().archivePromotion(parsed.data.id));
+    return apiOk(await createBillingPromotionRepository().archivePromotion(parsed.data.id));
   } catch (error) {
     return billingHttpError(error, 'admin-archive-promotion');
   }

@@ -1,6 +1,33 @@
 import crypto from 'crypto';
 import { z } from 'zod';
-import { BillingDomainError } from './billing-domain';
+import { billingConfig } from './billing-config';
+import type {
+  WebhookRejectionReason,
+  WebhookVerificationClass,
+} from './domain/webhook-diagnostics';
+
+/**
+ * Turns one raw request body into a verdict.
+ *
+ * Nothing here throws. A webhook endpoint that throws its rejections away is an
+ * endpoint nobody can debug: the provider sees a 400 and we see nothing, so a
+ * signature that stopped matching after a key rotation is indistinguishable
+ * from a scanner posting junk. Every path therefore produces a value the caller
+ * can persist, and the caller decides the HTTP status from it.
+ *
+ * The envelope is deliberately tolerant of fields we do not know: providers add
+ * them, and rejecting an otherwise valid, correctly signed message because it
+ * grew a field is a self-inflicted outage. Tolerance stops at the fields that
+ * matter — the signature is still required, still computed over exactly the
+ * `data` object, and still compared in constant time.
+ */
+
+/**
+ * The largest body this endpoint will read. A real PayOS notification is under
+ * two kilobytes; the ceiling exists so an anonymous caller cannot make the
+ * process buffer an arbitrary amount of text before anything has been checked.
+ */
+export const MAX_WEBHOOK_BYTES = 64 * 1024;
 
 const webhookDataSchema = z
   .object({
@@ -16,13 +43,17 @@ const webhookDataSchema = z
   })
   .catchall(z.unknown());
 
-const webhookSchema = z.strictObject({
-  code: z.string(),
-  desc: z.string(),
-  success: z.boolean(),
-  data: z.record(z.string(), z.unknown()),
-  signature: z.string().regex(/^[a-fA-F0-9]{64}$/),
-});
+type PayOSPaymentEvent = z.infer<typeof webhookDataSchema>;
+
+const webhookEnvelopeSchema = z
+  .object({
+    code: z.string(),
+    desc: z.string(),
+    success: z.boolean(),
+    data: z.record(z.string(), z.unknown()),
+    signature: z.string().regex(/^[a-fA-F0-9]{64}$/),
+  })
+  .catchall(z.unknown());
 
 function sortRecordKeys(value: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
@@ -44,81 +75,162 @@ function signatureValue(value: unknown): string {
   return String(value);
 }
 
-function signaturePayload(data: Record<string, unknown>): string {
-  return Object.keys(data)
-    .filter((key) => data[key] !== undefined)
+function signaturePayload(event: Record<string, unknown>): string {
+  return Object.keys(event)
+    .filter((key) => event[key] !== undefined)
     .sort()
-    .map((key) => `${key}=${signatureValue(data[key])}`)
+    .map((key) => `${key}=${signatureValue(event[key])}`)
     .join('&');
 }
 
-export interface VerifiedPayOSWebhook {
-  rawPayloadHash: string;
-  payload: z.infer<typeof webhookDataSchema>;
-  ignored: boolean;
+function matchesChecksumKey(payload: string, received: string, secret: string): boolean {
+  const receivedBuffer = Buffer.from(received, 'hex');
+  const expected = crypto.createHmac('sha256', secret).update(payload).digest();
+  return (
+    expected.length === receivedBuffer.length && crypto.timingSafeEqual(expected, receivedBuffer)
+  );
 }
 
-export function parseAndVerifyPayOSWebhook(rawBody: string): VerifiedPayOSWebhook {
-  if (Buffer.byteLength(rawBody, 'utf8') > 64 * 1024) {
-    throw new BillingDomainError('payload_too_large', 'Webhook payload exceeds 64 KB', 413);
+interface PayOSWebhookFacts {
+  readonly rawPayloadHash: string;
+  readonly byteSize: number;
+}
+
+export interface AcceptedPayOSWebhook extends PayOSWebhookFacts {
+  readonly kind: 'accepted';
+  readonly payload: PayOSPaymentEvent;
+}
+
+/**
+ * Authenticated, understood, and not a successful payment: a cancellation, a
+ * failure, or a notice type we take no direct action on. It is not discarded —
+ * when it names an order, it becomes a reconciliation trigger, because the
+ * provider's own API, not the notice, is the authority on what happened.
+ */
+interface IgnoredPayOSWebhook extends PayOSWebhookFacts {
+  readonly kind: 'ignored';
+  readonly eventCode: string;
+  readonly eventDesc: string;
+  readonly orderCode: number | null;
+}
+
+interface UnsupportedPayOSWebhook extends PayOSWebhookFacts {
+  readonly kind: 'unsupported_schema';
+  readonly rawBody: string;
+}
+
+interface RejectedPayOSWebhook extends PayOSWebhookFacts {
+  readonly kind: 'rejected';
+  readonly reason: WebhookRejectionReason;
+}
+
+export type PayOSWebhookOutcome =
+  | AcceptedPayOSWebhook
+  | IgnoredPayOSWebhook
+  | UnsupportedPayOSWebhook
+  | RejectedPayOSWebhook;
+
+export function webhookVerificationClass(outcome: PayOSWebhookOutcome): WebhookVerificationClass {
+  switch (outcome.kind) {
+    case 'accepted':
+      return 'accepted';
+    case 'ignored':
+      return 'ignored';
+    case 'unsupported_schema':
+      return 'unsupported_schema';
+    case 'rejected':
+      return 'unauthenticated';
   }
-  const rawPayloadHash = crypto.createHash('sha256').update(rawBody).digest('hex');
+}
+
+const REJECTION_STATUS: Record<WebhookRejectionReason, number> = {
+  payload_too_large: 413,
+  malformed_json: 400,
+  invalid_envelope: 400,
+  invalid_signature: 400,
+  provider_not_configured: 500,
+};
+
+export function webhookRejectionStatus(reason: WebhookRejectionReason): number {
+  return REJECTION_STATUS[reason];
+}
+
+/**
+ * Every reason maps to a code the shared API error contract already carries.
+ * The precise reason is not lost — it is the detail on the response and the
+ * `rejectionReason` on the inbox row — but the code an integrator switches on
+ * has to be one both sides of the contract agree exists, and `invalid_webhook`
+ * and `payload_too_large` were never in it.
+ */
+const REJECTION_ERROR_CODE: Record<WebhookRejectionReason, string> = {
+  payload_too_large: 'validation_error',
+  malformed_json: 'validation_error',
+  invalid_envelope: 'validation_error',
+  invalid_signature: 'invalid_webhook_signature',
+  provider_not_configured: 'configuration_error',
+};
+
+export function webhookRejectionErrorCode(reason: WebhookRejectionReason): string {
+  return REJECTION_ERROR_CODE[reason];
+}
+
+function facts(rawBody: string): PayOSWebhookFacts {
+  return {
+    rawPayloadHash: crypto.createHash('sha256').update(rawBody).digest('hex'),
+    byteSize: Buffer.byteLength(rawBody, 'utf8'),
+  };
+}
+
+function optionalOrderCode(event: Record<string, unknown>): number | null {
+  const parsed = Number(event['orderCode']);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function classifyPayOSWebhook(rawBody: string): PayOSWebhookOutcome {
+  const base = facts(rawBody);
+  if (base.byteSize > MAX_WEBHOOK_BYTES) {
+    return { ...base, kind: 'rejected', reason: 'payload_too_large' };
+  }
+
   let json: unknown;
   try {
     json = JSON.parse(rawBody);
   } catch {
-    throw new BillingDomainError('invalid_webhook', 'Webhook body is not valid JSON', 400);
+    return { ...base, kind: 'rejected', reason: 'malformed_json' };
   }
-  const envelope = webhookSchema.safeParse(json);
+
+  const envelope = webhookEnvelopeSchema.safeParse(json);
   if (!envelope.success) {
-    throw new BillingDomainError('invalid_webhook', 'Webhook envelope is invalid', 400);
+    return { ...base, kind: 'rejected', reason: 'invalid_envelope' };
   }
-  const checksumKey = process.env['PAYOS_CHECKSUM_KEY'];
-  if (!checksumKey) {
-    throw new BillingDomainError(
-      'billing_configuration_error',
-      'PayOS webhook is not configured',
-      500,
-    );
+  const checksumKey = billingConfig.payosChecksumKey();
+  if (checksumKey === null) {
+    return { ...base, kind: 'rejected', reason: 'provider_not_configured' };
   }
-  const expected = crypto
-    .createHmac('sha256', checksumKey)
-    .update(signaturePayload(envelope.data.data))
-    .digest('hex');
-  const expectedBuffer = Buffer.from(expected, 'hex');
-  const receivedBuffer = Buffer.from(envelope.data.signature, 'hex');
-  if (
-    expectedBuffer.length !== receivedBuffer.length ||
-    !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
-  ) {
-    throw new BillingDomainError('invalid_webhook_signature', 'Webhook signature is invalid', 400);
+  const event = envelope.data.data;
+  if (!matchesChecksumKey(signaturePayload(event), envelope.data.signature, checksumKey)) {
+    return { ...base, kind: 'rejected', reason: 'invalid_signature' };
   }
-  if (
-    envelope.data.success !== true ||
-    envelope.data.code !== '00' ||
-    envelope.data.data['code'] !== '00'
-  ) {
+
+  const successful =
+    envelope.data.success === true && envelope.data.code === '00' && event['code'] === '00';
+  if (!successful) {
     return {
-      rawPayloadHash,
-      payload: webhookDataSchema.parse({
-        ...envelope.data.data,
-        orderCode: Number(envelope.data.data['orderCode']),
-        amount: Number(envelope.data.data['amount']),
-      }),
-      ignored: true,
+      ...base,
+      kind: 'ignored',
+      eventCode: String(envelope.data.code),
+      eventDesc: envelope.data.desc.slice(0, 200),
+      orderCode: optionalOrderCode(event),
     };
   }
+
   const payload = webhookDataSchema.safeParse({
-    ...envelope.data.data,
-    orderCode: Number(envelope.data.data['orderCode']),
-    amount: Number(envelope.data.data['amount']),
+    ...event,
+    orderCode: Number(event['orderCode']),
+    amount: Number(event['amount']),
   });
   if (!payload.success) {
-    throw new BillingDomainError(
-      'unsupported_webhook_schema',
-      'Verified webhook schema is unsupported',
-      422,
-    );
+    return { ...base, kind: 'unsupported_schema', rawBody };
   }
-  return { rawPayloadHash, payload: payload.data, ignored: false };
+  return { ...base, kind: 'accepted', payload: payload.data };
 }

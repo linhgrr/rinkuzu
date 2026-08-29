@@ -10,6 +10,8 @@ export interface AdminBillingHealthViewModel {
   inboxOrphaned: number;
   inboxRetryable: number;
   inboxDeadLettered: number;
+  webhooksUnsupportedSchema: number;
+  webhooksUnauthenticatedRecent: number;
 }
 
 export interface AdminBillingOrderRowViewModel {
@@ -27,6 +29,9 @@ export interface AdminBillingOrderRowViewModel {
   fulfillmentStatus: string;
   settlementStatus: string;
   attemptCollectionStatus: string;
+  excessResolution: string;
+  /** True while the overpayment is still an operator's to dispose of. */
+  excessResolvable: boolean;
   promotionCode?: string;
   createdAtLabel: string;
   updatedAtLabel: string;
@@ -97,5 +102,41 @@ export interface AdminBillingOrderQueryInput {
   limit: number;
   bucket: AdminOrderBucketViewModel;
   searchTerm: string;
+  signal: AbortSignal;
+}
+
+/**
+ * One row of the webhook door's own record. The retained body is never part of
+ * it — the row says whether one exists, and revealing it is a separate action.
+ */
+export interface AdminWebhookDiagnosticViewModel {
+  id: string;
+  verificationClass: string;
+  status: string;
+  rejectionReason?: string;
+  orderCode?: string;
+  eventCode?: string;
+  eventDesc?: string;
+  payloadHashShort: string;
+  sizeLabel: string;
+  retainedPayloadStored: boolean;
+  retainedPayloadKeyVersion?: string;
+  attemptCount: number;
+  lastError?: string;
+  createdAtLabel: string;
+  /** Whether a replay is something this row is actually waiting on. */
+  replayable: boolean;
+}
+
+export interface AdminWebhookDiagnosticListViewModel {
+  webhooks: AdminWebhookDiagnosticViewModel[];
+  pagination: AdminBillingPaginationViewModel;
+}
+
+export interface AdminWebhookDiagnosticQueryInput {
+  page: number;
+  limit: number;
+  /** Empty means every class. */
+  verificationClass: string;
   signal: AbortSignal;
 }

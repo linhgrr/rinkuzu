@@ -80,6 +80,11 @@
     --brand-action-hover: var(--primary-5);
     --brand-action-active: var(--primary-7);
     --brand-action-text: var(--neutral-white);
+    /* The action colour that carries white text. `--brand-action` is 2.57:1
+       against white and its dark-theme value is lighter still, so neither
+       clears the 3:1 floor; this one does in both themes, which is why it does
+       not vary by theme. For a filled control whose label is white. */
+    --brand-action-strong: #e67020;
     --brand-trust: var(--accent);
     --brand-trust-hover: var(--accent-hover);
     --brand-trust-active: var(--primary-6);
@@ -328,6 +333,7 @@
     --brand-action-hover: #fdba74;
     --brand-action-active: #fed7aa;
     --brand-action-text: #ffffff;
+    --brand-action-strong: #e67020;
 
     --brand-trust: #34d399;
     --brand-trust-hover: #6ee7b7;

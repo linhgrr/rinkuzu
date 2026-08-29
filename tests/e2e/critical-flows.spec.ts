@@ -39,14 +39,22 @@ type SessionPayload = {
   };
 };
 
-function credentialsRateLimitKeys(emails: string[]): string[] {
-  return [
-    ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
-    ...emails.map(
-      (email) =>
-        `auth:credentials_identity:${createHash('sha256').update(email.toLowerCase()).digest('hex')}`,
-    ),
-  ];
+/**
+ * The rate-limit keys a fixture created and is therefore allowed to assert on.
+ *
+ * Deliberately not the per-IP keys. Those are keyed by the address the browser
+ * connects from, which is the same loopback address for every project, so the
+ * three projects running this file in parallel all write and delete the same
+ * three rows. A fixture that asserts those are gone is asserting about another
+ * project's login, and it fails whenever the two interleave — which read as a
+ * flake in whichever flow happened to finish second. Identity keys are hashed
+ * from seeded emails and belong to exactly one fixture.
+ */
+function ownedCredentialsRateLimitKeys(emails: string[]): string[] {
+  return emails.map(
+    (email) =>
+      `auth:credentials_identity:${createHash('sha256').update(email.toLowerCase()).digest('hex')}`,
+  );
 }
 
 const ACTIVE_ADMIN_FENCE_ID = 'active-admin';
@@ -172,8 +180,15 @@ async function createDatabaseFixture(testInfo: TestInfo): Promise<DatabaseFixtur
     // Shared singleton fence for admin mutations — insert-once, never cleaned up per-run.
     await ensureCanonicalActiveAdminFence(db, now);
 
+    // Clearing the shared per-IP budget here is safe in a way asserting on it
+    // is not: resetting a counter can only ever let a login through.
     await db.collection('auth_rate_limits').deleteMany({
-      key: { $in: credentialsRateLimitKeys([regular.email, admin.email, target.email]) },
+      key: {
+        $in: [
+          ...ownedCredentialsRateLimitKeys([regular.email, admin.email, target.email]),
+          ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
+        ],
+      },
     });
 
     await db.collection('users').insertMany(
@@ -252,7 +267,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
   const userIds = [fixture.regular.id, fixture.admin.id, fixture.target.id];
   const userIdStrings = userIds.map((id) => id.toHexString());
   const emails = [fixture.regular.email, fixture.admin.email, fixture.target.email];
-  const authRateLimitKeys = credentialsRateLimitKeys(emails);
+  const ownedRateLimitKeys = ownedCredentialsRateLimitKeys(emails);
   const llmRateLimitKeyPattern = new RegExp(`:(?:${userIdStrings.join('|')})$`);
 
   try {
@@ -268,7 +283,9 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       db.collection('auditlogs').deleteMany({
         $or: [{ userId: { $in: userIds } }, { email: { $in: emails } }],
       }),
-      db.collection('auth_rate_limits').deleteMany({ key: { $in: authRateLimitKeys } }),
+      db.collection('auth_rate_limits').deleteMany({
+        key: { $in: [...ownedRateLimitKeys, ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS] },
+      }),
       db.collection('llm_rate_limits').deleteMany({ key: llmRateLimitKeyPattern }),
     ]);
     await db.collection('quizzes').deleteMany({ _e2eRun: runId });
@@ -281,7 +298,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       db.collection('plans').countDocuments({ _e2eRun: runId }),
       db.collection('attempts').countDocuments({ quiz: fixture.quizId }),
       db.collection('userprogresses').countDocuments({ userId: { $in: userIdStrings } }),
-      db.collection('auth_rate_limits').countDocuments({ key: { $in: authRateLimitKeys } }),
+      db.collection('auth_rate_limits').countDocuments({ key: { $in: ownedRateLimitKeys } }),
       db.collection('llm_rate_limits').countDocuments({ key: llmRateLimitKeyPattern }),
     ]);
     if (remaining.some((count) => count !== 0)) {

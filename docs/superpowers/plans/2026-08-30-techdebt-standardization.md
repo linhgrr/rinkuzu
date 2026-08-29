@@ -24,7 +24,7 @@
 - Before each commit: run `detect_changes({scope: "staged"})` (MCP) when available and confirm only intended symbols changed.
 - Commit style: conventional commits with scope, e.g. `refactor(communication): …`, ending with `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 - Test commands: `npm run test:node` (node env, `src/**/*.test.ts` + `tests/**` minus e2e/integration/quality), `npm run test:component` (jsdom, `*.test.tssx`), `npm run test:quality` (gate self-tests). Vitest single file: `npx vitest run --config vitest.node.config.ts <path>`.
-- Known pre-existing reds on the base branch: `check:duplication` (54 vs stale baseline — fixed in Wave 1), `check:dead-code` (45 knip findings — fixed in Task 1.6), `audit:consistency` (needs `MONGODB_URI`; out of scope, report as not run).
+- Gate state after the 2026-08-30 rebase onto master: `typecheck`, `lint`, `test:node`, `check:architecture` and `check:dead-code` are GREEN and must stay green. `check:duplication` is red ONLY because 16 baseline fingerprints went stale when Task 1.2 removed clones — the totals moved DOWN (52 clones / 524 lines vs master's ceiling of 58 / 582); Task 1.7 re-cuts it. `audit:consistency` needs `MONGODB_URI` and is out of scope — report as not run, never as passed.
 
 ---
 
@@ -665,35 +665,13 @@ git add eslint.config.mjs
 git commit -m "chore(lint): enforce max-lines 500 and complexity 30 with frozen legacy allowlists"
 ```
 
-### Task 1.6: Make `check:dead-code` green
+### ~~Task 1.6: Make `check:dead-code` green~~ — DELETED 2026-08-30 (obsolete after rebase)
 
-knip currently reports 12 unused exports + 33 unused exported types (e.g. `PremiumReviewVerdict` in `src/entities/PremiumQuiz.ts`, view-model interfaces in `src/features/admin/premium-submissions/api/premium-submissions-api.ts`, `CapabilityState` in `src/lib/postiz/connector.ts`, document interfaces in `src/models/CreditLedger.ts`…).
+This task was written against a stale base. Master commit `8c84413b chore(quality): tighten the gate scripts and re-baseline duplication down` already cleaned knip: the 12 unused exports + 33 unused types the original audit listed no longer exist.
 
-**Files:**
+After rebasing onto master, `npm run check:dead-code` reported exactly two items, both introduced by Task 1.2's own new file. They were fixed inside Task 1.2's fix round (commit `e19a676f`) — where a regression belongs.
 
-- Modify: every file knip lists (get the authoritative list from the run, not from this plan).
-
-- [ ] **Step 1: Get the current list**
-
-Run: `npx knip --strict` and save the output.
-
-- [ ] **Step 2: For each finding, demote or delete**
-
-- If the symbol is used inside its own file: remove only the `export` keyword.
-- If it is used nowhere: delete the declaration.
-- If it is genuinely part of a deliberate public contract consumed outside the repo (unlikely — verify before claiming), add it to `knip.jsonc` ignore with a comment instead. Do not blanket-ignore.
-
-- [ ] **Step 3: Verify**
-
-Run: `npm run check:dead-code && npm run typecheck && npm run test:node && npm run test:component`
-Expected: all PASS (knip strict + production modes green).
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add -A
-git commit -m "chore(dead-code): remove unused exports and types flagged by knip strict"
-```
+**No work remains. Skip this task.**
 
 ### Task 1.7: Wave 1 gate + baseline ratchet
 
@@ -721,6 +699,16 @@ git commit -m "chore(quality): ratchet duplication baseline after wave 1 dedupe"
 ---
 
 ## Wave 2 — Split god modules
+
+**AMENDMENT 2026-08-30 (ruling R9) — introduce `withCommunicationMutation` while you are in these files.**
+
+After Task 1.2 converted the admin routes, `check:duplication` surfaced a NEW clone at lines 10-17 of `admin/campaigns/[id]/{cancel,prepare,schedule,test}`, `admin/campaigns/[id]/route.ts`, `admin/feedback/[id]/{complete,messages,remind}` and `admin/support/[id]/messages`. Removing the validation preamble made the remaining preamble MORE uniform: `withAdmin(...)` + `try` + `assertCommunicationMutationRequest(request)` + the parse call + the same `communicationHttpError(error, '<label>')` catch.
+
+Master already solved the identical problem for billing with `withBillingOrderMutation(schema, auditLabel, handler)` in `src/lib/api/billing-order-mutation.ts` — READ THAT FILE FIRST and mirror its shape.
+
+Tasks 2.2, 2.3 and 2.4 already edit every one of these routes to change their imports, so add a `withCommunicationMutation` wrapper in `src/lib/communication/http.ts` (or a sibling module — it must NOT be a re-export-only file) that folds in the admin guard, the mutation assertion, params+body parsing, and the `communicationHttpError` mapping, then apply it to those routes as part of the same task.
+
+This ELIMINATES the clone structurally instead of baselining it. Behavior must stay byte-identical — same audit label per route, same error envelope, same status codes.
 
 GitNexus protocol applies to every task here: run upstream impact on each moved/edited export before cutting; stop on HIGH/CRITICAL and report.
 
@@ -813,34 +801,17 @@ GitNexus protocol applies to every task here: run upstream impact on each moved/
 - [ ] **Step 4:** Run: `npm run typecheck && npx vitest run --config vitest.node.config.ts src/lib/communication && npm run test:node && npm run check:architecture && npm run check:dead-code` — PASS (knip confirms nothing moved became orphaned).
 - [ ] **Step 5:** Commit: `refactor(communication): move worker/webhook/health machinery and retire the service god module`
 
-### Task 2.6: BillingRepository facade split
+### ~~Task 2.6: BillingRepository facade split~~ — DELETED 2026-08-30 (already done on master)
 
-2,432 lines / 15 public + ~25 private methods in one class. Split into internal stores behind the untouched facade; `IBillingRepository`, the factory, and every caller stay byte-identical.
+This task was written against a stale base. Master commit `4f9bc9fa refactor(billing): split the billing repository and make illegal states unrepresentable` already did it, and went further than this plan proposed.
 
-**Files:**
+`src/repositories/BillingRepository.ts` NO LONGER EXISTS. Master replaced it with seven repositories plus three helper modules under `src/repositories/billing/`: `BillingAdjustmentRepository`, `BillingAlertRepository`, `BillingOrderRepository`, `BillingPromotionRepository`, `BillingSettlementRepository`, `InternalNonceRepository`, `WebhookInboxRepository`, and `billing-shared.ts`, `promotion-lifecycle.ts`, `settlement-writers.ts`.
 
-- Create: `src/repositories/billing/BillingQuoteStore.ts`, `src/repositories/billing/BillingOrderStore.ts`, `src/repositories/billing/BillingWebhookStore.ts`, `src/repositories/billing/BillingReconcileStore.ts`, `src/repositories/billing/BillingPromotionStore.ts`, `src/repositories/billing/shared.ts`
-- Modify: `src/repositories/BillingRepository.ts` (becomes constructor + delegating methods)
+Ruling R3 (five stores, not the spec's four) is therefore moot — master chose seven.
 
-Note: the spec said "four collaborators"; the real method inventory groups into five — quote, orders, webhook-inbox, reconcile, promotions/adjustments. Five it is; note the deviation in the commit body.
+**No work remains. Skip this task.**
 
-**Interfaces:**
-
-- Public method → store mapping (facade delegates 1:1):
-  - `quote` → BillingQuoteStore
-  - `createOrder`, `getOrderByPublicId`, `verifyOrder`, `cancelOrder`, `createReplacementAttempt` → BillingOrderStore
-  - `persistVerifiedPayOSWebhook`, `persistUnsupportedPayOSWebhook`, `processInbox` → BillingWebhookStore
-  - `reconcileDueAttempts` → BillingReconcileStore
-  - `listPromotions`, `createPromotion`, `archivePromotion`, `recordExternalMoneyAdjustment`, `consumeInternalNonce` → BillingPromotionStore
-- Private helpers move to the single store that uses them; helpers used by ≥2 stores go to `billing/shared.ts` (grep-verified).
-- The facade: `export class BillingRepository implements IBillingRepository` with five private readonly store fields constructed in its constructor (stores take no constructor args unless the current class holds injected state — mirror whatever the current constructor holds).
-
-- [ ] **Step 1:** GitNexus impact on `BillingRepository` and each public method (audit precedent: `computeQuote`/`fulfillOrder` were LOW, but re-check on current code).
-- [ ] **Step 2:** Create the five stores + `shared.ts`, moving method bodies verbatim. Where clone pairs exist inside the class, collapse them within the owning store.
-- [ ] **Step 3:** Reduce `BillingRepository.ts` to the facade. Every method: `return this.orderStore.verifyOrder(userId, publicId);` — no logic.
-- [ ] **Step 4:** Run: `npm run typecheck && npx vitest run --config vitest.node.config.ts src/repositories && npm run test:node && npm run check:architecture` — PASS with repository tests unmodified.
-- [ ] **Step 5:** Verify `src/repositories/BillingRepository.ts` is now under 500 lines; remove it from the ESLint `oversizedFileAllowlist` (ratchet).
-- [ ] **Step 6:** Commit: `refactor(billing): split BillingRepository into five internal stores behind unchanged facade`
+**Follow-on candidates this split left behind** (NOT commitments; raise with the user before acting): `src/repositories/billing/BillingOrderRepository.ts` is 810 lines, `settlement-writers.ts` 683, `src/models/Billing.ts` 778. All three exceed the 500-line threshold Task 1.5 introduces, so they will land in that task's frozen allowlist rather than being split here.
 
 ### Task 2.7: PremiumQuizService internal dedupe
 
@@ -885,7 +856,7 @@ export default function <PageName>Page() {
 }
 ```
 
-Keep any existing `export const dynamic = …` line in `page.tsx`. Do NOT add metadata, auth checks, or Suspense wrappers (visual/behavior freeze). Route params/search params stay read via `useParams()`/`useSearchParams()` inside the client component — if the page currently receives `params` as a prop, switch that read to `useParams()` from `next/navigation` (allowed by the lint config) so the shell stays prop-less; verify the value usage is identical. 3. SWR conversion (only for pages marked "convert" below): replace each initial-data-load `useEffect` with `useSWR(key, fetcher, { revalidateOnFocus: false, revalidateOnReconnect: false })` where `fetcher` is the existing feature-api function already imported; derive the old `loading` flag as `isLoading || isValidating` so post-mutation `mutate()` reproduces the old reload-skeleton behavior; move the old catch-branch `toast.error(...)` into the `onError` option unchanged. Mutations stay imperative and call `mutate()` where the old code called `reload()`. Effects that are not data loading (timers, subscriptions, focus handlers) stay untouched. 4. Constraint check: the moved file must not import `@/dtos/*` or call `fetch(`/`fetchApi*` directly (it didn't as a page; moving can't add any). 5. Verify: `npm run typecheck && npx eslint <both files> --max-warnings 0 && npm run test:component && npm run check:architecture` — PASS. Grep the new client file and old page for accidental diffs: the JSX section must be byte-identical apart from the component name line. 6. Commit: `refactor(<feature>): split <page> into server shell + client component[ and unify fetching on SWR]`.
+Keep any existing `export const dynamic = …` line in `page.tsx`. Do NOT add metadata, auth checks, or Suspense wrappers (visual/behavior freeze). VERIFIED 2026-08-30: not one of the 18 pages takes `params` or `searchParams` as a prop — every one is `export default function XPage()` with zero parameters, already reading route data via hooks internally. So there is NO prop threading and NO `useParams()` rewiring to do; the move is a pure verbatim relocation plus a rename. Do not add prop plumbing that the page never had. 3. SWR conversion (only for pages marked "convert" below): replace each initial-data-load `useEffect` with `useSWR(key, fetcher, { revalidateOnFocus: false, revalidateOnReconnect: false })` where `fetcher` is the existing feature-api function already imported; derive the old `loading` flag as `isLoading || isValidating` so post-mutation `mutate()` reproduces the old reload-skeleton behavior; move the old catch-branch `toast.error(...)` into the `onError` option unchanged. Mutations stay imperative and call `mutate()` where the old code called `reload()`. Effects that are not data loading (timers, subscriptions, focus handlers) stay untouched. 4. Constraint check: the moved file must not import `@/dtos/*` or call `fetch(`/`fetchApi*` directly (it didn't as a page; moving can't add any). 5. Verify: `npm run typecheck && npx eslint <both files> --max-warnings 0 && npm run test:component && npm run check:architecture` — PASS. Grep the new client file and old page for accidental diffs: the JSX section must be byte-identical apart from the component name line. 6. Commit: `refactor(<feature>): split <page> into server shell + client component[ and unify fetching on SWR]`.
 
 **Placement rule:** the client component goes under the feature whose `api/` module the page already imports; when a page imports from several, pick the dominant one (most imports). Create missing `components/` directories as needed.
 
@@ -925,11 +896,11 @@ Each of 3.2–3.10 follows the shared procedure steps 1-6 with its own files/com
 
 ### Task 3.15: review (convert) — `ReviewPageClient` in `src/features/review/components/`.
 
-### Task 3.16: history/[attemptId] (convert) — `AttemptHistoryPageClient`, feature per placement rule (expected `features/quiz`); params via `useParams()`.
+### Task 3.16: history/[attemptId] (convert) — `AttemptHistoryPageClient`, feature per placement rule (expected `features/quiz`). Page takes no props; it already reads the attempt id via hooks — move verbatim.
 
 ### Task 3.17: quiz/[slug]/result (convert) — `QuizResultPageClient` in `src/features/quiz/components/`; page already uses `useSearchParams` + `Suspense` internally — keep both in the client component untouched.
 
-### Task 3.18: quiz/[slug]/flashcards (convert) — `FlashcardsPageClient` in `src/features/quiz/components/`; params via `useParams()`.
+### Task 3.18: quiz/[slug]/flashcards (convert) — `FlashcardsPageClient` in `src/features/quiz/components/`. Page takes no props; it already reads the slug via hooks — move verbatim.
 
 ### Task 3.19: loading.tsx coverage
 
@@ -1053,5 +1024,5 @@ Cross-layer echo clones are recorded in quality/duplication-baseline.json as kno
 ## Self-review record
 
 - Spec coverage: W1 items 1-4 → Tasks 1.2/1.3/1.4/1.5 (+1.1 tooling, +1.6 dead-code, an audit-red the spec's verification section requires reporting — fixed instead); W2 items 1-3 → Tasks 2.1-2.5/2.6/2.7; W3 all-18-pages + fetch unification + loading/error coverage → Tasks 3.1-3.19 (error.tsx already covered by existing `(app)/error.tsx` — no new files needed, recorded in 3.19); W4 items 1-4 → Tasks 4.1/4.3(baseline)/4.2/4.3(checker).
-- Known deviation from spec: BillingRepository splits into five stores, not four (real method inventory); spec's "facade" decision preserved.
+- Known deviation from spec: none outstanding. (The former "five stores, not four" deviation is moot — Task 2.6 was deleted on 2026-08-30 because master had already split BillingRepository into seven repositories.)
 - Type consistency: helper names used in route rewrites (`parseParamsAndBody`, `parseRouteParams`, `parseJsonBody`, `validationFailure`) match Task 1.2's definitions; `createRateLimiterRegistry`/`RateLimitOutcome` match Task 1.3; communication module exports in Tasks 2.2-2.5 match the caller tables; `quizComposeBaseFields`/`premiumRightsRefinement`/`quizProgressAnswerSchema` match between Task 4.1's producer and consumer lists.

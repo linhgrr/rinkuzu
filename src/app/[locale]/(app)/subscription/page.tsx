@@ -144,6 +144,11 @@ export default function SubscriptionPage() {
             {state.plans.map((plan, index) => (
               <Card
                 key={plan.id}
+                // Identifies which plan a card belongs to, so an end-to-end run
+                // can act on its own seeded plan. Every card renders the same
+                // "Subscribe" label, so without this the button is ambiguous
+                // the moment the catalogue holds more than one plan.
+                data-testid={`plan-card-${plan.id}`}
                 className="relative flex h-full flex-col border-brand-action/40 p-4 md:p-6"
               >
                 {index === 0 && (

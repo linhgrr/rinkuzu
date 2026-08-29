@@ -153,3 +153,6 @@ temp/
 .vercel
 .codex-tmp/
 *.inspect.ndjson
+
+# Superpowers SDD scratch workspace (ledger, briefs, review packages)
+.superpowers/

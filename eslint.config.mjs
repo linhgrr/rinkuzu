@@ -17,6 +17,63 @@ const centralizedAuthExceptions = [
   'src/app/api/auth/**/route.ts',
 ];
 
+// FROZEN 2026-08-30. This list may SHRINK when a file is split, and an entry may be
+// RENAMED when code moves to a new path — it must never GROW. New code stays under the
+// limit; grandfathered code earns its way off this list by getting smaller.
+// NOTE: bracketed Next.js route segments (e.g. [locale]) are escaped for glob matching
+// as [[]locale[]] — a plain `[locale]` is a glob character class, not a literal path
+// segment, and would silently fail to match these files on this platform.
+const oversizedFileAllowlist = [
+  'src/app/[[]locale[]]/(app)/admin/ocr-keys/page.tsx',
+  'src/app/[[]locale[]]/(app)/admin/plans/page.tsx',
+  'src/app/[[]locale[]]/(app)/admin/stats/page.tsx',
+  'src/app/[[]locale[]]/(app)/admin/subscriptions/page.tsx',
+  'src/app/[[]locale[]]/(app)/admin/users/page.tsx',
+  'src/app/[[]locale[]]/(app)/history/[[]attemptId[]]/page.tsx',
+  'src/app/[[]locale[]]/(app)/quiz/[[]slug[]]/flashcards/page.tsx',
+  'src/app/[[]locale[]]/(app)/quiz/[[]slug[]]/QuizPlayerClient.tsx',
+  'src/app/[[]locale[]]/(app)/quiz/[[]slug[]]/result/page.tsx',
+  'src/app/[[]locale[]]/(marketing)/privacy/page.tsx',
+  'src/app/[[]locale[]]/(marketing)/terms/page.tsx',
+  'src/components/app-chrome/AppChrome.tsx',
+  'src/features/adaptive/components/exercise-question-interaction.tsx',
+  'src/features/adaptive/components/KnowledgeGraph.tsx',
+  'src/features/adaptive/components/PipelineDebugPage.tsx',
+  'src/features/adaptive/hooks/use-processing-state.ts',
+  'src/features/adaptive/lib/adaptive-api-methods.ts',
+  'src/features/admin/ai-settings/components/AiSettingsClient.tsx',
+  'src/features/admin/ai-settings/components/ProviderModelsPanel.tsx',
+  'src/features/admin/stats/components/LlmUsageSection.tsx',
+  'src/features/admin/stats/components/StatsModal.tsx',
+  'src/features/dashboard/components/HomeDashboard.tsx',
+  'src/features/profile/components/ProfileSettings.tsx',
+  'src/features/quiz/components/create/CreateQuizPage.tsx',
+  'src/features/quiz/components/editor/QuizEditorWorkspace.tsx',
+  'src/lib/communication/service.ts',
+  'src/models/Billing.ts',
+  'src/models/Communication.ts',
+  'src/repositories/billing/BillingOrderRepository.ts',
+  'src/repositories/billing/settlement-writers.ts',
+  'src/repositories/LearningProgressRepository.ts',
+  'src/repositories/PremiumQuizRepository.ts',
+  'src/repositories/QuizRepository.ts',
+  'src/services/admin/AdminService.ts',
+  'src/services/premium/PremiumQuizService.ts',
+];
+
+// FROZEN 2026-08-30. This list may SHRINK when a function is simplified, and an entry may
+// be RENAMED when code moves to a new path — it must never GROW. New code stays under the
+// limit; grandfathered code earns its way off this list by getting simpler.
+const overComplexFileAllowlist = [
+  'src/app/[[]locale[]]/(app)/explore/page.tsx',
+  'src/app/[[]locale[]]/(marketing)/contact/page.tsx',
+  'src/features/adaptive/components/PipelineDebugPage.tsx',
+  'src/features/adaptive/lib/adaptive-api-fetch.ts',
+  'src/features/quiz/components/editor/QuizEditorWorkspace.tsx',
+  'src/lib/adaptive/proxy.ts',
+  'src/models/Attempt.ts',
+];
+
 export default defineConfig(
   ...nextVitals,
   ...nextTypeScript,
@@ -144,6 +201,20 @@ export default defineConfig(
           ],
         },
       ],
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [...oversizedFileAllowlist, '**/*.test.*', '**/*.spec.*', 'src/generated/**'],
+    rules: {
+      'max-lines': ['error', { max: 500, skipBlankLines: false, skipComments: false }],
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [...overComplexFileAllowlist, '**/*.test.*', '**/*.spec.*', 'src/generated/**'],
+    rules: {
+      complexity: ['error', { max: 30 }],
     },
   },
   prettier,

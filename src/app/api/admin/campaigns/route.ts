@@ -7,7 +7,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { createCampaign, listCampaigns } from '@/lib/communication/service';
+import { createCampaign, listCampaigns } from '@/lib/communication/campaigns';
 
 export const GET = withAdmin(async (request) => {
   const query = readAndValidateSearchParams(request, campaignListQuerySchema);

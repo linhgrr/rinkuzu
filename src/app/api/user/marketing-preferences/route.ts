@@ -8,7 +8,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { getMarketingPreferences, updateMarketingPreferences } from '@/lib/communication/service';
+import { getMarketingPreferences, updateMarketingPreferences } from '@/lib/communication/campaigns';
 
 export const GET = withAuth(async (_request, { userId }) => {
   try {

@@ -8,8 +8,28 @@ const packageLock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
 const nvmrc = fs.readFileSync('.nvmrc', 'utf8').trim();
 const dockerfile = fs.readFileSync('Dockerfile', 'utf8');
 
+/**
+ * The npm actually running this script, not whichever one happens to be first on
+ * PATH. When invoked through npm — which is how the gate runs — `npm_config_user_agent`
+ * names the running client exactly, and reading it needs no child process at all.
+ *
+ * The fallback is for a direct `node scripts/check-toolchain.mjs`. It has to go
+ * through a shell on Windows: npm there is `npm.cmd`, and since the CVE-2024-27980
+ * mitigation Node refuses to `execFile` a `.cmd` without one. The command and its
+ * arguments are literals, so there is nothing for a shell to interpolate.
+ */
+function detectNpmVersion() {
+  const agent = /(?:^|\s)npm\/(\S+)/.exec(process.env.npm_config_user_agent ?? '');
+  if (agent?.[1]) return agent[1];
+  const command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  return execFileSync(command, ['--version'], {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  }).trim();
+}
+
 const actualNode = process.versions.node;
-const actualNpm = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim();
+const actualNpm = detectNpmVersion();
 if (actualNode !== expected.node) failures.push(`Node must be ${expected.node}; got ${actualNode}`);
 if (actualNpm !== expected.npm) failures.push(`npm must be ${expected.npm}; got ${actualNpm}`);
 if (nvmrc !== expected.node) failures.push(`.nvmrc must pin ${expected.node}`);

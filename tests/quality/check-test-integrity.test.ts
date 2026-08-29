@@ -34,6 +34,34 @@ describe('test integrity guard', () => {
     );
   });
 
+  it('does not read a member call as the global test API it ends in', () => {
+    // `<expr>.test(x)` is a predicate call, not a test registration. Collapsing
+    // an unnameable receiver away made every regex guard inside an `if` look
+    // like a conditionally registered test, and the noise had the guard
+    // permanently red on files that were entirely correct.
+    const source = `
+      function keep(name: string): boolean {
+        if (!/\.tsx?$/u.test(name) || /\.(?:test|spec)\./u.test(name)) return false;
+        return matcher().test(name) && lookup['re'].test(name);
+      }
+    `;
+
+    expect(collectTestViolations(source)).toEqual([]);
+  });
+
+  it('still catches a real conditional registration beside a regex guard', () => {
+    // The other direction: the fix must not buy silence on the thing the rule
+    // exists for.
+    const source = `
+      if (/\.tsx?$/u.test(name)) {
+        test('conditional', () => { expect(true).toBe(true); });
+      }
+    `;
+
+    const messages = collectTestViolations(source).map((violation) => violation.message);
+    expect(messages).toEqual([expect.stringContaining('Conditional')]);
+  });
+
   it('only accepts exact, unexpired defensive coverage waivers', () => {
     const directives = collectCoverageDirectives(
       'const fallback = /* v8 ignore next */ buildFallback();',

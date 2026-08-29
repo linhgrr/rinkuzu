@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import prettier from 'prettier';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -89,6 +90,48 @@ function duplicateLabel(duplicate) {
   return `${label(duplicate.firstFile)} <-> ${label(duplicate.secondFile)}`;
 }
 
+/**
+ * What the baseline is a baseline *of*.
+ *
+ * It used to claim a commit SHA, which could never be true: the baseline is
+ * always cut from a working tree that does not yet have a commit, so the field
+ * either named the parent commit — whose sources it does not describe — or a
+ * SHA that would only exist after the file containing it was written. Neither
+ * can be checked, and the one that shipped named an object that was not in the
+ * repository at all.
+ *
+ * A fingerprint of the detector configuration can be checked, on every run,
+ * against the file it describes. It is deliberately not a fingerprint of the
+ * sources: those change with every commit, and a provenance field that must be
+ * regenerated on every edit is one that gets regenerated without being read.
+ */
+export function duplicationConfigFingerprint(baseline) {
+  return sha256(
+    JSON.stringify({
+      detector: baseline.detector,
+      scope: baseline.scope,
+      minimumAnalyzedSources: baseline.minimumAnalyzedSources,
+      limits: baseline.limits,
+    }),
+  );
+}
+
+export function validateDuplicationProvenance(baseline) {
+  const errors = [];
+  if (baseline.generatedFrom !== 'working-tree') {
+    errors.push(
+      `Duplication baseline generatedFrom must be "working-tree"; received ${JSON.stringify(baseline.generatedFrom)}.`,
+    );
+  }
+  const expected = duplicationConfigFingerprint(baseline);
+  if (baseline.configFingerprint !== expected) {
+    errors.push(
+      `Duplication baseline configFingerprint is ${baseline.configFingerprint ?? 'missing'}; the recorded detector, scope and limits hash to ${expected}.`,
+    );
+  }
+  return errors;
+}
+
 export function validateDuplicationConfig(config, baseline) {
   const expected = {
     path: baseline.scope.paths,
@@ -175,12 +218,29 @@ export function validateDuplicationReport(
     );
   }
 
+  // The fingerprint set has to match the report exactly, in both directions.
+  //
+  // An unknown fingerprint is a new duplicate, which has always failed. A
+  // *stale* one — a fingerprint the baseline carries that the report no longer
+  // produces — now fails too, and that is what closes the laundering hole:
+  // regenerating the baseline can no longer append a new clone quietly among
+  // entries nobody has checked, because every entry has to correspond to a
+  // clone that actually exists at the moment of regeneration. The cost is that
+  // removing duplication requires re-cutting the baseline, which is the point.
   const known = new Set(baseline.knownCloneFingerprints);
+  const observed = new Set(fingerprints);
   fingerprints.forEach((fingerprint, index) => {
     if (!known.has(fingerprint)) {
       errors.push(`New duplicate detected: ${duplicateLabel(fingerprintedDuplicates[index])}.`);
     }
   });
+  for (const fingerprint of known) {
+    if (!observed.has(fingerprint)) {
+      errors.push(
+        `Baseline fingerprint ${fingerprint} matches no clone in the report; re-cut quality/duplication-baseline.json.`,
+      );
+    }
+  }
   return errors;
 }
 
@@ -195,6 +255,7 @@ export function runDuplicationCheck(root = process.cwd()) {
   const configuredVersion = packageJson.devDependencies?.jscpd;
   const errors = [];
 
+  errors.push(...validateDuplicationProvenance(baseline));
   errors.push(...validateDuplicationConfig(config, baseline));
   if (configuredVersion !== baseline.detector.version) {
     errors.push(
@@ -256,16 +317,85 @@ export function runDuplicationCheck(root = process.cwd()) {
   return errors;
 }
 
+/**
+ * Re-cuts the baseline from a fresh detector run.
+ *
+ * It exists so the artifact cannot be hand-edited into an internally
+ * inconsistent state — the ceilings, the fingerprint set and the configuration
+ * fingerprint are always written together from one report. Every added and
+ * removed clone is printed with its location, so a re-cut that quietly admits a
+ * new duplicate is visible in the console and, because the fingerprint list is
+ * in the file, in the diff a reviewer reads.
+ */
+export async function rebaselineDuplication(root = process.cwd()) {
+  const baselinePath = path.join(root, 'quality', 'duplication-baseline.json');
+  const reportPath = path.join(root, 'reports', 'jscpd', 'jscpd-report.json');
+  const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
+
+  runDuplicationCheck(root);
+  if (!existsSync(reportPath)) throw new Error('No jscpd report to re-cut the baseline from.');
+  const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+  const fingerprinted = report.duplicates.filter(
+    (duplicate) => !isImportOnlyDuplicate(root, duplicate),
+  );
+  const fingerprints = fingerprinted.map((duplicate) => fingerprintDuplicate(root, duplicate));
+  const previous = new Set(baseline.knownCloneFingerprints);
+  const total = report.statistics.total;
+
+  const updated = {
+    ...baseline,
+    generatedFrom: 'working-tree',
+    limits: {
+      clones: total.clones,
+      duplicatedLines: total.duplicatedLines,
+      percentage: baseline.limits.percentage,
+    },
+    knownCloneFingerprints: [...fingerprints].sort(),
+  };
+  delete updated.sourceCommit;
+  delete updated.sourceNote;
+  updated.configFingerprint = duplicationConfigFingerprint(updated);
+
+  for (const [index, fingerprint] of fingerprints.entries()) {
+    if (!previous.has(fingerprint)) {
+      process.stdout.write(`+ new clone admitted: ${duplicateLabel(fingerprinted[index])}\n`);
+    }
+  }
+  for (const fingerprint of previous) {
+    if (!fingerprints.includes(fingerprint)) {
+      process.stdout.write(`- clone removed: ${fingerprint}\n`);
+    }
+  }
+  // Written through Prettier because the artifact is checked in and
+  // `format:check` is a required gate: a re-cut that left the file in raw
+  // `JSON.stringify` shape would fail formatting every time, which invites
+  // hand-editing the artifact back into shape — the one thing writing it from a
+  // single report is meant to prevent.
+  const serialised = `${JSON.stringify(updated, null, 2)}\n`;
+  const prettierOptions = await prettier.resolveConfig(baselinePath);
+  writeFileSync(
+    baselinePath,
+    await prettier.format(serialised, { ...prettierOptions, parser: 'json' }),
+  );
+  process.stdout.write(
+    `Baseline re-cut: ${total.clones} clones, ${total.duplicatedLines} duplicated lines.\n`,
+  );
+}
+
 const isMainModule =
   process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isMainModule) {
-  const errors = runDuplicationCheck();
-  if (errors.length > 0) {
-    console.error('Duplicate-code check failed:');
-    for (const error of errors) console.error(`- ${error}`);
-    process.exitCode = 1;
+  if (process.argv.includes('--rebaseline')) {
+    await rebaselineDuplication();
   } else {
-    process.stdout.write('Duplicate-code check passed with no baseline regression.\n');
+    const errors = runDuplicationCheck();
+    if (errors.length > 0) {
+      console.error('Duplicate-code check failed:');
+      for (const error of errors) console.error(`- ${error}`);
+      process.exitCode = 1;
+    } else {
+      process.stdout.write('Duplicate-code check passed with no baseline regression.\n');
+    }
   }
 }

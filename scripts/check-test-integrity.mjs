@@ -44,19 +44,30 @@ function scriptKind(filePath) {
   return ts.ScriptKind.JS;
 }
 
+/**
+ * The dotted name a call is made through, or null when the receiver is something
+ * this cannot name.
+ *
+ * The distinction matters: returning an empty path for an unnameable receiver
+ * collapses `<expr>.test(x)` into a bare `test(x)`, and every `/regex/.test(...)`
+ * inside an `if` then reads as a conditionally registered test. Null propagates
+ * so a member call is never mistaken for the global it happens to end in.
+ */
 function callPath(expression) {
   if (ts.isIdentifier(expression)) return [expression.text];
   if (ts.isPropertyAccessExpression(expression)) {
-    return [...callPath(expression.expression), expression.name.text];
+    const receiver = callPath(expression.expression);
+    return receiver === null ? null : [...receiver, expression.name.text];
   }
   if (
     ts.isElementAccessExpression(expression) &&
     ts.isStringLiteral(expression.argumentExpression)
   ) {
-    return [...callPath(expression.expression), expression.argumentExpression.text];
+    const receiver = callPath(expression.expression);
+    return receiver === null ? null : [...receiver, expression.argumentExpression.text];
   }
   if (ts.isCallExpression(expression)) return callPath(expression.expression);
-  return [];
+  return null;
 }
 
 function isConditionallyRegistered(node) {
@@ -115,7 +126,7 @@ export function collectTestViolations(sourceText, filePath = 'fixture.test.ts') 
 
   function visit(node) {
     if (ts.isCallExpression(node)) {
-      const parts = callPath(node.expression);
+      const parts = callPath(node.expression) ?? [];
       const base = parts[0];
       const modifiers = parts.slice(1);
 

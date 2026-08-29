@@ -1,11 +1,13 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  duplicationConfigFingerprint,
   fingerprintDuplicate,
   isImportOnlyDuplicate,
   validateDuplicationConfig,
+  validateDuplicationProvenance,
   validateDuplicationReport,
 } from '../../scripts/check-duplication.mjs';
 
@@ -92,8 +94,13 @@ describe('duplicate-code quality gate', () => {
   });
 
   it('fails on a new clone even when aggregate metrics remain below the ceilings', () => {
+    // Two errors, not one: the clone is unknown *and* the baseline entry it
+    // displaced no longer corresponds to anything the detector found. The
+    // second half is what stops a re-cut from hiding a new clone among stale
+    // entries nobody checks.
     expect(validateDuplicationReport(report(), baseline(), ['new-clone'])).toEqual([
       'New duplicate detected: src/a.ts:1-5 <-> src/b.ts:1-5.',
+      'Baseline fingerprint known-clone matches no clone in the report; re-cut quality/duplication-baseline.json.',
     ]);
   });
 
@@ -125,7 +132,9 @@ describe('duplicate-code quality gate', () => {
     };
 
     expect(isImportOnlyDuplicate(root, duplicate)).toBe(true);
-    expect(validateDuplicationReport(report(), baseline(), [], [])).toEqual([]);
+    expect(
+      validateDuplicationReport(report(), baseline({ knownCloneFingerprints: [] }), [], []),
+    ).toEqual([]);
   });
 
   it('keeps executable and mixed import fragments actionable', () => {
@@ -151,7 +160,10 @@ describe('duplicate-code quality gate', () => {
     const evidence = report();
     expect(
       validateDuplicationReport(evidence, baseline(), ['new-clone'], evidence.duplicates),
-    ).toEqual(['New duplicate detected: src/a.ts:1-5 <-> src/b.ts:1-5.']);
+    ).toEqual([
+      'New duplicate detected: src/a.ts:1-5 <-> src/b.ts:1-5.',
+      'Baseline fingerprint known-clone matches no clone in the report; re-cut quality/duplication-baseline.json.',
+    ]);
   });
 
   it('fails closed for parse-error fragments instead of treating them as import-only', () => {
@@ -215,5 +227,123 @@ describe('duplicate-code quality gate', () => {
     };
 
     expect(fingerprintDuplicate(root, windowsPaths)).toBe(fingerprintDuplicate(root, posixPaths));
+  });
+});
+
+/**
+ * The baseline is evidence, and evidence has to be checkable.
+ *
+ * It used to claim a `sourceCommit`, which could never be true: the file is cut
+ * from a working tree that has no commit yet, so the field either named the
+ * parent — whose sources it does not describe — or a SHA that would exist only
+ * after the file naming it was written. The one that shipped named an object
+ * that was not in the repository at all, and nothing checked it, which is the
+ * definition of provenance theatre.
+ */
+describe('baseline provenance', () => {
+  function provenanced(overrides = {}) {
+    const draft = {
+      ...baseline(),
+      scope: { paths: ['src'] },
+      generatedFrom: 'working-tree',
+      ...overrides,
+    };
+    return { ...draft, configFingerprint: duplicationConfigFingerprint(draft) };
+  }
+
+  it('accepts a baseline whose fingerprint matches the config it records', () => {
+    expect(validateDuplicationProvenance(provenanced())).toEqual([]);
+  });
+
+  it('refuses a baseline that claims a commit instead of a working tree', () => {
+    const errors = validateDuplicationProvenance(
+      provenanced({ generatedFrom: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef' }),
+    );
+    expect(errors.join('\n')).toContain('generatedFrom must be "working-tree"');
+  });
+
+  it('refuses a baseline with no provenance at all', () => {
+    expect(validateDuplicationProvenance(baseline())).not.toEqual([]);
+  });
+
+  it('catches a hand-edited ceiling, which is the laundering this exists to stop', () => {
+    // Raising a limit by hand leaves the fingerprint describing the limits that
+    // were actually measured, so the mismatch is the tell.
+    const honest = provenanced();
+    const laundered = { ...honest, limits: { ...honest.limits, clones: 999 } };
+    const errors = validateDuplicationProvenance(laundered);
+    expect(errors.join('\n')).toContain('configFingerprint');
+  });
+
+  it('catches a widened detector scope smuggled in under an unchanged fingerprint', () => {
+    const honest = provenanced();
+    const widened = { ...honest, scope: { paths: ['src', 'scripts'] } };
+    expect(validateDuplicationProvenance(widened)).not.toEqual([]);
+  });
+
+  it('fingerprints the configuration, not the sources', () => {
+    // A fingerprint that changed with every edit would be regenerated on every
+    // commit without ever being read, which is worse than not having one.
+    const first = duplicationConfigFingerprint(provenanced());
+    const second = duplicationConfigFingerprint(provenanced());
+    expect(first).toBe(second);
+    expect(first).toMatch(/^[a-f0-9]{64}$/);
+  });
+});
+
+describe('the fingerprint set has to match the report in both directions', () => {
+  it('fails on a baseline entry no clone in the report produces', () => {
+    // The laundering hole this closes: without it, a re-cut could append a new
+    // clone quietly among dozens of stale entries nobody checks. Now every
+    // entry must correspond to a clone that actually exists.
+    const evidence = report();
+    const errors = validateDuplicationReport(
+      evidence,
+      baseline({ knownCloneFingerprints: ['known-clone', 'a-clone-that-no-longer-exists'] }),
+      ['known-clone'],
+      evidence.duplicates,
+    );
+    expect(errors.join('\n')).toContain('matches no clone in the report');
+  });
+
+  it('still fails on a clone the baseline does not know about', () => {
+    const evidence = report();
+    const errors = validateDuplicationReport(
+      evidence,
+      baseline({ knownCloneFingerprints: [] }),
+      ['a-brand-new-clone'],
+      evidence.duplicates,
+    );
+    expect(errors.join('\n')).toContain('New duplicate detected');
+  });
+
+  it('refuses to call a report green when two clones fingerprint the same', () => {
+    const twoDuplicates = {
+      ...report(),
+      duplicates: [...report().duplicates, ...report().duplicates],
+      statistics: { total: { ...report().statistics.total, clones: 2 } },
+    };
+    const errors = validateDuplicationReport(
+      twoDuplicates,
+      baseline({ knownCloneFingerprints: ['known-clone'] }),
+      ['known-clone', 'known-clone'],
+      twoDuplicates.duplicates,
+    );
+    expect(errors.join('\n')).toContain('ambiguous');
+  });
+});
+
+describe('the shipped baseline', () => {
+  const shipped = JSON.parse(
+    readFileSync(path.join(process.cwd(), 'quality', 'duplication-baseline.json'), 'utf8'),
+  );
+
+  it('carries provenance that validates against itself', () => {
+    expect(validateDuplicationProvenance(shipped)).toEqual([]);
+  });
+
+  it('no longer carries the self-referential commit fields', () => {
+    expect(shipped).not.toHaveProperty('sourceCommit');
+    expect(shipped).not.toHaveProperty('sourceNote');
   });
 });

@@ -130,9 +130,15 @@ function scanText(violations, file, text) {
 
     if (/['"]subscription\.[A-Za-z]|['"]subscription\.planId|\bsubscription:\s*\{/.test(source)) {
       const rel = normalize(file);
+      // The canonical billing persistence, by location rather than by a list of
+      // filenames: the old list still named `BillingRepository.ts` after the
+      // split retired it, so the guard was watching a file that no longer
+      // existed and every new sibling was unguarded.
       if (
-        rel === 'src/repositories/BillingRepository.ts' ||
-        rel === 'src/repositories/AdminBillingRepository.ts'
+        rel.startsWith('src/repositories/billing/') ||
+        rel === 'src/repositories/AdminSubscriptionRepository.ts' ||
+        rel === 'src/repositories/AdminBillingOrdersRepository.ts' ||
+        rel === 'src/repositories/EntitlementLedgerRepository.ts'
       ) {
         pushViolation(
           violations,

@@ -314,6 +314,35 @@ async function finalizeSupportAttachments(
   return finalized;
 }
 
+/**
+ * Claims a batch of finalized attachments onto the ticket/message they now
+ * belong to. Shared by `createSupportTicket` and `addSupportMessage`, which
+ * differ only in which ticket id the attachments are being claimed onto.
+ */
+async function claimSupportAttachments(
+  attachments: Types.ObjectId[],
+  actorId: string,
+  ticketId: Types.ObjectId,
+  messageId: Types.ObjectId,
+  session: ClientSession,
+): Promise<void> {
+  if (!attachments.length) return;
+  const claimed = await SupportAttachment.updateMany(
+    {
+      _id: { $in: attachments },
+      ownerUserId: requiredObjectId(actorId, 'actor id'),
+      status: 'ready',
+      ticketId: null,
+      messageId: null,
+    },
+    { $set: { ticketId, messageId, expiresAt: null } },
+    { session },
+  );
+  if (claimed.modifiedCount !== attachments.length) {
+    throw new CommunicationError('conflict', 'One or more attachments were already used', 409);
+  }
+}
+
 export async function createSupportTicket(
   actorId: string,
   actorEmail: string,
@@ -384,26 +413,7 @@ export async function createSupportTicket(
         ],
         { session: dbSession },
       );
-      if (attachments.length) {
-        const claimed = await SupportAttachment.updateMany(
-          {
-            _id: { $in: attachments },
-            ownerUserId: requiredObjectId(actorId, 'actor id'),
-            status: 'ready',
-            ticketId: null,
-            messageId: null,
-          },
-          { $set: { ticketId, messageId, expiresAt: null } },
-          { session: dbSession },
-        );
-        if (claimed.modifiedCount !== attachments.length) {
-          throw new CommunicationError(
-            'conflict',
-            'One or more attachments were already used',
-            409,
-          );
-        }
-      }
+      await claimSupportAttachments(attachments, actorId, ticketId, messageId, dbSession);
       if (admin && notification) {
         await queueSupportNotification(
           ticketId,
@@ -511,26 +521,7 @@ export async function addSupportMessage(
       if (updated.modifiedCount !== 1) {
         throw new CommunicationError('conflict', 'Ticket changed; reload and retry', 409);
       }
-      if (attachments.length) {
-        const claimed = await SupportAttachment.updateMany(
-          {
-            _id: { $in: attachments },
-            ownerUserId: requiredObjectId(actorId, 'actor id'),
-            status: 'ready',
-            ticketId: null,
-            messageId: null,
-          },
-          { $set: { ticketId: ticket._id, messageId, expiresAt: null } },
-          { session: dbSession },
-        );
-        if (claimed.modifiedCount !== attachments.length) {
-          throw new CommunicationError(
-            'conflict',
-            'One or more attachments were already used',
-            409,
-          );
-        }
-      }
+      await claimSupportAttachments(attachments, actorId, ticket._id, messageId, dbSession);
       if (recipient && rendered) {
         await queueSupportNotification(
           ticket._id,

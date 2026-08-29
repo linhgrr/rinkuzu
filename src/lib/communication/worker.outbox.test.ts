@@ -97,7 +97,7 @@ vi.mock('@/models/Communication', () => ({
 }));
 
 import { applyFeedbackPreference } from './feedback';
-import { runCommunicationWorker } from './service';
+import { runCommunicationWorker } from './worker';
 import { feedbackPreferenceToken, feedbackReplyToken } from './feedback-address';
 
 const COMPACT_TOKEN = feedbackReplyToken(CONVERSATION_ID, AUTH_SECRET);

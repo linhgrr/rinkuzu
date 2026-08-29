@@ -68,7 +68,7 @@ vi.mock('@/models/Communication', () => ({
   AdminActionAudit: { create: vi.fn() },
 }));
 
-import { processResendWebhook } from './service';
+import { processResendWebhook } from './worker';
 import { feedbackPreferenceToken, feedbackReplyToken } from './feedback-address';
 
 const REPLY_TOKEN = feedbackReplyToken(CONVERSATION_ID, AUTH_SECRET);

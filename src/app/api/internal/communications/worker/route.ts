@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { communicationHttpError } from '@/lib/communication/http';
 import { communicationEnvironment } from '@/lib/communication/resend';
-import { runCommunicationWorker } from '@/lib/communication/service';
+import { runCommunicationWorker } from '@/lib/communication/worker';
 
 function authorized(request: NextRequest): boolean {
   const provided = request.headers.get('authorization')?.replace(/^Bearer\s+/iu, '') ?? '';

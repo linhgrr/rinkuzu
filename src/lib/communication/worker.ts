@@ -54,8 +54,6 @@ import {
   OPEN_FEEDBACK_STATUSES,
 } from './internal';
 
-export { CommunicationError };
-
 function configuredRate(name: string, fallback: number): number {
   const value = process.env[name]?.trim();
   if (!value) return fallback;
@@ -457,7 +455,14 @@ export async function processResendWebhook(
   externalId: string,
   payloadDigest: string,
   event: WebhookEventPayload,
-) {
+): Promise<
+  | { status: 'quarantined'; reason: string }
+  // Matches the inferred type exactly: mongoose's Document#id virtual is untyped.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | { status: 'processed'; conversationId: any }
+  | { status: 'failed' | 'processing' | 'processed' | 'quarantined'; duplicate: boolean }
+  | { status: 'processed'; duplicate?: undefined }
+> {
   await connectDB();
   const now = new Date();
   const leaseUntil = new Date(now.getTime() + 2 * 60 * 1000);
@@ -708,6 +713,31 @@ async function markInvitationSent(
   );
 }
 
+/**
+ * The claim-update fragment issued by every lease-based queue in this worker: mark the
+ * chosen row `processing`, stamp a fresh two-minute lease window, hand back a token only
+ * this claim knows (so a stolen lease can never be released by the loser), and bump the
+ * attempt counter. `processOutbox` and `processCampaignAudience` claim from different
+ * collections with different filters and sort orders — that part stays in each function —
+ * but once a candidate row is chosen, this is the write that claims it in both.
+ */
+function leaseClaimUpdate(
+  now: Date,
+  leaseToken: string,
+): {
+  $set: { status: 'processing'; leaseToken: string; leaseUntil: Date };
+  $inc: { attempts: 1 };
+} {
+  return {
+    $set: {
+      status: 'processing',
+      leaseToken,
+      leaseUntil: new Date(now.getTime() + 2 * 60 * 1000),
+    },
+    $inc: { attempts: 1 },
+  };
+}
+
 async function processOutbox(
   limit: number,
 ): Promise<{ completed: number; retried: number; dead: number; canceled: number }> {
@@ -723,14 +753,7 @@ async function processOutbox(
         availableAt: { $lte: now },
         $or: [{ status: 'pending' }, { status: 'processing', leaseUntil: { $lte: now } }],
       },
-      {
-        $set: {
-          status: 'processing',
-          leaseToken,
-          leaseUntil: new Date(now.getTime() + 2 * 60 * 1000),
-        },
-        $inc: { attempts: 1 },
-      },
+      leaseClaimUpdate(now, leaseToken),
       { sort: { availableAt: 1 }, new: true },
     );
     if (!item) break;
@@ -849,14 +872,7 @@ async function processCampaignAudience(limit: number): Promise<{ synced: number;
             { status: 'processing', leaseUntil: { $lte: now } },
           ],
         },
-        {
-          $set: {
-            status: 'processing',
-            leaseToken,
-            leaseUntil: new Date(now.getTime() + 2 * 60 * 1000),
-          },
-          $inc: { attempts: 1 },
-        },
+        leaseClaimUpdate(now, leaseToken),
         { sort: { availableAt: 1, createdAt: 1 }, new: true },
       );
       if (!item) break;
@@ -1095,7 +1111,17 @@ async function expireUnansweredFeedback(limit: number): Promise<number> {
   return expired.modifiedCount;
 }
 
-export async function runCommunicationWorker(limit = 50) {
+export async function runCommunicationWorker(limit = 50): Promise<{
+  outbox: { completed: number; retried: number; dead: number; canceled: number };
+  campaignAudience: { synced: number; failed: number };
+  campaignCancellations: number;
+  expiredFeedback: number;
+  retention: {
+    orphanedAttachments: number;
+    supportTickets: number;
+    feedbackConversations: number;
+  };
+}> {
   await connectDB();
   const [outbox, campaignAudience, campaignCancellations, expired, retention] = await Promise.all([
     processOutbox(Math.min(limit, 50)),
@@ -1117,7 +1143,24 @@ export async function runCommunicationWorker(limit = 50) {
   };
 }
 
-export async function communicationHealth() {
+export async function communicationHealth(): Promise<{
+  pending: number;
+  processing: number;
+  dead: number;
+  canceled: number;
+  quarantined: number;
+  preparingCampaigns: number;
+  stuckDetails: {
+    id: string;
+    kind: 'support_notification' | 'feedback_invitation' | 'feedback_reply' | 'feedback_reminder';
+    entityType: 'support_ticket' | 'feedback_conversation';
+    status: 'pending' | 'processing' | 'completed' | 'dead' | 'canceled';
+    attempts: number;
+    availableAt: string;
+    lastError: string | null;
+    updatedAt: string;
+  }[];
+}> {
   await connectDB();
   const [pending, processing, dead, canceled, quarantined, preparingCampaigns, stuckDetails] =
     await Promise.all([

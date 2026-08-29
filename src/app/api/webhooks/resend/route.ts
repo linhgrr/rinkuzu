@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { communicationHttpError } from '@/lib/communication/http';
-import { processResendWebhook } from '@/lib/communication/service';
+import { processResendWebhook } from '@/lib/communication/worker';
 import { verifyResendWebhook } from '@/lib/communication/resend';
 
 export async function POST(request: NextRequest): Promise<Response> {

@@ -3,7 +3,7 @@ import 'server-only';
 import type { NextRequest } from 'next/server';
 import { apiErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { CommunicationError } from './service';
+import { CommunicationError } from './internal';
 
 export function assertCommunicationMutationRequest(request: NextRequest): void {
   const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';

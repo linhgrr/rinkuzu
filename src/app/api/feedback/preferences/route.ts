@@ -6,7 +6,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { applyFeedbackPreference } from '@/lib/communication/service';
+import { applyFeedbackPreference } from '@/lib/communication/feedback';
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {

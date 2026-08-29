@@ -96,7 +96,8 @@ vi.mock('@/models/Communication', () => ({
   AdminActionAudit: { create: vi.fn() },
 }));
 
-import { applyFeedbackPreference, runCommunicationWorker } from './service';
+import { applyFeedbackPreference } from './feedback';
+import { runCommunicationWorker } from './service';
 import { feedbackPreferenceToken, feedbackReplyToken } from './feedback-address';
 
 const COMPACT_TOKEN = feedbackReplyToken(CONVERSATION_ID, AUTH_SECRET);

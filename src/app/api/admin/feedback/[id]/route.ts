@@ -3,7 +3,7 @@ import { withAdmin } from '@/lib/api/auth';
 import { readAndValidateRouteParams } from '@/lib/api/request';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { communicationHttpError } from '@/lib/communication/http';
-import { getFeedback } from '@/lib/communication/service';
+import { getFeedback } from '@/lib/communication/feedback';
 
 export const GET = withAdmin<{ id: string }>(async (_request, { params }) => {
   const parsed = readAndValidateRouteParams(params, communicationIdParamsSchema);

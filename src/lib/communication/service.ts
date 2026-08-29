@@ -10,11 +10,7 @@ import { campaignBlockSchema } from '@/dtos/communication';
 import type {
   campaignListQuerySchema,
   createCampaignSchema,
-  createFeedbackConversationSchema,
-  createFeedbackMessageSchema,
-  feedbackListQuerySchema,
   marketingPreferenceSchema,
-  remindFeedbackSchema,
   scheduleCampaignSchema,
   updateCampaignSchema,
 } from '@/dtos/communication';
@@ -22,14 +18,12 @@ import connectDB from '@/lib/mongoose';
 import { logger } from '@/lib/logger';
 import { BUCKET_NAME, s3Client } from '@/lib/s3';
 import {
-  AdminActionAudit,
   EmailCampaign,
   EmailCampaignAudience,
   EmailDeliveryEvent,
   EmailOutbox,
   FeedbackConversation,
   FeedbackMessage,
-  FeedbackOutreachPreference,
   MarketingConsentEvent,
   MarketingContactState,
   MarketingPreference,
@@ -58,35 +52,30 @@ import {
   sendCommunicationEmail,
   syncMarketingContact,
 } from './resend';
-import { renderCampaign, renderFeedbackInvitation, renderFeedbackReply } from './templates';
+import { renderCampaign } from './templates';
 import {
   extractFeedbackReplyToken,
   normalizeInboundFeedbackBody,
   parseInboundSenderAddress,
 } from './inbound';
 import {
-  feedbackPreferenceToken,
-  feedbackReplyAddress as buildFeedbackReplyAddress,
-  feedbackReplyToken,
-} from './feedback-address';
-import {
   audit,
-  auditExpiry,
+  cancelQueuedFeedbackMail,
+  CLOSED_FEEDBACK_STATUSES,
   CommunicationError,
+  compactFeedbackReplyToken,
   DAY,
   digest,
+  feedbackReplyAddress,
+  isClosedFeedbackStatus,
+  OPEN_FEEDBACK_STATUSES,
   pageMeta,
-  queueMail,
   requiredObjectId,
   siteUrl,
   type AdminActor,
   type PageResult,
 } from './internal';
 
-type FeedbackListQuery = z.infer<typeof feedbackListQuerySchema>;
-type CreateFeedbackInput = z.infer<typeof createFeedbackConversationSchema>;
-type CreateFeedbackMessageInput = z.infer<typeof createFeedbackMessageSchema>;
-type RemindFeedbackInput = z.infer<typeof remindFeedbackSchema>;
 type MarketingPreferenceInput = z.infer<typeof marketingPreferenceSchema>;
 type CampaignListQuery = z.infer<typeof campaignListQuerySchema>;
 type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
@@ -104,27 +93,6 @@ function configuredRate(name: string, fallback: number): number {
     throw new Error(`${name} must be a number greater than 0 and at most 1`);
   }
   return parsed;
-}
-
-function feedbackConversationView(conversation: InstanceType<typeof FeedbackConversation>) {
-  return {
-    id: conversation.id,
-    userId: conversation.userId.toString(),
-    userEmail: conversation.userEmail,
-    subject: conversation.subject,
-    status: conversation.status,
-    queuedAt: conversation.queuedAt?.toISOString() ?? null,
-    sentAt: conversation.sentAt?.toISOString() ?? null,
-    repliedAt: conversation.repliedAt?.toISOString() ?? null,
-    remindedAt: conversation.remindedAt?.toISOString() ?? null,
-    completedAt: conversation.completedAt?.toISOString() ?? null,
-    declinedAt: conversation.declinedAt?.toISOString() ?? null,
-    expiresAt: conversation.expiresAt.toISOString(),
-    lastMessageAt: conversation.lastMessageAt.toISOString(),
-    revision: conversation.revision,
-    createdAt: conversation.createdAt.toISOString(),
-    updatedAt: conversation.updatedAt.toISOString(),
-  };
 }
 
 function campaignView(campaign: InstanceType<typeof EmailCampaign>) {
@@ -173,522 +141,6 @@ function isMongoDuplicateKeyError(error: unknown): boolean {
     'code' in error &&
     (error as { code?: unknown }).code === 11000
   );
-}
-
-/** Statuses after which no further outreach email may leave the system. */
-const CLOSED_FEEDBACK_STATUSES = [
-  'declined',
-  'opted_out',
-  'completed',
-  'expired',
-  'failed',
-] as const satisfies readonly FeedbackStatus[];
-
-/** Statuses an in-flight invitation can still be moved out of by a delivery failure. */
-const OPEN_FEEDBACK_STATUSES = [
-  'queued',
-  'sent',
-  'replied',
-  'in_conversation',
-] as const satisfies readonly FeedbackStatus[];
-
-function isClosedFeedbackStatus(status: FeedbackStatus): boolean {
-  return (CLOSED_FEEDBACK_STATUSES as readonly string[]).includes(status);
-}
-
-function feedbackToken(conversationId: string): string {
-  return feedbackPreferenceToken(conversationId, communicationEnvironment('AUTH_SECRET'));
-}
-
-function compactFeedbackReplyToken(conversationId: string): string {
-  return feedbackReplyToken(conversationId, communicationEnvironment('AUTH_SECRET'));
-}
-
-/**
- * A single preferences link. The page offers both declining this invitation and
- * opting out of all future ones, so one link carries the same control while the
- * email footer stops reading like a newsletter's unsubscribe row. Links already
- * delivered still carry `action=` and the page still honours it.
- */
-function feedbackPreferencesUrl(token: string): string {
-  return `${siteUrl()}/feedback/preferences?token=${encodeURIComponent(token)}`;
-}
-
-function feedbackReplyAddress(token: string): string {
-  return buildFeedbackReplyAddress(token, communicationEnvironment('FEEDBACK_REPLY_DOMAIN'));
-}
-
-function rejectPromotionalFeedback(subject: string, body: string): void {
-  const text = `${subject}\n${body}`.toLowerCase();
-  const prohibited = [
-    'khuyến mãi',
-    'giảm giá',
-    'mua ngay',
-    'voucher',
-    'coupon',
-    'discount',
-    '% off',
-  ];
-  if (prohibited.some((term) => text.includes(term))) {
-    throw new CommunicationError(
-      'validation_error',
-      'Feedback outreach cannot contain promotional content; use a campaign instead',
-      400,
-    );
-  }
-}
-
-export async function listFeedback(
-  query: FeedbackListQuery,
-): Promise<PageResult<ReturnType<typeof feedbackConversationView>>> {
-  await connectDB();
-  const filter: { status?: FeedbackStatus; userId?: Types.ObjectId } = {};
-  if (query.status !== 'all') filter.status = query.status;
-  if (query.userId) filter.userId = requiredObjectId(query.userId, 'user id');
-  const skip = (query.page - 1) * query.limit;
-  const [items, total] = await Promise.all([
-    FeedbackConversation.find(filter).sort({ lastMessageAt: -1 }).skip(skip).limit(query.limit),
-    FeedbackConversation.countDocuments(filter),
-  ]);
-  return {
-    items: items.map(feedbackConversationView),
-    pagination: pageMeta(query.page, query.limit, total),
-  };
-}
-
-export async function getFeedback(id: string) {
-  await connectDB();
-  const conversation = await FeedbackConversation.findById(requiredObjectId(id));
-  if (!conversation)
-    throw new CommunicationError('not_found', 'Feedback conversation not found', 404);
-  const messages = await FeedbackMessage.find({ conversationId: conversation._id }).sort({
-    createdAt: 1,
-  });
-  return {
-    conversation: feedbackConversationView(conversation),
-    messages: messages.map((message) => ({
-      id: message.id,
-      direction: message.direction,
-      source: message.source,
-      body: message.body,
-      hasAttachments: message.hasAttachments,
-      emailId: message.emailId ?? null,
-      createdAt: message.createdAt.toISOString(),
-    })),
-  };
-}
-
-export async function createFeedback(actor: AdminActor, input: CreateFeedbackInput) {
-  await connectDB();
-  rejectPromotionalFeedback(input.subject, input.body);
-  const userId = requiredObjectId(input.userId, 'user id');
-  const user = await User.findOne({
-    _id: userId,
-    disable: ACCOUNT_DISABLE_ACTIVE,
-    emailVerified: { $type: 'date' },
-  }).select('email');
-  if (!user) throw new CommunicationError('not_found', 'Eligible verified user not found', 404);
-  const [preference, contactState] = await Promise.all([
-    FeedbackOutreachPreference.findOne({ userId }),
-    MarketingContactState.findOne({ userId }),
-  ]);
-  if (preference?.optedOutAt) {
-    throw new CommunicationError('feedback_opted_out', 'User opted out of feedback outreach', 409);
-  }
-  if (contactState && contactState.status !== 'deliverable') {
-    throw new CommunicationError('email_suppressed', 'User email is not deliverable', 409);
-  }
-  const ninetyDaysAgo = new Date(Date.now() - 90 * DAY);
-  if (
-    await FeedbackConversation.exists({
-      userId,
-      createdAt: { $gte: ninetyDaysAgo },
-      status: { $nin: ['draft', 'failed'] },
-    })
-  ) {
-    throw new CommunicationError(
-      'feedback_frequency_limit',
-      'User was invited in the last 90 days',
-      429,
-    );
-  }
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (
-    (await FeedbackConversation.countDocuments({
-      createdAt: { $gte: today },
-      status: { $nin: ['draft', 'failed'] },
-    })) >= 20
-  ) {
-    throw new CommunicationError(
-      'rate_limit_exceeded',
-      'Daily feedback invitation limit reached',
-      429,
-    );
-  }
-  const conversationId = new Types.ObjectId();
-  const messageId = new Types.ObjectId();
-  const token = feedbackToken(conversationId.toString());
-  const tokenHash = digest(token);
-  const replyToken = compactFeedbackReplyToken(conversationId.toString());
-  const now = new Date();
-  const rendered = await renderFeedbackInvitation({
-    body: input.body,
-    preferencesUrl: feedbackPreferencesUrl(token),
-  });
-  const dbSession = await mongoose.startSession();
-  try {
-    await dbSession.withTransaction(async () => {
-      await FeedbackConversation.create(
-        [
-          {
-            _id: conversationId,
-            userId,
-            userEmail: user.email,
-            subject: input.subject,
-            status: 'queued',
-            replyTokenHash: tokenHash,
-            replyAddressTokenHash: digest(replyToken),
-            createdBy: requiredObjectId(actor.id, 'actor id'),
-            queuedAt: now,
-            expiresAt: new Date(now.getTime() + 30 * DAY),
-            lastMessageAt: now,
-          },
-        ],
-        { session: dbSession },
-      );
-      await FeedbackMessage.create(
-        [
-          {
-            _id: messageId,
-            conversationId,
-            direction: 'outbound',
-            source: 'admin_app',
-            body: input.body,
-            hasAttachments: false,
-            clientMessageId: input.clientMessageId,
-          },
-        ],
-        { session: dbSession },
-      );
-      await queueMail(
-        {
-          kind: 'feedback_invitation',
-          entityType: 'feedback_conversation',
-          entityId: conversationId,
-          to: user.email,
-          from: communicationEnvironment('FEEDBACK_MAIL_FROM'),
-          replyTo: feedbackReplyAddress(replyToken),
-          subject: input.subject,
-          ...rendered,
-          dedupeKey: `feedback/${conversationId.toString()}/message/${messageId.toString()}`,
-        },
-        dbSession,
-      );
-      await AdminActionAudit.create(
-        [
-          {
-            actorId: requiredObjectId(actor.id, 'actor id'),
-            actorEmail: actor.email,
-            action: 'feedback.invite',
-            entityType: 'feedback_conversation',
-            entityId: conversationId.toString(),
-            details: { userId: input.userId },
-            expiresAt: auditExpiry(),
-          },
-        ],
-        { session: dbSession },
-      );
-    });
-  } finally {
-    await dbSession.endSession();
-  }
-  return getFeedback(conversationId.toString());
-}
-
-export async function addFeedbackMessage(
-  id: string,
-  actor: AdminActor,
-  input: CreateFeedbackMessageInput,
-) {
-  await connectDB();
-  rejectPromotionalFeedback('', input.body);
-  const conversation = await FeedbackConversation.findById(requiredObjectId(id));
-  if (!conversation)
-    throw new CommunicationError('not_found', 'Feedback conversation not found', 404);
-  const existing = await FeedbackMessage.findOne({
-    conversationId: conversation._id,
-    clientMessageId: input.clientMessageId,
-  });
-  if (existing) return getFeedback(conversation.id);
-  if (isClosedFeedbackStatus(conversation.status)) {
-    throw new CommunicationError('conflict', 'Feedback conversation is not open', 409);
-  }
-  if (conversation.status === 'queued') {
-    throw new CommunicationError('conflict', 'Wait until the invitation email is sent', 409);
-  }
-  const token = feedbackToken(conversation.id);
-  const replyToken = compactFeedbackReplyToken(conversation.id);
-  const rendered = await renderFeedbackReply({
-    body: input.body,
-    preferencesUrl: feedbackPreferencesUrl(token),
-  });
-  const messageId = new Types.ObjectId();
-  const messageCreatedAt = new Date();
-  const dbSession = await mongoose.startSession();
-  try {
-    await dbSession.withTransaction(async () => {
-      await FeedbackMessage.create(
-        [
-          {
-            _id: messageId,
-            conversationId: conversation._id,
-            direction: 'outbound',
-            source: 'admin_app',
-            body: input.body,
-            hasAttachments: false,
-            clientMessageId: input.clientMessageId,
-            inReplyTo: conversation.lastMessageIdHeader ?? null,
-            createdAt: messageCreatedAt,
-          },
-        ],
-        { session: dbSession },
-      );
-      const updated = await FeedbackConversation.updateOne(
-        {
-          _id: conversation._id,
-          revision: conversation.revision,
-          status: { $nin: CLOSED_FEEDBACK_STATUSES },
-        },
-        {
-          $set: {
-            status: 'in_conversation',
-            lastMessageAt: messageCreatedAt,
-            replyAddressTokenHash: digest(replyToken),
-          },
-          $inc: { revision: 1 },
-        },
-        { session: dbSession },
-      );
-      if (updated.modifiedCount !== 1) {
-        throw new CommunicationError('conflict', 'Conversation changed; reload and retry', 409);
-      }
-      await queueMail(
-        {
-          kind: 'feedback_reply',
-          entityType: 'feedback_conversation',
-          entityId: conversation._id,
-          to: conversation.userEmail,
-          from: communicationEnvironment('FEEDBACK_MAIL_FROM'),
-          replyTo: feedbackReplyAddress(replyToken),
-          subject: `Re: ${conversation.subject.replace(/^Re:\s*/iu, '')}`,
-          ...rendered,
-          ...(conversation.lastMessageIdHeader
-            ? { inReplyTo: conversation.lastMessageIdHeader }
-            : {}),
-          references: conversation.references,
-          dedupeKey: `feedback/${conversation.id}/message/${messageId.toString()}`,
-        },
-        dbSession,
-      );
-      await AdminActionAudit.create(
-        [
-          {
-            actorId: requiredObjectId(actor.id, 'actor id'),
-            actorEmail: actor.email,
-            action: 'feedback.reply',
-            entityType: 'feedback_conversation',
-            entityId: conversation.id,
-            details: {},
-            expiresAt: auditExpiry(),
-          },
-        ],
-        { session: dbSession },
-      );
-    });
-  } finally {
-    await dbSession.endSession();
-  }
-  return getFeedback(conversation.id);
-}
-
-export async function remindFeedback(id: string, actor: AdminActor, input: RemindFeedbackInput) {
-  await connectDB();
-  const conversation = await FeedbackConversation.findById(requiredObjectId(id));
-  if (!conversation)
-    throw new CommunicationError('not_found', 'Feedback conversation not found', 404);
-  const existing = await FeedbackMessage.findOne({
-    conversationId: conversation._id,
-    clientMessageId: input.clientMessageId,
-  });
-  if (existing) return getFeedback(conversation.id);
-  if (conversation.status !== 'sent' || !conversation.sentAt) {
-    throw new CommunicationError('conflict', 'Only unanswered invitations can be reminded', 409);
-  }
-  if (conversation.remindedAt)
-    throw new CommunicationError('conflict', 'Reminder already sent', 409);
-  if (Date.now() - conversation.sentAt.getTime() < 7 * DAY) {
-    throw new CommunicationError('conflict', 'Wait at least 7 days before reminding', 409);
-  }
-  const body =
-    input.body ??
-    'Mình xin phép nhắc lại lời mời chia sẻ trải nghiệm trước đó. Nếu không tiện, bạn không cần trả lời.';
-  const token = feedbackToken(conversation.id);
-  const replyToken = compactFeedbackReplyToken(conversation.id);
-  const rendered = await renderFeedbackInvitation({
-    body,
-    preferencesUrl: feedbackPreferencesUrl(token),
-    reminder: true,
-  });
-  const messageId = new Types.ObjectId();
-  const messageCreatedAt = new Date();
-  const dbSession = await mongoose.startSession();
-  try {
-    await dbSession.withTransaction(async () => {
-      await FeedbackMessage.create(
-        [
-          {
-            _id: messageId,
-            conversationId: conversation._id,
-            direction: 'outbound',
-            source: 'admin_app',
-            body,
-            hasAttachments: false,
-            clientMessageId: input.clientMessageId,
-            createdAt: messageCreatedAt,
-          },
-        ],
-        { session: dbSession },
-      );
-      const updated = await FeedbackConversation.updateOne(
-        {
-          _id: conversation._id,
-          revision: conversation.revision,
-          status: 'sent',
-          remindedAt: null,
-        },
-        {
-          $set: {
-            remindedAt: messageCreatedAt,
-            lastMessageAt: messageCreatedAt,
-            replyAddressTokenHash: digest(replyToken),
-          },
-          $inc: { revision: 1 },
-        },
-        { session: dbSession },
-      );
-      if (updated.modifiedCount !== 1) {
-        throw new CommunicationError('conflict', 'Conversation changed; reload and retry', 409);
-      }
-      await queueMail(
-        {
-          kind: 'feedback_reminder',
-          entityType: 'feedback_conversation',
-          entityId: conversation._id,
-          to: conversation.userEmail,
-          from: communicationEnvironment('FEEDBACK_MAIL_FROM'),
-          replyTo: feedbackReplyAddress(replyToken),
-          subject: `Re: ${conversation.subject.replace(/^Re:\s*/iu, '')}`,
-          ...rendered,
-          ...(conversation.lastMessageIdHeader
-            ? { inReplyTo: conversation.lastMessageIdHeader }
-            : {}),
-          references: conversation.references,
-          dedupeKey: `feedback/${conversation.id}/message/${messageId.toString()}`,
-        },
-        dbSession,
-      );
-      await AdminActionAudit.create(
-        [
-          {
-            actorId: requiredObjectId(actor.id, 'actor id'),
-            actorEmail: actor.email,
-            action: 'feedback.remind',
-            entityType: 'feedback_conversation',
-            entityId: conversation.id,
-            details: {},
-            expiresAt: auditExpiry(),
-          },
-        ],
-        { session: dbSession },
-      );
-    });
-  } finally {
-    await dbSession.endSession();
-  }
-  return getFeedback(conversation.id);
-}
-
-export async function completeFeedback(id: string, actor: AdminActor, revision: number) {
-  await connectDB();
-  const conversation = await FeedbackConversation.findOneAndUpdate(
-    {
-      _id: requiredObjectId(id),
-      revision,
-      status: { $nin: CLOSED_FEEDBACK_STATUSES },
-    },
-    { $set: { status: 'completed', completedAt: new Date() }, $inc: { revision: 1 } },
-    { new: true },
-  );
-  if (!conversation)
-    throw new CommunicationError('conflict', 'Conversation changed or is closed', 409);
-  await cancelQueuedFeedbackMail([conversation._id]);
-  await audit(actor, 'feedback.complete', 'feedback_conversation', conversation.id);
-  return feedbackConversationView(conversation);
-}
-
-export async function applyFeedbackPreference(token: string, action: 'decline' | 'opt_out') {
-  await connectDB();
-  const conversation = await FeedbackConversation.findOne({ replyTokenHash: digest(token) });
-  if (!conversation) throw new CommunicationError('invalid_token', 'Feedback link is invalid', 404);
-  const now = new Date();
-  if (action === 'opt_out') {
-    await FeedbackOutreachPreference.updateOne(
-      { userId: conversation.userId },
-      { $set: { optedOutAt: now, reason: 'user_opt_out' } },
-      { upsert: true },
-    );
-    const openStatuses = ['draft', ...OPEN_FEEDBACK_STATUSES];
-    const affected = await FeedbackConversation.find({
-      userId: conversation.userId,
-      status: { $in: openStatuses },
-    }).select('_id');
-    const affectedIds = affected.map((entry) => entry._id);
-    await FeedbackConversation.updateMany(
-      // The ids come from a separate read, so the write repeats the status
-      // predicate: a conversation completed in between must not be reopened
-      // into `opted_out`.
-      { _id: { $in: affectedIds }, status: { $in: openStatuses } },
-      { $set: { status: 'opted_out', declinedAt: now }, $inc: { revision: 1 } },
-    );
-    await cancelQueuedFeedbackMail(affectedIds);
-  } else if (!['completed', 'opted_out'].includes(conversation.status)) {
-    conversation.status = 'declined';
-    conversation.declinedAt = now;
-    conversation.revision += 1;
-    await conversation.save();
-    await cancelQueuedFeedbackMail([conversation._id]);
-  }
-  return { action, applied: true };
-}
-
-/**
- * Stop invitations that have not left the queue yet. Cancelling the row keeps
- * the queue depth honest instead of letting a doomed email retry for hours; the
- * worker performs the same check again immediately before sending, so a race
- * cannot slip an email past an opt-out.
- */
-async function cancelQueuedFeedbackMail(conversationIds: Types.ObjectId[]): Promise<number> {
-  if (!conversationIds.length) return 0;
-  const canceled = await EmailOutbox.updateMany(
-    {
-      entityType: 'feedback_conversation',
-      entityId: { $in: conversationIds },
-      status: 'pending',
-    },
-    { $set: { status: 'canceled', lastError: 'conversation_closed' } },
-  );
-  return canceled.modifiedCount;
 }
 
 export async function getMarketingPreferences(userId: string) {

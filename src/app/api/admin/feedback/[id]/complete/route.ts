@@ -7,7 +7,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { completeFeedback } from '@/lib/communication/service';
+import { completeFeedback } from '@/lib/communication/feedback';
 
 export const POST = withAdmin<{ id: string }>(async (request: NextRequest, context) => {
   try {

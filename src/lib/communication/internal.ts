@@ -4,7 +4,12 @@ import { createHash } from 'node:crypto';
 import { Types, type ClientSession } from 'mongoose';
 
 import { publicEnv } from '@/lib/public-env';
-import { AdminActionAudit, EmailOutbox } from '@/models/Communication';
+import { AdminActionAudit, EmailOutbox, type FeedbackStatus } from '@/models/Communication';
+import {
+  feedbackReplyAddress as buildFeedbackReplyAddress,
+  feedbackReplyToken,
+} from './feedback-address';
+import { communicationEnvironment } from './resend';
 
 export class CommunicationError extends Error {
   constructor(
@@ -105,4 +110,52 @@ export async function queueMail(
     },
     { upsert: true, ...(session ? { session } : {}) },
   );
+}
+
+/** Statuses after which no further outreach email may leave the system. */
+export const CLOSED_FEEDBACK_STATUSES = [
+  'declined',
+  'opted_out',
+  'completed',
+  'expired',
+  'failed',
+] as const satisfies readonly FeedbackStatus[];
+
+/** Statuses an in-flight invitation can still be moved out of by a delivery failure. */
+export const OPEN_FEEDBACK_STATUSES = [
+  'queued',
+  'sent',
+  'replied',
+  'in_conversation',
+] as const satisfies readonly FeedbackStatus[];
+
+export function isClosedFeedbackStatus(status: FeedbackStatus): boolean {
+  return (CLOSED_FEEDBACK_STATUSES as readonly string[]).includes(status);
+}
+
+export function compactFeedbackReplyToken(conversationId: string): string {
+  return feedbackReplyToken(conversationId, communicationEnvironment('AUTH_SECRET'));
+}
+
+export function feedbackReplyAddress(token: string): string {
+  return buildFeedbackReplyAddress(token, communicationEnvironment('FEEDBACK_REPLY_DOMAIN'));
+}
+
+/**
+ * Stop invitations that have not left the queue yet. Cancelling the row keeps
+ * the queue depth honest instead of letting a doomed email retry for hours; the
+ * worker performs the same check again immediately before sending, so a race
+ * cannot slip an email past an opt-out.
+ */
+export async function cancelQueuedFeedbackMail(conversationIds: Types.ObjectId[]): Promise<number> {
+  if (!conversationIds.length) return 0;
+  const canceled = await EmailOutbox.updateMany(
+    {
+      entityType: 'feedback_conversation',
+      entityId: { $in: conversationIds },
+      status: 'pending',
+    },
+    { $set: { status: 'canceled', lastError: 'conversation_closed' } },
+  );
+  return canceled.modifiedCount;
 }

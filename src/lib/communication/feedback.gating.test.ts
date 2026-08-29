@@ -64,7 +64,7 @@ vi.mock('@/models/Communication', () => ({
   AdminActionAudit: { create: vi.fn() },
 }));
 
-import { addFeedbackMessage, createFeedback, remindFeedback } from './service';
+import { addFeedbackMessage, createFeedback, remindFeedback } from './feedback';
 
 function conversationDoc(overrides: Record<string, unknown> = {}) {
   return {

@@ -7,7 +7,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { createFeedback, listFeedback } from '@/lib/communication/service';
+import { createFeedback, listFeedback } from '@/lib/communication/feedback';
 
 export const GET = withAdmin(async (request) => {
   const query = readAndValidateSearchParams(request, feedbackListQuerySchema);

@@ -49,6 +49,7 @@ const oversizedFileAllowlist = [
   'src/features/profile/components/ProfileSettings.tsx',
   'src/features/quiz/components/create/CreateQuizPage.tsx',
   'src/features/quiz/components/editor/QuizEditorWorkspace.tsx',
+  'src/lib/communication/feedback.ts',
   'src/lib/communication/service.ts',
   'src/lib/communication/support.ts',
   'src/models/Billing.ts',

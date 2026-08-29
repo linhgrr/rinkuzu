@@ -263,6 +263,25 @@
     --app-search-leading-padding: 52px;
     --app-mobile-menu-radius: 18px;
 
+    /*
+     * The bottom overlay band.
+     *
+     * Everything anchored to the bottom of the viewport shares one geometry so
+     * the pieces stack instead of landing on top of each other, and so page
+     * content can reserve exactly the space they take. A fixed element that
+     * nothing reserves space for will sooner or later sit on a button: the
+     * marketing prompt covered the Subscribe CTA on every phone-sized viewport
+     * precisely because it was positioned independently of both the bottom nav
+     * below it and the content behind it.
+     *
+     * `--app-bottom-overlay-inset` is 0 until a transient prompt announces
+     * itself by setting `data-bottom-prompt` on the document element; only then
+     * does content pay for the space.
+     */
+    --app-bottom-nav-height: 88px;
+    --app-bottom-prompt-height: 180px;
+    --app-bottom-overlay-inset: 0px;
+
     /* Motion */
     --duration-fast: 120ms;
     --duration-base: 180ms;
@@ -273,6 +292,15 @@
     --ease-enter: cubic-bezier(0, 0, 0.2, 1);
     --ease-exit: cubic-bezier(0.4, 0, 1, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /*
+   * A transient prompt is on screen, so content owes it the space. Set by the
+   * prompt itself on mount and cleared on unmount, which keeps the reservation
+   * and the thing being reserved for from ever disagreeing.
+   */
+  :root[data-bottom-prompt='true'] {
+    --app-bottom-overlay-inset: var(--app-bottom-prompt-height);
   }
 
   [data-theme='dark'],
@@ -362,6 +390,74 @@
 }
 
 @layer components {
+  /*
+   * The bottom overlay band.
+   *
+   * Geometry rather than utility classes, because these three rules have to
+   * agree with each other: a banner anchored above the navigation, a second
+   * banner stacked above the first, and the page content that reserves what
+   * both of them take. Expressed as arbitrary values scattered across three
+   * components they drift apart, and the drift is invisible until something
+   * lands on a button.
+   */
+  .app-bottom-prompt {
+    bottom: calc(var(--app-bottom-nav-height) + env(safe-area-inset-bottom, 8px));
+  }
+
+  .app-bottom-prompt-stacked {
+    bottom: calc(
+      var(--app-bottom-nav-height) + var(--app-bottom-overlay-inset) +
+        env(safe-area-inset-bottom, 8px)
+    );
+  }
+
+  /* Above the md breakpoint the bottom navigation is hidden; prompts stack. */
+  @media (min-width: 768px) {
+    .app-bottom-prompt {
+      bottom: 1rem;
+    }
+
+    .app-bottom-prompt-stacked {
+      bottom: calc(var(--app-bottom-overlay-inset) + 1rem);
+    }
+  }
+
+  /*
+   * Keep the overlay band clear when anything is scrolled into view.
+   *
+   * Reserving space at the end of the document stops the last element being
+   * permanently buried, but it does nothing for an element in the middle: the
+   * browser scrolls it just far enough to be "visible", which can be exactly
+   * far enough to leave it under the banner. `scroll-padding-bottom` is what
+   * tells every scroll-into-view — anchor links, focus moves, keyboard
+   * navigation — to stop short of the band.
+   */
+  html {
+    scroll-padding-bottom: calc(
+      var(--app-bottom-nav-height) + env(safe-area-inset-bottom, 8px) +
+        var(--app-bottom-overlay-inset)
+    );
+  }
+
+  @media (min-width: 768px) {
+    html {
+      scroll-padding-bottom: var(--app-bottom-overlay-inset);
+    }
+  }
+
+  .app-bottom-inset {
+    padding-bottom: calc(
+      var(--app-bottom-nav-height) + env(safe-area-inset-bottom, 8px) +
+        var(--app-bottom-overlay-inset)
+    );
+  }
+
+  @media (min-width: 768px) {
+    .app-bottom-inset {
+      padding-bottom: var(--app-bottom-overlay-inset);
+    }
+  }
+
   /* Buttons */
   .btn {
     display: inline-flex;

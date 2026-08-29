@@ -7,12 +7,11 @@ import { isAdaptiveExerciseModePath } from '@/lib/routing/pathname';
 export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isExerciseMode = isAdaptiveExerciseModePath(pathname || '/');
-  const mobileBottomNavPadding = 'pb-[calc(88px+env(safe-area-inset-bottom,8px))]';
-
+  // The reservation lives in one CSS class beside the geometry the banners are
+  // positioned from, so content and overlay cannot drift apart. It resolves to
+  // the bottom navigation alone until a transient prompt announces itself.
   return (
-    <main
-      className={`relative min-h-screen ${isExerciseMode ? '' : `${mobileBottomNavPadding} md:pb-0`}`}
-    >
+    <main className={`relative min-h-screen ${isExerciseMode ? '' : 'app-bottom-inset'}`}>
       {children}
     </main>
   );

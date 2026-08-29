@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { usePathname } from '@/i18n/navigation';
+import { isFocusedTaskPath } from '@/lib/routing/pathname';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import { fetchMarketingPreferences, saveMarketingPreferences } from '../api/communications-api';
@@ -13,7 +15,24 @@ export function MarketingPreferencePrompt() {
   const [dismissed, setDismissed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  if (!data || data.updatedAt || dismissed) return null;
+  const pathname = usePathname();
+  // Not while the user is mid-task. Reserving the band keeps content reachable;
+  // staying away from a quiz in progress is what keeps the task uninterrupted.
+  const visible =
+    Boolean(data) && !data?.updatedAt && !dismissed && !isFocusedTaskPath(pathname || '/');
+
+  // Content behind this banner has to reserve the band it occupies, and the
+  // only moment that is knowable is while it is mounted. Announcing it on the
+  // document element keeps the reservation in one place instead of every page
+  // guessing at a bottom padding.
+  useEffect(() => {
+    if (!visible) return undefined;
+    const root = document.documentElement;
+    root.setAttribute('data-bottom-prompt', 'true');
+    return () => root.removeAttribute('data-bottom-prompt');
+  }, [visible]);
+
+  if (!visible) return null;
 
   async function save(productUpdates: boolean, promotions: boolean): Promise<void> {
     setSaving(true);
@@ -31,7 +50,9 @@ export function MarketingPreferencePrompt() {
   return (
     <aside
       aria-label={t('label')}
-      className="fixed bottom-4 left-4 right-4 z-[70] mx-auto max-w-xl rounded-xl border border-line bg-surface p-5 shadow-xl lg:left-auto lg:right-6"
+      // Anchored above the mobile bottom navigation rather than across it, so
+      // the two do not fight for the same strip of screen.
+      className="app-bottom-prompt fixed left-4 right-4 z-[70] mx-auto max-w-xl rounded-xl border border-line bg-surface p-5 shadow-xl lg:left-auto lg:right-6"
     >
       <h2 className="font-semibold text-ink">{t('title')}</h2>
       <p className="mt-1 text-sm text-ink-muted">{t('description')}</p>

@@ -112,6 +112,23 @@ export function isAdaptiveExerciseModePath(pathname: string): boolean {
   return EXERCISE_MODE_PREFIXES.some((prefix) => matchesPrefix(pathWithoutLocale, prefix));
 }
 
+/**
+ * Paths where the user is working through something and must not be
+ * interrupted.
+ *
+ * A non-urgent prompt — the marketing opt-in, an install nudge — is a fair
+ * thing to show someone browsing, and the wrong thing to float over someone
+ * halfway through a quiz: it covers the answers they are reading and asks them
+ * to make an unrelated decision first. Reserving the space it occupies keeps
+ * content reachable; not showing it here is what keeps the task uninterrupted.
+ */
+const FOCUSED_TASK_PREFIXES = [...EXERCISE_MODE_PREFIXES, '/quiz'];
+
+export function isFocusedTaskPath(pathname: string): boolean {
+  const pathWithoutLocale = stripLocaleFromPath(pathname);
+  return FOCUSED_TASK_PREFIXES.some((prefix) => matchesPrefix(pathWithoutLocale, prefix));
+}
+
 export function shouldHideGlobalFooter(pathname: string): boolean {
   const pathWithoutLocale = stripLocaleFromPath(pathname);
   const shouldShowFooter = FOOTER_PATHS.some((path) => matchesPrefix(pathWithoutLocale, path));

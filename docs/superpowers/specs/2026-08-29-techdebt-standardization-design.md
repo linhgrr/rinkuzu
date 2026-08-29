@@ -67,13 +67,16 @@ Hard constraint: rendered DOM/classes identical — structure-only. Any page tha
 
 Gate: Wave 1 gates + `test:e2e` for touched flows where runnable; per-page visual parity check.
 
-### Wave 4 — Derive layer shapes (architecture decision, user-approved)
+### Wave 4 — Codify the three-layer type standard (revised 2026-08-30, user-approved)
 
-Keep all layers; kill the triple declaration. Entity is the single source of a shape:
+The originally proposed cross-layer type derivation (`DTO = Serialized<Entity>`) is **withdrawn**: `check:architecture` correctly bans `dtos/` importing `@/entities/`, and the desired architecture (user-confirmed) is the classic three-layer model — Presentation / Service / Persistence, each layer owning its own type family (DTO / Entity / Persistence record), with mappers converting between them. Shape similarity **between** layers is by-design decoupling, not debt.
 
-- `src/shared/types/derive.ts`: `Serialized<T>` (Date→string recursively) and `Persisted<T, IdKey>` (`id: string` → `_id: Types.ObjectId`, Date preserved) mapped-type utilities. Note: `Persisted` output references mongoose types, so persistence aliases stay declared inside `src/repositories/types/` applying the utility — layer guard remains satisfied.
-- Apply to the three flagged clusters first: admin-billing-orders, premium-play-session, quiz/quiz-draft shared question shapes. Runtime mappers remain (conversion is real work); only the type declarations derive.
-- Rollout is incremental: future edits standardize the file they touch; no big-bang rewrite of all 43 DTO files.
+What Wave 4 actually does:
+
+1. **Dedupe within the DTO layer** (real debt): extract shared zod fragments for `dtos/quiz.ts` ↔ `dtos/quiz-draft.ts` (create-quiz body) and `dtos/premium-quiz.ts` ↔ `dtos/quiz.ts` (answer union); extract the shared paginated list-query schema inside `dtos/communication.ts`.
+2. **Baseline the cross-layer shape echoes** (admin-billing-orders dto↔entity↔persistence, premium-play-session model↔persistence, entity↔persistence mappers) as deliberate, with a one-line comment in each file pointing at the standard doc.
+3. **Write the standard down**: `docs/architecture/three-layer-standard.md` — which layer owns which type family, which mapper crosses which boundary, when sharing a type is allowed (only within a layer), and why cross-layer echoes are intentional.
+4. **Fix the checker only where it deviates from this standard** (user authorized); the audit found it already matches, so this is expected to be a no-op unless Waves 1–3 expose an enforcement gap.
 
 Gate: Wave 1 gates + `check:architecture` + `check:source-of-truth` green.
 
@@ -88,4 +91,4 @@ Gate: Wave 1 gates + `check:architecture` + `check:source-of-truth` green.
 - Communication split touches every communication route's imports — mitigated by signature-preserving moves and the existing route tests.
 - Billing is the most sensitive domain — mitigated by the facade choice (zero caller churn) and GitNexus impact gating.
 - Page splits can drift DOM subtly — mitigated by 1:1 constraint, e2e on touched flows, and skip-and-report rule.
-- `Serialized<T>` mapped types can produce unreadable hover types — mitigated by applying only where triplication exists today.
+- Baselining cross-layer echoes could hide future _within-layer_ copy-paste — mitigated because the duplication baseline is fingerprint-exact (any new clone content still fails the gate).

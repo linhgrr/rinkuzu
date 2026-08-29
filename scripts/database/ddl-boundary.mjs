@@ -86,6 +86,9 @@ export function findDdlViolations(source, fileName = 'source.ts') {
   return violations;
 }
 
+/** Enough to saturate the disk without opening every source file at once. */
+const DDL_SCAN_CONCURRENCY = 32;
+
 export async function scanDatabaseDdlBoundary({
   repoRoot,
   allowedFiles = [
@@ -101,15 +104,35 @@ export async function scanDatabaseDdlBoundary({
     await collectSourceFiles(path.join(repoRoot, directory), sourceFiles);
   }
 
-  const violations = [];
-  for (const absoluteFile of sourceFiles.sort()) {
-    const relativeFile = normalizePath(path.relative(repoRoot, absoluteFile));
-    if (allowed.has(relativeFile)) continue;
-    const source = await readFile(absoluteFile, 'utf8');
-    violations.push(...findDdlViolations(source, relativeFile));
-  }
+  const targets = sourceFiles
+    .sort()
+    .map((absoluteFile) => ({
+      absoluteFile,
+      relativeFile: normalizePath(path.relative(repoRoot, absoluteFile)),
+    }))
+    .filter(({ relativeFile }) => !allowed.has(relativeFile));
 
-  return violations;
+  // Read with bounded concurrency rather than one file at a time. The scan
+  // covers every source file in the repository, and awaiting each read in turn
+  // made it slow enough to exceed its own timeout under coverage
+  // instrumentation — an intermittently red gate that says nothing about the
+  // boundary it is meant to police. Results are collected by index, so the
+  // reported order stays the sorted one regardless of completion order.
+  const perFile = new Array(targets.length);
+  let cursor = 0;
+  const workers = Array.from(
+    { length: Math.min(DDL_SCAN_CONCURRENCY, targets.length) },
+    async () => {
+      for (let index = cursor++; index < targets.length; index = cursor++) {
+        const { absoluteFile, relativeFile } = targets[index];
+        const source = await readFile(absoluteFile, 'utf8');
+        perFile[index] = findDdlViolations(source, relativeFile);
+      }
+    },
+  );
+  await Promise.all(workers);
+
+  return perFile.flat();
 }
 
 async function collectSourceFiles(directory, output) {

@@ -1,5 +1,4 @@
 import { afterEach, vi } from 'vitest';
-import { invalidateEntitlements } from '@/lib/entitlements/cache';
 
 let cleanupDom: (() => void) | undefined;
 
@@ -53,5 +52,4 @@ afterEach(() => {
   cleanupDom?.();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-  invalidateEntitlements();
 });

@@ -1,9 +1,9 @@
 import 'server-only';
 
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import mongoose, { Types, type ClientSession } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import sharp from 'sharp';
 import type { WebhookEventPayload } from 'resend';
 import type { z } from 'zod';
@@ -27,7 +27,6 @@ import type {
 } from '@/dtos/communication';
 import connectDB from '@/lib/mongoose';
 import { logger } from '@/lib/logger';
-import { publicEnv } from '@/lib/public-env';
 import { BUCKET_NAME, s3Client } from '@/lib/s3';
 import {
   AdminActionAudit,
@@ -83,6 +82,19 @@ import {
   feedbackReplyAddress as buildFeedbackReplyAddress,
   feedbackReplyToken,
 } from './feedback-address';
+import {
+  audit,
+  auditExpiry,
+  CommunicationError,
+  DAY,
+  digest,
+  pageMeta,
+  queueMail,
+  requiredObjectId,
+  siteUrl,
+  type AdminActor,
+  type PageResult,
+} from './internal';
 
 type SupportListQuery = z.infer<typeof supportListQuerySchema>;
 type CreateSupportTicketInput = z.infer<typeof createSupportTicketSchema>;
@@ -99,29 +111,9 @@ type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
 type UpdateCampaignInput = z.infer<typeof updateCampaignSchema>;
 type ScheduleCampaignInput = z.infer<typeof scheduleCampaignSchema>;
 
-export class CommunicationError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-    readonly status: number,
-    readonly meta?: Record<string, unknown>,
-  ) {
-    super(message);
-    this.name = 'CommunicationError';
-  }
-}
+export { CommunicationError };
+export type { AdminActor };
 
-export interface AdminActor {
-  id: string;
-  email: string;
-}
-
-interface PageResult<T> {
-  items: T[];
-  pagination: { page: number; limit: number; total: number; totalPages: number };
-}
-
-const DAY = 86_400_000;
 const SUPPORT_UPLOAD_ROOT = 'uploads/support_pending';
 const SUPPORT_READY_ROOT = 'support/attachments';
 
@@ -133,43 +125,6 @@ function configuredRate(name: string, fallback: number): number {
     throw new Error(`${name} must be a number greater than 0 and at most 1`);
   }
   return parsed;
-}
-
-function siteUrl(): string {
-  return publicEnv.NEXT_PUBLIC_SITE_URL.replace(/\/$/u, '');
-}
-
-function requiredObjectId(value: string, label = 'id'): Types.ObjectId {
-  if (!Types.ObjectId.isValid(value)) {
-    throw new CommunicationError('validation_error', `Invalid ${label}`, 400);
-  }
-  return new Types.ObjectId(value);
-}
-
-function pageMeta(page: number, limit: number, total: number): PageResult<never>['pagination'] {
-  return { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) };
-}
-
-function auditExpiry(): Date {
-  return new Date(Date.now() + 5 * 365 * DAY);
-}
-
-async function audit(
-  actor: AdminActor,
-  action: string,
-  entityType: string,
-  entityId: string,
-  details: Record<string, string> = {},
-): Promise<void> {
-  await AdminActionAudit.create({
-    actorId: requiredObjectId(actor.id, 'actor id'),
-    actorEmail: actor.email,
-    action,
-    entityType,
-    entityId,
-    details,
-    expiresAt: auditExpiry(),
-  });
 }
 
 function supportTicketView(ticket: InstanceType<typeof SupportTicket>, userEmail?: string) {
@@ -246,10 +201,6 @@ function campaignView(campaign: InstanceType<typeof EmailCampaign>) {
 async function userEmailMap(ids: Types.ObjectId[]): Promise<Map<string, string>> {
   const users = await User.find({ _id: { $in: ids } }).select('_id email');
   return new Map(users.map((user) => [user.id, user.email]));
-}
-
-function digest(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
 }
 
 /**
@@ -334,38 +285,6 @@ function rejectPromotionalFeedback(subject: string, body: string): void {
       400,
     );
   }
-}
-
-async function queueMail(
-  input: {
-    kind: 'support_notification' | 'feedback_invitation' | 'feedback_reply' | 'feedback_reminder';
-    entityType: 'support_ticket' | 'feedback_conversation';
-    entityId: Types.ObjectId;
-    to: string;
-    from: string;
-    replyTo?: string;
-    subject: string;
-    html: string;
-    text: string;
-    inReplyTo?: string;
-    references?: string[];
-    dedupeKey: string;
-  },
-  session?: ClientSession,
-): Promise<void> {
-  await EmailOutbox.updateOne(
-    { dedupeKey: input.dedupeKey },
-    {
-      $setOnInsert: {
-        ...input,
-        references: input.references ?? [],
-        status: 'pending',
-        attempts: 0,
-        availableAt: new Date(),
-      },
-    },
-    { upsert: true, ...(session ? { session } : {}) },
-  );
 }
 
 export async function listSupportTickets(

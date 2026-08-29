@@ -7,7 +7,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { createSupportTicket, listSupportTickets } from '@/lib/communication/service';
+import { createSupportTicket, listSupportTickets } from '@/lib/communication/support';
 
 export const GET = withAuth(async (request, { userId }) => {
   const query = readAndValidateSearchParams(request, supportListQuerySchema);

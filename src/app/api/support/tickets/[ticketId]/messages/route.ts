@@ -7,7 +7,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { addSupportMessage } from '@/lib/communication/service';
+import { addSupportMessage } from '@/lib/communication/support';
 
 export const POST = withAuth<{ ticketId: string }>(async (request: NextRequest, context) => {
   try {

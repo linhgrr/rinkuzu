@@ -7,7 +7,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { createSupportAttachmentUpload } from '@/lib/communication/service';
+import { createSupportAttachmentUpload } from '@/lib/communication/support';
 
 export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {

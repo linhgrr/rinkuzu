@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/api/auth';
 import { readAndValidateRouteParams } from '@/lib/api/request';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { communicationHttpError } from '@/lib/communication/http';
-import { getSupportTicket } from '@/lib/communication/service';
+import { getSupportTicket } from '@/lib/communication/support';
 
 export const GET = withAuth<{ ticketId: string }>(async (_request, { params, userId }) => {
   const parsed = readAndValidateRouteParams(params, supportTicketParamsSchema);

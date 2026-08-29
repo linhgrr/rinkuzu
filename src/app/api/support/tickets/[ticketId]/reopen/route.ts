@@ -7,7 +7,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { reopenSupportTicket } from '@/lib/communication/service';
+import { reopenSupportTicket } from '@/lib/communication/support';
 
 export const POST = withAuth<{ ticketId: string }>(
   async (request: NextRequest, { params, userId }) => {

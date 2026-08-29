@@ -7,7 +7,7 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { getSupportTicket, updateSupportTicket } from '@/lib/communication/service';
+import { getSupportTicket, updateSupportTicket } from '@/lib/communication/support';
 
 export const GET = withAdmin<{ id: string }>(async (_request, { params, userId }) => {
   const parsed = parseRouteParams(params, communicationIdParamsSchema);

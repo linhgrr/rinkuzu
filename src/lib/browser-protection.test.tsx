@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  isDevtoolShortcut,
-  isQuizAttemptPath,
-  shouldBlockQuizClipboard,
-} from './browser-protection';
+import { isDevtoolShortcut, shouldBlockQuizClipboard } from './browser-protection';
 
 describe('browser protection', () => {
   it.each([
@@ -28,7 +24,9 @@ describe('browser protection', () => {
     ['/vi/quizzes', false],
     ['/vi/edit/networking-basics', false],
   ])('recognizes quiz attempt path %s', (pathname, expected) => {
-    expect(isQuizAttemptPath(pathname)).toBe(expected);
+    // Asserted through the only caller: route recognition exists to decide
+    // whether the clipboard is blocked, and a non-email target isolates it.
+    expect(shouldBlockQuizClipboard(pathname, document.createElement('div'))).toBe(expected);
   });
 
   it('blocks clipboard events on quiz attempt content', () => {

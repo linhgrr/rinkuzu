@@ -7,7 +7,7 @@ interface ProfilePageShellProps {
   children: ReactNode;
 }
 
-export function ProfilePageFallback() {
+function ProfilePageFallback() {
   const tCommon = useTranslations('common');
 
   return (

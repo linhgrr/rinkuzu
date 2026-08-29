@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types } from 'mongoose';
 
-export interface PremiumQuizAccessGrantDocument {
+interface PremiumQuizAccessGrantDocument {
   user: Types.ObjectId;
   quiz: Types.ObjectId;
   ledgerEntry: Types.ObjectId;

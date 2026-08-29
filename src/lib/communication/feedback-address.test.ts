@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
-  EMAIL_LOCAL_PART_MAX_LENGTH,
   feedbackPreferenceToken,
   feedbackReplyAddress,
   feedbackReplyToken,
   isFeedbackReplyToken,
 } from './feedback-address';
+
+/**
+ * RFC 5321 section 4.5.3.1.1. Restated here on purpose: a test that reads the
+ * limit out of the module under test cannot fail when that module changes it.
+ */
+const RFC5321_LOCAL_PART_MAX_LENGTH = 64;
 
 const conversationId = '6a8ed209f04328ac17443d91';
 const secret = 'a-production-length-auth-secret';
@@ -17,7 +22,7 @@ describe('feedback Reply-To addressing', () => {
     const localPart = address.split('@')[0] ?? '';
 
     expect(localPart).toHaveLength(52);
-    expect(localPart.length).toBeLessThanOrEqual(EMAIL_LOCAL_PART_MAX_LENGTH);
+    expect(localPart.length).toBeLessThanOrEqual(RFC5321_LOCAL_PART_MAX_LENGTH);
     expect(address).toMatch(/^feedback\+[A-Za-z0-9_-]{43}@feedback\.rinkuzu\.app$/u);
   });
 
@@ -25,7 +30,7 @@ describe('feedback Reply-To addressing', () => {
     const token = feedbackReplyToken('f'.repeat(24), secret);
     const localPart = feedbackReplyAddress(token, 'feedback.rinkuzu.app').split('@')[0] ?? '';
 
-    expect(localPart.length).toBeLessThanOrEqual(EMAIL_LOCAL_PART_MAX_LENGTH);
+    expect(localPart.length).toBeLessThanOrEqual(RFC5321_LOCAL_PART_MAX_LENGTH);
   });
 
   it('carries full HMAC entropy in email-safe characters only', () => {
@@ -59,7 +64,7 @@ describe('feedback Reply-To addressing', () => {
     expect(preference.startsWith(`${conversationId}_`)).toBe(true);
     expect(preference).not.toContain(reply);
     // The legacy preference token is exactly what made the address too long.
-    expect(`feedback+${preference}`.length).toBeGreaterThan(EMAIL_LOCAL_PART_MAX_LENGTH);
+    expect(`feedback+${preference}`.length).toBeGreaterThan(RFC5321_LOCAL_PART_MAX_LENGTH);
   });
 
   it('rejects a token that is not a reply-address token', () => {

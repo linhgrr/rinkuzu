@@ -91,4 +91,3 @@ export interface AdminUserCreditGrantDto {
 export type AdminUserListQueryDto = z.infer<typeof adminUserListQuerySchema>;
 export type UpdateAdminUserRoleRequestDto = z.infer<typeof updateAdminUserRoleRequestSchema>;
 export type UpdateAdminUserStatusRequestDto = z.infer<typeof updateAdminUserStatusRequestSchema>;
-export type AddAdminUserCreditsRequestDto = z.infer<typeof addAdminUserCreditsRequestSchema>;

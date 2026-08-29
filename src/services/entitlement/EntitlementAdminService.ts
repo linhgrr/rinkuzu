@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import type { ServiceResult } from '@/interfaces/services/types';
-import { invalidateEntitlements } from '@/lib/entitlements/cache';
 import type { IEntitlementAdminRepository } from '@/interfaces/repositories/IEntitlementAdminRepository';
 import {
   EntitlementAdminDtoMapper,
@@ -25,7 +24,6 @@ export class EntitlementAdminService {
       if (!userId) {
         return { success: false, error: 'Entitlement account not found', statusCode: 404 };
       }
-      invalidateEntitlements(userId);
       return { success: true, data: EntitlementAdminDtoMapper.toRevokeResult(accountId) };
     } catch (error) {
       return {

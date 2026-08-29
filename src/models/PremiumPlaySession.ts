@@ -6,7 +6,7 @@ interface StoredAnswerDocument {
   selectedIndexes?: number[];
 }
 
-export interface PremiumPlaySessionDocument {
+interface PremiumPlaySessionDocument {
   user: Types.ObjectId;
   quiz: Types.ObjectId;
   submission: Types.ObjectId;

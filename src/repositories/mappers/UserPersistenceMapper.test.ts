@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  toUserSubscription,
-  UserPersistenceMapper,
-} from '@/repositories/mappers/UserPersistenceMapper';
+import { UserPersistenceMapper } from '@/repositories/mappers/UserPersistenceMapper';
 import type { UserPersistenceRecord } from '@/repositories/types/UserPersistence';
 
 const record: UserPersistenceRecord = {
@@ -77,15 +74,18 @@ describe('UserPersistenceMapper', () => {
     ).toThrow('user.disable must be exactly 0 or 1');
   });
 
-  it('omits undefined subscription optionals via toUserSubscription', () => {
-    expect(
-      toUserSubscription({
+  it('omits undefined subscription optionals when projecting the entitlement', () => {
+    const entity = UserPersistenceMapper.toEntity({
+      ...record,
+      subscription: {
         planId: 'premium',
         planName: 'Premium',
         isActive: true,
         payosOrderId: 'order-1',
-      }),
-    ).toEqual({
+      },
+    });
+
+    expect(entity.subscription).toEqual({
       planId: 'premium',
       planName: 'Premium',
       isActive: true,

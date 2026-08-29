@@ -6,7 +6,7 @@ export type PremiumSubmissionStatusViewModel =
   | 'rejected'
   | 'approved';
 
-export interface PremiumQuestionViewModel {
+interface PremiumQuestionViewModel {
   id: string;
   question: string;
   options: string[];
@@ -15,21 +15,21 @@ export interface PremiumQuestionViewModel {
   correctIndexes?: number[];
 }
 
-export interface PremiumSnapshotViewModel {
+interface PremiumSnapshotViewModel {
   title: string;
   slug: string;
   description?: string;
   questions: PremiumQuestionViewModel[];
 }
 
-export interface PremiumDuplicateMatchViewModel {
+interface PremiumDuplicateMatchViewModel {
   submissionId: string;
   title: string;
   similarity: number;
   reason: string;
 }
 
-export interface PremiumDuplicateReportViewModel {
+interface PremiumDuplicateReportViewModel {
   exactDocumentRewarded: boolean;
   exactQuiz: boolean;
   sharedQuestionCount: number;
@@ -37,20 +37,20 @@ export interface PremiumDuplicateReportViewModel {
   matches: PremiumDuplicateMatchViewModel[];
 }
 
-export interface PremiumReviewCriterionViewModel {
+interface PremiumReviewCriterionViewModel {
   key: string;
   score: number;
   note: string;
 }
 
-export interface PremiumReviewIssueViewModel {
+interface PremiumReviewIssueViewModel {
   questionIndex?: number;
   severity: 'info' | 'warning' | 'error';
   code: string;
   message: string;
 }
 
-export interface PremiumReviewResultViewModel {
+interface PremiumReviewResultViewModel {
   verdict: 'pass' | 'needs_review' | 'fail';
   score: number;
   suggestedCredits: number;

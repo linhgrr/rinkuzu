@@ -4,7 +4,7 @@ export interface CreditWalletSummaryViewModel {
   wallet: CreditWalletBalanceViewModel;
 }
 
-export interface CreditWalletBalanceViewModel {
+interface CreditWalletBalanceViewModel {
   balance: number;
 }
 

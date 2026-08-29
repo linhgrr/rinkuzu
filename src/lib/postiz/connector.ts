@@ -2,12 +2,12 @@ import 'server-only';
 
 export type PostizPlatform = 'threads' | 'telegram';
 
-export type CapabilityState = {
+type CapabilityState = {
   supported: boolean;
   reason: string | null;
 };
 
-export type PostizCapabilityMatrix = Record<
+type PostizCapabilityMatrix = Record<
   PostizPlatform,
   {
     postHistory: CapabilityState;
@@ -17,7 +17,7 @@ export type PostizCapabilityMatrix = Record<
   }
 >;
 
-export const POSTIZ_CAPABILITIES: PostizCapabilityMatrix = {
+const POSTIZ_CAPABILITIES: PostizCapabilityMatrix = {
   threads: {
     postHistory: { supported: true, reason: null },
     aggregateAnalytics: { supported: true, reason: null },
@@ -119,7 +119,7 @@ function mapMetric(metric: UpstreamMetric) {
   };
 }
 
-export function mapPostizPost(post: UpstreamPost) {
+function mapPostizPost(post: UpstreamPost) {
   const integrationId = stringOrNull(post.integration?.id);
   const platform = platformOf(post.integration?.providerIdentifier);
   const providerState = stringOrNull(post.state) ?? stringOrNull(post.status);

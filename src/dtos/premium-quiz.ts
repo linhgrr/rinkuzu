@@ -118,11 +118,7 @@ export const premiumSessionSubmitRequestSchema = z.strictObject({
   idempotencyKey: z.uuid(),
 });
 
-export type CreatePremiumSubmissionRequestDto = z.infer<
-  typeof createPremiumSubmissionRequestSchema
->;
 export type DecidePremiumSubmissionRequestDto = z.infer<
   typeof decidePremiumSubmissionRequestSchema
 >;
-export type PremiumSubmissionListQueryDto = z.infer<typeof premiumSubmissionListQuerySchema>;
 export type PremiumReviewCallbackRequestDto = z.infer<typeof premiumReviewCallbackRequestSchema>;

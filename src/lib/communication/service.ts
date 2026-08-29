@@ -256,7 +256,7 @@ function digest(value: string): string {
  * Provider errors are surfaced to admins and to logs, so anything that could
  * carry a reply token or a recipient address is redacted before it is stored.
  */
-export function sanitizeOutboxError(error: unknown): string {
+function sanitizeOutboxError(error: unknown): string {
   const raw = error instanceof Error ? error.message : 'Email send failed';
   return raw
     .replaceAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/gu, '[email]')

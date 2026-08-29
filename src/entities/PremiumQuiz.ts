@@ -7,10 +7,10 @@ export const PREMIUM_SUBMISSION_STATUSES = [
   'approved',
 ] as const;
 
-export type PremiumSubmissionStatus = (typeof PREMIUM_SUBMISSION_STATUSES)[number];
+type PremiumSubmissionStatus = (typeof PREMIUM_SUBMISSION_STATUSES)[number];
 export type PremiumSourceType = 'pdf' | 'manual';
 export type PremiumReviewStatus = 'not_started' | 'queued' | 'running' | 'completed' | 'failed';
-export type PremiumReviewVerdict = 'pass' | 'needs_review' | 'fail';
+type PremiumReviewVerdict = 'pass' | 'needs_review' | 'fail';
 
 export interface PremiumQuizSnapshot {
   title: string;
@@ -35,13 +35,13 @@ export interface PremiumDuplicateReport {
   matches: PremiumDuplicateMatch[];
 }
 
-export interface PremiumReviewCriterion {
+interface PremiumReviewCriterion {
   key: string;
   score: number;
   note: string;
 }
 
-export interface PremiumReviewIssue {
+interface PremiumReviewIssue {
   questionIndex?: number;
   severity: 'info' | 'warning' | 'error';
   code: string;
@@ -94,7 +94,7 @@ export interface CreditWallet {
   updatedAt: Date;
 }
 
-export type CreditLedgerType =
+type CreditLedgerType =
   | 'submission_reward'
   | 'quiz_unlock'
   | 'refund'
@@ -111,14 +111,6 @@ export interface CreditLedgerEntry {
   referenceId: string;
   idempotencyKey: string;
   note?: string;
-  createdAt: Date;
-}
-
-export interface PremiumQuizAccessGrant {
-  id: string;
-  userId: string;
-  quizId: string;
-  ledgerEntryId: string;
   createdAt: Date;
 }
 

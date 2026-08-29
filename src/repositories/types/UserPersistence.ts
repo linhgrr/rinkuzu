@@ -1,7 +1,7 @@
 import type { AccountDisableState } from '@/shared/constants/account-disable';
 import type { MongoIdLike } from '@/types/mongo';
 
-export interface UserSubscriptionPersistenceRecord {
+interface UserSubscriptionPersistenceRecord {
   planId: string;
   planName: string;
   startDate?: Date;

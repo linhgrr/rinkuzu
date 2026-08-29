@@ -23,14 +23,6 @@ export const noIndexAdminMetadata: Metadata = {
   },
 };
 
-/** Noindex without `nocache` (e.g. payment result pages). */
-export const noIndexNoNocacheMetadata: Metadata = {
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
-
 /** Noindex but allow link equity follow (e.g. flashcards). */
 export const noIndexAllowFollowMetadata: Metadata = {
   robots: {

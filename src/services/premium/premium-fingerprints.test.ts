@@ -3,7 +3,6 @@ import type { PremiumQuizSnapshot } from '@/entities/PremiumQuiz';
 import {
   hashPremiumQuestion,
   hashPremiumSnapshot,
-  normalizePremiumText,
   premiumSnapshotSimilarity,
 } from '@/services/premium/premium-fingerprints';
 
@@ -25,9 +24,13 @@ function snapshot(title: string, question: string): PremiumQuizSnapshot {
 
 describe('Premium quiz fingerprints', () => {
   it('normalizes Vietnamese accents, case, and punctuation deterministically', () => {
-    expect(normalizePremiumText('  ĐÁP án: Bốn! ')).toBe('dap an bon');
+    // Accents, case, separators and trailing punctuation all have to fall out
+    // of the fingerprint, which is the only place the normalization is visible.
     expect(hashPremiumSnapshot(snapshot('Toán học', 'Hai cộng hai?'))).toBe(
       hashPremiumSnapshot(snapshot('TOAN-HOC', 'Hai, cộng HAI ?')),
+    );
+    expect(hashPremiumSnapshot(snapshot('Đáp án', ' Bốn! '))).toBe(
+      hashPremiumSnapshot(snapshot('dap an', 'bon')),
     );
   });
 

@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createPostizConnector,
-  mapPostizPost,
-  POSTIZ_CAPABILITIES,
-  PostizConnectorError,
-} from './connector';
+import { createPostizConnector, PostizConnectorError } from './connector';
 
 const threadsId = 'cmrxbd9bg0004li8fyg626pi7';
 const telegramId = 'cmrx2wuru0001ne81kz37lcys';
@@ -27,30 +22,49 @@ function connector(fetchImpl: typeof fetch) {
 
 describe('Postiz privacy-safe connector', () => {
   it('declares unsupported reply/comment capabilities with reasons for both providers', () => {
+    // Read off the connector, which is the only way a caller ever sees them.
+    const capabilities = connector(vi.fn<typeof fetch>()).capabilities;
     for (const platform of ['threads', 'telegram'] as const) {
-      expect(POSTIZ_CAPABILITIES[platform].postHistory.supported).toBe(true);
-      expect(POSTIZ_CAPABILITIES[platform].comments).toEqual({
+      expect(capabilities[platform].postHistory.supported).toBe(true);
+      expect(capabilities[platform].comments).toEqual({
         supported: false,
         reason: expect.any(String),
       });
-      expect(POSTIZ_CAPABILITIES[platform].singleReply.supported).toBe(false);
+      expect(capabilities[platform].singleReply.supported).toBe(false);
     }
   });
 
-  it('maps explicit nulls and omits audience and content PII', () => {
-    const upstreamPost = {
-      id: 'post-1',
-      publishDate: '2026-08-12T00:00:00Z',
-      releaseURL: null,
-      integration: { id: threadsId, providerIdentifier: 'threads' },
-      author: { email: 'audience@example.test' },
-      content: 'private audience text',
-    };
-    const mapped = mapPostizPost(upstreamPost);
-    expect(mapped.providerState).toBeNull();
-    expect(mapped.providerStateUnavailableReason).toMatch(/did not return/);
-    expect(JSON.stringify(mapped)).not.toContain('audience@example.test');
-    expect(JSON.stringify(mapped)).not.toContain('private audience text');
+  it('maps explicit nulls and omits audience and content PII', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response([{ id: threadsId, providerIdentifier: 'threads' }]))
+      .mockResolvedValueOnce(
+        response({
+          posts: [
+            {
+              id: 'post-1',
+              publishDate: '2026-08-12T00:00:00Z',
+              releaseURL: null,
+              integration: { id: threadsId, providerIdentifier: 'threads' },
+              author: { email: 'audience@example.test' },
+              content: 'private audience text',
+            },
+          ],
+        }),
+      );
+    const result = await connector(fetchImpl).listPosts({
+      integrationId: threadsId,
+      startDate: '2026-08-01T00:00:00Z',
+      endDate: '2026-08-13T00:00:00Z',
+    });
+    const [mapped] = result.posts;
+
+    expect(mapped?.providerState).toBeNull();
+    expect(mapped?.providerStateUnavailableReason).toMatch(/did not return/);
+    // The PII assertions matter on what leaves the connector, not on what the
+    // private mapper happens to return.
+    expect(JSON.stringify(result)).not.toContain('audience@example.test');
+    expect(JSON.stringify(result)).not.toContain('private audience text');
   });
 
   it.each([

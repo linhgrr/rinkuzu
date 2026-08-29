@@ -1,6 +1,6 @@
 import { fetchApiData } from '@/lib/api/client';
 
-export interface PremiumBatchQuestionViewModel {
+interface PremiumBatchQuestionViewModel {
   id: string;
   question: string;
   options: string[];

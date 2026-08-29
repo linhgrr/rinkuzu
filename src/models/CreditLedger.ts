@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types } from 'mongoose';
 
-export interface CreditLedgerDocument {
+interface CreditLedgerDocument {
   user: Types.ObjectId;
   amount: number;
   balanceAfter: number;

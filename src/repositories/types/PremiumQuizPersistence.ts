@@ -1,14 +1,14 @@
 import type { MongoIdLike } from '@/types/mongo';
 import type { QuizQuestionPersistenceRecord } from '@/repositories/types/QuizPersistence';
 
-export interface PremiumSnapshotPersistenceRecord {
+interface PremiumSnapshotPersistenceRecord {
   title: string;
   slug: string;
   description?: string;
   questions: QuizQuestionPersistenceRecord[];
 }
 
-export interface PremiumDuplicateMatchPersistenceRecord {
+interface PremiumDuplicateMatchPersistenceRecord {
   submissionId: MongoIdLike;
   quizId: MongoIdLike;
   title: string;
@@ -16,7 +16,7 @@ export interface PremiumDuplicateMatchPersistenceRecord {
   reason: 'exact_quiz' | 'shared_questions' | 'fuzzy';
 }
 
-export interface PremiumDuplicateReportPersistenceRecord {
+interface PremiumDuplicateReportPersistenceRecord {
   exactDocumentRewarded: boolean;
   exactQuiz: boolean;
   sharedQuestionCount: number;
@@ -24,20 +24,20 @@ export interface PremiumDuplicateReportPersistenceRecord {
   matches: PremiumDuplicateMatchPersistenceRecord[];
 }
 
-export interface PremiumReviewCriterionPersistenceRecord {
+interface PremiumReviewCriterionPersistenceRecord {
   key: string;
   score: number;
   note: string;
 }
 
-export interface PremiumReviewIssuePersistenceRecord {
+interface PremiumReviewIssuePersistenceRecord {
   questionIndex?: number;
   severity: 'info' | 'warning' | 'error';
   code: string;
   message: string;
 }
 
-export interface PremiumReviewResultPersistenceRecord {
+interface PremiumReviewResultPersistenceRecord {
   verdict: 'pass' | 'needs_review' | 'fail';
   score: number;
   suggestedCredits: number;
@@ -47,7 +47,7 @@ export interface PremiumReviewResultPersistenceRecord {
   issues: PremiumReviewIssuePersistenceRecord[];
 }
 
-export interface PremiumSessionAnswerPersistenceRecord {
+interface PremiumSessionAnswerPersistenceRecord {
   questionIndex: number;
   selectedIndex?: number;
   selectedIndexes?: number[];

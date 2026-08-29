@@ -1,22 +1,15 @@
-import type { PublicProfileUser, User, UserSubscriptionSnapshot } from '@/entities/User';
+import type { PublicProfileUser, User } from '@/entities/User';
 import { serializeId } from '@/lib/mongo-id';
 import { mapEntitlementProjection } from '@/repositories/mappers/EntitlementProjectionPersistenceMapper';
 import { mapOptionalEditableProfileFields } from '@/repositories/mappers/mapOptionalEditableProfileFields';
 import type {
   PublicProfileUserPersistenceRecord,
   UserPersistenceRecord,
-  UserSubscriptionPersistenceRecord,
 } from '@/repositories/types/UserPersistence';
 import {
   isAccountDisableState,
   type AccountDisableState,
 } from '@/shared/constants/account-disable';
-
-export function toUserSubscription(
-  record: UserSubscriptionPersistenceRecord,
-): UserSubscriptionSnapshot {
-  return mapEntitlementProjection(record);
-}
 
 function requireDisable(value: unknown): AccountDisableState {
   if (!isAccountDisableState(value)) {
@@ -50,7 +43,7 @@ export class UserPersistenceMapper {
       ...mapOptionalEditableProfileFields(record),
       ...(record.subscription === undefined
         ? {}
-        : { subscription: toUserSubscription(record.subscription) }),
+        : { subscription: mapEntitlementProjection(record.subscription) }),
     };
   }
 

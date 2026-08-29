@@ -13,8 +13,9 @@ import { createHmac } from 'node:crypto';
  * without invalidating anything that was already sent.
  */
 
-export const EMAIL_LOCAL_PART_MAX_LENGTH = 64;
-export const FEEDBACK_REPLY_LOCAL_PREFIX = 'feedback+';
+/** RFC 5321 caps an email local part at 64 octets. */
+const EMAIL_LOCAL_PART_MAX_LENGTH = 64;
+const FEEDBACK_REPLY_LOCAL_PREFIX = 'feedback+';
 
 /** base64url of a SHA-256 HMAC: 43 characters, 256 bits of entropy. */
 const REPLY_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/u;

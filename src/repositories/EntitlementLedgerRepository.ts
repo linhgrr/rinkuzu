@@ -22,7 +22,7 @@ export interface AppendEntitlementGrantInput {
   providerPaidAt?: Date;
 }
 
-export interface RevokeEntitlementGrantInput {
+export interface EntitlementGrantAdjustmentInput {
   user: Types.ObjectId;
   sourceType: 'billing_order' | 'manual' | 'migration';
   sourceId: string;
@@ -31,6 +31,25 @@ export interface RevokeEntitlementGrantInput {
   adjustmentSourceId: string;
   reason?: string;
 }
+
+/** The two directions an entitlement adjustment can move a grant. */
+type EntitlementAdjustmentKind = 'revoke' | 'restore';
+
+/** The label a replayed projection carries when the account row has no plan. */
+interface FallbackPlanLabel {
+  planId: string;
+  planName: string;
+}
+
+/**
+ * The plan an account falls back to when the projection is replayed and the
+ * account row carries no plan of its own — only reachable for an account that
+ * predates plan tracking, and only as a label.
+ */
+const ADJUSTMENT_FALLBACK_PLAN: Record<EntitlementAdjustmentKind, FallbackPlanLabel> = {
+  revoke: { planId: 'revoked', planName: 'Revoked' },
+  restore: { planId: 'restored', planName: 'Restored' },
+};
 
 interface GrantLean {
   _id: Types.ObjectId;
@@ -132,18 +151,22 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
   }
 
   /**
-   * Revoke exactly the grant a single source produced — the refund/chargeback
-   * counterpart to `appendGrant`. Unlike `revokeAccount` this leaves every
-   * other grant standing, so clawing back one order cannot delete a renewal
-   * the customer paid for separately.
+   * Appends one revoke or restore against the grant a single source produced.
    *
-   * Returns the affected user id when a revocation was appended, so the caller
-   * can invalidate that user's tier cache; null when there was nothing to
-   * revoke (no grant for the source, or already revoked).
+   * Both directions are the same procedure — find the grant, check the state it
+   * is already in, take a sequence number, append, replay the projection — and
+   * they were written out twice. Two copies of an entitlement mutation is the
+   * worst place for a divergence to hide: it would take one bad edit for a
+   * revoke to stop bumping the version a restore reads.
+   *
+   * Returns the affected user id when an adjustment was appended, so the caller
+   * can invalidate exactly that user's tier cache, or null when there was
+   * nothing to do.
    */
-  async revokeGrantBySource(
-    input: RevokeEntitlementGrantInput,
+  private async appendGrantAdjustment(
+    input: EntitlementGrantAdjustmentInput,
     session: ClientSession,
+    kind: EntitlementAdjustmentKind,
   ): Promise<string | null> {
     const grant = await EntitlementGrant.findOne({
       user: input.user,
@@ -158,9 +181,13 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
     const latest = await EntitlementAdjustment.findOne({ user: input.user, grant: grant._id })
       .sort({ sequence: -1 })
       .session(session)
-      .lean<{ type: 'revoke' | 'restore' }>()
+      .lean<{ type: EntitlementAdjustmentKind }>()
       .exec();
-    if (latest?.type === 'revoke') return null;
+    // A grant nobody has adjusted is already in the restored state, so the
+    // ledger is a toggle: an adjustment that would not change it is a no-op,
+    // not a second row. That is what makes a replayed reversal idempotent.
+    const current: EntitlementAdjustmentKind = latest?.type ?? 'restore';
+    if (current === kind) return null;
 
     const sequenced = await EntitlementAccount.findOneAndUpdate(
       { user: input.user },
@@ -177,7 +204,7 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
           user: input.user,
           grant: grant._id,
           sequence: sequenced.nextSequence - 1,
-          type: 'revoke',
+          type: kind,
           sourceType: input.adjustmentSourceType,
           sourceId: input.adjustmentSourceId,
           ...(input.reason === undefined ? {} : { reason: input.reason }),
@@ -187,13 +214,43 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
       { session },
     );
 
+    const fallback = ADJUSTMENT_FALLBACK_PLAN[kind];
     await this.rebuildProjection(
       input.user,
-      sequenced.planId ?? 'revoked',
-      sequenced.planName ?? 'Revoked',
+      sequenced.planId ?? fallback.planId,
+      sequenced.planName ?? fallback.planName,
       session,
     );
     return input.user.toString();
+  }
+
+  /**
+   * Revoke exactly the grant a single source produced — the refund/chargeback
+   * counterpart to `appendGrant`. Unlike `revokeAccount` this leaves every
+   * other grant standing, so clawing back one order cannot delete a renewal
+   * the customer paid for separately.
+   */
+  revokeGrantBySource(
+    input: EntitlementGrantAdjustmentInput,
+    session: ClientSession,
+  ): Promise<string | null> {
+    return this.appendGrantAdjustment(input, session, 'revoke');
+  }
+
+  /**
+   * Puts back the grant a revocation took away, when the money came back.
+   *
+   * A chargeback that is later reversed, or a refund that is itself refunded,
+   * leaves the order paid for again — and under the old type-switch rule the
+   * customer stayed revoked forever, because nothing in the system could undo a
+   * revocation. Restoration is an append like any other: the revoke stays in
+   * the ledger and the projection is replayed over both.
+   */
+  restoreGrantBySource(
+    input: EntitlementGrantAdjustmentInput,
+    session: ClientSession,
+  ): Promise<string | null> {
+    return this.appendGrantAdjustment(input, session, 'restore');
   }
 
   async appendGrant(

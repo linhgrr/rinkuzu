@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  EMAIL_LOCAL_PART_MAX_LENGTH,
-  FEEDBACK_REPLY_LOCAL_PREFIX,
   feedbackPreferenceToken,
   feedbackReplyAddress,
   feedbackReplyToken,
@@ -21,9 +19,19 @@ describe('build-time Reply-To mirror matches the runtime helper', () => {
   const secret = 'a-production-length-auth-secret';
   const conversationIds = ['6a8ed209f04328ac17443d91', 'f'.repeat(24), '0'.repeat(24)];
 
-  it('exposes the same limits', () => {
-    expect(shared.EMAIL_LOCAL_PART_MAX_LENGTH).toBe(EMAIL_LOCAL_PART_MAX_LENGTH);
-    expect(shared.FEEDBACK_REPLY_LOCAL_PREFIX).toBe(FEEDBACK_REPLY_LOCAL_PREFIX);
+  it('holds the runtime helper to the limits the mirror publishes', () => {
+    // Comparing the two literals only proved they were spelled the same. What
+    // the build validator actually relies on is that an address the runtime
+    // emits fits inside the limit the mirror advertises and carries the prefix
+    // the mirror looks for.
+    const address = feedbackReplyAddress(
+      feedbackReplyToken(conversationIds[0] as string, secret),
+      'feedback.rinkuzu.app',
+    );
+    const localPart = address.split('@')[0] ?? '';
+
+    expect(localPart.length).toBeLessThanOrEqual(shared.EMAIL_LOCAL_PART_MAX_LENGTH);
+    expect(localPart.startsWith(shared.FEEDBACK_REPLY_LOCAL_PREFIX)).toBe(true);
   });
 
   it.each(conversationIds)('derives identical tokens and addresses for %s', (conversationId) => {

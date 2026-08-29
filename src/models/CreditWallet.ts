@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types } from 'mongoose';
 
-export interface CreditWalletDocument {
+interface CreditWalletDocument {
   user: Types.ObjectId;
   balance: number;
   createdAt: Date;

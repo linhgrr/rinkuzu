@@ -11,7 +11,7 @@
  * no org overrides, no RBAC). Add those only when trials/enterprise arrive.
  */
 import { createEntitlementService } from '@/lib/entitlement-factory';
-import { getCachedTier, setCachedTier } from './cache';
+import { logger } from '@/lib/logger';
 import type {
   BooleanCapability,
   EntitlementConstraint,
@@ -121,27 +121,25 @@ export function isMeteredCapabilityEnabled(
 }
 
 /**
- * Resolve a user's entitlements. Fail-closed: any error resolving premium
- * status falls back to `free` so a lookup failure never hands out paid access.
+ * Resolve a user's entitlements from the entitlement projection on every call.
  *
- * Short-lived per-user tier cache (see ./cache) avoids a DB read on every gated
- * request; invalidated explicitly on subscription verify/activate/cancel.
+ * There is deliberately no cache. A process-local one is incoherent on
+ * serverless — each instance holds its own copy, so an entitlement granted on
+ * one instance is invisible to the others until their entry expires, and a
+ * lookup failure cached as `free` keeps a paying user locked out for the whole
+ * TTL. The read is a single indexed projection lookup.
+ *
+ * Fail-closed: any error resolving premium status falls back to `free`, so a
+ * lookup failure never hands out paid access. The failure is logged rather than
+ * swallowed, because a silent fallback and a genuinely free user look identical
+ * from the outside.
  */
 export async function resolveEntitlements(userId: string): Promise<Entitlements> {
-  const now = Date.now();
-  const cachedTier = getCachedTier(userId, now);
-  if (cachedTier) {
-    return { tier: cachedTier };
-  }
-
-  let tier: Tier = 'free';
   try {
     const isPremium = await createEntitlementService().isUserPremium(userId);
-    tier = isPremium ? 'premium' : 'free';
-  } catch {
-    tier = 'free';
+    return { tier: isPremium ? 'premium' : 'free' };
+  } catch (error) {
+    logger.warn({ err: error, userId }, 'Entitlement resolution failed; falling back to free');
+    return { tier: 'free' };
   }
-
-  setCachedTier(userId, tier, now);
-  return { tier };
 }

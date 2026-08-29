@@ -6,7 +6,6 @@ vi.mock('@/lib/entitlement-factory', () => ({
   createEntitlementService: () => ({ isUserPremium }),
 }));
 
-import { invalidateEntitlements } from './cache';
 import { can, getConstraint, getMeteredWindows, resolveEntitlements } from './index';
 
 describe('entitlements registry', () => {
@@ -54,7 +53,6 @@ describe('entitlements registry', () => {
 describe('resolveEntitlements', () => {
   beforeEach(() => {
     isUserPremium.mockReset();
-    invalidateEntitlements('user-1');
   });
 
   it('maps premium status to the premium tier', async () => {
@@ -67,18 +65,17 @@ describe('resolveEntitlements', () => {
     expect(await resolveEntitlements('user-1')).toEqual({ tier: 'free' });
   });
 
-  it('caches the tier within TTL (one lookup for repeated calls)', async () => {
-    isUserPremium.mockResolvedValue(true);
-    await resolveEntitlements('user-1');
-    await resolveEntitlements('user-1');
-    expect(isUserPremium).toHaveBeenCalledTimes(1);
+  it('reads the projection on every call so a grant is visible immediately', async () => {
+    isUserPremium.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    expect(await resolveEntitlements('user-1')).toEqual({ tier: 'free' });
+    expect(await resolveEntitlements('user-1')).toEqual({ tier: 'premium' });
+    expect(isUserPremium).toHaveBeenCalledTimes(2);
   });
 
-  it('re-resolves after invalidation', async () => {
-    isUserPremium.mockResolvedValue(true);
-    await resolveEntitlements('user-1');
-    invalidateEntitlements('user-1');
-    await resolveEntitlements('user-1');
-    expect(isUserPremium).toHaveBeenCalledTimes(2);
+  it('does not remember a failed lookup as a free tier', async () => {
+    isUserPremium.mockRejectedValueOnce(new Error('db down')).mockResolvedValueOnce(true);
+    expect(await resolveEntitlements('user-1')).toEqual({ tier: 'free' });
+    // A paying user must not stay locked out because one read failed.
+    expect(await resolveEntitlements('user-1')).toEqual({ tier: 'premium' });
   });
 });

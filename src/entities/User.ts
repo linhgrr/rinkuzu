@@ -1,6 +1,6 @@
 import type { AccountDisableState } from '@/shared/constants/account-disable';
 
-export interface UserSubscriptionSnapshot {
+interface UserSubscriptionSnapshot {
   planId: string;
   planName: string;
   startDate?: Date;

@@ -38,7 +38,7 @@ export interface PremiumSubmissionListResult {
   totalPages: number;
 }
 
-export interface PremiumCatalogItem {
+interface PremiumCatalogItem {
   quizId: string;
   title: string;
   slug: string;
@@ -146,7 +146,7 @@ export interface UpdatePremiumProgressData {
   now: Date;
 }
 
-export type PremiumSessionSubmissionClaim = 'claimed' | 'replay' | 'conflict' | 'expired';
+type PremiumSessionSubmissionClaim = 'claimed' | 'replay' | 'conflict' | 'expired';
 
 export interface IPremiumQuizRepository {
   isVerifiedUser(userId: string): Promise<boolean>;

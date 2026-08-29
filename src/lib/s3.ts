@@ -64,7 +64,7 @@ export async function getSignedPDFUrl(key: string, expiresIn: number = 3600): Pr
  * Returns null when the URL does not reference this bucket or the key is unsafe.
  * Query/hash suffixes from signed URLs are stripped.
  */
-export function extractOwnedObjectKeyFromUrl(url: string): string | null {
+function extractOwnedObjectKeyFromUrl(url: string): string | null {
   if (typeof url !== 'string' || url.length === 0) return null;
 
   let parsed: URL;

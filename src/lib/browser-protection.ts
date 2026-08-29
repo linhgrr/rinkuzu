@@ -1,4 +1,4 @@
-export function isQuizAttemptPath(pathname: string): boolean {
+function isQuizAttemptPath(pathname: string): boolean {
   const segments = pathname.split('/').filter(Boolean);
   const quizSegmentIndex = segments.lastIndexOf('quiz');
 

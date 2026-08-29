@@ -8,7 +8,7 @@ import {
 } from '@/lib/api/request';
 import { apiErr } from '@/lib/api/response';
 
-export interface ValidationFailureLike {
+interface ValidationFailureLike {
   error: string;
   fields: Record<string, string>;
 }
@@ -24,7 +24,7 @@ export interface ParamsAndBodySchemas<TParams, TBody> {
   body: ZodType<TBody>;
 }
 
-export function validationFailure(result: ValidationFailureLike): NextResponse {
+function validationFailure(result: ValidationFailureLike): NextResponse {
   return apiErr('validation_error', result.error, 400, { fields: result.fields });
 }
 

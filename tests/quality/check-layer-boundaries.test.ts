@@ -242,3 +242,66 @@ describe('persistence -> dto ratchet', () => {
     expect(result.status).toBe(0);
   });
 });
+
+describe('persistence -> shared record type ratchet', () => {
+  /**
+   * The standard allowed src/shared only for layer-agnostic primitives and said
+   * so in prose; nothing enforced it, so one file there was the model, the
+   * repository record, the entity and the DTO at once.
+   */
+  it('fails when a model imports a shape from src/shared/types', () => {
+    const sandbox = makeSandbox();
+    writeFile(
+      sandbox,
+      'src/models/Report.ts',
+      "import type { ReportFields } from '@/shared/types/report';\n\nexport type D = ReportFields;\n",
+    );
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      'persistence -> shared record type: new violation in src/models/Report.ts',
+    );
+  });
+
+  it('fails when a repository contract imports one', () => {
+    const sandbox = makeSandbox();
+    writeFile(
+      sandbox,
+      'src/interfaces/repositories/IReportRepository.ts',
+      "import type { ReportQuestionSnapshot } from '@/shared/types/report';\n\nexport type S = ReportQuestionSnapshot;\n",
+    );
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('persistence -> shared record type');
+  });
+
+  it('still allows persistence to share constants, which is what src/shared is for', () => {
+    const sandbox = makeSandbox();
+    writeFile(
+      sandbox,
+      'src/models/Report.ts',
+      "import { REPORT_STATUSES } from '@/shared/constants/report-status';\n\nexport const S = REPORT_STATUSES;\n",
+    );
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(0);
+  });
+
+  it('leaves presentation free to share types among itself', () => {
+    const sandbox = makeSandbox();
+    writeFile(
+      sandbox,
+      'src/features/quiz/types/flashcard-view-model.ts',
+      "import type { QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';\n\nexport type V = QuizQuestionWithAnswerKey;\n",
+    );
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(0);
+  });
+});

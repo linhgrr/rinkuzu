@@ -131,6 +131,18 @@ where the route is declared, never passed in as an argument.
 - Never share a runtime schema or type across layer boundaries; shared primitives live in src/shared
   only if they are layer-agnostic (constants, branded scalars), never whole record shapes.
 
+This last line was written and then not enforced, which is the same as not having it. Two files
+under `src/shared/types` had grown into whole record shapes: `report.ts` was simultaneously the
+mongoose document, the persistence record, the domain entity and the admin DTO, and
+`subscription.ts` was both the entity and the persistence record. Each layer now declares its own,
+and `persistence -> shared record type` in the architecture checker keeps `src/shared/types` out of
+`src/models`, `src/repositories` and `src/interfaces/repositories`. Constants are still shareable
+everywhere — that distinction is exactly what the rule is about, and there are meta-tests for both
+halves of it.
+
+Presentation-only shapes may still be shared within presentation: `src/shared/types/quiz-question.ts`
+is read by DTOs and feature view models and by nothing in persistence, which is the intended use.
+
 ## When you add a field
 
 1. Add it to the mongoose schema + persistence record (persistence layer).

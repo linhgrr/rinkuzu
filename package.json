@@ -88,6 +88,7 @@
     "check:duplication": "node scripts/check-duplication.mjs",
     "check:test-integrity": "node scripts/check-test-integrity.mjs",
     "check:coverage": "node scripts/check-coverage-gates.mjs",
+    "check:typecheck-hardening": "node scripts/check-typecheck-hardening.mjs",
     "check:runtime-cycles": "node scripts/check-runtime-cycles.mjs",
     "check:required-e2e-flows": "node scripts/check-required-e2e-flows.mjs",
     "check:mutation-report": "node scripts/check-mutation-report.mjs",

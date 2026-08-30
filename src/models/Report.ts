@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { REPORT_STATUSES } from '@/shared/constants/report-status';
-import type { ReportFields } from '@/shared/types/report';
+import type { ReportPersistenceFields } from '@/repositories/types/ReportPersistence';
 
-type ReportDocument = ReportFields;
+type ReportDocument = ReportPersistenceFields;
 
 const reportQuestionSnapshotSchema = new mongoose.Schema(
   {

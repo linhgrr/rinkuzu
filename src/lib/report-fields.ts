@@ -1,8 +1,27 @@
 import type { QuizQuestion } from '@/entities/Quiz';
-import type { ReportCoreFields, ReportQuestionSnapshot } from '@/shared/types/report';
+import type { ReportQuestionSnapshot } from '@/entities/Report';
+import type { ReportStatus } from '@/shared/constants/report-status';
 
-export interface IdentifiedReportCoreFields extends ReportCoreFields {
+/**
+ * The fields a report carries across every representation of it, as this
+ * helper's input contract -- not as a type any layer derives from.
+ *
+ * The domain entity and the admin DTO each declare their own shape and both
+ * happen to satisfy this one, which is the point: if either drifts, the call in
+ * its mapper stops compiling instead of the two silently moving together the
+ * way they did while all three layers shared src/shared/types/report.ts.
+ */
+export interface IdentifiedReportCoreFields {
   id: string;
+  quizId: string;
+  quizTitle: string;
+  quizSlug: string;
+  questionId?: string;
+  questionSnapshot?: ReportQuestionSnapshot;
+  reporterEmail: string;
+  reporterName: string;
+  content: string;
+  status: ReportStatus;
 }
 
 export function copyReportCoreFields(

@@ -1,9 +1,27 @@
 import type { ReportStatus } from '@/shared/constants/report-status';
-import type { ReportQuestionSnapshot } from '@/shared/types/report';
+import type { QuestionType } from '@/shared/constants/question-type';
 
 export type AdminReportStatusViewModel = ReportStatus;
 export type AdminReportFilterViewModel = 'all' | AdminReportStatusViewModel;
-export type AdminReportedQuestionViewModel = ReportQuestionSnapshot;
+
+/**
+ * The reported question as the admin screen renders it.
+ *
+ * Declared here rather than aliased from AdminReportedQuestionDto: a view model
+ * that *is* the DTO moves whenever the wire shape does, and the checker's
+ * feature-non-boundary rule exists to stop exactly that.
+ */
+export interface AdminReportedQuestionViewModel {
+  id: string;
+  index: number;
+  question: string;
+  options: string[];
+  type: QuestionType;
+  correctIndex?: number;
+  correctIndexes?: number[];
+  questionImage?: string;
+  optionImages?: (string | undefined)[];
+}
 
 export interface AdminReportViewModel {
   id: string;

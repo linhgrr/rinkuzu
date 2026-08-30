@@ -15,6 +15,8 @@ const allowedDtoDomainLeakDebt = new Set([]);
 
 const allowedPersistenceDtoDebt = new Set([]);
 
+const allowedPersistenceSharedTypeDebt = new Set([]);
+
 const allowedQuizBuilderDomainLeakDebt = new Set([]);
 
 const allowedPresentationDtoDebt = new Set([]);
@@ -384,6 +386,17 @@ const persistenceDtoLeaks = collectViolations(
   [...repositoryFiles, ...repositoryContractFiles, ...walk(path.join(root, 'src/models'))],
   (imports) => imports.some((source) => source.startsWith('@/dtos/')),
 );
+// docs/architecture/three-layer-standard.md: shared primitives live in src/shared
+// "only if they are layer-agnostic (constants, branded scalars), never whole
+// record shapes". That rule was written and never enforced, so
+// src/shared/types/report.ts welded the model, the repository record, the
+// entity and the admin DTO into one interface, and src/shared/types/subscription.ts
+// did the same across the entity and the persistence record. Constants stay
+// shareable; src/shared/types does not cross into persistence.
+const persistenceSharedTypeLeaks = collectViolations(
+  [...repositoryFiles, ...repositoryContractFiles, ...walk(path.join(root, 'src/models'))],
+  (imports) => imports.some((source) => source.startsWith('@/shared/types/')),
+);
 const quizBuilderDomainLeaks = collectViolations(quizBuilderClientFiles, (imports) =>
   imports.some(
     (source) =>
@@ -467,6 +480,12 @@ checkRatchet(
 );
 checkRatchet('dto -> domain', dtoDomainLeaks, allowedDtoDomainLeakDebt, errors);
 checkRatchet('persistence -> dto', persistenceDtoLeaks, allowedPersistenceDtoDebt, errors);
+checkRatchet(
+  'persistence -> shared record type',
+  persistenceSharedTypeLeaks,
+  allowedPersistenceSharedTypeDebt,
+  errors,
+);
 checkRatchet(
   'quiz builder client -> domain',
   quizBuilderDomainLeaks,

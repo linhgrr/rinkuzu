@@ -152,6 +152,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: npm run typecheck:scripts
 
+      - name: Hold the typecheck hardening ratchet
+        if: ${{ !cancelled() }}
+        run: npm run check:typecheck-hardening
+
       - name: Verify dynamic route parameter safety
         if: ${{ !cancelled() }}
         run: npm run check:routes

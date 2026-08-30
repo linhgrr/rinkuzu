@@ -1,4 +1,4 @@
-import type { SubscriptionRecordFields } from '@/shared/types/subscription';
+import type { SubscriptionStatus } from '@/shared/constants/subscription-status';
 
 export interface BillingPlan {
   id: string;
@@ -10,9 +10,32 @@ export interface BillingPlan {
   updatedAt: Date;
 }
 
-export interface AdminSubscriptionRecord extends SubscriptionRecordFields {
+/**
+ * A subscription as the domain works with it.
+ *
+ * These fields were shared with the persistence record through
+ * src/shared/types/subscription.ts, which the standard rules out: src/shared is
+ * for layer-agnostic primitives, never whole record shapes. Sharing one meant a
+ * column added for storage arrived in the domain without anyone deciding it
+ * should.
+ */
+export interface AdminSubscriptionRecord {
   id: string;
   user: string;
+  userEmail: string;
+  planId: string;
+  planName: string;
+  amount: number;
+  currency: string;
+  status: SubscriptionStatus;
+  payosOrderId: string;
+  payosTransactionId?: string;
+  payosPaymentUrl?: string;
+  startDate?: Date;
+  endDate?: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface AdminUserSubscriptionGrant {

@@ -2,8 +2,8 @@ import { z } from 'zod';
 import type { PaginationMeta } from '@/dtos/common';
 import { objectIdSchema } from '@/lib/validation/common';
 import { REPORT_STATUSES } from '@/shared/constants/report-status';
+import type { QuestionType } from '@/shared/constants/question-type';
 import { quizQuestionInputSchema } from '@/lib/validation/question';
-import type { ReportQuestionSnapshot } from '@/shared/types/report';
 
 const adminReportStatusSchema = z.enum(REPORT_STATUSES);
 const adminReportFilterSchema = z.enum(['all', ...REPORT_STATUSES]);
@@ -26,7 +26,17 @@ export const updateAdminReportRequestSchema = z.strictObject({
 
 export const updateAdminReportedQuestionRequestSchema = quizQuestionInputSchema;
 
-export type AdminReportedQuestionDto = ReportQuestionSnapshot;
+export interface AdminReportedQuestionDto {
+  id: string;
+  index: number;
+  question: string;
+  options: string[];
+  type: QuestionType;
+  correctIndex?: number;
+  correctIndexes?: number[];
+  questionImage?: string;
+  optionImages?: (string | undefined)[];
+}
 
 export interface AdminReportDto {
   id: string;

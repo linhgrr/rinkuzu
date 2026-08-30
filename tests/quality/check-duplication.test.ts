@@ -6,7 +6,9 @@ import {
   assertRatchetableBaseline,
   duplicationConfigFingerprint,
   fingerprintDuplicate,
+  isFieldListOnlyDuplicate,
   isImportOnlyDuplicate,
+  removableTotals,
   validateDuplicationConfig,
   validateDuplicationProvenance,
   validateDuplicationReport,
@@ -393,5 +395,109 @@ describe('the shipped baseline', () => {
   it('no longer carries the self-referential commit fields', () => {
     expect(shipped).not.toHaveProperty('sourceCommit');
     expect(shipped).not.toHaveProperty('sourceNote');
+  });
+});
+
+describe('cross-layer field lists', () => {
+  /**
+   * The three-layer standard requires each layer to declare its own record
+   * shapes and forbids sharing them, so the same field list appears in the
+   * persistence record, the entity, the DTO and the view model by design. No
+   * helper can remove those without breaking the rule that put them there --
+   * the same argument that already excludes import lists.
+   */
+  function fieldListRoot(name: string, body: string) {
+    const root = mkdtempSync(path.join(tmpdir(), `rinkuzu-duplication-${name}-`));
+    temporaryDirectories.push(root);
+    mkdirSync(path.join(root, 'src'));
+    writeFileSync(path.join(root, 'src', 'a.ts'), `${body}\n`);
+    writeFileSync(path.join(root, 'src', 'b.ts'), `${body}\n`);
+    return root;
+  }
+
+  const duplicate = (lines: number) => ({
+    format: 'typescript',
+    firstFile: { name: 'a.ts', start: 1, end: lines },
+    secondFile: { name: 'b.ts', start: 1, end: lines },
+    lines,
+  });
+
+  it('treats a bare list of property signatures as mandated', () => {
+    const body = [
+      '  quizId: string;',
+      '  quizTitle: string;',
+      '  questionId?: string;',
+      '  createdAt: Date;',
+      '}',
+    ].join('\n');
+
+    expect(isFieldListOnlyDuplicate(fieldListRoot('fields', body), duplicate(5))).toBe(true);
+  });
+
+  it('treats the declaration with its header as mandated too', () => {
+    const body = [
+      'export interface Thing {',
+      '  id: string;',
+      '  amount: number;',
+      '  isActive: boolean;',
+      '}',
+    ].join('\n');
+
+    expect(isFieldListOnlyDuplicate(fieldListRoot('decl', body), duplicate(5))).toBe(true);
+  });
+
+  it('does not excuse a method, which is logic and could be shared', () => {
+    const body = [
+      '  id: string;',
+      '  total(): number;',
+      '  createdAt: Date;',
+      '  updatedAt: Date;',
+      '}',
+    ].join('\n');
+
+    expect(isFieldListOnlyDuplicate(fieldListRoot('method', body), duplicate(5))).toBe(false);
+  });
+
+  it('does not excuse duplicated statements that merely look declarative', () => {
+    const body = [
+      '  const a = compute(1);',
+      '  const b = compute(2);',
+      '  const c = compute(3);',
+      '  return a + b + c;',
+      '}',
+    ].join('\n');
+
+    expect(isFieldListOnlyDuplicate(fieldListRoot('stmts', body), duplicate(5))).toBe(false);
+  });
+
+  it('fails closed on a fragment it cannot parse', () => {
+    const body = ['  id: string;', '  broken: <<<', '  createdAt: Date;', '}'].join('\n');
+
+    expect(isFieldListOnlyDuplicate(fieldListRoot('broken', body), duplicate(4))).toBe(false);
+  });
+});
+
+describe('removableTotals', () => {
+  it('counts only the clones a change could remove', () => {
+    const totals = removableTotals({ statistics: { total: { sources: 700, lines: 1000 } } }, [
+      { lines: 12 },
+      { lines: 8 },
+    ]);
+
+    expect(totals).toEqual({
+      sources: 700,
+      clones: 2,
+      duplicatedLines: 20,
+      lines: 1000,
+      percentage: 2,
+    });
+  });
+
+  it('reports zero rather than dividing by zero on an empty scan', () => {
+    expect(removableTotals({ statistics: { total: { sources: 0, lines: 0 } } }, [])).toMatchObject({
+      clones: 0,
+      duplicatedLines: 0,
+      percentage: 0,
+    });
   });
 });

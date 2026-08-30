@@ -10,7 +10,7 @@ export interface RepositoryPaginationOptions {
  * importing the DTO here would make every repository signature move whenever
  * the client's pagination envelope does.
  */
-export interface RepositoryPaginationMeta {
+interface RepositoryPaginationMeta {
   currentPage: number;
   totalPages: number;
   totalItems: number;

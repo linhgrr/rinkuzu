@@ -1,7 +1,7 @@
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 import type { QuizListItemDto } from '@/dtos/quiz';
 
-export interface DashboardWeeklyActivityDto {
+interface DashboardWeeklyActivityDto {
   questionsReviewed: number;
   xpEarned: number;
   correctCount: number;

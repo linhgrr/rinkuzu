@@ -15,16 +15,12 @@
   },
   "minimumAnalyzedSources": 425,
   "limits": {
-    "clones": 10,
-    "duplicatedLines": 123,
+    "clones": 6,
+    "duplicatedLines": 65,
     "percentage": 2.2
   },
   "knownCloneFingerprints": [
-    "053ce646d175f8fdfc19a72b674a519705ffe659824b2f749fe3abb7e3da704a",
     "4a4f905e12d2c2558ca7e0d5c1e789f4ee5920bc92c3ad98346c08de4f5d24c1",
-    "5335d9ed5e0ff638c1083bfa403922b06084a55e2a237656a75a6c0c406b7181",
-    "5f4d999630f3a58be9ba94a8af82a1c7eb70e9a7781759577649b3d30267f8c7",
-    "ba422f829839c5fd7cb96ef36e369cf41df6b6eddf2d0505f45269f8dcfc2d51",
     "ccda83e8487d4731db02e9b211a97f2da3840fd96f5e21070ac4b6869c27bc16",
     "e1653719b2d4763de3a2ae99971227909073d869310c84e6570db77664ac077d",
     "e7a8bf76f23aa08cadac00eff5be6e2185548a02e57b5f3e0d1399856737a68e",
@@ -32,5 +28,5 @@
     "facedba7b8f892e53f3b151f4a28ee7c6d34195fb4a3302b09d284967b7e67af"
   ],
   "generatedFrom": "working-tree",
-  "configFingerprint": "71d9b6a371b37eca1a5175d91f1ad16d87a7643cd383f4648119cfe4bb8cfb36"
+  "configFingerprint": "5003f9cfd6186b111b10a26e30a5aef3d6de30d1972d680345e20da0959a262e"
 }

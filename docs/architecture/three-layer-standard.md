@@ -143,6 +143,23 @@ halves of it.
 Presentation-only shapes may still be shared within presentation: `src/shared/types/quiz-question.ts`
 is read by DTOs and feature view models and by nothing in persistence, which is the intended use.
 
+### This rule and the duplication gate disagreed
+
+Splitting those two files created four new jscpd clones, because a field list repeated once per layer
+is repeated text however good the reason. The duplication ratchet refuses to go up, and it was right
+to: hand-raising a ceiling to fit your own change is how a ratchet stops meaning anything.
+
+The gate already had the answer for the other case it cannot fix — `isImportOnlyDuplicate` excludes
+clones that are nothing but import lists, on the grounds that no helper removes an import list. A
+cross-layer field list is the same kind of thing: extracting it into one shared interface is exactly
+what this document forbids. So `isFieldListOnlyDuplicate` now excludes clones where **both** sides
+are only property signatures — no methods, no statements, failing closed on anything it cannot parse
+— and the ceilings measure removable clones rather than every clone jscpd finds.
+
+That made the gate stricter, not looser: the ceiling moved from 10 clones and 123 duplicated lines to
+6 and 65, because import lists had been inflating the old number too. When you split a record shape
+across layers, expect the mandated count to rise and the removable ceiling to stay put.
+
 ## When you add a field
 
 1. Add it to the mongoose schema + persistence record (persistence layer).

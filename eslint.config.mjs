@@ -33,7 +33,6 @@ const centralizedAuthExceptions = [
 // as [[]locale[]] — a plain `[locale]` is a glob character class, not a literal path
 // segment, and would silently fail to match these files on this platform.
 const oversizedFileAllowlist = [
-  'src/app/[[]locale[]]/(app)/admin/stats/page.tsx',
   'src/app/[[]locale[]]/(app)/admin/subscriptions/page.tsx',
   'src/app/[[]locale[]]/(app)/history/[[]attemptId[]]/page.tsx',
   'src/app/[[]locale[]]/(app)/quiz/[[]slug[]]/flashcards/page.tsx',
@@ -51,6 +50,7 @@ const oversizedFileAllowlist = [
   'src/features/admin/ai-settings/components/ProviderModelsPanel.tsx',
   'src/features/admin/ocr-keys/components/OcrKeysPageClient.tsx',
   'src/features/admin/plans/components/AdminPlansPageClient.tsx',
+  'src/features/admin/stats/components/AdminStatsPageClient.tsx',
   'src/features/admin/stats/components/LlmUsageSection.tsx',
   'src/features/admin/stats/components/StatsModal.tsx',
   'src/features/admin/users/components/AdminUsersPageClient.tsx',

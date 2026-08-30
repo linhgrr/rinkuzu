@@ -399,10 +399,11 @@ export class LearningProgressRepository implements ILearningProgressRepository {
   ): Promise<ReviewProgressTransactionResult> {
     await connectDB();
     const session = await mongoose.startSession();
-    let result: ReviewProgressTransactionResult | null = null;
 
     try {
-      await session.withTransaction(async () => {
+      // Return the callback's result: withTransaction retries on a transient
+      // error, and a captured outer variable keeps the losing attempt's value.
+      const result = await session.withTransaction(async () => {
         // Sequential on purpose: withTransaction forbids Promise.all (architecture check).
         const questionRecord = await QuestionProgress.findOne({ userId, quizSlug, questionId })
           .session(session)
@@ -436,18 +437,17 @@ export class LearningProgressRepository implements ILearningProgressRepository {
         ).lean<UserProgressPersistenceRecord>();
         if (!savedUser) throw new Error('Failed to save user progress');
 
-        result = {
+        return {
           questionProgress: LearningProgressPersistenceMapper.toQuestionProgress(savedQuestion),
           userProgress: LearningProgressPersistenceMapper.toUserProgress(savedUser),
           streakFreezeUsed: mutation.streakFreezeUsed,
         };
       });
+      if (!result) throw new Error('Review progress transaction did not commit');
+      return result;
     } finally {
       await session.endSession();
     }
-
-    if (!result) throw new Error('Review progress transaction did not commit');
-    return result;
   }
 
   async buyStreakFreeze(

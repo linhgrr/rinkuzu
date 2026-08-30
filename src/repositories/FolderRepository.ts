@@ -151,10 +151,14 @@ export class FolderRepository implements IFolderRepository {
     const folderObjectId = new Types.ObjectId(folderId);
     const ownerObjectId = new Types.ObjectId(ownerId);
     const session = await mongoose.startSession();
-    let deleted = false;
 
     try {
-      await session.withTransaction(async () => {
+      // Return the callback's result: withTransaction retries on a transient
+      // error, and a captured outer variable keeps the losing attempt's value.
+      // Here that mattered -- an attempt that set deleted = true and then
+      // aborted, followed by a retry taking the `if (!folder) return` path,
+      // reported a deletion that never happened.
+      return await session.withTransaction(async () => {
         const folder = await FolderModel.findOne({
           _id: folderObjectId,
           owner: ownerObjectId,
@@ -162,7 +166,7 @@ export class FolderRepository implements IFolderRepository {
           .select('_id')
           .session(session)
           .lean<{ _id: Types.ObjectId }>();
-        if (!folder) return;
+        if (!folder) return false;
 
         await FolderQuiz.deleteMany({ owner: ownerObjectId, folder: folderObjectId }).session(
           session,
@@ -171,13 +175,11 @@ export class FolderRepository implements IFolderRepository {
           _id: folderObjectId,
           owner: ownerObjectId,
         }).session(session);
-        deleted = result.deletedCount === 1;
+        return result.deletedCount === 1;
       });
     } finally {
       await session.endSession();
     }
-
-    return deleted;
   }
 
   async findQuizAccess(userId: string, quizId: string): Promise<QuizFolderAccess | null> {

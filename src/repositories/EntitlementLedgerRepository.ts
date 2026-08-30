@@ -85,15 +85,15 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
     if (!Types.ObjectId.isValid(accountId)) return null;
     await connectDB();
     const session = await mongoose.startSession();
-    let userId: string | null = null;
     try {
-      await session.withTransaction(async () => {
+      // Return the callback's result: withTransaction retries on a transient
+      // error, and a captured outer variable keeps the losing attempt's value.
+      return await session.withTransaction(async () => {
         const account = await EntitlementAccount.findById(accountId)
           .session(session)
           .lean<{ user: Types.ObjectId; planId?: string; planName?: string }>()
           .exec();
-        if (!account) return;
-        userId = account.user.toString();
+        if (!account) return null;
 
         const grants = await EntitlementGrant.find({ user: account.user })
           .sort({ sequence: 1 })
@@ -143,11 +143,12 @@ export class EntitlementLedgerRepository implements IEntitlementAdminRepository 
           account.planName ?? 'Revoked',
           session,
         );
+
+        return account.user.toString();
       });
     } finally {
       await session.endSession();
     }
-    return userId;
   }
 
   /**

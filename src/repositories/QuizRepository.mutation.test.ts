@@ -314,10 +314,11 @@ describe('QuizRepository mutation coverage', () => {
 
     it('deletes dependent data in a transaction and reports whether a quiz row was removed', async () => {
       // Match repository session usage: withTransaction closes over startSession's session.
+      // It also resolves to whatever the callback returned, as the real one does --
+      // a double that swallowed the result would let a repository reading it back
+      // through a captured outer variable pass here and be wrong in production.
       const session: ClientSession = Object.assign(Object.create(null), {
-        withTransaction: vi.fn(async (callback: () => Promise<void>) => {
-          await callback();
-        }),
+        withTransaction: vi.fn(async <T>(callback: () => Promise<T>) => callback()),
         endSession: vi.fn().mockResolvedValue(undefined),
       });
       startSessionMock.mockResolvedValue(session);

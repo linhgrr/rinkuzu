@@ -360,11 +360,13 @@ export class QuizAttemptProgressRepository implements IQuizAttemptProgressReposi
         transactionAttempt <= TRANSACTION_ATTEMPTS;
         transactionAttempt++
       ) {
-        let result: RecordedQuizAttempt | null = null;
         try {
-          await session.withTransaction(async () => {
-            result = await recordSubmissionTransaction(data, submissionDigest, session);
-          });
+          // Return the callback's result rather than capturing it: withTransaction
+          // has its own retry, and an outer variable survives an attempt that
+          // rolled back.
+          const result = await session.withTransaction(async () =>
+            recordSubmissionTransaction(data, submissionDigest, session),
+          );
           if (!result) throw new Error('Quiz attempt transaction did not commit');
           return result;
         } catch (error) {

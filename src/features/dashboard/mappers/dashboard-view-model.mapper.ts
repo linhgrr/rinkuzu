@@ -1,11 +1,8 @@
-import type {
-  DashboardBootstrapDto,
-  DashboardInProgressQuizDto,
-  DashboardStatsDto,
-} from '@/dtos/dashboard';
+import type { DashboardBootstrapDto, DashboardInProgressQuizDto } from '@/dtos/dashboard';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { ROUTES } from '@/shared/constants/routes';
+import { buildWeekDays } from '@/features/dashboard/mappers/dashboard-week-days';
 import { formatDate } from '@/lib/formatters';
 import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
 import type { DashboardViewModel } from '@/features/dashboard/types/dashboard-view-model';
@@ -75,7 +72,11 @@ function formatLearningCardTime(
   }
 
   return formatDate(timestamp, {
-    locale: locale === 'vi' ? 'vi-VN' : 'en-GB',
+    // 'en-GB' used to sit here and read as a choice of British date order. It
+    // never was one: resolveDateFormatter branches on isVi(locale) alone, so
+    // every non-vi tag resolves to the same en-US formatter. Spelling it en-US
+    // says what actually renders.
+    locale: locale === 'vi' ? 'vi-VN' : 'en-US',
     emptyLabel: copy.recentlyUpdated,
   });
 }
@@ -156,29 +157,6 @@ function buildContinueLearning({
     adaptiveCards.length > 0 ? ADAPTIVE_ROUTES.dashboard : QUIZ_BUILDER_LIBRARY_HREF;
 
   return { items, viewAllHref };
-}
-
-function buildWeekDays(
-  weeklyActivity: DashboardStatsDto['weeklyActivity'],
-  labels: string[],
-): DashboardViewModel['progress']['weekDays'] {
-  const today = new Date();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - today.getDay());
-  sunday.setHours(0, 0, 0, 0);
-
-  return labels.map((label, index) => {
-    const date = new Date(sunday);
-    date.setDate(sunday.getDate() + index);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-      date.getDate(),
-    ).padStart(2, '0')}`;
-
-    return {
-      label,
-      active: (weeklyActivity[key]?.questionsReviewed ?? 0) > 0,
-    };
-  });
 }
 
 export function toDashboardViewModel({

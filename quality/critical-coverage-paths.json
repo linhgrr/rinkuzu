@@ -5,20 +5,20 @@
     "scope": "all executable src TypeScript files, including zero-covered files",
     "metrics": {
       "lines": {
-        "covered": 9318,
-        "total": 18312
+        "covered": 9309,
+        "total": 18293
       },
       "statements": {
-        "covered": 9885,
-        "total": 19789
+        "covered": 9877,
+        "total": 19770
       },
       "functions": {
         "covered": 2295,
-        "total": 5274
+        "total": 5271
       },
       "branches": {
-        "covered": 6386,
-        "total": 14549
+        "covered": 6390,
+        "total": 14544
       }
     }
   },

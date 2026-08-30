@@ -93,15 +93,16 @@ export class AdminSubscriptionRepository implements IAdminSubscriptionRepository
   async deletePlan(planId: string): Promise<boolean> {
     await connectDB();
     const session = await mongoose.startSession();
-    let deleted = false;
 
     try {
-      await session.withTransaction(async () => {
+      // Return the callback's result: withTransaction retries on a transient
+      // error, and a captured outer variable keeps the losing attempt's value.
+      return await session.withTransaction(async () => {
         const plan = await Plan.findById(planId)
           .select('_id')
           .session(session)
           .lean<{ _id: string }>();
-        if (!plan) return;
+        if (!plan) return false;
 
         const entitlementExists = await EntitlementGrant.exists({ planId }).session(session);
         if (entitlementExists) {
@@ -109,13 +110,11 @@ export class AdminSubscriptionRepository implements IAdminSubscriptionRepository
         }
 
         const result = await Plan.deleteOne({ _id: planId }).session(session);
-        deleted = result.deletedCount === 1;
+        return result.deletedCount === 1;
       });
     } finally {
       await session.endSession();
     }
-
-    return deleted;
   }
 
   async listSubscriptions(

@@ -311,9 +311,10 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     await connectDB();
     const { folder, ...quizFields } = quizData;
     const session = await mongoose.startSession();
-    let record: QuizPersistenceRecord | null = null;
     try {
-      await session.withTransaction(async () => {
+      // Return the callback's result: withTransaction retries on a transient
+      // error, and a captured outer variable keeps the losing attempt's value.
+      const record = await session.withTransaction(async () => {
         const document = new QuizModel(quizFields);
         await document.save({ session });
         if (folder) {
@@ -323,13 +324,13 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
             { upsert: true, session },
           );
         }
-        record = document.toObject() as QuizPersistenceRecord;
+        return document.toObject() as QuizPersistenceRecord;
       });
+      if (!record) throw new Error('Quiz creation transaction did not commit');
+      return { ...QuizPersistenceMapper.toEntity(record), folder: folder ?? null };
     } finally {
       await session.endSession();
     }
-    if (!record) throw new Error('Quiz creation transaction did not commit');
-    return { ...QuizPersistenceMapper.toEntity(record), folder: folder ?? null };
   }
 
   async update(id: string, quizData: UpdateQuizData): Promise<Quiz | null> {
@@ -346,20 +347,21 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
       return record ? mapQuizWithOwnerPlacement(record) : null;
     }
     const session = await mongoose.startSession();
-    let record: QuizPersistenceRecord | null = null;
     try {
-      await session.withTransaction(async () => {
-        record = await QuizModel.findByIdAndUpdate(id, quizFields, {
+      // Return the callback's result: withTransaction retries on a transient
+      // error, and a captured outer variable keeps the losing attempt's value.
+      const record = await session.withTransaction(async () => {
+        const updated = await QuizModel.findByIdAndUpdate(id, quizFields, {
           new: true,
           runValidators: true,
           session,
         })
           .populate('author', 'email name displayName avatar')
           .lean<QuizPersistenceRecord>();
-        if (!record || !hasFolderCommand) return;
+        if (!updated || !hasFolderCommand) return updated;
 
         const placementFilter = {
-          owner: new Types.ObjectId(persistenceAuthorId(record.author)),
+          owner: new Types.ObjectId(persistenceAuthorId(updated.author)),
           quiz: new Types.ObjectId(id),
         };
         if (folder) {
@@ -371,11 +373,13 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
         } else {
           await FolderQuiz.deleteOne(placementFilter).session(session);
         }
+
+        return updated;
       });
+      return record ? mapQuizWithOwnerPlacement(record) : null;
     } finally {
       await session.endSession();
     }
-    return record ? mapQuizWithOwnerPlacement(record) : null;
   }
 
   async updateQuestionById(
@@ -418,12 +422,13 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
   async delete(id: string): Promise<boolean> {
     await connectDB();
     const session = await mongoose.startSession();
-    let deleted = false;
-    let pdfUrl: string | undefined;
-    let quizAuthorId = '';
-
     try {
-      await session.withTransaction(async () => {
+      // Return the callback's result: withTransaction retries on a transient
+      // error, and captured outer variables keep the losing attempt's values.
+      // Three of them were captured here, and the object-storage cleanup below
+      // reads all three -- a retry that took the `if (!quiz) return` path would
+      // have deleted a PDF belonging to the attempt that rolled back.
+      const outcome = await session.withTransaction(async () => {
         const quiz = await QuizModel.findById(id)
           .select('_id slug author pdfUrl')
           .session(session)
@@ -433,23 +438,28 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
             author: Types.ObjectId;
             pdfUrl?: string;
           } | null>();
-        if (!quiz) return;
+        if (!quiz) return null;
 
-        pdfUrl = quiz.pdfUrl;
-        quizAuthorId = quiz.author.toString();
         await deleteQuizDependents([{ id: quiz._id, slug: quiz.slug }], session);
 
         const result = await QuizModel.deleteOne({ _id: quiz._id }).session(session);
-        deleted = result.deletedCount === 1;
+        return {
+          deleted: result.deletedCount === 1,
+          pdfUrl: quiz.pdfUrl,
+          authorId: quiz.author.toString(),
+        };
       });
 
       // External object storage cleanup is best-effort and runs only after a
       // successful Mongo transaction commit (never inside the transaction).
-      if (deleted) {
-        await deleteOwnedPdfUrlsBestEffort([pdfUrl], getQuizPdfObjectPrefix(quizAuthorId));
+      if (outcome?.deleted) {
+        await deleteOwnedPdfUrlsBestEffort(
+          [outcome.pdfUrl],
+          getQuizPdfObjectPrefix(outcome.authorId),
+        );
       }
 
-      return deleted;
+      return outcome?.deleted ?? false;
     } finally {
       await session.endSession();
     }

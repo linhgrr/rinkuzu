@@ -6,6 +6,7 @@ import { Types } from 'mongoose';
 import type { WebhookEventPayload } from 'resend';
 
 import connectDB from '@/lib/mongoose';
+import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import { logger } from '@/lib/logger';
 import { BUCKET_NAME, s3Client } from '@/lib/s3';
 import {
@@ -74,15 +75,6 @@ function sanitizeOutboxError(error: unknown): string {
     .replaceAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/gu, '[email]')
     .replaceAll(/\b[A-Za-z0-9_-]{24,}\b/gu, '[redacted]')
     .slice(0, 2_000);
-}
-
-function isMongoDuplicateKeyError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 11000
-  );
 }
 
 async function quarantineWebhook(

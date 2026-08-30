@@ -118,13 +118,6 @@ export function settlementAttemptSnapshot(
   };
 }
 
-export function requireCreatedObjectId(value: Types.ObjectId | null): Types.ObjectId {
-  if (!value) {
-    throw new BillingDomainError('payment_processing_failed', 'Order was not created', 500);
-  }
-  return value;
-}
-
 export type BillingTransactionWork<T> = (session: ClientSession) => Promise<T>;
 
 export async function runBillingTransaction<T>(work: BillingTransactionWork<T>): Promise<T> {

@@ -1,7 +1,6 @@
 'use client';
 
-import useSWR from 'swr';
-import { fetchProfileEntitlements } from '@/features/profile/api/profile-entitlements-api';
+import { useEntitlementSnapshot } from '@/hooks/useEntitlementSnapshot';
 import { MAX_PDF_UPLOAD_BYTES } from '@/lib/pdf-upload-policy';
 import type { EntitlementConstraint } from '@/types/entitlements';
 
@@ -13,9 +12,7 @@ const PAGE_CONSTRAINT: Record<PdfUploadPurpose, EntitlementConstraint> = {
 };
 
 export function usePdfUploadPolicy(purpose: PdfUploadPurpose) {
-  const { data, error, isLoading } = useSWR('/api/entitlements', fetchProfileEntitlements, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading } = useEntitlementSnapshot();
 
   return {
     isLoading,

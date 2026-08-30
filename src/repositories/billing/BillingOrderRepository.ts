@@ -47,7 +47,7 @@ import type {
   PaymentAttemptPersistenceRecord,
   PromotionPersistenceRecord,
 } from '@/repositories/types/BillingPersistence';
-import { objectId, parsePlanDuration, requireCreatedObjectId, toOrderView } from './billing-shared';
+import { objectId, parsePlanDuration, toOrderView } from './billing-shared';
 import {
   ensureFirstPurchaseEligibility,
   releaseReservationForFailedCreate,
@@ -83,6 +83,13 @@ interface CreateProviderCheckoutInput {
 
 const CHECKOUT_WINDOW_MS = 15 * 60_000;
 const FIRST_RECONCILE_DELAY_MS = 60_000;
+/** What the order-creation transaction hands back to the checkout call that follows it. */
+interface CreatedOrderIds {
+  readonly orderId: Types.ObjectId;
+  readonly attemptId: Types.ObjectId;
+  readonly orderCode: number;
+}
+
 const ORDER_ENDPOINT = '/api/billing/orders';
 
 function quoteMatches(left: BillingQuotePayload, right: BillingQuotePayload): boolean {
@@ -193,16 +200,19 @@ export class BillingOrderRepository implements IBillingOrderRepository {
     }
     const buyerEmail = await this.userEmail(user);
     const session = await mongoose.startSession();
-    let orderId: Types.ObjectId | null = null;
-    let attemptId: Types.ObjectId | null = null;
-    let orderCode = 0;
     const publicId = crypto.randomUUID();
     const now = new Date();
+    // Holds the callback's return value, assigned once after the retry loop has
+    // settled -- unlike the three variables this used to capture inside the
+    // callback, which a transient-error retry could leave holding the losing
+    // attempt's ids. The catch stays wrapped around the transaction alone, so a
+    // checkout failure below is still not mistaken for an idempotency race.
+    let created: CreatedOrderIds | null = null;
     try {
-      await session.withTransaction(async () => {
-        orderId = new Types.ObjectId();
-        attemptId = new Types.ObjectId();
-        orderCode = await this.nextOrderCode(session);
+      created = await session.withTransaction(async () => {
+        const orderId = new Types.ObjectId();
+        const attemptId = new Types.ObjectId();
+        const orderCode = await this.nextOrderCode(session);
         await IdempotencyRecord.create(
           [
             {
@@ -282,6 +292,8 @@ export class BillingOrderRepository implements IBillingOrderRepository {
           ],
           { session },
         );
+
+        return { orderId, attemptId, orderCode };
       });
     } catch (error) {
       const raced = await this.resolveIdempotencyRace(input, requestHash, error);
@@ -290,8 +302,10 @@ export class BillingOrderRepository implements IBillingOrderRepository {
     } finally {
       await session.endSession();
     }
-    const createdOrderId = requireCreatedObjectId(orderId);
-    const createdAttemptId = requireCreatedObjectId(attemptId);
+    if (!created) {
+      throw new BillingDomainError('payment_processing_failed', 'Order was not created', 500);
+    }
+    const { orderId: createdOrderId, attemptId: createdAttemptId, orderCode } = created;
 
     const outcome = await this.openCheckout({
       orderCode,
@@ -401,11 +415,15 @@ export class BillingOrderRepository implements IBillingOrderRepository {
     const buyerEmail = await this.userEmail(order.user);
     const session = await mongoose.startSession();
     const attemptId = new Types.ObjectId();
-    let orderCode = 0;
     const now = new Date();
+    let orderCode: number;
     try {
-      await session.withTransaction(async () => {
-        orderCode = await this.nextOrderCode(session);
+      // Assigned from the callback's return value once the retry loop has
+      // settled. Captured inside the callback, a transient-error retry could
+      // leave orderCode holding the code of the attempt that rolled back, and
+      // the checkout opened below would be for a code no attempt row carries.
+      orderCode = await session.withTransaction(async () => {
+        const code = await this.nextOrderCode(session);
         const deactivated = await PaymentAttempt.updateOne(
           {
             _id: previous._id,
@@ -429,7 +447,7 @@ export class BillingOrderRepository implements IBillingOrderRepository {
               provider: 'payos',
               providerAccountId: billingConfig.providerAccountId(),
               environment: billingConfig.providerEnvironment(),
-              externalOrderId: orderCode.toString(),
+              externalOrderId: code.toString(),
               currency: order.currency,
               requestedAmount: order.finalAmount,
               amountPaid: 0,
@@ -443,6 +461,8 @@ export class BillingOrderRepository implements IBillingOrderRepository {
           ],
           { session },
         );
+
+        return code;
       });
     } finally {
       await session.endSession();

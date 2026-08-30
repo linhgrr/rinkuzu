@@ -6,6 +6,7 @@ import type {
   IBillingAdjustmentRepository,
   StoredAdjustmentIdentity,
 } from '@/interfaces/repositories/IBillingAdjustmentRepository';
+import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import { BillingDomainError } from '../billing-domain';
 import {
   canResolveExcess,
@@ -73,12 +74,6 @@ interface ReplayCandidate {
   readonly currency: string;
   readonly allocation: MoneyAllocation;
   readonly occurredAtMs: number;
-}
-
-const DUPLICATE_KEY = 11000;
-
-function isDuplicateKey(error: unknown): boolean {
-  return (error as { code?: number }).code === DUPLICATE_KEY;
 }
 
 /**
@@ -324,7 +319,7 @@ export async function recordExternalMoneyAdjustment(
       recordedBy: command.recordedBy,
     });
   } catch (error) {
-    if (!isDuplicateKey(error)) throw error;
+    if (!isMongoDuplicateKeyError(error)) throw error;
     // Two operators reached the insert at once. The winner's row is not
     // necessarily the same money, so it is discriminated exactly as a replay
     // is: identical is a success, anything else is a conflict, and a collision
@@ -407,7 +402,7 @@ export async function resolveOrderExcess(
       },
     });
   } catch (error) {
-    if (!isDuplicateKey(error)) throw error;
+    if (!isMongoDuplicateKeyError(error)) throw error;
     throw new BillingDomainError(
       'excess_not_resolvable',
       'The overpayment has already been resolved',

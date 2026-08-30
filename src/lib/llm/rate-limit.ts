@@ -1,8 +1,9 @@
 import 'server-only';
 
 import mongoose from 'mongoose';
-import type { ClientSession, Collection, MongoServerError } from 'mongodb';
+import type { ClientSession, Collection } from 'mongodb';
 import connectDB from '@/lib/mongoose';
+import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import { apiErr } from '@/lib/api/response';
 import {
   getMeteredWindows,
@@ -102,10 +103,6 @@ function windowBounds(window: RateWindow, now: Date): { start: Date; end: Date }
   const startMs = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1);
   const endMs = Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 1);
   return { start: new Date(startMs - VN_OFFSET_MS), end: new Date(endMs - VN_OFFSET_MS) };
-}
-
-function isDuplicateKey(error: unknown): error is MongoServerError {
-  return error instanceof Error && 'code' in error && (error as MongoServerError).code === 11000;
 }
 
 async function readWindows(
@@ -316,7 +313,7 @@ export async function reserveLlmUsage(
     if (!reservation) throw new Error('Usage reservation transaction returned no result');
     return reservation;
   } catch (error) {
-    if (isDuplicateKey(error)) {
+    if (isMongoDuplicateKeyError(error)) {
       return reserveLlmUsage(userId, action, requestId);
     }
     throw error;

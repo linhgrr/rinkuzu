@@ -1,11 +1,10 @@
 'use client';
 
-import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
 import { HiOutlineChartBar } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { fetchProfileEntitlements } from '@/features/profile/api/profile-entitlements-api';
+import { useEntitlementSnapshot } from '@/hooks/useEntitlementSnapshot';
 import type {
   EntitlementWindowSnapshot,
   MeteredCapability,
@@ -60,10 +59,7 @@ function QuotaWindow({ item, label }: { item: EntitlementWindowSnapshot; label: 
 
 export function ProfileQuotaCard({ variant = 'full' }: ProfileQuotaCardProps) {
   const t = useTranslations('profile');
-  const { data, error, isLoading, mutate } = useSWR('/api/entitlements', fetchProfileEntitlements, {
-    refreshInterval: 60_000,
-    revalidateOnFocus: true,
-  });
+  const { data, error, isLoading, mutate } = useEntitlementSnapshot();
   const capabilityLabels: Record<MeteredCapability, string> = {
     ask_rin_chan: t('quotaAskRin'),
     quiz_extract: t('quotaQuizExtract'),

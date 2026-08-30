@@ -236,6 +236,43 @@ describe('entitlement usage ledger', () => {
     },
   );
 
+  it('retries the reservation once when two callers race the same request id', async () => {
+    // The unique index on (userId, capability, requestId) is what makes the
+    // reservation idempotent under concurrency: the loser gets E11000 and asks
+    // again, and the second read finds the winner's row.
+    const winner = {
+      userId: 'user-e11000',
+      capability: 'ask_rin_chan',
+      requestId: 'request-e11000',
+      status: 'committed',
+      buckets: [],
+      leaseExpiresAt: new Date(Date.now() + 60_000),
+    };
+    // Nothing on the way in; the winner's row on every read the retry makes.
+    mocks.requestCollection.findOne.mockResolvedValueOnce(null).mockResolvedValue(winner);
+    mocks.session.withTransaction.mockRejectedValueOnce(
+      Object.assign(new Error('E11000 duplicate key error'), { code: 11000 }),
+    );
+
+    await expect(
+      reserveLlmUsage('user-e11000', 'ask_rin_chan', 'request-e11000'),
+    ).resolves.toMatchObject({ allowed: true, disposition: 'committed', duplicate: true });
+    // The retry short-circuits on the duplicate read, so it never opens a second
+    // transaction -- one attempt, and the losing session still gets closed.
+    expect(mocks.session.withTransaction).toHaveBeenCalledTimes(1);
+    expect(mocks.session.endSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates a transaction failure that is not a duplicate key', async () => {
+    mocks.requestCollection.findOne.mockResolvedValue(null);
+    mocks.session.withTransaction.mockRejectedValueOnce(new Error('replica set stepped down'));
+
+    await expect(reserveLlmUsage('user-fail', 'ask_rin_chan', 'request-fail')).rejects.toThrow(
+      'replica set stepped down',
+    );
+    expect(mocks.session.withTransaction).toHaveBeenCalledTimes(1);
+  });
+
   it('does not commit or refund denied usage', async () => {
     const denied = {
       allowed: false,

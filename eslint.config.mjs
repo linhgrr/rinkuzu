@@ -34,7 +34,6 @@ const centralizedAuthExceptions = [
 // segment, and would silently fail to match these files on this platform.
 const oversizedFileAllowlist = [
   'src/app/[[]locale[]]/(app)/quiz/[[]slug[]]/QuizPlayerClient.tsx',
-  'src/app/[[]locale[]]/(app)/quiz/[[]slug[]]/result/page.tsx',
   'src/app/[[]locale[]]/(marketing)/privacy/page.tsx',
   'src/app/[[]locale[]]/(marketing)/terms/page.tsx',
   'src/components/app-chrome/AppChrome.tsx',
@@ -58,6 +57,7 @@ const oversizedFileAllowlist = [
   'src/features/quiz/components/create/CreateQuizPage.tsx',
   'src/features/quiz/components/editor/QuizEditorWorkspace.tsx',
   'src/features/quiz/components/FlashcardsPageClient.tsx',
+  'src/features/quiz/components/QuizResultPageClient.tsx',
   'src/lib/communication/campaigns.ts',
   'src/lib/communication/feedback.ts',
   'src/lib/communication/support.ts',

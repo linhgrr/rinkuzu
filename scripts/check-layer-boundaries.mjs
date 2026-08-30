@@ -247,21 +247,33 @@ function checkTransactionParallelism(filePath, errors) {
   visit(sourceFile);
 }
 
-const presentationFiles = walk(path.join(root, 'src/app'));
 const localePresentationFiles = walk(path.join(root, 'src/app/[locale]'));
 const componentPresentationFiles = walk(path.join(root, 'src/components'));
+const featureFiles = walk(path.join(root, 'src/features'));
 const clientPresentationFiles = [...localePresentationFiles, ...componentPresentationFiles];
-const featureClientFiles = walk(path.join(root, 'src/features')).filter(
+// The presentation layer as docs/architecture/three-layer-standard.md defines it: src/app plus
+// src/components plus src/features. A rule that bans reaching into persistence has to scan all
+// three. Scanning only src/app -- as this did until 2026-08-30 -- let a shared component or a
+// feature module import @/repositories or mongoose straight past a green gate.
+// The narrower sets above stay narrow deliberately: `presentation -> dto` exempts src/app/api,
+// because route handlers are the one presentation-side place that legitimately speaks DTO, and
+// it leaves src/features to the feature-scoped rules that model that layer's own boundaries.
+const presentationLayerFiles = [
+  ...walk(path.join(root, 'src/app')),
+  ...componentPresentationFiles,
+  ...featureFiles,
+];
+const featureClientFiles = featureFiles.filter(
   (filePath) => /\/(?:components|hooks)\//.test(relative(filePath)) && !isTestFile(filePath),
 );
-const featureApiFiles = walk(path.join(root, 'src/features')).filter(
+const featureApiFiles = featureFiles.filter(
   (filePath) => /\/api\//.test(relative(filePath)) && !isTestFile(filePath),
 );
 const approvedFeatureTransportBoundaries = new Set([
   'src/features/adaptive/lib/adaptive-api-fetch.ts',
   'src/features/adaptive/lib/adaptive-api-methods.ts',
 ]);
-const featureNonBoundaryFiles = walk(path.join(root, 'src/features')).filter((filePath) => {
+const featureNonBoundaryFiles = featureFiles.filter((filePath) => {
   if (isTestFile(filePath)) return false;
   const relativePath = relative(filePath);
   if (approvedFeatureTransportBoundaries.has(relativePath)) return false;
@@ -309,7 +321,7 @@ const featureOwnedRootComponents = new Map([
   ['FloatingDraftProgressIsland.tsx', 'quiz'],
 ]);
 
-const presentationPersistenceImports = collectViolations(presentationFiles, (imports) =>
+const presentationPersistenceImports = collectViolations(presentationLayerFiles, (imports) =>
   imports.some(
     (source) =>
       source === 'mongoose' ||

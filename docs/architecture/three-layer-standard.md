@@ -15,16 +15,18 @@ ownership).
 | Persistence        | src/repositories, src/models                                      | Persistence records (src/repositories/types, `_id: ObjectId`, Date as Date) and mongoose schemas (src/models)                                   | only repositories touch models²; one DDL writer (migrations), never request-path DDL³                                                                                                                 |
 
 ¹ The two presentation rules do **not** cover the same files, so read them separately.
-`presentation -> persistence` (mongoose / `@/models` / `@/repositories`) walks all of src/app —
-including src/app/api — but **not src/components**. `presentation -> dto` walks src/app/[locale] and
-src/components. So a file under src/components that imported `@/repositories` or mongoose would pass
-a green gate today; the Wave 4 `non-persistence -> models` ratchet catches the `@/models` half of
-that hole but not `@/repositories`. Separately, every non-boundary file under src/features is
-scanned (`feature client -> dto`, `feature non-boundary -> dto`). It does not scan for `@/entities` imports from
-presentation code specifically — that ban is enforced only where DTOs themselves import entities
-(`dto -> domain`) and for the quiz-builder client allowlist (`quiz builder client -> domain`). No
-presentation file imports `@/entities` today, but a general presentation-wide `@/entities` scan is
-not wired into the checker; treat the entities half of this cell as convention until it is.
+`presentation -> persistence` (mongoose / `@/lib/mongoose` / `@/models` / `@/repositories`) walks the
+whole presentation layer — src/app including src/app/api, plus src/components, plus src/features,
+tests included. `presentation -> dto` walks src/app/[locale] and src/components only: src/app/api is
+exempt because route handlers are the one presentation-side place that legitimately speaks DTO, and
+src/features is left to the feature-scoped rules that model its own boundaries (`feature client ->
+dto`, `feature non-boundary -> dto`, and their api-client twins). Both rules read static
+`from '…'` specifiers; a dynamic `await import('@/repositories/…')` is invisible to them, and none
+exists outside repository tests today. Neither scans for `@/entities` imports from presentation code
+specifically — that ban is enforced only where DTOs themselves import entities (`dto -> domain`) and
+for the quiz-builder client allowlist (`quiz builder client -> domain`). No presentation file imports
+`@/entities` today, but a general presentation-wide `@/entities` scan is not wired into the checker;
+treat the entities half of this cell as convention until it is.
 
 ² Enforced repo-wide (`non-persistence -> models`): every file under `src` importing `@/models` is a
 violation unless it is under `src/repositories` (the persistence layer) or `src/models` itself

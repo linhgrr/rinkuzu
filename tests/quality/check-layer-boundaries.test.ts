@@ -27,6 +27,20 @@ function modelImport(): string {
   return "import { Placeholder } from '@/models/Placeholder';\n\nexport const touchesModel = Placeholder;\n";
 }
 
+/**
+ * A persistence reach the "only repositories touch models" ratchet cannot see.
+ * That ratchet only matches `@/models/`, so `@/repositories/` and a bare
+ * `mongoose` import are caught by `presentation -> persistence` alone — which
+ * is why these fixtures use them rather than modelImport().
+ */
+function repositoryImport(): string {
+  return "import { FooRepository } from '@/repositories/FooRepository';\n\nexport const reachesRepository = FooRepository;\n";
+}
+
+function mongooseImport(): string {
+  return "import mongoose from 'mongoose';\n\nexport const reachesMongoose = mongoose;\n";
+}
+
 function writeFile(sandbox: string, relativePath: string, contents: string): void {
   const filePath = path.join(sandbox, relativePath);
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -112,6 +126,65 @@ describe('persistence-layer model access ratchet', () => {
   it('does not flag test files', () => {
     const sandbox = makeSandbox();
     writeFile(sandbox, 'src/lib/foo.test.ts', modelImport());
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(0);
+  });
+});
+
+describe('presentation-layer persistence ratchet', () => {
+  it('flags a shared component reaching into a repository', () => {
+    const sandbox = makeSandbox();
+    writeFile(sandbox, 'src/components/SharedThing.tsx', repositoryImport());
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      'presentation -> persistence: new violation in src/components/SharedThing.tsx',
+    );
+  });
+
+  it('flags a shared component importing mongoose directly', () => {
+    const sandbox = makeSandbox();
+    writeFile(sandbox, 'src/components/SharedThing.tsx', mongooseImport());
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      'presentation -> persistence: new violation in src/components/SharedThing.tsx',
+    );
+  });
+
+  it('flags a feature module reaching into a repository', () => {
+    const sandbox = makeSandbox();
+    writeFile(sandbox, 'src/features/quiz/components/QuizThing.tsx', repositoryImport());
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      'presentation -> persistence: new violation in src/features/quiz/components/QuizThing.tsx',
+    );
+  });
+
+  it('still flags a page under src/app, the surface it always covered', () => {
+    const sandbox = makeSandbox();
+    writeFile(sandbox, 'src/app/dashboard/page.tsx', repositoryImport());
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      'presentation -> persistence: new violation in src/app/dashboard/page.tsx',
+    );
+  });
+
+  it('leaves a component that touches no persistence alone', () => {
+    const sandbox = makeSandbox();
+    writeFile(sandbox, 'src/components/SharedThing.tsx', 'export const shared = true;\n');
 
     const result = runChecker(sandbox);
 

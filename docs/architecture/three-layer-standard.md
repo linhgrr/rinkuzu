@@ -14,9 +14,13 @@ ownership).
 | Application/Domain | src/services, src/entities, src/interfaces, src/dtos, src/mappers | DTO (src/dtos, zod is the source of truth, Date as ISO string, id as string) and Entity (src/entities, Date as Date, id as string, no mongoose) | DTOs never import entities/models/repositories; entities never reference `_id` or Mongo types; services never import mongoose/@/models/@/repositories, so they depend on the injected interfaces only |
 | Persistence        | src/repositories, src/models                                      | Persistence records (src/repositories/types, `_id: ObjectId`, Date as Date) and mongoose schemas (src/models)                                   | only repositories touch models²; one DDL writer (migrations), never request-path DDL³                                                                                                                 |
 
-¹ `check:architecture` scans every file under src/app/[locale] and src/components (`presentation -> dto`,
-`presentation -> persistence`), and every non-boundary file under src/features (`feature client -> dto`,
-`feature non-boundary -> dto`) for these imports. It does not scan for `@/entities` imports from
+¹ The two presentation rules do **not** cover the same files, so read them separately.
+`presentation -> persistence` (mongoose / `@/models` / `@/repositories`) walks all of src/app —
+including src/app/api — but **not src/components**. `presentation -> dto` walks src/app/[locale] and
+src/components. So a file under src/components that imported `@/repositories` or mongoose would pass
+a green gate today; the Wave 4 `non-persistence -> models` ratchet catches the `@/models` half of
+that hole but not `@/repositories`. Separately, every non-boundary file under src/features is
+scanned (`feature client -> dto`, `feature non-boundary -> dto`). It does not scan for `@/entities` imports from
 presentation code specifically — that ban is enforced only where DTOs themselves import entities
 (`dto -> domain`) and for the quiz-builder client allowlist (`quiz builder client -> domain`). No
 presentation file imports `@/entities` today, but a general presentation-wide `@/entities` scan is
@@ -56,16 +60,28 @@ in three groups, and only the first two are "not debt":
 
 | group                                                             | count | status                                                                                                             |
 | ----------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------ |
-| Cross-layer shape echoes (the section above)                      | 9     | deliberate — do not "fix"                                                                                          |
+| Cross-layer shape echoes (the section above)                      | 7     | deliberate — do not "fix"                                                                                          |
 | One explicit pair in `src/services/premium/PremiumQuizService.ts` | 1     | deliberate — two response shapes kept stated rather than hidden behind a helper that cost more lines than it saved |
+| **Intra-persistence duplication**                                 | 2     | **debt, collapsible now** — see below                                                                              |
 | Controller boilerplate across `src/app/api/**/route.ts`           | 16    | **accepted debt, retirable**                                                                                       |
+
+The two intra-persistence pairs are `src/models/PremiumPlaySession.ts` ↔
+`src/repositories/types/PremiumQuizPersistence.ts` and `src/repositories/PremiumQuizRepository.ts` ↔
+`src/repositories/mappers/QuizPersistenceMapper.ts`. Both sides of each sit **inside the persistence
+layer**, so the cross-layer argument does not apply to them and "Sharing IS allowed within a layer"
+does — a shared field builder collapses them the way `leaseQueueFields` collapsed its equivalents in
+`src/models/Communication.ts`. They are baselined only because no wave scoped them.
 
 The third group is genuine duplication that is simply not yet retired. It is the same shape that
 `src/lib/api/communication-mutation.ts` (`withCommunicationMutation`) and
 `src/lib/api/billing-order-mutation.ts` (`withBillingOrderMutation`) already eliminated for the
 communication and billing-order route families: the guard, the params/body schemas, the bail-out,
-the `apiOk` wrap and the error-scope catch, restated per route. What remains sits in the
-premium-quizzes, premium-submissions, credits and remaining billing route families.
+the `apiOk` wrap and the error-scope catch, restated per route. What remains spans more than the
+mutation families: `admin/billing`, `admin/premium-submissions`, `admin/support`, `billing/orders`,
+`billing/quotes`, `credits`, `premium-quizzes/[id]`, `premium-quizzes/sessions`,
+`premium-submissions/mine`, `quiz-drafts/[id]`, `quizzes` and `support/tickets`. A follow-up that
+retires only the obvious four will re-cut the baseline expecting zero and fail on the rest — derive
+the list from `reports/jscpd/jscpd-report.json` rather than from memory.
 
 It is baselined so the gate stays useful — a fingerprint-exact baseline still fails on any _new_
 clone — but being in the baseline does not make it sanctioned. **A baselined clone is invisible in

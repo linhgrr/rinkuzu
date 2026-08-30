@@ -156,3 +156,6 @@ temp/
 
 # Superpowers SDD scratch workspace (ledger, briefs, review packages)
 .superpowers/
+
+# Playwright MCP session debris (console logs and page snapshots)
+.playwright-mcp/

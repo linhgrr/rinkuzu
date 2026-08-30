@@ -49,6 +49,31 @@ caught at the mappers by the type checker. Do NOT "fix" it by deriving one layer
 another across a boundary — `check:architecture` bans the imports that would require, on purpose.
 Cross-layer echo clones are recorded in quality/duplication-baseline.json as known.
 
+## What else is in the duplication baseline, and why
+
+The baseline is not exclusively deliberate design. As of the 2026-08-30 re-cut it holds 26 clones
+in three groups, and only the first two are "not debt":
+
+| group                                                             | count | status                                                                                                             |
+| ----------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------ |
+| Cross-layer shape echoes (the section above)                      | 9     | deliberate — do not "fix"                                                                                          |
+| One explicit pair in `src/services/premium/PremiumQuizService.ts` | 1     | deliberate — two response shapes kept stated rather than hidden behind a helper that cost more lines than it saved |
+| Controller boilerplate across `src/app/api/**/route.ts`           | 16    | **accepted debt, retirable**                                                                                       |
+
+The third group is genuine duplication that is simply not yet retired. It is the same shape that
+`src/lib/api/communication-mutation.ts` (`withCommunicationMutation`) and
+`src/lib/api/billing-order-mutation.ts` (`withBillingOrderMutation`) already eliminated for the
+communication and billing-order route families: the guard, the params/body schemas, the bail-out,
+the `apiOk` wrap and the error-scope catch, restated per route. What remains sits in the
+premium-quizzes, premium-submissions, credits and remaining billing route families.
+
+It is baselined so the gate stays useful — a fingerprint-exact baseline still fails on any _new_
+clone — but being in the baseline does not make it sanctioned. **A baselined clone is invisible in
+the gate's failure output, so the only way to see this group is to read
+`reports/jscpd/jscpd-report.json` directly.** Retiring it means extending the same wrapper pattern
+to those families and re-cutting the baseline downward; the ratchet in
+`scripts/check-duplication.mjs` only ever permits it to fall.
+
 ## Sharing IS allowed within a layer
 
 - DTO layer: shared zod fragments (see src/dtos/quiz.ts `quizComposeBaseFields`).

@@ -142,14 +142,6 @@ interface PremiumPlaySessionStart {
   session: PremiumPlaySession;
 }
 
-interface PremiumSessionResponseHeader {
-  sessionId: string;
-  quizId: string;
-  submissionId: string;
-  title: string;
-  totalQuestions: number;
-}
-
 interface PremiumDecodedSessionCursor {
   decoded: PremiumCursorPayload;
   session: PremiumPlaySession;
@@ -558,7 +550,7 @@ export class PremiumQuizService {
   ): Promise<PremiumFlashcardResponse> {
     const { decoded, session } = await this.decodeSessionCursor(sessionId, userId, cursor);
     await this.requireBatchQuota(sessionId, userId, 'Too many Premium flashcard requests');
-    const publication = await this.loadSessionPublication(session, decoded);
+    const publication = await this.requireFreshSessionPublication(session, decoded);
     return this.buildFlashcard(publication, session, decoded.batchIndex);
   }
 
@@ -601,7 +593,7 @@ export class PremiumQuizService {
   ): Promise<PremiumBatchResponse> {
     const { decoded, session } = await this.decodeSessionCursor(sessionId, context.userId, cursor);
     await this.requireBatchQuota(sessionId, context.userId, 'Too many Premium batch requests');
-    const publication = await this.loadSessionPublication(session, decoded);
+    const publication = await this.requireFreshSessionPublication(session, decoded);
     return this.buildBatch(publication, session, decoded.batchIndex);
   }
 
@@ -777,7 +769,7 @@ export class PremiumQuizService {
     }
   }
 
-  private async loadSessionPublication(
+  private async requireFreshSessionPublication(
     session: PremiumPlaySession,
     decoded: PremiumCursorPayload,
   ): Promise<PremiumQuizSubmission> {
@@ -802,19 +794,6 @@ export class PremiumQuizService {
     };
   }
 
-  private buildResponseHeader(
-    publication: PremiumQuizSubmission,
-    session: PremiumPlaySession,
-  ): PremiumSessionResponseHeader {
-    return {
-      sessionId: session.id,
-      quizId: publication.sourceQuizId,
-      submissionId: publication.id,
-      title: publication.snapshot.title,
-      totalQuestions: publication.snapshot.questions.length,
-    };
-  }
-
   private buildWatermark(session: PremiumPlaySession): string {
     const watermarkIdentity = createHash('sha256')
       .update(`${session.userId}:${session.id}`)
@@ -836,7 +815,11 @@ export class PremiumQuizService {
     const totalBatches = Math.ceil(publication.snapshot.questions.length / BATCH_SIZE);
     const cursorBase = this.buildCursorBase(publication, session);
     return {
-      ...this.buildResponseHeader(publication, session),
+      sessionId: session.id,
+      quizId: publication.sourceQuizId,
+      submissionId: publication.id,
+      title: publication.snapshot.title,
+      totalQuestions: publication.snapshot.questions.length,
       batchIndex,
       startIndex,
       questions: await Promise.all(questions.map(toBatchQuestion)),
@@ -869,7 +852,11 @@ export class PremiumQuizService {
     if (!question) throw new PremiumQuizError('invalid_cursor', 'Flashcard is out of range');
     const cursorBase = this.buildCursorBase(publication, session);
     return {
-      ...this.buildResponseHeader(publication, session),
+      sessionId: session.id,
+      quizId: publication.sourceQuizId,
+      submissionId: publication.id,
+      title: publication.snapshot.title,
+      totalQuestions: publication.snapshot.questions.length,
       questionIndex,
       question: await toBatchQuestion(question),
       revealCursor: encodeCursor({ ...cursorBase, batchIndex: questionIndex }),

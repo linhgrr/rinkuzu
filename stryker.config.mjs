@@ -50,6 +50,17 @@ const config = {
   // every time, and a gate that cannot reach evaluation reports no score at
   // all rather than a bad one. Bounded and explicit, not removed.
   dryRunTimeoutMinutes: 20,
+  // Reuse the verdicts of mutants whose source and covering tests have not
+  // changed since the last run. The campaign is 19,500 mutants over 378 files
+  // and every invocation was re-deciding all of them from scratch; the cache
+  // is what makes a second run cost only what actually moved. It changes no
+  // verdict — a mutant is re-tested the moment anything it depends on differs
+  // — so the score means the same thing it did before.
+  //
+  // Cached under reports/mutation/, which is gitignored: it is a cache, not
+  // evidence, and a stale one is discarded rather than trusted.
+  incremental: true,
+  incrementalFile: 'reports/mutation/stryker-incremental.json',
   tempDirName: '.stryker-tmp',
   cleanTempDir: true,
 };

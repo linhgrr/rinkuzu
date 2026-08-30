@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { apiErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { parseQuizSlugRouteParams } from '../quiz-slug-route-params';
+import { quizSlugRouteParamsSchema } from '@/dtos/quiz';
+import { parseRouteParams } from '@/lib/api/validated';
 
 interface QuizProgressRouteContext {
   request: NextRequest;
@@ -20,12 +21,12 @@ interface QuizProgressRouteOptions {
 export function createQuizProgressRoute(options: QuizProgressRouteOptions) {
   return withAuth(async (request: NextRequest, { params, userId, session }) => {
     try {
-      const parsedParams = parseQuizSlugRouteParams(params);
-      if (!parsedParams.success) return parsedParams.response;
+      const parsedParams = parseRouteParams(params, quizSlugRouteParamsSchema);
+      if (!parsedParams.ok) return parsedParams.response;
 
       return await options.handle({
         request,
-        slug: parsedParams.slug,
+        slug: parsedParams.data.slug,
         userId,
         userRole: session.user.role,
       });

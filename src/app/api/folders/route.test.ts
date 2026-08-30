@@ -140,8 +140,7 @@ describe('POST /api/folders', () => {
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.error.code).toBe('validation_error');
-    // route passes Zod field map directly as meta (not nested under meta.fields)
-    expect(body.error.meta).toEqual(
+    expect(body.error.meta.fields).toEqual(
       expect.objectContaining({
         name: expect.any(String),
       }),

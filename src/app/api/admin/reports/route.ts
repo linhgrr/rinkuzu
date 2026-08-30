@@ -4,16 +4,14 @@ import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { adminReportListQuerySchema } from '@/dtos/admin-report';
-import { readAndValidateSearchParams } from '@/lib/api/request';
+import { parseSearchParams } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withAdmin(async (request: NextRequest) => {
   try {
-    const query = readAndValidateSearchParams(request, adminReportListQuerySchema);
-    if (!query.success) {
-      return apiErr('validation_error', query.error, 400, { fields: query.fields });
-    }
+    const query = parseSearchParams(request, adminReportListQuerySchema);
+    if (!query.ok) return query.response;
 
     const adminService = getAdminService();
     const result = await adminService.getReports(query.data);

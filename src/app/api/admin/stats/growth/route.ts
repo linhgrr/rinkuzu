@@ -3,15 +3,13 @@ import { getAdminService } from '@/lib/admin-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { adminGrowthQuerySchema } from '@/dtos/admin-stats';
-import { readAndValidateSearchParams } from '@/lib/api/request';
+import { parseSearchParams } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withAdmin(async (req: Request) => {
-  const query = readAndValidateSearchParams(req, adminGrowthQuerySchema);
-  if (!query.success) {
-    return apiErr('validation_error', query.error, 400, { fields: query.fields });
-  }
+  const query = parseSearchParams(req, adminGrowthQuerySchema);
+  if (!query.ok) return query.response;
 
   try {
     const adminService = getAdminService();

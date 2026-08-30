@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
 import { adminBillingWebhookListQuerySchema } from '@/dtos/admin-billing-orders';
 import { withAdmin } from '@/lib/api/auth';
-import { readAndValidateSearchParams } from '@/lib/api/request';
-import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { apiOk, apiServiceErr } from '@/lib/api/response';
 import { getAdminBillingOrdersService } from '@/lib/admin-billing-orders-factory';
+import { parseSearchParams } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +18,8 @@ export const dynamic = 'force-dynamic';
  * seen by anyone.
  */
 export const GET = withAdmin(async (request: NextRequest) => {
-  const query = readAndValidateSearchParams(request, adminBillingWebhookListQuerySchema);
-  if (!query.success) {
-    return apiErr('validation_error', query.error, 400, { fields: query.fields });
-  }
+  const query = parseSearchParams(request, adminBillingWebhookListQuerySchema);
+  if (!query.ok) return query.response;
 
   const result = await getAdminBillingOrdersService().listWebhookDiagnostics(query.data);
   return result.success ? apiOk(result.data) : apiServiceErr(result);

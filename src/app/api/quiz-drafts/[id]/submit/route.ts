@@ -12,14 +12,14 @@ import { quizDraftIdRouteParamsSchema } from '@/dtos/quiz';
 import { getQuestionListWarnings } from '@/lib/validation/question';
 import { fetchQuizDraftServer } from '@/lib/quiz/draftServer';
 import { logger } from '@/lib/logger';
-import { QuizCreationError, QuizDraftSynchronizationError } from '@/lib/quiz/errors';
+import { QuizDraftSynchronizationError } from '@/lib/quiz/errors';
+import { quizAuthoringErrorResponse } from '@/lib/api/quiz-authoring-error';
 import {
   buildAdaptiveServiceHeaders,
   buildAdaptiveUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
-import { premiumQuizErrorResponse } from '@/lib/api/premium-quiz';
 
 const quizService = getQuizService();
 
@@ -131,14 +131,8 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
     });
   } catch (error) {
     logger.error({ error }, 'Submit draft error');
-    if (error instanceof Error && error.name === 'PremiumQuizError') {
-      return premiumQuizErrorResponse(error);
-    }
-    if (error instanceof QuizCreationError) {
-      const status = error.code === 'premium_required' ? 403 : 400;
-      const code = error.code === 'premium_required' ? 'premium_required' : 'validation_error';
-      return apiErr(code, error.message, status);
-    }
+    const authoringRefusal = quizAuthoringErrorResponse(error);
+    if (authoringRefusal) return authoringRefusal;
     if (error instanceof QuizDraftSynchronizationError) {
       return apiErr('upstream_error', error.message, 502, {
         draftId: error.draftId,

@@ -4,21 +4,17 @@ import { getUserService } from '@/lib/user-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { attemptDetailQuerySchema, attemptIdRouteParamsSchema } from '@/dtos/user';
-import { readAndValidateRouteParams, readAndValidateSearchParams } from '@/lib/api/request';
+import { parseRouteParams, parseSearchParams } from '@/lib/api/validated';
 
 // This route accepts BOTH authenticated users (via session) and anonymous
 // users that pass `userEmail` as a query param to inspect their own attempt.
 export const GET = withOptionalAuth(async (request: NextRequest, { params, userId, session }) => {
   try {
-    const parsedParams = readAndValidateRouteParams(params, attemptIdRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
+    const parsedParams = parseRouteParams(params, attemptIdRouteParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
 
-    const query = readAndValidateSearchParams(request, attemptDetailQuerySchema);
-    if (!query.success) {
-      return apiErr('validation_error', query.error, 400, { fields: query.fields });
-    }
+    const query = parseSearchParams(request, attemptDetailQuerySchema);
+    if (!query.ok) return query.response;
     const userEmailParam = query.data.userEmail;
 
     const owner = userId

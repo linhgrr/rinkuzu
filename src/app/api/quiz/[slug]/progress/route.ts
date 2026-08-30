@@ -1,8 +1,8 @@
 import { getQuizService } from '@/lib/quiz-factory';
-import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
-import { readAndValidateJson } from '@/lib/api/request';
+import { apiOk, apiServiceErr } from '@/lib/api/response';
 import { savedQuizProgressSchema } from '@/dtos/quiz';
 import { createQuizProgressRoute } from './progress-route';
+import { parseJsonBody } from '@/lib/api/validated';
 
 const quizService = getQuizService();
 
@@ -17,10 +17,8 @@ export const GET = createQuizProgressRoute({
 export const PUT = createQuizProgressRoute({
   logMessage: 'Save quiz progress error',
   handle: async ({ request, slug, userId, userRole }) => {
-    const parsedBody = await readAndValidateJson(request, savedQuizProgressSchema);
-    if (!parsedBody.success) {
-      return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);
-    }
+    const parsedBody = await parseJsonBody(request, savedQuizProgressSchema);
+    if (!parsedBody.ok) return parsedBody.response;
 
     const result = await quizService.saveQuizProgress(slug, userId, parsedBody.data, userRole);
 

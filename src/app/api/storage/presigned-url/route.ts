@@ -6,11 +6,11 @@ import { getQuizPdfObjectPrefix, s3Client, BUCKET_NAME } from '@/lib/s3';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { readAndValidateJson } from '@/lib/api/request';
 import { createPresignedUploadUrlRequestSchema } from '@/dtos/storage';
 import { resolveEntitlements, type MeteredCapability } from '@/lib/entitlements';
 import { getLlmUsageSnapshot } from '@/lib/llm/rate-limit';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
+import { parseJsonBody } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,10 +27,8 @@ const UPLOAD_CAPABILITY: Record<'quiz' | 'adaptive', MeteredCapability> = {
 
 export const POST = withAuth(async (request: NextRequest, { userId, session }) => {
   try {
-    const input = await readAndValidateJson(request, createPresignedUploadUrlRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, input.fields);
-    }
+    const input = await parseJsonBody(request, createPresignedUploadUrlRequestSchema);
+    if (!input.ok) return input.response;
 
     const uploadRate = await checkAuthRateLimit('pdf_upload_intent_user', userId);
     if (!uploadRate.allowed) return rateLimitResponse(uploadRate);

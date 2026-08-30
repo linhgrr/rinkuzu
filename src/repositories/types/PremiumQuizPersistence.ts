@@ -1,8 +1,11 @@
+import type { PremiumPlaySessionFields } from '@/models/PremiumPlaySession';
 import type { MongoIdLike } from '@/types/mongo';
 import type { QuizQuestionPersistenceRecord } from '@/repositories/types/QuizPersistence';
 
-// This shape deliberately echoes its sibling in src/models/PremiumPlaySession.ts;
-// see docs/architecture/three-layer-standard.md. Do not derive one from another.
+// The submission snapshot below deliberately echoes its sibling in
+// src/models/PremiumQuizSubmission.ts; see docs/architecture/three-layer-standard.md.
+// The play-session record at the bottom of this file does NOT: it shares its
+// field list with the schema, because both sit inside the persistence layer.
 interface PremiumSnapshotPersistenceRecord {
   title: string;
   slug: string;
@@ -47,12 +50,6 @@ interface PremiumReviewResultPersistenceRecord {
   summary: string;
   criteria: PremiumReviewCriterionPersistenceRecord[];
   issues: PremiumReviewIssuePersistenceRecord[];
-}
-
-interface PremiumSessionAnswerPersistenceRecord {
-  questionIndex: number;
-  selectedIndex?: number;
-  selectedIndexes?: number[];
 }
 
 export interface PremiumQuizSubmissionPersistenceRecord {
@@ -105,23 +102,6 @@ export interface CreditLedgerPersistenceRecord {
   createdAt: Date;
 }
 
-export interface PremiumPlaySessionPersistenceRecord {
+export interface PremiumPlaySessionPersistenceRecord extends PremiumPlaySessionFields<MongoIdLike> {
   _id: MongoIdLike;
-  user: MongoIdLike;
-  quiz: MongoIdLike;
-  submission: MongoIdLike;
-  snapshotHash: string;
-  answers: PremiumSessionAnswerPersistenceRecord[];
-  currentQuestionIndex: number;
-  highestBatch: number;
-  sessionCode: string;
-  idleExpiresAt: Date;
-  absoluteExpiresAt: Date;
-  purgeAt: Date;
-  batchWindowStartedAt: Date;
-  batchRequestCount: number;
-  submissionIdempotencyKey?: string;
-  completedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
 }

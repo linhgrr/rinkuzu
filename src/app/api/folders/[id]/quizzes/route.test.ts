@@ -62,8 +62,7 @@ describe('POST /api/folders/[id]/quizzes', () => {
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.error.code).toBe('validation_error');
-    // body validation meta is the field map itself
-    expect(body.error.meta).toEqual(
+    expect(body.error.meta.fields).toEqual(
       expect.objectContaining({
         quizId: expect.any(String),
       }),
@@ -79,8 +78,7 @@ describe('POST /api/folders/[id]/quizzes', () => {
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.error.code).toBe('validation_error');
-    // route-param validation wraps the field map under meta.fields
-    expect(body.error.meta?.fields).toEqual(
+    expect(body.error.meta.fields).toEqual(
       expect.objectContaining({
         id: expect.any(String),
       }),

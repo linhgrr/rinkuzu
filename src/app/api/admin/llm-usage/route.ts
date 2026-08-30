@@ -1,8 +1,7 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
 import { withAdmin } from '@/lib/api/auth';
-import { apiErr } from '@/lib/api/response';
-import { readAndValidateSearchParams } from '@/lib/api/request';
 import { z } from 'zod';
+import { parseSearchParams } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +17,8 @@ const querySchema = z
   .strict();
 
 export const GET = withAdmin(async (req, { userId, session }) => {
-  const query = readAndValidateSearchParams(req, querySchema);
-  if (!query.success) {
-    return apiErr('validation_error', query.error, 400, { fields: query.fields });
-  }
+  const query = parseSearchParams(req, querySchema);
+  if (!query.ok) return query.response;
 
   const upstreamUrl = new URL(req.url);
   upstreamUrl.search = '';

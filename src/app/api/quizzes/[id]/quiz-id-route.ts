@@ -3,8 +3,7 @@ import type { NextRequest } from 'next/server';
 
 import { quizIdRouteParamsSchema } from '@/dtos/quiz';
 import { withAuth } from '@/lib/api/auth';
-import { readAndValidateRouteParams } from '@/lib/api/request';
-import { apiErr } from '@/lib/api/response';
+import { parseRouteParams } from '@/lib/api/validated';
 
 type AuthenticatedSession = Session & {
   user: NonNullable<Session['user']>;
@@ -28,10 +27,8 @@ interface QuizIdRouteOptions {
  */
 export function createQuizIdRoute(options: QuizIdRouteOptions) {
   return withAuth(async (request: NextRequest, { params, userId, email, session }) => {
-    const parsedParams = readAndValidateRouteParams(params, quizIdRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
+    const parsedParams = parseRouteParams(params, quizIdRouteParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
 
     return options.handle({
       request,

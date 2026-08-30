@@ -1,21 +1,20 @@
 import type { NextRequest } from 'next/server';
 import { supportTicketParamsSchema } from '@/dtos/communication';
 import { withAuth } from '@/lib/api/auth';
-import { readAndValidateRouteParams } from '@/lib/api/request';
-import { apiErr, apiOk } from '@/lib/api/response';
+import { apiOk } from '@/lib/api/response';
 import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
 import { reopenSupportTicket } from '@/lib/communication/support';
+import { parseRouteParams } from '@/lib/api/validated';
 
 export const POST = withAuth<{ ticketId: string }>(
   async (request: NextRequest, { params, userId }) => {
     try {
       assertCommunicationMutationRequest(request);
-      const parsed = readAndValidateRouteParams(params, supportTicketParamsSchema);
-      if (!parsed.success)
-        return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
+      const parsed = parseRouteParams(params, supportTicketParamsSchema);
+      if (!parsed.ok) return parsed.response;
       return apiOk(await reopenSupportTicket(parsed.data.ticketId, userId));
     } catch (error) {
       return communicationHttpError(error, 'support-reopen');

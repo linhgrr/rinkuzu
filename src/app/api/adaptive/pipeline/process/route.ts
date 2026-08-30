@@ -6,21 +6,19 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
 import { apiErr } from '@/lib/api/response';
 import { withAuth } from '@/lib/api/auth';
-import { readAndValidateJson } from '@/lib/api/request';
 import { adaptivePipelineProcessRequestSchema } from '@/dtos/adaptive-pipeline';
 import { logger } from '@/lib/logger';
 import type { components } from '@/generated/adaptive-api';
 import { getConstraint, resolveEntitlements } from '@/lib/entitlements';
+import { parseJsonBody } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 type ApiSchemas = components['schemas'];
 
 export const POST = withAuth(async (req, { userId, session }) => {
   try {
-    const body = await readAndValidateJson(req, adaptivePipelineProcessRequestSchema);
-    if (!body.success) {
-      return apiErr('validation_error', body.error, 400, { issues: body.fields });
-    }
+    const body = await parseJsonBody(req, adaptivePipelineProcessRequestSchema);
+    if (!body.ok) return body.response;
     const { s3Key: clientS3Key, filename, subject_id, page_batch_size } = body.data;
 
     // Fail closed: never sign or forward a client key outside the auth user's namespace.

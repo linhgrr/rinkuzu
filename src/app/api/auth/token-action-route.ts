@@ -3,8 +3,8 @@ import type { ZodType } from 'zod';
 
 import type { ServiceResult } from '@/interfaces/services/types';
 import { extractRequestContext, type RequestAuditContext } from '@/lib/audit';
-import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
-import { readAndValidateJson } from '@/lib/api/request';
+import { apiOk, apiServiceErr } from '@/lib/api/response';
+import { parseJsonBody } from '@/lib/api/validated';
 import {
   checkAuthRateLimit,
   rateLimitResponse,
@@ -23,10 +23,8 @@ export function createAuthTokenActionRoute<TInput, TData>(
   options: AuthTokenActionRouteOptions<TInput, TData>,
 ) {
   return async (request: NextRequest) => {
-    const input = await readAndValidateJson(request, options.schema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
-    }
+    const input = await parseJsonBody(request, options.schema);
+    if (!input.ok) return input.response;
 
     const context = extractRequestContext(request);
     const rate = await checkAuthRateLimit(

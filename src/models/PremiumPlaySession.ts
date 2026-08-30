@@ -1,20 +1,28 @@
 import mongoose, { Schema, Types } from 'mongoose';
 
-// This shape deliberately echoes its sibling in
-// src/repositories/types/PremiumQuizPersistence.ts; see
-// docs/architecture/three-layer-standard.md. Do not derive one from another.
-interface StoredAnswerDocument {
+/**
+ * One collection's fields, stated once for the two persistence-layer views of
+ * it: the schema below, which spells ids as `Types.ObjectId`, and
+ * PremiumPlaySessionPersistenceRecord in src/repositories/types, which spells
+ * them as MongoIdLike. Both are inside the persistence layer, so the
+ * three-layer standard's "do not derive one from another" rule does not apply
+ * here — that rule is about DTO/Entity/Persistence echoes, which must stay
+ * independent so the layers can move apart. These two cannot move apart: they
+ * describe the same documents, and a field added to one and not the other is a
+ * bug no type checker was catching.
+ */
+interface PremiumSessionAnswerFields {
   questionIndex: number;
   selectedIndex?: number;
   selectedIndexes?: number[];
 }
 
-interface PremiumPlaySessionDocument {
-  user: Types.ObjectId;
-  quiz: Types.ObjectId;
-  submission: Types.ObjectId;
+export interface PremiumPlaySessionFields<TId> {
+  user: TId;
+  quiz: TId;
+  submission: TId;
   snapshotHash: string;
-  answers: StoredAnswerDocument[];
+  answers: PremiumSessionAnswerFields[];
   currentQuestionIndex: number;
   highestBatch: number;
   sessionCode: string;
@@ -29,7 +37,9 @@ interface PremiumPlaySessionDocument {
   updatedAt: Date;
 }
 
-const StoredAnswerSchema = new Schema<StoredAnswerDocument>(
+type PremiumPlaySessionDocument = PremiumPlaySessionFields<Types.ObjectId>;
+
+const StoredAnswerSchema = new Schema<PremiumSessionAnswerFields>(
   {
     questionIndex: { type: Number, required: true, min: 0 },
     selectedIndex: { type: Number, min: -1 },

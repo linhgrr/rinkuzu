@@ -2,8 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { quizDraftIdRouteParamsSchema } from '@/dtos/quiz';
 import { withAuth } from '@/lib/api/auth';
-import { apiErr } from '@/lib/api/response';
-import { readAndValidateRouteParams } from '@/lib/api/request';
+import { parseRouteParams } from '@/lib/api/validated';
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
 
 type DraftMutationMethod = 'PATCH' | 'DELETE';
@@ -14,10 +13,8 @@ interface QuizDraftIdRouteOptions {
 
 export function createQuizDraftIdRoute(options: QuizDraftIdRouteOptions = {}) {
   return withAuth(async (request: NextRequest, { params, userId, session }) => {
-    const parsedParams = readAndValidateRouteParams(params, quizDraftIdRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
+    const parsedParams = parseRouteParams(params, quizDraftIdRouteParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
 
     const auth = { userId, userRole: session.user.role };
     const targetPath = `/quiz/drafts/${parsedParams.data.id}`;

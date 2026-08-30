@@ -2,7 +2,6 @@ import type { components } from '@/generated/adaptive-api';
 import { withAdmin } from '@/lib/api/auth';
 import { fetchApiData } from '@/lib/api/client';
 import { apiErr, apiOk } from '@/lib/api/response';
-import { readAndValidateRouteParams } from '@/lib/api/request';
 import { premiumQuizErrorResponse, PREMIUM_PRIVATE_HEADERS } from '@/lib/api/premium-quiz';
 import {
   premiumReviewCallbackRequestSchema,
@@ -15,16 +14,15 @@ import {
 } from '@/lib/adaptive/config';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 import { logger } from '@/lib/logger';
+import { parseRouteParams } from '@/lib/api/validated';
 
 type ReviewResponse = components['schemas']['PremiumReviewCreateResponse'];
 
 export const dynamic = 'force-dynamic';
 
 export const POST = withAdmin<{ id: string }>(async (_request, { params, userId, session }) => {
-  const parsed = readAndValidateRouteParams(params, premiumSubmissionIdParamsSchema);
-  if (!parsed.success) {
-    return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
-  }
+  const parsed = parseRouteParams(params, premiumSubmissionIdParamsSchema);
+  if (!parsed.ok) return parsed.response;
   const service = getPremiumQuizService();
   let dispatch: Awaited<ReturnType<typeof service.createReviewDispatch>> | undefined;
   try {

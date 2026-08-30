@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { adminWebhookRowParamsSchema } from '@/dtos/admin-billing-orders';
 import { withAdmin } from '@/lib/api/auth';
-import { readAndValidateRouteParams } from '@/lib/api/request';
-import { apiErr, apiOk } from '@/lib/api/response';
+import { apiOk } from '@/lib/api/response';
+import { parseRouteParams } from '@/lib/api/validated';
 import { createWebhookOperationDeps } from '@/lib/billing-factory';
 import { billingHttpError } from '@/services/billing/billing-http';
 import { assertBillingMutationRequest } from '@/services/billing/billing-security';
@@ -34,10 +34,8 @@ export function withWebhookRowAction<T>(
     async (request: NextRequest, { userId, email, params }): Promise<Response> => {
       try {
         assertBillingMutationRequest(request);
-        const route = readAndValidateRouteParams(params, adminWebhookRowParamsSchema);
-        if (!route.success) {
-          return apiErr('validation_error', route.error, 400, { fields: route.fields });
-        }
+        const route = parseRouteParams(params, adminWebhookRowParamsSchema);
+        if (!route.ok) return route.response;
         const result = await run(createWebhookOperationDeps(), {
           inboxRef: route.data.inboxId,
           operator: { id: userId, email },

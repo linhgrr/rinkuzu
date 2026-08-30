@@ -4,17 +4,15 @@ import { getBookmarkService } from '@/lib/bookmark-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { bookmarkListQuerySchema, createBookmarkRequestSchema } from '@/dtos/bookmark';
-import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
+import { parseJsonBody, parseSearchParams } from '@/lib/api/validated';
 
 const bookmarkService = getBookmarkService();
 
 // GET - Get all bookmarks for current user
 export const GET = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const query = readAndValidateSearchParams(request, bookmarkListQuerySchema);
-    if (!query.success) {
-      return apiErr('validation_error', query.error, 400, { fields: query.fields });
-    }
+    const query = parseSearchParams(request, bookmarkListQuerySchema);
+    if (!query.ok) return query.response;
 
     const result = await bookmarkService.getBookmarksByUser(userId, query.data);
 
@@ -31,10 +29,8 @@ export const GET = withAuth(async (request: NextRequest, { userId }) => {
 // POST - Create new bookmark
 export const POST = withAuth(async (request: NextRequest, { userId, email }) => {
   try {
-    const input = await readAndValidateJson(request, createBookmarkRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
-    }
+    const input = await parseJsonBody(request, createBookmarkRequestSchema);
+    if (!input.ok) return input.response;
 
     const bookmark = await bookmarkService.createBookmark({ userId, userEmail: email }, input.data);
 

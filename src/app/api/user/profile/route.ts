@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/api/auth';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { updateProfileRequestSchema } from '@/dtos/account';
 import { getAccountService } from '@/lib/account-factory';
-import { readAndValidateJson } from '@/lib/api/request';
+import { parseJsonBody } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 const accountService = getAccountService();
@@ -16,10 +16,8 @@ export const GET = withAuth(async (_request, { email }) => {
 
 export const PUT = withAuth(async (request: NextRequest, { email }) => {
   if (!email) return apiErr('unauthorized', 'Authentication required', 401);
-  const input = await readAndValidateJson(request, updateProfileRequestSchema);
-  if (!input.success) {
-    return apiErr('validation_error', input.error, 400, { fields: input.fields });
-  }
+  const input = await parseJsonBody(request, updateProfileRequestSchema);
+  if (!input.ok) return input.response;
   const result = await accountService.updateProfile(email, {
     ...(input.data.displayName !== undefined ? { displayName: input.data.displayName } : {}),
     ...(input.data.bio !== undefined ? { bio: input.data.bio } : {}),

@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
-import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
-import { readAndValidateJson } from '@/lib/api/request';
+import { apiOk, apiServiceErr } from '@/lib/api/response';
 import {
   createPlanRequestSchema,
   deletePlanRequestSchema,
@@ -10,6 +9,7 @@ import {
 import { getAdminSubscriptionService } from '@/lib/admin-subscription-factory';
 import { assertBillingMutationRequest } from '@/services/billing/billing-security';
 import { billingHttpError } from '@/services/billing/billing-http';
+import { parseJsonBody } from '@/lib/api/validated';
 
 const adminSubscriptionService = getAdminSubscriptionService();
 
@@ -24,10 +24,8 @@ export const PATCH = withAdmin(async (request: NextRequest) => {
     // Plan price drives every future quote, so hold plan writes to the same
     // origin and double-submit boundary as the rest of billing.
     assertBillingMutationRequest(request);
-    const input = await readAndValidateJson(request, updatePlanRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
-    }
+    const input = await parseJsonBody(request, updatePlanRequestSchema);
+    if (!input.ok) return input.response;
 
     const result = await adminSubscriptionService.updatePlan(input.data);
     return result.success ? apiOk(result.data) : apiServiceErr(result);
@@ -40,10 +38,8 @@ export const PATCH = withAdmin(async (request: NextRequest) => {
 export const POST = withAdmin(async (request: NextRequest) => {
   try {
     assertBillingMutationRequest(request);
-    const input = await readAndValidateJson(request, createPlanRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
-    }
+    const input = await parseJsonBody(request, createPlanRequestSchema);
+    if (!input.ok) return input.response;
 
     const result = await adminSubscriptionService.createPlan(input.data);
     return result.success ? apiOk(result.data, 201) : apiServiceErr(result);
@@ -56,10 +52,8 @@ export const POST = withAdmin(async (request: NextRequest) => {
 export const DELETE = withAdmin(async (request: NextRequest) => {
   try {
     assertBillingMutationRequest(request);
-    const input = await readAndValidateJson(request, deletePlanRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, { fields: input.fields });
-    }
+    const input = await parseJsonBody(request, deletePlanRequestSchema);
+    if (!input.ok) return input.response;
 
     const result = await adminSubscriptionService.deletePlan(input.data.id);
     return result.success

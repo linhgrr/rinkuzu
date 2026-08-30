@@ -3,6 +3,7 @@ import type { ZodType } from 'zod';
 import {
   readAndValidateJson,
   readAndValidateRouteParams,
+  readAndValidateSearchParams,
   type RouteParams,
   type ValidationResult,
 } from '@/lib/api/request';
@@ -38,6 +39,13 @@ export function parseRouteParams<TParams>(
   schema: ZodType<TParams>,
 ): ParsedResult<TParams> {
   return toParsed(readAndValidateRouteParams(params, schema));
+}
+
+export function parseSearchParams<TQuery>(
+  request: Request,
+  schema: ZodType<TQuery>,
+): ParsedResult<TQuery> {
+  return toParsed(readAndValidateSearchParams(request, schema));
 }
 
 export async function parseJsonBody<TBody>(

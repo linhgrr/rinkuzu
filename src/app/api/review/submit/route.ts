@@ -1,16 +1,14 @@
 import { withAuth } from '@/lib/api/auth';
-import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
-import { readAndValidateJson } from '@/lib/api/request';
+import { apiOk, apiServiceErr } from '@/lib/api/response';
 import { submitReviewRequestSchema } from '@/dtos/review';
 import { getLearningProgressService } from '@/lib/learning-progress-factory';
+import { parseJsonBody } from '@/lib/api/validated';
 
 const learningProgressService = getLearningProgressService();
 
 export const POST = withAuth(async (request, { userId }) => {
-  const input = await readAndValidateJson(request, submitReviewRequestSchema);
-  if (!input.success) {
-    return apiErr('validation_error', input.error, 400, { fields: input.fields });
-  }
+  const input = await parseJsonBody(request, submitReviewRequestSchema);
+  if (!input.ok) return input.response;
 
   const result = await learningProgressService.submitReview(userId, input.data);
   return result.success

@@ -1,19 +1,17 @@
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { withAuth } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
-import { readAndValidateJson } from '@/lib/api/request';
 import { deletePendingUploadRequestSchema } from '@/dtos/storage';
 import { resolveOwnedAdaptivePipelineS3Key } from '@/lib/adaptive/storage-key';
 import { BUCKET_NAME, getQuizPdfObjectPrefix, s3Client } from '@/lib/s3';
 import { logger } from '@/lib/logger';
+import { parseJsonBody } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
 export const DELETE = withAuth(async (request, { userId }) => {
-  const input = await readAndValidateJson(request, deletePendingUploadRequestSchema);
-  if (!input.success) {
-    return apiErr('validation_error', input.error, 400, { fields: input.fields });
-  }
+  const input = await parseJsonBody(request, deletePendingUploadRequestSchema);
+  if (!input.ok) return input.response;
 
   const { purpose, s3Key } = input.data;
   const ownedKey =

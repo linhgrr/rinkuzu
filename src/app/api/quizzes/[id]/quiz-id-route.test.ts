@@ -440,7 +440,7 @@ describe('/api/quizzes/[id] mutation-sensitive branches', () => {
     expect(body.success).toBe(false);
     expect(body.error.code).toBe('validation_error');
     expect(body.error.detail).toBe('No quiz fields provided');
-    expect(body.error.meta).toEqual({ _: 'No quiz fields provided' });
+    expect(body.error.meta).toEqual({ fields: { _: 'No quiz fields provided' } });
     expect(updateQuizMock).not.toHaveBeenCalled();
   });
 

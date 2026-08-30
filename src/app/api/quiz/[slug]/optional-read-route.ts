@@ -4,7 +4,8 @@ import type { ServiceResult } from '@/interfaces/services/types';
 import { withOptionalAuth } from '@/lib/api/auth';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { parseQuizSlugRouteParams } from './quiz-slug-route-params';
+import { quizSlugRouteParamsSchema } from '@/dtos/quiz';
+import { parseRouteParams } from '@/lib/api/validated';
 
 interface OptionalQuizSlugReadContext {
   slug: string;
@@ -23,11 +24,11 @@ export function createOptionalQuizSlugReadRoute<TData>(
 ) {
   return withOptionalAuth(async (_request, { params, userId, session }) => {
     try {
-      const parsedParams = parseQuizSlugRouteParams(params);
-      if (!parsedParams.success) return parsedParams.response;
+      const parsedParams = parseRouteParams(params, quizSlugRouteParamsSchema);
+      if (!parsedParams.ok) return parsedParams.response;
 
       const result = await options.load({
-        slug: parsedParams.slug,
+        slug: parsedParams.data.slug,
         userId,
         session,
       });

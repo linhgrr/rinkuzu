@@ -2,8 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { folderIdRouteParamsSchema } from '@/dtos/folder';
 import { withAuth } from '@/lib/api/auth';
-import { readAndValidateRouteParams } from '@/lib/api/request';
-import { apiErr } from '@/lib/api/response';
+import { parseRouteParams } from '@/lib/api/validated';
 
 interface FolderIdRouteContext {
   request: NextRequest;
@@ -17,12 +16,8 @@ interface FolderIdRouteOptions {
 
 export function createFolderIdRoute(options: FolderIdRouteOptions) {
   return withAuth(async (request: NextRequest, { params, userId }) => {
-    const parsedParams = readAndValidateRouteParams(params, folderIdRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, {
-        fields: parsedParams.fields,
-      });
-    }
+    const parsedParams = parseRouteParams(params, folderIdRouteParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
 
     return options.handle({ request, folderId: parsedParams.data.id, userId });
   });

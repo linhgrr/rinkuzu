@@ -4,7 +4,7 @@ import type { ZodType } from 'zod';
 import { quizSlugRouteParamsSchema } from '@/dtos/quiz';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { withAuth } from '@/lib/api/auth';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
+import { parseParamsAndBody } from '@/lib/api/validated';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 
@@ -30,20 +30,15 @@ export function createQuizSlugMutationRoute<TInput, TData>(
 ) {
   return withAuth(async (request, { params, email, session }) => {
     try {
-      const parsedParams = readAndValidateRouteParams(params, quizSlugRouteParamsSchema);
-      if (!parsedParams.success) {
-        return apiErr('validation_error', parsedParams.error, 400, {
-          fields: parsedParams.fields,
-        });
-      }
-      const parsedBody = await readAndValidateJson(request, options.schema);
-      if (!parsedBody.success) {
-        return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);
-      }
+      const parsed = await parseParamsAndBody(request, params, {
+        params: quizSlugRouteParamsSchema,
+        body: options.schema,
+      });
+      if (!parsed.ok) return parsed.response;
 
       const result = await options.execute({
-        slug: parsedParams.data.slug,
-        input: parsedBody.data,
+        slug: parsed.params.slug,
+        input: parsed.body,
         email,
         session,
       });

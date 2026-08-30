@@ -4,8 +4,8 @@ import type { AdminStatsListQueryDto } from '@/dtos/admin-stats';
 import { adminStatsListQuerySchema } from '@/dtos/admin-stats';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { withAdmin } from '@/lib/api/auth';
-import { readAndValidateSearchParams } from '@/lib/api/request';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { parseSearchParams } from '@/lib/api/validated';
 import { logger } from '@/lib/logger';
 
 interface AdminStatsListRouteOptions<TData, TResponse> {
@@ -20,10 +20,8 @@ export function createAdminStatsListRoute<TData, TResponse>(
 ) {
   return withAdmin(async (request: NextRequest) => {
     try {
-      const query = readAndValidateSearchParams(request, adminStatsListQuerySchema);
-      if (!query.success) {
-        return apiErr('validation_error', query.error, 400, { fields: query.fields });
-      }
+      const query = parseSearchParams(request, adminStatsListQuerySchema);
+      if (!query.ok) return query.response;
 
       const result = await options.load(query.data);
       if (!result.success) {

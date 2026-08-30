@@ -1,11 +1,11 @@
 import { getQuizService } from '@/lib/quiz-factory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { readAndValidateJson } from '@/lib/api/request';
 import { updateQuizRequestSchema } from '@/dtos/quiz';
 import { createQuizIdRoute } from './quiz-id-route';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 import { premiumQuizErrorResponse } from '@/lib/api/premium-quiz';
+import { parseJsonBody } from '@/lib/api/validated';
 
 // GET /api/quizzes/[id] - Get answer-bearing quiz detail for author/admin editing
 export const GET = createQuizIdRoute({
@@ -50,10 +50,8 @@ export const GET = createQuizIdRoute({
 export const PUT = createQuizIdRoute({
   handle: async ({ request, quizId, userId, session }) => {
     try {
-      const input = await readAndValidateJson(request, updateQuizRequestSchema);
-      if (!input.success) {
-        return apiErr('validation_error', input.error, 400, input.fields);
-      }
+      const input = await parseJsonBody(request, updateQuizRequestSchema);
+      if (!input.ok) return input.response;
       const quizService = getQuizService();
 
       const result = await quizService.updateQuiz(quizId, input.data, userId, session.user.role);

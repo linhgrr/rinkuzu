@@ -1,16 +1,13 @@
 import { withAuth } from '@/lib/api/auth';
-import { apiErr } from '@/lib/api/response';
-import { readAndValidateJson } from '@/lib/api/request';
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
 import { askRinContextRequestSchema } from '@/dtos/ask-rin-chan';
+import { parseJsonBody } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
 export const POST = withAuth(async (request, { userId, session }) => {
-  const parsed = await readAndValidateJson(request, askRinContextRequestSchema);
-  if (!parsed.success) {
-    return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
-  }
+  const parsed = await parseJsonBody(request, askRinContextRequestSchema);
+  if (!parsed.ok) return parsed.response;
 
   return proxyAdaptiveRequest(
     request,

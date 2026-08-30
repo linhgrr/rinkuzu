@@ -6,6 +6,7 @@ import type {
   QuizPersistenceRecord,
   QuizQuestionPersistenceRecord,
 } from '@/repositories/types/QuizPersistence';
+import { questionContentFields } from '@/repositories/mappers/question-content';
 
 function isPopulatedAuthor(
   author: MongoIdLike | QuizAuthorPersistenceRecord,
@@ -30,10 +31,7 @@ function toAuthor(author: QuizPersistenceRecord['author']): string | QuizAuthorP
 function toQuestion(question: QuizQuestionPersistenceRecord, index: number): QuizQuestion {
   const base = {
     id: serializeId(question._id, `quiz.questions[${index}]._id`),
-    question: question.question,
-    options: question.options,
-    ...(question.questionImage === undefined ? {} : { questionImage: question.questionImage }),
-    ...(question.optionImages === undefined ? {} : { optionImages: question.optionImages }),
+    ...questionContentFields(question),
   };
 
   const { type } = question;

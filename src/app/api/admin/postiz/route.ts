@@ -2,8 +2,8 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
-import { readAndValidateSearchParams } from '@/lib/api/request';
 import { createPostizConnector, PostizConnectorError } from '@/lib/postiz/connector';
+import { parseSearchParams } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,10 +53,8 @@ function errorResponse(error: unknown) {
 
 export const GET = withAdmin(async (request: NextRequest) => {
   try {
-    const parsed = readAndValidateSearchParams(request, querySchema);
-    if (!parsed.success) {
-      return apiErr('validation_error', parsed.error, 400, { fields: parsed.fields });
-    }
+    const parsed = parseSearchParams(request, querySchema);
+    if (!parsed.ok) return parsed.response;
     const { operation } = parsed.data;
     const connector = connectorFromEnvironment();
     if (operation === 'capabilities') return apiOk(connector.capabilities);

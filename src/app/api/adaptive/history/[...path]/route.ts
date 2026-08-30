@@ -1,7 +1,5 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
 import { withAuth } from '@/lib/api/auth';
-import { apiErr } from '@/lib/api/response';
-import { readAndValidateRouteParams, readAndValidateSearchParams } from '@/lib/api/request';
 import {
   adaptiveHistoryDeletePathParamsSchema,
   adaptiveHistoryDeleteQuerySchema,
@@ -9,30 +7,25 @@ import {
   adaptiveHistoryProgressQuerySchema,
   adaptiveHistorySubjectQuerySchema,
 } from '@/dtos/adaptive-history';
+import { parseRouteParams, parseSearchParams } from '@/lib/api/validated';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withAuth(async (req, { params, userId, session }) => {
-  const parsedParams = readAndValidateRouteParams(params, adaptiveHistoryGetPathParamsSchema);
-  if (!parsedParams.success) {
-    return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-  }
+  const parsedParams = parseRouteParams(params, adaptiveHistoryGetPathParamsSchema);
+  if (!parsedParams.ok) return parsedParams.response;
 
   if (parsedParams.data.kind === 'progress') {
-    const query = readAndValidateSearchParams(req, adaptiveHistoryProgressQuerySchema);
-    if (!query.success) {
-      return apiErr('validation_error', query.error, 400, { fields: query.fields });
-    }
+    const query = parseSearchParams(req, adaptiveHistoryProgressQuerySchema);
+    if (!query.ok) return query.response;
     return proxyAdaptiveRequest(req, `/history/subjects/progress?limit=${query.data.limit}`, {
       userId,
       userRole: session.user.role,
     });
   }
 
-  const query = readAndValidateSearchParams(req, adaptiveHistorySubjectQuerySchema);
-  if (!query.success) {
-    return apiErr('validation_error', query.error, 400, { fields: query.fields });
-  }
+  const query = parseSearchParams(req, adaptiveHistorySubjectQuerySchema);
+  if (!query.ok) return query.response;
   return proxyAdaptiveRequest(req, `/history/subjects/${parsedParams.data.jobId}`, {
     userId,
     userRole: session.user.role,
@@ -40,14 +33,10 @@ export const GET = withAuth(async (req, { params, userId, session }) => {
 });
 
 export const DELETE = withAuth(async (req, { params, userId, session }) => {
-  const parsedParams = readAndValidateRouteParams(params, adaptiveHistoryDeletePathParamsSchema);
-  if (!parsedParams.success) {
-    return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-  }
-  const query = readAndValidateSearchParams(req, adaptiveHistoryDeleteQuerySchema);
-  if (!query.success) {
-    return apiErr('validation_error', query.error, 400, { fields: query.fields });
-  }
+  const parsedParams = parseRouteParams(params, adaptiveHistoryDeletePathParamsSchema);
+  if (!parsedParams.ok) return parsedParams.response;
+  const query = parseSearchParams(req, adaptiveHistoryDeleteQuerySchema);
+  if (!query.ok) return query.response;
 
   return proxyAdaptiveRequest(
     req,

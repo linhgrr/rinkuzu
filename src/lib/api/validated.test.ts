@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { parseJsonBody, parseParamsAndBody, parseRouteParams } from '@/lib/api/validated';
+import {
+  parseJsonBody,
+  parseParamsAndBody,
+  parseRouteParams,
+  parseSearchParams,
+} from '@/lib/api/validated';
 
 const idSchema = z.strictObject({ id: z.string().min(1) });
 const bodySchema = z.strictObject({ revision: z.number().int().min(0) });
@@ -27,6 +32,29 @@ describe('parseRouteParams', () => {
     const payload = await result.response.json();
     expect(payload.success).toBe(false);
     expect(payload.error.code).toBe('validation_error');
+  });
+});
+
+describe('parseSearchParams', () => {
+  it('returns data on success', () => {
+    const request = new Request('http://localhost/api/things?limit=5');
+
+    const result = parseSearchParams(request, z.object({ limit: z.coerce.number() }));
+
+    expect(result).toEqual({ ok: true, data: { limit: 5 } });
+  });
+
+  it('returns a 400 validation_error envelope naming the field', async () => {
+    const request = new Request('http://localhost/api/things?limit=nope');
+
+    const result = parseSearchParams(request, z.object({ limit: z.coerce.number() }));
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected a failure');
+    expect(result.response.status).toBe(400);
+    const payload = await result.response.json();
+    expect(payload.error.code).toBe('validation_error');
+    expect(payload.error.meta.fields).toHaveProperty('limit');
   });
 });
 

@@ -3,18 +3,16 @@ import { withAuth } from '@/lib/api/auth';
 import { getBookmarkService } from '@/lib/bookmark-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { readAndValidateRouteParams } from '@/lib/api/request';
 import { bookmarkIdRouteParamsSchema } from '@/dtos/bookmark';
+import { parseRouteParams } from '@/lib/api/validated';
 
 const bookmarkService = getBookmarkService();
 
 // DELETE - Remove bookmark
 export const DELETE = withAuth(async (_request: NextRequest, { params, userId }) => {
   try {
-    const parsedParams = readAndValidateRouteParams(params, bookmarkIdRouteParamsSchema);
-    if (!parsedParams.success) {
-      return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
-    }
+    const parsedParams = parseRouteParams(params, bookmarkIdRouteParamsSchema);
+    if (!parsedParams.ok) return parsedParams.response;
 
     const result = await bookmarkService.deleteBookmarkByUser(parsedParams.data.id, userId);
 

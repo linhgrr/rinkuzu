@@ -4,7 +4,7 @@ import { getUserService } from '@/lib/user-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { userAttemptListQuerySchema } from '@/dtos/user';
-import { readAndValidateSearchParams } from '@/lib/api/request';
+import { parseSearchParams } from '@/lib/api/validated';
 
 const userService = getUserService();
 
@@ -12,10 +12,8 @@ export const dynamic = 'force-dynamic';
 
 export const GET = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const query = readAndValidateSearchParams(request, userAttemptListQuerySchema);
-    if (!query.success) {
-      return apiErr('validation_error', query.error, 400, { fields: query.fields });
-    }
+    const query = parseSearchParams(request, userAttemptListQuerySchema);
+    if (!query.ok) return query.response;
 
     const result = await userService.getUserAttempts(userId, query.data);
 

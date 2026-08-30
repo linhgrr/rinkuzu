@@ -55,47 +55,79 @@ caught at the mappers by the type checker. Do NOT "fix" it by deriving one layer
 another across a boundary — `check:architecture` bans the imports that would require, on purpose.
 Cross-layer echo clones are recorded in quality/duplication-baseline.json as known.
 
+**The rule is about crossings, and only about crossings.** Two shapes that echo each other _inside_
+one layer are not protected by it. `src/models/PremiumPlaySession.ts` and
+`PremiumPlaySessionPersistenceRecord` described the same documents field for field, in comments that
+cited this section — but both are persistence, they cannot evolve apart, and a field added to one and
+not the other was a bug no type checker was catching. They now share one generic field interface. If
+you are about to cite this section, first check that the two shapes are on opposite sides of a
+boundary; if they are not, the section below applies instead.
+
 ## What else is in the duplication baseline, and why
 
-The baseline is not exclusively deliberate design. As of the 2026-08-30 re-cut it holds 26 clones
-in three groups, and only the first two are "not debt":
+As of the 2026-08-30 re-cut the baseline holds 10 clones, 123 duplicated lines, 0.21% of `src`.
+Every one of them is there on purpose:
 
 | group                                                             | count | status                                                                                                             |
 | ----------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------ |
 | Cross-layer shape echoes (the section above)                      | 7     | deliberate — do not "fix"                                                                                          |
 | One explicit pair in `src/services/premium/PremiumQuizService.ts` | 1     | deliberate — two response shapes kept stated rather than hidden behind a helper that cost more lines than it saved |
-| **Intra-persistence duplication**                                 | 2     | **debt, collapsible now** — see below                                                                              |
-| Controller boilerplate across `src/app/api/**/route.ts`           | 16    | **accepted debt, retirable**                                                                                       |
+| Route import blocks                                               | 2     | residue — nothing to extract; see below                                                                            |
 
-The two intra-persistence pairs are `src/models/PremiumPlaySession.ts` ↔
-`src/repositories/types/PremiumQuizPersistence.ts` and `src/repositories/PremiumQuizRepository.ts` ↔
-`src/repositories/mappers/QuizPersistenceMapper.ts`. Both sides of each sit **inside the persistence
-layer**, so the cross-layer argument does not apply to them and "Sharing IS allowed within a layer"
-does — a shared field builder collapses them the way `leaseQueueFields` collapsed its equivalents in
-`src/models/Communication.ts`. They are baselined only because no wave scoped them.
+The two residue pairs are `admin/billing/orders` ↔ `admin/billing/webhooks` and
+`admin/premium-submissions` ↔ `premium-submissions/mine`. What jscpd matches in each is the **import
+block** plus `export const dynamic`, not a body. There is no helper that removes an import list — a
+module that re-exported them would be a barrel, which `check:architecture` rejects outright as a
+re-export-only file — and the second pair differs in the one line that matters, `withAdmin` against
+`withAuth`. Hiding that difference behind a parameter would make the weaker guard easier to reach for.
+So they stay, stated.
 
-The third group is genuine duplication that is simply not yet retired. It is the same shape that
-`src/lib/api/communication-mutation.ts` (`withCommunicationMutation`) and
-`src/lib/api/billing-order-mutation.ts` (`withBillingOrderMutation`) already eliminated for the
-communication and billing-order route families: the guard, the params/body schemas, the bail-out,
-the `apiOk` wrap and the error-scope catch, restated per route. What remains spans more than the
-mutation families: `admin/billing`, `admin/premium-submissions`, `admin/support`, `billing/orders`,
-`billing/quotes`, `credits`, `premium-quizzes/[id]`, `premium-quizzes/sessions`,
-`premium-submissions/mine`, `quiz-drafts/[id]`, `quizzes` and `support/tickets`. A follow-up that
-retires only the obvious four will re-cut the baseline expecting zero and fail on the rest — derive
-the list from `reports/jscpd/jscpd-report.json` rather than from memory.
+The baseline previously held 16 clones of controller boilerplate. They were retired by extending the
+wrapper pattern rather than by suppressing the detector; the section below is the result.
 
-It is baselined so the gate stays useful — a fingerprint-exact baseline still fails on any _new_
-clone — but being in the baseline does not make it sanctioned. **A baselined clone is invisible in
-the gate's failure output, so the only way to see this group is to read
-`reports/jscpd/jscpd-report.json` directly.** Retiring it means extending the same wrapper pattern
-to those families and re-cutting the baseline downward; the ratchet in
-`scripts/check-duplication.mjs` only ever permits it to fall.
+Being in the baseline still does not make a clone sanctioned. **A baselined clone is invisible in the
+gate's failure output, so the only way to see what is in it is to read
+`reports/jscpd/jscpd-report.json` directly.** The ratchet in `scripts/check-duplication.mjs` only ever
+permits the count to fall.
+
+## One validation idiom, and the route wrappers built on it
+
+Every `src/app/api/**/route.ts` validates through `src/lib/api/validated.ts` — `parseRouteParams`,
+`parseSearchParams`, `parseJsonBody`, `parseParamsAndBody` — which return `{ ok: false, response }`
+carrying the canonical 400 with a `{ fields }` payload. The lower layer they wrap,
+`readAndValidateX` in `src/lib/api/request.ts`, returns the raw result instead and is for the rare
+route that must answer something other than that 400: `billing/webhooks/[provider]` turns an unknown
+provider into a 404, and is the only caller left.
+
+Before this was unified, four spellings of the same bail-out were in circulation — the field map
+under `fields`, the field map as the whole meta object, the field map under `issues`, and no meta at
+all — and two route tests had comments pinning the drift as though it were intended. One route
+answered in two different shapes depending on which half of the request failed.
+
+On top of that idiom sit the route wrappers. Reach for the one that fits before writing a handler by
+hand; each exists because it holds an obligation that fails **silently** when a route forgets it.
+
+| wrapper                                                                                | family                             | what it holds that a route can forget           |
+| -------------------------------------------------------------------------------------- | ---------------------------------- | ----------------------------------------------- |
+| `withCommunicationMutation` / `withCommunicationRead`                                  | admin campaigns, feedback, support | same-origin guard; the error scope              |
+| `withBillingOrderMutation`                                                             | operator writes on an order        | mutation guard; body/route id cross-check       |
+| `withBillingUserOrderAction` / `withBillingUserBodyAction`                             | customer-initiated billing writes  | same-origin guard; per-user rate limit          |
+| `withWebhookRowAction`                                                                 | operator actions on a webhook row  | mutation guard; operator identity into audit    |
+| `withPremiumSessionAction` / `Start` / `withPremiumRead` / `withPremiumSubmissionRead` | paid quiz content                  | private cache headers, on success **and** error |
+| `quizAuthoringErrorResponse`                                                           | quiz create + draft submit         | `premium_required` → 403, not 400               |
+
+Two rules for adding to this table. A wrapper earns its place by removing an obligation whose absence
+is invisible in a green response — not by shortening a file, and never by breaking a clone the
+detector found. And the auth level stays at the call site: `withAdmin` and `withAuth` are chosen
+where the route is declared, never passed in as an argument.
 
 ## Sharing IS allowed within a layer
 
 - DTO layer: shared zod fragments (see src/dtos/quiz.ts `quizComposeBaseFields`).
-- Persistence layer: shared field builders (see src/models/Communication.ts `leaseQueueFields`).
+- Persistence layer: shared schema-field builders (src/models/Communication.ts `leaseQueueFields`),
+  shared field interfaces across the schema and its persistence record
+  (src/models/PremiumPlaySession.ts `PremiumPlaySessionFields`), and shared mapper helpers in either
+  direction (src/repositories/mappers/question-content.ts `questionContentFields`).
 - Never share a runtime schema or type across layer boundaries; shared primitives live in src/shared
   only if they are layer-agnostic (constants, branded scalars), never whole record shapes.
 

@@ -1,17 +1,15 @@
 import { NextRequest } from 'next/server';
 import { libraryListQuerySchema } from '@/dtos/review';
 import { withAuth } from '@/lib/api/auth';
-import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { apiOk, apiServiceErr } from '@/lib/api/response';
 import { getLearningProgressService } from '@/lib/learning-progress-factory';
-import { readAndValidateSearchParams } from '@/lib/api/request';
+import { parseSearchParams } from '@/lib/api/validated';
 
 const learningProgressService = getLearningProgressService();
 
 export const GET = withAuth(async (request: NextRequest, { userId }) => {
-  const query = readAndValidateSearchParams(request, libraryListQuerySchema);
-  if (!query.success) {
-    return apiErr('validation_error', query.error, 400, { fields: query.fields });
-  }
+  const query = parseSearchParams(request, libraryListQuerySchema);
+  if (!query.ok) return query.response;
 
   const result = await learningProgressService.listLibrary(userId, query.data);
 

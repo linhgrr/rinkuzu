@@ -1,17 +1,10 @@
-import { withAuth } from '@/lib/api/auth';
-import { apiOk } from '@/lib/api/response';
+import { withPremiumRead } from '@/lib/api/premium-quiz-action';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
-import { logger } from '@/lib/logger';
-import { premiumQuizErrorResponse, PREMIUM_PRIVATE_HEADERS } from '@/lib/api/premium-quiz';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = withAuth(async (_request, { userId }) => {
-  try {
-    const result = await getPremiumQuizService().getCredits(userId);
-    return apiOk(result.entries, 200, { headers: PREMIUM_PRIVATE_HEADERS });
-  } catch (error) {
-    logger.error({ error }, 'Get credit history failed');
-    return premiumQuizErrorResponse(error);
-  }
+/** The wallet's movements rather than its balance; the same read, projected. */
+export const GET = withPremiumRead('Get credit history failed', async (userId) => {
+  const wallet = await getPremiumQuizService().getCredits(userId);
+  return wallet.entries;
 });

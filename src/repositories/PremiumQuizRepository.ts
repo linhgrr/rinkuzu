@@ -31,6 +31,7 @@ import type {
 import type { PremiumPlaySession, PremiumQuizSubmission } from '@/entities/PremiumQuiz';
 import { PremiumQuizError } from '@/entities/PremiumQuizError';
 import { PremiumQuizPersistenceMapper } from '@/repositories/mappers/PremiumQuizPersistenceMapper';
+import { questionContentFields } from '@/repositories/mappers/question-content';
 import type {
   CreditLedgerPersistenceRecord,
   CreditWalletPersistenceRecord,
@@ -84,10 +85,7 @@ function toStoredSnapshot(
         _id: Types.ObjectId.isValid(question.id)
           ? new Types.ObjectId(question.id)
           : new Types.ObjectId(),
-        question: question.question,
-        options: question.options,
-        ...(question.questionImage === undefined ? {} : { questionImage: question.questionImage }),
-        ...(question.optionImages === undefined ? {} : { optionImages: question.optionImages }),
+        ...questionContentFields(question),
       };
       return question.type === 'single'
         ? { ...base, type: 'single' as const, correctIndex: question.correctIndex }

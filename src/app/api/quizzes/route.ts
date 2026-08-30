@@ -3,12 +3,11 @@ import { withAuth, withOptionalAuth } from '@/lib/api/auth';
 import { getQuizService } from '@/lib/quiz-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
 import { createQuizRequestSchema, quizListQuerySchema } from '@/dtos/quiz';
-import { QuizCreationError } from '@/lib/quiz/errors';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
-import { premiumQuizErrorResponse } from '@/lib/api/premium-quiz';
+import { quizAuthoringErrorResponse } from '@/lib/api/quiz-authoring-error';
+import { parseJsonBody, parseSearchParams } from '@/lib/api/validated';
 
 const quizService = getQuizService();
 
@@ -17,10 +16,8 @@ const quizService = getQuizService();
 export const GET = withOptionalAuth(async (request: NextRequest, { session, userId }) => {
   try {
     const isGuest = !session?.user;
-    const query = readAndValidateSearchParams(request, quizListQuerySchema);
-    if (!query.success) {
-      return apiErr('validation_error', query.error, 400, { fields: query.fields });
-    }
+    const query = parseSearchParams(request, quizListQuerySchema);
+    if (!query.ok) return query.response;
 
     const onlyMine = !isGuest && query.data.mine;
     const folder =
@@ -54,10 +51,8 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
 // POST /api/quizzes - Create quiz from prepared data
 export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const input = await readAndValidateJson(request, createQuizRequestSchema);
-    if (!input.success) {
-      return apiErr('validation_error', input.error, 400, input.fields);
-    }
+    const input = await parseJsonBody(request, createQuizRequestSchema);
+    if (!input.ok) return input.response;
     const premiumService = getPremiumQuizService();
     if (input.data.submitToPremium) {
       await premiumService.assertCanContribute(userId);
@@ -77,15 +72,8 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
     });
   } catch (error: unknown) {
     logger.error({ error }, 'Create quiz error');
-    if (error instanceof Error && error.name === 'PremiumQuizError') {
-      return premiumQuizErrorResponse(error);
-    }
-    if (error instanceof QuizCreationError) {
-      const status = error.code === 'premium_required' ? 403 : 400;
-      const code = error.code === 'premium_required' ? 'premium_required' : 'validation_error';
-      return apiErr(code, error.message, status);
-    }
-
-    return apiErr('internal_error', 'Internal server error', 500);
+    return (
+      quizAuthoringErrorResponse(error) ?? apiErr('internal_error', 'Internal server error', 500)
+    );
   }
 });

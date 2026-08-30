@@ -1,17 +1,15 @@
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { createFolderRequestSchema } from '@/dtos/folder';
 import { getFolderService } from '@/lib/folder-factory';
-import { readAndValidateJson } from '@/lib/api/request';
 import { createFolderIdRoute } from './folder-id-route';
+import { parseJsonBody } from '@/lib/api/validated';
 
 const folderService = getFolderService();
 
 export const PATCH = createFolderIdRoute({
   handle: async ({ request, folderId, userId }) => {
-    const body = await readAndValidateJson(request, createFolderRequestSchema);
-    if (!body.success) {
-      return apiErr('validation_error', body.error, 400, body.fields);
-    }
+    const body = await parseJsonBody(request, createFolderRequestSchema);
+    if (!body.ok) return body.response;
 
     const result = await folderService.renameFolder(folderId, userId, body.data.name);
     if (!result.success) {

@@ -106,9 +106,9 @@ describe('POST /api/adaptive/pipeline/process', () => {
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.error.code).toBe('validation_error');
-    expect(body.error.meta?.issues).toBeDefined();
-    expect(typeof body.error.meta.issues).toBe('object');
-    expect(Object.keys(body.error.meta.issues as Record<string, string>).length).toBeGreaterThan(0);
+    expect(body.error.meta.fields).toBeDefined();
+    expect(typeof body.error.meta.fields).toBe('object');
+    expect(Object.keys(body.error.meta.fields as Record<string, string>).length).toBeGreaterThan(0);
     expect(getSignedUrlMock).not.toHaveBeenCalled();
     expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
     expect(invalidateCacheMock).not.toHaveBeenCalled();

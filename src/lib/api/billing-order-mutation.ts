@@ -2,8 +2,8 @@ import type { NextRequest } from 'next/server';
 import type { ZodType } from 'zod';
 import { billingOrderParamsSchema } from '@/dtos/billing';
 import { withAdmin } from '@/lib/api/auth';
-import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { parseParamsAndBody } from '@/lib/api/validated';
 import { billingHttpError } from '@/services/billing/billing-http';
 import { assertBillingMutationRequest } from '@/services/billing/billing-security';
 
@@ -21,6 +21,12 @@ interface BillingOrderMutationBody {
  * ride along into the write. Restating that per route is how one of them
  * quietly ends up missing a guard, so the route is left with only the part
  * that differs — which schema, which port call, which error scope.
+ *
+ * Validation goes through `parseParamsAndBody`, the same parser
+ * `withCommunicationMutation` uses, so a 400 from either wrapper carries the
+ * same `{ fields }` payload that drives field-level highlighting in the client.
+ * The order-identity cross-check below is the one thing the shared parser cannot
+ * express: it is a relation between two schemas, not a rule inside either.
  */
 export function withBillingOrderMutation<TBody extends BillingOrderMutationBody, TResult>(
   schema: ZodType<TBody>,
@@ -31,18 +37,15 @@ export function withBillingOrderMutation<TBody extends BillingOrderMutationBody,
     async (request: NextRequest, { userId, params }): Promise<Response> => {
       try {
         assertBillingMutationRequest(request);
-        const route = readAndValidateRouteParams(params, billingOrderParamsSchema);
-        if (!route.success) {
-          return apiErr('validation_error', route.error, 400, { fields: route.fields });
-        }
-        const body = await readAndValidateJson(request, schema);
-        if (!body.success) {
-          return apiErr('validation_error', body.error, 400, { fields: body.fields });
-        }
-        if (body.data.orderId !== route.data.orderId) {
+        const parsed = await parseParamsAndBody(request, params, {
+          params: billingOrderParamsSchema,
+          body: schema,
+        });
+        if (!parsed.ok) return parsed.response;
+        if (parsed.body.orderId !== parsed.params.orderId) {
           return apiErr('validation_error', 'Order ID does not match route', 400);
         }
-        return apiOk(await record(body.data, userId));
+        return apiOk(await record(parsed.body, userId));
       } catch (error) {
         return billingHttpError(error, errorScope);
       }

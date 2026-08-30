@@ -138,6 +138,39 @@ describe('recording external money', () => {
     expect(recordAdjustmentMock).not.toHaveBeenCalled();
   });
 
+  /**
+   * The 400s below are checked for their `fields` payload, not just their
+   * status. That payload is what lets the operator console highlight the field
+   * it refused instead of showing a bare "invalid request", and it is the part
+   * a rewrite drops silently — the status stays 400 either way. Both wrappers
+   * produce it through the same `parseParamsAndBody`; these tests are what
+   * would notice if this one stopped.
+   */
+  it('names the field it refused, so the console can point at it', async () => {
+    const response = await adjustmentRoute(
+      mutationRequest({ ...ADJUSTMENT, amount: 0 }),
+      routeContext,
+    );
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.error.code).toBe('validation_error');
+    expect(payload.error.meta.fields).toHaveProperty('amount');
+    expect(recordAdjustmentMock).not.toHaveBeenCalled();
+  });
+
+  it('refuses a malformed order id in the route before it ever reads the body', async () => {
+    const response = await adjustmentRoute(mutationRequest(ADJUSTMENT), {
+      params: Promise.resolve({ orderId: 'not-an-order-id' }),
+    });
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.error.code).toBe('validation_error');
+    expect(payload.error.meta.fields).toHaveProperty('orderId');
+    expect(recordAdjustmentMock).not.toHaveBeenCalled();
+  });
+
   it('passes a ledger refusal through with the status it earned', async () => {
     recordAdjustmentMock.mockRejectedValue(
       new BillingDomainError('reversal_without_chargeback', 'Nothing to reverse', 409),

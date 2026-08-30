@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = fs.readFileSync('src/app/[locale]/(app)/subscription/page.tsx', 'utf8');
+const source = fs.readFileSync(
+  'src/features/subscription/components/SubscriptionPageClient.tsx',
+  'utf8',
+);
 
 describe('subscription page design contract', () => {
   it('uses the semantic line border for the free plan surface', () => {

@@ -116,7 +116,6 @@ export default defineConfig({
               HOSTNAME: '127.0.0.1',
               MONGODB_URI: e2eMongoUri,
               AUTH_URL: baseURL,
-              NEXTAUTH_URL: baseURL,
               AUTH_TRUST_HOST: 'true',
               NEXT_PUBLIC_SITE_URL: baseURL,
               INTERNAL_SERVICE_TOKEN: e2eServiceToken,

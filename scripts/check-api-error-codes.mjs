@@ -138,8 +138,22 @@ if (missingFrontendCodes.length > 0 || missingBackendCodes.length > 0) {
 }
 
 if (!hasBackendCheckout) {
+  // Half of this gate is the cross-repo drift check, and it only runs beside a
+  // checkout of rinkuzu-ai-api. Reporting "passed" for a run that skipped it
+  // leaves a partial result indistinguishable from a whole one, so it does not.
+  //
+  // Set REQUIRE_BACKEND_CONTRACT=1 wherever that checkout is guaranteed: that is
+  // what turns the skip into a failure instead of a notice.
+  if (process.env['REQUIRE_BACKEND_CONTRACT'] === '1') {
+    console.error(
+      'API error code contract check FAILED: REQUIRE_BACKEND_CONTRACT=1 but no rinkuzu-ai-api checkout is present.',
+    );
+    console.error(`- expected contract: ${backendContractPath}`);
+    console.error(`- expected sources:  ${backendApiRoot}`);
+    process.exit(1);
+  }
   process.stdout.write(
-    'API error code contract check passed (backend checkout not present; skipped cross-repo drift check).\n',
+    'API error code contract check PARTIAL: frontend half passed; cross-repo drift check did NOT run (no rinkuzu-ai-api checkout).\n',
   );
   process.exit(0);
 }

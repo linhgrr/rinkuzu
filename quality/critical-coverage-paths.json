@@ -4,10 +4,22 @@
     "sourceCommit": "2dce122f43139b68c3cad31b0e21879f01b7a29a",
     "scope": "all executable src TypeScript files, including zero-covered files",
     "metrics": {
-      "lines": { "covered": 2409, "total": 11508 },
-      "statements": { "covered": 2521, "total": 12170 },
-      "functions": { "covered": 668, "total": 3260 },
-      "branches": { "covered": 1291, "total": 7796 }
+      "lines": {
+        "covered": 9318,
+        "total": 18312
+      },
+      "statements": {
+        "covered": 9885,
+        "total": 19789
+      },
+      "functions": {
+        "covered": 2295,
+        "total": 5274
+      },
+      "branches": {
+        "covered": 6386,
+        "total": 14549
+      }
     }
   },
   "thresholds": {

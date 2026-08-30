@@ -11,14 +11,36 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pattern =
   'authOptions|getServerSession|getToken\\(|NextAuthOptions|NEXTAUTH_|GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|next-auth\\.session-token|__Secure-next-auth\\.session-token';
 const scannedExtensions = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.sh', '.yml', '.yaml']);
-const defaultScanRoots = ['src', 'scripts', '.github', 'tests'];
+// '.' means the repository-root files themselves, not a recursive walk from the
+// root. Config that boots the app lives there -- playwright.config.ts,
+// next.config.ts, middleware.ts -- and until 2026-08-30 none of it was scanned,
+// so a live NEXTAUTH_URL in playwright.config.ts passed this gate as clean.
+const defaultScanRoots = ['.', 'src', 'scripts', '.github', 'tests'];
 const defaultAllow = new Set([
   // This gate script itself contains the pattern string.
   'scripts/check-no-nextauth-v4.mjs',
+  // Declares the ban rather than reaching for the symbol: the getServerSession
+  // here is a no-restricted-imports entry that forbids calling it.
+  'eslint.config.mjs',
+  // The gate's own meta-test builds fixtures out of the forbidden patterns.
+  'tests/quality/check-no-nextauth-v4.test.ts',
 ]);
 
 function toRepoPath(rootDir, filePath) {
   return path.relative(rootDir, filePath).split(path.sep).join('/');
+}
+
+/**
+ * The files directly inside `directory`, without descending.
+ *
+ * The repository root is read this way rather than walked: a recursive walk from
+ * the root would descend into node_modules, .next and coverage, and would visit
+ * every other scan root a second time.
+ */
+function listFilesShallow(directory) {
+  return readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.join(directory, entry.name));
 }
 
 function walkFiles(directory) {
@@ -46,7 +68,8 @@ export function findForbiddenLegacyAuthSymbols({
 
   for (const scanRoot of scanRoots) {
     const directory = path.join(rootDir, scanRoot);
-    for (const filePath of walkFiles(directory)) {
+    const filePaths = scanRoot === '.' ? listFilesShallow(rootDir) : walkFiles(directory);
+    for (const filePath of filePaths) {
       if (!scannedExtensions.has(path.extname(filePath))) continue;
       const repoPath = toRepoPath(rootDir, filePath);
       if (allow.has(repoPath)) continue;

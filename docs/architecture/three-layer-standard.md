@@ -22,12 +22,13 @@ presentation code specifically — that ban is enforced only where DTOs themselv
 presentation file imports `@/entities` today, but a general presentation-wide `@/entities` scan is
 not wired into the checker; treat the entities half of this cell as convention until it is.
 
-² Enforced for src/app, src/services, src/interfaces/services, src/dtos, and the quiz-builder
-client allowlist (all forbidden from importing `@/models`). It is not enforced for every corner of
-the codebase: `src/lib/audit.ts` and `src/lib/communication/*.ts` import `@/models` directly today,
-outside the repository layer and outside any checker ratchet. That is pre-existing debt this
-standard does not paper over — new code should still go through a repository, and closing the
-`src/lib` gap is tracked separately, not by this document.
+² Enforced repo-wide (`non-persistence -> models`): every file under `src` importing `@/models` is a
+violation unless it is under `src/repositories` (the persistence layer) or `src/models` itself
+(models importing sibling models is legal within the persistence layer). Six pre-existing files are
+grandfathered in a frozen allowlist because they predate this ratchet — `src/lib/audit.ts` and five
+`src/lib/communication/*.ts` modules — and that allowlist may only shrink: `checkRatchet` fails both
+on a new violation outside it and on an entry whose file no longer violates. New code should still
+go through a repository; closing the `src/lib` gap remains its own refactor, tracked separately.
 
 ³ Not scanned by `check-layer-boundaries.mjs` at all. This is migration discipline enforced by
 process and code review (`npm run migrate:performance-indexes` / `:apply`, one DDL writer), not by

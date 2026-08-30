@@ -27,6 +27,23 @@ const allowedFeatureBoundaryDtoDebt = new Set([]);
 
 const allowedFeatureBoundaryApiClientDebt = new Set([]);
 
+// Pre-existing debt, not introduced by this effort: these six files import
+// @/models/... directly, outside src/repositories (the persistence layer) and
+// src/models (models importing sibling models is legal there). On master,
+// src/lib/audit.ts already imported one model and
+// src/lib/communication/service.ts already imported three (Communication,
+// User, Billing); a later split spread those three imports across five
+// domain modules, which relocated the debt across more files without adding
+// to it. Frozen so new violations are caught going forward; may only shrink.
+const allowedPersistenceModelAccessDebt = new Set([
+  'src/lib/audit.ts',
+  'src/lib/communication/campaigns.ts',
+  'src/lib/communication/feedback.ts',
+  'src/lib/communication/internal.ts',
+  'src/lib/communication/support.ts',
+  'src/lib/communication/worker.ts',
+]);
+
 function walk(directory) {
   if (!fs.existsSync(directory)) return [];
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -268,6 +285,10 @@ const sourceFiles = walk(path.join(root, 'src')).filter(
   (file) => !/\.(?:test|spec)\.tsx?$/.test(file),
 );
 const sourceAndTestFiles = [...walk(path.join(root, 'src')), ...walk(path.join(root, 'tests'))];
+const nonPersistenceModelAccessFiles = sourceFiles.filter((filePath) => {
+  const relativePath = relative(filePath);
+  return !relativePath.startsWith('src/repositories/') && !relativePath.startsWith('src/models/');
+});
 const featureNames = new Set(
   fs
     .readdirSync(path.join(root, 'src/features'), { withFileTypes: true })
@@ -348,6 +369,10 @@ const quizBuilderDomainLeaks = collectViolations(quizBuilderClientFiles, (import
       source.startsWith('@/interfaces/repositories/'),
   ),
 );
+const nonPersistenceModelAccessImports = collectViolations(
+  nonPersistenceModelAccessFiles,
+  (imports) => imports.some((source) => source.startsWith('@/models/')),
+);
 
 const errors = [];
 
@@ -421,6 +446,12 @@ checkRatchet(
   'quiz builder client -> domain',
   quizBuilderDomainLeaks,
   allowedQuizBuilderDomainLeakDebt,
+  errors,
+);
+checkRatchet(
+  'non-persistence -> models',
+  nonPersistenceModelAccessImports,
+  allowedPersistenceModelAccessDebt,
   errors,
 );
 

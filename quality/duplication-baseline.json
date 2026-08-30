@@ -15,8 +15,8 @@
   },
   "minimumAnalyzedSources": 425,
   "limits": {
-    "clones": 28,
-    "duplicatedLines": 291,
+    "clones": 26,
+    "duplicatedLines": 274,
     "percentage": 2.2
   },
   "knownCloneFingerprints": [
@@ -33,7 +33,6 @@
     "871e80f116f79c9c8b9ee04b53f41f9bd491242febcc1061ac3bebcc6a9eb1dd",
     "888d7712333345b32d87b3f2d5980227ea1116ba2dd63e42d5a53b6dcb299298",
     "92e20d869224fe6560dc9bfd734935218bad573ee744231686a81d798b857293",
-    "99d4dbb4ae27401583de237812684a3fa0ef7cd361efcae039edc0bdd7889bf0",
     "ae987b66bffc137e5362ac898dcc402f7515ca16bd03297d000a31992c66c19c",
     "ba422f829839c5fd7cb96ef36e369cf41df6b6eddf2d0505f45269f8dcfc2d51",
     "ccda83e8487d4731db02e9b211a97f2da3840fd96f5e21070ac4b6869c27bc16",
@@ -43,11 +42,10 @@
     "e008853420712c0136244d00294489d9f3153d12d4b79c56124675a7276aa7b4",
     "e0b7440be8fc72ddb38466db2c0fe03ce7c21a9c2998f22f83048f651bd4bffb",
     "e7a8bf76f23aa08cadac00eff5be6e2185548a02e57b5f3e0d1399856737a68e",
-    "ead28775e4bc807c88944ac02dd3707f4efff9b26c3008de0eff8c645ca0f561",
     "eb0d9924d9bfdb7982c56ba06ac339f4e6dc0cbaf59e4d45caa462089976afc0",
     "f1529d96d5af87e00e0c5dfd68c9396c2d19424ee8b7b2cc5c6b3c208a8112db",
     "facedba7b8f892e53f3b151f4a28ee7c6d34195fb4a3302b09d284967b7e67af"
   ],
   "generatedFrom": "working-tree",
-  "configFingerprint": "67b09024f943ead7fdd79773a1e5d32a8e050bf77706a54d09cb8842bf508740"
+  "configFingerprint": "0d4c7e3f2dcc63ecb110c8e7ac1015e5c3eba6afff565cfc840fffe94525dcbf"
 }

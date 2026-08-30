@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { questionListSchema } from '@/lib/validation/question';
 import { objectIdSchema } from '@/lib/validation/common';
+import { premiumRightsRefinement, quizComposeBaseFields } from '@/dtos/quiz';
 import type { components } from '@/generated/adaptive-api';
 
 type AdaptiveSchemas = components['schemas'];
@@ -45,21 +45,9 @@ export interface SubmitQuizDraftResultDto {
 
 export const submitQuizDraftRequestSchema = z
   .strictObject({
-    title: z.string().trim().min(1, 'Title is required').max(200),
-    description: z.string().trim().max(1000).optional(),
+    ...quizComposeBaseFields,
     folderId: objectIdSchema.nullable().optional(),
-    questions: questionListSchema,
-    submitToPremium: z.boolean(),
-    rightsAttested: z.boolean().optional(),
   })
-  .superRefine((value, context) => {
-    if (value.submitToPremium && value.rightsAttested !== true) {
-      context.addIssue({
-        code: 'custom',
-        path: ['rightsAttested'],
-        message: 'You must confirm you have the right to share Premium quiz content',
-      });
-    }
-  });
+  .superRefine(premiumRightsRefinement);
 
 export type SubmitQuizDraftRequestDto = z.infer<typeof submitQuizDraftRequestSchema>;

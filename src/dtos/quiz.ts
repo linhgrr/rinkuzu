@@ -30,25 +30,44 @@ export const reportQuizRequestSchema = z.strictObject({
   content: z.string().trim().min(1, 'Report content is required').max(2000),
 });
 
+/**
+ * Field set shared by the quiz-compose request schemas (create quiz, submit
+ * quiz draft). Shared within the DTO layer only — see
+ * docs/architecture/three-layer-standard.md.
+ */
+export const quizComposeBaseFields = {
+  title: z.string().trim().min(1, 'Title is required').max(200),
+  description: z.string().trim().max(1000).optional(),
+  questions: questionListSchema,
+  submitToPremium: z.boolean(),
+  rightsAttested: z.boolean().optional(),
+};
+
+export interface PremiumRightsFields {
+  submitToPremium: boolean;
+  rightsAttested?: boolean;
+}
+
+export function premiumRightsRefinement(
+  value: PremiumRightsFields,
+  context: z.RefinementCtx,
+): void {
+  if (value.submitToPremium && value.rightsAttested !== true) {
+    context.addIssue({
+      code: 'custom',
+      path: ['rightsAttested'],
+      message: 'You must confirm you have the right to share Premium quiz content',
+    });
+  }
+}
+
 export const createQuizRequestSchema = z
   .strictObject({
-    title: z.string().trim().min(1, 'Title is required').max(200),
-    description: z.string().trim().max(1000).optional(),
+    ...quizComposeBaseFields,
     folderId: z.string().trim().min(1).nullable().optional(),
-    questions: questionListSchema,
-    submitToPremium: z.boolean(),
-    rightsAttested: z.boolean().optional(),
     pdfUrl: z.url().optional(),
   })
-  .superRefine((value, context) => {
-    if (value.submitToPremium && value.rightsAttested !== true) {
-      context.addIssue({
-        code: 'custom',
-        path: ['rightsAttested'],
-        message: 'You must confirm you have the right to share Premium quiz content',
-      });
-    }
-  });
+  .superRefine(premiumRightsRefinement);
 
 export const updateQuizRequestSchema = z
   .strictObject({
@@ -168,7 +187,7 @@ export interface QuizAttemptResultDto {
   attemptId: string;
 }
 
-const quizProgressAnswerSchema = z.union([
+export const quizProgressAnswerSchema = z.union([
   z.number().int().min(-1),
   z.array(z.number().int().min(0)).max(20),
 ]);

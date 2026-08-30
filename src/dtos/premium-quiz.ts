@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { objectIdRouteParamSchema } from '@/lib/validation/common';
+import { quizProgressAnswerSchema } from '@/dtos/quiz';
 
 const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/);
 
@@ -104,14 +105,9 @@ export const premiumSessionBatchRequestSchema = z.strictObject({
   cursor: z.string().trim().min(16).max(512),
 });
 
-const premiumAnswerSchema = z.union([
-  z.number().int().min(-1),
-  z.array(z.number().int().min(0)).max(20),
-]);
-
 export const premiumSessionProgressRequestSchema = z.strictObject({
   questionIndex: z.number().int().min(0),
-  answer: premiumAnswerSchema,
+  answer: quizProgressAnswerSchema,
 });
 
 export const premiumSessionSubmitRequestSchema = z.strictObject({

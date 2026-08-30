@@ -318,6 +318,33 @@ export function runDuplicationCheck(root = process.cwd()) {
 }
 
 /**
+ * Guards that must hold before the baseline is rewritten.
+ *
+ * The ratchet check keeps this tool from ever raising a ceiling: it may only
+ * lower `limits.clones` / `limits.duplicatedLines`, never raise them. A fresh
+ * total above either current ceiling is a real regression — it must be argued
+ * for explicitly (by hand-editing the baseline and its ceilings, if that is
+ * ever genuinely warranted) rather than absorbed silently by a routine re-cut.
+ * The ambiguous-fingerprint check catches two clones that hash identically,
+ * which would make the fingerprint set unable to tell them apart.
+ */
+export function assertRatchetableBaseline(baseline, { fingerprints, totals }) {
+  const unique = new Set(fingerprints);
+  if (unique.size !== fingerprints.length) {
+    throw new Error('Clone fingerprints are ambiguous; refusing to write a baseline.');
+  }
+  if (
+    totals.clones > baseline.limits.clones ||
+    totals.duplicatedLines > baseline.limits.duplicatedLines
+  ) {
+    throw new Error(
+      `This tool only ratchets down: clones ${totals.clones}/${baseline.limits.clones}, ` +
+        `duplicatedLines ${totals.duplicatedLines}/${baseline.limits.duplicatedLines}.`,
+    );
+  }
+}
+
+/**
  * Re-cuts the baseline from a fresh detector run.
  *
  * It exists so the artifact cannot be hand-edited into an internally
@@ -326,6 +353,12 @@ export function runDuplicationCheck(root = process.cwd()) {
  * removed clone is printed with its location, so a re-cut that quietly admits a
  * new duplicate is visible in the console and, because the fingerprint list is
  * in the file, in the diff a reviewer reads.
+ *
+ * It only ratchets down: `assertRatchetableBaseline` throws before anything is
+ * written if the fresh totals exceed either existing ceiling. Raising a
+ * ceiling is a real regression, not something a baseline tool should be able
+ * to launder into a routine re-cut — it has to be a deliberate, explicit edit
+ * that a reviewer can see and argue with.
  */
 export async function rebaselineDuplication(root = process.cwd()) {
   const baselinePath = path.join(root, 'quality', 'duplication-baseline.json');
@@ -341,6 +374,8 @@ export async function rebaselineDuplication(root = process.cwd()) {
   const fingerprints = fingerprinted.map((duplicate) => fingerprintDuplicate(root, duplicate));
   const previous = new Set(baseline.knownCloneFingerprints);
   const total = report.statistics.total;
+
+  assertRatchetableBaseline(baseline, { fingerprints, totals: total });
 
   const updated = {
     ...baseline,

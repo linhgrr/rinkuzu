@@ -17,9 +17,18 @@ const centralizedAuthExceptions = [
   'src/app/api/auth/**/route.ts',
 ];
 
-// FROZEN 2026-08-30. This list may SHRINK when a file is split, and an entry may be
-// RENAMED when code moves to a new path — it must never GROW. New code stays under the
-// limit; grandfathered code earns its way off this list by getting smaller.
+// FROZEN 2026-08-30. Every entry must trace, line for line, to code that was already
+// over the limit on that date. That is the invariant — not the entry count.
+//
+// So this list may SHRINK when a file gets under the limit, an entry may be RENAMED when
+// code moves, and it may GROW only when already-grandfathered code is SPLIT: one oversized
+// file becoming two still-oversized files adds an entry without adding a single new line.
+// The communication split did exactly that (service.ts -> campaigns/feedback/support/worker).
+// What may never happen: a newly written file entering this list. New code stays under the
+// limit, and grandfathered code earns its way off by getting smaller.
+//
+// The count is therefore not the health signal; the largest single file is. Judge a split by
+// whether the biggest file shrank, not by whether this list got shorter.
 // NOTE: bracketed Next.js route segments (e.g. [locale]) are escaped for glob matching
 // as [[]locale[]] — a plain `[locale]` is a glob character class, not a literal path
 // segment, and would silently fail to match these files on this platform.

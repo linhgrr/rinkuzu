@@ -681,8 +681,10 @@ Run: `npm run check:duplication` — likely still failing, but the clone list sh
 
 - [ ] **Step 2: Ratchet the baseline**
 
-Run: `npm run baseline:duplication` (review the printed list — every clone on it must be one you deliberately left for a later wave), then `npm run baseline:duplication -- --apply`, then `npm run check:duplication`.
+Run: `npm run check:duplication:rebaseline` (review the printed added/removed clone list — every clone on it must be one you deliberately left for a later wave), then `npm run check:duplication`.
 Expected: `Duplicate-code check passed with no baseline regression.`
+
+> Note (2026-08-30, Task 2.8a): `scripts/update-duplication-baseline.mjs` and `npm run baseline:duplication` were retired as a duplicate, buggy copy of `scripts/check-duplication.mjs`'s pre-existing `rebaselineDuplication`/`--rebaseline`. Its one real improvement, the ratchet-only guard, was folded into `rebaselineDuplication` (now exported as `assertRatchetableBaseline`). Use `npm run check:duplication:rebaseline` wherever this plan says `baseline:duplication`.
 
 - [ ] **Step 3: Full wave gate**
 
@@ -833,7 +835,7 @@ Ruling R3 (five stores, not the spec's four) is therefore moot — master chose 
 
 ### Task 2.8: Wave 2 gate
 
-- [ ] **Step 1:** Run `npm run check:duplication`; confirm every god-file internal clone is gone; ratchet: `npm run baseline:duplication` (review) then `-- --apply`; re-run — green.
+- [ ] **Step 1:** Run `npm run check:duplication`; confirm every god-file internal clone is gone; ratchet: `npm run check:duplication:rebaseline` (review the printed clone list); re-run — green.
 - [ ] **Step 2:** ESLint allowlist ratchet: re-run the Task 1.5 Step-1 command; remove every file no longer ≥500 lines from `oversizedFileAllowlist` (communication modules, BillingRepository, PremiumQuizService if under).
 - [ ] **Step 3:** Full gate: `npm run typecheck && npm run typecheck:scripts && npm run lint && npm run test:node && npm run test:component && npm run test:quality && npm run check:dead-code` — all PASS.
 - [ ] **Step 4:** `detect_changes({scope: "staged"})` per commit already done; now run GitNexus `detect_changes({scope: "compare", base_ref: "master"})` and confirm affected flows are only communication/billing/premium.
@@ -1010,7 +1012,7 @@ Cross-layer echo clones are recorded in quality/duplication-baseline.json as kno
 
 ### Task 4.3: Final baseline ratchet + checker review
 
-- [ ] **Step 1:** `npm run check:duplication` → remaining clones must ALL be cross-layer echoes or otherwise deliberate; review the printed list against the standard doc; `npm run baseline:duplication -- --apply`; re-run — green.
+- [ ] **Step 1:** `npm run check:duplication` → remaining clones must ALL be cross-layer echoes or otherwise deliberate; review the printed list against the standard doc; `npm run check:duplication:rebaseline`; re-run — green.
 - [ ] **Step 2:** Checker-vs-standard review: re-read `scripts/check-layer-boundaries.mjs` against `three-layer-standard.md`. The audit found them aligned; if Waves 1–3 exposed an enforcement gap (e.g. a rule the standard states but the checker misses), add the rule following the file's existing `checkRatchet` pattern with an empty allowlist, plus a case in `tests/quality` mirroring how existing checker rules are tested. If no gap: record "no checker change needed" in the commit body of Step 3.
 - [ ] **Step 3:** Commit: `chore(quality): final duplication ratchet; checker verified against three-layer standard`
 

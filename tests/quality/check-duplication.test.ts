@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  assertRatchetableBaseline,
   duplicationConfigFingerprint,
   fingerprintDuplicate,
   isImportOnlyDuplicate,
@@ -330,6 +331,53 @@ describe('the fingerprint set has to match the report in both directions', () =>
       twoDuplicates.duplicates,
     );
     expect(errors.join('\n')).toContain('ambiguous');
+  });
+});
+
+/**
+ * `rebaselineDuplication` may only ratchet ceilings down. These pin the two
+ * guards it runs before writing anything — migrated from the retired
+ * `scripts/update-duplication-baseline.mjs` (Tool B), whose only merit over
+ * `rebaselineDuplication` was this guard. Exercised directly against the
+ * extracted `assertRatchetableBaseline` because `rebaselineDuplication`
+ * itself shells out to a real jscpd run.
+ */
+describe('the ratchet-only guard on a baseline re-cut', () => {
+  const ratchetBaseline = {
+    limits: { clones: 68, duplicatedLines: 687, percentage: 2.2 },
+  };
+
+  it('allows totals that lower or hold both ceilings', () => {
+    expect(() =>
+      assertRatchetableBaseline(ratchetBaseline, {
+        fingerprints: ['b-new', 'a-new'],
+        totals: { clones: 10, duplicatedLines: 100, percentage: 0.5 },
+      }),
+    ).not.toThrow();
+  });
+
+  it('refuses to ratchet up', () => {
+    expect(() =>
+      assertRatchetableBaseline(ratchetBaseline, {
+        fingerprints: ['x'],
+        totals: { clones: 69, duplicatedLines: 100, percentage: 0.5 },
+      }),
+    ).toThrow(/ratchet/i);
+    expect(() =>
+      assertRatchetableBaseline(ratchetBaseline, {
+        fingerprints: ['x'],
+        totals: { clones: 10, duplicatedLines: 688, percentage: 0.5 },
+      }),
+    ).toThrow(/ratchet/i);
+  });
+
+  it('rejects duplicate fingerprints', () => {
+    expect(() =>
+      assertRatchetableBaseline(ratchetBaseline, {
+        fingerprints: ['x', 'x'],
+        totals: { clones: 1, duplicatedLines: 5, percentage: 0.1 },
+      }),
+    ).toThrow(/ambiguous/i);
   });
 });
 

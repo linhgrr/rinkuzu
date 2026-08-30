@@ -137,6 +137,24 @@ interface PremiumSessionSubmitResult {
   sessionId: string;
 }
 
+interface PremiumPlaySessionStart {
+  publication: PremiumQuizSubmission;
+  session: PremiumPlaySession;
+}
+
+interface PremiumSessionResponseHeader {
+  sessionId: string;
+  quizId: string;
+  submissionId: string;
+  title: string;
+  totalQuestions: number;
+}
+
+interface PremiumDecodedSessionCursor {
+  decoded: PremiumCursorPayload;
+  session: PremiumPlaySession;
+}
+
 interface PremiumReviewDispatchPayload {
   reviewRequest: PremiumReviewRequestRecord;
   submissionId: string;
@@ -525,18 +543,7 @@ export class PremiumQuizService {
     context: PremiumAccessContext,
     quizId: string,
   ): Promise<PremiumFlashcardResponse> {
-    const publication = await this.premiumRepository.findActivePublicationByQuizId(quizId);
-    if (!publication) throw new PremiumQuizError('not_found', 'Premium quiz not found');
-    if (!(await this.canAccess(context, quizId, publication.authorId))) {
-      throw new PremiumQuizError('forbidden', 'Premium subscription or one credit is required');
-    }
-    const session = await this.premiumRepository.createSession({
-      userId: context.userId,
-      quizId,
-      submissionId: publication.id,
-      snapshotHash: publication.snapshotHash,
-      now: new Date(),
-    });
+    const { publication, session } = await this.beginPlaySession(context, quizId);
     const questionIndex = Math.min(
       session.currentQuestionIndex,
       publication.snapshot.questions.length - 1,
@@ -549,21 +556,9 @@ export class PremiumQuizService {
     sessionId: string,
     cursor: string,
   ): Promise<PremiumFlashcardResponse> {
-    const decoded = decodeCursor(cursor);
-    if (decoded.sessionId !== sessionId || decoded.userId !== userId) {
-      throw new PremiumQuizError('invalid_cursor', 'Cursor does not belong to this session');
-    }
-    const session = await this.requireActiveSession(sessionId, userId);
-    if (!(await this.premiumRepository.consumeBatchQuota(sessionId, userId, new Date()))) {
-      throw new PremiumQuizError('rate_limited', 'Too many Premium flashcard requests');
-    }
-    if (decoded.snapshotHash !== session.snapshotHash) {
-      throw new PremiumQuizError('invalid_cursor', 'Cursor snapshot is stale');
-    }
-    const publication = await this.premiumRepository.findSubmissionById(session.submissionId);
-    if (!publication || publication.snapshotHash !== session.snapshotHash) {
-      throw new PremiumQuizError('conflict', 'Published quiz version is unavailable');
-    }
+    const { decoded, session } = await this.decodeSessionCursor(sessionId, userId, cursor);
+    await this.requireBatchQuota(sessionId, userId, 'Too many Premium flashcard requests');
+    const publication = await this.loadSessionPublication(session, decoded);
     return this.buildFlashcard(publication, session, decoded.batchIndex);
   }
 
@@ -572,11 +567,7 @@ export class PremiumQuizService {
     sessionId: string,
     cursor: string,
   ): Promise<PremiumFlashcardRevealResponse> {
-    const decoded = decodeCursor(cursor);
-    if (decoded.sessionId !== sessionId || decoded.userId !== userId) {
-      throw new PremiumQuizError('invalid_cursor', 'Cursor does not belong to this session');
-    }
-    const session = await this.requireActiveSession(sessionId, userId);
+    const { decoded, session } = await this.decodeSessionCursor(sessionId, userId, cursor);
     if (decoded.snapshotHash !== session.snapshotHash) {
       throw new PremiumQuizError('invalid_cursor', 'Cursor snapshot is stale');
     }
@@ -595,18 +586,7 @@ export class PremiumQuizService {
   }
 
   async startSession(context: PremiumAccessContext, quizId: string): Promise<PremiumBatchResponse> {
-    const publication = await this.premiumRepository.findActivePublicationByQuizId(quizId);
-    if (!publication) throw new PremiumQuizError('not_found', 'Premium quiz not found');
-    if (!(await this.canAccess(context, quizId, publication.authorId))) {
-      throw new PremiumQuizError('forbidden', 'Premium subscription or one credit is required');
-    }
-    const session = await this.premiumRepository.createSession({
-      userId: context.userId,
-      quizId,
-      submissionId: publication.id,
-      snapshotHash: publication.snapshotHash,
-      now: new Date(),
-    });
+    const { publication, session } = await this.beginPlaySession(context, quizId);
     return this.buildBatch(
       publication,
       session,
@@ -619,21 +599,9 @@ export class PremiumQuizService {
     sessionId: string,
     cursor: string,
   ): Promise<PremiumBatchResponse> {
-    const decoded = decodeCursor(cursor);
-    if (decoded.sessionId !== sessionId || decoded.userId !== context.userId) {
-      throw new PremiumQuizError('invalid_cursor', 'Cursor does not belong to this session');
-    }
-    const session = await this.requireActiveSession(sessionId, context.userId);
-    if (!(await this.premiumRepository.consumeBatchQuota(sessionId, context.userId, new Date()))) {
-      throw new PremiumQuizError('rate_limited', 'Too many Premium batch requests');
-    }
-    if (decoded.snapshotHash !== session.snapshotHash) {
-      throw new PremiumQuizError('invalid_cursor', 'Cursor snapshot is stale');
-    }
-    const publication = await this.premiumRepository.findSubmissionById(session.submissionId);
-    if (!publication || publication.snapshotHash !== session.snapshotHash) {
-      throw new PremiumQuizError('conflict', 'Published quiz version is unavailable');
-    }
+    const { decoded, session } = await this.decodeSessionCursor(sessionId, context.userId, cursor);
+    await this.requireBatchQuota(sessionId, context.userId, 'Too many Premium batch requests');
+    const publication = await this.loadSessionPublication(session, decoded);
     return this.buildBatch(publication, session, decoded.batchIndex);
   }
 
@@ -767,6 +735,95 @@ export class PremiumQuizService {
     return session;
   }
 
+  private async beginPlaySession(
+    context: PremiumAccessContext,
+    quizId: string,
+  ): Promise<PremiumPlaySessionStart> {
+    const publication = await this.premiumRepository.findActivePublicationByQuizId(quizId);
+    if (!publication) throw new PremiumQuizError('not_found', 'Premium quiz not found');
+    if (!(await this.canAccess(context, quizId, publication.authorId))) {
+      throw new PremiumQuizError('forbidden', 'Premium subscription or one credit is required');
+    }
+    const session = await this.premiumRepository.createSession({
+      userId: context.userId,
+      quizId,
+      submissionId: publication.id,
+      snapshotHash: publication.snapshotHash,
+      now: new Date(),
+    });
+    return { publication, session };
+  }
+
+  private async decodeSessionCursor(
+    sessionId: string,
+    userId: string,
+    cursor: string,
+  ): Promise<PremiumDecodedSessionCursor> {
+    const decoded = decodeCursor(cursor);
+    if (decoded.sessionId !== sessionId || decoded.userId !== userId) {
+      throw new PremiumQuizError('invalid_cursor', 'Cursor does not belong to this session');
+    }
+    const session = await this.requireActiveSession(sessionId, userId);
+    return { decoded, session };
+  }
+
+  private async requireBatchQuota(
+    sessionId: string,
+    userId: string,
+    rateLimitMessage: string,
+  ): Promise<void> {
+    if (!(await this.premiumRepository.consumeBatchQuota(sessionId, userId, new Date()))) {
+      throw new PremiumQuizError('rate_limited', rateLimitMessage);
+    }
+  }
+
+  private async loadSessionPublication(
+    session: PremiumPlaySession,
+    decoded: PremiumCursorPayload,
+  ): Promise<PremiumQuizSubmission> {
+    if (decoded.snapshotHash !== session.snapshotHash) {
+      throw new PremiumQuizError('invalid_cursor', 'Cursor snapshot is stale');
+    }
+    const publication = await this.premiumRepository.findSubmissionById(session.submissionId);
+    if (!publication || publication.snapshotHash !== session.snapshotHash) {
+      throw new PremiumQuizError('conflict', 'Published quiz version is unavailable');
+    }
+    return publication;
+  }
+
+  private buildCursorBase(
+    publication: PremiumQuizSubmission,
+    session: PremiumPlaySession,
+  ): Omit<PremiumCursorPayload, 'batchIndex'> {
+    return {
+      sessionId: session.id,
+      userId: session.userId,
+      snapshotHash: publication.snapshotHash,
+    };
+  }
+
+  private buildResponseHeader(
+    publication: PremiumQuizSubmission,
+    session: PremiumPlaySession,
+  ): PremiumSessionResponseHeader {
+    return {
+      sessionId: session.id,
+      quizId: publication.sourceQuizId,
+      submissionId: publication.id,
+      title: publication.snapshot.title,
+      totalQuestions: publication.snapshot.questions.length,
+    };
+  }
+
+  private buildWatermark(session: PremiumPlaySession): string {
+    const watermarkIdentity = createHash('sha256')
+      .update(`${session.userId}:${session.id}`)
+      .digest('hex')
+      .slice(0, 10)
+      .toUpperCase();
+    return `${watermarkIdentity} · ${session.sessionCode} · ${new Date().toISOString()}`;
+  }
+
   private async buildBatch(
     publication: PremiumQuizSubmission,
     session: PremiumPlaySession,
@@ -777,26 +834,13 @@ export class PremiumQuizService {
     if (questions.length === 0)
       throw new PremiumQuizError('invalid_cursor', 'Batch is out of range');
     const totalBatches = Math.ceil(publication.snapshot.questions.length / BATCH_SIZE);
-    const cursorBase = {
-      sessionId: session.id,
-      userId: session.userId,
-      snapshotHash: publication.snapshotHash,
-    };
-    const watermarkIdentity = createHash('sha256')
-      .update(`${session.userId}:${session.id}`)
-      .digest('hex')
-      .slice(0, 10)
-      .toUpperCase();
+    const cursorBase = this.buildCursorBase(publication, session);
     return {
-      sessionId: session.id,
-      quizId: publication.sourceQuizId,
-      submissionId: publication.id,
-      title: publication.snapshot.title,
-      totalQuestions: publication.snapshot.questions.length,
+      ...this.buildResponseHeader(publication, session),
       batchIndex,
       startIndex,
       questions: await Promise.all(questions.map(toBatchQuestion)),
-      watermark: `${watermarkIdentity} · ${session.sessionCode} · ${new Date().toISOString()}`,
+      watermark: this.buildWatermark(session),
       idleExpiresAt: session.idleExpiresAt.toISOString(),
       absoluteExpiresAt: session.absoluteExpiresAt.toISOString(),
       currentQuestionIndex: session.currentQuestionIndex,
@@ -823,26 +867,13 @@ export class PremiumQuizService {
   ): Promise<PremiumFlashcardResponse> {
     const question = publication.snapshot.questions[questionIndex];
     if (!question) throw new PremiumQuizError('invalid_cursor', 'Flashcard is out of range');
-    const cursorBase = {
-      sessionId: session.id,
-      userId: session.userId,
-      snapshotHash: publication.snapshotHash,
-    };
-    const watermarkIdentity = createHash('sha256')
-      .update(`${session.userId}:${session.id}`)
-      .digest('hex')
-      .slice(0, 10)
-      .toUpperCase();
+    const cursorBase = this.buildCursorBase(publication, session);
     return {
-      sessionId: session.id,
-      quizId: publication.sourceQuizId,
-      submissionId: publication.id,
-      title: publication.snapshot.title,
-      totalQuestions: publication.snapshot.questions.length,
+      ...this.buildResponseHeader(publication, session),
       questionIndex,
       question: await toBatchQuestion(question),
       revealCursor: encodeCursor({ ...cursorBase, batchIndex: questionIndex }),
-      watermark: `${watermarkIdentity} · ${session.sessionCode} · ${new Date().toISOString()}`,
+      watermark: this.buildWatermark(session),
       idleExpiresAt: session.idleExpiresAt.toISOString(),
       absoluteExpiresAt: session.absoluteExpiresAt.toISOString(),
       ...(publication.snapshot.description === undefined

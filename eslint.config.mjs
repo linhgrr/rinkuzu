@@ -77,10 +77,10 @@ const oversizedFileAllowlist = [
 // be RENAMED when code moves to a new path — it must never GROW. New code stays under the
 // limit; grandfathered code earns its way off this list by getting simpler.
 const overComplexFileAllowlist = [
-  'src/app/[[]locale[]]/(app)/explore/page.tsx',
   'src/app/[[]locale[]]/(marketing)/contact/page.tsx',
   'src/features/adaptive/components/PipelineDebugPage.tsx',
   'src/features/adaptive/lib/adaptive-api-fetch.ts',
+  'src/features/explore/components/ExplorePageClient.tsx',
   'src/features/quiz/components/editor/QuizEditorWorkspace.tsx',
   'src/lib/adaptive/proxy.ts',
   'src/models/Attempt.ts',

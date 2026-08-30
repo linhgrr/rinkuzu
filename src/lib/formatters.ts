@@ -8,7 +8,14 @@ export function formatVndCurrency(amount: number): string {
 }
 
 type DateInput = Date | string | number | null | undefined;
-const DEFAULT_DATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+/**
+ * The zone every rendered timestamp is pinned to.
+ *
+ * Exported because it was not, and three modules answered that by writing the
+ * literal again while two more forgot a timeZone altogether and rendered in
+ * whatever zone the viewer's browser happened to be in.
+ */
+export const DEFAULT_DATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
 export interface DateFormatOptions {
   locale?: string;

@@ -1,13 +1,27 @@
-import type { PaginationMeta } from '@/dtos/common';
-
 export interface RepositoryPaginationOptions {
   page: number;
   limit: number;
 }
 
+/**
+ * What a paginated repository read reports about the page it returned.
+ *
+ * Structurally identical to the DTO's PaginationMeta, and separate on purpose:
+ * importing the DTO here would make every repository signature move whenever
+ * the client's pagination envelope does.
+ */
+export interface RepositoryPaginationMeta {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export interface PaginatedRepositoryResult<T> {
   items: T[];
-  pagination: PaginationMeta;
+  pagination: RepositoryPaginationMeta;
 }
 
 interface CreatedAtRangeFilter {

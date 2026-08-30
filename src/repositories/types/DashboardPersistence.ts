@@ -1,5 +1,19 @@
-import type { DashboardWeeklyActivityDto } from '@/dtos/dashboard';
 import type { MongoIdLike } from '@/types/mongo';
+
+/**
+ * One day's tally as the document stores it.
+ *
+ * The DTO carries the same four counters, and this deliberately does not reuse
+ * it: a persistence record that imports from src/dtos makes the wire shape and
+ * the stored shape one type, so a field added for the client silently becomes a
+ * field the database is expected to hold.
+ */
+export interface DashboardWeeklyActivityFields {
+  questionsReviewed: number;
+  xpEarned: number;
+  correctCount: number;
+  totalCount: number;
+}
 
 export interface DashboardUserProgressPersistenceRecord {
   currentStreak: number;
@@ -7,8 +21,8 @@ export interface DashboardUserProgressPersistenceRecord {
   streakFreezeCount: number;
   totalXp: number;
   weeklyActivity:
-    | Map<string, DashboardWeeklyActivityDto>
-    | Record<string, DashboardWeeklyActivityDto>;
+    | Map<string, DashboardWeeklyActivityFields>
+    | Record<string, DashboardWeeklyActivityFields>;
   totalQuestionsLearned: number;
   totalReviewSessions: number;
   averageAccuracy: number;

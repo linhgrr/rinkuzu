@@ -12,12 +12,12 @@ import {
 } from '@/features/admin/ocr-keys/api/admin-ocr-keys-api';
 import type { AdminOcrModelSettingsViewModel } from '@/features/admin/ocr-keys/types/admin-ocr-keys-view-model';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
-const OCR_MODEL_DATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 const ocrModelDateTimeOptions: Intl.DateTimeFormatOptions = {
   dateStyle: 'medium',
   timeStyle: 'short',
-  timeZone: OCR_MODEL_DATE_TIME_ZONE,
+  timeZone: DEFAULT_DATE_TIME_ZONE,
 };
 const ocrModelDateFormatterEn = new Intl.DateTimeFormat('en', ocrModelDateTimeOptions);
 const ocrModelDateFormatterVi = new Intl.DateTimeFormat('vi', ocrModelDateTimeOptions);

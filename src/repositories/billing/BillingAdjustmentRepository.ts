@@ -1,3 +1,4 @@
+import { runInTransaction } from '@/lib/mongoose-transaction';
 import { Types, type ClientSession } from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import { BillingOrder, ExternalMoneyAdjustment, PaymentTransaction } from '@/models/Billing';
@@ -31,7 +32,6 @@ import {
   assertStoredEnum,
   ENTITLED_ORDER_EXPRESSION,
   objectId,
-  runBillingTransaction,
   toLedgerAdjustments,
   toOrderView,
 } from './billing-shared';
@@ -314,8 +314,6 @@ export class BillingAdjustmentRepository implements IBillingAdjustmentRepository
   }
 
   inAdjustmentTransaction<T>(work: AdjustmentWork<T>): Promise<T> {
-    return runBillingTransaction((session) =>
-      work(adjustmentWriters(session, this.entitlementLedger)),
-    );
+    return runInTransaction((session) => work(adjustmentWriters(session, this.entitlementLedger)));
   }
 }

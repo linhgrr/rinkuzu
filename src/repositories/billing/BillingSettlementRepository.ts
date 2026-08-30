@@ -26,7 +26,8 @@ import type {
   BillingOrderPersistenceRecord,
   PaymentAttemptPersistenceRecord,
 } from '@/repositories/types/BillingPersistence';
-import { objectId, runBillingTransaction, settlementAttemptSnapshot } from './billing-shared';
+import { runInTransaction } from '@/lib/mongoose-transaction';
+import { objectId, settlementAttemptSnapshot } from './billing-shared';
 import { consumePromotion, ensureFirstPurchaseEligibility } from './promotion-lifecycle';
 import { fulfillmentWriters, inboxWriters, settlementWriters } from './settlement-writers';
 
@@ -201,11 +202,11 @@ export class BillingSettlementRepository implements IBillingSettlementRepository
   }
 
   inSettlementTransaction<T>(work: SettlementWork<T>): Promise<T> {
-    return runBillingTransaction((session) => work(settlementWriters(session)));
+    return runInTransaction((session) => work(settlementWriters(session)));
   }
 
   inInboxTransaction<T>(work: InboxWork<T>): Promise<T> {
-    return runBillingTransaction((session) => work(inboxWriters(session)));
+    return runInTransaction((session) => work(inboxWriters(session)));
   }
 
   /**
@@ -222,7 +223,7 @@ export class BillingSettlementRepository implements IBillingSettlementRepository
     if (order?.eligibilityClass === 'first_purchase') {
       await ensureFirstPurchaseEligibility(order.user);
     }
-    return runBillingTransaction((session) =>
+    return runInTransaction((session) =>
       work(
         fulfillmentWriters(session, this.entitlementLedger, (record) =>
           consumePromotion(record, session),

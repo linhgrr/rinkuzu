@@ -13,6 +13,8 @@ const allowedServiceContractLeakDebt = new Set([]);
 
 const allowedDtoDomainLeakDebt = new Set([]);
 
+const allowedPersistenceDtoDebt = new Set([]);
+
 const allowedQuizBuilderDomainLeakDebt = new Set([]);
 
 const allowedPresentationDtoDebt = new Set([]);
@@ -372,6 +374,16 @@ const dtoDomainLeaks = collectViolations(dtoFiles, (imports) =>
       source.startsWith('@/interfaces/repositories/'),
   ),
 );
+// The mirror of dto -> domain. That rule stopped a DTO from reaching down into
+// persistence, but nothing stopped persistence from reaching up into src/dtos,
+// so DashboardPersistence, IDashboardRepository and the repository pagination
+// contract each imported a DTO and passed this check green until 2026-08-31. A
+// stored shape that *is* the wire shape means a field added for the client is a
+// field the database is then expected to hold.
+const persistenceDtoLeaks = collectViolations(
+  [...repositoryFiles, ...repositoryContractFiles, ...walk(path.join(root, 'src/models'))],
+  (imports) => imports.some((source) => source.startsWith('@/dtos/')),
+);
 const quizBuilderDomainLeaks = collectViolations(quizBuilderClientFiles, (imports) =>
   imports.some(
     (source) =>
@@ -454,6 +466,7 @@ checkRatchet(
   errors,
 );
 checkRatchet('dto -> domain', dtoDomainLeaks, allowedDtoDomainLeakDebt, errors);
+checkRatchet('persistence -> dto', persistenceDtoLeaks, allowedPersistenceDtoDebt, errors);
 checkRatchet(
   'quiz builder client -> domain',
   quizBuilderDomainLeaks,

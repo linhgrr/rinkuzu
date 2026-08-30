@@ -20,6 +20,7 @@ import { useRouter } from '@/i18n/navigation';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { createManualQuizDraft, deleteQuizDraft, listQuizDrafts } from '@/lib/quiz/draftApi';
 import { ROUTES } from '@/shared/constants/routes';
+import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
 export function CreateQuizHubPage() {
   const t = useTranslations('create');
@@ -36,7 +37,12 @@ export function CreateQuizHubPage() {
     mutate,
   } = useSWR('quiz-drafts-hub', () => listQuizDrafts());
   const dateFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }),
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: DEFAULT_DATE_TIME_ZONE,
+      }),
     [locale],
   );
 

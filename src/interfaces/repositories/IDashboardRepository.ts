@@ -1,11 +1,11 @@
-import type { DashboardWeeklyActivityDto } from '@/dtos/dashboard';
+import type { DashboardWeeklyActivityFields } from '@/repositories/types/DashboardPersistence';
 
 export interface DashboardUserProgressRecord {
   currentStreak: number;
   longestStreak: number;
   streakFreezeCount: number;
   totalXp: number;
-  weeklyActivity: Record<string, DashboardWeeklyActivityDto>;
+  weeklyActivity: Record<string, DashboardWeeklyActivityFields>;
   totalQuestionsLearned: number;
   totalReviewSessions: number;
   averageAccuracy: number;

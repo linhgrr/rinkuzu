@@ -35,6 +35,7 @@ import type {
   AdminOcrKeyViewModel,
 } from '@/features/admin/ocr-keys/types/admin-ocr-keys-view-model';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
 interface State {
   keys: AdminOcrKeyViewModel[];
@@ -145,11 +146,10 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-const OCR_KEY_DATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 const ocrKeyDateTimeOptions: Intl.DateTimeFormatOptions = {
   dateStyle: 'medium',
   timeStyle: 'short',
-  timeZone: OCR_KEY_DATE_TIME_ZONE,
+  timeZone: DEFAULT_DATE_TIME_ZONE,
 };
 const ocrKeyDateFormatterEn = new Intl.DateTimeFormat('en', ocrKeyDateTimeOptions);
 const ocrKeyDateFormatterVi = new Intl.DateTimeFormat('vi', ocrKeyDateTimeOptions);

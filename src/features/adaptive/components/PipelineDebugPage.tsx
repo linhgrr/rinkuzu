@@ -26,6 +26,7 @@ import type {
   PipelineStatus,
 } from '@/features/adaptive/types/pipeline';
 import styles from './PipelineDebugLayout.module.css';
+import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
 type JsonValue =
   | string
@@ -144,6 +145,7 @@ const PIPELINE_TIME_FORMATTER = new Intl.DateTimeFormat('vi-VN', {
   second: '2-digit',
   day: '2-digit',
   month: '2-digit',
+  timeZone: DEFAULT_DATE_TIME_ZONE,
 });
 
 function statusIndex(status: PipelineStatus): number {

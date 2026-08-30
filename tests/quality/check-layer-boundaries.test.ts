@@ -191,3 +191,54 @@ describe('presentation-layer persistence ratchet', () => {
     expect(result.status).toBe(0);
   });
 });
+
+describe('persistence -> dto ratchet', () => {
+  /**
+   * The mirror of dto -> domain. Until 2026-08-31 only one direction was
+   * guarded, so a persistence record could import the wire shape and the check
+   * stayed green.
+   */
+  function dtoImport(): string {
+    return "import type { PaginationMeta } from '@/dtos/common';\n\nexport type Reaches = PaginationMeta;\n";
+  }
+
+  it.each([
+    'src/repositories/types/DashboardPersistence.ts',
+    'src/interfaces/repositories/IDashboardRepository.ts',
+    'src/models/Report.ts',
+  ])('fails when %s imports a DTO', (relativePath) => {
+    const sandbox = makeSandbox();
+    writeFile(sandbox, relativePath, dtoImport());
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(`persistence -> dto: new violation in ${relativePath}`);
+  });
+
+  it('leaves the other direction to the dto -> domain rule', () => {
+    // A DTO reaching into persistence is a different rule with a different
+    // message; this one must not also claim it.
+    const sandbox = makeSandbox();
+    writeFile(sandbox, 'src/dtos/leaky.ts', repositoryImport());
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('dto -> domain: new violation in src/dtos/leaky.ts');
+    expect(result.stderr).not.toContain('persistence -> dto');
+  });
+
+  it('allows persistence to import its own sibling types', () => {
+    const sandbox = makeSandbox();
+    writeFile(
+      sandbox,
+      'src/repositories/types/FooPersistence.ts',
+      "import type { MongoIdLike } from '@/types/mongo';\n\nexport interface Foo {\n  _id: MongoIdLike;\n}\n",
+    );
+
+    const result = runChecker(sandbox);
+
+    expect(result.status).toBe(0);
+  });
+});

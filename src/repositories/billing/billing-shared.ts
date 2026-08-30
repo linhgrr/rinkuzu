@@ -1,5 +1,4 @@
-import mongoose, { Types, type ClientSession } from 'mongoose';
-import connectDB from '@/lib/mongoose';
+import { Types } from 'mongoose';
 import { PaymentAttempt } from '@/models/Billing';
 import type { BillingOrderView } from '@/interfaces/repositories/IBillingOrderRepository';
 import type {
@@ -116,18 +115,6 @@ export function settlementAttemptSnapshot(
     createdAtMs: attempt.createdAt.getTime(),
     version: attempt.version,
   };
-}
-
-export type BillingTransactionWork<T> = (session: ClientSession) => Promise<T>;
-
-export async function runBillingTransaction<T>(work: BillingTransactionWork<T>): Promise<T> {
-  await connectDB();
-  const session = await mongoose.startSession();
-  try {
-    return await session.withTransaction(work);
-  } finally {
-    await session.endSession();
-  }
 }
 
 /**

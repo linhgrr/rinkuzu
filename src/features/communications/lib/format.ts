@@ -1,4 +1,5 @@
 import type { FeedbackStatusViewModel } from '../types/communication-view-model';
+import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
@@ -8,7 +9,7 @@ export function formatCommunicationTimestamp(value: string, locale: string): str
     formatter = new Intl.DateTimeFormat(locale, {
       dateStyle: 'short',
       timeStyle: 'short',
-      timeZone: 'Asia/Ho_Chi_Minh',
+      timeZone: DEFAULT_DATE_TIME_ZONE,
     });
     formatters.set(locale, formatter);
   }

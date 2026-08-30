@@ -3,6 +3,10 @@ import type { PaginationMeta } from '@/dtos/common';
 import { WEBHOOK_VERIFICATION_CLASSES } from '@/services/billing/domain/webhook-diagnostics';
 import { ADMIN_ORDER_BUCKETS } from '@/shared/constants/billing-order-buckets';
 
+// This shape deliberately echoes its sibling in the entity and persistence
+// layers; see docs/architecture/three-layer-standard.md. Do not derive one
+// from another.
+
 export const adminBillingOrderListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

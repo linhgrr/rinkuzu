@@ -1,6 +1,8 @@
 import type { MongoIdLike } from '@/types/mongo';
 import type { QuizQuestionPersistenceRecord } from '@/repositories/types/QuizPersistence';
 
+// This shape deliberately echoes its sibling in src/models/PremiumPlaySession.ts;
+// see docs/architecture/three-layer-standard.md. Do not derive one from another.
 interface PremiumSnapshotPersistenceRecord {
   title: string;
   slug: string;

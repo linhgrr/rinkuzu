@@ -1,6 +1,10 @@
 /**
  * Domain view of the payment pipeline for operators. Dates stay as `Date`
  * here; serialization belongs to the DTO mapper.
+ *
+ * This shape deliberately echoes its sibling in the DTO and persistence
+ * layers; see docs/architecture/three-layer-standard.md. Do not derive one
+ * from another.
  */
 export interface AdminBillingOrderRecord {
   publicId: string;

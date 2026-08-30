@@ -1,3 +1,6 @@
+// This mapper's DTO shape deliberately echoes its sibling in
+// AdminBillingOrdersPersistenceMapper; see
+// docs/architecture/three-layer-standard.md. Do not derive one from another.
 import type {
   AdminBillingAdjustmentRecord,
   AdminBillingAttemptRecord,

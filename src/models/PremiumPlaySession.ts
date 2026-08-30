@@ -1,5 +1,8 @@
 import mongoose, { Schema, Types } from 'mongoose';
 
+// This shape deliberately echoes its sibling in
+// src/repositories/types/PremiumQuizPersistence.ts; see
+// docs/architecture/three-layer-standard.md. Do not derive one from another.
 interface StoredAnswerDocument {
   questionIndex: number;
   selectedIndex?: number;

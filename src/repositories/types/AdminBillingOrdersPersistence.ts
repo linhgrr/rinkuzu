@@ -1,5 +1,8 @@
 import type { Types } from 'mongoose';
 
+// This shape deliberately echoes its sibling in the DTO and entity layers;
+// see docs/architecture/three-layer-standard.md. Do not derive one from
+// another.
 export interface AdminBillingAttemptPersistence {
   _id: Types.ObjectId;
   provider: string;

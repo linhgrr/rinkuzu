@@ -692,10 +692,13 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
           "$RUNNER_TEMP/gitleaks" version
 
+      # --config is passed explicitly rather than relying on gitleaks finding
+      # .gitleaks.toml by itself: a silently missing config would drop the two
+      # repository-specific rules and turn this gate green for the wrong reason.
       - name: Scan all reachable repository history
         run: >-
           "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1
-          --log-opts='--all' .
+          --config .gitleaks.toml --log-opts='--all' .
 
   codeql:
     name: CodeQL (${{ matrix.language }})

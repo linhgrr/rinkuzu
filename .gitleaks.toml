@@ -1,0 +1,90 @@
+# Gitleaks configuration for rinkuzu.
+#
+# The default rule set is kept in full. Two rules are added on top of it, and
+# the fixtures that used to be suppressed by commit fingerprints are allowed by
+# value instead.
+#
+# WHY THE EXTRA RULES
+#
+# A live MongoDB Atlas URI and an auth secret have sat in requirement.md since
+# the initial commit, and every scan reported the repository clean. Measured
+# against gitleaks 8.30.1, the reasons are:
+#
+#   1. No default rule matches a connection URI carrying an inline password,
+#      and `MONGO_URL` is not one of the keywords `generic-api-key` looks for.
+#   2. `generic-api-key` does recognise `NEXTAUTH_SECRET`, but only accepts a
+#      value of at least 12 characters. The committed secret is 11 -- one
+#      character under the floor.
+#
+# WHY ALLOWLISTS AND NOT .gitleaksignore
+#
+# A .gitleaksignore entry is a fingerprint pinned to a commit SHA, so it stops
+# matching the moment any commit touches the file again. All 20 entries in the
+# old file had gone stale, which left the CI gate failing on 14 test fixtures
+# and prose -- a permanently red gate nobody could act on. Allowlists match on
+# the captured VALUE, so they survive the next commit.
+#
+# Allowlists never match on file path. A path allowlist would also excuse a
+# genuine credential that happens to live in the same file; a value allowlist
+# only forgives things that are demonstrably not secrets.
+
+[extend]
+useDefault = true
+
+# Fixtures and prose that the built-in generic-api-key rule cannot tell from a
+# credential. Each entry below was confirmed against the value gitleaks
+# actually captured, not against the line it appeared on.
+[[allowlists]]
+description = "Non-secret fixtures: idempotency UUIDs, storage keys, keyboard-walk tokens, prose"
+targetRules = ["generic-api-key"]
+regexes = [
+  # Idempotency keys in tests are plain UUIDs.
+  '''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''',
+  # Versioned browser-storage keys, e.g. rinkuzu_landing_attribution_v1.
+  '''^[a-z][a-z0-9]*(?:_[a-z0-9]+)*_v[0-9]+$''',
+  # Prose picked up mid-sentence, e.g. "destructive/unique/TTL index".
+  '''^[A-Za-z]+/[A-Za-z]+/[A-Za-z]+$''',
+]
+stopwords = [
+  # Keyboard-walk fixture tokens.
+  "qwerty",
+  "asdfgh",
+]
+
+[[rules]]
+id = "connection-uri-with-password"
+description = "Connection URI carrying an inline password"
+regex = '''(?i)\b[a-z][a-z0-9+.-]{2,}://[^\s:/@'"]+:([^\s:/@'"]{4,})@[a-z0-9.-]+\.[a-z]{2,}'''
+secretGroup = 1
+keywords = ["://"]
+
+  # Documentation writes the word itself where a password would go.
+  [[rules.allowlists]]
+  description = "Placeholder standing in for a password in prose and examples"
+  regexes = [
+    '''(?i)^(?:pass|passwd|password|secret|token|user|username|credential|redacted)$''',
+    '''(?i)^(?:your|my|the|example|placeholder|changeme|replace)[-_]''',
+    '''^[<${]''',
+  ]
+
+[[rules]]
+id = "short-auth-secret-assignment"
+description = "Auth secret assigned a value below the generic-api-key length floor"
+regex = '''(?i)(?:nextauth|auth|jwt|session|encryption)[\\]?_(?:secret|key)\s*[=:]\s*['"]?([^\s'"]{6,})'''
+secretGroup = 1
+keywords = ["secret", "_key"]
+
+  [[rules.allowlists]]
+  description = "Fixtures, placeholders, and code that reads the variable rather than setting it"
+  regexes = [
+    # Test fixtures and documented placeholders.
+    '''(?i)^(?:test|fixture|sample|dummy|fake|local|dev|ci|replace|your|my|example|placeholder|changeme|build-only)[-_]''',
+    # Shell and workflow interpolation: ${VAR}, ${VAR:-default}, ${{ secrets.X }}.
+    '''^\$[{(]''',
+    # Source that reads the secret from the environment or a helper.
+    '''^process\.env''',
+    '''^[A-Za-z_$][A-Za-z0-9_$]*\(''',
+    # A PowerShell snippet documenting how to generate a secret.
+    '''^\[[A-Za-z]+\]::''',
+    '''^[<]''',
+  ]

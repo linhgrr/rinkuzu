@@ -109,6 +109,12 @@ for (const file of workflows) {
       [/GITLEAKS_ARCHIVE_SHA256:\s*[a-f0-9]{64}/, 'Gitleaks archive checksum must be pinned'],
       [/sha256sum --check --strict/, 'Gitleaks archive checksum must be verified'],
       [/gitleaks" git[\s\S]*--log-opts='--all'/, 'Gitleaks must scan all reachable history'],
+      // Without the repository config the scan silently loses the two rules
+      // that cover a connection URI and a short auth secret, and reports clean.
+      [
+        /gitleaks" git[\s\S]*--config \.gitleaks\.toml/,
+        'Gitleaks must run with the repository config (.gitleaks.toml)',
+      ],
     ];
     for (const [pattern, message] of requirements) {
       if (!pattern.test(secretBody)) fail(file, secretLine, message);

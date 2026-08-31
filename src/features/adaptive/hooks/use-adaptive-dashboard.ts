@@ -25,16 +25,22 @@ import type {
   DashboardSubjectExercise,
 } from '@/features/adaptive/types/dashboard-view-model';
 import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
+import { toTimestampMs } from '@/lib/epoch';
 
 const DAILY_GOAL_TARGET = 3;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-const toTimestampMs = (value: number): number => (value < 1_000_000_000_000 ? value * 1000 : value);
-
-const getDayStart = (value: number): number => {
-  const date = new Date(value);
+/** The local midnight a known-good millisecond timestamp falls in. */
+const startOfLocalDay = (timestamp: number): number => {
+  const date = new Date(timestamp);
   date.setHours(0, 0, 0, 0);
   return date.getTime();
+};
+
+/** The same, for a payload value that may not be a timestamp at all. */
+const getDayStart = (value?: number | null): number | null => {
+  const timestamp = toTimestampMs(value);
+  return timestamp === null ? null : startOfLocalDay(timestamp);
 };
 
 const calculateLearningStreak = (sessions: SessionHistoryViewModel[]): number => {
@@ -43,7 +49,8 @@ const calculateLearningStreak = (sessions: SessionHistoryViewModel[]): number =>
   const uniqueDayStarts = new Set<number>();
   for (const session of sessions) {
     if (session.totalAnswered > 0) {
-      uniqueDayStarts.add(getDayStart(toTimestampMs(session.lastActivityAt)));
+      const dayStart = getDayStart(session.lastActivityAt);
+      if (dayStart !== null) uniqueDayStarts.add(dayStart);
     }
   }
   const dayStarts = Array.from(uniqueDayStarts).sort((a, b) => b - a);
@@ -51,7 +58,7 @@ const calculateLearningStreak = (sessions: SessionHistoryViewModel[]): number =>
   if (dayStarts.length === 0) return 0;
 
   let streak = 0;
-  let expectedDay = getDayStart(Date.now());
+  let expectedDay = startOfLocalDay(Date.now());
 
   for (const day of dayStarts) {
     if (day === expectedDay) {
@@ -295,8 +302,8 @@ export const useAdaptiveDashboard = ({
 
     const current = dashboardState.sessionHistory.filter((session) => {
       if (session.totalAnswered <= 0) return false;
-      const dayStart = getDayStart(toTimestampMs(session.lastActivityAt));
-      return dayStart === todayStart;
+      const dayStart = getDayStart(session.lastActivityAt);
+      return dayStart !== null && dayStart === todayStart;
     }).length;
 
     return {
@@ -313,7 +320,7 @@ export const useAdaptiveDashboard = ({
   }, [router]);
 
   useEffect(() => {
-    queueMicrotask(() => setTodayStart(getDayStart(Date.now())));
+    queueMicrotask(() => setTodayStart(startOfLocalDay(Date.now())));
   }, []);
 
   useEffect(() => {

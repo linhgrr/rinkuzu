@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/formatters';
 import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
 import type { DashboardViewModel } from '@/features/dashboard/types/dashboard-view-model';
 import { toQuizListItemViewModel } from '@/features/quiz/mappers/quiz-list.mapper';
+import { toTimestampMs } from '@/lib/epoch';
 
 interface DashboardViewModelCopy {
   aiLearning: string;
@@ -47,11 +48,6 @@ interface BuildContinueLearningInput
 
 const CONTINUE_LEARNING_CARD_LIMIT = 8;
 const QUIZ_BUILDER_LIBRARY_HREF = '/my-quizzes';
-
-function toTimestampMs(value?: number | null): number | null {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
-  return value < 1_000_000_000_000 ? value * 1000 : value;
-}
 
 function formatLearningCardTime(
   value: string | number | null | undefined,

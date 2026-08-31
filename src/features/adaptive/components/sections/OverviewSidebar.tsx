@@ -11,17 +11,9 @@ import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
 import { cn } from '@/lib/utils';
 import styles from './AdaptiveDashboardLayout.module.css';
+import { formatSessionRelativeTime } from '@/features/adaptive/lib/session-relative-time';
 
 const ASSET_BASE = '/images/home-redesign';
-
-function relativeTime(timestamp: number, t: TranslateFn) {
-  const normalized = timestamp < 1_000_000_000_000 ? timestamp * 1000 : timestamp;
-  const minutes = Math.max(0, Math.floor((Date.now() - normalized) / 60_000));
-  if (minutes < 60) return t('minutesAgo', { count: Math.max(1, minutes) });
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return t('hoursAgoShort', { count: hours });
-  return t('daysAgoShort', { count: Math.floor(hours / 24) });
-}
 
 export function UploadMaterialCard({ onGoUpload, t }: { onGoUpload: () => void; t: TranslateFn }) {
   const router = useRouter();
@@ -114,7 +106,7 @@ export function RecentActivity({
                 <p className="mt-1 font-home text-sm text-ink-muted">
                   {t('recentActivityMeta', {
                     score: session.accuracyPercent,
-                    time: relativeTime(session.lastActivityAt, t),
+                    time: formatSessionRelativeTime(session.lastActivityAt, t),
                   })}
                 </p>
               </div>

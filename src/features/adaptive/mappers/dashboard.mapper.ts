@@ -10,12 +10,7 @@ import type {
 } from '@/features/adaptive/types/dashboard-view-model';
 import { formatDate } from '@/lib/formatters';
 import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
-
-const toTimestampMs = (value?: number | null): number | null => {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
-
-  return value < 1_000_000_000_000 ? value * 1000 : value;
-};
+import { toTimestampMs } from '@/lib/epoch';
 
 const clampPercent = (value: number): number => {
   if (!Number.isFinite(value)) return 0;

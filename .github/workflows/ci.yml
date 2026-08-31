@@ -179,6 +179,15 @@ jobs:
 
   mutation:
     name: Critical mutation
+    # Deferred off the pull-request path, and measured rather than assumed: the
+    # campaign's fixed cost is its initial test run, which instruments the whole
+    # unit corpus and takes about nine minutes of which only sixty-nine seconds
+    # is test execution. Stryker's incremental cache reuses verdicts perfectly
+    # (42 of 42 in a control run) but cannot avoid that pass, so no cache makes
+    # this suitable for a gate a developer waits on. It runs on every push to
+    # master instead, which detects a regression one merge after it lands rather
+    # than one night later.
+    if: ${{ github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
     runs-on: ubuntu-24.04
     # Full campaigns have a 3h process timeout; leave setup/evidence headroom
     # while preventing a stuck worker tree from consuming the 6h Actions default.
@@ -191,6 +200,21 @@ jobs:
 
       - name: Set up Node and dependencies
         uses: ./.github/actions/node-env
+
+      # Without this the campaign starts from zero every run: 19,500 mutants
+      # decided from scratch, which is where the three-hour ceiling came from.
+      # Stryker's incremental file is what makes a campaign proportional to the
+      # change instead of to the repository — it re-tests a mutant the moment its
+      # source or any covering test differs, and reuses the verdict otherwise.
+      # A cache, not evidence: the run still writes its own report, and a miss
+      # costs time rather than correctness.
+      - name: Restore the mutation verdict cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: reports/mutation/stryker-incremental.json
+          key: stryker-incremental-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            stryker-incremental-${{ runner.os }}-
 
       - name: Run authoritative mutation gate
         env:
@@ -393,6 +417,11 @@ jobs:
   performance:
     name: Controlled performance
     needs: build
+    # Deferred for the same reason as the mutation campaign: it rebuilds the base
+    # commit from scratch to obtain a size baseline, and Lighthouse timings are
+    # only meaningful on the controlled runner. Every push to master produces the
+    # evidence; a pull request does not wait for it.
+    if: ${{ github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -605,11 +634,27 @@ jobs:
       - name: Require every production signal
         env:
           REQUIRED_RESULTS: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           node - <<'NODE'
           const results = JSON.parse(process.env.REQUIRED_RESULTS);
+          const eventName = process.env.EVENT_NAME;
+
+          // The two campaigns whose fixed cost makes them unfit for a gate a
+          // developer waits on. They are skipped on a pull request and in the
+          // merge queue, and run on every push to master. The allowance is
+          // deliberately narrow: only these two names, only on those two events,
+          // and only for the exact result `skipped`. A campaign that ran and
+          // failed still fails the gate, and one that goes missing on any other
+          // event still fails the gate.
+          const DEFERRED = new Set(['mutation', 'performance']);
+          const deferralAllowed = eventName === 'pull_request' || eventName === 'merge_group';
+
           const failures = Object.entries(results)
-            .filter(([, value]) => value.result !== 'success')
+            .filter(([name, value]) => {
+              if (value.result === 'success') return false;
+              return !(value.result === 'skipped' && deferralAllowed && DEFERRED.has(name));
+            })
             .map(([name, value]) => `${name}=${value.result}`);
           if (Object.keys(results).length !== 14) {
             failures.push(`expected 14 required jobs, received ${Object.keys(results).length}`);
@@ -617,5 +662,9 @@ jobs:
           if (failures.length > 0) {
             throw new Error(`Production Gate failed closed: ${failures.join(', ')}`);
           }
-          process.stdout.write('Production Gate passed with 14/14 required jobs.\n');
+          const deferred = Object.entries(results)
+            .filter(([, value]) => value.result === 'skipped')
+            .map(([name]) => name);
+          const note = deferred.length > 0 ? ` (deferred to master: ${deferred.join(', ')})` : '';
+          console.log(`Production Gate passed with 14/14 required jobs${note}.`);
           NODE

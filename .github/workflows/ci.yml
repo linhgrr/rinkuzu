@@ -66,17 +66,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
 
       - name: Verify toolchain
         run: npm run check:toolchain
@@ -117,17 +108,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
         with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+          build-caches: 'true'
 
       - name: Check formatting
         run: npm run format:check
@@ -171,17 +155,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
 
       - name: Run unit tests with instrumentation
         run: npm run test:unit
@@ -214,17 +189,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
 
       - name: Run authoritative mutation gate
         env:
@@ -265,17 +231,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
 
       - name: Run React Doctor
         run: npm run check:react-doctor
@@ -294,17 +251,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
 
       - name: Start pinned MongoDB replica set
         run: bash scripts/ci-mongodb.sh start
@@ -352,17 +300,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
         with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+          build-caches: 'true'
 
       - name: Start pinned MongoDB replica set
         run: bash scripts/ci-mongodb.sh start
@@ -401,17 +342,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
         with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+          build-caches: 'true'
 
       - name: Start pinned MongoDB replica set
         run: bash scripts/ci-mongodb.sh start
@@ -468,17 +402,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
         with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+          build-caches: 'true'
 
       - name: Start pinned MongoDB replica set
         run: bash scripts/ci-mongodb.sh start
@@ -574,17 +501,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.9.8
-
-      - name: Install exact dependency graph
-        run: npm ci
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
 
       - name: Enforce scoped vulnerability policy
         run: npm run check:security-audit

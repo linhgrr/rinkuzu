@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": ".cache/tsbuildinfo/hardening.tsbuildinfo",
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true
   }

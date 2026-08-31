@@ -9,7 +9,7 @@
     "vercel-build": "npm run check:communications && npm run check:billing && next build",
     "build:analyze": "ANALYZE=true next build --webpack",
     "start": "node scripts/start-standalone.mjs",
-    "lint": "npm run check:api-error-codes && npm run check:internal-api-fetch && npm run check:architecture && npm run check:no-nextauth-v4 && npm run check:design-system && npm run check:question-content && eslint . --max-warnings 0",
+    "lint": "npm run check:api-error-codes && npm run check:internal-api-fetch && npm run check:architecture && npm run check:no-nextauth-v4 && npm run check:design-system && npm run check:question-content && eslint . --max-warnings 0 --cache --cache-location .cache/eslint/",
     "typecheck": "tsc --noEmit --pretty false",
     "typecheck:hardening": "tsc --noEmit --pretty false -p tsconfig.hardening.json",
     "typecheck:declarations": "tsc --noEmit --pretty false -p tsconfig.declarations.json",

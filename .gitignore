@@ -159,3 +159,6 @@ temp/
 
 # Playwright MCP session debris (console logs and page snapshots)
 .playwright-mcp/
+
+# Incremental compiler caches (tsc buildinfo, ESLint), restored in CI as an artifact
+.cache/

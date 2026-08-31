@@ -45,6 +45,26 @@ env:
   NEXT_IMAGE_UNOPTIMIZED: 'false'
 
 jobs:
+  changes:
+    name: Affected stages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      heavy: ${{ steps.affected.outputs.heavy }}
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+
+      - name: Classify the change
+        id: affected
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: node scripts/ci-affected.mjs
+
   actionlint:
     name: Workflow syntax
     runs-on: ubuntu-24.04
@@ -267,6 +287,10 @@ jobs:
 
   integration:
     name: Integration and index contract
+    needs: changes
+    # Prose cannot move a schema or an index. The classifier fails closed, so an
+    # unresolvable base runs this anyway.
+    if: ${{ needs.changes.outputs.heavy == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -363,7 +387,9 @@ jobs:
 
   e2e:
     name: Production E2E
-    needs: build
+    needs: [build, changes]
+    # Same rule as integration: prose cannot change a browser flow.
+    if: ${{ needs.changes.outputs.heavy == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -614,6 +640,7 @@ jobs:
     name: Production Gate
     if: ${{ always() }}
     needs:
+      - changes
       - actionlint
       - policy
       - static-analysis
@@ -639,32 +666,42 @@ jobs:
           node - <<'NODE'
           const results = JSON.parse(process.env.REQUIRED_RESULTS);
           const eventName = process.env.EVENT_NAME;
+          const EXPECTED_JOBS = 15;
 
-          // The two campaigns whose fixed cost makes them unfit for a gate a
-          // developer waits on. They are skipped on a pull request and in the
-          // merge queue, and run on every push to master. The allowance is
-          // deliberately narrow: only these two names, only on those two events,
-          // and only for the exact result `skipped`. A campaign that ran and
-          // failed still fails the gate, and one that goes missing on any other
-          // event still fails the gate.
-          const DEFERRED = new Set(['mutation', 'performance']);
+          // Two campaigns are deferred to master because their fixed cost makes
+          // them unfit for a check a developer waits on, and two suites are
+          // skipped when the change cannot reach them. Neither allowance is a
+          // blanket tolerance of `skipped`: each is tied to the reason it is
+          // allowed, and a job that ran and failed is never excused.
+          const DEFERRED_TO_MASTER = new Set(['mutation', 'performance']);
+          const PATH_FILTERED = new Set(['integration', 'e2e']);
+
           const deferralAllowed = eventName === 'pull_request' || eventName === 'merge_group';
+          // Read from the classifier's own output, not assumed: if that job did
+          // not run or did not answer, no path-based skip is permitted.
+          const pathSkipAllowed = results.changes?.outputs?.heavy === 'false';
+
+          const excused = (name, result) => {
+            if (result !== 'skipped') return false;
+            if (DEFERRED_TO_MASTER.has(name)) return deferralAllowed;
+            if (PATH_FILTERED.has(name)) return pathSkipAllowed;
+            return false;
+          };
 
           const failures = Object.entries(results)
-            .filter(([name, value]) => {
-              if (value.result === 'success') return false;
-              return !(value.result === 'skipped' && deferralAllowed && DEFERRED.has(name));
-            })
+            .filter(([name, value]) => value.result !== 'success' && !excused(name, value.result))
             .map(([name, value]) => `${name}=${value.result}`);
-          if (Object.keys(results).length !== 14) {
-            failures.push(`expected 14 required jobs, received ${Object.keys(results).length}`);
+          if (Object.keys(results).length !== EXPECTED_JOBS) {
+            failures.push(
+              `expected ${EXPECTED_JOBS} required jobs, received ${Object.keys(results).length}`,
+            );
           }
           if (failures.length > 0) {
             throw new Error(`Production Gate failed closed: ${failures.join(', ')}`);
           }
-          const deferred = Object.entries(results)
+          const skipped = Object.entries(results)
             .filter(([, value]) => value.result === 'skipped')
             .map(([name]) => name);
-          const note = deferred.length > 0 ? ` (deferred to master: ${deferred.join(', ')})` : '';
-          console.log(`Production Gate passed with 14/14 required jobs${note}.`);
+          const note = skipped.length > 0 ? ` (excused: ${skipped.join(', ')})` : '';
+          console.log(`Production Gate passed with ${EXPECTED_JOBS}/${EXPECTED_JOBS} required jobs${note}.`);
           NODE

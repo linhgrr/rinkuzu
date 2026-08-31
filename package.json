@@ -203,7 +203,7 @@
     "@types/dagre": "^0.7.54",
     "@types/html-to-text": "^9.0.4",
     "@types/jest-axe": "3.5.9",
-    "@types/node": "^20",
+    "@types/node": "^22.19.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.59.0",

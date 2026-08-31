@@ -1,9 +1,9 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import path from 'node:path';
+import { readFileSync } from 'node:fs';
+
 import ts from 'typescript';
 
-const root = process.cwd();
-const sourceDir = path.join(root, 'src');
+import { listFiles, toRepoPath } from './repo-files.shared.mjs';
+
 const bannedCallNames = new Set(['fetch', 'fetchWithRetry', 'timedFetch']);
 const allowedDirectInternalFetches = new Map([
   [
@@ -21,25 +21,6 @@ const allowedDirectInternalFetches = new Map([
 ]);
 
 const failures = [];
-
-function walk(dir, files = []) {
-  for (const entry of readdirSync(dir)) {
-    const fullPath = path.join(dir, entry);
-    const stat = statSync(fullPath);
-
-    if (stat.isDirectory()) {
-      walk(fullPath, files);
-    } else {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
-}
-
-function toRepoPath(filePath) {
-  return path.relative(root, filePath).split(path.sep).join('/');
-}
 
 function shouldScanFile(repoPath) {
   if (!/\.(ts|tsx)$/.test(repoPath)) return false;
@@ -261,7 +242,9 @@ function resolveStringPrefix(node, declarations, seen = new Set()) {
   return null;
 }
 
-for (const filePath of walk(sourceDir).filter((file) => shouldScanFile(toRepoPath(file)))) {
+for (const filePath of listFiles('src/**/*.{ts,tsx}').filter((file) =>
+  shouldScanFile(toRepoPath(file)),
+)) {
   const repoPath = toRepoPath(filePath);
   const sourceText = readFileSync(filePath, 'utf8');
   const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true);

@@ -1,18 +1,9 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
-function walk(directory, files = []) {
-  if (!existsSync(directory)) return files;
-  for (const entry of readdirSync(directory)) {
-    const fullPath = path.join(directory, entry);
-    const stat = statSync(fullPath);
-    if (stat.isDirectory()) walk(fullPath, files);
-    else if (/\.spec\.(?:[cm]?[jt]sx?)$/.test(entry)) files.push(fullPath);
-  }
-  return files;
-}
+import { listFiles } from './repo-files.shared.mjs';
 
 function callPath(expression) {
   if (ts.isIdentifier(expression)) return [expression.text];
@@ -84,7 +75,7 @@ export function runRequiredFlowCheck(root = process.cwd()) {
   const policy = JSON.parse(
     readFileSync(path.join(root, 'quality', 'required-e2e-flows.json'), 'utf8'),
   );
-  const testFiles = walk(path.join(root, 'tests', 'e2e'));
+  const testFiles = listFiles('tests/e2e/**/*.spec.{js,jsx,ts,tsx,cjs,mjs,cts,mts}');
   const titles = testFiles.flatMap((file) =>
     collectPlaywrightTitles(readFileSync(file, 'utf8'), file),
   );

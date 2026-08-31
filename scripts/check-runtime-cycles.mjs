@@ -1,25 +1,9 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
-function walk(directory, files = []) {
-  if (!existsSync(directory)) return files;
-  for (const entry of readdirSync(directory)) {
-    const fullPath = path.join(directory, entry);
-    const stat = statSync(fullPath);
-    if (stat.isDirectory()) {
-      if (entry !== 'generated') walk(fullPath, files);
-    } else if (
-      /\.(?:ts|tsx)$/.test(entry) &&
-      !/\.(?:test|spec)\.(?:ts|tsx)$/.test(entry) &&
-      !entry.endsWith('.d.ts')
-    ) {
-      files.push(fullPath);
-    }
-  }
-  return files;
-}
+import { listFiles, toRepoPath } from './repo-files.shared.mjs';
 
 function isTypeOnlyImport(node) {
   const clause = node.importClause;
@@ -141,14 +125,16 @@ export function findRuntimeCycles(graph) {
 }
 
 export function buildRuntimeGraph(root = process.cwd()) {
-  const files = walk(path.join(root, 'src'));
+  const files = listFiles('src/**/*.{ts,tsx}', {
+    exclude: ['**/generated/**', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/*.d.ts'],
+  });
   const graph = new Map();
   for (const file of files) {
-    const key = path.relative(root, file).split(path.sep).join('/');
+    const key = toRepoPath(file);
     const dependencies = runtimeSpecifiers(readFileSync(file, 'utf8'), file)
       .map((specifier) => resolveSourceImport(root, file, specifier))
       .filter(Boolean)
-      .map((dependency) => path.relative(root, dependency).split(path.sep).join('/'));
+      .map((dependency) => toRepoPath(dependency));
     graph.set(key, [...new Set(dependencies)].sort());
   }
   return graph;

@@ -1,8 +1,8 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SOURCE_EXTENSIONS = new Set(['.tsx', '.jsx']);
+import { listFiles, toRepoPath } from './repo-files.shared.mjs';
 
 const RULES = [
   {
@@ -58,19 +58,10 @@ function matchesGlob(filePath, glob) {
 
 function sourceFiles(root, directory = path.join(root, 'src')) {
   if (!existsSync(directory)) return [];
-  const result = [];
-  for (const entry of readdirSync(directory)) {
-    const absolute = path.join(directory, entry);
-    if (statSync(absolute).isDirectory()) {
-      result.push(...sourceFiles(root, absolute));
-    } else if (SOURCE_EXTENSIONS.has(path.extname(entry))) {
-      result.push({
-        path: normalizePath(path.relative(root, absolute)),
-        content: readFileSync(absolute, 'utf8'),
-      });
-    }
-  }
-  return result.sort((left, right) => left.path.localeCompare(right.path));
+  return listFiles('**/*.{tsx,jsx}', { cwd: directory }).map((absolute) => ({
+    path: toRepoPath(absolute, root),
+    content: readFileSync(absolute, 'utf8'),
+  }));
 }
 
 function lineNumberAt(content, index) {

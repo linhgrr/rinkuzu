@@ -3,6 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 import ts from 'typescript';
 
+import { listFiles, toRepoPath } from './repo-files.shared.mjs';
+
 const root = process.cwd();
 
 const allowedPresentationPersistenceDebt = new Set([]);
@@ -49,16 +51,11 @@ const allowedPersistenceModelAccessDebt = new Set([
 ]);
 
 function walk(directory) {
-  if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) return walk(fullPath);
-    return /\.(?:ts|tsx)$/.test(entry.name) ? [fullPath] : [];
-  });
+  return listFiles('**/*.{ts,tsx}', { cwd: directory });
 }
 
 function relative(filePath) {
-  return path.relative(root, filePath).split(path.sep).join('/');
+  return toRepoPath(filePath, root);
 }
 
 /**

@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { listFiles, toRepoPath } from './repo-files.shared.mjs';
 import ts from 'typescript';
 
 const TEST_FILE_PATTERN = /\.(?:test|spec)\.(?:[cm]?[jt]sx?)$/;
@@ -18,23 +20,8 @@ const CONTROL_FLOW_KINDS = new Set([
   ts.SyntaxKind.TryStatement,
 ]);
 
-export function collectFiles(directory, predicate, files = []) {
-  if (!existsSync(directory)) return files;
-
-  for (const entry of readdirSync(directory)) {
-    const fullPath = path.join(directory, entry);
-    const stat = statSync(fullPath);
-
-    if (stat.isDirectory()) {
-      if (!['.git', '.next', 'coverage', 'node_modules'].includes(entry)) {
-        collectFiles(fullPath, predicate, files);
-      }
-    } else if (predicate(fullPath)) {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
+export function collectFiles(directory, predicate) {
+  return listFiles('**/*', { cwd: directory }).filter((filePath) => predicate(filePath));
 }
 
 function scriptKind(filePath) {
@@ -274,12 +261,12 @@ export function runTestIntegrityCheck(root = process.cwd()) {
   const failures = [];
 
   for (const filePath of testFiles) {
-    const repoPath = path.relative(root, filePath).split(path.sep).join('/');
+    const repoPath = toRepoPath(filePath, root);
     failures.push(...collectTestViolations(readFileSync(filePath, 'utf8'), repoPath));
   }
 
   const directives = sourceFiles.flatMap((filePath) => {
-    const repoPath = path.relative(root, filePath).split(path.sep).join('/');
+    const repoPath = toRepoPath(filePath, root);
     return collectCoverageDirectives(readFileSync(filePath, 'utf8'), repoPath);
   });
   const registry = JSON.parse(

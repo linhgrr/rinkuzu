@@ -2,8 +2,10 @@
 /**
  * Fail CI if Auth.js v4 symbols remain in application source.
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
+
+import { listFiles, toRepoPath } from './repo-files.shared.mjs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
@@ -26,30 +28,6 @@ const defaultAllow = new Set([
   'tests/quality/check-no-nextauth-v4.test.ts',
 ]);
 
-function toRepoPath(rootDir, filePath) {
-  return path.relative(rootDir, filePath).split(path.sep).join('/');
-}
-
-/**
- * The files directly inside `directory`, without descending.
- *
- * The repository root is read this way rather than walked: a recursive walk from
- * the root would descend into node_modules, .next and coverage, and would visit
- * every other scan root a second time.
- */
-function listFilesShallow(directory) {
-  return readdirSync(directory, { withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => path.join(directory, entry.name));
-}
-
-function walkFiles(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const filePath = path.join(directory, entry.name);
-    return entry.isDirectory() ? walkFiles(filePath) : [filePath];
-  });
-}
-
 /**
  * @param {{
  *   rootDir: string,
@@ -68,10 +46,12 @@ export function findForbiddenLegacyAuthSymbols({
 
   for (const scanRoot of scanRoots) {
     const directory = path.join(rootDir, scanRoot);
-    const filePaths = scanRoot === '.' ? listFilesShallow(rootDir) : walkFiles(directory);
+    // '*' does not descend, so the repository root is read without walking
+    // into node_modules or revisiting every other scan root.
+    const filePaths = listFiles(scanRoot === '.' ? '*' : '**/*', { cwd: directory });
     for (const filePath of filePaths) {
       if (!scannedExtensions.has(path.extname(filePath))) continue;
-      const repoPath = toRepoPath(rootDir, filePath);
+      const repoPath = toRepoPath(filePath, rootDir);
       if (allow.has(repoPath)) continue;
 
       const source = readFileSync(filePath, 'utf8');

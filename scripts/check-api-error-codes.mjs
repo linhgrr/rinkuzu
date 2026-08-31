@@ -1,5 +1,7 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+
+import { listFiles } from './repo-files.shared.mjs';
 
 const frontendRoot = process.cwd();
 const workspaceRoot = path.resolve(frontendRoot, '..');
@@ -19,38 +21,10 @@ const backendContract = hasBackendCheckout
   : null;
 const allowedCodes = new Set(Object.keys(frontendContract.defaultMessagesByCode));
 
-const IGNORED_DIRS = new Set([
-  '.git',
-  '.next',
-  '.venv',
-  '.worktrees',
-  'coverage',
-  'dist',
-  'build',
-  '__pycache__',
-  'node_modules',
-]);
-
-function walk(dir, files = []) {
-  for (const entry of readdirSync(dir)) {
-    if (IGNORED_DIRS.has(entry)) continue;
-    const fullPath = path.join(dir, entry);
-    const stat = statSync(fullPath);
-
-    if (stat.isDirectory()) {
-      walk(fullPath, files);
-    } else {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
-}
-
 function collectMatches({ baseDir, includeFile, regex }) {
   const results = new Map();
 
-  for (const filePath of walk(baseDir)) {
+  for (const filePath of listFiles('**/*', { cwd: baseDir })) {
     if (!includeFile(filePath)) continue;
     const repoPath = path.relative(baseDir, filePath).split(path.sep).join('/');
     const source = readFileSync(filePath, 'utf8');

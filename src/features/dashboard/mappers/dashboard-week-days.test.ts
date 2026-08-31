@@ -3,7 +3,7 @@
 // correct there. These assertions only discriminate east of Greenwich, so the
 // file fixes the offset the product actually ships to rather than inheriting the
 // runner's. Node re-reads this on assignment.
-process.env.TZ = 'Asia/Ho_Chi_Minh';
+process.env['TZ'] = 'Asia/Ho_Chi_Minh';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 

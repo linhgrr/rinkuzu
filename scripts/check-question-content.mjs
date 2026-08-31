@@ -1,7 +1,9 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+
+import { listFiles, toRepoPath } from './repo-files.shared.mjs';
 
 const QUESTION_METADATA_PROPERTIES = new Set([
   'correctIndex',
@@ -13,29 +15,15 @@ const QUESTION_METADATA_PROPERTIES = new Set([
   'type',
 ]);
 
-function normalizePath(value) {
-  return value.replaceAll('\\', '/');
-}
-
 function sourceFiles(root, directory = path.join(root, 'src')) {
   if (!existsSync(directory)) {
     return [];
   }
 
-  const result = [];
-  for (const entry of readdirSync(directory)) {
-    const absolute = path.join(directory, entry);
-    if (statSync(absolute).isDirectory()) {
-      result.push(...sourceFiles(root, absolute));
-    } else if (path.extname(entry) === '.tsx') {
-      result.push({
-        path: normalizePath(path.relative(root, absolute)),
-        content: readFileSync(absolute, 'utf8'),
-      });
-    }
-  }
-
-  return result.sort((left, right) => left.path.localeCompare(right.path));
+  return listFiles('**/*.tsx', { cwd: directory }).map((absolute) => ({
+    path: toRepoPath(absolute, root),
+    content: readFileSync(absolute, 'utf8'),
+  }));
 }
 
 function containsJsx(expression) {

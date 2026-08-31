@@ -61,13 +61,68 @@ function relative(filePath) {
   return path.relative(root, filePath).split(path.sep).join('/');
 }
 
-function importSources(source) {
-  return [...source.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((match) => match[1]);
+/**
+ * Every module specifier a file actually pulls in, read from the TypeScript AST.
+ *
+ * This was a regex for `from '...'` until 2026-08-31, which failed a boundary
+ * gate in the direction that matters: it could not see `await import('...')` or
+ * `require('...')` at all. A presentation-layer file reaching into persistence
+ * through a dynamic import passed the gate clean, while the same import written
+ * statically failed it. The regex also matched specifiers quoted inside
+ * comments and strings, which reports violations that are not there.
+ *
+ * The AST is not an upgrade for its own sake: isReexportOnlyFile below already
+ * parses these same files this way, so the parser was in the file already.
+ */
+function importSources(filePath, source) {
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const specifiers = [];
+
+  const visit = (node) => {
+    // import x from '...' and export { x } from '...'
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      specifiers.push(node.moduleSpecifier.text);
+    }
+
+    // import x = require('...')
+    if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference) &&
+      ts.isStringLiteral(node.moduleReference.expression)
+    ) {
+      specifiers.push(node.moduleReference.expression.text);
+    }
+
+    // await import('...') and require('...'), at any depth.
+    if (ts.isCallExpression(node)) {
+      const isDynamicImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
+      const isRequire = ts.isIdentifier(node.expression) && node.expression.text === 'require';
+      const [firstArgument] = node.arguments;
+      if ((isDynamicImport || isRequire) && firstArgument && ts.isStringLiteral(firstArgument)) {
+        specifiers.push(firstArgument.text);
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return specifiers;
 }
 
 function collectViolations(files, predicate) {
   return files
-    .filter((filePath) => predicate(importSources(fs.readFileSync(filePath, 'utf8'))))
+    .filter((filePath) => predicate(importSources(filePath, fs.readFileSync(filePath, 'utf8'))))
     .map(relative)
     .sort();
 }
@@ -519,7 +574,10 @@ for (const filePath of sourceFiles) {
   if (relativePath.startsWith('src/entities/') && /(?:^|\W)_id(?:\W|$)/m.test(source)) {
     errors.push(`entity identity: use id instead of persistence _id in ${relativePath}`);
   }
-  if (relativePath.startsWith('src/entities/') && importSources(source).includes('@/types/mongo')) {
+  if (
+    relativePath.startsWith('src/entities/') &&
+    importSources(filePath, source).includes('@/types/mongo')
+  ) {
     errors.push(`entity identity: remove Mongo persistence types from ${relativePath}`);
   }
   if (

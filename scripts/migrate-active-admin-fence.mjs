@@ -5,6 +5,8 @@ import nextEnv from '@next/env';
 import { MongoClient } from 'mongodb';
 import { verifyUserDisablePostcondition } from './migrate-user-disable-state.mjs';
 
+import { readCliOptions } from './cli-options.shared.mjs';
+
 const { loadEnvConfig } = nextEnv;
 
 const FENCE_ID = 'active-admin';
@@ -315,23 +317,19 @@ export async function verifyActiveAdminFencePostcondition(db) {
   };
 }
 
-/**
- * @param {string} name
- * @returns {string | undefined}
- */
-function readOption(name) {
-  const prefix = `--${name}=`;
-  return process.argv.find((argument) => argument.startsWith(prefix))?.slice(prefix.length);
-}
-
 async function main() {
   loadEnvConfig(process.cwd());
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error('MONGODB_URI is required');
 
-  const apply = process.argv.includes('--apply');
-  const verifyOnly = process.argv.includes('--verify');
-  const approvedPlanSha = readOption('approve-plan');
+  const options = readCliOptions({
+    apply: { type: 'boolean', default: false },
+    verify: { type: 'boolean', default: false },
+    'approve-plan': { type: 'string' },
+  });
+  const apply = options.apply;
+  const verifyOnly = options.verify;
+  const approvedPlanSha = options['approve-plan'];
 
   validateActiveAdminFenceMigrationModes({
     apply,

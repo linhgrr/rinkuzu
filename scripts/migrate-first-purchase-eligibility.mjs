@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 import nextEnv from '@next/env';
 import { MongoClient } from 'mongodb';
 
+import { readCliOptions } from './cli-options.shared.mjs';
+
 const { loadEnvConfig } = nextEnv;
 
 const CLAIMS_COLLECTION = 'firstpurchaseclaims';
@@ -614,20 +616,21 @@ export async function verifyFirstPurchaseEligibilityPostcondition(db) {
   };
 }
 
-function readOption(name) {
-  const prefix = `--${name}=`;
-  return process.argv.find((argument) => argument.startsWith(prefix))?.slice(prefix.length);
-}
-
 async function main() {
   loadEnvConfig(process.cwd());
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error('MONGODB_URI is required');
 
-  const apply = process.argv.includes('--apply');
-  const verifyOnly = process.argv.includes('--verify');
-  const approvedPlanSha = readOption('approve-plan');
-  const billingCreateDisabledConfirmed = process.argv.includes('--confirm-billing-create-disabled');
+  const options = readCliOptions({
+    apply: { type: 'boolean', default: false },
+    verify: { type: 'boolean', default: false },
+    'approve-plan': { type: 'string' },
+    'confirm-billing-create-disabled': { type: 'boolean', default: false },
+  });
+  const apply = options.apply;
+  const verifyOnly = options.verify;
+  const approvedPlanSha = options['approve-plan'];
+  const billingCreateDisabledConfirmed = options['confirm-billing-create-disabled'];
   validateFirstPurchaseEligibilityMigrationModes({
     apply,
     verifyOnly,

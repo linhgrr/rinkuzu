@@ -3,6 +3,8 @@ import process from 'node:process';
 import nextEnv from '@next/env';
 import { MongoClient, ObjectId } from 'mongodb';
 
+import { readCliOptions } from './cli-options.shared.mjs';
+
 const { loadEnvConfig } = nextEnv;
 const REFERENCE_FIELDS = [
   ['attempts', 'user'],
@@ -15,14 +17,6 @@ const REFERENCE_FIELDS = [
   ['subscriptions', 'user'],
   ['users', 'disabledBy'],
 ];
-
-function readOption(name) {
-  const prefix = `--${name}=`;
-  return process.argv
-    .slice(2)
-    .find((arg) => arg.startsWith(prefix))
-    ?.slice(prefix.length);
-}
 
 function canonicalizeEmail(value) {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -46,9 +40,14 @@ function mergeIdentities(survivor, duplicate) {
 }
 
 async function main() {
-  const survivorId = requireObjectId(readOption('survivor'), 'survivor');
-  const duplicateId = requireObjectId(readOption('duplicate'), 'duplicate');
-  const apply = process.argv.includes('--apply');
+  const options = readCliOptions({
+    apply: { type: 'boolean', default: false },
+    survivor: { type: 'string' },
+    duplicate: { type: 'string' },
+  });
+  const survivorId = requireObjectId(options.survivor, 'survivor');
+  const duplicateId = requireObjectId(options.duplicate, 'duplicate');
+  const apply = options.apply;
   if (survivorId.equals(duplicateId)) throw new Error('Survivor and duplicate must differ');
 
   loadEnvConfig(process.cwd());

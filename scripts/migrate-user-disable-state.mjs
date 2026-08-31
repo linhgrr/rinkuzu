@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 import nextEnv from '@next/env';
 import { MongoClient, ObjectId } from 'mongodb';
 
+import { readCliOptions } from './cli-options.shared.mjs';
+
 const { loadEnvConfig } = nextEnv;
 
 const DEFAULT_MAX_DOCUMENTS = 500;
@@ -533,25 +535,23 @@ export async function inspectUserDisableMigration(db) {
   return buildUserDisableMigrationPlan(/** @type {Array<Record<string, unknown>>} */ (documents));
 }
 
-/**
- * @param {string} name
- * @returns {string | undefined}
- */
-function readOption(name) {
-  const prefix = `--${name}=`;
-  return process.argv.find((argument) => argument.startsWith(prefix))?.slice(prefix.length);
-}
-
 async function main() {
   loadEnvConfig(process.cwd());
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error('MONGODB_URI is required');
 
-  const apply = process.argv.includes('--apply');
-  const verifyOnly = process.argv.includes('--verify');
-  const approvedPlanSha = readOption('approve-plan');
-  const maxDocumentsRaw = readOption('max-documents');
-  const batchSizeRaw = readOption('batch-size');
+  const options = readCliOptions({
+    apply: { type: 'boolean', default: false },
+    verify: { type: 'boolean', default: false },
+    'approve-plan': { type: 'string' },
+    'max-documents': { type: 'string' },
+    'batch-size': { type: 'string' },
+  });
+  const apply = options.apply;
+  const verifyOnly = options.verify;
+  const approvedPlanSha = options['approve-plan'];
+  const maxDocumentsRaw = options['max-documents'];
+  const batchSizeRaw = options['batch-size'];
   const maxDocuments =
     maxDocumentsRaw === undefined ? DEFAULT_MAX_DOCUMENTS : Number(maxDocumentsRaw);
   const batchSize = batchSizeRaw === undefined ? DEFAULT_BATCH_SIZE : Number(batchSizeRaw);

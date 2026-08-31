@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 import nextEnv from '@next/env';
 import { MongoClient } from 'mongodb';
 
+import { readCliOptions } from './cli-options.shared.mjs';
+
 const { loadEnvConfig } = nextEnv;
 const GUEST_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_MAX_DELETE = 100;
@@ -110,19 +112,19 @@ export async function inspectAttemptIdentityCleanup(db) {
   };
 }
 
-function readOption(name) {
-  const prefix = `--${name}=`;
-  return process.argv.find((argument) => argument.startsWith(prefix))?.slice(prefix.length);
-}
-
 async function main() {
   loadEnvConfig(process.cwd());
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error('MONGODB_URI is required');
 
-  const apply = process.argv.includes('--apply');
-  const approvedPlanSha = readOption('approve-plan');
-  const maxDeleteRaw = readOption('max-delete');
+  const options = readCliOptions({
+    apply: { type: 'boolean', default: false },
+    'approve-plan': { type: 'string' },
+    'max-delete': { type: 'string' },
+  });
+  const apply = options.apply;
+  const approvedPlanSha = options['approve-plan'];
+  const maxDeleteRaw = options['max-delete'];
   const maxDelete = maxDeleteRaw === undefined ? DEFAULT_MAX_DELETE : Number(maxDeleteRaw);
   const client = new MongoClient(uri, { serverSelectionTimeoutMS: 10_000 });
 

@@ -308,9 +308,13 @@ jobs:
       - name: Start pinned MongoDB replica set
         run: bash scripts/ci-mongodb.sh start
 
+      # The static-analysis job type-checks this same program, including the
+      # route types, so re-checking it here buys nothing and costs five of the
+      # six minutes this step takes.
       - name: Build once
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          NEXT_SKIP_TYPECHECK: '1'
         run: npm run build
 
       - name: Compute production build identity
@@ -360,6 +364,7 @@ jobs:
       - name: Build the end-to-end production artifact
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          NEXT_SKIP_TYPECHECK: '1'
         run: npm run build:e2e
 
       - name: Install pinned browser matrix
@@ -396,6 +401,7 @@ jobs:
       PERF_REUSE_BUILD: '1'
       PERF_EXPECTED_BUILD_DIGEST: ${{ needs.build.outputs.digest }}
       LIGHTHOUSE_PORT: '3000'
+      NEXT_SKIP_TYPECHECK: '1'
     steps:
       - name: Checkout full history
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd

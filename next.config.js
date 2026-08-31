@@ -27,9 +27,17 @@ const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   typescript: {
-    // The full production graph currently exceeds Vercel's 8 GB build limit.
-    // Keep local/CI typecheck enabled; Vercel still compiles the application bundle.
-    ignoreBuildErrors: process.env.VERCEL === '1',
+    // The full production graph currently exceeds Vercel's 8 GB build limit, so
+    // Vercel compiles the bundle without the check.
+    //
+    // `NEXT_SKIP_TYPECHECK` is for the other case: a build whose types have
+    // already been checked. `next build` re-checks the whole program, which is
+    // five of the six minutes it takes, and in CI three separate jobs paid that
+    // toll for an answer the static-analysis job had already produced. It is an
+    // explicit flag rather than a test on `CI` so that a build which skipped the
+    // check says so where anyone can grep for it — and it is only ever set
+    // beside a typecheck that actually runs, never as a way past a red one.
+    ignoreBuildErrors: process.env.VERCEL === '1' || process.env.NEXT_SKIP_TYPECHECK === '1',
   },
   turbopack: {
     root: __dirname,

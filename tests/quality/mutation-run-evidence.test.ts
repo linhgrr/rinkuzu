@@ -1458,7 +1458,9 @@ describe('workflow and package mutation:gate wiring', () => {
     };
     expect(pkg.scripts['mutation:gate']).toBe('node scripts/run-mutation-gate.mjs');
     expect(pkg.scripts['check:mutation-report']).toBe('node scripts/check-mutation-report.mjs');
-    expect(pkg.scripts['check:mutation']).toBe('node scripts/check-mutation-report.mjs');
+    // One name for one script. `check:mutation` was a second alias for this same
+    // command that nothing invoked, so there was no wiring for it to pin.
+    expect(pkg.scripts['check:mutation']).toBeUndefined();
     expect(pkg.scripts['test:mutation']).toBe('npm run mutation:gate -- --mode full');
     const workflow = readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
     expect(workflow).toContain('node scripts/run-mutation-gate.mjs --mode full');

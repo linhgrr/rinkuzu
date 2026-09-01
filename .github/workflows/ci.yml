@@ -385,13 +385,12 @@ jobs:
         if: ${{ always() }}
         run: bash scripts/ci-mongodb.sh stop
 
-  e2e:
-    name: Production E2E
+  e2e-build:
+    name: E2E artifact
     needs: [build, changes]
-    # Same rule as integration: prose cannot change a browser flow.
     if: ${{ needs.changes.outputs.heavy == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -411,21 +410,119 @@ jobs:
       # fails every flow at its first input. The shared artifact is the one that
       # ships and must not carry the waiver, which leaves the suite building its
       # own. Same bundler, same config — `NEXT_PUBLIC_E2E` is the only delta.
+      #
+      # Built once here rather than inside each shard: three shards each
+      # repeating a five-minute build would spend more than the suite they were
+      # split up to shorten.
       - name: Build the end-to-end production artifact
         env:
           NODE_OPTIONS: --max-old-space-size=4096
           NEXT_SKIP_TYPECHECK: '1'
         run: npm run build:e2e
 
+      - name: Upload the end-to-end artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: e2e-next-${{ github.sha }}
+          path: .next
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: true
+
+      - name: Stop MongoDB
+        if: ${{ always() }}
+        run: bash scripts/ci-mongodb.sh stop
+
+  e2e:
+    name: Production E2E ${{ matrix.shard }}/3
+    needs: [e2e-build, changes]
+    # Same rule as integration: prose cannot change a browser flow.
+    if: ${{ needs.changes.outputs.heavy == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      # Every shard reports. Stopping the others on one failure would leave the
+      # merged report describing a suite that never finished, which reads like a
+      # smaller suite rather than an interrupted one.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
+
+      - name: Start pinned MongoDB replica set
+        run: bash scripts/ci-mongodb.sh start
+
+      - name: Download the end-to-end artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: e2e-next-${{ github.sha }}
+          path: .next
+
       - name: Install pinned browser matrix
         run: ./node_modules/.bin/playwright install --with-deps chromium webkit
 
-      - name: Run production E2E suite
+      - name: Run production E2E shard
         id: production_e2e
-        run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BLOB_REPORT: '1'
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
+
+      - name: Upload this shard's blob report
+        if: ${{ !cancelled() && steps.production_e2e.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: e2e-blob-${{ github.sha }}-${{ matrix.shard }}
+          path: blob-report
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+
+      - name: Stop MongoDB
+        if: ${{ always() }}
+        run: bash scripts/ci-mongodb.sh stop
+
+  e2e-report:
+    name: E2E report
+    needs: [e2e, changes]
+    # Runs even when a shard failed: the merged report is how anyone finds out
+    # which flow broke, and it is worth the most exactly then.
+    if: ${{ !cancelled() && needs.changes.outputs.heavy == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/node-env
+
+      - name: Collect every shard's blob report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: e2e-blob-${{ github.sha }}-*
+          merge-multiple: true
+          path: all-blob-reports
+
+      # The two output names are set here rather than left to the config.
+      # `merge-reports --config` honours the HTML reporter's folder but not the
+      # JUnit and JSON reporters' `outputFile`, which was verified rather than
+      # assumed: without these the merged JSON goes to stdout and the evidence
+      # upload has nothing to collect.
+      - name: Merge the shard reports into one
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/playwright-results.json
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: test-results/playwright-junit.xml
+        run: >-
+          npx playwright merge-reports --config playwright.config.ts
+          --reporter html,junit,json all-blob-reports
 
       - name: Upload E2E evidence
-        if: ${{ !cancelled() && steps.production_e2e.outcome != 'skipped' }}
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: e2e-${{ github.sha }}
@@ -435,10 +532,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           include-hidden-files: true
-
-      - name: Stop MongoDB
-        if: ${{ always() }}
-        run: bash scripts/ci-mongodb.sh stop
 
   performance:
     name: Controlled performance
@@ -649,7 +742,9 @@ jobs:
       - architecture
       - integration
       - build
+      - e2e-build
       - e2e
+      - e2e-report
       - performance
       - dependency-review
       - audit
@@ -666,7 +761,7 @@ jobs:
           node - <<'NODE'
           const results = JSON.parse(process.env.REQUIRED_RESULTS);
           const eventName = process.env.EVENT_NAME;
-          const EXPECTED_JOBS = 15;
+          const EXPECTED_JOBS = 17;
 
           // Two campaigns are deferred to master because their fixed cost makes
           // them unfit for a check a developer waits on, and two suites are
@@ -674,7 +769,7 @@ jobs:
           // blanket tolerance of `skipped`: each is tied to the reason it is
           // allowed, and a job that ran and failed is never excused.
           const DEFERRED_TO_MASTER = new Set(['mutation', 'performance']);
-          const PATH_FILTERED = new Set(['integration', 'e2e']);
+          const PATH_FILTERED = new Set(['integration', 'e2e-build', 'e2e', 'e2e-report']);
 
           const deferralAllowed = eventName === 'pull_request' || eventName === 'merge_group';
           // Read from the classifier's own output, not assumed: if that job did

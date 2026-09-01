@@ -41,6 +41,9 @@ coverage/
 *.lcov
 playwright-report/
 test-results/
+# Per-shard blob reports, and the directory the report job merges them in.
+blob-report/
+all-blob-reports/
 .playwright/
 
 # nyc test coverage

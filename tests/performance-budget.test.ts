@@ -4,6 +4,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 
 import { afterEach, describe, expect, it } from 'vitest';
+import { parse as parseYaml } from 'yaml';
 
 import {
   evaluateRouteBudgets,
@@ -13,6 +14,8 @@ import {
   validateLighthouseEvidence,
 } from '../scripts/check-perf-budget.mjs';
 import { computeNextBuildDigest, sha256File } from '../scripts/run-lighthouse.mjs';
+
+type WorkflowStep = { run?: string; if?: string };
 
 const temporaryRoots: string[] = [];
 
@@ -312,8 +315,28 @@ describe('production performance workflow contract', () => {
     expect(workflow).toContain("steps.production_e2e.outcome != 'skipped'");
     expect(workflow).toContain("steps.performance_gate.outcome != 'skipped'");
     expect(workflow).toContain('if-no-files-found: error');
-    expect(workflow.match(/bash scripts\/ci-mongodb\.sh start/g)).toHaveLength(4);
-    expect(workflow.match(/bash scripts\/ci-mongodb\.sh stop/g)).toHaveLength(4);
+    // Parsed, not counted. A count of the `start` lines only says how many jobs
+    // needed a database on the day it was written, so it goes red every time the
+    // job topology changes and says nothing about the property that matters:
+    // a job that starts the replica set must also stop it, unconditionally, or a
+    // failing step strands the container and the next job on that runner inherits
+    // a dirty database.
+    const jobs = Object.entries(
+      (parseYaml(workflow) as { jobs: Record<string, { steps?: WorkflowStep[] }> }).jobs,
+    );
+    const runsMongo = (step: WorkflowStep, verb: 'start' | 'stop') =>
+      step.run?.includes(`bash scripts/ci-mongodb.sh ${verb}`) ?? false;
+    const starters = jobs.filter(([, job]) => job.steps?.some((step) => runsMongo(step, 'start')));
+
+    expect(starters.length).toBeGreaterThan(0);
+    for (const [name, job] of starters) {
+      const stops = (job.steps ?? []).filter((step) => runsMongo(step, 'stop'));
+      expect(stops, `${name} starts MongoDB without stopping it`).toHaveLength(1);
+      expect(
+        required(stops[0], `${name} stop step`).if,
+        `${name} leaks MongoDB when a step fails`,
+      ).toBe('${{ always() }}');
+    }
   });
 });
 

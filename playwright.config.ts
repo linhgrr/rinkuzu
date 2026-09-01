@@ -44,6 +44,21 @@ const e2eMongoUri =
 process.env['MONGODB_URI'] = e2eMongoUri;
 const systemChrome = usesSystemChrome ? { channel: 'chrome' as const } : {};
 
+/**
+ * Whether this process is one shard of a sharded run.
+ *
+ * A shard must emit a blob report and nothing else that claims to be final: an
+ * HTML or JUnit file written by one shard describes a third of the suite while
+ * looking exactly like a description of all of it. The blobs are merged
+ * afterwards by a job that runs without this set, which is also how
+ * `merge-reports --config` finds the output paths for the real reports.
+ *
+ * An explicit variable rather than a test on `--shard`, because the flag is not
+ * visible here and a report format that silently depended on argv would be the
+ * harder thing to debug.
+ */
+const emitsBlobReport = process.env['PLAYWRIGHT_BLOB_REPORT'] === '1';
+
 export default defineConfig({
   testDir: './tests/e2e',
   outputDir: 'test-results/playwright',
@@ -52,14 +67,16 @@ export default defineConfig({
   failOnFlakyTests: true,
   retries: isCI ? 1 : 0,
   ...(isCI ? { workers: 1 } : {}),
-  reporter: isCI
-    ? [
-        ['github'],
-        ['json', { outputFile: 'test-results/playwright-results.json' }],
-        ['junit', { outputFile: 'test-results/playwright-junit.xml' }],
-        ['html', { open: 'never', outputFolder: 'playwright-report' }],
-      ]
-    : 'list',
+  reporter: emitsBlobReport
+    ? [['blob'], ['github']]
+    : isCI
+      ? [
+          ['github'],
+          ['json', { outputFile: 'test-results/playwright-results.json' }],
+          ['junit', { outputFile: 'test-results/playwright-junit.xml' }],
+          ['html', { open: 'never', outputFolder: 'playwright-report' }],
+        ]
+      : 'list',
   expect: { timeout: 10_000 },
   use: {
     baseURL,

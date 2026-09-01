@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error -- plain ESM gate script, checked by tsconfig.scripts.json
 import { classifyChangedFiles, isProse, readChangedFiles } from '../../scripts/ci-affected.mjs';
 
 /**
@@ -58,11 +57,23 @@ describe('deciding whether a change can reach a bundle', () => {
   });
 
   it.each([
-    ['no base sha', { GITHUB_EVENT_NAME: 'pull_request' }],
-    ['an all-zero base', { GITHUB_EVENT_NAME: 'push', PUSH_BEFORE_SHA: '0'.repeat(40) }],
-    ['an unresolvable base', { GITHUB_EVENT_NAME: 'pull_request', PR_BASE_SHA: 'f'.repeat(40) }],
-    ['an event it does not know', { GITHUB_EVENT_NAME: 'release', PR_BASE_SHA: 'HEAD' }],
-  ])('reports no diff for %s rather than guessing one', (_label, env) => {
-    expect(readChangedFiles(env as NodeJS.ProcessEnv)).toBeNull();
-  });
+    ['no base sha', { NODE_ENV: 'test', GITHUB_EVENT_NAME: 'pull_request' }],
+    [
+      'an all-zero base',
+      { NODE_ENV: 'test', GITHUB_EVENT_NAME: 'push', PUSH_BEFORE_SHA: '0'.repeat(40) },
+    ],
+    [
+      'an unresolvable base',
+      { NODE_ENV: 'test', GITHUB_EVENT_NAME: 'pull_request', PR_BASE_SHA: 'f'.repeat(40) },
+    ],
+    [
+      'an event it does not know',
+      { NODE_ENV: 'test', GITHUB_EVENT_NAME: 'release', PR_BASE_SHA: 'HEAD' },
+    ],
+  ] satisfies [string, NodeJS.ProcessEnv][])(
+    'reports no diff for %s rather than guessing one',
+    (_label, env) => {
+      expect(readChangedFiles(env)).toBeNull();
+    },
+  );
 });

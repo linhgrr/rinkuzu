@@ -240,6 +240,7 @@
     "estimo": {
       "nanoid": "5.1.16"
     },
+    "browserslist": "^4.28.8",
     "js-yaml": "4.3.1",
     "postcss": "^8.5.13",
     "qs": "6.15.3",

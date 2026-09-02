@@ -45,17 +45,24 @@ describe('active-admin mutation fence integration', () => {
           updatedAt: now,
         },
       ]);
+      // Upserted, not inserted. The fence is a singleton keyed by a literal id,
+      // so it is the one fixture here that a previous run can leave behind — the
+      // users carry `_integrationRun` and are cleaned by it. A run interrupted
+      // before `afterAll` used to poison the database for every run after it:
+      // the insert failed with E11000 and the catch below reported it as the
+      // database being unavailable, which sends the reader after a dead replica
+      // set instead of a stale row.
       await mongoose.connection
         .collection<{ _id: string; revision: number; updatedAt: Date }>('adminmutationfences')
-        .insertOne({
-          _id: 'active-admin',
-          revision: 0,
-          updatedAt: now,
-        });
+        .replaceOne({ _id: 'active-admin' }, { revision: 0, updatedAt: now }, { upsert: true });
     } catch (error) {
-      throw new Error('Admin mutation replica-set integration database is unavailable', {
-        cause: error,
-      });
+      // States what failed and what the suite needs, without asserting a cause
+      // it has not established: the attached `cause` is the only thing here
+      // that knows why.
+      throw new Error(
+        'Admin mutation fence integration setup failed; this suite needs a replica set on the integration URI',
+        { cause: error },
+      );
     }
   }, 15_000);
 

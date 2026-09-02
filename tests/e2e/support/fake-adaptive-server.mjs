@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { HEADERS_TIMEOUT_MS, KEEP_ALIVE_TIMEOUT_MS } from './connection-timeouts.mjs';
 import { handleFakeLlmControlRequest, handleFakeLlmSettingsRequest } from './fake-llm-settings.mjs';
 
 const HOST = '127.0.0.1';
@@ -304,6 +305,11 @@ const server = createServer(async (request, response) => {
     );
   }
 });
+
+// Held open for longer than any gap between calls in the suite; see the module
+// these come from for the ECONNRESET race they exist to remove.
+server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT_MS;
+server.headersTimeout = HEADERS_TIMEOUT_MS;
 
 server.listen(PORT, HOST, () => {
   process.stdout.write(`Fake adaptive service listening on http://${HOST}:${PORT}\n`);

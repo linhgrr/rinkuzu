@@ -20,8 +20,9 @@ import path from 'node:path';
 
 import { isMap, isScalar, isSeq, parseDocument, visit } from 'yaml';
 
+import { listFiles } from './repo-files.shared.mjs';
+
 const root = process.cwd();
-const workflowDir = path.join(root, '.github/workflows');
 const failures = [];
 
 function fail(file, line, message) {
@@ -111,12 +112,21 @@ function withInputs(jobNode, name) {
   return values;
 }
 
-const workflows = fs
-  .readdirSync(workflowDir, { withFileTypes: true })
-  .filter((entry) => entry.isFile() && /\.ya?ml$/.test(entry.name))
-  .map((entry) => path.join(workflowDir, entry.name));
+const workflows = listFiles('.github/workflows/*.{yml,yaml}');
 
 if (workflows.length === 0) throw new Error('No GitHub Actions workflows found');
+
+/**
+ * Composite actions are workflow code too.
+ *
+ * When the repeated four-step Node preamble moved into
+ * .github/actions/node-env, three pinned `uses:` moved with it -- out of the
+ * only directory this script read. The pinning rule went on reporting "passed"
+ * over a file it had never opened, which is the same blind spot as matching a
+ * comment. Job-level rules (triggers, permissions, timeouts) do not apply here,
+ * because a composite action declares steps rather than jobs.
+ */
+const compositeActions = listFiles('.github/actions/**/action.{yml,yaml}');
 
 const FORBIDDEN_TRIGGERS = new Set(['pull_request_target', 'workflow_run']);
 
@@ -130,6 +140,73 @@ const FORBIDDEN_RUN_PATTERNS = [
   [/\|\|\s*true/, 'swallowing a command failure is forbidden'],
   [/\bset\s+\+e\b/, 'disabling shell fail-fast is forbidden'],
 ];
+
+/**
+ * The rules that apply to any file declaring steps -- a workflow or a
+ * composite action: pinned action references, settings that would let a
+ * failed gate report success, forbidden shell, and long-lived secrets.
+ */
+function checkStepRules(file, source, doc) {
+  // Actions must be pinned to an immutable reference.
+  visit(doc, {
+    Pair(_key, pair) {
+      if (String(pair.key) !== 'uses' || !isScalar(pair.value)) return;
+      const value = String(pair.value.value);
+      const separator = value.lastIndexOf('@');
+      if (value.startsWith('./')) return;
+      if (separator === -1) {
+        fail(file, lineOf(source, pair.value), `action ${value} is not pinned`);
+        return;
+      }
+      const action = value.slice(0, separator);
+      const reference = value.slice(separator + 1);
+      const immutable = action.startsWith('docker://')
+        ? /^sha256:[a-f0-9]{64}$/.test(reference)
+        : /^[a-f0-9]{40}$/.test(reference);
+      if (!immutable) {
+        fail(file, lineOf(source, pair.value), `action ${action}@${reference} is not immutable`);
+      }
+    },
+  });
+
+  // Settings that would let a failed gate report success.
+  visit(doc, {
+    Pair(_key, pair) {
+      const key = String(pair.key);
+      if (!isScalar(pair.value)) return;
+      const value = pair.value.value;
+      if (key === 'continue-on-error' && value === true) {
+        fail(file, lineOf(source, pair.value), 'continue-on-error: true can hide a failed gate');
+      }
+      if (key === 'if-no-files-found' && (value === 'warn' || value === 'ignore')) {
+        fail(file, lineOf(source, pair.value), 'missing evidence must fail');
+      }
+    },
+  });
+
+  // Shell scripts the workflow actually runs.
+  visit(doc, {
+    Pair(_key, pair) {
+      if (String(pair.key) !== 'run' || !isScalar(pair.value)) return;
+      const script = stripShellComments(String(pair.value.value));
+      for (const [pattern, message] of FORBIDDEN_RUN_PATTERNS) {
+        if (pattern.test(script)) fail(file, lineOf(source, pair.value), message);
+      }
+    },
+  });
+
+  // Long-lived secrets, read from values rather than from anywhere in the text.
+  visit(doc, {
+    Scalar(_key, node) {
+      if (typeof node.value !== 'string') return;
+      for (const match of node.value.matchAll(/\$\{\{\s*secrets\.([A-Za-z0-9_]+)\s*\}\}/g)) {
+        if (match[1] !== 'GITHUB_TOKEN') {
+          fail(file, lineOf(source, node), `long-lived secret ${match[1]} is forbidden`);
+        }
+      }
+    },
+  });
+}
 
 for (const file of workflows) {
   const source = fs.readFileSync(file, 'utf8');
@@ -196,65 +273,7 @@ for (const file of workflows) {
     }
   }
 
-  // Actions must be pinned to an immutable reference.
-  visit(doc, {
-    Pair(_key, pair) {
-      if (String(pair.key) !== 'uses' || !isScalar(pair.value)) return;
-      const value = String(pair.value.value);
-      const separator = value.lastIndexOf('@');
-      if (value.startsWith('./')) return;
-      if (separator === -1) {
-        fail(file, lineOf(source, pair.value), `action ${value} is not pinned`);
-        return;
-      }
-      const action = value.slice(0, separator);
-      const reference = value.slice(separator + 1);
-      const immutable = action.startsWith('docker://')
-        ? /^sha256:[a-f0-9]{64}$/.test(reference)
-        : /^[a-f0-9]{40}$/.test(reference);
-      if (!immutable) {
-        fail(file, lineOf(source, pair.value), `action ${action}@${reference} is not immutable`);
-      }
-    },
-  });
-
-  // Settings that would let a failed gate report success.
-  visit(doc, {
-    Pair(_key, pair) {
-      const key = String(pair.key);
-      if (!isScalar(pair.value)) return;
-      const value = pair.value.value;
-      if (key === 'continue-on-error' && value === true) {
-        fail(file, lineOf(source, pair.value), 'continue-on-error: true can hide a failed gate');
-      }
-      if (key === 'if-no-files-found' && (value === 'warn' || value === 'ignore')) {
-        fail(file, lineOf(source, pair.value), 'missing evidence must fail');
-      }
-    },
-  });
-
-  // Shell scripts the workflow actually runs.
-  visit(doc, {
-    Pair(_key, pair) {
-      if (String(pair.key) !== 'run' || !isScalar(pair.value)) return;
-      const script = stripShellComments(String(pair.value.value));
-      for (const [pattern, message] of FORBIDDEN_RUN_PATTERNS) {
-        if (pattern.test(script)) fail(file, lineOf(source, pair.value), message);
-      }
-    },
-  });
-
-  // Long-lived secrets, read from values rather than from anywhere in the text.
-  visit(doc, {
-    Scalar(_key, node) {
-      if (typeof node.value !== 'string') return;
-      for (const match of node.value.matchAll(/\$\{\{\s*secrets\.([A-Za-z0-9_]+)\s*\}\}/g)) {
-        if (match[1] !== 'GITHUB_TOKEN') {
-          fail(file, lineOf(source, node), `long-lived secret ${match[1]} is forbidden`);
-        }
-      }
-    },
-  });
+  checkStepRules(file, source, doc);
 
   // Every job needs a bounded timeout.
   const jobs = doc.get('jobs', true);
@@ -326,9 +345,27 @@ for (const file of workflows) {
   }
 }
 
+for (const file of compositeActions) {
+  const source = fs.readFileSync(file, 'utf8');
+  const doc = parseDocument(source);
+
+  for (const error of doc.errors) {
+    fail(
+      file,
+      lineOf(source, { range: [error.pos[0]] }),
+      `composite action does not parse: ${error.message}`,
+    );
+  }
+  if (doc.errors.length > 0) continue;
+
+  checkStepRules(file, source, doc);
+}
+
 if (failures.length > 0) {
   process.stderr.write(`${failures.join('\n')}\n`);
   process.exit(1);
 }
 
-process.stdout.write(`CI security policy passed for ${workflows.length} workflow(s).\n`);
+process.stdout.write(
+  `CI security policy passed for ${workflows.length} workflow(s) and ${compositeActions.length} composite action(s).\n`,
+);

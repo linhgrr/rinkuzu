@@ -14,7 +14,6 @@ import {
 import { NextIntlClientProvider } from 'next-intl';
 import { SerwistProvider } from '@serwist/turbopack/react';
 import { AnalyticsRoot } from '@/components/analytics/AnalyticsRoot';
-import { MaintenanceBanner } from '@/components/system/MaintenanceBanner';
 
 const inter = Inter({
   subsets: ['latin', 'vietnamese'],
@@ -173,7 +172,6 @@ export default async function LocaleLayout({
             <JsonLd id="webpage-schema" data={webpageSchema} />
             <JsonLd id="software-app-schema" data={softwareApplicationSchema} />
             {children}
-            {process.env.NODE_ENV === 'production' ? <MaintenanceBanner locale={locale} /> : null}
             <AnalyticsRoot />
           </NextIntlClientProvider>
         </SerwistProvider>

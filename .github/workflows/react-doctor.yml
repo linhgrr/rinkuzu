@@ -42,7 +42,7 @@ jobs:
           fetch-depth: 0
 
       # millionco/react-doctor v2, resolved to its immutable commit.
-      - uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2
+      - uses: millionco/react-doctor@013f7373f91a3b9e68bd1dc7d4d354f4b041b117
         with:
           # Pinned to the devDependency in package.json. An unpinned "latest"
           # here would report against a different analyser than the pre-commit

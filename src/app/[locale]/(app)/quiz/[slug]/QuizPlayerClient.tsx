@@ -702,19 +702,6 @@ export default function QuizPlayerClient({
   const { push } = useRouter();
   const encodedSlug = routePathSegment(slug);
   const [state, dispatch] = useReducer(quizPlayerReducer, initialQuizPlayerState);
-  const quizJourneyIdRef = useRef<string | null>(null);
-
-  const getQuizJourneyId = () => {
-    quizJourneyIdRef.current ??= crypto.randomUUID();
-    return quizJourneyIdRef.current;
-  };
-
-  const captureFirstQuestionAnswered = () => {
-    captureAnalyticsEventOnce('first_question_answered', 'first-question-answered', {
-      learning_mode: 'quiz',
-      journey_id: getQuizJourneyId(),
-    });
-  };
 
   const isMobile = useMediaQuery(MEDIA_MAX_MD);
 
@@ -834,6 +821,21 @@ export default function QuizPlayerClient({
   const currentQuestion = quiz?.questions[state.currentQuestionIndex] || null;
   const answeredQuestions = quiz ? countAnswered(quiz, state.userAnswers) : 0;
   const progress = quiz ? Math.round((answeredQuestions / quiz.questions.length) * 100) : 0;
+  const quizJourneyIdRef = useRef<string | null>(null);
+
+  const getQuizJourneyId = () => {
+    if (quizJourneyIdRef.current === null) {
+      quizJourneyIdRef.current = crypto.randomUUID();
+    }
+    return quizJourneyIdRef.current;
+  };
+
+  const captureFirstQuestionAnswered = () => {
+    captureAnalyticsEventOnce('first_question_answered', 'first-question-answered', {
+      learning_mode: 'quiz',
+      journey_id: getQuizJourneyId(),
+    });
+  };
 
   const {
     submitting,

@@ -3,7 +3,7 @@
 import { useRouter, Link } from '@/i18n/navigation';
 import { useEffect, useReducer, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytics/client';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
@@ -702,6 +702,19 @@ export default function QuizPlayerClient({
   const { push } = useRouter();
   const encodedSlug = routePathSegment(slug);
   const [state, dispatch] = useReducer(quizPlayerReducer, initialQuizPlayerState);
+  const quizJourneyIdRef = useRef<string | null>(null);
+
+  const getQuizJourneyId = () => {
+    quizJourneyIdRef.current ??= crypto.randomUUID();
+    return quizJourneyIdRef.current;
+  };
+
+  const captureFirstQuestionAnswered = () => {
+    captureAnalyticsEventOnce('first_question_answered', 'first-question-answered', {
+      learning_mode: 'quiz',
+      journey_id: getQuizJourneyId(),
+    });
+  };
 
   const isMobile = useMediaQuery(MEDIA_MAX_MD);
 
@@ -838,6 +851,7 @@ export default function QuizPlayerClient({
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
+        journey_id: getQuizJourneyId(),
         question_count: quiz?.questions.length ?? 0,
         score,
         authenticated: Boolean(sessionEmail),
@@ -985,9 +999,10 @@ export default function QuizPlayerClient({
           quiz={quiz}
           userAnswers={state.userAnswers}
           currentQuestionIndex={state.currentQuestionIndex}
-          onAnswersChange={(answers) =>
-            dispatch({ type: 'patch', value: { userAnswers: answers } })
-          }
+          onAnswersChange={(answers) => {
+            captureFirstQuestionAnswered();
+            dispatch({ type: 'patch', value: { userAnswers: answers } });
+          }}
           onIndexChange={(index) => dispatch({ type: 'setCurrentQuestionIndex', value: index })}
           onComplete={handleQuizComplete}
           onExit={() => {
@@ -1029,7 +1044,10 @@ export default function QuizPlayerClient({
             confirmExit: exitQuiz,
           }}
           error={state.error}
-          selectAnswer={(answerIndex) => dispatch({ type: 'selectAnswer', answerIndex })}
+          selectAnswer={(answerIndex) => {
+            captureFirstQuestionAnswered();
+            dispatch({ type: 'selectAnswer', answerIndex });
+          }}
           previousQuestion={() => dispatch({ type: 'goToPreviousQuestion' })}
           nextQuestion={() => dispatch({ type: 'goToNextQuestion' })}
           submitQuiz={submitQuiz}

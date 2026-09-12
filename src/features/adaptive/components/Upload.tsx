@@ -102,13 +102,18 @@ export default function AdaptiveLearningUpload() {
     setUploadProgress(10);
     const uploadStartedAt = performance.now();
     const sizeBucket = fileSizeBucket(file.size);
-    captureAnalyticsEvent('pdf_upload_started', { file_size_bucket: sizeBucket });
+    const journeyId = crypto.randomUUID();
+    captureAnalyticsEvent('pdf_upload_started', {
+      file_size_bucket: sizeBucket,
+      journey_id: journeyId,
+    });
     try {
       const online = await checkApiHealth();
       if (!online) {
         const message = t('uploadPage.backendOffline');
         captureAnalyticsEvent('pdf_upload_failed', {
           file_size_bucket: sizeBucket,
+          journey_id: journeyId,
           reason: 'service_unavailable',
           duration_ms: Math.round(performance.now() - uploadStartedAt),
         });
@@ -122,6 +127,7 @@ export default function AdaptiveLearningUpload() {
       setUploadProgress(100);
       captureAnalyticsEvent('pdf_upload_completed', {
         file_size_bucket: sizeBucket,
+        journey_id: journeyId,
         duration_ms: Math.round(performance.now() - uploadStartedAt),
       });
       saveSelectedPipelineJob({
@@ -136,6 +142,7 @@ export default function AdaptiveLearningUpload() {
     } catch (err) {
       captureAnalyticsEvent('pdf_upload_failed', {
         file_size_bucket: sizeBucket,
+        journey_id: journeyId,
         reason: err instanceof AdaptiveApiError ? err.code : 'unknown',
         duration_ms: Math.round(performance.now() - uploadStartedAt),
       });

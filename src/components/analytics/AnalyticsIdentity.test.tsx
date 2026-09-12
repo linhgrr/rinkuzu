@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => {
       for (const listener of listeners) listener();
     },
     identify: vi.fn(),
+    capturePendingSignup: vi.fn(),
     capturePendingLogin: vi.fn(),
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -32,6 +33,7 @@ vi.mock('next-auth/react', () => ({
 
 vi.mock('@/lib/analytics/client', () => ({
   capturePendingAnalyticsLogin: mocks.capturePendingLogin,
+  capturePendingAnalyticsSignup: mocks.capturePendingSignup,
   getAnalyticsConsent: () => mocks.consent,
   identifyAnalyticsUser: mocks.identify,
   subscribeToAnalyticsConsent: mocks.subscribe,
@@ -41,6 +43,7 @@ describe('AnalyticsIdentity', () => {
   afterEach(() => {
     cleanup();
     mocks.identify.mockClear();
+    mocks.capturePendingSignup.mockClear();
     mocks.capturePendingLogin.mockClear();
     mocks.setConsent('denied');
   });
@@ -53,8 +56,12 @@ describe('AnalyticsIdentity', () => {
     act(() => mocks.setConsent('granted'));
 
     expect(mocks.identify).toHaveBeenCalledWith('user-123', { role: 'user' });
+    await vi.waitFor(() => expect(mocks.capturePendingSignup).toHaveBeenCalledOnce());
     await vi.waitFor(() => expect(mocks.capturePendingLogin).toHaveBeenCalledOnce());
     expect(mocks.identify.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.capturePendingSignup.mock.invocationCallOrder[0] ?? 0,
+    );
+    expect(mocks.capturePendingSignup.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.capturePendingLogin.mock.invocationCallOrder[0] ?? 0,
     );
   });

@@ -63,6 +63,7 @@ describe('analytics client', () => {
     expect(posthogMock.capture).toHaveBeenCalledWith(
       'pdf_upload_completed',
       expect.objectContaining({ duration_ms: 1200, landing_path: '/' }),
+      { send_instantly: true, transport: 'sendBeacon' },
     );
     expect(document.querySelector('script[data-rinkuzu-analytics="google"]')).not.toBeNull();
     expect(window.dataLayer).toContainEqual([
@@ -153,11 +154,51 @@ describe('analytics client', () => {
         method: 'google',
         locale: 'en',
       }),
+      { send_instantly: true, transport: 'sendBeacon' },
     );
     expect(posthogMock.identify.mock.invocationCallOrder[0]).toBeLessThan(
       posthogMock.capture.mock.invocationCallOrder[0] ?? 0,
     );
     expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it('captures verified signup only after PostHog identifies the user', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+    analytics.markAnalyticsSignupPending('credentials', 'en');
+
+    analytics.capturePendingAnalyticsSignup();
+    expect(posthogMock.capture).not.toHaveBeenCalled();
+
+    await analytics.identifyAnalyticsUser('user-verified', { role: 'user' });
+    analytics.capturePendingAnalyticsSignup();
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.identify).toHaveBeenCalledWith('user-verified', { role: 'user' });
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'signup_completed',
+      expect.objectContaining({
+        method: 'credentials',
+        locale: 'en',
+        journey_id: expect.any(String),
+      }),
+      { send_instantly: true, transport: 'sendBeacon' },
+    );
+    expect(window.localStorage.getItem('rinkuzu_analytics_pending_signup_v1')).toBeNull();
+  });
+
+  it('scopes first-question markers to the identified user', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+
+    await analytics.identifyAnalyticsUser('user-a');
+    analytics.captureAnalyticsEventOnce('first_question_answered', 'first-answer');
+    analytics.captureAnalyticsEventOnce('first_question_answered', 'first-answer');
+
+    await analytics.identifyAnalyticsUser('user-b');
+    analytics.captureAnalyticsEventOnce('first_question_answered', 'first-answer');
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(2));
   });
 
   it('delivers the privacy-bounded upload failure guardrail', async () => {
@@ -178,6 +219,7 @@ describe('analytics client', () => {
         reason: 'service_unavailable',
         duration_ms: 450,
       }),
+      { send_instantly: true, transport: 'sendBeacon' },
     );
   });
 

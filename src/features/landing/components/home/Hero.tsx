@@ -10,8 +10,15 @@ interface HeroProps {
 
 export default function Hero({ isAuthenticated = false, locale }: HeroProps) {
   const uploadHref = isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload';
-  const demoHref = isAuthenticated ? '/adaptive' : '/register?next=/adaptive';
+  const learningHref = isAuthenticated ? '/adaptive' : '/register?next=/adaptive';
   const isVi = locale === 'vi';
+  const learningLabel = isAuthenticated
+    ? isVi
+      ? 'Tiếp tục học'
+      : 'Continue Learning'
+    : isVi
+      ? 'Tạo tài khoản'
+      : 'Start Learning';
 
   return (
     <div className="relative w-full max-w-[1920px] mx-auto min-h-[90vh] xl:h-[1080px] flex flex-col xl:flex-row items-center xl:items-start justify-between mt-4 xl:mt-0">
@@ -38,11 +45,11 @@ export default function Hero({ isAuthenticated = false, locale }: HeroProps) {
           <div className="flex flex-col sm:flex-row gap-[16px] items-start sm:items-center">
             <Magnetic className="w-full sm:w-auto">
               <Link
-                href={demoHref}
+                href={learningHref}
                 className="border border-[#ff541b] flex h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[#ff541b]/20 transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto"
               >
                 <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
-                  {isVi ? 'Học thử' : 'Try Demo'}
+                  {learningLabel}
                 </span>
               </Link>
             </Magnetic>

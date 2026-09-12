@@ -4,11 +4,12 @@ import { useSearchParams } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
 import { Suspense, useEffect, useReducer, useRef } from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineCheckCircle, HiOutlineExclamationCircle, HiOutlineMail } from 'react-icons/hi';
 import { verifyEmail } from '@/features/auth/api/auth-api';
+import { markAnalyticsSignupPending } from '@/lib/analytics/client';
 
 type Status = 'pending' | 'verifying' | 'success' | 'error';
 
@@ -45,6 +46,7 @@ function viewStateReducer(_state: ViewState, action: ViewAction): ViewState {
 
 function VerifyEmailContent() {
   const t = useTranslations('auth');
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const token = get('token') ?? '';
@@ -63,6 +65,7 @@ function VerifyEmailContent() {
     dispatch({ type: 'verifying' });
     verifyEmail(token)
       .then((result) => {
+        markAnalyticsSignupPending('credentials', locale);
         dispatch({
           type: 'success',
           message: result.message ?? t('verifyEmailSuccess'),
@@ -74,7 +77,7 @@ function VerifyEmailContent() {
           message: error instanceof Error ? error.message : t('verifyEmailFailed'),
         });
       });
-  }, [token, t]);
+  }, [locale, token, t]);
 
   return (
     <div className="relative min-h-screen overflow-hidden">

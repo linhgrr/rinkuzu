@@ -133,7 +133,6 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
     captureAnalyticsEvent('signup_started', { method: 'credentials', locale });
     try {
       const result = await registerAccount({ email: values.email, password: values.password });
-      captureAnalyticsEvent('signup_completed', { method: 'credentials', locale });
       setServerSuccess(result.message ?? t('accountCreatedSuccess'));
     } catch (error) {
       setServerError(

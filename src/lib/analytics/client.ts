@@ -5,6 +5,7 @@ const ANALYTICS_CONSENT_CHANGE_EVENT = 'rinkuzu:analytics-consent-change';
 const LANDING_ATTRIBUTION_STORAGE_KEY = 'rinkuzu_landing_attribution_v1';
 const CAMPAIGN_VALUE_PATTERN = /^[a-zA-Z0-9._~-]{1,100}$/;
 const PENDING_LOGIN_STORAGE_KEY = 'rinkuzu_analytics_pending_login_v1';
+const PENDING_SIGNUP_STORAGE_KEY = 'rinkuzu_analytics_pending_signup_v1';
 
 export type AnalyticsConsent = 'granted' | 'denied';
 
@@ -50,6 +51,7 @@ type LandingAttribution = {
 let posthogClient: PostHogClient | null = null;
 let posthogLoadPromise: Promise<PostHogClient | null> | null = null;
 let googleAnalyticsInitialized = false;
+let analyticsUserId: string | null = null;
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
@@ -255,6 +257,7 @@ export function grantAnalyticsConsent(): void {
 export function denyAnalyticsConsent(): void {
   if (!isBrowser()) return;
   window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, 'denied');
+  analyticsUserId = null;
   if (googleAnalyticsId) {
     Reflect.set(window, `ga-disable-${googleAnalyticsId}`, true);
   }
@@ -275,7 +278,9 @@ export function captureAnalyticsEvent(
   initializeGoogleAnalytics();
   window.gtag?.('event', event, sanitized);
   void initializePostHog().then((client) => {
-    if (client && getAnalyticsConsent() === 'granted') client.capture(event, sanitized);
+    if (client && getAnalyticsConsent() === 'granted') {
+      client.capture(event, sanitized, { send_instantly: true, transport: 'sendBeacon' });
+    }
   });
 }
 
@@ -285,7 +290,8 @@ export function captureAnalyticsEventOnce(
   properties: AnalyticsProperties = {},
 ): void {
   if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
-  const key = `rinkuzu_analytics_once_${storageKey}`;
+  const identityScope = analyticsUserId ?? 'anonymous';
+  const key = `rinkuzu_analytics_once_${identityScope}_${storageKey}`;
   if (window.localStorage.getItem(key) === '1') return;
 
   captureAnalyticsEvent(event, properties);
@@ -325,7 +331,46 @@ export async function identifyAnalyticsUser(
   if (getAnalyticsConsent() !== 'granted') return;
   const sanitized = sanitizeProperties(properties);
   const client = await initializePostHog();
-  if (client && getAnalyticsConsent() === 'granted') client.identify(userId, sanitized);
+  if (client && getAnalyticsConsent() === 'granted') {
+    client.identify(userId, sanitized);
+    analyticsUserId = userId;
+  }
+}
+
+export function markAnalyticsSignupPending(method: AnalyticsLoginMethod, locale: string): void {
+  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  window.localStorage.setItem(
+    PENDING_SIGNUP_STORAGE_KEY,
+    JSON.stringify({ method, locale, journey_id: window.crypto.randomUUID() }),
+  );
+}
+
+export function capturePendingAnalyticsSignup(): void {
+  if (!isBrowser() || getAnalyticsConsent() !== 'granted' || !analyticsUserId) return;
+  const pending = window.localStorage.getItem(PENDING_SIGNUP_STORAGE_KEY);
+  if (!pending) return;
+
+  try {
+    const parsed = JSON.parse(pending) as {
+      method?: unknown;
+      locale?: unknown;
+      journey_id?: unknown;
+    };
+    if (
+      (parsed.method === 'credentials' || parsed.method === 'google') &&
+      typeof parsed.locale === 'string' &&
+      typeof parsed.journey_id === 'string'
+    ) {
+      captureAnalyticsEvent('signup_completed', {
+        method: parsed.method,
+        locale: parsed.locale,
+        journey_id: parsed.journey_id,
+      });
+      window.localStorage.removeItem(PENDING_SIGNUP_STORAGE_KEY);
+    }
+  } catch {
+    window.localStorage.removeItem(PENDING_SIGNUP_STORAGE_KEY);
+  }
 }
 
 export function markAnalyticsLoginPending(method: AnalyticsLoginMethod, locale: string): void {
@@ -356,6 +401,7 @@ export function capturePendingAnalyticsLogin(): void {
 }
 
 export function resetAnalyticsIdentity(): void {
+  analyticsUserId = null;
   if (!isBrowser() || !posthogClient) return;
   posthogClient.reset();
 }

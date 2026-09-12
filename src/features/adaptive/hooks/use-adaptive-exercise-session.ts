@@ -128,6 +128,7 @@ export const useAdaptiveExerciseSession = ({
       setShowTheory(Boolean(step.theory));
       setExercise(step.exercise);
       captureAnalyticsEventOnce('adaptive_session_started', `adaptive-session-${sessionId}`, {
+        journey_id: sessionId,
         exercise_type: step.exercise.exercise_type,
         bloom_level: step.exercise.bloom_level,
         has_theory: Boolean(step.theory),
@@ -221,12 +222,14 @@ export const useAdaptiveExerciseSession = ({
       if (!isMountedRef.current) return;
 
       captureAnalyticsEvent('adaptive_answer_submitted', {
+        journey_id: sessionId,
         exercise_type: exercise.exercise_type,
         bloom_level: exercise.bloom_level,
         is_correct: result.is_correct,
       });
       captureAnalyticsEventOnce('first_question_answered', 'first-question-answered', {
         learning_mode: 'adaptive',
+        journey_id: sessionId,
       });
       saveSessionExerciseOutcome(sessionId, { result, exercise });
       clearSessionExerciseDraft(sessionId, exercise.exercise_id);

@@ -1,6 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const getServerMediaQuerySnapshot = () => false;
+
+function subscribeToMediaQuery(query: string, onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return () => undefined;
+  }
+
+  const mediaQuery = window.matchMedia(query);
+  mediaQuery.addEventListener('change', onStoreChange);
+  return () => mediaQuery.removeEventListener('change', onStoreChange);
+}
 
 /**
  * One-shot, SSR-safe media query read. Returns `false` on the server (where
@@ -21,20 +33,9 @@ export function matchesMedia(query: string): boolean {
  * Use this when the match drives rendering (derived boolean state).
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState<boolean>(() => matchesMedia(query));
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-    const mediaQuery = window.matchMedia(query);
-    const apply = () => setMatches(mediaQuery.matches);
-
-    // Sync immediately in case the query changed between render and effect.
-    apply();
-    mediaQuery.addEventListener('change', apply);
-    return () => mediaQuery.removeEventListener('change', apply);
-  }, [query]);
-
-  return matches;
+  return useSyncExternalStore(
+    (onStoreChange) => subscribeToMediaQuery(query, onStoreChange),
+    () => matchesMedia(query),
+    getServerMediaQuerySnapshot,
+  );
 }

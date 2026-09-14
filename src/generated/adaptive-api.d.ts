@@ -881,6 +881,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/admin/personal-learning/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Personal Learning Summary */
+    get: operations['get_personal_learning_summary_api_admin_personal_learning_summary_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/personal-learning/subjects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Personal Learning Subjects */
+    get: operations['get_personal_learning_subjects_api_admin_personal_learning_subjects_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/ask-rin-chan/contexts': {
     parameters: {
       query?: never;
@@ -2428,6 +2462,269 @@ export interface components {
       exercise_type: 'ordering';
       /** Correct Order */
       correct_order: string[];
+    };
+    /** PersonalLearningBreakdownRow */
+    PersonalLearningBreakdownRow: {
+      /** Key */
+      key: string;
+      /** Count */
+      count: number;
+    };
+    /** PersonalLearningPipelineResponse */
+    PersonalLearningPipelineResponse: {
+      /**
+       * Total Jobs
+       * @default 0
+       */
+      total_jobs: number;
+      /**
+       * Completed Jobs
+       * @default 0
+       */
+      completed_jobs: number;
+      /**
+       * Failed Jobs
+       * @default 0
+       */
+      failed_jobs: number;
+      /**
+       * Cancelled Jobs
+       * @default 0
+       */
+      cancelled_jobs: number;
+      /**
+       * Active Jobs
+       * @default 0
+       */
+      active_jobs: number;
+      /**
+       * Partial Successes
+       * @default 0
+       */
+      partial_successes: number;
+      /**
+       * Retryable Failures
+       * @default 0
+       */
+      retryable_failures: number;
+      /**
+       * Success Rate
+       * @default 0
+       */
+      success_rate: number;
+      /**
+       * Failure Rate
+       * @default 0
+       */
+      failure_rate: number;
+      /**
+       * Average Duration Seconds
+       * @default 0
+       */
+      average_duration_seconds: number;
+    };
+    /** PersonalLearningSubjectResponse */
+    PersonalLearningSubjectResponse: {
+      /** Job Id */
+      job_id: string;
+      /** User Id */
+      user_id?: string | null;
+      /** Filename */
+      filename: string;
+      /** Subject Id */
+      subject_id: string;
+      /** Pipeline Status */
+      pipeline_status: string;
+      /** Progress Status */
+      progress_status?: string | null;
+      /** Safe Error Code */
+      safe_error_code?: string | null;
+      /**
+       * Retryable
+       * @default false
+       */
+      retryable: boolean;
+      /**
+       * Partial Success
+       * @default false
+       */
+      partial_success: boolean;
+      /**
+       * Concepts Extracted
+       * @default 0
+       */
+      concepts_extracted: number;
+      /**
+       * Concepts After Merge
+       * @default 0
+       */
+      concepts_after_merge: number;
+      /**
+       * Relations Accepted
+       * @default 0
+       */
+      relations_accepted: number;
+      /**
+       * Total Answers
+       * @default 0
+       */
+      total_answers: number;
+      /**
+       * Total Correct
+       * @default 0
+       */
+      total_correct: number;
+      /**
+       * Accuracy
+       * @default 0
+       */
+      accuracy: number;
+      /**
+       * Average Mastery
+       * @default 0
+       */
+      average_mastery: number;
+      /**
+       * Progress Percent
+       * @default 0
+       */
+      progress_percent: number;
+      /**
+       * Mastered Concepts
+       * @default 0
+       */
+      mastered_concepts: number;
+      /** Last Session Id */
+      last_session_id?: string | null;
+      /** Duration Seconds */
+      duration_seconds?: number | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Completed At */
+      completed_at?: string | null;
+      /** Last Activity At */
+      last_activity_at?: string | null;
+    };
+    /** PersonalLearningSubjectsResponse */
+    PersonalLearningSubjectsResponse: {
+      /** Subjects */
+      subjects: components['schemas']['PersonalLearningSubjectResponse'][];
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
+    /** PersonalLearningSummaryResponse */
+    PersonalLearningSummaryResponse: {
+      /**
+       * Window
+       * @enum {string}
+       */
+      window: '7d' | '30d' | '90d' | 'all';
+      /**
+       * Bucket
+       * @enum {string}
+       */
+      bucket: 'day' | 'month';
+      totals: components['schemas']['PersonalLearningTotalsResponse'];
+      pipeline: components['schemas']['PersonalLearningPipelineResponse'];
+      /** Pipeline Statuses */
+      pipeline_statuses: components['schemas']['PersonalLearningBreakdownRow'][];
+      /** Progress Statuses */
+      progress_statuses: components['schemas']['PersonalLearningBreakdownRow'][];
+      /** Top Error Codes */
+      top_error_codes: components['schemas']['PersonalLearningBreakdownRow'][];
+      /** Trend */
+      trend: components['schemas']['PersonalLearningTrendRow'][];
+    };
+    /** PersonalLearningTotalsResponse */
+    PersonalLearningTotalsResponse: {
+      /**
+       * Active Learners
+       * @default 0
+       */
+      active_learners: number;
+      /**
+       * Subjects Created
+       * @default 0
+       */
+      subjects_created: number;
+      /**
+       * Subjects Completed
+       * @default 0
+       */
+      subjects_completed: number;
+      /**
+       * Subjects With Progress
+       * @default 0
+       */
+      subjects_with_progress: number;
+      /**
+       * Total Answers
+       * @default 0
+       */
+      total_answers: number;
+      /**
+       * Total Correct
+       * @default 0
+       */
+      total_correct: number;
+      /**
+       * Weighted Accuracy
+       * @default 0
+       */
+      weighted_accuracy: number;
+      /**
+       * Average Mastery
+       * @default 0
+       */
+      average_mastery: number;
+      /**
+       * Average Progress
+       * @default 0
+       */
+      average_progress: number;
+      /**
+       * Mastered Concepts
+       * @default 0
+       */
+      mastered_concepts: number;
+    };
+    /** PersonalLearningTrendRow */
+    PersonalLearningTrendRow: {
+      /** Period */
+      period: string;
+      /**
+       * Jobs Created
+       * @default 0
+       */
+      jobs_created: number;
+      /**
+       * Jobs Completed
+       * @default 0
+       */
+      jobs_completed: number;
+      /**
+       * Jobs Failed
+       * @default 0
+       */
+      jobs_failed: number;
+      /**
+       * Active Learners
+       * @default 0
+       */
+      active_learners: number;
+      /**
+       * Answers
+       * @default 0
+       */
+      answers: number;
+      /**
+       * Correct Answers
+       * @default 0
+       */
+      correct_answers: number;
     };
     /**
      * PipelineBypassKind
@@ -4108,6 +4405,32 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['OcrProviderKeyTestResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[PersonalLearningSubjectsResponse] */
+    StandardResponse_PersonalLearningSubjectsResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PersonalLearningSubjectsResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[PersonalLearningSummaryResponse] */
+    StandardResponse_PersonalLearningSummaryResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PersonalLearningSummaryResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -6873,6 +7196,82 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_LlmUsageEventsResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_personal_learning_summary_api_admin_personal_learning_summary_get: {
+    parameters: {
+      query?: {
+        window?: '7d' | '30d' | '90d' | 'all';
+      };
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_PersonalLearningSummaryResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_personal_learning_subjects_api_admin_personal_learning_subjects_get: {
+    parameters: {
+      query?: {
+        window?: '7d' | '30d' | '90d' | 'all';
+        search?: string | null;
+        user_ids?: string[];
+        pipeline_status?: components['schemas']['PipelineStatus'] | null;
+        progress_status?: components['schemas']['SubjectProgressStatus'] | null;
+        limit?: number;
+        cursor?: string | null;
+      };
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_PersonalLearningSubjectsResponse_'];
         };
       };
       /** @description Validation Error */

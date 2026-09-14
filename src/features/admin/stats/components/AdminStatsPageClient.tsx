@@ -4,7 +4,7 @@ import { useEffect, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { BarChart3, BrainCircuit, Gauge, type LucideIcon } from 'lucide-react';
+import { BarChart3, BrainCircuit, Gauge, GraduationCap, type LucideIcon } from 'lucide-react';
 import {
   fetchAdminStatsViewModel,
   fetchGrowthTrendsViewModel,
@@ -65,6 +65,17 @@ const TopCreatorsBarChart = dynamic(
   },
 );
 
+const PersonalLearningSection = dynamic(
+  () =>
+    import('@/features/admin/stats/components/PersonalLearningSection').then(
+      (module) => module.PersonalLearningSection,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-80 w-full animate-pulse rounded-xl bg-neutral-100" />,
+  },
+);
+
 const LlmUsageSection = dynamic(
   () =>
     import('@/features/admin/stats/components/LlmUsageSection').then(
@@ -78,7 +89,7 @@ const LlmUsageSection = dynamic(
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;
-type StatsWorkspace = 'overview' | 'llm' | 'entitlements';
+type StatsWorkspace = 'overview' | 'llm' | 'entitlements' | 'personalLearning';
 
 interface AdminStatsLayoutProps {
   children: ReactNode;
@@ -532,6 +543,11 @@ function AdminStatsContent({
     { id: 'overview', label: t('statsWorkspaceOverview'), icon: BarChart3 },
     { id: 'llm', label: t('statsWorkspaceLlm'), icon: BrainCircuit },
     { id: 'entitlements', label: t('statsWorkspaceEntitlements'), icon: Gauge },
+    {
+      id: 'personalLearning',
+      label: t('statsWorkspacePersonalLearning'),
+      icon: GraduationCap,
+    },
   ];
 
   return (
@@ -568,6 +584,7 @@ function AdminStatsContent({
       ) : null}
       {workspace === 'llm' ? <LlmUsageSection /> : null}
       {workspace === 'entitlements' ? <EntitlementTelemetrySection /> : null}
+      {workspace === 'personalLearning' ? <PersonalLearningSection /> : null}
     </>
   );
 }

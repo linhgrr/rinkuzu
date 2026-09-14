@@ -4240,6 +4240,236 @@
         }
       }
     },
+    "/api/admin/personal-learning/summary": {
+      "get": {
+        "tags": ["admin-personal-learning"],
+        "summary": "Get Personal Learning Summary",
+        "operationId": "get_personal_learning_summary_api_admin_personal_learning_summary_get",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["7d", "30d", "90d", "all"],
+              "type": "string",
+              "default": "30d",
+              "title": "Window"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_PersonalLearningSummaryResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/personal-learning/subjects": {
+      "get": {
+        "tags": ["admin-personal-learning"],
+        "summary": "Get Personal Learning Subjects",
+        "operationId": "get_personal_learning_subjects_api_admin_personal_learning_subjects_get",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["7d", "30d", "90d", "all"],
+              "type": "string",
+              "default": "30d",
+              "title": "Window"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "user_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "title": "User Ids"
+            }
+          },
+          {
+            "name": "pipeline_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PipelineStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pipeline Status"
+            }
+          },
+          {
+            "name": "progress_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SubjectProgressStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Progress Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_PersonalLearningSubjectsResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ask-rin-chan/contexts": {
       "post": {
         "tags": ["ask-rin-chan"],
@@ -7928,6 +8158,421 @@
         "type": "object",
         "required": ["correct_order"],
         "title": "OrderingPayload"
+      },
+      "PersonalLearningBreakdownRow": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": ["key", "count"],
+        "title": "PersonalLearningBreakdownRow"
+      },
+      "PersonalLearningPipelineResponse": {
+        "properties": {
+          "total_jobs": {
+            "type": "integer",
+            "title": "Total Jobs",
+            "default": 0
+          },
+          "completed_jobs": {
+            "type": "integer",
+            "title": "Completed Jobs",
+            "default": 0
+          },
+          "failed_jobs": {
+            "type": "integer",
+            "title": "Failed Jobs",
+            "default": 0
+          },
+          "cancelled_jobs": {
+            "type": "integer",
+            "title": "Cancelled Jobs",
+            "default": 0
+          },
+          "active_jobs": {
+            "type": "integer",
+            "title": "Active Jobs",
+            "default": 0
+          },
+          "partial_successes": {
+            "type": "integer",
+            "title": "Partial Successes",
+            "default": 0
+          },
+          "retryable_failures": {
+            "type": "integer",
+            "title": "Retryable Failures",
+            "default": 0
+          },
+          "success_rate": {
+            "type": "number",
+            "title": "Success Rate",
+            "default": 0.0
+          },
+          "failure_rate": {
+            "type": "number",
+            "title": "Failure Rate",
+            "default": 0.0
+          },
+          "average_duration_seconds": {
+            "type": "number",
+            "title": "Average Duration Seconds",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "PersonalLearningPipelineResponse"
+      },
+      "PersonalLearningSubjectResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "subject_id": {
+            "type": "string",
+            "title": "Subject Id"
+          },
+          "pipeline_status": {
+            "type": "string",
+            "title": "Pipeline Status"
+          },
+          "progress_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Status"
+          },
+          "safe_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safe Error Code"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable",
+            "default": false
+          },
+          "partial_success": {
+            "type": "boolean",
+            "title": "Partial Success",
+            "default": false
+          },
+          "concepts_extracted": {
+            "type": "integer",
+            "title": "Concepts Extracted",
+            "default": 0
+          },
+          "concepts_after_merge": {
+            "type": "integer",
+            "title": "Concepts After Merge",
+            "default": 0
+          },
+          "relations_accepted": {
+            "type": "integer",
+            "title": "Relations Accepted",
+            "default": 0
+          },
+          "total_answers": {
+            "type": "integer",
+            "title": "Total Answers",
+            "default": 0
+          },
+          "total_correct": {
+            "type": "integer",
+            "title": "Total Correct",
+            "default": 0
+          },
+          "accuracy": {
+            "type": "number",
+            "title": "Accuracy",
+            "default": 0.0
+          },
+          "average_mastery": {
+            "type": "number",
+            "title": "Average Mastery",
+            "default": 0.0
+          },
+          "progress_percent": {
+            "type": "integer",
+            "title": "Progress Percent",
+            "default": 0
+          },
+          "mastered_concepts": {
+            "type": "integer",
+            "title": "Mastered Concepts",
+            "default": 0
+          },
+          "last_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Session Id"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "last_activity_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Activity At"
+          }
+        },
+        "type": "object",
+        "required": ["job_id", "filename", "subject_id", "pipeline_status", "created_at"],
+        "title": "PersonalLearningSubjectResponse"
+      },
+      "PersonalLearningSubjectsResponse": {
+        "properties": {
+          "subjects": {
+            "items": {
+              "$ref": "#/components/schemas/PersonalLearningSubjectResponse"
+            },
+            "type": "array",
+            "title": "Subjects"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": ["subjects"],
+        "title": "PersonalLearningSubjectsResponse"
+      },
+      "PersonalLearningSummaryResponse": {
+        "properties": {
+          "window": {
+            "type": "string",
+            "enum": ["7d", "30d", "90d", "all"],
+            "title": "Window"
+          },
+          "bucket": {
+            "type": "string",
+            "enum": ["day", "month"],
+            "title": "Bucket"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/PersonalLearningTotalsResponse"
+          },
+          "pipeline": {
+            "$ref": "#/components/schemas/PersonalLearningPipelineResponse"
+          },
+          "pipeline_statuses": {
+            "items": {
+              "$ref": "#/components/schemas/PersonalLearningBreakdownRow"
+            },
+            "type": "array",
+            "title": "Pipeline Statuses"
+          },
+          "progress_statuses": {
+            "items": {
+              "$ref": "#/components/schemas/PersonalLearningBreakdownRow"
+            },
+            "type": "array",
+            "title": "Progress Statuses"
+          },
+          "top_error_codes": {
+            "items": {
+              "$ref": "#/components/schemas/PersonalLearningBreakdownRow"
+            },
+            "type": "array",
+            "title": "Top Error Codes"
+          },
+          "trend": {
+            "items": {
+              "$ref": "#/components/schemas/PersonalLearningTrendRow"
+            },
+            "type": "array",
+            "title": "Trend"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window",
+          "bucket",
+          "totals",
+          "pipeline",
+          "pipeline_statuses",
+          "progress_statuses",
+          "top_error_codes",
+          "trend"
+        ],
+        "title": "PersonalLearningSummaryResponse"
+      },
+      "PersonalLearningTotalsResponse": {
+        "properties": {
+          "active_learners": {
+            "type": "integer",
+            "title": "Active Learners",
+            "default": 0
+          },
+          "subjects_created": {
+            "type": "integer",
+            "title": "Subjects Created",
+            "default": 0
+          },
+          "subjects_completed": {
+            "type": "integer",
+            "title": "Subjects Completed",
+            "default": 0
+          },
+          "subjects_with_progress": {
+            "type": "integer",
+            "title": "Subjects With Progress",
+            "default": 0
+          },
+          "total_answers": {
+            "type": "integer",
+            "title": "Total Answers",
+            "default": 0
+          },
+          "total_correct": {
+            "type": "integer",
+            "title": "Total Correct",
+            "default": 0
+          },
+          "weighted_accuracy": {
+            "type": "number",
+            "title": "Weighted Accuracy",
+            "default": 0.0
+          },
+          "average_mastery": {
+            "type": "number",
+            "title": "Average Mastery",
+            "default": 0.0
+          },
+          "average_progress": {
+            "type": "number",
+            "title": "Average Progress",
+            "default": 0.0
+          },
+          "mastered_concepts": {
+            "type": "integer",
+            "title": "Mastered Concepts",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "PersonalLearningTotalsResponse"
+      },
+      "PersonalLearningTrendRow": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "jobs_created": {
+            "type": "integer",
+            "title": "Jobs Created",
+            "default": 0
+          },
+          "jobs_completed": {
+            "type": "integer",
+            "title": "Jobs Completed",
+            "default": 0
+          },
+          "jobs_failed": {
+            "type": "integer",
+            "title": "Jobs Failed",
+            "default": 0
+          },
+          "active_learners": {
+            "type": "integer",
+            "title": "Active Learners",
+            "default": 0
+          },
+          "answers": {
+            "type": "integer",
+            "title": "Answers",
+            "default": 0
+          },
+          "correct_answers": {
+            "type": "integer",
+            "title": "Correct Answers",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": ["period"],
+        "title": "PersonalLearningTrendRow"
       },
       "PipelineBypassKind": {
         "type": "string",
@@ -11692,6 +12337,60 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[OcrProviderKeyTestResponse]"
+      },
+      "StandardResponse_PersonalLearningSubjectsResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/PersonalLearningSubjectsResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[PersonalLearningSubjectsResponse]"
+      },
+      "StandardResponse_PersonalLearningSummaryResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/PersonalLearningSummaryResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[PersonalLearningSummaryResponse]"
       },
       "StandardResponse_PipelineJobCancelResponse_": {
         "properties": {

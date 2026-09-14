@@ -82,8 +82,12 @@ function buildTargetUrl(req: Request, targetPath: string, infra: boolean): URL {
   );
   const incomingUrl = new URL(req.url);
 
+  // `append`, not `set`: a repeated key is how a list-valued upstream parameter
+  // is spelled, and `set` kept only the last one — which silently narrowed
+  // `user_ids=a&user_ids=b` to a single id. The target starts with no query of
+  // its own, so single-valued parameters are unaffected.
   incomingUrl.searchParams.forEach((value, key) => {
-    targetUrl.searchParams.set(key, value);
+    targetUrl.searchParams.append(key, value);
   });
 
   return targetUrl;

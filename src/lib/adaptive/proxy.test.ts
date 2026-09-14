@@ -35,6 +35,21 @@ describe('proxyAdaptiveRequest', () => {
     expect(request).toMatchObject({ method: 'GET', cache: 'no-store' });
   });
 
+  it('preserves a repeated query parameter instead of keeping only the last value', async () => {
+    await proxyAdaptiveRequest(
+      new Request(
+        'https://app.test/api/admin/personal-learning/subjects?user_ids=a&user_ids=b&window=7d',
+      ),
+      '/admin/personal-learning/subjects',
+      {},
+    );
+
+    const [url] = vi.mocked(fetch).mock.calls[0] ?? [];
+    const forwarded = new URL(String(url));
+    expect(forwarded.searchParams.getAll('user_ids')).toEqual(['a', 'b']);
+    expect(forwarded.searchParams.get('window')).toBe('7d');
+  });
+
   it('adds validated Next cache options for safe cacheable GET requests', async () => {
     await proxyAdaptiveRequest(
       new Request('https://app.test/api/adaptive/subjects'),

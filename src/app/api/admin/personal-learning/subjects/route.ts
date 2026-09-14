@@ -48,7 +48,7 @@ export const GET = withAdmin(async (req, { userId, session }) => {
   );
 
   const payload: unknown = await response.json().catch(() => null);
-  if (!isStandardSuccessEnvelope<Record<string, unknown>>(payload)) {
+  if (!isStandardSuccessEnvelope<Record<string, unknown>>(payload) || !isRecord(payload.data)) {
     const forwarded = apiForward(
       payload === null
         ? { success: false, error: { code: 'bad_gateway', message: 'Upstream analytics failed' } }

@@ -88,9 +88,16 @@ export function PersonalLearningSection() {
 
   const cursor = cursors.at(-1);
   const summaryKey = `${window}|${attempt}`;
-  const subjectsKey = [window, search, pipelineStatus, progressStatus, cursor ?? '', attempt].join(
-    '|',
-  );
+  // JSON, not join('|'): a search term containing the separator could otherwise
+  // collide with a different filter combination and skip the refetch.
+  const subjectsKey = JSON.stringify([
+    window,
+    search,
+    pipelineStatus,
+    progressStatus,
+    cursor,
+    attempt,
+  ]);
 
   const [summaryState, setSummaryState] = useState<Settled<PersonalLearningSummaryViewModel>>({
     key: '',
@@ -103,16 +110,26 @@ export function PersonalLearningSection() {
 
   useEffect(() => {
     const controller = new AbortController();
+    // A superseded request must never write: aborting does not stop a promise
+    // that already resolved, and a late write would clobber the newer key and
+    // leave the panel loading for good.
+    let superseded = false;
     fetchPersonalLearningSummary(window, controller.signal)
-      .then((data) => setSummaryState({ key: summaryKey, data }))
+      .then((data) => {
+        if (!superseded) setSummaryState({ key: summaryKey, data });
+      })
       .catch((error: unknown) => {
-        if (!isAbort(error)) setSummaryState({ key: summaryKey, data: null });
+        if (!superseded && !isAbort(error)) setSummaryState({ key: summaryKey, data: null });
       });
-    return () => controller.abort();
+    return () => {
+      superseded = true;
+      controller.abort();
+    };
   }, [summaryKey, window]);
 
   useEffect(() => {
     const controller = new AbortController();
+    let superseded = false;
     fetchPersonalLearningSubjects(
       {
         window,
@@ -124,11 +141,16 @@ export function PersonalLearningSection() {
       },
       controller.signal,
     )
-      .then((data) => setSubjectsState({ key: subjectsKey, data }))
+      .then((data) => {
+        if (!superseded) setSubjectsState({ key: subjectsKey, data });
+      })
       .catch((error: unknown) => {
-        if (!isAbort(error)) setSubjectsState({ key: subjectsKey, data: null });
+        if (!superseded && !isAbort(error)) setSubjectsState({ key: subjectsKey, data: null });
       });
-    return () => controller.abort();
+    return () => {
+      superseded = true;
+      controller.abort();
+    };
     // subjectsKey is the digest of every filter the request is built from.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjectsKey]);

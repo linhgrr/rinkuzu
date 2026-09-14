@@ -47,10 +47,14 @@ export class UserIdentityRepository implements IUserIdentityRepository {
 
     await connectDB();
     const pattern = { $regex: escapeRegexLiteral(term), $options: 'i' };
+    // ponytail: a broad term is truncated to `limit` accounts. Sorted so the
+    // same search always truncates the same way rather than returning an
+    // arbitrary slice; paginate the identity search if admins hit the cap.
     const records = await User.find({
       $or: [{ email: pattern }, { name: pattern }, { displayName: pattern }],
     })
       .select('_id')
+      .sort({ _id: 1 })
       .limit(limit)
       .lean<{ _id: Types.ObjectId }[]>();
     return records.map((record) => record._id.toString());

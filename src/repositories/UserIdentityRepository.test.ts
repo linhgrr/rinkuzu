@@ -4,9 +4,10 @@ import { Types } from 'mongoose';
 const userModelMocks = vi.hoisted(() => {
   const lean = vi.fn();
   const limit = vi.fn(() => ({ lean }));
-  const select = vi.fn(() => ({ lean, limit }));
+  const sort = vi.fn(() => ({ limit, lean }));
+  const select = vi.fn(() => ({ lean, limit, sort }));
   const find = vi.fn(() => ({ select }));
-  return { find, select, limit, lean };
+  return { find, select, sort, limit, lean };
 });
 
 vi.mock('@/lib/mongoose', () => ({ default: vi.fn().mockResolvedValue(undefined) }));
@@ -69,6 +70,7 @@ describe('UserIdentityRepository', () => {
     expect(userModelMocks.find).toHaveBeenCalledWith({
       $or: [{ email: pattern }, { name: pattern }, { displayName: pattern }],
     });
+    expect(userModelMocks.sort).toHaveBeenCalledWith({ _id: 1 });
     expect(userModelMocks.limit).toHaveBeenCalledWith(50);
   });
 

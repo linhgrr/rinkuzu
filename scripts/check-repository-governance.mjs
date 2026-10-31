@@ -4,9 +4,9 @@ import path from 'node:path';
 const root = process.cwd();
 const policyPath = path.join(root, '.github/rulesets/master-production.json');
 const expectedRepository = process.env.GITHUB_REPOSITORY ?? 'linhgrr/rinkuzu';
-// The check-run context GitHub reports for the pipeline's aggregating job,
-// which is that job's `name:` in ci.yml.
-const REQUIRED_GATE_CONTEXT = 'Production Gate';
+// Commit-status contexts master must require. GitHub Actions is off (no minutes); ops/local-ci reports
+// local/ci, and the CTO and QA agents report review/cto and qa/preview (Paperclip spec 2026-10-31).
+const REQUIRED_CONTEXTS = ['local/ci', 'review/cto', 'qa/preview'];
 
 function fail(message) {
   throw new Error(`Repository governance check failed: ${message}`);
@@ -43,17 +43,15 @@ function assertRuleset(ruleset, source) {
   // tolerated.
   const statusChecks = getRule(ruleset, 'required_status_checks');
   if (!statusChecks) fail(`${source}: missing required_status_checks rule`);
-  if (statusChecks.parameters?.strict_required_status_checks_policy !== true) {
-    fail(`${source}: required_status_checks must require the branch to be up to date`);
-  }
+  // Up-to-date is not required: statuses are per commit, so it would force a fresh CTO review and QA
+  // pass every time master moves. The local gate re-runs CI on every new master head instead.
   const contexts = (statusChecks.parameters?.required_status_checks ?? []).map(
     (check) => check.context,
   );
-  // The aggregating job, not the individual ones. It already fails closed on
-  // every job it needs, so requiring it here means adding a job to the
-  // pipeline cannot quietly leave that job unrequired.
-  if (!contexts.includes(REQUIRED_GATE_CONTEXT)) {
-    fail(`${source}: required_status_checks must include "${REQUIRED_GATE_CONTEXT}"`);
+  for (const context of REQUIRED_CONTEXTS) {
+    if (!contexts.includes(context)) {
+      fail(`${source}: required_status_checks must include "${context}"`);
+    }
   }
 
   // `pull_request` is deliberately unasserted, not forbidden. Whether master

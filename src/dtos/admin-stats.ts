@@ -162,3 +162,62 @@ export interface AdminActivityStatsListDto {
   >;
   pagination: PaginationMeta;
 }
+
+const ADMIN_ACTIVATION_DEFAULT_WEEKS = 8;
+const ADMIN_ACTIVATION_MAX_WEEKS = 26;
+
+export const adminActivationQuerySchema = z.object({
+  weeks: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(ADMIN_ACTIVATION_MAX_WEEKS)
+    .default(ADMIN_ACTIVATION_DEFAULT_WEEKS),
+});
+
+const isoInstantSchema = z.iso.datetime();
+const countSchema = z.number().int().min(0);
+
+const adminActivationWeekSchema = z
+  .object({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    start: isoInstantSchema,
+    end: isoInstantSchema,
+    signups: countSchema,
+    material: countSchema,
+    activated: countSchema,
+    weeklyActivatedLearners: countSchema,
+    w1Retained: countSchema.nullable(),
+    w1RetentionRate: z.number().min(0).max(1).nullable(),
+    complete: z.boolean(),
+  })
+  .strict();
+
+/**
+ * Aggregate-only by contract: integers, rates, dates and definition strings.
+ * Strict at every level so a future field cannot leak learner data unnoticed.
+ */
+export const adminActivationStatsSchema = z
+  .object({
+    generatedAt: isoInstantSchema,
+    timezone: z.literal('UTC'),
+    definitions: z
+      .object({
+        week: z.string(),
+        exclusions: z.string(),
+        signups: z.string(),
+        material: z.string(),
+        activated: z.string(),
+        weeklyActivatedLearners: z.string(),
+        w1Retained: z.string(),
+        w1RetentionRate: z.string(),
+        complete: z.string(),
+        limitations: z.string(),
+      })
+      .strict(),
+    weeks: z.array(adminActivationWeekSchema),
+  })
+  .strict();
+
+export type AdminActivationWeekDto = z.infer<typeof adminActivationWeekSchema>;
+export type AdminActivationStatsDto = z.infer<typeof adminActivationStatsSchema>;

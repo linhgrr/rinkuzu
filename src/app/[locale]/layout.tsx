@@ -12,6 +12,7 @@ import {
   buildWebsiteSchema,
 } from '@/lib/structured-data';
 import { NextIntlClientProvider } from 'next-intl';
+import { setRequestLocale } from 'next-intl/server';
 import { SerwistProvider } from '@serwist/turbopack/react';
 import { AnalyticsRoot } from '@/components/analytics/AnalyticsRoot';
 
@@ -134,6 +135,10 @@ export default async function LocaleLayout({
     notFound();
   }
 
+  // Static routes (the homepage is force-static) have no request headers, so next-intl
+  // would otherwise resolve the default locale ('vi') instead of the [locale] segment.
+  setRequestLocale(locale);
+
   const organizationSchema = buildOrganizationSchema();
   const websiteSchema = buildWebsiteSchema(locale);
   const webpageSchema = buildWebPageSchema(locale);
@@ -166,7 +171,7 @@ export default async function LocaleLayout({
           cacheOnNavigation={false}
           reloadOnOnline={false}
         >
-          <NextIntlClientProvider messages={null}>
+          <NextIntlClientProvider locale={locale} messages={null}>
             <JsonLd id="org-schema" data={organizationSchema} />
             <JsonLd id="website-schema" data={websiteSchema} />
             <JsonLd id="webpage-schema" data={webpageSchema} />

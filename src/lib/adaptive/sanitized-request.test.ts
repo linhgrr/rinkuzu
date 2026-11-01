@@ -8,7 +8,11 @@ describe('sanitizedGetRequest', () => {
       headers: { 'x-request-id': 'req-1' },
     });
 
-    const sanitized = sanitizedGetRequest(original, { window: '30d', limit: 25, cursor: undefined });
+    const sanitized = sanitizedGetRequest(original, {
+      window: '30d',
+      limit: 25,
+      cursor: undefined,
+    });
 
     const url = new URL(sanitized.url);
     expect(url.pathname).toBe('/api/x');

@@ -1,11 +1,10 @@
 import { z } from 'zod';
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
+import { getAdminAuditRepository } from '@/lib/admin-audit-factory';
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { parseSearchParams } from '@/lib/api/validated';
 import { logger } from '@/lib/logger';
-import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
-import { AdminAuditRepository } from '@/repositories/AdminAuditRepository';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,8 +60,6 @@ const upstreamSchema = z.object({
 
 const NO_STORE_HEADERS = { 'Cache-Control': 'private, no-store', Pragma: 'no-cache' } as const;
 
-const adminAudit: IAdminAuditRepository = new AdminAuditRepository();
-
 /**
  * One learner's subjects, for admin support.
  *
@@ -101,7 +98,7 @@ export const GET = withAdmin(async (req, { userId, email, session }) => {
   }
 
   try {
-    await adminAudit.record({
+    await getAdminAuditRepository().record({
       actorId: userId,
       actorEmail: email,
       action: 'personal_learning.learner_view',

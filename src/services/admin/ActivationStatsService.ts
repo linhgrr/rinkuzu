@@ -9,21 +9,21 @@ import { DAY_MS, trailingIsoWeeks } from '@/lib/analytics/iso-week';
 import { logger } from '@/lib/logger';
 import type { ServiceResult } from '@/interfaces/services/types';
 
-export const ACTIVATION_STATS_CACHE_TTL_MS = 10 * 60_000;
-export const ACTIVATION_STATS_AUDIT_ACTION = 'stats.activation.read';
-export const ANALYTICS_SERVICE_ACTOR = 'service:analytics-read';
+const ACTIVATION_STATS_CACHE_TTL_MS = 10 * 60_000;
+const ACTIVATION_STATS_AUDIT_ACTION = 'stats.activation.read';
+const ANALYTICS_SERVICE_ACTOR = 'service:analytics-read';
 /**
  * `AdminActionAudit.actorId` is a required ObjectId. A service caller has no
  * user id, so it is recorded under the all-zero id, which no user can have,
  * with `actorEmail` naming the service.
  */
-export const ANALYTICS_SERVICE_ACTOR_ID = '000000000000000000000000';
+const ANALYTICS_SERVICE_ACTOR_ID = '000000000000000000000000';
 
 export type ActivationStatsActor =
   | { kind: 'admin'; userId: string; email: string }
   | { kind: 'service' };
 
-export const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
+const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
   week: 'ISO-8601 week in UTC, Monday 00:00:00.000 to Sunday 23:59:59.999. `end` is the last millisecond of the week.',
   exclusions:
     'Users with role admin, disabled users (disable = 1), and test/QA accounts (reserved example/.test/.invalid/.localhost email domains plus a documented constant list) are never counted.',
@@ -111,7 +111,7 @@ export class ActivationStatsService {
   }
 }
 
-export function buildActivationWeeks(
+function buildActivationWeeks(
   windows: ReturnType<typeof trailingIsoWeeks>,
   aggregates: AdminActivationAggregates,
   now: Date,

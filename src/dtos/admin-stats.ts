@@ -163,8 +163,8 @@ export interface AdminActivityStatsListDto {
   pagination: PaginationMeta;
 }
 
-export const ADMIN_ACTIVATION_DEFAULT_WEEKS = 8;
-export const ADMIN_ACTIVATION_MAX_WEEKS = 26;
+const ADMIN_ACTIVATION_DEFAULT_WEEKS = 8;
+const ADMIN_ACTIVATION_MAX_WEEKS = 26;
 
 export const adminActivationQuerySchema = z.object({
   weeks: z.coerce

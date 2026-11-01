@@ -8,7 +8,7 @@
  */
 
 export const DAY_MS = 86_400_000;
-export const WEEK_MS = 7 * DAY_MS;
+const WEEK_MS = 7 * DAY_MS;
 
 export interface IsoWeekWindow {
   /** e.g. `2026-W44`. */
@@ -20,7 +20,7 @@ export interface IsoWeekWindow {
 }
 
 /** Monday 00:00 UTC of the ISO week containing `date`. */
-export function isoWeekStart(date: Date): Date {
+function isoWeekStart(date: Date): Date {
   const midnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   // getUTCDay: Sunday = 0. Shift so Monday = 0 … Sunday = 6.
   const daysSinceMonday = (new Date(midnight).getUTCDay() + 6) % 7;
@@ -28,7 +28,7 @@ export function isoWeekStart(date: Date): Date {
 }
 
 /** `YYYY-Www` label of the ISO week containing `date`. */
-export function isoWeekLabel(date: Date): string {
+function isoWeekLabel(date: Date): string {
   const thursday = new Date(isoWeekStart(date).getTime() + 3 * DAY_MS);
   const isoYear = thursday.getUTCFullYear();
   const firstThursdayWeekStart = isoWeekStart(new Date(Date.UTC(isoYear, 0, 4)));

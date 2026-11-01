@@ -5,12 +5,12 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 import { adminActivationStatsSchema } from '@/dtos/admin-stats';
-import {
-  ACTIVATION_STATS_CACHE_TTL_MS,
-  ActivationStatsService,
-  ANALYTICS_SERVICE_ACTOR,
-  ANALYTICS_SERVICE_ACTOR_ID,
-} from './ActivationStatsService';
+import { ActivationStatsService } from './ActivationStatsService';
+
+// Spec values (RIN-463 AC 4/5), asserted as literals so a change is deliberate.
+const CACHE_TTL_MS = 10 * 60_000;
+const SERVICE_ACTOR = 'service:analytics-read';
+const SERVICE_ACTOR_ID = '000000000000000000000000';
 
 const NOW = new Date('2026-11-04T12:00:00.000Z'); // Wednesday of 2026-W45
 
@@ -101,7 +101,7 @@ describe('ActivationStatsService', () => {
       userId: '64b000000000000000000001',
       email: 'admin@example.com',
     });
-    advance(ACTIVATION_STATS_CACHE_TTL_MS - 1);
+    advance(CACHE_TTL_MS - 1);
     await service.getWeeklyActivation(8, { kind: 'service' });
     expect(stats.getActivationAggregates).toHaveBeenCalledTimes(1);
     await service.getWeeklyActivation(4, { kind: 'service' });
@@ -120,8 +120,8 @@ describe('ActivationStatsService', () => {
       details: { weeks: '8' },
     });
     expect(audit.record).toHaveBeenNthCalledWith(2, {
-      actorId: ANALYTICS_SERVICE_ACTOR_ID,
-      actorEmail: ANALYTICS_SERVICE_ACTOR,
+      actorId: SERVICE_ACTOR_ID,
+      actorEmail: SERVICE_ACTOR,
       action: 'stats.activation.read',
       entityType: 'stats',
       entityId: 'activation',

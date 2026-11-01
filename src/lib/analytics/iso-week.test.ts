@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { isoWeekLabel, isoWeekStart, trailingIsoWeeks } from './iso-week';
+import { trailingIsoWeeks } from './iso-week';
+
+function weekOf(iso: string) {
+  const [week] = trailingIsoWeeks(new Date(iso), 1);
+  if (!week) throw new Error('expected one week');
+  return week;
+}
 
 describe('iso-week', () => {
   it('starts weeks on Monday 00:00 UTC', () => {
     // Sunday 2026-11-01 23:59:59.999 belongs to the week starting Monday 2026-10-26.
-    expect(isoWeekStart(new Date('2026-11-01T23:59:59.999Z')).toISOString()).toBe(
-      '2026-10-26T00:00:00.000Z',
-    );
-    expect(isoWeekStart(new Date('2026-11-02T00:00:00.000Z')).toISOString()).toBe(
-      '2026-11-02T00:00:00.000Z',
-    );
+    expect(weekOf('2026-11-01T23:59:59.999Z').start.toISOString()).toBe('2026-10-26T00:00:00.000Z');
+    expect(weekOf('2026-11-02T00:00:00.000Z').start.toISOString()).toBe('2026-11-02T00:00:00.000Z');
   });
 
   it.each([
@@ -21,7 +23,7 @@ describe('iso-week', () => {
     ['2024-12-30T00:00:00.000Z', '2025-W01'],
     ['2021-01-03T00:00:00.000Z', '2020-W53'],
   ])('labels %s as %s', (iso, label) => {
-    expect(isoWeekLabel(new Date(iso))).toBe(label);
+    expect(weekOf(iso).isoWeek).toBe(label);
   });
 
   it('returns trailing weeks oldest first, ending with the current week', () => {

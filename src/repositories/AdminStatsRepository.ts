@@ -65,12 +65,12 @@ const LEARNER_FILTER = {
   email: { $nin: [...ANALYTICS_EXCLUDED_EMAILS], $not: ANALYTICS_TEST_EMAIL_PATTERN },
 } as const;
 
-function utcWeekStart(date: string) {
+function utcWeekStart(date: string): Record<string, unknown> {
   return { $dateTrunc: { date, unit: 'week', startOfWeek: 'monday', timezone: 'UTC' } };
 }
 
 /** True when any date in `dates` lies in `[from, to)`. */
-function anyDateIn(dates: string, from: unknown, to: unknown) {
+function anyDateIn(dates: string, from: unknown, to: unknown): Record<string, unknown> {
   return {
     $anyElementTrue: [
       {

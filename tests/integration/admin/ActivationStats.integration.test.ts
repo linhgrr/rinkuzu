@@ -80,18 +80,20 @@ describe('activation stats integration', () => {
       await mongoose.connect(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
       const db = mongoose.connection;
       const ownQuizA = id();
-      await db.collection('users').insertMany([
-        user('a'),
-        user('b'),
-        user('c'),
-        user('d'),
-        user('e'),
-        user('f'),
-        user('g'),
-        user('admin', { role: 'admin' }),
-        user('disabled', { disable: 1 }),
-        user('qa', { email: `${runId}-qa@example.test` }),
-      ]);
+      await db
+        .collection('users')
+        .insertMany([
+          user('a'),
+          user('b'),
+          user('c'),
+          user('d'),
+          user('e'),
+          user('f'),
+          user('g'),
+          user('admin', { role: 'admin' }),
+          user('disabled', { disable: 1 }),
+          user('qa', { email: `${runId}-qa@example.test` }),
+        ]);
       await db.collection('quizzes').insertMany([
         { ...quiz('shared'), _id: sharedQuiz, author: ids.admin, createdAt: signup.admin },
         { ...quiz('own-a'), _id: ownQuizA, author: ids.a, createdAt: plus(signup.a, DAY) },

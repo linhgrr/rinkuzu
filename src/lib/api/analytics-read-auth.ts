@@ -10,11 +10,9 @@ import { withAdmin } from './auth';
  * itself never looks at it, so every other admin route still answers 401 to a
  * token-only request.
  */
-export const ANALYTICS_READ_TOKEN_ENV = 'ANALYTICS_READ_TOKEN';
+const ANALYTICS_READ_TOKEN_ENV = 'ANALYTICS_READ_TOKEN';
 
-export type AnalyticsReadActor =
-  | { kind: 'admin'; userId: string; email: string }
-  | { kind: 'service' };
+type AnalyticsReadActor = { kind: 'admin'; userId: string; email: string } | { kind: 'service' };
 
 type AnalyticsReadHandler = (request: NextRequest, actor: AnalyticsReadActor) => Promise<Response>;
 
@@ -34,7 +32,7 @@ function bearerToken(request: NextRequest): string | null {
  * compares equal-length buffers and the comparison leaks neither content nor
  * length. An unset or empty env var disables token access entirely.
  */
-export function hasValidAnalyticsReadToken(request: NextRequest): boolean {
+function hasValidAnalyticsReadToken(request: NextRequest): boolean {
   const expected = process.env[ANALYTICS_READ_TOKEN_ENV]?.trim();
   if (!expected) return false;
   const provided = bearerToken(request);

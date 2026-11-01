@@ -3,7 +3,6 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { afterEach, describe, expect, it } from 'vitest';
-import { parse as parseYaml } from 'yaml';
 
 const root = process.cwd();
 const checkerPath = path.join(root, 'scripts/check-repository-governance.mjs');
@@ -69,20 +68,21 @@ describe('repository governance checker', () => {
     expect(result.stderr).toContain('missing required_status_checks rule');
   });
 
-  it('rejects status checks that do not require an up-to-date branch', async () => {
+  // Statuses are per commit, so requiring an up-to-date branch would force a fresh CTO review and QA
+  // pass every time master moves. The local gate re-runs CI on every new master head instead.
+  it('accepts status checks that do not require an up-to-date branch', async () => {
     const policy = await readPolicy();
     const rule = policy.rules.find((candidate) => candidate.type === 'required_status_checks');
-    Object.assign(required(rule?.parameters, 'status check parameters'), {
-      strict_required_status_checks_policy: false,
-    });
+    expect(
+      required(rule?.parameters, 'status check parameters')['strict_required_status_checks_policy'],
+    ).toBe(false);
 
     const result = await runChecker(policy);
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('must require the branch to be up to date');
+    expect(result.status).toBe(0);
   });
 
-  it('rejects status checks that omit the aggregating gate', async () => {
+  it('rejects status checks that omit a required local context', async () => {
     const policy = await readPolicy();
     const rule = policy.rules.find((candidate) => candidate.type === 'required_status_checks');
     Object.assign(required(rule?.parameters, 'status check parameters'), {
@@ -92,14 +92,13 @@ describe('repository governance checker', () => {
     const result = await runChecker(policy);
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain('must include "Production Gate"');
+    expect(result.stderr).toContain('must include "local/ci"');
   });
 
-  // The context is a string in one file naming a job in another. Renaming the
-  // job would leave master requiring a check that can never report, which
-  // GitHub surfaces as a permanently pending merge rather than as an error, so
-  // the two files are tied together here.
-  it('names a job that the pipeline actually defines', async () => {
+  // GitHub Actions is off for this repository (no minutes); the local gate in ops/local-ci reports
+  // local/ci and the CTO/QA agents report review/cto and qa/preview. A context outside that set can
+  // never be reported, which GitHub shows as a merge that stays pending forever.
+  it('requires exactly the contexts the local gate and reviewers report', async () => {
     const policy = await readPolicy();
     const rule = policy.rules.find((candidate) => candidate.type === 'required_status_checks');
     const contexts = (
@@ -107,17 +106,8 @@ describe('repository governance checker', () => {
         context: string;
       }>
     ).map((check) => check.context);
-    const workflow = parseYaml(
-      await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8'),
-    ) as { jobs: Record<string, { name?: string }> };
-    const jobNames = Object.entries(workflow.jobs).map(([id, job]) => job.name ?? id);
 
-    expect(contexts.length).toBeGreaterThan(0);
-    for (const context of contexts) {
-      expect(jobNames, `no job in ci.yml reports the check context "${context}"`).toContain(
-        context,
-      );
-    }
+    expect(contexts.sort()).toEqual(['local/ci', 'qa/preview', 'review/cto']);
   });
 
   it('rejects routine bypass actors', async () => {

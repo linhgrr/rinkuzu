@@ -1,18 +1,17 @@
 {
   "schemaVersion": 1,
   "source": {
-    "repository": "git@github-personal:linhgrr/rinkuzu-ai-api.git",
-    "commit": "e6994601eb5d0c07f13d257e9e7f7f82e5bfccc5",
-    "dirty": true
+    "repository": "linhgrr/rinkuzu-ai-api",
+    "commit": "8540d24189a169f75e700182c5f37906af05a039"
   },
   "artifacts": {
     "openapi": {
       "path": "contracts/adaptive-openapi.json",
-      "sha256": "72629258c8eb18953645cb26f2e47abd08d4027c076acce4989364d5f84b4085"
+      "sha256": "7a8ee563b11bba1d44985e78db1f257209c8140c36cdd73afa5912ced39e47dc"
     },
     "typescript": {
       "path": "src/generated/adaptive-api.d.ts",
-      "sha256": "f74c1405c6691cdbef85e561fe5e69f46d8edf14cf2b96b545d1d5f8be1b464c"
+      "sha256": "3fd6b6fc9693ff193e901fe6a861f8f031be787954715be657dd7d22dd3e2cc1"
     }
   },
   "toolchain": {

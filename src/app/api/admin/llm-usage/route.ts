@@ -1,4 +1,5 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
+import { sanitizedGetRequest } from '@/lib/adaptive/sanitized-request';
 import { withAdmin } from '@/lib/api/auth';
 import { z } from 'zod';
 import { parseSearchParams } from '@/lib/api/validated';
@@ -20,17 +21,10 @@ export const GET = withAdmin(async (req, { userId, session }) => {
   const query = parseSearchParams(req, querySchema);
   if (!query.ok) return query.response;
 
-  const upstreamUrl = new URL(req.url);
-  upstreamUrl.search = '';
-  for (const [key, value] of Object.entries(query.data)) {
-    if (value !== undefined && !(key === 'include_non_product' && value === 'false')) {
-      upstreamUrl.searchParams.set(key, value);
-    }
-  }
-  const sanitizedRequest = new Request(upstreamUrl, {
-    method: 'GET',
-    headers: req.headers,
-    signal: req.signal,
+  const sanitizedRequest = sanitizedGetRequest(req, {
+    ...query.data,
+    include_non_product:
+      query.data.include_non_product === 'false' ? undefined : query.data.include_non_product,
   });
   const response = await proxyAdaptiveRequest(sanitizedRequest, '/admin/llm-usage/summary', {
     userId,

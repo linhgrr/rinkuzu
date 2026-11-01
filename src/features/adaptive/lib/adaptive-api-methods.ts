@@ -473,13 +473,38 @@ export async function getConceptDetail(
   return normalizeConceptDetail(response);
 }
 
-export async function checkApiHealth(): Promise<boolean> {
+export type ApiReadinessCause =
+  | 'unauthorized'
+  | 'not_ready'
+  | 'upstream_error'
+  | 'timeout'
+  | 'network';
+
+export type ApiReadiness = { ok: true } | { ok: false; cause: ApiReadinessCause };
+
+function readinessCauseFromError(error: unknown): ApiReadinessCause {
+  if (error instanceof AdaptiveApiError) {
+    if (error.code === 'unauthorized' || error.status === 401 || error.status === 403) {
+      return 'unauthorized';
+    }
+    if (error.code === 'request_aborted' || error.code === 'upstream_timeout') return 'timeout';
+    // timedFetch normalizes a thrown fetch (TypeError) to service_unavailable with no HTTP status.
+    if (error.code === 'service_unavailable' && error.status === undefined) return 'network';
+  }
+  return 'upstream_error';
+}
+
+export async function checkApiReadiness(): Promise<ApiReadiness> {
   try {
     const health = await apiFetch<ReadinessResponse>('/api/adaptive/ready', { cache: 'no-store' });
-    return health.ready;
-  } catch {
-    return false;
+    return health.ready ? { ok: true } : { ok: false, cause: 'not_ready' };
+  } catch (error) {
+    return { ok: false, cause: readinessCauseFromError(error) };
   }
+}
+
+export async function checkApiHealth(): Promise<boolean> {
+  return (await checkApiReadiness()).ok;
 }
 
 // --- Pipeline API ---

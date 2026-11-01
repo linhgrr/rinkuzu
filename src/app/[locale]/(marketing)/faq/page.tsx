@@ -138,6 +138,33 @@ export default async function FAQPage({ params }: Props) {
             </div>
           </div>
         ))}
+
+        {/* Keep learning */}
+        <div className="border-t border-subtle pt-10">
+          <h2 className="text-xl font-semibold text-primary mb-4">
+            {isVi ? 'Tìm hiểu thêm' : 'Keep learning'}
+          </h2>
+          <ul className="space-y-3 text-muted">
+            <li>
+              <Link
+                href="/blog/ai-powered-quiz-generation-guide"
+                className="font-medium text-brand-trust hover:text-brand-trust-hover underline"
+              >
+                {isVi
+                  ? 'AI biến tài liệu PDF thành quiz thích ứng như thế nào?'
+                  : 'How AI turns PDF learning into adaptive quizzes'}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={ROUTES.PREMIUM_QUIZZES}
+                className="font-medium text-brand-trust hover:text-brand-trust-hover underline"
+              >
+                {isVi ? 'Khám phá bộ quiz premium' : 'Browse premium quizzes'}
+              </Link>
+            </li>
+          </ul>
+        </div>
       </section>
 
       {/* CTA */}

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
+import { sanitizedGetRequest } from '@/lib/adaptive/sanitized-request';
 import { getAdminAuditRepository } from '@/lib/admin-audit-factory';
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
@@ -70,13 +71,8 @@ export const GET = withAdmin(async (req, { userId, email, session }) => {
   const query = parseSearchParams(req, querySchema);
   if (!query.ok) return query.response;
 
-  const upstreamUrl = new URL(req.url);
-  upstreamUrl.search = '';
-  for (const [key, value] of Object.entries(query.data)) {
-    if (value !== undefined) upstreamUrl.searchParams.set(key, String(value));
-  }
   const upstream = await proxyAdaptiveRequest(
-    new Request(upstreamUrl, { method: 'GET', headers: req.headers, signal: req.signal }),
+    sanitizedGetRequest(req, query.data),
     '/admin/personal-learning/subjects',
     { userId, userRole: session.user.role },
   );

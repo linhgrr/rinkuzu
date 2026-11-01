@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { GuestLanding } from '@/features/landing/components/GuestLanding';
 import { buildLocalizedMetadata } from '@/lib/seo';
@@ -24,6 +24,7 @@ export async function generateMetadata({
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  setRequestLocale(locale);
 
   return <GuestLanding locale={locale} />;
 }

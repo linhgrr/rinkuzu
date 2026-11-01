@@ -508,6 +508,47 @@ describe('AuthAccountRepository', () => {
     });
   });
 
+  it('does not report a new account when the upsert result carries no write metadata', async () => {
+    mocks.findOneAndUpdate
+      .mockReturnValueOnce(queryChain(null))
+      .mockReturnValueOnce(
+        queryChain({ value: identityRecord({ passwordChangedAt: null, authVersion: 1 }) }),
+      );
+
+    await expect(
+      new AuthAccountRepository().resolveVerifiedGoogleAccount({
+        subject: 'google-sub',
+        email: 'user@example.com',
+        now,
+        ip: null,
+      }),
+    ).resolves.toMatchObject({ email: 'user@example.com', isNewAccount: false });
+  });
+
+  it('treats a concurrent Google sign-in that won the E11000 race as a returning account', async () => {
+    const duplicateKeyError = Object.assign(new Error('E11000 duplicate key error'), {
+      code: 11000,
+      keyPattern: { email: 1 },
+    });
+    mocks.findOneAndUpdate
+      .mockReturnValueOnce(queryChain(null))
+      .mockReturnValueOnce({
+        select: () => ({
+          lean: vi.fn().mockRejectedValueOnce(duplicateKeyError),
+        }),
+      })
+      .mockReturnValueOnce(queryChain(identityRecord({ passwordChangedAt: null, authVersion: 2 })));
+
+    await expect(
+      new AuthAccountRepository().resolveVerifiedGoogleAccount({
+        subject: 'google-sub',
+        email: 'user@example.com',
+        now,
+        ip: '127.0.0.1',
+      }),
+    ).resolves.toMatchObject({ email: 'user@example.com', isNewAccount: false });
+  });
+
   it('rejects Google upsert generically on E11000 disabled-email collision', async () => {
     const duplicateKeyError = Object.assign(new Error('E11000 duplicate key error'), {
       code: 11000,

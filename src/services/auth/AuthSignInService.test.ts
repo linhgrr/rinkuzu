@@ -10,6 +10,7 @@ import type {
 import type {
   FailedLoginPolicy,
   IAuthSignInRepository,
+  ResolvedGoogleAccount,
   SuccessfulLoginData,
   VerifiedGoogleAccountData,
 } from '@/interfaces/repositories/IAuthAccountRepository';
@@ -57,7 +58,7 @@ class SignInRepositoryStub implements IAuthSignInRepository {
       ) => Promise<AuthenticatedUser | null>
     >();
   resolveVerifiedGoogleAccount =
-    vi.fn<(data: VerifiedGoogleAccountData) => Promise<AuthenticatedUser | null>>();
+    vi.fn<(data: VerifiedGoogleAccountData) => Promise<ResolvedGoogleAccount | null>>();
 }
 
 class RateLimiterStub implements IAuthRateLimiter {
@@ -322,7 +323,10 @@ describe('AuthSignInService', () => {
       passwordChangedAt: null,
       authVersion: 0,
     };
-    repository.resolveVerifiedGoogleAccount.mockResolvedValue(googleUser);
+    repository.resolveVerifiedGoogleAccount.mockResolvedValue({
+      ...googleUser,
+      isNewAccount: true,
+    });
 
     await expect(
       service.authenticateGoogle(
@@ -334,7 +338,7 @@ describe('AuthSignInService', () => {
         },
         context,
       ),
-    ).resolves.toEqual({ success: true, user: googleUser });
+    ).resolves.toEqual({ success: true, user: googleUser, isNewAccount: true });
     expect(repository.resolveVerifiedGoogleAccount).toHaveBeenCalledTimes(1);
     expect(repository.resolveVerifiedGoogleAccount).toHaveBeenCalledWith(
       expect.objectContaining({

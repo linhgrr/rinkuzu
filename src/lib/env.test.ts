@@ -115,6 +115,66 @@ describe('env validation', () => {
       );
     },
   );
+
+  it.each(['preview', 'development'])(
+    'accepts a Vercel %s build with a test database and no trusted-host flag',
+    async (vercelEnv) => {
+      replaceProcessEnv({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        VERCEL_ENV: vercelEnv,
+        MONGODB_URI: 'mongodb+srv://user:password@example.mongodb.net/test?retryWrites=true',
+        AUTH_TRUST_HOST: undefined,
+      });
+
+      const { env } = await import('@/lib/env');
+      expect(env.VERCEL_ENV).toBe(vercelEnv);
+      expect(env.AUTH_TRUST_HOST).toBe('false');
+    },
+  );
+
+  it('rejects a Vercel production build that selects the test database', async () => {
+    replaceProcessEnv({
+      ...baseEnv,
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
+      MONGODB_URI: 'mongodb://127.0.0.1:27017/test',
+    });
+
+    await expect(import('@/lib/env')).rejects.toThrow(
+      /Production MONGODB_URI must select an explicit non-test database/,
+    );
+  });
+
+  it.each([undefined, 'false'])(
+    'rejects a Vercel production build without trusted-host configuration: %s',
+    async (authTrustHost) => {
+      replaceProcessEnv({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        VERCEL_ENV: 'production',
+        MONGODB_URI: 'mongodb://127.0.0.1:27017/rinkuzu',
+        AUTH_TRUST_HOST: authTrustHost,
+      });
+
+      await expect(import('@/lib/env')).rejects.toThrow(
+        /AUTH_TRUST_HOST must be true in production/,
+      );
+    },
+  );
+
+  it('keeps production checks for an unknown VERCEL_ENV value', async () => {
+    replaceProcessEnv({
+      ...baseEnv,
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'staging',
+      MONGODB_URI: 'mongodb://127.0.0.1:27017/test',
+    });
+
+    await expect(import('@/lib/env')).rejects.toThrow(
+      /Production MONGODB_URI must select an explicit non-test database/,
+    );
+  });
 });
 
 describe('INTERNAL_SERVICE_TOKEN validation', () => {

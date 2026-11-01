@@ -19,7 +19,11 @@ import {
   isAdaptiveRequestAbortedError,
   isAdaptiveServiceUnavailableError,
 } from '@/features/adaptive/lib/adaptive-api-error';
-import { checkApiHealth, uploadPdf } from '@/features/adaptive/lib/adaptive-api-methods';
+import {
+  checkApiReadiness,
+  uploadPdf,
+  type ApiReadinessCause,
+} from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
 import { captureAnalyticsEvent, fileSizeBucket } from '@/lib/analytics/client';
@@ -28,6 +32,13 @@ import { MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 
 const DEFAULT_PIPELINE_PAGE_BATCH_SIZE = 10;
+const HEALTH_RETRY_DELAY_MS = 1_000;
+// Session and readiness failures will not clear in a second; only blips are retried.
+const TRANSIENT_HEALTH_CAUSES: ReadonlySet<ApiReadinessCause> = new Set([
+  'upstream_error',
+  'timeout',
+  'network',
+]);
 
 export default function AdaptiveLearningUpload() {
   const { back, push } = useRouter();
@@ -108,13 +119,18 @@ export default function AdaptiveLearningUpload() {
       journey_id: journeyId,
     });
     try {
-      const online = await checkApiHealth();
-      if (!online) {
+      let readiness = await checkApiReadiness();
+      if (!readiness.ok && TRANSIENT_HEALTH_CAUSES.has(readiness.cause)) {
+        await new Promise((resolve) => setTimeout(resolve, HEALTH_RETRY_DELAY_MS));
+        readiness = await checkApiReadiness();
+      }
+      if (!readiness.ok) {
         const message = t('uploadPage.backendOffline');
         captureAnalyticsEvent('pdf_upload_failed', {
           file_size_bucket: sizeBucket,
           journey_id: journeyId,
           reason: 'service_unavailable',
+          health_cause: readiness.cause,
           duration_ms: Math.round(performance.now() - uploadStartedAt),
         });
         setError(message);

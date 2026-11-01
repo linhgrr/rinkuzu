@@ -73,6 +73,9 @@ const subscriptionCronSecretSchema = z
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    // Vercel builds Preview with NODE_ENV=production; VERCEL_ENV carries the real target.
+    // Kept a plain string so an unknown value from Vercel never breaks parsing.
+    VERCEL_ENV: z.string().optional(),
     MONGODB_URI: z
       .string()
       .min(1, 'MONGODB_URI is required')
@@ -128,9 +131,15 @@ const envSchema = z
     NEXT_IMAGE_UNOPTIMIZED: z.enum(['true', 'false']).optional(),
   })
   .superRefine((data, ctx) => {
+    // Fail closed: only an explicit Vercel preview/development build relaxes production checks.
+    const isDeployedProduction =
+      data.NODE_ENV === 'production' &&
+      data.VERCEL_ENV !== 'preview' &&
+      data.VERCEL_ENV !== 'development';
+
     const mongoDatabaseName = readMongoDatabaseName(data.MONGODB_URI);
     if (
-      data.NODE_ENV === 'production' &&
+      isDeployedProduction &&
       (mongoDatabaseName === null || mongoDatabaseName.toLowerCase() === 'test')
     ) {
       ctx.addIssue({
@@ -140,7 +149,7 @@ const envSchema = z
       });
     }
 
-    if (data.NODE_ENV === 'production' && data.AUTH_TRUST_HOST !== 'true') {
+    if (isDeployedProduction && data.AUTH_TRUST_HOST !== 'true') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['AUTH_TRUST_HOST'],

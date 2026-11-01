@@ -148,7 +148,7 @@
     "esbuild": "0.28.1",
     "framer-motion": "^12.35.0",
     "html-to-text": "^9.0.5",
-    "katex": "^0.16.33",
+    "katex": "^0.19.1",
     "lucide-react": "^0.577.0",
     "mdast-util-to-string": "^4.0.0",
     "mongoose": "^8.24.1",
@@ -175,12 +175,12 @@
     "resend": "^6.12.3",
     "server-only": "^0.0.1",
     "serwist": "9.5.11",
-    "sharp": "0.35.3",
+    "sharp": "0.35.5",
     "sonner": "^2.0.7",
     "swr": "^2.3.8",
     "tailwind-merge": "^2.3.0",
     "unified": "^11.0.5",
-    "zod": "^4.3.6",
+    "zod": "^4.6.7",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
@@ -208,7 +208,7 @@
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.59.0",
     "@typescript-eslint/parser": "^8.46.1",
-    "@vitest/coverage-v8": "4.1.5",
+    "@vitest/coverage-v8": "^4.1.12",
     "autoprefixer": "^10.5.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "17.4.2",
@@ -233,7 +233,7 @@
     "size-limit": "^12.1.0",
     "tailwindcss": "^3.4.19",
     "typescript": "^5",
-    "vitest": "4.1.5",
+    "vitest": "^4.1.12",
     "yaml": "^2.9.0"
   },
   "overrides": {
@@ -241,12 +241,20 @@
       "nanoid": "5.1.16"
     },
     "browserslist": "^4.28.8",
-    "js-yaml": "4.3.1",
+    "js-yaml": "^4.3.2",
     "postcss": "^8.5.13",
-    "qs": "6.15.3",
-    "sharp": "0.35.3",
+    "qs": "^6.17.1",
+    "sharp": "0.35.5",
     "tmp": "0.2.7",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "katex": "^0.19.1",
+    "ip-address": "^10.7.5",
+    "@serwist/build": {
+      "zod": "^4.6.7"
+    },
+    "@serwist/turbopack": {
+      "zod": "^4.6.7"
+    }
   },
   "engines": {
     "node": "22.23.1",

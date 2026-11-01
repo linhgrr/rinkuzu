@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cancelPipelineJob,
   checkApiHealth,
+  checkApiReadiness,
   createSessionFromPipeline,
   deleteSubject,
   getConceptDetail,
@@ -443,6 +444,35 @@ describe('adaptive-api-methods mutation coverage', () => {
       await expect(checkApiHealth()).resolves.toBe(true);
       await expect(checkApiHealth()).resolves.toBe(false);
       await expect(checkApiHealth()).resolves.toBe(false);
+    });
+
+    it.each([
+      ['200 ready:false', () => okJson({ ready: false }), 'not_ready'],
+      ['401', () => new Response(null, { status: 401 }), 'unauthorized'],
+      ['403', () => new Response(null, { status: 403 }), 'unauthorized'],
+      ['500', () => new Response(null, { status: 500 }), 'upstream_error'],
+      ['502', () => new Response(null, { status: 502 }), 'upstream_error'],
+      ['503', () => new Response(null, { status: 503 }), 'upstream_error'],
+      ['429', () => new Response(null, { status: 429 }), 'upstream_error'],
+    ])('checkApiReadiness maps %s to %s', async (_label, response, cause) => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(response()));
+
+      await expect(checkApiReadiness()).resolves.toEqual({ ok: false, cause });
+    });
+
+    it.each([
+      ['an aborted fetch', new DOMException('The operation timed out.', 'TimeoutError'), 'timeout'],
+      ['a fetch TypeError', new TypeError('Failed to fetch'), 'network'],
+    ])('checkApiReadiness maps %s to %s', async (_label, error, cause) => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(error));
+
+      await expect(checkApiReadiness()).resolves.toEqual({ ok: false, cause });
+    });
+
+    it('checkApiReadiness reports ok when the backend is ready', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(okJson({ ready: true })));
+
+      await expect(checkApiReadiness()).resolves.toEqual({ ok: true });
     });
   });
 

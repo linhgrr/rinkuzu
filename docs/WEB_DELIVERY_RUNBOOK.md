@@ -63,8 +63,8 @@ After `npm run start`, smoke-test the candidate locally:
    origin, and confirm installability in browser developer tools.
 4. Exercise the issue-approved user outcome and its failure state against
    non-production dependencies.
-5. Run the focused tests for every changed boundary. Run `npm run prepush:full` when
-   preparing a commit intended as a release candidate.
+5. Run the focused tests for every changed boundary. The pre-push hook runs `npm run prepush:fast` (no build, no integration suite, so it fits a
+   600s cap); run `npm run prepush:full` when preparing a release candidate.
 
 PWA checks validate only installability and service-worker delivery. They do not imply
 native packaging, app-store readiness, or complete offline support.

@@ -21,7 +21,7 @@ Playwright is configured in `playwright.config.ts`.
   - `@critical-adaptive`: upload UI, processing state, and generated subject page
   - `@critical-subscription`: checkout handoff plus success/cancel outcomes
   - `@critical-admin`: admin route/API access and a persisted role mutation
-  - `@critical-admin-learner-lookup`: admin finds a learner by email and opens the read-only drill-down; only allowlisted fields render and exactly one view is audited
+  - `@critical-admin-learner-lookup`: anonymous (401 / login redirect) and non-admin (403 / dashboard redirect) are denied the lookup page and both lookup APIs; admin finds a learner by email and opens the read-only drill-down; every allowlisted field renders, nothing else does, and exactly one view is audited
   - `@critical-admin-quiz-visibility`: admin makes a public quiz private (anonymous play 401, gone from the public list), the change is audited, and the same row makes it public again
   - `@critical-admin-disable`: admin disable/restore, authVersion session revocation, disabled/active filters, fresh login after restore
 

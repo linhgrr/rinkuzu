@@ -8,6 +8,11 @@ import type { TranslateFn } from '@/features/adaptive/types/learning';
 import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types/pipeline';
 import { MEDIA_MIN_LG } from '@/shared/constants/breakpoints';
 
+// The analytics client reads the GA id at import; its dataLayer is the observable sink.
+vi.hoisted(() => {
+  process.env['NEXT_PUBLIC_GA_ID'] = 'G-TEST123';
+});
+
 const {
   pushMock,
   getPipelineJobStatusMock,
@@ -69,6 +74,7 @@ vi.mock('sonner', () => ({
   },
 }));
 
+import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
 import { useProcessingState } from './use-processing-state';
 
 const t: TranslateFn = ((key: string, values?: Record<string, unknown>) => {
@@ -147,7 +153,20 @@ beforeEach(() => {
   useMediaQueryMock.mockReturnValue(false);
   getPipelineJobStatusMock.mockReset();
   createSessionFromPipelineMock.mockReset();
+  window.localStorage.clear();
+  window.dataLayer = [];
 });
+
+function analyticsEvents(name: string) {
+  return (window.dataLayer ?? []).filter(
+    (entry) => Array.isArray(entry) && entry[0] === 'event' && entry[1] === name,
+  ) as [string, string, Record<string, unknown>][];
+}
+
+function trackJobWithConsent() {
+  window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'granted');
+  trackAdaptivePipelineJob(JOB_ID, 'journey-1');
+}
 
 afterEach(() => {
   vi.useRealTimers();
@@ -1239,6 +1258,74 @@ describe('useProcessingState', () => {
       expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(1);
       await advance(1);
       expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('terminal analytics events', () => {
+    it('emits one pipeline_failed with a slug error code, even after a remount', async () => {
+      trackJobWithConsent();
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({
+          status: 'failed',
+          error_code: 'ocr_failed',
+          error_message: 'OCR API request failed for all configured keys.',
+          created_at: 1_000,
+          updated_at: 1_042,
+        }),
+      );
+
+      const first = renderProcessingState();
+      await flushMicrotasks();
+      first.unmount();
+      renderProcessingState();
+      await flushMicrotasks();
+
+      expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(2);
+      const failed = analyticsEvents('pipeline_failed');
+      expect(failed).toHaveLength(1);
+      expect(failed[0]?.[2]).toMatchObject({
+        path: 'adaptive',
+        error_code: 'ocr_failed',
+        journey_id: 'journey-1',
+        duration_ms: 42_000,
+      });
+      expect(JSON.stringify(failed[0]?.[2])).not.toMatch(/OCR API|notes\.pdf/);
+      expect(analyticsEvents('pipeline_completed')).toHaveLength(0);
+    });
+
+    it('emits one pipeline_completed across repeated completed polls', async () => {
+      trackJobWithConsent();
+      getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'completed', progress: 1 }));
+      createSessionFromPipelineMock
+        .mockRejectedValueOnce(
+          new AdaptiveApiError({
+            message: 'not ready',
+            code: 'pipeline_not_completed',
+            status: 409,
+            retryable: true,
+          }),
+        )
+        .mockResolvedValueOnce({ session_id: 'session-ready' });
+
+      renderProcessingState();
+      await flushMicrotasks();
+      await advance(2000);
+
+      expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(2);
+      const completed = analyticsEvents('pipeline_completed');
+      expect(completed).toHaveLength(1);
+      expect(completed[0]?.[2]).toMatchObject({ path: 'adaptive', journey_id: 'journey-1' });
+      expect(completed[0]?.[2]).not.toHaveProperty('error_code');
+    });
+
+    it('stays silent for a job this browser did not submit', async () => {
+      window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'granted');
+      getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'failed' }));
+
+      renderProcessingState();
+      await flushMicrotasks();
+
+      expect(analyticsEvents('pipeline_failed')).toHaveLength(0);
     });
   });
 });

@@ -62,8 +62,7 @@ export function reportAdaptivePipelineTerminal(job: TerminalJobFields): void {
     // A retried job runs again, so each attempt reports its own outcome.
     runKey: `${job.job_id}:${job.retry_count}`,
     outcome: job.status === 'completed' ? 'completed' : 'failed',
-    errorCode:
-      job.status === 'cancelled' ? (job.error_code ?? 'pipeline_cancelled') : job.error_code,
+    errorCode: job.error_code ?? (job.status === 'cancelled' ? 'pipeline_cancelled' : null),
     journeyId: tracked.journeyId,
     durationMs,
   });

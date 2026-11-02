@@ -36,6 +36,7 @@ describe('creator stats pipeline (orphaned quizzes)', () => {
       .collection(quizzesName)
       .aggregate<CreatorStatsResult>(buildPaginatedCreatorStatsPipeline({ page, limit }))
       .toArray();
+    if (!result) throw new Error('creator-stats pipeline returned no $facet document');
     return result;
   };
 

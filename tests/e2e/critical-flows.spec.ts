@@ -334,13 +334,20 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
         entityId: fixture.quizId.toHexString(),
       }),
     ]);
-    await db.collection('quizzes').deleteMany({ _e2eRun: runId });
+    // Quizzes created through the app carry no `_e2eRun` tag. Remove them by
+    // author before the users go, or they are left orphaned and break admin
+    // Top creators (RIN-634).
+    await db.collection('quizzes').deleteMany({
+      $or: [{ _e2eRun: runId }, { author: { $in: userIds } }],
+    });
     await db.collection('plans').deleteMany({ _e2eRun: runId });
     await db.collection('users').deleteMany({ _e2eRun: runId });
 
     const remaining = await Promise.all([
       db.collection('users').countDocuments({ _e2eRun: runId }),
-      db.collection('quizzes').countDocuments({ _e2eRun: runId }),
+      db.collection('quizzes').countDocuments({
+        $or: [{ _e2eRun: runId }, { author: { $in: userIds } }],
+      }),
       db.collection('plans').countDocuments({ _e2eRun: runId }),
       db.collection('attempts').countDocuments({ quiz: fixture.quizId }),
       db.collection('userprogresses').countDocuments({ userId: { $in: userIdStrings } }),

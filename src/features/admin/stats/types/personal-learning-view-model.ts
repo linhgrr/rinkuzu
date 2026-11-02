@@ -48,3 +48,20 @@ export interface PersonalLearningSummaryViewModel {
   topErrorCodes: PersonalLearningBreakdownRowViewModel[];
   trend: PersonalLearningTrendPointViewModel[];
 }
+
+export interface LearnerIdentityViewModel {
+  id: string;
+  displayName: string | null;
+  email: string;
+}
+
+/** Allowlisted per-learner row: no document content, answers or billing data. */
+export interface LearnerSubjectViewModel {
+  jobId: string;
+  filename: string;
+  pipelineStatus: string;
+  progressStatus: string | null;
+  accuracy: number;
+  progressPercent: number;
+  lastActivityAt: string | null;
+}

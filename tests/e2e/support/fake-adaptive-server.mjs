@@ -216,6 +216,26 @@ async function handleAdaptiveRequest(request, response, url) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/admin/personal-learning/subjects') {
+    // Any learner gets one fixed subject; raw_text proves the BFF allowlist drops extras.
+    sendOk(response, {
+      subjects: [
+        {
+          job_id: `e2e-lookup-job-${url.searchParams.get('user_id')}`,
+          filename: 'e2e-lookup-notes.pdf',
+          pipeline_status: 'completed',
+          progress_status: 'active',
+          accuracy: 0.8,
+          progress_percent: 50,
+          last_activity_at: '2026-10-30T12:00:00Z',
+          raw_text: 'E2E_RAW_DOCUMENT_TEXT',
+        },
+      ],
+      next_cursor: null,
+    });
+    return;
+  }
+
   const state = statesByUserId.get(userId);
   if (request.method === 'GET' && url.pathname === '/api/history/subjects') {
     const subjects = state?.status === 'completed' ? [toCompletedSubject(state)] : [];

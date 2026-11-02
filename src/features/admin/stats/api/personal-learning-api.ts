@@ -1,6 +1,9 @@
+import type { AdminLearnerSearchDto } from '@/dtos/admin-learner';
 import type { components } from '@/generated/adaptive-api';
 import { fetchApiData } from '@/lib/api/client';
 import type {
+  LearnerIdentityViewModel,
+  LearnerSubjectViewModel,
   PersonalLearningBreakdownRowViewModel,
   PersonalLearningSummaryViewModel,
   PersonalLearningWindow,
@@ -9,6 +12,7 @@ import type {
 type ApiSchemas = components['schemas'];
 type SummaryDto = ApiSchemas['PersonalLearningSummaryResponse'];
 type BreakdownDto = ApiSchemas['PersonalLearningBreakdownRow'];
+type LearnerSubjectsDto = ApiSchemas['LearnerSubjectsResponse'];
 
 function toBreakdown(rows: BreakdownDto[]): PersonalLearningBreakdownRowViewModel[] {
   return rows.map((row) => ({ key: row.key, count: row.count }));
@@ -64,4 +68,35 @@ export async function fetchPersonalLearningSummary(
       correctAnswers: point.correct_answers,
     })),
   };
+}
+
+export async function searchLearners(
+  search: string,
+  signal?: AbortSignal,
+): Promise<LearnerIdentityViewModel[]> {
+  const dto = await fetchApiData<AdminLearnerSearchDto>(
+    `/api/admin/personal-learning/learners?${new URLSearchParams({ search })}`,
+    { cache: 'no-store', ...(signal ? { signal } : {}) },
+  );
+  return dto.learners.map(({ id, displayName, email }) => ({ id, displayName, email }));
+}
+
+/** One learner's subjects. The route records an admin audit entry per call. */
+export async function fetchLearnerSubjects(
+  userId: string,
+  signal?: AbortSignal,
+): Promise<LearnerSubjectViewModel[]> {
+  const dto = await fetchApiData<LearnerSubjectsDto>(
+    `/api/admin/personal-learning/subjects?${new URLSearchParams({ user_id: userId, limit: '100' })}`,
+    { cache: 'no-store', ...(signal ? { signal } : {}) },
+  );
+  return dto.subjects.map((subject) => ({
+    jobId: subject.job_id,
+    filename: subject.filename,
+    pipelineStatus: subject.pipeline_status,
+    progressStatus: subject.progress_status ?? null,
+    accuracy: subject.accuracy,
+    progressPercent: subject.progress_percent,
+    lastActivityAt: subject.last_activity_at ?? null,
+  }));
 }

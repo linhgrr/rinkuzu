@@ -4,7 +4,14 @@ import { useEffect, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { BarChart3, BrainCircuit, Gauge, GraduationCap, type LucideIcon } from 'lucide-react';
+import {
+  BarChart3,
+  BrainCircuit,
+  Gauge,
+  GraduationCap,
+  UserSearch,
+  type LucideIcon,
+} from 'lucide-react';
 import {
   fetchAdminStatsViewModel,
   fetchGrowthTrendsViewModel,
@@ -76,6 +83,17 @@ const PersonalLearningSection = dynamic(
   },
 );
 
+const LearnerLookupSection = dynamic(
+  () =>
+    import('@/features/admin/stats/components/LearnerLookupSection').then(
+      (module) => module.LearnerLookupSection,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-40 w-full animate-pulse rounded-xl bg-neutral-100" />,
+  },
+);
+
 const LlmUsageSection = dynamic(
   () =>
     import('@/features/admin/stats/components/LlmUsageSection').then(
@@ -89,7 +107,7 @@ const LlmUsageSection = dynamic(
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;
-type StatsWorkspace = 'overview' | 'llm' | 'entitlements' | 'personalLearning';
+type StatsWorkspace = 'overview' | 'llm' | 'entitlements' | 'personalLearning' | 'learnerLookup';
 
 interface AdminStatsLayoutProps {
   children: ReactNode;
@@ -118,7 +136,10 @@ interface RecentActivityCardProps extends AdminStatsDataProps {
   onOpenModal: () => void;
 }
 
-interface AdminStatsContentProps extends AdminStatsDataProps {
+interface AdminStatsContentProps {
+  // Null when the overview fetch failed; the other workspaces load their own data.
+  stats: AdminStatsViewModel | null;
+  t: TranslateFn;
   workspace: StatsWorkspace;
   error: string;
   onWorkspaceChange: (workspace: StatsWorkspace) => void;
@@ -544,6 +565,7 @@ function AdminStatsContent({
     { id: 'llm', label: t('statsWorkspaceLlm'), icon: BrainCircuit },
     { id: 'entitlements', label: t('statsWorkspaceEntitlements'), icon: Gauge },
     { id: 'personalLearning', label: t('statsWorkspacePersonalLearning'), icon: GraduationCap },
+    { id: 'learnerLookup', label: t('statsWorkspaceLearnerLookup'), icon: UserSearch },
   ];
 
   return (
@@ -568,8 +590,8 @@ function AdminStatsContent({
           </Button>
         ))}
       </nav>
-      <AdminStatsErrorBanner error={error} />
-      {workspace === 'overview' ? (
+      {workspace === 'overview' ? <AdminStatsErrorBanner error={error} /> : null}
+      {workspace === 'overview' && stats ? (
         <div className="space-y-6">
           <OverviewCards stats={stats} t={t} />
           <GrowthTrendsSection initialData={stats.growthTrends} t={t} />
@@ -581,6 +603,7 @@ function AdminStatsContent({
       {workspace === 'llm' ? <LlmUsageSection /> : null}
       {workspace === 'entitlements' ? <EntitlementTelemetrySection /> : null}
       {workspace === 'personalLearning' ? <PersonalLearningSection /> : null}
+      {workspace === 'learnerLookup' ? <LearnerLookupSection /> : null}
     </>
   );
 }
@@ -639,22 +662,15 @@ export function AdminStatsPageClient() {
 
   return (
     <AdminStatsLayout>
-      {state.stats ? (
-        <AdminStatsContent
-          stats={state.stats}
-          workspace={workspace}
-          error={state.error}
-          t={t}
-          onWorkspaceChange={setWorkspace}
-          onOpenCreators={() => dispatch({ type: 'openModal', modal: 'creators' })}
-          onOpenActivity={() => dispatch({ type: 'openModal', modal: 'activity' })}
-        />
-      ) : (
-        <>
-          <h1 className="sr-only">{t('statistics')}</h1>
-          <AdminStatsErrorBanner error={state.error} />
-        </>
-      )}
+      <AdminStatsContent
+        stats={state.stats}
+        workspace={workspace}
+        error={state.error}
+        t={t}
+        onWorkspaceChange={setWorkspace}
+        onOpenCreators={() => dispatch({ type: 'openModal', modal: 'creators' })}
+        onOpenActivity={() => dispatch({ type: 'openModal', modal: 'activity' })}
+      />
 
       <AdminStatsModals
         activeModal={state.activeModal}

@@ -4,7 +4,11 @@ const { fetchApiDataMock } = vi.hoisted(() => ({ fetchApiDataMock: vi.fn() }));
 
 vi.mock('@/lib/api/client', () => ({ fetchApiData: fetchApiDataMock }));
 
-import { fetchPersonalLearningSummary } from '@/features/admin/stats/api/personal-learning-api';
+import {
+  fetchLearnerSubjects,
+  fetchPersonalLearningSummary,
+  searchLearners,
+} from '@/features/admin/stats/api/personal-learning-api';
 
 const summaryDto = {
   window: 'all',
@@ -82,5 +86,51 @@ describe('personal learning api', () => {
       answers: 40,
       correctAnswers: 30,
     });
+  });
+
+  it('searches learners by an encoded query and keeps only identity fields', async () => {
+    fetchApiDataMock.mockResolvedValue({
+      learners: [{ id: 'u1', displayName: 'Ana', email: 'ana@example.test', role: 'user' }],
+    });
+
+    const learners = await searchLearners('ana&b');
+
+    expect(fetchApiDataMock.mock.calls[0]?.[0]).toBe(
+      '/api/admin/personal-learning/learners?search=ana%26b',
+    );
+    expect(learners).toEqual([{ id: 'u1', displayName: 'Ana', email: 'ana@example.test' }]);
+  });
+
+  it('maps the subjects of one learner to the allowlisted row fields', async () => {
+    fetchApiDataMock.mockResolvedValue({
+      subjects: [
+        {
+          job_id: 'j1',
+          filename: 'notes.pdf',
+          pipeline_status: 'completed',
+          accuracy: 0.5,
+          progress_percent: 40,
+          raw_text: 'must not leak',
+        },
+      ],
+      next_cursor: null,
+    });
+
+    const subjects = await fetchLearnerSubjects('u1');
+
+    expect(fetchApiDataMock.mock.calls[0]?.[0]).toBe(
+      '/api/admin/personal-learning/subjects?user_id=u1&limit=100',
+    );
+    expect(subjects).toEqual([
+      {
+        jobId: 'j1',
+        filename: 'notes.pdf',
+        pipelineStatus: 'completed',
+        progressStatus: null,
+        accuracy: 0.5,
+        progressPercent: 40,
+        lastActivityAt: null,
+      },
+    ]);
   });
 });

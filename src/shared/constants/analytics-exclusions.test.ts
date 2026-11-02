@@ -13,4 +13,13 @@ describe('analytics excluded emails', () => {
     }
     expect(new Set(ANALYTICS_EXCLUDED_EMAILS).size).toBe(ANALYTICS_EXCLUDED_EMAILS.length);
   });
+
+  // Company-owned accounts that must never count as learners
+  // (RIN-554 content, RIN-553 QA, RIN-629 ops/admin).
+  it.each(['rinkuzu-content@fldubai.com', 'rinkuzu-qa-w45@fldubai.com', 'rinkuzu-ops@fldubai.com'])(
+    'excludes the company account %s',
+    (email) => {
+      expect(ANALYTICS_EXCLUDED_EMAILS).toContain(email);
+    },
+  );
 });

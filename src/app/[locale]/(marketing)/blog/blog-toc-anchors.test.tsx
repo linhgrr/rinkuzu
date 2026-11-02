@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { render, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AiGuidePost from './ai-powered-quiz-generation-guide/page';
 import KnowledgeGraphsPost from './knowledge-graphs-adaptive-learning-pdfs/page';
 
@@ -26,28 +26,30 @@ const posts: Array<{ slug: string; Page: PostPage }> = [
 ];
 
 const observed: Element[] = [];
-const OriginalIntersectionObserver = globalThis.IntersectionObserver;
 
-beforeAll(() => {
-  globalThis.IntersectionObserver = class {
-    observe(el: Element) {
-      observed.push(el);
-    }
-    unobserve() {}
-    disconnect() {}
-    takeRecords() {
-      return [];
-    }
-  } as unknown as typeof IntersectionObserver;
+beforeEach(() => {
+  observed.length = 0;
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      observe(el: Element) {
+        observed.push(el);
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    },
+  );
 });
 
-afterAll(() => {
-  globalThis.IntersectionObserver = OriginalIntersectionObserver;
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('blog table of contents anchors', () => {
   it.each(posts)('$slug: every TOC entry targets a rendered heading', async ({ Page }) => {
-    observed.length = 0;
     const { container } = render(
       <NextIntlClientProvider locale="en" messages={{}}>
         {await Page({ params: Promise.resolve({ locale: 'en' }) })}

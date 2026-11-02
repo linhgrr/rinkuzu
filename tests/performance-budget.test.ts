@@ -13,7 +13,11 @@ import {
   summarizeLighthouseReports,
   validateLighthouseEvidence,
 } from '../scripts/check-perf-budget.mjs';
-import { computeNextBuildDigest, sha256File } from '../scripts/run-lighthouse.mjs';
+import {
+  computeNextBuildDigest,
+  resolveChromePath,
+  sha256File,
+} from '../scripts/run-lighthouse.mjs';
 
 type WorkflowStep = { run?: string; if?: string };
 
@@ -512,5 +516,46 @@ describe('Lighthouse evidence integrity', () => {
         now: mismatch.now,
       }),
     ).toThrow(/changed during the run/);
+  });
+});
+
+describe('resolveChromePath', () => {
+  it('keeps an explicit CHROME_PATH', () => {
+    expect(
+      resolveChromePath(
+        { CHROME_PATH: '/x/chrome' },
+        () => '/pw/chrome',
+        () => true,
+      ),
+    ).toBe('/x/chrome');
+  });
+
+  it('falls back to the Playwright Chromium when it exists', () => {
+    expect(
+      resolveChromePath(
+        {},
+        () => '/pw/chrome',
+        () => true,
+      ),
+    ).toBe('/pw/chrome');
+  });
+
+  it('returns undefined when the binary is missing or Playwright cannot resolve', () => {
+    expect(
+      resolveChromePath(
+        {},
+        () => '/pw/chrome',
+        () => false,
+      ),
+    ).toBeUndefined();
+    expect(
+      resolveChromePath(
+        {},
+        () => {
+          throw new Error('no playwright');
+        },
+        () => true,
+      ),
+    ).toBeUndefined();
   });
 });

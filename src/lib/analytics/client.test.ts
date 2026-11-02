@@ -385,9 +385,21 @@ describe('analytics client', () => {
       ['OCR API request failed for all configured keys.', 'unknown'],
       [null, 'unknown'],
       [undefined, 'unknown'],
-    ])('normalizes error code %s to %s', async (code, expected) => {
+    ])('reports error code %s as %s', async (code, expected) => {
       const analytics = await loadAnalytics();
-      expect(analytics.normalizePipelineErrorCode(code)).toBe(expected);
+      analytics.grantAnalyticsConsent();
+
+      analytics.capturePipelineTerminalEventOnce({
+        path: 'adaptive',
+        runKey: `job-${String(code)}:0`,
+        outcome: 'failed',
+        ...(code === undefined ? {} : { errorCode: code }),
+      });
+
+      await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+      expect(posthogMock.capture.mock.calls[0]?.[1]).toEqual(
+        expect.objectContaining({ error_code: expected }),
+      );
     });
   });
 });

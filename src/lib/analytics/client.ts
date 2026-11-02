@@ -30,7 +30,7 @@ export type AnalyticsEventName =
 
 export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>;
 export type AnalyticsLoginMethod = 'credentials' | 'google';
-export type PipelineAnalyticsPath = 'adaptive' | 'quiz_draft';
+type PipelineAnalyticsPath = 'adaptive' | 'quiz_draft';
 
 export type PipelineTerminalEvent = {
   path: PipelineAnalyticsPath;
@@ -328,7 +328,7 @@ function readPipelineTerminalKeys(): string[] {
   }
 }
 
-export function normalizePipelineErrorCode(code: string | null | undefined): string {
+function normalizePipelineErrorCode(code: string | null | undefined): string {
   const normalized = code?.trim().toLowerCase();
   return normalized && PIPELINE_ERROR_CODE_PATTERN.test(normalized) ? normalized : 'unknown';
 }

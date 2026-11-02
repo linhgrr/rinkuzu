@@ -136,7 +136,10 @@ interface RecentActivityCardProps extends AdminStatsDataProps {
   onOpenModal: () => void;
 }
 
-interface AdminStatsContentProps extends AdminStatsDataProps {
+interface AdminStatsContentProps {
+  // Null when the overview fetch failed; the other workspaces load their own data.
+  stats: AdminStatsViewModel | null;
+  t: TranslateFn;
   workspace: StatsWorkspace;
   error: string;
   onWorkspaceChange: (workspace: StatsWorkspace) => void;
@@ -587,8 +590,8 @@ function AdminStatsContent({
           </Button>
         ))}
       </nav>
-      <AdminStatsErrorBanner error={error} />
-      {workspace === 'overview' ? (
+      {workspace === 'overview' ? <AdminStatsErrorBanner error={error} /> : null}
+      {workspace === 'overview' && stats ? (
         <div className="space-y-6">
           <OverviewCards stats={stats} t={t} />
           <GrowthTrendsSection initialData={stats.growthTrends} t={t} />
@@ -659,22 +662,15 @@ export function AdminStatsPageClient() {
 
   return (
     <AdminStatsLayout>
-      {state.stats ? (
-        <AdminStatsContent
-          stats={state.stats}
-          workspace={workspace}
-          error={state.error}
-          t={t}
-          onWorkspaceChange={setWorkspace}
-          onOpenCreators={() => dispatch({ type: 'openModal', modal: 'creators' })}
-          onOpenActivity={() => dispatch({ type: 'openModal', modal: 'activity' })}
-        />
-      ) : (
-        <>
-          <h1 className="sr-only">{t('statistics')}</h1>
-          <AdminStatsErrorBanner error={state.error} />
-        </>
-      )}
+      <AdminStatsContent
+        stats={state.stats}
+        workspace={workspace}
+        error={state.error}
+        t={t}
+        onWorkspaceChange={setWorkspace}
+        onOpenCreators={() => dispatch({ type: 'openModal', modal: 'creators' })}
+        onOpenActivity={() => dispatch({ type: 'openModal', modal: 'activity' })}
+      />
 
       <AdminStatsModals
         activeModal={state.activeModal}

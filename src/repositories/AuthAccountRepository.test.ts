@@ -379,14 +379,15 @@ describe('AuthAccountRepository', () => {
       )
       .mockReturnValueOnce(queryChain(null))
       .mockReturnValueOnce(
-        queryChain(
-          identityRecord({
+        queryChain({
+          value: identityRecord({
             displayName: 'Google User',
             avatar: 'https://example.com/g.png',
             passwordChangedAt: null,
             authVersion: 1,
           }),
-        ),
+          lastErrorObject: { updatedExisting: true },
+        }),
       )
       .mockReturnValueOnce(queryChain(null))
       .mockReturnValueOnce(queryChain(null));
@@ -451,6 +452,7 @@ describe('AuthAccountRepository', () => {
       email: 'user@example.com',
       displayName: 'Google User',
       authVersion: 1,
+      isNewAccount: false,
     });
     expect(mocks.findOneAndUpdate).toHaveBeenNthCalledWith(
       5,
@@ -471,7 +473,7 @@ describe('AuthAccountRepository', () => {
         },
         $inc: { authVersion: 1 },
       }),
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, new: true, setDefaultsOnInsert: true, includeResultMetadata: true },
     );
 
     await expect(
@@ -482,6 +484,69 @@ describe('AuthAccountRepository', () => {
         ip: '127.0.0.1',
       }),
     ).resolves.toBeNull();
+  });
+
+  it('reports isNewAccount only when the Google upsert inserted a new user', async () => {
+    const googleRecord = identityRecord({ passwordChangedAt: null, authVersion: 1 });
+    mocks.findOneAndUpdate
+      .mockReturnValueOnce(queryChain(null))
+      .mockReturnValueOnce(
+        queryChain({ value: googleRecord, lastErrorObject: { updatedExisting: false } }),
+      )
+      .mockReturnValueOnce(queryChain(googleRecord));
+    const repository = new AuthAccountRepository();
+    const input = { subject: 'google-sub', email: 'user@example.com', now, ip: null };
+
+    await expect(repository.resolveVerifiedGoogleAccount(input)).resolves.toMatchObject({
+      email: 'user@example.com',
+      isNewAccount: true,
+    });
+    // Returning user: the linked-identity lookup matches, so nothing is inserted.
+    await expect(repository.resolveVerifiedGoogleAccount(input)).resolves.toMatchObject({
+      email: 'user@example.com',
+      isNewAccount: false,
+    });
+  });
+
+  it('does not report a new account when the upsert result carries no write metadata', async () => {
+    mocks.findOneAndUpdate
+      .mockReturnValueOnce(queryChain(null))
+      .mockReturnValueOnce(
+        queryChain({ value: identityRecord({ passwordChangedAt: null, authVersion: 1 }) }),
+      );
+
+    await expect(
+      new AuthAccountRepository().resolveVerifiedGoogleAccount({
+        subject: 'google-sub',
+        email: 'user@example.com',
+        now,
+        ip: null,
+      }),
+    ).resolves.toMatchObject({ email: 'user@example.com', isNewAccount: false });
+  });
+
+  it('treats a concurrent Google sign-in that won the E11000 race as a returning account', async () => {
+    const duplicateKeyError = Object.assign(new Error('E11000 duplicate key error'), {
+      code: 11000,
+      keyPattern: { email: 1 },
+    });
+    mocks.findOneAndUpdate
+      .mockReturnValueOnce(queryChain(null))
+      .mockReturnValueOnce({
+        select: () => ({
+          lean: vi.fn().mockRejectedValueOnce(duplicateKeyError),
+        }),
+      })
+      .mockReturnValueOnce(queryChain(identityRecord({ passwordChangedAt: null, authVersion: 2 })));
+
+    await expect(
+      new AuthAccountRepository().resolveVerifiedGoogleAccount({
+        subject: 'google-sub',
+        email: 'user@example.com',
+        now,
+        ip: '127.0.0.1',
+      }),
+    ).resolves.toMatchObject({ email: 'user@example.com', isNewAccount: false });
   });
 
   it('rejects Google upsert generically on E11000 disabled-email collision', async () => {

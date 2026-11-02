@@ -22,7 +22,7 @@ import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 import { resolveAuthCallback } from '@/lib/routing/auth-callback';
 import { replaceBrowserLocation } from '@/lib/routing/browser-navigation';
-import { markAnalyticsLoginPending } from '@/lib/analytics/client';
+import { markAnalyticsGoogleAuthPending, markAnalyticsLoginPending } from '@/lib/analytics/client';
 
 interface LoginFormProps {
   locale: string;
@@ -143,7 +143,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         <GoogleAuthButton
           callbackUrl={callbackUrl}
           disabled={controlsDisabled}
-          onBeforeSignIn={() => markAnalyticsLoginPending('google', locale)}
+          onBeforeSignIn={() => markAnalyticsGoogleAuthPending(locale)}
         />
       )}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>

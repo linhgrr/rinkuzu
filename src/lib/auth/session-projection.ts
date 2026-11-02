@@ -79,6 +79,7 @@ export function applySessionUser(
       ...(session.user.image !== undefined ? { image: session.user.image } : {}),
       ...(dbUser.avatar ? { avatar: dbUser.avatar } : {}),
       ...(dbUser.displayName ? { displayName: dbUser.displayName } : {}),
+      ...(token.nac === true ? { isNewAccount: true as const } : {}),
     },
   };
 }

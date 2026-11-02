@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import { Types, type ModifyResult } from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import type {
@@ -14,6 +14,7 @@ import type {
   IAuthAccountRepository,
   IAuthSignInRepository,
   FailedLoginPolicy,
+  ResolvedGoogleAccount,
   SuccessfulLoginData,
   VerifiedGoogleAccountData,
 } from '@/interfaces/repositories/IAuthAccountRepository';
@@ -332,7 +333,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
 
   async resolveVerifiedGoogleAccount(
     data: VerifiedGoogleAccountData,
-  ): Promise<AuthenticatedUser | null> {
+  ): Promise<ResolvedGoogleAccount | null> {
     await connectDB();
     try {
       const identity = { provider: 'google', subject: data.subject };
@@ -347,10 +348,13 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         .select(AUTHENTICATED_USER_FIELDS)
         .lean<AuthAccountPersistenceRecord>();
       if (linkedRecord) {
-        return AuthAccountPersistenceMapper.toAuthenticatedUser(linkedRecord);
+        return {
+          ...AuthAccountPersistenceMapper.toAuthenticatedUser(linkedRecord),
+          isNewAccount: false,
+        };
       }
 
-      const record = await User.findOneAndUpdate(
+      const result = await User.findOneAndUpdate(
         { email: data.email, ...ACTIVE_ACCOUNT_FILTER },
         {
           $set: {
@@ -366,13 +370,18 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
           },
           $inc: { authVersion: 1 },
         },
-        { upsert: true, new: true, setDefaultsOnInsert: true },
+        { upsert: true, new: true, setDefaultsOnInsert: true, includeResultMetadata: true },
       )
         .select(AUTHENTICATED_USER_FIELDS)
-        .lean<AuthAccountPersistenceRecord>();
+        .lean<ModifyResult<AuthAccountPersistenceRecord>>();
 
+      const record = result?.value;
       if (!record) return null;
-      return AuthAccountPersistenceMapper.toAuthenticatedUser(record);
+      return {
+        ...AuthAccountPersistenceMapper.toAuthenticatedUser(record),
+        // updatedExisting=false means the upsert inserted: this is a brand-new account.
+        isNewAccount: result.lastErrorObject?.updatedExisting === false,
+      };
     } catch (error) {
       if (isMongoDuplicateKeyError(error)) {
         const identity = { provider: 'google', subject: data.subject };
@@ -389,7 +398,9 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         )
           .select(AUTHENTICATED_USER_FIELDS)
           .lean<AuthAccountPersistenceRecord>();
-        return record ? AuthAccountPersistenceMapper.toAuthenticatedUser(record) : null;
+        return record
+          ? { ...AuthAccountPersistenceMapper.toAuthenticatedUser(record), isNewAccount: false }
+          : null;
       }
       throw error;
     }

@@ -14,6 +14,8 @@ declare module 'next-auth' {
       emailVerified?: boolean;
       avatar?: string;
       displayName?: string;
+      /** True when the current JWT came from a Google sign-in that created the account. */
+      isNewAccount?: true;
     } & DefaultSession['user'];
   }
 
@@ -33,6 +35,8 @@ declare module 'next-auth' {
     passwordChangedAt?: number | null;
     /** Session generation copied to JWT as `av`. */
     authVersion?: number;
+    /** Google only: the sign-in inserted the user document. Copied to JWT as `nac`. */
+    isNewAccount?: boolean;
   }
 }
 
@@ -49,5 +53,7 @@ declare module 'next-auth/jwt' {
      * Missing or mismatched values fail closed and require re-login.
      */
     av?: number;
+    /** New-account flag from the Google sign-in that minted this JWT; analytics only. */
+    nac?: true;
   }
 }

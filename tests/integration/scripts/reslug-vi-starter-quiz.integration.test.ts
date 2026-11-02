@@ -22,6 +22,12 @@ describe('reslug-vi-starter-quiz against a test database', () => {
   let quizzes: Collection<QuizDoc>;
   const quizId = new ObjectId();
 
+  async function planAndApply(direction: 'forward' | 'revert'): Promise<string> {
+    const plan = await planReslug(quizzes, direction);
+    if (plan.status === 'ready' && plan.quiz) await applyReslug(quizzes, plan.quiz, direction);
+    return plan.status;
+  }
+
   beforeAll(async () => {
     client = new MongoClient(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
     await client.connect();
@@ -39,32 +45,28 @@ describe('reslug-vi-starter-quiz against a test database', () => {
   });
 
   it('moves the slug, keeps the old one as an alias, and reverts to the original document', async () => {
-    const forward = await planReslug(quizzes as never, 'forward');
-    expect(forward.status).toBe('ready');
-    await applyReslug(quizzes as never, forward.quiz as never, 'forward');
+    await expect(planAndApply('forward')).resolves.toBe('ready');
     expect(await quizzes.findOne({ _id: quizId })).toEqual({
       _id: quizId,
       title: EXPECTED_TITLE,
       slug: NEW_SLUG,
       slugAliases: [OLD_SLUG],
     });
-    expect((await planReslug(quizzes as never, 'forward')).status).toBe('already-done');
+    expect((await planReslug(quizzes, 'forward')).status).toBe('already-done');
 
-    const revert = await planReslug(quizzes as never, 'revert');
-    expect(revert.status).toBe('ready');
-    await applyReslug(quizzes as never, revert.quiz as never, 'revert');
+    await expect(planAndApply('revert')).resolves.toBe('ready');
     expect(await quizzes.findOne({ _id: quizId })).toEqual({
       _id: quizId,
       title: EXPECTED_TITLE,
       slug: OLD_SLUG,
     });
-    expect((await planReslug(quizzes as never, 'revert')).status).toBe('already-done');
+    expect((await planReslug(quizzes, 'revert')).status).toBe('already-done');
   });
 
   it('refuses when the new slug already belongs to another quiz', async () => {
     await quizzes.insertOne({ _id: new ObjectId(), title: 'Other', slug: NEW_SLUG });
 
-    await expect(planReslug(quizzes as never, 'forward')).resolves.toMatchObject({
+    await expect(planReslug(quizzes, 'forward')).resolves.toMatchObject({
       status: 'refused',
       reason: `slug ${NEW_SLUG} already belongs to another quiz`,
     });
@@ -73,7 +75,7 @@ describe('reslug-vi-starter-quiz against a test database', () => {
   it('refuses when the stored title is not the expected starter title', async () => {
     await quizzes.updateOne({ _id: quizId }, { $set: { title: 'Renamed' } });
 
-    await expect(planReslug(quizzes as never, 'forward')).resolves.toMatchObject({
+    await expect(planReslug(quizzes, 'forward')).resolves.toMatchObject({
       status: 'refused',
     });
   });

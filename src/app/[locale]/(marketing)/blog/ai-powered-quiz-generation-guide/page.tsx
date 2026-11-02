@@ -1,7 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
+import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
 import { ShareButtons } from '@/components/blog/ShareButtons';
@@ -13,7 +13,6 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  const canonicalUrl = `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`;
   const base = buildLocalizedMetadata({
     locale,
     path: '/blog/ai-powered-quiz-generation-guide',
@@ -29,11 +28,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
       description:
         "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
-      url: canonicalUrl,
       type: 'article',
       publishedTime: '2026-03-27T00:00:00.000Z',
       modifiedTime: '2026-03-27T00:00:00.000Z',
-      authors: [`${siteUrl.origin}/blog/authors/rinkuzu-team`],
+      authors: [canonicalFor(locale, '/blog/authors/rinkuzu-team')],
       images: [
         {
           url: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
@@ -203,8 +201,7 @@ Start with supported PDF material and create a personalized practice session.
 
 export default async function BlogPost({ params }: Props) {
   const { locale } = await params;
-  void locale;
-  const postUrl = `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`;
+  const postUrl = canonicalFor(locale, '/blog/ai-powered-quiz-generation-guide');
   const postTitle = 'How AI Transforms PDF Learning into Adaptive Quizzes';
   const headings = extractHeadingsFromMarkdown(postContent);
 
@@ -293,13 +290,19 @@ export default async function BlogPost({ params }: Props) {
                 complex topics with RinKuzu.
               </p>
               <Link
-                href="/register"
+                href="/register?next=/adaptive/upload"
                 className="inline-flex items-center justify-center rounded-full bg-brand-trust px-10 py-4 font-bold text-white shadow-lg shadow-green-500/20 transition-[background-color,transform] hover:scale-105 hover:bg-brand-trust-hover active:scale-95"
               >
                 Get Started Free
               </Link>
               <p className="mt-4 text-xs text-neutral-400">
                 No credit card required · Free plan available
+              </p>
+              <p className="mt-2 text-sm text-neutral-300">
+                Questions about uploads or plans?{' '}
+                <Link href="/faq" className="underline hover:text-white">
+                  Read the FAQ
+                </Link>
               </p>
             </div>
           </div>

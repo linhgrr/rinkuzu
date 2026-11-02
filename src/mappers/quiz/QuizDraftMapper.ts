@@ -44,6 +44,7 @@ export class QuizDraftMapper {
         };
       }),
       error: draft.error,
+      errorCode: draft.error_code ?? null,
       submittedQuizId: draft.submitted_quiz_id,
       createdAt: draft.created_at,
       updatedAt: draft.updated_at,

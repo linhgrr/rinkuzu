@@ -881,6 +881,62 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/admin/personal-learning/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Personal Learning Summary
+     * @description Aggregate-only personal-learning statistics for the admin dashboard. The body
+     *     holds no per-learner identifiers. Results are cached server-side per `window`
+     *     for up to 60 seconds.
+     *
+     *     Field semantics:
+     *     - `pipeline.*` counts (`total_jobs`, `completed_jobs`, `failed_jobs`, ...) cover
+     *       jobs **created** in the window (`created_at`), whatever their completion time.
+     *     - `totals.subjects_completed` counts jobs that **finished** in the window
+     *       (`completed_at`), so it can differ from `pipeline.completed_jobs`.
+     *     - `pipeline.success_rate` and `pipeline.failure_rate` divide by `total_jobs`,
+     *       which includes still-active jobs; they are not "of finished jobs".
+     *     - `totals.subjects_with_progress`, `average_mastery`, `average_progress` and
+     *       `progress_statuses` cover progress documents updated in the window.
+     *     - `totals.active_learners`, `total_answers` and the trend's `answers` count
+     *       answered exercises whose timestamp falls in the window.
+     *     - `trend` is bucketed by UTC day (`YYYY-MM-DD`) for 7d/30d/90d and by UTC month
+     *       (`YYYY-MM`) for `all`.
+     */
+    get: operations['get_personal_learning_summary_api_admin_personal_learning_summary_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/personal-learning/subjects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Learner Subjects
+     * @description Return one learner's subjects with pipeline and progress status only.
+     */
+    get: operations['get_learner_subjects_api_admin_personal_learning_subjects_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/ask-rin-chan/contexts': {
     parameters: {
       query?: never;
@@ -1521,6 +1577,36 @@ export interface components {
       status: components['schemas']['ConceptStatus'];
       /** Visited */
       visited: boolean;
+    };
+    /** LearnerSubjectResponse */
+    LearnerSubjectResponse: {
+      /** Job Id */
+      job_id: string;
+      /** Filename */
+      filename: string;
+      /** Pipeline Status */
+      pipeline_status: string;
+      /** Progress Status */
+      progress_status?: string | null;
+      /**
+       * Accuracy
+       * @default 0
+       */
+      accuracy: number;
+      /**
+       * Progress Percent
+       * @default 0
+       */
+      progress_percent: number;
+      /** Last Activity At */
+      last_activity_at?: string | null;
+    };
+    /** LearnerSubjectsResponse */
+    LearnerSubjectsResponse: {
+      /** Subjects */
+      subjects: components['schemas']['LearnerSubjectResponse'][];
+      /** Next Cursor */
+      next_cursor?: string | null;
     };
     /**
      * LearningSessionStatus
@@ -2428,6 +2514,177 @@ export interface components {
       exercise_type: 'ordering';
       /** Correct Order */
       correct_order: string[];
+    };
+    /** PersonalLearningBreakdownRow */
+    PersonalLearningBreakdownRow: {
+      /** Key */
+      key: string;
+      /** Count */
+      count: number;
+    };
+    /** PersonalLearningPipelineResponse */
+    PersonalLearningPipelineResponse: {
+      /**
+       * Total Jobs
+       * @default 0
+       */
+      total_jobs: number;
+      /**
+       * Completed Jobs
+       * @default 0
+       */
+      completed_jobs: number;
+      /**
+       * Failed Jobs
+       * @default 0
+       */
+      failed_jobs: number;
+      /**
+       * Cancelled Jobs
+       * @default 0
+       */
+      cancelled_jobs: number;
+      /**
+       * Active Jobs
+       * @default 0
+       */
+      active_jobs: number;
+      /**
+       * Partial Successes
+       * @default 0
+       */
+      partial_successes: number;
+      /**
+       * Retryable Failures
+       * @default 0
+       */
+      retryable_failures: number;
+      /**
+       * Success Rate
+       * @default 0
+       */
+      success_rate: number;
+      /**
+       * Failure Rate
+       * @default 0
+       */
+      failure_rate: number;
+      /**
+       * Average Duration Seconds
+       * @default 0
+       */
+      average_duration_seconds: number;
+    };
+    /** PersonalLearningSummaryResponse */
+    PersonalLearningSummaryResponse: {
+      /**
+       * Window
+       * @enum {string}
+       */
+      window: '7d' | '30d' | '90d' | 'all';
+      /**
+       * Bucket
+       * @enum {string}
+       */
+      bucket: 'day' | 'month';
+      totals: components['schemas']['PersonalLearningTotalsResponse'];
+      pipeline: components['schemas']['PersonalLearningPipelineResponse'];
+      /** Pipeline Statuses */
+      pipeline_statuses: components['schemas']['PersonalLearningBreakdownRow'][];
+      /** Progress Statuses */
+      progress_statuses: components['schemas']['PersonalLearningBreakdownRow'][];
+      /** Top Error Codes */
+      top_error_codes: components['schemas']['PersonalLearningBreakdownRow'][];
+      /** Trend */
+      trend: components['schemas']['PersonalLearningTrendRow'][];
+    };
+    /** PersonalLearningTotalsResponse */
+    PersonalLearningTotalsResponse: {
+      /**
+       * Active Learners
+       * @default 0
+       */
+      active_learners: number;
+      /**
+       * Subjects Created
+       * @default 0
+       */
+      subjects_created: number;
+      /**
+       * Subjects Completed
+       * @default 0
+       */
+      subjects_completed: number;
+      /**
+       * Subjects With Progress
+       * @default 0
+       */
+      subjects_with_progress: number;
+      /**
+       * Total Answers
+       * @default 0
+       */
+      total_answers: number;
+      /**
+       * Total Correct
+       * @default 0
+       */
+      total_correct: number;
+      /**
+       * Weighted Accuracy
+       * @default 0
+       */
+      weighted_accuracy: number;
+      /**
+       * Average Mastery
+       * @default 0
+       */
+      average_mastery: number;
+      /**
+       * Average Progress
+       * @default 0
+       */
+      average_progress: number;
+      /**
+       * Mastered Concepts
+       * @default 0
+       */
+      mastered_concepts: number;
+    };
+    /** PersonalLearningTrendRow */
+    PersonalLearningTrendRow: {
+      /** Period */
+      period: string;
+      /**
+       * Jobs Created
+       * @default 0
+       */
+      jobs_created: number;
+      /**
+       * Jobs Completed
+       * @default 0
+       */
+      jobs_completed: number;
+      /**
+       * Jobs Failed
+       * @default 0
+       */
+      jobs_failed: number;
+      /**
+       * Active Learners
+       * @default 0
+       */
+      active_learners: number;
+      /**
+       * Answers
+       * @default 0
+       */
+      answers: number;
+      /**
+       * Correct Answers
+       * @default 0
+       */
+      correct_answers: number;
     };
     /**
      * PipelineBypassKind
@@ -3983,6 +4240,19 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** StandardResponse[LearnerSubjectsResponse] */
+    StandardResponse_LearnerSubjectsResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['LearnerSubjectsResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
     /** StandardResponse[LearningStepResponse] */
     StandardResponse_LearningStepResponse_: {
       /**
@@ -4108,6 +4378,19 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['OcrProviderKeyTestResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[PersonalLearningSummaryResponse] */
+    StandardResponse_PersonalLearningSummaryResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PersonalLearningSummaryResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -6873,6 +7156,81 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_LlmUsageEventsResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_personal_learning_summary_api_admin_personal_learning_summary_get: {
+    parameters: {
+      query?: {
+        window?: '7d' | '30d' | '90d' | 'all';
+      };
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_PersonalLearningSummaryResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_learner_subjects_api_admin_personal_learning_subjects_get: {
+    parameters: {
+      query: {
+        user_id: string;
+        window?: '7d' | '30d' | '90d' | 'all';
+        pipeline_status?: components['schemas']['PipelineStatus'] | null;
+        progress_status?: components['schemas']['SubjectProgressStatus'] | null;
+        limit?: number;
+        cursor?: string | null;
+      };
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_LearnerSubjectsResponse_'];
         };
       };
       /** @description Validation Error */

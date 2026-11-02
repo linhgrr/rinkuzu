@@ -200,7 +200,8 @@ export const config = {
   // Match all pathnames except for
   // - Static files (images, etc.)
   // - Next.js internals
+  // - The non-localized `/og` share-card route (otherwise redirected to `/vi/og`)
   // API routes are now matched so the CSRF / same-origin guard applies; the
   // guard early-returns for read-only and exempt API paths.
-  matcher: ['/', '/(vi|en)/:path*', '/((?!_next|_vercel|.*\\..*).*)'],
+  matcher: ['/', '/(vi|en)/:path*', '/((?!_next|_vercel|og(?:/|$)|.*\\..*).*)'],
 };

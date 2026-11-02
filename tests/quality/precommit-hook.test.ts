@@ -15,7 +15,8 @@ describe('pre-commit guard', () => {
       scripts?: Record<string, string>;
     };
     const preCommitGate = packageJson.scripts?.['precommit:fast'] ?? '';
-    const prePushGate = packageJson.scripts?.['prepush:full'] ?? '';
+    const prePushGate = packageJson.scripts?.['prepush:fast'] ?? '';
+    const fullPrePushGate = packageJson.scripts?.['prepush:full'] ?? '';
     const fullVerificationGate = packageJson.scripts?.['verify:full'] ?? '';
 
     expect(preCommitHook).toMatch(/^#!\/usr\/bin\/env sh\nset -eu\n/);
@@ -26,17 +27,21 @@ describe('pre-commit guard', () => {
     expect(preCommitGate).not.toMatch(/install|typecheck|lint|test|build/u);
 
     expect(prePushHook).toMatch(/^#!\/usr\/bin\/env sh\nset -eu\n/);
-    expect(prePushHook).toContain('npm run prepush:full');
+    expect(prePushHook).toContain('npm run prepush:fast');
     for (const command of [
       'npm run typecheck',
       'npm run typecheck:scripts',
       'npm run lint',
       'npm run test:node',
       'npm run test:component',
-      'npm run build',
     ]) {
       expect(prePushGate).toContain(command);
     }
+    // The hook must fit an agent's 600s foreground cap (RIN-527): the build and the
+    // integration suite run in the local/ci gate and in prepush:full on demand.
+    expect(prePushGate).not.toContain('npm run build');
+    expect(prePushGate).not.toContain('npm run test:integration');
+    expect(fullPrePushGate).toContain('npm run build');
     expect(prePushGate).not.toContain('npm run test:unit');
 
     expect(fullVerificationGate).toContain('npm run check:dead-code');

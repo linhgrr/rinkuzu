@@ -1,4 +1,5 @@
 import connectDB from '@/lib/mongoose';
+import { logger } from '@/lib/logger';
 import QuizModel from '@/models/Quiz';
 import FolderQuiz from '@/models/FolderQuiz';
 import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
@@ -604,21 +605,30 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const records = result?.items ?? [];
     const total = result?.meta[0]?.totalItems ?? 0;
 
-    return {
-      items: records.map((record) => {
-        if (!record.email || !record.role || !record.joinedAt) {
-          throw new TypeError(`Quiz creator ${String(record._id)} could not be resolved`);
-        }
+    // The pipeline already drops creators without a user document. A record
+    // that still lacks a required field (a user document missing email, role or
+    // createdAt) is skipped rather than failing the whole admin Overview.
+    const items: QuizCreatorStatRecord[] = [];
+    for (const record of records) {
+      if (!record.email || !record.role || !record.joinedAt) {
+        logger.warn(
+          { creatorId: String(record._id) },
+          'Skipping top creator with an incomplete user record',
+        );
+        continue;
+      }
+      items.push({
+        id: String(record._id),
+        email: record.email,
+        role: record.role,
+        joinedAt: record.joinedAt,
+        quizCount: record.quizCount,
+        totalQuestions: record.totalQuestions,
+      });
+    }
 
-        return {
-          id: String(record._id),
-          email: record.email,
-          role: record.role,
-          joinedAt: record.joinedAt,
-          quizCount: record.quizCount,
-          totalQuestions: record.totalQuestions,
-        };
-      }),
+    return {
+      items,
       pagination: buildPaginationMeta(page, limit, total),
     };
   }

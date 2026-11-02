@@ -24,12 +24,14 @@ import {
   deleteAdminQuiz,
   fetchAdminQuizDetailViewModel,
   fetchAdminQuizListViewModel,
+  setAdminQuizVisibility,
 } from '@/features/admin/quizzes/api/admin-quizzes-api';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { ROUTES } from '@/shared/constants/routes';
 import {
   HiOutlineDocumentText,
   HiOutlineEye,
+  HiOutlineGlobeAlt,
   HiOutlineLockClosed,
   HiOutlinePencil,
   HiOutlineTrash,
@@ -48,6 +50,8 @@ interface State {
   previewingQuizId: string | null;
   quizToDelete: AdminQuizListItemViewModel | null;
   deletingQuizId: string | null;
+  quizToToggle: AdminQuizListItemViewModel | null;
+  togglingQuizId: string | null;
 }
 
 type Action =
@@ -57,7 +61,8 @@ type Action =
       quizzes: AdminQuizListItemViewModel[];
       pagination: AdminQuizzesPaginationViewModel;
     }
-  | { type: 'removed'; quizId: string };
+  | { type: 'removed'; quizId: string }
+  | { type: 'visibilityChanged'; quizId: string; visibility: 'public' | 'personal' };
 
 const initialState: State = {
   quizzes: [],
@@ -79,6 +84,8 @@ const initialState: State = {
   previewingQuizId: null,
   quizToDelete: null,
   deletingQuizId: null,
+  quizToToggle: null,
+  togglingQuizId: null,
 };
 
 function reducer(state: State, action: Action): State {
@@ -103,6 +110,17 @@ function reducer(state: State, action: Action): State {
           ...state.pagination,
           total: Math.max(0, state.pagination.total - 1),
         },
+      };
+    case 'visibilityChanged':
+      return {
+        ...state,
+        quizzes: state.quizzes.map((quiz) =>
+          quiz.id === action.quizId
+            ? { ...quiz, visibility: action.visibility, visibilityLabelKey: action.visibility }
+            : quiz,
+        ),
+        quizToToggle: null,
+        togglingQuizId: null,
       };
     default:
       return state;
@@ -189,6 +207,24 @@ export function AdminQuizzesPageClient() {
         value: {
           deletingQuizId: null,
           error: extractUnknownErrorMessage(error, t('quizManagementDeleteError')),
+        },
+      });
+    }
+  }
+
+  async function toggleVisibility(quiz: AdminQuizListItemViewModel) {
+    const visibility = quiz.visibility === 'public' ? 'personal' : 'public';
+    dispatch({ type: 'patch', value: { togglingQuizId: quiz.id, error: '' } });
+    try {
+      const result = await setAdminQuizVisibility(quiz.id, visibility);
+      dispatch({ type: 'visibilityChanged', quizId: quiz.id, visibility: result.visibility });
+    } catch (error) {
+      dispatch({
+        type: 'patch',
+        value: {
+          quizToToggle: null,
+          togglingQuizId: null,
+          error: extractUnknownErrorMessage(error, t('quizVisibilityChangeError')),
         },
       });
     }
@@ -339,6 +375,19 @@ export function AdminQuizzesPageClient() {
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={state.togglingQuizId === quiz.id}
+                    onClick={() => dispatch({ type: 'patch', value: { quizToToggle: quiz } })}
+                  >
+                    {quiz.visibility === 'public' ? (
+                      <HiOutlineLockClosed className="mr-1 size-4" />
+                    ) : (
+                      <HiOutlineGlobeAlt className="mr-1 size-4" />
+                    )}
+                    {quiz.visibility === 'public' ? t('quizMakePrivate') : t('quizMakePublic')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
                     className="border-red-200 text-red-600 hover:border-red-300 hover:text-red-700"
                     onClick={() => dispatch({ type: 'patch', value: { quizToDelete: quiz } })}
                   >
@@ -370,6 +419,30 @@ export function AdminQuizzesPageClient() {
           onClose={() => dispatch({ type: 'patch', value: { previewQuiz: null } })}
         />
       ) : null}
+
+      <ConfirmModal
+        isOpen={!!state.quizToToggle}
+        title={
+          state.quizToToggle?.visibility === 'public'
+            ? t('quizMakePrivateTitle')
+            : t('quizMakePublicTitle')
+        }
+        message={
+          state.quizToToggle
+            ? state.quizToToggle.visibility === 'public'
+              ? t('quizMakePrivateConfirm', { title: state.quizToToggle.title })
+              : t('quizMakePublicConfirm', { title: state.quizToToggle.title })
+            : ''
+        }
+        confirmText={
+          state.quizToToggle?.visibility === 'public' ? t('quizMakePrivate') : t('quizMakePublic')
+        }
+        cancelText={t('cancel')}
+        confirmVariant="primary"
+        isLoading={state.togglingQuizId === state.quizToToggle?.id}
+        onCancel={() => dispatch({ type: 'patch', value: { quizToToggle: null } })}
+        onConfirm={() => state.quizToToggle && void toggleVisibility(state.quizToToggle)}
+      />
 
       <ConfirmModal
         isOpen={!!state.quizToDelete}

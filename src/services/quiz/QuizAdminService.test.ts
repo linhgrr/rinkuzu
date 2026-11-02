@@ -206,4 +206,136 @@ describe('QuizAdminService', () => {
     expect(repository.findById).not.toHaveBeenCalled();
     expect(repository.delete).toHaveBeenCalledWith('507f191e810c19729de860ea');
   });
+
+  describe('setAdminQuizVisibility', () => {
+    const actor = { id: '507f191e810c19729de860ff', email: 'admin@example.com' };
+    const publicQuiz: Quiz = { ...quiz, visibility: 'public' };
+
+    function createVisibilityDeps(publication: unknown = null) {
+      return {
+        premiumRepository: {
+          findActivePublicationByQuizId: vi.fn().mockResolvedValue(publication),
+        },
+        auditRepository: { record: vi.fn().mockResolvedValue(undefined) },
+      };
+    }
+
+    it('makes a public quiz private and records one audit entry without quiz content', async () => {
+      const repository = createRepository({
+        findById: vi.fn().mockResolvedValue(publicQuiz),
+        update: vi.fn().mockResolvedValue({ ...publicQuiz, visibility: 'personal' }),
+      });
+      const deps = createVisibilityDeps();
+      const service = new QuizAdminService(repository, deps);
+
+      const result = await service.setAdminQuizVisibility(quiz.id, 'personal', actor);
+
+      expect(result).toEqual({
+        success: true,
+        data: { id: quiz.id, slug: quiz.slug, visibility: 'personal', changed: true },
+      });
+      expect(repository.update).toHaveBeenCalledTimes(1);
+      expect(repository.update).toHaveBeenCalledWith(quiz.id, { visibility: 'personal' });
+      expect(deps.premiumRepository.findActivePublicationByQuizId).not.toHaveBeenCalled();
+      expect(deps.auditRepository.record).toHaveBeenCalledTimes(1);
+      expect(deps.auditRepository.record).toHaveBeenCalledWith({
+        actorId: actor.id,
+        actorEmail: actor.email,
+        action: 'quiz.visibility.changed',
+        entityType: 'quiz',
+        entityId: quiz.id,
+        details: { slug: quiz.slug, from: 'public', to: 'personal' },
+      });
+    });
+
+    it('makes a private quiz public again when it has no premium publication', async () => {
+      const repository = createRepository({
+        findById: vi.fn().mockResolvedValue(quiz),
+        update: vi.fn().mockResolvedValue(publicQuiz),
+      });
+      const deps = createVisibilityDeps();
+      const service = new QuizAdminService(repository, deps);
+
+      const result = await service.setAdminQuizVisibility(quiz.id, 'public', actor);
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { visibility: 'public', changed: true },
+      });
+      expect(deps.premiumRepository.findActivePublicationByQuizId).toHaveBeenCalledWith(quiz.id);
+      expect(deps.auditRepository.record).toHaveBeenCalledWith(
+        expect.objectContaining({ details: { slug: quiz.slug, from: 'personal', to: 'public' } }),
+      );
+    });
+
+    it('returns a no-op without writing or auditing when the visibility already matches', async () => {
+      const repository = createRepository({ findById: vi.fn().mockResolvedValue(publicQuiz) });
+      const deps = createVisibilityDeps();
+      const service = new QuizAdminService(repository, deps);
+
+      const result = await service.setAdminQuizVisibility(quiz.id, 'public', actor);
+
+      expect(result).toEqual({
+        success: true,
+        data: { id: quiz.id, slug: quiz.slug, visibility: 'public', changed: false },
+      });
+      expect(repository.update).not.toHaveBeenCalled();
+      expect(deps.auditRepository.record).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 for a missing quiz', async () => {
+      const repository = createRepository({ findById: vi.fn().mockResolvedValue(null) });
+      const deps = createVisibilityDeps();
+      const service = new QuizAdminService(repository, deps);
+
+      const result = await service.setAdminQuizVisibility(quiz.id, 'personal', actor);
+
+      expect(result).toMatchObject({ success: false, code: 'not_found', statusCode: 404 });
+      expect(repository.update).not.toHaveBeenCalled();
+      expect(deps.auditRepository.record).not.toHaveBeenCalled();
+    });
+
+    it('refuses to make a premium-published quiz public', async () => {
+      const repository = createRepository({ findById: vi.fn().mockResolvedValue(quiz) });
+      const deps = createVisibilityDeps({ id: 'submission-1' });
+      const service = new QuizAdminService(repository, deps);
+
+      const result = await service.setAdminQuizVisibility(quiz.id, 'public', actor);
+
+      expect(result).toMatchObject({
+        success: false,
+        code: 'conflict',
+        statusCode: 409,
+      });
+      expect(repository.update).not.toHaveBeenCalled();
+      expect(deps.auditRepository.record).not.toHaveBeenCalled();
+    });
+
+    it('reverts the change and fails when the audit write fails', async () => {
+      const repository = createRepository({
+        findById: vi.fn().mockResolvedValue(publicQuiz),
+        update: vi.fn().mockResolvedValue(publicQuiz),
+      });
+      const deps = createVisibilityDeps();
+      deps.auditRepository.record.mockRejectedValue(new Error('audit down'));
+      const service = new QuizAdminService(repository, deps);
+
+      const result = await service.setAdminQuizVisibility(quiz.id, 'personal', actor);
+
+      expect(result).toMatchObject({ success: false, statusCode: 500 });
+      expect(repository.update).toHaveBeenNthCalledWith(1, quiz.id, { visibility: 'personal' });
+      expect(repository.update).toHaveBeenNthCalledWith(2, quiz.id, { visibility: 'public' });
+    });
+
+    it('fails closed when constructed without audit dependencies', async () => {
+      const repository = createRepository({ findById: vi.fn().mockResolvedValue(publicQuiz) });
+      const service = new QuizAdminService(repository);
+
+      const result = await service.setAdminQuizVisibility(quiz.id, 'personal', actor);
+
+      expect(result).toMatchObject({ success: false, statusCode: 500 });
+      expect(repository.findById).not.toHaveBeenCalled();
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+  });
 });

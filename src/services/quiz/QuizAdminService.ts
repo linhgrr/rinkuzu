@@ -1,9 +1,13 @@
 import { IQuizRepository, type QuizFindFilter } from '@/interfaces/repositories/IQuizRepository';
+import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
+import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
+import type { QuizVisibility } from '@/entities/Quiz';
 import type {
   AdminQuizDetailDto,
   AdminQuizListDto,
   AdminQuizListQueryDto,
+  AdminQuizVisibilityChangeDto,
 } from '@/dtos/admin-quiz';
 import type { DeleteResultDto } from '@/dtos/common';
 import type { QuizListDto, QuizListOptionsDto } from '@/dtos/quiz';
@@ -24,8 +28,26 @@ function applyQuizSearchFilter(filter: QuizFindFilter, search?: string): void {
   filter.$or = [{ title: searchRegex }, { description: searchRegex }];
 }
 
+export interface QuizAdminActor {
+  id: string;
+  email: string;
+}
+
+/**
+ * What an admin visibility change needs beyond the quiz repository. Optional so
+ * read-only callers (QuizService) need not wire them; the visibility change
+ * fails closed without them.
+ */
+export interface QuizAdminVisibilityDeps {
+  premiumRepository: Pick<IPremiumQuizRepository, 'findActivePublicationByQuizId'>;
+  auditRepository: IAdminAuditRepository;
+}
+
 export class QuizAdminService {
-  constructor(private quizRepository: IQuizRepository) {}
+  constructor(
+    private quizRepository: IQuizRepository,
+    private visibilityDeps?: QuizAdminVisibilityDeps,
+  ) {}
 
   async listAdminQuizzes(query: AdminQuizListQueryDto): Promise<ServiceResult<AdminQuizListDto>> {
     try {
@@ -106,6 +128,99 @@ export class QuizAdminService {
       return {
         success: false,
         error: 'Failed to delete quiz',
+        statusCode: 500,
+      };
+    }
+  }
+
+  /**
+   * Admin moderation: hide a public quiz (`personal`) or publish it again.
+   *
+   * Every real change is audited. The audit write is fail-closed: if it throws,
+   * the visibility is put back and the call fails, so no change goes unrecorded.
+   * Making a quiz with an active premium publication public is refused, because
+   * that would hand out paid content for free.
+   */
+  async setAdminQuizVisibility(
+    id: string,
+    visibility: QuizVisibility,
+    actor: QuizAdminActor,
+  ): Promise<ServiceResult<AdminQuizVisibilityChangeDto>> {
+    if (!this.visibilityDeps) {
+      logger.error('Admin quiz visibility change is not wired with audit dependencies');
+      return {
+        success: false,
+        code: 'internal_error',
+        error: 'Failed to change quiz visibility',
+        statusCode: 500,
+      };
+    }
+    const { premiumRepository, auditRepository } = this.visibilityDeps;
+
+    try {
+      const quiz = await this.quizRepository.findById(id);
+      if (!quiz) {
+        return { success: false, code: 'not_found', error: 'Quiz not found', statusCode: 404 };
+      }
+
+      const from = quiz.visibility;
+      if (from === visibility) {
+        return {
+          success: true,
+          data: AdminQuizDtoMapper.toVisibilityChange(quiz, visibility, false),
+        };
+      }
+
+      if (visibility === 'public') {
+        const publication = await premiumRepository.findActivePublicationByQuizId(quiz.id);
+        if (publication) {
+          return {
+            success: false,
+            code: 'conflict',
+            error: 'A quiz with a premium publication cannot be made public',
+            statusCode: 409,
+          };
+        }
+      }
+
+      const updated = await this.quizRepository.update(quiz.id, { visibility });
+      if (!updated) {
+        return { success: false, code: 'not_found', error: 'Quiz not found', statusCode: 404 };
+      }
+
+      try {
+        await auditRepository.record({
+          actorId: actor.id,
+          actorEmail: actor.email,
+          action: 'quiz.visibility.changed',
+          entityType: 'quiz',
+          entityId: quiz.id,
+          details: { slug: quiz.slug, from, to: visibility },
+        });
+      } catch (auditError) {
+        logger.error(
+          { error: auditError, quizId: quiz.id },
+          'Quiz visibility audit write failed; reverting the change',
+        );
+        await this.quizRepository.update(quiz.id, { visibility: from });
+        return {
+          success: false,
+          code: 'internal_error',
+          error: 'Failed to change quiz visibility',
+          statusCode: 500,
+        };
+      }
+
+      return {
+        success: true,
+        data: AdminQuizDtoMapper.toVisibilityChange(quiz, visibility, true),
+      };
+    } catch (error) {
+      logger.error({ error, quizId: id }, 'Set admin quiz visibility error');
+      return {
+        success: false,
+        code: 'internal_error',
+        error: 'Failed to change quiz visibility',
         statusCode: 500,
       };
     }

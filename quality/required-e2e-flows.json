@@ -30,6 +30,11 @@
       "id": "admin-account-disable",
       "tag": "@critical-admin-disable",
       "description": "Admin disable/restore: session revocation via authVersion, filter listing, and fresh login after restore"
+    },
+    {
+      "id": "admin-quiz-visibility",
+      "tag": "@critical-admin-quiz-visibility",
+      "description": "Admin makes a public quiz private (hidden from anonymous play and the public list), the change is audited, and it is reverted"
     }
   ]
 }

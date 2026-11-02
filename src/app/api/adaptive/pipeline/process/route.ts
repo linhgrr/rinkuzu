@@ -1,4 +1,5 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
+import { pipelineJobLinkFromEnvelope } from '@/lib/adaptive/pipeline-usage';
 import { invalidateAdaptiveServiceCache } from '@/lib/adaptive/cache-policy';
 import { resolveOwnedAdaptivePipelineS3Key } from '@/lib/adaptive/storage-key';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -58,6 +59,8 @@ export const POST = withAuth(async (req, { userId, session }) => {
       {
         method: 'POST',
         llmAction: 'adaptive_pipeline',
+        // Link the unit to the accepted job so a later failure refunds it.
+        llmJobLink: pipelineJobLinkFromEnvelope,
         body: JSON.stringify(proxiedBody),
         contentType: 'application/json',
         timeoutMs: 180_000,

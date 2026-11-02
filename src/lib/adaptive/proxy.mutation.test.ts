@@ -535,6 +535,44 @@ describe('proxyAdaptiveRequest mutation coverage', () => {
     });
   });
 
+  describe('async job metering', () => {
+    it('commits the unit with the job link read from the accepted envelope', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        successEnvelope({ job_id: 'job-1', status: 'queued', retry_count: 0 }),
+      );
+      const llmJobLink = vi.fn(() => ({ jobId: 'job-1', jobAttempt: 0 }));
+
+      await proxyAdaptiveRequest(
+        new Request('https://app.test/api/adaptive/pipeline/process', { method: 'POST' }),
+        '/pipeline/process',
+        { userId: 'user-1', userRole: 'user' },
+        { method: 'POST', llmAction: 'adaptive_pipeline', llmJobLink, body: '{}' },
+      );
+
+      expect(llmJobLink).toHaveBeenCalledWith({
+        success: true,
+        data: { job_id: 'job-1', status: 'queued', retry_count: 0 },
+      });
+      expect(rateLimitMocks.commitLlmUsage).toHaveBeenCalledWith(rateLimitMocks.allowedResult, {
+        jobId: 'job-1',
+        jobAttempt: 0,
+      });
+    });
+
+    it('still commits without a link when the envelope names no job', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(successEnvelope({ status: 'queued' }));
+
+      await proxyAdaptiveRequest(
+        new Request('https://app.test/api/adaptive/pipeline/process', { method: 'POST' }),
+        '/pipeline/process',
+        { userId: 'user-1', userRole: 'user' },
+        { method: 'POST', llmAction: 'adaptive_pipeline', llmJobLink: () => null, body: '{}' },
+      );
+
+      expect(rateLimitMocks.commitLlmUsage).toHaveBeenCalledWith(rateLimitMocks.allowedResult);
+    });
+  });
+
   describe('upstream response handling', () => {
     it('maps HTML upstream responses to upstream_html_error with 502 when ok and original status otherwise', async () => {
       vi.mocked(fetch).mockResolvedValueOnce(

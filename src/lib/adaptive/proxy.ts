@@ -17,6 +17,7 @@ import {
   commitLlmUsage,
   refundLlmUsage,
   reserveLlmUsage,
+  type LlmUsageJobLink,
   type LlmUsageReservation,
   type LlmRateLimitAction,
 } from '@/lib/llm/rate-limit';
@@ -31,6 +32,9 @@ type ProxyOptions = {
   // LLM-backed routes declare their metered action explicitly. Enforced here
   // before forwarding upstream. Non-LLM routes leave this undefined.
   llmAction?: LlmRateLimitAction;
+  // Async LLM routes: read the accepted job from the success envelope so the
+  // committed unit can be refunded if that job later fails.
+  llmJobLink?: (payload: unknown) => LlmUsageJobLink | null;
   cache?: {
     revalidateSeconds: number;
     tags: string[];
@@ -365,7 +369,10 @@ export async function proxyAdaptiveRequest(
         );
       }
 
-      if (llmReservation) await commitLlmUsage(llmReservation);
+      if (llmReservation) {
+        const jobLink = options?.llmJobLink?.(payload) ?? null;
+        await (jobLink ? commitLlmUsage(llmReservation, jobLink) : commitLlmUsage(llmReservation));
+      }
       const normalized = apiForward(payload, response.status);
       return applyResponseHeaders(normalized, responseHeaders);
     }

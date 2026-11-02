@@ -1,14 +1,18 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, proxyAdaptiveRequestMock } = vi.hoisted(() => ({
+const { authMock, proxyAdaptiveRequestMock, settleUsageMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   proxyAdaptiveRequestMock: vi.fn(),
+  settleUsageMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/adaptive/proxy', () => ({
   proxyAdaptiveRequest: proxyAdaptiveRequestMock,
+}));
+vi.mock('@/lib/adaptive/pipeline-usage', () => ({
+  settlePipelineUsageFromResponse: settleUsageMock,
 }));
 
 import { dynamic, GET } from '@/app/api/adaptive/pipeline/jobs/[jobId]/route';
@@ -30,6 +34,16 @@ describe('GET /api/adaptive/pipeline/jobs/[jobId]', () => {
     proxyAdaptiveRequestMock.mockResolvedValue(new Response('ok'));
   });
 
+  it('settles adaptive_pipeline usage from the job status it returns', async () => {
+    const upstream = Response.json({ success: true, data: { jobs: [] } });
+    proxyAdaptiveRequestMock.mockResolvedValue(upstream);
+
+    const response = await GET(request('job-1'), context('job-1'));
+
+    expect(response).toBe(upstream);
+    expect(settleUsageMock).toHaveBeenCalledWith(upstream, { userId: 'user-1', userRole: 'user' });
+  });
+
   it('exports force-dynamic and requires authentication', async () => {
     expect(dynamic).toBe('force-dynamic');
     authMock.mockResolvedValue(null);
@@ -38,6 +52,7 @@ describe('GET /api/adaptive/pipeline/jobs/[jobId]', () => {
 
     expect(response.status).toBe(401);
     expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
+    expect(settleUsageMock).not.toHaveBeenCalled();
   });
 
   it('rejects invalid jobId params before proxying', async () => {

@@ -1,15 +1,9 @@
+import { slugifyText } from './slug';
+
 export interface TocItem {
   id: string;
   text: string;
 }
-
-const slugify = (text: string): string => {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-};
 
 /**
  * Extract h2/h3 headings from markdown content as TocItem[].
@@ -27,9 +21,9 @@ export const extractHeadingsFromMarkdown = (content: string): TocItem[] => {
     const h3Text = h3Match?.[1];
 
     if (h2Text !== undefined) {
-      headings.push({ id: slugify(h2Text), text: h2Text });
+      headings.push({ id: slugifyText(h2Text), text: h2Text });
     } else if (h3Text !== undefined) {
-      headings.push({ id: slugify(h3Text), text: h3Text });
+      headings.push({ id: slugifyText(h3Text), text: h3Text });
     }
   }
 

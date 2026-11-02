@@ -19,10 +19,17 @@ const BACKEND_VENV_PYTHON = resolve(
 );
 const NULL_DEVICE = process.platform === 'win32' ? 'NUL' : '/dev/null';
 const UV_BIN = process.env.UV_BIN ?? 'uv';
+// 32 sequential bytes, base64-encoded: an obvious fixture, computed so no secret-shaped literal sits in source.
+const fixtureKeyBase64 = (firstByte) =>
+  Buffer.from(Array.from({ length: 32 }, (_, i) => firstByte + i)).toString('base64');
 const CONTRACT_EXPORT_ENV = Object.freeze({
   ENVIRONMENT: 'dev',
   // Deterministic non-secret fixture: contract export must not depend on a local backend .env.
   INTERNAL_SERVICE_TOKEN: 'rinkuzu-ci-fixture-0123456789abcdef-token',
+  // Deterministic non-secret LLM key fixtures (same `<id>:<base64 32 bytes>` format as the API's
+  // tests/conftest.py); Settings refuses to load without them. Never used outside contract export.
+  LLM_KEY_ENCRYPTION_KEYS: `ci-fixture-v1:${fixtureKeyBase64(0x40)}`,
+  LLM_KEY_FINGERPRINT_SECRET: fixtureKeyBase64(0x60),
 });
 
 function run(command, args, options = {}) {

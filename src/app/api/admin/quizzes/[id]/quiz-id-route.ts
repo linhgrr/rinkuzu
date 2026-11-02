@@ -1,8 +1,12 @@
 import type { ServiceResult } from '@/interfaces/services/types';
-import { adminQuizIdParamsSchema } from '@/dtos/admin-quiz';
+import {
+  adminQuizIdParamsSchema,
+  adminQuizVisibilityBodySchema,
+  type AdminQuizVisibilityBodyDto,
+} from '@/dtos/admin-quiz';
 import { withAdmin } from '@/lib/api/auth';
 import { apiOk, apiServiceErr } from '@/lib/api/response';
-import { parseRouteParams } from '@/lib/api/validated';
+import { parseParamsAndBody, parseRouteParams } from '@/lib/api/validated';
 
 interface AdminQuizIdRouteOptions<TData> {
   execute: (id: string) => Promise<ServiceResult<TData>>;
@@ -18,5 +22,35 @@ export function createAdminQuizIdRoute<TData>(options: AdminQuizIdRouteOptions<T
     return result.success
       ? apiOk(result.data, 200, options.successMeta ? { meta: options.successMeta } : undefined)
       : apiServiceErr(result);
+  });
+}
+
+interface AdminQuizVisibilityRouteOptions<TData> {
+  execute: (
+    id: string,
+    visibility: AdminQuizVisibilityBodyDto['visibility'],
+    actor: { id: string; email: string },
+  ) => Promise<ServiceResult<TData>>;
+}
+
+/**
+ * PATCH body `{ visibility }`. Admin-only; the proxy's same-origin guard covers
+ * CSRF for every state-changing /api request before this runs.
+ */
+export function createAdminQuizVisibilityRoute<TData>(
+  options: AdminQuizVisibilityRouteOptions<TData>,
+) {
+  return withAdmin<{ id: string }>(async (request, { params, userId, email }) => {
+    const parsed = await parseParamsAndBody(request, params, {
+      params: adminQuizIdParamsSchema,
+      body: adminQuizVisibilityBodySchema,
+    });
+    if (!parsed.ok) return parsed.response;
+
+    const result = await options.execute(parsed.params.id, parsed.body.visibility, {
+      id: userId,
+      email,
+    });
+    return result.success ? apiOk(result.data) : apiServiceErr(result);
   });
 }

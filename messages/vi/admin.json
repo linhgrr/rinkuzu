@@ -555,5 +555,12 @@
   "growthChartLabel": "Xu hướng người dùng, quiz và lượt làm bài",
   "chartLoading": "Đang tải biểu đồ…",
   "premiumReviewOpenSource": "Mở PDF nguồn",
-  "premiumReviewSourceError": "Không thể mở PDF nguồn đã lưu."
+  "premiumReviewSourceError": "Không thể mở PDF nguồn đã lưu.",
+  "quizMakePrivate": "Chuyển sang riêng tư",
+  "quizMakePublic": "Công khai quiz",
+  "quizMakePrivateTitle": "Chuyển quiz này sang riêng tư?",
+  "quizMakePublicTitle": "Công khai quiz này?",
+  "quizMakePrivateConfirm": "\"{title}\" sẽ bị ẩn khỏi danh sách cộng đồng, Khám phá và khách chưa đăng nhập. Chỉ tác giả và quản trị viên mới mở được. Bạn có thể công khai lại sau. Thay đổi này được ghi vào nhật ký kiểm tra của quản trị.",
+  "quizMakePublicConfirm": "\"{title}\" sẽ xuất hiện trong danh sách cộng đồng và Khám phá, và ai có liên kết đều có thể làm bài. Thay đổi này được ghi vào nhật ký kiểm tra của quản trị.",
+  "quizVisibilityChangeError": "Không thể thay đổi chế độ hiển thị của quiz"
 }

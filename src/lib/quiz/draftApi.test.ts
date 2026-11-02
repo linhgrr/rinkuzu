@@ -94,6 +94,17 @@ describe('QuizDraftMapper', () => {
     expect(draft.questions[0]?.correctIndex).toBe(1);
     expect(draft.questions[1]?.correctIndexes).toEqual([0, 2]);
   });
+
+  it('maps an optional error_code and defaults it to null when the API omits it', () => {
+    expect(QuizDraftMapper.toViewModel(transportDraft).errorCode).toBeNull();
+    expect(
+      QuizDraftMapper.toViewModel({
+        ...transportDraft,
+        status: 'failed',
+        error_code: 'ocr_request_failed',
+      }).errorCode,
+    ).toBe('ocr_request_failed');
+  });
 });
 
 describe('mapDraftStatus', () => {

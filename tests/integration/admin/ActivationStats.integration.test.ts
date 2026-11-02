@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import mongoose, { Types } from 'mongoose';
 
 import { AdminAuditRepository } from '@/repositories/AdminAuditRepository';
@@ -14,6 +14,20 @@ import { integrationDatabaseUri } from '../../setup/integration-db';
  * far from anything another suite writes, so the counts below are exact even
  * on a shared integration database.
  */
+// A company-owned account on a real-looking domain: excluded only because its
+// address is on `ANALYTICS_EXCLUDED_EMAILS`, which is stubbed here so the
+// fixture never uses a real address.
+const owned = vi.hoisted(() => ({
+  email: `activation-owned-${globalThis.crypto.randomUUID()}@company-owned.fixture`,
+}));
+vi.mock('@/shared/constants/analytics-exclusions', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/constants/analytics-exclusions')>();
+  return {
+    ...actual,
+    ANALYTICS_EXCLUDED_EMAILS: [...actual.ANALYTICS_EXCLUDED_EMAILS, owned.email],
+  };
+});
+
 const DAY = 86_400_000;
 const at = (iso: string) => new Date(iso);
 const plus = (date: Date, ms: number) => new Date(date.getTime() + ms);
@@ -37,6 +51,7 @@ describe('activation stats integration', () => {
     admin: id(),
     disabled: id(),
     qa: id(),
+    owned: id(),
   };
   const sharedQuiz = id();
   const signup = {
@@ -50,6 +65,7 @@ describe('activation stats integration', () => {
     admin: at('2001-01-02T00:00:00.000Z'),
     disabled: at('2001-01-10T00:00:00.000Z'),
     qa: at('2001-01-03T00:00:00.000Z'),
+    owned: at('2001-01-04T00:00:00.000Z'),
   };
 
   function user(key: keyof typeof ids, extra: Record<string, unknown> = {}) {
@@ -93,6 +109,7 @@ describe('activation stats integration', () => {
           user('admin', { role: 'admin' }),
           user('disabled', { disable: 1 }),
           user('qa', { email: `${runId}-qa@example.test` }),
+          user('owned', { email: owned.email }),
         ]);
       await db.collection('quizzes').insertMany([
         { ...quiz('shared'), _id: sharedQuiz, author: ids.admin, createdAt: signup.admin },
@@ -124,6 +141,7 @@ describe('activation stats integration', () => {
         attempt('admin', at('2001-01-02T12:00:00.000Z')),
         attempt('disabled', at('2001-01-10T12:00:00.000Z')),
         attempt('qa', at('2001-01-03T12:00:00.000Z')),
+        attempt('owned', at('2001-01-04T12:00:00.000Z')),
         // Guests are not learners.
         {
           _integrationRun: runId,

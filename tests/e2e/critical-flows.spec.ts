@@ -859,7 +859,20 @@ test.describe('production critical paths', () => {
       });
       await routeSelect.selectOption({ label: 'Primary Tutor' });
       await routeSelect.selectOption({ label: 'Fallback Tutor' });
+      // The numbered rows below render from the draft, so they are visible
+      // before anything is saved. Wait for the PUT to succeed and the unsaved
+      // notice to clear before navigating, or the reload aborts the save.
+      const routingSaved = page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/admin/ai-settings/routing') &&
+          response.request().method() === 'PUT' &&
+          response.ok(),
+      );
       await page.getByRole('button', { name: 'Save routing atomically', exact: true }).click();
+      await routingSaved;
+      await expect(
+        page.getByRole('status').filter({ hasText: 'This routing draft has unsaved changes.' }),
+      ).toBeHidden();
       // Substring, not exact: each row carries the owning provider's badge in
       // the same element, so the position and the model name are a prefix of
       // its text rather than the whole of it.

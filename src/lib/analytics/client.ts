@@ -378,7 +378,17 @@ export function markAnalyticsLoginPending(method: AnalyticsLoginMethod, locale: 
   window.sessionStorage.setItem(PENDING_LOGIN_STORAGE_KEY, JSON.stringify({ method, locale }));
 }
 
-export function capturePendingAnalyticsLogin(): void {
+/**
+ * Marks a Google OAuth round trip from either auth page. Whether it completes as
+ * a signup or a login is only known on return, from the server's isNewAccount flag.
+ */
+export function markAnalyticsGoogleAuthPending(locale: string): void {
+  markAnalyticsLoginPending('google', locale);
+}
+
+export function capturePendingAnalyticsLogin({
+  isNewAccount = false,
+}: { isNewAccount?: boolean } = {}): void {
   if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
   const pending = window.sessionStorage.getItem(PENDING_LOGIN_STORAGE_KEY);
   if (!pending) return;
@@ -386,6 +396,14 @@ export function capturePendingAnalyticsLogin(): void {
   window.sessionStorage.removeItem(PENDING_LOGIN_STORAGE_KEY);
   try {
     const parsed = JSON.parse(pending) as { method?: unknown; locale?: unknown };
+    if (parsed.method === 'google' && isNewAccount && typeof parsed.locale === 'string') {
+      captureAnalyticsEvent('signup_completed', {
+        method: 'google',
+        locale: parsed.locale,
+        journey_id: window.crypto.randomUUID(),
+      });
+      return;
+    }
     if (
       (parsed.method === 'credentials' || parsed.method === 'google') &&
       typeof parsed.locale === 'string'

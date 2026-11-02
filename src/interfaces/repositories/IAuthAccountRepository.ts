@@ -37,6 +37,11 @@ export interface VerifiedGoogleAccountData {
   avatar?: string;
 }
 
+export interface ResolvedGoogleAccount extends AuthenticatedUser {
+  /** True only when this sign-in inserted the user document (first-ever Rinkuzu account). */
+  isNewAccount: boolean;
+}
+
 export interface IAuthAccountRepository {
   /** Active accounts only. Disabled emails appear absent (generic outward behavior). */
   findByEmail(email: string): Promise<AuthAccountSecurityState | null>;
@@ -80,5 +85,7 @@ export interface IAuthSignInRepository {
    * Upserts only active accounts (`email` + `disable: 0`).
    * Returns null when the email belongs to a disabled account (duplicate-key) or is unusable.
    */
-  resolveVerifiedGoogleAccount(data: VerifiedGoogleAccountData): Promise<AuthenticatedUser | null>;
+  resolveVerifiedGoogleAccount(
+    data: VerifiedGoogleAccountData,
+  ): Promise<ResolvedGoogleAccount | null>;
 }

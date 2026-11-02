@@ -70,7 +70,16 @@
     "hero": {
       "title": "Personalize Your Learning Path with AI",
       "description": "AI analyzes your progress and recommends the right lessons, quizzes, and skills to improve next.",
-      "cta": "Start learning"
+      "cta": "Start learning",
+      "starterCta": "Start a 2-minute quiz",
+      "adaptiveLink": "Or personalize learning by uploading a PDF"
+    },
+    "starter": {
+      "title": "New here? Try a 2-minute quiz",
+      "subtitle": "No upload needed. Pick a ready-made quiz and get your first result in about two minutes.",
+      "start": "Start quiz",
+      "alternativesLabel": "Or try one of these",
+      "questionCount": "{count, plural, one {# question} other {# questions}}"
     },
     "quizBuilder": {
       "title": "Quiz Builder",

@@ -5,6 +5,20 @@ const quizProgressMocks = vi.hoisted(() => ({
   aggregate: vi.fn(),
 }));
 
+const starterMocks = vi.hoisted(() => ({
+  attemptExists: vi.fn(),
+  quizExists: vi.fn(),
+  quizAggregate: vi.fn(),
+}));
+
+vi.mock('@/models/Attempt', () => ({ default: { exists: starterMocks.attemptExists } }));
+vi.mock('@/models/Quiz', () => ({
+  default: { exists: starterMocks.quizExists, aggregate: starterMocks.quizAggregate },
+}));
+vi.mock('@/models/PremiumQuizSubmission', () => ({
+  default: { collection: { collectionName: 'premiumquizsubmissions' } },
+}));
+
 vi.mock('@/lib/mongoose', () => ({
   default: vi.fn().mockResolvedValue(undefined),
 }));
@@ -106,5 +120,59 @@ describe('DashboardRepository.findInProgressQuizzes', () => {
     await expect(repository.findInProgressQuizzes('not-a-valid-object-id', 6)).resolves.toEqual([]);
 
     expect(quizProgressMocks.aggregate).not.toHaveBeenCalled();
+  });
+});
+describe('DashboardRepository starter quiz lookups', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('checks for any attempt or authored quiz with exists()', async () => {
+    starterMocks.attemptExists.mockResolvedValue(null);
+    starterMocks.quizExists.mockResolvedValue({ _id: 'fake-quiz' });
+    const repository = new DashboardRepository();
+
+    await expect(repository.hasSubmittedAttempt('fake-user')).resolves.toBe(false);
+    await expect(repository.hasAuthoredQuiz('fake-user')).resolves.toBe(true);
+
+    expect(starterMocks.attemptExists).toHaveBeenCalledWith({ user: 'fake-user' });
+    expect(starterMocks.quizExists).toHaveBeenCalledWith({ author: 'fake-user' });
+  });
+
+  it('resolves starter slugs in one aggregation that projects a count, not question bodies', async () => {
+    starterMocks.quizAggregate.mockResolvedValue([]);
+    const repository = new DashboardRepository();
+
+    await repository.findStarterQuizCandidates(['fake-a', 'fake-b']);
+
+    expect(starterMocks.quizAggregate).toHaveBeenCalledTimes(1);
+    const pipeline = starterMocks.quizAggregate.mock.calls[0]?.[0] as Array<
+      Record<string, Record<string, unknown>>
+    >;
+    expect(pipeline[0]).toEqual({ $match: { slug: { $in: ['fake-a', 'fake-b'] } } });
+    expect(pipeline[1]?.['$lookup']).toMatchObject({
+      from: 'premiumquizsubmissions',
+      localField: '_id',
+      foreignField: 'sourceQuiz',
+      pipeline: [{ $match: { status: 'approved', active: true } }, { $project: { _id: 1 } }],
+    });
+    const projection = pipeline[2]?.['$project'] ?? {};
+    expect(Object.keys(projection)).toEqual([
+      '_id',
+      'slug',
+      'title',
+      'visibility',
+      'questionCount',
+      'isPremium',
+    ]);
+    expect(projection).not.toHaveProperty('questions');
+  });
+
+  it('skips the database for an empty allowlist', async () => {
+    const repository = new DashboardRepository();
+
+    await expect(repository.findStarterQuizCandidates([])).resolves.toEqual([]);
+
+    expect(starterMocks.quizAggregate).not.toHaveBeenCalled();
   });
 });

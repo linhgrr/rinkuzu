@@ -1,10 +1,14 @@
 import connectDB from '@/lib/mongoose';
 import { Types } from 'mongoose';
+import AttemptModel from '@/models/Attempt';
+import PremiumQuizSubmissionModel from '@/models/PremiumQuizSubmission';
+import QuizModel from '@/models/Quiz';
 import QuestionProgress from '@/models/QuestionProgress';
 import QuizProgress from '@/models/QuizProgress';
 import UserProgress from '@/models/UserProgress';
 import type {
   DashboardInProgressQuizRecord,
+  DashboardStarterQuizCandidateRecord,
   DashboardUserProgressRecord,
   IDashboardRepository,
 } from '@/interfaces/repositories/IDashboardRepository';
@@ -74,5 +78,47 @@ export class DashboardRepository implements IDashboardRepository {
       const mapped = DashboardPersistenceMapper.toInProgressQuiz(record);
       return mapped ? [mapped] : [];
     });
+  }
+
+  async hasSubmittedAttempt(userId: string): Promise<boolean> {
+    await connectDB();
+    // Served by the { user: 1, takenAt: -1 } index; exists() stops at the first match.
+    return (await AttemptModel.exists({ user: userId })) !== null;
+  }
+
+  async hasAuthoredQuiz(userId: string): Promise<boolean> {
+    await connectDB();
+    // Served by the { author: 1, createdAt: -1 } index.
+    return (await QuizModel.exists({ author: userId })) !== null;
+  }
+
+  async findStarterQuizCandidates(slugs: string[]): Promise<DashboardStarterQuizCandidateRecord[]> {
+    if (slugs.length === 0) return [];
+    await connectDB();
+    // One round trip on the unique slug index. Question bodies never leave the
+    // database: only their count is projected. The lookup mirrors the premium
+    // gate on /quiz/[slug] (an active, approved publication of this quiz).
+    return QuizModel.aggregate<DashboardStarterQuizCandidateRecord>([
+      { $match: { slug: { $in: slugs } } },
+      {
+        $lookup: {
+          from: PremiumQuizSubmissionModel.collection.collectionName,
+          localField: '_id',
+          foreignField: 'sourceQuiz',
+          pipeline: [{ $match: { status: 'approved', active: true } }, { $project: { _id: 1 } }],
+          as: 'premiumPublications',
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          slug: 1,
+          title: 1,
+          visibility: 1,
+          questionCount: { $size: { $ifNull: ['$questions', []] } },
+          isPremium: { $gt: [{ $size: '$premiumPublications' }, 0] },
+        },
+      },
+    ]);
   }
 }

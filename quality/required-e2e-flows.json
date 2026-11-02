@@ -12,6 +12,11 @@
       "description": "Create or select a quiz, answer it, submit it, and observe the result"
     },
     {
+      "id": "new-learner-starter",
+      "tag": "@critical-starter",
+      "description": "A new learner sees the starter quiz block on the dashboard and opens question 1 from it"
+    },
+    {
       "id": "adaptive-learning",
       "tag": "@critical-adaptive",
       "description": "Upload learning material, observe processing, and open the generated result"

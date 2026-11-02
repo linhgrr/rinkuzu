@@ -3,6 +3,7 @@ import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { createE2EUserEmail } from './support/fixture-identifiers';
+import { STARTER_QUIZ_ALLOWLIST } from '../../src/services/dashboard/starter-quizzes';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
 const E2E_CONTROL_TOKEN = 'rinkuzu-e2e-control';
@@ -128,6 +129,47 @@ async function ensureCanonicalActiveAdminFence(db: Db, now: Date): Promise<void>
       'Critical E2E active-admin fence missing or malformed; refuse to repair or mutate shared singleton',
     );
   }
+}
+
+/**
+ * Parallel-safe idempotent seed of the first allowlisted starter quiz (RIN-556).
+ * The dashboard resolves the allowlist by slug, a unique key every project in
+ * the matrix shares, so this is insert-once like the admin fence above and
+ * cleanup must never delete it.
+ */
+const E2E_STARTER_QUIZ = {
+  author: new ObjectId('000000000000000000005560'),
+  question: 'Which option opens the starter quiz?',
+  title: 'E2E Starter Quiz',
+} as const;
+
+async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
+  const slug = STARTER_QUIZ_ALLOWLIST[0]?.slug;
+  if (!slug) throw new Error('Starter quiz allowlist is empty');
+  await db.collection('quizzes').updateOne(
+    { slug },
+    {
+      $setOnInsert: {
+        author: E2E_STARTER_QUIZ.author,
+        createdAt: now,
+        questions: [
+          {
+            _id: new ObjectId(),
+            correctIndex: 0,
+            options: ['The starter card', 'Nothing'],
+            question: E2E_STARTER_QUIZ.question,
+            type: 'single',
+          },
+        ],
+        slug,
+        title: E2E_STARTER_QUIZ.title,
+        updatedAt: now,
+        visibility: 'public',
+      },
+    },
+    { upsert: true },
+  );
+  return slug;
 }
 
 /**
@@ -474,6 +516,33 @@ test.describe('production critical paths', () => {
         user: fixture.regular.id,
       });
       expect(attempt).toMatchObject({ score: 100, totalQuestions: 1 });
+    });
+  });
+
+  test('points a new learner from the dashboard to a starter quiz @critical-starter', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      // The target fixture has no attempt and no authored quiz: a new learner.
+      await login(page, fixture.target);
+
+      const block = page.getByTestId('starter-quiz-block');
+      await expect(block).toBeInViewport();
+      await expect(block.getByText(E2E_STARTER_QUIZ.title)).toBeVisible();
+      await expect(page.getByTestId('home-hero-cta')).toHaveAttribute(
+        'href',
+        `/en/quiz/${starterSlug}`,
+      );
+      await expect(
+        page.getByRole('link', { name: 'Or personalize learning by uploading a PDF' }),
+      ).toHaveAttribute('href', '/en/adaptive');
+
+      await Promise.all([
+        page.waitForURL(new RegExp(`/en/quiz/${starterSlug}(?:[/?#]|$)`)),
+        page.getByTestId('starter-quiz-primary').click(),
+      ]);
+      await expect(page.getByText(E2E_STARTER_QUIZ.question)).toBeVisible();
     });
   });
 

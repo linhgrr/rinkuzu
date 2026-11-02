@@ -33,6 +33,7 @@ export interface QuizDraft {
   progress: QuizDraftProgress;
   questions: QuizQuestionInputViewModel[];
   error: QuizDraftTransportContract['error'];
+  errorCode: string | null;
   submittedQuizId: QuizDraftTransportContract['submitted_quiz_id'];
   createdAt: QuizDraftTransportContract['created_at'];
   updatedAt: QuizDraftTransportContract['updated_at'];

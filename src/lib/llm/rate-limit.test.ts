@@ -302,6 +302,31 @@ describe('entitlement usage ledger', () => {
     expect(mocks.bucketCollection.updateOne).toHaveBeenCalledTimes(2);
   });
 
+  it('stores the accepted job on commit and clears it when a request id is reserved again', async () => {
+    const reservation = await reserveLlmUsage('user-job', 'ask_rin_chan', 'request-job');
+    expect(mocks.requestCollection.updateOne).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $unset: { jobId: '', jobAttempt: '', jobOutcome: '', refundedAt: '' },
+      }),
+      expect.anything(),
+    );
+
+    await commitLlmUsage(reservation, { jobId: 'job-9', jobAttempt: 1 });
+
+    expect(mocks.requestCollection.updateOne).toHaveBeenLastCalledWith(
+      expect.objectContaining({ requestId: 'request-job', status: 'reserved' }),
+      {
+        $set: {
+          status: 'committed',
+          updatedAt: expect.any(Date),
+          jobId: 'job-9',
+          jobAttempt: 1,
+        },
+      },
+    );
+  });
+
   it('builds snapshot and standard rate-limit headers', async () => {
     mocks.bucketCollection.findOne.mockResolvedValue({ count: 2 });
     const snapshot = await getLlmUsageSnapshot('user-snapshot', 'ask_rin_chan', {

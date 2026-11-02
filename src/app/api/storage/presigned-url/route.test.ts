@@ -1,14 +1,21 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, getSignedUrlMock, loggerErrorMock, uploadRateMock, usageSnapshotMock } =
-  vi.hoisted(() => ({
-    authMock: vi.fn(),
-    getSignedUrlMock: vi.fn(),
-    loggerErrorMock: vi.fn(),
-    uploadRateMock: vi.fn(),
-    usageSnapshotMock: vi.fn(),
-  }));
+const {
+  authMock,
+  getSignedUrlMock,
+  loggerErrorMock,
+  reconcileUsageMock,
+  uploadRateMock,
+  usageSnapshotMock,
+} = vi.hoisted(() => ({
+  authMock: vi.fn(),
+  reconcileUsageMock: vi.fn(),
+  getSignedUrlMock: vi.fn(),
+  loggerErrorMock: vi.fn(),
+  uploadRateMock: vi.fn(),
+  usageSnapshotMock: vi.fn(),
+}));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
@@ -27,6 +34,9 @@ vi.mock('@/lib/entitlements', () => ({
 }));
 vi.mock('@/lib/llm/rate-limit', () => ({
   getLlmUsageSnapshot: usageSnapshotMock,
+}));
+vi.mock('@/lib/adaptive/pipeline-usage', () => ({
+  reconcilePipelineUsage: reconcileUsageMock,
 }));
 vi.mock('@/lib/auth-rate-limit', () => ({
   checkAuthRateLimit: uploadRateMock,
@@ -157,6 +167,37 @@ describe('POST /api/storage/presigned-url', () => {
     await expect(response.json()).resolves.toMatchObject({
       error: { code: 'upstream_error', detail: 'signer down' },
     });
+  });
+
+  it('settles failed adaptive jobs before checking the adaptive quota', async () => {
+    const order: string[] = [];
+    reconcileUsageMock.mockImplementation(async () => order.push('reconcile'));
+    usageSnapshotMock.mockImplementation(async () => {
+      order.push('snapshot');
+      return [
+        {
+          window: 'month',
+          count: 1,
+          limit: 2,
+          remaining: 1,
+          resetAt: new Date('2026-12-01T00:00:00.000Z'),
+        },
+      ];
+    });
+
+    const response = await POST(request({ ...validBody, purpose: 'adaptive' }), routeContext);
+
+    expect(response.status).toBe(200);
+    expect(reconcileUsageMock).toHaveBeenCalledWith({ userId: 'user-1', userRole: 'user' });
+    expect(order).toEqual(['reconcile', 'snapshot']);
+  });
+
+  it('does not reconcile pipeline jobs for quiz uploads or admins', async () => {
+    await POST(request(validBody), routeContext);
+    authMock.mockResolvedValue({ user: { ...session().user, role: 'admin' } });
+    await POST(request({ ...validBody, purpose: 'adaptive' }), routeContext);
+
+    expect(reconcileUsageMock).not.toHaveBeenCalled();
   });
 
   it('rejects exhausted users before issuing an upload policy', async () => {

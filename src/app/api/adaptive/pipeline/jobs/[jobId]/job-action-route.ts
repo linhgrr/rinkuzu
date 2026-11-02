@@ -1,5 +1,6 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
 import { invalidateAdaptiveServiceCache } from '@/lib/adaptive/cache-policy';
+import { pipelineJobLinkFromEnvelope, reconcilePipelineUsage } from '@/lib/adaptive/pipeline-usage';
 import { withAuth } from '@/lib/api/auth';
 import { adaptivePipelineJobRouteParamsSchema } from '@/dtos/adaptive-pipeline';
 import { parseRouteParams } from '@/lib/api/validated';
@@ -18,11 +19,21 @@ export function createAdaptiveJobActionRoute(
     const jobParams = parseRouteParams(params, adaptivePipelineJobRouteParamsSchema);
     if (!jobParams.ok) return jobParams.response;
 
+    // A retry re-runs the pipeline, so it is metered like a new upload and
+    // linked to the job's new attempt. The earlier attempt's unit is refunded
+    // as superseded when the job is next read, so a job is charged once.
+    // Settle first, so the failed attempt's unit is back before the quota check.
+    const auth = { userId, userRole: session.user.role };
+    const metered = options.action === 'retry';
+    if (metered) await reconcilePipelineUsage(auth);
+    const metering = metered
+      ? { llmAction: 'adaptive_pipeline' as const, llmJobLink: pipelineJobLinkFromEnvelope }
+      : {};
     const response = await proxyAdaptiveRequest(
       request,
       `/pipeline/jobs/${jobParams.data.jobId}/${options.action}`,
-      { userId, userRole: session.user.role },
-      { method: 'POST', timeoutMs: options.timeoutMs },
+      auth,
+      { method: 'POST', timeoutMs: options.timeoutMs, ...metering },
     );
     invalidateAdaptiveServiceCache();
     return response;

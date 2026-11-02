@@ -48,6 +48,7 @@ vi.mock('@/lib/entitlements', async (importOriginal) => {
 });
 
 import { POST, dynamic } from '@/app/api/adaptive/pipeline/process/route';
+import { pipelineJobLinkFromEnvelope } from '@/lib/adaptive/pipeline-usage';
 
 const USER_ID = 'user-1';
 const OWNED_KEY = `uploads/adaptive_pipeline/${USER_ID}/1710000000000-source.pdf`;
@@ -181,6 +182,7 @@ describe('POST /api/adaptive/pipeline/process', () => {
       {
         method: 'POST',
         llmAction: 'adaptive_pipeline',
+        llmJobLink: pipelineJobLinkFromEnvelope,
         body: JSON.stringify({
           file_url: 'https://signed.example/file.pdf',
           filename: 'source.pdf',

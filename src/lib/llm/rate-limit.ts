@@ -36,7 +36,7 @@ export interface LlmUsageReservation {
   retryAfterSeconds?: number;
 }
 
-interface UsageBucket {
+export interface UsageBucket {
   userId: string;
   capability: LlmRateLimitAction;
   window: RateWindow;
@@ -46,7 +46,7 @@ interface UsageBucket {
   updatedAt: Date;
 }
 
-interface UsageRequest {
+export interface UsageRequest {
   userId: string;
   capability: LlmRateLimitAction;
   requestId: string;
@@ -57,7 +57,26 @@ interface UsageRequest {
   retentionExpiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
+  // Async capabilities (adaptive pipeline) are committed when the job is
+  // accepted, before it has run. The job link lets a job that later fails hand
+  // its unit back exactly once; `jobOutcome` marks the record as settled.
+  jobId?: string;
+  jobAttempt?: number;
+  jobOutcome?: LlmJobUsageOutcome;
+  refundedAt?: Date;
 }
+
+/** The upstream job (and retry attempt) a committed unit paid for. */
+export interface LlmUsageJobLink {
+  jobId: string;
+  jobAttempt: number;
+}
+
+export interface LlmJobUsage extends LlmUsageJobLink {
+  requestId: string;
+}
+
+export type LlmJobUsageOutcome = 'completed' | 'missing' | 'failed' | 'superseded';
 
 interface UsageRequestInsertFields {
   userId: string;
@@ -73,7 +92,7 @@ const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
 const RESERVATION_LEASE_MS = 10 * 60 * 1000;
 const RAW_RETENTION_MS = 180 * 24 * 60 * 60 * 1000;
 
-function collections(): {
+export function usageLedgerCollections(): {
   buckets: Collection<UsageBucket>;
   requests: Collection<UsageRequest>;
 } {
@@ -112,7 +131,7 @@ async function readWindows(
   now: Date,
   session?: ClientSession,
 ): Promise<WindowResult[]> {
-  const { buckets } = collections();
+  const { buckets } = usageLedgerCollections();
   return Promise.all(
     getMeteredWindows(entitlements, action).map(async ({ window, limit }) => {
       const bounds = windowBounds(window, now);
@@ -180,7 +199,7 @@ export async function reserveLlmUsage(
   await connectDB();
   const entitlements = await resolveEntitlements(userId);
   const now = new Date();
-  const { buckets, requests } = collections();
+  const { buckets, requests } = usageLedgerCollections();
   const existing = await requests.findOne({ userId, capability: action, requestId });
   if (existing) {
     await recoverExpiredReservation(userId, action, existing);
@@ -291,6 +310,8 @@ export async function reserveLlmUsage(
             leaseExpiresAt: new Date(now.getTime() + RESERVATION_LEASE_MS),
             updatedAt: now,
           },
+          // A refunded request id may be reserved again; drop the old job link.
+          $unset: { jobId: '', jobAttempt: '', jobOutcome: '', refundedAt: '' },
           $setOnInsert: usageRequestInsertFields(userId, action, requestId, now),
         },
         { upsert: true, session },
@@ -322,9 +343,12 @@ export async function reserveLlmUsage(
   }
 }
 
-export async function commitLlmUsage(reservation: LlmUsageReservation): Promise<void> {
+export async function commitLlmUsage(
+  reservation: LlmUsageReservation,
+  job?: LlmUsageJobLink,
+): Promise<void> {
   if (!reservation.allowed) return;
-  const { requests } = collections();
+  const { requests } = usageLedgerCollections();
   await requests.updateOne(
     {
       userId: reservation.userId,
@@ -332,14 +356,40 @@ export async function commitLlmUsage(reservation: LlmUsageReservation): Promise<
       capability: reservation.action,
       status: 'reserved',
     },
-    { $set: { status: 'committed', updatedAt: new Date() } },
+    {
+      $set: {
+        status: 'committed',
+        updatedAt: new Date(),
+        ...(job && { jobId: job.jobId, jobAttempt: job.jobAttempt }),
+      },
+    },
   );
+}
+
+export async function decrementRequestBuckets(
+  buckets: Collection<UsageBucket>,
+  request: Pick<UsageRequest, 'userId' | 'capability' | 'buckets'>,
+  session: ClientSession,
+): Promise<void> {
+  for (const bucket of request.buckets) {
+    await buckets.updateOne(
+      {
+        userId: request.userId,
+        capability: request.capability,
+        window: bucket.window,
+        bucketStart: bucket.bucketStart,
+        count: { $gt: 0 },
+      },
+      { $inc: { count: -1 }, $set: { updatedAt: new Date() } },
+      { session },
+    );
+  }
 }
 
 export async function refundLlmUsage(reservation: LlmUsageReservation): Promise<void> {
   if (!reservation.allowed) return;
   await connectDB();
-  const { buckets, requests } = collections();
+  const { buckets, requests } = usageLedgerCollections();
   const client = mongoose.connection.getClient();
   const session = client.startSession();
   try {
@@ -353,19 +403,7 @@ export async function refundLlmUsage(reservation: LlmUsageReservation): Promise<
         { session },
       );
       if (!request || request.status !== 'reserved') return;
-      for (const bucket of request.buckets) {
-        await buckets.updateOne(
-          {
-            userId: request.userId,
-            capability: request.capability,
-            window: bucket.window,
-            bucketStart: bucket.bucketStart,
-            count: { $gt: 0 },
-          },
-          { $inc: { count: -1 }, $set: { updatedAt: new Date() } },
-          { session },
-        );
-      }
+      await decrementRequestBuckets(buckets, request, session);
       await requests.updateOne(
         { _id: request._id, status: 'reserved' },
         { $set: { status: 'refunded', updatedAt: new Date() } },

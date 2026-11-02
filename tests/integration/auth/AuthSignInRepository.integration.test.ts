@@ -87,6 +87,8 @@ describe('AuthAccountRepository sign-in integration', () => {
 
     expect(first).not.toBeNull();
     expect(second).not.toBeNull();
+    expect(first?.isNewAccount).toBe(true);
+    expect(second?.isNewAccount).toBe(false);
     expect(second?.id).toBe(first?.id);
     expect(second?.email).toBe(googleEmail);
     expect(second?.authVersion).toBe((first?.authVersion ?? 0) + 1);

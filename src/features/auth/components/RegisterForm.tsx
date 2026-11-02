@@ -27,7 +27,7 @@ import { emailSchema, passwordSchema } from '@/lib/validation/auth';
 import { usePasswordStrength } from '@/lib/validation/usePasswordStrength';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { ROUTES } from '@/shared/constants/routes';
-import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { captureAnalyticsEvent, markAnalyticsGoogleAuthPending } from '@/lib/analytics/client';
 
 interface RegisterFormProps {
   locale: string;
@@ -155,6 +155,10 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
         <GoogleAuthButton
           callbackUrl={toBrowserPath(ROUTES.DASHBOARD, locale)}
           disabled={isSubmitting}
+          onBeforeSignIn={() => {
+            captureAnalyticsEvent('signup_started', { method: 'google', locale });
+            markAnalyticsGoogleAuthPending(locale);
+          }}
         />
       )}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>

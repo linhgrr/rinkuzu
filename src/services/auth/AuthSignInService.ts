@@ -43,7 +43,7 @@ export type CredentialsSignInResult =
   | CredentialsSignInFailure;
 
 export type GoogleSignInResult =
-  | { success: true; user: AuthenticatedUser }
+  | { success: true; user: AuthenticatedUser; isNewAccount: boolean }
   | { success: false; code: 'invalid_google_profile' };
 
 type CredentialsRateLimitFailure = Extract<
@@ -168,7 +168,7 @@ export class AuthSignInService {
       return { success: false, code: 'invalid_google_profile' };
     }
 
-    const user = await this.repository.resolveVerifiedGoogleAccount({
+    const resolved = await this.repository.resolveVerifiedGoogleAccount({
       subject,
       email,
       now: new Date(),
@@ -177,15 +177,16 @@ export class AuthSignInService {
       ...(input.avatar ? { avatar: input.avatar.trim() } : {}),
     });
     // Disabled / unusable Google accounts reject generically (no existence leak).
-    if (!user) {
+    if (!resolved) {
       return { success: false, code: 'invalid_google_profile' };
     }
+    const { isNewAccount, ...user } = resolved;
     this.scheduleAudit('login_success', context, {
       userId: user.id,
       email: user.email,
       metadata: { provider: 'google' },
     });
-    return { success: true, user };
+    return { success: true, user, isNewAccount };
   }
 
   private async checkCredentialsRateLimits(

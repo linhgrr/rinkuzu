@@ -5,13 +5,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginForm } from '@/features/auth/components/LoginForm';
 
-const { markAnalyticsLoginPendingMock, replaceBrowserLocationMock, searchParamsMock, signInMock } =
-  vi.hoisted(() => ({
-    markAnalyticsLoginPendingMock: vi.fn(),
-    replaceBrowserLocationMock: vi.fn(),
-    searchParamsMock: vi.fn(() => new URLSearchParams('callbackUrl=/explore?type=mine')),
-    signInMock: vi.fn(),
-  }));
+const {
+  markAnalyticsGoogleAuthPendingMock,
+  markAnalyticsLoginPendingMock,
+  replaceBrowserLocationMock,
+  searchParamsMock,
+  signInMock,
+} = vi.hoisted(() => ({
+  markAnalyticsGoogleAuthPendingMock: vi.fn(),
+  markAnalyticsLoginPendingMock: vi.fn(),
+  replaceBrowserLocationMock: vi.fn(),
+  searchParamsMock: vi.fn(() => new URLSearchParams('callbackUrl=/explore?type=mine')),
+  signInMock: vi.fn(),
+}));
 
 vi.mock('next-auth/react', () => ({
   signIn: signInMock,
@@ -38,10 +44,15 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 vi.mock('@/features/auth/components/GoogleAuthButton', () => ({
-  GoogleAuthButton: () => null,
+  GoogleAuthButton: ({ onBeforeSignIn }: { onBeforeSignIn?: () => void }) => (
+    <button type="button" onClick={onBeforeSignIn}>
+      mock-google-button
+    </button>
+  ),
 }));
 
 vi.mock('@/lib/analytics/client', () => ({
+  markAnalyticsGoogleAuthPending: markAnalyticsGoogleAuthPendingMock,
   markAnalyticsLoginPending: markAnalyticsLoginPendingMock,
 }));
 
@@ -51,6 +62,7 @@ vi.mock('@/lib/routing/browser-navigation', () => ({
 
 describe('LoginForm', () => {
   beforeEach(() => {
+    markAnalyticsGoogleAuthPendingMock.mockReset();
     markAnalyticsLoginPendingMock.mockReset();
     replaceBrowserLocationMock.mockReset();
     searchParamsMock.mockReturnValue(new URLSearchParams('callbackUrl=/explore?type=mine'));
@@ -138,5 +150,15 @@ describe('LoginForm', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('invalidEmailPassword');
     expect(replaceBrowserLocationMock).not.toHaveBeenCalled();
+  });
+
+  it('marks a pending Google auth before redirecting to OAuth', async () => {
+    const user = userEvent.setup();
+    render(<LoginForm locale="en" googleEnabled />);
+
+    await user.click(screen.getByRole('button', { name: 'mock-google-button' }));
+
+    expect(markAnalyticsGoogleAuthPendingMock).toHaveBeenCalledWith('en');
+    expect(markAnalyticsLoginPendingMock).not.toHaveBeenCalled();
   });
 });

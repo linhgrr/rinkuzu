@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "acceptances": [
     {
-      "fingerprint": "00d39367b0f32bf94458a69f52b6d8815a9675394ab4770934136603645d8ca7",
+      "fingerprint": "1289d50f010711b0953bcbaf8f5dda5d3859884af9d33a5d4be13d5ed5e8d895",
       "package": "@lhci/cli",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -16,7 +16,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "d785ca59503292490ade39c17069be77ebab1e04b437bc2e74958296256f5155",
+      "fingerprint": "0e5e642b978e2c355fba6cd6f2a6c3f439913d6929c161a31e49f8b8d7622b5f",
       "package": "@lhci/utils",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -30,7 +30,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "c049278d31fd8fbf32fa98d745afe805c536fdb914458362c5111b86447084b8",
+      "fingerprint": "57b9019bb1d455da96df4df87a4ee4a93138c30e6ae998bdbb95716538894957",
       "package": "@puppeteer/browsers",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -44,7 +44,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "3cadb4d5d4f7f48ece8748f0db109e34dda5b54456ad211303e4e2d4e2f1e300",
+      "fingerprint": "5dc2018b5946e7945679faa3f55111e5cbe6355d405b550c54087266939cfee0",
       "package": "@size-limit/preset-app",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -58,7 +58,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "b28186b3757e00288071203f8d93ba050a2561ab3a48a0c77e59cb003b5a88cd",
+      "fingerprint": "044d0e9760d31d9b77484f22113551d0baae77338e0ac372fc3d8c03a77d8da6",
       "package": "@size-limit/time",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -68,20 +68,6 @@
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
       "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-11-02",
-      "expiresAt": "2026-12-02"
-    },
-    {
-      "fingerprint": "6e40f0bc866197b3688e74e264d039b9fedade8ba9f2ae2a836b199984008b69",
-      "package": "basic-ftp",
-      "kind": "risk_acceptance",
-      "severity": "high",
-      "scope": "development",
-      "tool": "npm-audit",
-      "toolVersion": "10.9.8",
-      "advisory": "GHSA-c475-qrg2-pj4r",
-      "owner": "linhgrr",
-      "reason": "GHSA-c475-qrg2-pj4r in basic-ftp (quadratic-time CPU denial of service in the Unix directory-listing parser), reached only through the dev-only Lighthouse CI proxy-agent chain (@lhci/cli -> proxy-agent -> pac-proxy-agent -> get-uri -> basic-ftp). The toolchain never lists an FTP server and does not ship in the application bundle. No patched release is available without the semver-major @lhci/cli change npm proposes. Re-review when the chain publishes a fix.",
       "createdAt": "2026-11-02",
       "expiresAt": "2026-12-02"
     },
@@ -128,21 +114,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "75a4cd6ef5f0ca8c0f4062af96922fbab8934064a9c1790f870555b3fdfdbe35",
-      "package": "get-uri",
-      "kind": "risk_acceptance",
-      "severity": "high",
-      "scope": "development",
-      "tool": "npm-audit",
-      "toolVersion": "10.9.8",
-      "advisory": "GHSA-c475-qrg2-pj4r",
-      "owner": "linhgrr",
-      "reason": "GHSA-c475-qrg2-pj4r in basic-ftp (quadratic-time CPU denial of service in the Unix directory-listing parser), reached only through the dev-only Lighthouse CI proxy-agent chain (@lhci/cli -> proxy-agent -> pac-proxy-agent -> get-uri -> basic-ftp). The toolchain never lists an FTP server and does not ship in the application bundle. No patched release is available without the semver-major @lhci/cli change npm proposes. Re-review when the chain publishes a fix.",
-      "createdAt": "2026-11-02",
-      "expiresAt": "2026-12-02"
-    },
-    {
-      "fingerprint": "2ae6c81b6e8f315a8ef6e66090aae8366860d499178c0f0313d7d612f9778fec",
+      "fingerprint": "87a623e304baf55ee5273ad28431e45f9c46b9913996ebddb90af47c84d383c5",
       "package": "lighthouse",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -156,35 +128,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "446c382f8ef9ec9ae3996244c92f398edae1c9451b14fddf312b5bfc0a963361",
-      "package": "pac-proxy-agent",
-      "kind": "risk_acceptance",
-      "severity": "high",
-      "scope": "development",
-      "tool": "npm-audit",
-      "toolVersion": "10.9.8",
-      "advisory": "GHSA-c475-qrg2-pj4r",
-      "owner": "linhgrr",
-      "reason": "GHSA-c475-qrg2-pj4r in basic-ftp (quadratic-time CPU denial of service in the Unix directory-listing parser), reached only through the dev-only Lighthouse CI proxy-agent chain (@lhci/cli -> proxy-agent -> pac-proxy-agent -> get-uri -> basic-ftp). The toolchain never lists an FTP server and does not ship in the application bundle. No patched release is available without the semver-major @lhci/cli change npm proposes. Re-review when the chain publishes a fix.",
-      "createdAt": "2026-11-02",
-      "expiresAt": "2026-12-02"
-    },
-    {
-      "fingerprint": "0a57c5e5a86d9e3ea485149b481ad8244156953c747a5a39de3f27a75fb01488",
-      "package": "proxy-agent",
-      "kind": "risk_acceptance",
-      "severity": "high",
-      "scope": "development",
-      "tool": "npm-audit",
-      "toolVersion": "10.9.8",
-      "advisory": "GHSA-c475-qrg2-pj4r",
-      "owner": "linhgrr",
-      "reason": "GHSA-c475-qrg2-pj4r in basic-ftp (quadratic-time CPU denial of service in the Unix directory-listing parser), reached only through the dev-only Lighthouse CI proxy-agent chain (@lhci/cli -> proxy-agent -> pac-proxy-agent -> get-uri -> basic-ftp). The toolchain never lists an FTP server and does not ship in the application bundle. No patched release is available without the semver-major @lhci/cli change npm proposes. Re-review when the chain publishes a fix.",
-      "createdAt": "2026-11-02",
-      "expiresAt": "2026-12-02"
-    },
-    {
-      "fingerprint": "8255639e03682c7c51ae790199987382abc91320c2c372f3099996aae7d223e2",
+      "fingerprint": "0339d496ab137256f10406e4e8bbdcd4c26e0c2a529b240f4c79f4bc85e838a0",
       "package": "puppeteer-core",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -194,6 +138,90 @@
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
       "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "5d2a9766b3c6dc4a2bc96452342256fa75e76a0de49fe54649d9fadeb1f05f6f",
+      "package": "@ag-ui/client",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "fc3b042f3dd0f3313a722a1c3c47b8735c9c49ea4236613592636c40de25323c",
+      "package": "@ag-ui/core",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "86d4a197f0d3ffa2b619f34c54a577ace795f9f73f1316a1541a8ba3072fde19",
+      "package": "@ag-ui/encoder",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "7dd071ec5ece4a35ea2292c519c9b957ebee7ccb46044fc5b7bbb0db533c8d20",
+      "package": "@ag-ui/proto",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "5b2ae57665fb9fac014e9a99788d7eb1fc8a6b01b65472a08c82bbda3a468df4",
+      "package": "@assistant-ui/react-ag-ui",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "25f8da868e2a603e5d6698b99eab40b0876d5685b603f85d505aa6ec9f8408f5",
+      "package": "zod",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
       "createdAt": "2026-11-02",
       "expiresAt": "2026-12-02"
     }

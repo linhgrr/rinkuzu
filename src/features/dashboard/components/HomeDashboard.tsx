@@ -9,8 +9,10 @@ import type {
   DashboardHomeCopy,
   DashboardLearningCardViewModel,
   DashboardProgressViewModel,
+  DashboardStarterViewModel,
 } from '@/features/dashboard/types/dashboard-view-model';
 import { QuizUploadDropzone } from './QuizUploadDropzone';
+import { StarterQuizBlock } from './StarterQuizBlock';
 import { QuizCard } from '@/features/quiz/components/QuizCard';
 import type { QuizListItemViewModel } from '@/features/quiz/types/quiz-list-view-model';
 
@@ -24,17 +26,23 @@ interface HomeDashboardProps {
     };
     recentOwnedQuizzes: QuizListItemViewModel[];
     recentPublicQuizzes: QuizListItemViewModel[];
+    starter: DashboardStarterViewModel | null;
+    heroCtaHref: string;
   };
   copy: DashboardHomeCopy;
 }
 
 const ASSET_BASE = '/images/home-redesign';
 const QUIZ_BUILDER_LIBRARY_HREF = '/my-quizzes';
+const ADAPTIVE_HREF = '/adaptive';
 
 interface HomeHeroProps {
   title: string;
   description: string;
   ctaLabel: string;
+  ctaHref: string;
+  /** Shown while the primary CTA points at a starter quiz, so upload stays one tap away. */
+  adaptiveLinkLabel?: string;
 }
 
 interface QuizBuilderCardProps {
@@ -158,7 +166,7 @@ function HeroArtwork() {
   );
 }
 
-function HomeHero({ title, description, ctaLabel }: HomeHeroProps) {
+function HomeHero({ title, description, ctaLabel, ctaHref, adaptiveLinkLabel }: HomeHeroProps) {
   return (
     <section className="relative min-h-[280px] rounded-panel border border-accent bg-hero px-5 py-6 sm:min-h-[295px] sm:px-6 sm:py-7">
       <div
@@ -181,12 +189,23 @@ function HomeHero({ title, description, ctaLabel }: HomeHeroProps) {
         </h2>
         <p className="font-home text-base font-normal leading-[1.4]">{description}</p>
       </div>
-      <Link
-        href="/adaptive"
-        className="relative z-10 mt-7 inline-flex rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold leading-[1.4] text-white hover:bg-brand-action-hover sm:mt-9 sm:text-lg"
-      >
-        {ctaLabel}
-      </Link>
+      <div className="relative z-10 mt-7 flex flex-col items-start gap-3 sm:mt-9">
+        <Link
+          href={ctaHref}
+          className="inline-flex rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold leading-[1.4] text-white hover:bg-brand-action-hover sm:text-lg"
+          data-testid="home-hero-cta"
+        >
+          {ctaLabel}
+        </Link>
+        {adaptiveLinkLabel ? (
+          <Link
+            href={ADAPTIVE_HREF}
+            className="font-home text-base font-semibold leading-[1.4] text-ink underline underline-offset-4 hover:text-accent"
+          >
+            {adaptiveLinkLabel}
+          </Link>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -469,10 +488,15 @@ export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
 
         <div className="grid grid-cols-1 gap-6 min-[1684px]:grid-cols-[minmax(0,900px)_416px]">
           <div className="flex min-w-0 flex-col gap-6">
+            {viewModel.starter ? (
+              <StarterQuizBlock starter={viewModel.starter} copy={copy.starter} />
+            ) : null}
             <HomeHero
               title={copy.hero.title}
               description={copy.hero.description}
-              ctaLabel={copy.hero.cta}
+              ctaLabel={viewModel.starter ? copy.hero.starterCta : copy.hero.cta}
+              ctaHref={viewModel.heroCtaHref}
+              {...(viewModel.starter ? { adaptiveLinkLabel: copy.hero.adaptiveLink } : {})}
             />
             <ContinueLearning
               items={viewModel.continueLearning.items}

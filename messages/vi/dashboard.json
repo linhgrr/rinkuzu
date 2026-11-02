@@ -70,7 +70,16 @@
     "hero": {
       "title": "Cá nhân hóa lộ trình học tập của bạn với AI",
       "description": "AI phân tích tiến độ và gợi ý đúng bài học, quiz và kỹ năng bạn nên cải thiện tiếp theo.",
-      "cta": "Bắt đầu học"
+      "cta": "Bắt đầu học",
+      "starterCta": "Làm bài trắc nghiệm 2 phút",
+      "adaptiveLink": "Hoặc tải PDF lên để học cá nhân hóa"
+    },
+    "starter": {
+      "title": "Mới đến? Thử một bài trắc nghiệm 2 phút",
+      "subtitle": "Không cần tải tài liệu lên. Chọn một bài có sẵn và nhận kết quả đầu tiên sau khoảng hai phút.",
+      "start": "Bắt đầu",
+      "alternativesLabel": "Hoặc thử một bài khác",
+      "questionCount": "{count} câu hỏi"
     },
     "quizBuilder": {
       "title": "Tạo Quiz",

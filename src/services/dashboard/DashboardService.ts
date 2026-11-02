@@ -2,6 +2,7 @@ import type {
   DashboardBootstrapDto,
   DashboardInProgressQuizDto,
   DashboardStatsDto,
+  StarterQuizDto,
 } from '@/dtos/dashboard';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 import { toPipelineJobHistoryItem } from '@/features/adaptive/mappers/pipeline.mapper';
@@ -23,6 +24,11 @@ import { DashboardDtoMapper } from '@/mappers/dashboard/DashboardDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 import type { QuizListItemDto } from '@/dtos/quiz';
 import type { components } from '@/generated/adaptive-api';
+import {
+  STARTER_QUIZ_ALLOWLIST,
+  resolveStarterQuizzes,
+  type StarterQuizAllowlistEntry,
+} from '@/services/dashboard/starter-quizzes';
 
 type ApiSchemas = components['schemas'];
 const HOME_ADAPTIVE_SUBJECT_LIMIT = 4;
@@ -34,6 +40,13 @@ interface DashboardRecentQuizQuery {
   filter: QuizFindFilter;
   warningMessage: string;
 }
+
+interface DashboardStarterState {
+  isNewLearner: boolean;
+  starterQuizzes: StarterQuizDto[];
+}
+
+const NO_STARTER_STATE: DashboardStarterState = { isNewLearner: false, starterQuizzes: [] };
 
 const EMPTY_DASHBOARD_USER_PROGRESS: DashboardUserProgressRecord = {
   currentStreak: 0,
@@ -50,6 +63,7 @@ export class DashboardService implements IDashboardService {
   constructor(
     private readonly repository: IDashboardRepository,
     private readonly quizRepository: IDashboardQuizRepository,
+    private readonly starterAllowlist: readonly StarterQuizAllowlistEntry[] = STARTER_QUIZ_ALLOWLIST,
   ) {}
 
   async getStats(userId: string): Promise<DashboardStatsDto> {
@@ -109,21 +123,55 @@ export class DashboardService implements IDashboardService {
     }
   }
 
-  async getBootstrapData(userId: string): Promise<DashboardBootstrapDto> {
-    const [stats, adaptiveSubjects, inProgressQuizzes, recentOwnedQuizzes, recentPublicQuizzes] =
-      await Promise.all([
-        this.getStats(userId),
-        this.getAdaptiveSubjects(userId),
-        this.getInProgressQuizzes(userId),
-        this.getRecentQuizzes({
-          filter: { author: userId },
-          warningMessage: 'Failed fetching recent owned quizzes for home dashboard',
-        }),
-        this.getRecentQuizzes({
-          filter: { visibility: 'public', excludeAuthor: userId },
-          warningMessage: 'Failed fetching recent public quizzes for home dashboard',
-        }),
+  /**
+   * A new learner (no submitted attempt, no authored quiz) is pointed at a short
+   * curated public quiz. Fails open: any lookup error renders today's dashboard.
+   */
+  private async getStarterState(userId: string): Promise<DashboardStarterState> {
+    try {
+      const [hasSubmittedAttempt, hasAuthoredQuiz, candidates] = await Promise.all([
+        this.repository.hasSubmittedAttempt(userId),
+        this.repository.hasAuthoredQuiz(userId),
+        this.repository.findStarterQuizCandidates(this.starterAllowlist.map(({ slug }) => slug)),
       ]);
+      if (hasSubmittedAttempt || hasAuthoredQuiz) return NO_STARTER_STATE;
+
+      const { starterQuizzes, dropped } = resolveStarterQuizzes({
+        allowlist: this.starterAllowlist,
+        candidates,
+      });
+      for (const { slug, reason } of dropped) {
+        logger.warn({ slug, reason }, 'Dropped starter quiz from home dashboard allowlist');
+      }
+      return { isNewLearner: true, starterQuizzes };
+    } catch (error) {
+      logger.warn({ error }, 'Failed resolving starter quizzes for home dashboard');
+      return NO_STARTER_STATE;
+    }
+  }
+
+  async getBootstrapData(userId: string): Promise<DashboardBootstrapDto> {
+    const [
+      stats,
+      adaptiveSubjects,
+      inProgressQuizzes,
+      recentOwnedQuizzes,
+      recentPublicQuizzes,
+      starterState,
+    ] = await Promise.all([
+      this.getStats(userId),
+      this.getAdaptiveSubjects(userId),
+      this.getInProgressQuizzes(userId),
+      this.getRecentQuizzes({
+        filter: { author: userId },
+        warningMessage: 'Failed fetching recent owned quizzes for home dashboard',
+      }),
+      this.getRecentQuizzes({
+        filter: { visibility: 'public', excludeAuthor: userId },
+        warningMessage: 'Failed fetching recent public quizzes for home dashboard',
+      }),
+      this.getStarterState(userId),
+    ]);
 
     return {
       stats,
@@ -131,6 +179,7 @@ export class DashboardService implements IDashboardService {
       inProgressQuizzes,
       recentOwnedQuizzes,
       recentPublicQuizzes,
+      ...starterState,
     };
   }
 }

@@ -31,4 +31,23 @@ describe('home dashboard contract', () => {
 
     expect(messages.home).not.toHaveProperty('reviewToday');
   });
+
+  it.each(['en', 'vi'])('ships the new-learner starter copy in the %s locale', (locale) => {
+    const messages = JSON.parse(fs.readFileSync(`messages/${locale}/dashboard.json`, 'utf8')) as {
+      home: {
+        hero: Record<string, string>;
+        starter?: Record<string, string>;
+      };
+    };
+
+    expect(messages.home.hero['starterCta']).toEqual(expect.any(String));
+    expect(messages.home.hero['adaptiveLink']).toEqual(expect.any(String));
+    expect(Object.keys(messages.home.starter ?? {}).sort()).toEqual([
+      'alternativesLabel',
+      'questionCount',
+      'start',
+      'subtitle',
+      'title',
+    ]);
+  });
 });

@@ -32,10 +32,19 @@ export interface DashboardInProgressQuizDto {
   updatedAt: string;
 }
 
+export interface StarterQuizDto {
+  slug: string;
+  title: string;
+  questionCount: number;
+  locale: string;
+}
+
 export interface DashboardBootstrapDto {
   stats: DashboardStatsDto;
   adaptiveSubjects: PipelineJobHistoryItem[];
   inProgressQuizzes: DashboardInProgressQuizDto[];
   recentOwnedQuizzes: QuizListItemDto[];
   recentPublicQuizzes: QuizListItemDto[];
+  isNewLearner: boolean;
+  starterQuizzes: StarterQuizDto[];
 }

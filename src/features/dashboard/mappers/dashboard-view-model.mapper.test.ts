@@ -46,6 +46,8 @@ describe('toDashboardViewModel', () => {
       inProgressQuizzes: [],
       recentOwnedQuizzes: [],
       recentPublicQuizzes: [],
+      isNewLearner: false,
+      starterQuizzes: [],
       locale: 'en',
       copy,
     });
@@ -105,6 +107,8 @@ describe('toDashboardViewModel', () => {
       ],
       recentOwnedQuizzes: [],
       recentPublicQuizzes: [],
+      isNewLearner: false,
+      starterQuizzes: [],
       locale: 'en',
       copy,
     });
@@ -151,6 +155,8 @@ describe('toDashboardViewModel', () => {
       inProgressQuizzes: [],
       recentOwnedQuizzes: [quiz],
       recentPublicQuizzes: [{ ...quiz, id: 'quiz-2', slug: 'geometry', title: 'Geometry' }],
+      isNewLearner: false,
+      starterQuizzes: [],
       locale: 'en',
       copy,
     });
@@ -162,5 +168,75 @@ describe('toDashboardViewModel', () => {
     expect(viewModel.recentPublicQuizzes).toEqual([
       expect.objectContaining({ id: 'quiz-2', title: 'Geometry' }),
     ]);
+  });
+
+  describe('starter quizzes', () => {
+    const starterQuizzes = [
+      { slug: 'fake-vi-1', title: 'Fake VI 1', questionCount: 10, locale: 'vi' },
+      { slug: 'fake-en-1', title: 'Fake EN 1', questionCount: 8, locale: 'en' },
+      { slug: 'fake-vi-2', title: 'Fake VI 2', questionCount: 12, locale: 'vi' },
+      { slug: 'fake-en-2', title: 'Fake EN 2', questionCount: 5, locale: 'en' },
+    ];
+
+    function build(input: {
+      isNewLearner: boolean;
+      locale: string;
+      starters?: typeof starterQuizzes;
+    }) {
+      return toDashboardViewModel({
+        userName: 'Learner',
+        stats: baseStats,
+        adaptiveSubjects: [],
+        inProgressQuizzes: [],
+        recentOwnedQuizzes: [],
+        recentPublicQuizzes: [],
+        isNewLearner: input.isNewLearner,
+        starterQuizzes: input.starters ?? starterQuizzes,
+        locale: input.locale,
+        copy,
+      });
+    }
+
+    it('points a new learner at the first starter in their locale, with up to two alternatives', () => {
+      const viewModel = build({ isNewLearner: true, locale: 'en' });
+
+      expect(viewModel.starter?.primary).toEqual({
+        slug: 'fake-en-1',
+        title: 'Fake EN 1',
+        questionCount: 8,
+        href: '/quiz/fake-en-1',
+      });
+      expect(viewModel.starter?.alternatives.map((quiz) => quiz.slug)).toEqual([
+        'fake-vi-1',
+        'fake-vi-2',
+      ]);
+      expect(viewModel.heroCtaHref).toBe('/quiz/fake-en-1');
+    });
+
+    it('falls back to the first starter when none matches the locale', () => {
+      const viewModel = build({
+        isNewLearner: true,
+        locale: 'en',
+        starters: starterQuizzes.slice(0, 1),
+      });
+
+      expect(viewModel.starter?.primary.slug).toBe('fake-vi-1');
+      expect(viewModel.starter?.alternatives).toEqual([]);
+      expect(viewModel.heroCtaHref).toBe('/quiz/fake-vi-1');
+    });
+
+    it('keeps the hero on /adaptive and hides the block for a graduated learner', () => {
+      const viewModel = build({ isNewLearner: false, locale: 'vi' });
+
+      expect(viewModel.starter).toBeNull();
+      expect(viewModel.heroCtaHref).toBe('/adaptive');
+    });
+
+    it('keeps the hero on /adaptive when every starter was dropped', () => {
+      const viewModel = build({ isNewLearner: true, locale: 'vi', starters: [] });
+
+      expect(viewModel.starter).toBeNull();
+      expect(viewModel.heroCtaHref).toBe('/adaptive');
+    });
   });
 });

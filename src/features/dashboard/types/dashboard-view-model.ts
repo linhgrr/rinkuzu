@@ -27,6 +27,18 @@ interface DashboardContinueLearningViewModel {
   viewAllHref: string;
 }
 
+export interface DashboardStarterQuizViewModel {
+  slug: string;
+  title: string;
+  questionCount: number;
+  href: string;
+}
+
+export interface DashboardStarterViewModel {
+  primary: DashboardStarterQuizViewModel;
+  alternatives: DashboardStarterQuizViewModel[];
+}
+
 export interface DashboardViewModel {
   userName: string;
   locale: string;
@@ -34,6 +46,9 @@ export interface DashboardViewModel {
   continueLearning: DashboardContinueLearningViewModel;
   recentOwnedQuizzes: QuizListItemViewModel[];
   recentPublicQuizzes: QuizListItemViewModel[];
+  /** Set only for a new learner with at least one resolved starter quiz. */
+  starter: DashboardStarterViewModel | null;
+  heroCtaHref: string;
 }
 
 export interface DashboardHomeCopy {
@@ -44,6 +59,15 @@ export interface DashboardHomeCopy {
     title: string;
     description: string;
     cta: string;
+    starterCta: string;
+    adaptiveLink: string;
+  };
+  starter: {
+    title: string;
+    subtitle: string;
+    start: string;
+    alternativesLabel: string;
+    questionCount: (count: number) => string;
   };
   quizBuilder: {
     title: string;

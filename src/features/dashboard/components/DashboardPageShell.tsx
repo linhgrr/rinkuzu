@@ -16,6 +16,8 @@ interface DashboardPageShellProps {
   inProgressQuizzes: ToDashboardViewModelInput['inProgressQuizzes'];
   recentOwnedQuizzes: ToDashboardViewModelInput['recentOwnedQuizzes'];
   recentPublicQuizzes: ToDashboardViewModelInput['recentPublicQuizzes'];
+  isNewLearner: ToDashboardViewModelInput['isNewLearner'];
+  starterQuizzes: ToDashboardViewModelInput['starterQuizzes'];
 }
 
 export async function DashboardPageShell({
@@ -27,6 +29,8 @@ export async function DashboardPageShell({
   inProgressQuizzes,
   recentOwnedQuizzes,
   recentPublicQuizzes,
+  isNewLearner,
+  starterQuizzes,
 }: DashboardPageShellProps) {
   const t = await getTranslations('dashboard.home');
   const userName = session.user?.displayName ?? userEmail?.split('@')[0] ?? 'User';
@@ -37,6 +41,8 @@ export async function DashboardPageShell({
     inProgressQuizzes,
     recentOwnedQuizzes,
     recentPublicQuizzes,
+    isNewLearner,
+    starterQuizzes,
     locale,
     copy: {
       aiLearning: t('learningCard.aiLearning'),
@@ -65,6 +71,15 @@ export async function DashboardPageShell({
       title: t('hero.title'),
       description: t('hero.description'),
       cta: t('hero.cta'),
+      starterCta: t('hero.starterCta'),
+      adaptiveLink: t('hero.adaptiveLink'),
+    },
+    starter: {
+      title: t('starter.title'),
+      subtitle: t('starter.subtitle'),
+      start: t('starter.start'),
+      alternativesLabel: t('starter.alternativesLabel'),
+      questionCount: (count) => t('starter.questionCount', { count }),
     },
     quizBuilder: {
       title: t('quizBuilder.title'),

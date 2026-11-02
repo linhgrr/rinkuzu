@@ -100,6 +100,10 @@ export class QuizService implements IQuizService {
     return this.crudService.getQuizMetadataBySlug(slug);
   }
 
+  async resolveSlugAlias(slug: string): Promise<string | null> {
+    return this.playService.resolveSlugAlias(slug);
+  }
+
   async getQuizForPlay(
     slug: string,
     userRole?: string,

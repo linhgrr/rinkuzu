@@ -46,6 +46,7 @@ function createService() {
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     }),
     findIdBySlug: vi.fn(),
+    findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -91,6 +92,27 @@ function createService() {
     ),
   };
 }
+
+describe('QuizPlayService slug aliases', () => {
+  it('returns the canonical slug for a former slug', async () => {
+    const { service, quizRepository } = createService();
+    vi.mocked(quizRepository.findCanonicalSlugByAlias).mockResolvedValue('cach-ghi-nho-096007');
+
+    await expect(service.resolveSlugAlias('cch-ghi-nh-096007')).resolves.toBe(
+      'cach-ghi-nho-096007',
+    );
+    expect(quizRepository.findCanonicalSlugByAlias).toHaveBeenCalledWith('cch-ghi-nh-096007');
+  });
+
+  it('returns null for an unknown slug or an alias equal to the slug (no redirect loop)', async () => {
+    const { service, quizRepository } = createService();
+    vi.mocked(quizRepository.findCanonicalSlugByAlias).mockResolvedValueOnce(null);
+    await expect(service.resolveSlugAlias('unknown')).resolves.toBeNull();
+
+    vi.mocked(quizRepository.findCanonicalSlugByAlias).mockResolvedValueOnce('same-slug');
+    await expect(service.resolveSlugAlias('same-slug')).resolves.toBeNull();
+  });
+});
 
 describe('QuizPlayService progress operations', () => {
   beforeEach(() => {

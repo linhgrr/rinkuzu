@@ -38,6 +38,9 @@ export interface IQuizService {
 
   getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null>;
 
+  /** Canonical slug when `slug` is a former slug (alias) of a quiz, else null. */
+  resolveSlugAlias(slug: string): Promise<string | null>;
+
   getQuizForPlay(
     slug: string,
     userRole?: string,

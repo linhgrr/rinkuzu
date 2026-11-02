@@ -7,6 +7,7 @@ interface QuizDocument extends Document {
   description?: string;
   author: Types.ObjectId;
   slug: string;
+  slugAliases?: string[];
   questions: QuizQuestionDocument[];
   visibility: 'public' | 'personal';
   pdfUrl?: string; // S3 URL for source PDF
@@ -38,6 +39,12 @@ const QuizSchema = new Schema<QuizDocument>(
       required: [true, 'Slug is required'],
       unique: true,
       lowercase: true,
+    },
+    // Former slugs that 301 to `slug` (RIN-624). No default: the sparse index
+    // must skip quizzes that never changed slug.
+    slugAliases: {
+      type: [String],
+      default: undefined,
     },
     questions: {
       type: [QuizQuestionSchema],
@@ -81,6 +88,7 @@ QuizSchema.index(
     partialFilterExpression: { sourceDraftId: { $type: 'string' } },
   },
 );
+QuizSchema.index({ slugAliases: 1 }, { sparse: true });
 // slug index is already created via unique: true in schema
 
 // Prevent re-compilation in development

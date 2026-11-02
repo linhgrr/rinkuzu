@@ -131,6 +131,11 @@ export class QuizPlayService {
     }
   }
 
+  async resolveSlugAlias(slug: string): Promise<string | null> {
+    const canonical = await this.quizRepository.findCanonicalSlugByAlias(slug);
+    return canonical && canonical !== slug ? canonical : null;
+  }
+
   async getQuizForPlay(
     slug: string,
     userRole?: string,

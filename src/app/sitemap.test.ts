@@ -14,8 +14,34 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 import sitemap from './sitemap';
+import { GET as localeSitemapGET } from './[locale]/sitemap.xml/route';
 
 describe('sitemap', () => {
+  it('lists only the canonical quiz slug, never a former slug alias', async () => {
+    getQuizzes.mockResolvedValue({
+      quizzes: [
+        {
+          slug: 'cach-ghi-nho-quiz-096007',
+          slugAliases: ['cch-ghi-nh-quiz-096007'],
+          createdAt: '2026-11-01T00:00:00.000Z',
+          updatedAt: '2026-11-02T00:00:00.000Z',
+        },
+      ],
+    });
+
+    const urls = (await sitemap()).map((entry) => entry.url);
+    const xml = await (await localeSitemapGET()).text();
+
+    expect(urls.filter((url) => url.includes('/quiz/'))).toEqual([
+      expect.stringMatching(/\/en\/quiz\/cach-ghi-nho-quiz-096007$/),
+      expect.stringMatching(/\/vi\/quiz\/cach-ghi-nho-quiz-096007$/),
+    ]);
+    expect(xml).toContain('/vi/quiz/cach-ghi-nho-quiz-096007');
+    for (const output of [urls.join('\n'), xml]) {
+      expect(output).not.toContain('cch-ghi-nh-quiz-096007');
+    }
+  });
+
   beforeEach(() => {
     getQuizzes.mockReset();
     loggerError.mockReset();

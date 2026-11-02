@@ -66,6 +66,7 @@ export class QuizPersistenceMapper {
       updatedAt: record.updatedAt,
       ...(record.description === undefined ? {} : { description: record.description }),
       ...(record.pdfUrl === undefined ? {} : { pdfUrl: record.pdfUrl }),
+      ...(record.slugAliases === undefined ? {} : { slugAliases: record.slugAliases }),
       ...(record.tags === undefined ? {} : { tags: record.tags }),
       ...(record.sourceDraftId === undefined ? {} : { sourceDraftId: record.sourceDraftId }),
       ...(record.questionCount === undefined ? {} : { questionCount: record.questionCount }),

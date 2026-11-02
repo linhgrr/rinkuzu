@@ -63,6 +63,9 @@ export interface IQuizRepository {
 
   findIdBySlug(slug: string): Promise<string | null>;
 
+  /** Canonical slug of the quiz that lists `alias` in `slugAliases`, or null. */
+  findCanonicalSlugByAlias(alias: string): Promise<string | null>;
+
   findBySourceDraftId(sourceDraftId: string): Promise<Quiz | null>;
 
   create(quizData: CreateQuizData): Promise<Quiz>;

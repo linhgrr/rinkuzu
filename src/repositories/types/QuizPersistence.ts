@@ -33,6 +33,7 @@ export interface QuizPersistenceRecord {
   title: string;
   description?: string;
   slug: string;
+  slugAliases?: string[];
   author: MongoIdLike | QuizAuthorPersistenceRecord;
   folder?: MongoIdLike | null;
   questions: QuizQuestionPersistenceRecord[];

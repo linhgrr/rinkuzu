@@ -1,4 +1,5 @@
 import { getCurrentSession } from '@/lib/auth/session';
+import { permanentRedirect } from 'next/navigation';
 import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
 import type { QuizPlayAuthorViewModel } from '@/features/quiz/types/quiz-play-view-model';
@@ -10,10 +11,25 @@ import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 
 export const dynamic = 'force-dynamic';
 
+type QuizPageSearchParams = Record<string, string | string[] | undefined>;
+
+function toQueryString(searchParams: QuizPageSearchParams): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) {
+      query.append(key, item);
+    }
+  }
+  const serialized = query.toString();
+  return serialized ? `?${serialized}` : '';
+}
+
 export default async function QuizPlayerPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; slug: string }>;
+  searchParams: Promise<QuizPageSearchParams>;
 }) {
   const [{ locale, slug }, session] = await Promise.all([params, getCurrentSession()]);
   const premiumMetadata = await getPremiumQuizService().getCatalogMetadataBySlug(slug);
@@ -32,6 +48,16 @@ export default async function QuizPlayerPage({
     session?.user?.role,
     session?.user?.id,
   );
+
+  if (!result.success && result.statusCode === 404) {
+    // Former slugs (RIN-624) only cost a lookup after a miss.
+    const canonicalSlug = await getQuizService().resolveSlugAlias(slug);
+    if (canonicalSlug) {
+      permanentRedirect(
+        `/${locale}/quiz/${encodeURIComponent(canonicalSlug)}${toQueryString(await searchParams)}`,
+      );
+    }
+  }
 
   if (!result.success) {
     return (

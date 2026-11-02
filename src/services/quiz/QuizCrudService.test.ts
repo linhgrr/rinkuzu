@@ -79,6 +79,7 @@ function createQuizRepository(overrides: Partial<IQuizRepository> = {}): Mocked<
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn(),
     findIdBySlug: vi.fn(),
+    findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

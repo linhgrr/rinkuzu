@@ -40,6 +40,16 @@
       "id": "admin-quiz-visibility",
       "tag": "@critical-admin-quiz-visibility",
       "description": "Admin makes a public quiz private (hidden from anonymous play and the public list), the change is audited, and it is reverted"
+    },
+    {
+      "id": "admin-personal-learning",
+      "tag": "@critical-admin-personal-learning",
+      "description": "Admin opens the Personalized Learning stats workspace, sees aggregate totals and the trend chart, and each window filter refetches its own figures"
+    },
+    {
+      "id": "admin-personal-learning-gate",
+      "tag": "@critical-admin-personal-learning-gate",
+      "description": "Anonymous visitors are sent to login and non-admins to the dashboard from /admin/stats, and the personal-learning summary API answers 401/403"
     }
   ]
 }

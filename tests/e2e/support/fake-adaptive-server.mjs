@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { HEADERS_TIMEOUT_MS, KEEP_ALIVE_TIMEOUT_MS } from './connection-timeouts.mjs';
 import { handleFakeLlmControlRequest, handleFakeLlmSettingsRequest } from './fake-llm-settings.mjs';
+import { handleFakePersonalLearningRequest } from './fake-personal-learning.mjs';
 
 const HOST = '127.0.0.1';
 const PORT = Number(process.env['FAKE_ADAPTIVE_PORT'] ?? 8000);
@@ -168,6 +169,7 @@ async function handleAdaptiveRequest(request, response, url) {
   if (await handleFakeLlmSettingsRequest({ readJsonBody, request, response, url, userId })) {
     return;
   }
+  if (handleFakePersonalLearningRequest({ request, response, sendError, sendOk, url })) return;
 
   if (request.method === 'GET' && url.pathname === '/api/ready') {
     sendOk(response, {

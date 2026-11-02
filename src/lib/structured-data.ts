@@ -28,13 +28,8 @@ export function buildOrganizationSchema() {
       postalCode: '100000',
       addressCountry: 'VN',
     },
-    // sameAs: populated once social accounts are created — placeholder only
-    // 'sameAs': [
-    //   'https://twitter.com/rinkuzu',
-    //   'https://facebook.com/rinkuzu',
-    //   'https://linkedin.com/company/rinkuzu',
-    //   'https://instagram.com/rinkuzu',
-    // ],
+    // Only verified, Rinkuzu-owned profiles belong here.
+    sameAs: ['https://www.threads.com/@rinkuzu_app'],
   };
 }
 

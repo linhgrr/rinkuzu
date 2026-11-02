@@ -330,8 +330,10 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       }),
       db.collection('llm_rate_limits').deleteMany({ key: llmRateLimitKeyPattern }),
       db.collection('adminactionaudits').deleteMany({
-        entityType: 'quiz',
-        entityId: fixture.quizId.toHexString(),
+        $or: [
+          { entityType: 'quiz', entityId: fixture.quizId.toHexString() },
+          { entityType: 'user', entityId: { $in: userIdStrings } },
+        ],
       }),
     ]);
     await db.collection('quizzes').deleteMany({ _e2eRun: runId });
@@ -472,6 +474,9 @@ test.describe('production critical paths', () => {
       await page.goto('/en/admin/users');
       // The proxy sends non-admin users to localized home; an authenticated
       // home page then canonicalizes to dashboard by design.
+      await expect(page).toHaveURL(/\/en\/dashboard(?:[/?#]|$)/);
+      // Learner Lookup lives on the stats page, behind the same admin layout.
+      await page.goto('/en/admin/stats');
       await expect(page).toHaveURL(/\/en\/dashboard(?:[/?#]|$)/);
 
       await page.goto('/en/dashboard');
@@ -784,6 +789,34 @@ test.describe('production critical paths', () => {
         data: { users: [{ email: fixture.target.email, role: 'admin' }] },
         success: true,
       });
+    });
+  });
+
+  test('looks up a learner and opens the audited read-only drill-down @critical-admin-learner-lookup', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      await login(page, fixture.admin);
+      await page.goto('/en/admin/stats');
+      await page.getByRole('button', { name: 'Learner Lookup' }).click();
+      await page.getByLabel('Name or email').fill(fixture.target.email);
+      await page.getByRole('button', { name: 'Search', exact: true }).click();
+      await page.getByRole('button', { name: `View learning for ${fixture.target.email}` }).click();
+
+      const drawer = page.getByRole('dialog');
+      const row = drawer.getByRole('row', { name: /e2e-lookup-notes\.pdf/ });
+      await expect(row).toContainText('completed');
+      await expect(row).toContainText('80%');
+      await expect(row).toContainText('50%');
+      await expect(drawer).not.toContainText('E2E_RAW_DOCUMENT_TEXT');
+
+      const audits = await fixture.db
+        .collection('adminactionaudits')
+        .find({ entityType: 'user', entityId: fixture.target.id.toHexString() })
+        .toArray();
+      expect(audits.map((audit) => [audit['action'], String(audit['actorId'])])).toEqual([
+        ['personal_learning.learner_view', fixture.admin.id.toHexString()],
+      ]);
     });
   });
 

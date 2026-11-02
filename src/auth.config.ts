@@ -57,7 +57,10 @@ export function resolveAuthRedirectTarget(url: string, baseUrl: string): string 
  */
 const authConfig = {
   providers: [],
-  trustHost: process.env['AUTH_TRUST_HOST'] === 'true',
+  // Vercel sets VERCEL=1 on every deployment (Preview included) and fronts the
+  // app with its own proxy, so the Host header is trustworthy there. An explicit
+  // `false` would also disable Auth.js's built-in Vercel default (`??=`).
+  trustHost: process.env['AUTH_TRUST_HOST'] === 'true' || process.env['VERCEL'] === '1',
   session: {
     strategy: 'jwt',
     maxAge: positiveSeconds(process.env['SESSION_MAX_AGE_SECONDS'], 28_800),

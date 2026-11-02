@@ -24,6 +24,10 @@ Playwright is configured in `playwright.config.ts`.
   - `@critical-admin-learner-lookup`: admin finds a learner by email and opens the read-only drill-down; only allowlisted fields render and exactly one view is audited
   - `@critical-admin-quiz-visibility`: admin makes a public quiz private (anonymous play 401, gone from the public list), the change is audited, and the same row makes it public again
   - `@critical-admin-disable`: admin disable/restore, authVersion session revocation, disabled/active filters, fresh login after restore
+- `admin-personal-learning.spec.ts`
+  - `@critical-admin-personal-learning`: admin opens the Personalized Learning stats workspace; totals tiles and trend chart render, and each window (7d/30d/90d/all) refetches and shows its own figures
+  - `@critical-admin-personal-learning-gate`: anonymous visitors go to login, non-admins to the dashboard, and the summary API answers 401/403
+  - Aggregate figures come from `support/fake-personal-learning.mjs`; only the two signing-in accounts are seeded
 
 Fixture users are seeded with the canonical disable contract
 (`disable: 0`, `authVersion: 0`, `disabledAt: null`, `disabledBy: null`) so

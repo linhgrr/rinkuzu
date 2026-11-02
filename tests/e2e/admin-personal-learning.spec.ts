@@ -106,6 +106,10 @@ async function login(page: Page, user: SeededUser): Promise<void> {
   ]);
 }
 
+function jobsDetailFor(jobs: string): string {
+  return `${jobs} jobs started in this window completed`;
+}
+
 function summaryResponse(page: Page, key: string) {
   return page.waitForResponse(
     (response) =>
@@ -121,7 +125,15 @@ test.describe('admin personal-learning dashboard', () => {
     test.setTimeout(60_000);
     await withAccounts(testInfo, async ({ admin }) => {
       await login(page, admin);
+      // The workspace nav renders only once the overview stats have loaded.
+      const stats = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/admin/stats' &&
+          response.request().method() === 'GET',
+        { timeout: 30_000 },
+      );
       await page.goto('/en/admin/stats');
+      expect((await stats).status()).toBe(200);
 
       const initial = summaryResponse(page, '30d');
       await page
@@ -142,23 +154,22 @@ test.describe('admin personal-learning dashboard', () => {
       const chart = page.getByRole('img', { name: 'Trend over time' });
       await expect(chart).toBeVisible();
 
+      // The section opens on 30 days; then every window in turn, 30 days
+      // included, so each one is fetched by a click rather than inherited.
+      const opening = WINDOW_FIGURES.find((entry) => entry.key === '30d');
+      await expect(page.getByText(jobsDetailFor(opening?.jobs ?? ''))).toBeVisible();
       for (const figures of WINDOW_FIGURES) {
-        const jobsDetail = `${figures.jobs} jobs started in this window completed`;
-        if (figures.key !== '30d') {
-          const refetch = summaryResponse(page, figures.key);
-          await filter.getByRole('button', { name: figures.label }).click();
-          expect((await refetch).status()).toBe(200);
-          await expect(filter.getByRole('button', { name: figures.label })).toHaveAttribute(
-            'aria-pressed',
-            'true',
-          );
-        }
-        await expect(page.getByText(jobsDetail)).toBeVisible();
+        const refetch = summaryResponse(page, figures.key);
+        await filter.getByRole('button', { name: figures.label }).click();
+        expect((await refetch).status()).toBe(200);
+        await expect(filter.getByRole('button', { name: figures.label })).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        );
+        await expect(page.getByText(jobsDetailFor(figures.jobs))).toBeVisible();
         await expect(chart.getByText(figures.period, { exact: true })).toBeVisible();
         for (const other of WINDOW_FIGURES.filter((entry) => entry !== figures)) {
-          await expect(
-            page.getByText(`${other.jobs} jobs started in this window completed`),
-          ).toHaveCount(0);
+          await expect(page.getByText(jobsDetailFor(other.jobs))).toHaveCount(0);
         }
       }
     });

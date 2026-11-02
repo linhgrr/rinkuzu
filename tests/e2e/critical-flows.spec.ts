@@ -136,9 +136,15 @@ async function ensureCanonicalActiveAdminFence(db: Db, now: Date): Promise<void>
  * The dashboard resolves the allowlist by slug, a unique key every project in
  * the matrix shares, so this is insert-once like the admin fence above and
  * cleanup must never delete it.
+ *
+ * Its author is seeded the same way. A quiz whose author has no user document
+ * cannot happen in the app, and the admin stats overview refuses one (top
+ * creators fail closed), so an orphaned fixture would leave /admin/stats
+ * returning 500 for every flow that runs after this one (RIN-425).
  */
 const E2E_STARTER_QUIZ = {
   author: new ObjectId('000000000000000000005560'),
+  authorEmail: 'e2e-starter-author@example.com',
   question: 'Which option opens the starter quiz?',
   title: 'E2E Starter Quiz',
 } as const;
@@ -146,6 +152,20 @@ const E2E_STARTER_QUIZ = {
 async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
   const slug = STARTER_QUIZ_ALLOWLIST[0]?.slug;
   if (!slug) throw new Error('Starter quiz allowlist is empty');
+  await db.collection('users').updateOne(
+    { _id: E2E_STARTER_QUIZ.author },
+    {
+      $setOnInsert: {
+        authVersion: 0,
+        createdAt: now,
+        disable: 0,
+        displayName: 'E2E Starter Author',
+        email: E2E_STARTER_QUIZ.authorEmail,
+        role: 'user',
+      },
+    },
+    { upsert: true },
+  );
   await db.collection('quizzes').updateOne(
     { slug },
     {

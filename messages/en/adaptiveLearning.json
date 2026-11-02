@@ -8,7 +8,6 @@
   "dashboardTitle": "Personalized Learning Center",
   "dashboardDescription": "Track your personalized learning path, upload new materials, and master concepts with AI-driven guidance.",
   "dashboardSubtitle": "AI-powered personalized learning",
-  "backendOffline": "Backend offline. Start: cd full-demo/api && uvicorn api.main:app --reload --port 8000",
   "uploadNewMaterial": "Upload New Material",
   "uploadPdf": "Upload PDF",
   "continueLearning": "Continue Learning",
@@ -81,7 +80,7 @@
     "replaceFile": "Replace file",
     "removeFile": "Remove",
     "createLearningPath": "Create learning path",
-    "backendOffline": "Backend is offline. Please start the API server first.",
+    "serviceTemporarilyUnavailable": "The service is temporarily unavailable. Please try again in a few minutes. Your quota was not used.",
     "uploadFailed": "Failed to upload PDF",
     "errors": {
       "unauthorized": "Your session has expired. Please sign in again and upload the PDF once more.",

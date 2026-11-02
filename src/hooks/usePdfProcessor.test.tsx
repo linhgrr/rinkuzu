@@ -12,6 +12,11 @@ import { usePdfProcessor } from './usePdfProcessor';
 // RIN-565: the draft failure toast used to be hard-coded Vietnamese, so /en
 // learners whose PDF failed read "Lỗi xử lý ...".
 
+// The analytics client reads the GA id at import; its dataLayer is the observable sink.
+vi.hoisted(() => {
+  process.env['NEXT_PUBLIC_GA_ID'] = 'G-TEST123';
+});
+
 const mocks = vi.hoisted(() => ({
   getQuizDraft: vi.fn(),
   toastError: vi.fn(),
@@ -82,6 +87,8 @@ function draftSnapshot(overrides: Partial<QuizDraft>): QuizDraft {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
+  window.dataLayer = [];
 });
 
 afterEach(() => {
@@ -217,5 +224,52 @@ describe('usePdfProcessor ready toast', () => {
         action: expect.objectContaining({ label }),
       }),
     );
+  });
+});
+
+function analyticsEvents(name: string) {
+  return (window.dataLayer ?? []).filter(
+    (entry) => Array.isArray(entry) && entry[0] === 'event' && entry[1] === name,
+  ) as [string, string, Record<string, unknown>][];
+}
+
+describe('usePdfProcessor terminal analytics', () => {
+  beforeEach(() => {
+    window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'granted');
+  });
+
+  it('emits one pipeline_failed when a polled draft fails, even if it is resumed again', async () => {
+    mocks.getQuizDraft.mockResolvedValue(
+      draftSnapshot({
+        status: 'failed',
+        title: 'Private lecture title',
+        error: 'OCR API request failed for all configured keys.',
+      }),
+    );
+    const { result } = renderProcessor('en');
+
+    await act(() => result.current.startProcessing('draft-1', 'Private lecture title'));
+    await act(() => result.current.resumeProcessing('draft-1'));
+
+    expect(mocks.setDraftError).toHaveBeenCalledTimes(1);
+    const failed = analyticsEvents('pipeline_failed');
+    expect(failed).toHaveLength(1);
+    expect(failed[0]?.[2]).toMatchObject({
+      path: 'quiz_draft',
+      error_code: 'ocr_failed',
+      duration_ms: 10_000,
+    });
+    expect(JSON.stringify(failed[0]?.[2])).not.toMatch(/Private lecture|OCR API|source\.pdf/);
+  });
+
+  it('emits one pipeline_completed for a draft that finished while the tab was away', async () => {
+    mocks.getQuizDraft.mockResolvedValue(draftSnapshot({ status: 'completed', error: null }));
+    const { result } = renderProcessor('en');
+
+    await act(() => result.current.resumeProcessing('draft-1'));
+    await act(() => result.current.resumeProcessing('draft-1'));
+
+    expect(analyticsEvents('pipeline_completed')).toHaveLength(1);
+    expect(analyticsEvents('pipeline_failed')).toHaveLength(0);
   });
 });

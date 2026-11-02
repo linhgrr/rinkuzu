@@ -25,6 +25,7 @@ import {
   type ApiReadinessCause,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
+import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
 import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
 import { captureAnalyticsEvent, fileSizeBucket } from '@/lib/analytics/client';
 import { getPdfPageCount } from '@/lib/pdf';
@@ -125,7 +126,7 @@ export default function AdaptiveLearningUpload() {
         readiness = await checkApiReadiness();
       }
       if (!readiness.ok) {
-        const message = t('uploadPage.backendOffline');
+        const message = t('uploadPage.serviceTemporarilyUnavailable');
         captureAnalyticsEvent('pdf_upload_failed', {
           file_size_bucket: sizeBucket,
           journey_id: journeyId,
@@ -146,6 +147,7 @@ export default function AdaptiveLearningUpload() {
         journey_id: journeyId,
         duration_ms: Math.round(performance.now() - uploadStartedAt),
       });
+      trackAdaptivePipelineJob(result.job_id, journeyId);
       saveSelectedPipelineJob({
         jobId: result.job_id,
         filename: file.name,

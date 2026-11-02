@@ -133,6 +133,32 @@ describe('env validation', () => {
     },
   );
 
+  it('accepts a Vercel preview build without AUTH_URL', async () => {
+    replaceProcessEnv({
+      ...baseEnv,
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'preview',
+      AUTH_URL: undefined,
+    });
+
+    const { env } = await import('@/lib/env');
+    expect(env.AUTH_URL).toBeUndefined();
+  });
+
+  it.each([
+    ['local', {}],
+    ['Vercel production', { NODE_ENV: 'production', VERCEL_ENV: 'production' }],
+  ])('requires AUTH_URL for a %s build', async (_label, overrides) => {
+    replaceProcessEnv({
+      ...baseEnv,
+      MONGODB_URI: 'mongodb://127.0.0.1:27017/rinkuzu',
+      ...overrides,
+      AUTH_URL: undefined,
+    });
+
+    await expect(import('@/lib/env')).rejects.toThrow(/AUTH_URL is required/);
+  });
+
   it('rejects a Vercel production build that selects the test database', async () => {
     replaceProcessEnv({
       ...baseEnv,

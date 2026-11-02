@@ -24,6 +24,7 @@ import {
   uploadPdfViaPresignedUrl,
 } from '@/lib/pdf';
 import { createQuizDraft } from '@/lib/quiz/draftApi';
+import { getCreateQuizDraftErrorMessage } from '@/features/quiz/components/create/create-quiz-draft-error';
 import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
@@ -682,7 +683,7 @@ export function CreateQuizPage() {
       dispatch({
         type: 'patch',
         value: {
-          error: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
+          error: getCreateQuizDraftErrorMessage(error, t),
           extracting: false,
         },
       });

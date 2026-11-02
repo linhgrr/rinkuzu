@@ -11,6 +11,17 @@ describe('extractHeadingsFromMarkdown', () => {
     ]);
   });
 
+  it('transliterates Vietnamese heading ids', () => {
+    expect(
+      extractHeadingsFromMarkdown(
+        "## Cách ghi nhớ những gì bạn học\n### Đánh giá: Bloom's Taxonomy",
+      ),
+    ).toEqual([
+      { id: 'cach-ghi-nho-nhung-gi-ban-hoc', text: 'Cách ghi nhớ những gì bạn học' },
+      { id: 'danh-gia-blooms-taxonomy', text: "Đánh giá: Bloom's Taxonomy" },
+    ]);
+  });
+
   it('ignores empty or unsupported headings', () => {
     expect(extractHeadingsFromMarkdown('# Top\n## \n#### Too deep')).toEqual([]);
   });

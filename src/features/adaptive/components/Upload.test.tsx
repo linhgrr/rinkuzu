@@ -5,9 +5,15 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { captureAnalyticsEventMock, checkApiReadinessMock, uploadPdfMock } = vi.hoisted(() => ({
+const {
+  captureAnalyticsEventMock,
+  checkApiReadinessMock,
+  trackAdaptivePipelineJobMock,
+  uploadPdfMock,
+} = vi.hoisted(() => ({
   captureAnalyticsEventMock: vi.fn(),
   checkApiReadinessMock: vi.fn(),
+  trackAdaptivePipelineJobMock: vi.fn(),
   uploadPdfMock: vi.fn(),
 }));
 
@@ -19,6 +25,9 @@ vi.mock('@/features/adaptive/lib/adaptive-api-methods', () => ({
   uploadPdf: uploadPdfMock,
 }));
 vi.mock('@/features/adaptive/lib/session-storage', () => ({ saveSelectedPipelineJob: vi.fn() }));
+vi.mock('@/features/adaptive/lib/pipeline-analytics', () => ({
+  trackAdaptivePipelineJob: trackAdaptivePipelineJobMock,
+}));
 vi.mock('@/lib/analytics/client', () => ({
   captureAnalyticsEvent: captureAnalyticsEventMock,
   fileSizeBucket: () => 'lt_1mb',
@@ -83,6 +92,11 @@ describe('AdaptiveLearningUpload health gate', () => {
     await waitFor(() => expect(uploadPdfMock).toHaveBeenCalledTimes(1), { timeout: 3_000 });
     expect(checkApiReadinessMock).toHaveBeenCalledTimes(2);
     expect(failedEventProps()).toBeUndefined();
+    // The accepted job is tracked under the upload's journey so its terminal outcome can report.
+    const accepted = captureAnalyticsEventMock.mock.calls.find(
+      ([name]) => name === 'pdf_upload_completed',
+    );
+    expect(trackAdaptivePipelineJobMock).toHaveBeenCalledWith('job-1', accepted?.[1].journey_id);
   });
 
   it('reports the cause of the retry when a transient failure persists', async () => {

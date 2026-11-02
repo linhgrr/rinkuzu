@@ -17,6 +17,8 @@ export const ANALYTICS_EXCLUDED_EMAILS: readonly string[] = [
   'rinkuzu-content@fldubai.com',
   // QA account for the W45-P1 production walk (RIN-553).
   'rinkuzu-qa-w45@fldubai.com',
+  // Company ops/admin account created by SRE (RIN-629).
+  'rinkuzu-ops@fldubai.com',
 ];
 
 export const ANALYTICS_TEST_EMAIL_PATTERN =

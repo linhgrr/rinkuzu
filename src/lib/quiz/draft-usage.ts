@@ -4,6 +4,7 @@ import { proxyAdaptiveRequest, type ProxyAuthContext } from '@/lib/adaptive/prox
 import { isRecord, isStandardSuccessEnvelope } from '@/lib/api/envelope';
 import { logger } from '@/lib/logger';
 import {
+  listRecentUnsettledLlmJobUsage,
   listUnsettledLlmJobUsage,
   refundLlmJobUsage,
   settleLlmJobUsageOutcome,
@@ -26,8 +27,6 @@ import type { LlmJobUsage, LlmUsageJobLink } from '@/lib/llm/rate-limit';
  */
 
 const ACTION = 'quiz_extract';
-const RECONCILE_LOOKBACK_MS = 35 * 24 * 60 * 60 * 1000;
-const RECONCILE_LIMIT = 5;
 const LOOKUP_TIMEOUT_MS = 5_000;
 
 interface QuizDraftSnapshot {
@@ -160,10 +159,7 @@ export async function reconcileQuizDraftUsage(auth: ProxyAuthContext): Promise<v
   const userId = meteredUser(auth);
   if (!userId) return;
   try {
-    const charged = await listUnsettledLlmJobUsage(userId, ACTION, {
-      since: new Date(Date.now() - RECONCILE_LOOKBACK_MS),
-      limit: RECONCILE_LIMIT,
-    });
+    const charged = await listRecentUnsettledLlmJobUsage(userId, ACTION);
     const draftIds = [...new Set(charged.map((usage) => usage.jobId))];
     for (const draftId of draftIds) await settleDraftById(userId, draftId, charged, auth);
   } catch (error) {

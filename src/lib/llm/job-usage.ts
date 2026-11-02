@@ -44,6 +44,22 @@ export async function listUnsettledLlmJobUsage(
   );
 }
 
+// A reconciliation sweep re-checks only a few recent charges, so it stays
+// cheap on the quota-check path; older ones settle on the next read.
+const SWEEP_LOOKBACK_MS = 35 * 24 * 60 * 60 * 1000;
+const SWEEP_LIMIT = 5;
+
+/** The few most recent unsettled job charges a reconciliation sweep re-checks. */
+export function listRecentUnsettledLlmJobUsage(
+  userId: string,
+  action: LlmRateLimitAction,
+): Promise<LlmJobUsage[]> {
+  return listUnsettledLlmJobUsage(userId, action, {
+    since: new Date(Date.now() - SWEEP_LOOKBACK_MS),
+    limit: SWEEP_LIMIT,
+  });
+}
+
 /**
  * Hands back a committed unit whose async job produced nothing billable. The
  * conditional flip away from `committed` is the idempotency guard: repeated or

@@ -39,7 +39,12 @@ vi.mock('./rate-limit', () => ({
   usageLedgerCollections: () => ({ buckets: mocks.buckets, requests: mocks.requests }),
 }));
 
-import { listUnsettledLlmJobUsage, refundLlmJobUsage, settleLlmJobUsageOutcome } from './job-usage';
+import {
+  listRecentUnsettledLlmJobUsage,
+  listUnsettledLlmJobUsage,
+  refundLlmJobUsage,
+  settleLlmJobUsageOutcome,
+} from './job-usage';
 
 describe('job-linked usage settlement', () => {
   beforeEach(() => {
@@ -87,6 +92,25 @@ describe('job-linked usage settlement', () => {
 
       expect(mocks.requests.find).toHaveBeenCalledWith(
         expect.objectContaining({ createdAt: { $gte: since } }),
+        expect.anything(),
+      );
+      expect(mocks.cursor.limit).toHaveBeenCalledWith(5);
+    });
+
+    it('bounds a reconciliation sweep to a few charges from the last 35 days', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-12-05T00:00:00Z'));
+      try {
+        await listRecentUnsettledLlmJobUsage('user-1', 'quiz_extract');
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(mocks.requests.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          capability: 'quiz_extract',
+          createdAt: { $gte: new Date('2026-10-31T00:00:00Z') },
+        }),
         expect.anything(),
       );
       expect(mocks.cursor.limit).toHaveBeenCalledWith(5);

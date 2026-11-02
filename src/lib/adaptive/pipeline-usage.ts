@@ -3,6 +3,7 @@ import 'server-only';
 import { isRecord, isStandardSuccessEnvelope } from '@/lib/api/envelope';
 import { logger } from '@/lib/logger';
 import {
+  listRecentUnsettledLlmJobUsage,
   listUnsettledLlmJobUsage,
   refundLlmJobUsage,
   settleLlmJobUsageOutcome,
@@ -24,8 +25,6 @@ import { proxyAdaptiveRequest, type ProxyAuthContext } from './proxy';
  */
 
 const ACTION = 'adaptive_pipeline';
-const RECONCILE_LOOKBACK_MS = 35 * 24 * 60 * 60 * 1000;
-const RECONCILE_LIMIT = 5;
 const RECONCILE_TIMEOUT_MS = 5_000;
 
 interface PipelineJobSnapshot {
@@ -110,10 +109,7 @@ export async function reconcilePipelineUsage(auth: ProxyAuthContext): Promise<vo
   const userId = meteredUser(auth);
   if (!userId) return;
   try {
-    const charged = await listUnsettledLlmJobUsage(userId, ACTION, {
-      since: new Date(Date.now() - RECONCILE_LOOKBACK_MS),
-      limit: RECONCILE_LIMIT,
-    });
+    const charged = await listRecentUnsettledLlmJobUsage(userId, ACTION);
     const jobIds = [...new Set(charged.map((usage) => usage.jobId))];
     for (const jobId of jobIds) {
       const response = await proxyAdaptiveRequest(

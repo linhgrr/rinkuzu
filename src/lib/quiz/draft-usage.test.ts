@@ -52,6 +52,7 @@ const loggerWarn = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/llm/job-usage', () => ({
   listUnsettledLlmJobUsage: ledger.listUnsettledLlmJobUsage,
+  listRecentUnsettledLlmJobUsage: ledger.listUnsettledLlmJobUsage,
   refundLlmJobUsage: ledger.refundLlmJobUsage,
   settleLlmJobUsageOutcome: ledger.settleLlmJobUsageOutcome,
 }));

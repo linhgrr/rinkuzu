@@ -77,7 +77,7 @@ describe('PersonalLearningSection', () => {
     expect(learners).toHaveTextContent('4');
     expect(screen.getByText('67%')).toBeInTheDocument();
     expect(screen.getByText('pdf_unreadable')).toBeInTheDocument();
-    expect(screen.getByTestId('trend-chart')).toBeInTheDocument();
+    expect(await screen.findByTestId('trend-chart')).toBeInTheDocument();
   });
 
   it('labels finished subjects and completed jobs as different counts', async () => {

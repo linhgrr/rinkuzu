@@ -9,3 +9,16 @@ export function formatCount(value: number): string {
 export function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
+
+// Pinned locale and time zone for the same hydration reason; admins read UTC.
+const dateTimeFormat = new Intl.DateTimeFormat('en-GB', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'UTC',
+});
+
+export function formatDateTimeUtc(value: string | null): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : `${dateTimeFormat.format(date)} UTC`;
+}

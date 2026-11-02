@@ -88,7 +88,9 @@ const envSchema = z
       .string()
       .min(32, 'AUTH_SECRET must be at least 32 chars')
       .refine((v) => v !== 'replace-me', 'AUTH_SECRET must be changed from the default'),
-    AUTH_URL: z.url('AUTH_URL must be a valid URL'),
+    // Required outside Vercel Preview (see superRefine). Auth.js rewrites every request
+    // origin to AUTH_URL, so a Preview must leave it unset to keep logins on its own host.
+    AUTH_URL: z.url('AUTH_URL must be a valid URL').optional(),
     AUTH_TRUST_HOST: z.enum(['true', 'false']).default('false'),
     NEXT_PUBLIC_SITE_URL: z.url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
     NEXT_PUBLIC_API_URL: z.url('NEXT_PUBLIC_API_URL must be a valid URL'),
@@ -146,6 +148,14 @@ const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['MONGODB_URI'],
         message: 'Production MONGODB_URI must select an explicit non-test database',
+      });
+    }
+
+    if (data.AUTH_URL === undefined && data.VERCEL_ENV !== 'preview') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['AUTH_URL'],
+        message: 'AUTH_URL is required (only a Vercel Preview may omit it)',
       });
     }
 

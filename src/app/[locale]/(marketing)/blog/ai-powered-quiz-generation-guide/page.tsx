@@ -273,7 +273,7 @@ export default async function BlogPost({ params }: Props) {
 
         {/* Article content — centered */}
         <div className="max-w-3xl mx-auto">
-          <MarkdownRenderer content={postContent} />
+          <MarkdownRenderer content={postContent} headingIds />
 
           <ShareButtons url={postUrl} title={postTitle} />
 

@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { generateSlug, slugifyText } from './slug';
+import { createHeadingSlugger, generateSlug } from './slug';
 import { generateSlug as generateSlugFromUtils } from './utils';
+
+// The first id from a fresh heading slugger is the plain transliterated slug.
+const slugifyText = (text: string) => createHeadingSlugger()(text);
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-describe('slugifyText', () => {
+describe('slugifyText (first id of a fresh heading slugger)', () => {
   it.each([
     ['a family', 'ả ã á ạ à a', 'a-a-a-a-a-a'],
     ['ă family', 'ẳ ẵ ắ ặ ằ ă', 'a-a-a-a-a-a'],
@@ -40,10 +43,10 @@ describe('slugifyText', () => {
     expect(slugifyText('RinKuzu\u2019s Approach')).toBe('rinkuzus-approach');
   });
 
-  it('returns an empty string when nothing slug-worthy remains', () => {
-    expect(slugifyText('🔥🔥')).toBe('');
-    expect(slugifyText('!!!')).toBe('');
-    expect(slugifyText('   ')).toBe('');
+  it('falls back to "section" when nothing slug-worthy remains', () => {
+    expect(slugifyText('🔥🔥')).toBe('section');
+    expect(slugifyText('!!!')).toBe('section');
+    expect(slugifyText('   ')).toBe('section');
   });
 });
 
@@ -79,5 +82,31 @@ describe('generateSlug', () => {
 
   it('is still exported from utils', () => {
     expect(generateSlugFromUtils).toBe(generateSlug);
+  });
+});
+
+describe('createHeadingSlugger', () => {
+  it('suffixes repeated headings so ids stay unique within one document', () => {
+    const slug = createHeadingSlugger();
+    expect(['Tổng quan', 'Tong quan', 'Tổng quan'].map(slug)).toEqual([
+      'tong-quan',
+      'tong-quan-2',
+      'tong-quan-3',
+    ]);
+  });
+
+  it('skips a suffix that a literal heading already took', () => {
+    const slug = createHeadingSlugger();
+    expect(['Step', 'Step 2', 'Step'].map(slug)).toEqual(['step', 'step-2', 'step-3']);
+  });
+
+  it('falls back to "section" when nothing slug-worthy remains', () => {
+    const slug = createHeadingSlugger();
+    expect(['🚀', '!!!'].map(slug)).toEqual(['section', 'section-2']);
+  });
+
+  it('starts every slugger with a clean slate', () => {
+    expect(createHeadingSlugger()('Intro')).toBe('intro');
+    expect(createHeadingSlugger()('Intro')).toBe('intro');
   });
 });

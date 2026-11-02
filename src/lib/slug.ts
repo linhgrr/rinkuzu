@@ -12,7 +12,7 @@ const EDGE_DASHES = /^-+|-+$/g;
  * ordinary English text keeps the slug it had before this helper existed.
  * Returns '' when nothing slug-worthy remains (emoji, punctuation, blanks).
  */
-export function slugifyText(text: string): string {
+function slugifyText(text: string): string {
   return text
     .normalize('NFD')
     .replace(COMBINING_MARKS, '')
@@ -29,4 +29,25 @@ const FALLBACK_QUIZ_SLUG = 'quiz';
 export function generateSlug(title: string): string {
   const base = slugifyText(title) || FALLBACK_QUIZ_SLUG;
   return `${base}-${Date.now().toString().slice(-6)}`;
+}
+
+const FALLBACK_HEADING_SLUG = 'section';
+
+/**
+ * Heading-anchor slugger for one document: slugifies each heading and
+ * suffixes repeats (`-2`, `-3`, ...) so every id is unique. Create a fresh
+ * one per document; the blog TOC and the rendered headings must each use
+ * their own slugger over the same headings in the same order.
+ */
+export function createHeadingSlugger(): (text: string) => string {
+  const used = new Set<string>();
+  return (text) => {
+    const base = slugifyText(text) || FALLBACK_HEADING_SLUG;
+    let id = base;
+    for (let n = 2; used.has(id); n += 1) {
+      id = `${base}-${n}`;
+    }
+    used.add(id);
+    return id;
+  };
 }

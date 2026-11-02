@@ -6,6 +6,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { cn } from '@/lib/utils';
 import { normalizeMarkdownContent } from '@/lib/markdown/normalize';
+import { rehypeHeadingIds } from '@/lib/markdown/rehype-heading-ids';
 
 type MarkdownRendererVariant = 'document' | 'prompt' | 'option' | 'answer' | 'compact';
 
@@ -14,6 +15,11 @@ export interface MarkdownRendererProps {
   className?: string;
   variant?: MarkdownRendererVariant;
   headingLevel?: 2 | 3 | 4 | 5 | 6;
+  /**
+   * Give h2/h3 anchor ids matching `extractHeadingsFromMarkdown` (blog TOC).
+   * Off by default so quiz and question markdown never gains ids.
+   */
+  headingIds?: boolean;
 }
 
 const variantClasses: Record<MarkdownRendererVariant, string> = {
@@ -31,6 +37,11 @@ const variantClasses: Record<MarkdownRendererVariant, string> = {
 
 const QUESTION_DISALLOWED_ELEMENTS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 const OPTION_DISALLOWED_ELEMENTS = [...QUESTION_DISALLOWED_ELEMENTS, 'a'];
+const DEFAULT_REHYPE_PLUGINS = [rehypeKatex];
+const HEADING_ID_REHYPE_PLUGINS = [rehypeHeadingIds, rehypeKatex];
+// Clear the sticky blog header when a TOC link scrolls a heading into view.
+const HEADING_ID_CLASSES = '[&_h2]:scroll-mt-24 [&_h3]:scroll-mt-24';
+
 const HEADING_DISALLOWED_ELEMENTS = [
   ...QUESTION_DISALLOWED_ELEMENTS,
   'p',
@@ -53,6 +64,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   className,
   variant = 'document',
   headingLevel,
+  headingIds = false,
 }: MarkdownRendererProps) {
   const normalizedContent = normalizeMarkdownContent(content);
   const disallowedElements = headingLevel
@@ -80,13 +92,14 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       className={cn(
         'max-w-none break-words [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden',
         variantClasses[variant],
+        headingIds && HEADING_ID_CLASSES,
         className,
       )}
       data-rich-text={variant}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={headingIds ? HEADING_ID_REHYPE_PLUGINS : DEFAULT_REHYPE_PLUGINS}
         skipHtml
         urlTransform={defaultUrlTransform}
         {...(disallowedElements ? { disallowedElements, unwrapDisallowed: true } : {})}

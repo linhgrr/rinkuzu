@@ -125,7 +125,7 @@ export default function AdaptiveLearningUpload() {
         readiness = await checkApiReadiness();
       }
       if (!readiness.ok) {
-        const message = t('uploadPage.backendOffline');
+        const message = t('uploadPage.serviceTemporarilyUnavailable');
         captureAnalyticsEvent('pdf_upload_failed', {
           file_size_bucket: sizeBucket,
           journey_id: journeyId,

@@ -6,9 +6,9 @@ export interface StarterQuizAllowlistEntry {
   locale: string;
 }
 
-export type StarterQuizDropReason = 'missing' | 'not-public' | 'too-long' | 'premium';
+type StarterQuizDropReason = 'missing' | 'not-public' | 'too-long' | 'premium';
 
-export interface DroppedStarterQuiz {
+interface DroppedStarterQuiz {
   slug: string;
   reason: StarterQuizDropReason;
 }
@@ -30,10 +30,12 @@ export interface ResolvedStarterQuizzes {
  * dropped at request time (see resolveStarterQuizzes), never shown.
  */
 export const STARTER_QUIZ_ALLOWLIST: readonly StarterQuizAllowlistEntry[] = [
+  { slug: 'cch-ghi-nh-nhng-g-bn-hc-quiz-khi-ng-7-cu-096007', locale: 'vi' },
+  { slug: 'how-to-remember-what-you-study-7-question-starter-quiz-093947', locale: 'en' },
   { slug: 'ktpm-chng-6-p1-219991', locale: 'vi' },
 ];
 
-export const STARTER_QUIZ_MAX_QUESTIONS = 15;
+const STARTER_QUIZ_MAX_QUESTIONS = 15;
 
 function getDropReason(
   candidate: DashboardStarterQuizCandidateRecord | undefined,

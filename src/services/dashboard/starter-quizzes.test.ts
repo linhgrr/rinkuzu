@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { DashboardStarterQuizCandidateRecord } from '@/interfaces/repositories/IDashboardRepository';
 import {
   STARTER_QUIZ_ALLOWLIST,
-  STARTER_QUIZ_MAX_QUESTIONS,
   resolveStarterQuizzes,
 } from '@/services/dashboard/starter-quizzes';
+
+const STARTER_QUIZ_MAX_QUESTIONS = 15;
 
 function candidate(
   overrides: Partial<DashboardStarterQuizCandidateRecord> & { slug: string },
@@ -76,7 +77,11 @@ describe('resolveStarterQuizzes', () => {
     expect(result.starterQuizzes).toEqual([]);
   });
 
-  it('ships the initial vi starter first', () => {
-    expect(STARTER_QUIZ_ALLOWLIST[0]).toEqual({ slug: 'ktpm-chng-6-p1-219991', locale: 'vi' });
+  it('ships the vi starter first, then the en starter, then the vi alternative', () => {
+    expect(STARTER_QUIZ_ALLOWLIST).toEqual([
+      { slug: 'cch-ghi-nh-nhng-g-bn-hc-quiz-khi-ng-7-cu-096007', locale: 'vi' },
+      { slug: 'how-to-remember-what-you-study-7-question-starter-quiz-093947', locale: 'en' },
+      { slug: 'ktpm-chng-6-p1-219991', locale: 'vi' },
+    ]);
   });
 });

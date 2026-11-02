@@ -16,6 +16,12 @@ export const adminQuizIdParamsSchema = z.object({
   id: objectIdSchema,
 });
 
+export const adminQuizVisibilityBodySchema = z
+  .object({
+    visibility: z.enum(['public', 'personal']),
+  })
+  .strict();
+
 export interface AdminQuizAuthorDto {
   id: string;
   email?: string;
@@ -49,5 +55,15 @@ export interface AdminQuizListDto {
   quizzes: AdminQuizListItemDto[];
   pagination: PaginationMeta;
 }
+
+export interface AdminQuizVisibilityChangeDto {
+  id: string;
+  slug: string;
+  visibility: 'public' | 'personal';
+  /** False when the quiz already had the requested visibility (no write, no audit). */
+  changed: boolean;
+}
+
+export type AdminQuizVisibilityBodyDto = z.infer<typeof adminQuizVisibilityBodySchema>;
 
 export type AdminQuizListQueryDto = z.infer<typeof adminQuizListQuerySchema>;

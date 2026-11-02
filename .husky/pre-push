@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 set -eu
 
-npm run prepush:full
+npm run prepush:fast

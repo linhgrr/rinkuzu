@@ -8,8 +8,13 @@ readonly max_attempts=30
 
 case "${1:-}" in
   start)
+    # Data and journal on tmpfs. Writes default to w:"majority" (admin
+    # transactions also j:true), which on a single node waits for a journal
+    # fsync; on a loaded Docker disk those stalled 5-33 s and surfaced as admin
+    # 503s and 30 s e2e timeouts (RIN-509). The database is throwaway anyway.
     docker run --detach --name "$container_name" \
       --publish 27017:27017 \
+      --tmpfs /data/db --tmpfs /data/configdb \
       "$image" \
       --replSet rs0 --bind_ip_all --port 27017
 

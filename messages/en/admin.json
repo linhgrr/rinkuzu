@@ -591,5 +591,12 @@
   "personalLearningJobsFailed": "Failed",
   "personalLearningPipelineStatuses": "Pipeline statuses",
   "personalLearningProgressStatuses": "Progress statuses",
-  "personalLearningTopErrors": "Common error groups"
+  "personalLearningTopErrors": "Common error groups",
+  "quizMakePrivate": "Make private",
+  "quizMakePublic": "Make public",
+  "quizMakePrivateTitle": "Make this quiz private?",
+  "quizMakePublicTitle": "Make this quiz public?",
+  "quizMakePrivateConfirm": "\"{title}\" will be hidden from the community list, Explore and anonymous visitors. Only its author and admins can open it. You can make it public again later. This change is recorded in the admin audit log.",
+  "quizMakePublicConfirm": "\"{title}\" will appear in the community list and Explore, and anyone with the link can play it. This change is recorded in the admin audit log.",
+  "quizVisibilityChangeError": "Failed to change quiz visibility"
 }

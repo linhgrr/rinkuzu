@@ -202,6 +202,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
         passwordChangedAt: null,
         authVersion: 2,
       },
+      isNewAccount: true,
     });
 
     const profile = await googleProvider().profile({
@@ -220,6 +221,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
       role: 'user',
       authVersion: 2,
       passwordChangedAt: null,
+      isNewAccount: true,
     });
     // Must not prefer Auth core UUID shape as the Mongo subject.
     expect(profile['id']).not.toBe(profile['dbUserId']);
@@ -312,6 +314,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
         passwordChangedAt: null,
         authVersion: 4,
         displayName: 'G',
+        isNewAccount: true,
       },
       account: { provider: 'google' },
     });
@@ -322,7 +325,9 @@ describe('production Auth.js config (src/auth.ts)', () => {
       av: 4,
       pwc: null,
       displayName: 'G',
+      nac: true,
     });
+    expect(credToken['nac']).toBeUndefined();
     // Google must select Mongo id, not Auth core / provider UUID.
     expect(googleToken['sub']).not.toBe('google-sub');
 
@@ -337,6 +342,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
         email: 'x@example.com',
         avatar: 'a',
         displayName: 'X',
+        nac: true,
       },
       user: { id: 'uuid', authVersion: 0 },
       account: { provider: 'google' },
@@ -349,6 +355,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
     expect(cleared['email']).toBeUndefined();
     expect(cleared['avatar']).toBeUndefined();
     expect(cleared['displayName']).toBeUndefined();
+    expect(cleared['nac']).toBeUndefined();
   });
 
   it('keeps existing claims during a JWT refresh without a user payload', async () => {
@@ -397,6 +404,15 @@ describe('production Auth.js config (src/auth.ts)', () => {
       email: 'user@example.com',
       role: 'user',
     });
+    expect(hydrated['user']).not.toHaveProperty('isNewAccount');
+
+    // A JWT minted by a Google sign-in that created the account exposes the flag.
+    findSessionUserMock.mockResolvedValueOnce(activeDbUser);
+    const newGoogleAccount = await callbacks.session({
+      session: { ...baseSession, user: { ...baseSession.user } },
+      token: { sub: 'mongo-1', av: 3, role: 'user', nac: true },
+    });
+    expect(newGoogleAccount['user']).toMatchObject({ id: 'mongo-1', isNewAccount: true });
 
     // Same DB user with mismatched av → real applySessionUser clears.
     findSessionUserMock.mockResolvedValueOnce(activeDbUser);

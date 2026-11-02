@@ -20,6 +20,7 @@ Playwright is configured in `playwright.config.ts`.
   - `@critical-adaptive`: upload UI, processing state, and generated subject page
   - `@critical-subscription`: checkout handoff plus success/cancel outcomes
   - `@critical-admin`: admin route/API access and a persisted role mutation
+  - `@critical-admin-quiz-visibility`: admin makes a public quiz private (anonymous play 401, gone from the public list), the change is audited, and the same row makes it public again
   - `@critical-admin-disable`: admin disable/restore, authVersion session revocation, disabled/active filters, fresh login after restore
 
 Fixture users are seeded with the canonical disable contract

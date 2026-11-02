@@ -162,6 +162,66 @@ describe('analytics client', () => {
     expect(window.sessionStorage.length).toBe(0);
   });
 
+  it('completes a pending Google auth as a signup when the server created the account', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+    analytics.markAnalyticsGoogleAuthPending('vi');
+
+    await analytics.identifyAnalyticsUser('new-google-user', { role: 'user' });
+    analytics.capturePendingAnalyticsLogin({ isNewAccount: true });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'signup_completed',
+      expect.objectContaining({ method: 'google', locale: 'vi', journey_id: expect.any(String) }),
+      { send_instantly: true, transport: 'sendBeacon' },
+    );
+    expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it('completes a pending Google auth as a login when the account already existed', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+    analytics.markAnalyticsGoogleAuthPending('en');
+
+    await analytics.identifyAnalyticsUser('existing-google-user', { role: 'user' });
+    analytics.capturePendingAnalyticsLogin({ isNewAccount: false });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'login_completed',
+      expect.objectContaining({ method: 'google', locale: 'en' }),
+      { send_instantly: true, transport: 'sendBeacon' },
+    );
+  });
+
+  it('never reclassifies a credentials login as a signup', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+    analytics.markAnalyticsLoginPending('credentials', 'en');
+
+    await analytics.identifyAnalyticsUser('credentials-user', { role: 'user' });
+    analytics.capturePendingAnalyticsLogin({ isNewAccount: true });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'login_completed',
+      expect.objectContaining({ method: 'credentials' }),
+      { send_instantly: true, transport: 'sendBeacon' },
+    );
+  });
+
+  it('does not mark or capture a Google auth when consent is withheld', async () => {
+    const analytics = await loadAnalytics();
+    analytics.denyAnalyticsConsent();
+    analytics.markAnalyticsGoogleAuthPending('en');
+
+    analytics.capturePendingAnalyticsLogin({ isNewAccount: true });
+
+    expect(window.sessionStorage.length).toBe(0);
+    expect(posthogMock.capture).not.toHaveBeenCalled();
+  });
+
   it('captures verified signup only after PostHog identifies the user', async () => {
     const analytics = await loadAnalytics();
     analytics.grantAnalyticsConsent();

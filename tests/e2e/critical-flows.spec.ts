@@ -287,6 +287,10 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
         key: { $in: [...ownedRateLimitKeys, ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS] },
       }),
       db.collection('llm_rate_limits').deleteMany({ key: llmRateLimitKeyPattern }),
+      db.collection('adminactionaudits').deleteMany({
+        entityType: 'quiz',
+        entityId: fixture.quizId.toHexString(),
+      }),
     ]);
     await db.collection('quizzes').deleteMany({ _e2eRun: runId });
     await db.collection('plans').deleteMany({ _e2eRun: runId });
@@ -714,6 +718,86 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('hides a public quiz with an audited admin visibility toggle and reverts it @critical-admin-quiz-visibility', async ({
+    page,
+    request,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const quizHexId = fixture.quizId.toHexString();
+      // A run-unique title so the admin search lands on this run's fixture only.
+      const title = `E2E Visibility ${fixture.runId}`;
+      await fixture.db
+        .collection('quizzes')
+        .updateOne({ _id: fixture.quizId }, { $set: { title } });
+
+      // `request` is a separate, cookie-less context: it plays the anonymous visitor.
+      const anonymousPlayStatus = async () =>
+        (await request.get(`/api/quiz/${fixture.quizSlug}/play`)).status();
+      const publicListSlugs = async () => {
+        const response = await request.get(`/api/quizzes?search=${encodeURIComponent(title)}`);
+        expect(response.status()).toBe(200);
+        const body = (await response.json()) as { data: { quizzes: { slug: string }[] } };
+        return body.data.quizzes.map((quiz) => quiz.slug);
+      };
+      expect(await anonymousPlayStatus()).toBe(200);
+      expect(await publicListSlugs()).toContain(fixture.quizSlug);
+
+      await login(page, fixture.admin);
+      await page.goto('/en/admin/quizzes');
+      await expect(page.getByRole('heading', { name: 'Quiz Management' })).toBeVisible();
+      const search = page.getByLabel('Search quizzes...');
+      await search.fill(title);
+      await search.press('Enter');
+      const row = page.locator('article').filter({ hasText: title });
+      await expect(row).toHaveCount(1);
+
+      await row.getByRole('button', { name: 'Make private', exact: true }).click();
+      const confirmPrivate = page.getByRole('dialog');
+      await expect(confirmPrivate).toContainText(title);
+      await confirmPrivate.getByRole('button', { name: 'Make private', exact: true }).click();
+      await expect(row.getByRole('button', { name: 'Make public', exact: true })).toBeVisible();
+
+      const hidden = await fixture.db.collection('quizzes').findOne({ _id: fixture.quizId });
+      expect(hidden?.['visibility']).toBe('personal');
+      expect(await anonymousPlayStatus()).toBe(401);
+      expect(await publicListSlugs()).not.toContain(fixture.quizSlug);
+
+      await row.getByRole('button', { name: 'Make public', exact: true }).click();
+      const confirmPublic = page.getByRole('dialog');
+      await confirmPublic.getByRole('button', { name: 'Make public', exact: true }).click();
+      await expect(row.getByRole('button', { name: 'Make private', exact: true })).toBeVisible();
+
+      const restored = await fixture.db.collection('quizzes').findOne({ _id: fixture.quizId });
+      expect(restored?.['visibility']).toBe('public');
+      expect(await anonymousPlayStatus()).toBe(200);
+
+      const audits = await fixture.db
+        .collection('adminactionaudits')
+        .find({ entityType: 'quiz', entityId: quizHexId })
+        .sort({ createdAt: 1 })
+        .toArray();
+      expect(
+        audits.map((audit) => ({
+          action: audit['action'],
+          actorId: String(audit['actorId']),
+          details: audit['details'],
+        })),
+      ).toEqual([
+        {
+          action: 'quiz.visibility.changed',
+          actorId: fixture.admin.id.toHexString(),
+          details: { slug: fixture.quizSlug, from: 'public', to: 'personal' },
+        },
+        {
+          action: 'quiz.visibility.changed',
+          actorId: fixture.admin.id.toHexString(),
+          details: { slug: fixture.quizSlug, from: 'personal', to: 'public' },
+        },
+      ]);
+    });
+  });
+
   test('configures masked AI providers and preserves tutor fallback order @critical-admin-ai-settings', async ({
     page,
     request,
@@ -790,7 +874,20 @@ test.describe('production critical paths', () => {
       });
       await routeSelect.selectOption({ label: 'Primary Tutor' });
       await routeSelect.selectOption({ label: 'Fallback Tutor' });
+      // The numbered rows below render from the draft, so they are visible
+      // before anything is saved. Wait for the PUT to succeed and the unsaved
+      // notice to clear before navigating, or the reload aborts the save.
+      const routingSaved = page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/admin/ai-settings/routing') &&
+          response.request().method() === 'PUT' &&
+          response.ok(),
+      );
       await page.getByRole('button', { name: 'Save routing atomically', exact: true }).click();
+      await routingSaved;
+      await expect(
+        page.getByRole('status').filter({ hasText: 'This routing draft has unsaved changes.' }),
+      ).toBeHidden();
       // Substring, not exact: each row carries the owning provider's badge in
       // the same element, so the position and the model name are a prefix of
       // its text rather than the whole of it.

@@ -3,9 +3,10 @@ import type {
   AdminQuizDetailDto,
   AdminQuizListDto,
   AdminQuizListItemDto,
+  AdminQuizVisibilityChangeDto,
 } from '@/dtos/admin-quiz';
 import type { PaginationMeta } from '@/dtos/common';
-import type { Quiz, QuizAuthorPreview } from '@/entities/Quiz';
+import type { Quiz, QuizAuthorPreview, QuizVisibility } from '@/entities/Quiz';
 import { serializeDate } from '@/lib/date-serialization';
 import { toQuizQuestionDto } from '@/mappers/quiz/QuizQuestionDtoMapper';
 
@@ -57,5 +58,13 @@ export class AdminQuizDtoMapper {
       ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
       ...(quiz.tags !== undefined && { tags: quiz.tags }),
     };
+  }
+
+  static toVisibilityChange(
+    quiz: Pick<Quiz, 'id' | 'slug'>,
+    visibility: QuizVisibility,
+    changed: boolean,
+  ): AdminQuizVisibilityChangeDto {
+    return { id: quiz.id, slug: quiz.slug, visibility, changed };
   }
 }

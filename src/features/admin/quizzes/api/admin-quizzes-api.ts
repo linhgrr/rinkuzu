@@ -1,4 +1,8 @@
-import type { AdminQuizDetailDto, AdminQuizListDto } from '@/dtos/admin-quiz';
+import type {
+  AdminQuizDetailDto,
+  AdminQuizListDto,
+  AdminQuizVisibilityChangeDto,
+} from '@/dtos/admin-quiz';
 import type { DeleteResultDto } from '@/dtos/common';
 import { fetchApiData } from '@/lib/api/client';
 import {
@@ -39,4 +43,15 @@ export async function fetchAdminQuizDetailViewModel(
 
 export async function deleteAdminQuiz(quizId: string): Promise<DeleteResultDto> {
   return fetchApiData<DeleteResultDto>(`/api/admin/quizzes/${quizId}`, { method: 'DELETE' });
+}
+
+export async function setAdminQuizVisibility(
+  quizId: string,
+  visibility: 'public' | 'personal',
+): Promise<AdminQuizVisibilityChangeDto> {
+  return fetchApiData<AdminQuizVisibilityChangeDto>(`/api/admin/quizzes/${quizId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ visibility }),
+  });
 }

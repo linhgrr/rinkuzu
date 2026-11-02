@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('next-auth/react', () => ({
   useSession: () => ({
-    data: { user: { id: 'user-123', role: 'user' } },
+    data: { user: { id: 'user-123', role: 'user', isNewAccount: true } },
   }),
 }));
 
@@ -58,6 +58,7 @@ describe('AnalyticsIdentity', () => {
     expect(mocks.identify).toHaveBeenCalledWith('user-123', { role: 'user' });
     await vi.waitFor(() => expect(mocks.capturePendingSignup).toHaveBeenCalledOnce());
     await vi.waitFor(() => expect(mocks.capturePendingLogin).toHaveBeenCalledOnce());
+    expect(mocks.capturePendingLogin).toHaveBeenCalledWith({ isNewAccount: true });
     expect(mocks.identify.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.capturePendingSignup.mock.invocationCallOrder[0] ?? 0,
     );

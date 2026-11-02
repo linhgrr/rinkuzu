@@ -57,7 +57,7 @@ export interface UsageRequest {
   retentionExpiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
-  // Async capabilities (adaptive pipeline) are committed when the job is
+  // Async capabilities (adaptive pipeline, quiz drafts) are committed when the job is
   // accepted, before it has run. The job link lets a job that later fails hand
   // its unit back exactly once; `jobOutcome` marks the record as settled.
   jobId?: string;
@@ -76,7 +76,7 @@ export interface LlmJobUsage extends LlmUsageJobLink {
   requestId: string;
 }
 
-export type LlmJobUsageOutcome = 'completed' | 'missing' | 'failed' | 'superseded';
+export type LlmJobUsageOutcome = 'completed' | 'cancelled' | 'missing' | 'failed' | 'superseded';
 
 interface UsageRequestInsertFields {
   userId: string;

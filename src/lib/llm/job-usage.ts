@@ -10,8 +10,9 @@ import {
   type LlmRateLimitAction,
 } from './rate-limit';
 
-// Settlement of usage committed for async jobs (adaptive pipeline). The
-// reserve/commit half lives in ./rate-limit; see src/lib/adaptive/pipeline-usage.
+// Settlement of usage committed for async jobs (adaptive pipeline, quiz drafts).
+// The reserve/commit half lives in ./rate-limit; see
+// src/lib/adaptive/pipeline-usage and src/lib/quiz/draft-usage.
 
 /** Committed job-linked usage whose job outcome has not been observed yet. */
 export async function listUnsettledLlmJobUsage(
@@ -41,6 +42,22 @@ export async function listUnsettledLlmJobUsage(
       ? [{ requestId: row.requestId, jobId: row.jobId, jobAttempt: row.jobAttempt ?? 0 }]
       : [],
   );
+}
+
+// A reconciliation sweep re-checks only a few recent charges, so it stays
+// cheap on the quota-check path; older ones settle on the next read.
+const SWEEP_LOOKBACK_MS = 35 * 24 * 60 * 60 * 1000;
+const SWEEP_LIMIT = 5;
+
+/** The few most recent unsettled job charges a reconciliation sweep re-checks. */
+export function listRecentUnsettledLlmJobUsage(
+  userId: string,
+  action: LlmRateLimitAction,
+): Promise<LlmJobUsage[]> {
+  return listUnsettledLlmJobUsage(userId, action, {
+    since: new Date(Date.now() - SWEEP_LOOKBACK_MS),
+    limit: SWEEP_LIMIT,
+  });
 }
 
 /**
@@ -89,7 +106,7 @@ export async function settleLlmJobUsageOutcome(
   userId: string,
   action: LlmRateLimitAction,
   requestId: string,
-  outcome: Extract<LlmJobUsageOutcome, 'completed' | 'missing'>,
+  outcome: Extract<LlmJobUsageOutcome, 'completed' | 'cancelled' | 'missing'>,
 ): Promise<void> {
   await connectDB();
   const { requests } = usageLedgerCollections();

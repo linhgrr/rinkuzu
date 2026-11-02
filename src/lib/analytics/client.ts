@@ -6,6 +6,9 @@ const LANDING_ATTRIBUTION_STORAGE_KEY = 'rinkuzu_landing_attribution_v1';
 const CAMPAIGN_VALUE_PATTERN = /^[a-zA-Z0-9._~-]{1,100}$/;
 const PENDING_LOGIN_STORAGE_KEY = 'rinkuzu_analytics_pending_login_v1';
 const PENDING_SIGNUP_STORAGE_KEY = 'rinkuzu_analytics_pending_signup_v1';
+const PIPELINE_TERMINAL_STORAGE_KEY = 'rinkuzu_analytics_pipeline_terminal_v1';
+const PIPELINE_TERMINAL_MAX_ENTRIES = 200;
+const PIPELINE_ERROR_CODE_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
 
 export type AnalyticsConsent = 'granted' | 'denied';
 
@@ -14,8 +17,12 @@ export type AnalyticsEventName =
   | 'signup_completed'
   | 'login_completed'
   | 'pdf_upload_started'
+  /** The upload was accepted by the processing queue, not that processing succeeded. */
   | 'pdf_upload_completed'
   | 'pdf_upload_failed'
+  /** Terminal pipeline outcomes, emitted once per job run or draft. */
+  | 'pipeline_completed'
+  | 'pipeline_failed'
   | 'adaptive_session_started'
   | 'adaptive_answer_submitted'
   | 'first_question_answered'
@@ -23,6 +30,18 @@ export type AnalyticsEventName =
 
 export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>;
 export type AnalyticsLoginMethod = 'credentials' | 'google';
+type PipelineAnalyticsPath = 'adaptive' | 'quiz_draft';
+
+export type PipelineTerminalEvent = {
+  path: PipelineAnalyticsPath;
+  /** Identifies one pipeline run (job id + attempt, or draft id). Used for dedupe, never sent. */
+  runKey: string;
+  outcome: 'completed' | 'failed';
+  /** Machine code for a failure; anything that is not a short slug is reported as `unknown`. */
+  errorCode?: string | null;
+  journeyId?: string | undefined;
+  durationMs?: number | null;
+};
 
 declare global {
   interface Window {
@@ -296,6 +315,52 @@ export function captureAnalyticsEventOnce(
 
   captureAnalyticsEvent(event, properties);
   window.localStorage.setItem(key, '1');
+}
+
+function readPipelineTerminalKeys(): string[] {
+  try {
+    const parsed: unknown = JSON.parse(
+      window.localStorage.getItem(PIPELINE_TERMINAL_STORAGE_KEY) ?? '[]',
+    );
+    return Array.isArray(parsed) ? parsed.filter((key) => typeof key === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizePipelineErrorCode(code: string | null | undefined): string {
+  const normalized = code?.trim().toLowerCase();
+  return normalized && PIPELINE_ERROR_CODE_PATTERN.test(normalized) ? normalized : 'unknown';
+}
+
+/**
+ * Emits `pipeline_completed` / `pipeline_failed` at most once per run, across
+ * re-renders, repeated polls, reloads and tabs (the dedupe set lives in localStorage).
+ */
+export function capturePipelineTerminalEventOnce(event: PipelineTerminalEvent): void {
+  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  const dedupeKey = `${event.path}:${event.runKey}`;
+  const emitted = readPipelineTerminalKeys();
+  if (emitted.includes(dedupeKey)) return;
+
+  window.localStorage.setItem(
+    PIPELINE_TERMINAL_STORAGE_KEY,
+    JSON.stringify([...emitted, dedupeKey].slice(-PIPELINE_TERMINAL_MAX_ENTRIES)),
+  );
+  const durationMs =
+    typeof event.durationMs === 'number' &&
+    Number.isFinite(event.durationMs) &&
+    event.durationMs >= 0
+      ? Math.round(event.durationMs)
+      : undefined;
+  captureAnalyticsEvent(event.outcome === 'completed' ? 'pipeline_completed' : 'pipeline_failed', {
+    path: event.path,
+    journey_id: event.journeyId,
+    duration_ms: durationMs,
+    ...(event.outcome === 'failed'
+      ? { error_code: normalizePipelineErrorCode(event.errorCode) }
+      : {}),
+  });
 }
 
 export function trackAnalyticsPageView(url: string, title: string): void {

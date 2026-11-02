@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getQuizDraft } from '@/lib/quiz/draftApi';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
+import { reportQuizDraftTerminal } from '@/lib/quiz/draftAnalytics';
 import { mapDraftStatus } from '@/lib/quiz/draftStatus';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { useDraftStore } from '@/store/useDraftStore';
@@ -107,6 +108,7 @@ export function usePdfProcessor() {
         }
 
         const mapped = mapDraftStatus(snapshot.status);
+        reportQuizDraftTerminal(snapshot);
 
         if (mapped === 'completed') {
           const totalQuestions = snapshot.questions.length;
@@ -179,8 +181,12 @@ export function usePdfProcessor() {
   const resumeProcessing = async (draftId: string) => {
     try {
       const draft = await getQuizDraft(draftId);
-      // Only (re)start polling while the draft is still in flight.
-      if (mapDraftStatus(draft.status) !== 'processing') return;
+      // Only (re)start polling while the draft is still in flight. The caller
+      // last saw it processing, so a draft that finished meanwhile reports here.
+      if (mapDraftStatus(draft.status) !== 'processing') {
+        reportQuizDraftTerminal(draft);
+        return;
+      }
 
       await startProcessing(draftId, draft.title);
     } catch (error) {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Session } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 
@@ -86,5 +86,34 @@ describe('edge-safe auth callbacks', () => {
         role: 'user',
       },
     });
+  });
+});
+
+describe('trustHost', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function loadTrustHost(env: { AUTH_TRUST_HOST?: string; VERCEL?: string }) {
+    vi.stubEnv('AUTH_TRUST_HOST', env.AUTH_TRUST_HOST);
+    vi.stubEnv('VERCEL', env.VERCEL);
+    vi.resetModules();
+    const { default: config } = await import('@/auth.config');
+    return config.trustHost;
+  }
+
+  it('trusts the host on Vercel when AUTH_TRUST_HOST is unset (Preview)', async () => {
+    await expect(loadTrustHost({ VERCEL: '1' })).resolves.toBe(true);
+  });
+
+  it('trusts the host when AUTH_TRUST_HOST is true', async () => {
+    await expect(loadTrustHost({ AUTH_TRUST_HOST: 'true' })).resolves.toBe(true);
+  });
+
+  it('does not trust the host off Vercel without AUTH_TRUST_HOST', async () => {
+    await expect(loadTrustHost({})).resolves.toBe(false);
+    await expect(loadTrustHost({ AUTH_TRUST_HOST: 'false' })).resolves.toBe(false);
+    await expect(loadTrustHost({ VERCEL: '0' })).resolves.toBe(false);
   });
 });

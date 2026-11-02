@@ -8,6 +8,7 @@ import {
   cancelPipelineJob,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { createLibraryPoller, type LibraryPoller } from '@/features/adaptive/hooks/library-poller';
+import { reportAdaptivePipelineTerminals } from '@/features/adaptive/lib/pipeline-analytics';
 import type { PipelineJobListItem } from '@/features/adaptive/types/pipeline';
 
 export type UseJobLibraryArgs = {
@@ -37,7 +38,11 @@ export function useJobLibrary({
       listJobs: listPipelineJobs,
       retryJob: retryPipelineJob,
       cancelJob: cancelPipelineJob,
-      onJobs: setJobs,
+      onJobs: (nextJobs) => {
+        setJobs(nextJobs);
+        // The dashboard is where users wait after uploading, so terminal outcomes surface here too.
+        reportAdaptivePipelineTerminals(nextJobs);
+      },
       onBusy: setBusyJobId,
       onTickSettled: () => setHasLoaded(true),
     }),

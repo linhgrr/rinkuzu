@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "acceptances": [
     {
-      "fingerprint": "cef94d4f11eac20e527ca4947b5b76cea166c38ece95f46cfad5cdb76a2dd5c3",
+      "fingerprint": "1289d50f010711b0953bcbaf8f5dda5d3859884af9d33a5d4be13d5ed5e8d895",
       "package": "@lhci/cli",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -11,9 +11,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
       "fingerprint": "0e5e642b978e2c355fba6cd6f2a6c3f439913d6929c161a31e49f8b8d7622b5f",
@@ -25,9 +25,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
       "fingerprint": "57b9019bb1d455da96df4df87a4ee4a93138c30e6ae998bdbb95716538894957",
@@ -39,9 +39,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
       "fingerprint": "5dc2018b5946e7945679faa3f55111e5cbe6355d405b550c54087266939cfee0",
@@ -53,9 +53,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
       "fingerprint": "044d0e9760d31d9b77484f22113551d0baae77338e0ac372fc3d8c03a77d8da6",
@@ -67,9 +67,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
       "fingerprint": "21dd9e3eb272e7ea9726202baec3d0320735e45e47222b8c4c3a16fce3671d07",
@@ -81,12 +81,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "72882acf2074c005f4a08035917ea498deac6ac72478c6b652e75047c831cf9f",
+      "fingerprint": "b74f8cc4d0c45cfd3a4987239149e7ea6a545ff0cfc9af32be61d0413a243258",
       "package": "extract-zip",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -95,9 +95,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
       "fingerprint": "70b4d178009e14e1374c4a524f118e4d95028687b819abe003c3e01b5686d346",
@@ -109,9 +109,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
       "fingerprint": "87a623e304baf55ee5273ad28431e45f9c46b9913996ebddb90af47c84d383c5",
@@ -123,9 +123,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
       "fingerprint": "0339d496ab137256f10406e4e8bbdcd4c26e0c2a529b240f4c79f4bc85e838a0",
@@ -137,9 +137,93 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "5d2a9766b3c6dc4a2bc96452342256fa75e76a0de49fe54649d9fadeb1f05f6f",
+      "package": "@ag-ui/client",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "fc3b042f3dd0f3313a722a1c3c47b8735c9c49ea4236613592636c40de25323c",
+      "package": "@ag-ui/core",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "86d4a197f0d3ffa2b619f34c54a577ace795f9f73f1316a1541a8ba3072fde19",
+      "package": "@ag-ui/encoder",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "7dd071ec5ece4a35ea2292c519c9b957ebee7ccb46044fc5b7bbb0db533c8d20",
+      "package": "@ag-ui/proto",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "5b2ae57665fb9fac014e9a99788d7eb1fc8a6b01b65472a08c82bbda3a468df4",
+      "package": "@assistant-ui/react-ag-ui",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
+    },
+    {
+      "fingerprint": "25f8da868e2a603e5d6698b99eab40b0876d5685b603f85d505aa6ec9f8408f5",
+      "package": "zod",
+      "kind": "risk_acceptance",
+      "severity": "high",
+      "scope": "runtime",
+      "tool": "npm-audit",
+      "toolVersion": "10.9.8",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "owner": "linhgrr",
+      "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6: memory exhaustion when validating oversized constrained collections (denial of service only, no data exposure). @ag-ui/core and @ag-ui/client pin zod 3.25.76, a line that receives no patch; the application itself and every other consumer already run zod 4.6.7. The affected copy only validates AG-UI protocol events exchanged with our own agent endpoint, not arbitrary third-party input. Cannot be fixed without a major @ag-ui/client change that supports zod 4. Re-check when an @ag-ui/client release supports zod 4.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     }
   ]
 }

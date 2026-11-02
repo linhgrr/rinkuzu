@@ -16,7 +16,6 @@ import { FolderSelector } from '@/features/folders/components/FolderSelector';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {
   deletePendingPdfUpload,
   getPdfPageCount,
@@ -24,6 +23,7 @@ import {
   uploadPdfViaPresignedUrl,
 } from '@/lib/pdf';
 import { createQuizDraft } from '@/lib/quiz/draftApi';
+import { getCreateQuizDraftErrorMessage } from '@/features/quiz/components/create/create-quiz-draft-error';
 import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
@@ -169,7 +169,7 @@ export function MobileCreateQuizPage() {
         await deletePendingPdfUpload(pendingS3Key, 'quiz').catch(() => undefined);
       }
       toast.error(tCommon('error'), {
-        description: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
+        description: getCreateQuizDraftErrorMessage(error, t),
       });
       dispatch({ type: 'patch', value: { isUploading: false } });
     }

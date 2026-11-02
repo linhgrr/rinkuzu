@@ -132,6 +132,7 @@
   "hidePreview": "Hide Preview",
   "processingStarted": "Processing started",
   "failedToStartProcessing": "Failed to start processing",
+  "serviceTemporarilyUnavailable": "The service is temporarily unavailable. Please try again in a few minutes. Your quota was not used.",
   "confirmRemoveQuestionTitle": "Remove question?",
   "confirmRemoveQuestionMessage": "Are you sure you want to remove question {number}?",
   "editDraftTitle": "Edit draft quiz",

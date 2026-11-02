@@ -814,28 +814,101 @@ test.describe('production critical paths', () => {
 
   test('looks up a learner and opens the audited read-only drill-down @critical-admin-learner-lookup', async ({
     page,
+    request,
   }, testInfo) => {
     await withDatabaseFixture(testInfo, async (fixture) => {
+      const targetId = fixture.target.id.toHexString();
+      const lookupApis = [
+        `/api/admin/personal-learning/learners?search=${encodeURIComponent(fixture.target.email)}`,
+        `/api/admin/personal-learning/subjects?user_id=${targetId}`,
+      ];
+
+      // Anonymous: `request` is a cookie-less context, and the page has no session yet.
+      for (const path of lookupApis) {
+        const response = await request.get(path);
+        expect(response.status(), path).toBe(401);
+        expect(await response.json()).toMatchObject({
+          error: { code: 'unauthorized' },
+          success: false,
+        });
+      }
+      await page.goto('/en/admin/stats');
+      await expect(page).toHaveURL(/\/en\/login\?callbackUrl=%2Fadmin%2Fstats/);
+
+      // Signed in without the admin role: the page redirects and both APIs refuse.
+      await login(page, fixture.regular);
+      await page.goto('/en/admin/stats');
+      await expect(page).toHaveURL(/\/en\/dashboard(?:[/?#]|$)/);
+      const denied = await page.evaluate(
+        (paths) =>
+          Promise.all(
+            paths.map(async (path) => {
+              const response = await fetch(path, { cache: 'no-store' });
+              return { body: await response.json(), path, status: response.status };
+            }),
+          ),
+        lookupApis,
+      );
+      expect(denied).toEqual(
+        lookupApis.map((path) => ({
+          body: expect.objectContaining({
+            error: expect.objectContaining({ code: 'forbidden' }),
+            success: false,
+          }),
+          path,
+          status: 403,
+        })),
+      );
+      await page.context().clearCookies();
+
       await login(page, fixture.admin);
       await page.goto('/en/admin/stats');
       await page.getByRole('button', { name: 'Learner Lookup' }).click();
       await page.getByLabel('Name or email').fill(fixture.target.email);
       await page.getByRole('button', { name: 'Search', exact: true }).click();
-      await page.getByRole('button', { name: `View learning for ${fixture.target.email}` }).click();
+
+      const result = page
+        .getByRole('table', { name: 'Matching learners' })
+        .getByRole('row')
+        .filter({ hasText: fixture.target.email });
+      await expect(result).toHaveCount(1);
+      await expect(result).toContainText('E2E Role Target');
+      await result
+        .getByRole('button', { name: `View learning for ${fixture.target.email}` })
+        .click();
 
       const drawer = page.getByRole('dialog');
       const row = drawer.getByRole('row', { name: /e2e-lookup-notes\.pdf/ });
-      await expect(row).toContainText('completed');
-      await expect(row).toContainText('80%');
-      await expect(row).toContainText('50%');
+      // File, pipeline status, progress status, accuracy, progress, last activity (UTC).
+      await expect(row.getByRole('cell')).toHaveText([
+        'e2e-lookup-notes.pdf',
+        'completed',
+        'active',
+        '80%',
+        '50%',
+        /^30 Oct 2026,? 12:00 UTC$/,
+      ]);
       await expect(drawer).not.toContainText('E2E_RAW_DOCUMENT_TEXT');
 
+      // The denied calls above recorded nothing; the one admin view recorded exactly one entry.
       const audits = await fixture.db
         .collection('adminactionaudits')
-        .find({ entityType: 'user', entityId: fixture.target.id.toHexString() })
+        .find({ entityType: 'user', entityId: targetId })
         .toArray();
-      expect(audits.map((audit) => [audit['action'], String(audit['actorId'])])).toEqual([
-        ['personal_learning.learner_view', fixture.admin.id.toHexString()],
+      expect(
+        audits.map((audit) => ({
+          action: audit['action'],
+          actorEmail: audit['actorEmail'],
+          actorId: String(audit['actorId']),
+          entityId: audit['entityId'],
+        })),
+      ).toEqual([
+        {
+          action: 'personal_learning.learner_view',
+          actorEmail: fixture.admin.email,
+          actorId: fixture.admin.id.toHexString(),
+          entityId: targetId,
+        },
       ]);
     });
   });

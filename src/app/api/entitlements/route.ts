@@ -7,8 +7,10 @@ import {
   resolveEntitlements,
   type MeteredCapability,
 } from '@/lib/entitlements';
+import { reconcilePipelineUsage } from '@/lib/adaptive/pipeline-usage';
 import { getLlmUsageSnapshot } from '@/lib/llm/rate-limit';
 import { logger } from '@/lib/logger';
+import { reconcileQuizDraftUsage } from '@/lib/quiz/draft-usage';
 import type { EntitlementSnapshot } from '@/types/entitlements';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +26,12 @@ export const GET = withAuth(async (_request, { userId, session }) => {
   try {
     const entitlements = await resolveEntitlements(userId);
     const isAdmin = session.user.role === 'admin';
+    if (!isAdmin) {
+      // Settle failed async uploads first so the reported remaining usage
+      // matches what the next upload's quota check will see (RIN-596).
+      const auth = { userId, userRole: session.user.role };
+      await Promise.all([reconcileQuizDraftUsage(auth), reconcilePipelineUsage(auth)]);
+    }
     const meteredEntries = await Promise.all(
       METERED_CAPABILITIES.map(async (capability) => {
         const windows = isAdmin

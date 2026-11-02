@@ -10,8 +10,9 @@ import {
   type LlmRateLimitAction,
 } from './rate-limit';
 
-// Settlement of usage committed for async jobs (adaptive pipeline). The
-// reserve/commit half lives in ./rate-limit; see src/lib/adaptive/pipeline-usage.
+// Settlement of usage committed for async jobs (adaptive pipeline, quiz drafts).
+// The reserve/commit half lives in ./rate-limit; see
+// src/lib/adaptive/pipeline-usage and src/lib/quiz/draft-usage.
 
 /** Committed job-linked usage whose job outcome has not been observed yet. */
 export async function listUnsettledLlmJobUsage(
@@ -89,7 +90,7 @@ export async function settleLlmJobUsageOutcome(
   userId: string,
   action: LlmRateLimitAction,
   requestId: string,
-  outcome: Extract<LlmJobUsageOutcome, 'completed' | 'missing'>,
+  outcome: Extract<LlmJobUsageOutcome, 'completed' | 'cancelled' | 'missing'>,
 ): Promise<void> {
   await connectDB();
   const { requests } = usageLedgerCollections();

@@ -1,12 +1,16 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, getConstraintMock, proxyMock, resolveEntitlementsMock } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  getConstraintMock: vi.fn(),
-  proxyMock: vi.fn(),
-  resolveEntitlementsMock: vi.fn(),
-}));
+const { authMock, getConstraintMock, proxyMock, resolveEntitlementsMock, settleMock } = vi.hoisted(
+  () => ({
+    authMock: vi.fn(),
+    getConstraintMock: vi.fn(),
+    proxyMock: vi.fn(),
+    resolveEntitlementsMock: vi.fn(),
+    settleMock: vi.fn(),
+  }),
+);
+const jobLink = vi.hoisted(() => vi.fn());
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/adaptive/proxy', () => ({ proxyAdaptiveRequest: proxyMock }));
@@ -14,8 +18,12 @@ vi.mock('@/lib/entitlements', () => ({
   getConstraint: getConstraintMock,
   resolveEntitlements: resolveEntitlementsMock,
 }));
+vi.mock('@/lib/quiz/draft-usage', () => ({
+  quizDraftJobLinkFromEnvelope: jobLink,
+  settleQuizDraftUsageFromResponse: settleMock,
+}));
 
-import { POST } from '@/app/api/quiz-drafts/route';
+import { GET, POST } from '@/app/api/quiz-drafts/route';
 
 const routeContext = { params: Promise.resolve({}) };
 
@@ -48,8 +56,33 @@ describe('POST /api/quiz-drafts', () => {
       {
         method: 'POST',
         llmAction: 'quiz_extract',
+        llmJobLink: jobLink,
         internalHeaders: { 'x-rinkuzu-pdf-page-limit': '30' },
       },
     );
+  });
+});
+
+describe('GET /api/quiz-drafts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'user@example.com', role: 'user' },
+    });
+  });
+
+  it('settles quiz_extract usage from the listed drafts and returns the list', async () => {
+    const upstream = Response.json({ success: true, data: { drafts: [] } });
+    proxyMock.mockResolvedValue(upstream);
+    const request = new NextRequest('http://localhost/api/quiz-drafts');
+
+    const response = await GET(request, routeContext);
+
+    expect(response).toBe(upstream);
+    expect(proxyMock).toHaveBeenCalledWith(request, '/quiz/drafts', {
+      userId: 'user-1',
+      userRole: 'user',
+    });
+    expect(settleMock).toHaveBeenCalledWith(upstream, { userId: 'user-1', userRole: 'user' });
   });
 });

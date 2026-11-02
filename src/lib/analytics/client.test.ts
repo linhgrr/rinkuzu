@@ -308,4 +308,86 @@ describe('analytics client', () => {
     const analytics = await loadAnalytics();
     expect(analytics.fileSizeBucket(sizeBytes)).toBe(expected);
   });
+
+  describe('pipeline terminal events', () => {
+    it('emits pipeline_failed once per run with a slug error code and no raw text', async () => {
+      const analytics = await loadAnalytics();
+      analytics.grantAnalyticsConsent();
+
+      const event = {
+        path: 'adaptive',
+        runKey: 'job-1:0',
+        outcome: 'failed',
+        errorCode: 'ocr_failed',
+        journeyId: 'journey-1',
+        durationMs: 1234.4,
+      } as const;
+      analytics.capturePipelineTerminalEventOnce(event);
+      analytics.capturePipelineTerminalEventOnce(event);
+
+      await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+      expect(posthogMock.capture).toHaveBeenCalledWith(
+        'pipeline_failed',
+        expect.objectContaining({
+          path: 'adaptive',
+          journey_id: 'journey-1',
+          duration_ms: 1234,
+          error_code: 'ocr_failed',
+        }),
+        { send_instantly: true, transport: 'sendBeacon' },
+      );
+      expect(posthogMock.capture.mock.calls[0]?.[1]).not.toHaveProperty('runKey');
+    });
+
+    it('dedupes across a reload because the emitted set lives in localStorage', async () => {
+      const first = await loadAnalytics();
+      first.grantAnalyticsConsent();
+      first.capturePipelineTerminalEventOnce({
+        path: 'quiz_draft',
+        runKey: 'draft-1',
+        outcome: 'completed',
+      });
+      await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+
+      const reloaded = await loadAnalytics();
+      reloaded.capturePipelineTerminalEventOnce({
+        path: 'quiz_draft',
+        runKey: 'draft-1',
+        outcome: 'completed',
+      });
+      reloaded.capturePipelineTerminalEventOnce({
+        path: 'quiz_draft',
+        runKey: 'draft-2',
+        outcome: 'completed',
+      });
+
+      await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(2));
+      expect(posthogMock.capture.mock.calls[0]?.[0]).toBe('pipeline_completed');
+      expect(posthogMock.capture.mock.calls[0]?.[1]).not.toHaveProperty('error_code');
+    });
+
+    it('records nothing without consent', async () => {
+      const analytics = await loadAnalytics();
+
+      analytics.capturePipelineTerminalEventOnce({
+        path: 'adaptive',
+        runKey: 'job-1:0',
+        outcome: 'completed',
+      });
+
+      expect(window.localStorage.getItem('rinkuzu_analytics_pipeline_terminal_v1')).toBeNull();
+      expect(posthogMock.capture).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['pipeline_timeout', 'pipeline_timeout'],
+      ['OCR_FAILED', 'ocr_failed'],
+      ['OCR API request failed for all configured keys.', 'unknown'],
+      [null, 'unknown'],
+      [undefined, 'unknown'],
+    ])('normalizes error code %s to %s', async (code, expected) => {
+      const analytics = await loadAnalytics();
+      expect(analytics.normalizePipelineErrorCode(code)).toBe(expected);
+    });
+  });
 });

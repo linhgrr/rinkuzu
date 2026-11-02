@@ -15,6 +15,7 @@ import {
   createSessionFromPipeline,
   getPipelineJobStatus,
 } from '@/features/adaptive/lib/adaptive-api-methods';
+import { reportAdaptivePipelineTerminal } from '@/features/adaptive/lib/pipeline-analytics';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { MEDIA_MIN_LG } from '@/shared/constants/breakpoints';
@@ -389,6 +390,7 @@ export const useProcessingState = (t: TranslateFn) => {
 
       updateStats(job);
       updatePipelineNotice(job);
+      reportAdaptivePipelineTerminal(job);
 
       if (job.status === 'completed' && !creatingSessionRef.current) {
         const outcome = await handleCompletedJob();

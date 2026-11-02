@@ -1,5 +1,4 @@
-import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
-import { sanitizedGetRequest } from '@/lib/adaptive/sanitized-request';
+import { proxyAdminAdaptiveRead } from '@/lib/adaptive/admin-read-proxy';
 import { withAdmin } from '@/lib/api/auth';
 import { z } from 'zod';
 import { parseSearchParams } from '@/lib/api/validated';
@@ -21,16 +20,13 @@ export const GET = withAdmin(async (req, { userId, session }) => {
   const query = parseSearchParams(req, querySchema);
   if (!query.ok) return query.response;
 
-  const sanitizedRequest = sanitizedGetRequest(req, {
+  const params = {
     ...query.data,
     include_non_product:
       query.data.include_non_product === 'false' ? undefined : query.data.include_non_product,
-  });
-  const response = await proxyAdaptiveRequest(sanitizedRequest, '/admin/llm-usage/summary', {
+  };
+  return proxyAdminAdaptiveRead(req, params, '/admin/llm-usage/summary', {
     userId,
     userRole: session.user.role,
   });
-  response.headers.set('Cache-Control', 'private, no-store');
-  response.headers.set('Pragma', 'no-cache');
-  return response;
 });

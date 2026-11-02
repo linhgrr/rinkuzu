@@ -24,7 +24,6 @@ import type { PersonalLearningSummaryViewModel } from '@/features/admin/stats/ty
 
 function summary(): PersonalLearningSummaryViewModel {
   return {
-    window: '30d',
     bucket: 'day',
     adoption: {
       activeLearners: 4,

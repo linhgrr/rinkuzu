@@ -20,11 +20,10 @@ export async function fetchPersonalLearningSummary(
 ): Promise<PersonalLearningSummaryViewModel> {
   const dto = await fetchApiData<SummaryDto>(
     `/api/admin/personal-learning/summary?window=${window}`,
-    { cache: 'no-store', signal },
+    { cache: 'no-store', ...(signal ? { signal } : {}) },
   );
 
   return {
-    window: dto.window,
     bucket: dto.bucket,
     adoption: {
       activeLearners: dto.totals.active_learners,

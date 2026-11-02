@@ -61,6 +61,8 @@ describe('personal learning api', () => {
       '/api/admin/personal-learning/summary?window=all',
     );
     expect(fetchApiDataMock.mock.calls[0]?.[1]).toMatchObject({ cache: 'no-store' });
+    // exactOptionalPropertyTypes: no signal means no `signal` key, not `signal: undefined`.
+    expect(Object.keys(fetchApiDataMock.mock.calls[0]?.[1] ?? {})).toEqual(['cache']);
     expect(summary.bucket).toBe('month');
     expect(summary.adoption).toEqual({
       activeLearners: 4,

@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { formatPercent } from '@/features/admin/stats/lib/personal-learning-format';
+import { formatCount, formatPercent } from '@/features/admin/stats/lib/personal-learning-format';
 import type {
   PersonalLearningBreakdownRowViewModel,
   PersonalLearningSummaryViewModel,
@@ -64,7 +64,7 @@ function BreakdownList({
           <div className="flex items-center justify-between text-sm">
             <span className="truncate text-neutral-700">{row.key}</span>
             <span className="ml-3 shrink-0 font-medium text-neutral-950">
-              {row.count.toLocaleString()}
+              {formatCount(row.count)}
             </span>
           </div>
           <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface-warm">
@@ -90,12 +90,12 @@ function AdoptionCards({
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <MetricCard
         label={t('personalLearningActiveLearners')}
-        value={summary.adoption.activeLearners.toLocaleString()}
+        value={formatCount(summary.adoption.activeLearners)}
         detail={t('personalLearningActiveLearnersDetail')}
       />
       <MetricCard
         label={t('personalLearningSubjectsCreated')}
-        value={summary.adoption.subjectsCreated.toLocaleString()}
+        value={formatCount(summary.adoption.subjectsCreated)}
         detail={t('personalLearningSubjectsCompletedDetail', {
           count: summary.adoption.subjectsCompleted,
         })}
@@ -144,7 +144,7 @@ function PipelineHealthCards({
       />
       <MetricCard
         label={t('personalLearningPartialSuccess')}
-        value={summary.pipeline.partialSuccesses.toLocaleString()}
+        value={formatCount(summary.pipeline.partialSuccesses)}
         detail={t('personalLearningActiveJobsDetail', { count: summary.pipeline.activeJobs })}
       />
       <MetricCard

@@ -16,7 +16,6 @@ export interface PersonalLearningTrendPointViewModel {
 }
 
 export interface PersonalLearningSummaryViewModel {
-  window: PersonalLearningWindow;
   bucket: 'day' | 'month';
   adoption: {
     activeLearners: number;

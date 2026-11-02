@@ -915,9 +915,20 @@ test.describe('production critical paths', () => {
       await addKey.click();
       await expect(page.getByText('••••LPHA', { exact: true })).toBeVisible();
 
+      // The list re-renders from the reload inside the save, a render or more
+      // before the form resets. Wait for the reset (and the submit to leave its
+      // busy state) before typing the second key, or the reset wipes it.
+      await expect(keyForm.getByLabel('Key label')).toHaveValue('');
+      await expect(keyForm.getByLabel('Paste API key')).toHaveValue('');
+      await expect(keyForm.getByLabel('Key priority')).toHaveValue('100');
+      await expect(addKey).toBeEnabled();
+
       await keyForm.getByLabel('Key label').fill('Fallback key');
       await keyForm.getByLabel('Paste API key').fill(fallbackSecret);
       await keyForm.getByLabel('Key priority').fill('10');
+      await expect(keyForm.getByLabel('Key label')).toHaveValue('Fallback key');
+      await expect(keyForm.getByLabel('Paste API key')).toHaveValue(fallbackSecret);
+      await expect(keyForm.getByLabel('Key priority')).toHaveValue('10');
       await addKey.click();
       await expect(page.getByText('••••BETA', { exact: true })).toBeVisible();
 
@@ -930,8 +941,16 @@ test.describe('production critical paths', () => {
       await addModel.click();
       await expect(page.getByText('Primary Tutor', { exact: true })).toBeVisible();
 
+      // Same ordering as the keys: the list shows the new model before the
+      // form resets, so wait for the reset before typing the fallback model.
+      await expect(modelForm.getByLabel('Display name')).toHaveValue('');
+      await expect(modelForm.getByLabel('Upstream model name')).toHaveValue('');
+      await expect(addModel).toBeEnabled();
+
       await modelForm.getByLabel('Display name').fill('Fallback Tutor');
       await modelForm.getByLabel('Upstream model name').fill('e2e-fallback-model');
+      await expect(modelForm.getByLabel('Display name')).toHaveValue('Fallback Tutor');
+      await expect(modelForm.getByLabel('Upstream model name')).toHaveValue('e2e-fallback-model');
       await addModel.click();
       await expect(page.getByText('Fallback Tutor', { exact: true })).toBeVisible();
 

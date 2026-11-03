@@ -66,7 +66,7 @@ describe('useApiErrorMessage', () => {
       retryAfterSeconds: 30,
     });
 
-    expect(result.current(limited)).toBe('Too many requests. Please try again in 30 seconds.');
+    expect(result.current(limited)).toBe('You can try again in 30 seconds.');
     expect(result.current(new DOMException('aborted', 'AbortError'))).toBe('');
   });
 });

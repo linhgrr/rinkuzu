@@ -85,6 +85,9 @@
        clears the 3:1 floor; this one does in both themes, which is why it does
        not vary by theme. For a filled control whose label is white. */
     --brand-action-strong: #e67020;
+    /* Its hover. Theme-stable for the same reason: --brand-action-hover is
+       #fdba74 in dark, where white reaches only 1.7:1 (RIN-810). */
+    --brand-action-strong-hover: #ea660c;
     --brand-trust: var(--accent);
     --brand-trust-hover: var(--accent-hover);
     --brand-trust-active: var(--primary-6);
@@ -377,6 +380,7 @@
     --brand-action-active: #fed7aa;
     --brand-action-text: #ffffff;
     --brand-action-strong: #e67020;
+    --brand-action-strong-hover: #ea660c;
 
     --brand-trust: #34d399;
     --brand-trust-hover: #6ee7b7;

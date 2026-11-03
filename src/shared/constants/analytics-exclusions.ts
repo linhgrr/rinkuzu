@@ -19,6 +19,12 @@ export const ANALYTICS_EXCLUDED_EMAILS: readonly string[] = [
   'rinkuzu-qa-w45@fldubai.com',
   // Company ops/admin account created by SRE (RIN-629).
   'rinkuzu-ops@fldubai.com',
+  // QA W45 re-run account (RIN-665).
+  'rinkuzu-qa-w45b@fldubai.com',
+  // QA W45 re-run account (RIN-665).
+  'rinkuzu-qa-w45c@fldubai.com',
+  // Founder starter-quiz test signup (RIN-665). This one address only, not its domain.
+  'nk.toan@shirokumapower.com',
 ];
 
 export const ANALYTICS_TEST_EMAIL_PATTERN =

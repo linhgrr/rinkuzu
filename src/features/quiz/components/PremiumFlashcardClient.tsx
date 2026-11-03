@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { PremiumCreditCost } from '@/features/quiz/components/PremiumCreditCost';
+import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
 import {
   fetchPremiumFlashcard,
   revealPremiumFlashcard,
@@ -16,35 +18,60 @@ import {
   type PremiumFlashcardRevealViewModel,
   type PremiumFlashcardViewModel,
 } from '@/features/quiz/api/premium-quiz-api';
-import { ApiResponseError } from '@/lib/api/client';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 
-export function PremiumFlashcardClient({
-  metadata,
-}: {
+interface PremiumFlashcardClientProps {
   metadata: PremiumCatalogMetadataViewModel;
-}) {
+  /** The quiz the sign-in prompt returns to. */
+  slug: string;
+}
+
+export function PremiumFlashcardClient({ metadata, slug }: PremiumFlashcardClientProps) {
   const t = useTranslations('quiz');
   const tFlashcard = useTranslations('flashcard');
   const [card, setCard] = useState<PremiumFlashcardViewModel | null>(null);
   const [reveal, setReveal] = useState<PremiumFlashcardRevealViewModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [unlockRequired, setUnlockRequired] = useState(false);
+  // A 401 at any step means there is no session: same prompt as the player (RIN-747).
+  const [signInRequired, setSignInRequired] = useState(false);
+  // Secondary actions (reveal, move, unlock) show localized inline copy (RIN-753).
   const [error, setError] = useState('');
+  // A failed start replaces the deck with the page-level ErrorState.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const describeError = useApiErrorMessage();
+
+  function handleStartError(startError: unknown) {
+    const { kind } = describeApiError(startError);
+    if (kind === 'aborted') return;
+    if (kind === 'auth_required') {
+      setSignInRequired(true);
+    } else if (kind === 'unlock_required') {
+      setUnlockRequired(true);
+    } else {
+      setLoadError(startError);
+    }
+  }
+
+  function handleActionError(actionError: unknown) {
+    if (describeApiError(actionError).kind === 'auth_required') {
+      setSignInRequired(true);
+      return;
+    }
+    setError(describeError(actionError));
+  }
 
   async function begin() {
     setLoading(true);
     setError('');
+    setLoadError(null);
     try {
       setCard(await startPremiumFlashcardSession(metadata.quizId));
       setReveal(null);
       setUnlockRequired(false);
     } catch (startError) {
-      if (startError instanceof ApiResponseError && startError.status === 403) {
-        setUnlockRequired(true);
-      } else {
-        setError(extractUnknownErrorMessage(startError, t('loadError')));
-      }
+      handleStartError(startError);
     } finally {
       setLoading(false);
     }
@@ -61,12 +88,7 @@ export function PremiumFlashcardClient({
         setError('');
       })
       .catch((startError: unknown) => {
-        if (!active) return;
-        if (startError instanceof ApiResponseError && startError.status === 403) {
-          setUnlockRequired(true);
-        } else {
-          setError(extractUnknownErrorMessage(startError, t('loadError')));
-        }
+        if (active) handleStartError(startError);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -74,7 +96,7 @@ export function PremiumFlashcardClient({
     return () => {
       active = false;
     };
-  }, [metadata.quizId, t]);
+  }, [metadata.quizId]);
 
   async function showAnswer() {
     if (!card) return;
@@ -82,7 +104,7 @@ export function PremiumFlashcardClient({
     try {
       setReveal(await revealPremiumFlashcard(card.sessionId, card.revealCursor));
     } catch (revealError) {
-      setError(extractUnknownErrorMessage(revealError, t('loadError')));
+      handleActionError(revealError);
     } finally {
       setLoading(false);
     }
@@ -96,7 +118,7 @@ export function PremiumFlashcardClient({
       setCard(await fetchPremiumFlashcard(card.sessionId, cursor));
       setReveal(null);
     } catch (cardError) {
-      setError(extractUnknownErrorMessage(cardError, t('loadError')));
+      handleActionError(cardError);
     } finally {
       setLoading(false);
     }
@@ -104,11 +126,12 @@ export function PremiumFlashcardClient({
 
   async function unlock() {
     setLoading(true);
+    setError('');
     try {
       await unlockPremiumQuiz(metadata.quizId);
       await begin();
     } catch (unlockError) {
-      setError(extractUnknownErrorMessage(unlockError, t('premiumUnlockError')));
+      handleActionError(unlockError);
     } finally {
       setLoading(false);
     }
@@ -119,13 +142,28 @@ export function PremiumFlashcardClient({
     return new Set(reveal.type === 'single' ? [reveal.correctIndex] : reveal.correctIndexes);
   }, [reveal]);
 
+  if (signInRequired) {
+    return (
+      <PremiumQuizSignInPrompt
+        slug={slug}
+        title={metadata.title}
+        questionCount={metadata.questionCount}
+        {...(metadata.description === undefined ? {} : { description: metadata.description })}
+      />
+    );
+  }
+
   if (unlockRequired) {
     return (
       <main className="mx-auto max-w-xl px-4 py-16">
         <SurfaceCard className="p-8 text-center">
           <h1 className="text-2xl font-semibold text-ink">{metadata.title}</h1>
           <p className="mt-4 text-sm text-ink-muted">{t('premiumUnlockDescription')}</p>
-          {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+          {error ? (
+            <p role="alert" className="mt-4 text-sm text-error">
+              {error}
+            </p>
+          ) : null}
           <Button
             className="mt-5"
             loading={loading}
@@ -141,10 +179,17 @@ export function PremiumFlashcardClient({
   }
 
   if (!card) {
+    if (loading) {
+      return (
+        <div className="mx-auto max-w-2xl p-10 text-center text-ink-muted">{t('loadingQuiz')}</div>
+      );
+    }
+    // The whole deck failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <div className="mx-auto max-w-2xl p-10 text-center text-ink-muted">
-        {loading ? t('loadingQuiz') : error || t('loadError')}
-      </div>
+      <main className="mx-auto max-w-xl px-4 py-8 sm:py-12">
+        <h1 className="text-center text-2xl font-semibold text-ink">{metadata.title}</h1>
+        <ErrorState error={loadError} variant="page" onRetry={begin} />
+      </main>
     );
   }
 
@@ -175,7 +220,12 @@ export function PremiumFlashcardClient({
         </div>
       </header>
       {error ? (
-        <p className="relative z-50 mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>
+        <p
+          role="alert"
+          className="relative z-50 mb-4 rounded-xl bg-error-surface p-3 text-sm text-error"
+        >
+          {error}
+        </p>
       ) : null}
       <SurfaceCard className="relative z-50 p-6 sm:p-8">
         <div className="text-xl font-semibold leading-relaxed text-ink">

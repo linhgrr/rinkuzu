@@ -50,9 +50,9 @@ export function AnalyticsRoot() {
       };
   const localePrefix = isVietnamese ? 'vi' : 'en';
   // Both choices share one style apart from colour, so neither is easier to
-  // reach. The 19 px bold size is what lets white on `action-strong` count as
+  // reach. The 20 px bold size is what lets white on `action-strong` count as
   // large text (3:1); the decline button matches it.
-  const choiceClass = 'min-h-11 rounded-full px-4 py-2 text-[19px] font-bold leading-6 sm:min-w-28';
+  const choiceClass = 'min-h-11 rounded-full px-4 py-2 text-xl font-bold leading-6 sm:min-w-28';
 
   return (
     <aside
@@ -62,7 +62,7 @@ export function AnalyticsRoot() {
       className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-3 font-system shadow-xl sm:inset-x-4 sm:bottom-4 sm:flex sm:items-center sm:gap-5 sm:p-4 max-md:[html:has([data-bottom-nav])_&]:bottom-[calc(5.25rem+env(safe-area-inset-bottom))]"
       aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
     >
-      <p className="flex-1 text-[13px] leading-5 text-neutral-700 sm:text-sm sm:leading-6">
+      <p className="flex-1 text-sm leading-5 text-neutral-700 sm:leading-6">
         {copy.body}{' '}
         <a
           href={`/${localePrefix}/privacy`}

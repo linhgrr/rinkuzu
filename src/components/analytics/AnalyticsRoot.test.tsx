@@ -61,7 +61,7 @@ describe('AnalyticsRoot consent banner', () => {
     // Same row, same size: neither choice is easier to reach.
     expect(decline.parentElement).toBe(allow.parentElement);
     expect(decline.parentElement).toHaveClass('grid-cols-2');
-    for (const sizing of ['min-h-11', 'text-[19px]', 'font-bold', 'px-4', 'py-2']) {
+    for (const sizing of ['min-h-11', 'text-xl', 'font-bold', 'px-4', 'py-2']) {
       expect(decline).toHaveClass(sizing);
       expect(allow).toHaveClass(sizing);
     }

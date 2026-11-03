@@ -1,14 +1,15 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { MongoClient, ObjectId } from 'mongodb';
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Browser, type Page, type TestInfo } from '@playwright/test';
 import { createE2EUserEmail } from './support/fixture-identifiers';
 
 /**
  * /profile must stay put while the SessionProvider polls (RIN-676).
  *
- * The provider refetches /api/auth/session every 5 s for SingleSessionGuard
- * and hands out a new session object each time. The profile page used to key
+ * SingleSessionGuard checks /api/auth/session every 30 s while the tab is
+ * visible and once when it becomes visible again (RIN-687; the SessionProvider
+ * poll used to do it every 5 s, two GETs per tick). The profile page used to key
  * its fetch on that object and its tab on a React key, so every poll and every
  * tab click refetched /api/user/profile, flashed the skeleton and threw away
  * what the learner had typed.
@@ -17,6 +18,7 @@ import { createE2EUserEmail } from './support/fixture-identifiers';
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
 const PROFILE_ROUTE = '/api/user/profile';
 const SESSION_ROUTE = '/api/auth/session';
+const SESSION_CHECK_INTERVAL_MS = 30_000;
 const DEEP_LINK_TABS = [
   { tab: 'overview', name: 'Overview' },
   { tab: 'personal', name: 'Personal' },
@@ -117,6 +119,7 @@ test.describe('profile page stability', () => {
     await withLearner(testInfo, async (learner) => {
       await login(page, learner);
 
+      await page.clock.install();
       const profileRequests = countRequests(page, PROFILE_ROUTE);
       const sessionRequests = countRequests(page, SESSION_ROUTE);
       await page.goto('/en/profile?tab=personal');
@@ -125,10 +128,14 @@ test.describe('profile page stability', () => {
       await expect(displayName).toHaveValue('E2E Profile Learner');
       await displayName.fill('Typed while polling');
 
-      // A focus refetch (next-auth listens for visibilitychange) plus two
-      // refetchInterval ticks (5 s each).
+      // One check when the tab becomes visible, then exactly one per 30 s tick.
+      const before = sessionRequests();
       await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-      await expect.poll(sessionRequests, { timeout: 15_000 }).toBeGreaterThanOrEqual(2);
+      await expect.poll(sessionRequests).toBe(before + 1);
+      await page.clock.runFor(SESSION_CHECK_INTERVAL_MS * 2);
+      await expect.poll(sessionRequests).toBe(before + 3);
+      await page.waitForTimeout(1_000);
+      expect(sessionRequests()).toBe(before + 3);
 
       await expect(displayName).toHaveValue('Typed while polling');
       await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
@@ -150,6 +157,36 @@ test.describe('profile page stability', () => {
           'aria-selected',
           'true',
         );
+      }
+    });
+  });
+});
+
+async function signedInPage(browser: Browser, learner: SeededUser): Promise<Page> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await login(page, learner);
+  return page;
+}
+
+test.describe('single active session', () => {
+  test('a second sign-in signs the first browser out on its next session check @profile-stability', async ({
+    browser,
+  }, testInfo) => {
+    test.slow();
+    await withLearner(testInfo, async (learner) => {
+      const first = await signedInPage(browser, learner);
+      const second = await signedInPage(browser, learner);
+      try {
+        await first.goto('/en/profile');
+        await first.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+        await first.waitForURL(/\/en\/login\?reason=session_replaced/, { timeout: 15_000 });
+
+        await second.goto('/en/profile');
+        await expect(second).toHaveURL(/\/en\/profile$/);
+      } finally {
+        await first.context().close();
+        await second.context().close();
       }
     });
   });

@@ -100,4 +100,42 @@ describe('api client helpers', () => {
       code: 'invalid_response_envelope',
     });
   });
+
+  it('reads retryAfterSeconds from the Retry-After header or the error meta', async () => {
+    const envelope = (meta?: unknown) =>
+      JSON.stringify({
+        success: false,
+        error: { code: 'rate_limit_exceeded', message: 'Rate limit exceeded', meta },
+      });
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockResolvedValueOnce(
+      new Response(envelope(), { status: 429, headers: { 'Retry-After': '42' } }),
+    );
+    await expect(fetchApiResponse('/api/limited')).rejects.toMatchObject({
+      retryAfterSeconds: 42,
+    });
+
+    const inTwoMinutes = new Date(Date.now() + 120_000).toUTCString();
+    fetchMock.mockResolvedValueOnce(
+      new Response(envelope(), { status: 429, headers: { 'Retry-After': inTwoMinutes } }),
+    );
+    const dated = await fetchApiResponse('/api/limited').catch((error: unknown) => error);
+    expect((dated as { retryAfterSeconds: number }).retryAfterSeconds).toBeGreaterThan(110);
+    expect((dated as { retryAfterSeconds: number }).retryAfterSeconds).toBeLessThanOrEqual(120);
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(envelope({ retry_after_seconds: 9 }), { status: 429 }),
+    );
+    await expect(fetchApiResponse('/api/limited')).rejects.toMatchObject({ retryAfterSeconds: 9 });
+
+    fetchMock.mockResolvedValueOnce(new Response(envelope(), { status: 429 }));
+    await expect(fetchApiResponse('/api/limited')).rejects.toMatchObject({
+      retryAfterSeconds: null,
+    });
+  });
+
+  it('lets network failures reject with the fetch TypeError', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(fetchApiData('/api/offline')).rejects.toBeInstanceOf(TypeError);
+  });
 });

@@ -9,6 +9,10 @@
     "src/services/abuse/abuse-identity.ts!",
     "doctor.config.mjs",
     "tests/types/declaration-contracts.ts",
+    // RIN-748: the API error layer ships before its call sites (sibling migration PRs).
+    // Remove these two entries in the first migration PR that imports them.
+    "src/lib/api/error-kind.ts!",
+    "src/lib/api/use-api-error.ts!",
   ],
   "project": [
     "src/**/*.{ts,tsx}!",

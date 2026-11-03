@@ -3,15 +3,24 @@
 import '@testing-library/jest-dom/vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
 import { FlashcardsPageClient } from './FlashcardsPageClient';
 
-const { fetchFlashcardsMock, fetchPremiumMetadataMock } = vi.hoisted(() => ({
-  fetchFlashcardsMock: vi.fn(),
-  fetchPremiumMetadataMock: vi.fn(),
+const { fetchFlashcardsMock, fetchPremiumMetadataMock, submitFlashcardReviewMock, sessionState } =
+  vi.hoisted(() => ({
+    fetchFlashcardsMock: vi.fn(),
+    fetchPremiumMetadataMock: vi.fn(),
+    submitFlashcardReviewMock: vi.fn<(...args: unknown[]) => Promise<unknown>>(() =>
+      Promise.resolve({}),
+    ),
+    sessionState: { status: 'authenticated' as 'authenticated' | 'unauthenticated' | 'loading' },
+  }));
+
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({ data: null, status: sessionState.status }),
 }));
 
 // Namespaced keys make a label read from the wrong namespace visible in the DOM.
@@ -56,11 +65,11 @@ vi.mock('@/features/quiz/api/premium-quiz-api', () => ({
 
 vi.mock('@/features/quiz/api/flashcards-api', () => ({
   fetchFlashcardQuizViewModel: (...args: unknown[]) => fetchFlashcardsMock(...args),
-  submitFlashcardReview: () => Promise.resolve({}),
+  submitFlashcardReview: (...args: unknown[]) => submitFlashcardReviewMock(...args),
 }));
 
 vi.mock('@/features/quiz/components/PremiumFlashcardClient', () => ({
-  PremiumFlashcardClient: () => null,
+  PremiumFlashcardClient: () => <div data-testid="premium-flashcard-client" />,
 }));
 
 vi.mock('@/features/quiz/components/Flashcard', async () => {
@@ -239,6 +248,78 @@ describe('FlashcardsPageClient design follow-ups (RIN-770)', () => {
     for (const label of ['quiz.known', 'quiz.unknown', 'quiz.mastery']) {
       expect((await screen.findByText(label)).className.split(/\s+/)).toContain('text-center');
     }
+  });
+});
+
+describe('FlashcardsPageClient SRS reviews and premium lookup (RIN-798)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionState.status = 'authenticated';
+    fetchPremiumMetadataMock.mockResolvedValue(null);
+    fetchFlashcardsMock.mockResolvedValue(quiz);
+    submitFlashcardReviewMock.mockResolvedValue({});
+  });
+
+  it('loads a normal quiz when the premium lookup answers null', async () => {
+    render(<FlashcardsPageClient />);
+
+    expect(await screen.findByTestId('flashcard-progress-header')).toBeInTheDocument();
+    expect(fetchPremiumMetadataMock).toHaveBeenCalledWith('demo-flash');
+    expect(fetchFlashcardsMock).toHaveBeenCalledWith('demo-flash');
+    expect(screen.queryByTestId('premium-flashcard-client')).not.toBeInTheDocument();
+  });
+
+  it('renders the premium client when the lookup returns metadata', async () => {
+    fetchPremiumMetadataMock.mockResolvedValue({
+      quizId: 'premium-1',
+      title: 'Premium',
+      slug: 'demo-flash',
+      questionCount: 20,
+    });
+    render(<FlashcardsPageClient />);
+
+    expect(await screen.findByTestId('premium-flashcard-client')).toBeInTheDocument();
+    expect(fetchFlashcardsMock).not.toHaveBeenCalled();
+  });
+
+  it('submits one SRS review per answer when signed in', async () => {
+    render(<FlashcardsPageClient />);
+
+    fireEvent.click(await screen.findByText('swipe-right'));
+
+    await waitFor(() => expect(submitFlashcardReviewMock).toHaveBeenCalledTimes(1));
+    expect(submitFlashcardReviewMock).toHaveBeenCalledWith(
+      expect.objectContaining({ quizSlug: 'demo-flash', rating: 'good' }),
+    );
+  });
+
+  it.each(['unauthenticated', 'loading'] as const)(
+    'sends no SRS review when the session is %s',
+    async (status) => {
+      sessionState.status = status;
+      render(<FlashcardsPageClient />);
+
+      fireEvent.click(await screen.findByText('swipe-left'));
+      fireEvent.click(screen.getByText('swipe-right'));
+
+      expect(await screen.findByText('quiz.unknownQuestions')).toBeInTheDocument();
+      expect(submitFlashcardReviewMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it('stays quiet when an expired session answers 401', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    submitFlashcardReviewMock.mockRejectedValue(
+      new ApiResponseError({ message: 'Unauthorized', status: 401, payload: null }),
+    );
+    render(<FlashcardsPageClient />);
+
+    fireEvent.click(await screen.findByText('swipe-right'));
+
+    await waitFor(() => expect(submitFlashcardReviewMock).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });
 

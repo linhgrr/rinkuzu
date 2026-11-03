@@ -3,6 +3,7 @@
 import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -395,6 +396,7 @@ export function FlashcardsPageClient() {
   const t = useTranslations('quiz');
   const tCommon = useTranslations('common');
   const slug = useRequiredRouteParam('slug');
+  const { status: sessionStatus } = useSession();
   const [state, dispatch] = useReducer(flashcardPageReducer, initialFlashcardPageState);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [premiumMetadata, setPremiumMetadata] = useState<PremiumCatalogMetadataViewModel | null>(
@@ -408,8 +410,10 @@ export function FlashcardsPageClient() {
       try {
         try {
           const metadata = await fetchPremiumCatalogMetadata(slug);
-          if (isActive) setPremiumMetadata(metadata);
-          return;
+          if (metadata) {
+            if (isActive) setPremiumMetadata(metadata);
+            return;
+          }
         } catch (metadataError) {
           if (
             !(metadataError instanceof ApiResponseError) ||
@@ -477,11 +481,21 @@ export function FlashcardsPageClient() {
 
     dispatch({ type: 'registerSwipe', direction });
 
+    // SRS reviews belong to an account: guests (and a still-loading session) only
+    // practise locally, so they send nothing (RIN-798).
+    if (sessionStatus !== 'authenticated') {
+      return;
+    }
+
     void submitFlashcardReview({
       quizSlug: quiz.slug,
       question: currentQuestion,
       rating: direction === 'right' ? 'good' : 'hard',
     }).catch((error) => {
+      // A session that expired mid-run is not an error worth logging.
+      if (error instanceof ApiResponseError && error.status === 401) {
+        return;
+      }
       console.error('Failed to submit SRS review from flashcard:', error);
     });
   };

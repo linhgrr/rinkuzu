@@ -507,6 +507,28 @@ export function executeMutationGate(root, options) {
   };
 }
 
+/** Echo the failure diagnostics into the step log so triage never needs the workspace volume. */
+function printFailureMeta(root) {
+  try {
+    const meta = JSON.parse(
+      readFileSync(path.join(root, 'reports', 'mutation', 'gate-run-meta.json'), 'utf8'),
+    );
+    const keys = [
+      'failureReason',
+      'errorMessage',
+      'strykerExitCode',
+      'strykerStderrTail',
+      'strykerStdoutTail',
+    ];
+    for (const key of keys) {
+      if (meta[key] !== undefined && meta[key] !== null)
+        console.error(`gate-run-meta ${key}: ${meta[key]}`);
+    }
+  } catch {
+    console.error('gate-run-meta.json unreadable; no diagnostics to echo.');
+  }
+}
+
 const isMainModule =
   process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMainModule) {
@@ -531,6 +553,7 @@ if (isMainModule) {
       console.error(
         `Mutation gate failed before evaluation (see gate-run-meta.json). ${MUTATION_RERUN_MESSAGE}`,
       );
+      printFailureMeta(process.cwd());
     }
     process.exitCode = result.exitCode;
   } catch (error) {

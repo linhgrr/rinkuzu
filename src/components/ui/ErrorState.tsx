@@ -19,7 +19,7 @@ interface ErrorStateProps {
   /** Any thrown value; copy, tone and CTAs come from `describeApiError` (RIN-748). */
   error?: unknown;
   /** Already-localized text. Wins over the error's body copy when given. */
-  message?: string;
+  message?: string | undefined;
   variant?: ErrorStateVariant;
   /** May return a promise: the button shows a spinner until it settles. */
   onRetry?: () => void | Promise<unknown>;
@@ -313,7 +313,7 @@ function ErrorStateAction({
   const label = kind === 'reload' ? t('errors.api.actions.reload') : t('common.retry');
   return (
     <Button
-      ref={primary ? primaryRef : undefined}
+      {...(primary ? { ref: primaryRef } : {})}
       variant={primary ? 'primary' : 'ghost'}
       className={cn(actionClass, waiting && 'cursor-not-allowed opacity-50')}
       aria-disabled={waiting || undefined}

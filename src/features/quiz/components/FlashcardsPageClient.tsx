@@ -208,21 +208,21 @@ function FlashcardResultsView({
       </div>
 
       <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-6">
-        <Card>
+        <Card className="p-0 sm:p-6">
           <CardContent className="px-2 py-4 text-center sm:p-6">
             <div className="mb-2 text-2xl font-bold text-green-600 sm:text-3xl">{knownCount}</div>
             <div className={statLabelClassName}>{t('known')}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="p-0 sm:p-6">
           <CardContent className="px-2 py-4 text-center sm:p-6">
             <div className="mb-2 text-2xl font-bold text-red-600 sm:text-3xl">{unknownCount}</div>
             <div className={statLabelClassName}>{t('unknown')}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="p-0 sm:p-6">
           <CardContent className="px-2 py-4 text-center sm:p-6">
             <div className="mb-2 text-2xl font-bold text-brand-trust sm:text-3xl">
               {masteryPercentage}%

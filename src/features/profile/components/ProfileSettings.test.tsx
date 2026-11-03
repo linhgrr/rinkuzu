@@ -1,14 +1,26 @@
 /** @vitest-environment jsdom */
 
 import type { ComponentProps, ReactNode } from 'react';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiResponseError } from '@/lib/api/client';
 import ProfileSettings from './ProfileSettings';
 
-const { fetchProfileMock, routerReplaceMock, sessionState, translateMock } = vi.hoisted(() => ({
+const {
+  changePasswordMock,
+  fetchProfileMock,
+  routerPushMock,
+  routerReplaceMock,
+  sessionState,
+  toastErrorMock,
+  translateMock,
+} = vi.hoisted(() => ({
+  changePasswordMock: vi.fn(),
   fetchProfileMock: vi.fn(),
+  routerPushMock: vi.fn(),
   routerReplaceMock: vi.fn(),
+  toastErrorMock: vi.fn(),
   sessionState: { current: { user: { id: 'user-1' } } },
   translateMock: (key: string) => key,
 }));
@@ -19,6 +31,7 @@ vi.mock('next-auth/react', () => ({
 
 vi.mock('next-intl', () => ({
   useTranslations: () => translateMock,
+  useLocale: () => 'en',
 }));
 
 vi.mock('next/image', () => ({
@@ -31,11 +44,12 @@ vi.mock('@/i18n/navigation', () => ({
       {children}
     </a>
   ),
-  useRouter: () => ({ replace: routerReplaceMock }),
+  useRouter: () => ({ replace: routerReplaceMock, push: routerPushMock, back: vi.fn() }),
+  usePathname: () => '/profile',
 }));
 
 vi.mock('sonner', () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: toastErrorMock, success: vi.fn() },
 }));
 
 vi.mock('@/components/ui/ConfirmModal', () => ({
@@ -43,7 +57,7 @@ vi.mock('@/components/ui/ConfirmModal', () => ({
 }));
 
 vi.mock('@/features/profile/api/profile-settings-api', () => ({
-  changeProfilePassword: vi.fn(),
+  changeProfilePassword: changePasswordMock,
   fetchProfileSettingsViewModel: fetchProfileMock,
   removeProfileAvatar: vi.fn(),
   updateProfileSettingsViewModel: vi.fn(),
@@ -184,5 +198,93 @@ describe('ProfileSettings control center', () => {
 
     expect(fetchProfileMock).toHaveBeenCalledTimes(1);
     expect(screen.queryByLabelText('loading')).toBeNull();
+  });
+});
+
+const serverFailure = (status: number, code: string) =>
+  new ApiResponseError({
+    message: 'Mongo timeout for learner@example.com',
+    status,
+    payload: { success: false, error: { code, detail: 'learner@example.com' } },
+    code,
+    detail: 'Mongo timeout for learner@example.com',
+  });
+
+describe('ProfileSettings API errors (RIN-755)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+    sessionState.current = { user: { id: 'user-1' } };
+  });
+
+  it('shows an inline ErrorState with retry when the profile fails to load, never the server text', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const user = userEvent.setup();
+    fetchProfileMock
+      .mockRejectedValueOnce(serverFailure(500, 'internal_error'))
+      .mockResolvedValueOnce(learnerProfile);
+
+    render(<ProfileSettings />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('errors.api.server');
+    expect(document.body.textContent).not.toContain('learner@example.com');
+    expect(toastErrorMock).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'common.retry' }));
+
+    expect(await screen.findByRole('heading', { name: 'Learner' })).toBeTruthy();
+    expect(fetchProfileMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('offers sign-in instead of an error box when the session expired', async () => {
+    fetchProfileMock.mockRejectedValueOnce(serverFailure(401, 'unauthorized'));
+
+    render(<ProfileSettings />);
+
+    const signIn = await screen.findByRole('link', { name: 'errors.api.actions.signIn' });
+    expect(signIn.getAttribute('href')).toBe(
+      `/login?callbackUrl=${encodeURIComponent('/profile')}`,
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  async function submitPasswordChange() {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+    await user.type(await screen.findByLabelText('currentPassword'), 'old-secret');
+    await user.type(screen.getByLabelText('newPassword'), 'new-secret-1');
+    await user.type(screen.getByLabelText('confirmNewPassword'), 'new-secret-1');
+    await user.click(screen.getByRole('button', { name: 'updatePassword' }));
+  }
+
+  it('toasts localized copy when changing the password fails on the server', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    changePasswordMock.mockRejectedValueOnce(serverFailure(500, 'internal_error'));
+
+    await submitPasswordChange();
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('errors.api.server'));
+    expect(JSON.stringify(toastErrorMock.mock.calls)).not.toContain('learner@example.com');
+  });
+
+  it('says the current password is wrong for a 400, without the server text', async () => {
+    changePasswordMock.mockRejectedValueOnce(serverFailure(400, 'validation_error'));
+
+    await submitPasswordChange();
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('currentPasswordIncorrect'));
+  });
+
+  it('sends an expired session to sign-in instead of toasting', async () => {
+    changePasswordMock.mockRejectedValueOnce(serverFailure(401, 'unauthorized'));
+
+    await submitPasswordChange();
+
+    await waitFor(() => expect(routerPushMock).toHaveBeenCalledTimes(1));
+    expect(String(routerPushMock.mock.calls[0]?.[0])).toMatch(/^\/login\?callbackUrl=/);
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 });

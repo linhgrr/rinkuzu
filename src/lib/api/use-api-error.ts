@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
 import { resolveAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
@@ -41,4 +42,24 @@ export function useAuthRequiredPrompt(): () => void {
     const { pathname, search } = window.location;
     router.push(buildAuthRequiredHref(`${pathname}${search}`, locale));
   }, [router, locale]);
+}
+
+/**
+ * Failed mutation (RIN-755): an expired session goes to sign-in, an abort shows nothing,
+ * anything else is a toast with copy from the error layer. Never the server text.
+ */
+export function useApiErrorToast(): (error: unknown) => void {
+  const describeError = useApiErrorMessage();
+  const promptSignIn = useAuthRequiredPrompt();
+  return useCallback(
+    (error: unknown) => {
+      if (describeApiError(error).kind === 'auth_required') {
+        promptSignIn();
+        return;
+      }
+      const message = describeError(error);
+      if (message) toast.error(message);
+    },
+    [describeError, promptSignIn],
+  );
 }

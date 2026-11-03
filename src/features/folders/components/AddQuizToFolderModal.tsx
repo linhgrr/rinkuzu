@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ModalListSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
 import {
   addQuizToFolderViewModel,
   fetchFolderLibraryQuizViewModels,
@@ -20,38 +20,39 @@ interface State {
   search: string;
   loading: boolean;
   addingId: string | null;
-  error: string;
+  /** Load failure, rendered by ErrorState from the error layer (RIN-755). */
+  loadError: unknown;
 }
 
 type Action =
   | { type: 'load:start' }
   | { type: 'load:success'; quizzes: FolderLibraryQuizViewModel[] }
-  | { type: 'load:error'; error: string }
+  | { type: 'load:error'; error: unknown }
   | { type: 'search:set'; search: string }
   | { type: 'add:start'; quizId: string }
   | { type: 'add:success'; quizId: string; folder: string | null }
-  | { type: 'add:error'; error: string };
+  | { type: 'add:error' };
 
 const initialState: State = {
   quizzes: [],
   search: '',
   loading: false,
   addingId: null,
-  error: '',
+  loadError: null,
 };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'load:start':
-      return { ...state, loading: true, error: '' };
+      return { ...state, loading: true, loadError: null };
     case 'load:success':
-      return { ...state, quizzes: action.quizzes, loading: false, error: '' };
+      return { ...state, quizzes: action.quizzes, loading: false, loadError: null };
     case 'load:error':
-      return { ...state, loading: false, error: action.error };
+      return { ...state, loading: false, loadError: action.error };
     case 'search:set':
       return { ...state, search: action.search };
     case 'add:start':
-      return { ...state, addingId: action.quizId, error: '' };
+      return { ...state, addingId: action.quizId };
     case 'add:success':
       return {
         ...state,
@@ -61,7 +62,7 @@ function reducer(state: State, action: Action): State {
         ),
       };
     case 'add:error':
-      return { ...state, addingId: null, error: action.error };
+      return { ...state, addingId: null };
   }
 }
 
@@ -77,6 +78,8 @@ export function AddQuizToFolderModal({
   onAdded: () => void;
 }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const showMutationError = useApiErrorToast();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -89,10 +92,7 @@ export function AddQuizToFolderModal({
         if (active) dispatch({ type: 'load:success', quizzes });
       } catch (requestError) {
         if (active) {
-          dispatch({
-            type: 'load:error',
-            error: extractUnknownErrorMessage(requestError, 'Failed to load quizzes'),
-          });
+          dispatch({ type: 'load:error', error: requestError });
         }
       }
     }
@@ -101,7 +101,7 @@ export function AddQuizToFolderModal({
     return () => {
       active = false;
     };
-  }, [isOpen]);
+  }, [isOpen, loadAttempt]);
 
   const query = state.search.trim().toLowerCase();
   const visibleQuizzes = query
@@ -119,10 +119,8 @@ export function AddQuizToFolderModal({
       });
       onAdded();
     } catch (requestError) {
-      dispatch({
-        type: 'add:error',
-        error: extractUnknownErrorMessage(requestError, 'Failed to add quiz'),
-      });
+      dispatch({ type: 'add:error' });
+      showMutationError(requestError);
     }
   }
 
@@ -141,7 +139,12 @@ export function AddQuizToFolderModal({
           value={state.search}
           onChange={(event) => dispatch({ type: 'search:set', search: event.target.value })}
         />
-        {state.error ? <ErrorState message={state.error} /> : null}
+        {state.loadError ? (
+          <ErrorState
+            error={state.loadError}
+            onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
+          />
+        ) : null}
         <div className="max-h-[55vh] space-y-2 overflow-y-auto">
           {state.loading ? <ModalListSkeleton label="Loading quizzes…" /> : null}
           {!state.loading && visibleQuizzes.length === 0 ? (

@@ -8,6 +8,7 @@ import {
   type MoneyAdjustmentType,
   type MoneyAllocation,
 } from '@/services/billing/domain/settlement-math';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 /**
  * Recording money that moved outside the provider.
@@ -28,6 +29,7 @@ export function RecordAdjustmentForm({
   orderId: string;
   onRecorded: () => void;
 }) {
+  const describeError = useAdminApiErrorMessage();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<MoneyAdjustmentType>('refund');
   const [reference, setReference] = useState('');
@@ -57,7 +59,7 @@ export function RecordAdjustmentForm({
       setOpen(false);
       onRecorded();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Failed to record adjustment');
+      setError(describeError(caught));
     }
     setBusy(false);
   };

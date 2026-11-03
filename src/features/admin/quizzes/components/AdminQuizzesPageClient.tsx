@@ -26,7 +26,7 @@ import {
   fetchAdminQuizListViewModel,
   setAdminQuizVisibility,
 } from '@/features/admin/quizzes/api/admin-quizzes-api';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { ROUTES } from '@/shared/constants/routes';
 import {
   HiOutlineDocumentText,
@@ -151,6 +151,7 @@ function AdminQuizAuthorLink({ author }: AdminQuizAuthorLinkProps) {
 
 export function AdminQuizzesPageClient() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
@@ -177,7 +178,7 @@ export function AdminQuizzesPageClient() {
           type: 'patch',
           value: {
             loading: false,
-            error: extractUnknownErrorMessage(error, t('quizManagementLoadError')),
+            error: describeError(error, t('quizManagementLoadError')),
           },
         });
       }
@@ -189,7 +190,7 @@ export function AdminQuizzesPageClient() {
       cancelled = true;
       controller.abort();
     };
-  }, [state.page, state.appliedSearch, state.visibility, t]);
+  }, [state.page, state.appliedSearch, state.visibility, t, describeError]);
 
   const pageStats = {
     public: state.quizzes.filter((quiz) => quiz.visibility === 'public').length,
@@ -206,7 +207,7 @@ export function AdminQuizzesPageClient() {
         type: 'patch',
         value: {
           deletingQuizId: null,
-          error: extractUnknownErrorMessage(error, t('quizManagementDeleteError')),
+          error: describeError(error, t('quizManagementDeleteError')),
         },
       });
     }
@@ -224,7 +225,7 @@ export function AdminQuizzesPageClient() {
         value: {
           quizToToggle: null,
           togglingQuizId: null,
-          error: extractUnknownErrorMessage(error, t('quizVisibilityChangeError')),
+          error: describeError(error, t('quizVisibilityChangeError')),
         },
       });
     }
@@ -246,7 +247,7 @@ export function AdminQuizzesPageClient() {
         type: 'patch',
         value: {
           previewingQuizId: null,
-          error: extractUnknownErrorMessage(error, t('quizManagementLoadError')),
+          error: describeError(error, t('quizManagementLoadError')),
         },
       });
     }

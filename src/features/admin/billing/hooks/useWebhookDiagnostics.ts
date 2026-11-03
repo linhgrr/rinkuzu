@@ -6,6 +6,7 @@ import type {
   AdminBillingPaginationViewModel,
   AdminWebhookDiagnosticViewModel,
 } from '@/features/admin/billing/types/admin-billing-view-model';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface DiagnosticsState {
   webhooks: AdminWebhookDiagnosticViewModel[];
@@ -71,6 +72,7 @@ export interface UseWebhookDiagnostics {
  * being three separate renders that can be observed half-applied.
  */
 export function useWebhookDiagnostics(active: boolean): UseWebhookDiagnostics {
+  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const { verificationClass, reloadToken, pagination } = state;
   const { page, limit } = pagination;
@@ -98,13 +100,13 @@ export function useWebhookDiagnostics(active: boolean): UseWebhookDiagnostics {
           type: 'patch',
           value: {
             loading: false,
-            error: caught instanceof Error ? caught.message : 'Failed to load webhook diagnostics',
+            error: describeError(caught),
           },
         });
       });
 
     return () => controller.abort();
-  }, [active, page, limit, verificationClass, reloadToken]);
+  }, [active, page, limit, verificationClass, reloadToken, describeError]);
 
   return {
     webhooks: state.webhooks,

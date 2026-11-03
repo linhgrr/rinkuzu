@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useEffectEvent, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/features/admin/stats/components/StatsModal';
 import { EntitlementTelemetrySection } from '@/features/admin/stats/components/EntitlementTelemetrySection';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 const KpiSparkline = dynamic(
   () =>
@@ -631,8 +632,13 @@ function AdminStatsModals({ activeModal, onClose, t }: AdminStatsModalsProps) {
 
 export function AdminStatsPageClient() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(adminStatsReducer, initialState);
   const [workspace, setWorkspace] = useState<StatsWorkspace>('overview');
+
+  const onFetchError = useEffectEvent((error: unknown) => {
+    dispatch({ type: 'fetchError', message: describeError(error) });
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -642,10 +648,7 @@ export function AdminStatsPageClient() {
         const data = await fetchAdminStatsViewModel();
         dispatch({ type: 'fetchSuccess', stats: data });
       } catch (error) {
-        dispatch({
-          type: 'fetchError',
-          message: error instanceof Error ? error.message : 'Failed to fetch statistics',
-        });
+        onFetchError(error);
       }
     };
 

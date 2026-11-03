@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { QuestionContent } from '@/components/ui/QuestionContent';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import {
   decidePremiumSubmission,
   fetchPremiumSubmissions,
@@ -19,6 +19,7 @@ import {
 
 export function PremiumSubmissionsPageClient() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const [status, setStatus] = useState<'' | PremiumSubmissionStatusViewModel>('pending');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [credits, setCredits] = useState(3);
@@ -42,7 +43,7 @@ export function PremiumSubmissionsPageClient() {
         );
       },
       onError: (loadError: unknown) => {
-        setError(extractUnknownErrorMessage(loadError, t('premiumReviewLoadError')));
+        setError(describeError(loadError, t('premiumReviewLoadError')));
       },
     },
   );
@@ -59,7 +60,7 @@ export function PremiumSubmissionsPageClient() {
         revalidate: false,
       });
     } catch (reviewError) {
-      setError(extractUnknownErrorMessage(reviewError, t('premiumReviewAiError')));
+      setError(describeError(reviewError, t('premiumReviewAiError')));
     } finally {
       setBusy(null);
     }
@@ -84,7 +85,7 @@ export function PremiumSubmissionsPageClient() {
       setNote('');
       setOverrideReason('');
     } catch (decisionError) {
-      setError(extractUnknownErrorMessage(decisionError, t('premiumReviewDecisionError')));
+      setError(describeError(decisionError, t('premiumReviewDecisionError')));
     } finally {
       setBusy(null);
     }
@@ -97,7 +98,7 @@ export function PremiumSubmissionsPageClient() {
       const source = await fetchPremiumSourceUrl(submission.id);
       window.open(source.url, '_blank', 'noopener,noreferrer');
     } catch (sourceError) {
-      setError(extractUnknownErrorMessage(sourceError, t('premiumReviewSourceError')));
+      setError(describeError(sourceError, t('premiumReviewSourceError')));
     } finally {
       setBusy(null);
     }

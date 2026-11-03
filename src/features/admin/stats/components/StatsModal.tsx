@@ -15,6 +15,7 @@ import type {
   StatsModalPaginationViewModel,
 } from '@/features/admin/stats/types/stats-modal-view-model';
 import Pagination from '@/components/ui/Pagination';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface StatsModalProps {
   isOpen: boolean;
@@ -546,6 +547,7 @@ export default function StatsModal({
   children,
 }: StatsModalProps) {
   const t = useTranslations('statsModal');
+  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(statsModalReducer, initialStatsModalState);
   const sortOptions = getSortOptions(type, t);
   const requestSignature = `${type}:${apiEndpoint}`;
@@ -590,7 +592,7 @@ export default function StatsModal({
 
       dispatch({
         type: 'loadError',
-        error: error instanceof Error ? error.message : 'Failed to fetch data',
+        error: describeError(error),
       });
     }
   };
@@ -608,7 +610,7 @@ export default function StatsModal({
     if (loadedSignatureRef.current === requestSignature) return;
     loadedSignatureRef.current = requestSignature;
     void latestLoadDataRef.current(1);
-  }, [isOpen, requestSignature]);
+  }, [isOpen, requestSignature, describeError]);
 
   const handleSortChange = (field: string) => {
     const nextSortBy = field;

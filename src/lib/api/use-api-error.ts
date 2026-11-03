@@ -5,7 +5,7 @@ import { useCallback } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { resolveAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
-import { describeApiError } from './error-kind';
+import { describeApiError, KIND_MESSAGE_KEYS } from './error-kind';
 
 /**
  * Localized copy for an API error (RIN-748 contract, section 4).
@@ -25,6 +25,35 @@ export function useApiErrorMessage(): (error: unknown, fallback?: string) => str
       if (kind === 'unknown' && code === null && status === null && fallback) return fallback;
       // USER_SAFE_DETAIL_CODES is empty in v1, so server text is never returned here.
       return t(described.messageKey, described.messageValues);
+    },
+    [t],
+  );
+}
+
+const GENERIC_MESSAGE_KEYS: ReadonlySet<string> = new Set([
+  KIND_MESSAGE_KEYS.server,
+  KIND_MESSAGE_KEYS.unknown,
+]);
+
+/**
+ * Admin surfaces (RIN-757): localized copy plus `Code: x` for diagnosis, never the server text.
+ * `fallback` is already-localized, task-specific copy ("Could not save the key"); it replaces the
+ * generic server/unknown sentence, while code-specific and kind copy (forbidden, rate limit) win.
+ * Returns '' for aborted requests.
+ */
+export function useAdminApiErrorMessage(): (error: unknown, fallback?: string) => string {
+  const t = useTranslations();
+  return useCallback(
+    (error: unknown, fallback?: string) => {
+      const described = describeApiError(error);
+      if (described.kind === 'aborted') return '';
+      const { kind, code, status } = described;
+      console.warn('[api-error]', { kind, code, status });
+      const message =
+        fallback && GENERIC_MESSAGE_KEYS.has(described.messageKey)
+          ? fallback
+          : t(described.messageKey, described.messageValues);
+      return code ? `${message} · ${t('errors.api.codeLabel', { code })}` : message;
     },
     [t],
   );

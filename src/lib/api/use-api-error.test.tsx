@@ -5,7 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import enErrors from '@/../messages/en/errors.json';
 import viErrors from '@/../messages/vi/errors.json';
 import { ApiResponseError } from './client';
-import { buildAuthRequiredHref, useApiErrorMessage, useAuthRequiredPrompt } from './use-api-error';
+import {
+  buildAuthRequiredHref,
+  useAdminApiErrorMessage,
+  useApiErrorMessage,
+  useAuthRequiredPrompt,
+} from './use-api-error';
 
 const pushMock = vi.fn();
 
@@ -81,6 +86,48 @@ describe('useApiErrorMessage', () => {
     expect(result.current(new TypeError('Failed to fetch'), 'Không tải được')).toBe(
       viErrors.api.network,
     );
+  });
+});
+
+describe('useAdminApiErrorMessage', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const adminError = (status: number, code: string) =>
+    new ApiResponseError({
+      message: 'Raw server text for admin secret@example.com',
+      status,
+      payload: { success: false, error: { code, message: 'secret@example.com' } },
+      code,
+      detail: 'secret@example.com',
+    });
+
+  it('adds the code (never the server text) to code-specific admin copy', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { result } = renderHook(() => useAdminApiErrorMessage(), { wrapper: wrapper('en') });
+
+    const message = result.current(adminError(409, 'last_active_admin'), 'Could not update user');
+
+    expect(message).toBe(`${enErrors.api.codes.lastActiveAdmin} · Code: last_active_admin`);
+    expect(message).not.toContain('secret');
+  });
+
+  it('uses the localized fallback for generic server errors and keeps kind copy otherwise', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { result } = renderHook(() => useAdminApiErrorMessage(), { wrapper: wrapper('vi') });
+
+    expect(result.current(serverError(), 'Không lưu được khóa')).toBe(
+      'Không lưu được khóa · Mã: internal_error',
+    );
+    expect(result.current(new Error('raw secret@example.com'), 'Không tải được')).toBe(
+      'Không tải được',
+    );
+    expect(result.current(adminError(403, 'forbidden'), 'Không tải được')).toBe(
+      `${viErrors.api.forbidden} · Mã: forbidden`,
+    );
+    expect(result.current(new Error('raw secret@example.com'))).toBe(viErrors.api.generic);
+    expect(result.current(new DOMException('aborted', 'AbortError'), 'x')).toBe('');
   });
 });
 

@@ -34,7 +34,13 @@ import {
   grantAdminUserSubscription,
   updateAdminUserRole,
   updateAdminUserStatus,
+  updateAdminUserTestAccount,
 } from '@/features/admin/users/api/admin-users-api';
+import {
+  TestAccountBadge,
+  TestAccountModal,
+  TestAccountToggleButton,
+} from '@/features/admin/users/components/AdminUserTestAccountControls';
 import type {
   AdminUserListViewModel,
   AdminUserStatusFilter,
@@ -51,7 +57,7 @@ import {
 } from '@/shared/constants/account-disable';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
-type AdminUsersModal = 'status' | 'role' | 'subscription' | 'credit' | null;
+type AdminUsersModal = 'status' | 'role' | 'subscription' | 'credit' | 'testAccount' | null;
 type AdminUserActionRequest<T> = () => Promise<T>;
 
 interface AdminUsersTranslationProps {
@@ -82,6 +88,7 @@ interface UserActionCallbacks {
   onOpenSubscriptionModal: (user: AdminUserViewModel) => void;
   onOpenRoleModal: (user: AdminUserViewModel) => void;
   onOpenStatusModal: (user: AdminUserViewModel) => void;
+  onOpenTestAccountModal: (user: AdminUserViewModel) => void;
 }
 
 interface UserRowProps extends AdminUsersTranslationProps, UserActionCallbacks {
@@ -173,6 +180,7 @@ type AdminUsersAction =
   | { type: 'resetSearch' }
   | { type: 'openRoleModal'; user: AdminUserViewModel }
   | { type: 'openStatusModal'; user: AdminUserViewModel }
+  | { type: 'openTestAccountModal'; user: AdminUserViewModel }
   | { type: 'openSubscriptionModal'; user: AdminUserViewModel }
   | { type: 'openCreditModal'; user: AdminUserViewModel; idempotencyKey: string }
   | { type: 'closeModal' }
@@ -229,6 +237,12 @@ function adminUsersReducer(state: AdminUsersState, action: AdminUsersAction): Ad
         ...state,
         selectedUser: action.user,
         activeModal: 'status',
+      };
+    case 'openTestAccountModal':
+      return {
+        ...state,
+        selectedUser: action.user,
+        activeModal: 'testAccount',
       };
     case 'openSubscriptionModal':
       return {
@@ -385,6 +399,7 @@ function UserRow({
   onOpenSubscriptionModal,
   onOpenRoleModal,
   onOpenStatusModal,
+  onOpenTestAccountModal,
 }: UserRowProps) {
   const isDisabled = user.disable === ACCOUNT_DISABLE_DISABLED;
 
@@ -399,6 +414,7 @@ function UserRow({
             </span>
           ) : null}
         </div>
+        <TestAccountBadge user={user} t={t} />
       </td>
       <td className="whitespace-nowrap px-6 py-4">
         {getRoleBadge(user.role, user.role === 'admin' ? t('administrator') : t('user'))}
@@ -450,6 +466,12 @@ function UserRow({
             <HiOutlinePlusCircle className="mr-1 size-4" aria-hidden="true" />
             {t('addCredit')}
           </Button>
+          <TestAccountToggleButton
+            user={user}
+            t={t}
+            disabled={actionLoading === user.id}
+            onOpen={onOpenTestAccountModal}
+          />
           {user.email !== sessionEmail ? (
             <>
               {!isDisabled ? (
@@ -503,6 +525,7 @@ function UsersTable({
   onOpenSubscriptionModal,
   onOpenRoleModal,
   onOpenStatusModal,
+  onOpenTestAccountModal,
 }: UsersTableProps) {
   return (
     <Card>
@@ -565,6 +588,7 @@ function UsersTable({
                   onOpenSubscriptionModal={onOpenSubscriptionModal}
                   onOpenRoleModal={onOpenRoleModal}
                   onOpenStatusModal={onOpenStatusModal}
+                  onOpenTestAccountModal={onOpenTestAccountModal}
                 />
               ))}
             </tbody>
@@ -929,6 +953,22 @@ export function AdminUsersPageClient() {
     );
   };
 
+  const handleToggleTestAccount = async () => {
+    if (!state.selectedUser) return;
+    const selectedUser = state.selectedUser;
+    const isTestAccount = !selectedUser.isTestAccount;
+
+    await runUserAction(
+      selectedUser.id,
+      () => updateAdminUserTestAccount({ userId: selectedUser.id, isTestAccount }),
+      (result) => {
+        if (!result.changed) return t('testAccountUnchanged');
+        return isTestAccount ? t('testAccountMarkedSuccess') : t('testAccountUnmarkedSuccess');
+      },
+      t('userActionRefreshWarning'),
+    );
+  };
+
   const handleAddSubscription = async () => {
     if (!state.selectedUser || !state.selectedPlanId) return;
     const selectedUser = state.selectedUser;
@@ -1028,6 +1068,7 @@ export function AdminUsersPageClient() {
           onOpenSubscriptionModal={(user) => dispatch({ type: 'openSubscriptionModal', user })}
           onOpenRoleModal={(user) => dispatch({ type: 'openRoleModal', user })}
           onOpenStatusModal={(user) => dispatch({ type: 'openStatusModal', user })}
+          onOpenTestAccountModal={(user) => dispatch({ type: 'openTestAccountModal', user })}
         />
 
         {pagination.totalPages > 1 ? (
@@ -1058,6 +1099,15 @@ export function AdminUsersPageClient() {
         actionLoading={state.actionLoading}
         onClose={() => dispatch({ type: 'closeModal' })}
         onConfirm={() => void handleToggleUserStatus()}
+        t={t}
+      />
+
+      <TestAccountModal
+        isOpen={state.activeModal === 'testAccount'}
+        selectedUser={state.selectedUser}
+        actionLoading={state.actionLoading}
+        onClose={() => dispatch({ type: 'closeModal' })}
+        onConfirm={() => void handleToggleTestAccount()}
         t={t}
       />
 

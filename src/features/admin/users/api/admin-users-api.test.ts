@@ -14,6 +14,7 @@ import {
   grantAdminUserSubscription,
   updateAdminUserRole,
   updateAdminUserStatus,
+  updateAdminUserTestAccount,
 } from '@/features/admin/users/api/admin-users-api';
 
 describe('admin-users-api', () => {
@@ -65,6 +66,24 @@ describe('admin-users-api', () => {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ disable: 1 }),
+      },
+    );
+  });
+
+  it('PATCHes the test-account flag on /api/admin/users/:id/test-account', async () => {
+    const flagResponse = { id: '507f191e810c19729de860ea', isTestAccount: true, changed: true };
+    fetchApiDataMock.mockResolvedValue(flagResponse);
+
+    await expect(
+      updateAdminUserTestAccount({ userId: '507f191e810c19729de860ea', isTestAccount: true }),
+    ).resolves.toEqual(flagResponse);
+
+    expect(fetchApiDataMock).toHaveBeenCalledWith(
+      '/api/admin/users/507f191e810c19729de860ea/test-account',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isTestAccount: true }),
       },
     );
   });

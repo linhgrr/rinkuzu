@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { hasMath } from '@/lib/markdown/has-math';
 import { normalizeMarkdownContent } from '@/lib/markdown/normalize';
 import { rehypeHeadingIds } from '@/lib/markdown/rehype-heading-ids';
+import { getLoadedMathMarkdown, noteMathMarkdownLoaded } from './preloadMathRenderer';
 
 type MarkdownRendererVariant = 'document' | 'prompt' | 'option' | 'answer' | 'compact';
 
@@ -42,9 +43,19 @@ const HEADING_ID_REHYPE_PLUGINS: Options['rehypePlugins'] = [rehypeHeadingIds];
 
 // KaTeX (JS + CSS) is ~425 KB raw: load it only for content with math (RIN-679).
 // No `loading` option, so next/dynamic adds no Suspense boundary of its own and
-// the boundary below shows the plain render while the chunk loads. During SSR the
+// the boundary below lays out the plain render, hidden, while the chunk loads.
+// Views that can wait await `preloadMathRenderer` first. During SSR the
 // chunk and its CSS are preloaded, so hydration keeps the server-rendered math.
-const MathMarkdown = dynamic(() => import('./MathMarkdown').then((module) => module.MathMarkdown));
+const LazyMathMarkdown = dynamic(() =>
+  import('./MathMarkdown').then((module) => noteMathMarkdownLoaded(module.MathMarkdown)),
+);
+
+// Once the chunk is in (preloaded or loaded by an earlier render), render it
+// directly so the fallback never paints (RIN-732). Same DOM, so hydration holds.
+function MathMarkdown(props: Options) {
+  const LoadedMathMarkdown = getLoadedMathMarkdown();
+  return LoadedMathMarkdown ? <LoadedMathMarkdown {...props} /> : <LazyMathMarkdown {...props} />;
+}
 
 // Clear the sticky blog header when a TOC link scrolls a heading into view.
 const HEADING_ID_CLASSES = '[&_h2]:scroll-mt-24 [&_h3]:scroll-mt-24';
@@ -168,7 +179,14 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       data-rich-text={variant}
     >
       {hasMath(normalizedContent) ? (
-        <Suspense fallback={<ReactMarkdown {...markdownProps} />}>
+        <Suspense
+          fallback={
+            // Hidden but laid out: holds the space without flashing raw LaTeX (RIN-732).
+            <span className="invisible contents" data-math-pending="">
+              <ReactMarkdown {...markdownProps} />
+            </span>
+          }
+        >
           <MathMarkdown {...markdownProps} />
         </Suspense>
       ) : (

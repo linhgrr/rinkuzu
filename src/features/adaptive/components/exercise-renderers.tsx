@@ -194,7 +194,7 @@ export const ExerciseTheoryView = ({
         <Button
           onClick={onStartExercise}
           disabled={loadingExercise}
-          className={`${exerciseStyles['startExerciseAction']} h-12 min-h-12 w-full rounded-full bg-brand-action px-8 text-sm font-medium text-white shadow-md transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover disabled:bg-neutral-200 disabled:text-neutral-400 md:h-11 md:w-auto md:text-base`}
+          className={`${exerciseStyles['startExerciseAction']} h-12 min-h-12 w-full rounded-full bg-brand-action px-8 text-sm font-medium text-brand-action-text shadow-md transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover disabled:bg-neutral-200 disabled:text-neutral-400 md:h-11 md:w-auto md:text-base`}
         >
           {loadingExercise ? t('exercise.loadingTitle') : t('exercise.theory.startExercise')}
           {!loadingExercise && <HiArrowRight className="ml-2 size-4" />}
@@ -367,7 +367,7 @@ export const ExerciseQuestionView = ({
               })}
             </p>
             <Button
-              className="h-12 min-h-12 w-full justify-center rounded-full bg-brand-action py-2 text-sm font-medium text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover sm:h-11 sm:min-h-11 sm:hover:scale-[1.02] md:text-base"
+              className="h-12 min-h-12 w-full justify-center rounded-full bg-brand-action py-2 text-sm font-medium text-brand-action-text shadow-sm transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover sm:h-11 sm:min-h-11 sm:hover:scale-[1.02] md:text-base"
               onClick={onSubmit}
               disabled={!canSubmit || submitting}
             >

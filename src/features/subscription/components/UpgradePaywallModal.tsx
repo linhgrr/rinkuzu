@@ -106,7 +106,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
 
         <section aria-label={t('paywall.availablePlans')}>
           <div className="mb-4 flex items-start gap-3 rounded-2xl border border-accent-warm bg-surface-warm p-4 text-ink">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-action text-white">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-action text-brand-action-text">
               <HiOutlineSparkles className="size-5" aria-hidden="true" />
             </span>
             <div>
@@ -179,7 +179,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
                       }`}
                     >
                       {isBestValue && (
-                        <span className="mb-3 self-start rounded-full bg-brand-action px-3 py-1 text-xs font-semibold text-white">
+                        <span className="mb-3 self-start rounded-full bg-brand-action px-3 py-1 text-xs font-semibold text-brand-action-text">
                           {t('paywall.bestValue')}
                         </span>
                       )}

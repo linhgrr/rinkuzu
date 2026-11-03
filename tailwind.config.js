@@ -71,6 +71,7 @@ module.exports = {
           action: 'var(--brand-action)',
           'action-hover': 'var(--brand-action-hover)',
           'action-active': 'var(--brand-action-active)',
+          'action-text': 'var(--brand-action-text)',
           'action-strong': 'var(--brand-action-strong)',
           trust: 'var(--brand-trust)',
           'trust-hover': 'var(--brand-trust-hover)',

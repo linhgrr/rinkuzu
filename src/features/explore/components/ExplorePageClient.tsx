@@ -98,7 +98,7 @@ function SignedOutPrompt({ message, callbackPath }: { message: string; callbackP
       <p className="font-home text-sm text-ink-muted">{message}</p>
       <Link
         href={`${ROUTES.LOGIN}?callbackUrl=${encodeURIComponent(callbackPath)}`}
-        className="inline-flex min-h-10 shrink-0 items-center rounded-full bg-brand-action px-4 font-home text-sm font-semibold text-white hover:bg-brand-action-hover"
+        className="inline-flex min-h-10 shrink-0 items-center rounded-full bg-brand-action px-4 font-home text-sm font-semibold text-brand-action-text hover:bg-brand-action-hover"
       >
         {t('signInCta')}
       </Link>
@@ -291,7 +291,7 @@ function ExploreContent() {
               onClick={() => updateUrl({ type: tab.type, page: 1 })}
               className={`min-h-10 shrink-0 rounded-full px-4 font-home text-sm font-semibold transition-colors ${
                 activeType === tab.type
-                  ? 'bg-brand-action text-white'
+                  ? 'bg-brand-action text-brand-action-text'
                   : 'border border-line bg-surface text-ink hover:bg-accent-soft'
               }`}
               aria-pressed={activeType === tab.type}

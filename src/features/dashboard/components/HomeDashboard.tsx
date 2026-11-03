@@ -192,7 +192,7 @@ function HomeHero({ title, description, ctaLabel, ctaHref, adaptiveLinkLabel }: 
       <div className="relative z-10 mt-7 flex flex-col items-start gap-3 sm:mt-9">
         <Link
           href={ctaHref}
-          className="inline-flex rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold leading-[1.4] text-white hover:bg-brand-action-hover sm:text-lg"
+          className="inline-flex rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold leading-[1.4] text-brand-action-text hover:bg-brand-action-hover sm:text-lg"
           data-testid="home-hero-cta"
         >
           {ctaLabel}

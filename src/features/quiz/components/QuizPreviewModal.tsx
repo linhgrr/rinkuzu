@@ -175,7 +175,7 @@ export function QuizPreviewModal({
                 onClick={() => setCurrentQuestionIndex(index)}
                 className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                   index === safeQuestionIndex
-                    ? 'bg-brand-action text-white'
+                    ? 'bg-brand-action text-brand-action-text'
                     : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                 }`}
               >

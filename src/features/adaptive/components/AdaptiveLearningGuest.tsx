@@ -41,7 +41,7 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
         <div className="flex flex-wrap gap-3">
           <Link
             href={`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`}
-            className="inline-flex items-center rounded-lg bg-brand-action px-5 py-2.5 font-medium text-white hover:bg-brand-action-hover"
+            className="inline-flex items-center rounded-lg bg-brand-action px-5 py-2.5 font-medium text-brand-action-text hover:bg-brand-action-hover"
           >
             {t('guest.loginCta')}
           </Link>
@@ -97,7 +97,7 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
         </div>
         <Link
           href={`${loginPath}?callbackUrl=${encodeURIComponent(uploadPath)}`}
-          className="inline-flex items-center justify-center rounded-lg bg-brand-action px-5 py-2.5 font-medium text-white hover:bg-brand-action-hover"
+          className="inline-flex items-center justify-center rounded-lg bg-brand-action px-5 py-2.5 font-medium text-brand-action-text hover:bg-brand-action-hover"
         >
           {t('guest.startNow')}
         </Link>

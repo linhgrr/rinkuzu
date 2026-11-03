@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { getSession, useSession } from 'next-auth/react';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 const REDIRECT_DELAY_MS = 1_500;
-const SESSION_ENDPOINT = '/api/auth/session';
 
 /**
  * How often a visible tab asks whether its session was replaced (RIN-687).
@@ -19,26 +18,16 @@ const SESSION_ENDPOINT = '/api/auth/session';
  */
 const SESSION_CHECK_INTERVAL_MS = 30_000;
 
-interface SessionCheckBody {
-  invalidatedReason?: unknown;
-}
-
 /**
- * One GET per check, outside next-auth's SessionProvider. The provider's own
- * poll calls `getSession()`, which broadcasts on a fresh BroadcastChannel; the
+ * One GET per check, without next-auth's broadcast. The SessionProvider poll
+ * calls `getSession()`, which broadcasts on a fresh BroadcastChannel; the
  * provider's listener on its singleton channel hears that echo in the same tab
  * and fetches again, so every tick cost two requests (and one more per other
  * open tab).
  */
 async function isSessionReplaced(): Promise<boolean> {
-  const response = await fetch(SESSION_ENDPOINT, {
-    cache: 'no-store',
-    credentials: 'same-origin',
-    headers: { Accept: 'application/json' },
-  });
-  if (!response.ok) return false;
-  const body = (await response.json()) as SessionCheckBody | null;
-  return body?.invalidatedReason === 'session_replaced';
+  const session = await getSession({ broadcast: false });
+  return session?.invalidatedReason === 'session_replaced';
 }
 
 function useReplacedSessionCheck(signedIn: boolean): boolean {

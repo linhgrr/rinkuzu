@@ -20,5 +20,7 @@ export default async function ProfilePage({
 }) {
   const { tab } = await searchParams;
   const initialTab = isProfileTab(tab) ? tab : 'overview';
-  return <ProfileContent key={initialTab} initialTab={initialTab} />;
+  // No key on initialTab: a ?tab= change must not remount ProfileSettings
+  // (that refetched the profile and flashed the skeleton on every tab click).
+  return <ProfileContent initialTab={initialTab} />;
 }

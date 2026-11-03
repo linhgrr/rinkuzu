@@ -7,6 +7,7 @@ import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from '
 
 import { LoginForm } from '@/features/auth/components/LoginForm';
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
+import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
 
 type AuthMode = 'login' | 'signup';
@@ -31,9 +32,10 @@ export function AuthShell({ locale, googleEnabled = false }: AuthShellProps) {
   // and framer-motion animates the difference.
   const mode: AuthMode = pathname.includes('/register') ? 'signup' : 'login';
 
-  const switchTo = (next: AuthMode) => {
+  const switchTo = (next: AuthMode, callbackUrl: string | null = null) => {
     // next-intl router applies the active locale — do not prefix manually.
-    router.push(next === 'login' ? ROUTES.LOGIN : ROUTES.REGISTER);
+    // The form passes its sanitised callbackUrl so a guest from a quiz keeps it.
+    router.push(withAuthCallback(next === 'login' ? ROUTES.LOGIN : ROUTES.REGISTER, callbackUrl));
   };
 
   const isLogin = mode === 'login';
@@ -119,7 +121,7 @@ export function AuthShell({ locale, googleEnabled = false }: AuthShellProps) {
                   <RegisterForm
                     locale={locale}
                     googleEnabled={googleEnabled}
-                    onSwitchMode={() => switchTo('login')}
+                    onSwitchMode={(callbackUrl) => switchTo('login', callbackUrl)}
                   />
                 )}
               </m.div>

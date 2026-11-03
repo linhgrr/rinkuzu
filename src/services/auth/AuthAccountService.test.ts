@@ -193,6 +193,21 @@ describe('AuthAccountService', () => {
     expect(audit.record).toHaveBeenCalledTimes(2);
   });
 
+  it('forwards the sign-up callbackUrl to the verification email', async () => {
+    repository.findByEmail.mockResolvedValue(null);
+    repository.createPending.mockResolvedValue(identity);
+
+    await service.register(
+      { email: identity.email, password: 'password', callbackUrl: '/quiz/nhap-mon-ai' },
+      context,
+    );
+
+    await scheduler.runAll();
+    expect(notifier.sendVerificationEmail).toHaveBeenCalledWith(identity.email, 'raw-token', {
+      callbackUrl: '/quiz/nhap-mon-ai',
+    });
+  });
+
   it('verifies valid tokens atomically and rejects invalid tokens', async () => {
     repository.verifyEmail.mockResolvedValueOnce(null).mockResolvedValueOnce(identity);
 

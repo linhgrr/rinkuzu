@@ -20,7 +20,8 @@ import {
 } from 'react-icons/hi';
 import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
-import { resolveAuthCallback } from '@/lib/routing/auth-callback';
+import { resolveAuthCallback, withAuthCallback } from '@/lib/routing/auth-callback';
+import { ROUTES } from '@/shared/constants/routes';
 import { replaceBrowserLocation } from '@/lib/routing/browser-navigation';
 import { markAnalyticsGoogleAuthPending, markAnalyticsLoginPending } from '@/lib/analytics/client';
 
@@ -286,7 +287,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
               </button>
             ) : (
               <Link
-                href="/register"
+                href={withAuthCallback(ROUTES.REGISTER, get('callbackUrl'))}
                 className="font-semibold text-ink underline underline-offset-2 transition-colors hover:text-accent"
               >
                 {t('createAccount')}

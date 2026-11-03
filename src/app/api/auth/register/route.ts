@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       email: input.data.email,
       password: input.data.password,
       ...(input.data.displayName ? { displayName: input.data.displayName } : {}),
+      ...(input.data.callbackUrl ? { callbackUrl: input.data.callbackUrl } : {}),
     },
     context,
   );

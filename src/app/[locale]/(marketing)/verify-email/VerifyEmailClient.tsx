@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { HiOutlineCheckCircle, HiOutlineExclamationCircle, HiOutlineMail } from 'react-icons/hi';
 import { verifyEmail } from '@/features/auth/api/auth-api';
 import { markAnalyticsSignupPending } from '@/lib/analytics/client';
+import { withAuthCallback } from '@/lib/routing/auth-callback';
+import { ROUTES } from '@/shared/constants/routes';
 
 type Status = 'pending' | 'verifying' | 'success' | 'error';
 
@@ -50,6 +52,8 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const token = get('token') ?? '';
+  // The verification email carries the sign-up callbackUrl (RIN-773); keep it for sign-in.
+  const signInHref = withAuthCallback(ROUTES.LOGIN, get('callbackUrl'));
   const [viewState, dispatch] = useReducer(viewStateReducer, INITIAL_VIEW_STATE);
   const calledRef = useRef(false);
 
@@ -138,7 +142,7 @@ function VerifyEmailContent() {
                 <div className="flex flex-col gap-2 sm:flex-row">
                   {viewState.status === 'success' && (
                     <Link
-                      href="/login"
+                      href={signInHref}
                       className="inline-flex items-center justify-center rounded-xl bg-brand-trust px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-trust-hover"
                     >
                       {t('signIn')}

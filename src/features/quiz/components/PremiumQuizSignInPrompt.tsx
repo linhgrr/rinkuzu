@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
+import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
 
 interface PremiumQuizSignInPromptProps {
@@ -23,8 +24,8 @@ export function PremiumQuizSignInPrompt({
   description,
 }: PremiumQuizSignInPromptProps) {
   const t = useTranslations('quiz');
-  // next-intl Link hrefs are locale-unprefixed; the login form adds the locale.
-  const callbackUrl = encodeURIComponent(ROUTES.QUIZ.VIEW(slug));
+  // next-intl Link hrefs are locale-unprefixed; the auth forms add the locale.
+  const quizPath = ROUTES.QUIZ.VIEW(slug);
 
   return (
     <main className="mx-auto max-w-xl px-4 py-16">
@@ -41,10 +42,10 @@ export function PremiumQuizSignInPrompt({
           {t('premiumSignInDescription')}
         </p>
         <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link href={`${ROUTES.LOGIN}?callbackUrl=${callbackUrl}`} className="btn btn-primary">
+          <Link href={withAuthCallback(ROUTES.LOGIN, quizPath)} className="btn btn-primary">
             {t('premiumSignInButton')}
           </Link>
-          <Link href={ROUTES.REGISTER} className="btn btn-secondary">
+          <Link href={withAuthCallback(ROUTES.REGISTER, quizPath)} className="btn btn-secondary">
             {t('premiumSignUpButton')}
           </Link>
         </div>

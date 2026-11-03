@@ -8,6 +8,7 @@ import { getUserDisplayName } from '@/components/user/user-identity';
 import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
+import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,12 +35,27 @@ export default async function QuizPlayerPage({
   const [{ locale, slug }, session] = await Promise.all([params, getCurrentSession()]);
   const premiumMetadata = await getPremiumQuizService().getCatalogMetadataBySlug(slug);
   if (premiumMetadata) {
+    const description =
+      premiumMetadata.description === undefined ? {} : { description: premiumMetadata.description };
+    // A guest cannot start a Premium session (the API answers 401), so do not
+    // try: show the quiz and a sign-in that returns here (RIN-747).
+    if (!session?.user) {
+      return (
+        <PremiumQuizSignInPrompt
+          slug={slug}
+          title={premiumMetadata.title}
+          questionCount={premiumMetadata.questionCount}
+          {...description}
+        />
+      );
+    }
     return (
       <PremiumQuizPlayerClient
         quizId={premiumMetadata.quizId}
         slug={slug}
         title={premiumMetadata.title}
         questionCount={premiumMetadata.questionCount}
+        {...description}
       />
     );
   }

@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/Button';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { PremiumCreditCost } from '@/features/quiz/components/PremiumCreditCost';
+import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
 import { ApiResponseError } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -25,6 +26,11 @@ interface PremiumQuizPlayerClientProps {
   slug: string;
   title: string;
   questionCount: number;
+  description?: string;
+}
+
+function isApiStatus(error: unknown, status: number): boolean {
+  return error instanceof ApiResponseError && error.status === status;
 }
 
 export default function PremiumQuizPlayerClient({
@@ -32,6 +38,7 @@ export default function PremiumQuizPlayerClient({
   slug,
   title,
   questionCount,
+  description,
 }: PremiumQuizPlayerClientProps) {
   const t = useTranslations('quiz');
   const { push } = useRouter();
@@ -42,6 +49,9 @@ export default function PremiumQuizPlayerClient({
   const [watermark, setWatermark] = useState('');
   const [loading, setLoading] = useState(true);
   const [unlockRequired, setUnlockRequired] = useState(false);
+  // A 401 at any step means the session is gone (RIN-747): ask to sign in again
+  // instead of rendering the server's raw message.
+  const [signInRequired, setSignInRequired] = useState(false);
   const [error, setError] = useState('');
   const prefetching = useRef<Promise<void> | null>(null);
 
@@ -57,10 +67,12 @@ export default function PremiumQuizPlayerClient({
       setWatermark(batch.watermark);
       setUnlockRequired(false);
     } catch (startError) {
-      if (startError instanceof ApiResponseError && startError.status === 403) {
+      if (isApiStatus(startError, 401)) {
+        setSignInRequired(true);
+      } else if (isApiStatus(startError, 403)) {
         setUnlockRequired(true);
       } else {
-        setError(extractUnknownErrorMessage(startError, t('loadError')));
+        setError(t('loadError'));
       }
     } finally {
       setLoading(false);
@@ -82,10 +94,12 @@ export default function PremiumQuizPlayerClient({
       })
       .catch((startError: unknown) => {
         if (!active) return;
-        if (startError instanceof ApiResponseError && startError.status === 403) {
+        if (isApiStatus(startError, 401)) {
+          setSignInRequired(true);
+        } else if (isApiStatus(startError, 403)) {
           setUnlockRequired(true);
         } else {
-          setError(extractUnknownErrorMessage(startError, t('loadError')));
+          setError(t('loadError'));
         }
       })
       .finally(() => {
@@ -131,6 +145,10 @@ export default function PremiumQuizPlayerClient({
     try {
       await savePremiumAnswer(sessionId, currentIndex, answer);
     } catch (saveError) {
+      if (isApiStatus(saveError, 401)) {
+        setSignInRequired(true);
+        return;
+      }
       setError(extractUnknownErrorMessage(saveError, t('saveProgressError')));
     }
   }
@@ -154,6 +172,10 @@ export default function PremiumQuizPlayerClient({
       await unlockPremiumQuiz(quizId);
       await begin();
     } catch (unlockError) {
+      if (isApiStatus(unlockError, 401)) {
+        setSignInRequired(true);
+        return;
+      }
       setError(extractUnknownErrorMessage(unlockError, t('premiumUnlockError')));
     } finally {
       setLoading(false);
@@ -167,6 +189,10 @@ export default function PremiumQuizPlayerClient({
       const submitted = await submitPremiumSession(sessionId);
       push(`${ROUTES.QUIZ.RESULT(slug)}?attemptId=${encodeURIComponent(submitted.attemptId)}`);
     } catch (submitError) {
+      if (isApiStatus(submitError, 401)) {
+        setSignInRequired(true);
+        return;
+      }
       setError(extractUnknownErrorMessage(submitError, t('submitError')));
     } finally {
       setLoading(false);
@@ -177,6 +203,17 @@ export default function PremiumQuizPlayerClient({
     () => Array.from({ length: 18 }, (_, index) => `${watermark}:${index}`),
     [watermark],
   );
+
+  if (signInRequired) {
+    return (
+      <PremiumQuizSignInPrompt
+        slug={slug}
+        title={title}
+        questionCount={questionCount}
+        {...(description === undefined ? {} : { description })}
+      />
+    );
+  }
 
   if (loading && !question && !unlockRequired) {
     return (
@@ -208,10 +245,19 @@ export default function PremiumQuizPlayerClient({
   }
 
   if (!question || !currentBatch) {
+    // Never the server's text here: this is the whole page (RIN-747).
     return (
-      <div className="mx-auto max-w-3xl p-8 text-center text-red-700">
-        {error || t('loadError')}
-      </div>
+      <main className="mx-auto max-w-xl px-4 py-16">
+        <SurfaceCard className="p-8 text-center">
+          <h1 className="text-2xl font-semibold text-ink">{title}</h1>
+          <p role="alert" className="mt-4 text-sm text-red-700">
+            {t('loadError')}
+          </p>
+          <Button className="mt-5" variant="secondary" onClick={() => void begin()}>
+            {t('tryAgain')}
+          </Button>
+        </SurfaceCard>
+      </main>
     );
   }
 

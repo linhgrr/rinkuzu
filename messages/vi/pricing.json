@@ -1,11 +1,11 @@
 {
   "meta": {
     "title": "Bảng giá RinKuzu – Tạo quiz từ PDF miễn phí bằng AI",
-    "description": "Bắt đầu miễn phí: tải PDF bài giảng, AI tạo quiz và luyện tập thích ứng ngay. Nâng cấp Premium để mở kho Quiz Premium tuyển chọn và hạn mức cao hơn."
+    "description": "Bắt đầu miễn phí: tải PDF bài giảng, AI tạo quiz và luyện tập cá nhân hóa ngay. Nâng cấp Premium để mở kho Quiz Premium tuyển chọn và hạn mức cao hơn."
   },
   "hero": {
     "title": "Giá đơn giản, minh bạch",
-    "subtitle": "Bắt đầu miễn phí. Nâng cấp khi bạn sẵn sàng cho trải nghiệm học thích ứng đầy đủ."
+    "subtitle": "Bắt đầu miễn phí. Nâng cấp khi bạn sẵn sàng cho trải nghiệm học cá nhân hóa đầy đủ."
   },
   "free": {
     "name": "Miễn phí",
@@ -14,8 +14,8 @@
     "features": {
       "askRinChan": "Ask Rin-chan tối đa 25 lượt mỗi ngày",
       "pdfQuiz": "Tạo 5 quiz từ PDF mỗi tháng, tối đa 30 trang mỗi tệp",
-      "adaptivePath": "Tạo 2 lộ trình học thích ứng mỗi tháng",
-      "adaptiveExercises": "Tạo tối đa 50 bài tập thích ứng mỗi ngày",
+      "adaptivePath": "Tạo 2 lộ trình học cá nhân hóa mỗi tháng",
+      "adaptiveExercises": "Tạo tối đa 50 bài tập cá nhân hóa mỗi ngày",
       "publicQuizzes": "Tạo và chia sẻ quiz công khai",
       "progressTracking": "Theo dõi tiến độ và mức độ thành thạo"
     }
@@ -28,15 +28,15 @@
       "premiumCatalog": "Toàn bộ kho Quiz Premium tuyển chọn",
       "askRinChan": "Ask Rin-chan tối đa 150 lượt mỗi ngày",
       "pdfQuiz": "Tạo 50 quiz từ PDF mỗi tháng, tối đa 100 trang mỗi tệp",
-      "adaptivePath": "Tạo 12 lộ trình học thích ứng mỗi tháng",
-      "adaptiveExercises": "Tạo tối đa 500 bài tập thích ứng mỗi ngày"
+      "adaptivePath": "Tạo 12 lộ trình học cá nhân hóa mỗi tháng",
+      "adaptiveExercises": "Tạo tối đa 500 bài tập cá nhân hóa mỗi ngày"
     }
   },
   "faqHeading": "Câu hỏi về giá",
   "faqs": [
     {
       "q": "Gói miễn phí bao gồm những gì?",
-      "a": "Gói miễn phí gồm Ask Rin-chan, tạo quiz từ PDF, lộ trình và bài tập thích ứng, quiz công khai cùng theo dõi tiến độ. Mỗi chức năng AI có hạn mức riêng được hiển thị trong trang hồ sơ."
+      "a": "Gói miễn phí gồm Ask Rin-chan, tạo quiz từ PDF, lộ trình và bài tập cá nhân hóa, quiz công khai cùng theo dõi tiến độ. Mỗi chức năng AI có hạn mức riêng được hiển thị trong trang hồ sơ."
     },
     {
       "q": "Gói Premium hoạt động thế nào?",

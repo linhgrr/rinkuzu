@@ -137,7 +137,7 @@
     "yourDocuments": "Your Documents",
     "relations": "Relations",
     "welcomeBack": "Welcome back.",
-    "mascotAlt": "Adaptive learning mascot",
+    "mascotAlt": "Personalized learning mascot",
     "goalAriaLabel": "Daily goal",
     "pickUpDescription": "Pick up right where you left off and keep your learning streak alive.",
     "continueLearning": "Continue Learning",
@@ -172,7 +172,7 @@
     "completedDailyGoal": "Completed daily goal",
     "yesterday": "Yesterday",
     "upNext": "UP NEXT",
-    "brandTitle": "Adaptive Scholar",
+    "brandTitle": "Personalized Scholar",
     "brandSubtitle": "Empowering your learning journey with AI.",
     "avatarAlt": "User avatar",
     "activeJourney": "Active Journey",
@@ -369,7 +369,7 @@
     },
     "progress": "PROGRESS",
     "didYouKnow": "Did you know?",
-    "didYouKnowDescription": "Adaptive learning adjusts the difficulty of questions in real-time based on your performance."
+    "didYouKnowDescription": "Personalized learning adjusts the difficulty of questions in real-time based on your performance."
   },
   "exercise": {
     "loadingTitle": "AI is selecting the best exercise for you...",

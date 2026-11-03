@@ -198,7 +198,7 @@ function buildPricingSchema(premiumPlans: PremiumPlanView[]) {
     name: 'RinKuzu Pricing Plans',
     url: `${siteUrl.origin}/pricing`,
     description:
-      'Compare RinKuzu Free and Premium plans for AI-powered adaptive learning from PDFs.',
+      'Compare RinKuzu Free and Premium plans for AI-powered personalized learning from PDFs.',
     mainEntity: {
       '@type': 'ItemList',
       name: 'RinKuzu Pricing Plans',
@@ -208,7 +208,7 @@ function buildPricingSchema(premiumPlans: PremiumPlanView[]) {
           position: 1,
           name: 'Free Plan',
           url: `${siteUrl.origin}/pricing#free`,
-          description: 'Core PDF quiz generation, adaptive practice, and mastery tracking.',
+          description: 'Core PDF quiz generation, personalized practice, and mastery tracking.',
           offers: {
             '@type': 'Offer',
             price: '0',

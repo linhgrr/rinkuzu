@@ -18,6 +18,11 @@ const { pushMock, saveAnswerMock, startSessionMock, submitSessionMock, unlockMoc
 
 vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 // next-intl memoizes `t` per namespace. Returning a fresh function here would
@@ -117,5 +122,66 @@ describe('PremiumQuizPlayerClient', () => {
 
     fireEvent.click(unlockButton);
     await waitFor(() => expect(unlockMock).toHaveBeenCalledWith('quiz-1'));
+  });
+
+  it('asks a signed-out player to sign in on 401 instead of showing the raw server message', async () => {
+    startSessionMock.mockRejectedValueOnce(
+      new ApiResponseError({ message: 'Unauthorized', status: 401, payload: {} }),
+    );
+
+    render(
+      <PremiumQuizPlayerClient
+        quizId="quiz-1"
+        slug="premium-quiz"
+        title="Premium quiz"
+        questionCount={1}
+      />,
+    );
+
+    const signIn = await screen.findByRole('link', { name: 'premiumSignInButton' });
+    expect(signIn).toHaveAttribute('href', '/login?callbackUrl=%2Fquiz%2Fpremium-quiz');
+    expect(screen.getByRole('heading', { name: 'Premium quiz' })).toBeInTheDocument();
+    expect(screen.queryByText('Unauthorized')).not.toBeInTheDocument();
+  });
+
+  it('asks to sign in again when the session expires mid-play (401 on save)', async () => {
+    saveAnswerMock.mockRejectedValueOnce(
+      new ApiResponseError({ message: 'Unauthorized', status: 401, payload: {} }),
+    );
+
+    render(
+      <PremiumQuizPlayerClient
+        quizId="quiz-1"
+        slug="premium-quiz"
+        title="Premium quiz"
+        questionCount={1}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('radio', { name: 'Option B' }));
+
+    expect(await screen.findByRole('link', { name: 'premiumSignInButton' })).toBeInTheDocument();
+    expect(screen.queryByText('Unauthorized')).not.toBeInTheDocument();
+  });
+
+  it('shows localized load-error copy with a retry, never the server message', async () => {
+    startSessionMock.mockRejectedValueOnce(
+      new ApiResponseError({ message: 'Mongo exploded at shard 3', status: 500, payload: {} }),
+    );
+
+    render(
+      <PremiumQuizPlayerClient
+        quizId="quiz-1"
+        slug="premium-quiz"
+        title="Premium quiz"
+        questionCount={1}
+      />,
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('loadError');
+    expect(screen.queryByText(/Mongo exploded/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'tryAgain' }));
+    expect(await screen.findByText('Premium question?')).toBeInTheDocument();
   });
 });

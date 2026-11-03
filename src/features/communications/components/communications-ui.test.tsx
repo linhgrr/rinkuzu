@@ -7,9 +7,12 @@ import type { AnchorHTMLAttributes } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FloatingSupportButton } from './FloatingSupportButton';
 import { MarketingPreferencesPage } from './MarketingPreferencesPage';
+import { ApiResponseError } from '@/lib/api/client';
 import { SupportCenterPage } from './SupportCenterPage';
+import { SupportConversationPage } from './SupportConversationPage';
 
 const mocks = vi.hoisted(() => ({
+  addSupportMessage: vi.fn(),
   createSupportTicket: vi.fn(),
   mutate: vi.fn(),
   push: vi.fn(),
@@ -45,7 +48,6 @@ vi.mock('next-intl', () => ({
       'communications.support.body': 'Nội dung',
       'communications.support.attachments': 'Ảnh minh họa',
       'communications.support.submit': 'Gửi yêu cầu',
-      'communications.support.createError': 'Không thể tạo ticket hỗ trợ',
       'communications.support.listTitle': 'Yêu cầu của bạn',
       'communications.support.loading': 'Đang tải…',
       'communications.support.listError': 'Không thể tải danh sách hỗ trợ.',
@@ -53,6 +55,10 @@ vi.mock('next-intl', () => ({
       'communications.support.emptyDescription': 'Các cuộc trao đổi sẽ xuất hiện tại đây.',
       'communications.support.previous': 'Trang trước',
       'communications.support.next': 'Trang sau',
+      'communications.support.reply': 'Trả lời',
+      'communications.support.sendReply': 'Gửi',
+      'communications.support.sendError': 'Không thể gửi phản hồi',
+      'communications.support.statuses.open': 'Đang mở',
     };
     return messages[`${namespace}.${key}`] ?? key;
   },
@@ -67,6 +73,10 @@ vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: mocks.push }),
 }));
 vi.mock('../api/communications-api', () => ({
+  addSupportMessage: (...args: unknown[]) => mocks.addSupportMessage(...args),
+  fetchSupportDetail: vi.fn(),
+  reopenSupport: vi.fn(),
+  updateSupportStatus: vi.fn(),
   createSupportTicket: (...args: unknown[]) => mocks.createSupportTicket(...args),
   fetchMarketingPreferences: vi.fn(),
   fetchSupportTickets: vi.fn(),
@@ -147,5 +157,67 @@ describe('communications UI accessibility and behavior', () => {
       }),
     );
     expect(mocks.push).toHaveBeenCalledWith('/support/507f191e810c19729de860ea');
+  });
+
+  it('shows localized copy when a support ticket cannot be created, not the server text', async () => {
+    mocks.swr.mockReturnValue({
+      data: { items: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 1 } },
+      error: null,
+      isLoading: false,
+      mutate: mocks.mutate,
+    });
+    mocks.createSupportTicket.mockRejectedValue(
+      new ApiResponseError({
+        payload: null,
+        message: 'ValidationError: subject too long',
+        status: 500,
+      }),
+    );
+    const user = userEvent.setup();
+    render(<SupportCenterPage />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Tiêu đề' }), 'Cần hỗ trợ');
+    await user.type(screen.getByRole('textbox', { name: 'Nội dung' }), 'Nội dung');
+    await user.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('errors.api.server');
+    expect(screen.queryByText(/ValidationError/)).not.toBeInTheDocument();
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it('shows localized copy when a support reply fails to send', async () => {
+    mocks.swr.mockReturnValue({
+      data: {
+        ticket: {
+          id: '507f191e810c19729de860ea',
+          subject: 'Cần hỗ trợ',
+          category: 'account',
+          status: 'open',
+          revision: 1,
+          priority: 'normal',
+          canReopen: false,
+        },
+        messages: [],
+      },
+      error: null,
+      isLoading: false,
+      mutate: mocks.mutate,
+    });
+    mocks.addSupportMessage.mockRejectedValue(
+      new ApiResponseError({
+        payload: null,
+        message: 'Too many messages from user 42',
+        status: 429,
+        code: 'rate_limit_exceeded',
+      }),
+    );
+    const user = userEvent.setup();
+    render(<SupportConversationPage ticketId="507f191e810c19729de860ea" />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Trả lời' }), 'Mình vẫn chưa đổi được.');
+    await user.click(screen.getByRole('button', { name: 'Gửi' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('errors.api.rateLimited');
+    expect(screen.queryByText(/user 42/)).not.toBeInTheDocument();
   });
 });

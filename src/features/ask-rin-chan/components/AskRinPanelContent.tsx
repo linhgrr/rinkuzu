@@ -27,7 +27,6 @@ import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Modal } from '@/components/ui/Modal';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {
   deleteAskRinConversation,
   getAskRinConversation,
@@ -36,8 +35,8 @@ import {
   type AskRinContextPayload,
 } from '@/lib/ask-rin-chan/client';
 import { fetchAskRinAgent } from '@/lib/ask-rin-chan/agui-fetch';
-import { getAskRinPublicErrorKey } from '@/lib/ask-rin-chan/public-error';
 import { isAwaitingFirstAssistantText } from '@/lib/ask-rin-chan/stream-state';
+import { useAskRinErrorMessage } from '@/features/ask-rin-chan/hooks/use-ask-rin-error-message';
 import styles from './AskRinPanelLayout.module.css';
 
 const CHATBOT_ICON = '/images/chatbot_icon.png';
@@ -169,8 +168,9 @@ function AskRinThread({
       await deleteAskRinConversation(credentials.exerciseContextId);
       runtime.thread.reset();
       onHistoryReset();
-    } catch (clearError: unknown) {
-      onError(extractUnknownErrorMessage(clearError, t('errorClear')));
+    } catch {
+      // Context copy rather than the server text (RIN-756).
+      onError(t('errorClear'));
     } finally {
       setClearing(false);
     }
@@ -296,6 +296,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
   const t = useTranslations('adaptiveLearning.chatbot');
   const historyErrorLabel = t('errorHistory');
   const interruptedLabel = t('errorInterrupted');
+  const askRinErrorMessage = useAskRinErrorMessage();
   const [error, setError] = useState('');
   const historyCallbackRef = useRef(onHistoryChange);
   const historySummaryRef = useRef<AskRinHistorySummary>({ totalMessages: 0, totalTurns: 0 });
@@ -344,8 +345,9 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
               })),
             ),
           );
-        } catch (historyError: unknown) {
-          setError(extractUnknownErrorMessage(historyError, historyErrorLabel));
+        } catch {
+          // Context copy ("you can still ask") rather than the server text (RIN-756).
+          setError(historyErrorLabel);
           return ExportedMessageRepository.fromArray([]);
         }
       },
@@ -367,7 +369,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
     agent,
     adapters: { history },
     onError: (runError) => {
-      setError(t(getAskRinPublicErrorKey(runError)));
+      setError(askRinErrorMessage(runError));
     },
   });
 
@@ -401,6 +403,7 @@ function AskRinRegistration({
 }) {
   const t = useTranslations('adaptiveLearning.chatbot');
   const [credentials, setCredentials] = useState<AskRinContextCredentials | null>(null);
+  const askRinErrorMessage = useAskRinErrorMessage();
   const [registrationError, setRegistrationError] = useState('');
   const [attempt, setAttempt] = useState(0);
 
@@ -413,13 +416,13 @@ function AskRinRegistration({
       })
       .catch((contextError: unknown) => {
         if (active) {
-          setRegistrationError(t(getAskRinPublicErrorKey(contextError)));
+          setRegistrationError(askRinErrorMessage(contextError));
         }
       });
     return () => {
       active = false;
     };
-  }, [attempt, serializedContext, t]);
+  }, [attempt, serializedContext, askRinErrorMessage]);
 
   const retryRegistration = () => {
     setCredentials(null);

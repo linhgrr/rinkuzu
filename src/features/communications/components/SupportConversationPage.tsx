@@ -7,7 +7,7 @@ import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Textarea } from '@/components/ui/Input';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { formatCommunicationTimestamp } from '../lib/format';
 import {
   addSupportMessage,
@@ -25,6 +25,7 @@ interface SupportConversationPageProps {
 export function SupportConversationPage({ ticketId, admin = false }: SupportConversationPageProps) {
   const locale = useLocale();
   const t = useTranslations('communications.support');
+  const apiErrorMessage = useApiErrorMessage();
   const { data, error, isLoading, mutate } = useSWR(
     `support:${admin}:${ticketId}`,
     () => fetchSupportDetail(ticketId, admin),
@@ -48,7 +49,7 @@ export function SupportConversationPage({ ticketId, admin = false }: SupportConv
       if (fileInputRef.current) fileInputRef.current.value = '';
       await mutate();
     } catch (caught) {
-      setActionError(extractUnknownErrorMessage(caught, t('sendError')));
+      setActionError(apiErrorMessage(caught));
     } finally {
       setSubmitting(false);
     }
@@ -60,7 +61,7 @@ export function SupportConversationPage({ ticketId, admin = false }: SupportConv
       await updateSupportStatus(ticketId, status, data.ticket.revision, data.ticket.priority);
       await mutate();
     } catch (caught) {
-      setActionError(extractUnknownErrorMessage(caught, 'Không thể cập nhật ticket'));
+      setActionError(apiErrorMessage(caught));
     }
   }
 
@@ -104,7 +105,7 @@ export function SupportConversationPage({ ticketId, admin = false }: SupportConv
                   void reopenSupport(ticketId)
                     .then(() => mutate())
                     .catch((caught) => {
-                      setActionError(extractUnknownErrorMessage(caught, t('reopenError')));
+                      setActionError(apiErrorMessage(caught));
                     })
                     .finally(() => setSubmitting(false));
                 }}

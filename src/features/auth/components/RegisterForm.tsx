@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 import { registerAccount } from '@/features/auth/api/auth-api';
 import { ApiResponseError } from '@/lib/api/client';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -110,6 +111,7 @@ function PasswordCriteriaCard({
 
 function RegisterFormContent({ locale, googleEnabled = false, onSwitchMode }: RegisterFormProps) {
   const t = useTranslations('auth');
+  const apiErrorMessage = useApiErrorMessage();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [serverSuccess, setServerSuccess] = useState<string | null>(null);
@@ -144,19 +146,18 @@ function RegisterFormContent({ locale, googleEnabled = false, onSwitchMode }: Re
     setServerError(null);
     captureAnalyticsEvent('signup_started', { method: 'credentials', locale });
     try {
-      const result = await registerAccount({
+      await registerAccount({
         email: values.email,
         password: values.password,
         ...(forwardedCallback ? { callbackUrl: forwardedCallback } : {}),
       });
-      setServerSuccess(result.message ?? t('accountCreatedSuccess'));
+      // Localized copy, not the server's English meta.message (RIN-756).
+      setServerSuccess(t('checkEmailMessage'));
     } catch (error) {
       setServerError(
         error instanceof ApiResponseError && error.code === 'registration_method_mismatch'
           ? t('registrationMethodMismatch')
-          : error instanceof Error
-            ? error.message
-            : t('registrationFailed'),
+          : apiErrorMessage(error),
       );
     }
   });

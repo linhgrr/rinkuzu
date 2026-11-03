@@ -550,6 +550,7 @@
     "errorInvalidRequest": "Rin-chan could not understand this request. Please rephrase and try again.",
     "errorQuota": "You have reached your Ask Rin-chan limit. Choose a plan to continue.",
     "errorRateLimited": "You are asking too quickly. Wait a moment and try again.",
+    "errorRunFailed": "Rin-chan couldn't finish this answer. Please ask again.",
     "errorInterrupted": "_The response was interrupted before completion. Ask again and Rin-chan can continue._"
   },
   "meta": {

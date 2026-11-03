@@ -15,8 +15,8 @@ function block(selectorStart: string): Map<string, string> {
   const open = css.indexOf('{', start);
   const close = css.indexOf('\n  }', open);
   const tokens = new Map<string, string>();
-  for (const match of css.slice(open + 1, close).matchAll(/(--[\w-]+):\s*([^;]+);/g)) {
-    tokens.set(match[1]!, match[2]!.trim());
+  for (const [, name, value] of css.slice(open + 1, close).matchAll(/(--[\w-]+):\s*([^;]+);/g)) {
+    if (name && value) tokens.set(name, value.trim());
   }
   return tokens;
 }
@@ -28,16 +28,16 @@ const dark = block("  [data-theme='dark'],\n  .dark {");
 function resolve(name: string, theme: 'light' | 'dark'): string {
   const value = (theme === 'dark' ? dark.get(name) : undefined) ?? light.get(name);
   if (value === undefined) throw new Error(`missing token ${name}`);
-  const ref = /^var\((--[\w-]+)\)$/.exec(value);
-  return ref ? resolve(ref[1]!, theme) : value;
+  const ref = /^var\((--[\w-]+)\)$/.exec(value)?.[1];
+  return ref ? resolve(ref, theme) : value;
 }
 
 type Rgb = [number, number, number];
 
 function hex(value: string): Rgb {
-  const match = /^#([0-9a-f]{6})$/i.exec(value);
-  if (!match) throw new Error(`not a 6-digit hex colour: ${value}`);
-  const n = Number.parseInt(match[1]!, 16);
+  const digits = /^#([0-9a-f]{6})$/i.exec(value)?.[1];
+  if (!digits) throw new Error(`not a 6-digit hex colour: ${value}`);
+  const n = Number.parseInt(digits, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 

@@ -201,13 +201,14 @@ describe('ProfileSettings control center', () => {
   });
 });
 
-const serverFailure = (status: number, code: string) =>
+const serverFailure = (status: number, code: string, meta?: unknown) =>
   new ApiResponseError({
     message: 'Mongo timeout for learner@example.com',
     status,
     payload: { success: false, error: { code, detail: 'learner@example.com' } },
     code,
     detail: 'Mongo timeout for learner@example.com',
+    meta,
   });
 
 describe('ProfileSettings API errors (RIN-755)', () => {
@@ -276,6 +277,32 @@ describe('ProfileSettings API errors (RIN-755)', () => {
     await submitPasswordChange();
 
     await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('currentPasswordIncorrect'));
+  });
+
+  it('blames the new password, not the current one, when the 400 names newPassword', async () => {
+    changePasswordMock.mockRejectedValueOnce(
+      serverFailure(400, 'validation_error', {
+        fields: { newPassword: 'Password must be at least 8 characters' },
+      }),
+    );
+
+    await submitPasswordChange();
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('newPasswordRejected'));
+    expect(toastErrorMock).not.toHaveBeenCalledWith('currentPasswordIncorrect');
+  });
+
+  it('rejects a new password shorter than 8 characters before calling the server', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+    await user.type(await screen.findByLabelText('currentPassword'), 'old-secret');
+    await user.type(screen.getByLabelText('newPassword'), 'seven77');
+    await user.type(screen.getByLabelText('confirmNewPassword'), 'seven77');
+    await user.click(screen.getByRole('button', { name: 'updatePassword' }));
+
+    expect(toastErrorMock).toHaveBeenCalledWith('passwordMinLength');
+    expect(changePasswordMock).not.toHaveBeenCalled();
   });
 
   it('sends an expired session to sign-in instead of toasting', async () => {

@@ -14,6 +14,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ProfileSettingsPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorToast } from '@/lib/api/use-api-error';
+import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
 import { AVATAR_ALLOWED_MEDIA_TYPES, AVATAR_MAX_FILE_SIZE } from '@/shared/constants/avatar';
 import {
   changeProfilePassword,
@@ -367,7 +368,7 @@ function PasswordSection({
           placeholder={t('newPasswordPlaceholder')}
           autoComplete="new-password"
           icon={<HiOutlineLockClosed className="size-full" />}
-          {...(newPassword.length > 0 && newPassword.length < 6
+          {...(newPassword.length > 0 && newPassword.length < PASSWORD_MIN_LENGTH
             ? { error: t('passwordMinLength') }
             : {})}
         />
@@ -538,7 +539,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       return;
     }
 
-    if (state.newPassword.length < 6) {
+    if (state.newPassword.length < PASSWORD_MIN_LENGTH) {
       toast.error(t('passwordMinLength'));
       return;
     }
@@ -554,8 +555,12 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       toast.success(t('passwordChanged'));
     } catch (error: unknown) {
       dispatch({ type: 'password:save:finish' });
-      // A 400 here is almost always a wrong current password; the server text stays hidden.
-      if (describeApiError(error).kind === 'validation') {
+      // The server text stays hidden. A 400 naming no field is a wrong current password;
+      // one naming `newPassword` (too short, same as the current one) is about the new one.
+      const described = describeApiError(error);
+      if (described.kind === 'validation' && described.fieldErrors.includes('newPassword')) {
+        toast.error(t('newPasswordRejected'));
+      } else if (described.kind === 'validation' && described.fieldErrors.length === 0) {
         toast.error(t('currentPasswordIncorrect'));
       } else {
         showMutationError(error);

@@ -52,9 +52,10 @@ const LazyMathMarkdown = dynamic(() =>
 
 // Once the chunk is in (preloaded or loaded by an earlier render), render it
 // directly so the fallback never paints (RIN-732). Same DOM, so hydration holds.
+// A plain call: the loaded renderer holds no hooks or state of its own.
 function MathMarkdown(props: Options) {
-  const LoadedMathMarkdown = getLoadedMathMarkdown();
-  return LoadedMathMarkdown ? <LoadedMathMarkdown {...props} /> : <LazyMathMarkdown {...props} />;
+  const renderLoadedMath = getLoadedMathMarkdown();
+  return renderLoadedMath ? renderLoadedMath(props) : <LazyMathMarkdown {...props} />;
 }
 
 // Clear the sticky blog header when a TOC link scrolls a heading into view.

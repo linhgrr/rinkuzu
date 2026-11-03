@@ -22,6 +22,7 @@ function createQuizService(quiz: Quiz) {
       questionCount: quiz.questionCount ?? quiz.questions.length,
     }),
     findIdBySlug: vi.fn().mockResolvedValue(quiz.id),
+    findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

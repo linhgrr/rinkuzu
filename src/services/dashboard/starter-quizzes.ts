@@ -30,7 +30,7 @@ export interface ResolvedStarterQuizzes {
  * dropped at request time (see resolveStarterQuizzes), never shown.
  */
 export const STARTER_QUIZ_ALLOWLIST: readonly StarterQuizAllowlistEntry[] = [
-  { slug: 'cch-ghi-nh-nhng-g-bn-hc-quiz-khi-ng-7-cu-096007', locale: 'vi' },
+  { slug: 'cach-ghi-nho-nhung-gi-ban-hoc-quiz-khoi-dong-7-cau-096007', locale: 'vi' },
   { slug: 'how-to-remember-what-you-study-7-question-starter-quiz-093947', locale: 'en' },
   { slug: 'ktpm-chng-6-p1-219991', locale: 'vi' },
 ];

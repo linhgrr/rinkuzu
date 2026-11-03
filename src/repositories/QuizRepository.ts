@@ -300,6 +300,14 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     return record ? String(record._id) : null;
   }
 
+  async findCanonicalSlugByAlias(alias: string): Promise<string | null> {
+    await connectDB();
+    const record = await QuizModel.findOne({ slugAliases: alias })
+      .select('slug')
+      .lean<{ slug: string }>();
+    return record ? record.slug : null;
+  }
+
   async findBySourceDraftId(sourceDraftId: string): Promise<Quiz | null> {
     await connectDB();
     const record = await QuizModel.findOne({ sourceDraftId })

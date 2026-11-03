@@ -389,6 +389,7 @@ export const INDEX_CONTRACT = Object.freeze([
 
   // quizzes
   required('quizzes.slug', 'quizzes', { slug: 1 }, { unique: true }),
+  required('quizzes.slug-aliases', 'quizzes', { slugAliases: 1 }, { sparse: true }),
   required('quizzes.recent', 'quizzes', { createdAt: -1 }),
   required('quizzes.visibility-recent', 'quizzes', { visibility: 1, createdAt: -1 }),
   required('quizzes.author-recent', 'quizzes', { author: 1, createdAt: -1 }),

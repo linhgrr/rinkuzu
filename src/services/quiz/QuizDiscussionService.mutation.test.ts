@@ -143,6 +143,7 @@ function createService() {
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn().mockResolvedValue(quizSummary()),
     findIdBySlug: vi.fn(),
+    findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

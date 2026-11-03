@@ -255,6 +255,20 @@ describe('QuizRepository mutation coverage', () => {
       await expect(repository.findIdBySlug('missing')).resolves.toBeNull();
     });
 
+    it('resolves a former slug alias to the canonical slug only', async () => {
+      chainFindOneLean({ slug: 'cach-ghi-nho-096007' });
+      const repository = new QuizRepository();
+
+      await expect(repository.findCanonicalSlugByAlias('cch-ghi-nh-096007')).resolves.toBe(
+        'cach-ghi-nho-096007',
+      );
+      expect(quizModelMocks.findOne).toHaveBeenCalledWith({ slugAliases: 'cch-ghi-nh-096007' });
+      expect(quizModelMocks.select).toHaveBeenCalledWith('slug');
+
+      chainFindOneLean(null);
+      await expect(repository.findCanonicalSlugByAlias('unknown')).resolves.toBeNull();
+    });
+
     it('loads quizzes by sourceDraftId with author populate', async () => {
       chainFindOneLean(populatedAuthorRecord);
       const repository = new QuizRepository();

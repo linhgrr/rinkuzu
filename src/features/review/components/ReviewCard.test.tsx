@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
@@ -15,6 +15,9 @@ vi.mock('next-intl', () => ({
 vi.mock('react-hotkeys-hook', () => ({
   useHotkeys: vi.fn(),
 }));
+
+// KaTeX loads on demand (RIN-679); its first import is a cold transform in vitest.
+const KATEX_LOAD = { timeout: 10_000 };
 
 describe('ReviewCard', () => {
   it('renders Markdown on both card faces without losing heading semantics', async () => {
@@ -29,6 +32,7 @@ describe('ReviewCard', () => {
         onResult={vi.fn()}
       />,
     );
+    await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull(), KATEX_LOAD);
 
     expect(screen.getByText('now')).toHaveProperty('tagName', 'STRONG');
     expect(container.querySelector('h3')).toBeInTheDocument();

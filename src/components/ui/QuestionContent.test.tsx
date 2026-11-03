@@ -2,19 +2,22 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it } from 'vitest';
 import { QuestionContent, QuestionExcerpt } from './QuestionContent';
+
+// KaTeX loads on demand (RIN-679); its first import is a cold transform in vitest.
+const KATEX_LOAD = { timeout: 10_000 };
 
 describe('QuestionContent', () => {
   it('renders GFM and KaTeX through the shared educational-content contract', async () => {
     const { container } = render(
       <QuestionContent content={'Choose **two** values where $x^2 = 4$.\n\n- $2$\n- $-2$'} />,
     );
+    await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull(), KATEX_LOAD);
 
     expect(screen.getByText('two')).toHaveProperty('tagName', 'STRONG');
-    expect(container.querySelector('.katex')).not.toBeNull();
     expect(screen.getByRole('list')).toBeInTheDocument();
     expect(container.querySelector('[data-rich-text="prompt"]')).toBeInTheDocument();
     expect((await axe(container)).violations).toEqual([]);
@@ -35,14 +38,14 @@ describe('QuestionContent', () => {
     expect(container.querySelector('a')?.getAttribute('href') ?? '').not.toContain('javascript:');
   });
 
-  it('renders option content as a block without nested paragraph ownership assumptions', () => {
+  it('renders option content as a block without nested paragraph ownership assumptions', async () => {
     const { container } = render(
       <QuestionContent content={'# **A** and [$B$](https://example.com)'} variant="option" />,
     );
+    await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull(), KATEX_LOAD);
 
     expect(container.querySelector('[data-rich-text="option"]')).toBeInTheDocument();
     expect(container.querySelector('strong')).toHaveTextContent('A');
-    expect(container.querySelector('.katex')).not.toBeNull();
     expect(container.querySelector('h1')).toBeNull();
     expect(container.querySelector('a')).toBeNull();
   });
@@ -55,11 +58,11 @@ describe('QuestionContent', () => {
         headingLevel={3}
       />,
     );
+    await waitFor(() => expect(container.querySelector('h3 .katex')).not.toBeNull(), KATEX_LOAD);
 
     const heading = screen.getByRole('heading', { level: 3 });
     expect(heading).toHaveTextContent(/Choose two values/);
     expect(heading.querySelector('strong')).toHaveTextContent('two');
-    expect(heading.querySelector('.katex')).not.toBeNull();
     expect(heading.querySelector('p, ul, ol, li, div')).toBeNull();
     expect((await axe(container)).violations).toEqual([]);
   });

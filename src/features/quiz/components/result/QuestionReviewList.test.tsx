@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
 import { QuestionReviewList } from './QuestionReviewList';
@@ -13,6 +13,9 @@ vi.mock('next/image', () => ({
     <img src={src} alt={alt} />
   ),
 }));
+
+// KaTeX loads on demand (RIN-679); its first import is a cold transform in vitest.
+const KATEX_LOAD = { timeout: 10_000 };
 
 describe('QuestionReviewList', () => {
   it('uses the shared Markdown contract for prompts, summaries and options', async () => {
@@ -40,11 +43,14 @@ describe('QuestionReviewList', () => {
         tProfile={(key) => key}
       />,
     );
+    await waitFor(
+      () => expect(container.querySelectorAll('.katex').length).toBeGreaterThanOrEqual(5),
+      KATEX_LOAD,
+    );
 
     expect(screen.getByText('both')).toHaveProperty('tagName', 'STRONG');
     expect(container.querySelector('h3')).toBeInTheDocument();
     expect(container.querySelectorAll('[data-rich-text="option"]')).toHaveLength(2);
-    expect(container.querySelectorAll('.katex').length).toBeGreaterThanOrEqual(5);
     expect((await axe(container)).violations).toEqual([]);
   });
 

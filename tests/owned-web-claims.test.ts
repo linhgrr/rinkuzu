@@ -16,6 +16,8 @@ const forbiddenOwnedWebClaims = [
   /offline access|quyền truy cập ngoại tuyến/i,
   /24\/7|always ready|luôn sẵn sàng/i,
   /scientifically-grounded adaptive learning path/i,
+  // RIN-739/RIN-777: the feature is "personalized"; the about hero no longer says "adapt".
+  /Learning Should Adapt to You/i,
 ];
 
 const ownedWebSources = [

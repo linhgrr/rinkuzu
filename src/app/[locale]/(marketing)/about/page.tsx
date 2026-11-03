@@ -121,7 +121,7 @@ export default async function AboutPage({ params }: Props) {
             {isVi ? 'Câu chuyện của RinKuzu' : 'Our Story'}
           </p>
           <h1 className="text-4xl md:text-6xl font-semibold text-[var(--text-primary)] mb-6 leading-tight">
-            {isVi ? 'Việc học nên xoay quanh bạn,' : 'Learning Should Adapt to You,'}
+            {isVi ? 'Việc học nên xoay quanh bạn,' : 'Learning Should Revolve Around You,'}
             <br />
             {isVi ? 'không phải ngược lại' : 'Not the Other Way Around'}
           </h1>

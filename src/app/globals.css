@@ -310,20 +310,63 @@
 
   [data-theme='dark'],
   .dark {
-    --bg-page: #10110f;
-    --bg-section: #151713;
-    --bg-surface: #1b1d19;
-    --bg-surface-muted: #242720;
-    --bg-surface-warm: #211a13;
+    /* Semantic layer, dark (RIN-791). Components use these utilities
+       (`text-ink`, `bg-surface-warm`, ...), so this is the one place dark
+       values live. Contrast pairs are pinned in
+       tests/ui/dark-theme-token-contract.test.ts. */
+    --surface: #1b1d19;
+    --surface-page: #10110f;
+    --surface-warm: #211a13;
+    --surface-blue: #171c26;
+    --hero: #2a1d12;
+    --ink: #f7f7f2;
+    --ink-strong: #ffffff;
+    --ink-muted: #b8b8b0;
+    --accent: #ff7c23;
+    /* Lighter on dark, not darker. */
+    --accent-hover: #ff9a52;
+    --accent-soft: rgba(255, 124, 35, 0.16);
+    --accent-warm: rgba(255, 124, 35, 0.26);
+    --accent-pale: rgba(255, 124, 35, 0.16);
+    /* Text on --accent: white is 2.5:1 here. White labels on a filled orange
+       control belong on --brand-action-strong, which does not vary by theme. */
+    --accent-text: #10110f;
+    --line: rgba(255, 255, 255, 0.12);
+    --line-blue: rgba(255, 255, 255, 0.24);
+    --divider-warm: rgba(255, 124, 35, 0.3);
+    --progress-track: #2c2f28;
+    --progress-blue-track: #2c3442;
+    --progress-blue: #8fa8d0;
+    --badge-cool: #232b3a;
+    --control-surface: rgba(255, 255, 255, 0.06);
+    --control-border: rgba(255, 255, 255, 0.12);
+    --card-shadow-accent: 2px 2px 0 rgba(255, 124, 35, 0.3);
+    /* #076cee is 3.9:1 on the dark surface. */
+    --info: #6aa6ff;
+    --info-surface: rgba(106, 166, 255, 0.14);
+    --success: #34d399;
+    --success-surface: rgba(52, 211, 153, 0.14);
+    --purple: #a78bfa;
+    --purple-surface: rgba(167, 139, 250, 0.16);
 
-    --text-primary: #f7f7f2;
-    --text-secondary: #c8c8c1;
+    /* Legacy roles resolve through the semantic layer, as in light. They are
+       re-declared so a dark subtree below <html> resolves them against its own
+       values instead of inheriting the light ones already computed above it. */
+    --bg-page: var(--surface-page);
+    --bg-section: var(--surface-warm);
+    --bg-surface: var(--surface);
+    --bg-surface-muted: var(--surface-warm);
+    --bg-surface-warm: var(--surface-warm);
+
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-muted);
+    /* Hints: intentionally dimmer than --ink-muted (5.1:1 on --surface). */
     --text-muted: #94948d;
-    --text-inverse: #10110f;
+    --text-inverse: var(--accent-text);
 
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-default: rgba(255, 255, 255, 0.12);
-    --border-strong: rgba(255, 255, 255, 0.2);
+    --border-subtle: var(--line);
+    --border-default: var(--line);
+    --border-strong: var(--line-blue);
 
     --brand-primary: #34d399;
     --brand-primary-hover: #6ee7b7;

@@ -31,6 +31,7 @@ vi.mock('@/features/admin/users/api/admin-users-api', () => ({
   grantAdminUserSubscription: vi.fn(),
   updateAdminUserRole: vi.fn(),
   updateAdminUserStatus: vi.fn(),
+  updateAdminUserTestAccount: vi.fn(),
 }));
 vi.mock('@/features/admin/plans/api/admin-plans-api', () => ({
   fetchAdminBillingPlanViewModels: vi.fn(),
@@ -43,6 +44,7 @@ const user = {
   disable: 0 as const,
   accountStatusLabel: 'accountActive' as const,
   accountStatusVariant: 'success' as const,
+  isTestAccount: false,
   createdAt: '2026-08-24T00:00:00.000Z',
   createdAtLabel: '24/08/2026',
 };

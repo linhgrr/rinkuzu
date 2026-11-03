@@ -34,6 +34,7 @@ describe('toAdminUserListViewModel', () => {
       disable: 0,
       accountStatusLabel: 'accountActive',
       accountStatusVariant: 'success',
+      isTestAccount: false,
       createdAtLabel: '07/02/2026',
       subscription: {
         startDateLabel: '07/02/2026',
@@ -50,5 +51,30 @@ describe('toAdminUserListViewModel', () => {
     expect(result.users[0]).not.toHaveProperty('displayName');
     expect(result.users[0]?.subscription).not.toHaveProperty('endDate');
     expect(result.users[0]?.subscription).not.toHaveProperty('endDateLabel');
+  });
+
+  it('carries the admin-set test-account flag through to the row', () => {
+    const result = toAdminUserListViewModel({
+      users: [
+        {
+          id: 'user-2',
+          email: 'qa-bot@example.com',
+          role: 'user',
+          disable: 0,
+          isTestAccount: true,
+          createdAt: '2026-07-02T00:00:00.000Z',
+        },
+      ],
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 1,
+        itemsPerPage: 10,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    });
+
+    expect(result.users[0]?.isTestAccount).toBe(true);
   });
 });

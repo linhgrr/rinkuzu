@@ -5,5 +5,29 @@
   "serverError": "Lỗi máy chủ",
   "tryAgain": "Vui lòng thử lại",
   "pageNotFound": "Trang không tồn tại",
-  "goHome": "Về trang chủ"
+  "goHome": "Về trang chủ",
+  "api": {
+    "authRequired": "Vui lòng đăng nhập để tiếp tục.",
+    "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+    "notFound": "Không tìm thấy nội dung bạn cần.",
+    "conflict": "Dữ liệu vừa thay đổi. Hãy tải lại và thử lại.",
+    "rateLimited": "Bạn thao tác hơi nhanh. Vui lòng thử lại sau ít phút.",
+    "rateLimitedSeconds": "Bạn thao tác hơi nhanh. Vui lòng thử lại sau {seconds} giây.",
+    "validation": "Thông tin chưa hợp lệ. Vui lòng kiểm tra lại.",
+    "unavailable": "Dịch vụ đang tạm gián đoạn. Vui lòng thử lại sau ít phút.",
+    "server": "Rinkuzu đang gặp lỗi. Vui lòng thử lại.",
+    "network": "Không thể kết nối. Hãy kiểm tra mạng và thử lại.",
+    "generic": "Có lỗi xảy ra. Vui lòng thử lại.",
+    "codes": {
+      "premiumRequired": "Tính năng này dành cho gói Premium.",
+      "quotaExceeded": "Bạn đã dùng hết lượt của gói hiện tại. Nâng cấp để dùng tiếp.",
+      "pipelineStalled": "Quá trình xử lý bị dừng. Bạn có thể thử lại.",
+      "pipelineNotCompleted": "Tài liệu vẫn đang được xử lý. Vui lòng đợi thêm một chút.",
+      "askRinConversationBusy": "Rin-chan đang trả lời. Vui lòng đợi câu trả lời xong.",
+      "requestInProgress": "Yêu cầu này đang được xử lý.",
+      "paymentCreationDisabled": "Thanh toán đang tạm dừng. Vui lòng thử lại sau.",
+      "activationPaused": "Việc kích hoạt gói đang tạm dừng. Vui lòng thử lại sau.",
+      "unsupportedMediaType": "Định dạng tệp này chưa được hỗ trợ."
+    }
+  }
 }

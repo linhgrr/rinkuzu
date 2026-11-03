@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { NextIntlClientProvider, createTranslator } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 import enPremium from '../../../../messages/en/premium.json';
@@ -89,5 +89,35 @@ describe.each([
     expect(
       intro.compareDocumentPosition(searchBox) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  // RIN-736: below 640px the intro is clamped to three lines so the search box
+  // stays above the fold; the full text stays in the HTML for crawlers.
+  it('clamps the intro on mobile only and toggles it with an accessible button', () => {
+    const { getByTestId, getByRole } = render(
+      <NextIntlClientProvider locale={locale} messages={{ premium: messages }}>
+        <PremiumQuizzesPageClient />
+      </NextIntlClientProvider>,
+    );
+    const intro = getByTestId('premium-catalog-intro');
+    expect(intro.className).toContain('line-clamp-3');
+    expect(intro.className).toContain('sm:line-clamp-none');
+    expect(intro.textContent).toBe(messages.catalogIntro);
+
+    const toggle = getByRole('button', { name: messages.catalogIntroMore });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-controls')).toBe(intro.id);
+    expect(toggle.className).toContain('min-h-11');
+    expect(toggle.className).toContain('sm:hidden');
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.textContent).toBe(messages.catalogIntroLess);
+    expect(intro.className).not.toContain('line-clamp-3');
+    expect(intro.textContent).toBe(messages.catalogIntro);
+  });
+
+  it('uses the personalized wording, never adaptive, in the intro (RIN-739)', () => {
+    expect(messages.catalogIntro).not.toMatch(/adaptive|thích ứng/i);
   });
 });

@@ -592,9 +592,9 @@ export default function PipelineDebugPage() {
       setJob(nextJob);
       setSelectedJobId(nextJob.job_id);
       setJobIdInput(nextJob.job_id);
-      setLoading(false);
     } catch (err) {
       setError(describeError(err));
+    } finally {
       setLoading(false);
     }
   };

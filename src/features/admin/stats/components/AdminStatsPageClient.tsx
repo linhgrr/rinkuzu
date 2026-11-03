@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useEffectEvent, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -636,6 +636,10 @@ export function AdminStatsPageClient() {
   const [state, dispatch] = useReducer(adminStatsReducer, initialState);
   const [workspace, setWorkspace] = useState<StatsWorkspace>('overview');
 
+  const onFetchError = useEffectEvent((error: unknown) => {
+    dispatch({ type: 'fetchError', message: describeError(error) });
+  });
+
   useEffect(() => {
     const fetchStats = async () => {
       dispatch({ type: 'startFetch' });
@@ -644,15 +648,12 @@ export function AdminStatsPageClient() {
         const data = await fetchAdminStatsViewModel();
         dispatch({ type: 'fetchSuccess', stats: data });
       } catch (error) {
-        dispatch({
-          type: 'fetchError',
-          message: describeError(error),
-        });
+        onFetchError(error);
       }
     };
 
     void fetchStats();
-  }, [describeError]);
+  }, []);
 
   if (state.loading) {
     return (

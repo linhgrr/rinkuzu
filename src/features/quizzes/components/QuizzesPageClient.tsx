@@ -50,10 +50,9 @@ function EmptyState({ hasQuery }: { hasQuery: boolean }) {
   );
 }
 
-function SectionError({ onRetry }: { onRetry: () => void }) {
-  const t = useTranslations('quizzes');
-
-  return <ErrorState message={t('loadError')} onRetry={onRetry} />;
+// Copy, tone and CTAs come from the error layer (RIN-753).
+function SectionError({ error, onRetry }: { error: unknown; onRetry: () => Promise<unknown> }) {
+  return <ErrorState error={error} onRetry={onRetry} />;
 }
 
 function QuizzesContent() {
@@ -101,7 +100,7 @@ function QuizzesContent() {
             {isLoading ? (
               <QuizGridSkeleton count={6} />
             ) : error ? (
-              <SectionError onRetry={() => void retry()} />
+              <SectionError error={error} onRetry={() => retry()} />
             ) : quizzes.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {quizzes.map((quiz) => (

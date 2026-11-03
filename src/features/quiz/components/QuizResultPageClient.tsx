@@ -2,10 +2,11 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
-import { Suspense, useEffect, useReducer } from 'react';
+import { Suspense, useEffect, useReducer, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
 import {
@@ -18,7 +19,8 @@ import type {
   QuizResultQuestionViewModel,
   QuizResultViewModel,
 } from '@/features/quiz/types/quiz-result-page-view-model';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { formatCorrectAnswerText } from '@/lib/quiz/answer-text';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
@@ -45,7 +47,8 @@ type ResultPageStatus = 'loading' | 'ready' | 'error';
 interface QuizResultPageState {
   status: ResultPageStatus;
   result: QuizResult | null;
-  error: string | null;
+  /** Why the results could not load; rendered by ErrorState, never as text (RIN-753). */
+  error: unknown;
   showAIModal: boolean;
   aiQuestionData: AIQuestionData | null;
   currentQuestionIndex: number;
@@ -60,7 +63,8 @@ interface QuizResultPageState {
 
 type QuizResultPageAction =
   | { type: 'loadSuccess'; result: QuizResult; bookmarks: QuizResultBookmarkLookup }
-  | { type: 'loadError'; error: string }
+  | { type: 'loadError'; error: unknown }
+  | { type: 'retryLoad' }
   | { type: 'openAIModal'; questionData: AIQuestionData; questionIndex: number }
   | { type: 'closeAIModal' }
   | { type: 'setBookmarkLoading'; questionIndex: number; loading: boolean }
@@ -107,6 +111,8 @@ function quizResultPageReducer(
         status: 'error',
         error: action.error,
       };
+    case 'retryLoad':
+      return { ...state, status: 'loading', error: null };
     case 'openAIModal':
       return {
         ...state,
@@ -217,32 +223,6 @@ function formatAnswerValue(
   return selectedOptions.every((option): option is string => option !== undefined)
     ? selectedOptions.join(', ')
     : notAnsweredLabel;
-}
-
-function QuizResultErrorState({
-  actionLabel,
-  error,
-  title,
-}: {
-  actionLabel: string;
-  error: string | null;
-  title: string;
-}) {
-  return (
-    <div className="min-h-dvh bg-surface-page flex items-center justify-center">
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-red-600">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
-          <p className="text-ink-muted mb-4">{error}</p>
-          <Link href="/">
-            <Button>{actionLabel}</Button>
-          </Link>
-        </CardContent>
-      </Card>
-    </div>
-  );
 }
 
 function QuizResultActions({
@@ -364,13 +344,16 @@ function useQuizResultPageData(
   guestUserEmail: string | null,
 ) {
   const [state, dispatch] = useReducer(quizResultPageReducer, initialQuizResultPageState);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const describeError = useApiErrorMessage();
 
   useEffect(() => {
     let isActive = true;
 
     const loadResults = async () => {
       if (!attemptId) {
-        dispatch({ type: 'loadError', error: 'No attempt ID provided' });
+        // A result link without an attempt id points at nothing.
+        dispatch({ type: 'loadError', error: { code: 'not_found', status: 404 } });
         return;
       }
 
@@ -390,10 +373,7 @@ function useQuizResultPageData(
         }
       } catch (error: unknown) {
         if (isActive) {
-          dispatch({
-            type: 'loadError',
-            error: extractUnknownErrorMessage(error, 'Failed to load results'),
-          });
+          dispatch({ type: 'loadError', error });
         }
       }
     };
@@ -403,7 +383,12 @@ function useQuizResultPageData(
     return () => {
       isActive = false;
     };
-  }, [attemptId, guestUserEmail, locale]);
+  }, [attemptId, guestUserEmail, locale, loadAttempt]);
+
+  const retryLoad = () => {
+    dispatch({ type: 'retryLoad' });
+    setLoadAttempt((attempt) => attempt + 1);
+  };
 
   const showBookmarkMessage = (tone: BookmarkMessageTone, message: string) => {
     dispatch({ type: 'setBookmarkMessage', message, tone });
@@ -428,10 +413,7 @@ function useQuizResultPageData(
       showBookmarkMessage('success', 'Bookmark removed');
     } catch (error: unknown) {
       console.error('Error removing bookmark:', error);
-      showBookmarkMessage(
-        'error',
-        extractUnknownErrorMessage(error, 'Network error, please try again'),
-      );
+      showBookmarkMessage('error', describeError(error));
       dispatch({ type: 'setBookmarkLoading', questionIndex, loading: false });
     }
   };
@@ -459,12 +441,11 @@ function useQuizResultPageData(
       showBookmarkMessage('success', 'Question bookmarked successfully!');
     } catch (error: unknown) {
       console.error('Error toggling bookmark:', error);
-      const message = extractUnknownErrorMessage(error, 'Network error, please try again');
-
-      if (message === 'Question already bookmarked') {
+      // POST /api/bookmarks answers a duplicate with 400 validation_error.
+      if (describeApiError(error).kind === 'validation') {
         showBookmarkMessage('warning', 'This question is already bookmarked');
       } else {
-        showBookmarkMessage('error', message);
+        showBookmarkMessage('error', describeError(error));
       }
       dispatch({ type: 'setBookmarkLoading', questionIndex, loading: false });
     }
@@ -478,6 +459,7 @@ function useQuizResultPageData(
     stats,
     toggleBookmark,
     removeBookmark,
+    retryLoad,
   };
 }
 
@@ -622,7 +604,6 @@ function QuizResultReadyState({
 
 function QuizResultContent() {
   const t = useTranslations('quiz');
-  const tCommon = useTranslations('common');
   const tProfile = useTranslations('profile');
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -630,11 +611,8 @@ function QuizResultContent() {
   const attemptId = get('attemptId');
   const guestUserEmail = get('userEmail');
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
-  const { state, dispatch, stats, toggleBookmark, removeBookmark } = useQuizResultPageData(
-    attemptId,
-    locale,
-    guestUserEmail,
-  );
+  const { state, dispatch, stats, toggleBookmark, removeBookmark, retryLoad } =
+    useQuizResultPageData(attemptId, locale, guestUserEmail);
   const chatTurnCounts = Object.values(state.chatTurnsByQuestion);
   const chatStats: QuizResultChatSummary = {
     totalTurns: chatTurnCounts.reduce((sum, turns) => sum + turns, 0),
@@ -650,13 +628,12 @@ function QuizResultContent() {
     return <QuizResultPageSkeleton label={`${t('loadingQuiz')}...`} />;
   }
 
-  if (state.error || !result) {
+  if (state.error !== null || !result) {
+    // The whole result failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <QuizResultErrorState
-        actionLabel={t('backHome')}
-        error={state.error}
-        title={tCommon('error')}
-      />
+      <div className="flex min-h-dvh items-center justify-center bg-surface-page px-4">
+        <ErrorState error={state.error} variant="page" onRetry={retryLoad} />
+      </div>
     );
   }
 

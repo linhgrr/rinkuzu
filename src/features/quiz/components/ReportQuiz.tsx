@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { reportQuizViewModel } from '@/features/quiz/api/quiz-interaction-api';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface ReportQuizProps {
   quizSlug: string;
@@ -37,6 +38,7 @@ export default function ReportQuiz({
 }: ReportQuizProps) {
   const { data: session } = useSession();
   const t = useTranslations('report');
+  const describeError = useApiErrorMessage();
   const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -66,7 +68,9 @@ export default function ReportQuiz({
       }, 2000);
     } catch (error) {
       console.error('Error submitting report:', error);
-      toast.error(error instanceof Error ? error.message : t('failedToSubmit'));
+      // Secondary action: a toast with copy from the error layer (RIN-753).
+      const message = describeError(error);
+      if (message) toast.error(message);
     }
   });
 

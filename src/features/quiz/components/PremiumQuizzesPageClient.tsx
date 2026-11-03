@@ -80,7 +80,7 @@ function PremiumQuizzesContent() {
         {isLoading ? (
           <PremiumCatalogSkeleton />
         ) : error ? (
-          <ErrorState message={t('catalogLoadError')} onRetry={() => void mutate()} />
+          <ErrorState error={error} onRetry={() => mutate()} />
         ) : data && data.items.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {data.items.map((item) => (

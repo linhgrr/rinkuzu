@@ -176,11 +176,18 @@ test.describe('single active session', () => {
     test.slow();
     await withLearner(testInfo, async (learner) => {
       const first = await signedInPage(browser, learner);
+      await first.clock.install();
+      await first.goto('/en/profile?tab=personal');
+      await expect(first.getByLabel('Display Name')).toBeVisible();
+      // The first tab is already open when the learner signs in elsewhere; the
+      // server would refuse any new navigation, so only the guard's next timed
+      // check can notice (no focus event, so SWR revalidation stays out of it).
       const second = await signedInPage(browser, learner);
       try {
-        await first.goto('/en/profile');
-        await first.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-        await first.waitForURL(/\/en\/login\?reason=session_replaced/, { timeout: 15_000 });
+        await first.clock.runFor(SESSION_CHECK_INTERVAL_MS);
+        await expect(first.getByText(/signed in somewhere else/)).toBeVisible();
+        await first.clock.runFor(2_000);
+        await first.waitForURL(/\/en\/login(?:[/?#]|$)/, { timeout: 15_000 });
 
         await second.goto('/en/profile');
         await expect(second).toHaveURL(/\/en\/profile$/);

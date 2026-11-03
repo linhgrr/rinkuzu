@@ -5,6 +5,7 @@ import {
   type StandardSuccessEnvelope,
 } from './envelope';
 import { reportApiError } from './error-events';
+import { parseRetryAfterSeconds } from './error-kind';
 
 export class ApiResponseError extends Error {
   status: number;
@@ -12,6 +13,8 @@ export class ApiResponseError extends Error {
   code: string | null;
   detail: string | null;
   meta: unknown;
+  /** From the `Retry-After` header (seconds or HTTP date) or `meta.retryAfterSeconds`. */
+  retryAfterSeconds: number | null;
 
   constructor({
     message,
@@ -20,6 +23,7 @@ export class ApiResponseError extends Error {
     code,
     detail,
     meta,
+    retryAfterSeconds,
   }: {
     message: string;
     status: number;
@@ -27,6 +31,7 @@ export class ApiResponseError extends Error {
     code?: string | null;
     detail?: string | null;
     meta?: unknown;
+    retryAfterSeconds?: number | null;
   }) {
     super(message);
     this.name = 'ApiResponseError';
@@ -35,6 +40,7 @@ export class ApiResponseError extends Error {
     this.code = code ?? null;
     this.detail = detail ?? null;
     this.meta = meta ?? null;
+    this.retryAfterSeconds = retryAfterSeconds ?? null;
   }
 }
 
@@ -107,13 +113,15 @@ export async function fetchApiResponse<
       rawPayload,
       `Request failed with status ${response.status}`,
     );
+    const meta = extractApiErrorMeta(rawPayload);
     const error = new ApiResponseError({
       message,
       status: response.status,
       payload: rawPayload,
       code: extractApiErrorCode(rawPayload),
       detail: message,
-      meta: extractApiErrorMeta(rawPayload),
+      meta,
+      retryAfterSeconds: parseRetryAfterSeconds(response.headers.get('Retry-After'), meta),
     });
     reportApiError(error);
     throw error;

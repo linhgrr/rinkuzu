@@ -5,5 +5,29 @@
   "serverError": "Server error",
   "tryAgain": "Please try again",
   "pageNotFound": "Page not found",
-  "goHome": "Go Home"
+  "goHome": "Go Home",
+  "api": {
+    "authRequired": "Please sign in to continue.",
+    "forbidden": "You don't have permission to do this.",
+    "notFound": "We couldn't find what you were looking for.",
+    "conflict": "This changed in the meantime. Reload and try again.",
+    "rateLimited": "Too many requests. Please try again in a moment.",
+    "rateLimitedSeconds": "Too many requests. Please try again in {seconds} seconds.",
+    "validation": "Some information is invalid. Please check it and try again.",
+    "unavailable": "The service is temporarily unavailable. Please try again shortly.",
+    "server": "Something went wrong on our side. Please try again.",
+    "network": "Can't connect. Check your connection and try again.",
+    "generic": "Something went wrong. Please try again.",
+    "codes": {
+      "premiumRequired": "This feature is part of Premium.",
+      "quotaExceeded": "You've used up your plan's allowance. Upgrade to keep going.",
+      "pipelineStalled": "Processing stalled and was stopped. You can retry.",
+      "pipelineNotCompleted": "Your material is still being processed. Please wait a little longer.",
+      "askRinConversationBusy": "Rin-chan is still answering. Please wait for the reply to finish.",
+      "requestInProgress": "This request is already being processed.",
+      "paymentCreationDisabled": "Payments are paused for now. Please try again later.",
+      "activationPaused": "Plan activation is paused for now. Please try again later.",
+      "unsupportedMediaType": "This file type isn't supported."
+    }
+  }
 }

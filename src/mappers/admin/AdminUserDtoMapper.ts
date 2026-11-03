@@ -50,6 +50,7 @@ export class AdminUserDtoMapper {
       role: user.role,
       disable: user.disable,
       ...(disabledAt !== undefined && { disabledAt }),
+      isTestAccount: user.isTestAccount === true,
       createdAt: serializeDate(user.createdAt, 'user.createdAt'),
       ...(subscription !== undefined && { subscription }),
     };

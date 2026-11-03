@@ -39,6 +39,7 @@ export class UserPersistenceMapper {
       createdAt: record.createdAt,
       ...(record.disabledAt === undefined ? {} : { disabledAt: record.disabledAt }),
       ...(disabledBy === undefined ? {} : { disabledBy }),
+      ...(record.isTestAccount === true ? { isTestAccount: true } : {}),
       ...(record.name === undefined ? {} : { name: record.name }),
       ...mapOptionalEditableProfileFields(record),
       ...(record.subscription === undefined

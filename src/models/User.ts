@@ -21,6 +21,8 @@ interface UserDocument extends Document {
   disable: typeof ACCOUNT_DISABLE_ACTIVE | typeof ACCOUNT_DISABLE_DISABLED;
   disabledAt?: Date | null;
   disabledBy?: Types.ObjectId | null;
+  /** Set by an admin in /admin/users; excluded from activation stats. Absent = false. */
+  isTestAccount?: boolean;
   /** Monotonic session generation; increments on login and real disable/restore. */
   authVersion: number;
   authIdentities?: Array<{ provider: string; subject: string }>;
@@ -88,6 +90,7 @@ const UserSchema = new Schema<UserDocument>({
   },
   disabledAt: { type: Date, default: null },
   disabledBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  isTestAccount: { type: Boolean, default: false },
   authVersion: {
     type: Number,
     required: true,

@@ -10,6 +10,7 @@ describe('toAdminUserListViewModel', () => {
           email: 'learner@example.com',
           role: 'user',
           disable: 0,
+          isTestAccount: false,
           createdAt: '2026-07-02T00:00:00.000Z',
           subscription: {
             plan: { id: 'premium', name: 'Premium' },

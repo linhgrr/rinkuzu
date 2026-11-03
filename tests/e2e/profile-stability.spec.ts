@@ -111,6 +111,32 @@ function countRequests(page: Page, pathname: string): () => number {
   return () => count;
 }
 
+/**
+ * Runs one session check to the end: triggers it, waits for its response body
+ * and lets the page run the fetch callbacks. The guard skips a tick while a
+ * check is still in flight (it never stacks session GETs), so fake time must not
+ * reach the next tick before the previous check has finished; on a slow machine
+ * `runFor(60_000)` fired both ticks while the first GET was still open (RIN-737).
+ */
+async function runSessionCheck(page: Page, trigger: () => Promise<unknown>): Promise<void> {
+  const response = page.waitForResponse(
+    (candidate) =>
+      candidate.request().method() === 'GET' && new URL(candidate.url()).pathname === SESSION_ROUTE,
+  );
+  await trigger();
+  await (await response).finished();
+  // One real macrotask (page.clock does not fake MessageChannel), so the
+  // guard's `finally` has cleared its in-flight flag before the next tick.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = () => resolve();
+        channel.port2.postMessage(null);
+      }),
+  );
+}
+
 test.describe('profile page stability', () => {
   test('keeps loaded content and typed input across session polls and tab switches @profile-stability', async ({
     page,
@@ -130,10 +156,15 @@ test.describe('profile page stability', () => {
 
       // One check when the tab becomes visible, then exactly one per 30 s tick.
       const before = sessionRequests();
-      await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-      await expect.poll(sessionRequests).toBe(before + 1);
-      await page.clock.runFor(SESSION_CHECK_INTERVAL_MS * 2);
-      await expect.poll(sessionRequests).toBe(before + 3);
+      await runSessionCheck(page, () =>
+        page.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))),
+      );
+      expect(sessionRequests()).toBe(before + 1);
+      await runSessionCheck(page, () => page.clock.runFor(SESSION_CHECK_INTERVAL_MS));
+      expect(sessionRequests()).toBe(before + 2);
+      await runSessionCheck(page, () => page.clock.runFor(SESSION_CHECK_INTERVAL_MS));
+      expect(sessionRequests()).toBe(before + 3);
+      // No late second GET (broadcast echo or stacked check) after the last tick.
       await page.waitForTimeout(1_000);
       expect(sessionRequests()).toBe(before + 3);
 

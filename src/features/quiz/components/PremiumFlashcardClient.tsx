@@ -96,8 +96,6 @@ export function PremiumFlashcardClient({ metadata, slug }: PremiumFlashcardClien
     return () => {
       active = false;
     };
-    // Only the quiz identity restarts the session; the handler reads stable setters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metadata.quizId]);
 
   async function showAnswer() {

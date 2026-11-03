@@ -114,8 +114,6 @@ export default function PremiumQuizPlayerClient({
     return () => {
       active = false;
     };
-    // Only the quiz identity restarts the session; the handler reads stable setters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId]);
 
   const batchIndex = Math.floor(currentIndex / 3);

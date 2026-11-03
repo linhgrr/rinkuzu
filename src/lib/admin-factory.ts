@@ -4,6 +4,8 @@ import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
 import { UserRepository } from '@/repositories/UserRepository';
+import { UserTestAccountRepository } from '@/repositories/UserTestAccountRepository';
+import { AdminTestAccountService } from '@/services/admin/AdminTestAccountService';
 import { ActivationStatsService } from '@/services/admin/ActivationStatsService';
 import { AdminService } from '@/services/admin/AdminService';
 
@@ -28,4 +30,14 @@ export function getActivationStatsService(): ActivationStatsService {
     audit: new AdminAuditRepository(),
   });
   return activationStatsService;
+}
+
+let testAccountService: AdminTestAccountService | undefined;
+
+export function getAdminTestAccountService(): AdminTestAccountService {
+  testAccountService ??= new AdminTestAccountService({
+    users: new UserTestAccountRepository(),
+    audit: new AdminAuditRepository(),
+  });
+  return testAccountService;
 }

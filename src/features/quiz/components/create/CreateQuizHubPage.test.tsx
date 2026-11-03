@@ -1,9 +1,12 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
+import { toast } from 'sonner';
+import { ApiResponseError } from '@/lib/api/client';
+import { createManualQuizDraft } from '@/lib/quiz/draftApi';
 import { CreateQuizHubPage } from './CreateQuizHubPage';
 
 vi.mock('next/image', () => ({
@@ -17,9 +20,10 @@ vi.mock('next/image', () => ({
   ),
 }));
 
+const translate = (key: string) => key;
 vi.mock('next-intl', () => ({
   useLocale: () => 'vi',
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => translate,
 }));
 
 vi.mock('swr', () => ({
@@ -73,5 +77,34 @@ describe('CreateQuizHubPage', () => {
     ).toBeInTheDocument();
     expect(container.querySelectorAll('.card.p-0')).toHaveLength(3);
     expect((await axe(container)).violations).toEqual([]);
+  });
+
+  // RIN-754: the toast used to carry the server's own message.
+  it.each([
+    {
+      name: 'a coded 500',
+      error: new ApiResponseError({
+        message: 'E11000 duplicate key quiz_drafts',
+        status: 500,
+        payload: null,
+        code: 'internal_error',
+      }),
+      description: 'errors.api.server',
+    },
+    {
+      name: 'a plain Error',
+      error: new Error('E11000 duplicate key quiz_drafts'),
+      description: 'manualCreateFailed',
+    },
+  ])('shows localized copy when manual create fails with $name', async ({ error, description }) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.mocked(createManualQuizDraft).mockRejectedValueOnce(error);
+    render(<CreateQuizHubPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'startManual' }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('error', { description }));
+    expect(JSON.stringify(vi.mocked(toast.error).mock.calls)).not.toContain('E11000');
+    vi.mocked(toast.error).mockClear();
   });
 });

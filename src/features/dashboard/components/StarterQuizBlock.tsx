@@ -36,7 +36,7 @@ export function StarterQuizBlock({ starter, copy }: StarterQuizBlockProps) {
             {copy.questionCount(primary.questionCount)}
           </span>
         </span>
-        <span className="inline-flex w-fit shrink-0 rounded-full bg-brand-action px-5 py-2.5 font-home text-base font-semibold leading-snug text-white">
+        <span className="inline-flex w-fit shrink-0 rounded-full bg-brand-action px-5 py-2.5 font-home text-base font-semibold leading-snug text-brand-action-text">
           {copy.start}
         </span>
       </Link>

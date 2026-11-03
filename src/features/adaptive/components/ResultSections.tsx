@@ -188,7 +188,7 @@ export const ResultContent = ({
         </p>
       </div>
       <Button
-        className="min-h-11 rounded-full bg-brand-action px-5 font-semibold text-white hover:bg-brand-action-hover sm:ml-auto"
+        className="min-h-11 rounded-full bg-brand-action px-5 font-semibold text-brand-action-text hover:bg-brand-action-hover sm:ml-auto"
         onClick={onHandleNext}
       >
         {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}
@@ -285,7 +285,7 @@ export const ResultContent = ({
             {t('result.dashboard')}
           </Button>
           <Button
-            className="h-12 flex-[2] rounded-xl bg-brand-action font-semibold text-white shadow-md transition-[background-color,transform] hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
+            className="h-12 flex-[2] rounded-xl bg-brand-action font-semibold text-brand-action-text shadow-md transition-[background-color,transform] hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
             onClick={onHandleNext}
           >
             {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}

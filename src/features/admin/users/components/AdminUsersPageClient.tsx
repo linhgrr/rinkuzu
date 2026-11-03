@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer } from 'react';
+import { useMemo, useReducer } from 'react';
 import type { FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
@@ -842,6 +842,11 @@ export function AdminUsersPageClient() {
   });
 
   const { data: plansData } = useSWR('/api/admin/plans', () => fetchAdminBillingPlanViewModels());
+  // Described once per error object, not on every render: describing logs (RIN-827).
+  const usersErrorMessage = useMemo(
+    () => (usersError ? describeError(usersError) : ''),
+    [describeError, usersError],
+  );
 
   const users = usersData?.users ?? [];
   const plans = plansData ?? [];
@@ -1040,7 +1045,7 @@ export function AdminUsersPageClient() {
 
         {usersError || state.localError ? (
           <ErrorState
-            message={usersError ? describeError(usersError) : state.localError}
+            message={usersError ? usersErrorMessage : state.localError}
             className="mb-6"
           />
         ) : null}

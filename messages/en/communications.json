@@ -72,5 +72,16 @@
     "optOut": "Do not send future invitations",
     "optOutAll": "Decline all future invitations",
     "error": "Could not update your choice"
+  },
+  "admin": {
+    "campaignLoadError": "Could not load the campaign.",
+    "campaignCreateError": "Could not create the campaign",
+    "campaignActionError": "The action failed",
+    "feedbackInviteError": "Could not send the invitation",
+    "feedbackLoadError": "Could not load the conversation.",
+    "feedbackReplyError": "Could not send the reply",
+    "feedbackRemindError": "Could not send the reminder",
+    "feedbackCompleteError": "Could not complete the conversation",
+    "supportCreateError": "Could not create the support conversation"
   }
 }

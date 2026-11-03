@@ -72,5 +72,16 @@
     "optOut": "Không nhận lời mời trong tương lai",
     "optOutAll": "Từ chối tất cả lời mời sau này",
     "error": "Không thể cập nhật"
+  },
+  "admin": {
+    "campaignLoadError": "Không thể tải campaign.",
+    "campaignCreateError": "Không thể tạo campaign",
+    "campaignActionError": "Thao tác thất bại",
+    "feedbackInviteError": "Không thể gửi lời mời",
+    "feedbackLoadError": "Không thể tải cuộc trao đổi.",
+    "feedbackReplyError": "Không thể trả lời",
+    "feedbackRemindError": "Không thể gửi lời nhắc",
+    "feedbackCompleteError": "Không thể hoàn tất cuộc trao đổi",
+    "supportCreateError": "Không thể tạo cuộc hỗ trợ"
   }
 }

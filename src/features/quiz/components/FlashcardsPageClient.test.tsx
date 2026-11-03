@@ -131,7 +131,72 @@ describe('FlashcardsPageClient layout inside the app shell', () => {
   });
 });
 
+describe('FlashcardsPageClient design follow-ups (RIN-770)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchPremiumMetadataMock.mockRejectedValue(
+      new ApiResponseError({ message: 'not found', status: 404, payload: null }),
+    );
+    fetchFlashcardsMock.mockResolvedValue(quiz);
+  });
+
+  it('uses a standard-size Take Quiz button in the header', async () => {
+    render(<FlashcardsPageClient />);
+
+    const takeQuiz = (await screen.findByRole('link', { name: 'quiz.takeQuiz' })).querySelector(
+      'button',
+    );
+    const tokens = takeQuiz?.className.split(/\s+/) ?? [];
+    expect(tokens).toContain('text-sm');
+    expect(tokens).toContain('min-h-11');
+    expect(tokens).toContain('sm:min-h-9');
+    expect(tokens).not.toContain('text-xs');
+  });
+
+  it('stacks the end-screen actions full width on mobile, primary first', async () => {
+    render(<FlashcardsPageClient />);
+
+    fireEvent.click(await screen.findByText('swipe-left'));
+    fireEvent.click(screen.getByText('swipe-right'));
+
+    const actions = await screen.findByTestId('flashcard-results-actions');
+    const tokens = actions.className.split(/\s+/);
+    expect(tokens).toContain('flex-col');
+    expect(tokens).toContain('sm:flex-row');
+
+    const buttons = Array.from(actions.querySelectorAll('button'));
+    expect(buttons.map((button) => button.textContent)).toEqual([
+      'quiz.practiceContinue',
+      'quiz.takeQuiz',
+      'common.browseQuizzes',
+    ]);
+    for (const button of buttons) {
+      expect(button.className.split(/\s+/)).toContain('w-full');
+    }
+  });
+
+  it('centres every end-screen stat label', async () => {
+    render(<FlashcardsPageClient />);
+
+    fireEvent.click(await screen.findByText('swipe-left'));
+    fireEvent.click(screen.getByText('swipe-right'));
+
+    for (const label of ['quiz.known', 'quiz.unknown', 'quiz.mastery']) {
+      expect((await screen.findByText(label)).className.split(/\s+/)).toContain('text-center');
+    }
+  });
+});
+
 describe('flashcard messages', () => {
+  it.each(['en', 'vi'])('keeps the mastery stat label to one short word or two in %s', (locale) => {
+    const messages = JSON.parse(
+      readFileSync(path.join(process.cwd(), 'messages', locale, 'quiz.json'), 'utf8'),
+    ) as Record<string, string>;
+
+    // Three stats share one row at 375px; a long label wraps to four lines.
+    expect(messages['mastery']?.split(/\s+/).length).toBeLessThanOrEqual(2);
+  });
+
   it.each(['en', 'vi'])('has the card aria labels in %s', (locale) => {
     const messages = JSON.parse(
       readFileSync(path.join(process.cwd(), 'messages', locale, 'flashcard.json'), 'utf8'),

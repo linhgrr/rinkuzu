@@ -2,6 +2,8 @@ export interface RegisterAccountDto {
   email: string;
   password: string;
   displayName?: string;
+  /** Same-origin path to return to after the user verifies and signs in. */
+  callbackUrl?: string;
 }
 
 export interface RegisterAccountResponseDto {

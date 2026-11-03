@@ -1,11 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { HiOutlineSearch } from 'react-icons/hi';
+import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import Pagination from '@/components/ui/Pagination';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
@@ -144,18 +145,44 @@ function PremiumCatalogHeader() {
  * a crawlable intro above the catalog grid). Only the search and grid
  * suspend.
  */
-export function PremiumQuizzesPageClient() {
+/**
+ * Below 640px the intro is clamped to three lines so the search box stays
+ * above the fold (RIN-736). The clamp is CSS only: the full text is always in
+ * the HTML, so crawlers still read it.
+ */
+function PremiumCatalogIntro() {
   const t = useTranslations('premium');
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="mt-5 max-w-3xl">
+      <p
+        id="premium-catalog-intro"
+        data-testid="premium-catalog-intro"
+        className={`font-home text-sm leading-6 text-ink-muted sm:text-base ${
+          expanded ? '' : 'line-clamp-3 sm:line-clamp-none'
+        }`}
+      >
+        {t('catalogIntro')}
+      </p>
+      <Button
+        variant="link"
+        aria-expanded={expanded}
+        aria-controls="premium-catalog-intro"
+        onClick={() => setExpanded((value) => !value)}
+        className="min-h-11 text-sm font-semibold text-accent sm:hidden"
+      >
+        {expanded ? t('catalogIntroLess') : t('catalogIntroMore')}
+      </Button>
+    </div>
+  );
+}
+
+export function PremiumQuizzesPageClient() {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 pb-24 pt-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-app">
         <PremiumCatalogHeader />
-        <p
-          data-testid="premium-catalog-intro"
-          className="mt-5 max-w-3xl font-home text-sm leading-6 text-ink-muted sm:text-base"
-        >
-          {t('catalogIntro')}
-        </p>
+        <PremiumCatalogIntro />
         <Suspense fallback={<PremiumCatalogSkeleton />}>
           <PremiumQuizzesContent />
         </Suspense>

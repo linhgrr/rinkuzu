@@ -46,6 +46,8 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   displayName: displayNameSchema.optional(),
+  // Where to return after sign-in; sanitised again where the email link is built.
+  callbackUrl: z.string().max(512).optional(),
 });
 
 export const forgotPasswordSchema = z.object({

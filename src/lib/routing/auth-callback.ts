@@ -1,4 +1,4 @@
-import { locales } from '@/i18n/config';
+import { defaultLocale, locales } from '@/i18n/config';
 import { stripLocaleFromPath, toBrowserPath, toIntlHref } from '@/lib/routing/pathname';
 import { ROUTES } from '@/shared/constants/routes';
 
@@ -43,4 +43,21 @@ export function resolveAuthCallback(
     intlHref: safeIntlHref,
     browserUrl: query ? `${browserPath}?${query}` : browserPath,
   };
+}
+
+/**
+ * The safe, locale-unprefixed callback path worth forwarding to the next auth
+ * step (sign-up link, verification email, verify page), or null when the value
+ * would fall back to the dashboard anyway. Same guards as resolveAuthCallback:
+ * same-origin paths only, `//` rejected, auth pages and the home page blocked.
+ */
+export function forwardableAuthCallback(raw: string | null | undefined): string | null {
+  const { intlHref } = resolveAuthCallback(raw, defaultLocale);
+  return intlHref === ROUTES.DASHBOARD ? null : intlHref;
+}
+
+/** `route` with `?callbackUrl=` appended when `raw` is safe to forward. */
+export function withAuthCallback(route: string, raw: string | null | undefined): string {
+  const callback = forwardableAuthCallback(raw);
+  return callback ? `${route}?callbackUrl=${encodeURIComponent(callback)}` : route;
 }

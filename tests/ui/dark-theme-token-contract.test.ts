@@ -135,10 +135,11 @@ describe('dark theme token contract', () => {
     expect(dark.get('--text-muted')).toBe('#94948d');
   });
 
-  it('keeps the white-label action colour theme-stable', () => {
+  it('keeps --brand-action-strong theme-stable and gives dark actions a dark label', () => {
     expect(dark.get('--brand-action-strong')).toBe('#e67020');
     expect(dark.get('--brand-action-strong-hover')).toBe('#ea660c');
-    expect(dark.get('--brand-action-text')).toBe('#ffffff');
+    // RIN-797: white is ~2.3:1 on the dark #fb923c, so the dark label is ink.
+    expect(dark.get('--brand-action-text')).toBe('#1c1917');
   });
 
   // [foreground, background] — translucent backgrounds sit on --surface.

@@ -350,7 +350,7 @@ provided.
   --brand-action: #fb923c;
   --brand-action-hover: #fdba74;
   --brand-action-active: #fed7aa;
-  --brand-action-text: #ffffff;
+  --brand-action-text: #1c1917;
 
   --brand-trust: #34d399;
   --brand-trust-hover: #6ee7b7;

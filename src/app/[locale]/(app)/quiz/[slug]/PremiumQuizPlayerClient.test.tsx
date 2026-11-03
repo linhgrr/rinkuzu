@@ -17,7 +17,8 @@ const { pushMock, saveAnswerMock, startSessionMock, submitSessionMock, unlockMoc
 );
 
 vi.mock('@/i18n/navigation', () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, back: vi.fn() }),
+  usePathname: () => '/quiz/premium-quiz',
   Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
     <a href={href} {...rest}>
       {children}
@@ -29,7 +30,7 @@ vi.mock('@/i18n/navigation', () => ({
 // change the identity of the player's effect dependency on every render, which
 // re-runs the session bootstrap and races the assertions below.
 const translate = (key: string) => key;
-vi.mock('next-intl', () => ({ useTranslations: () => translate }));
+vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
 
 vi.mock('@/features/quiz/api/premium-quiz-api', () => ({
   fetchPremiumBatch: vi.fn(),
@@ -38,6 +39,17 @@ vi.mock('@/features/quiz/api/premium-quiz-api', () => ({
   submitPremiumSession: (...args: unknown[]) => submitSessionMock(...args),
   unlockPremiumQuiz: (...args: unknown[]) => unlockMock(...args),
 }));
+
+function renderPlayer() {
+  return render(
+    <PremiumQuizPlayerClient
+      quizId="quiz-1"
+      slug="premium-quiz"
+      title="Premium quiz"
+      questionCount={1}
+    />,
+  );
+}
 
 describe('PremiumQuizPlayerClient', () => {
   beforeEach(() => {
@@ -100,7 +112,8 @@ describe('PremiumQuizPlayerClient', () => {
       new ApiResponseError({
         message: 'Premium access required',
         status: 403,
-        payload: { code: 'premium_required' },
+        payload: { success: false, error: { code: 'premium_required' } },
+        code: 'premium_required',
       }),
     );
 
@@ -164,24 +177,86 @@ describe('PremiumQuizPlayerClient', () => {
     expect(screen.queryByText('Unauthorized')).not.toBeInTheDocument();
   });
 
-  it('shows localized load-error copy with a retry, never the server message', async () => {
+  it('shows the page-level server error with a retry, never the server message', async () => {
     startSessionMock.mockRejectedValueOnce(
       new ApiResponseError({ message: 'Mongo exploded at shard 3', status: 500, payload: {} }),
     );
 
-    render(
-      <PremiumQuizPlayerClient
-        quizId="quiz-1"
-        slug="premium-quiz"
-        title="Premium quiz"
-        questionCount={1}
-      />,
-    );
+    renderPlayer();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('loadError');
+    expect(
+      await screen.findByRole('heading', { name: 'errors.api.serverTitle' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('errors.api.server');
     expect(screen.queryByText(/Mongo exploded/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'tryAgain' }));
+    fireEvent.click(screen.getByRole('button', { name: 'common.retry' }));
     expect(await screen.findByText('Premium question?')).toBeInTheDocument();
+  });
+
+  it.each([
+    {
+      label: 'a bare 403 (forbidden, not a paywall)',
+      error: new ApiResponseError({
+        message: 'Only the owner',
+        status: 403,
+        payload: {},
+        code: 'forbidden',
+      }),
+      title: 'errors.api.forbiddenTitle',
+    },
+    {
+      label: '404',
+      error: new ApiResponseError({ message: 'Premium quiz not found', status: 404, payload: {} }),
+      title: 'errors.api.notFoundTitle',
+    },
+    {
+      label: '429',
+      error: new ApiResponseError({
+        message: 'Slow down there',
+        status: 429,
+        payload: {},
+        retryAfterSeconds: 12,
+      }),
+      title: 'errors.api.rateLimitedSecondsTitle',
+    },
+    {
+      label: 'network failure',
+      error: new TypeError('Failed to fetch'),
+      title: 'errors.api.networkTitle',
+    },
+  ])('start fails with $label: page error from the error layer', async ({ error, title }) => {
+    startSessionMock.mockRejectedValueOnce(error);
+
+    renderPlayer();
+
+    expect(await screen.findByRole('heading', { name: title })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'premiumUnlockButton' })).not.toBeInTheDocument();
+    expect(screen.queryByText(error.message)).not.toBeInTheDocument();
+  });
+
+  it('shows localized copy when the unlock fails, never the server text', async () => {
+    startSessionMock.mockRejectedValueOnce(
+      new ApiResponseError({
+        message: 'Premium access required',
+        status: 403,
+        payload: {},
+        code: 'premium_required',
+      }),
+    );
+    unlockMock.mockRejectedValueOnce(
+      new ApiResponseError({
+        message: 'wallet 42 empty',
+        status: 403,
+        payload: {},
+        code: 'quota_exceeded',
+      }),
+    );
+
+    renderPlayer();
+    fireEvent.click(await screen.findByRole('button', { name: 'premiumUnlockButton' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('errors.api.codes.quotaExceeded');
+    expect(screen.queryByText(/wallet 42/)).not.toBeInTheDocument();
   });
 });

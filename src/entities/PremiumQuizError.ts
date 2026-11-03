@@ -6,6 +6,7 @@ export class PremiumQuizError extends Error {
       | 'email_verification_required'
       | 'invalid_state'
       | 'insufficient_credits'
+      | 'unlock_required'
       | 'review_required'
       | 'session_expired'
       | 'invalid_cursor'

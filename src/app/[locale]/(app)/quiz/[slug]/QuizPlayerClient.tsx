@@ -7,7 +7,8 @@ import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytic
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, Badge } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { preloadMathRenderer } from '@/components/ui/preloadMathRenderer';
 import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
@@ -33,6 +34,8 @@ import type {
 } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { routePathSegment } from '@/lib/routing/routeParams';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 
 function QuizLayoutLoadingFallback() {
   const t = useTranslations('quiz');
@@ -348,7 +351,10 @@ type QuizPlayerStatus = 'loading' | 'ready' | 'error';
 interface QuizPlayerState {
   quiz: QuizPlayerQuiz | null;
   status: QuizPlayerStatus;
+  /** Inline copy for the email gate and the submit flow (already localized). */
   error: string;
+  /** Why the quiz could not load; rendered by ErrorState, never as text (RIN-753). */
+  loadError: unknown;
   userEmail: string;
   showEmailInput: boolean;
   currentQuestionIndex: number;
@@ -372,7 +378,7 @@ type QuizPlayerAction =
     }
   | { type: 'acceptResume' }
   | { type: 'declineResume'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
-  | { type: 'loadQuizError'; error: string }
+  | { type: 'loadQuizError'; error: unknown }
   | { type: 'requirePremium' }
   | { type: 'selectAnswer'; answerIndex: number }
   | { type: 'goToNextQuestion' }
@@ -383,6 +389,7 @@ const initialQuizPlayerState: QuizPlayerState = {
   quiz: null,
   status: 'loading',
   error: '',
+  loadError: null,
   userEmail: '',
   showEmailInput: true,
   currentQuestionIndex: 0,
@@ -448,7 +455,7 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
       return {
         ...state,
         status: 'error',
-        error: action.error,
+        loadError: action.error,
         showPremiumModal: false,
       };
     case 'requirePremium':
@@ -530,35 +537,6 @@ function QuizGateHeader({ title, subtitle }: { title: string; subtitle?: string 
 
 function QuizLoadingState({ t }: { t: (key: string) => string }) {
   return <CenteredCardPageSkeleton label={t('loadingQuiz')} />;
-}
-
-function QuizErrorState({ error, t }: { error: string; t: (key: string) => string }) {
-  return (
-    <div className="min-h-screen">
-      <div className="flex items-center justify-center min-h-[70vh] px-4">
-        <Card
-          variant="glass"
-          className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
-        >
-          <CardHeader className="text-center">
-            <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-2xl mb-4 mx-auto w-fit">
-              <HiOutlineExclamationCircle className="size-6 text-red-600" />
-            </div>
-            <CardTitle className="text-red-600 text-xl">{t('quizNotFound')}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-ink-muted mb-6">{error}</p>
-            <Link href="/">
-              <Button variant="gradient" className="w-full">
-                <HiOutlineArrowLeft className="size-4 mr-2" />
-                {t('returnHome')}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
 }
 
 function QuizPremiumState({ onClose, t }: { onClose: () => void; t: (key: string) => string }) {
@@ -687,20 +665,22 @@ function QuizEmailGate({
 
 interface QuizPlayerClientProps {
   initialErrorCode: string | null | undefined;
-  initialErrorMessage: string | null;
+  /** HTTP status of the server-side load failure; the server's text never reaches the client. */
+  initialErrorStatus: number | null;
   initialQuiz: QuizPlayViewModel | null;
   slug: string;
 }
 
 export default function QuizPlayerClient({
   initialErrorCode,
-  initialErrorMessage,
+  initialErrorStatus,
   initialQuiz,
   slug,
 }: QuizPlayerClientProps) {
   const t = useTranslations('quiz');
   const { data: session, status: sessionStatus } = useSession();
-  const { push } = useRouter();
+  const { push, refresh } = useRouter();
+  const describeError = useApiErrorMessage();
   const encodedSlug = routePathSegment(slug);
   const [state, dispatch] = useReducer(quizPlayerReducer, initialQuizPlayerState);
 
@@ -739,13 +719,12 @@ export default function QuizPlayerClient({
 
     const loadQuiz = async () => {
       if (!initialQuiz) {
-        if (initialErrorCode === 'premium_required') {
+        // Same classification as a client-side API error (RIN-753).
+        const failure = { code: initialErrorCode, status: initialErrorStatus ?? 404 };
+        if (describeApiError(failure).kind === 'unlock_required') {
           dispatch({ type: 'requirePremium' });
         } else {
-          dispatch({
-            type: 'loadQuizError',
-            error: initialErrorMessage || 'Quiz not found',
-          });
+          dispatch({ type: 'loadQuizError', error: failure });
         }
         return;
       }
@@ -797,8 +776,7 @@ export default function QuizPlayerClient({
           return;
         }
 
-        const message = error instanceof Error ? error.message : '';
-        dispatch({ type: 'loadQuizError', error: message || 'Quiz not found' });
+        dispatch({ type: 'loadQuizError', error });
       }
     };
 
@@ -811,7 +789,7 @@ export default function QuizPlayerClient({
     clearProgress,
     encodedSlug,
     initialErrorCode,
-    initialErrorMessage,
+    initialErrorStatus,
     initialQuiz,
     sessionStatus,
     progressEnabled,
@@ -882,7 +860,7 @@ export default function QuizPlayerClient({
       push(`/quiz/${encodedSlug}/result?${params.toString()}`);
     },
     onSubmitStart: () => dispatch({ type: 'patch', value: { error: '' } }),
-    onSubmitError: (message) => dispatch({ type: 'patch', value: { error: message } }),
+    onSubmitError: (error) => dispatch({ type: 'patch', value: { error: describeError(error) } }),
     mapAnswersToOriginalOrder: (currentQuiz, answersToSubmit) =>
       mapAnswersToOriginalOrder(currentQuiz, answersToSubmit, debugLog),
     isQuestionAnswered,
@@ -980,8 +958,13 @@ export default function QuizPlayerClient({
     );
   }
 
-  if (state.error && !quiz) {
-    return <QuizErrorState error={state.error} t={t} />;
+  if (state.loadError !== null && !quiz) {
+    // The whole player failed to load: page variant, copy from the error layer (RIN-753).
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center px-4">
+        <ErrorState error={state.loadError} variant="page" onRetry={refresh} />
+      </div>
+    );
   }
 
   if (state.showEmailInput && !sessionEmail && quiz) {

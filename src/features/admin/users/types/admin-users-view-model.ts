@@ -25,6 +25,8 @@ export interface AdminUserViewModel {
   disabledAtLabel?: string;
   accountStatusLabel: 'accountActive' | 'accountDisabled';
   accountStatusVariant: 'success' | 'danger';
+  /** Admin-set: excluded from the activation stats. */
+  isTestAccount: boolean;
   createdAt: string;
   createdAtLabel: string;
   subscription?: AdminUserSubscriptionViewModel;
@@ -50,6 +52,11 @@ export interface AdminUserRoleUpdateInput {
 export interface AdminUserStatusUpdateInput {
   userId: string;
   disable: AccountDisableState;
+}
+
+export interface AdminUserTestAccountUpdateInput {
+  userId: string;
+  isTestAccount: boolean;
 }
 
 export interface AdminUserSubscriptionGrantInput {

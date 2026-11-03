@@ -1,12 +1,12 @@
-import { memo } from 'react';
-import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
+import { memo, Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import ReactMarkdown, { defaultUrlTransform, type Components, type Options } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 import { cn } from '@/lib/utils';
+import { hasMath } from '@/lib/markdown/has-math';
 import { normalizeMarkdownContent } from '@/lib/markdown/normalize';
 import { rehypeHeadingIds } from '@/lib/markdown/rehype-heading-ids';
+import { getLoadedMathMarkdown, noteMathMarkdownLoaded } from './preloadMathRenderer';
 
 type MarkdownRendererVariant = 'document' | 'prompt' | 'option' | 'answer' | 'compact';
 
@@ -37,10 +37,82 @@ const variantClasses: Record<MarkdownRendererVariant, string> = {
 
 const QUESTION_DISALLOWED_ELEMENTS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 const OPTION_DISALLOWED_ELEMENTS = [...QUESTION_DISALLOWED_ELEMENTS, 'a'];
-const DEFAULT_REHYPE_PLUGINS = [rehypeKatex];
-const HEADING_ID_REHYPE_PLUGINS = [rehypeHeadingIds, rehypeKatex];
+const REMARK_PLUGINS: Options['remarkPlugins'] = [remarkGfm];
+const DEFAULT_REHYPE_PLUGINS: Options['rehypePlugins'] = [];
+const HEADING_ID_REHYPE_PLUGINS: Options['rehypePlugins'] = [rehypeHeadingIds];
+
+// KaTeX (JS + CSS) is ~425 KB raw: load it only for content with math (RIN-679).
+// No `loading` option, so next/dynamic adds no Suspense boundary of its own and
+// the boundary below lays out the plain render, hidden, while the chunk loads.
+// Views that can wait await `preloadMathRenderer` first. During SSR the
+// chunk and its CSS are preloaded, so hydration keeps the server-rendered math.
+const LazyMathMarkdown = dynamic(() =>
+  import('./MathMarkdown').then((module) => noteMathMarkdownLoaded(module.MathMarkdown)),
+);
+
+// Once the chunk is in (preloaded or loaded by an earlier render), render it
+// directly so the fallback never paints (RIN-732). Same DOM, so hydration holds.
+// A plain call: the loaded renderer holds no hooks or state of its own.
+function MathMarkdown(props: Options) {
+  const renderLoadedMath = getLoadedMathMarkdown();
+  return renderLoadedMath ? renderLoadedMath(props) : <LazyMathMarkdown {...props} />;
+}
+
 // Clear the sticky blog header when a TOC link scrolls a heading into view.
 const HEADING_ID_CLASSES = '[&_h2]:scroll-mt-24 [&_h3]:scroll-mt-24';
+
+const MARKDOWN_COMPONENTS: Components = {
+  ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-3 ml-2">{children}</ul>,
+  ol: ({ children }) => (
+    <ol className="list-decimal list-inside space-y-1 mb-3 ml-2">{children}</ol>
+  ),
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  code: ({ children }) => (
+    <code className="bg-neutral-100 text-neutral-900 px-1 py-0.5 rounded text-xs font-mono">
+      {children}
+    </code>
+  ),
+  pre: ({ children }) => (
+    <pre className="bg-neutral-50 border border-neutral-200 rounded-md p-3 overflow-x-auto mb-3">
+      {children}
+    </pre>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="mb-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="border-neutral-300 my-4" />,
+  table: ({ children }) => (
+    <div className="overflow-x-auto mb-3">
+      <table className="min-w-full border border-neutral-200 rounded-md">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-neutral-50">{children}</thead>,
+  tbody: ({ children }) => <tbody className="bg-white">{children}</tbody>,
+  tr: ({ children }) => <tr className="border-b border-neutral-200">{children}</tr>,
+  th: ({ children }) => (
+    <th className="px-3 py-2 text-left text-xs font-medium text-neutral-900 border-r border-neutral-200 last:border-r-0">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-2 text-sm text-neutral-700 border-r border-neutral-200 last:border-r-0">
+      {children}
+    </td>
+  ),
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-brand-trust hover:text-green-700 underline"
+    >
+      {children}
+    </a>
+  ),
+};
 
 const HEADING_DISALLOWED_ELEMENTS = [
   ...QUESTION_DISALLOWED_ELEMENTS,
@@ -87,6 +159,16 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
               ? 'h6'
               : 'div';
 
+  const markdownProps: Options = {
+    children: normalizedContent,
+    remarkPlugins: REMARK_PLUGINS,
+    rehypePlugins: headingIds ? HEADING_ID_REHYPE_PLUGINS : DEFAULT_REHYPE_PLUGINS,
+    skipHtml: true,
+    urlTransform: defaultUrlTransform,
+    components: MARKDOWN_COMPONENTS,
+    ...(disallowedElements ? { disallowedElements, unwrapDisallowed: true } : {}),
+  };
+
   return (
     <Root
       className={cn(
@@ -97,69 +179,20 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       )}
       data-rich-text={variant}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={headingIds ? HEADING_ID_REHYPE_PLUGINS : DEFAULT_REHYPE_PLUGINS}
-        skipHtml
-        urlTransform={defaultUrlTransform}
-        {...(disallowedElements ? { disallowedElements, unwrapDisallowed: true } : {})}
-        components={{
-          ul: ({ children }) => (
-            <ul className="list-disc list-inside space-y-1 mb-3 ml-2">{children}</ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="list-decimal list-inside space-y-1 mb-3 ml-2">{children}</ol>
-          ),
-          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-          em: ({ children }) => <em className="italic">{children}</em>,
-          code: ({ children }) => (
-            <code className="bg-neutral-100 text-neutral-900 px-1 py-0.5 rounded text-xs font-mono">
-              {children}
-            </code>
-          ),
-          pre: ({ children }) => (
-            <pre className="bg-neutral-50 border border-neutral-200 rounded-md p-3 overflow-x-auto mb-3">
-              {children}
-            </pre>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="mb-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-              {children}
-            </blockquote>
-          ),
-          hr: () => <hr className="border-neutral-300 my-4" />,
-          table: ({ children }) => (
-            <div className="overflow-x-auto mb-3">
-              <table className="min-w-full border border-neutral-200 rounded-md">{children}</table>
-            </div>
-          ),
-          thead: ({ children }) => <thead className="bg-neutral-50">{children}</thead>,
-          tbody: ({ children }) => <tbody className="bg-white">{children}</tbody>,
-          tr: ({ children }) => <tr className="border-b border-neutral-200">{children}</tr>,
-          th: ({ children }) => (
-            <th className="px-3 py-2 text-left text-xs font-medium text-neutral-900 border-r border-neutral-200 last:border-r-0">
-              {children}
-            </th>
-          ),
-          td: ({ children }) => (
-            <td className="px-3 py-2 text-sm text-neutral-700 border-r border-neutral-200 last:border-r-0">
-              {children}
-            </td>
-          ),
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-trust hover:text-green-700 underline"
-            >
-              {children}
-            </a>
-          ),
-        }}
-      >
-        {normalizedContent}
-      </ReactMarkdown>
+      {hasMath(normalizedContent) ? (
+        <Suspense
+          fallback={
+            // Hidden but laid out: holds the space without flashing raw LaTeX (RIN-732).
+            <span className="invisible contents" data-math-pending="">
+              <ReactMarkdown {...markdownProps} />
+            </span>
+          }
+        >
+          <MathMarkdown {...markdownProps} />
+        </Suspense>
+      ) : (
+        <ReactMarkdown {...markdownProps} />
+      )}
     </Root>
   );
 });

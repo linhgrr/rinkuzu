@@ -49,6 +49,7 @@ function toAdminUserViewModel(user: AdminUserDto): AdminUserViewModel {
     ...(disabledAtLabel !== undefined && { disabledAtLabel }),
     accountStatusLabel: isDisabled ? 'accountDisabled' : 'accountActive',
     accountStatusVariant: isDisabled ? 'danger' : 'success',
+    isTestAccount: user.isTestAccount,
     createdAt: user.createdAt,
     createdAtLabel: formatDate(user.createdAt),
     ...(subscription !== undefined && { subscription }),

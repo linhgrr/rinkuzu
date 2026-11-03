@@ -178,6 +178,11 @@ export const adminActivationQuerySchema = z.object({
 const isoInstantSchema = z.iso.datetime();
 const countSchema = z.number().int().min(0);
 
+/** quiz only, adaptive only, both: the three add up to the learner count. */
+const activationPathCountsSchema = z
+  .object({ quiz: countSchema, adaptive: countSchema, both: countSchema })
+  .strict();
+
 const adminActivationWeekSchema = z
   .object({
     isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
@@ -186,7 +191,9 @@ const adminActivationWeekSchema = z
     signups: countSchema,
     material: countSchema,
     activated: countSchema,
+    activatedBy: activationPathCountsSchema,
     weeklyActivatedLearners: countSchema,
+    weeklyActivatedBy: activationPathCountsSchema,
     w1Retained: countSchema.nullable(),
     w1RetentionRate: z.number().min(0).max(1).nullable(),
     complete: z.boolean(),
@@ -208,13 +215,21 @@ export const adminActivationStatsSchema = z
         signups: z.string(),
         material: z.string(),
         activated: z.string(),
+        activatedBy: z.string(),
         weeklyActivatedLearners: z.string(),
+        weeklyActivatedBy: z.string(),
+        adaptiveCompletion: z.string(),
+        succeededUpload: z.string(),
         w1Retained: z.string(),
         w1RetentionRate: z.string(),
         complete: z.string(),
+        sources: z.string(),
         limitations: z.string(),
       })
       .strict(),
+    // 'unavailable': the adaptive API did not answer, so every number is
+    // quiz-only and undercounts Path B learners.
+    sources: z.object({ adaptive: z.enum(['ok', 'unavailable']) }).strict(),
     weeks: z.array(adminActivationWeekSchema),
   })
   .strict();

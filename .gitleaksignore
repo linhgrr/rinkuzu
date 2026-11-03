@@ -1,6 +1,5 @@
 # Historical gitleaks findings whose credentials were rotated by the Founder (RIN-378).
 # Tracked in RIN-379 / RIN-674. Format: <commit>:<path>:<rule-id>:<line>. Values are never recorded here.
-[90m3:50AM[0m [33mWRN[0m [1mleaks found: 10[0m
 1ea7b3b523bf853e18e64e53ab4c634d1020e1ff:requirement.txt:connection-uri-with-password:26
 1ea7b3b523bf853e18e64e53ab4c634d1020e1ff:requirement.txt:short-auth-secret-assignment:27
 1ea7b3b523bf853e18e64e53ab4c634d1020e1ff:src/app/api/admin/setup/route.ts:generic-api-key:31

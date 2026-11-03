@@ -723,7 +723,7 @@ export default function QuizPlayerClient({
   useEffect(() => {
     // Fetch KaTeX while auth settles, before the first math question mounts (RIN-679).
     if (initialQuiz) {
-      preloadMathRenderer(
+      void preloadMathRenderer(
         initialQuiz.questions.flatMap((question) => [question.question, ...question.options]),
       );
     }

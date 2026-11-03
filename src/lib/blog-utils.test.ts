@@ -26,3 +26,22 @@ describe('extractHeadingsFromMarkdown', () => {
     expect(extractHeadingsFromMarkdown('# Top\n## \n#### Too deep')).toEqual([]);
   });
 });
+
+describe('extractHeadingsFromMarkdown ids', () => {
+  it('gives repeated headings unique ids', () => {
+    expect(extractHeadingsFromMarkdown('## Ví dụ\n### Example\n## Ví dụ').map((h) => h.id)).toEqual(
+      ['vi-du', 'example', 'vi-du-2'],
+    );
+  });
+
+  it('ignores heading-like lines inside fenced code blocks', () => {
+    expect(
+      extractHeadingsFromMarkdown(
+        '## Real\n```md\n## Not a heading\n```\n~~~\n### Nope\n~~~\n### After',
+      ),
+    ).toEqual([
+      { id: 'real', text: 'Real' },
+      { id: 'after', text: 'After' },
+    ]);
+  });
+});

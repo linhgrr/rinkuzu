@@ -15,7 +15,10 @@ function block(selectorStart: string): Map<string, string> {
   const open = css.indexOf('{', start);
   const close = css.indexOf('\n  }', open);
   const tokens = new Map<string, string>();
-  for (const [, name, value] of css.slice(open + 1, close).matchAll(/(--[\w-]+):\s*([^;]+);/g)) {
+  // Strip comments first: prose such as "Text on --accent: white is ..." would
+  // otherwise parse as a declaration and shadow the real token.
+  const body = css.slice(open + 1, close).replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const [, name, value] of body.matchAll(/(--[\w-]+):\s*([^;]+);/g)) {
     if (name && value) tokens.set(name, value.trim());
   }
   return tokens;

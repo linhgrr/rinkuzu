@@ -259,6 +259,8 @@ describe('i18n keys', () => {
   ])('every kind and code key exists in %s', (_locale, messages) => {
     for (const key of keys) {
       expect(typeof resolve(messages, key), key).toBe('string');
+      // ErrorState derives the title key from the body key (RIN-752).
+      expect(typeof resolve(messages, `${key}Title`), `${key}Title`).toBe('string');
     }
     expect(resolve(messages, RATE_LIMITED_SECONDS_KEY)).toContain('{seconds}');
   });

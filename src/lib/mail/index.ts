@@ -9,6 +9,7 @@ import { VerifyEmail } from './templates/VerifyEmail';
 import { env } from '@/lib/env';
 import { publicEnv } from '@/lib/public-env';
 import { logger } from '@/lib/logger';
+import { forwardableAuthCallback } from '@/lib/routing/auth-callback';
 
 type MailMessage = {
   to: string;
@@ -26,6 +27,11 @@ type RenderedMail = {
 
 interface MailIdempotencyOptions {
   idempotencyKey?: string;
+}
+
+interface VerifyEmailMessageOptions extends MailIdempotencyOptions {
+  /** Forwarded to the verify page only when it is a safe same-origin path. */
+  callbackUrl?: string;
 }
 
 let cachedResend: Resend | null = null;
@@ -78,9 +84,12 @@ function truncateIdempotency(key: string): string {
 export async function buildVerifyEmailMessage(
   to: string,
   rawToken: string,
-  options: MailIdempotencyOptions = {},
+  options: VerifyEmailMessageOptions = {},
 ): Promise<MailMessage> {
-  const url = `${siteUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`;
+  const callback = forwardableAuthCallback(options.callbackUrl);
+  const url =
+    `${siteUrl()}/verify-email?token=${encodeURIComponent(rawToken)}` +
+    (callback ? `&callbackUrl=${encodeURIComponent(callback)}` : '');
   const { html, text } = await renderMail(VerifyEmail({ url }));
   return {
     to,

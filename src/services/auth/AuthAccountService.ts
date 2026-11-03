@@ -80,7 +80,11 @@ export class AuthAccountService implements IAuthAccountService {
 
       this.scheduler.schedule(async () => {
         await Promise.all([
-          this.notifier.sendVerificationEmail(account.email, verification.raw),
+          input.callbackUrl
+            ? this.notifier.sendVerificationEmail(account.email, verification.raw, {
+                callbackUrl: input.callbackUrl,
+              })
+            : this.notifier.sendVerificationEmail(account.email, verification.raw),
           this.audit.record({
             event: 'register',
             userId: account.id,

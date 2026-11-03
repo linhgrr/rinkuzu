@@ -3,6 +3,7 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import { buildFaqSchema, buildSoftwareApplicationSchema } from '@/lib/structured-data';
+import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
 
 type AdaptiveLearningGuestProps = {
@@ -40,13 +41,13 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
         <p className="text-lg text-neutral-600">{t('dashboardDescription')}</p>
         <div className="flex flex-wrap gap-3">
           <Link
-            href={`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`}
+            href={withAuthCallback(loginPath, callbackPath)}
             className="inline-flex items-center rounded-lg bg-brand-action px-5 py-2.5 font-medium text-brand-action-text hover:bg-brand-action-hover"
           >
             {t('guest.loginCta')}
           </Link>
           <Link
-            href={registerPath}
+            href={withAuthCallback(registerPath, callbackPath)}
             className="inline-flex items-center rounded-lg border border-line px-5 py-2.5 font-medium text-neutral-700 hover:bg-neutral-50"
           >
             {t('guest.registerCta')}

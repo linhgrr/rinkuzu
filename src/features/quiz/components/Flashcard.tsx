@@ -179,8 +179,11 @@ function getAnimatedCardStyle(state: FlashcardState) {
 
 function FlashcardFront({ options, question }: FlashcardFrontProps) {
   return (
-    <Card className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-neutral-100 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]">
-      <CardContent className="flex h-full w-full flex-col justify-between overflow-y-auto px-5 py-6 sm:px-14 sm:py-8">
+    <Card
+      data-flashcard-face="front"
+      className="[grid-area:1/1] flex w-full flex-col bg-white shadow-2xl rounded-2xl border-2 border-neutral-100 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]"
+    >
+      <CardContent className="flex w-full flex-1 flex-col px-5 py-6 sm:px-14 sm:py-8">
         <div className="flex-1 flex flex-col justify-center">
           <QuestionContent
             content={question}
@@ -220,8 +223,11 @@ function FlashcardBack({
   type,
 }: FlashcardBackProps) {
   return (
-    <Card className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-green-200 [backface-visibility:hidden] [-webkit-backface-visibility:hidden] [transform:rotateX(180deg)]">
-      <CardContent className="flex h-full w-full flex-col justify-between overflow-y-auto px-5 py-6 sm:px-14 sm:py-8">
+    <Card
+      data-flashcard-face="back"
+      className="[grid-area:1/1] flex w-full flex-col bg-white shadow-2xl rounded-2xl border-2 border-green-200 [backface-visibility:hidden] [-webkit-backface-visibility:hidden] [transform:rotateX(180deg)]"
+    >
+      <CardContent className="flex w-full flex-1 flex-col px-5 py-6 sm:px-14 sm:py-8">
         <div className="flex-1 flex flex-col justify-center">
           <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">
             {t('correctAnswer')}
@@ -430,7 +436,7 @@ export function Flashcard({
     <div className="flex w-full flex-col items-center justify-center overflow-hidden px-4 sm:px-6">
       <button
         type="button"
-        className="relative select-none border-0 bg-transparent p-0 text-left w-full max-w-[1000px] h-[60vh] max-h-[500px] min-h-[380px] mx-auto z-10"
+        className="relative select-none border-0 bg-transparent p-0 text-left w-full max-w-5xl min-h-96 mx-auto z-10"
         aria-label={state.isFlipped ? t('showQuestion') : t('showAnswer')}
         style={animatedCardStyle}
         onMouseDown={(event) => handleDragStart({ x: event.clientX, y: event.clientY })}
@@ -462,9 +468,11 @@ export function Flashcard({
           }
         }}
       >
-        <div className="relative w-full h-full cursor-pointer [perspective:1000px] [transform-style:preserve-3d]">
+        {/* Both faces share one grid cell, so the card is as tall as its taller face:
+            no fixed height, no inner scroll, no clipped options (RIN-770). */}
+        <div className="relative w-full cursor-pointer [perspective:1000px] [transform-style:preserve-3d]">
           <div
-            className="relative w-full h-full transition-transform duration-300 ease-in-out [transform-style:preserve-3d]"
+            className="grid w-full min-h-96 transition-transform duration-300 ease-in-out [transform-style:preserve-3d]"
             style={{ transform: state.isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)' }}
           >
             <FlashcardFront options={options} question={question} />

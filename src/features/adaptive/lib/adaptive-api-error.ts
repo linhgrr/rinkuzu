@@ -1,6 +1,10 @@
 export class AdaptiveApiError extends Error {
   declare status?: number;
   declare detail?: string;
+  /** Envelope `error.meta` (for example `upgradeEligible` on `quota_exceeded`). */
+  declare meta?: unknown;
+  /** From `Retry-After` or `meta.retryAfterSeconds`; read by `describeApiError` (RIN-754). */
+  declare retryAfterSeconds?: number;
   code: string;
   retryable: boolean;
 
@@ -9,21 +13,47 @@ export class AdaptiveApiError extends Error {
     code,
     status,
     detail,
+    meta,
+    retryAfterSeconds,
     retryable = false,
   }: {
+    /** For logs only: the UI never renders it (RIN-748 contract). */
     message: string;
     code: string;
     status?: number;
     detail?: string;
+    meta?: unknown;
+    retryAfterSeconds?: number | null;
     retryable?: boolean;
   }) {
     super(message);
     this.name = 'AdaptiveApiError';
     if (status !== undefined) this.status = status;
     if (detail !== undefined) this.detail = detail;
+    if (meta !== undefined) this.meta = meta;
+    if (retryAfterSeconds !== undefined && retryAfterSeconds !== null) {
+      this.retryAfterSeconds = retryAfterSeconds;
+    }
     this.code = code;
     this.retryable = retryable;
   }
+}
+
+/**
+ * The value to hand to `describeApiError` / `ErrorState` for an adaptive failure (RIN-754).
+ * `timedFetch` reports a timeout as `request_aborted` and a dropped connection as
+ * `service_unavailable` without a status; shown as-is they would render nothing or a
+ * misleading "service down", so they become `upstream_timeout` and a network failure.
+ */
+export function adaptiveErrorForDisplay(error: unknown): unknown {
+  if (!(error instanceof AdaptiveApiError)) return error;
+  if (error.code === 'request_aborted') {
+    return { code: 'upstream_timeout', status: error.status ?? null };
+  }
+  if (error.code === 'service_unavailable' && error.status === undefined) {
+    return new TypeError('network');
+  }
+  return error;
 }
 
 type AdaptiveApiErrorWithCode<TCode extends string> = AdaptiveApiError & {

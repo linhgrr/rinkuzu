@@ -63,6 +63,10 @@ vi.mock('@/features/adaptive/lib/session-storage', () => ({
   saveSessionJobMapping: saveSessionJobMappingMock,
 }));
 
+// The shared error keys (`errors.api.*`) come from the root translator; stable like next-intl's.
+const rootTranslate = (key: string) => key;
+vi.mock('next-intl', () => ({ useTranslations: () => rootTranslate, useLocale: () => 'vi' }));
+
 vi.mock('@/hooks/useMediaQuery', () => ({
   useMediaQuery: (query: string) => useMediaQueryMock(query),
 }));
@@ -764,7 +768,8 @@ describe('useProcessingState', () => {
         notice: 'processing.notices.retryAfterFailure',
       },
       {
-        name: 'user_message branch',
+        // RIN-754: the server's user_message is never shown; unknown codes get the generic copy.
+        name: 'user_message with an unknown code',
         job: {
           status: 'failed' as const,
           error_code: 'custom_code',
@@ -772,9 +777,57 @@ describe('useProcessingState', () => {
           retryable: false,
         },
         expected: {
-          message: '  Backend said no  ',
+          message: 'processing.errors.pipelineFailed',
           retryable: false,
           code: 'custom_code',
+          action: 'upload' as const,
+        },
+        notice: null,
+      },
+      {
+        name: 'pipeline_stalled code key',
+        job: {
+          status: 'failed' as const,
+          error_code: 'pipeline_stalled',
+          user_message: 'Worker heartbeat lost on node-7',
+          retryable: true,
+        },
+        expected: {
+          message: 'errors.api.codes.pipelineStalled',
+          retryable: true,
+          code: 'pipeline_stalled',
+          action: 'upload' as const,
+        },
+        notice: 'processing.notices.retryAfterFailure',
+      },
+      {
+        name: 'quota_exceeded code key',
+        job: {
+          status: 'failed' as const,
+          error_code: 'quota_exceeded',
+          user_message: 'Usage quota exceeded',
+          retryable: false,
+        },
+        expected: {
+          message: 'errors.api.codes.quotaExceeded',
+          retryable: false,
+          code: 'quota_exceeded',
+          action: 'upload' as const,
+        },
+        notice: null,
+      },
+      {
+        name: 'unsupported_media_type code key',
+        job: {
+          status: 'failed' as const,
+          error_code: 'unsupported_media_type',
+          user_message: 'application/x-msdownload rejected',
+          retryable: false,
+        },
+        expected: {
+          message: 'errors.api.codes.unsupportedMediaType',
+          retryable: false,
+          code: 'unsupported_media_type',
           action: 'upload' as const,
         },
         notice: null,
@@ -959,7 +1012,7 @@ describe('useProcessingState', () => {
       },
     );
 
-    it('maps plain Error message and non-Error values in the generic friendly branch', async () => {
+    it('never shows a plain Error message; non-Error values get the generic copy too', async () => {
       getPipelineJobStatusMock
         .mockRejectedValueOnce(new Error('plain boom'))
         .mockRejectedValueOnce('string-failure');
@@ -967,7 +1020,7 @@ describe('useProcessingState', () => {
       const first = renderProcessingState();
       await flushMicrotasks();
       expect(first.result.current.error).toEqual({
-        message: 'plain boom',
+        message: 'processing.errors.generic',
         retryable: false,
         code: null,
         action: 'upload',
@@ -986,6 +1039,30 @@ describe('useProcessingState', () => {
       });
       second.unmount();
     });
+
+    it.each([
+      { code: 'quota_exceeded', status: 429, messageKey: 'errors.api.codes.quotaExceeded' },
+      { code: 'pipeline_stalled', status: 409, messageKey: 'errors.api.codes.pipelineStalled' },
+      { code: 'forbidden', status: 403, messageKey: 'errors.api.forbidden' },
+    ])(
+      'uses the $code key for a non-retryable $status poll failure, not its message',
+      async ({ code, status, messageKey }) => {
+        getPipelineJobStatusMock.mockRejectedValueOnce(
+          new AdaptiveApiError({ message: 'raw server text', code, status }),
+        );
+
+        const { result } = renderProcessingState();
+        await flushMicrotasks();
+
+        expect(result.current.error).toEqual({
+          message: messageKey,
+          retryable: false,
+          code,
+          action: 'upload',
+        });
+        expect(toastErrorMock).not.toHaveBeenCalledWith('raw server text');
+      },
+    );
 
     it('throttles identical toast messages within the 4s window and allows later ones', async () => {
       getPipelineJobStatusMock.mockRejectedValue(

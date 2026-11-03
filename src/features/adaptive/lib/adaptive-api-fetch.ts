@@ -1,5 +1,9 @@
 import { AdaptiveApiError } from './adaptive-api-error';
+import { ApiResponseError } from '@/lib/api/client';
 import { isStandardErrorEnvelope, isStandardSuccessEnvelope } from '@/lib/api/envelope';
+import { reportApiError } from '@/lib/api/error-events';
+import { parseRetryAfterSeconds } from '@/lib/api/error-kind';
+import { isPremiumLimitError } from '@/features/subscription/lib/limit-error';
 
 const API_BASE = '';
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -19,7 +23,15 @@ interface NormalizeAdaptiveErrorInput {
   code?: string | null;
   message?: string | null;
   detail?: string | null;
+  meta?: unknown;
+  retryAfterSeconds?: number | null;
 }
+
+/** Codes for statuses that otherwise fall through to `request_failed` (RIN-754). */
+const CODE_BY_CLIENT_STATUS: Readonly<Record<number, string>> = {
+  413: 'validation_error',
+  415: 'unsupported_media_type',
+};
 
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
@@ -63,7 +75,17 @@ function looksLikeHtmlPayload(value: string): boolean {
   );
 }
 
-function normalizeAdaptiveError({
+function normalizeAdaptiveError(input: NormalizeAdaptiveErrorInput): AdaptiveApiError {
+  const { meta, retryAfterSeconds } = input;
+  const error = buildAdaptiveError(input);
+  if (meta !== undefined) error.meta = meta;
+  if (retryAfterSeconds !== undefined && retryAfterSeconds !== null) {
+    error.retryAfterSeconds = retryAfterSeconds;
+  }
+  return error;
+}
+
+function buildAdaptiveError({
   status,
   code,
   message,
@@ -137,7 +159,11 @@ function normalizeAdaptiveError({
       message: trimmedMessage || 'Adaptive service temporarily unavailable',
       code:
         (normalizedCode === 'upstream_html_error' ? 'upstream_error' : normalizedCode) ||
-        (status === 502 ? 'upstream_error' : 'service_unavailable'),
+        (status === 429
+          ? 'rate_limit_exceeded'
+          : status === 502
+            ? 'upstream_error'
+            : 'service_unavailable'),
       status,
       detail: trimmedDetail,
       retryable: true,
@@ -146,7 +172,7 @@ function normalizeAdaptiveError({
 
   return new AdaptiveApiError({
     message: trimmedMessage || trimmedDetail || `API Error ${status}`,
-    code: normalizedCode || 'request_failed',
+    code: normalizedCode || CODE_BY_CLIENT_STATUS[status] || 'request_failed',
     status,
     ...(trimmedDetail.length > 0 && { detail: trimmedDetail }),
   });
@@ -256,21 +282,28 @@ async function executeRequest<T>(
 
   if (!res.ok) {
     const { payload, rawText } = await parseResponseBody(res);
+    const retryAfterHeader = res.headers.get('Retry-After');
     if (isStandardErrorEnvelope(payload)) {
-      throw normalizeAdaptiveError({
+      const { meta } = payload.error;
+      const error = normalizeAdaptiveError({
         status: res.status,
         ...(payload.error.code !== undefined && { code: payload.error.code }),
         ...(payload.error.message !== undefined && { message: payload.error.message }),
         ...((payload.error.detail || payload.error.message) !== undefined && {
           detail: payload.error.detail || payload.error.message,
         }),
+        meta,
+        retryAfterSeconds: parseRetryAfterSeconds(retryAfterHeader, meta),
       });
+      reportPremiumLimit(error, payload);
+      throw error;
     }
 
     throw normalizeAdaptiveError({
       status: res.status,
       message: 'Request failed',
       detail: rawText || res.statusText,
+      retryAfterSeconds: parseRetryAfterSeconds(retryAfterHeader, null),
     });
   }
 
@@ -302,6 +335,24 @@ async function executeRequest<T>(
     ...(rawText.length > 0 && { detail: rawText }),
     retryable: true,
   });
+}
+
+/**
+ * Opens the shared upgrade prompt (`UpgradePromptProvider`) for entitlement errors, the
+ * same way `@/lib/api/client` does; the page then shows its inline state without a toast.
+ */
+function reportPremiumLimit(error: AdaptiveApiError, payload: unknown): void {
+  if (!isPremiumLimitError(error)) return;
+  reportApiError(
+    new ApiResponseError({
+      message: error.message,
+      status: error.status ?? 0,
+      payload,
+      code: error.code,
+      meta: error.meta,
+      retryAfterSeconds: error.retryAfterSeconds ?? null,
+    }),
+  );
 }
 
 async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> {

@@ -8,7 +8,9 @@ import {
   cancelPipelineJob,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { createLibraryPoller, type LibraryPoller } from '@/features/adaptive/hooks/library-poller';
+import { adaptiveErrorForDisplay } from '@/features/adaptive/lib/adaptive-api-error';
 import { reportAdaptivePipelineTerminals } from '@/features/adaptive/lib/pipeline-analytics';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import type { PipelineJobListItem } from '@/features/adaptive/types/pipeline';
 
 export type UseJobLibraryArgs = {
@@ -32,6 +34,12 @@ export function useJobLibrary({
   const [jobs, setJobs] = useState<PipelineJobListItem[]>(initialJobs);
   const [hasLoaded, setHasLoaded] = useState(initialJobs.length > 0);
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
+  const apiErrorMessage = useApiErrorMessage();
+  // Localized by code/kind, never the server's text (RIN-754).
+  const toastError = (err: unknown) => {
+    const message = apiErrorMessage(adaptiveErrorForDisplay(err));
+    if (message) toast.error(message);
+  };
 
   const [poller] = useState<LibraryPoller>(() =>
     createLibraryPoller({
@@ -58,7 +66,7 @@ export function useJobLibrary({
     try {
       await poller.retry(jobId);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to retry job');
+      toastError(err);
     }
   };
 
@@ -66,7 +74,7 @@ export function useJobLibrary({
     try {
       await poller.cancel(jobId);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to cancel job');
+      toastError(err);
     }
   };
 

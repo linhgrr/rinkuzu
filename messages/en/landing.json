@@ -10,7 +10,7 @@
     "poweredBy": "Powered by",
     "geminiAi": "Gemini AI",
     "headline": "Practice From Your Source Material",
-    "subtitle": "Turn supported PDF material into quiz and adaptive practice. RinKuzu connects concepts and prerequisite context to help you choose a next practice step.",
+    "subtitle": "Turn supported PDF material into quiz and personalized practice. RinKuzu connects concepts and prerequisite context to help you choose a next practice step.",
     "ctaStartLearning": "Start Learning Now",
     "ctaQuizBuilder": "Try Quiz Builder",
     "ctaAdaptiveLearning": "Try Personalized Learning",
@@ -84,7 +84,7 @@
     "main": {
       "name": "PDF to practice",
       "role": "Verified product capability",
-      "content": "RinKuzu turns supported PDF material into quiz and adaptive practice."
+      "content": "RinKuzu turns supported PDF material into quiz and personalized practice."
     }
   },
   "faq": {
@@ -94,7 +94,7 @@
     "q2": "How do I generate a quiz from a PDF?",
     "a2": "Upload supported PDF material and RinKuzu extracts concepts, identifies prerequisite context, and generates quizzes with explanations.",
     "q3": "Is RinKuzu free to use?",
-    "a3": "Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive learning paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks the full curated Quiz Premium catalog and raises these limits. Free accounts can unlock individual Premium quizzes with credits earned from approved contributions.",
+    "a3": "Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 personalized learning paths per month, 50 personalized exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks the full curated Quiz Premium catalog and raises these limits. Free accounts can unlock individual Premium quizzes with credits earned from approved contributions.",
     "q4": "Which languages does RinKuzu support?",
     "a4": "RinKuzu supports Vietnamese and English with a full bilingual interface. Switch languages anytime using the language switcher in the navigation.",
     "q5": "What is a knowledge graph in learning?",
@@ -163,7 +163,7 @@
   },
   "cta": {
     "title": "Ready to Level Up Your Knowledge?",
-    "subtitle": "Turn supported PDF material into quiz and adaptive practice with RinKuzu.",
+    "subtitle": "Turn supported PDF material into quiz and personalized practice with RinKuzu.",
     "button": "Join Today",
     "placeholder": "Your email address",
     "freeTrial": "Free Trial Available",
@@ -175,7 +175,7 @@
   "ready_to_start": "Ready to start your learning journey?",
   "footer": {
     "contact": "Contact",
-    "description": "Turn supported PDF material into quiz and adaptive practice.",
+    "description": "Turn supported PDF material into quiz and personalized practice.",
     "links": {
       "title": "Links",
       "home": "Home",

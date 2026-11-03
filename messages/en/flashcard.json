@@ -4,5 +4,7 @@
   "noCorrectAnswer": "No correct answer",
   "dontKnow": "Don't Know",
   "knowIt": "Know It",
-  "revealAnswer": "Reveal answer"
+  "revealAnswer": "Reveal answer",
+  "showAnswer": "Show answer",
+  "showQuestion": "Show question"
 }

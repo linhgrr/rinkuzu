@@ -15,7 +15,7 @@ type PageProps = { params: Promise<PageParams> };
 
 const ADAPTIVE_LEARNING_METADATA = {
   path: '/adaptive',
-  title: 'AI Adaptive Learning Platform | RinKuzu',
+  title: 'AI Personalized Learning Platform | RinKuzu',
   description:
     'Upload your PDF, let AI extract concepts, and learn with a personalized Bloom-based curriculum.',
 } as const;

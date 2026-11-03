@@ -22,11 +22,11 @@ const AUTHORS: Record<
     name: 'RinKuzu Team',
     slug: 'rinkuzu-team',
     role: 'Research & Engineering',
-    bio: `The RinKuzu Team is a group of researchers and engineers at Hanoi University of Science and Technology working at the intersection of adaptive learning systems, knowledge graph construction, and educational AI. The team develops the ALSS-LEPC v2 (Adaptive Learning System with LLM-Enhanced RL for Personalized Curriculum) — an end-to-end system that transforms PDF lecture documents into personalized, knowledge-graph-driven adaptive learning paths.
+    bio: `The RinKuzu Team is a group of researchers and engineers at Hanoi University of Science and Technology working at the intersection of personalized learning systems, knowledge graph construction, and educational AI. The team develops the ALSS-LEPC v2 (Adaptive Learning System with LLM-Enhanced RL for Personalized Curriculum) — an end-to-end system that transforms PDF lecture documents into personalized, knowledge-graph-driven learning paths.
 
 The team's research combines Bayesian Knowledge Tracing, deep knowledge tracing with SAINT-Bloom models, Reinforcement Learning-based curriculum sequencing using Dueling Double DQN, and large language model-powered exercise generation to create a fully automated pipeline from document to mastery.`,
     shortBio:
-      'Researchers and engineers building AI-powered adaptive learning systems from Hanoi University of Science and Technology.',
+      'Researchers and engineers building AI-powered personalized learning systems from Hanoi University of Science and Technology.',
     imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80',
     links: [],
   },
@@ -39,11 +39,11 @@ function localizeAuthor(author: (typeof AUTHORS)[string], locale: string) {
   return {
     ...author,
     role: 'Nghiên cứu & Kỹ thuật',
-    bio: `Nhóm RinKuzu gồm các nhà nghiên cứu và kỹ sư tại Đại học Bách khoa Hà Nội, làm việc trong các lĩnh vực hệ thống học thích ứng, xây dựng đồ thị kiến thức và AI giáo dục. Nhóm phát triển quy trình biến tài liệu PDF thành lộ trình luyện tập cá nhân hóa dựa trên quan hệ kiến thức.
+    bio: `Nhóm RinKuzu gồm các nhà nghiên cứu và kỹ sư tại Đại học Bách khoa Hà Nội, làm việc trong các lĩnh vực hệ thống học cá nhân hóa, xây dựng đồ thị kiến thức và AI giáo dục. Nhóm phát triển quy trình biến tài liệu PDF thành lộ trình luyện tập cá nhân hóa dựa trên quan hệ kiến thức.
 
 Hệ thống kết hợp theo dõi mức độ nắm vững, sắp xếp nội dung học và tạo bài tập bằng mô hình ngôn ngữ để hỗ trợ người học đi từ tài liệu nguồn đến bước luyện tập tiếp theo.`,
     shortBio:
-      'Nhóm nghiên cứu và kỹ sư phát triển hệ thống học thích ứng bằng AI tại Đại học Bách khoa Hà Nội.',
+      'Nhóm nghiên cứu và kỹ sư phát triển hệ thống học cá nhân hóa bằng AI tại Đại học Bách khoa Hà Nội.',
   };
 }
 
@@ -188,13 +188,13 @@ export default async function AuthorPage({ params }: Props) {
                   </div>
                   <h3 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-brand-trust transition-colors leading-snug mb-1">
                     {isVi
-                      ? 'AI biến tài liệu PDF thành quiz thích ứng như thế nào?'
-                      : 'How AI Transforms PDF Learning into Adaptive Quizzes'}
+                      ? 'AI biến tài liệu PDF thành quiz cá nhân hóa như thế nào?'
+                      : 'How AI Transforms PDF Learning into Personalized Quizzes'}
                   </h3>
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
                     {isVi
                       ? 'Tìm hiểu cách RinKuzu trích xuất khái niệm từ PDF, tạo câu hỏi và điều chỉnh nội dung luyện tập theo mức độ nắm vững.'
-                      : 'Discover how RinKuzu turns PDF lectures into personalized adaptive quiz journeys.'}
+                      : 'Discover how RinKuzu turns PDF lectures into personalized quiz journeys.'}
                   </p>
                 </div>
               </Link>
@@ -221,7 +221,7 @@ export default async function AuthorPage({ params }: Props) {
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
                     {isVi
                       ? 'Tìm hiểu cách quan hệ tiên quyết kết hợp với sáu cấp độ Bloom để tạo lộ trình luyện tập từ tài liệu PDF.'
-                      : "Learn how prerequisite knowledge graphs and Bloom's six cognitive levels shape an adaptive practice path for PDF documents."}
+                      : "Learn how prerequisite knowledge graphs and Bloom's six cognitive levels shape a personalized practice path for PDF documents."}
                   </p>
                 </div>
               </Link>

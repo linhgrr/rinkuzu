@@ -34,7 +34,7 @@ const accountSecurityItems: PolicyItem[] = [
 
 const coreFeatureItems = [
   'PDF-to-quiz generation using Google Gemini AI',
-  'Adaptive learning sessions with SAINT-Bloom knowledge tracing',
+  'Personalized learning sessions with SAINT-Bloom knowledge tracing',
   'Curriculum sequencing using Dueling DQN reinforcement learning',
   'Knowledge graph visualization of prerequisite concepts',
   "Mastery tracking across six Bloom's Taxonomy cognitive levels",
@@ -155,7 +155,7 @@ function SubscriptionSection() {
         <div>
           <h3 className="font-medium text-neutral-800">4.1 Free Plan</h3>
           <p>
-            The Free plan provides access to core PDF-to-quiz generation and adaptive practice
+            The Free plan provides access to core PDF-to-quiz generation and personalized practice
             features at no cost. The Free plan is provided as-is and may be modified or discontinued
             at our discretion with reasonable notice.
           </p>
@@ -234,9 +234,9 @@ function TermsPolicyContent() {
 
       <PolicySection title="3. Description of Service">
         <p>
-          RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into
-          personalized quiz-based learning experiences using knowledge graphs and Bloom&apos;s
-          Taxonomy. Core features include:
+          RinKuzu is an AI-powered personalized learning platform that transforms PDF documents into
+          quiz-based learning experiences using knowledge graphs and Bloom&apos;s Taxonomy. Core
+          features include:
         </p>
         <PolicyList items={coreFeatureItems} className="mt-3 space-y-1" />
         <p className="mt-3">
@@ -420,7 +420,7 @@ function VietnameseTermsPage() {
     },
     {
       title: '3. Mô tả dịch vụ',
-      body: 'RinKuzu cung cấp công cụ tạo quiz từ PDF, phiên học thích ứng, đồ thị kiến thức, theo dõi mức độ nắm vững và chia sẻ quiz công khai. Tính năng có thể thay đổi trong quá trình phát triển.',
+      body: 'RinKuzu cung cấp công cụ tạo quiz từ PDF, phiên học cá nhân hóa, đồ thị kiến thức, theo dõi mức độ nắm vững và chia sẻ quiz công khai. Tính năng có thể thay đổi trong quá trình phát triển.',
     },
     {
       title: '4. Gói dịch vụ và thanh toán',

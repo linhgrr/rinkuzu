@@ -3,6 +3,7 @@
   "searchPlaceholder": "Search quizzes or lessons...",
   "filterLabel": "Filter result type",
   "viewAll": "View all",
+  "signInCta": "Sign in",
   "retry": "Try again",
   "partialError": "This content group could not be loaded. Other results are still available.",
   "noResults": "No results found",
@@ -28,12 +29,14 @@
     "mine": {
       "title": "Your quizzes",
       "subtitle": "Quizzes you created, including public quizzes and personal sources",
-      "empty": "You do not have any matching quizzes."
+      "empty": "You do not have any matching quizzes.",
+      "signedOut": "Sign in to see the quizzes you created."
     },
     "adaptive": {
       "title": "AI lessons",
       "subtitle": "Documents processed into personalized learning paths",
-      "empty": "No AI lessons match your search."
+      "empty": "No AI lessons match your search.",
+      "signedOut": "Sign in to see your AI lessons, or upload a document to create one."
     },
     "quizzes": {
       "title": "Quizzes",

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { FlashcardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { QuestionExcerpt } from '@/components/ui/QuestionContent';
+import { preloadMathRenderer } from '@/components/ui/preloadMathRenderer';
 import { Flashcard } from '@/features/quiz/components/Flashcard';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { PremiumFlashcardClient } from '@/features/quiz/components/PremiumFlashcardClient';
@@ -441,6 +442,11 @@ export function FlashcardsPageClient() {
           }
         }
         const data = await fetchFlashcardQuizViewModel(slug);
+        // Keep the skeleton until KaTeX is ready so math cards paint once, with no
+        // raw LaTeX and no reflow (RIN-732). Plain quizzes resolve at once.
+        await preloadMathRenderer(
+          data.questions.flatMap((question) => [question.question, ...question.options]),
+        );
 
         if (isActive) {
           dispatch({ type: 'loadQuizSuccess', quiz: data });

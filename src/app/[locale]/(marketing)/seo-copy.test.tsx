@@ -38,7 +38,7 @@ describe('SEO metadata copy (RIN-504 AC4)', () => {
     const meta = await pricingMetadata(params('vi'));
     expect(meta.title).toBe('Bảng giá RinKuzu – Tạo quiz từ PDF miễn phí bằng AI');
     expect(meta.description).toBe(
-      'Bắt đầu miễn phí: tải PDF bài giảng, AI tạo quiz và luyện tập thích ứng ngay. Nâng cấp Premium để mở kho Quiz Premium tuyển chọn và hạn mức cao hơn.',
+      'Bắt đầu miễn phí: tải PDF bài giảng, AI tạo quiz và luyện tập cá nhân hóa ngay. Nâng cấp Premium để mở kho Quiz Premium tuyển chọn và hạn mức cao hơn.',
     );
   });
 

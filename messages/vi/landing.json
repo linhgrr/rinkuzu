@@ -10,10 +10,10 @@
     "poweredBy": "Được hỗ trợ bởi",
     "geminiAi": "Gemini AI",
     "headline": "Luyện tập từ tài liệu nguồn",
-    "subtitle": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập thích ứng. RinKuzu kết nối khái niệm và ngữ cảnh tiên quyết để giúp bạn chọn bước luyện tập tiếp theo.",
+    "subtitle": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập cá nhân hóa. RinKuzu kết nối khái niệm và ngữ cảnh tiên quyết để giúp bạn chọn bước luyện tập tiếp theo.",
     "ctaStartLearning": "Bắt đầu học ngay",
     "ctaQuizBuilder": "Thử Quiz Builder",
-    "ctaAdaptiveLearning": "Thử Học Cá Nhân Hóa",
+    "ctaAdaptiveLearning": "Thử học cá nhân hóa",
     "login": "Đăng nhập",
     "getStarted": "Bắt đầu ngay",
     "navAiQuiz": "Tạo Quiz bằng AI",
@@ -84,7 +84,7 @@
     "main": {
       "name": "Từ PDF đến luyện tập",
       "role": "Tính năng sản phẩm đã xác minh",
-      "content": "RinKuzu chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập thích ứng."
+      "content": "RinKuzu chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập cá nhân hóa."
     }
   },
   "faq": {
@@ -94,7 +94,7 @@
     "q2": "Làm thế nào để tạo quiz từ file PDF?",
     "a2": "Tải tài liệu PDF được hỗ trợ và RinKuzu sẽ trích xuất khái niệm, xác định ngữ cảnh tiên quyết và tạo quiz kèm lời giải thích.",
     "q3": "RinKuzu có miễn phí không?",
-    "a3": "Có. Gói Miễn phí gồm 5 lượt tạo quiz từ PDF mỗi tháng (tối đa 30 trang mỗi tệp), 2 lộ trình học thích ứng mỗi tháng, 50 bài tập thích ứng mỗi ngày và 25 tin nhắn Ask Rin-chan mỗi ngày. Premium mở khóa toàn bộ kho Quiz Premium tuyển chọn và tăng các hạn mức này. Tài khoản miễn phí có thể mở từng quiz bằng credit nhận từ đóng góp được duyệt.",
+    "a3": "Có. Gói Miễn phí gồm 5 lượt tạo quiz từ PDF mỗi tháng (tối đa 30 trang mỗi tệp), 2 lộ trình học cá nhân hóa mỗi tháng, 50 bài tập cá nhân hóa mỗi ngày và 25 tin nhắn Ask Rin-chan mỗi ngày. Premium mở khóa toàn bộ kho Quiz Premium tuyển chọn và tăng các hạn mức này. Tài khoản miễn phí có thể mở từng quiz bằng credit nhận từ đóng góp được duyệt.",
     "q4": "RinKuzu hỗ trợ những ngôn ngữ nào?",
     "a4": "RinKuzu hỗ trợ Tiếng Việt và Tiếng Anh với giao diện song ngữ hoàn chỉnh. Chuyển ngôn ngữ bất kỳ lúc nào qua công tắc ngôn ngữ trên thanh điều hướng.",
     "q5": "Đồ thị kiến thức là gì?",
@@ -108,7 +108,7 @@
     "q9": "RinKuzu tạo những loại câu hỏi nào?",
     "a9": "RinKuzu tạo câu hỏi trắc nghiệm theo các cấp độ Bloom's Taxonomy và kèm phần giải thích do AI tạo để bạn xem lại.",
     "q10": "RinKuzu có hoạt động trên điện thoại không?",
-    "a10": "Có. RinKuzu có manifest Progressive Web App có thể cài đặt và trải nghiệm web thích ứng cho máy tính, máy tính bảng và trình duyệt di động.",
+    "a10": "Có. RinKuzu có manifest Progressive Web App có thể cài đặt và giao diện tối ưu cho máy tính, máy tính bảng và điện thoại.",
     "q11": "Những định dạng file nào được hỗ trợ?",
     "a11": "Hiện tại hỗ trợ tài liệu PDF. Hỗ trợ Word, PowerPoint, và văn bản thuần đang trong lộ trình phát triển.",
     "q12": "Dữ liệu và quyền riêng tư của tôi được bảo vệ như thế nào?",
@@ -166,7 +166,7 @@
   "ready_to_start": "Sẵn sàng bắt đầu hành trình học tập?",
   "cta": {
     "title": "Sẵn sàng để nâng tầm tri thức?",
-    "subtitle": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập thích ứng với RinKuzu.",
+    "subtitle": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập cá nhân hóa với RinKuzu.",
     "button": "Tham gia ngay hôm nay",
     "placeholder": "Địa chỉ email của bạn",
     "freeTrial": "Trải nghiệm miễn phí",
@@ -175,7 +175,7 @@
   },
   "footer": {
     "contact": "Liên hệ",
-    "description": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập thích ứng.",
+    "description": "Chuyển tài liệu PDF được hỗ trợ thành quiz và bài luyện tập cá nhân hóa.",
     "links": {
       "title": "Liên kết",
       "home": "Trang chủ",

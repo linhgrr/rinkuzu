@@ -42,6 +42,11 @@
       "description": "Admin makes a public quiz private (hidden from anonymous play and the public list), the change is audited, and it is reverted"
     },
     {
+      "id": "admin-test-account",
+      "tag": "@critical-admin-test-account",
+      "description": "Anonymous and non-admin callers are refused the test-account route; admin marks and clears the analytics test-account flag from /admin/users, and each change is audited with the actor"
+    },
+    {
       "id": "admin-personal-learning",
       "tag": "@critical-admin-personal-learning",
       "description": "Admin opens the Personalized Learning stats workspace, sees aggregate totals and the trend chart, and each window filter refetches its own figures"

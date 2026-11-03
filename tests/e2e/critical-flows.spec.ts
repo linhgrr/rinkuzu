@@ -1000,6 +1000,97 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('marks and clears an audited test-account flag from the admin users page @critical-admin-test-account', async ({
+    page,
+    browser,
+    request,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const targetId = fixture.target.id.toHexString();
+      const flagRoute = `/api/admin/users/${targetId}/test-account`;
+      const readFlag = async () =>
+        (await fixture.db.collection('users').findOne({ _id: fixture.target.id }))?.[
+          'isTestAccount'
+        ];
+
+      // `request` is cookie-less: the anonymous caller is refused before any write.
+      const anonymous = await request.patch(flagRoute, {
+        data: { isTestAccount: true },
+        headers: { 'Sec-Fetch-Site': 'same-origin' },
+      });
+      expect(anonymous.status()).toBe(401);
+
+      // A signed-in learner is refused too, from an isolated context.
+      const baseURL = testInfo.project.use.baseURL;
+      const learnerContext = await browser.newContext(
+        typeof baseURL === 'string' && baseURL.length > 0 ? { baseURL } : undefined,
+      );
+      try {
+        const learnerPage = await learnerContext.newPage();
+        await login(learnerPage, fixture.regular);
+        const learnerStatus = await learnerPage.evaluate(async (route) => {
+          const response = await fetch(route, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isTestAccount: true }),
+          });
+          return response.status;
+        }, flagRoute);
+        expect(learnerStatus).toBe(403);
+      } finally {
+        await learnerContext.close();
+      }
+      expect(await readFlag()).toBeUndefined();
+
+      await login(page, fixture.admin);
+      await page.goto('/en/admin/users');
+      await expect(page.getByRole('heading', { name: 'User Management' })).toBeVisible();
+      const search = page.getByLabel('Search users by email...');
+      await search.fill(fixture.target.email);
+      await search.press('Enter');
+      const row = page.getByRole('row').filter({ hasText: fixture.target.email });
+      await expect(row).toHaveCount(1);
+      await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
+
+      await row.getByRole('button', { name: 'Mark as test', exact: true }).click();
+      const confirmMark = page.getByRole('dialog');
+      await expect(confirmMark).toContainText(fixture.target.email);
+      await confirmMark.getByRole('button', { name: 'Mark as test', exact: true }).click();
+      await expect(row.getByText('Test account', { exact: true })).toBeVisible();
+      await expect(row.getByRole('button', { name: 'Unmark test', exact: true })).toBeVisible();
+      expect(await readFlag()).toBe(true);
+
+      await row.getByRole('button', { name: 'Unmark test', exact: true }).click();
+      const confirmClear = page.getByRole('dialog');
+      await confirmClear.getByRole('button', { name: 'Unmark test', exact: true }).click();
+      await expect(row.getByRole('button', { name: 'Mark as test', exact: true })).toBeVisible();
+      await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
+      expect(await readFlag()).toBe(false);
+
+      const audits = await fixture.db
+        .collection('adminactionaudits')
+        .find({ entityType: 'user', entityId: targetId, action: 'user.test_account.set' })
+        .sort({ createdAt: 1 })
+        .toArray();
+      expect(
+        audits.map((audit) => ({
+          actorId: String(audit['actorId']),
+          details: audit['details'],
+        })),
+      ).toEqual([
+        {
+          actorId: fixture.admin.id.toHexString(),
+          details: { isTestAccount: 'true', previous: 'false' },
+        },
+        {
+          actorId: fixture.admin.id.toHexString(),
+          details: { isTestAccount: 'false', previous: 'true' },
+        },
+      ]);
+    });
+  });
+
   test('configures masked AI providers and preserves tutor fallback order @critical-admin-ai-settings', async ({
     page,
     request,

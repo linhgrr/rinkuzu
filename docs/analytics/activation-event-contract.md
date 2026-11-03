@@ -42,3 +42,13 @@ PostHog may enrich events with SDK/network metadata such as coarse geolocation, 
 On 2026-08-11, live schema inspection in project `525510` confirmed `$pageview`, `$identify`, `login_completed`, `pdf_upload_started`, `pdf_upload_completed`, and `quiz_completed`. The refreshed 30-day funnel (2026-07-12 through 2026-08-11 UTC) showed 17 pageview persons, 1 ordered login conversion, and 0 ordered upload/quiz conversions. Event totals showed 11 logins, 1 upload start, 1 upload completion, and 3 quiz completions; the mismatch is evidence of sparse traffic and identity/order discontinuity, not product conversion evidence.
 
 Non-production verification covers consent gating, property omission for `undefined`, pending-login sequencing after identification for credentials and Google login, one-time markers, and the existing upload failure event mapping. No production event was emitted during repository tests.
+
+## Server-side activation stats (`GET /api/admin/stats/activation`)
+
+The ground-truth weekly series (signups, material, activated, north-star `weeklyActivatedLearners`, W1 retention) is computed at request time from the web database and, for Path B (adaptive), from the API's `GET /api/admin/activation/adaptive-events` (RIN-669, RIN-670). There is no backfill and no stored copy. The response is aggregate-only and validated by a strict schema; definitions ship in the response body (`definitions`).
+
+- **Adaptive completion:** every 5th answered adaptive exercise on one uploaded document, timed at that exercise. It counts like a submitted quiz attempt for `activated`, `w1Retained` and the north star.
+- **Succeeded upload:** an adaptive processing job that reached `completed`, timed at its completion. It counts toward `material`; failed, cancelled and in-flight jobs do not.
+- A learner on both paths is counted once. `activatedBy` / `weeklyActivatedBy` split each count into `quiz`, `adaptive` and `both`.
+- Adaptive user ids go through the same exclusions as web signups (admin, disabled, test/QA, `ANALYTICS_EXCLUDED_EMAILS`); ids with no web user are dropped.
+- If the API read fails or takes over 2 s, the endpoint still answers with quiz-only numbers and `sources.adaptive = "unavailable"`, and that answer is not cached.

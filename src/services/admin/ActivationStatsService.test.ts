@@ -5,6 +5,7 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 import { adminActivationStatsSchema } from '@/dtos/admin-stats';
+import { logger } from '@/lib/logger';
 import { ActivationStatsService } from './ActivationStatsService';
 
 // Spec values (RIN-463 AC 4/5), asserted as literals so a change is deliberate.
@@ -13,6 +14,15 @@ const SERVICE_ACTOR = 'service:analytics-read';
 const SERVICE_ACTOR_ID = '000000000000000000000000';
 
 const NOW = new Date('2026-11-04T12:00:00.000Z'); // Wednesday of 2026-W45
+const ADAPTIVE_LEARNER = '64b0000000000000000000a1'; // fake id
+const ADAPTIVE_EVENTS = [
+  {
+    userId: ADAPTIVE_LEARNER,
+    firstCompletionAt: new Date('2026-10-20T08:00:00.000Z'),
+    completions: [new Date('2026-10-20T08:00:00.000Z')],
+    succeededUploads: [new Date('2026-10-20T07:00:00.000Z')],
+  },
+];
 
 function setup(now = NOW) {
   let clock = now.getTime();
@@ -24,6 +34,7 @@ function setup(now = NOW) {
           signups: 10,
           material: 7,
           activated: 4,
+          activatedBy: { quiz: 2, adaptive: 1, both: 1 },
           w1Retained: 1,
         },
         {
@@ -31,15 +42,28 @@ function setup(now = NOW) {
           signups: 3,
           material: 2,
           activated: 1,
+          activatedBy: { quiz: 1, adaptive: 0, both: 0 },
           w1Retained: 1,
         },
       ],
-      firstAttempts: [{ weekStart: new Date('2026-10-19T00:00:00.000Z'), learners: 5 }],
+      firstAttempts: [
+        {
+          weekStart: new Date('2026-10-19T00:00:00.000Z'),
+          learners: 5,
+          activatedBy: { quiz: 3, adaptive: 2, both: 0 },
+        },
+      ],
     }),
   };
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
-  const service = new ActivationStatsService({ stats, audit, now: () => new Date(clock) });
-  return { service, stats, audit, advance: (ms: number) => (clock += ms) };
+  const adaptiveEvents = vi.fn().mockResolvedValue(ADAPTIVE_EVENTS);
+  const service = new ActivationStatsService({
+    stats,
+    audit,
+    adaptiveEvents,
+    now: () => new Date(clock),
+  });
+  return { service, stats, audit, adaptiveEvents, advance: (ms: number) => (clock += ms) };
 }
 
 describe('ActivationStatsService', () => {
@@ -51,8 +75,10 @@ describe('ActivationStatsService', () => {
     expect(stats.getActivationAggregates).toHaveBeenCalledWith(
       new Date('2026-10-12T00:00:00.000Z'),
       new Date('2026-11-09T00:00:00.000Z'),
+      ADAPTIVE_EVENTS,
     );
     expect(result.data.timezone).toBe('UTC');
+    expect(result.data.sources).toEqual({ adaptive: 'ok' });
     expect(result.data.weeks.map((week) => week.isoWeek)).toEqual([
       '2026-W42',
       '2026-W43',
@@ -66,14 +92,18 @@ describe('ActivationStatsService', () => {
       signups: 10,
       material: 7,
       activated: 4,
+      activatedBy: { quiz: 2, adaptive: 1, both: 1 },
       weeklyActivatedLearners: 0,
+      weeklyActivatedBy: { quiz: 0, adaptive: 0, both: 0 },
       w1Retained: 1,
       w1RetentionRate: 0.25,
       complete: true,
     });
     // W43 ended 2026-10-26; 14 days later is 2026-11-09, after NOW.
     expect(result.data.weeks[1]).toMatchObject({
+      activatedBy: { quiz: 0, adaptive: 0, both: 0 },
       weeklyActivatedLearners: 5,
+      weeklyActivatedBy: { quiz: 3, adaptive: 2, both: 0 },
       w1Retained: null,
       w1RetentionRate: null,
       complete: false,
@@ -85,6 +115,56 @@ describe('ActivationStatsService', () => {
       w1Retained: null,
       complete: false,
     });
+  });
+
+  it('reads adaptive events from the first week to 14 days after the last, as the actor', async () => {
+    const { service, adaptiveEvents } = setup();
+    await service.getWeeklyActivation(4, {
+      kind: 'admin',
+      userId: '64b000000000000000000001',
+      email: 'admin@example.com',
+    });
+    expect(adaptiveEvents).toHaveBeenCalledWith(
+      new Date('2026-10-12T00:00:00.000Z'),
+      new Date('2026-11-23T00:00:00.000Z'),
+      '64b000000000000000000001',
+    );
+    await service.getWeeklyActivation(2, { kind: 'service' });
+    expect(adaptiveEvents).toHaveBeenLastCalledWith(
+      expect.any(Date),
+      expect.any(Date),
+      SERVICE_ACTOR_ID,
+    );
+  });
+
+  it('answers quiz-only with sources.adaptive unavailable, uncached, when the API fails', async () => {
+    const { service, stats, adaptiveEvents } = setup();
+    adaptiveEvents.mockRejectedValueOnce(
+      new Error('adaptive activation events unavailable: status 504'),
+    );
+    const result = await service.getWeeklyActivation(4, { kind: 'service' });
+    if (!result.success) throw new Error(result.error);
+
+    expect(result.data.sources).toEqual({ adaptive: 'unavailable' });
+    expect(stats.getActivationAggregates).toHaveBeenLastCalledWith(
+      expect.any(Date),
+      expect.any(Date),
+      [],
+    );
+    expect(result.data.weeks[0]?.activated).toBe(4);
+    expect(logger.warn).toHaveBeenCalledWith(
+      { reason: 'adaptive activation events unavailable: status 504' },
+      expect.any(String),
+    );
+
+    // Not cached: the next read retries the API and caches the full answer.
+    const retry = await service.getWeeklyActivation(4, { kind: 'service' });
+    if (!retry.success) throw new Error(retry.error);
+    expect(retry.data.sources).toEqual({ adaptive: 'ok' });
+    expect(adaptiveEvents).toHaveBeenCalledTimes(2);
+    await service.getWeeklyActivation(4, { kind: 'service' });
+    expect(adaptiveEvents).toHaveBeenCalledTimes(2);
+    expect(stats.getActivationAggregates).toHaveBeenCalledTimes(2);
   });
 
   it('marks a week complete exactly 14 days after it ends', async () => {
@@ -150,7 +230,9 @@ describe('ActivationStatsService', () => {
       for (const [key, value] of Object.entries(week)) {
         if (['isoWeek', 'start', 'end'].includes(key)) expect(typeof value).toBe('string');
         else if (key === 'complete') expect(typeof value).toBe('boolean');
-        else expect(value === null || typeof value === 'number').toBe(true);
+        else if (['activatedBy', 'weeklyActivatedBy'].includes(key)) {
+          expect(Object.keys(value as object).sort()).toEqual(['adaptive', 'both', 'quiz']);
+        } else expect(value === null || typeof value === 'number').toBe(true);
       }
     }
   });
@@ -172,6 +254,23 @@ describe('ActivationStatsService', () => {
       adminActivationStatsSchema.safeParse({
         ...valid,
         weeks: [{ ...valid.weeks[0], userIds: ['64b000000000000000000001'] }],
+      }).success,
+    ).toBe(false);
+    expect(
+      adminActivationStatsSchema.safeParse({
+        ...valid,
+        weeks: [
+          {
+            ...valid.weeks[0],
+            activatedBy: { quiz: 0, adaptive: 0, both: 0, userIds: [ADAPTIVE_LEARNER] },
+          },
+        ],
+      }).success,
+    ).toBe(false);
+    expect(
+      adminActivationStatsSchema.safeParse({
+        ...valid,
+        sources: { adaptive: 'ok', learners: [ADAPTIVE_LEARNER] },
       }).success,
     ).toBe(false);
   });

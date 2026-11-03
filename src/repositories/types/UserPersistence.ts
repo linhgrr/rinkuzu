@@ -22,6 +22,7 @@ export interface UserPersistenceRecord {
   disable: AccountDisableState;
   disabledAt?: Date | null;
   disabledBy?: MongoIdLike | null;
+  isTestAccount?: boolean;
   subscription?: UserSubscriptionPersistenceRecord;
   createdAt: Date;
 }

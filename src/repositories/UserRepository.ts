@@ -58,6 +58,7 @@ const USER_ENTITY_PROJECTION = {
   disable: 1,
   disabledAt: 1,
   disabledBy: 1,
+  isTestAccount: 1,
 } as const;
 
 interface ProjectedUserQueryOptions {

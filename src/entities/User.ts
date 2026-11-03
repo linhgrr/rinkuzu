@@ -22,6 +22,8 @@ export interface User {
   disable: AccountDisableState;
   disabledAt?: Date | null;
   disabledBy?: string | null;
+  /** Admin-set: a company/QA account that analytics never counts. */
+  isTestAccount?: boolean;
   subscription?: UserSubscriptionSnapshot;
   createdAt: Date;
 }

@@ -41,4 +41,10 @@ describe('BottomNav', () => {
     expect(current.querySelector('svg')).toHaveClass('text-accent');
     expect((await axe(container)).violations).toEqual([]);
   });
+
+  it('marks its fixed bar so overlays such as the consent banner can sit above it', () => {
+    const { container } = render(<BottomNav />);
+
+    expect(container.firstElementChild).toHaveAttribute('data-bottom-nav');
+  });
 });

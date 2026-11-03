@@ -36,6 +36,10 @@ export const updateAdminUserStatusRequestSchema = z.strictObject({
   disable: accountDisableSchema,
 });
 
+export const updateAdminUserTestAccountRequestSchema = z.strictObject({
+  isTestAccount: z.boolean(),
+});
+
 export const addAdminUserCreditsRequestSchema = z.strictObject({
   amount: z.number().int().min(1).max(1000),
   note: z.string().trim().min(3).max(500),
@@ -59,6 +63,8 @@ export interface AdminUserDto {
   role: z.infer<typeof userRoleSchema>;
   disable: z.infer<typeof accountDisableSchema>;
   disabledAt?: string | null;
+  /** Admin-set analytics exclusion; false when the field was never set. */
+  isTestAccount: boolean;
   createdAt: string;
   subscription?: AdminUserSubscriptionDto;
 }
@@ -78,6 +84,13 @@ export interface AdminUserStatusDto {
   changed: boolean;
   disabledAt?: string | null;
   message: string;
+}
+
+export interface AdminUserTestAccountDto {
+  id: string;
+  isTestAccount: boolean;
+  /** False when the flag already had the requested value (no write, no audit entry). */
+  changed: boolean;
 }
 
 export interface AdminUserCreditGrantDto {

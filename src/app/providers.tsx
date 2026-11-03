@@ -17,8 +17,10 @@ export default function Providers({ children, session }: ProvidersProps) {
   return (
     <SessionProvider
       {...(session !== undefined ? { session } : {})}
-      refetchInterval={session?.user ? 5 : 0}
-      refetchOnWindowFocus={Boolean(session?.user)}
+      // SingleSessionGuard checks the session itself (one GET per check). The
+      // provider poll costs two GETs per tick in next-auth 5 beta (RIN-687).
+      refetchInterval={0}
+      refetchOnWindowFocus={false}
       refetchWhenOffline={false}
     >
       <SingleSessionGuard />

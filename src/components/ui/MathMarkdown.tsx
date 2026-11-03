@@ -9,12 +9,12 @@ import 'katex/dist/katex.min.css';
  * so plain-text questions never download KaTeX (RIN-679). Math plugins run after
  * the caller's plugins, matching the order of the former static pipeline.
  */
-export function MathMarkdown({ remarkPlugins = [], rehypePlugins = [], ...props }: Options) {
+export function MathMarkdown({ remarkPlugins, rehypePlugins, ...props }: Options) {
   return (
     <ReactMarkdown
       {...props}
-      remarkPlugins={[...remarkPlugins, remarkMath]}
-      rehypePlugins={[...rehypePlugins, rehypeKatex]}
+      remarkPlugins={[...(remarkPlugins ?? []), remarkMath]}
+      rehypePlugins={[...(rehypePlugins ?? []), rehypeKatex]}
     />
   );
 }

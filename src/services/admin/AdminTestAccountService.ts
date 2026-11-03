@@ -1,9 +1,13 @@
 import type { AdminUserTestAccountDto } from '@/dtos/admin-user';
 import type { AdminMutationActor } from '@/entities/AdminMutation';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
-import type { IUserTestAccountRepository } from '@/interfaces/repositories/IUserTestAccountRepository';
+import type {
+  IUserTestAccountRepository,
+  TestAccountFlagWrite,
+} from '@/interfaces/repositories/IUserTestAccountRepository';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
 
 const TEST_ACCOUNT_AUDIT_ACTION = 'user.test_account.set';
 
@@ -25,7 +29,7 @@ export class AdminTestAccountService {
     isTestAccount: boolean,
     actor: AdminMutationActor,
   ): Promise<ServiceResult<AdminUserTestAccountDto>> {
-    let written: { previous: boolean } | null;
+    let written: TestAccountFlagWrite | null;
     try {
       written = await this.deps.users.setTestAccount(userId, isTestAccount);
     } catch (error) {
@@ -57,6 +61,9 @@ export class AdminTestAccountService {
       }
     }
 
-    return { success: true, data: { id: userId, isTestAccount, changed } };
+    return {
+      success: true,
+      data: AdminUserDtoMapper.toTestAccountDto(userId, isTestAccount, changed),
+    };
   }
 }

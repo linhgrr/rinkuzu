@@ -13,21 +13,20 @@ export const dynamic = 'force-dynamic';
 
 // PATCH /api/admin/users/[userId]/test-account — mark or clear an analytics-excluded test account
 export const PATCH = withAdmin(async (request: NextRequest, context) => {
-  try {
-    if (!context.email || !context.userId) {
-      return apiErr('validation_error', 'Admin identity is required', 400);
-    }
+  const { userId: actorId, email: actorEmail } = context;
+  if (!actorId || !actorEmail) return apiErr('validation_error', 'Admin identity is required', 400);
 
-    const parsed = await parseParamsAndBody(request, context.params, {
-      params: adminUserIdRouteParamsSchema,
+  try {
+    const input = await parseParamsAndBody(request, context.params, {
       body: updateAdminUserTestAccountRequestSchema,
+      params: adminUserIdRouteParamsSchema,
     });
-    if (!parsed.ok) return parsed.response;
+    if (!input.ok) return input.response;
 
     const result = await getAdminTestAccountService().setTestAccount(
-      parsed.params.userId,
-      parsed.body.isTestAccount,
-      { id: context.userId, email: context.email },
+      input.params.userId,
+      input.body.isTestAccount,
+      { id: actorId, email: actorEmail },
     );
     if (!result.success) return apiServiceErr(result);
 

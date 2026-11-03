@@ -3,6 +3,7 @@ import type {
   AdminUserListDto,
   AdminUserStatusDto,
   AdminUserSubscriptionDto,
+  AdminUserTestAccountDto,
 } from '@/dtos/admin-user';
 import type { PaginationMeta } from '@/dtos/common';
 import type { User } from '@/entities/User';
@@ -54,6 +55,14 @@ export class AdminUserDtoMapper {
       createdAt: serializeDate(user.createdAt, 'user.createdAt'),
       ...(subscription !== undefined && { subscription }),
     };
+  }
+
+  static toTestAccountDto(
+    userId: string,
+    isTestAccount: boolean,
+    changed: boolean,
+  ): AdminUserTestAccountDto {
+    return { id: userId, isTestAccount, changed };
   }
 
   static toStatusDto(

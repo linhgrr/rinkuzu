@@ -1,7 +1,15 @@
 'use client';
 
 import { Link, useRouter } from '@/i18n/navigation';
-import { useEffect, useReducer, useRef, useState, type ChangeEvent, type RefObject } from 'react';
+import {
+  useEffect,
+  useEffectEvent,
+  useReducer,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type RefObject,
+} from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -137,7 +145,9 @@ function profileSettingsReducer(
 ): ProfileSettingsState {
   switch (action.type) {
     case 'fetch:start':
-      return { ...state, loading: true };
+      // Runs once per signed-in user id: start from a clean slate so another
+      // user's profile or draft input never shows while the new one loads.
+      return initialState;
     case 'fetch:success':
       return {
         ...state,
@@ -443,12 +453,22 @@ function AccountSection({ profile, t }: AccountSectionProps) {
 
 export default function ProfileSettings({ initialTab = 'overview' }: { initialTab?: ProfileTab }) {
   const { data: session } = useSession();
+  // The SessionProvider poll (refetchInterval) hands out a new session object
+  // every few seconds, so effects key on the stable user id, not the object.
+  const userId = session?.user?.id;
   const router = useRouter();
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [state, dispatch] = useReducer(profileSettingsReducer, initialState);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
+  const [syncedInitialTab, setSyncedInitialTab] = useState<ProfileTab>(initialTab);
+
+  // Follow ?tab= changes (browser back/forward, links) without remounting.
+  if (initialTab !== syncedInitialTab) {
+    setSyncedInitialTab(initialTab);
+    setActiveTab(initialTab);
+  }
 
   const selectTab = (tab: ProfileTab) => {
     setActiveTab(tab);
@@ -463,8 +483,12 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     );
   };
 
+  const reportLoadError = useEffectEvent((error: unknown) => {
+    toast.error(extractUnknownErrorMessage(error, t('errorLoadingProfile')));
+  });
+
   useEffect(() => {
-    if (!session) {
+    if (!userId) {
       return;
     }
 
@@ -486,7 +510,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
         }
 
         dispatch({ type: 'fetch:error' });
-        toast.error(extractUnknownErrorMessage(error, t('errorLoadingProfile')));
+        reportLoadError(error);
       }
     };
 
@@ -495,7 +519,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     return () => {
       isActive = false;
     };
-  }, [session, t]);
+  }, [userId]);
 
   const handleSaveProfile = async () => {
     dispatch({ type: 'profile:save:start' });
@@ -583,12 +607,8 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     }
   };
 
-  if (state.loading) {
-    return <ProfileSettingsPageSkeleton label={tCommon('loading')} />;
-  }
-
   if (!state.profile) {
-    return null;
+    return state.loading ? <ProfileSettingsPageSkeleton label={tCommon('loading')} /> : null;
   }
 
   const initials = state.profile.displayName

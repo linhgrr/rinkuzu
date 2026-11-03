@@ -156,6 +156,7 @@ describe('AdminService mutation coverage', () => {
               displayName: 'Learner',
               role: 'user',
               disable: 0,
+              isTestAccount: false,
               createdAt: '2026-02-01T00:00:00.000Z',
             },
           ],

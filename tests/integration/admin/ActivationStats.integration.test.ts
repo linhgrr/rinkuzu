@@ -58,6 +58,7 @@ describe('activation stats integration', () => {
     disabled: id(),
     qa: id(),
     owned: id(),
+    flagged: id(),
   };
   const sharedQuiz = id();
   const signup = {
@@ -77,6 +78,7 @@ describe('activation stats integration', () => {
     disabled: at('2001-01-10T00:00:00.000Z'),
     qa: at('2001-01-03T00:00:00.000Z'),
     owned: at('2001-01-04T00:00:00.000Z'),
+    flagged: at('2001-01-05T00:00:00.000Z'),
   };
 
   function user(key: keyof typeof ids, extra: Record<string, unknown> = {}) {
@@ -151,26 +153,26 @@ describe('activation stats integration', () => {
       await mongoose.connect(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
       const db = mongoose.connection;
       const ownQuizA = id();
-      await db
-        .collection('users')
-        .insertMany([
-          user('a'),
-          user('b'),
-          user('c'),
-          user('d'),
-          user('e'),
-          user('f'),
-          user('g'),
-          user('h'),
-          user('i'),
-          user('j'),
-          user('k'),
-          user('l'),
-          user('admin', { role: 'admin' }),
-          user('disabled', { disable: 1 }),
-          user('qa', { email: `${runId}-qa@example.test` }),
-          user('owned', { email: owned.email }),
-        ]);
+      await db.collection('users').insertMany([
+        user('a'),
+        user('b'),
+        user('c'),
+        user('d'),
+        user('e'),
+        user('f'),
+        user('g'),
+        user('h'),
+        user('i'),
+        user('j'),
+        user('k'),
+        user('l'),
+        user('admin', { role: 'admin' }),
+        user('disabled', { disable: 1 }),
+        user('qa', { email: `${runId}-qa@example.test` }),
+        user('owned', { email: owned.email }),
+        // Ordinary address: excluded only by the admin-set flag.
+        user('flagged', { isTestAccount: true }),
+      ]);
       await db.collection('quizzes').insertMany([
         { ...quiz('shared'), _id: sharedQuiz, author: ids.admin, createdAt: signup.admin },
         { ...quiz('own-a'), _id: ownQuizA, author: ids.a, createdAt: plus(signup.a, DAY) },
@@ -178,6 +180,7 @@ describe('activation stats integration', () => {
         { ...quiz('d'), author: ids.d, createdAt: plus(signup.d, 2 * DAY) },
         // C authors on day 7 exactly: outside the material window.
         { ...quiz('c'), author: ids.c, createdAt: plus(signup.c, 7 * DAY) },
+        { ...quiz('flagged'), author: ids.flagged, createdAt: plus(signup.flagged, DAY) },
       ]);
       await db.collection('attempts').insertMany([
         // A: own quiz on day 1, back on day 8 → activated and retained.
@@ -204,6 +207,9 @@ describe('activation stats integration', () => {
         attempt('disabled', at('2001-01-10T12:00:00.000Z')),
         attempt('qa', at('2001-01-03T12:00:00.000Z')),
         attempt('owned', at('2001-01-04T12:00:00.000Z')),
+        // Flagged: would be activated and retained in W01 if it were counted.
+        attempt('flagged', plus(signup.flagged, DAY)),
+        attempt('flagged', plus(signup.flagged, 8 * DAY)),
         // Guests are not learners.
         {
           _integrationRun: runId,
@@ -313,6 +319,29 @@ describe('activation stats integration', () => {
       { weekStart: W02, learners: 4, activatedBy: by(3, 1, 0) },
       { weekStart: W03, learners: 1, activatedBy: by(1, 0, 0) },
     ]);
+  });
+
+  it('counts the flagged learner in every series once the flag is cleared', async () => {
+    const users = mongoose.connection.collection('users');
+    await users.updateOne({ _id: ids.flagged }, { $set: { isTestAccount: false } });
+    try {
+      const aggregates = await new AdminStatsRepository().getActivationAggregates(W01, W04);
+      expect(aggregates.cohorts[0]).toEqual({
+        weekStart: W01,
+        signups: 6,
+        material: 4,
+        activated: 3,
+        activatedBy: by(3, 0, 0),
+        w1Retained: 3,
+      });
+      expect(aggregates.firstAttempts[0]).toEqual({
+        weekStart: W01,
+        learners: 2,
+        activatedBy: by(2, 0, 0),
+      });
+    } finally {
+      await users.updateOne({ _id: ids.flagged }, { $set: { isTestAccount: true } });
+    }
   });
 
   it('serves the response contract with the 14-day completeness boundary and an audit entry', async () => {

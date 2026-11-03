@@ -33,7 +33,7 @@ export type ActivationStatsActor =
 const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
   week: 'ISO-8601 week in UTC, Monday 00:00:00.000 to Sunday 23:59:59.999. `end` is the last millisecond of the week.',
   exclusions:
-    'Users with role admin, disabled users (disable = 1), and test/QA accounts (reserved example/.test/.invalid/.localhost email domains plus a documented constant list) are never counted.',
+    'Users with role admin, disabled users (disable = 1), users an admin marked as test accounts in /admin/users (isTestAccount = true), and test/QA accounts on reserved example/.test/.invalid/.localhost email domains or in a documented constant list of company-owned addresses are never counted.',
   signups: 'Non-excluded users whose createdAt falls in the week.',
   material:
     'Signups of the week who, within 7 days of signup, authored a quiz, submitted an attempt on a quiz they did not author, or had a succeeded upload (Path B). Every activated signup is material.',

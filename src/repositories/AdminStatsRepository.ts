@@ -87,10 +87,14 @@ const DAILY_GROUP_STAGE = {
 
 const DAY_MS = 86_400_000;
 
-/** Who counts as a learner: not an admin, not disabled, not a test/QA account. */
+/**
+ * Who counts as a learner: not an admin, not disabled, not flagged as a test
+ * account by an admin, not a test/QA address (reserved domains, constant list).
+ */
 const LEARNER_FILTER = {
   role: { $ne: 'admin' },
   disable: { $ne: ACCOUNT_DISABLE_DISABLED },
+  isTestAccount: { $ne: true },
   email: { $nin: [...ANALYTICS_EXCLUDED_EMAILS], $not: ANALYTICS_TEST_EMAIL_PATTERN },
 } as const;
 
@@ -278,6 +282,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
         $or: [
           { role: 'admin' },
           { disable: ACCOUNT_DISABLE_DISABLED },
+          { isTestAccount: true },
           { email: { $in: [...ANALYTICS_EXCLUDED_EMAILS] } },
           { email: ANALYTICS_TEST_EMAIL_PATTERN },
         ],

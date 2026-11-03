@@ -4,6 +4,8 @@ vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
+import { logger } from '@/lib/logger';
+
 import { AdminTestAccountService } from './AdminTestAccountService';
 
 const USER_ID = '507f1f77bcf86cd799439011';
@@ -82,6 +84,22 @@ describe('AdminTestAccountService.setTestAccount', () => {
       statusCode: 500,
     });
     expect(users.revertTestAccount).toHaveBeenCalledWith(USER_ID, true, false);
+  });
+
+  it('still returns 500 and logs the failed revert when the revert also fails', async () => {
+    const { users, audit, service } = setup(false);
+    audit.record.mockRejectedValueOnce(new Error('audit down'));
+    const revertError = new Error('revert down');
+    users.revertTestAccount.mockRejectedValueOnce(revertError);
+
+    expect(await service.setTestAccount(USER_ID, true, ACTOR)).toMatchObject({
+      success: false,
+      statusCode: 500,
+    });
+    expect(logger.error).toHaveBeenCalledWith(
+      { error: revertError, userId: USER_ID },
+      'Test account flag revert failed',
+    );
   });
 
   it('maps a failed flag write to 500', async () => {

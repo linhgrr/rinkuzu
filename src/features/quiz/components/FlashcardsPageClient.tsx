@@ -1,7 +1,6 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import Image from 'next/image';
 import { useEffect, useReducer, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
@@ -160,7 +159,7 @@ function FlashcardFallbackState({
   title: string;
 }) {
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+    <div className="flex items-center justify-center px-4 py-16">
       <Card className="max-w-md">
         <CardContent className="p-6 text-center">
           <h2 className="text-xl font-semibold text-neutral-900 mb-4">{title}</h2>
@@ -200,109 +199,81 @@ function FlashcardResultsView({
   unknownQuestions: FlashcardQuestionViewModel[];
 }) {
   return (
-    <div className="min-h-screen bg-neutral-50 overflow-hidden">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/explore" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <Image
-                    src="/images/auth_logo.webp"
-                    alt="RinKuzu Logo"
-                    width={96}
-                    height={40}
-                    className="h-10 w-auto object-contain"
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-8 text-center">
+        <h1 className="mb-2 text-3xl font-semibold text-neutral-900">{t('flashcards')}</h1>
+        <p className="break-words text-neutral-600">{quiz.title}</p>
+      </div>
+
+      <div className="mb-8 grid grid-cols-3 gap-3 sm:gap-6">
+        <Card>
+          <CardContent className="p-4 text-center sm:p-6">
+            <div className="mb-2 text-2xl font-bold text-green-600 sm:text-3xl">{knownCount}</div>
+            <div className="text-sm text-neutral-600">{t('known')}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 text-center sm:p-6">
+            <div className="mb-2 text-2xl font-bold text-red-600 sm:text-3xl">{unknownCount}</div>
+            <div className="text-sm text-neutral-600">{t('unknown')}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 text-center sm:p-6">
+            <div className="mb-2 text-2xl font-bold text-brand-trust sm:text-3xl">
+              {masteryPercentage}%
+            </div>
+            <div className="text-sm text-neutral-600">{t('mastery')}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {unknownQuestions.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>{t('unknownQuestions')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {unknownQuestions.map((question, index) => (
+                <div key={question.id} className="rounded-lg border border-red-200 bg-red-50 p-3">
+                  <div className="font-medium text-neutral-900">
+                    {t('question')} {index + 1}
+                  </div>
+                  <QuestionExcerpt
+                    content={question.question}
+                    maxLines={2}
+                    className="mt-1 text-sm text-neutral-600"
                   />
                 </div>
-              </Link>
+              ))}
             </div>
-            <div className="flex items-center gap-x-4">
-              <Link href={`/quiz/${quiz.slug}`}>
-                <Button variant="outline">{t('takeQuiz')}</Button>
-              </Link>
-              <Link href="/explore">
-                <Button variant="outline">{tCommon('browseQuizzes')}</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+          </CardContent>
+        </Card>
+      )}
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-neutral-900 mb-2">{t('flashcards')}</h1>
-          <p className="text-neutral-600">{quiz.title}</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">{knownCount}</div>
-              <div className="text-sm text-neutral-600">{tCommon('questions')}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-red-600 mb-2">{unknownCount}</div>
-              <div className="text-sm text-neutral-600">{tCommon('questions')}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-brand-trust mb-2">{masteryPercentage}%</div>
-              <div className="text-sm text-neutral-600">{t('mastery')}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {unknownQuestions.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>{t('unknownQuestions')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {unknownQuestions.map((question, index) => (
-                  <div key={question.id} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="font-medium text-neutral-900">
-                      {t('question')} {index + 1}
-                    </div>
-                    <QuestionExcerpt
-                      content={question.question}
-                      maxLines={2}
-                      className="mt-1 text-sm text-neutral-600"
-                    />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      <div className="flex flex-wrap justify-center gap-3">
+        {unknownCount > 0 ? (
+          <Button
+            onClick={onContinuePractice}
+            className="bg-brand-trust hover:bg-brand-trust-hover"
+          >
+            {t('practiceContinue')}
+          </Button>
+        ) : (
+          <Button onClick={onReset} className="bg-brand-trust hover:bg-brand-trust-hover">
+            {t('start')}
+          </Button>
         )}
-
-        <div className="flex flex-wrap justify-center gap-3">
-          {unknownCount > 0 ? (
-            <Button
-              onClick={onContinuePractice}
-              className="bg-brand-trust hover:bg-brand-trust-hover"
-            >
-              {t('practiceContinue')}
-            </Button>
-          ) : (
-            <Button onClick={onReset} className="bg-brand-trust hover:bg-brand-trust-hover">
-              {t('start')}
-            </Button>
-          )}
-          <Link href={`/quiz/${quiz.slug}`}>
-            <Button variant="outline">{t('takeQuiz')}</Button>
-          </Link>
-          <Link href="/explore">
-            <Button variant="outline">{tCommon('browseQuizzes')}</Button>
-          </Link>
-        </div>
-      </main>
+        <Link href={`/quiz/${quiz.slug}`}>
+          <Button variant="outline">{t('takeQuiz')}</Button>
+        </Link>
+        <Link href="/explore">
+          <Button variant="outline">{tCommon('browseQuizzes')}</Button>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -315,7 +286,6 @@ function FlashcardDeckView({
   progressPercentage,
   quiz,
   t,
-  tCommon,
   totalQuestions,
   unknownCount,
 }: {
@@ -326,91 +296,75 @@ function FlashcardDeckView({
   progressPercentage: number;
   quiz: FlashcardQuizViewModel;
   t: (key: string) => string;
-  tCommon: (key: string) => string;
   totalQuestions: number;
   unknownCount: number;
 }) {
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col items-center relative">
-      <div className="fixed top-20 left-0 right-0 z-50 flex items-center justify-between px-2 sm:px-4">
-        <div className="bg-red-100 text-red-700 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap">
-          {t('unknown')}: {unknownCount}
-        </div>
-
-        <div className="flex-1 mx-2 sm:mx-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs sm:text-sm font-medium text-neutral-700">
-              {Math.min(currentIndex + 1, totalQuestions)}/{totalQuestions}
-            </span>
-            <span className="text-xs sm:text-sm font-medium text-neutral-700">
-              {progressPercentage}%
-            </span>
+    <div className="flex w-full flex-col items-center">
+      {/* Sticky inside the content column: it inherits the sidebar offset and stops
+          under the app top bar (64px, 72px from lg) instead of covering either. */}
+      <div
+        data-testid="flashcard-progress-header"
+        className="sticky top-16 z-30 w-full border-b border-line bg-surface/95 backdrop-blur lg:top-[var(--app-chrome-height)]"
+      >
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-3 py-2 sm:px-6 sm:py-3">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-sm font-semibold text-neutral-900 sm:text-base">
+              {quiz.title}
+            </p>
+            <Link href={`/quiz/${quiz.slug}`} className="shrink-0">
+              <Button variant="outline" size="sm">
+                {t('takeQuiz')}
+              </Button>
+            </Link>
           </div>
-          <div className="w-full bg-neutral-200 rounded-full h-2">
-            <div
-              className="bg-brand-trust h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="whitespace-nowrap rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 sm:px-4 sm:py-1.5 sm:text-sm">
+              {t('unknown')}: {unknownCount}
+            </div>
 
-        <div className="bg-green-100 text-green-700 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap">
-          {t('known')}: {knownCount}
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs font-medium text-neutral-700 sm:text-sm">
+                  {Math.min(currentIndex + 1, totalQuestions)}/{totalQuestions}
+                </span>
+                <span className="text-xs font-medium text-neutral-700 sm:text-sm">
+                  {progressPercentage}%
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-neutral-200">
+                <div
+                  className="h-2 rounded-full bg-brand-trust transition-all duration-300"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 sm:px-4 sm:py-1.5 sm:text-sm">
+              {t('known')}: {knownCount}
+            </div>
+          </div>
         </div>
       </div>
 
-      <nav className="bg-white shadow-sm border-b w-full">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/explore" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <Image
-                    src="/images/auth_logo.webp"
-                    alt="RinKuzu Logo"
-                    width={96}
-                    height={40}
-                    className="h-10 w-auto object-contain"
-                  />
-                </div>
-              </Link>
-            </div>
-            <div className="flex items-center gap-x-2 sm:gap-x-4">
-              <Link href={`/quiz/${quiz.slug}`}>
-                <Button variant="outline" size="sm">
-                  {t('takeQuiz')}
-                </Button>
-              </Link>
-              <Link href="/explore" className="hidden sm:block">
-                <Button variant="outline" size="sm">
-                  {tCommon('browseQuizzes')}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <main className="w-full flex-1 flex flex-col items-center justify-center pt-20">
-        <div className="flex flex-col items-center justify-center min-h-[420px] w-full">
-          {currentQuestion && (
-            <Flashcard
-              key={`${currentIndex}-${currentQuestion.id}`}
-              question={currentQuestion.question}
-              options={currentQuestion.options}
-              {...(currentQuestion.correctIndex !== undefined
-                ? { correctIndex: currentQuestion.correctIndex }
-                : {})}
-              {...(currentQuestion.correctIndexes !== undefined
-                ? { correctIndexes: currentQuestion.correctIndexes }
-                : {})}
-              type={currentQuestion.type}
-              onSwipe={onSwipe}
-              isLast={currentIndex === totalQuestions - 1}
-            />
-          )}
-        </div>
-      </main>
+      <div className="flex w-full flex-1 flex-col items-center justify-center py-6 sm:py-10">
+        {currentQuestion && (
+          <Flashcard
+            key={`${currentIndex}-${currentQuestion.id}`}
+            question={currentQuestion.question}
+            options={currentQuestion.options}
+            {...(currentQuestion.correctIndex !== undefined
+              ? { correctIndex: currentQuestion.correctIndex }
+              : {})}
+            {...(currentQuestion.correctIndexes !== undefined
+              ? { correctIndexes: currentQuestion.correctIndexes }
+              : {})}
+            type={currentQuestion.type}
+            onSwipe={onSwipe}
+            isLast={currentIndex === totalQuestions - 1}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -563,7 +517,6 @@ export function FlashcardsPageClient() {
       progressPercentage={progressPercentage}
       quiz={quiz}
       t={t}
-      tCommon={tCommon}
       totalQuestions={state.currentQuestions.length}
       unknownCount={unknownCount}
     />

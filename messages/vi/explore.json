@@ -3,6 +3,7 @@
   "searchPlaceholder": "Tìm quiz hoặc bài học...",
   "filterLabel": "Lọc loại kết quả",
   "viewAll": "Xem tất cả",
+  "signInCta": "Đăng nhập",
   "retry": "Thử lại",
   "partialError": "Không thể tải nhóm nội dung này. Các kết quả khác vẫn có thể sử dụng.",
   "noResults": "Không tìm thấy kết quả",
@@ -28,12 +29,14 @@
     "mine": {
       "title": "Quiz của bạn",
       "subtitle": "Quiz bạn đã tạo, gồm quiz công khai và nguồn cá nhân",
-      "empty": "Bạn chưa có quiz phù hợp."
+      "empty": "Bạn chưa có quiz phù hợp.",
+      "signedOut": "Đăng nhập để xem các quiz bạn đã tạo."
     },
     "adaptive": {
       "title": "Bài học AI",
       "subtitle": "Tài liệu đã được xử lý thành lộ trình học cá nhân hóa",
-      "empty": "Không có bài học AI phù hợp."
+      "empty": "Không có bài học AI phù hợp.",
+      "signedOut": "Đăng nhập để xem bài học AI của bạn, hoặc tải tài liệu lên để tạo bài học mới."
     },
     "quizzes": {
       "title": "Quiz",

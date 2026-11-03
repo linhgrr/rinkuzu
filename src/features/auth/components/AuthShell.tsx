@@ -7,6 +7,7 @@ import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from '
 
 import { LoginForm } from '@/features/auth/components/LoginForm';
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
+import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
 
 type AuthMode = 'login' | 'signup';
@@ -33,7 +34,10 @@ export function AuthShell({ locale, googleEnabled = false }: AuthShellProps) {
 
   const switchTo = (next: AuthMode) => {
     // next-intl router applies the active locale — do not prefix manually.
-    router.push(next === 'login' ? ROUTES.LOGIN : ROUTES.REGISTER);
+    // Keep the callbackUrl so a guest from a quiz returns to it either way. Read at
+    // click time: this shell renders in the layout, outside any Suspense boundary.
+    const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl');
+    router.push(withAuthCallback(next === 'login' ? ROUTES.LOGIN : ROUTES.REGISTER, callbackUrl));
   };
 
   const isLogin = mode === 'login';

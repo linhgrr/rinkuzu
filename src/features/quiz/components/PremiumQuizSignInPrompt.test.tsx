@@ -38,7 +38,7 @@ describe('PremiumQuizSignInPrompt', () => {
     );
     expect(screen.getByRole('link', { name: 'premiumSignUpButton' })).toHaveAttribute(
       'href',
-      '/register',
+      '/register?callbackUrl=%2Fquiz%2Fnhap-mon-ai',
     );
   });
 

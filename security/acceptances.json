@@ -16,7 +16,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "0e5e642b978e2c355fba6cd6f2a6c3f439913d6929c161a31e49f8b8d7622b5f",
+      "fingerprint": "c7d9dc558c49b554b153af68c79888cdc95636aab10bc7caf03f319f5fe8d104",
       "package": "@lhci/utils",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -25,7 +25,7 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it. Re-fingerprinted 2026-11-03 (RIN-654): the @lhci/utils 0.16.0 release (patched lighthouse 13.6.0) narrowed the computed vulnerable range of the installed 0.15.1 to 0.13.0 - 0.15.1; same advisories, same dev-only exposure; upgrading to 0.16.0 is tracked in RIN-606.",
       "createdAt": "2026-11-02",
       "expiresAt": "2026-12-02"
     },

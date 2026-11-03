@@ -412,14 +412,15 @@ describe('QuizRepository.findUserQuizzes', () => {
     ]);
     expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
       expect.objectContaining({ $group: expect.any(Object) }),
+      // RIN-634: authors are resolved before pagination, and unresolved ones dropped.
+      expect.objectContaining({ $lookup: expect.objectContaining({ from: 'users' }) }),
+      { $unwind: '$author' },
       { $sort: { quizCount: -1, totalQuestions: -1, _id: 1 } },
       {
         $facet: {
           items: [
             { $skip: 5 },
             { $limit: 5 },
-            expect.objectContaining({ $lookup: expect.any(Object) }),
-            expect.objectContaining({ $unwind: expect.any(Object) }),
             expect.objectContaining({ $project: expect.any(Object) }),
           ],
           meta: [{ $count: 'totalItems' }],

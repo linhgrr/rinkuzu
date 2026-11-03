@@ -16,9 +16,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildLocalizedMetadata({
     locale,
     path: '/faq',
-    title: isVi ? 'Câu hỏi thường gặp | RinKuzu' : 'FAQ | RinKuzu',
+    title: isVi ? 'Hỏi đáp RinKuzu – Cách tạo quiz từ PDF bằng AI' : 'FAQ | RinKuzu',
     description: isVi
-      ? 'Câu hỏi thường gặp về RinKuzu: tạo quiz AI từ PDF, học tập thích ứng, đồ thị kiến thức, phân loại Bloom và cách sử dụng cho học sinh, sinh viên, giáo viên.'
+      ? 'Giải đáp nhanh: tạo quiz từ PDF trong vài phút, có miễn phí không, AI chấm và giải thích thế nào, dùng cho sinh viên và giáo viên ra sao.'
       : "Frequently asked questions about RinKuzu — AI quiz generator, adaptive learning, knowledge graphs, Bloom's Taxonomy, and how to use RinKuzu for students and teachers.",
     robots: { index: true, follow: true },
   });

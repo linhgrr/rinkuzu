@@ -98,6 +98,17 @@ describe('withPremiumSessionAction', () => {
     });
   });
 
+  it('maps a locked quiz to premium_required so the client offers the unlock (RIN-753)', async () => {
+    run.mockRejectedValue(new PremiumQuizError('unlock_required', 'Unlock required'));
+
+    const response = await route(postRequest({ cursor: CURSOR }), context);
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'premium_required', meta: { reason: 'unlock_required' } },
+    });
+  });
+
   it('refuses a malformed session id before the body is read', async () => {
     const response = await route(postRequest({ cursor: CURSOR }), {
       params: Promise.resolve({ sessionId: 'not-an-id' }),

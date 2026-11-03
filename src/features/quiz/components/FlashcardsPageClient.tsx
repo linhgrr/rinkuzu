@@ -5,6 +5,7 @@ import { useEffect, useReducer, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { FlashcardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { QuestionExcerpt } from '@/components/ui/QuestionContent';
 import { preloadMathRenderer } from '@/components/ui/preloadMathRenderer';
@@ -25,6 +26,7 @@ import type {
   FlashcardQuizViewModel,
 } from '@/features/quiz/types/flashcard-view-model';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
+import { describeApiError } from '@/lib/api/error-kind';
 
 interface FlashcardProgress {
   knownIds: string[];
@@ -37,7 +39,8 @@ type FlashcardStatus = 'loading' | 'ready' | 'error';
 interface FlashcardPageState {
   quiz: FlashcardQuizViewModel | null;
   status: FlashcardStatus;
-  error: string;
+  /** The thrown value of a failed load; rendered by ErrorState, never as text (RIN-753). */
+  error: unknown;
   progress: FlashcardProgress;
   currentQuestions: FlashcardQuestionViewModel[];
   showPremiumModal: boolean;
@@ -45,7 +48,8 @@ interface FlashcardPageState {
 
 type FlashcardPageAction =
   | { type: 'loadQuizSuccess'; quiz: FlashcardQuizViewModel }
-  | { type: 'loadQuizError'; error: string }
+  | { type: 'loadQuizError'; error: unknown }
+  | { type: 'retryLoad' }
   | { type: 'requirePremium' }
   | { type: 'registerSwipe'; direction: 'left' | 'right' }
   | { type: 'resetProgress' }
@@ -61,7 +65,7 @@ const initialProgress: FlashcardProgress = {
 const initialFlashcardPageState: FlashcardPageState = {
   quiz: null,
   status: 'loading',
-  error: '',
+  error: null,
   progress: initialProgress,
   currentQuestions: [],
   showPremiumModal: false,
@@ -77,7 +81,7 @@ function flashcardPageReducer(
         ...state,
         quiz: action.quiz,
         status: 'ready',
-        error: '',
+        error: null,
         progress: initialProgress,
         currentQuestions: action.quiz.questions,
         showPremiumModal: false,
@@ -89,11 +93,13 @@ function flashcardPageReducer(
         error: action.error,
         showPremiumModal: false,
       };
+    case 'retryLoad':
+      return { ...state, status: 'loading', error: null, showPremiumModal: false };
     case 'requirePremium':
       return {
         ...state,
         status: 'error',
-        error: '',
+        error: null,
         showPremiumModal: true,
       };
     case 'registerSwipe': {
@@ -390,6 +396,7 @@ export function FlashcardsPageClient() {
   const tCommon = useTranslations('common');
   const slug = useRequiredRouteParam('slug');
   const [state, dispatch] = useReducer(flashcardPageReducer, initialFlashcardPageState);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [premiumMetadata, setPremiumMetadata] = useState<PremiumCatalogMetadataViewModel | null>(
     null,
   );
@@ -426,13 +433,12 @@ export function FlashcardsPageClient() {
           return;
         }
 
-        const message = error instanceof Error ? error.message : 'Failed to load quiz';
-        const code = error instanceof ApiResponseError ? error.code : null;
-
-        if (code === 'premium_required') {
+        const { kind } = describeApiError(error);
+        if (kind === 'aborted') return;
+        if (kind === 'unlock_required') {
           dispatch({ type: 'requirePremium' });
         } else {
-          dispatch({ type: 'loadQuizError', error: message });
+          dispatch({ type: 'loadQuizError', error });
         }
       }
     };
@@ -442,10 +448,10 @@ export function FlashcardsPageClient() {
     return () => {
       isActive = false;
     };
-  }, [slug]);
+  }, [slug, loadAttempt]);
 
   if (premiumMetadata) {
-    return <PremiumFlashcardClient metadata={premiumMetadata} />;
+    return <PremiumFlashcardClient metadata={premiumMetadata} slug={slug} />;
   }
 
   const quiz = state.quiz;
@@ -488,12 +494,16 @@ export function FlashcardsPageClient() {
     return <FlashcardPremiumState onClose={() => dispatch({ type: 'dismissPremium' })} />;
   }
 
-  if (state.error) {
+  if (state.error !== null) {
+    // The whole deck failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <FlashcardFallbackState
-        browseLabel={tCommon('browseQuizzes')}
-        description={state.error}
-        title={tCommon('error')}
+      <ErrorState
+        error={state.error}
+        variant="page"
+        onRetry={() => {
+          dispatch({ type: 'retryLoad' });
+          setLoadAttempt((attempt) => attempt + 1);
+        }}
       />
     );
   }

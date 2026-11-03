@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { PremiumCreditCost } from '@/features/quiz/components/PremiumCreditCost';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
-import { ApiResponseError } from '@/lib/api/client';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { ROUTES } from '@/shared/constants/routes';
 import {
   fetchPremiumBatch,
@@ -29,8 +30,8 @@ interface PremiumQuizPlayerClientProps {
   description?: string;
 }
 
-function isApiStatus(error: unknown, status: number): boolean {
-  return error instanceof ApiResponseError && error.status === status;
+function isAuthRequired(error: unknown): boolean {
+  return describeApiError(error).kind === 'auth_required';
 }
 
 export default function PremiumQuizPlayerClient({
@@ -52,12 +53,30 @@ export default function PremiumQuizPlayerClient({
   // A 401 at any step means the session is gone (RIN-747): ask to sign in again
   // instead of rendering the server's raw message.
   const [signInRequired, setSignInRequired] = useState(false);
+  // Secondary actions (save, unlock, submit) show localized inline copy (RIN-753).
   const [error, setError] = useState('');
+  // A failed start replaces the whole player with the page-level ErrorState.
+  const [loadError, setLoadError] = useState<unknown>(null);
   const prefetching = useRef<Promise<void> | null>(null);
+  const describeError = useApiErrorMessage();
+
+  // 401 asks to sign in (RIN-747), unlock_required offers the unlock; the rest is a page error.
+  function handleStartError(startError: unknown) {
+    const { kind } = describeApiError(startError);
+    if (kind === 'aborted') return;
+    if (kind === 'auth_required') {
+      setSignInRequired(true);
+    } else if (kind === 'unlock_required') {
+      setUnlockRequired(true);
+    } else {
+      setLoadError(startError);
+    }
+  }
 
   async function begin() {
     setLoading(true);
     setError('');
+    setLoadError(null);
     try {
       const batch = await startPremiumSession(quizId);
       setBatches({ [batch.batchIndex]: batch });
@@ -67,13 +86,7 @@ export default function PremiumQuizPlayerClient({
       setWatermark(batch.watermark);
       setUnlockRequired(false);
     } catch (startError) {
-      if (isApiStatus(startError, 401)) {
-        setSignInRequired(true);
-      } else if (isApiStatus(startError, 403)) {
-        setUnlockRequired(true);
-      } else {
-        setError(t('loadError'));
-      }
+      handleStartError(startError);
     } finally {
       setLoading(false);
     }
@@ -93,14 +106,7 @@ export default function PremiumQuizPlayerClient({
         setError('');
       })
       .catch((startError: unknown) => {
-        if (!active) return;
-        if (isApiStatus(startError, 401)) {
-          setSignInRequired(true);
-        } else if (isApiStatus(startError, 403)) {
-          setUnlockRequired(true);
-        } else {
-          setError(t('loadError'));
-        }
+        if (active) handleStartError(startError);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -108,7 +114,9 @@ export default function PremiumQuizPlayerClient({
     return () => {
       active = false;
     };
-  }, [quizId, t]);
+    // Only the quiz identity restarts the session; the handler reads stable setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizId]);
 
   const batchIndex = Math.floor(currentIndex / 3);
   const currentBatch = batches[batchIndex];
@@ -145,11 +153,11 @@ export default function PremiumQuizPlayerClient({
     try {
       await savePremiumAnswer(sessionId, currentIndex, answer);
     } catch (saveError) {
-      if (isApiStatus(saveError, 401)) {
+      if (isAuthRequired(saveError)) {
         setSignInRequired(true);
         return;
       }
-      setError(extractUnknownErrorMessage(saveError, t('saveProgressError')));
+      setError(describeError(saveError));
     }
   }
 
@@ -172,11 +180,11 @@ export default function PremiumQuizPlayerClient({
       await unlockPremiumQuiz(quizId);
       await begin();
     } catch (unlockError) {
-      if (isApiStatus(unlockError, 401)) {
+      if (isAuthRequired(unlockError)) {
         setSignInRequired(true);
         return;
       }
-      setError(extractUnknownErrorMessage(unlockError, t('premiumUnlockError')));
+      setError(describeError(unlockError));
     } finally {
       setLoading(false);
     }
@@ -189,11 +197,11 @@ export default function PremiumQuizPlayerClient({
       const submitted = await submitPremiumSession(sessionId);
       push(`${ROUTES.QUIZ.RESULT(slug)}?attemptId=${encodeURIComponent(submitted.attemptId)}`);
     } catch (submitError) {
-      if (isApiStatus(submitError, 401)) {
+      if (isAuthRequired(submitError)) {
         setSignInRequired(true);
         return;
       }
-      setError(extractUnknownErrorMessage(submitError, t('submitError')));
+      setError(describeError(submitError));
     } finally {
       setLoading(false);
     }
@@ -229,7 +237,11 @@ export default function PremiumQuizPlayerClient({
           <p className="mt-5 rounded-xl bg-brand-trust/5 p-4 text-sm text-ink">
             {t('premiumUnlockDescription')}
           </p>
-          {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+          {error ? (
+            <p role="alert" className="mt-4 text-sm text-error">
+              {error}
+            </p>
+          ) : null}
           <Button
             className="mt-5"
             loading={loading}
@@ -245,18 +257,11 @@ export default function PremiumQuizPlayerClient({
   }
 
   if (!question || !currentBatch) {
-    // Never the server's text here: this is the whole page (RIN-747).
+    // The whole player failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <SurfaceCard className="p-8 text-center">
-          <h1 className="text-2xl font-semibold text-ink">{title}</h1>
-          <p role="alert" className="mt-4 text-sm text-red-700">
-            {t('loadError')}
-          </p>
-          <Button className="mt-5" variant="secondary" onClick={() => void begin()}>
-            {t('tryAgain')}
-          </Button>
-        </SurfaceCard>
+      <main className="mx-auto max-w-xl px-4 py-8 sm:py-12">
+        <h1 className="text-center text-2xl font-semibold text-ink">{title}</h1>
+        <ErrorState error={loadError} variant="page" onRetry={begin} />
       </main>
     );
   }

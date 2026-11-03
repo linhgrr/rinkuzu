@@ -52,7 +52,8 @@ describe('useQuizSubmission', () => {
   });
 
   it('reuses an idempotency key for an unchanged retry', async () => {
-    submitAttemptMock.mockRejectedValueOnce(new Error('temporary')).mockResolvedValueOnce({
+    const temporary = new Error('temporary');
+    submitAttemptMock.mockRejectedValueOnce(temporary).mockResolvedValueOnce({
       attemptId: 'attempt-1',
       score: 100,
       correctAnswers: 1,
@@ -68,7 +69,7 @@ describe('useQuizSubmission', () => {
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
     ]);
     expect(randomUUID).toHaveBeenCalledOnce();
-    expect(onSubmitError).toHaveBeenCalledWith('temporary');
+    expect(onSubmitError).toHaveBeenCalledWith(temporary);
     expect(onSubmitSuccess).toHaveBeenCalledWith('attempt-1', 100);
   });
 

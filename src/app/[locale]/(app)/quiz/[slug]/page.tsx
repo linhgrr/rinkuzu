@@ -79,7 +79,7 @@ export default async function QuizPlayerPage({
     return (
       <QuizPlayerClient
         initialErrorCode={result.code}
-        initialErrorMessage={result.error}
+        initialErrorStatus={result.statusCode}
         initialQuiz={null}
         slug={slug}
       />
@@ -115,7 +115,7 @@ export default async function QuizPlayerPage({
       ) : null}
       <QuizPlayerClient
         initialErrorCode={null}
-        initialErrorMessage={null}
+        initialErrorStatus={null}
         initialQuiz={quiz}
         slug={slug}
       />

@@ -23,6 +23,7 @@ export function premiumQuizErrorResponse(error: unknown): Response {
         response = apiErr('forbidden', error.message, 403, { reason: error.code });
         break;
       case 'insufficient_credits':
+      case 'unlock_required':
         response = apiErr('premium_required', error.message, 403, { reason: error.code });
         break;
       case 'session_expired':

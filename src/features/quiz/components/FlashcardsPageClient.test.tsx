@@ -20,14 +20,17 @@ vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => {
     let translate = translators.get(namespace);
     if (!translate) {
-      translate = (key: string) => `${namespace}.${key}`;
+      translate = (key: string) => (namespace ? `${namespace}.${key}` : key);
       translators.set(namespace, translate);
     }
     return translate;
   },
+  useLocale: () => 'en',
 }));
 
 vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  usePathname: () => '/quiz/demo-flash/flashcards',
   Link: ({
     href,
     children,
@@ -81,6 +84,58 @@ const quiz = {
     { id: 'q2', question: 'Second?', options: ['A', 'B'], type: 'single', correctIndex: 1 },
   ],
 };
+
+describe('FlashcardsPageClient load errors (RIN-753)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchPremiumMetadataMock.mockRejectedValue(
+      new ApiResponseError({ message: 'not found', status: 404, payload: null }),
+    );
+  });
+
+  it('shows the page-level server error with a retry that reloads, never the server text', async () => {
+    fetchFlashcardsMock
+      .mockRejectedValueOnce(
+        new ApiResponseError({ message: 'Mongo exploded at shard 3', status: 500, payload: null }),
+      )
+      .mockResolvedValueOnce(quiz);
+
+    render(<FlashcardsPageClient />);
+
+    expect(
+      await screen.findByRole('heading', { name: 'errors.api.serverTitle' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Mongo exploded/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.retry' }));
+    expect(await screen.findByText('Calculus basics')).toBeInTheDocument();
+  });
+
+  it.each([
+    {
+      label: '401 for a guest',
+      error: new ApiResponseError({ message: 'Unauthorized', status: 401, payload: null }),
+      title: 'errors.api.authRequiredTitle',
+    },
+    {
+      label: '404',
+      error: new ApiResponseError({ message: 'Quiz xyz not found', status: 404, payload: null }),
+      title: 'errors.api.notFoundTitle',
+    },
+    {
+      label: 'a network failure',
+      error: new TypeError('Failed to fetch'),
+      title: 'errors.api.networkTitle',
+    },
+  ])('maps $label to its page error', async ({ error, title }) => {
+    fetchFlashcardsMock.mockRejectedValueOnce(error);
+
+    render(<FlashcardsPageClient />);
+
+    expect(await screen.findByRole('heading', { name: title })).toBeInTheDocument();
+    expect(screen.queryByText(error.message)).not.toBeInTheDocument();
+  });
+});
 
 describe('FlashcardsPageClient layout inside the app shell', () => {
   beforeEach(() => {

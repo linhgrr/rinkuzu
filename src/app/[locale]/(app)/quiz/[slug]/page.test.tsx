@@ -88,7 +88,7 @@ describe('QuizPlayerPage slug aliases', () => {
     resolveSlugAlias.mockResolvedValue(null);
 
     await expect(renderPage('unknown-slug')).resolves.toMatchObject({
-      props: { initialErrorMessage: 'Quiz not found', initialQuiz: null, slug: 'unknown-slug' },
+      props: { initialErrorStatus: 404, initialQuiz: null, slug: 'unknown-slug' },
     });
     expect(permanentRedirectMock).not.toHaveBeenCalled();
   });

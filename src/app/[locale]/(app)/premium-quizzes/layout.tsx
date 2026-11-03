@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: isVi ? 'Kho Quiz Premium | RinKuzu' : 'Quiz Premium Catalog | RinKuzu',
     description: isVi
       ? 'Khám phá kho quiz tuyển chọn đã được duyệt chất lượng trên RinKuzu.'
-      : 'Explore RinKuzu’s curated, quality-reviewed Quiz Premium catalog.',
+      : 'Practice with curated, quality-reviewed quizzes by subject. Free learners can preview; Premium unlocks the full RinKuzu Quiz Premium catalog.',
   });
 }
 

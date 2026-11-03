@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -52,9 +52,8 @@ async function uploadValidatedImage({
     onImageUploaded(result.displayUrl);
   } catch (error: unknown) {
     console.error('Failed to upload image:', error);
-    toast.error(
-      `${t('failedToUpload')}: ${extractUnknownErrorMessage(error, 'Unknown upload error')}`,
-    );
+    // The upload service's text is never shown (RIN-754).
+    toast.error(t('failedToUpload'));
   }
 
   setIsUploading(false);

@@ -74,6 +74,19 @@ describe('useApiErrorMessage', () => {
     expect(result.current(limited)).toBe('You can try again in 30 seconds.');
     expect(result.current(new DOMException('aborted', 'AbortError'))).toBe('');
   });
+
+  it('uses the screen fallback only when the error has no code or status (RIN-754)', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { result } = renderHook(() => useApiErrorMessage(), { wrapper: wrapper('vi') });
+
+    expect(result.current(new Error('pdf.js: Invalid XRef'), 'Không tải được')).toBe(
+      'Không tải được',
+    );
+    expect(result.current(serverError(), 'Không tải được')).toBe(viErrors.api.server);
+    expect(result.current(new TypeError('Failed to fetch'), 'Không tải được')).toBe(
+      viErrors.api.network,
+    );
+  });
 });
 
 describe('useAdminApiErrorMessage', () => {

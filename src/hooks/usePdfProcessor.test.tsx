@@ -6,7 +6,10 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import enDraft from '../../messages/en/draft.json';
+import enErrors from '../../messages/en/errors.json';
 import viDraft from '../../messages/vi/draft.json';
+import viErrors from '../../messages/vi/errors.json';
+import { ApiResponseError } from '@/lib/api/client';
 import { usePdfProcessor } from './usePdfProcessor';
 
 // RIN-565: the draft failure toast used to be hard-coded Vietnamese, so /en
@@ -42,7 +45,10 @@ vi.mock('@/store/useDraftStore', () => ({
   }),
 }));
 
-const messagesByLocale = { en: { draft: enDraft }, vi: { draft: viDraft } };
+const messagesByLocale = {
+  en: { draft: enDraft, errors: enErrors },
+  vi: { draft: viDraft, errors: viErrors },
+};
 
 function renderProcessor(locale: 'en' | 'vi') {
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -159,14 +165,35 @@ describe('usePdfProcessor failure toast', () => {
     });
   });
 
-  it('localises the title when the status request itself fails', async () => {
+  // RIN-754: this used to expect the error's own text ('Draft not found') in the toast.
+  it('localises the title and body when the status request itself fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     mocks.getQuizDraft.mockRejectedValue(new Error('Draft not found'));
     const { result } = renderProcessor('en');
 
     await act(() => result.current.startProcessing('draft-1', 'Photosynthesis'));
 
     expect(mocks.toastError).toHaveBeenCalledWith('Could not process "Photosynthesis"', {
-      description: 'Draft not found',
+      description: enDraft.statusFetchFailed,
+    });
+  });
+
+  it('uses the API error copy, not the server text, for a coded status failure', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mocks.getQuizDraft.mockRejectedValue(
+      new ApiResponseError({
+        message: 'QuizDraft 66f0 not found in collection quiz_drafts',
+        status: 404,
+        payload: null,
+        code: 'not_found',
+      }),
+    );
+    const { result } = renderProcessor('en');
+
+    await act(() => result.current.startProcessing('draft-1', 'Photosynthesis'));
+
+    expect(mocks.toastError).toHaveBeenCalledWith('Could not process "Photosynthesis"', {
+      description: enErrors.api.notFound,
     });
   });
 

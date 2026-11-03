@@ -11,15 +11,18 @@ import { describeApiError, KIND_MESSAGE_KEYS } from './error-kind';
  * Localized copy for an API error (RIN-748 contract, section 4).
  * Logs kind + code + status only: the payload and server text can hold personal data.
  * Returns '' for aborted requests (render nothing).
+ * `fallback` (already localized, screen-specific) replaces the generic copy when the error
+ * carries no code or status, e.g. a plain `Error` from client code (RIN-754).
  */
-export function useApiErrorMessage(): (error: unknown) => string {
+export function useApiErrorMessage(): (error: unknown, fallback?: string) => string {
   const t = useTranslations();
   return useCallback(
-    (error: unknown) => {
+    (error: unknown, fallback?: string) => {
       const described = describeApiError(error);
       if (described.kind === 'aborted') return '';
       const { kind, code, status } = described;
       console.warn('[api-error]', { kind, code, status });
+      if (kind === 'unknown' && code === null && status === null && fallback) return fallback;
       // USER_SAFE_DETAIL_CODES is empty in v1, so server text is never returned here.
       return t(described.messageKey, described.messageValues);
     },

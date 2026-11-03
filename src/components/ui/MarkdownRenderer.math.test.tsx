@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { preloadMathRenderer } from './preloadMathRenderer';
 
 // Records whether the KaTeX module was ever imported. The factory runs only on the
 // first import of './MathMarkdown', so the tests below run in order on purpose.
@@ -31,6 +32,17 @@ describe('MarkdownRenderer KaTeX loading (RIN-679)', () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(container.querySelector('.katex')).toBeNull();
     expect(mathModule.imported).toBe(false);
+  });
+
+  it('does not preload KaTeX for plain contents', async () => {
+    preloadMathRenderer(['Plain question', 'It costs \\$5', '']);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(mathModule.imported).toBe(false);
+  });
+
+  it('preloads KaTeX when one of the contents has math', async () => {
+    preloadMathRenderer(['Plain question', 'Option $x^2$']);
+    await waitFor(() => expect(mathModule.imported).toBe(true), KATEX_LOAD);
   });
 
   it('loads KaTeX for inline and block math and keeps the markdown around it', async () => {

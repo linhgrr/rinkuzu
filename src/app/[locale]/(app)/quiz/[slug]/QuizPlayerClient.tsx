@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { preloadMathRenderer } from '@/components/ui/preloadMathRenderer';
 import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import {
   HiOutlineLightBulb,
@@ -718,6 +719,15 @@ export default function QuizPlayerClient({
       dispatch({ type: 'setSessionEmail', email: session.user.email });
     }
   }, [session]);
+
+  useEffect(() => {
+    // Fetch KaTeX while auth settles, before the first math question mounts (RIN-679).
+    if (initialQuiz) {
+      preloadMathRenderer(
+        initialQuiz.questions.flatMap((question) => [question.question, ...question.options]),
+      );
+    }
+  }, [initialQuiz]);
 
   useEffect(() => {
     // Wait until the auth state is settled so we know whether to look for saved progress.

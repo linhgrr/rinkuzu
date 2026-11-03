@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import mongoose, { Types } from 'mongoose';
 
+import type { AdminAdaptiveLearnerEvents } from '@/interfaces/repositories/IAdminStatsRepository';
 import { AdminAuditRepository } from '@/repositories/AdminAuditRepository';
 import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
 import { ActivationStatsService } from '@/services/admin/ActivationStatsService';
@@ -48,6 +49,11 @@ describe('activation stats integration', () => {
     e: id(),
     f: id(),
     g: id(),
+    h: id(),
+    i: id(),
+    j: id(),
+    k: id(),
+    l: id(),
     admin: id(),
     disabled: id(),
     qa: id(),
@@ -62,6 +68,11 @@ describe('activation stats integration', () => {
     e: at('2001-01-09T00:00:00.000Z'),
     f: at('2000-12-20T00:00:00.000Z'), // before the window
     g: at('2001-01-15T00:00:00.000Z'),
+    h: at('2001-01-09T00:00:00.000Z'),
+    i: at('2001-01-02T00:00:00.000Z'),
+    j: at('2001-01-17T00:00:00.000Z'),
+    k: at('2001-01-16T00:00:00.000Z'),
+    l: at('2000-12-20T00:00:00.000Z'), // before the window
     admin: at('2001-01-02T00:00:00.000Z'),
     disabled: at('2001-01-10T00:00:00.000Z'),
     qa: at('2001-01-03T00:00:00.000Z'),
@@ -91,6 +102,50 @@ describe('activation stats integration', () => {
     return { _integrationRun: runId, user: ids[key], quiz, takenAt, score: 50 };
   }
 
+  function events(
+    userId: string,
+    firstCompletionAt: Date | null,
+    completions: Date[],
+    succeededUploads: Date[] = [],
+  ): AdminAdaptiveLearnerEvents {
+    return { userId, firstCompletionAt, completions, succeededUploads };
+  }
+
+  // Path B events as the API serves them (failed jobs are never listed).
+  const adaptiveEvents = (): AdminAdaptiveLearnerEvents[] => [
+    // A: on both paths in W01, counted once, in the `both` buckets.
+    events(
+      ids.a.toHexString(),
+      plus(signup.a, 2 * DAY),
+      [plus(signup.a, 2 * DAY)],
+      [plus(signup.a, DAY)],
+    ),
+    // H: adaptive only. Completion on day 1, back on day 10 → activated and retained.
+    events(
+      ids.h.toHexString(),
+      plus(signup.h, DAY),
+      [plus(signup.h, DAY), plus(signup.h, 10 * DAY)],
+      [plus(signup.h, 3_600_000)],
+    ),
+    // I: first adaptive completion in W01, first attempt (day 7) in W02 → north star W01.
+    events(ids.i.toHexString(), plus(signup.i, DAY), [plus(signup.i, DAY)], [signup.i]),
+    // K: succeeded upload on day 3, never completes → material only.
+    events(ids.k.toHexString(), null, [], [plus(signup.k, 3 * DAY)]),
+    // J: succeeded upload only on day 8 → not material.
+    events(ids.j.toHexString(), null, [], [plus(signup.j, 8 * DAY)]),
+    // L: first completion ever was before the window; an in-window one is not a first.
+    events(ids.l.toHexString(), at('2000-12-25T00:00:00.000Z'), [at('2001-01-10T00:00:00.000Z')]),
+    // Excluded, unknown and malformed ids are dropped.
+    events(
+      ids.disabled.toHexString(),
+      at('2001-01-11T00:00:00.000Z'),
+      [at('2001-01-11T00:00:00.000Z')],
+      [at('2001-01-11T00:00:00.000Z')],
+    ),
+    events(id().toHexString(), at('2001-01-05T00:00:00.000Z'), [at('2001-01-05T00:00:00.000Z')]),
+    events('not-an-object-id', at('2001-01-05T00:00:00.000Z'), [at('2001-01-05T00:00:00.000Z')]),
+  ];
+
   beforeAll(async () => {
     try {
       await mongoose.connect(integrationDatabaseUri(), { serverSelectionTimeoutMS: 2_000 });
@@ -106,6 +161,11 @@ describe('activation stats integration', () => {
           user('e'),
           user('f'),
           user('g'),
+          user('h'),
+          user('i'),
+          user('j'),
+          user('k'),
+          user('l'),
           user('admin', { role: 'admin' }),
           user('disabled', { disable: 1 }),
           user('qa', { email: `${runId}-qa@example.test` }),
@@ -137,6 +197,8 @@ describe('activation stats integration', () => {
         attempt('f', at('2001-01-10T00:00:00.000Z')),
         // G: activated on signup day in W03.
         attempt('g', plus(signup.g, 3_600_000)),
+        // I: first attempt exactly on day 7 → not quiz-activated, but a return.
+        attempt('i', plus(signup.i, 7 * DAY)),
         // Excluded accounts are invisible everywhere.
         attempt('admin', at('2001-01-02T12:00:00.000Z')),
         attempt('disabled', at('2001-01-10T12:00:00.000Z')),
@@ -170,25 +232,95 @@ describe('activation stats integration', () => {
     await mongoose.disconnect();
   }, 10_000);
 
-  it('produces exact cohort and first-attempt counts per ISO week', async () => {
+  const by = (quiz: number, adaptive: number, both: number) => ({ quiz, adaptive, both });
+
+  it('produces exact quiz-only cohort and first-attempt counts per ISO week', async () => {
     const aggregates = await new AdminStatsRepository().getActivationAggregates(W01, W04);
 
     expect(aggregates.cohorts).toEqual([
-      { weekStart: W01, signups: 4, material: 3, activated: 2, w1Retained: 2 },
-      { weekStart: W02, signups: 1, material: 1, activated: 1, w1Retained: 0 },
-      { weekStart: W03, signups: 1, material: 1, activated: 1, w1Retained: 0 },
+      {
+        weekStart: W01,
+        signups: 5,
+        material: 3,
+        activated: 2,
+        activatedBy: by(2, 0, 0),
+        w1Retained: 2,
+      },
+      {
+        weekStart: W02,
+        signups: 2,
+        material: 1,
+        activated: 1,
+        activatedBy: by(1, 0, 0),
+        w1Retained: 0,
+      },
+      {
+        weekStart: W03,
+        signups: 3,
+        material: 1,
+        activated: 1,
+        activatedBy: by(1, 0, 0),
+        w1Retained: 0,
+      },
     ]);
     expect(aggregates.firstAttempts).toEqual([
-      { weekStart: W01, learners: 1 },
-      { weekStart: W02, learners: 3 },
-      { weekStart: W03, learners: 1 },
+      { weekStart: W01, learners: 1, activatedBy: by(1, 0, 0) },
+      { weekStart: W02, learners: 4, activatedBy: by(4, 0, 0) },
+      { weekStart: W03, learners: 1, activatedBy: by(1, 0, 0) },
+    ]);
+  });
+
+  it('merges Path B events, counting each learner once on the earliest path', async () => {
+    const aggregates = await new AdminStatsRepository().getActivationAggregates(
+      W01,
+      W04,
+      adaptiveEvents(),
+    );
+
+    expect(aggregates.cohorts).toEqual([
+      // + I (adaptive). A is now `both`. I returns via the day-7 attempt.
+      {
+        weekStart: W01,
+        signups: 5,
+        material: 4,
+        activated: 3,
+        activatedBy: by(1, 1, 1),
+        w1Retained: 3,
+      },
+      // + H (adaptive), retained via the day-10 adaptive completion.
+      {
+        weekStart: W02,
+        signups: 2,
+        material: 2,
+        activated: 2,
+        activatedBy: by(1, 1, 0),
+        w1Retained: 1,
+      },
+      // + K's succeeded upload (material); J's day-8 upload does not count.
+      {
+        weekStart: W03,
+        signups: 3,
+        material: 2,
+        activated: 1,
+        activatedBy: by(1, 0, 0),
+        w1Retained: 0,
+      },
+    ]);
+    expect(aggregates.firstAttempts).toEqual([
+      // A (both firsts in W01) and I (adaptive W01, before its W02 attempt).
+      { weekStart: W01, learners: 2, activatedBy: by(0, 1, 1) },
+      // B, C, E by quiz; H by adaptive. I is no longer here; L never counts.
+      { weekStart: W02, learners: 4, activatedBy: by(3, 1, 0) },
+      { weekStart: W03, learners: 1, activatedBy: by(1, 0, 0) },
     ]);
   });
 
   it('serves the response contract with the 14-day completeness boundary and an audit entry', async () => {
+    const adaptiveReader = vi.fn().mockResolvedValue(adaptiveEvents());
     const service = new ActivationStatsService({
       stats: new AdminStatsRepository(),
       audit: new AdminAuditRepository(),
+      adaptiveEvents: adaptiveReader,
       // Monday of W05: exactly 14 days after W02 ended.
       now: () => at('2001-01-29T00:00:00.000Z'),
     });
@@ -207,14 +339,21 @@ describe('activation stats integration', () => {
         complete,
       })),
     ).toEqual([
-      { isoWeek: '2001-W01', w1Retained: 2, w1RetentionRate: 1, complete: true },
-      { isoWeek: '2001-W02', w1Retained: 0, w1RetentionRate: 0, complete: true },
+      { isoWeek: '2001-W01', w1Retained: 3, w1RetentionRate: 1, complete: true },
+      { isoWeek: '2001-W02', w1Retained: 1, w1RetentionRate: 0.5, complete: true },
       { isoWeek: '2001-W03', w1Retained: null, w1RetentionRate: null, complete: false },
       { isoWeek: '2001-W04', w1Retained: null, w1RetentionRate: null, complete: false },
       { isoWeek: '2001-W05', w1Retained: null, w1RetentionRate: null, complete: false },
     ]);
-    expect(result.data.weeks.map((week) => week.weeklyActivatedLearners)).toEqual([1, 3, 1, 0, 0]);
+    expect(result.data.weeks.map((week) => week.weeklyActivatedLearners)).toEqual([2, 4, 1, 0, 0]);
+    expect(result.data.sources).toEqual({ adaptive: 'ok' });
+    expect(adaptiveReader).toHaveBeenCalledWith(
+      W01,
+      at('2001-02-19T00:00:00.000Z'),
+      ids.admin.toHexString(),
+    );
     expect(JSON.stringify(result.data)).not.toContain(runId);
+    expect(JSON.stringify(result.data)).not.toContain(ids.h.toHexString());
 
     const audits = await mongoose.connection
       .collection('adminactionaudits')

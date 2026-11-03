@@ -75,6 +75,23 @@ describe('protected Premium quiz routes', () => {
     expect(getCatalogMetadataBySlugMock).toHaveBeenCalledWith('premium-preview');
   });
 
+  it('answers 200 with null data for a slug that is not premium (RIN-798)', async () => {
+    authMock.mockResolvedValueOnce(null);
+    getCatalogMetadataBySlugMock.mockResolvedValue(null);
+
+    const response = await getPremiumMetadata(
+      new NextRequest('http://localhost/api/premium-quizzes/by-slug/normal-quiz'),
+      { params: Promise.resolve({ slug: 'normal-quiz' }) },
+    );
+    const payload = await response.json();
+
+    // A 404 here made the browser log a failed request on every normal flashcard page.
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ success: true, data: null });
+    expect(response.headers.get('cache-control')).toContain('no-store');
+    expect(getCatalogMetadataBySlugMock).toHaveBeenCalledWith('normal-quiz');
+  });
+
   it('unlocks with the exact client idempotency key and protected headers', async () => {
     unlockMock.mockResolvedValue({ granted: true, alreadyGranted: false, balance: 2 });
     const idempotencyKey = '018f7494-8bd8-7b8a-a387-3bc5a14f22a1';

@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { TabBar } from '@/components/ui/TabBar';
 import { Select } from '@/components/ui/Select';
 import { ApiResponseError } from '@/lib/api/client';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import {
   createCredential,
   createModel,
@@ -73,6 +73,7 @@ export function AiSettingsClient({
   initialProviderId?: string | null;
 }) {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const [snapshot, setSnapshot] = useState<AiSettingsViewModel | null>(null);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(initialProviderId);
   const selectedProviderIdRef = useRef<string | null>(initialProviderId);
@@ -162,7 +163,7 @@ export function AiSettingsClient({
       void load(controller.signal)
         .catch((cause) => {
           if (!controller.signal.aborted)
-            setError(extractUnknownErrorMessage(cause, t('aiSettingsUnexpectedError')));
+            setError(describeError(cause, t('aiSettingsUnexpectedError')));
         })
         .finally(() => {
           if (!controller.signal.aborted) setLoading(false);
@@ -172,7 +173,7 @@ export function AiSettingsClient({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [load, t]);
+  }, [load, t, describeError]);
 
   const selectedProvider = snapshot?.providers.find(
     (provider) => provider.id === selectedProviderId,
@@ -267,7 +268,7 @@ export function AiSettingsClient({
         await load();
         setError(t('aiSettingsStale'));
       } else {
-        setError(extractUnknownErrorMessage(cause, t('aiSettingsUnexpectedError')));
+        setError(describeError(cause, t('aiSettingsUnexpectedError')));
       }
       throw cause;
     } finally {
@@ -283,7 +284,7 @@ export function AiSettingsClient({
     try {
       await load();
     } catch (cause) {
-      setError(extractUnknownErrorMessage(cause, t('aiSettingsUnexpectedError')));
+      setError(describeError(cause, t('aiSettingsUnexpectedError')));
     } finally {
       setBusy(false);
     }

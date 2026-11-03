@@ -16,6 +16,11 @@ vi.mock('@/features/admin/reports/api/admin-reports-api', () => ({
   fetchAdminReportedQuestion: fetchQuestionMock,
   updateAdminReportedQuestion: updateQuestionMock,
 }));
+// Stable `t`: the admin error hook is a load-effect dependency.
+const translate = vi.hoisted(() => (key: string) => key);
+vi.mock('next-intl', () => ({
+  useTranslations: () => translate,
+}));
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));

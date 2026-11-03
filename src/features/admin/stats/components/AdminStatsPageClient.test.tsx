@@ -7,8 +7,10 @@ const { fetchAdminStatsViewModelMock } = vi.hoisted(() => ({
 }));
 
 // Translation keys are the assertion surface; the copy is covered by the i18n gate.
+// Stable `t`: the admin error hook is a load-effect dependency.
+const translate = vi.hoisted(() => (key: string) => key);
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => translate,
 }));
 vi.mock('@/features/admin/stats/api/admin-stats-api', () => ({
   fetchAdminStatsViewModel: fetchAdminStatsViewModelMock,
@@ -41,10 +43,10 @@ describe('AdminStatsPageClient', () => {
 
     render(<AdminStatsPageClient />);
 
-    expect(await screen.findByText('Failed to fetch statistics')).toBeInTheDocument();
+    expect(await screen.findByText('errors.api.generic')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'statsWorkspaceLearnerLookup' }));
 
     expect(await screen.findByText('learner-lookup-workspace')).toBeInTheDocument();
-    expect(screen.queryByText('Failed to fetch statistics')).not.toBeInTheDocument();
+    expect(screen.queryByText('errors.api.generic')).not.toBeInTheDocument();
   });
 });

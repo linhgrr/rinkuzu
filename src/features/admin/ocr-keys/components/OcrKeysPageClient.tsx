@@ -34,7 +34,7 @@ import type {
   AdminOcrKeysViewModel,
   AdminOcrKeyViewModel,
 } from '@/features/admin/ocr-keys/types/admin-ocr-keys-view-model';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
 interface State {
@@ -163,6 +163,7 @@ function formatDate(value: string | null, locale: string) {
 
 function AdminOcrKeysContent() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
@@ -195,7 +196,7 @@ function AdminOcrKeysContent() {
         value: {
           loading: false,
           refreshing: false,
-          error: extractUnknownErrorMessage(error, t('ocrKeysLoadError')),
+          error: describeError(error, t('ocrKeysLoadError')),
         },
       });
     }
@@ -229,7 +230,7 @@ function AdminOcrKeysContent() {
         type: 'patch',
         value: {
           saving: false,
-          error: extractUnknownErrorMessage(error, t('ocrKeysSaveError')),
+          error: describeError(error, t('ocrKeysSaveError')),
         },
       });
     }
@@ -245,7 +246,7 @@ function AdminOcrKeysContent() {
         type: 'patch',
         value: {
           rowActionKeyId: null,
-          error: extractUnknownErrorMessage(error, t('ocrKeysUpdateError')),
+          error: describeError(error, t('ocrKeysUpdateError')),
         },
       });
     }
@@ -277,7 +278,7 @@ function AdminOcrKeysContent() {
         type: 'patch',
         value: {
           rowActionKeyId: null,
-          error: result.errorMessage || t('ocrKeysTestFailed'),
+          error: describeError({ code: result.errorCode }, t('ocrKeysTestFailed')),
         },
       });
     } catch (error) {
@@ -285,7 +286,7 @@ function AdminOcrKeysContent() {
         type: 'patch',
         value: {
           rowActionKeyId: null,
-          error: extractUnknownErrorMessage(error, t('ocrKeysTestFailed')),
+          error: describeError(error, t('ocrKeysTestFailed')),
         },
       });
     }
@@ -304,7 +305,7 @@ function AdminOcrKeysContent() {
         value: {
           rowActionKeyId: null,
           keyToDelete: null,
-          error: extractUnknownErrorMessage(error, t('ocrKeysDeleteError')),
+          error: describeError(error, t('ocrKeysDeleteError')),
         },
       });
     }

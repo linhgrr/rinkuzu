@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/features/admin/stats/components/StatsModal';
 import { EntitlementTelemetrySection } from '@/features/admin/stats/components/EntitlementTelemetrySection';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 const KpiSparkline = dynamic(
   () =>
@@ -631,6 +632,7 @@ function AdminStatsModals({ activeModal, onClose, t }: AdminStatsModalsProps) {
 
 export function AdminStatsPageClient() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(adminStatsReducer, initialState);
   const [workspace, setWorkspace] = useState<StatsWorkspace>('overview');
 
@@ -644,13 +646,13 @@ export function AdminStatsPageClient() {
       } catch (error) {
         dispatch({
           type: 'fetchError',
-          message: error instanceof Error ? error.message : 'Failed to fetch statistics',
+          message: describeError(error),
         });
       }
     };
 
     void fetchStats();
-  }, []);
+  }, [describeError]);
 
   if (state.loading) {
     return (

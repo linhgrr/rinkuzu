@@ -33,6 +33,7 @@ import {
   HiOutlineCheck,
   HiOutlineX,
 } from 'react-icons/hi';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface AdminReportsState {
   status: 'loading' | 'ready';
@@ -304,6 +305,7 @@ function ReportReviewModal({
 }
 
 export function AdminReportsPageClient() {
+  const describeError = useAdminApiErrorMessage();
   const tAdmin = useTranslations('admin');
   const [state, dispatch] = useReducer(adminReportsReducer, initialState);
 
@@ -357,7 +359,7 @@ export function AdminReportsPageClient() {
       dispatch({ type: 'patch', value: { updating: false } });
     } catch (error) {
       console.error('Error updating report:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update report');
+      toast.error(describeError(error));
       dispatch({ type: 'patch', value: { updating: false } });
     }
   };
@@ -374,7 +376,7 @@ export function AdminReportsPageClient() {
       dispatch({ type: 'patch', value: { deleting: false } });
     } catch (error) {
       console.error('Error deleting report:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete report');
+      toast.error(describeError(error));
       dispatch({ type: 'patch', value: { deleting: false } });
     }
   };

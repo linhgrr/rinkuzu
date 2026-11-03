@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { Button } from '@/components/ui/Button';
@@ -83,8 +83,11 @@ const scrollQuestions: QuizPlayQuestionViewModel[] = [
   },
 ];
 
+// KaTeX loads on demand (RIN-679); its first import is a cold transform in vitest.
+const KATEX_LOAD = { timeout: 10_000 };
+
 describe('MobileQuizLayout', () => {
-  it('propagates and renders option images aligned with shuffled options', () => {
+  it('propagates and renders option images aligned with shuffled options', async () => {
     render(
       <MobileQuizLayout
         quiz={{ slug: 'math', title: 'Math', questions }}
@@ -97,6 +100,7 @@ describe('MobileQuizLayout', () => {
         submitting={false}
       />,
     );
+    await waitFor(() => expect(document.querySelectorAll('.katex')).toHaveLength(2), KATEX_LOAD);
 
     expect(screen.getByAltText('Image for question 1').getAttribute('src')).toBe(
       'https://cdn.example/q.png',
@@ -109,7 +113,6 @@ describe('MobileQuizLayout', () => {
     );
     expect(screen.getByText('Alpha')).toBeTruthy();
     expect(screen.getByText('Alpha')).toHaveProperty('tagName', 'STRONG');
-    expect(document.querySelectorAll('.katex')).toHaveLength(2);
   });
 
   it('lets mobile users confirm exiting the quiz', () => {

@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/blog/knowledge-graphs-adaptive-learning-pdfs',
     title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
     description:
-      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
+      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
     imagePath: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80',
   });
   return {
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ...base.openGraph,
       title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
       description:
-        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
+        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
       type: 'article',
       publishedTime: '2026-03-20T00:00:00.000Z',
       modifiedTime: '2026-03-20T00:00:00.000Z',
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
       description:
-        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure an adaptive practice path.",
+        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure a personalized practice path.",
       images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80'],
     },
   };
@@ -57,7 +57,7 @@ const articleSchema = {
   name: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
   headline: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
   description:
-    "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
+    "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
   url: `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`,
   datePublished: '2026-03-20',
   dateModified: '2026-03-20',
@@ -290,7 +290,7 @@ export default async function BlogPost({ params }: Props) {
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
             Learn how prerequisite graphs combined with Bloom&apos;s six cognitive levels create a
-            adaptive practice path from supported PDF material.
+            personalized practice path from supported PDF material.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
             <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
@@ -340,8 +340,8 @@ export default async function BlogPost({ params }: Props) {
                 See Knowledge Graphs in Action
               </h3>
               <p className="text-neutral-300 text-lg mb-8">
-                Upload a PDF and watch RinKuzu build a knowledge graph and adaptive quiz, free, in
-                from supported PDF material.
+                Upload a PDF and watch RinKuzu build a knowledge graph and a personalized quiz from
+                it, free.
               </p>
               <Link
                 href="/register?next=/adaptive/upload"

@@ -1,17 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getQuizForPlay, resolveSlugAlias, getCatalogMetadataBySlug, permanentRedirectMock } =
-  vi.hoisted(() => ({
-    getQuizForPlay: vi.fn(),
-    resolveSlugAlias: vi.fn(),
-    getCatalogMetadataBySlug: vi.fn(),
-    permanentRedirectMock: vi.fn((target: string): never => {
-      throw new Error(`permanentRedirect:${target}`);
-    }),
-  }));
+const {
+  getCurrentSession,
+  getQuizForPlay,
+  resolveSlugAlias,
+  getCatalogMetadataBySlug,
+  permanentRedirectMock,
+} = vi.hoisted(() => ({
+  getCurrentSession: vi.fn(),
+  getQuizForPlay: vi.fn(),
+  resolveSlugAlias: vi.fn(),
+  getCatalogMetadataBySlug: vi.fn(),
+  permanentRedirectMock: vi.fn((target: string): never => {
+    throw new Error(`permanentRedirect:${target}`);
+  }),
+}));
 
 vi.mock('next/navigation', () => ({ permanentRedirect: permanentRedirectMock }));
-vi.mock('@/lib/auth/session', () => ({ getCurrentSession: vi.fn().mockResolvedValue(null) }));
+vi.mock('@/lib/auth/session', () => ({ getCurrentSession }));
 vi.mock('@/lib/quiz-factory', () => ({
   getQuizService: () => ({ getQuizForPlay, resolveSlugAlias }),
 }));
@@ -24,8 +30,13 @@ vi.mock('@/features/quiz/mappers/quiz-play.mapper', () => ({
 vi.mock('@/components/seo/QuizPageSchema', () => ({ QuizPageSchema: () => null }));
 vi.mock('./QuizPlayerClient', () => ({ default: () => null }));
 vi.mock('./PremiumQuizPlayerClient', () => ({ default: () => null }));
+vi.mock('@/features/quiz/components/PremiumQuizSignInPrompt', () => ({
+  PremiumQuizSignInPrompt: () => null,
+}));
 
 import QuizPlayerPage from './page';
+import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
+import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
 
 const OLD_SLUG = 'cch-ghi-nh-quiz-096007';
 const NEW_SLUG = 'cach-ghi-nho-quiz-096007';
@@ -40,6 +51,7 @@ function renderPage(slug: string, searchParams: Record<string, string | string[]
 describe('QuizPlayerPage slug aliases', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getCurrentSession.mockResolvedValue(null);
     getCatalogMetadataBySlug.mockResolvedValue(null);
   });
 
@@ -86,5 +98,47 @@ describe('QuizPlayerPage slug aliases', () => {
 
     await renderPage(NEW_SLUG);
     expect(resolveSlugAlias).not.toHaveBeenCalled();
+  });
+});
+
+describe('QuizPlayerPage premium quizzes (RIN-747)', () => {
+  const premiumMetadata = {
+    quizId: 'quiz-1',
+    title: 'Nhập môn trí tuệ nhân tạo',
+    questionCount: 40,
+    description: 'Trắc nghiệm LMS',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCatalogMetadataBySlug.mockResolvedValue(premiumMetadata);
+  });
+
+  it('shows a guest the sign-in prompt and never mounts the session-starting player', async () => {
+    getCurrentSession.mockResolvedValue(null);
+
+    const element = await renderPage('premium-ai');
+
+    expect(element).toMatchObject({
+      type: PremiumQuizSignInPrompt,
+      props: {
+        slug: 'premium-ai',
+        title: premiumMetadata.title,
+        questionCount: 40,
+        description: 'Trắc nghiệm LMS',
+      },
+    });
+    expect(getQuizForPlay).not.toHaveBeenCalled();
+  });
+
+  it('mounts the player for a signed-in user (unlock and access flows unchanged)', async () => {
+    getCurrentSession.mockResolvedValue({ user: { id: 'user-1', role: 'user' } });
+
+    const element = await renderPage('premium-ai');
+
+    expect(element).toMatchObject({
+      type: PremiumQuizPlayerClient,
+      props: { quizId: 'quiz-1', slug: 'premium-ai', questionCount: 40 },
+    });
   });
 });

@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/blog/authors',
     title: isVi ? 'Tác giả Blog RinKuzu' : 'Blog Authors — RinKuzu',
     description: isVi
-      ? 'Gặp gỡ nhóm nghiên cứu và kỹ sư viết về học thích ứng, AI trong giáo dục, đồ thị kiến thức và phân loại Bloom trên Blog RinKuzu.'
-      : "Meet the researchers and engineers behind the RinKuzu Blog, writing about adaptive learning, AI in education, knowledge graphs, and Bloom's Taxonomy.",
+      ? 'Gặp gỡ nhóm nghiên cứu và kỹ sư viết về học cá nhân hóa, AI trong giáo dục, đồ thị kiến thức và phân loại Bloom trên Blog RinKuzu.'
+      : "Meet the researchers and engineers behind the RinKuzu Blog, writing about personalized learning, AI in education, knowledge graphs, and Bloom's Taxonomy.",
   });
 }
 
@@ -24,7 +24,7 @@ const englishAuthors = [
     slug: 'rinkuzu-team',
     role: 'Research & Engineering',
     shortBio:
-      'Researchers and engineers building AI-powered adaptive learning systems from Hanoi University of Science and Technology.',
+      'Researchers and engineers building AI-powered personalized learning systems from Hanoi University of Science and Technology.',
     imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80',
   },
 ];
@@ -37,7 +37,7 @@ export default async function AuthorsPage({ params }: Props) {
         ...author,
         role: 'Nghiên cứu & Kỹ thuật',
         shortBio:
-          'Nhóm nghiên cứu và kỹ sư phát triển hệ thống học thích ứng bằng AI tại Đại học Bách khoa Hà Nội.',
+          'Nhóm nghiên cứu và kỹ sư phát triển hệ thống học cá nhân hóa bằng AI tại Đại học Bách khoa Hà Nội.',
       }))
     : englishAuthors;
 
@@ -61,8 +61,8 @@ export default async function AuthorsPage({ params }: Props) {
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed">
             {isVi
-              ? 'Gặp gỡ nhóm nghiên cứu và kỹ sư viết về học thích ứng và AI trong giáo dục.'
-              : 'Meet the researchers and engineers writing about adaptive learning and AI in education.'}
+              ? 'Gặp gỡ nhóm nghiên cứu và kỹ sư viết về học cá nhân hóa và AI trong giáo dục.'
+              : 'Meet the researchers and engineers writing about personalized learning and AI in education.'}
           </p>
         </div>
       </header>

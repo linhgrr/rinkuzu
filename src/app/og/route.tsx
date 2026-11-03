@@ -6,7 +6,7 @@ const SIZE = { width: 1200, height: 630 };
 const MAX_TITLE = 110;
 
 function clampTitle(raw: string | null): string {
-  const defaultTitle = 'AI Quiz Generator from PDF · Knowledge-Graph Adaptive Learning';
+  const defaultTitle = 'AI Quiz Generator from PDF · Knowledge-Graph Personalized Learning';
   if (!raw) return defaultTitle;
   const trimmed = raw.trim();
   if (!trimmed) return defaultTitle;

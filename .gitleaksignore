@@ -1,0 +1,13 @@
+# Historical gitleaks findings whose credentials were rotated by the Founder (RIN-378).
+# Tracked in RIN-379 / RIN-674. Format: <commit>:<path>:<rule-id>:<line>. Values are never recorded here.
+[90m3:50AM[0m [33mWRN[0m [1mleaks found: 10[0m
+1ea7b3b523bf853e18e64e53ab4c634d1020e1ff:requirement.txt:connection-uri-with-password:26
+1ea7b3b523bf853e18e64e53ab4c634d1020e1ff:requirement.txt:short-auth-secret-assignment:27
+1ea7b3b523bf853e18e64e53ab4c634d1020e1ff:src/app/api/admin/setup/route.ts:generic-api-key:31
+451fc4c823efe5eea15a515da7696b989a2828d3:src/services/imageUploadService.ts:generic-api-key:4
+517c07bf47a7456490261fb024213e35f31419cc:src/services/imageUploadService.ts:generic-api-key:4
+696cf16e5ceb1e75da19b69cee8fff6d88f18d76:requirement.txt:connection-uri-with-password:26
+696cf16e5ceb1e75da19b69cee8fff6d88f18d76:requirement.txt:short-auth-secret-assignment:27
+7af5d1ae52c5f7a8bfc29ff4fb113d83433308a9:src/services/imageUploadService.ts:generic-api-key:4
+bc74db624eecbd053616763a8acbe0c04a72d640:requirement.md:short-auth-secret-assignment:28
+f9e2d025b462e76a810683ee6b42f9157dafcdef:SUBSCRIPTION_README.md:generic-api-key:99

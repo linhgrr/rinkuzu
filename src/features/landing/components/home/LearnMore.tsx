@@ -8,8 +8,8 @@ interface LearnMoreProps {
 const posts = [
   {
     slug: 'ai-powered-quiz-generation-guide',
-    en: 'How AI Transforms PDF Learning into Adaptive Quizzes',
-    vi: 'AI biến tài liệu PDF thành quiz thích ứng như thế nào?',
+    en: 'How AI Transforms PDF Learning into Personalized Quizzes',
+    vi: 'AI biến tài liệu PDF thành quiz cá nhân hóa như thế nào?',
   },
   {
     slug: 'knowledge-graphs-adaptive-learning-pdfs',

@@ -16,18 +16,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const base = buildLocalizedMetadata({
     locale,
     path: '/blog/ai-powered-quiz-generation-guide',
-    title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
+    title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
     description:
-      "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
+      "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
     imagePath: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
   });
   return {
     ...base,
     openGraph: {
       ...base.openGraph,
-      title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
+      title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
       description:
-        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
+        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
       type: 'article',
       publishedTime: '2026-03-27T00:00:00.000Z',
       modifiedTime: '2026-03-27T00:00:00.000Z',
@@ -43,9 +43,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
+      title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
       description:
-        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
+        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
       images: ['https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80'],
     },
   };
@@ -54,10 +54,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const articleSchema = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  name: 'How AI Transforms PDF Learning into Adaptive Quizzes',
-  headline: 'How AI Transforms PDF Learning into Adaptive Quizzes',
+  name: 'How AI Transforms PDF Learning into Personalized Quizzes',
+  headline: 'How AI Transforms PDF Learning into Personalized Quizzes',
   description:
-    "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
+    "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
   url: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
   datePublished: '2026-03-27',
   dateModified: '2026-03-27',
@@ -95,7 +95,7 @@ const breadcrumbSchema = {
     {
       '@type': 'ListItem',
       position: 3,
-      name: 'How AI Transforms PDF Learning into Adaptive Quizzes',
+      name: 'How AI Transforms PDF Learning into Personalized Quizzes',
       item: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
     },
   ],
@@ -202,7 +202,7 @@ Start with supported PDF material and create a personalized practice session.
 export default async function BlogPost({ params }: Props) {
   const { locale } = await params;
   const postUrl = canonicalFor(locale, '/blog/ai-powered-quiz-generation-guide');
-  const postTitle = 'How AI Transforms PDF Learning into Adaptive Quizzes';
+  const postTitle = 'How AI Transforms PDF Learning into Personalized Quizzes';
   const headings = extractHeadingsFromMarkdown(postContent);
 
   return (
@@ -236,7 +236,7 @@ export default async function BlogPost({ params }: Props) {
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
             Discover how RinKuzu&apos;s ALSS system, SAINT-Bloom, Dueling DQN, and Gemini, turns
-            supported PDF lecture material into adaptive quiz practice.
+            supported PDF lecture material into personalized quiz practice.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
             <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">

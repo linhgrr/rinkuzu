@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildLocalizedMetadata({
     locale,
     path: '/about',
-    title: isVi ? 'Về RinKuzu — Học thích ứng từ tài liệu của bạn' : 'About RinKuzu',
+    title: isVi ? 'Về RinKuzu — Học cá nhân hóa từ tài liệu của bạn' : 'About RinKuzu',
     description: isVi
       ? 'Tìm hiểu cách RinKuzu biến tài liệu PDF thành nội dung luyện tập, theo dõi điểm yếu và gợi ý bước học tiếp theo.'
       : 'Learn how RinKuzu turns PDF material into practice, tracks weak areas, and suggests the next learning step.',
@@ -25,16 +25,16 @@ const teamSchema = {
   name: 'About RinKuzu',
   url: `${siteUrl.origin}/about`,
   description:
-    'RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys.',
+    'RinKuzu is an AI-powered personalized learning platform that transforms PDF documents into quiz-based learning journeys.',
   mainEntity: {
     '@type': 'Organization',
     name: 'RinKuzu',
     url: siteUrl.origin,
     description:
-      'AI-powered adaptive learning platform for students, teachers, and training teams.',
+      'AI-powered personalized learning platform for students, teachers, and training teams.',
     areaServed: 'Worldwide',
     knowsAbout: [
-      'Adaptive Learning',
+      'Personalized Learning',
       'Artificial Intelligence',
       'Educational Technology',
       'Knowledge Graphs',
@@ -46,7 +46,7 @@ const teamSchema = {
 const englishValues = [
   {
     icon: 'AI',
-    title: 'Adaptive by Design',
+    title: 'Personalized by Design',
     body: "Every learner is unique. RinKuzu uses Bayesian Knowledge Tracing to model each student's mastery and continuously adapts the learning path to target weak spots.",
   },
   {
@@ -80,7 +80,7 @@ export default async function AboutPage({ params }: Props) {
     ? [
         {
           icon: 'AI',
-          title: 'Thích ứng theo người học',
+          title: 'Cá nhân hóa theo người học',
           body: 'RinKuzu cập nhật mức độ nắm vững sau mỗi lần luyện tập để ưu tiên các khái niệm còn yếu.',
         },
         {
@@ -121,7 +121,7 @@ export default async function AboutPage({ params }: Props) {
             {isVi ? 'Câu chuyện của RinKuzu' : 'Our Story'}
           </p>
           <h1 className="text-4xl md:text-6xl font-semibold text-[var(--text-primary)] mb-6 leading-tight">
-            {isVi ? 'Việc học nên thích ứng với bạn,' : 'Learning Should Adapt to You,'}
+            {isVi ? 'Việc học nên xoay quanh bạn,' : 'Learning Should Adapt to You,'}
             <br />
             {isVi ? 'không phải ngược lại' : 'Not the Other Way Around'}
           </h1>
@@ -236,7 +236,7 @@ export default async function AboutPage({ params }: Props) {
             <div className="overflow-hidden rounded-3xl shadow-xl">
               <Image
                 src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80"
-                alt="AI-powered adaptive learning knowledge graph visualization"
+                alt="AI-powered personalized learning knowledge graph visualization"
                 width={600}
                 height={400}
                 className="w-full object-cover"

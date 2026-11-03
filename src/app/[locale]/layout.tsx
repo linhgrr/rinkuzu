@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   metadataBase: siteUrl,
   title: 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
   description:
-    'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
+    'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run personalized practice sessions for students, teachers, and teams.',
   keywords: 'quiz, education, PDF, AI, teachers, students, assessment, interactive learning',
   authors: [{ name: 'RinKuzu Team' }],
   openGraph: {
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
     siteName: 'RinKuzu',
     title: 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
     description:
-      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
+      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run personalized practice sessions for students, teachers, and teams.',
     url: '/',
     images: [
       {
@@ -75,9 +75,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AI Quiz Generator from PDF - Adaptive learning | RinKuzu',
+    title: 'AI Quiz Generator from PDF - Personalized learning | RinKuzu',
     description:
-      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
+      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run personalized practice sessions for students, teachers, and teams.',
     images: ['/images/navbar_logo.png'],
   },
   robots: {

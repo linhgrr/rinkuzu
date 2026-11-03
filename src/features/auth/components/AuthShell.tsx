@@ -32,11 +32,9 @@ export function AuthShell({ locale, googleEnabled = false }: AuthShellProps) {
   // and framer-motion animates the difference.
   const mode: AuthMode = pathname.includes('/register') ? 'signup' : 'login';
 
-  const switchTo = (next: AuthMode) => {
+  const switchTo = (next: AuthMode, callbackUrl: string | null = null) => {
     // next-intl router applies the active locale — do not prefix manually.
-    // Keep the callbackUrl so a guest from a quiz returns to it either way. Read at
-    // click time: this shell renders in the layout, outside any Suspense boundary.
-    const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl');
+    // The form passes its sanitised callbackUrl so a guest from a quiz keeps it.
     router.push(withAuthCallback(next === 'login' ? ROUTES.LOGIN : ROUTES.REGISTER, callbackUrl));
   };
 
@@ -123,7 +121,7 @@ export function AuthShell({ locale, googleEnabled = false }: AuthShellProps) {
                   <RegisterForm
                     locale={locale}
                     googleEnabled={googleEnabled}
-                    onSwitchMode={() => switchTo('login')}
+                    onSwitchMode={(callbackUrl) => switchTo('login', callbackUrl)}
                   />
                 )}
               </m.div>

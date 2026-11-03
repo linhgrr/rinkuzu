@@ -150,6 +150,17 @@ describe('RegisterForm callbackUrl', () => {
     });
   });
 
+  it('hands the safe callback to the in-shell switch to sign-in', async () => {
+    navigationMock.search = 'callbackUrl=%2Fvi%2Fquiz%2Fnhap-mon-ai';
+    const onSwitchMode = vi.fn();
+    const { RegisterForm } = await import('@/features/auth/components/RegisterForm');
+    render(<RegisterForm locale="vi" onSwitchMode={onSwitchMode} />);
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'signIn' }));
+
+    expect(onSwitchMode).toHaveBeenCalledWith('/quiz/nhap-mon-ai');
+  });
+
   it('keeps the dashboard when there is no callbackUrl', async () => {
     await renderVi();
 

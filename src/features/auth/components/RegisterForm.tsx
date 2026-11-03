@@ -37,7 +37,8 @@ import { captureAnalyticsEvent, markAnalyticsGoogleAuthPending } from '@/lib/ana
 interface RegisterFormProps {
   locale: string;
   googleEnabled?: boolean;
-  onSwitchMode?: () => void;
+  /** Called with the safe callback path (or null) so sign-in keeps it. */
+  onSwitchMode?: (callbackUrl: string | null) => void;
 }
 
 const formSchema = z
@@ -323,7 +324,7 @@ function RegisterFormContent({ locale, googleEnabled = false, onSwitchMode }: Re
             {onSwitchMode ? (
               <button
                 type="button"
-                onClick={onSwitchMode}
+                onClick={() => onSwitchMode(forwardedCallback)}
                 className="font-semibold text-brand-trust transition-colors hover:text-brand-trust-hover"
               >
                 {t('signIn')}

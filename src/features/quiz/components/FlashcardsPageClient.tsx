@@ -177,6 +177,8 @@ function FlashcardPremiumState({ onClose }: { onClose: () => void }) {
   return <PremiumRequiredModal isOpen onClose={onClose} />;
 }
 
+const statLabelClassName = 'text-center text-xs leading-tight text-neutral-600 sm:text-sm';
+
 function FlashcardResultsView({
   knownCount,
   masteryPercentage,
@@ -205,27 +207,27 @@ function FlashcardResultsView({
         <p className="break-words text-neutral-600">{quiz.title}</p>
       </div>
 
-      <div className="mb-8 grid grid-cols-3 gap-3 sm:gap-6">
-        <Card>
-          <CardContent className="p-4 text-center sm:p-6">
+      <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-6">
+        <Card className="p-0 sm:p-6">
+          <CardContent className="px-2 py-4 text-center sm:p-6">
             <div className="mb-2 text-2xl font-bold text-green-600 sm:text-3xl">{knownCount}</div>
-            <div className="text-sm text-neutral-600">{t('known')}</div>
+            <div className={statLabelClassName}>{t('known')}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 text-center sm:p-6">
+        <Card className="p-0 sm:p-6">
+          <CardContent className="px-2 py-4 text-center sm:p-6">
             <div className="mb-2 text-2xl font-bold text-red-600 sm:text-3xl">{unknownCount}</div>
-            <div className="text-sm text-neutral-600">{t('unknown')}</div>
+            <div className={statLabelClassName}>{t('unknown')}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 text-center sm:p-6">
+        <Card className="p-0 sm:p-6">
+          <CardContent className="px-2 py-4 text-center sm:p-6">
             <div className="mb-2 text-2xl font-bold text-brand-trust sm:text-3xl">
               {masteryPercentage}%
             </div>
-            <div className="text-sm text-neutral-600">{t('mastery')}</div>
+            <div className={statLabelClassName}>{t('mastery')}</div>
           </CardContent>
         </Card>
       </div>
@@ -254,24 +256,35 @@ function FlashcardResultsView({
         </Card>
       )}
 
-      <div className="flex flex-wrap justify-center gap-3">
+      {/* Mobile: one full-width column, primary first; no orphaned third button. */}
+      <div
+        data-testid="flashcard-results-actions"
+        className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center"
+      >
         {unknownCount > 0 ? (
           <Button
             onClick={onContinuePractice}
-            className="bg-brand-trust hover:bg-brand-trust-hover"
+            className="w-full bg-brand-trust hover:bg-brand-trust-hover sm:w-auto"
           >
             {t('practiceContinue')}
           </Button>
         ) : (
-          <Button onClick={onReset} className="bg-brand-trust hover:bg-brand-trust-hover">
+          <Button
+            onClick={onReset}
+            className="w-full bg-brand-trust hover:bg-brand-trust-hover sm:w-auto"
+          >
             {t('start')}
           </Button>
         )}
-        <Link href={`/quiz/${quiz.slug}`}>
-          <Button variant="outline">{t('takeQuiz')}</Button>
+        <Link href={`/quiz/${quiz.slug}`} className="block w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto">
+            {t('takeQuiz')}
+          </Button>
         </Link>
-        <Link href="/explore">
-          <Button variant="outline">{tCommon('browseQuizzes')}</Button>
+        <Link href="/explore" className="block w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto">
+            {tCommon('browseQuizzes')}
+          </Button>
         </Link>
       </div>
     </div>
@@ -307,41 +320,44 @@ function FlashcardDeckView({
         data-testid="flashcard-progress-header"
         className="sticky top-16 z-30 w-full border-b border-line bg-surface/95 backdrop-blur lg:top-[var(--app-chrome-height)]"
       >
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-3 py-2 sm:px-6 sm:py-3">
-          <div className="flex min-w-0 items-center justify-between gap-3">
-            <p className="min-w-0 truncate text-sm font-semibold text-neutral-900 sm:text-base">
-              {quiz.title}
-            </p>
-            <Link href={`/quiz/${quiz.slug}`} className="shrink-0">
-              <Button variant="outline" size="sm">
-                {t('takeQuiz')}
-              </Button>
-            </Link>
-          </div>
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="whitespace-nowrap rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 sm:px-4 sm:py-1.5 sm:text-sm">
-              {t('unknown')}: {unknownCount}
+        {/* Same max width and side padding as the card below, so the edges line up. */}
+        <div className="w-full px-4 py-2 sm:px-6 sm:py-3">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-2">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <p className="min-w-0 truncate text-sm font-semibold text-neutral-900 sm:text-base">
+                {quiz.title}
+              </p>
+              <Link href={`/quiz/${quiz.slug}`} className="shrink-0">
+                <Button variant="outline" size="sm" className="h-auto min-h-11 text-sm sm:min-h-9">
+                  {t('takeQuiz')}
+                </Button>
+              </Link>
             </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-700 sm:text-sm">
-                  {Math.min(currentIndex + 1, totalQuestions)}/{totalQuestions}
-                </span>
-                <span className="text-xs font-medium text-neutral-700 sm:text-sm">
-                  {progressPercentage}%
-                </span>
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
+              <div className="whitespace-nowrap rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 sm:px-4 sm:py-1.5 sm:text-sm">
+                {t('unknown')}: {unknownCount}
               </div>
-              <div className="h-2 w-full rounded-full bg-neutral-200">
-                <div
-                  className="h-2 rounded-full bg-brand-trust transition-all duration-300"
-                  style={{ width: `${progressPercentage}%` }}
-                />
-              </div>
-            </div>
 
-            <div className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 sm:px-4 sm:py-1.5 sm:text-sm">
-              {t('known')}: {knownCount}
+              <div className="min-w-0 flex-1">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium text-neutral-700 sm:text-sm">
+                    {Math.min(currentIndex + 1, totalQuestions)}/{totalQuestions}
+                  </span>
+                  <span className="text-xs font-medium text-neutral-700 sm:text-sm">
+                    {progressPercentage}%
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-neutral-200">
+                  <div
+                    className="h-2 rounded-full bg-brand-trust transition-all duration-300"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 sm:px-4 sm:py-1.5 sm:text-sm">
+                {t('known')}: {knownCount}
+              </div>
             </div>
           </div>
         </div>

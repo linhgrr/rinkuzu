@@ -47,7 +47,7 @@ export interface QuizPersistenceRecord {
 }
 
 /** Owner fields read only to decide quiz indexing (RIN-840). */
-export interface QuizOwnerIndexingPersistenceRecord {
+interface QuizOwnerIndexingPersistenceRecord {
   email?: string | null;
   isTestAccount?: boolean | null;
 }

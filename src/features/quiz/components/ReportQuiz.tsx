@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,6 +43,16 @@ export default function ReportQuiz({
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Auto-close after a successful report; the cleanup stops it firing after unmount (RIN-682).
+  useEffect(() => {
+    if (!isSubmitted) return;
+    const timer = setTimeout(() => {
+      setIsOpen(false);
+      setIsSubmitted(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isSubmitted]);
+
   const {
     register,
     handleSubmit,
@@ -62,10 +72,6 @@ export default function ReportQuiz({
       await reportQuizViewModel(quizSlug, questionId, content);
       setIsSubmitted(true);
       reset({ content: '' });
-      setTimeout(() => {
-        setIsOpen(false);
-        setIsSubmitted(false);
-      }, 2000);
     } catch (error) {
       console.error('Error submitting report:', error);
       // Secondary action: a toast with copy from the error layer (RIN-753).

@@ -72,14 +72,10 @@ test.describe('admin communications load errors', () => {
         }
 
         const before = hits();
-        await Promise.all([
-          page.waitForRequest(
-            (request) =>
-              new URL(request.url()).pathname === target.api && request.method() === 'GET',
-          ),
-          alert.getByRole('button', { name: 'Retry' }).click(),
-        ]);
-        expect(hits()).toBeGreaterThan(before);
+        await alert.getByRole('button', { name: 'Retry' }).click();
+        // The route handler counts the hit after the browser sends the request, so a
+        // synchronous read right after waitForRequest can still see the old count (RIN-878).
+        await expect.poll(hits).toBeGreaterThan(before);
         await expect(alert).toBeVisible();
       });
     });

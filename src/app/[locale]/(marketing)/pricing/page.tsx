@@ -128,7 +128,7 @@ export default async function PricingPage({ params }: Props) {
                   </ul>
                   <Link
                     href={subscriptionHref}
-                    className="mt-6 inline-block w-full rounded-full bg-brand-action px-6 py-2.5 text-center font-semibold text-white transition-colors hover:bg-brand-action-hover"
+                    className="mt-6 inline-block w-full rounded-full bg-brand-action-strong px-6 py-2.5 text-center font-semibold text-white transition-colors hover:bg-brand-action-strong-hover"
                   >
                     {t('premium.cta')}
                   </Link>
@@ -161,7 +161,7 @@ export default async function PricingPage({ params }: Props) {
           <p className="text-neutral-600">{t('cta.subtitle')}</p>
           <Link
             href={registerHref}
-            className="inline-block bg-brand-action text-white font-semibold px-8 py-3 rounded-full hover:bg-brand-action-hover transition-colors shadow-sm"
+            className="inline-block bg-brand-action-strong text-white font-semibold px-8 py-3 rounded-full hover:bg-brand-action-strong-hover transition-colors shadow-sm"
           >
             {t('cta.button')}
           </Link>

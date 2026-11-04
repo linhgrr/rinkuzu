@@ -67,6 +67,36 @@ describe('ReportQuiz', () => {
     );
   });
 
+  // RIN-682 gate run: the 2 s auto-close timer outlived the component and fired a
+  // setState after jsdom was torn down ("window is not defined").
+  it('cancels the auto-close timer when it unmounts after a report', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const { unmount } = render(
+        <ReportQuiz
+          quizSlug="algebra"
+          quizTitle="Algebra"
+          questionId="507f1f77bcf86cd799439011"
+          questionNumber={3}
+          questionText="2 + 2 = ?"
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'reportQuestion' }));
+      await user.type(screen.getByLabelText(/reportDetails/), 'The marked answer is wrong');
+      const submitButton = screen.getByRole('button', { name: 'submitReport' });
+      await waitFor(() => expect((submitButton as HTMLButtonElement).disabled).toBe(false));
+      await user.click(submitButton);
+      await waitFor(() => expect(reportQuizMock).toHaveBeenCalledOnce());
+      await waitFor(() => expect(vi.getTimerCount()).toBeGreaterThan(0));
+
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('toasts localized copy when the report fails, never the server text', async () => {
     reportQuizMock.mockRejectedValueOnce(
       new ApiResponseError({ message: 'reports collection locked', status: 500, payload: {} }),

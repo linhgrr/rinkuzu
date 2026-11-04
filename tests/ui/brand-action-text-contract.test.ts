@@ -86,7 +86,6 @@ describe('brand action label token', () => {
 
 // Marketing/landing visuals are protected; these keep text-white (RIN-797 PR).
 const PROTECTED = new Set([
-  'src/app/[locale]/(marketing)/pricing/page.tsx',
   'src/app/[locale]/(marketing)/contact/page.tsx',
   'src/features/adaptive/components/sections/HeroSection.tsx',
 ]);
@@ -123,5 +122,60 @@ describe('labels on --brand-action use the token', () => {
     );
     expect(source).toContain('bg-accent text-brand-action-text');
     expect(source).not.toMatch(white);
+  });
+});
+
+// RIN-682: light-theme text tokens measured by Lighthouse color-contrast.
+// --brand-trust was var(--accent) (#ff7c23), 2.44:1 as text on bg-green-50;
+// .badge-info text was 4.13:1 and .badge-purple 3.75:1 on their surfaces.
+function over(rgba: string, base: string): string {
+  const m = /^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/.exec(rgba);
+  if (!m) return rgba;
+  const alpha = Number(m[4]);
+  const under = hex(base);
+  const out = [m[1], m[2], m[3]].map((c, i) =>
+    Math.round(Number(c) * alpha + (under[i] ?? 0) * (1 - alpha)),
+  );
+  return `#${out.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}
+
+describe('light text tokens clear AA (RIN-682)', () => {
+  it.each(['#ffffff', '#ecfdf5', '#fffbf8'])('text-brand-trust on %s clears 4.5:1', (bg) => {
+    expect(contrast(resolve('--brand-trust', 'light'), bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(['--brand-trust', '--brand-trust-hover', '--brand-trust-active'])(
+    'white label on %s clears 4.5:1',
+    (background) => {
+      expect(contrast('#ffffff', resolve(background, 'light'))).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it('dark keeps the green trust colour', () => {
+    expect(resolve('--brand-trust', 'dark')).toBe('#34d399');
+  });
+
+  it.each([
+    ['--info-strong', '--info-surface'],
+    ['--purple-strong', '--purple-surface'],
+  ])('badge text %s on %s clears 4.5:1 in both themes', (fg, bg) => {
+    for (const theme of ['light', 'dark'] as const) {
+      const base = theme === 'light' ? '#ffffff' : resolve('--surface', 'dark');
+      expect(contrast(resolve(fg, theme), over(resolve(bg, theme), base))).toBeGreaterThanOrEqual(
+        4.5,
+      );
+    }
+  });
+
+  it.each(['info', 'purple'])('.badge-%s reads its strong text token', (name) => {
+    const start = css.indexOf(`.badge-${name} {`);
+    const rule = css.slice(start, css.indexOf('}', start));
+    expect(start).toBeGreaterThan(-1);
+    expect(rule).toContain(`color: var(--${name}-strong);`);
+  });
+
+  it('the pricing Popular badge sits on the strong action colour', () => {
+    const rule = /\.pricing-popular-badge\s*{([^}]*)}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/background:\s*var\(--brand-action-strong\);/);
   });
 });

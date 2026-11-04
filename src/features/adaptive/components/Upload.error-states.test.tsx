@@ -89,6 +89,8 @@ describe('AdaptiveLearningUpload error states', () => {
 
     expect(await screen.findByText(api.validationTitle)).toBeInTheDocument();
     expect(screen.getByText(/Tệp PDF này quá lớn/)).toBeInTheDocument();
+    // RIN-809: the inline ErrorState is the only message; no toast repeats it.
+    expect(toastErrorMock).not.toHaveBeenCalled();
     expect(screen.queryByText(RAW)).not.toBeInTheDocument();
   });
 
@@ -100,6 +102,8 @@ describe('AdaptiveLearningUpload error states', () => {
 
     expect(await screen.findByText(api.codes.unsupportedMediaTypeTitle)).toBeInTheDocument();
     expect(screen.getByText(api.codes.unsupportedMediaType)).toBeInTheDocument();
+    // RIN-809: the inline ErrorState is the only message; no toast repeats it.
+    expect(toastErrorMock).not.toHaveBeenCalled();
     expect(screen.queryByText(RAW)).not.toBeInTheDocument();
   });
 
@@ -117,6 +121,8 @@ describe('AdaptiveLearningUpload error states', () => {
     const user = await submitUpload();
 
     expect(await screen.findByText(api.rateLimitedTitle)).toBeInTheDocument();
+    // RIN-809: the inline ErrorState is the only message; no toast repeats it.
+    expect(toastErrorMock).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: viCommon.retry }));
     await waitFor(() => expect(uploadPdfMock).toHaveBeenCalledTimes(2));
   });
@@ -135,6 +141,8 @@ describe('AdaptiveLearningUpload error states', () => {
 
     expect(await screen.findByText('Bạn có thể thử lại sau 30 giây.')).toBeInTheDocument();
     expect(screen.getByText('Thử lại (30s)')).toBeInTheDocument();
+    // A toast saying "30 giây" would go stale next to the live countdown.
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
   it('shows a 503 as unavailable with retry', async () => {
@@ -151,7 +159,8 @@ describe('AdaptiveLearningUpload error states', () => {
     expect(await screen.findByText(api.unavailableTitle)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: viCommon.retry })).toBeInTheDocument();
     expect(screen.queryByText(/Adaptive/)).not.toBeInTheDocument();
-    expect(toastErrorMock).toHaveBeenCalledWith(api.unavailable);
+    // RIN-809: the inline ErrorState is the only message; no toast repeats it.
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
   it('renders upstream_timeout as localized vi copy, not the English message (RIN-764)', async () => {
@@ -167,6 +176,8 @@ describe('AdaptiveLearningUpload error states', () => {
 
     expect(await screen.findByText(api.unavailable)).toBeInTheDocument();
     expect(screen.queryByText(/Adaptive|thích ứng/i)).not.toBeInTheDocument();
+    // RIN-809: the inline ErrorState is the only message; no toast repeats it.
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
   it('shows a dropped connection as a network problem', async () => {
@@ -183,6 +194,8 @@ describe('AdaptiveLearningUpload error states', () => {
     expect(await screen.findByText(api.networkTitle)).toBeInTheDocument();
     expect(screen.getByText(api.network)).toBeInTheDocument();
     expect(screen.queryByText('Failed to fetch')).not.toBeInTheDocument();
+    // RIN-809: the inline ErrorState is the only message; no toast repeats it.
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
   it('shows quota_exceeded with an upgrade link and leaves the prompt to the modal (no toast)', async () => {

@@ -314,8 +314,10 @@ function ErrorStateAction({
   return (
     <Button
       {...(primary ? { ref: primaryRef } : {})}
-      variant={primary ? 'primary' : 'ghost'}
-      className={cn(actionClass, waiting && 'cursor-not-allowed opacity-50')}
+      // While counting down, a neutral surface with ink text keeps "Retry (27s)" legible
+      // (>= 4.5:1 in both themes); a faded primary was white on pale orange, ~2:1 (RIN-809).
+      variant={waiting ? 'secondary' : primary ? 'primary' : 'ghost'}
+      className={cn(actionClass, waiting && 'cursor-not-allowed hover:bg-[var(--bg-surface)]')}
       aria-disabled={waiting || undefined}
       loading={pending}
       onClick={onRetry}

@@ -642,8 +642,12 @@ describe('useProcessingState', () => {
       expect(createSessionFromPipelineMock).toHaveBeenCalledTimes(4);
       expect(result.current.error).toBeNull();
 
+      const toastsBeforeLastAttempt = toastErrorMock.mock.calls.length;
       await advance(10_000);
       expect(createSessionFromPipelineMock).toHaveBeenCalledTimes(5);
+      // RIN-809: the last attempt shows the failure card; no "retrying" toast next to it.
+      expect(toastErrorMock).toHaveBeenCalledTimes(toastsBeforeLastAttempt);
+      expect(result.current.notice).toBeNull();
       expect(result.current.error).toEqual({
         message: 'processing.errors.sessionSetupUnconfirmed',
         retryable: true,
@@ -699,7 +703,8 @@ describe('useProcessingState', () => {
         code: 'unauthorized',
         action: 'dashboard',
       });
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.unauthorized');
+      // RIN-809: the failure card is the only message.
+      expect(toastErrorMock).not.toHaveBeenCalled();
       expect(result.current.creatingSession).toBe(false);
       expect(createSessionFromPipelineMock).toHaveBeenCalledTimes(1);
     });
@@ -856,8 +861,8 @@ describe('useProcessingState', () => {
 
       expect(result.current.error).toEqual(expected);
       expect(result.current.notice).toBe(notice);
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
-      expect(toastErrorMock).toHaveBeenCalledWith(expected.message);
+      // RIN-809: the failure card is the only message.
+      expect(toastErrorMock).not.toHaveBeenCalled();
       expect(result.current.currentStep).toBe(job.status === 'cancelled' ? -1 : -1);
     });
   });
@@ -959,7 +964,7 @@ describe('useProcessingState', () => {
         code: 'not_found',
         action: 'upload',
       });
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.jobNotFound');
+      expect(toastErrorMock).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -1060,7 +1065,7 @@ describe('useProcessingState', () => {
           code,
           action: 'upload',
         });
-        expect(toastErrorMock).not.toHaveBeenCalledWith('raw server text');
+        expect(toastErrorMock).not.toHaveBeenCalled();
       },
     );
 
@@ -1075,7 +1080,8 @@ describe('useProcessingState', () => {
 
       const first = renderProcessingState();
       await flushMicrotasks();
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
+      // A terminal failure shows the card only (RIN-809).
+      expect(toastErrorMock).not.toHaveBeenCalled();
       first.unmount();
 
       // remount quickly with same terminal message → still throttled via module-level? No —
@@ -1108,62 +1114,38 @@ describe('useProcessingState', () => {
       expect(result.current.notice).toBe('processing.notices.retryingCreateSession');
     });
 
-    it('allows a different toast message even inside the throttle window', async () => {
-      // Two sequential mounts with distinct terminal messages share no throttle state,
-      // so exercise one instance: completed → non-retryable create errors with different messages.
+    it('never toasts a failure that the failure card already shows (RIN-809)', async () => {
       getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'completed', progress: 1 }));
       createSessionFromPipelineMock.mockRejectedValueOnce(
-        new AdaptiveApiError({
-          message: 'auth',
-          code: 'unauthorized',
-          retryable: false,
-        }),
+        new AdaptiveApiError({ message: 'auth', code: 'unauthorized', retryable: false }),
       );
 
       const first = renderProcessingState();
       await flushMicrotasks();
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.unauthorized');
+      expect(first.result.current.error?.message).toBe('processing.errors.unauthorized');
       first.unmount();
 
-      toastErrorMock.mockClear();
-      createSessionFromPipelineMock.mockReset();
-      createSessionFromPipelineMock.mockRejectedValue(
-        new AdaptiveApiError({
-          message: 'gone',
-          code: 'not_found',
-          retryable: false,
-        }),
-      );
       getPipelineJobStatusMock.mockReset();
-      getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'completed', progress: 1 }));
-
-      renderProcessingState();
-      await flushMicrotasks();
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.jobNotFound');
-    });
-
-    it('emits a toast for terminal poll failure and throttles the same message on a rapid remount of a new instance independently', async () => {
       getPipelineJobStatusMock.mockRejectedValue(
-        new AdaptiveApiError({
-          message: 'missing',
-          code: 'conflict',
-          retryable: false,
-        }),
+        new AdaptiveApiError({ message: 'missing', code: 'conflict', retryable: false }),
       );
 
-      const a = renderProcessingState();
+      const second = renderProcessingState();
       await flushMicrotasks();
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.conflict');
-      a.unmount();
+      expect(second.result.current.error?.message).toBe('processing.errors.conflict');
+      second.unmount();
 
-      const b = renderProcessingState();
+      getPipelineJobStatusMock.mockReset();
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({ status: 'failed', error_code: 'pipeline_stalled', retryable: true }),
+      );
+
+      const third = renderProcessingState();
       await flushMicrotasks();
-      // throttle is per hook instance (ref), so a new mount always toasts
-      expect(toastErrorMock).toHaveBeenCalledTimes(2);
-      b.unmount();
+      expect(third.result.current.error).not.toBeNull();
+      third.unmount();
+
+      expect(toastErrorMock).not.toHaveBeenCalled();
     });
   });
 

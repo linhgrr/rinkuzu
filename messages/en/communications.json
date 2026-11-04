@@ -79,6 +79,7 @@
     "feedbackReplyError": "Could not send the reply",
     "feedbackRemindError": "Could not send the reminder",
     "feedbackCompleteError": "Could not complete the conversation",
-    "supportCreateError": "Could not create the support conversation"
+    "supportCreateError": "Could not create the support conversation",
+    "scheduleTimeInvalid": "Choose a valid send time"
   }
 }

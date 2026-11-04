@@ -81,6 +81,13 @@ describe('ErrorState legacy message', () => {
     );
     expect(screen.getByRole('button', { name: 'Get help' })).toBeInTheDocument();
   });
+
+  it('writes the message in ink: red-500 is 3.5:1 on the error surface, below AA for 14px', () => {
+    renderIn(<ErrorState message="Could not load" />);
+    const text = screen.getByText('Could not load');
+    expect(text).toHaveClass('text-ink');
+    expect(text).not.toHaveClass('text-error');
+  });
 });
 
 describe('ErrorState from an API error', () => {

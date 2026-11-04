@@ -24,6 +24,22 @@ if (requestedPort !== undefined) {
   process.env.PORT = String(port);
 }
 
+// The standalone server.js binds to process.env.HOSTNAME and ignores a
+// --hostname flag. Inside Docker HOSTNAME is the container id, so without this
+// the server listens on the container IP only and 127.0.0.1 refuses connections
+// (Lighthouse then reports CHROME_INTERSTITIAL_ERROR, RIN-813).
+const hostnameFlagIndex = process.argv.findIndex(
+  (argument) => argument === '--hostname' || argument === '-H',
+);
+const inlineHostname = process.argv
+  .find((argument) => argument.startsWith('--hostname='))
+  ?.slice(11);
+const requestedHostname =
+  inlineHostname ?? (hostnameFlagIndex >= 0 ? process.argv[hostnameFlagIndex + 1] : undefined);
+if (requestedHostname) {
+  process.env.HOSTNAME = requestedHostname;
+}
+
 const requireNonEmptyDirectory = async (directoryPath, label) => {
   const entries = await readdir(directoryPath).catch(() => []);
   if (entries.length === 0) {

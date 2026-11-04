@@ -9,10 +9,14 @@ import {
   buildAuthRequiredHref,
   useAdminApiErrorMessage,
   useApiErrorMessage,
+  useApiErrorToast,
   useAuthRequiredPrompt,
 } from './use-api-error';
 
 const pushMock = vi.fn();
+const { toastErrorMock } = vi.hoisted(() => ({ toastErrorMock: vi.fn() }));
+
+vi.mock('sonner', () => ({ toast: { error: toastErrorMock } }));
 
 vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
@@ -155,5 +159,46 @@ describe('useAuthRequiredPrompt', () => {
     expect(buildAuthRequiredHref('//evil.example/x', 'vi')).toBe(
       `/login?callbackUrl=${encodeURIComponent('/dashboard')}`,
     );
+  });
+});
+
+describe('useApiErrorToast', () => {
+  afterEach(() => {
+    pushMock.mockReset();
+    toastErrorMock.mockReset();
+    vi.restoreAllMocks();
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('toasts localized copy for a failed mutation, never the server text', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { result } = renderHook(() => useApiErrorToast(), { wrapper: wrapper('en') });
+
+    result.current(serverError());
+
+    expect(toastErrorMock).toHaveBeenCalledWith(enErrors.api.server);
+    expect(JSON.stringify(toastErrorMock.mock.calls)).not.toContain('secret');
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('sends an expired session to sign-in instead of toasting', () => {
+    window.history.replaceState(null, '', '/en/profile?tab=settings');
+    const { result } = renderHook(() => useApiErrorToast(), { wrapper: wrapper('en') });
+
+    result.current(new ApiResponseError({ message: 'Unauthorized', status: 401, payload: null }));
+
+    expect(toastErrorMock).not.toHaveBeenCalled();
+    expect(pushMock).toHaveBeenCalledWith(
+      `/login?callbackUrl=${encodeURIComponent('/profile?tab=settings')}`,
+    );
+  });
+
+  it('shows nothing for an aborted request', () => {
+    const { result } = renderHook(() => useApiErrorToast(), { wrapper: wrapper('en') });
+
+    result.current(new DOMException('aborted', 'AbortError'));
+
+    expect(toastErrorMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 });

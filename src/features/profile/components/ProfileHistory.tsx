@@ -11,7 +11,6 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants/routes';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { fetchProfileHistoryViewModel } from '@/features/profile/api/profile-history-api';
 import type {
   ProfileHistoryAttemptViewModel,
@@ -30,8 +29,10 @@ import {
 interface ProfileHistoryState {
   attempts: ProfileHistoryAttemptViewModel[];
   loading: boolean;
-  error: string;
+  /** Load failure, rendered by ErrorState from the error layer (RIN-755). */
+  error: unknown;
   currentPage: number;
+  reloadKey: number;
   pagination: ProfileHistoryPaginationViewModel | null;
 }
 
@@ -47,16 +48,18 @@ type ProfileHistoryAction =
       attempts: ProfileHistoryAttemptViewModel[];
       pagination: ProfileHistoryPaginationViewModel;
     }
-  | { type: 'fetch:error'; error: string }
-  | { type: 'page:set'; page: number };
+  | { type: 'fetch:error'; error: unknown }
+  | { type: 'page:set'; page: number }
+  | { type: 'retry' };
 
 const ITEMS_PER_PAGE = 10;
 
 const initialState: ProfileHistoryState = {
   attempts: [],
   loading: true,
-  error: '',
+  error: null,
   currentPage: 1,
+  reloadKey: 0,
   pagination: null,
 };
 
@@ -73,12 +76,14 @@ function profileHistoryReducer(
         attempts: action.attempts,
         pagination: action.pagination,
         loading: false,
-        error: '',
+        error: null,
       };
     case 'fetch:error':
       return { ...state, loading: false, error: action.error };
     case 'page:set':
-      return { ...state, currentPage: action.page, error: '' };
+      return { ...state, currentPage: action.page, error: null };
+    case 'retry':
+      return { ...state, error: null, reloadKey: state.reloadKey + 1 };
     default:
       return state;
   }
@@ -150,18 +155,15 @@ function ProfileHistory() {
           pagination: viewModel.pagination,
         });
       })
-      .catch((err) => {
+      .catch((error: unknown) => {
         if (!isActive) return;
-        dispatch({
-          type: 'fetch:error',
-          error: extractUnknownErrorMessage(err, t('loadHistoryError')),
-        });
+        dispatch({ type: 'fetch:error', error });
       });
 
     return () => {
       isActive = false;
     };
-  }, [state.currentPage, t]);
+  }, [state.currentPage, state.reloadKey]);
 
   const getPerformanceBadge = (score: number) => {
     if (score >= 90)
@@ -209,9 +211,15 @@ function ProfileHistory() {
         {t('quizHistory')}
       </h2>
 
-      {state.error && <ErrorState message={state.error} className="mb-4" />}
+      {state.error ? (
+        <ErrorState
+          error={state.error}
+          onRetry={() => dispatch({ type: 'retry' })}
+          className="mb-4"
+        />
+      ) : null}
 
-      {state.attempts.length === 0 ? (
+      {state.error && state.attempts.length === 0 ? null : state.attempts.length === 0 ? (
         <SurfaceCard className="p-8 text-center">
           <EmptyState
             icon={<HiOutlineDocumentText className="size-14 text-ink-muted" />}

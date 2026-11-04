@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -10,7 +10,7 @@ import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { ROUTES } from '@/shared/constants/routes';
 import ReviewCard from '@/features/review/components/ReviewCard';
 import { Card } from '@/components/ui/Card';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
 import {
   fetchDueReviewQuestionViewModels,
   submitReviewAnswer,
@@ -29,7 +29,8 @@ interface ReviewState {
   questions: ReviewQuestionViewModel[];
   currentIndex: number;
   phase: ReviewPhase;
-  error: string;
+  /** Load failure, rendered by ErrorState from the error layer (RIN-755). */
+  error: unknown;
   stats: {
     xpGained: number;
     reviewedCount: number;
@@ -39,34 +40,31 @@ interface ReviewState {
 type ReviewAction =
   | { type: 'setPhase'; value: ReviewPhase }
   | { type: 'loadQuestions'; questions: ReviewQuestionViewModel[] }
-  | { type: 'loadError'; error: string }
-  | { type: 'submitError'; error: string }
+  | { type: 'loadError'; error: unknown }
   | { type: 'recordReview'; xpGained: number; hasNext: boolean };
 
 const initialState: ReviewState = {
   questions: [],
   currentIndex: 0,
   phase: 'loading',
-  error: '',
+  error: null,
   stats: { xpGained: 0, reviewedCount: 0 },
 };
 
 function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
   switch (action.type) {
     case 'setPhase':
-      return { ...state, phase: action.value, error: '' };
+      return { ...state, phase: action.value, error: null };
     case 'loadQuestions':
       return {
         ...state,
         questions: action.questions,
         currentIndex: 0,
         phase: 'ready',
-        error: '',
+        error: null,
       };
     case 'loadError':
       return { ...state, phase: 'error', error: action.error, questions: [] };
-    case 'submitError':
-      return { ...state, error: action.error };
     case 'recordReview':
       return {
         ...state,
@@ -76,7 +74,6 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
           xpGained: state.stats.xpGained + action.xpGained,
           reviewedCount: state.stats.reviewedCount + 1,
         },
-        error: '',
       };
     default:
       return state;
@@ -88,6 +85,8 @@ export function ReviewPageClient() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(reviewReducer, initialState);
   const { questions, currentIndex, phase, stats } = state;
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const showMutationError = useApiErrorToast();
 
   useEffect(() => {
     const fetchDueReviews = async () => {
@@ -99,16 +98,12 @@ export function ReviewPageClient() {
           questions: await fetchDueReviewQuestionViewModels(),
         });
       } catch (error) {
-        console.error('Failed to fetch reviews', error);
-        dispatch({
-          type: 'loadError',
-          error: extractUnknownErrorMessage(error, t('loadError')),
-        });
+        dispatch({ type: 'loadError', error });
       }
     };
 
     void fetchDueReviews();
-  }, [t]);
+  }, [loadAttempt]);
 
   const handleReviewSubmit = async (rating: ReviewRating) => {
     const currentQuestion = questions[currentIndex];
@@ -125,11 +120,7 @@ export function ReviewPageClient() {
         hasNext: currentIndex < questions.length - 1,
       });
     } catch (error) {
-      console.error('Error submitting review', error);
-      dispatch({
-        type: 'submitError',
-        error: extractUnknownErrorMessage(error, t('submitError')),
-      });
+      showMutationError(error);
     }
   };
 
@@ -141,7 +132,10 @@ export function ReviewPageClient() {
     return (
       <div className="min-h-screen bg-surface-page">
         <div className="mx-auto max-w-2xl px-4 py-8">
-          <ErrorState message={state.error} />
+          <ErrorState
+            error={state.error}
+            onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
+          />
         </div>
       </div>
     );
@@ -229,9 +223,6 @@ export function ReviewPageClient() {
           question={currentQuestion.questionRef}
           onResult={handleReviewSubmit}
         />
-        {state.error ? (
-          <ErrorState message={state.error} className="mt-4 w-full max-w-2xl" />
-        ) : null}
       </div>
     </div>
   );

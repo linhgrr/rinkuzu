@@ -2,7 +2,12 @@
 
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
-import { HiCheck, HiOutlineArrowLeft, HiOutlineExclamationCircle } from 'react-icons/hi';
+import {
+  HiCheck,
+  HiOutlineArrowLeft,
+  HiOutlineCloudUpload,
+  HiOutlineExclamationCircle,
+} from 'react-icons/hi';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import type {
   ProcessingErrorState,
@@ -162,10 +167,23 @@ export const ProcessingStatusCard = ({
             onClick={handleErrorAction}
             className="h-auto rounded-md border-control-border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-neutral-50"
           >
-            <HiOutlineArrowLeft className="mr-2 size-4" />
-            {error.action === 'dashboard'
-              ? t('processing.goToDashboard')
-              : t('processing.tryAgain')}
+            {/* Label and icon say where the button goes (RIN-809): the upload action opens
+                the upload form for a new file; it does not retry this job. */}
+            {error.action === 'dashboard' ? (
+              <>
+                <HiOutlineArrowLeft data-icon="back" aria-hidden="true" className="mr-2 size-4" />
+                {t('processing.goToDashboard')}
+              </>
+            ) : (
+              <>
+                <HiOutlineCloudUpload
+                  data-icon="upload"
+                  aria-hidden="true"
+                  className="mr-2 size-4"
+                />
+                {t('processing.uploadAgain')}
+              </>
+            )}
           </Button>
         </div>
       )}

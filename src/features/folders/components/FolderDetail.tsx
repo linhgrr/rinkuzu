@@ -10,7 +10,7 @@ import { HiOutlineArrowLeft, HiOutlineFolder, HiOutlinePlus } from 'react-icons/
 import { Button } from '@/components/ui/Button';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
 import { deleteQuizById } from '@/features/quiz/api/quiz-api';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
 import { fetchFolderDetailQuizViewModels } from '@/features/folders/api/folders-api';
 import type { FolderLibraryQuizViewModel } from '@/features/folders/types/folder-view-model';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
@@ -20,7 +20,8 @@ import { AddQuizToFolderModal } from './AddQuizToFolderModal';
 interface State {
   quizzes: FolderLibraryQuizViewModel[];
   loading: boolean;
-  error: string;
+  /** Load failure, rendered by ErrorState from the error layer (RIN-755). */
+  error: unknown;
   quizToDelete: FolderLibraryQuizViewModel | null;
   showAddQuiz: boolean;
 }
@@ -28,7 +29,7 @@ interface State {
 type Action =
   | { type: 'load:start' }
   | { type: 'load:success'; quizzes: FolderLibraryQuizViewModel[] }
-  | { type: 'load:error'; error: string }
+  | { type: 'load:error'; error: unknown }
   | { type: 'delete:prompt'; quiz: FolderLibraryQuizViewModel }
   | { type: 'delete:success'; quizId: string }
   | { type: 'delete:cancel' }
@@ -38,7 +39,7 @@ type Action =
 const initialState: State = {
   quizzes: [],
   loading: true,
-  error: '',
+  error: null,
   quizToDelete: null,
   showAddQuiz: false,
 };
@@ -46,9 +47,9 @@ const initialState: State = {
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'load:start':
-      return { ...state, loading: true, error: '' };
+      return { ...state, loading: true, error: null };
     case 'load:success':
-      return { ...state, quizzes: action.quizzes, loading: false, error: '' };
+      return { ...state, quizzes: action.quizzes, loading: false, error: null };
     case 'load:error':
       return { ...state, loading: false, error: action.error };
     case 'delete:prompt':
@@ -73,6 +74,7 @@ export function FolderDetail({ folderId }: { folderId: string }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const isUnfiled = folderId === UNFILED_FOLDER_TARGET;
   const folder = folders.find((item) => item.id === folderId);
+  const showMutationError = useApiErrorToast();
 
   async function reloadQuizzes() {
     dispatch({ type: 'load:start' });
@@ -80,10 +82,7 @@ export function FolderDetail({ folderId }: { folderId: string }) {
       const quizzes = await fetchFolderDetailQuizViewModels(folderId, isUnfiled);
       dispatch({ type: 'load:success', quizzes });
     } catch (requestError) {
-      dispatch({
-        type: 'load:error',
-        error: extractUnknownErrorMessage(requestError, 'Failed to load quizzes'),
-      });
+      dispatch({ type: 'load:error', error: requestError });
     }
   }
 
@@ -97,10 +96,7 @@ export function FolderDetail({ folderId }: { folderId: string }) {
         if (active) dispatch({ type: 'load:success', quizzes });
       } catch (requestError) {
         if (active) {
-          dispatch({
-            type: 'load:error',
-            error: extractUnknownErrorMessage(requestError, 'Failed to load quizzes'),
-          });
+          dispatch({ type: 'load:error', error: requestError });
         }
       }
     }
@@ -118,7 +114,7 @@ export function FolderDetail({ folderId }: { folderId: string }) {
       dispatch({ type: 'delete:success', quizId: state.quizToDelete.id });
       toast.success('Quiz deleted');
     } catch (requestError) {
-      toast.error(extractUnknownErrorMessage(requestError, 'Failed to delete quiz'));
+      showMutationError(requestError);
     }
   }
 
@@ -149,7 +145,9 @@ export function FolderDetail({ folderId }: { folderId: string }) {
         </Button>
       </header>
 
-      {state.error ? <ErrorState message={state.error} className="mt-6 rounded-xl" /> : null}
+      {state.error ? (
+        <ErrorState error={state.error} onRetry={reloadQuizzes} className="mt-6" />
+      ) : null}
       {state.loading ? (
         <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 6 }, (_, index) => (

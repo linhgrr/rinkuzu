@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useRouter } from '@/i18n/navigation';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
@@ -10,12 +11,15 @@ import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input, Textarea } from '@/components/ui/Input';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { createFeedbackInvitation, fetchFeedbackList } from '../api/communications-api';
 import { formatFeedbackStatus } from '../lib/format';
 
 export function AdminFeedbackPage() {
   const params = useSearchParams();
   const router = useRouter();
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const initialUserId = params.get('userId') ?? '';
   const [page, setPage] = useState(1);
   const { data, mutate } = useSWR(`feedback:${initialUserId}:${page}`, () =>
@@ -42,7 +46,7 @@ export function AdminFeedbackPage() {
       await mutate();
       router.push(`/admin/feedback/${detail.conversation.id}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể gửi lời mời');
+      setError(describeError(caught, t('feedbackInviteError')));
     } finally {
       setLoading(false);
     }

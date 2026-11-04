@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { useLocale } from 'next-intl';
+import { useMemo, useState, type FormEvent } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Textarea } from '@/components/ui/Input';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import {
   formatCommunicationTimestamp,
   formatFeedbackStatus,
@@ -21,12 +22,19 @@ import {
 
 export function AdminFeedbackConversationPage({ id }: { id: string }) {
   const locale = useLocale();
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const { data, error, mutate } = useSWR(`feedback-detail:${id}`, () => fetchFeedbackDetail(id), {
     refreshInterval: 15_000,
   });
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
   const [actionError, setActionError] = useState('');
+  // Described once per error object: the 15 s refresh re-renders, and describing logs.
+  const loadError = useMemo(
+    () => (error ? describeError(error, t('feedbackLoadError')) : ''),
+    [describeError, error, t],
+  );
 
   async function reply(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -37,7 +45,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
       setBody('');
       await mutate();
     } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : 'Không thể trả lời');
+      setActionError(describeError(caught, t('feedbackReplyError')));
     } finally {
       setLoading(false);
     }
@@ -50,7 +58,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
       await run();
       await mutate();
     } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : fallback);
+      setActionError(describeError(caught, fallback));
     } finally {
       setLoading(false);
     }
@@ -59,7 +67,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
   if (error)
     return (
       <div role="alert" className="p-8 text-error">
-        Không thể tải cuộc trao đổi.
+        {loadError}
       </div>
     );
   if (!data) return <div className="p-8">Đang tải…</div>;
@@ -96,7 +104,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                     size="sm"
                     loading={loading}
                     disabled={loading}
-                    onClick={() => void action(() => remindFeedback(id), 'Không thể gửi lời nhắc')}
+                    onClick={() => void action(() => remindFeedback(id), t('feedbackRemindError'))}
                   >
                     Nhắc lại
                   </Button>
@@ -108,7 +116,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                   onClick={() =>
                     void action(
                       () => completeFeedback(id, data.conversation.revision),
-                      'Không thể hoàn tất cuộc trao đổi',
+                      t('feedbackCompleteError'),
                     )
                   }
                 >
@@ -139,6 +147,12 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
           </ol>
         </CardContent>
       </Card>
+      {/* Outside the reply form: remind and complete fail while that form is hidden too. */}
+      {actionError ? (
+        <p role="alert" className="mt-4 text-error">
+          {actionError}
+        </p>
+      ) : null}
       {!closed && !queued ? (
         <Card className="mt-6">
           <CardContent className="pt-6">
@@ -151,11 +165,6 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                 rows={6}
                 maxLength={20_000}
               />
-              {actionError ? (
-                <p role="alert" className="text-error">
-                  {actionError}
-                </p>
-              ) : null}
               <Button type="submit" loading={loading}>
                 Gửi email
               </Button>

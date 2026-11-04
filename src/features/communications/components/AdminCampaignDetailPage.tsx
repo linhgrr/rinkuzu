@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from 'react';
 import Image, { type ImageLoaderProps } from 'next/image';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { CampaignBlockEditor } from './CampaignBlockEditor';
 import {
   cancelCampaign,
@@ -24,13 +26,20 @@ import type {
 } from '../types/communication-view-model';
 
 export function AdminCampaignDetailPage({ id }: { id: string }) {
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const { data, error, mutate } = useSWR(`campaign:${id}`, () => fetchCampaignDetail(id), {
     refreshInterval: 10_000,
   });
+  // Described once per error object: the 10 s refresh re-renders, and describing logs.
+  const loadError = useMemo(
+    () => (error ? describeError(error, t('campaignLoadError')) : ''),
+    [describeError, error, t],
+  );
   if (error)
     return (
       <div role="alert" className="p-8 text-error">
-        Không thể tải campaign.
+        {loadError}
       </div>
     );
   if (!data) return <div className="p-8">Đang tải…</div>;
@@ -63,7 +72,9 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
   const [scheduledAt, setScheduledAt] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   const draftInput = useMemo(
@@ -93,13 +104,14 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
 
   async function action(run: () => Promise<unknown>, success: string): Promise<void> {
     setBusy(true);
-    setMessage('');
+    setNotice(null);
     try {
       await run();
-      setMessage(success);
+      setNotice({ tone: 'success', text: success });
       await onRefresh();
     } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : 'Thao tác thất bại');
+      const text = describeError(caught, t('campaignActionError'));
+      setNotice(text ? { tone: 'error', text } : null);
     } finally {
       setBusy(false);
     }
@@ -122,7 +134,7 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
   function schedule(): void {
     const instant = new Date(scheduledAt);
     if (!scheduledAt || Number.isNaN(instant.getTime())) {
-      setMessage('Hãy chọn thời gian gửi hợp lệ');
+      setNotice({ tone: 'error', text: 'Hãy chọn thời gian gửi hợp lệ' });
       return;
     }
     void action(
@@ -281,9 +293,14 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
                   </Button>
                 </>
               ) : null}
-              {message ? (
+              {notice?.tone === 'error' ? (
+                <p role="alert" className="text-sm text-error">
+                  {notice.text}
+                </p>
+              ) : null}
+              {notice?.tone === 'success' ? (
                 <p role="status" className="text-sm text-ink-muted">
-                  {message}
+                  {notice.text}
                 </p>
               ) : null}
             </CardContent>

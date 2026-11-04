@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useRouter } from '@/i18n/navigation';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
@@ -10,10 +11,13 @@ import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { createCampaign, fetchCampaigns } from '../api/communications-api';
 
 export function AdminCampaignsPage() {
   const router = useRouter();
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const [page, setPage] = useState(1);
   const { data, mutate } = useSWR(`/api/admin/campaigns?page=${page}`, () => fetchCampaigns(page), {
     refreshInterval: 20_000,
@@ -43,7 +47,7 @@ export function AdminCampaignsPage() {
       await mutate();
       router.push(`/admin/campaigns/${detail.campaign.id}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể tạo campaign');
+      setError(describeError(caught, t('campaignCreateError')));
     } finally {
       setLoading(false);
     }

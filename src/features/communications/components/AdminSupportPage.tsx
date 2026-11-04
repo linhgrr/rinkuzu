@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useRouter } from '@/i18n/navigation';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
@@ -10,11 +11,14 @@ import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input, Textarea } from '@/components/ui/Input';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { createSupportTicket, fetchSupportTickets } from '../api/communications-api';
 
 export function AdminSupportPage() {
   const params = useSearchParams();
   const router = useRouter();
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const [page, setPage] = useState(1);
   const { data, mutate } = useSWR(`/api/admin/support?page=${page}`, () =>
     fetchSupportTickets(true, page),
@@ -44,7 +48,7 @@ export function AdminSupportPage() {
       await mutate();
       router.push(`/admin/support/${detail.ticket.id}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể tạo cuộc hỗ trợ');
+      setError(describeError(caught, t('supportCreateError')));
     } finally {
       setLoading(false);
     }

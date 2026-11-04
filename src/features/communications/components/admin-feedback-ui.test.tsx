@@ -8,7 +8,8 @@ import { AdminFeedbackConversationPage } from './AdminFeedbackConversationPage';
 
 const mocks = vi.hoisted(() => ({ swr: vi.fn(), mutate: vi.fn() }));
 
-vi.mock('next-intl', () => ({ useLocale: () => 'vi' }));
+const translate = (key: string) => key;
+vi.mock('next-intl', () => ({ useLocale: () => 'vi', useTranslations: () => translate }));
 vi.mock('swr', () => ({ default: (...args: unknown[]) => mocks.swr(...args) }));
 vi.mock('../api/communications-api', () => ({
   completeFeedback: vi.fn(),

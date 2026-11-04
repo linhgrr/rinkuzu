@@ -5,6 +5,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   AdaptiveApiError,
+  adaptiveErrorForDisplay,
   isAdaptiveApiError,
   isAdaptivePipelineNotReadyError,
   isAdaptiveRequestAbortedError,
@@ -18,6 +19,8 @@ import {
 import { reportAdaptivePipelineTerminal } from '@/features/adaptive/lib/pipeline-analytics';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { CODE_MESSAGE_KEYS, describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { MEDIA_MIN_LG } from '@/shared/constants/breakpoints';
 import {
   clearSelectedPipelineJob,
@@ -75,6 +78,7 @@ export type ProcessingStep = {
 };
 
 export type ProcessingErrorState = {
+  /** Localized copy only (rendered by ProcessingSections); never server text (RIN-754). */
   message: string;
   retryable: boolean;
   code: string | null;
@@ -83,6 +87,7 @@ export type ProcessingErrorState = {
 
 export const useProcessingState = (t: TranslateFn) => {
   const router = useRouter();
+  const apiErrorMessage = useApiErrorMessage();
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [statusLabel, setStatusLabel] = useState(() => t('processing.status.starting'));
@@ -164,10 +169,15 @@ export const useProcessingState = (t: TranslateFn) => {
         };
     }
 
+    // Never the error's own text (RIN-754): copy comes from its code or kind.
+    const shown = adaptiveErrorForDisplay(err);
     return {
-      message: err instanceof Error ? err.message : t('processing.errors.generic'),
+      message:
+        describeApiError(shown).kind === 'unknown'
+          ? t('processing.errors.generic')
+          : apiErrorMessage(shown) || t('processing.errors.generic'),
       retryable: false,
-      code: null,
+      code: isAdaptiveApiError(err) ? err.code : null,
       action: 'upload' as const,
     };
   };
@@ -202,9 +212,11 @@ export const useProcessingState = (t: TranslateFn) => {
       };
     }
 
-    if (job.user_message?.trim()) {
+    // `job.user_message` is server text; codes with their own copy (pipeline_stalled,
+    // quota_exceeded, unsupported_media_type, ...) use the shared error keys (RIN-754).
+    if (code && CODE_MESSAGE_KEYS[code]) {
       return {
-        message: job.user_message,
+        message: apiErrorMessage({ code }),
         retryable: Boolean(job.retryable),
         code,
         action: 'upload',

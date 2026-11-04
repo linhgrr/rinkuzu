@@ -39,7 +39,6 @@
     "body": "Message",
     "attachments": "Screenshots (up to 3 images, 5 MB each)",
     "submit": "Send request",
-    "createError": "Could not create the support ticket",
     "listTitle": "Your requests",
     "loading": "Loading…",
     "listError": "Could not load your support requests.",
@@ -53,9 +52,7 @@
     "attachmentAlt": "Support attachment",
     "reply": "Reply",
     "sendReply": "Send reply",
-    "sendError": "Could not send your reply",
     "reopen": "Reopen",
-    "reopenError": "Could not reopen the ticket",
     "statuses": {
       "open": "Open",
       "waiting_for_admin": "Waiting for support",

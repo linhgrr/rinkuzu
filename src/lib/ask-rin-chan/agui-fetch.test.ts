@@ -27,6 +27,8 @@ describe('fetchAskRinAgent', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
 
     await expect(fetchAskRinAgent('/api/ask-rin-chan/agent', {})).rejects.toMatchObject({
+      // The runtime copies Error.message into the run status: keep server text out of it.
+      message: 'Ask Rin-chan request failed',
       code: 'quota_exceeded',
       status: 429,
       meta: { upgradeEligible: true },

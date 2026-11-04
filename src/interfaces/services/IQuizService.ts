@@ -6,8 +6,9 @@ import type {
   QuizDiscussionDto,
   QuizDetailDto,
   QuizListDto,
-  QuizListItemDto,
+  PublicQuizSitemapEntryDto,
   QuizListOptionsDto,
+  QuizMetadataDto,
   QuizPlayDetailDto,
   QuizProgressResponseDto,
   ReportQuizResponseDto,
@@ -36,7 +37,11 @@ export interface IQuizService {
     userRole?: string,
   ): Promise<ServiceResult<QuizDetailDto>>;
 
-  getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null>;
+  /** Public quizzes for the sitemap, minus test/company-owned ones (RIN-840). */
+  getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]>;
+
+  /** Page metadata; `ownerIndexable` is server-only (RIN-840). */
+  getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null>;
 
   /** Canonical slug when `slug` is a former slug (alias) of a quiz, else null. */
   resolveSlugAlias(slug: string): Promise<string | null>;

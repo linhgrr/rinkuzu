@@ -4,7 +4,6 @@ import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
 import type { QuizPlayAuthorViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
-import { getUserDisplayName } from '@/components/user/user-identity';
 import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
@@ -88,7 +87,9 @@ export default async function QuizPlayerPage({
 
   const quiz = toQuizPlayViewModel(result.data);
   const author: QuizPlayAuthorViewModel | null = quiz.author;
-  const authorName = author ? getUserDisplayName(author) : 'RinKuzu Community';
+  // Structured data names a person only from a real name, never an email,
+  // its local part or a placeholder (RIN-840); otherwise RinKuzu is the author.
+  const schemaAuthorName = author?.displayName?.trim() || author?.name?.trim() || undefined;
   const fallbackDescription =
     locale === 'vi'
       ? `Luyện tập ${quiz.questionCount} câu hỏi trong quiz ${quiz.title} trên RinKuzu.`
@@ -107,7 +108,7 @@ export default async function QuizPlayerPage({
             quizSlug={slug}
             quizTitle={quiz.title}
             {...(quiz.description ? { quizDescription: quiz.description } : {})}
-            authorName={authorName}
+            {...(schemaAuthorName ? { authorName: schemaAuthorName } : {})}
             createdAt={quiz.createdAt}
             updatedAt={quiz.updatedAt}
           />

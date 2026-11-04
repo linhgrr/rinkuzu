@@ -34,6 +34,8 @@ vi.mock('@/features/quiz/components/PremiumQuizSignInPrompt', () => ({
   PremiumQuizSignInPrompt: () => null,
 }));
 
+import type { ReactElement, ReactNode } from 'react';
+import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
 import QuizPlayerPage from './page';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
@@ -141,4 +143,56 @@ describe('QuizPlayerPage premium quizzes (RIN-747)', () => {
       props: { quizId: 'quiz-1', slug: 'premium-ai', questionCount: 40 },
     });
   });
+});
+
+describe('QuizPlayerPage structured data author (RIN-840)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCurrentSession.mockResolvedValue(null);
+    getCatalogMetadataBySlug.mockResolvedValue(null);
+  });
+
+  async function schemaProps(author: Record<string, unknown> | null) {
+    getQuizForPlay.mockResolvedValue({
+      success: true,
+      data: {
+        title: 'Quiz',
+        visibility: 'public',
+        questionCount: 7,
+        author,
+        createdAt: '2026-11-01T00:00:00.000Z',
+        updatedAt: '2026-11-01T00:00:00.000Z',
+      },
+    });
+    const page = (await renderPage(NEW_SLUG)) as ReactElement<{ children: ReactNode }>;
+    const publicPart = (page.props.children as ReactNode[])[0] as ReactElement<{
+      children: ReactNode[];
+    }>;
+    const schema = publicPart.props.children.find(
+      (child): child is ReactElement<Record<string, unknown>> =>
+        (child as ReactElement | null)?.type === QuizPageSchema,
+    );
+    expect(schema).toBeDefined();
+    return schema?.props ?? {};
+  }
+
+  it('passes the display name, then the name, as the schema author', async () => {
+    await expect(
+      schemaProps({ id: 'u1', displayName: ' Lan Anh ', name: 'Lan' }),
+    ).resolves.toMatchObject({ authorName: 'Lan Anh' });
+    await expect(schemaProps({ id: 'u1', displayName: '  ', name: 'Minh' })).resolves.toMatchObject(
+      { authorName: 'Minh' },
+    );
+  });
+
+  it.each([null, { id: 'qa-run@fldubai.com' }, { id: 'u1', name: ' ', displayName: '' }])(
+    'passes no author name for %j, so the schema names RinKuzu',
+    async (author) => {
+      const props = await schemaProps(author);
+
+      expect(props).not.toHaveProperty('authorName');
+      expect(JSON.stringify(props)).not.toContain('User');
+      expect(JSON.stringify(props)).not.toContain('fldubai');
+    },
+  );
 });

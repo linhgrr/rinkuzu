@@ -6,6 +6,7 @@ interface QuizPageSchemaProps {
   quizSlug: string;
   quizTitle: string;
   quizDescription?: string;
+  /** The author's real name; without one RinKuzu is the author (RIN-840). */
   authorName?: string;
   categoryName?: string;
   createdAt?: string;
@@ -17,12 +18,13 @@ export function QuizPageSchema({
   quizSlug,
   quizTitle,
   quizDescription,
-  authorName = 'RinKuzu Community',
+  authorName,
   categoryName,
   createdAt,
   updatedAt,
 }: QuizPageSchemaProps) {
   const quizUrl = canonicalFor(locale, `/quiz/${quizSlug}`);
+  const personName = authorName?.trim();
   const description =
     quizDescription ||
     (locale === 'vi'
@@ -41,17 +43,16 @@ export function QuizPageSchema({
     isAccessibleForFree: true,
     ...(createdAt ? { dateCreated: createdAt } : {}),
     ...(updatedAt ? { dateModified: updatedAt } : {}),
-    author:
-      authorName === 'RinKuzu Community'
-        ? {
-            '@type': 'Organization',
-            name: 'RinKuzu',
-            url: siteUrl.origin,
-          }
-        : {
-            '@type': 'Person',
-            name: authorName,
-          },
+    author: personName
+      ? {
+          '@type': 'Person',
+          name: personName,
+        }
+      : {
+          '@type': 'Organization',
+          name: 'RinKuzu',
+          url: siteUrl.origin,
+        },
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': quizUrl,

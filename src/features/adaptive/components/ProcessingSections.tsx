@@ -71,6 +71,7 @@ export const ProcessingStatusCard = ({
               : 'border-amber-200 bg-amber-50 text-amber-800'
           }`}
         >
+          {/* eslint-disable-next-line no-restricted-syntax -- ProcessingErrorState.message is localized copy, never server text (RIN-754) */}
           {error ? error.message : notice}
           {error && notice ? <p className="mt-2 text-amber-800">{notice}</p> : null}
         </div>

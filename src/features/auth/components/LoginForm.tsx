@@ -182,6 +182,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
                 aria-hidden="true"
               />
               <div className="text-sm">
+                {/* eslint-disable-next-line no-restricted-syntax -- serverError holds t() / useApiErrorMessage copy, never server text (RIN-756) */}
                 <p className="font-medium">{displayedError.message}</p>
                 {displayedError.code === 'account_locked' && retrySeconds > 0 && (
                   <p className="mt-1 text-red-600">

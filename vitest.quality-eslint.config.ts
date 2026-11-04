@@ -16,7 +16,10 @@ export default defineConfig({
     testTimeout: 60_000,
     fileParallelism: false,
     environment: 'node',
-    include: ['tests/quality/eslint-global-ignores.test.ts'],
+    include: [
+      'tests/quality/eslint-global-ignores.test.ts',
+      'tests/quality/eslint-api-error-layer.test.ts',
+    ],
     exclude: ['node_modules/**', '.next/**'],
   },
 });

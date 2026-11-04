@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "acceptances": [
     {
-      "fingerprint": "dc2efc646fe0c05b88872ec05f77c0fce042546d2bb9531ff2cc56973f29bab9",
+      "fingerprint": "ad4552b693c0ede4f3d2d0ceefd00661e4c961931c79bad82ccce596b12062a5",
       "package": "@lhci/cli",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -11,7 +11,7 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it. Re-fingerprinted (RIN-892, 2026-11-05): npm audit now reports the chain as via [@lhci/utils, lighthouse], so the hash moved; same lockfile, same advisories, same dev-only exposure.",
       "createdAt": "2026-11-02",
       "expiresAt": "2026-12-02"
     },

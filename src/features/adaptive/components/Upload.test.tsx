@@ -17,8 +17,17 @@ const {
   uploadPdfMock: vi.fn(),
 }));
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ back: vi.fn(), push: vi.fn() }) }));
+const translate = (key: string) => key;
+vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ back: vi.fn(), push: vi.fn() }),
+  usePathname: () => '/adaptive-learning/upload',
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('@/features/adaptive/lib/adaptive-api-methods', () => ({
   checkApiReadiness: checkApiReadinessMock,

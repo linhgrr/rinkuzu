@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import {
   HiOutlineArrowLeft,
@@ -16,8 +17,7 @@ import {
 import { useTranslations } from 'next-intl';
 import {
   AdaptiveApiError,
-  isAdaptiveRequestAbortedError,
-  isAdaptiveServiceUnavailableError,
+  adaptiveErrorForDisplay,
 } from '@/features/adaptive/lib/adaptive-api-error';
 import {
   checkApiReadiness,
@@ -28,6 +28,8 @@ import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
 import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
 import { captureAnalyticsEvent, fileSizeBucket } from '@/lib/analytics/client';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { getPdfPageCount } from '@/lib/pdf';
 import { MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
@@ -40,40 +42,54 @@ const TRANSIENT_HEALTH_CAUSES: ReadonlySet<ApiReadinessCause> = new Set([
   'timeout',
   'network',
 ]);
+const READINESS_FAILURE = { code: 'service_unavailable', status: 503 } as const;
+
+/**
+ * What went wrong. With `error` (an API failure, RIN-754) `ErrorState` picks title, copy and
+ * actions from it and `message` is optional upload copy; without it `message` is a local check.
+ */
+type UploadFailure = { error?: unknown; message?: string };
 
 export default function AdaptiveLearningUpload() {
   const { back, push } = useRouter();
   const t = useTranslations('adaptiveLearning');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<UploadFailure | null>(null);
+  /** Already-localized copy for local checks (file type, size, pages, missing file). */
+  const setError = (message: string | null) => setFailure(message === null ? null : { message });
+  const apiErrorMessage = useApiErrorMessage();
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectName, setSubjectName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const uploadPolicy = usePdfUploadPolicy('adaptive');
 
-  const getFriendlyUploadError = (err: unknown) => {
-    if (err instanceof AdaptiveApiError) {
-      if (err.code === 'unauthorized') return t('uploadPage.errors.unauthorized');
-      if (isAdaptiveRequestAbortedError(err)) return t('uploadPage.errors.connectionInterrupted');
-      if (isAdaptiveServiceUnavailableError(err)) return t('uploadPage.errors.serviceUnavailable');
-      if (err.code === 'conflict') return t('uploadPage.errors.conflict');
-      if (err.code === 'validation_error') {
-        const validationDetail = `${err.detail ?? ''} ${err.message}`.toLowerCase();
-        if (validationDetail.includes('page')) {
-          return t('uploadPage.errors.pageLimitExceeded', { maxPages: uploadPolicy.maxPages });
-        }
-        if (
-          validationDetail.includes('readable') ||
-          validationDetail.includes('valid pdf') ||
-          validationDetail.includes('encrypted')
-        ) {
-          return t('uploadPage.errors.pdfUnreadable');
-        }
-      }
+  /** Upload-specific copy where it says more than the generic kind copy; never server text. */
+  const getUploadErrorOverride = (err: unknown): string | undefined => {
+    if (!(err instanceof AdaptiveApiError) || err.code !== 'validation_error') return undefined;
+    if (err.status === 413)
+      return t('uploadPage.errors.fileTooLarge', { maxSizeMb: MAX_PDF_UPLOAD_MB });
+    // Matched, never shown: the server's wording only picks which localized line to use.
+    const validationDetail = `${err.detail ?? ''} ${err.message}`.toLowerCase();
+    if (validationDetail.includes('page')) {
+      return t('uploadPage.errors.pageLimitExceeded', { maxPages: uploadPolicy.maxPages });
     }
+    if (
+      validationDetail.includes('readable') ||
+      validationDetail.includes('valid pdf') ||
+      validationDetail.includes('encrypted')
+    ) {
+      return t('uploadPage.errors.pdfUnreadable');
+    }
+    return undefined;
+  };
 
-    return t('uploadPage.uploadFailed');
+  const showApiFailure = (apiFailure: { error: unknown; message?: string }) => {
+    setFailure(apiFailure);
+    // The upgrade modal (UpgradePromptProvider) is the prompt for entitlement errors.
+    if (describeApiError(apiFailure.error).kind === 'unlock_required') return;
+    const message = apiFailure.message ?? apiErrorMessage(apiFailure.error);
+    if (message) toast.error(message);
   };
 
   const onDropRejected = (rejections: FileRejection[]) => {
@@ -96,8 +112,8 @@ export default function AdaptiveLearningUpload() {
       return;
     }
 
-    const message = firstError.message || t('uploadPage.uploadFailed');
-    setError(message);
+    // react-dropzone's own text is English and technical.
+    setError(t('uploadPage.uploadFailed'));
   };
 
   const handleUpload = async (file: File) => {
@@ -134,8 +150,7 @@ export default function AdaptiveLearningUpload() {
           health_cause: readiness.cause,
           duration_ms: Math.round(performance.now() - uploadStartedAt),
         });
-        setError(message);
-        toast.error(message);
+        showApiFailure({ error: READINESS_FAILURE, message });
         setIsUploading(false);
         return;
       }
@@ -164,9 +179,9 @@ export default function AdaptiveLearningUpload() {
         reason: err instanceof AdaptiveApiError ? err.code : 'unknown',
         duration_ms: Math.round(performance.now() - uploadStartedAt),
       });
-      const message = getFriendlyUploadError(err);
-      setError(message);
-      toast.error(message);
+      const shown = adaptiveErrorForDisplay(err);
+      const message = getUploadErrorOverride(err);
+      showApiFailure({ error: shown, ...(message !== undefined && { message }) });
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -243,13 +258,22 @@ export default function AdaptiveLearningUpload() {
         </p>
       </div>
 
-      {error && (
+      {failure && failure.error === undefined && (
         <div
           role="alert"
           className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700"
         >
-          {error}
+          {failure.message}
         </div>
+      )}
+
+      {failure && failure.error !== undefined && (
+        <ErrorState
+          error={failure.error}
+          message={failure.message}
+          {...(selectedFile && !isUploading ? { onRetry: () => handleUpload(selectedFile) } : {})}
+          className="mb-6"
+        />
       )}
 
       <div className="max-w-3xl mx-auto space-y-10">

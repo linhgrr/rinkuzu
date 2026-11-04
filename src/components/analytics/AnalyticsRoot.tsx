@@ -53,7 +53,7 @@ export function AnalyticsRoot() {
   // reach. White on `action-strong` is 5.18:1, so normal 16 px text passes AA
   // (4.5:1); the decline button matches its size.
   const choiceClass =
-    'min-h-11 min-w-24 rounded-full px-4 py-2 text-base font-semibold leading-6 sm:min-w-28';
+    'min-h-11 rounded-full px-3 py-2 text-base font-semibold leading-6 sm:min-w-28 sm:px-4';
 
   return (
     <aside
@@ -66,10 +66,10 @@ export function AnalyticsRoot() {
       aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
     >
       <p className="flex-1 text-sm leading-5 text-neutral-700 sm:leading-6">{copy.body}</p>
-      <div className="mt-2 flex shrink-0 items-center justify-between gap-3 sm:mt-0">
+      <div className="mt-2 flex shrink-0 items-center justify-between gap-2 sm:mt-0 sm:gap-3">
         <a
           href={`/${localePrefix}/privacy`}
-          className="inline-flex min-h-6 items-center text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
+          className="inline-flex min-h-6 items-center whitespace-nowrap text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
         >
           {copy.privacy}
         </a>

@@ -17,13 +17,14 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useRouter } from '@/i18n/navigation';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { createManualQuizDraft, deleteQuizDraft, listQuizDrafts } from '@/lib/quiz/draftApi';
 import { ROUTES } from '@/shared/constants/routes';
 import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
 export function CreateQuizHubPage() {
   const t = useTranslations('create');
+  const apiErrorMessage = useApiErrorMessage();
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const { push } = useRouter();
@@ -55,7 +56,7 @@ export function CreateQuizHubPage() {
       push(ROUTES.DRAFT.EDIT(draft.id));
     } catch (createError) {
       toast.error(tCommon('error'), {
-        description: extractUnknownErrorMessage(createError, t('manualCreateFailed')),
+        description: apiErrorMessage(createError, t('manualCreateFailed')),
       });
       setIsCreatingManual(false);
     }
@@ -70,7 +71,7 @@ export function CreateQuizHubPage() {
       setDraftToDelete(null);
     } catch (deleteError) {
       toast.error(tCommon('error'), {
-        description: extractUnknownErrorMessage(deleteError, t('draftDeleteFailed')),
+        description: apiErrorMessage(deleteError, t('draftDeleteFailed')),
       });
     } finally {
       setIsDeleting(false);

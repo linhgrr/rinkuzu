@@ -16,7 +16,7 @@ import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { toast } from 'sonner';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import {
   deletePendingPdfUpload,
   getPdfPageCount,
@@ -178,7 +178,6 @@ function PDFViewerComponent({ file, onClose }: { file: File; onClose: () => void
         <div className="text-center text-red-600 max-w-sm">
           <HiOutlineExclamationCircle className="size-8 mx-auto mb-2" />
           <p className="text-sm font-medium mb-1">{t('pdfLoadingError')}</p>
-          <p className="text-xs">{extractUnknownErrorMessage(error, 'Failed to load PDF file')}</p>
         </div>
       </div>
     );
@@ -566,6 +565,7 @@ function PreviewPanel({
 export function CreateQuizPage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
+  const apiErrorMessage = useApiErrorMessage();
   const { data: session } = useSession();
   const { push, replace } = useRouter();
   const { addDraft } = useDraftStore();
@@ -683,7 +683,7 @@ export function CreateQuizPage() {
       dispatch({
         type: 'patch',
         value: {
-          error: getCreateQuizDraftErrorMessage(error, t),
+          error: getCreateQuizDraftErrorMessage(error, t, apiErrorMessage),
           extracting: false,
         },
       });

@@ -15,15 +15,14 @@ export async function fetchAskRinAgent(url: string, init: RequestInit): Promise<
   }
 
   const standardPayload = isStandardErrorEnvelope(payload) ? payload : null;
-  const message = standardPayload
-    ? extractApiErrorMessage(standardPayload, 'Ask Rin-chan request failed')
-    : 'Ask Rin-chan request failed';
+  // AG-UI copies Error.message into the run status, so it never carries server text (RIN-756).
+  // The UI renders copy from the code via useAskRinErrorMessage; the server text stays in detail.
   const error = new ApiResponseError({
-    message,
+    message: 'Ask Rin-chan request failed',
     status: response.status,
     payload: standardPayload,
     code: standardPayload ? extractApiErrorCode(standardPayload) : null,
-    detail: standardPayload ? message : null,
+    detail: standardPayload ? extractApiErrorMessage(standardPayload, '') || null : null,
     meta: standardPayload ? extractApiErrorMeta(standardPayload) : null,
   });
   reportApiError(error);

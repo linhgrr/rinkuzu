@@ -9,13 +9,15 @@ const { revealMock, replayMock } = vi.hoisted(() => ({
 
 // The shared UI states reach for translations; the panel's own copy is plain
 // English, so keys are enough to assert on here.
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
+const translate = vi.hoisted(() => (key: string) => key);
+vi.mock('next-intl', () => ({ useTranslations: () => translate }));
 vi.mock('@/features/admin/billing/api/admin-billing-api', () => ({
   revealWebhookPayload: revealMock,
   replayWebhook: replayMock,
   fetchAdminWebhookDiagnostics: vi.fn(),
 }));
 
+import { ApiResponseError } from '@/lib/api/client';
 import { WebhookDiagnosticsPanel } from './WebhookDiagnosticsPanel';
 import type { UseWebhookDiagnostics } from '@/features/admin/billing/hooks/useWebhookDiagnostics';
 import type { AdminWebhookDiagnosticViewModel } from '@/features/admin/billing/types/admin-billing-view-model';
@@ -158,12 +160,23 @@ describe('the webhook diagnostics panel', () => {
   });
 
   it('surfaces a refused action instead of failing silently', async () => {
-    replayMock.mockRejectedValue(new Error('A webhook in "processed" is not waiting on a replay'));
+    replayMock.mockRejectedValue(
+      new ApiResponseError({
+        message: 'A webhook in "processed" is not waiting on a replay',
+        status: 409,
+        payload: null,
+        code: 'conflict',
+      }),
+    );
     render(<WebhookDiagnosticsPanel diagnostics={diagnostics()} />);
 
     await userEvent.click(screen.getByRole('button', { name: /^replay$/i }));
 
-    expect(await screen.findByText(/not waiting on a replay/i)).toBeInTheDocument();
+    // Localized copy plus the code for diagnosis, never the server text (RIN-757).
+    expect(
+      await screen.findByText('errors.api.conflict · errors.api.codeLabel'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/not waiting on a replay/i)).not.toBeInTheDocument();
   });
 
   it('reports a failed load rather than an empty list', () => {

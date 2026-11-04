@@ -39,7 +39,6 @@
     "body": "Nội dung",
     "attachments": "Ảnh minh họa (tối đa 3 ảnh, 5 MB/ảnh)",
     "submit": "Gửi yêu cầu",
-    "createError": "Không thể tạo ticket hỗ trợ",
     "listTitle": "Yêu cầu của bạn",
     "loading": "Đang tải…",
     "listError": "Không thể tải danh sách hỗ trợ.",
@@ -53,9 +52,7 @@
     "attachmentAlt": "Ảnh đính kèm hỗ trợ",
     "reply": "Phản hồi",
     "sendReply": "Gửi phản hồi",
-    "sendError": "Không thể gửi phản hồi",
     "reopen": "Mở lại",
-    "reopenError": "Không thể mở lại ticket",
     "statuses": {
       "open": "Đang mở",
       "waiting_for_admin": "Chờ hỗ trợ viên",

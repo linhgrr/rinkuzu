@@ -10,7 +10,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { getQuizDraft } from '@/lib/quiz/draftApi';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { reportQuizDraftTerminal } from '@/lib/quiz/draftAnalytics';
@@ -52,6 +52,7 @@ async function pollOnce(draftId: string, signal: AbortSignal): Promise<QuizDraft
 export function usePdfProcessor() {
   const locale = useLocale();
   const t = useTranslations('draft');
+  const apiErrorMessage = useApiErrorMessage();
   const { updateDraftProgress, completeDraft, setDraftError } = useDraftStore();
   const processingRef = useRef<Record<string, boolean>>({});
   const abortControllersRef = useRef<Record<string, AbortController>>({});
@@ -95,7 +96,7 @@ export function usePdfProcessor() {
             cleanupProcessing();
             return;
           }
-          const message = extractUnknownErrorMessage(error, t('statusFetchFailed'));
+          const message = apiErrorMessage(error, t('statusFetchFailed'));
           setDraftError(draftId, message);
           toast.error(t('failedTitle', { title }), { description: message });
           cleanupProcessing();

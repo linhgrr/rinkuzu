@@ -1,5 +1,7 @@
 'use client';
 
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { useRouter } from '@/i18n/navigation';
 import { useCallback, useEffect, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -74,6 +76,7 @@ function mobileCreateReducer(
 export function MobileCreateQuizPage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
+  const apiErrorMessage = useApiErrorMessage();
   const { push } = useRouter();
   const { addDraft } = useDraftStore();
   const consumePendingFile = usePendingQuizUploadStore((s) => s.consumeFile);
@@ -168,9 +171,12 @@ export function MobileCreateQuizPage() {
       if (pendingS3Key && shouldCleanupPendingPdfUpload(error)) {
         await deletePendingPdfUpload(pendingS3Key, 'quiz').catch(() => undefined);
       }
-      toast.error(tCommon('error'), {
-        description: getCreateQuizDraftErrorMessage(error, t),
-      });
+      // The upgrade modal is the prompt for entitlement errors (no double prompt).
+      if (describeApiError(error).kind !== 'unlock_required') {
+        toast.error(tCommon('error'), {
+          description: getCreateQuizDraftErrorMessage(error, t, apiErrorMessage),
+        });
+      }
       dispatch({ type: 'patch', value: { isUploading: false } });
     }
   };

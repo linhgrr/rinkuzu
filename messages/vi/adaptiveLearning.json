@@ -550,6 +550,7 @@
     "errorInvalidRequest": "Rin-chan chưa hiểu yêu cầu này. Bạn hãy diễn đạt lại rồi thử nhé.",
     "errorQuota": "Bạn đã dùng hết lượt Ask Rin-chan. Hãy chọn gói phù hợp để tiếp tục.",
     "errorRateLimited": "Bạn đang hỏi hơi nhanh. Hãy chờ một chút rồi thử lại nhé.",
+    "errorRunFailed": "Rin-chan chưa trả lời xong. Bạn hãy hỏi lại nhé.",
     "errorInterrupted": "_Phản hồi bị gián đoạn trước khi hoàn tất. Bạn có thể hỏi lại để Rin-chan tiếp tục._"
   },
   "meta": {

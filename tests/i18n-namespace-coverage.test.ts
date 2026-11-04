@@ -26,12 +26,20 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
-/** Root namespace of every `useTranslations('root.sub')` call in a file. */
+/**
+ * Root namespace of every `useTranslations('root.sub')` call in a file. A root-scoped
+ * `useTranslations()` that renders `describeApiError` keys needs `errors`: every key the
+ * API error layer returns lives under `errors.api.*` (RIN-756).
+ */
 function namespacesIn(file: string): string[] {
   const source = readFileSync(file, 'utf8');
-  return [...source.matchAll(/useTranslations\(\s*'([^']+)'/gu)].map(
+  const namespaces = [...source.matchAll(/useTranslations\(\s*'([^']+)'/gu)].map(
     (match) => (match[1] ?? '').split('.')[0] ?? '',
   );
+  if (/useTranslations\(\s*\)/u.test(source) && source.includes('describeApiError')) {
+    namespaces.push('errors');
+  }
+  return namespaces;
 }
 
 /** Resolve a `@/…` import to a file on disk, if it is one. */

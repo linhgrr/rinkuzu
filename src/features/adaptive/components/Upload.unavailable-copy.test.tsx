@@ -7,6 +7,10 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import enAdaptive from '@/../messages/en/adaptiveLearning.json';
 import viAdaptive from '@/../messages/vi/adaptiveLearning.json';
+import enCommon from '@/../messages/en/common.json';
+import enErrors from '@/../messages/en/errors.json';
+import viCommon from '@/../messages/vi/common.json';
+import viErrors from '@/../messages/vi/errors.json';
 
 // RIN-617: a learner blocked by the readiness gate was told to "start the API
 // server". The copy must be learner language in both locales.
@@ -17,7 +21,15 @@ const { checkApiReadinessMock, uploadPdfMock, toastErrorMock } = vi.hoisted(() =
   toastErrorMock: vi.fn(),
 }));
 
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ back: vi.fn(), push: vi.fn() }) }));
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ back: vi.fn(), push: vi.fn() }),
+  usePathname: () => '/adaptive-learning/upload',
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock('sonner', () => ({ toast: { error: toastErrorMock, success: vi.fn() } }));
 vi.mock('@/features/adaptive/lib/adaptive-api-methods', () => ({
   checkApiReadiness: checkApiReadinessMock,
@@ -39,12 +51,14 @@ const cases = [
   {
     locale: 'en',
     messages: enAdaptive,
+    shared: { common: enCommon, errors: enErrors },
     expected:
       'The service is temporarily unavailable. Please try again in a few minutes. Your quota was not used.',
   },
   {
     locale: 'vi',
     messages: viAdaptive,
+    shared: { common: viCommon, errors: viErrors },
     expected:
       'Dịch vụ đang tạm thời gián đoạn. Vui lòng thử lại sau vài phút. Lượt sử dụng của bạn chưa bị trừ.',
   },
@@ -60,7 +74,10 @@ describe('AdaptiveLearningUpload readiness failure copy', () => {
     checkApiReadinessMock.mockResolvedValue({ ok: false, cause: 'not_ready' });
     const user = userEvent.setup();
     const { container } = render(
-      <NextIntlClientProvider locale={c.locale} messages={{ adaptiveLearning: c.messages }}>
+      <NextIntlClientProvider
+        locale={c.locale}
+        messages={{ ...c.shared, adaptiveLearning: c.messages }}
+      >
         <AdaptiveLearningUpload />
       </NextIntlClientProvider>,
     );

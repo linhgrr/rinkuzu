@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { formatCommunicationTimestamp } from '../lib/format';
 import {
   createSupportTicket,
@@ -22,6 +22,7 @@ export function SupportCenterPage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('communications.support');
+  const apiErrorMessage = useApiErrorMessage();
   const [page, setPage] = useState(1);
   const { data, error, isLoading, mutate } = useSWR(
     `/api/support/tickets?page=${page}`,
@@ -54,7 +55,7 @@ export function SupportCenterPage() {
       if (fileInputRef.current) fileInputRef.current.value = '';
       router.push(`/support/${result.ticket.id}`);
     } catch (caught) {
-      setFormError(extractUnknownErrorMessage(caught, t('createError')));
+      setFormError(apiErrorMessage(caught));
     } finally {
       setSubmitting(false);
     }

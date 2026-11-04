@@ -11,7 +11,7 @@ import {
   updateAdminOcrModel,
 } from '@/features/admin/ocr-keys/api/admin-ocr-keys-api';
 import type { AdminOcrModelSettingsViewModel } from '@/features/admin/ocr-keys/types/admin-ocr-keys-view-model';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
 const ocrModelDateTimeOptions: Intl.DateTimeFormatOptions = {
@@ -24,6 +24,7 @@ const ocrModelDateFormatterVi = new Intl.DateTimeFormat('vi', ocrModelDateTimeOp
 
 export function OcrModelPanel() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const locale = useLocale();
   const [settings, setSettings] = useState<AdminOcrModelSettingsViewModel | null>(null);
   const [modelName, setModelName] = useState('');
@@ -41,7 +42,7 @@ export function OcrModelPanel() {
       setModelName(value.modelName);
     } catch (loadError) {
       if (signal?.aborted) return;
-      setError(extractUnknownErrorMessage(loadError, t('ocrModelLoadError')));
+      setError(describeError(loadError, t('ocrModelLoadError')));
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
@@ -78,7 +79,7 @@ export function OcrModelPanel() {
       setModelName(value.modelName);
       setSuccess(t('ocrModelSaved'));
     } catch (saveError) {
-      setError(extractUnknownErrorMessage(saveError, t('ocrModelSaveError')));
+      setError(describeError(saveError, t('ocrModelSaveError')));
     } finally {
       setSaving(false);
     }

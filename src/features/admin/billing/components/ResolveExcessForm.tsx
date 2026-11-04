@@ -6,6 +6,7 @@ import {
   EXCESS_RESOLUTION_COMMANDS,
   type ExcessResolutionCommand,
 } from '@/services/billing/domain/excess-resolution';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 /**
  * Closing an overpayment.
@@ -26,6 +27,7 @@ export function ResolveExcessForm({
   excessLabel: string;
   onResolved: () => void;
 }) {
+  const describeError = useAdminApiErrorMessage();
   const [command, setCommand] = useState<ExcessResolutionCommand>('refund');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -41,7 +43,7 @@ export function ResolveExcessForm({
       setReason('');
       onResolved();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Failed to resolve the overpayment');
+      setError(describeError(caught));
     }
     setBusy(false);
   };

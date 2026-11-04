@@ -12,7 +12,8 @@ interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestio
   sessionEmail?: string;
   onSubmitSuccess: (attemptId: string, score: number) => void | Promise<void>;
   onSubmitStart?: () => void;
-  onSubmitError: (message: string) => void;
+  /** Receives the thrown value; the caller turns it into localized copy (RIN-753). */
+  onSubmitError: (error: unknown) => void;
   mapAnswersToOriginalOrder: (quiz: TQuiz, answers: QuizAnswer[]) => QuizAnswer[];
   isQuestionAnswered: (question: TQuestion, answer: QuizAnswer) => boolean;
 }
@@ -79,7 +80,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
       return true;
     } catch (error) {
       console.error('Quiz submission error:', error);
-      onSubmitError(error instanceof Error ? error.message : 'Failed to submit quiz');
+      onSubmitError(error);
       finishSubmission();
       return false;
     }

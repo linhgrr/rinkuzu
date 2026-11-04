@@ -127,7 +127,9 @@ describe('RegisterForm callbackUrl', () => {
     await user.type(screen.getByLabelText('confirmPassword'), credentials.password);
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: 'createAccountButton' }));
-    await screen.findByText('check your inbox');
+    // The success screen uses localized copy, never the server's English meta.message.
+    await screen.findByText('checkEmailMessage');
+    expect(screen.queryByText('check your inbox')).not.toBeInTheDocument();
   }
 
   it('carries a safe callbackUrl into Google, the sign-in link and the verification email', async () => {
@@ -190,4 +192,54 @@ describe('RegisterForm callbackUrl', () => {
       expect(registerAccountMock).toHaveBeenCalledWith(credentials);
     },
   );
+});
+
+describe('RegisterForm server errors', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    navigationMock.search = '';
+  });
+
+  async function submit() {
+    const { RegisterForm } = await import('@/features/auth/components/RegisterForm');
+    render(<RegisterForm locale="en" />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText('emailAddress'), 'learner@example.com');
+    await user.type(screen.getByLabelText('password'), 'Str0ng-Passw0rd!');
+    await user.type(screen.getByLabelText('confirmPassword'), 'Str0ng-Passw0rd!');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'createAccountButton' }));
+  }
+
+  it('shows localized server copy instead of the raw server message', async () => {
+    const { ApiResponseError } = await import('@/lib/api/client');
+    registerAccountMock.mockRejectedValue(
+      new ApiResponseError({
+        payload: null,
+        message: 'MongoServerError: E11000 duplicate key',
+        status: 500,
+      }),
+    );
+
+    await submit();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('errors.api.server');
+    expect(screen.queryByText(/MongoServerError/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the specific copy for a registration method mismatch', async () => {
+    const { ApiResponseError } = await import('@/lib/api/client');
+    registerAccountMock.mockRejectedValue(
+      new ApiResponseError({
+        payload: null,
+        message: 'Account uses google',
+        status: 409,
+        code: 'registration_method_mismatch',
+      }),
+    );
+
+    await submit();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('registrationMethodMismatch');
+  });
 });

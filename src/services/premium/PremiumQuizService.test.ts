@@ -344,6 +344,22 @@ describe('PremiumQuizService', () => {
     );
   });
 
+  it('refuses to start a locked quiz with unlock_required, not a bare forbidden (RIN-753)', async () => {
+    const { service, premiumRepository } = setup();
+    const approved = publication();
+    premiumRepository.findActivePublicationByQuizId.mockResolvedValue(approved);
+    entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
+    premiumRepository.hasGrant.mockResolvedValue(false);
+
+    await expect(
+      service.startSession({ userId: '507f191e810c19729de860ff' }, approved.sourceQuizId),
+    ).rejects.toMatchObject({ code: 'unlock_required' } satisfies Partial<PremiumQuizError>);
+    await expect(
+      service.startFlashcardSession({ userId: '507f191e810c19729de860ff' }, approved.sourceQuizId),
+    ).rejects.toMatchObject({ code: 'unlock_required' } satisfies Partial<PremiumQuizError>);
+    expect(premiumRepository.createSession).not.toHaveBeenCalled();
+  });
+
   it('delivers at most three questions without answer keys and binds cursors to the user', async () => {
     const { service, premiumRepository } = setup();
     const approved = publication();

@@ -5,11 +5,13 @@
 // is what keeps the two in step.
 
 // `/feedback/preferences` renders a client component from the communications
-// feature, so the marketing tree needs that namespace too.
+// feature, so the marketing tree needs that namespace too. Login, register and
+// verify-email render API errors through `useApiErrorMessage` (`errors.api.*`).
 export const MARKETING_MESSAGE_NAMESPACES = [
   'auth',
   'common',
   'communications',
+  'errors',
   'landing',
   'nav',
   'pwa',

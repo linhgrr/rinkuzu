@@ -91,7 +91,7 @@ module.exports = {
       startServerReadyPattern: 'Ready in',
       startServerReadyTimeout: 120000,
       settings: {
-        chromeFlags: '--no-sandbox',
+        chromeFlags: '--no-sandbox --disable-dev-shm-usage',
         throttlingMethod: 'provided',
       },
     },

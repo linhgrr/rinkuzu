@@ -734,7 +734,10 @@ export class PremiumQuizService {
     const publication = await this.premiumRepository.findActivePublicationByQuizId(quizId);
     if (!publication) throw new PremiumQuizError('not_found', 'Premium quiz not found');
     if (!(await this.canAccess(context, quizId, publication.authorId))) {
-      throw new PremiumQuizError('forbidden', 'Premium subscription or one credit is required');
+      throw new PremiumQuizError(
+        'unlock_required',
+        'Premium subscription or one credit is required',
+      );
     }
     const session = await this.premiumRepository.createSession({
       userId: context.userId,

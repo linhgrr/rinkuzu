@@ -12,6 +12,7 @@ import {
 import type { AdminWebhookDiagnosticViewModel } from '@/features/admin/billing/types/admin-billing-view-model';
 import type { UseWebhookDiagnostics } from '@/features/admin/billing/hooks/useWebhookDiagnostics';
 import { WEBHOOK_VERIFICATION_CLASSES } from '@/services/billing/domain/webhook-diagnostics';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 const CLASS_FILTERS = [
   { value: '', label: 'All' },
@@ -92,6 +93,7 @@ function WebhookRow({
   row: AdminWebhookDiagnosticViewModel;
   onChanged: () => void;
 }) {
+  const describeError = useAdminApiErrorMessage();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [revealed, setRevealed] = useState<string | null>(null);
@@ -103,7 +105,7 @@ function WebhookRow({
     try {
       await action();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Action failed');
+      setError(describeError(caught));
     }
     setBusy(false);
   };

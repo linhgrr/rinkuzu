@@ -9,6 +9,7 @@ import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
@@ -109,11 +110,7 @@ export function AdminCampaignsPage() {
                 required
                 rows={6}
               />
-              {error ? (
-                <p role="alert" className="text-error">
-                  {error}
-                </p>
-              ) : null}
+              {error ? <ErrorState message={error} /> : null}
               <Button type="submit" loading={loading}>
                 Tạo bản nháp
               </Button>

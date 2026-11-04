@@ -7,6 +7,7 @@ import useSWR from 'swr';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -38,9 +39,9 @@ export function AdminCampaignDetailPage({ id }: { id: string }) {
   );
   if (error)
     return (
-      <div role="alert" className="p-8 text-error">
-        {loadError}
-      </div>
+      <AdminPageShell>
+        <ErrorState message={loadError} onRetry={() => mutate()} />
+      </AdminPageShell>
     );
   if (!data) return <div className="p-8">Đang tải…</div>;
   return (
@@ -134,7 +135,7 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
   function schedule(): void {
     const instant = new Date(scheduledAt);
     if (!scheduledAt || Number.isNaN(instant.getTime())) {
-      setNotice({ tone: 'error', text: 'Hãy chọn thời gian gửi hợp lệ' });
+      setNotice({ tone: 'error', text: t('scheduleTimeInvalid') });
       return;
     }
     void action(
@@ -293,11 +294,7 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
                   </Button>
                 </>
               ) : null}
-              {notice?.tone === 'error' ? (
-                <p role="alert" className="text-sm text-error">
-                  {notice.text}
-                </p>
-              ) : null}
+              {notice?.tone === 'error' ? <ErrorState message={notice.text} /> : null}
               {notice?.tone === 'success' ? (
                 <p role="status" className="text-sm text-ink-muted">
                   {notice.text}

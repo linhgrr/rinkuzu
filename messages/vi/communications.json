@@ -79,6 +79,7 @@
     "feedbackReplyError": "Không thể trả lời",
     "feedbackRemindError": "Không thể gửi lời nhắc",
     "feedbackCompleteError": "Không thể hoàn tất cuộc trao đổi",
-    "supportCreateError": "Không thể tạo cuộc hỗ trợ"
+    "supportCreateError": "Không thể tạo cuộc hỗ trợ",
+    "scheduleTimeInvalid": "Hãy chọn thời gian gửi hợp lệ"
   }
 }

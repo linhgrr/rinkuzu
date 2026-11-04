@@ -7,6 +7,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import viCommon from '@/../messages/vi/common.json';
+import enCommunications from '@/../messages/en/communications.json';
 import viCommunications from '@/../messages/vi/communications.json';
 import viErrors from '@/../messages/vi/errors.json';
 import { ApiResponseError } from '@/lib/api/client';
@@ -143,6 +144,11 @@ function feedbackDetail(
   };
 }
 
+/** The shared ErrorState surface box, not a bare text-error line (RIN-846). */
+function expectErrorBox(alert: HTMLElement): void {
+  expect(alert).toHaveClass('bg-error-surface');
+}
+
 const emptyPage = { items: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 1 } };
 
 describe('admin communications pages use the API error layer', () => {
@@ -166,6 +172,7 @@ describe('admin communications pages use the API error layer', () => {
     await user.click(screen.getByRole('button', { name: 'Lên lịch gửi' }));
 
     const alert = await screen.findByRole('alert');
+    expectErrorBox(alert);
     expect(alert).toHaveTextContent(
       `${viErrors.api.codes.campaignTestRequired} · Mã: campaign_test_required`,
     );
@@ -183,6 +190,7 @@ describe('admin communications pages use the API error layer', () => {
     renderVi(<AdminCampaignDetailPage id="campaign-1" />);
 
     const alert = screen.getByRole('alert');
+    expectErrorBox(alert);
     expect(alert).toHaveTextContent(`${admin.campaignLoadError} · Mã: internal_error`);
     expect(alert).not.toHaveTextContent(SERVER_TEXT);
   });
@@ -197,6 +205,7 @@ describe('admin communications pages use the API error layer', () => {
     await user.click(screen.getByRole('button', { name: 'Gửi email' }));
 
     const alert = await screen.findByRole('alert');
+    expectErrorBox(alert);
     expect(alert).toHaveTextContent(`${admin.feedbackReplyError} · Mã: email_provider_failed`);
     expect(alert).not.toHaveTextContent(SERVER_TEXT);
   });
@@ -214,8 +223,58 @@ describe('admin communications pages use the API error layer', () => {
     await user.click(screen.getByRole('button', { name: 'Hoàn tất' }));
 
     const alert = await screen.findByRole('alert');
+    expectErrorBox(alert);
     expect(alert).toHaveTextContent('Mã: revision_conflict');
     expect(alert).not.toHaveTextContent(SERVER_TEXT);
+  });
+
+  it('offers Retry on a campaign load error and refetches', async () => {
+    const user = userEvent.setup();
+    mocks.swr.mockReturnValue({
+      data: undefined,
+      error: apiError(500, 'internal_error'),
+      mutate: mocks.mutate,
+    });
+
+    renderVi(<AdminCampaignDetailPage id="campaign-1" />);
+    await user.click(screen.getByRole('button', { name: viCommon.retry }));
+
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers Retry on a conversation load error and refetches', async () => {
+    const user = userEvent.setup();
+    mocks.swr.mockReturnValue({
+      data: undefined,
+      error: apiError(500, 'internal_error'),
+      mutate: mocks.mutate,
+    });
+
+    renderVi(<AdminFeedbackConversationPage id="feedback-1" />);
+    const alert = screen.getByRole('alert');
+    expectErrorBox(alert);
+    expect(alert).toHaveTextContent(`${admin.feedbackLoadError} · Mã: internal_error`);
+    await user.click(screen.getByRole('button', { name: viCommon.retry }));
+
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a conversation action error under the header, above the messages', async () => {
+    const user = userEvent.setup();
+    mocks.swr.mockReturnValue({ data: feedbackDetail('sent'), error: null, mutate: mocks.mutate });
+    mocks.completeFeedback.mockRejectedValue(apiError(409, 'revision_conflict'));
+
+    renderVi(<AdminFeedbackConversationPage id="feedback-1" />);
+    await user.click(screen.getByRole('button', { name: 'Hoàn tất' }));
+
+    const alert = await screen.findByRole('alert');
+    const list = screen.getByRole('list');
+    expect(alert.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('has the invalid schedule time copy in both locales', () => {
+    expect(admin.scheduleTimeInvalid).toBe('Hãy chọn thời gian gửi hợp lệ');
+    expect(enCommunications.admin.scheduleTimeInvalid).toBeTruthy();
   });
 
   it.each([
@@ -262,6 +321,7 @@ describe('admin communications pages use the API error layer', () => {
     await user.click(screen.getByRole('button', { name: row.submit }));
 
     const alert = await screen.findByRole('alert');
+    expectErrorBox(alert);
     expect(alert).toHaveTextContent(row.fallback);
     expect(alert).not.toHaveTextContent(SERVER_TEXT);
     expect(mocks.push).not.toHaveBeenCalled();

@@ -10,6 +10,7 @@ import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input, Textarea } from '@/components/ui/Input';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { createSupportTicket, fetchSupportTickets } from '../api/communications-api';
@@ -87,11 +88,7 @@ export function AdminSupportPage() {
                 required
                 rows={5}
               />
-              {error ? (
-                <p role="alert" className="text-sm text-error">
-                  {error}
-                </p>
-              ) : null}
+              {error ? <ErrorState message={error} /> : null}
               <Button type="submit" loading={loading}>
                 Tạo và gửi thông báo
               </Button>

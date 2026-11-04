@@ -6,6 +6,7 @@ import useSWR from 'swr';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Textarea } from '@/components/ui/Input';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import {
@@ -66,9 +67,9 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
 
   if (error)
     return (
-      <div role="alert" className="p-8 text-error">
-        {loadError}
-      </div>
+      <AdminPageShell>
+        <ErrorState message={loadError} onRetry={() => mutate()} />
+      </AdminPageShell>
     );
   if (!data) return <div className="p-8">Đang tải…</div>;
   const closed = isFeedbackConversationClosed(data.conversation.status);
@@ -125,6 +126,8 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
               </div>
             ) : null}
           </div>
+          {/* Under the header, next to the buttons that fail, and visible while the reply form is hidden. */}
+          {actionError ? <ErrorState message={actionError} className="mt-4" /> : null}
         </CardHeader>
         <CardContent>
           <ol className="space-y-4">
@@ -147,12 +150,6 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
           </ol>
         </CardContent>
       </Card>
-      {/* Outside the reply form: remind and complete fail while that form is hidden too. */}
-      {actionError ? (
-        <p role="alert" className="mt-4 text-error">
-          {actionError}
-        </p>
-      ) : null}
       {!closed && !queued ? (
         <Card className="mt-6">
           <CardContent className="pt-6">

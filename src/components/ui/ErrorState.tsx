@@ -41,7 +41,8 @@ function LegacyErrorState({
       role="alert"
       className={cn('rounded-xl border border-error bg-error-surface p-4', className)}
     >
-      <p className="font-home text-sm text-error">{message}</p>
+      {/* Ink, not text-error: red-500 is 3.5:1 on the error surface, below AA at 14px (RIN-846). */}
+      <p className="font-home text-sm text-ink">{message}</p>
       {onRetry ? (
         <Button variant="destructive" size="sm" className="mt-3 font-home" onClick={onRetry}>
           {tCommon('retry')}

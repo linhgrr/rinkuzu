@@ -136,8 +136,8 @@ describe('dark theme token contract', () => {
   });
 
   it('keeps --brand-action-strong theme-stable and gives dark actions a dark label', () => {
-    expect(dark.get('--brand-action-strong')).toBe('#e67020');
-    expect(dark.get('--brand-action-strong-hover')).toBe('#ea660c');
+    expect(dark.get('--brand-action-strong')).toBe('#c2410c');
+    expect(dark.get('--brand-action-strong-hover')).toBe('#9a3412');
     // RIN-797: white is ~2.3:1 on the dark #fb923c, so the dark label is ink.
     expect(dark.get('--brand-action-text')).toBe('#1c1917');
   });
@@ -164,9 +164,9 @@ describe('dark theme token contract', () => {
   });
 });
 
-describe('analytics consent accept button contrast (RIN-810)', () => {
+describe('analytics consent accept button contrast (RIN-810, RIN-719)', () => {
   const source = fs.readFileSync('src/components/analytics/AnalyticsRoot.tsx', 'utf8');
-  const choiceClass = /const choiceClass = '([^']+)'/.exec(source)?.[1] ?? '';
+  const choiceClass = /const choiceClass =\s*'([^']+)'/.exec(source)?.[1] ?? '';
   const accept =
     /className=\{`\$\{choiceClass\}([^`]*\btext-white\b[^`]*)`\}/.exec(source)?.[1] ?? '';
   const light = block(':root {');
@@ -183,10 +183,10 @@ describe('analytics consent accept button contrast (RIN-810)', () => {
     return `--brand-${name ?? ''}`;
   }
 
-  it('sets the label in large text, so the WCAG floor is 3:1', () => {
-    // 20 px bold is large text (>= 18.66 px bold).
-    expect(choiceClass).toMatch(/\btext-xl\b/);
-    expect(choiceClass).toMatch(/\bfont-bold\b/);
+  it('sets the label in normal-size text, so the WCAG floor is 4.5:1', () => {
+    // RIN-719 dropped the 20 px bold large-text workaround for 16 px semibold.
+    expect(choiceClass).toMatch(/\btext-base\b/);
+    expect(choiceClass).toMatch(/\bfont-semibold\b/);
   });
 
   it.each([
@@ -194,13 +194,15 @@ describe('analytics consent accept button contrast (RIN-810)', () => {
     ['light', 'hover'],
     ['dark', 'rest'],
     ['dark', 'hover'],
-  ] as const)('white label clears 3:1 in %s at %s', (theme, state) => {
+  ] as const)('white label clears 4.5:1 in %s at %s', (theme, state) => {
     const bg = parseColor(resolve(themes[theme], brandToken(state)));
-    expect(contrast(white, bg)).toBeGreaterThanOrEqual(3);
+    expect(contrast(white, bg)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('keeps the light rendering unchanged', () => {
-    expect(resolve(themes.light, brandToken('rest'))).toBe('#e67020');
-    expect(resolve(themes.light, brandToken('hover'))).toBe('#ea660c');
+  it('resolves to the same colours in both themes', () => {
+    for (const theme of ['light', 'dark'] as const) {
+      expect(resolve(themes[theme], brandToken('rest'))).toBe('#c2410c');
+      expect(resolve(themes[theme], brandToken('hover'))).toBe('#9a3412');
+    }
   });
 });

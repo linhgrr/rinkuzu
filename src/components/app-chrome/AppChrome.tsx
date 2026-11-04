@@ -352,6 +352,9 @@ function AppSidebar({
 }: AppSidebarProps) {
   return (
     <aside
+      // Read by the consent banner so it centres on the content area, not on
+      // the viewport behind this fixed column (RIN-719).
+      data-app-sidebar={collapsed ? 'collapsed' : 'expanded'}
       className={`${styles['sidebar']} fixed left-0 z-40 hidden flex-col justify-between overflow-y-auto border-r border-line bg-surface py-6 transition-[width] duration-300 ease-out [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden ${
         collapsed ? `${styles['sidebarCollapsed']} px-3` : `${styles['sidebarExpanded']} px-5`
       }`}

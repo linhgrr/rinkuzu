@@ -61,7 +61,7 @@ describe('AnalyticsRoot consent banner', () => {
     // Same row, same size: neither choice is easier to reach.
     expect(decline.parentElement).toBe(allow.parentElement);
     expect(decline.parentElement).toHaveClass('grid-cols-2');
-    for (const sizing of ['min-h-11', 'text-xl', 'font-bold', 'px-4', 'py-2']) {
+    for (const sizing of ['min-h-11', 'text-base', 'font-semibold', 'px-3', 'sm:px-4', 'py-2']) {
       expect(decline).toHaveClass(sizing);
       expect(allow).toHaveClass(sizing);
     }
@@ -74,6 +74,14 @@ describe('AnalyticsRoot consent banner', () => {
     expect(mocks.grant).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the copy to one paragraph without the link, so it fits two lines at 375 px', () => {
+    render(<AnalyticsRoot />);
+
+    const body = screen.getByText(/We never send your PDFs, password or answers./);
+    expect(body.tagName).toBe('P');
+    expect(body.querySelector('a')).toBeNull();
+  });
+
   it('keeps a privacy link with a 24 px target and lifts the card above the mobile bottom nav', () => {
     render(<AnalyticsRoot />);
 
@@ -83,6 +91,13 @@ describe('AnalyticsRoot consent banner', () => {
 
     const banner = screen.getByRole('complementary', { name: 'Analytics preference' });
     expect(banner.className).toContain('max-md:[html:has([data-bottom-nav])_&]:bottom-');
+    // From lg it centres on the content area beside the fixed app sidebar.
+    expect(banner.className).toContain(
+      'lg:[html:has([data-app-sidebar=expanded])_&]:left-[calc(var(--app-sidebar-expanded-width)+1rem)]',
+    );
+    expect(banner.className).toContain(
+      'lg:[html:has([data-app-sidebar=collapsed])_&]:left-[calc(var(--app-sidebar-collapsed-width)+1rem)]',
+    );
   });
 
   it('renders the Vietnamese copy and privacy link on vi pages', () => {

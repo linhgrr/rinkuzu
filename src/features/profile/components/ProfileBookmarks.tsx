@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
 import { Pill } from '@/components/ui/Pill';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -44,10 +45,6 @@ interface HydratedDateTextProps {
 
 interface BookmarksHeaderProps {
   t: TranslateFn;
-}
-
-interface BookmarksErrorBannerProps {
-  message?: string | null;
 }
 
 interface BookmarkCardProps {
@@ -150,14 +147,6 @@ function BookmarksHeader({ t }: BookmarksHeaderProps) {
       {t('bookmarkedQuestions')}
     </h2>
   );
-}
-
-function BookmarksErrorBanner({ message }: BookmarksErrorBannerProps) {
-  if (!message) {
-    return null;
-  }
-
-  return <ErrorState message={message} className="mb-4" />;
 }
 
 function BookmarkCard({
@@ -324,6 +313,7 @@ export default function ProfileBookmarks() {
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(profileBookmarksReducer, initialState);
   const itemsPerPage = 10;
+  const showMutationError = useApiErrorToast();
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}`,
@@ -350,14 +340,12 @@ export default function ProfileBookmarks() {
       void mutate().catch(() => {
         toast.error(t('refreshBookmarksError'));
       });
-    } catch {
-      toast.error(t('removeBookmarkError'));
+    } catch (requestError) {
+      showMutationError(requestError);
     } finally {
       dispatch({ type: 'patch', value: { removingBookmarkId: null } });
     }
   };
-
-  const displayError = error ? (error instanceof Error ? error.message : tCommon('error')) : null;
 
   if (isLoading) {
     return <BookmarksSkeleton />;
@@ -366,9 +354,9 @@ export default function ProfileBookmarks() {
   return (
     <div className="space-y-6">
       <BookmarksHeader t={t} />
-      <BookmarksErrorBanner message={displayError} />
+      {error ? <ErrorState error={error} onRetry={() => mutate()} className="mb-4" /> : null}
 
-      {bookmarks.length === 0 ? (
+      {error && bookmarks.length === 0 ? null : bookmarks.length === 0 ? (
         <EmptyBookmarksState t={t} tCommon={tCommon} />
       ) : (
         <div className="space-y-6">

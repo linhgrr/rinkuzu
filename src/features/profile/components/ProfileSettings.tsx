@@ -1,15 +1,7 @@
 'use client';
 
 import { Link, useRouter } from '@/i18n/navigation';
-import {
-  useEffect,
-  useEffectEvent,
-  useReducer,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type RefObject,
-} from 'react';
+import { useEffect, useReducer, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -18,8 +10,11 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { ProfileSettingsPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
+import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
 import { AVATAR_ALLOWED_MEDIA_TYPES, AVATAR_MAX_FILE_SIZE } from '@/shared/constants/avatar';
 import {
   changeProfilePassword,
@@ -373,7 +368,7 @@ function PasswordSection({
           placeholder={t('newPasswordPlaceholder')}
           autoComplete="new-password"
           icon={<HiOutlineLockClosed className="size-full" />}
-          {...(newPassword.length > 0 && newPassword.length < 6
+          {...(newPassword.length > 0 && newPassword.length < PASSWORD_MIN_LENGTH
             ? { error: t('passwordMinLength') }
             : {})}
         />
@@ -483,9 +478,9 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     );
   };
 
-  const reportLoadError = useEffectEvent((error: unknown) => {
-    toast.error(extractUnknownErrorMessage(error, t('errorLoadingProfile')));
-  });
+  const showMutationError = useApiErrorToast();
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     if (!userId) {
@@ -497,6 +492,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     const fetchProfile = async () => {
       try {
         dispatch({ type: 'fetch:start' });
+        setLoadError(null);
         const data = await fetchProfileSettingsViewModel();
 
         if (!isActive) {
@@ -510,7 +506,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
         }
 
         dispatch({ type: 'fetch:error' });
-        reportLoadError(error);
+        setLoadError(error);
       }
     };
 
@@ -519,7 +515,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     return () => {
       isActive = false;
     };
-  }, [userId]);
+  }, [userId, loadAttempt]);
 
   const handleSaveProfile = async () => {
     dispatch({ type: 'profile:save:start' });
@@ -533,7 +529,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       toast.success(t('profileUpdated'));
     } catch (error: unknown) {
       dispatch({ type: 'profile:save:finish' });
-      toast.error(extractUnknownErrorMessage(error, t('errorUpdatingProfile')));
+      showMutationError(error);
     }
   };
 
@@ -543,7 +539,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       return;
     }
 
-    if (state.newPassword.length < 6) {
+    if (state.newPassword.length < PASSWORD_MIN_LENGTH) {
       toast.error(t('passwordMinLength'));
       return;
     }
@@ -559,7 +555,16 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       toast.success(t('passwordChanged'));
     } catch (error: unknown) {
       dispatch({ type: 'password:save:finish' });
-      toast.error(extractUnknownErrorMessage(error, t('errorChangingPassword')));
+      // The server text stays hidden. A 400 naming no field is a wrong current password;
+      // one naming `newPassword` (too short, same as the current one) is about the new one.
+      const described = describeApiError(error);
+      if (described.kind === 'validation' && described.fieldErrors.includes('newPassword')) {
+        toast.error(t('newPasswordRejected'));
+      } else if (described.kind === 'validation' && described.fieldErrors.length === 0) {
+        toast.error(t('currentPasswordIncorrect'));
+      } else {
+        showMutationError(error);
+      }
     }
   };
 
@@ -587,7 +592,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       toast.success(t('avatarUpdated'));
     } catch (error: unknown) {
       dispatch({ type: 'avatar:upload:finish' });
-      toast.error(extractUnknownErrorMessage(error, t('errorUploadingAvatar')));
+      showMutationError(error);
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -603,12 +608,19 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       toast.success(t('avatarRemoved'));
     } catch (error: unknown) {
       dispatch({ type: 'avatar:upload:finish' });
-      toast.error(extractUnknownErrorMessage(error, t('errorRemovingAvatar')));
+      showMutationError(error);
     }
   };
 
   if (!state.profile) {
-    return state.loading ? <ProfileSettingsPageSkeleton label={tCommon('loading')} /> : null;
+    if (state.loading) return <ProfileSettingsPageSkeleton label={tCommon('loading')} />;
+    return loadError ? (
+      <ErrorState
+        error={loadError}
+        onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
+        className="mx-auto mt-6 max-w-2xl"
+      />
+    ) : null;
   }
 
   const initials = state.profile.displayName

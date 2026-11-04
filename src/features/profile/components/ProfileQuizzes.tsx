@@ -1,19 +1,20 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { NavigationTabBar } from '@/components/ui/NavigationTabBar';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { QuizUploadDropzone } from '@/features/dashboard/components/QuizUploadDropzone';
 import { FoldersView } from '@/features/folders/components/FoldersView';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
 import { deleteQuizById } from '@/features/quiz/api/quiz-api';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
 import { matchesLibraryStatus, type QuizLibraryFilter } from '@/lib/quiz/library';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { fetchProfileQuizLibraryViewModel } from '@/features/profile/api/profile-quizzes-api';
@@ -25,7 +26,8 @@ import styles from './ProfileQuizzesLayout.module.css';
 interface State {
   quizzes: ProfileQuizViewModel[];
   loading: boolean;
-  error: string;
+  /** Load failure, rendered by ErrorState from the error layer (RIN-755). */
+  error: unknown;
   filter: QuizLibraryFilter;
   quizToDelete: ProfileQuizViewModel | null;
   deletingQuizId: string | null;
@@ -38,18 +40,18 @@ interface ProfileQuizzesProps {
 type Action =
   | { type: 'fetch:start' }
   | { type: 'fetch:success'; quizzes: ProfileQuizViewModel[] }
-  | { type: 'fetch:error'; error: string }
+  | { type: 'fetch:error'; error: unknown }
   | { type: 'filter:set'; filter: QuizLibraryFilter }
   | { type: 'delete:prompt'; quiz: ProfileQuizViewModel }
   | { type: 'delete:start'; quizId: string }
   | { type: 'delete:success'; quizId: string }
-  | { type: 'delete:error'; error: string }
+  | { type: 'delete:error' }
   | { type: 'delete:cancel' };
 
 const initialState: State = {
   quizzes: [],
   loading: true,
-  error: '',
+  error: null,
   filter: 'all',
   quizToDelete: null,
   deletingQuizId: null,
@@ -58,9 +60,9 @@ const initialState: State = {
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'fetch:start':
-      return { ...state, loading: true, error: '' };
+      return { ...state, loading: true, error: null };
     case 'fetch:success':
-      return { ...state, quizzes: action.quizzes, loading: false, error: '' };
+      return { ...state, quizzes: action.quizzes, loading: false, error: null };
     case 'fetch:error':
       return { ...state, loading: false, error: action.error };
     case 'filter:set':
@@ -77,7 +79,7 @@ function reducer(state: State, action: Action): State {
         quizToDelete: null,
       };
     case 'delete:error':
-      return { ...state, deletingQuizId: null, error: action.error };
+      return { ...state, deletingQuizId: null };
     case 'delete:cancel':
       return { ...state, deletingQuizId: null, quizToDelete: null };
     default:
@@ -90,6 +92,8 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const showMutationError = useApiErrorToast();
 
   useEffect(() => {
     let active = true;
@@ -119,10 +123,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
         if (active) dispatch({ type: 'fetch:success', quizzes });
       } catch (error) {
         if (active) {
-          dispatch({
-            type: 'fetch:error',
-            error: extractUnknownErrorMessage(error, t('fetchQuizzesError')),
-          });
+          dispatch({ type: 'fetch:error', error });
         }
       }
     }
@@ -131,7 +132,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [loadAttempt]);
 
   const visibleQuizzes = state.quizzes.filter((quiz) =>
     matchesLibraryStatus(quiz.libraryStatus, state.filter),
@@ -157,10 +158,8 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
       dispatch({ type: 'delete:success', quizId });
       toast.success(t('quizDeleted'));
     } catch (error) {
-      dispatch({
-        type: 'delete:error',
-        error: extractUnknownErrorMessage(error, t('deleteQuizError')),
-      });
+      dispatch({ type: 'delete:error' });
+      showMutationError(error);
     }
   }
 
@@ -205,9 +204,11 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
               </div>
 
               {state.error ? (
-                <div className="relative mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">
-                  {state.error}
-                </div>
+                <ErrorState
+                  error={state.error}
+                  onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
+                  className="relative mt-5"
+                />
               ) : null}
 
               <div aria-busy={state.loading}>
@@ -217,7 +218,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                       <QuizCardSkeleton key={`quiz-card-skeleton-${index}`} />
                     ))}
                   </div>
-                ) : groupedQuizzes.length === 0 ? (
+                ) : state.error ? null : groupedQuizzes.length === 0 ? (
                   <div
                     className={`${styles['emptyState']} relative flex flex-col items-center justify-center text-center`}
                   >

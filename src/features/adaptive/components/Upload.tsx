@@ -301,7 +301,7 @@ export default function AdaptiveLearningUpload() {
                             ${isDragActive ? '!border-brand-action bg-orange-50/30 cursor-copy' : ''}
                             ${isUploading ? 'pointer-events-none' : ''}`}
           >
-            <input {...getInputProps()} />
+            <input {...getInputProps({ 'aria-label': t('uploadPage.fileInputLabel') })} />
 
             <div className="p-16 md:p-20 flex flex-col items-center justify-center text-center">
               {!isUploading && !selectedFile ? (

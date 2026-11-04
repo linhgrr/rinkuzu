@@ -62,4 +62,15 @@ describe('i18n message copy', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps English UI words out of Vietnamese copy (RIN-689)', () => {
+    const offenders: string[] = [];
+    for (const file of namespaceFiles('vi')) {
+      for (const [key, value] of flatten(readMessages('vi', file))) {
+        if (/\bupload\b|\bskip to\b/iu.test(value)) offenders.push(`vi/${file} ${key}: ${value}`);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
 });

@@ -80,7 +80,7 @@
     "replaceFile": "Replace file",
     "removeFile": "Remove",
     "createLearningPath": "Create learning path",
-    "serviceTemporarilyUnavailable": "The service is temporarily unavailable. Please try again in a few minutes. Your quota was not used.",
+    "serviceTemporarilyUnavailable": "Please try again in a few minutes. Your quota was not used.",
     "uploadFailed": "Failed to upload PDF",
     "errors": {
       "unauthorized": "Your session has expired. Please sign in again and upload the PDF once more.",
@@ -308,7 +308,7 @@
     "waitingForConcepts": "Waiting for concepts...",
     "knowledgeGraph": "Knowledge Graph",
     "visualizingStructures": "Visualizing structures in real-time...",
-    "tryAgain": "Try Again",
+    "uploadAgain": "Upload again",
     "goToDashboard": "Go To Dashboard",
     "defaultFilename": "document.pdf",
     "steps": {

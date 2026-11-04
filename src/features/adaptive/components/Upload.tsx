@@ -28,8 +28,6 @@ import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
 import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
 import { captureAnalyticsEvent, fileSizeBucket } from '@/lib/analytics/client';
-import { describeApiError } from '@/lib/api/error-kind';
-import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { getPdfPageCount } from '@/lib/pdf';
 import { MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
@@ -58,7 +56,6 @@ export default function AdaptiveLearningUpload() {
   const [failure, setFailure] = useState<UploadFailure | null>(null);
   /** Already-localized copy for local checks (file type, size, pages, missing file). */
   const setError = (message: string | null) => setFailure(message === null ? null : { message });
-  const apiErrorMessage = useApiErrorMessage();
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectName, setSubjectName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -82,14 +79,6 @@ export default function AdaptiveLearningUpload() {
       return t('uploadPage.errors.pdfUnreadable');
     }
     return undefined;
-  };
-
-  const showApiFailure = (apiFailure: { error: unknown; message?: string }) => {
-    setFailure(apiFailure);
-    // The upgrade modal (UpgradePromptProvider) is the prompt for entitlement errors.
-    if (describeApiError(apiFailure.error).kind === 'unlock_required') return;
-    const message = apiFailure.message ?? apiErrorMessage(apiFailure.error);
-    if (message) toast.error(message);
   };
 
   const onDropRejected = (rejections: FileRejection[]) => {
@@ -150,7 +139,7 @@ export default function AdaptiveLearningUpload() {
           health_cause: readiness.cause,
           duration_ms: Math.round(performance.now() - uploadStartedAt),
         });
-        showApiFailure({ error: READINESS_FAILURE, message });
+        setFailure({ error: READINESS_FAILURE, message });
         setIsUploading(false);
         return;
       }
@@ -181,7 +170,7 @@ export default function AdaptiveLearningUpload() {
       });
       const shown = adaptiveErrorForDisplay(err);
       const message = getUploadErrorOverride(err);
-      showApiFailure({ error: shown, ...(message !== undefined && { message }) });
+      setFailure({ error: shown, ...(message !== undefined && { message }) });
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -267,6 +256,8 @@ export default function AdaptiveLearningUpload() {
         </div>
       )}
 
+      {/* The only message for an API failure: no toast repeats it (RIN-809). Entitlement errors
+          also get the upgrade modal from UpgradePromptProvider. */}
       {failure && failure.error !== undefined && (
         <ErrorState
           error={failure.error}

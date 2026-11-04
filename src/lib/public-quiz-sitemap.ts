@@ -6,18 +6,16 @@ export interface PublicQuizSitemapEntry {
   lastModified: Date;
 }
 
+const PUBLIC_QUIZ_SITEMAP_LIMIT = 5000;
+
 export async function loadPublicQuizSitemapEntries(
   failureMessage: string,
 ): Promise<PublicQuizSitemapEntry[]> {
   try {
-    const quizResult = await getQuizService().getQuizzes({
-      visibility: 'public',
-      page: 1,
-      limit: 5000,
-      onlyMine: false,
-    });
+    // Excludes quizzes owned by test or company accounts (RIN-840).
+    const quizzes = await getQuizService().getPublicSitemapQuizzes(PUBLIC_QUIZ_SITEMAP_LIMIT);
 
-    return quizResult.quizzes.map((quiz) => ({
+    return quizzes.map((quiz) => ({
       path: `/quiz/${quiz.slug}`,
       lastModified: new Date(quiz.updatedAt ?? quiz.createdAt),
     }));

@@ -78,6 +78,9 @@ function createQuizRepository(overrides: Partial<IQuizRepository> = {}): Mocked<
     findAccessById: vi.fn(),
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn(),
+    findMetadataBySlug: vi.fn(),
+    findNonIndexableOwnerCandidates: vi.fn(),
+    findPublicSitemapEntries: vi.fn(),
     findIdBySlug: vi.fn(),
     findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
@@ -117,9 +120,12 @@ describe('QuizCrudService', () => {
   });
 
   describe('metadata reads', () => {
-    it('uses the compact summary query for quiz metadata', async () => {
+    it('uses the compact metadata query for quiz metadata', async () => {
       const quizRepository = createQuizRepository({
-        findSummaryBySlug: vi.fn().mockResolvedValue(quizSummary),
+        findMetadataBySlug: vi.fn().mockResolvedValue({
+          quiz: quizSummary,
+          owner: { id: authorId, email: 'learner@gmail.com', isTestAccount: false },
+        }),
       });
       const service = new QuizCrudService(quizRepository);
 
@@ -127,14 +133,47 @@ describe('QuizCrudService', () => {
         id: quizSummary.id,
         title: quizSummary.title,
         questionCount: 12,
+        ownerIndexable: true,
       });
-      expect(quizRepository.findSummaryBySlug).toHaveBeenCalledWith('algebra-basics');
+      expect(quizRepository.findMetadataBySlug).toHaveBeenCalledWith('algebra-basics');
       expect(quizRepository.findBySlug).not.toHaveBeenCalled();
+    });
+
+    // RIN-840: test and company accounts never get their quizzes indexed, and
+    // the owner's email never leaves the service.
+    it.each([
+      { email: 'qa-run@fldubai.com', isTestAccount: false },
+      { email: 'fixture@example.com', isTestAccount: false },
+      { email: 'learner@gmail.com', isTestAccount: true },
+    ])('marks a quiz owned by $email (flag $isTestAccount) not indexable', async (owner) => {
+      const quizRepository = createQuizRepository({
+        findMetadataBySlug: vi.fn().mockResolvedValue({
+          quiz: quizSummary,
+          owner: { id: authorId, ...owner },
+        }),
+      });
+      const service = new QuizCrudService(quizRepository);
+
+      const metadata = await service.getQuizMetadataBySlug('algebra-basics');
+
+      expect(metadata?.ownerIndexable).toBe(false);
+      expect(JSON.stringify(metadata)).not.toContain(owner.email);
+    });
+
+    it('keeps a quiz with an unknown owner indexable', async () => {
+      const quizRepository = createQuizRepository({
+        findMetadataBySlug: vi.fn().mockResolvedValue({ quiz: quizSummary, owner: null }),
+      });
+      const service = new QuizCrudService(quizRepository);
+
+      await expect(service.getQuizMetadataBySlug('algebra-basics')).resolves.toMatchObject({
+        ownerIndexable: true,
+      });
     });
 
     it('returns null when the summary query misses', async () => {
       const quizRepository = createQuizRepository({
-        findSummaryBySlug: vi.fn().mockResolvedValue(null),
+        findMetadataBySlug: vi.fn().mockResolvedValue(null),
       });
       const service = new QuizCrudService(quizRepository);
 

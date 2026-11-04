@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   ANALYTICS_EXCLUDED_EMAILS,
   ANALYTICS_TEST_EMAIL_PATTERN,
+  COMPANY_TEST_EMAIL_PATTERN,
+  PUBLIC_CATALOG_OWNER_EMAILS,
+  isNonIndexableQuizOwner,
 } from '@/shared/constants/analytics-exclusions';
 
 describe('analytics excluded emails', () => {
@@ -45,5 +48,64 @@ describe('analytics excluded emails', () => {
     for (const email of ANALYTICS_EXCLUDED_EMAILS) {
       expect(email.startsWith('@')).toBe(false);
     }
+  });
+});
+
+describe('isNonIndexableQuizOwner (RIN-840)', () => {
+  const catalogOwner = PUBLIC_CATALOG_OWNER_EMAILS[0] ?? '';
+  const listedTestAccount =
+    ANALYTICS_EXCLUDED_EMAILS.find((email) => !PUBLIC_CATALOG_OWNER_EMAILS.includes(email)) ?? '';
+
+  it('keeps the catalog owner in the learner exclusions, written once', () => {
+    expect(catalogOwner).not.toBe('');
+    expect(ANALYTICS_EXCLUDED_EMAILS).toEqual(
+      expect.arrayContaining([...PUBLIC_CATALOG_OWNER_EMAILS]),
+    );
+    expect(COMPANY_TEST_EMAIL_PATTERN.test(catalogOwner)).toBe(true);
+  });
+
+  it('excludes an admin-flagged test account on a learner domain', () => {
+    expect(isNonIndexableQuizOwner({ email: 'learner@gmail.com', isTestAccount: true })).toBe(true);
+    expect(isNonIndexableQuizOwner({ isTestAccount: true })).toBe(true);
+  });
+
+  it.each(['fixture@example.com', 'qa@sub.example.org', 'seed@school.test', 'X@Demo.Invalid'])(
+    'excludes the reserved test domain address %s',
+    (email) => {
+      expect(isNonIndexableQuizOwner({ email })).toBe(true);
+    },
+  );
+
+  it('excludes a listed company account, in any case', () => {
+    expect(listedTestAccount).not.toBe('');
+    expect(isNonIndexableQuizOwner({ email: listedTestAccount })).toBe(true);
+    expect(isNonIndexableQuizOwner({ email: ` ${listedTestAccount.toUpperCase()} ` })).toBe(true);
+  });
+
+  it.each(['qa-new-run@fldubai.com', 'Someone@FLDUBAI.COM'])(
+    'excludes any company-domain address such as %s',
+    (email) => {
+      expect(isNonIndexableQuizOwner({ email })).toBe(true);
+    },
+  );
+
+  it('does not treat a look-alike domain as the company domain', () => {
+    expect(COMPANY_TEST_EMAIL_PATTERN.test('learner@notfldubai.com')).toBe(false);
+    expect(COMPANY_TEST_EMAIL_PATTERN.test('learner@fldubaixcom')).toBe(false);
+    expect(isNonIndexableQuizOwner({ email: 'learner@fldubai.com.vn' })).toBe(false);
+  });
+
+  it('keeps the public catalog owner indexable, in any case and even when flagged', () => {
+    expect(isNonIndexableQuizOwner({ email: catalogOwner })).toBe(false);
+    expect(isNonIndexableQuizOwner({ email: catalogOwner.toUpperCase() })).toBe(false);
+    expect(isNonIndexableQuizOwner({ email: catalogOwner, isTestAccount: true })).toBe(false);
+  });
+
+  it('keeps a normal learner and an owner without an email indexable', () => {
+    expect(isNonIndexableQuizOwner({ email: 'learner@gmail.com', isTestAccount: false })).toBe(
+      false,
+    );
+    expect(isNonIndexableQuizOwner({ email: null })).toBe(false);
+    expect(isNonIndexableQuizOwner({})).toBe(false);
   });
 });

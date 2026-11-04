@@ -89,6 +89,9 @@ function createQuizRepository(
     findPublicByAuthor: vi.fn(),
     count: vi.fn().mockResolvedValue(0),
     countByCreatedAtBuckets: vi.fn().mockResolvedValue({ today: 0, thisWeek: 0, thisMonth: 0 }),
+    findMetadataBySlug: vi.fn(),
+    findNonIndexableOwnerCandidates: vi.fn(),
+    findPublicSitemapEntries: vi.fn(),
     findTopCreators: vi.fn().mockResolvedValue({ items: [], pagination }),
     ...overrides,
   };

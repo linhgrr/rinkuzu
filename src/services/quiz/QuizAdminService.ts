@@ -10,7 +10,8 @@ import type {
   AdminQuizVisibilityChangeDto,
 } from '@/dtos/admin-quiz';
 import type { DeleteResultDto } from '@/dtos/common';
-import type { QuizListDto, QuizListOptionsDto } from '@/dtos/quiz';
+import type { PublicQuizSitemapEntryDto, QuizListDto, QuizListOptionsDto } from '@/dtos/quiz';
+import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import { logger } from '@/lib/logger';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
@@ -224,6 +225,24 @@ export class QuizAdminService {
         statusCode: 500,
       };
     }
+  }
+
+  /**
+   * Newest public quizzes for the sitemap, minus quizzes owned by test or
+   * company accounts (RIN-840). The owners are excluded in the query, so the
+   * limit counts only indexable quizzes.
+   */
+  async getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]> {
+    const candidates = await this.quizRepository.findNonIndexableOwnerCandidates();
+    const excludeAuthorIds = candidates
+      .filter((owner) => isNonIndexableQuizOwner(owner))
+      .map((owner) => owner.id);
+    const rows = await this.quizRepository.findPublicSitemapEntries({ excludeAuthorIds, limit });
+    return rows.map((row) => ({
+      slug: row.slug,
+      createdAt: row.createdAt.toISOString(),
+      ...(row.updatedAt ? { updatedAt: row.updatedAt.toISOString() } : {}),
+    }));
   }
 
   async getQuizzes(options: QuizListOptionsDto): Promise<QuizListDto> {

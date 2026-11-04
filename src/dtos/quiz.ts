@@ -128,6 +128,21 @@ export interface QuizListItemDto {
   updatedAt: string;
 }
 
+/**
+ * Quiz page metadata (RIN-840). `ownerIndexable` is false when the owner is a
+ * test or company account: the page must then carry `noindex`. Server-only:
+ * read it in `generateMetadata`, never pass it to a client component.
+ */
+export interface QuizMetadataDto extends QuizListItemDto {
+  ownerIndexable: boolean;
+}
+
+export interface PublicQuizSitemapEntryDto {
+  slug: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export type QuizQuestionDto = QuizQuestionInputDto & {
   id: string;
 };

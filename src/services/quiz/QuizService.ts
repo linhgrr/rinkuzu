@@ -6,8 +6,9 @@ import type {
   QuizDiscussionDto,
   QuizDetailDto,
   QuizListDto,
-  QuizListItemDto,
+  PublicQuizSitemapEntryDto,
   QuizListOptionsDto,
+  QuizMetadataDto,
   QuizPlayDetailDto,
   QuizProgressResponseDto,
   ReportQuizResponseDto,
@@ -96,7 +97,11 @@ export class QuizService implements IQuizService {
     return this.crudService.getQuizById(id, userId, userRole);
   }
 
-  async getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null> {
+  async getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]> {
+    return this.adminService.getPublicSitemapQuizzes(limit);
+  }
+
+  async getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null> {
     return this.crudService.getQuizMetadataBySlug(slug);
   }
 

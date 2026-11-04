@@ -8,9 +8,10 @@ import type { IFolderRepository } from '@/interfaces/repositories/IFolderReposit
 import type {
   CreateQuizRequestDto,
   QuizDetailDto,
-  QuizListItemDto,
+  QuizMetadataDto,
   UpdateQuizRequestDto,
 } from '@/dtos/quiz';
+import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
@@ -145,9 +146,13 @@ export class QuizCrudService {
     return { success: true, data: quiz };
   }
 
-  async getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null> {
-    const quiz = await this.quizRepository.findSummaryBySlug(slug);
-    return quiz ? QuizListDtoMapper.toListItem(quiz) : null;
+  async getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null> {
+    const record = await this.quizRepository.findMetadataBySlug(slug);
+    if (!record) return null;
+    return {
+      ...QuizListDtoMapper.toListItem(record.quiz),
+      ownerIndexable: record.owner === null || !isNonIndexableQuizOwner(record.owner),
+    };
   }
 
   async getQuizById(

@@ -31,7 +31,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       return defaultMetadata;
     }
 
-    const isIndexable = quiz.visibility === 'public';
+    // Public quizzes of test or company accounts stay out of search (RIN-840).
+    const isIndexable = quiz.visibility === 'public' && quiz.ownerIndexable;
     return buildLocalizedMetadata({
       locale,
       path: `/quiz/${slug}`,

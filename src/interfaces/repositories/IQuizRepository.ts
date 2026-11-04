@@ -32,6 +32,35 @@ export interface QuizCreatorStatRecord {
 
 export type QuizAccessRecord = Pick<Quiz, 'id' | 'author' | 'visibility'>;
 
+/**
+ * Owner fields that decide whether a public quiz may be indexed (RIN-840).
+ * Server-only: it carries the owner's email, so it must never be mapped into a
+ * DTO, a view model or rendered HTML.
+ */
+export interface QuizOwnerIndexingRecord {
+  id: string;
+  email?: string | null;
+  isTestAccount?: boolean | null;
+}
+
+/** Quiz summary plus its owner's indexing fields, for page metadata only. */
+export interface QuizMetadataRecord {
+  quiz: Quiz;
+  owner: QuizOwnerIndexingRecord | null;
+}
+
+export interface PublicQuizSitemapRecord {
+  slug: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface PublicQuizSitemapQuery {
+  /** Owners whose public quizzes stay out of the sitemap. */
+  excludeAuthorIds: readonly string[];
+  limit: number;
+}
+
 export interface CreateQuizData {
   title: string;
   description?: string;
@@ -60,6 +89,19 @@ export interface IQuizRepository {
   findBySlug(slug: string): Promise<Quiz | null>;
 
   findSummaryBySlug(slug: string): Promise<Quiz | null>;
+
+  /** Summary plus the owner's server-only indexing fields (RIN-840). */
+  findMetadataBySlug(slug: string): Promise<QuizMetadataRecord | null>;
+
+  /**
+   * Accounts that may own non-indexable quizzes: a superset of
+   * `isNonIndexableQuizOwner` (flagged, listed, reserved or company domain).
+   * The caller applies the rule itself.
+   */
+  findNonIndexableOwnerCandidates(): Promise<QuizOwnerIndexingRecord[]>;
+
+  /** Newest public quizzes, slug and dates only, minus the excluded owners. */
+  findPublicSitemapEntries(query: PublicQuizSitemapQuery): Promise<PublicQuizSitemapRecord[]>;
 
   findIdBySlug(slug: string): Promise<string | null>;
 

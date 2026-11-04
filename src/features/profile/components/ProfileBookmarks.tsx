@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { EmptyState, EmptyStateExploreAction } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useApiErrorToast } from '@/lib/api/use-api-error';
 import { Pill } from '@/components/ui/Pill';
@@ -21,7 +21,6 @@ import { HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
 import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { getCorrectAnswerIndexes, getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
-import { ROUTES } from '@/shared/constants/routes';
 import {
   deleteProfileBookmark,
   fetchProfileBookmarkListViewModel,
@@ -67,7 +66,6 @@ interface BookmarksListProps {
 
 interface EmptyBookmarksStateProps {
   t: TranslateFn;
-  tCommon: TranslateFn;
 }
 
 interface ProfileBookmarksState {
@@ -266,19 +264,15 @@ function BookmarksList({
   );
 }
 
-function EmptyBookmarksState({ t, tCommon }: EmptyBookmarksStateProps) {
+function EmptyBookmarksState({ t }: EmptyBookmarksStateProps) {
   return (
     <Card>
       <CardContent className="py-12 text-center">
         <EmptyState
           icon={<HiOutlineTag className="size-12 text-neutral-400" />}
           title={t('noBookmarks')}
-          description={t('exploreQuizzes')}
-          action={
-            <Link href={ROUTES.DASHBOARD}>
-              <Button>{tCommon('browseQuizzes')}</Button>
-            </Link>
-          }
+          description={t('bookmarksEmptyHint')}
+          action={<EmptyStateExploreAction />}
         />
       </CardContent>
     </Card>
@@ -357,7 +351,7 @@ export default function ProfileBookmarks() {
       {error ? <ErrorState error={error} onRetry={() => mutate()} className="mb-4" /> : null}
 
       {error && bookmarks.length === 0 ? null : bookmarks.length === 0 ? (
-        <EmptyBookmarksState t={t} tCommon={tCommon} />
+        <EmptyBookmarksState t={t} />
       ) : (
         <div className="space-y-6">
           <BookmarksList

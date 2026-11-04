@@ -4,7 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { EmptyState, EmptyStateExploreAction } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Pill } from '@/components/ui/Pill';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -224,12 +224,8 @@ function ProfileHistory() {
           <EmptyState
             icon={<HiOutlineDocumentText className="size-14 text-ink-muted" />}
             title={t('noHistory')}
-            description={t('exploreQuizzes')}
-            action={
-              <Link href={ROUTES.DASHBOARD}>
-                <Button>{tCommon('browseQuizzes')}</Button>
-              </Link>
-            }
+            description={t('historyEmptyHint')}
+            action={<EmptyStateExploreAction />}
           />
         </SurfaceCard>
       ) : (

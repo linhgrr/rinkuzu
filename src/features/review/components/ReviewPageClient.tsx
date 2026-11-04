@@ -4,7 +4,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useEffect, useReducer, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { EmptyState, EmptyStateExploreAction } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { ROUTES } from '@/shared/constants/routes';
@@ -186,9 +186,7 @@ export function ReviewPageClient() {
               icon={<HiOutlineCheckCircle className="size-8 text-accent" />}
               title={t('noCards')}
               description={t('comeBack')}
-              action={
-                <Button onClick={() => push(ROUTES.DASHBOARD)}>{t('backToDashboard')}</Button>
-              }
+              action={<EmptyStateExploreAction />}
               className="py-0"
             />
           </Card>

@@ -147,6 +147,7 @@
   "avatarRemoved": "Avatar removed",
   "currentPasswordIncorrect": "Your current password is not correct.",
   "newPasswordRejected": "Your new password must have at least 8 characters and differ from your current password.",
+  "passwordNotSet": "This account signs in with Google, so it has no password to change.",
   "avatarInvalidType": "Only JPG, PNG, and WebP images are allowed",
   "avatarTooLarge": "File size must be less than 2MB",
   "publicProfile": "Public profile",

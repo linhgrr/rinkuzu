@@ -15,6 +15,7 @@ import type {
   AdminReportViewModel,
 } from '@/features/admin/reports/types/admin-reports-view-model';
 import { quizQuestionInputSchema } from '@/lib/validation/question';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface ReportedQuestionEditorProps {
   report: AdminReportViewModel;
@@ -92,6 +93,7 @@ function removeOption(question: EditableQuestion, optionIndex: number): Editable
 }
 
 function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQuestionEditorProps) {
+  const describeError = useAdminApiErrorMessage();
   const [current, setCurrent] = useState<AdminReportedQuestionViewModel | null>(null);
   const [draft, setDraft] = useState<EditableQuestion | null>(null);
   const [optionIds, setOptionIds] = useState<string[]>([]);
@@ -110,7 +112,7 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
       })
       .catch((loadError: unknown) => {
         if (loadError instanceof DOMException && loadError.name === 'AbortError') return;
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load question');
+        setError(describeError(loadError));
       })
       .finally(() => {
         if (!controller.signal.aborted) {
@@ -118,7 +120,7 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
         }
       });
     return () => controller.abort();
-  }, [reportId, questionId]);
+  }, [reportId, questionId, describeError]);
 
   const dirty = useMemo(() => {
     if (!current || !draft) return false;
@@ -158,7 +160,7 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
       setEditing(false);
       toast.success('Question updated');
     } catch (saveError) {
-      toast.error(saveError instanceof Error ? saveError.message : 'Failed to update question');
+      toast.error(describeError(saveError));
     } finally {
       setSaving(false);
     }

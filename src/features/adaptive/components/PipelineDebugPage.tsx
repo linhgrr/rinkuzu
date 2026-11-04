@@ -27,6 +27,7 @@ import type {
 } from '@/features/adaptive/types/pipeline';
 import styles from './PipelineDebugLayout.module.css';
 import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 type JsonValue =
   | string
@@ -557,6 +558,7 @@ function MetricTile({
 }
 
 export default function PipelineDebugPage() {
+  const describeError = useAdminApiErrorMessage();
   const [jobIdInput, setJobIdInput] = useState('');
   const [selectedJobId, setSelectedJobId] = useState('');
   const [jobs, setJobs] = useState<PipelineJobListItem[]>([]);
@@ -590,9 +592,9 @@ export default function PipelineDebugPage() {
       setJob(nextJob);
       setSelectedJobId(nextJob.job_id);
       setJobIdInput(nextJob.job_id);
-      setLoading(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không tải được pipeline job');
+      setError(describeError(err));
+    } finally {
       setLoading(false);
     }
   };

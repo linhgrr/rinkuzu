@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiResponseError } from '@/lib/api/client';
 import type { AdminQuizListItemViewModel } from '@/features/admin/quizzes/types/admin-quizzes-view-model';
 
 const { fetchListMock, setVisibilityMock, translate } = vi.hoisted(() => ({
@@ -121,13 +122,18 @@ describe('AdminQuizzesPageClient visibility action', () => {
     expect(await screen.findByRole('button', { name: 'quizMakePrivate' })).toBeInTheDocument();
   });
 
-  it('keeps the row unchanged and shows the server error when the change is refused', async () => {
+  it('keeps the row unchanged and shows localized copy, not server text, when refused', async () => {
     const user = userEvent.setup();
     fetchListMock.mockResolvedValue(
       listOf(quiz({ visibility: 'personal', visibilityLabelKey: 'personal' })),
     );
     setVisibilityMock.mockRejectedValue(
-      new Error('A quiz with a premium publication cannot be made public'),
+      new ApiResponseError({
+        message: 'A quiz with a premium publication cannot be made public',
+        status: 409,
+        payload: null,
+        code: 'conflict',
+      }),
     );
 
     render(<AdminQuizzesPageClient />);
@@ -137,8 +143,9 @@ describe('AdminQuizzesPageClient visibility action', () => {
     await user.click(within(dialog).getByRole('button', { name: 'quizMakePublic' }));
 
     expect(
-      await screen.findByText('A quiz with a premium publication cannot be made public'),
+      await screen.findByText('errors.api.conflict · errors.api.codeLabel'),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/premium publication/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'quizMakePublic' })).toBeInTheDocument();
   });
 });

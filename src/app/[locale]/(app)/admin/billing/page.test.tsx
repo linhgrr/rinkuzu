@@ -7,7 +7,8 @@ const { useOrdersMock, useDiagnosticsMock } = vi.hoisted(() => ({
   useDiagnosticsMock: vi.fn(),
 }));
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
+const translate = vi.hoisted(() => (key: string) => key);
+vi.mock('next-intl', () => ({ useTranslations: () => translate }));
 vi.mock('@/features/admin/billing/hooks/useAdminBillingOrders', () => ({
   useAdminBillingOrders: useOrdersMock,
 }));

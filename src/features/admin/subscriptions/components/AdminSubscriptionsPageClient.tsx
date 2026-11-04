@@ -33,6 +33,7 @@ import type {
   AdminSubscriptionsPaginationViewModel,
 } from '@/features/admin/subscriptions/types/admin-subscriptions-view-model';
 import { DERIVED_SUBSCRIPTION_STATUSES } from '@/shared/constants/subscription-status';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 // Entitlement status is derived from the projection window, so these are the
 // only values a row can report — and therefore the only ones worth filtering.
@@ -434,6 +435,7 @@ function SubscriptionDetailField({ label, value }: SubscriptionDetailFieldProps)
 
 export function AdminSubscriptionsPageClient() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(adminSubscriptionsReducer, initialState);
 
@@ -455,13 +457,19 @@ export function AdminSubscriptionsPageClient() {
           type: 'patch',
           value: {
             status: 'ready',
-            error: error instanceof Error ? error.message : 'Failed to fetch subscriptions',
+            error: describeError(error),
           },
         });
       });
 
     return () => controller.abort();
-  }, [state.pagination.limit, state.pagination.page, state.searchTerm, state.statusFilter]);
+  }, [
+    state.pagination.limit,
+    state.pagination.page,
+    state.searchTerm,
+    state.statusFilter,
+    describeError,
+  ]);
 
   const setSearchInput = (searchInput: string) => {
     dispatch({
@@ -525,7 +533,7 @@ export function AdminSubscriptionsPageClient() {
       dispatch({
         type: 'patch',
         value: {
-          error: error instanceof Error ? error.message : 'Failed to revoke Premium',
+          error: describeError(error),
         },
       });
     }

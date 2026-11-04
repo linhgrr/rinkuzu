@@ -49,7 +49,7 @@ import type {
 } from '@/features/admin/users/types/admin-users-view-model';
 import { fetchAdminBillingPlanViewModels } from '@/features/admin/plans/api/admin-plans-api';
 import type { AdminBillingPlanViewModel } from '@/features/admin/plans/types/admin-plans-view-model';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import type { UserRole } from '@/types/next-auth';
 import {
   ACCOUNT_DISABLE_ACTIVE,
@@ -814,6 +814,7 @@ function CreditModal({
 
 export function AdminUsersPageClient() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const [state, dispatch] = useReducer(adminUsersReducer, initialState);
@@ -877,7 +878,7 @@ export function AdminUsersPageClient() {
         type: 'patch',
         value: {
           actionLoading: null,
-          localError: extractUnknownErrorMessage(error, 'Request failed'),
+          localError: describeError(error),
         },
       });
       return null;
@@ -1038,7 +1039,10 @@ export function AdminUsersPageClient() {
         />
 
         {usersError || state.localError ? (
-          <ErrorState message={usersError?.message ?? state.localError} className="mb-6" />
+          <ErrorState
+            message={usersError ? describeError(usersError) : state.localError}
+            className="mb-6"
+          />
         ) : null}
 
         {state.success ? (

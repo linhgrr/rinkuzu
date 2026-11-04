@@ -13,6 +13,7 @@ import type {
   AdminBillingPaginationViewModel,
   AdminOrderBucketViewModel,
 } from '@/features/admin/billing/types/admin-billing-view-model';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 /**
  * The order list, its filters, and the one order an operator is looking at.
@@ -90,6 +91,7 @@ export interface UseAdminBillingOrders extends OrdersState {
 }
 
 export function useAdminBillingOrders(): UseAdminBillingOrders {
+  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const { bucket, searchTerm, reloadToken, pagination, detail } = state;
   const { page, limit } = pagination;
@@ -106,26 +108,29 @@ export function useAdminBillingOrders(): UseAdminBillingOrders {
           type: 'patch',
           value: {
             status: 'ready',
-            error: error instanceof Error ? error.message : 'Failed to load billing orders',
+            error: describeError(error),
           },
         });
       });
 
     return () => controller.abort();
-  }, [bucket, limit, page, searchTerm, reloadToken]);
+  }, [bucket, limit, page, searchTerm, reloadToken, describeError]);
 
-  const openDetail = useCallback((orderId: string) => {
-    dispatch({ type: 'patch', value: { detailLoading: true, detail: null, detailError: '' } });
-    void fetchAdminBillingOrderDetail(orderId)
-      .then((loaded) => dispatch({ type: 'patch', value: { detail: loaded } }))
-      .catch((error: unknown) =>
-        dispatch({
-          type: 'patch',
-          value: { detailError: error instanceof Error ? error.message : 'Failed to load order' },
-        }),
-      )
-      .finally(() => dispatch({ type: 'patch', value: { detailLoading: false } }));
-  }, []);
+  const openDetail = useCallback(
+    (orderId: string) => {
+      dispatch({ type: 'patch', value: { detailLoading: true, detail: null, detailError: '' } });
+      void fetchAdminBillingOrderDetail(orderId)
+        .then((loaded) => dispatch({ type: 'patch', value: { detail: loaded } }))
+        .catch((error: unknown) =>
+          dispatch({
+            type: 'patch',
+            value: { detailError: describeError(error) },
+          }),
+        )
+        .finally(() => dispatch({ type: 'patch', value: { detailLoading: false } }));
+    },
+    [describeError],
+  );
 
   const reload = useCallback(() => {
     dispatch({ type: 'patch', value: { reloadToken: Date.now() } });

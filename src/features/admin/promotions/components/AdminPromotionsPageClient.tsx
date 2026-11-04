@@ -18,6 +18,7 @@ import {
   type AdminPromotion,
 } from '@/features/admin/promotions/api/admin-promotions-api';
 import { formatVndCurrency } from '@/lib/formatters';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 type PromotionKind = 'percentage' | 'fixed';
 
@@ -35,6 +36,7 @@ function promotionValue(promotion: AdminPromotion): string {
 
 export function AdminPromotionsPageClient() {
   const t = useTranslations('adminPromotions');
+  const describeError = useAdminApiErrorMessage();
   const { data, isLoading, isValidating, mutate } = useSWR(
     'admin-promotions',
     fetchAdminPromotions,
@@ -42,7 +44,7 @@ export function AdminPromotionsPageClient() {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       onError: (error: unknown) => {
-        toast.error(error instanceof Error ? error.message : t('loadError'));
+        toast.error(describeError(error, t('loadError')));
       },
     },
   );
@@ -80,7 +82,7 @@ export function AdminPromotionsPageClient() {
       toast.success(t('created'));
       await mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('createError'));
+      toast.error(describeError(error, t('createError')));
     } finally {
       setSaving(false);
     }
@@ -93,7 +95,7 @@ export function AdminPromotionsPageClient() {
       await archiveAdminPromotion(id);
       await mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('archiveError'));
+      toast.error(describeError(error, t('archiveError')));
     } finally {
       setArchivingId(null);
     }

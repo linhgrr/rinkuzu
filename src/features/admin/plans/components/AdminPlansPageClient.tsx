@@ -22,6 +22,7 @@ import type {
   AdminBillingPlanMutationInput,
   AdminBillingPlanViewModel,
 } from '@/features/admin/plans/types/admin-plans-view-model';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface PlanFormState {
   name: string;
@@ -392,6 +393,7 @@ function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
 
 export function AdminPlansPageClient() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const tCommon = useTranslations('common');
   const [plans, setPlans] = useState<AdminBillingPlanViewModel[]>([]);
   const [status, setStatus] = useState<PageStatus>({
@@ -432,12 +434,12 @@ export function AdminPlansPageClient() {
         setStatus((prev) => ({
           ...prev,
           loading: false,
-          error: error instanceof Error ? error.message : 'Failed to fetch plans',
+          error: describeError(error),
         }));
       });
 
     return () => controller.abort();
-  }, []);
+  }, [describeError]);
 
   const handleSavePlan = async (planId: string, payload: AdminBillingPlanMutationInput) => {
     try {
@@ -448,7 +450,7 @@ export function AdminPlansPageClient() {
     } catch (error) {
       setStatus((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to update plan',
+        error: describeError(error),
       }));
       return false;
     }
@@ -463,7 +465,7 @@ export function AdminPlansPageClient() {
     } catch (error) {
       setStatus((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to create plan',
+        error: describeError(error),
       }));
       return false;
     }
@@ -478,7 +480,7 @@ export function AdminPlansPageClient() {
     } catch (error) {
       setStatus((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to delete plan',
+        error: describeError(error),
       }));
       return false;
     }

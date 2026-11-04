@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiResponseError } from '@/lib/api/client';
 import type { AdminUserViewModel } from '@/features/admin/users/types/admin-users-view-model';
 
 const { mutateUsersMock, swrMock, updateTestAccountMock, translate } = vi.hoisted(() => ({
@@ -164,9 +165,16 @@ describe('AdminUsersPageClient test-account flag', () => {
     expect(updateTestAccountMock).not.toHaveBeenCalled();
   });
 
-  it('shows the server error and keeps the row when the change is refused', async () => {
+  it('shows localized copy, not server text, and keeps the row when refused', async () => {
     const user = userEvent.setup();
-    updateTestAccountMock.mockRejectedValue(new Error('User not found'));
+    updateTestAccountMock.mockRejectedValue(
+      new ApiResponseError({
+        message: 'User not found',
+        status: 404,
+        payload: null,
+        code: 'not_found',
+      }),
+    );
 
     render(<AdminUsersPageClient />);
 
@@ -174,7 +182,10 @@ describe('AdminUsersPageClient test-account flag', () => {
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'markTestAccount' }));
 
-    expect(await screen.findByText('User not found')).toBeInTheDocument();
+    expect(
+      await screen.findByText('errors.api.notFound · errors.api.codeLabel'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('User not found')).not.toBeInTheDocument();
     expect(mutateUsersMock).not.toHaveBeenCalled();
     expect(within(rowOf(learner.email)).queryByText('testAccountBadge')).not.toBeInTheDocument();
   });

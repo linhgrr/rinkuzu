@@ -2,6 +2,8 @@
 
 import { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
@@ -23,5 +25,19 @@ export function EmptyState({ icon, title, description, action, className }: Empt
       {description && <p className="font-home mt-1.5 text-sm text-ink-muted">{description}</p>}
       {action && <div className="mt-6">{action}</div>}
     </div>
+  );
+}
+
+/**
+ * The one CTA shared by the learner empty states (history, bookmarks, review): a single
+ * 44 px button-styled link to Explore, where a learner can take a first quiz (RIN-691).
+ */
+export function EmptyStateExploreAction() {
+  const tCommon = useTranslations('common');
+
+  return (
+    <Link href={ROUTES.EXPLORE} className="btn btn-primary">
+      {tCommon('exploreQuizzes')}
+    </Link>
   );
 }

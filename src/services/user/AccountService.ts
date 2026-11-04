@@ -72,6 +72,8 @@ export class AccountService implements IAccountService {
           success: false,
           error: 'Password change is not available for this account',
           statusCode: 400,
+          // OAuth-only accounts (Google) have no password; the client must not call it "incorrect".
+          code: 'password_not_set',
         };
       }
       const verification = await verifyPassword(currentPassword, credentials.passwordHash);

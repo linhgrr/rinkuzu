@@ -279,6 +279,15 @@ describe('ProfileSettings API errors (RIN-755)', () => {
     await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('currentPasswordIncorrect'));
   });
 
+  it('says the account has no password, not that it is wrong, for password_not_set', async () => {
+    changePasswordMock.mockRejectedValueOnce(serverFailure(400, 'password_not_set'));
+
+    await submitPasswordChange();
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('passwordNotSet'));
+    expect(toastErrorMock).not.toHaveBeenCalledWith('currentPasswordIncorrect');
+  });
+
   it('blames the new password, not the current one, when the 400 names newPassword', async () => {
     changePasswordMock.mockRejectedValueOnce(
       serverFailure(400, 'validation_error', {

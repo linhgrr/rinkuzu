@@ -143,6 +143,7 @@ describe('AccountService', () => {
       success: false,
       error: 'Password change is not available for this account',
       statusCode: 400,
+      code: 'password_not_set',
     });
   });
 

@@ -555,10 +555,13 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       toast.success(t('passwordChanged'));
     } catch (error: unknown) {
       dispatch({ type: 'password:save:finish' });
-      // The server text stays hidden. A 400 naming no field is a wrong current password;
+      // The server text stays hidden. `password_not_set` is an account with no password
+      // (Google sign-in). Otherwise a 400 naming no field is a wrong current password;
       // one naming `newPassword` (too short, same as the current one) is about the new one.
       const described = describeApiError(error);
-      if (described.kind === 'validation' && described.fieldErrors.includes('newPassword')) {
+      if (described.code === 'password_not_set') {
+        toast.error(t('passwordNotSet'));
+      } else if (described.kind === 'validation' && described.fieldErrors.includes('newPassword')) {
         toast.error(t('newPasswordRejected'));
       } else if (described.kind === 'validation' && described.fieldErrors.length === 0) {
         toast.error(t('currentPasswordIncorrect'));

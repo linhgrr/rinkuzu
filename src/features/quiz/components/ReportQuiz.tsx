@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,6 +42,10 @@ export default function ReportQuiz({
   const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // The auto-close must not fire after unmount (RIN-682).
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
 
   const {
     register,
@@ -62,7 +66,8 @@ export default function ReportQuiz({
       await reportQuizViewModel(quizSlug, questionId, content);
       setIsSubmitted(true);
       reset({ content: '' });
-      setTimeout(() => {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = setTimeout(() => {
         setIsOpen(false);
         setIsSubmitted(false);
       }, 2000);

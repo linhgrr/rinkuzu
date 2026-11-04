@@ -609,10 +609,10 @@ function QuizEmailGate({
               )}
 
               <Card variant="bordered" className="border-green-200 bg-green-50 p-4">
-                <div className="text-center text-accent">
-                  <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-accent" />
+                <div className="text-center text-brand-trust">
+                  <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-brand-trust" />
                   <p className="text-sm font-medium">
-                    <Link href="/login" className="underline hover:text-green-700">
+                    <Link href="/login" className="underline hover:text-brand-trust-hover">
                       {t('login')}
                     </Link>{' '}
                     {t('loginToTrack')}
@@ -635,7 +635,12 @@ function QuizEmailGate({
               </div>
 
               <div className="space-y-3">
-                <Button onClick={onStartQuiz} variant="gradient" size="lg" className="w-full">
+                <Button
+                  onClick={onStartQuiz}
+                  variant="gradient"
+                  size="lg"
+                  className="w-full bg-brand-action-strong text-white hover:bg-brand-action-strong-hover"
+                >
                   <HiOutlineLightningBolt className="size-5 mr-2" />
                   {t('startQuiz')}
                 </Button>
@@ -648,7 +653,10 @@ function QuizEmailGate({
                     </Button>
                   </Link>
                   <Link href={`/quiz/${encodedSlug}/flashcards`}>
-                    <Button variant="accent" className="w-full">
+                    <Button
+                      variant="accent"
+                      className="w-full bg-brand-action-strong text-white hover:bg-brand-action-strong-hover"
+                    >
                       <HiOutlineRefresh className="size-4 mr-2" />
                       {t('flashcards')}
                     </Button>

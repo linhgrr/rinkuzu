@@ -102,3 +102,42 @@ describe('QuizPlayerClient load failures (RIN-753)', () => {
     expect(refreshMock).toHaveBeenCalledOnce();
   });
 });
+
+// RIN-682 (QA on the PR): the guest start screen failed Lighthouse color-contrast.
+// White on --brand-action is 2.57:1 and text-accent on bg-green-50 2.44:1;
+// the strong action fill and the trust text token clear 4.5:1.
+describe('QuizPlayerClient guest start screen contrast (RIN-682)', () => {
+  const quiz = {
+    id: 'quiz-1',
+    title: 'Fake quiz',
+    slug: 'private-quiz',
+    author: null,
+    folder: null,
+    visibility: 'public' as const,
+    questionCount: 1,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    questions: [
+      { id: 'q1', question: 'Two plus two?', options: ['3', '4'], type: 'single' as const },
+    ],
+  };
+
+  it('puts white labels on the strong action fill and the sign-in hint on trust text', async () => {
+    render(
+      <QuizPlayerClient
+        initialErrorCode={null}
+        initialErrorStatus={null}
+        initialQuiz={quiz}
+        slug="private-quiz"
+      />,
+    );
+
+    for (const name of ['startQuiz', 'flashcards']) {
+      const button = await screen.findByRole('button', { name });
+      expect(button).toHaveClass('bg-brand-action-strong', 'text-white');
+    }
+    const hint = screen.getByText('loginToTrack', { exact: false }).parentElement;
+    expect(hint).toHaveClass('text-brand-trust');
+    expect(hint).not.toHaveClass('text-accent');
+  });
+});

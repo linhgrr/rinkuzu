@@ -102,7 +102,7 @@ export default async function BlogIndexPage({ params }: Props) {
 
       {/* Post list */}
       <div className="max-w-3xl mx-auto px-6 py-16 space-y-12">
-        {posts.map((post) => (
+        {posts.map((post, index) => (
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
@@ -114,6 +114,10 @@ export default async function BlogIndexPage({ params }: Props) {
                 src={post.image}
                 alt={post.imageAlt}
                 fill
+                // The first thumbnail is the LCP element (RIN-683): load it eagerly at high
+                // priority; the cards below stay lazy.
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : undefined}
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                 sizes="(max-width: 768px) 100vw, 720px"
               />

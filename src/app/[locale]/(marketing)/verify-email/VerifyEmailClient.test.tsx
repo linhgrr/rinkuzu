@@ -1,6 +1,7 @@
 import type { AnchorHTMLAttributes } from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiResponseError } from '@/lib/api/client';
 import { VerifyEmailClient } from './VerifyEmailClient';
 
 const mocks = vi.hoisted(() => ({
@@ -69,16 +70,57 @@ describe('VerifyEmailClient', () => {
 
     render(<VerifyEmailClient />);
 
-    expect(await screen.findByText('verified')).toBeInTheDocument();
+    expect(await screen.findByText('verifyEmailSuccess')).toBeInTheDocument();
     expect(mocks.markSignupPending).toHaveBeenCalledWith('credentials', 'en');
   });
 
   it('does not mark signup complete when verification fails', async () => {
-    mocks.verifyEmail.mockRejectedValue(new Error('invalid token'));
+    mocks.verifyEmail.mockRejectedValue(
+      new ApiResponseError({
+        payload: null,
+        message: 'Token 9f2c… not found in auth_tokens',
+        status: 400,
+        code: 'invalid_token',
+      }),
+    );
 
     render(<VerifyEmailClient />);
 
-    expect(await screen.findByText('invalid token')).toBeInTheDocument();
+    expect(await screen.findByText('verifyEmailFailed')).toBeInTheDocument();
+    expect(screen.queryByText(/auth_tokens/)).not.toBeInTheDocument();
     expect(mocks.markSignupPending).not.toHaveBeenCalled();
+  });
+
+  it('shows the localized success copy, not the server message', async () => {
+    mocks.verifyEmail.mockResolvedValue({ message: 'Email verified. You can now sign in.' });
+
+    render(<VerifyEmailClient />);
+
+    expect(await screen.findByText('verifyEmailSuccess')).toBeInTheDocument();
+    expect(screen.queryByText('Email verified. You can now sign in.')).not.toBeInTheDocument();
+  });
+
+  it('uses the shared API copy when verification is rate limited or the server fails', async () => {
+    mocks.verifyEmail.mockRejectedValue(
+      new ApiResponseError({
+        payload: null,
+        message: 'Too many requests from 10.0.0.1',
+        status: 429,
+      }),
+    );
+
+    const { unmount } = render(<VerifyEmailClient />);
+
+    expect(await screen.findByText('errors.api.rateLimited')).toBeInTheDocument();
+    expect(screen.queryByText(/10\.0\.0\.1/)).not.toBeInTheDocument();
+    unmount();
+
+    mocks.verifyEmail.mockRejectedValue(
+      new ApiResponseError({ payload: null, message: 'MongoServerError: E11000', status: 500 }),
+    );
+    render(<VerifyEmailClient />);
+
+    expect(await screen.findByText('errors.api.server')).toBeInTheDocument();
+    expect(screen.queryByText(/MongoServerError/)).not.toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, type SignInResponse } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
@@ -22,6 +22,7 @@ import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 import { resolveAuthCallback, withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { replaceBrowserLocation } from '@/lib/routing/browser-navigation';
 import { markAnalyticsGoogleAuthPending, markAnalyticsLoginPending } from '@/lib/analytics/client';
 
@@ -29,6 +30,21 @@ interface LoginFormProps {
   locale: string;
   googleEnabled?: boolean;
   onSwitchMode?: () => void;
+}
+
+/**
+ * Auth.js failures the shared API error layer has copy for (RIN-756): a throttled sign-in
+ * arrives as the `rate_limit_exceeded` CredentialsSignin code, a server failure as
+ * `Configuration` or a 5xx. Null keeps the form's own `loginFailed` copy.
+ */
+function signInFailureForApiLayer(
+  code: string | null | undefined,
+  result: SignInResponse,
+): { code?: string; status: number } | null {
+  if (code === 'rate_limit_exceeded') return { code, status: 429 };
+  if (result.status >= 500) return { status: result.status };
+  if (result.error === 'Configuration') return { status: 500 };
+  return null;
 }
 
 type ErrorState = {
@@ -42,6 +58,7 @@ function subscribeToClientHydration() {
 
 function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProps) {
   const t = useTranslations('auth');
+  const apiErrorMessage = useApiErrorMessage();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<ErrorState | null>(null);
   const [retrySeconds, setRetrySeconds] = useState(0);
@@ -108,7 +125,11 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         } else if (code === 'invalid_credentials' || code === 'CredentialsSignin') {
           setServerError({ code: 'invalid_credentials', message: t('invalidEmailPassword') });
         } else {
-          setServerError({ ...(code ? { code } : {}), message: t('loginFailed') });
+          const failure = signInFailureForApiLayer(code, result);
+          setServerError({
+            ...(code ? { code } : {}),
+            message: failure ? apiErrorMessage(failure) : t('loginFailed'),
+          });
         }
         return;
       }

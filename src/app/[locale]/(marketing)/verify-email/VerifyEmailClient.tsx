@@ -9,6 +9,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineCheckCircle, HiOutlineExclamationCircle, HiOutlineMail } from 'react-icons/hi';
 import { verifyEmail } from '@/features/auth/api/auth-api';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { markAnalyticsSignupPending } from '@/lib/analytics/client';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
@@ -17,14 +19,15 @@ type Status = 'pending' | 'verifying' | 'success' | 'error';
 
 type ViewState = {
   status: Status;
+  /** Extra line under the title; null when the title already says it all. */
   message: string | null;
 };
 
 type ViewAction =
-  | { type: 'missing-token'; message: string }
+  | { type: 'missing-token' }
   | { type: 'verifying' }
-  | { type: 'success'; message: string }
-  | { type: 'error'; message: string };
+  | { type: 'success' }
+  | { type: 'error'; message: string | null };
 
 const INITIAL_VIEW_STATE: ViewState = {
   status: 'pending',
@@ -34,11 +37,11 @@ const INITIAL_VIEW_STATE: ViewState = {
 function viewStateReducer(_state: ViewState, action: ViewAction): ViewState {
   switch (action.type) {
     case 'missing-token':
-      return { status: 'error', message: action.message };
+      return { status: 'error', message: null };
     case 'verifying':
       return { status: 'verifying', message: null };
     case 'success':
-      return { status: 'success', message: action.message };
+      return { status: 'success', message: null };
     case 'error':
       return { status: 'error', message: action.message };
     default:
@@ -48,6 +51,7 @@ function viewStateReducer(_state: ViewState, action: ViewAction): ViewState {
 
 function VerifyEmailContent() {
   const t = useTranslations('auth');
+  const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
@@ -62,26 +66,28 @@ function VerifyEmailContent() {
     calledRef.current = true;
 
     if (!token) {
-      dispatch({ type: 'missing-token', message: t('verifyEmailFailed') });
+      dispatch({ type: 'missing-token' });
       return;
     }
 
     dispatch({ type: 'verifying' });
     verifyEmail(token)
-      .then((result) => {
+      .then(() => {
         markAnalyticsSignupPending('credentials', locale);
-        dispatch({
-          type: 'success',
-          message: result.message ?? t('verifyEmailSuccess'),
-        });
+        dispatch({ type: 'success' });
       })
       .catch((error: unknown) => {
+        // A bad or expired link (`invalid_token`) needs nothing beyond the title's link copy;
+        // rate limits, server and network failures add the shared API copy. Never the server
+        // text (RIN-756).
+        const { kind } = describeApiError(error);
+        const linkProblem = kind === 'validation' || kind === 'not_found' || kind === 'unknown';
         dispatch({
           type: 'error',
-          message: error instanceof Error ? error.message : t('verifyEmailFailed'),
+          message: linkProblem ? null : apiErrorMessage(error),
         });
       });
-  }, [locale, token, t]);
+  }, [locale, token, t, apiErrorMessage]);
 
   return (
     <div className="relative min-h-screen overflow-hidden">

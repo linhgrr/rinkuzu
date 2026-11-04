@@ -82,12 +82,15 @@
     --brand-action-text: var(--neutral-white);
     /* The action colour that carries white text. `--brand-action` is 2.57:1
        against white and its dark-theme value is lighter still, so neither
-       clears the 3:1 floor; this one does in both themes, which is why it does
-       not vary by theme. For a filled control whose label is white. */
-    --brand-action-strong: #e67020;
-    /* Its hover. Theme-stable for the same reason: --brand-action-hover is
-       #fdba74 in dark, where white reaches only 1.7:1 (RIN-810). */
-    --brand-action-strong-hover: #ea660c;
+       clears the 3:1 floor. This one is 5.18:1 (Tailwind orange-700), so a
+       normal-size white label passes AA (4.5:1) in both themes, which is why it
+       does not vary by theme. For a filled control whose label is white
+       (RIN-719; was #e67020 at 3.13:1, large text only). */
+    --brand-action-strong: #c2410c;
+    /* Its hover (orange-800, 7.31:1). Theme-stable for the same reason:
+       --brand-action-hover is #fdba74 in dark, where white reaches only 1.7:1
+       (RIN-810). */
+    --brand-action-strong-hover: #9a3412;
     --brand-trust: var(--accent);
     --brand-trust-hover: var(--accent-hover);
     --brand-trust-active: var(--primary-6);
@@ -379,8 +382,8 @@
     --brand-action-hover: #fdba74;
     --brand-action-active: #fed7aa;
     --brand-action-text: #1c1917;
-    --brand-action-strong: #e67020;
-    --brand-action-strong-hover: #ea660c;
+    --brand-action-strong: #c2410c;
+    --brand-action-strong-hover: #9a3412;
 
     --brand-trust: #34d399;
     --brand-trust-hover: #6ee7b7;

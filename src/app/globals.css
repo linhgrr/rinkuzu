@@ -91,9 +91,13 @@
        --brand-action-hover is #fdba74 in dark, where white reaches only 1.7:1
        (RIN-810). */
     --brand-action-strong-hover: #9a3412;
-    --brand-trust: var(--accent);
-    --brand-trust-hover: var(--accent-hover);
-    --brand-trust-active: var(--primary-6);
+    /* Trust stays in the orange family in light (Figma reskin), but at the
+       strong step: var(--accent) was 2.57:1 as text on white and 2.44:1 on
+       bg-green-50 (RIN-682). These clear 4.5:1 as text and under a white
+       label. Login/signup keep the old orange through .auth-shell. */
+    --brand-trust: var(--brand-action-strong);
+    --brand-trust-hover: var(--brand-action-strong-hover);
+    --brand-trust-active: #7c2d12;
 
     /* ===== Figma design tokens — source of truth (Rinkuzu FINAL) ===== */
     /* Primary (orange) */
@@ -169,6 +173,10 @@
     --info-surface: var(--status-1);
     --purple: var(--purple-500);
     --purple-surface: rgba(139, 92, 246, 0.1);
+    /* Badge text on those surfaces: --info is 4.13:1 and --purple 3.75:1 there;
+       these are 5.56:1 and 6.29:1 (RIN-682). */
+    --info-strong: #0559c7;
+    --purple-strong: #6d28d9;
     --error: var(--red-500);
     --error-border: rgba(229, 72, 77, 0.35);
     --error-surface: rgba(229, 72, 77, 0.08);
@@ -354,6 +362,8 @@
     --success-surface: rgba(52, 211, 153, 0.14);
     --purple: #a78bfa;
     --purple-surface: rgba(167, 139, 250, 0.16);
+    --info-strong: var(--info);
+    --purple-strong: var(--purple);
 
     /* Legacy roles resolve through the semantic layer, as in light. They are
        re-declared so a dark subtree below <html> resolves them against its own
@@ -708,7 +718,7 @@
 
   .badge-info {
     background: var(--info-surface);
-    color: var(--info);
+    color: var(--info-strong);
   }
 
   .badge-primary {
@@ -723,7 +733,7 @@
 
   .badge-purple {
     background: var(--purple-surface);
-    color: var(--purple);
+    color: var(--purple-strong);
   }
 
   .badge-gray {
@@ -847,7 +857,7 @@
   }
 
   .pricing-popular-badge {
-    background: var(--brand-action);
+    background: var(--brand-action-strong);
     color: white;
   }
 

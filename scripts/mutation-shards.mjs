@@ -72,3 +72,54 @@ export function mutationShardPaths(shard, shardCount) {
     incrementalRelative: `${stem}.incremental.json`,
   };
 }
+
+function prefixIds(ids, prefix) {
+  return Array.isArray(ids) ? ids.map((id) => `${prefix}${id}`) : ids;
+}
+
+/**
+ * Merge shard reports produced by ONE run (same head SHA) into a single
+ * mutation-testing-elements report. Mutant and test ids are only unique per
+ * Stryker run, so each shard's ids are namespaced `<k>:`. `config.mutate` is
+ * the full policy the shards partition, so the existing full-mode evidence
+ * binder judges the merged report unchanged (it still checks the exact file
+ * inventory, which is what proves the shards covered everything).
+ *
+ * @param {Array<{ shard: number, report?: any }>} shardReports
+ * @param {string[]} fullMutate
+ */
+export function mergeMutationShardReports(shardReports, fullMutate) {
+  if (shardReports.length === 0) throw new Error('No shard reports to merge.');
+  const [{ report: first }] = shardReports;
+  /** @type {Record<string, any>} */
+  const files = {};
+  /** @type {Record<string, any>} */
+  const testFiles = {};
+  for (const { shard, report } of shardReports) {
+    const prefix = `${shard}:`;
+    for (const [file, details] of Object.entries(report?.files ?? {})) {
+      if (files[file]) throw new Error(`File ${file} appears in more than one shard report.`);
+      files[file] = {
+        ...details,
+        mutants: (details?.mutants ?? []).map((mutant) => ({
+          ...mutant,
+          id: `${prefix}${mutant.id}`,
+          coveredBy: prefixIds(mutant.coveredBy, prefix),
+          killedBy: prefixIds(mutant.killedBy, prefix),
+        })),
+      };
+    }
+    for (const [file, details] of Object.entries(report?.testFiles ?? {})) {
+      const tests = (details?.tests ?? []).map((test) => ({ ...test, id: `${prefix}${test.id}` }));
+      testFiles[file] = testFiles[file]
+        ? { ...testFiles[file], tests: [...testFiles[file].tests, ...tests] }
+        : { ...details, tests };
+    }
+  }
+  return {
+    ...first,
+    files,
+    testFiles,
+    config: { ...first.config, mutate: [...fullMutate] },
+  };
+}

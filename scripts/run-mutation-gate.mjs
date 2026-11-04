@@ -489,14 +489,23 @@ const STRYKER_TIMEOUT_TEXT = 'Stryker timed out after';
  * A stale shard report from an earlier run is deleted first, so only reports
  * produced by THIS run (this head SHA) can ever be merged.
  *
+ * The shard gets min(per-shard timeout, time left before the campaign
+ * deadline); with less than MIN_STRYKER_TIMEOUT_MS left it is not started and
+ * counts as timed out. Shard runs use Vitest related-test selection
+ * (MUTATION_VITEST_RELATED=1, read by stryker.config.mjs) so each one does not
+ * pay the whole-corpus dry run; the inventory check below still fails a shard
+ * whose report drops a file.
+ *
  * @typedef {{
  *   shard: number;
  *   files: number;
  *   reportRelative: string;
  *   incrementalRelative: string;
- *   status: 'empty' | 'completed' | 'failed' | 'timed_out';
+ *   vitestRelated: boolean;
+ *   status: 'empty' | 'completed' | 'failed' | 'timed_out' | 'not_started';
  *   report?: any;
  *   error?: string;
+ *   timeoutMs?: number;
  *   durationMs?: number;
  *   strykerExitCode?: number | null;
  *   strykerStderrTail?: string | null;
@@ -508,17 +517,31 @@ function runMutationShard(root, paths, shard, shardCount, files, ctx) {
   const shardReportPath = path.join(root, shardPaths.reportRelative);
   rmSync(shardReportPath, { force: true });
   removeStaleMutationReport(root);
-  const summary = { shard, files: files.length, ...shardPaths };
+  const summary = { shard, files: files.length, ...shardPaths, vitestRelated: true };
   if (files.length === 0) return { ...summary, status: 'empty', report: null };
-  const startedAt = Date.now();
+  const remainingMs = ctx.deadline - ctx.now();
+  if (remainingMs < MIN_STRYKER_TIMEOUT_MS) {
+    return {
+      ...summary,
+      status: 'not_started',
+      error: `${STRYKER_TIMEOUT_TEXT} the ${ctx.budgetMs}ms campaign budget (MUTATION_STRYKER_TIMEOUT_MS) before shard ${shard} of ${shardCount} could start.`,
+    };
+  }
+  const timeoutMs = Math.min(ctx.timeoutMs, remainingMs);
+  const startedAt = ctx.now();
   const result = ctx.invoke(root, {
     mode: 'full',
     mutatePatterns: toStrykerMutatePatterns(files),
     incrementalFile: shardPaths.incrementalRelative,
-    timeoutMs: ctx.timeoutMs,
-    env: ctx.env,
+    timeoutMs,
+    env: { ...ctx.env, MUTATION_VITEST_RELATED: '1' },
   });
-  const timing = { ...summary, durationMs: Date.now() - startedAt, strykerExitCode: result.status };
+  const timing = {
+    ...summary,
+    timeoutMs,
+    durationMs: ctx.now() - startedAt,
+    strykerExitCode: result.status,
+  };
   if (result.error) {
     const timedOut = result.error.message.includes(STRYKER_TIMEOUT_TEXT);
     return { ...timing, status: timedOut ? 'timed_out' : 'failed', error: result.error.message };
@@ -547,10 +570,13 @@ function runMutationShard(root, paths, shard, shardCount, files, ctx) {
   }
 }
 
+/** A shard killed by its timeout, or never started because the campaign budget ran out. */
+const isTimeoutClass = (result) => result.status === 'timed_out' || result.status === 'not_started';
+
 /** Shard summaries for gate-run-meta; timeout text stays out unless every failure is a timeout. */
 function shardMetaSummary(results, keepTimeoutText) {
   return results.map(({ report: _report, error, ...rest }) =>
-    error && (keepTimeoutText || rest.status !== 'timed_out') ? { ...rest, error } : rest,
+    error && (keepTimeoutText || !isTimeoutClass(rest)) ? { ...rest, error } : rest,
   );
 }
 
@@ -562,22 +588,36 @@ function shardMetaSummary(results, keepTimeoutText) {
  * full-mode evidence path. Timeouts (and nothing worse) keep the
  * "Stryker timed out after" text in gate-run-meta so the gate reports
  * MUTATION UNVERIFIED; any other shard failure fails closed.
+ *
+ * MUTATION_STRYKER_TIMEOUT_MS (the gate's 150 min) is the deadline for the
+ * whole campaign, so N shards never outlive the gate job's own kill: a job
+ * killed mid-shard writes no gate-run-meta and goes red instead of UNVERIFIED.
  */
 function runShardedStrykerCampaign(root, paths, commonMeta, scope, sourceInventory, ctx) {
   const fail = (fields) => ({ ok: false, result: markFailed(root, commonMeta, fields, scope) });
   const mutateInput = [...CRITICAL_MUTATION_PATTERNS, '!src/**/*.{test,spec}.{ts,tsx}'];
   const { shardCount } = ctx;
+  const now = ctx.now ?? Date.now;
+  const campaignStart = now();
   let timeoutMs;
+  let budgetMs;
   let fingerprintT0;
   try {
     timeoutMs = resolveShardTimeoutMs(ctx.env);
+    budgetMs = resolveStrykerTimeoutMs(ctx.env, 'full');
     fingerprintT0 = captureCampaignFingerprint(root, 'full', sourceInventory);
   } catch (error) {
     return fail({ failureReason: 'shard_setup_failed', errorMessage: errorMessage(error) });
   }
   mkdirSync(path.join(root, MUTATION_SHARDS_DIR_RELATIVE), { recursive: true });
   const results = partitionMutationInventory(sourceInventory, shardCount).map((files, index) =>
-    runMutationShard(root, paths, index + 1, shardCount, files, { ...ctx, timeoutMs }),
+    runMutationShard(root, paths, index + 1, shardCount, files, {
+      ...ctx,
+      now,
+      timeoutMs,
+      budgetMs,
+      deadline: campaignStart + budgetMs,
+    }),
   );
 
   let fingerprintT1;
@@ -601,7 +641,7 @@ function runShardedStrykerCampaign(root, paths, commonMeta, scope, sourceInvento
       shards: shardMetaSummary(results, false),
     });
   }
-  const timedOut = results.filter((r) => r.status === 'timed_out');
+  const timedOut = results.filter(isTimeoutClass);
   if (timedOut.length > 0) {
     return fail({
       failureReason: 'stryker_spawn_failed',
@@ -691,6 +731,7 @@ export function executeMutationGate(root, options) {
         env,
         invoke,
         shardCount,
+        now: options.now,
       })
     : runStrykerCampaign(
         root,

@@ -13,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runMutationGate } from '../../scripts/check-mutation-report.mjs';
+import { partitionMutationInventory } from '../../scripts/mutation-shards.mjs';
 import {
   CRITICAL_MUTATION_PATTERNS,
   literalPathFromStrykerMutatePattern,
@@ -1486,12 +1487,18 @@ describe('sharded full mutation campaign (RIN-889)', () => {
     mutatePatterns?: string[];
     incrementalFile?: string;
     timeoutMs?: number;
+    env?: NodeJS.ProcessEnv;
   };
 
-  function fakeShardInvoke(root: string, outcome: (shard: number) => 'ok' | 'timeout' | 'crash') {
+  function fakeShardInvoke(
+    root: string,
+    outcome: (shard: number) => 'ok' | 'timeout' | 'crash',
+    onShard: (options: InvokeOptions) => void = () => {},
+  ) {
     const calls: InvokeOptions[] = [];
     const invoke = (_root: string, options: InvokeOptions) => {
       calls.push(options);
+      onShard(options);
       const shard = Number(/shards\/(\d+)-of-/.exec(options.incrementalFile ?? '')?.[1]);
       const kind = outcome(shard);
       if (kind === 'timeout') {
@@ -1625,5 +1632,57 @@ describe('sharded full mutation campaign (RIN-889)', () => {
     const raw = readFileSync(path.join(root, 'reports/mutation/gate-run-meta.json'), 'utf8');
     expect(JSON.parse(raw).failureReason).toBe('shard_failed');
     expect(raw).not.toContain('Stryker timed out after');
+  });
+
+  it('keeps the whole campaign inside MUTATION_STRYKER_TIMEOUT_MS: later shards are shortened, then not started', () => {
+    const root = seedMinimalMutationRepo();
+    // Enough model files that all four shards are non-empty.
+    const extra = Array.from({ length: 16 }, (_, i) => `src/models/Budget${i}.ts`);
+    extra.forEach((rel, i) => write(root, rel, `export const b${i} = ${i};\n`));
+    commitAll(root, 'more models');
+    const inventory = ['src/app/api/folders/[id]/route.ts', 'src/models/User.ts', ...extra];
+    expect(partitionMutationInventory(inventory, 4).every((files) => files.length > 0)).toBe(true);
+
+    const MIN = 60_000;
+    let clock = 1_000_000;
+    // Shards 1 and 2 use their full 60 min; shard 3 then has 30 min left of
+    // the 150 min budget, uses all of it and times out; shard 4 never starts.
+    const { calls, invoke } = fakeShardInvoke(
+      root,
+      (shard) => (shard === 3 ? 'timeout' : 'ok'),
+      (options) => {
+        clock += options.timeoutMs ?? 0;
+      },
+    );
+    const result = executeMutationGate(root, {
+      mode: 'full',
+      shards: 4,
+      env: testEnv({
+        MUTATION_STRYKER_TIMEOUT_MS: String(150 * MIN),
+        MUTATION_SHARD_TIMEOUT_MS: String(60 * MIN),
+      }),
+      invokeStrykerFn: invoke,
+      now: () => clock,
+      evaluateFn: () => {
+        throw new Error('should not evaluate a partial campaign');
+      },
+    });
+
+    expect(calls.map((call) => call.timeoutMs)).toEqual([60 * MIN, 60 * MIN, 30 * MIN]);
+    expect(calls.every((call) => call.env?.['MUTATION_VITEST_RELATED'] === '1')).toBe(true);
+    expect(result).toMatchObject({ status: 'failed', exitCode: 1 });
+    expect(existsSync(path.join(root, 'reports/mutation/mutation.json'))).toBe(false);
+    const meta = readMeta(root);
+    expect(meta.failureReason).toBe('stryker_spawn_failed');
+    expect(meta.errorMessage).toMatch(/^2 of 4 mutation shards did not finish/);
+    expect(meta.errorMessage).toContain('Stryker timed out after');
+    expect(meta.shards.map((s: { status: string }) => s.status)).toEqual([
+      'completed',
+      'completed',
+      'timed_out',
+      'not_started',
+    ]);
+    expect(meta.shards[3].error).toContain('campaign budget');
+    expect(meta.shards.every((s: { vitestRelated: boolean }) => s.vitestRelated)).toBe(true);
   });
 });

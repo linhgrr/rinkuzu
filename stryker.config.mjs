@@ -30,8 +30,11 @@ const config = {
     configFile: 'vitest.config.ts',
     // Vitest related-test selection can omit unreferenced mutation candidates
     // from the JSON inventory. Run the full unit corpus so missing files fail
-    // as NoCoverage instead of disappearing from evidence.
-    related: false,
+    // as NoCoverage instead of disappearing from evidence. Sharded campaigns
+    // (run-mutation-gate --shards) opt in with MUTATION_VITEST_RELATED=1 so a
+    // shard does not pay the whole-corpus dry run; the runner sets it itself,
+    // and the per-shard inventory check still fails a shard that drops a file.
+    related: process.env['MUTATION_VITEST_RELATED'] === '1',
   },
   coverageAnalysis: 'perTest',
   reporters: ['progress', 'clear-text', 'json', 'html'],

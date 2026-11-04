@@ -124,3 +124,14 @@ describe('AdaptiveLearningUpload health gate', () => {
     expect(uploadPdfMock).not.toHaveBeenCalled();
   });
 });
+
+describe('AdaptiveLearningUpload file input', () => {
+  afterEach(cleanup);
+
+  it('gives the hidden PDF file input an accessible name (RIN-689)', () => {
+    const { container } = render(<AdaptiveLearningUpload />);
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+    expect(input).toHaveAccessibleName('uploadPage.fileInputLabel');
+  });
+});

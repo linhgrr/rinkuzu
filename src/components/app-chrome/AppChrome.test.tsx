@@ -6,6 +6,8 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
+import AdaptiveLearningLayout from '@/app/[locale]/(app)/adaptive/layout';
+import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { AppChrome } from './AppChrome';
 
 const { swrMock } = vi.hoisted(() => ({ swrMock: vi.fn() }));
@@ -73,5 +75,27 @@ describe('AppChrome', () => {
     creditLinks.forEach((link) => expect(link).toHaveAttribute('href', '/premium-quizzes'));
     expect(container.querySelector('#app-main-content')).toHaveAttribute('tabindex', '-1');
     expect((await axe(container)).violations).toEqual([]);
+  });
+
+  it('gives adaptive routes one translated skip link and one main landmark (RIN-689)', () => {
+    swrMock.mockReturnValue({ data: undefined, isLoading: false });
+    render(
+      <AppChrome>
+        <MainLayoutWrapper>
+          <AdaptiveLearningLayout>
+            <p>Adaptive content</p>
+          </AdaptiveLearningLayout>
+        </MainLayoutWrapper>
+      </AppChrome>,
+    );
+
+    const skipLinks = screen
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('href')?.startsWith('#'));
+    expect(skipLinks).toHaveLength(1);
+    expect(skipLinks[0]).toHaveAccessibleName('skipToContent');
+    expect(screen.queryByText('Skip to main content')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(screen.getByRole('main')).toHaveTextContent('Adaptive content');
   });
 });

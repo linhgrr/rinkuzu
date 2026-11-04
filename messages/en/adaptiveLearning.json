@@ -75,6 +75,7 @@
     "uploadMaterialDescription": "Upload a textbook or study material to create a personalized learning path.",
     "pdfLimitHint": "Your current plan supports up to {maxPages} pages per PDF.",
     "pdfTechnicalLimit": "Maximum file size: {maxSizeMb}MB.",
+    "fileInputLabel": "Choose a PDF file",
     "uploading": "Uploading...",
     "fileRequired": "Choose a PDF before creating the learning path.",
     "replaceFile": "Replace file",

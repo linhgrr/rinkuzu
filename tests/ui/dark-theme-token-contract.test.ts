@@ -10,9 +10,9 @@ import { describe, expect, it } from 'vitest';
 
 const css = fs.readFileSync('src/app/globals.css', 'utf8');
 
-function darkBlock(): Map<string, string> {
-  const start = css.indexOf("[data-theme='dark'],\n  .dark {");
-  expect(start, 'dark theme block').toBeGreaterThan(-1);
+function block(selector: string): Map<string, string> {
+  const start = css.indexOf(selector);
+  expect(start, selector).toBeGreaterThan(-1);
   const body = css
     .slice(css.indexOf('{', start) + 1, css.indexOf('\n  }', start))
     .replace(/\/\*[\s\S]*?\*\//g, '');
@@ -21,6 +21,19 @@ function darkBlock(): Map<string, string> {
     tokens.set(name, value.trim());
   }
   return tokens;
+}
+
+function darkBlock(): Map<string, string> {
+  return block("[data-theme='dark'],\n  .dark {");
+}
+
+/** The colour a token has in a theme, following `var()` chains. Dark falls
+ *  back to light for tokens it does not re-declare, as the cascade does. */
+function resolve(theme: Array<Map<string, string>>, name: string): string {
+  const value = theme.map((tokens) => tokens.get(name)).find((v) => v !== undefined);
+  if (value === undefined) throw new Error(`missing token ${name}`);
+  const ref = /^var\((--[\w-]+)\)$/.exec(value);
+  return ref ? resolve(theme, ref[1] ?? '') : value;
 }
 
 type Rgba = [number, number, number, number];
@@ -124,6 +137,7 @@ describe('dark theme token contract', () => {
 
   it('keeps --brand-action-strong theme-stable and gives dark actions a dark label', () => {
     expect(dark.get('--brand-action-strong')).toBe('#e67020');
+    expect(dark.get('--brand-action-strong-hover')).toBe('#ea660c');
     // RIN-797: white is ~2.3:1 on the dark #fb923c, so the dark label is ink.
     expect(dark.get('--brand-action-text')).toBe('#1c1917');
   });
@@ -147,5 +161,46 @@ describe('dark theme token contract', () => {
     const background = over(token(dark, bg), token(dark, '--surface'));
     const ratio = contrast(over(token(dark, fg), background), background);
     expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('analytics consent accept button contrast (RIN-810)', () => {
+  const source = fs.readFileSync('src/components/analytics/AnalyticsRoot.tsx', 'utf8');
+  const choiceClass = /const choiceClass = '([^']+)'/.exec(source)?.[1] ?? '';
+  const accept =
+    /className=\{`\$\{choiceClass\}([^`]*\btext-white\b[^`]*)`\}/.exec(source)?.[1] ?? '';
+  const light = block(':root {');
+  const themes = { light: [light], dark: [darkBlock(), light] };
+  const white = parseColor('#ffffff');
+
+  function brandToken(state: 'rest' | 'hover'): string {
+    const prefix = state === 'hover' ? 'hover:bg-brand-' : 'bg-brand-';
+    const name = accept
+      .split(/\s+/)
+      .find((c) => c.startsWith(prefix))
+      ?.slice(prefix.length);
+    expect(name, `${state} background class`).toBeDefined();
+    return `--brand-${name ?? ''}`;
+  }
+
+  it('sets the label in large text, so the WCAG floor is 3:1', () => {
+    // 20 px bold is large text (>= 18.66 px bold).
+    expect(choiceClass).toMatch(/\btext-xl\b/);
+    expect(choiceClass).toMatch(/\bfont-bold\b/);
+  });
+
+  it.each([
+    ['light', 'rest'],
+    ['light', 'hover'],
+    ['dark', 'rest'],
+    ['dark', 'hover'],
+  ] as const)('white label clears 3:1 in %s at %s', (theme, state) => {
+    const bg = parseColor(resolve(themes[theme], brandToken(state)));
+    expect(contrast(white, bg)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('keeps the light rendering unchanged', () => {
+    expect(resolve(themes.light, brandToken('rest'))).toBe('#e67020');
+    expect(resolve(themes.light, brandToken('hover'))).toBe('#ea660c');
   });
 });

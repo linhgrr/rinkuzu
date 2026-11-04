@@ -87,8 +87,8 @@ export function AnalyticsRoot() {
           // floor for text this size, and its dark-theme value is lighter
           // still, so the banner failed the accessibility budget over both the
           // landing and login pages. `action-strong` is the same colour in
-          // both themes for exactly that reason.
-          className={`${choiceClass} border border-transparent bg-brand-action-strong text-white hover:bg-brand-action-hover`}
+          // both themes for exactly that reason, and so is its hover.
+          className={`${choiceClass} border border-transparent bg-brand-action-strong text-white hover:bg-brand-action-strong-hover`}
           onClick={() => {
             grantAnalyticsConsent();
           }}

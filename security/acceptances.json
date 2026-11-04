@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "acceptances": [
     {
-      "fingerprint": "1289d50f010711b0953bcbaf8f5dda5d3859884af9d33a5d4be13d5ed5e8d895",
+      "fingerprint": "dc2efc646fe0c05b88872ec05f77c0fce042546d2bb9531ff2cc56973f29bab9",
       "package": "@lhci/cli",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -16,7 +16,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "c7d9dc558c49b554b153af68c79888cdc95636aab10bc7caf03f319f5fe8d104",
+      "fingerprint": "1840439355dd5ee4296b1f8fe8af0e6144a3624e9716e1b6369243c2f9b223a2",
       "package": "@lhci/utils",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -30,7 +30,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "57b9019bb1d455da96df4df87a4ee4a93138c30e6ae998bdbb95716538894957",
+      "fingerprint": "a0cd3b9e0ee140dfdc3bebff4bac576d6d644f63d512eb2ea9403763ffe9261f",
       "package": "@puppeteer/browsers",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -44,7 +44,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "5dc2018b5946e7945679faa3f55111e5cbe6355d405b550c54087266939cfee0",
+      "fingerprint": "92dd43c4e9955237d0b6152446985651b7a8354fd77cd58f67f0f007df279b1e",
       "package": "@size-limit/preset-app",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -58,7 +58,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "044d0e9760d31d9b77484f22113551d0baae77338e0ac372fc3d8c03a77d8da6",
+      "fingerprint": "646b62b381055eeec05f432077f7380dadc09d6667a6f02a9dfea729adfa33cb",
       "package": "@size-limit/time",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -72,7 +72,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "21dd9e3eb272e7ea9726202baec3d0320735e45e47222b8c4c3a16fce3671d07",
+      "fingerprint": "8000f944c8f333bb11aded1c88a052d3bbdaaf9e40cdc64002d46532fb0f6428",
       "package": "estimo",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -86,7 +86,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "b74f8cc4d0c45cfd3a4987239149e7ea6a545ff0cfc9af32be61d0413a243258",
+      "fingerprint": "33f8cb3ac995aa5a6ab960b44f815ac5205965058666a85fd557fdf53f927577",
       "package": "extract-zip",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -100,7 +100,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "70b4d178009e14e1374c4a524f118e4d95028687b819abe003c3e01b5686d346",
+      "fingerprint": "1ce58c9430b839f426faabc44130ff2deeb10aa72babde04d1993b4f1042b032",
       "package": "find-chrome-bin",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -114,7 +114,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "87a623e304baf55ee5273ad28431e45f9c46b9913996ebddb90af47c84d383c5",
+      "fingerprint": "def8d29ae8df0a91e659d6c911d6fdfc00b58ea0dc43396d910eb46c97ec7952",
       "package": "lighthouse",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -128,7 +128,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "0339d496ab137256f10406e4e8bbdcd4c26e0c2a529b240f4c79f4bc85e838a0",
+      "fingerprint": "6d3a02e04a25392aec10696b91431a08cedb8e33a63bd77792685aaf27b25127",
       "package": "puppeteer-core",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -142,7 +142,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "5d2a9766b3c6dc4a2bc96452342256fa75e76a0de49fe54649d9fadeb1f05f6f",
+      "fingerprint": "43362fd428f1787c027ce9027bf83508bc114e0aa8edba2c7314b1bea823e86a",
       "package": "@ag-ui/client",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -156,7 +156,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "fc3b042f3dd0f3313a722a1c3c47b8735c9c49ea4236613592636c40de25323c",
+      "fingerprint": "83c30cb0321d539caf6c49aa612f06e9b065fa1ebbd3626a79cb2cba95fee9fe",
       "package": "@ag-ui/core",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -170,7 +170,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "86d4a197f0d3ffa2b619f34c54a577ace795f9f73f1316a1541a8ba3072fde19",
+      "fingerprint": "9f41c6349e82ac36e9bb43860e090d1aef694b3800461d0fe2a9bd153ea2f718",
       "package": "@ag-ui/encoder",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -184,7 +184,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "7dd071ec5ece4a35ea2292c519c9b957ebee7ccb46044fc5b7bbb0db533c8d20",
+      "fingerprint": "260fde12588f5b385888c77ab8502543c624b637882741a8dd9195e020aa1e09",
       "package": "@ag-ui/proto",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -198,7 +198,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "5b2ae57665fb9fac014e9a99788d7eb1fc8a6b01b65472a08c82bbda3a468df4",
+      "fingerprint": "27a43e776d791438961011d5ff4f903aac220314bfeeebcef1439c415b6f91ff",
       "package": "@assistant-ui/react-ag-ui",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -212,7 +212,7 @@
       "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "25f8da868e2a603e5d6698b99eab40b0876d5685b603f85d505aa6ec9f8408f5",
+      "fingerprint": "74d776d48c1ac881b281be39f40ae228229812baf14e7fe949cad2231dc5dae0",
       "package": "zod",
       "kind": "risk_acceptance",
       "severity": "high",

@@ -52,7 +52,75 @@ describe('npm audit finding fingerprints', () => {
     };
 
     expect(fingerprintAuditFinding('example', finding)).not.toBe(
-      fingerprintAuditFinding('example', { ...finding, range: '<2.0.0' }),
+      fingerprintAuditFinding('example', { ...finding, severity: 'critical' }),
+    );
+    expect(fingerprintAuditFinding('example', finding)).not.toBe(
+      fingerprintAuditFinding('example', { ...finding, via: ['other-package'] }),
+    );
+    expect(fingerprintAuditFinding('example', finding)).not.toBe(
+      fingerprintAuditFinding('example', {
+        ...finding,
+        nodes: ['node_modules/a/node_modules/example'],
+      }),
+    );
+  });
+
+  // RIN-880: npm derives the top-level `range` of a transitive-only finding from the
+  // registry's version list, so it moves whenever the publisher ships a new (canary)
+  // version or the npm cache is fresher. Same lockfile, different range.
+  it('ignores the registry-derived top-level range', () => {
+    const finding = {
+      severity: 'high',
+      isDirect: false,
+      range: '<=1.0.3',
+      via: ['zod'],
+      effects: [],
+      nodes: ['node_modules/@ag-ui/client'],
+      fixAvailable: false,
+    };
+
+    expect(fingerprintAuditFinding('@ag-ui/client', finding)).toBe(
+      fingerprintAuditFinding('@ag-ui/client', {
+        ...finding,
+        range: '<=1.0.4-canary.1792171324.0',
+      }),
+    );
+  });
+
+  it('still changes the fingerprint when a direct advisory id or its vulnerable range changes', () => {
+    const advisory = {
+      source: 1_000_001,
+      name: 'zod',
+      dependency: 'zod',
+      title: 'Example advisory',
+      url: 'https://github.com/advisories/GHSA-xxxx-xxxx-xxxx',
+      severity: 'high',
+      cwe: ['CWE-400'],
+      cvss: { score: 7.5, vectorString: null },
+      range: '<3.25.77',
+    };
+    const finding = {
+      severity: 'high',
+      isDirect: false,
+      range: '<3.25.77',
+      via: [advisory],
+      effects: [],
+      nodes: ['node_modules/zod'],
+      fixAvailable: false,
+    };
+    const base = fingerprintAuditFinding('zod', finding);
+
+    expect(base).not.toBe(
+      fingerprintAuditFinding('zod', {
+        ...finding,
+        via: [{ ...advisory, source: 1_000_002, url: 'https://github.com/advisories/GHSA-yyyy' }],
+      }),
+    );
+    expect(base).not.toBe(
+      fingerprintAuditFinding('zod', { ...finding, via: [{ ...advisory, range: '<4.0.0' }] }),
+    );
+    expect(base).not.toBe(
+      fingerprintAuditFinding('zod', { ...finding, via: [advisory, 'other-package'] }),
     );
   });
 

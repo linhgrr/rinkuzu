@@ -52,15 +52,13 @@ const cases = [
     locale: 'en',
     messages: enAdaptive,
     shared: { common: enCommon, errors: enErrors },
-    expected:
-      'The service is temporarily unavailable. Please try again in a few minutes. Your quota was not used.',
+    expected: 'Please try again in a few minutes. Your quota was not used.',
   },
   {
     locale: 'vi',
     messages: viAdaptive,
     shared: { common: viCommon, errors: viErrors },
-    expected:
-      'Dịch vụ đang tạm thời gián đoạn. Vui lòng thử lại sau vài phút. Lượt sử dụng của bạn chưa bị trừ.',
+    expected: 'Vui lòng thử lại sau vài phút. Lượt sử dụng của bạn chưa bị trừ.',
   },
 ] as const;
 
@@ -91,7 +89,10 @@ describe('AdaptiveLearningUpload readiness failure copy', () => {
     await user.click(submit);
 
     expect(await screen.findByText(c.expected)).toBeInTheDocument();
-    expect(toastErrorMock).toHaveBeenCalledWith(c.expected);
+    // RIN-809: the title already says the service is down; the body does not repeat it,
+    // and no toast repeats the inline state.
+    expect(screen.getByText(c.shared.errors.api.unavailableTitle)).toBeInTheDocument();
+    expect(toastErrorMock).not.toHaveBeenCalled();
     expect(c.expected).not.toMatch(/backend|api|server/i);
     expect(uploadPdfMock).not.toHaveBeenCalled();
   });

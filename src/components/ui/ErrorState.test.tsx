@@ -158,6 +158,12 @@ describe('ErrorState from an API error', () => {
     expect(screen.getByRole('status')).toHaveTextContent('You can try again in 3 seconds.');
     expect(button).toHaveTextContent('Retry (3s)');
     expect(button).toHaveAttribute('aria-disabled', 'true');
+    // RIN-809: the countdown must stay legible (>= 4.5:1). A faded primary button
+    // (white on pale orange, ~2:1) is not; the waiting state uses the neutral
+    // secondary surface with ink text, and goes back to primary when it can retry.
+    expect(button).not.toHaveClass('opacity-50');
+    expect(button).not.toHaveClass('btn-primary');
+    expect(button).toHaveClass('btn-secondary');
     fireEvent.click(button);
     expect(onRetry).not.toHaveBeenCalled();
 
@@ -168,6 +174,7 @@ describe('ErrorState from an API error', () => {
     act(() => vi.advanceTimersByTime(2000));
     expect(button).toHaveTextContent(/^Retry$/);
     expect(button).not.toHaveAttribute('aria-disabled');
+    expect(button).toHaveClass('btn-primary');
     expect(screen.getByText(enErrors.api.retryNow)).toHaveClass('sr-only');
     fireEvent.click(button);
     expect(onRetry).toHaveBeenCalledOnce();

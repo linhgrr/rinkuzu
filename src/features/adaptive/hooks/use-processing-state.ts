@@ -274,6 +274,10 @@ export const useProcessingState = (t: TranslateFn) => {
     createSessionRetryCountRef.current = 0;
   };
 
+  /**
+   * For retry notices only. A failure is never toasted: the failure card already shows it,
+   * and a toast repeated it (RIN-809).
+   */
   const pushThrottledToast = (message: string) => {
     const now = Date.now();
     const last = lastToastRef.current;
@@ -356,11 +360,11 @@ export const useProcessingState = (t: TranslateFn) => {
           const retryMessage = getRetryNotice(err, 'createSession');
           const nextAttempt = createSessionRetryCountRef.current + 1;
           createSessionRetryCountRef.current = nextAttempt;
-          setNotice(retryMessage);
-          pushThrottledToast(retryMessage);
 
           if (nextAttempt >= CREATE_SESSION_MAX_RETRIES) {
             clearPolling();
+            // The card says it failed; a "retrying" notice under it would contradict it.
+            setNotice(null);
             setError({
               message: t('processing.errors.sessionSetupUnconfirmed'),
               retryable: true,
@@ -370,6 +374,8 @@ export const useProcessingState = (t: TranslateFn) => {
             return 'failed';
           }
 
+          setNotice(retryMessage);
+          pushThrottledToast(retryMessage);
           return 'retrying';
         }
 
@@ -378,7 +384,6 @@ export const useProcessingState = (t: TranslateFn) => {
           ...friendlyError,
           action: 'dashboard',
         });
-        pushThrottledToast(friendlyError.message);
         clearPolling();
         return 'failed';
       }
@@ -419,7 +424,6 @@ export const useProcessingState = (t: TranslateFn) => {
         setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null);
         const terminalError = getTerminalProcessingError(job);
         setError(terminalError);
-        pushThrottledToast(terminalError.message);
         releasePollLock();
         return null;
       }
@@ -438,7 +442,6 @@ export const useProcessingState = (t: TranslateFn) => {
       clearPolling();
       const friendlyError = getFriendlyProcessingError(err);
       setError(friendlyError);
-      pushThrottledToast(friendlyError.message);
       releasePollLock();
       return null;
     }

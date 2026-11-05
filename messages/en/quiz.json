@@ -151,6 +151,6 @@
     "tryAgain": "Try again",
     "guestSignIn": "<link>Sign in</link> to retry missed questions and get a review email.",
     "retryOfMissed": "Retry of missed questions",
-    "retryPill": "Retry: {count} questions"
+    "retryPill": "Retry: {count, plural, one {# question} other {# questions}}"
   }
 }

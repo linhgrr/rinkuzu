@@ -588,7 +588,7 @@ test.describe('production critical paths', () => {
       ]);
 
       await expect(
-        page.getByText('Retry: 1 questions').filter({ visible: true }).first(),
+        page.getByText('Retry: 1 question', { exact: true }).filter({ visible: true }).first(),
       ).toBeVisible();
       await page.getByText('Production is the correct choice', { exact: true }).click();
       await submitQuiz();

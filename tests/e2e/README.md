@@ -17,7 +17,7 @@ Playwright is configured in `playwright.config.ts`.
 - `critical-flows.spec.ts`
   - `@critical-auth`: real credentials session, persistence, role guard, and logout
   - `@critical-quiz`: seeded quiz, answer, persisted attempt, and result page
-  - `@critical-retry`: a missed answer shows "Retry the 1 you missed" and the unticked review-email box on the result page; the `?retryOf=` session shows its "Retry: 1 questions" pill, and submitting it stores a normal attempt with `retryOfAttemptId` (RIN-917). It runs on mobile too (AC2 is at 390 px). Ticking the box is not part of it: the gate's env has no `SUPPORT_MAIL_FROM`.
+  - `@critical-retry`: a missed answer shows "Retry the 1 you missed" and the unticked review-email box on the result page; the `?retryOf=` session shows its "Retry: 1 question" pill, and submitting it stores a normal attempt with `retryOfAttemptId` (RIN-917). It runs on mobile too (AC2 is at 390 px). Ticking the box is not part of it: the gate's env has no `SUPPORT_MAIL_FROM`.
   - `@critical-starter`: new learner sees the starter quiz block above the fold and opens question 1; signing in with no `callbackUrl` lands straight on the starter quiz with its intro and Skip, and submitting it records the attempt (RIN-913). Other flows sign in with the skip cookie (`support/post-signin.ts`) so they still land on `/dashboard`.
   - `@critical-adaptive`: upload UI, processing state, and generated subject page
   - `@critical-subscription`: checkout handoff plus success/cancel outcomes

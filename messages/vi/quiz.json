@@ -97,10 +97,6 @@
   "mastery": "Thành thạo",
   "noTimeLimit": "Không giới hạn thời gian",
   "login": "Đăng nhập",
-  "loginToTrack": "để theo dõi tiến độ và lưu kết quả của bạn",
-  "yourEmail": "Email của bạn",
-  "enterEmailAddress": "Nhập địa chỉ email của bạn",
-  "weWillUseEmail": "Chúng tôi sẽ sử dụng email này để theo dõi tiến độ của bạn",
   "notAnswered": "Chưa trả lời",
   "of": "trong",
   "performanceSummary": "Tổng kết kết quả",
@@ -119,7 +115,6 @@
   "redo": "Làm lại",
   "redoQuiz": "Làm lại quiz",
   "returnHome": "Về trang chủ",
-  "startQuiz": "Bắt đầu quiz",
   "submitQuiz": "Nộp bài",
   "total": "Tổng",
   "unanswered": "Chưa trả lời",
@@ -149,8 +144,14 @@
     "savedOff": "Đã tắt email nhắc.",
     "saveError": "Không lưu được. Thử lại nhé.",
     "tryAgain": "Thử lại",
-    "guestSignIn": "<link>Đăng nhập</link> để làm lại câu sai và nhận email ôn tập.",
     "retryOfMissed": "Làm lại câu sai",
     "retryPill": "Làm lại câu sai · {count} câu"
-  }
+  },
+  "guestSaveTitle": "Lưu kết quả và nhận nhận xét cá nhân hóa",
+  "guestSaveBody": "Đăng nhập một lần để giữ kết quả này và xem lại từng câu.",
+  "guestSaveScoreOnlyBody": "Đăng nhập để lưu điểm này vào hồ sơ của bạn.",
+  "guestSaveWithGoogle": "Lưu kết quả với Google",
+  "guestSaveSignInEmail": "Đăng nhập bằng email",
+  "guestSaveCreateAccount": "Tạo tài khoản",
+  "guestReviewUnavailable": "Chúng tôi không mở được phần xem lại trên thiết bị này. Điểm của bạn vẫn được giữ ở trên."
 }

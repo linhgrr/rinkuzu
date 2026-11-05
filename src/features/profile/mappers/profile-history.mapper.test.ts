@@ -111,4 +111,32 @@ describe('toProfileHistoryViewModel taken-at label', () => {
   ])('follows the %s page locale', (locale, label) => {
     expect(toProfileHistoryViewModel(dto, locale).attempts[0]?.takenAtLabel).toBe(label);
   });
+
+  it('carries the quick-round mode to a history item (RIN-936)', () => {
+    const result = toProfileHistoryViewModel(
+      {
+        attempts: [
+          {
+            id: 'attempt-2',
+            score: 70,
+            takenAt: '2026-07-02T00:00:00.000Z',
+            totalQuestions: 10,
+            mode: 'quick',
+            quiz: { title: 'Biology', slug: 'biology' },
+          },
+        ],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 1,
+          itemsPerPage: 10,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      },
+      'en',
+    );
+
+    expect(result.attempts[0]).toMatchObject({ mode: 'quick', totalQuestions: 10 });
+  });
 });

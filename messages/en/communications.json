@@ -81,5 +81,19 @@
     "feedbackCompleteError": "Could not complete the conversation",
     "supportCreateError": "Could not create the support conversation",
     "scheduleTimeInvalid": "Choose a valid send time"
+  },
+  "unsubscribe": {
+    "metaTitle": "Unsubscribe | RinKuzu",
+    "confirmTitle": "Stop study reminder emails?",
+    "confirmDescription": "You'll no longer get the email reminding you to review the questions you missed two days after a quiz.",
+    "confirmButton": "Unsubscribe",
+    "doneTitle": "You're unsubscribed",
+    "doneDescription": "You won't get study reminder emails any more.",
+    "invalidTitle": "This link isn't valid",
+    "invalidDescription": "Check that you opened the full link from the email.",
+    "errorTitle": "Something went wrong",
+    "errorDescription": "We couldn't update your email settings. Please try again in a moment.",
+    "retryButton": "Try again",
+    "home": "Go to RinKuzu"
   }
 }

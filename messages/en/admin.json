@@ -631,5 +631,18 @@
   "learnerLookupPipelineStatus": "Pipeline status",
   "learnerLookupProgressStatus": "Progress status",
   "learnerLookupProgress": "Progress",
-  "learnerLookupLastActivity": "Last activity"
+  "learnerLookupLastActivity": "Last activity",
+  "activationFunnelTitle": "First-session funnel",
+  "activationFunnelDescription": "Last 8 signup weeks, newest first. Each step shows its share of signups.",
+  "activationFunnelWeek": "Signup week",
+  "activationFunnelSignups": "Signups",
+  "activationFunnelSignedIn": "Signed in",
+  "activationFunnelStartedQuiz": "Started a quiz",
+  "activationFunnelActivated": "Activated",
+  "activationFunnelReturnedWeek1": "Returned in week 1",
+  "activationFunnelInProgress": "in progress",
+  "activationFunnelCaption": "Weeks are UTC ISO weeks. Internal and test accounts are excluded. Each step counts within 7 days of signup.",
+  "activationFunnelAdaptiveUnavailable": "Personalized learning data unavailable: counts are quiz-only.",
+  "activationFunnelLoading": "Loading the first-session funnel…",
+  "activationFunnelError": "Could not load the first-session funnel."
 }

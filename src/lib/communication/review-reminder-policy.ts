@@ -158,7 +158,7 @@ const UNSUBSCRIBE_TOKEN_PATTERN = /^([a-f0-9]{24})\.([a-z_]{1,32})\.([A-Za-z0-9_
 
 /**
  * The `(userId, topic)` a token was signed for, or `null` when it is not authentic.
- * @public Consumed by the one-click unsubscribe route (RIN-915 part 2); drop this tag there.
+ * Tokens are keyed on `AUTH_SECRET`: rotating it invalidates every link already sent.
  */
 export function verifyUnsubscribeToken(
   token: string,
@@ -191,8 +191,19 @@ export function reviewRetryUrl(input: {
   return url.toString();
 }
 
-export function unsubscribeUrl(siteUrl: string, token: string): string {
-  const url = new URL('/unsubscribe', siteUrl);
+/** Footer link: the signed-out confirm page in the learner's locale. */
+export function unsubscribePageUrl(siteUrl: string, locale: string, token: string): string {
+  const url = new URL(`/${encodeURIComponent(locale)}/unsubscribe`, siteUrl);
+  url.searchParams.set('t', token);
+  return url.toString();
+}
+
+/**
+ * `List-Unsubscribe` target: mail clients POST `List-Unsubscribe=One-Click`
+ * here (RFC 8058); a plain GET redirects to the confirm page.
+ */
+export function oneClickUnsubscribeUrl(siteUrl: string, token: string): string {
+  const url = new URL('/api/unsubscribe', siteUrl);
   url.searchParams.set('t', token);
   return url.toString();
 }

@@ -31,6 +31,7 @@ export async function submitQuizAttemptViewModel({
   idempotencyKey,
   userEmail,
   retryOfAttemptId,
+  guestClaimToken,
 }: SubmitQuizAttemptInput): Promise<QuizAttemptResultViewModel> {
   const encodedSlug = routePathSegment(slug);
   const dto = await fetchApiData<QuizAttemptResultDto>(`/api/quiz/${encodedSlug}/attempt`, {
@@ -41,6 +42,7 @@ export async function submitQuizAttemptViewModel({
       idempotencyKey,
       ...(userEmail ? { userEmail } : {}),
       ...(retryOfAttemptId ? { retryOfAttemptId } : {}),
+      ...(guestClaimToken ? { guestClaimToken } : {}),
     }),
   });
   return toQuizAttemptResultViewModel(dto);

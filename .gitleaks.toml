@@ -42,6 +42,8 @@ regexes = [
   '''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''',
   # Versioned browser-storage keys, e.g. rinkuzu_landing_attribution_v1.
   '''^[a-z][a-z0-9]*(?:_[a-z0-9]+)*_v[0-9]+$''',
+  # Versioned dotted browser-storage keys, e.g. rinkuzu.guestClaims.v1.
+  '''^[a-z][a-z0-9]*(?:\.[a-z][A-Za-z0-9]*)+\.v[0-9]+$''',
   # Prose picked up mid-sentence, e.g. "destructive/unique/TTL index".
   '''^[A-Za-z]+/[A-Za-z]+/[A-Za-z]+$''',
 ]

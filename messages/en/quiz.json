@@ -67,11 +67,6 @@
   "loadingQuizInfo": "Loading quiz information...",
   "noTimeLimit": "No time limit",
   "login": "Login",
-  "loginToTrack": "to track your progress and save your results",
-  "yourEmail": "Your Email",
-  "enterEmailAddress": "Enter your email address",
-  "weWillUseEmail": "We'll use this to track your progress",
-  "startQuiz": "Start Quiz",
   "backHome": "Back Home",
   "exitQuiz": "Exit Quiz",
   "of": "of",
@@ -149,8 +144,14 @@
     "savedOff": "Reminder turned off.",
     "saveError": "Couldn't save. Try again.",
     "tryAgain": "Try again",
-    "guestSignIn": "<link>Sign in</link> to retry missed questions and get a review email.",
     "retryOfMissed": "Retry of missed questions",
     "retryPill": "Retry: {count, plural, one {# question} other {# questions}}"
-  }
+  },
+  "guestSaveTitle": "Save your result and get your personalized review",
+  "guestSaveBody": "Sign in once to keep this result and review every question.",
+  "guestSaveScoreOnlyBody": "Sign in to add this score to your profile.",
+  "guestSaveWithGoogle": "Save with Google",
+  "guestSaveSignInEmail": "Sign in with email",
+  "guestSaveCreateAccount": "Create an account",
+  "guestReviewUnavailable": "We can't open the question review on this device. Your score is still shown above."
 }

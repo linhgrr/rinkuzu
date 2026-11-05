@@ -38,7 +38,6 @@ vi.mock('@/lib/analytics/client', () => ({
 const ATTEMPT_ID = '6a8ed20a3d0a1892cacdfe0b';
 const baseProps = {
   attemptId: ATTEMPT_ID,
-  resultPath: `/quiz/demo/result?attemptId=${ATTEMPT_ID}`,
   slug: 'demo',
   missedCount: 3,
   nextQuiz: { slug: 'starter-en', title: 'Starter' },
@@ -90,14 +89,11 @@ describe('ResultActions (RIN-917)', () => {
     expect(screen.getAllByRole('link', { name: 'backHome' })).toHaveLength(1);
   });
 
-  it('shows a guest the sign-in line instead of retry and the checkbox', () => {
+  it('shows a guest neither retry nor the checkbox (the page shows the save-result card)', () => {
     render(<ResultActions {...baseProps} viewer="guest" />);
     expect(screen.queryByText(/retryMissed/)).not.toBeInTheDocument();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'guestSignIn' })).toHaveAttribute(
-      'href',
-      expect.stringContaining('/login?callbackUrl='),
-    );
+    expect(screen.getAllByRole('link', { name: 'backHome' })).toHaveLength(1);
     expect(fetchOptedInMock).not.toHaveBeenCalled();
   });
 

@@ -59,7 +59,11 @@ import {
   optInReviewReminder,
   optOutReviewReminder,
   prepareReviewReminder,
+  reviewReminderSendingEnabled,
+  unsubscribeLinkState,
+  unsubscribeWithToken,
 } from './review-reminder';
+import { unsubscribeToken } from './review-reminder-policy';
 
 function attemptDoc(owner = USER_ID) {
   return {
@@ -220,9 +224,11 @@ describe('review reminder send-time preparation (AC5)', () => {
     if (prepared.decision !== 'send') return;
     expect(prepared.mail.tags).toEqual([{ name: 'campaign', value: 'w1-review' }]);
     expect(prepared.mail.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
-    expect(prepared.mail.headers['List-Unsubscribe']).toMatch(
-      /^<https:\/\/www\.rinkuzu\.app\/unsubscribe\?t=[^>]+>$/u,
+    const token = unsubscribeToken(USER_ID, ENVIRONMENT['AUTH_SECRET'] ?? '');
+    expect(prepared.mail.headers['List-Unsubscribe']).toBe(
+      `<https://www.rinkuzu.app/api/unsubscribe?t=${token}>`,
     );
+    expect(prepared.mail.text).toContain(`https://www.rinkuzu.app/en/unsubscribe?t=${token}`);
     expect(prepared.mail.subject).toBe('Review the 3 questions you missed in “Cell biology”');
     expect(prepared.mail.text).toContain(
       `https://www.rinkuzu.app/en/quiz/cell-biology?retryOf=${ATTEMPT_ID}&utm_source=email&utm_campaign=w1-review`,
@@ -258,5 +264,69 @@ describe('review reminder send-time preparation (AC5)', () => {
       decision: 'cancel',
       reason: 'opted_out',
     });
+  });
+});
+
+describe('one-click unsubscribe (AC7)', () => {
+  const token = unsubscribeToken(USER_ID, ENVIRONMENT['AUTH_SECRET'] ?? '');
+  const tampered = `${token.slice(0, -1)}${token.endsWith('A') ? 'B' : 'A'}`;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.preference.findOneAndUpdate.mockReturnValue(query({ studyReminders: true }));
+    mocks.outbox.updateMany.mockResolvedValue({ modifiedCount: 1 });
+  });
+
+  it('records an unsubscribe opt-out and cancels the pending email for a valid token', async () => {
+    await expect(unsubscribeWithToken(token, '203.0.113.7')).resolves.toBe(true);
+
+    expect(mocks.consentEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: new Types.ObjectId(USER_ID),
+        topic: 'study_reminders',
+        action: 'opt_out',
+        source: 'unsubscribe',
+      }),
+    );
+    expect(mocks.outbox.updateMany).toHaveBeenCalledWith(
+      { userId: new Types.ObjectId(USER_ID), kind: 'review_reminder', status: 'pending' },
+      { $set: { status: 'canceled', lastError: 'opted_out' } },
+    );
+  });
+
+  it('is idempotent: an already unsubscribed learner gets no second event', async () => {
+    mocks.preference.findOneAndUpdate.mockReturnValue(query(null));
+
+    await expect(unsubscribeWithToken(token, null)).resolves.toBe(true);
+
+    expect(mocks.consentEvent.create).not.toHaveBeenCalled();
+    expect(mocks.outbox.updateMany).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a tampered token without touching the database', async () => {
+    await expect(unsubscribeWithToken(tampered, null)).resolves.toBe(false);
+    await expect(unsubscribeLinkState(tampered)).resolves.toBe('invalid');
+
+    expect(mocks.preference.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(mocks.preference.findOne).not.toHaveBeenCalled();
+    expect(mocks.outbox.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('reads the page state; a missing preference reads as unsubscribed', async () => {
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true }));
+    await expect(unsubscribeLinkState(token)).resolves.toBe('subscribed');
+
+    mocks.preference.findOne.mockReturnValue(query(null));
+    await expect(unsubscribeLinkState(token)).resolves.toBe('unsubscribed');
+  });
+});
+
+describe('review email kill switch', () => {
+  it('sends unless REVIEW_REMINDER_SENDING_ENABLED is false', () => {
+    expect(reviewReminderSendingEnabled({})).toBe(true);
+    expect(reviewReminderSendingEnabled({ REVIEW_REMINDER_SENDING_ENABLED: 'true' })).toBe(true);
+    expect(reviewReminderSendingEnabled({ REVIEW_REMINDER_SENDING_ENABLED: ' FALSE ' })).toBe(
+      false,
+    );
   });
 });

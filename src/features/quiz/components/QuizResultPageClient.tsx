@@ -1,9 +1,12 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { Suspense, useEffect, useReducer, useState, type ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
-import { Suspense, useEffect, useReducer, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { HiOutlineInformationCircle } from 'react-icons/hi';
+import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
@@ -27,9 +30,12 @@ import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { ResultActions, type ResultViewer } from '@/features/quiz/components/result/ResultActions';
+import { GuestSaveResultCard } from '@/features/quiz/components/result/GuestSaveResultCard';
+import { findGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuestionType } from '@/shared/constants/question-type';
+import { ROUTES } from '@/shared/constants/routes';
 
 type QuizResultQuestion = QuizResultQuestionViewModel;
 type QuizResult = QuizResultViewModel;
@@ -225,6 +231,27 @@ function formatAnswerValue(
     : notAnsweredLabel;
 }
 
+function QuizResultActions({
+  backHomeLabel,
+  encodedSlug,
+  redoLabel,
+}: {
+  backHomeLabel: string;
+  encodedSlug: string;
+  redoLabel: string;
+}) {
+  return (
+    <div className="mb-8 flex flex-wrap justify-center gap-3">
+      <Link href={`/quiz/${encodedSlug}`}>
+        <Button variant="outline">{redoLabel}</Button>
+      </Link>
+      <Link href="/">
+        <Button>{backHomeLabel}</Button>
+      </Link>
+    </div>
+  );
+}
+
 interface QuizResultReadyStateProps {
   aiQuestionData: AIQuestionData | null;
   bookmarkedQuestions: Set<number>;
@@ -236,7 +263,6 @@ interface QuizResultReadyStateProps {
   chatTurnsByQuestion: Readonly<Record<number, number>>;
   closeAIModal: () => void;
   currentQuestionIndex: number;
-  resultPath: string;
   viewer: ResultViewer;
   formatAnswer: (
     answer: number | number[],
@@ -245,6 +271,8 @@ interface QuizResultReadyStateProps {
     isAnswered?: boolean,
   ) => string;
   formatCorrectAnswer: (question: QuizResultQuestion) => string;
+  /** The signed-out "save your result" card, shown under the score (RIN-912). */
+  guestSaveCard: ReactNode;
   onCancelRemove: () => void;
   onConfirmRemove: () => void;
   onDismissBookmarkMessage: () => void;
@@ -317,9 +345,13 @@ function getQuizResultScoreMessage(score: number, tProfile: (key: string) => str
   return tProfile('needsWork');
 }
 
+/** Who is reading the result: `pending` while the session settles (RIN-912). */
+type ResultReader = 'pending' | 'member' | 'guest';
+
 function useQuizResultPageData(
   attemptId: string | null,
   locale: string,
+  reader: ResultReader,
   guestUserEmail: string | null,
 ) {
   const [state, dispatch] = useReducer(quizResultPageReducer, initialQuizResultPageState);
@@ -330,8 +362,18 @@ function useQuizResultPageData(
     let isActive = true;
 
     const loadResults = async () => {
+      if (reader === 'pending') return;
       if (!attemptId) {
         // A result link without an attempt id points at nothing.
+        dispatch({ type: 'loadError', error: { code: 'not_found', status: 404 } });
+        return;
+      }
+
+      // A guest reads with the claim token saved at submit; legacy links carry userEmail.
+      const guestClaimToken = reader === 'guest' ? findGuestClaimToken(attemptId) : null;
+      const legacyEmail = reader === 'guest' ? guestUserEmail : null;
+      if (reader === 'guest' && !guestClaimToken && !legacyEmail) {
+        // Another device or cleared storage: nothing here can open this attempt.
         dispatch({ type: 'loadError', error: { code: 'not_found', status: 404 } });
         return;
       }
@@ -340,7 +382,11 @@ function useQuizResultPageData(
         const pageData = await fetchQuizResultPageData(
           attemptId,
           locale,
-          guestUserEmail ? { userEmail: guestUserEmail } : undefined,
+          guestClaimToken
+            ? { guestClaimToken }
+            : legacyEmail
+              ? { userEmail: legacyEmail }
+              : undefined,
         );
 
         if (isActive) {
@@ -362,7 +408,7 @@ function useQuizResultPageData(
     return () => {
       isActive = false;
     };
-  }, [attemptId, guestUserEmail, locale, loadAttempt]);
+  }, [attemptId, guestUserEmail, locale, loadAttempt, reader]);
 
   const retryLoad = () => {
     dispatch({ type: 'retryLoad' });
@@ -453,10 +499,10 @@ function QuizResultReadyState({
   chatTurnsByQuestion,
   closeAIModal,
   currentQuestionIndex,
-  resultPath,
   viewer,
   formatAnswer,
   formatCorrectAnswer,
+  guestSaveCard,
   onCancelRemove,
   onConfirmRemove,
   onDismissBookmarkMessage,
@@ -515,9 +561,10 @@ function QuizResultReadyState({
           />
         )}
 
+        {guestSaveCard}
+
         <ResultActions
           attemptId={result.id}
-          resultPath={resultPath}
           slug={result.quiz.slug}
           missedCount={result.missedCount}
           nextQuiz={result.nextQuiz}
@@ -588,6 +635,74 @@ function QuizResultReadyState({
   );
 }
 
+function toResultReader(sessionStatus: string): ResultReader {
+  if (sessionStatus === 'loading') return 'pending';
+  return sessionStatus === 'authenticated' ? 'member' : 'guest';
+}
+
+function parseUrlScore(raw: string | null): number | null {
+  if (raw === null || raw.trim() === '') return null;
+  const score = Number(raw);
+  return Number.isFinite(score) && score >= 0 && score <= 100 ? Math.round(score) : null;
+}
+
+function guestResultPath(encodedSlug: string, attemptId: string | null, score: number | null) {
+  const params = new URLSearchParams();
+  if (attemptId) params.set('attemptId', attemptId);
+  if (score !== null) params.set('score', String(score));
+  return `${ROUTES.QUIZ.RESULT(encodedSlug)}?${params.toString()}`;
+}
+
+/**
+ * A guest attempt that cannot be read here (no token, or the read failed): RIN-912.
+ * Also shown, without the save card, to a guest who just signed in from that card:
+ * their attempt is not linked to the account until parts 3–4 (RIN-920/921) ship.
+ */
+function GuestScoreOnlyResult({
+  backHomeLabel,
+  encodedSlug,
+  redoLabel,
+  resultPath,
+  score,
+  showSaveCard,
+  t,
+}: {
+  backHomeLabel: string;
+  encodedSlug: string;
+  redoLabel: string;
+  resultPath: string;
+  score: number;
+  showSaveCard: boolean;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="min-h-dvh bg-surface-page">
+      <div className="bg-surface shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
+          <h1 className="text-2xl font-semibold text-ink">{t('quizComplete')}</h1>
+        </div>
+      </div>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card className="mb-6">
+          <CardContent className="p-6 text-center">
+            <p className="text-4xl font-bold text-brand-trust">{score}%</p>
+          </CardContent>
+        </Card>
+        {showSaveCard ? <GuestSaveResultCard resultPath={resultPath} variant="scoreOnly" /> : null}
+        <QuizResultActions
+          backHomeLabel={backHomeLabel}
+          encodedSlug={encodedSlug}
+          redoLabel={redoLabel}
+        />
+        <p role="status" className="flex items-start justify-center gap-2 text-sm text-ink-muted">
+          <HiOutlineInformationCircle className="mt-0.5 size-5 flex-shrink-0" aria-hidden="true" />
+          {t('guestReviewUnavailable')}
+        </p>
+      </main>
+    </div>
+  );
+}
+
 function QuizResultContent() {
   const t = useTranslations('quiz');
   const tProfile = useTranslations('profile');
@@ -596,17 +711,13 @@ function QuizResultContent() {
   const get = searchParams.get.bind(searchParams);
   const attemptId = get('attemptId');
   const guestUserEmail = get('userEmail');
-  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
+  const urlScore = parseUrlScore(get('score'));
   const { status: sessionStatus } = useSession();
-  const viewer: ResultViewer =
-    guestUserEmail !== null || sessionStatus === 'unauthenticated'
-      ? 'guest'
-      : sessionStatus === 'loading'
-        ? 'pending'
-        : 'signed_in';
-  const resultPath = `/quiz/${encodedSlug}/result${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`;
+  const reader = toResultReader(sessionStatus);
+  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
+  const viewer: ResultViewer = reader === 'member' ? 'signed_in' : reader;
   const { state, dispatch, stats, toggleBookmark, removeBookmark, retryLoad } =
-    useQuizResultPageData(attemptId, locale, guestUserEmail);
+    useQuizResultPageData(attemptId, locale, reader, guestUserEmail);
   const chatTurnCounts = Object.values(state.chatTurnsByQuestion);
   const chatStats: QuizResultChatSummary = {
     totalTurns: chatTurnCounts.reduce((sum, turns) => sum + turns, 0),
@@ -618,8 +729,32 @@ function QuizResultContent() {
   const closeAIModal = () => dispatch({ type: 'closeAIModal' });
   const result = state.result;
 
-  if (state.status === 'loading') {
+  if (state.status === 'loading' || reader === 'pending') {
     return <QuizResultPageSkeleton label={`${t('loadingQuiz')}...`} />;
+  }
+
+  // Where sign-in comes back to; never carries the email or the token.
+  const resultPath = guestResultPath(encodedSlug, attemptId, urlScore ?? result?.score ?? null);
+
+  // A member read that fails while this browser still holds the guest token is the
+  // guest who just signed in to save this result: keep their score, not a 404.
+  const holdsGuestScore =
+    (state.error !== null || !result) &&
+    urlScore !== null &&
+    (reader === 'guest' || (attemptId !== null && findGuestClaimToken(attemptId) !== null));
+
+  if (holdsGuestScore) {
+    return (
+      <GuestScoreOnlyResult
+        backHomeLabel={t('backHome')}
+        encodedSlug={encodedSlug}
+        redoLabel={tProfile('redo')}
+        resultPath={resultPath}
+        score={urlScore}
+        showSaveCard={reader === 'guest'}
+        t={t}
+      />
+    );
   }
 
   if (state.error !== null || !result) {
@@ -643,12 +778,14 @@ function QuizResultContent() {
       chatTurnsByQuestion={state.chatTurnsByQuestion}
       closeAIModal={closeAIModal}
       currentQuestionIndex={state.currentQuestionIndex}
-      resultPath={resultPath}
       viewer={viewer}
       formatAnswer={(answer, options, type, isAnswered) =>
         formatAnswerValue(answer, options, type, t('notAnswered'), isAnswered)
       }
       formatCorrectAnswer={formatCorrectAnswerText}
+      guestSaveCard={
+        reader === 'guest' ? <GuestSaveResultCard resultPath={resultPath} variant="review" /> : null
+      }
       onCancelRemove={() => dispatch({ type: 'setBookmarkToRemove', questionIndex: null })}
       onConfirmRemove={() =>
         state.bookmarkToRemove !== null && void removeBookmark(state.bookmarkToRemove)

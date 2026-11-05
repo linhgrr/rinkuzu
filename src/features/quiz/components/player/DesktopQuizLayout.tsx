@@ -9,7 +9,7 @@ import { Pill } from '@/components/ui/Pill';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
-import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from 'react-icons/hi';
+import { HiOutlineArrowLeft, HiOutlineUser } from 'react-icons/hi';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
@@ -59,7 +59,6 @@ interface DesktopQuizLayoutProps {
   quizTitle: string;
   questions: QuizPlayQuestionViewModel[];
   sessionEmail?: string | null;
-  userEmail: string;
   currentQuestionIndex: number;
   setCurrentQuestionIndex: (index: number) => void;
   answeredQuestions: number;
@@ -85,7 +84,6 @@ interface DesktopQuizLayoutProps {
 interface DesktopQuizHeaderProps {
   quizTitle: string;
   sessionEmail?: string | null;
-  userEmail: string;
   currentQuestionIndex: number;
   questionCount: number;
   answeredQuestions: number;
@@ -123,7 +121,6 @@ interface DesktopExitModalProps {
 function DesktopQuizHeader({
   quizTitle,
   sessionEmail,
-  userEmail,
   currentQuestionIndex,
   questionCount,
   answeredQuestions,
@@ -150,19 +147,15 @@ function DesktopQuizHeader({
                 <h1 className="text-lg font-semibold text-neutral-900">{quizTitle}</h1>
                 {titleBadge ? <Pill tone="warm">{titleBadge}</Pill> : null}
               </div>
-              <div className="text-sm">
-                {sessionEmail ? (
+              {/* Guests play without an email (RIN-912): only a session shows a badge. */}
+              {sessionEmail ? (
+                <div className="text-sm">
                   <Badge variant="success" className="text-xs">
                     <HiOutlineUser className="mr-1 size-3" />
                     {sessionEmail}
                   </Badge>
-                ) : (
-                  <Badge variant="default" className="text-xs">
-                    <HiOutlineMail className="mr-1 size-3" />
-                    {userEmail}
-                  </Badge>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="flex items-center gap-x-4">
@@ -334,7 +327,6 @@ export function DesktopQuizLayout({
   quizTitle,
   questions,
   sessionEmail,
-  userEmail,
   currentQuestionIndex,
   setCurrentQuestionIndex,
   answeredQuestions,
@@ -370,7 +362,6 @@ export function DesktopQuizLayout({
       <DesktopQuizHeader
         quizTitle={quizTitle}
         {...(sessionEmail !== undefined ? { sessionEmail } : {})}
-        userEmail={userEmail}
         currentQuestionIndex={currentQuestionIndex}
         questionCount={questions.length}
         answeredQuestions={answeredQuestions}

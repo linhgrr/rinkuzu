@@ -168,11 +168,20 @@ describe('communication outbox delivery', () => {
     mocks.conversation.findById.mockReturnValue(query(conversationDoc()));
   });
 
-  it('never claims a review email while the unsubscribe route is not live (RIN-915)', async () => {
+  it('claims review emails unless the kill switch is off (RIN-915)', async () => {
     await runCommunicationWorker(5);
+    expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).not.toHaveProperty('kind');
 
-    const filter = mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0];
-    expect(filter).toMatchObject({ kind: { $ne: 'review_reminder' } });
+    vi.stubEnv('REVIEW_REMINDER_SENDING_ENABLED', 'false');
+    try {
+      mocks.outbox.findOneAndUpdate.mockClear();
+      await runCommunicationWorker(5);
+      expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).toMatchObject({
+        kind: { $ne: 'review_reminder' },
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('repairs a legacy over-long Reply-To in place and sends exactly one email', async () => {

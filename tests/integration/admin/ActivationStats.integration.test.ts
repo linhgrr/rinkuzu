@@ -109,6 +109,12 @@ describe('activation stats integration', () => {
     return { ...attempt(key, takenAt, quiz), retryOfAttemptId: id(), questionIndices: [1, 3] };
   }
 
+  // A quick round (RIN-936) is a normal attempt over 10 chosen questions.
+  function quickAttempt(key: keyof typeof ids, takenAt: Date, quiz = sharedQuiz) {
+    const questionIndices = [16, 2, 9, 0, 11, 5, 14, 7, 3, 12];
+    return { ...attempt(key, takenAt, quiz), mode: 'quick', questionIndices, totalQuestions: 10 };
+  }
+
   function events(
     userId: string,
     firstCompletionAt: Date | null,
@@ -198,8 +204,9 @@ describe('activation stats integration', () => {
         retryAttempt('b', plus(signup.b, 14 * DAY - 1)),
         // C: first attempt exactly 7 days after signup → not activated; first attempt W02.
         attempt('c', plus(signup.c, 7 * DAY)),
-        // E: activated, returns exactly on day 14 → not retained (window is days 7–13).
-        attempt('e', plus(signup.e, DAY)),
+        // E: activated by a quick round (counts like any attempt), returns exactly on
+        // day 14 → not retained (window is days 7–13).
+        quickAttempt('e', plus(signup.e, DAY)),
         attempt('e', plus(signup.e, 14 * DAY)),
         // F: first attempt before the window; a later one never counts as first.
         attempt('f', plus(signup.f, DAY)),
@@ -239,12 +246,18 @@ describe('activation stats integration', () => {
       db.collection('users').deleteMany({ _integrationRun: runId }),
       db.collection('quizzes').deleteMany({ _integrationRun: runId }),
       db.collection('attempts').deleteMany({ _integrationRun: runId }),
+      db.collection('auditlogs').deleteMany({ _integrationRun: runId }),
+      db.collection('quizprogresses').deleteMany({ _integrationRun: runId }),
       db.collection('adminactionaudits').deleteMany({ actorId: ids.admin }),
     ]);
     await mongoose.disconnect();
   }, 10_000);
 
   const by = (quiz: number, adaptive: number, both: number) => ({ quiz, adaptive, both });
+  const cohortBy = (quiz: number, adaptive: number, both: number, claimedGuest = 0) => ({
+    ...by(quiz, adaptive, both),
+    claimedGuest,
+  });
 
   it('produces exact quiz-only cohort and first-attempt counts per ISO week', async () => {
     const aggregates = await new AdminStatsRepository().getActivationAggregates(W01, W04);
@@ -255,24 +268,33 @@ describe('activation stats integration', () => {
         signups: 5,
         material: 3,
         activated: 2,
-        activatedBy: by(2, 0, 0),
+        activatedBy: cohortBy(2, 0, 0),
         w1Retained: 2,
+        signedIn: 0,
+        startedQuiz: 2,
+        returnedWeek1: 1,
       },
       {
         weekStart: W02,
         signups: 2,
         material: 1,
         activated: 1,
-        activatedBy: by(1, 0, 0),
+        activatedBy: cohortBy(1, 0, 0),
         w1Retained: 0,
+        signedIn: 0,
+        startedQuiz: 1,
+        returnedWeek1: 1,
       },
       {
         weekStart: W03,
         signups: 3,
         material: 1,
         activated: 1,
-        activatedBy: by(1, 0, 0),
+        activatedBy: cohortBy(1, 0, 0),
         w1Retained: 0,
+        signedIn: 0,
+        startedQuiz: 1,
+        returnedWeek1: 0,
       },
     ]);
     expect(aggregates.firstAttempts).toEqual([
@@ -296,8 +318,11 @@ describe('activation stats integration', () => {
         signups: 5,
         material: 4,
         activated: 3,
-        activatedBy: by(1, 1, 1),
+        activatedBy: cohortBy(1, 1, 1),
         w1Retained: 3,
+        signedIn: 0,
+        startedQuiz: 3,
+        returnedWeek1: 2,
       },
       // + H (adaptive), retained via the day-10 adaptive completion.
       {
@@ -305,8 +330,11 @@ describe('activation stats integration', () => {
         signups: 2,
         material: 2,
         activated: 2,
-        activatedBy: by(1, 1, 0),
+        activatedBy: cohortBy(1, 1, 0),
         w1Retained: 1,
+        signedIn: 0,
+        startedQuiz: 2,
+        returnedWeek1: 2,
       },
       // + K's succeeded upload (material); J's day-8 upload does not count.
       {
@@ -314,8 +342,11 @@ describe('activation stats integration', () => {
         signups: 3,
         material: 2,
         activated: 1,
-        activatedBy: by(1, 0, 0),
+        activatedBy: cohortBy(1, 0, 0),
         w1Retained: 0,
+        signedIn: 0,
+        startedQuiz: 1,
+        returnedWeek1: 0,
       },
     ]);
     expect(aggregates.firstAttempts).toEqual([
@@ -337,8 +368,11 @@ describe('activation stats integration', () => {
         signups: 6,
         material: 4,
         activated: 3,
-        activatedBy: by(3, 0, 0),
+        activatedBy: cohortBy(3, 0, 0),
         w1Retained: 3,
+        signedIn: 0,
+        startedQuiz: 3,
+        returnedWeek1: 2,
       });
       expect(aggregates.firstAttempts[0]).toEqual({
         weekStart: W01,
@@ -381,6 +415,8 @@ describe('activation stats integration', () => {
       { isoWeek: '2001-W05', w1Retained: null, w1RetentionRate: null, complete: false },
     ]);
     expect(result.data.weeks.map((week) => week.weeklyActivatedLearners)).toEqual([2, 4, 1, 0, 0]);
+    // returnedWeek1 is final 7 days after the week ends: W03 ended 2001-01-22, now is 01-29.
+    expect(result.data.weeks.map((week) => week.returnedWeek1)).toEqual([2, 2, 0, null, null]);
     expect(result.data.sources).toEqual({ adaptive: 'ok' });
     expect(adaptiveReader).toHaveBeenCalledWith(
       W01,
@@ -401,5 +437,117 @@ describe('activation stats integration', () => {
       entityId: 'activation',
       details: { weeks: '5' },
     });
+  });
+
+  /**
+   * First-session funnel (RIN-932). Dated in 2100 so the 180-day TTL on
+   * `auditlogs.createdAt` cannot delete the sign-ins mid-test. One UTC ISO
+   * week, 2100-03-01 (Monday) to 2100-03-08.
+   */
+  it('counts the first-session funnel with Asia/Ho_Chi_Minh return days and UTC weeks', async () => {
+    const db = mongoose.connection;
+    const F01 = at('2100-03-01T00:00:00.000Z');
+    const F03 = at('2100-03-15T00:00:00.000Z');
+    const funnelIds = { n: id(), s: id(), r: id(), t: id(), u: id(), p: id(), v: id(), x: id() };
+    const funnelSignup = {
+      n: at('2100-03-01T10:00:00.000Z'), // never signs in; opens a quiz, answers nothing
+      s: at('2100-03-01T18:00:00.000Z'), // 01:00 local on 03-02; back at 22:00 local, same local day
+      r: at('2100-03-02T05:00:00.000Z'), // back on day 3
+      t: at('2100-03-03T16:00:00.000Z'), // 23:00 local; back at 17:30 UTC = 00:30 local next day
+      u: at('2100-03-07T23:30:00.000Z'), // Sunday 23:30 UTC = Monday local: stays in the UTC week
+      p: at('2100-03-04T00:00:00.000Z'), // unsubmitted quiz with answers
+      v: at('2100-03-05T00:00:00.000Z'), // claimed guest attempt on day 1
+      x: at('2100-03-02T00:00:00.000Z'), // test account: does every step, counted in none
+    };
+    const learner = (key: keyof typeof funnelIds, extra: Record<string, unknown> = {}) => ({
+      _id: funnelIds[key],
+      _integrationRun: runId,
+      email: `${runId}-funnel-${key}@learners.fixture`,
+      role: 'user',
+      disable: 0,
+      authVersion: 0,
+      createdAt: funnelSignup[key],
+      updatedAt: funnelSignup[key],
+      ...extra,
+    });
+    const login = (key: keyof typeof funnelIds, createdAt: Date) => ({
+      _integrationRun: runId,
+      userId: funnelIds[key],
+      event: 'login_success',
+      createdAt,
+    });
+    const progress = (key: keyof typeof funnelIds, answeredCount: number, updatedAt: Date) => ({
+      _integrationRun: runId,
+      userId: funnelIds[key],
+      quiz: id(),
+      answeredCount,
+      updatedAt,
+    });
+    const funnelAttempt = (key: keyof typeof funnelIds, takenAt: Date, claimedAt?: Date) => ({
+      _integrationRun: runId,
+      user: funnelIds[key],
+      quiz: sharedQuiz,
+      takenAt,
+      score: 50,
+      ...(claimedAt ? { claimedAt } : {}),
+    });
+
+    await db
+      .collection('users')
+      .insertMany([
+        learner('n'),
+        learner('s'),
+        learner('r'),
+        learner('t'),
+        learner('u'),
+        learner('p'),
+        learner('v'),
+        learner('x', { isTestAccount: true }),
+      ]);
+    await db.collection('auditlogs').insertMany([
+      login('s', plus(funnelSignup.s, 60_000)),
+      login('s', at('2100-03-02T15:00:00.000Z')),
+      login('r', plus(funnelSignup.r, 60_000)),
+      login('r', plus(funnelSignup.r, 3 * DAY)),
+      login('t', at('2100-03-03T17:30:00.000Z')),
+      // Not a sign-in.
+      { _integrationRun: runId, userId: funnelIds.n, event: 'login_failed', createdAt: F01 },
+      login('x', funnelSignup.x),
+      login('x', plus(funnelSignup.x, 3 * DAY)),
+    ]);
+    await db
+      .collection('quizprogresses')
+      .insertMany([
+        progress('n', 0, plus(funnelSignup.n, 3_600_000)),
+        progress('p', 2, plus(funnelSignup.p, 3_600_000)),
+        progress('x', 3, plus(funnelSignup.x, 3_600_000)),
+      ]);
+    await db
+      .collection('attempts')
+      .insertMany([
+        funnelAttempt('u', at('2100-03-08T01:00:00.000Z')),
+        funnelAttempt('v', plus(funnelSignup.v, DAY), plus(funnelSignup.v, DAY + 60_000)),
+        funnelAttempt('x', plus(funnelSignup.x, DAY), plus(funnelSignup.x, DAY + 60_000)),
+      ]);
+
+    const aggregates = await new AdminStatsRepository().getActivationAggregates(F01, F03);
+
+    expect(aggregates.cohorts).toEqual([
+      {
+        weekStart: F01,
+        signups: 7,
+        // s, r, t. N never signs in.
+        signedIn: 3,
+        material: 2,
+        // u and v attempted; p has an unsubmitted quiz; n answered nothing.
+        startedQuiz: 3,
+        activated: 2,
+        activatedBy: cohortBy(2, 0, 0, 1),
+        w1Retained: 0,
+        // r (day 3), t (next local day), v (day-1 attempt). s and u came back
+        // only on their local signup day.
+        returnedWeek1: 3,
+      },
+    ]);
   });
 });

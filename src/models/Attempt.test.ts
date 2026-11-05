@@ -153,6 +153,40 @@ describe('Attempt model identity', () => {
     );
   });
 
+  describe('quick round contract (RIN-936)', () => {
+    const playOrder = [16, 2, 9, 0, 11, 5, 14, 7, 3, 12];
+    const question = submission.quizSnapshot.questions[0];
+    const quick = {
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      quizSnapshot: { ...submission.quizSnapshot, questions: playOrder.map(() => question) },
+      totalQuestions: 10,
+      correctAnswers: 10,
+      answers: playOrder.map(() => ({ kind: 'single', selectedIndex: 0 })),
+      mode: 'quick',
+      questionIndices: playOrder,
+    };
+
+    it('accepts a quick attempt with play-order indices and keeps a full attempt mode-less', async () => {
+      await expect(new Attempt(quick).validate()).resolves.toBeUndefined();
+      const full = new Attempt({ ...submission, user: '507f191e810c19729de860eb' });
+      await expect(full.validate()).resolves.toBeUndefined();
+      expect(full.mode).toBeUndefined();
+    });
+
+    it('rejects a quick attempt without indices, with duplicates, or combined with a retry', async () => {
+      const { questionIndices: _omit, ...withoutIndices } = quick;
+      await expect(new Attempt(withoutIndices).validate()).rejects.toThrow('questionIndices');
+      await expect(
+        new Attempt({ ...quick, questionIndices: [...playOrder.slice(0, 9), 16] }).validate(),
+      ).rejects.toThrow('questionIndices');
+      await expect(
+        new Attempt({ ...quick, retryOfAttemptId: '507f191e810c19729de860ec' }).validate(),
+      ).rejects.toThrow('questionIndices');
+      await expect(new Attempt({ ...quick, mode: 'speed' }).validate()).rejects.toThrow();
+    });
+  });
+
   it('enforces a complete and internally consistent submission contract', async () => {
     const inconsistent = new Attempt({
       ...submission,

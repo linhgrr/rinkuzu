@@ -10,10 +10,8 @@ import {
   saveReviewReminder,
 } from '@/features/quiz/api/review-reminder-api';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
-import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { cn } from '@/lib/utils';
-import { ROUTES } from '@/shared/constants/routes';
 
 /** Analytics campaign for the week-1 return loop (RIN-911); events carry nothing else but `missed_count`. */
 const REVIEW_CAMPAIGN = 'w1-review';
@@ -25,8 +23,6 @@ export type ResultViewer = 'signed_in' | 'guest' | 'pending';
 
 interface ResultActionsProps {
   attemptId: string;
-  /** Path of this result page, so sign-in returns here. */
-  resultPath: string;
   slug: string;
   missedCount: number;
   nextQuiz: { slug: string; title: string } | null;
@@ -50,10 +46,10 @@ function choosePrimary(
  * Result-page actions (RIN-917, Designer spec on the issue): exactly one primary
  * button ("Retry the N you missed", "Try another quiz", or Back Home), the
  * outline secondaries, and the opt-in review-email checkbox for signed-in learners.
+ * Guests get no retry or checkbox; the page shows them the RIN-912 save-result card.
  */
 export function ResultActions({
   attemptId,
-  resultPath,
   slug,
   missedCount,
   nextQuiz,
@@ -119,20 +115,6 @@ export function ResultActions({
         ) : null}
       </div>
       {canPersonalize ? <ReviewEmailOptIn attemptId={attemptId} missedCount={missedCount} /> : null}
-      {viewer === 'guest' && !contentLocked ? (
-        <p className="text-center text-sm text-ink-muted">
-          {t.rich('guestSignIn', {
-            link: (chunks) => (
-              <Link
-                href={withAuthCallback(ROUTES.LOGIN, resultPath)}
-                className="font-medium text-brand-trust underline underline-offset-4"
-              >
-                {chunks}
-              </Link>
-            ),
-          })}
-        </p>
-      ) : null}
     </div>
   );
 }

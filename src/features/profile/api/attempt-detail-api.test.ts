@@ -61,6 +61,19 @@ describe('fetchAttemptDetailViewModel', () => {
     );
   });
 
+  it('sends a guest claim token in the header, never in the URL (RIN-912)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce(dto);
+    toAttemptDetailViewModelMock.mockReturnValueOnce(viewModel);
+
+    await fetchAttemptDetailViewModel('507f191e810c19729de860ea', 'en', {
+      guestClaimToken: 'fake-token',
+    });
+    expect(fetchApiDataMock).toHaveBeenCalledWith(
+      '/api/attempts/507f191e810c19729de860ea?locale=en',
+      { headers: { 'x-guest-claim-token': 'fake-token' } },
+    );
+  });
+
   it('encodes attempt ids in the path segment', async () => {
     fetchApiDataMock.mockResolvedValueOnce(dto);
     toAttemptDetailViewModelMock.mockReturnValueOnce(viewModel);

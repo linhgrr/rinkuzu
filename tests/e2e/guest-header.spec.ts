@@ -63,9 +63,14 @@ test.describe('guest app header (RIN-958) @critical-auth', () => {
     });
   }
 
-  test('logging out without a session redirects home instead of failing', async ({ request }) => {
+  test('logging out without a session redirects home instead of failing', async ({
+    request,
+    baseURL,
+  }) => {
+    // A browser form POST is same-origin; the proxy CSRF guard 403s requests without Origin.
     const response = await request.post('/api/session/logout', {
       form: { locale: 'en' },
+      headers: { origin: new URL(baseURL ?? 'http://localhost:3000').origin },
       maxRedirects: 0,
     });
 

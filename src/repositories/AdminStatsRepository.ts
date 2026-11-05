@@ -27,6 +27,11 @@ import {
   funnelFlags,
   funnelUnionStages,
 } from '@/repositories/pipelines/activation-funnel';
+import {
+  pathCountAccumulators,
+  unionDocuments,
+  utcWeekStart,
+} from '@/repositories/pipelines/activation-stages';
 
 interface DailyCountAggregate {
   _id: string;
@@ -114,36 +119,8 @@ const LEARNER_FILTER = {
   email: { $nin: [...ANALYTICS_EXCLUDED_EMAILS], $not: ANALYTICS_TEST_EMAIL_PATTERN },
 } as const;
 
-function utcWeekStart(date: string): Record<string, unknown> {
-  return { $dateTrunc: { date, unit: 'week', startOfWeek: 'monday', timezone: 'UTC' } };
-}
-
-/** `quiz only`, `adaptive only` and `both` sums over two boolean fields. */
-function pathCountAccumulators(quiz: string, adaptive: string): Record<string, unknown> {
-  const count = (condition: unknown) => ({ $sum: { $cond: [condition, 1, 0] } });
-  return {
-    byQuiz: count({ $and: [quiz, { $not: [adaptive] }] }),
-    byAdaptive: count({ $and: [adaptive, { $not: [quiz] }] }),
-    byBoth: count({ $and: [quiz, adaptive] }),
-  };
-}
-
 function toPathCounts(row: ActivationPathAggregate): AdminActivationPathCounts {
   return { quiz: row.byQuiz, adaptive: row.byAdaptive, both: row.byBoth };
-}
-
-/**
- * In-memory rows injected with `$unionWith: { pipeline: [{ $documents }] }`
- * (MongoDB 6.0+). The adaptive events live in the API database, which a
- * cross-database `$unionWith` cannot reach; they are a handful of rows.
- * Nothing is injected for an empty list.
- */
-function unionDocuments(documents: readonly Record<string, unknown>[]): PipelineStage[] {
-  if (documents.length === 0) return [];
-  const stage: PipelineStage.UnionWith = {
-    $unionWith: { pipeline: [{ $documents: [...documents] }] },
-  } as PipelineStage.UnionWith;
-  return [stage];
 }
 
 export class AdminStatsRepository implements IAdminStatsRepository {

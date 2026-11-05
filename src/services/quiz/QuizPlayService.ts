@@ -45,6 +45,19 @@ const INVALID_QUICK_ROUND = {
   code: 'validation_error',
 } as const;
 
+/** The questions a submit is scored against and the attempt fields that record the subset. */
+interface AttemptSubset {
+  questions: Quiz['questions'];
+  subsetFields: SubsetAttemptFields | null;
+}
+
+function attemptSubset(
+  questions: Quiz['questions'],
+  subsetFields: SubsetAttemptFields | null,
+): AttemptSubset {
+  return { questions, subsetFields };
+}
+
 function isValidQuickRound(indices: readonly number[], quizQuestionCount: number): boolean {
   return (
     isQuickRoundEligible(quizQuestionCount) &&
@@ -107,9 +120,7 @@ export class QuizPlayService {
     authenticatedUserId: string | undefined,
     retryOfAttemptId: string | undefined,
     quickQuestionIndices: number[] | undefined,
-  ): Promise<
-    ServiceResult<{ questions: Quiz['questions']; subsetFields: SubsetAttemptFields | null }>
-  > {
+  ): Promise<ServiceResult<AttemptSubset>> {
     if (quickQuestionIndices !== undefined) {
       // The learner picks the 10; the server only checks them and scores in play order.
       if (
@@ -120,14 +131,14 @@ export class QuizPlayService {
       }
       return {
         success: true,
-        data: {
-          questions: quickQuestionIndices.flatMap((index) => quiz.questions[index] ?? []),
-          subsetFields: { mode: 'quick', questionIndices: quickQuestionIndices },
-        },
+        data: attemptSubset(
+          quickQuestionIndices.flatMap((index) => quiz.questions[index] ?? []),
+          { mode: 'quick', questionIndices: quickQuestionIndices },
+        ),
       };
     }
     if (retryOfAttemptId === undefined) {
-      return { success: true, data: { questions: quiz.questions, subsetFields: null } };
+      return { success: true, data: attemptSubset(quiz.questions, null) };
     }
     if (!authenticatedUserId) {
       return {
@@ -145,10 +156,10 @@ export class QuizPlayService {
     if (!retry.success) return retry;
     return {
       success: true,
-      data: {
-        questions: retry.data.flatMap((index) => quiz.questions[index] ?? []),
-        subsetFields: { retryOfAttemptId, questionIndices: retry.data },
-      },
+      data: attemptSubset(
+        retry.data.flatMap((index) => quiz.questions[index] ?? []),
+        { retryOfAttemptId, questionIndices: retry.data },
+      ),
     };
   }
 

@@ -109,6 +109,12 @@ describe('activation stats integration', () => {
     return { ...attempt(key, takenAt, quiz), retryOfAttemptId: id(), questionIndices: [1, 3] };
   }
 
+  // A quick round (RIN-936) is a normal attempt over 10 chosen questions.
+  function quickAttempt(key: keyof typeof ids, takenAt: Date, quiz = sharedQuiz) {
+    const questionIndices = [16, 2, 9, 0, 11, 5, 14, 7, 3, 12];
+    return { ...attempt(key, takenAt, quiz), mode: 'quick', questionIndices, totalQuestions: 10 };
+  }
+
   function events(
     userId: string,
     firstCompletionAt: Date | null,
@@ -198,8 +204,9 @@ describe('activation stats integration', () => {
         retryAttempt('b', plus(signup.b, 14 * DAY - 1)),
         // C: first attempt exactly 7 days after signup → not activated; first attempt W02.
         attempt('c', plus(signup.c, 7 * DAY)),
-        // E: activated, returns exactly on day 14 → not retained (window is days 7–13).
-        attempt('e', plus(signup.e, DAY)),
+        // E: activated by a quick round (counts like any attempt), returns exactly on
+        // day 14 → not retained (window is days 7–13).
+        quickAttempt('e', plus(signup.e, DAY)),
         attempt('e', plus(signup.e, 14 * DAY)),
         // F: first attempt before the window; a later one never counts as first.
         attempt('f', plus(signup.f, DAY)),

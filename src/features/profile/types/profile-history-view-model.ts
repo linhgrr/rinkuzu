@@ -13,6 +13,8 @@ export interface ProfileHistoryAttemptViewModel {
   takenAt: string;
   takenAtLabel: string;
   totalQuestions: number;
+  /** Quick round only (RIN-936). */
+  mode?: 'quick';
   quiz: {
     title: string;
     slug: string;

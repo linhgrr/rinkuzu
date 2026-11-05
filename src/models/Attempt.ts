@@ -30,6 +30,7 @@ interface AttemptDocument {
   takenAt: Date;
   retryOfAttemptId?: Types.ObjectId;
   questionIndices?: number[];
+  mode?: 'quick' | 'full';
 }
 
 const AttemptQuizSnapshotSchema = new Schema<AttemptQuizSnapshotDocument>(
@@ -184,6 +185,13 @@ const AttemptSchema = new Schema<AttemptDocument>({
     default: undefined,
     immutable: true,
   },
+  // Quick round (RIN-936): optional and additive; absent means a full attempt. A quick attempt
+  // records `questionIndices` in play order and its snapshot holds only the played questions.
+  mode: {
+    type: String,
+    enum: ['quick', 'full'],
+    immutable: true,
+  },
 });
 
 AttemptSchema.pre('validate', function validateIdentity() {
@@ -200,11 +208,27 @@ AttemptSchema.pre('validate', function validateIdentity() {
 
 AttemptSchema.pre('validate', function validateRetryContract() {
   const indices = this.questionIndices;
-  if (Boolean(this.retryOfAttemptId) !== Boolean(indices)) {
+  const isQuick = this.mode === 'quick';
+  if (isQuick && this.retryOfAttemptId) {
+    this.invalidate('questionIndices', 'A quick round cannot record retryOfAttemptId');
+    return;
+  }
+  if (Boolean(this.retryOfAttemptId) !== Boolean(indices) && !isQuick) {
     this.invalidate(
       'questionIndices',
       'Retry attempts record retryOfAttemptId and questionIndices',
     );
+    return;
+  }
+  if (isQuick) {
+    const unique =
+      indices?.every(isNonNegativeInteger) === true && new Set(indices).size === indices.length;
+    if (!indices || !unique || indices.length !== this.answers.length) {
+      this.invalidate(
+        'questionIndices',
+        'Quick rounds record unique questionIndices, one per answer',
+      );
+    }
     return;
   }
   if (!indices) return;

@@ -99,6 +99,8 @@ export interface IQuizService {
     userEmail?: string,
     retryOfAttemptId?: string,
     guestClaimToken?: string,
+    /** Quick round (RIN-936): the quiz question index of each answer, in play order. */
+    quickQuestionIndices?: number[],
   ): Promise<ServiceResult<QuizAttemptResultDto>>;
 
   getQuizDiscussions(

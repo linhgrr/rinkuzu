@@ -104,6 +104,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       'guest@example.com',
       undefined,
       undefined,
+      undefined,
     );
   });
 
@@ -119,6 +120,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [1],
       idempotencyKey,
       { user: { email: 'session-only@example.com', role: 'user' } },
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -142,6 +144,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       idempotencyKey,
       null,
       'guest@example.com',
+      undefined,
       undefined,
       undefined,
     );
@@ -168,7 +171,42 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
     );
+  });
+
+  it('passes quick-round indices to the service and rejects them without quick mode (RIN-936)', async () => {
+    const session = { user: { id: 'user-1', email: 'user@example.com', role: 'user' } };
+    authMock.mockResolvedValue(session);
+    const answers = Array.from({ length: 10 }, () => 0);
+    const questionIndices = [16, 2, 9, 0, 11, 5, 14, 7, 3, 12];
+
+    const quick = await POST(
+      request({ answers, idempotencyKey, mode: 'quick', questionIndices }),
+      routeContext,
+    );
+    const unpaired = await POST(
+      request({ answers, idempotencyKey, questionIndices }),
+      routeContext,
+    );
+
+    expect(quick.status).toBe(200);
+    expect(submitQuizAttemptMock).toHaveBeenCalledTimes(1);
+    expect(submitQuizAttemptMock).toHaveBeenCalledWith(
+      slug,
+      answers,
+      idempotencyKey,
+      session,
+      undefined,
+      undefined,
+      undefined,
+      questionIndices,
+    );
+    expect(unpaired.status).toBe(400);
+    await expect(unpaired.json()).resolves.toMatchObject({
+      success: false,
+      error: { code: 'validation_error' },
+    });
   });
 
   it('maps service failures through the shared API error envelope', async () => {
@@ -226,6 +264,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
         undefined,
         undefined,
         guestClaimToken,
+        undefined,
       );
     });
 

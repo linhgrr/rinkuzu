@@ -52,6 +52,8 @@ export interface UserAttemptSummaryDto {
   score: number;
   takenAt: string;
   totalQuestions: number;
+  /** Quick round only (RIN-936): `totalQuestions` is the round size. */
+  mode?: 'quick';
   quiz: {
     title: string;
     slug: string;
@@ -85,6 +87,8 @@ export interface AttemptDetailDto {
   nextQuiz: { slug: string; title: string } | null;
   /** Retry-missed attempt only: the source attempt id. */
   retryOfAttemptId?: string;
-  /** Retry-missed attempt only: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
+  /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
   questionIndices?: number[];
+  /** Quick round only (RIN-936). */
+  mode?: 'quick';
 }

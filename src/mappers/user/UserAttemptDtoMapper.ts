@@ -43,6 +43,7 @@ export class UserAttemptDtoMapper {
       score: attempt.score,
       takenAt: serializeDate(attempt.takenAt, 'attempt.takenAt'),
       totalQuestions: attempt.totalQuestions,
+      ...(attempt.mode === 'quick' && { mode: 'quick' as const }),
       quiz: {
         title: quiz.title,
         slug: quiz.slug,
@@ -89,6 +90,7 @@ export class UserAttemptDtoMapper {
       nextQuiz,
       ...(attempt.retryOfAttemptId !== undefined && { retryOfAttemptId: attempt.retryOfAttemptId }),
       ...(attempt.questionIndices !== undefined && { questionIndices: attempt.questionIndices }),
+      ...(attempt.mode === 'quick' && { mode: 'quick' as const }),
     };
   }
 

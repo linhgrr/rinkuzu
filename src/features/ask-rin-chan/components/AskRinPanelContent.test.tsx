@@ -7,6 +7,7 @@ import { AskRinPanelContent } from './AskRinPanelContent';
 
 const mocks = vi.hoisted(() => ({
   fetchAskRinAgent: vi.fn(),
+  getAskRinConversation: vi.fn(),
 }));
 
 // Stable `t` per namespace: the panel's hooks list it as an effect/memo dependency.
@@ -27,7 +28,7 @@ vi.mock('@/lib/ask-rin-chan/client', () => ({
     exerciseContextId: 'ctx-test-1',
     exerciseContextToken: 'fake-context-token',
   })),
-  getAskRinConversation: vi.fn(async () => ({ messages: [] })),
+  getAskRinConversation: mocks.getAskRinConversation,
   deleteAskRinConversation: vi.fn(async () => undefined),
 }));
 
@@ -43,7 +44,9 @@ const QUIZ_CONTEXT: AskRinContextPayload = {
 };
 const THINKING = 'adaptiveLearning.chatbot.thinking';
 const RUN_FAILED = 'adaptiveLearning.chatbot.errorRunFailed';
-// The first render in a worker loads the markdown/KaTeX stack and can take over 1 s.
+const PLACEHOLDER = 'adaptiveLearning.chatbot.placeholder';
+const SEND = 'adaptiveLearning.chatbot.send';
+// The first render in a worker is cold and can take over 1 s under gate contention.
 const SLOW = { timeout: 5_000 };
 
 interface SseRun {
@@ -78,14 +81,27 @@ function queueSseRun(): SseRun {
 
 async function openPanelAndAsk(question: string) {
   render(<AskRinPanelContent isOpen onClose={() => undefined} context={QUIZ_CONTEXT} />);
-  const input = await screen.findByLabelText('adaptiveLearning.chatbot.placeholder', {}, SLOW);
+  const input = await screen.findByLabelText(PLACEHOLDER, {}, SLOW);
+  // The composer renders before the AG-UI runtime's mount effects run. A click in that
+  // window hits a still-disabled Send button and is silently dropped (RIN-928), so wait
+  // for the runtime to load the (empty) history first, as a learner does.
+  await waitFor(() => {
+    expect(mocks.getAskRinConversation).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText('common.loading')).toBeNull();
+  }, SLOW);
   await ask(input, question);
 }
 
 async function ask(input: HTMLElement, question: string) {
   fireEvent.change(input, { target: { value: question } });
-  fireEvent.click(screen.getByLabelText('adaptiveLearning.chatbot.send'));
-  await screen.findByText(question, {}, SLOW);
+  await waitFor(
+    () => expect((screen.getByLabelText(SEND) as HTMLButtonElement).disabled).toBe(false),
+    SLOW,
+  );
+  fireEvent.click(screen.getByLabelText(SEND));
+  // The sent message in the thread, not the composer's own copy of the text: a controlled
+  // textarea also exposes its value as text content.
+  await screen.findByText(question, { ignore: 'textarea, script, style' }, SLOW);
 }
 
 function startAssistantMessage(run: SseRun, runId: string) {
@@ -106,6 +122,8 @@ function assistantBubbles() {
 describe('AskRinPanelContent run states', () => {
   beforeEach(() => {
     mocks.fetchAskRinAgent.mockReset();
+    mocks.getAskRinConversation.mockReset();
+    mocks.getAskRinConversation.mockResolvedValue({ messages: [] });
     HTMLDialogElement.prototype.showModal = vi.fn(function showModal(this: HTMLDialogElement) {
       this.setAttribute('open', '');
     });
@@ -163,7 +181,7 @@ describe('AskRinPanelContent run states', () => {
     expect(screen.queryByText(THINKING)).toBeNull();
 
     const retry = queueSseRun();
-    await ask(screen.getByLabelText('adaptiveLearning.chatbot.placeholder'), 'Please try again');
+    await ask(screen.getByLabelText(PLACEHOLDER), 'Please try again');
     await act(async () => startAssistantMessage(retry, 'run-2'));
 
     expect(await screen.findByText(THINKING, {}, SLOW)).toBeTruthy();
@@ -180,7 +198,7 @@ describe('AskRinPanelContent run states', () => {
       fireEvent.click(screen.getByLabelText('adaptiveLearning.chatbot.stop'));
     });
 
-    await screen.findByLabelText('adaptiveLearning.chatbot.send', {}, SLOW);
+    await screen.findByLabelText(SEND, {}, SLOW);
     await waitFor(() => expect(screen.queryByText(THINKING)).toBeNull());
     expect(assistantBubbles()).toHaveLength(0);
     expect(screen.queryByRole('alert')).toBeNull();

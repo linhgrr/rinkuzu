@@ -99,7 +99,7 @@ export function ReviewEmailSection() {
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
 
   return (
-    <Card>
+    <Card className="p-0">
       <CardHeader>
         <CardTitle>{t('reviewEmailTitle')}</CardTitle>
         <CardDescription>{t('reviewEmailDescription')}</CardDescription>

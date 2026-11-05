@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/Button';
@@ -133,13 +133,17 @@ export default function PremiumQuizPlayerClient({
     return prefetching.current;
   }
 
+  const prefetchNextBatch = useEffectEvent((batch: PremiumBatchViewModel, cursor: string) => {
+    void loadAdjacent(batch, cursor);
+  });
+
+  // Re-running is idempotent: a loaded next batch returns early, and `loadAdjacent`
+  // shares one in-flight request.
   useEffect(() => {
     if (!currentBatch?.nextCursor || currentIndex - currentBatch.startIndex < 1) return;
     if (batches[currentBatch.batchIndex + 1]) return;
-    void loadAdjacent(currentBatch, currentBatch.nextCursor);
-    // Batch/cursor identity makes repeated renders idempotent.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBatch?.batchIndex, currentBatch?.nextCursor, currentIndex]);
+    prefetchNextBatch(currentBatch, currentBatch.nextCursor);
+  }, [batches, currentBatch, currentIndex]);
 
   async function choose(answer: PremiumAnswerViewModel) {
     if (!sessionId) return;

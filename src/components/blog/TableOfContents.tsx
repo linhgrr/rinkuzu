@@ -25,16 +25,12 @@ export const TableOfContents = ({ headings }: TableOfContentsProps) => {
       },
     );
 
-    headings.forEach((item) => {
-      const element = document.getElementById(item.id);
-      if (element) {
-        observer.observe(element);
-      }
-    });
+    const targets = headings
+      .map((item) => document.getElementById(item.id))
+      .filter((element): element is HTMLElement => element !== null);
+    for (const element of targets) observer.observe(element);
 
-    return () => {
-      observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, [headings]);
 
   return (

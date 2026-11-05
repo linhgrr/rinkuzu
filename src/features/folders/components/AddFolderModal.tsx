@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
 import { createFolderViewModel } from '@/features/folders/api/folders-api';
 import { useApiErrorToast } from '@/lib/api/use-api-error';
+import { withPending } from '@/lib/async/with-pending';
 import type { FolderSummaryViewModel } from '@/features/folders/types/folder-view-model';
 
 interface AddFolderModalProps {
@@ -42,15 +43,13 @@ export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalPro
       return;
     }
 
-    setSubmitting(true);
     setError('');
     try {
-      const folder = await createFolderViewModel(normalizedName);
+      const folder = await withPending(setSubmitting, () => createFolderViewModel(normalizedName));
       onCreated(folder);
       handleClose();
     } catch (requestError) {
       showMutationError(requestError);
-      setSubmitting(false);
     }
   }
 

@@ -170,4 +170,18 @@ describe('CheckoutClient purchase review', () => {
       expect(mocks.replace).toHaveBeenCalledWith('/checkout?order=order-public-id'),
     );
   });
+
+  it('clears the pending pay button when creating the order fails', async () => {
+    const user = userEvent.setup();
+    mocks.createOrder.mockRejectedValue(new Error('network down'));
+    render(<CheckoutClient planId="premium-monthly" orderId={null} hasProviderCallback={false} />);
+
+    await screen.findByRole('button', { name: /Continue to PayOS/ });
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /Continue to PayOS/ }));
+
+    const payButton = await screen.findByRole('button', { name: /Continue to PayOS/ });
+    expect((payButton as HTMLButtonElement).disabled).toBe(false);
+    expect(mocks.createOrder).toHaveBeenCalledTimes(1);
+  });
 });

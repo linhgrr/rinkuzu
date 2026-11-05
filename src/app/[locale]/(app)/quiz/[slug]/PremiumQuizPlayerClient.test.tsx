@@ -1,9 +1,10 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
+import { fetchPremiumBatch } from '@/features/quiz/api/premium-quiz-api';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 
 const { pushMock, saveAnswerMock, startSessionMock, submitSessionMock, unlockMock } = vi.hoisted(
@@ -105,6 +106,41 @@ describe('PremiumQuizPlayerClient', () => {
     await waitFor(() =>
       expect(pushMock).toHaveBeenCalledWith('/quiz/premium-quiz/result?attemptId=attempt-1'),
     );
+  });
+
+  it('prefetches the next batch once when the learner reaches its second question', async () => {
+    const question = (n: number) => ({
+      id: `question-${n}`,
+      question: `Question ${n}?`,
+      options: ['No', 'Yes'],
+      type: 'single',
+    });
+    const first = await startSessionMock.getMockImplementation()?.();
+    startSessionMock.mockResolvedValue({
+      ...first,
+      totalQuestions: 4,
+      questions: [question(1), question(2), question(3)],
+      nextCursor: 'cursor-1',
+      currentQuestionIndex: 1,
+      answers: [null, null, null, null],
+    });
+    vi.mocked(fetchPremiumBatch).mockResolvedValue({
+      ...first,
+      totalQuestions: 4,
+      batchIndex: 1,
+      startIndex: 3,
+      questions: [question(4)],
+      answers: [null, null, null, null],
+    });
+    renderPlayer();
+
+    expect(await screen.findByText('Question 2?')).toBeInTheDocument();
+    await waitFor(() => expect(fetchPremiumBatch).toHaveBeenCalledWith('session-1', 'cursor-1'));
+    // Loading the batch re-runs the effect; the loaded batch stops a second request.
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(fetchPremiumBatch).toHaveBeenCalledTimes(1);
   });
 
   it('hides the source subtitle and renders the unlock cost as a credit icon with -1', async () => {

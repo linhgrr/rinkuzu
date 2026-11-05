@@ -136,20 +136,27 @@ export function EditQuizPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
+    // A newer quiz id (or unmount) supersedes this load: its late result is dropped.
+    let cancelled = false;
     const fetchQuiz = async () => {
       setStatus('loading');
       setLoadError('');
       try {
         const data = await fetchQuizEditViewModel(quizId);
+        if (cancelled) return;
         setQuiz(data);
         setStatus('ready');
       } catch (error) {
+        if (cancelled) return;
         setLoadError(apiErrorMessage(error, t('loadFailed')));
         setStatus('error');
       }
     };
 
     void fetchQuiz();
+    return () => {
+      cancelled = true;
+    };
   }, [quizId, t, apiErrorMessage]);
 
   if (status === 'loading') {

@@ -25,6 +25,7 @@ import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { Session } from 'next-auth';
 
@@ -56,6 +57,7 @@ export class QuizService implements IQuizService {
     quizAttemptProgressRepository: IQuizAttemptProgressRepository,
     folderRepository?: IFolderRepository,
     premiumAccessPolicy?: PremiumDiscussionAccessPolicy,
+    attemptRepository?: Pick<IAttemptRepository, 'findByIdWithQuiz'>,
   ) {
     this.crudService = new QuizCrudService(quizRepository, folderRepository);
     this.playService = new QuizPlayService(
@@ -63,6 +65,7 @@ export class QuizService implements IQuizService {
       userRepository,
       quizProgressRepository,
       quizAttemptProgressRepository,
+      attemptRepository,
     );
     this.adminService = new QuizAdminService(quizRepository);
     this.discussionService = new QuizDiscussionService(
@@ -115,6 +118,15 @@ export class QuizService implements IQuizService {
     userId?: string,
   ): Promise<ServiceResult<QuizPlayDetailDto>> {
     return this.playService.getQuizForPlay(slug, userRole, userId);
+  }
+
+  async getRetryQuizForPlay(
+    slug: string,
+    retryOfAttemptId: string,
+    userId?: string,
+    userRole?: string,
+  ): Promise<ServiceResult<QuizPlayDetailDto>> {
+    return this.playService.getRetryQuizForPlay(slug, retryOfAttemptId, userId, userRole);
   }
 
   async getSavedQuizProgress(
@@ -183,8 +195,16 @@ export class QuizService implements IQuizService {
     idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
+    retryOfAttemptId?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
-    return this.playService.submitQuizAttempt(slug, answers, idempotencyKey, session, userEmail);
+    return this.playService.submitQuizAttempt(
+      slug,
+      answers,
+      idempotencyKey,
+      session,
+      userEmail,
+      retryOfAttemptId,
+    );
   }
 
   async getQuizDiscussions(

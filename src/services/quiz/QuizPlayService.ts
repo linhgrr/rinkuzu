@@ -26,6 +26,13 @@ import {
 } from '@/services/quiz/quiz-attempt-evaluation';
 import type { QuizAttemptAnswer } from '@/entities/QuizAttempt';
 import type { Quiz } from '@/entities/Quiz';
+import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import { objectIdSchema } from '@/lib/validation/common';
+import { deriveMissedQuestionIndices } from '@/services/quiz/quiz-retry';
+
+type RetrySourceAttemptRepository = Pick<IAttemptRepository, 'findByIdWithQuiz'>;
+
+const ATTEMPT_NOT_FOUND = { success: false, error: 'Attempt not found', statusCode: 404 } as const;
 
 interface FlashcardQuizFailureContext {
   logMessage: string;
@@ -38,7 +45,81 @@ export class QuizPlayService {
     private userRepository: IUserRepository,
     private quizProgressRepository: IQuizProgressRepository,
     private quizAttemptProgressRepository: IQuizAttemptProgressRepository,
+    private attemptRepository?: RetrySourceAttemptRepository,
   ) {}
+
+  /**
+   * Quiz question indices the learner missed in `retryOfAttemptId`, re-derived server-side.
+   * Owner only: an attempt of another user, of another quiz, or an unknown id is a 404.
+   */
+  private async resolveRetryQuestionIndices(
+    quiz: Quiz,
+    retryOfAttemptId: string,
+    userId: string,
+  ): Promise<ServiceResult<number[]>> {
+    if (!this.attemptRepository || !objectIdSchema.safeParse(retryOfAttemptId).success) {
+      return ATTEMPT_NOT_FOUND;
+    }
+    const source = await this.attemptRepository.findByIdWithQuiz(retryOfAttemptId, { userId });
+    if (!source || typeof source.quiz !== 'object' || source.quiz.id !== quiz.id) {
+      return ATTEMPT_NOT_FOUND;
+    }
+    const indices = deriveMissedQuestionIndices(source, quiz.questions);
+    if (indices.length === 0) {
+      return {
+        success: false,
+        error: 'Nothing to retry',
+        statusCode: 409,
+        code: 'nothing_to_retry',
+      };
+    }
+    return { success: true, data: indices };
+  }
+
+  /** `GET /api/quiz/<slug>/play?retryOf=<attemptId>`: only the missed questions, in order. */
+  async getRetryQuizForPlay(
+    slug: string,
+    retryOfAttemptId: string,
+    userId?: string,
+    userRole?: string,
+  ): Promise<ServiceResult<QuizPlayDetailDto>> {
+    if (!userId) {
+      return {
+        success: false,
+        error: 'Authentication required',
+        statusCode: 401,
+        code: 'unauthorized',
+      };
+    }
+    try {
+      const access = await requireQuizReadAccess(
+        await this.quizRepository.findBySlug(slug),
+        userId,
+        userRole,
+      );
+      if (!access.success) return access;
+      const quiz = access.data;
+
+      const retry = await this.resolveRetryQuestionIndices(quiz, retryOfAttemptId, userId);
+      if (!retry.success) return retry;
+
+      const questions = retry.data.flatMap((index) => quiz.questions[index] ?? []);
+      return {
+        success: true,
+        data: {
+          ...QuizDetailDtoMapper.toPlayDetail({
+            ...quiz,
+            questions,
+            questionCount: questions.length,
+          }),
+          retry: { ofAttemptId: retryOfAttemptId, questionIndices: retry.data },
+        },
+      };
+    } catch (error) {
+      logger.error({ error }, 'Error in getRetryQuizForPlay');
+      return { success: false, error: 'Internal server error', statusCode: 500 };
+    }
+  }
 
   private async resolveQuizForRead(
     slug: string,
@@ -166,6 +247,7 @@ export class QuizPlayService {
     idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
+    retryOfAttemptId?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
     try {
       const quiz = await this.quizRepository.findForPlay(slug);
@@ -208,7 +290,28 @@ export class QuizPlayService {
         };
       }
 
-      const evaluation = evaluateQuizAttempt(quiz.questions, answers);
+      let questions = quiz.questions;
+      let retryFields: { retryOfAttemptId: string; questionIndices: number[] } | null = null;
+      if (retryOfAttemptId !== undefined) {
+        if (!authenticatedUserId) {
+          return {
+            success: false,
+            error: 'Authentication required',
+            statusCode: 401,
+            code: 'unauthorized',
+          };
+        }
+        const retry = await this.resolveRetryQuestionIndices(
+          quiz,
+          retryOfAttemptId,
+          authenticatedUserId,
+        );
+        if (!retry.success) return retry;
+        questions = retry.data.flatMap((index) => quiz.questions[index] ?? []);
+        retryFields = { retryOfAttemptId, questionIndices: retry.data };
+      }
+
+      const evaluation = evaluateQuizAttempt(questions, answers);
 
       const attemptIdentity = authenticatedUserId
         ? { userId: authenticatedUserId }
@@ -229,8 +332,9 @@ export class QuizPlayService {
           title: quiz.title,
           slug: quiz.slug,
           ...(quiz.description === undefined ? {} : { description: quiz.description }),
-          questions: quiz.questions,
+          questions,
         },
+        ...retryFields,
         answers: evaluation.answers,
         score: evaluation.score,
         correctAnswers: evaluation.correctAnswers,

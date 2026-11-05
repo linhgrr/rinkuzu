@@ -1,5 +1,6 @@
 import type { PaginationMeta } from '@/dtos/common';
 import { z } from 'zod';
+import { locales } from '@/i18n/config';
 import { objectIdRouteParamSchema } from '@/lib/validation/common';
 import type { QuizQuestionReview } from '@/shared/types/quiz-question';
 
@@ -12,6 +13,8 @@ export const userAttemptListQuerySchema = z.strictObject({
 
 export const attemptDetailQuerySchema = z.strictObject({
   userEmail: z.string().trim().pipe(z.email()).optional(),
+  /** Learner locale, used to pick `nextQuiz` (RIN-914). */
+  locale: z.enum(locales).optional(),
 });
 
 /** Public profile identity — stable non-PII fields only (no email). */
@@ -76,4 +79,12 @@ export interface AttemptDetailDto {
     description?: string;
     questions: AttemptQuestionDetailDto[];
   };
+  /** Questions answered wrong or left blank in this attempt. */
+  missedCount: number;
+  /** Next allowlisted starter quiz in the learner's locale they have not attempted, or null. */
+  nextQuiz: { slug: string; title: string } | null;
+  /** Retry-missed attempt only: the source attempt id. */
+  retryOfAttemptId?: string;
+  /** Retry-missed attempt only: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
+  questionIndices?: number[];
 }

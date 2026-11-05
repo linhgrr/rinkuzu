@@ -99,6 +99,20 @@ export class AttemptRepository implements IAttemptRepository {
     return record ? AttemptPersistenceMapper.toEntity(record) : null;
   }
 
+  /** Which of `slugs` the owner has an attempt for; scans only that owner's attempts. */
+  async findAttemptedQuizSlugs(owner: AttemptOwnerIdentity, slugs: string[]): Promise<string[]> {
+    if (slugs.length === 0) return [];
+    const identityFilter = owner.userId
+      ? { user: toStrictObjectId(owner.userId) }
+      : { guestEmail: owner.guestEmail };
+    await connectDB();
+    const attempted: unknown[] = await AttemptModel.distinct('quizSnapshot.slug', {
+      ...identityFilter,
+      'quizSnapshot.slug': { $in: slugs },
+    });
+    return attempted.filter((slug): slug is string => typeof slug === 'string');
+  }
+
   async count(filter: AttemptCountFilter = {}): Promise<number> {
     await connectDB();
     return AttemptModel.countDocuments(filter);

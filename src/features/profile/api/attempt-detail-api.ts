@@ -15,6 +15,9 @@ export async function fetchAttemptDetailViewModel(
 ): Promise<AttemptDetailViewModel> {
   const encodedAttemptId = routePathSegment(attemptId);
   const params = new URLSearchParams();
+  if (locale === 'vi' || locale === 'en') {
+    params.set('locale', locale);
+  }
   if (options?.userEmail) {
     params.set('userEmail', options.userEmail);
   }

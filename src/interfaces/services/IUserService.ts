@@ -16,6 +16,7 @@ export interface IUserService {
   getAttemptDetails(
     attemptId: string,
     owner: AttemptOwner,
+    options?: { locale?: string },
   ): Promise<ServiceResult<AttemptDetailDto>>;
 
   getPublicProfile(

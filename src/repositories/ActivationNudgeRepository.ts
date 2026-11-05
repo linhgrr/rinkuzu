@@ -26,9 +26,9 @@ export interface NudgeLearner {
   id: Types.ObjectId;
   email: string;
   name: string | null;
-  role?: string;
-  disable?: number;
-  isTestAccount?: boolean;
+  role: string | null;
+  disable: number | null;
+  isTestAccount: boolean | null;
   createdAt: Date;
   /** `MarketingPreference.locale`, the only locale an account stores. */
   locale: string | null;
@@ -80,9 +80,9 @@ export class ActivationNudgeRepository {
       id: user._id,
       email: user.email,
       name: user.name ?? null,
-      role: user.role,
-      disable: user.disable,
-      isTestAccount: user.isTestAccount,
+      role: user.role ?? null,
+      disable: user.disable ?? null,
+      isTestAccount: user.isTestAccount ?? null,
       createdAt: user.createdAt,
       locale: locales.get(user._id.toString()) ?? null,
     }));

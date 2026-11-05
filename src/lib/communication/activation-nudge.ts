@@ -93,8 +93,8 @@ export async function sweepActivationNudges(
   // Asked only when someone is left; send time checks again, so an outage here is not fatal.
   const adaptive =
     candidates.length > 0
-      ? ((await adaptiveCompleters(window.after, now)) ?? new Set())
-      : new Set();
+      ? ((await adaptiveCompleters(window.after, now)) ?? new Set<string>())
+      : new Set<string>();
   let enqueued = 0;
   for (const learner of candidates) {
     if (decide(learner, blockers, adaptive, now).decision !== 'send') continue;

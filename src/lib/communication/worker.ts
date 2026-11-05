@@ -1181,15 +1181,16 @@ export async function runCommunicationWorker(limit = 50): Promise<{
   };
 }> {
   await connectDB();
-  // Enqueued before the outbox pass so a due nudge goes out on the same tick.
-  const activationNudges = await sweepActivationNudgesSafely();
-  const [outbox, campaignAudience, campaignCancellations, expired, retention] = await Promise.all([
-    processOutbox(Math.min(limit, 50)),
-    processCampaignAudience(Math.min(limit, 100)),
-    processPendingCampaignCancellations(Math.min(limit, 25)),
-    expireUnansweredFeedback(Math.min(limit, 100)),
-    processCommunicationRetention(Math.min(limit, 25)),
-  ]);
+  // A row the sweep enqueues is claimed by this tick's outbox pass or the next one.
+  const [activationNudges, outbox, campaignAudience, campaignCancellations, expired, retention] =
+    await Promise.all([
+      sweepActivationNudgesSafely(),
+      processOutbox(Math.min(limit, 50)),
+      processCampaignAudience(Math.min(limit, 100)),
+      processPendingCampaignCancellations(Math.min(limit, 25)),
+      expireUnansweredFeedback(Math.min(limit, 100)),
+      processCommunicationRetention(Math.min(limit, 25)),
+    ]);
   await EmailCampaign.updateMany(
     { status: 'scheduled', scheduledAt: { $lte: new Date() } },
     { $set: { status: 'sending', sendingStartedAt: new Date() }, $inc: { revision: 1 } },

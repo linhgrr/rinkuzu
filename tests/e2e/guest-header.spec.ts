@@ -56,7 +56,10 @@ test.describe('guest app header (RIN-958) @critical-auth', () => {
       await page.setViewportSize(VIEWPORTS[0]);
       await page.goto(`/${locale}/explore`);
       await page.getByRole('banner').getByRole('link', { name: copy.signIn, exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/${locale}/login\\?callbackUrl=%2Fexplore$`));
+      await expect(page).toHaveURL(
+        (url) =>
+          url.pathname === `/${locale}/login` && url.searchParams.get('callbackUrl') === '/explore',
+      );
     });
   }
 

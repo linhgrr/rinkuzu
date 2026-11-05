@@ -57,7 +57,7 @@ import {
   isClosedFeedbackStatus,
   OPEN_FEEDBACK_STATUSES,
 } from './internal';
-import { prepareReviewReminder, REVIEW_REMINDER_SENDING_ENABLED } from './review-reminder';
+import { prepareReviewReminder, reviewReminderSendingEnabled } from './review-reminder';
 
 function configuredRate(name: string, fallback: number): number {
   const value = process.env[name]?.trim();
@@ -748,8 +748,8 @@ async function processOutbox(
       {
         availableAt: { $lte: now },
         $or: [{ status: 'pending' }, { status: 'processing', leaseUntil: { $lte: now } }],
-        // Review emails wait for the one-click unsubscribe route (RIN-915).
-        ...(REVIEW_REMINDER_SENDING_ENABLED ? {} : { kind: { $ne: 'review_reminder' } }),
+        // `REVIEW_REMINDER_SENDING_ENABLED=false` holds review emails back (RIN-915).
+        ...(reviewReminderSendingEnabled() ? {} : { kind: { $ne: 'review_reminder' } }),
       },
       leaseClaimUpdate(now, leaseToken),
       { sort: { availableAt: 1 }, new: true },

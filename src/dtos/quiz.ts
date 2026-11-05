@@ -388,3 +388,14 @@ export interface DeleteQuizProgressResponseDto {
 export interface ReportQuizResponseDto {
   reportId: string;
 }
+
+/** Guest attempts a new account claims after sign-up (RIN-912 part 3). */
+const GUEST_ATTEMPT_CLAIM_MAX_TOKENS = 20;
+
+export const claimGuestAttemptsRequestSchema = z.strictObject({
+  tokens: z.array(guestClaimTokenSchema).min(1).max(GUEST_ATTEMPT_CLAIM_MAX_TOKENS),
+});
+
+export interface ClaimGuestAttemptsResponseDto {
+  claimedAttemptIds: string[];
+}

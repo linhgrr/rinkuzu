@@ -128,6 +128,15 @@ export class ReviewReminderRepository {
     return wasOptedIn;
   }
 
+  /** Whether the learner is currently opted in to `study_reminders`. */
+  async studyRemindersEnabled(userId: Types.ObjectId): Promise<boolean> {
+    await connectDB();
+    const preference = await MarketingPreference.findOne({ userId })
+      .select('studyReminders')
+      .lean<{ studyReminders?: boolean } | null>();
+    return preference?.studyReminders === true;
+  }
+
   /** Un-ticks `studyReminders`; true when this write changed it. */
   async optOut(userId: Types.ObjectId): Promise<boolean> {
     await connectDB();

@@ -59,3 +59,18 @@ export interface RecordedQuizAttempt {
 export interface IQuizAttemptProgressRepository {
   recordSubmittedAttempt(data: RecordQuizAttemptProgressData): Promise<RecordedQuizAttempt>;
 }
+
+export interface IGuestAttemptClaimRepository {
+  /**
+   * Attaches each unclaimed, token-identified guest attempt taken since
+   * `claimableSince` to `userId` (single use: the hash is removed) and applies
+   * the user progress a signed-in submit would have written. Returns the ids
+   * claimed; hashes that match nothing are dropped.
+   */
+  claimGuestAttempts(
+    userId: string,
+    tokenHashes: readonly string[],
+    now: Date,
+    claimableSince: Date,
+  ): Promise<string[]>;
+}

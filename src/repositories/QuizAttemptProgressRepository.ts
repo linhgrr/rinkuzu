@@ -8,6 +8,7 @@ import QuestionProgress from '@/models/QuestionProgress';
 import QuizProgress from '@/models/QuizProgress';
 import UserProgress from '@/models/UserProgress';
 import type {
+  IGuestAttemptClaimRepository,
   IQuizAttemptProgressRepository,
   RecordedQuizAttempt,
   RecordQuizAttemptProgressData,
@@ -225,7 +226,7 @@ function buildQuestionProgressWrites(
 
 function applySubmittedAttemptToUserProgress(
   progress: MutableUserProgress,
-  data: AuthenticatedQuizAttemptSubmission,
+  data: Pick<AuthenticatedQuizAttemptSubmission, 'correctAnswers' | 'totalQuestions'>,
   now: Date,
 ): void {
   const xpGain = data.correctAnswers * 10;
@@ -362,6 +363,45 @@ async function recordAuthenticatedProgress(
   await QuizProgress.deleteOne({ userId: data.userId, quiz: data.quizId }).session(session);
 }
 
+interface ClaimedAttemptRecord {
+  _id: unknown;
+  correctAnswers: number;
+  totalQuestions: number;
+}
+
+/**
+ * One atomic claim: only an attempt that still holds the hash, has no owner
+ * (no `user`, never a `guestEmail` attempt) and was taken since
+ * `claimableSince`. Unsetting the hash makes the token single-use.
+ */
+async function claimOneGuestAttempt(
+  userId: string,
+  tokenHash: string,
+  now: Date,
+  claimableSince: Date,
+  session: ClientSession,
+): Promise<string | null> {
+  const claimed = await AttemptModel.findOneAndUpdate(
+    {
+      guestClaimTokenHash: tokenHash,
+      user: null,
+      guestEmail: null,
+      takenAt: { $gte: claimableSince },
+    },
+    { $set: { user: userId, claimedAt: now }, $unset: { guestClaimTokenHash: '' } },
+    { new: true, projection: { _id: 1, correctAnswers: 1, totalQuestions: 1 }, session },
+  ).lean<ClaimedAttemptRecord>();
+  if (!claimed) return null;
+
+  // The dashboard reads UserProgress (XP, quizzes taken, streak): apply the
+  // write a signed-in submit makes, dated at the claim.
+  let userProgress = await UserProgress.findOne({ userId }).session(session);
+  userProgress ??= new UserProgress({ userId });
+  applySubmittedAttemptToUserProgress(userProgress, claimed, now);
+  await userProgress.save({ session });
+  return serializeId(claimed._id, 'attempt._id');
+}
+
 async function recordSubmissionTransaction(
   data: RecordQuizAttemptProgressData,
   submissionDigest: string,
@@ -377,7 +417,9 @@ async function recordSubmissionTransaction(
   return attempt;
 }
 
-export class QuizAttemptProgressRepository implements IQuizAttemptProgressRepository {
+export class QuizAttemptProgressRepository
+  implements IQuizAttemptProgressRepository, IGuestAttemptClaimRepository
+{
   async recordSubmittedAttempt(data: RecordQuizAttemptProgressData): Promise<RecordedQuizAttempt> {
     await connectDB();
     const submissionDigest = createSubmissionDigest(data);
@@ -414,5 +456,28 @@ export class QuizAttemptProgressRepository implements IQuizAttemptProgressReposi
     }
 
     throw new Error('Quiz attempt transaction exhausted without a result');
+  }
+
+  async claimGuestAttempts(
+    userId: string,
+    tokenHashes: readonly string[],
+    now: Date,
+    claimableSince: Date,
+  ): Promise<string[]> {
+    if (tokenHashes.length === 0) return [];
+    await connectDB();
+    const session = await mongoose.startSession();
+    const claimedIds: string[] = [];
+    try {
+      for (const tokenHash of new Set(tokenHashes)) {
+        const claimedId = await session.withTransaction(async () =>
+          claimOneGuestAttempt(userId, tokenHash, now, claimableSince, session),
+        );
+        if (claimedId) claimedIds.push(claimedId);
+      }
+    } finally {
+      await session.endSession();
+    }
+    return claimedIds;
   }
 }

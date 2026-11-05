@@ -7,8 +7,9 @@ import {
   reviewReminderDedupeKey,
   reviewReminderQaRecipients,
   reviewRetryUrl,
+  oneClickUnsubscribeUrl,
+  unsubscribePageUrl,
   unsubscribeToken,
-  unsubscribeUrl,
   verifyUnsubscribeToken,
   type ReviewReminderFacts,
 } from './review-reminder-policy';
@@ -198,9 +199,12 @@ describe('unsubscribe token', () => {
     ).toBeNull();
   });
 
-  it('builds the unsubscribe link', () => {
-    expect(unsubscribeUrl('https://www.rinkuzu.app', 'abc.def')).toBe(
-      'https://www.rinkuzu.app/unsubscribe?t=abc.def',
+  it('builds the localized footer link and the one-click header URL', () => {
+    expect(unsubscribePageUrl('https://www.rinkuzu.app', 'en', 'abc.def')).toBe(
+      'https://www.rinkuzu.app/en/unsubscribe?t=abc.def',
+    );
+    expect(oneClickUnsubscribeUrl('https://www.rinkuzu.app', 'abc.def')).toBe(
+      'https://www.rinkuzu.app/api/unsubscribe?t=abc.def',
     );
   });
 });

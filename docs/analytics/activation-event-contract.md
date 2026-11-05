@@ -52,3 +52,12 @@ The ground-truth weekly series (signups, material, activated, north-star `weekly
 - A learner on both paths is counted once. `activatedBy` / `weeklyActivatedBy` split each count into `quiz`, `adaptive` and `both`.
 - Adaptive user ids go through the same exclusions as web signups (admin, disabled, test/QA, `ANALYTICS_EXCLUDED_EMAILS`); ids with no web user are dropped.
 - If the API read fails or takes over 2 s, the endpoint still answers with quiz-only numbers and `sources.adaptive = "unavailable"`, and that answer is not cached.
+
+### First-session funnel (RIN-932)
+
+Each cohort row also carries the steps between signup and activation, all within 7 days of signup and with the same exclusions, each learner counted once: `signups ⊇ signedIn`, `signups ⊇ startedQuiz ⊇ activated`.
+
+- **`signedIn`:** at least one `login_success` auth audit event (credentials or Google, first sign-in included). Auth audit events are kept 180 days, so this column reads 0 for cohorts older than that.
+- **`startedQuiz`:** activated, or an unsubmitted quiz (`quizprogresses`) with at least one answer saved after signup. Adaptive learners with 1–4 answers and no completion are not visible to the web.
+- **`returnedWeek1`:** a sign-in, attempt or adaptive completion on a later calendar day in Asia/Ho_Chi_Minh than the signup day, less than 7 days after signup. `null` until 7 days after the end of the week. A learner whose session is still live and who only browses is not seen. Cohort weeks stay UTC ISO weeks.
+- **`activatedBy.claimedGuest`:** activated learners with a qualifying attempt claimed from a guest session (RIN-918). A subset of `activated`, not part of `quiz + adaptive + both`.

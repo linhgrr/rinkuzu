@@ -5,7 +5,8 @@ import type { ProfileHistoryViewModel } from '@/features/profile/types/profile-h
 
 export async function fetchProfileHistoryViewModel(
   params: URLSearchParams,
+  locale: string,
 ): Promise<ProfileHistoryViewModel> {
   const data = await fetchApiData<UserAttemptListDto>(`/api/user/attempts?${params}`);
-  return toProfileHistoryViewModel(data);
+  return toProfileHistoryViewModel(data, locale);
 }

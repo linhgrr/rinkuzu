@@ -3,10 +3,13 @@ import type {
   ProfileBookmarkListViewModel,
   ProfileBookmarkViewModel,
 } from '@/features/profile/types/profile-bookmark-view-model';
-import { formatDate } from '@/lib/formatters';
+import { formatCalendarDate } from '@/lib/formatters';
 import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
 
-function toProfileBookmarkViewModel(bookmark: BookmarkDto): ProfileBookmarkViewModel {
+function toProfileBookmarkViewModel(
+  bookmark: BookmarkDto,
+  locale: string,
+): ProfileBookmarkViewModel {
   const { question } = bookmark;
   // Bookmark DTOs use `text`; the shared helper's content field is `question`.
   const { question: text, ...contentFields } = copyQuizQuestionContentFields({
@@ -32,17 +35,20 @@ function toProfileBookmarkViewModel(bookmark: BookmarkDto): ProfileBookmarkViewM
     },
     questionIndex: bookmark.questionIndex,
     createdAt: bookmark.createdAt,
-    createdAtLabel: formatDate(bookmark.createdAt),
+    createdAtLabel: formatCalendarDate(bookmark.createdAt, locale),
     ...(bookmark.updatedAt !== undefined && {
       updatedAt: bookmark.updatedAt,
-      updatedAtLabel: formatDate(bookmark.updatedAt),
+      updatedAtLabel: formatCalendarDate(bookmark.updatedAt, locale),
     }),
   };
 }
 
-export function toProfileBookmarkListViewModel(dto: BookmarkListDto): ProfileBookmarkListViewModel {
+export function toProfileBookmarkListViewModel(
+  dto: BookmarkListDto,
+  locale: string,
+): ProfileBookmarkListViewModel {
   return {
-    bookmarks: dto.bookmarks.map(toProfileBookmarkViewModel),
+    bookmarks: dto.bookmarks.map((bookmark) => toProfileBookmarkViewModel(bookmark, locale)),
     pagination: dto.pagination,
   };
 }

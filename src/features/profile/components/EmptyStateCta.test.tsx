@@ -70,6 +70,8 @@ describe('empty state CTA (RIN-691)', () => {
 
     await expectSingleExploreCta('profile.noHistory');
     expect(screen.getByText('profile.historyEmptyHint')).toBeTruthy();
+    // Dates in the list are formatted for the page locale (RIN-690).
+    expect(fetchHistoryMock).toHaveBeenCalledWith(expect.any(URLSearchParams), 'en');
   });
 
   it('bookmarks: one "Explore quizzes" link to /explore', async () => {
@@ -83,6 +85,7 @@ describe('empty state CTA (RIN-691)', () => {
 
     await expectSingleExploreCta('profile.noBookmarks');
     expect(screen.getByText('profile.bookmarksEmptyHint')).toBeTruthy();
+    expect(fetchBookmarksMock).toHaveBeenCalledWith('/api/bookmarks?page=1&limit=10', 'en');
   });
 
   it('review: one "Explore quizzes" link to /explore', async () => {

@@ -6,9 +6,10 @@ import type { ProfileBookmarkListViewModel } from '@/features/profile/types/prof
 
 export async function fetchProfileBookmarkListViewModel(
   url: string,
+  locale: string,
 ): Promise<ProfileBookmarkListViewModel> {
   const data = await fetchApiData<BookmarkListDto>(url);
-  return toProfileBookmarkListViewModel(data);
+  return toProfileBookmarkListViewModel(data, locale);
 }
 
 export async function deleteProfileBookmark(bookmarkId: string): Promise<DeleteResultDto> {

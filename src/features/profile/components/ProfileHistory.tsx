@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, EmptyStateExploreAction } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -133,6 +133,7 @@ function HistorySkeleton() {
 }
 
 function ProfileHistory() {
+  const locale = useLocale();
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(profileHistoryReducer, initialState);
@@ -146,6 +147,7 @@ function ProfileHistory() {
         page: state.currentPage.toString(),
         limit: ITEMS_PER_PAGE.toString(),
       }),
+      locale,
     )
       .then((viewModel) => {
         if (!isActive) return;
@@ -163,7 +165,7 @@ function ProfileHistory() {
     return () => {
       isActive = false;
     };
-  }, [state.currentPage, state.reloadKey]);
+  }, [state.currentPage, state.reloadKey, locale]);
 
   const getPerformanceBadge = (score: number) => {
     if (score >= 90)

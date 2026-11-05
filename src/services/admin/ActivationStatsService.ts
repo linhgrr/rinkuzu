@@ -3,6 +3,7 @@ import { adminActivationStatsSchema } from '@/dtos/admin-stats';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type {
   AdminActivationAggregates,
+  AdminActivationCohortPathCounts,
   AdminActivationPathCounts,
   AdminAdaptiveLearnerEvents,
   IAdminStatsRepository,
@@ -23,6 +24,7 @@ const ANALYTICS_SERVICE_ACTOR_ID = '000000000000000000000000';
 /** Adaptive events are fetched up to this long after the last week ends (retention). */
 const ADAPTIVE_EVENTS_TAIL_MS = 14 * DAY_MS;
 const NO_PATH: AdminActivationPathCounts = { quiz: 0, adaptive: 0, both: 0 };
+const NO_COHORT_PATH: AdminActivationCohortPathCounts = { ...NO_PATH, claimedGuest: 0 };
 
 type AdaptiveSourceStatus = AdminActivationStatsDto['sources']['adaptive'];
 
@@ -35,12 +37,16 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
   exclusions:
     'Users with role admin, disabled users (disable = 1), users an admin marked as test accounts in /admin/users (isTestAccount = true), and test/QA accounts on reserved example/.test/.invalid/.localhost email domains or in a documented constant list of company-owned addresses are never counted.',
   signups: 'Non-excluded users whose createdAt falls in the week.',
+  signedIn:
+    'Signups of the week with at least one successful sign-in (login_success audit event, Google sign-ins included) within 7 days of signup.',
+  startedQuiz:
+    'Signups of the week who, within 7 days of signup, submitted a quiz attempt or had an adaptive completion (every activated signup), or have an unsubmitted quiz with at least one answer saved after signup (in-progress quizzes keep only their last update time). activated <= startedQuiz <= signups.',
   material:
     'Signups of the week who, within 7 days of signup, authored a quiz, submitted an attempt on a quiz they did not author, or had a succeeded upload (Path B). Every activated signup is material.',
   activated:
     'Signups of the week with at least one completed (submitted) quiz attempt or adaptive completion within 7 days of signup. Each learner is counted once.',
   activatedBy:
-    'Split of activated by path within the 7-day window: quiz (attempt only), adaptive (adaptive completion only), both. quiz + adaptive + both = activated.',
+    'Split of activated by path within the 7-day window: quiz (attempt only), adaptive (adaptive completion only), both. quiz + adaptive + both = activated. claimedGuest is a subset of activated, not a fourth path: activated signups with a qualifying attempt made as a guest and claimed into the account (0 until guest claiming ships).',
   weeklyActivatedLearners:
     'Distinct non-excluded users whose first ever completion, the earlier of their first completed attempt and their first adaptive completion, fell in the week, whatever their signup week. North-star series.',
   weeklyActivatedBy:
@@ -52,11 +58,14 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
   w1Retained:
     'Activated signups of the week who also completed a quiz attempt or an adaptive completion on days 7-13 after signup. null until the youngest signup of the week is 14 days old.',
   w1RetentionRate: 'w1Retained / activated, rounded to 4 decimals; null when either is null or 0.',
+  returnedWeek1:
+    'Signups of the week with a sign-in, quiz attempt or adaptive completion on a later calendar day in Asia/Ho_Chi_Minh than their signup day, and less than 7 days after signup. Activation is not required. null until 7 days after the end of the week. Weeks themselves stay UTC ISO weeks.',
   complete:
     'true once every number in the row is final: 14 days after the end of the week. The current week and the two before it are partial.',
   sources:
     'sources.adaptive is ok when the Path B events were read from the API, unavailable when that read failed or took over 2 s: every number is then quiz-only, and the response is not cached.',
-  limitations: 'Unsubmitted in-progress quiz attempts are not counted as material.',
+  limitations:
+    'Unsubmitted in-progress quiz attempts are not counted as material. A learner whose session is still live comes back without signing in again, so they count in returnedWeek1 only if they also attempt or complete. Adaptive learners with 1-4 answers and no completion are not visible to the web (Path B reports completions only), so they are missing from startedQuiz. Sign-in events are kept 180 days.',
 };
 
 interface CacheEntry {
@@ -186,14 +195,17 @@ function buildActivationWeeks(
     const activated = cohort?.activated ?? 0;
     const final = now.getTime() >= window.endExclusive.getTime() + 14 * DAY_MS;
     const w1Retained = final ? (cohort?.w1Retained ?? 0) : null;
+    const returnFinal = now.getTime() >= window.endExclusive.getTime() + 7 * DAY_MS;
     return {
       isoWeek: window.isoWeek,
       start: window.start.toISOString(),
       end: new Date(window.endExclusive.getTime() - 1).toISOString(),
       signups: cohort?.signups ?? 0,
+      signedIn: cohort?.signedIn ?? 0,
       material: cohort?.material ?? 0,
+      startedQuiz: cohort?.startedQuiz ?? 0,
       activated,
-      activatedBy: cohort?.activatedBy ?? NO_PATH,
+      activatedBy: cohort?.activatedBy ?? NO_COHORT_PATH,
       weeklyActivatedLearners: firsts.get(key)?.learners ?? 0,
       weeklyActivatedBy: firsts.get(key)?.activatedBy ?? NO_PATH,
       w1Retained,
@@ -201,6 +213,7 @@ function buildActivationWeeks(
         w1Retained === null || activated === 0
           ? null
           : Math.round((w1Retained / activated) * 10_000) / 10_000,
+      returnedWeek1: returnFinal ? (cohort?.returnedWeek1 ?? 0) : null,
       complete: final,
     };
   });

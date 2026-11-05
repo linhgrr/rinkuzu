@@ -34,16 +34,22 @@ function setup(now = NOW) {
           signups: 10,
           material: 7,
           activated: 4,
-          activatedBy: { quiz: 2, adaptive: 1, both: 1 },
+          activatedBy: { quiz: 2, adaptive: 1, both: 1, claimedGuest: 1 },
           w1Retained: 1,
+          signedIn: 9,
+          startedQuiz: 5,
+          returnedWeek1: 3,
         },
         {
           weekStart: new Date('2026-11-02T00:00:00.000Z'),
           signups: 3,
           material: 2,
           activated: 1,
-          activatedBy: { quiz: 1, adaptive: 0, both: 0 },
+          activatedBy: { quiz: 1, adaptive: 0, both: 0, claimedGuest: 0 },
           w1Retained: 1,
+          signedIn: 3,
+          startedQuiz: 2,
+          returnedWeek1: 1,
         },
       ],
       firstAttempts: [
@@ -90,29 +96,41 @@ describe('ActivationStatsService', () => {
       start: '2026-10-12T00:00:00.000Z',
       end: '2026-10-18T23:59:59.999Z',
       signups: 10,
+      signedIn: 9,
       material: 7,
+      startedQuiz: 5,
       activated: 4,
-      activatedBy: { quiz: 2, adaptive: 1, both: 1 },
+      activatedBy: { quiz: 2, adaptive: 1, both: 1, claimedGuest: 1 },
       weeklyActivatedLearners: 0,
       weeklyActivatedBy: { quiz: 0, adaptive: 0, both: 0 },
       w1Retained: 1,
       w1RetentionRate: 0.25,
+      returnedWeek1: 3,
       complete: true,
     });
     // W43 ended 2026-10-26; 14 days later is 2026-11-09, after NOW.
     expect(result.data.weeks[1]).toMatchObject({
-      activatedBy: { quiz: 0, adaptive: 0, both: 0 },
+      signedIn: 0,
+      startedQuiz: 0,
+      activatedBy: { quiz: 0, adaptive: 0, both: 0, claimedGuest: 0 },
       weeklyActivatedLearners: 5,
       weeklyActivatedBy: { quiz: 3, adaptive: 2, both: 0 },
       w1Retained: null,
       w1RetentionRate: null,
+      // W43 ended 2026-10-26; 7 days later is 2026-11-02, before NOW.
+      returnedWeek1: 0,
       complete: false,
     });
+    // W44 ended 2026-11-02; 7 days later is 2026-11-09, after NOW.
+    expect(result.data.weeks[2]?.returnedWeek1).toBeNull();
     // Retention stays hidden on young cohorts even when the store has data.
     expect(result.data.weeks[3]).toMatchObject({
       signups: 3,
       activated: 1,
       w1Retained: null,
+      signedIn: 3,
+      startedQuiz: 2,
+      returnedWeek1: null,
       complete: false,
     });
   });
@@ -230,7 +248,14 @@ describe('ActivationStatsService', () => {
       for (const [key, value] of Object.entries(week)) {
         if (['isoWeek', 'start', 'end'].includes(key)) expect(typeof value).toBe('string');
         else if (key === 'complete') expect(typeof value).toBe('boolean');
-        else if (['activatedBy', 'weeklyActivatedBy'].includes(key)) {
+        else if (key === 'activatedBy') {
+          expect(Object.keys(value as object).sort()).toEqual([
+            'adaptive',
+            'both',
+            'claimedGuest',
+            'quiz',
+          ]);
+        } else if (key === 'weeklyActivatedBy') {
           expect(Object.keys(value as object).sort()).toEqual(['adaptive', 'both', 'quiz']);
         } else expect(value === null || typeof value === 'number').toBe(true);
       }
@@ -262,7 +287,13 @@ describe('ActivationStatsService', () => {
         weeks: [
           {
             ...valid.weeks[0],
-            activatedBy: { quiz: 0, adaptive: 0, both: 0, userIds: [ADAPTIVE_LEARNER] },
+            activatedBy: {
+              quiz: 0,
+              adaptive: 0,
+              both: 0,
+              claimedGuest: 0,
+              userIds: [ADAPTIVE_LEARNER],
+            },
           },
         ],
       }).success,

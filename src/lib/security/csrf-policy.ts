@@ -19,6 +19,10 @@ const CSRF_EXEMPT_API_PATHS = new Set([
   '/api/internal/billing/process',
   '/api/internal/billing/reconcile',
   '/api/webhooks/resend',
+  // RFC 8058 one-click unsubscribe: mail providers POST cross-site with no
+  // session. The HMAC token in `?t=` is the only authority, it can only opt
+  // its own learner out of `study_reminders`, and the route is rate-limited.
+  '/api/unsubscribe',
 ]);
 
 export function isStateChangingApiRequest(pathname: string, method: string): boolean {

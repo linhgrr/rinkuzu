@@ -81,5 +81,19 @@
     "feedbackCompleteError": "Không thể hoàn tất cuộc trao đổi",
     "supportCreateError": "Không thể tạo cuộc hỗ trợ",
     "scheduleTimeInvalid": "Hãy chọn thời gian gửi hợp lệ"
+  },
+  "unsubscribe": {
+    "metaTitle": "Hủy nhận email | RinKuzu",
+    "confirmTitle": "Ngừng nhận email nhắc ôn tập?",
+    "confirmDescription": "Bạn sẽ không còn nhận email nhắc ôn lại các câu đã làm sai hai ngày sau mỗi bài quiz.",
+    "confirmButton": "Hủy nhận",
+    "doneTitle": "Bạn đã hủy nhận email",
+    "doneDescription": "Bạn sẽ không nhận email nhắc ôn tập nữa.",
+    "invalidTitle": "Liên kết này không hợp lệ",
+    "invalidDescription": "Hãy kiểm tra bạn đã mở đúng và đủ liên kết trong email.",
+    "errorTitle": "Đã có lỗi xảy ra",
+    "errorDescription": "Chưa thể cập nhật cài đặt email của bạn. Vui lòng thử lại sau ít phút.",
+    "retryButton": "Thử lại",
+    "home": "Về RinKuzu"
   }
 }

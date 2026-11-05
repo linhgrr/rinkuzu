@@ -66,7 +66,7 @@ describe('ResultActions (RIN-917)', () => {
     expect(screen.getByRole('link', { name: 'redo' })).toHaveAttribute('href', '/quiz/demo');
     expect(screen.getByRole('link', { name: 'backHome' })).toHaveClass('btn-secondary');
 
-    fireEvent.click(primary!);
+    fireEvent.click(primary as HTMLElement);
     expect(captureMock).toHaveBeenCalledWith('retry_missed_clicked', {
       campaign: 'w1-review',
       missed_count: 3,

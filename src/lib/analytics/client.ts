@@ -1,5 +1,6 @@
 'use client';
 
+import type { AnalyticsEventName } from './events';
 const ANALYTICS_CONSENT_STORAGE_KEY = 'rinkuzu_analytics_consent_v1';
 const ANALYTICS_CONSENT_CHANGE_EVENT = 'rinkuzu:analytics-consent-change';
 const LANDING_ATTRIBUTION_STORAGE_KEY = 'rinkuzu_landing_attribution_v1';
@@ -12,27 +13,7 @@ const PIPELINE_ERROR_CODE_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
 
 export type AnalyticsConsent = 'granted' | 'denied';
 
-export type AnalyticsEventName =
-  | 'signup_started'
-  | 'signup_completed'
-  | 'login_completed'
-  | 'pdf_upload_started'
-  /** The upload was accepted by the processing queue, not that processing succeeded. */
-  | 'pdf_upload_completed'
-  | 'pdf_upload_failed'
-  /** Terminal pipeline outcomes, emitted once per job run or draft. */
-  | 'pipeline_completed'
-  | 'pipeline_failed'
-  | 'adaptive_session_started'
-  | 'adaptive_answer_submitted'
-  | 'first_question_answered'
-  | 'quiz_completed'
-  /** Skip on the post-sign-in starter quiz intro (RIN-913). */
-  | 'starter_quiz_skipped'
-  /** Result-page week-1 return loop (RIN-917); props only `campaign` and `missed_count`. */
-  | 'retry_missed_clicked'
-  | 'try_another_quiz_clicked'
-  | 'review_email_opt_in';
+export type { AnalyticsEventName } from './events';
 
 export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>;
 export type AnalyticsLoginMethod = 'credentials' | 'google';

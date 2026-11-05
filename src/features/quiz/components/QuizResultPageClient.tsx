@@ -2,7 +2,6 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Link } from '@/i18n/navigation';
 import { Suspense, useEffect, useReducer, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';

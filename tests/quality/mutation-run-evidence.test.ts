@@ -1697,9 +1697,9 @@ describe('moveFile', () => {
       renameSync: () => {
         throw exdev();
       },
-      copyFileSync: (from: string, to: string) => void calls.push(`copy ${from} ${to}`),
-      rmSync: (from: string) => void calls.push(`rm ${from}`),
-    } as never);
+      copyFileSync: (from, to) => void calls.push(`copy ${String(from)} ${String(to)}`),
+      rmSync: (from) => void calls.push(`rm ${String(from)}`),
+    });
     expect(calls).toEqual(['copy a b', 'rm a']);
   });
 
@@ -1712,7 +1712,7 @@ describe('moveFile', () => {
         },
         copyFileSync: () => void copy.push('x'),
         rmSync: () => undefined,
-      } as never),
+      }),
     ).toThrow('boom');
     expect(copy).toEqual([]);
   });

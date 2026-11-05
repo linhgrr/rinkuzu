@@ -17,16 +17,15 @@ const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 
 /** The email goes out once a signup is at least this old. */
-export const ACTIVATION_NUDGE_DELAY_MS = 24 * HOUR_MS;
+const ACTIVATION_NUDGE_DELAY_MS = 24 * HOUR_MS;
 /**
  * The sweep looks back this far, so a worker outage loses nobody; older
  * accounts belong to the one-time backfill.
  */
-export const ACTIVATION_NUDGE_LOOKBACK_MS = 7 * DAY_MS;
+const ACTIVATION_NUDGE_LOOKBACK_MS = 7 * DAY_MS;
 export const ACTIVATION_NUDGE_CAMPAIGN = 'activation_nudge';
 
 export type ActivationNudgeLocale = 'vi' | 'en';
-export type ActivationNudgeTrigger = '24h' | 'backfill';
 
 /**
  * Kill switch, on by default: `ACTIVATION_NUDGE_SENDING_ENABLED=false` stops

@@ -168,6 +168,13 @@ describe('communication outbox delivery', () => {
     mocks.conversation.findById.mockReturnValue(query(conversationDoc()));
   });
 
+  it('never claims a review email while the unsubscribe route is not live (RIN-915)', async () => {
+    await runCommunicationWorker(5);
+
+    const filter = mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0];
+    expect(filter).toMatchObject({ kind: { $ne: 'review_reminder' } });
+  });
+
   it('repairs a legacy over-long Reply-To in place and sends exactly one email', async () => {
     queueOne(outboxItem());
     mocks.sendCommunicationEmail.mockResolvedValue('re_email_1');

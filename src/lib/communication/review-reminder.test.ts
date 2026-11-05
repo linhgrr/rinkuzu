@@ -1,0 +1,262 @@
+import { Types } from 'mongoose';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const USER_ID = '6a8ed209f04328ac17443d91';
+const OTHER_USER_ID = '6a8ed209f04328ac17443d92';
+const ATTEMPT_ID = '6a8ed20a3d0a1892cacdfe0b';
+const QUIZ_ID = '6a8ed20a3d0a1892cacdfe0c';
+const OUTBOX_ID = '6a8ed20a3d0a1892cacdfe0a';
+const HOUR = 3_600_000;
+const TAKEN_AT = new Date('2026-11-02T10:00:00.000Z');
+const ENVIRONMENT: Record<string, string> = {
+  AUTH_SECRET: 'test-auth-secret-at-least-32-characters',
+  SUPPORT_MAIL_FROM: 'RinKuzu <support@notify.rinkuzu.app>',
+};
+
+const mocks = vi.hoisted(() => ({
+  attempt: { findById: vi.fn(), exists: vi.fn() },
+  quiz: { findById: vi.fn() },
+  user: { findById: vi.fn() },
+  outbox: { updateOne: vi.fn(), updateMany: vi.fn(), findOne: vi.fn(), exists: vi.fn() },
+  preference: { findOneAndUpdate: vi.fn(), updateOne: vi.fn(), findOne: vi.fn() },
+  consentEvent: { create: vi.fn() },
+}));
+
+/** Thenable stand-in for a chained Mongoose query. */
+function query<T>(result: T) {
+  const chain = {
+    select: () => chain,
+    lean: () => chain,
+    then: (resolve: (value: T) => unknown, reject?: (reason: unknown) => unknown) =>
+      Promise.resolve(result).then(resolve, reject),
+  };
+  return chain;
+}
+
+vi.mock('server-only', () => ({}));
+vi.mock('@/lib/mongoose', () => ({ default: vi.fn() }));
+vi.mock('@/lib/public-env', () => ({
+  publicEnv: { NEXT_PUBLIC_SITE_URL: 'https://www.rinkuzu.app/' },
+}));
+vi.mock('./resend', () => ({
+  communicationEnvironment: (name: string) => {
+    const value = ENVIRONMENT[name];
+    if (!value) throw new Error(`${name} is required for communications`);
+    return value;
+  },
+}));
+vi.mock('@/models/Attempt', () => ({ default: mocks.attempt }));
+vi.mock('@/models/Quiz', () => ({ default: mocks.quiz }));
+vi.mock('@/models/User', () => ({ default: mocks.user }));
+vi.mock('@/models/Communication', () => ({
+  EmailOutbox: mocks.outbox,
+  MarketingPreference: mocks.preference,
+  MarketingConsentEvent: mocks.consentEvent,
+  AdminActionAudit: { create: vi.fn() },
+}));
+
+import {
+  optInReviewReminder,
+  optOutReviewReminder,
+  prepareReviewReminder,
+} from './review-reminder';
+
+function attemptDoc(owner = USER_ID) {
+  return {
+    _id: new Types.ObjectId(ATTEMPT_ID),
+    user: new Types.ObjectId(owner),
+    quiz: new Types.ObjectId(QUIZ_ID),
+    takenAt: TAKEN_AT,
+    correctAnswers: 7,
+    totalQuestions: 10,
+  };
+}
+
+function optIn(now = new Date(TAKEN_AT.getTime() + HOUR)) {
+  return optInReviewReminder({
+    userId: USER_ID,
+    email: 'learner@gmail.com',
+    attemptId: ATTEMPT_ID,
+    locale: 'en',
+    ip: '203.0.113.7',
+    now,
+  });
+}
+
+describe('review reminder consent (AC3/AC4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.attempt.findById.mockReturnValue(query(attemptDoc()));
+    mocks.preference.findOneAndUpdate.mockReturnValue(query(null));
+    mocks.preference.updateOne.mockResolvedValue({ modifiedCount: 1 });
+    mocks.outbox.updateOne.mockResolvedValue({ upsertedCount: 1 });
+    mocks.outbox.updateMany.mockResolvedValue({ modifiedCount: 1 });
+  });
+
+  it('records the opt-in with result_page_review, then schedules one email 48 h out', async () => {
+    const result = await optIn();
+
+    expect(result).toEqual({
+      optedIn: true,
+      status: 'scheduled',
+      scheduledFor: new Date(TAKEN_AT.getTime() + 48 * HOUR).toISOString(),
+    });
+    expect(mocks.preference.findOneAndUpdate).toHaveBeenCalledWith(
+      { userId: new Types.ObjectId(USER_ID) },
+      { $set: { studyReminders: true, locale: 'en' } },
+      expect.objectContaining({ upsert: true }),
+    );
+    expect(mocks.preference.updateOne).toHaveBeenCalledWith(
+      { userId: new Types.ObjectId(USER_ID) },
+      { $set: { studyRemindersOptedInAt: expect.any(Date) } },
+    );
+    expect(mocks.consentEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        topic: 'study_reminders',
+        action: 'opt_in',
+        source: 'result_page_review',
+        ipHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+      }),
+    );
+    const [filter, update, options] = mocks.outbox.updateOne.mock.calls[0] ?? [];
+    expect(filter).toMatchObject({ status: { $in: ['pending', 'canceled'] } });
+    expect(filter.dedupeKey).toMatch(new RegExp(`^review_reminder/${USER_ID}/\\d+$`, 'u'));
+    expect(update.$set).toMatchObject({
+      kind: 'review_reminder',
+      entityType: 'attempt',
+      status: 'pending',
+      availableAt: new Date(TAKEN_AT.getTime() + 48 * HOUR),
+    });
+    expect(options).toEqual({ upsert: true });
+    // Consent comes first: the outbox write follows the event.
+    expect(mocks.consentEvent.create.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.outbox.updateOne.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('is idempotent: a repeated opt-in writes no second consent event', async () => {
+    mocks.preference.findOneAndUpdate.mockReturnValue(query({ studyReminders: true }));
+
+    await optIn();
+
+    expect(mocks.consentEvent.create).not.toHaveBeenCalled();
+    expect(mocks.preference.updateOne).not.toHaveBeenCalled();
+    expect(mocks.outbox.updateOne).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses someone else's attempt and enqueues nothing", async () => {
+    mocks.attempt.findById.mockReturnValue(query(attemptDoc(OTHER_USER_ID)));
+
+    await expect(optIn()).rejects.toMatchObject({ code: 'not_found', status: 404 });
+    expect(mocks.preference.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(mocks.consentEvent.create).not.toHaveBeenCalled();
+    expect(mocks.outbox.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('refuses an opt-in too late to send on time, before writing anything', async () => {
+    await expect(optIn(new Date(TAKEN_AT.getTime() + 47 * HOUR))).rejects.toMatchObject({
+      code: 'attempt_too_old',
+      status: 409,
+    });
+    expect(mocks.consentEvent.create).not.toHaveBeenCalled();
+    expect(mocks.outbox.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('reports the weekly cap when the bucket already holds a sent email', async () => {
+    mocks.outbox.updateOne.mockRejectedValue(
+      Object.assign(new Error('E11000 duplicate key'), { code: 11000 }),
+    );
+    mocks.outbox.findOne.mockReturnValue(query({ status: 'completed', availableAt: new Date() }));
+
+    await expect(optIn()).resolves.toEqual({ optedIn: true, status: 'capped', scheduledFor: null });
+  });
+
+  it('un-ticking records an opt-out and cancels pending emails', async () => {
+    mocks.preference.findOneAndUpdate.mockReturnValue(query({ studyReminders: true }));
+
+    await expect(
+      optOutReviewReminder({ userId: USER_ID, source: 'result_page_review', ip: null }),
+    ).resolves.toEqual({ optedIn: false });
+
+    expect(mocks.consentEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        topic: 'study_reminders',
+        action: 'opt_out',
+        source: 'result_page_review',
+      }),
+    );
+    expect(mocks.outbox.updateMany).toHaveBeenCalledWith(
+      { userId: new Types.ObjectId(USER_ID), kind: 'review_reminder', status: 'pending' },
+      { $set: { status: 'canceled', lastError: 'opted_out' } },
+    );
+  });
+});
+
+describe('review reminder send-time preparation (AC5)', () => {
+  const item = {
+    _id: new Types.ObjectId(OUTBOX_ID),
+    entityId: new Types.ObjectId(ATTEMPT_ID),
+    userId: new Types.ObjectId(USER_ID),
+    availableAt: new Date(TAKEN_AT.getTime() + 48 * HOUR),
+  };
+  const due = new Date(TAKEN_AT.getTime() + 48 * HOUR);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.attempt.findById.mockReturnValue(query(attemptDoc()));
+    mocks.attempt.exists.mockResolvedValue(null);
+    mocks.outbox.exists.mockResolvedValue(null);
+    mocks.user.findById.mockReturnValue(
+      query({ email: 'learner@gmail.com', role: 'user', disable: 0, isTestAccount: false }),
+    );
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true, locale: 'en' }));
+    mocks.quiz.findById.mockReturnValue(query({ slug: 'cell-biology', title: 'Cell biology' }));
+  });
+
+  it('renders a tagged email with RFC 8058 headers and no answers', async () => {
+    const prepared = await prepareReviewReminder(item, due);
+
+    expect(prepared.decision).toBe('send');
+    if (prepared.decision !== 'send') return;
+    expect(prepared.mail.tags).toEqual([{ name: 'campaign', value: 'w1-review' }]);
+    expect(prepared.mail.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+    expect(prepared.mail.headers['List-Unsubscribe']).toMatch(
+      /^<https:\/\/www\.rinkuzu\.app\/unsubscribe\?t=[^>]+>$/u,
+    );
+    expect(prepared.mail.subject).toBe('Review the 3 questions you missed in “Cell biology”');
+    expect(prepared.mail.text).toContain(
+      `https://www.rinkuzu.app/en/quiz/cell-biology?retryOf=${ATTEMPT_ID}&utm_source=email&utm_campaign=w1-review`,
+    );
+  });
+
+  it('cancels after a later attempt by the same learner', async () => {
+    mocks.attempt.exists.mockResolvedValue({ _id: new Types.ObjectId() });
+
+    await expect(prepareReviewReminder(item, due)).resolves.toEqual({
+      decision: 'cancel',
+      reason: 'later_attempt',
+    });
+    expect(mocks.attempt.exists).toHaveBeenCalledWith({
+      user: new Types.ObjectId(USER_ID),
+      takenAt: { $gt: TAKEN_AT },
+    });
+  });
+
+  it('cancels when another review email went out in the last 7 days', async () => {
+    mocks.outbox.exists.mockResolvedValue({ _id: new Types.ObjectId() });
+
+    await expect(prepareReviewReminder(item, due)).resolves.toEqual({
+      decision: 'cancel',
+      reason: 'weekly_cap',
+    });
+  });
+
+  it('cancels after an opt-out', async () => {
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: false }));
+
+    await expect(prepareReviewReminder(item, due)).resolves.toEqual({
+      decision: 'cancel',
+      reason: 'opted_out',
+    });
+  });
+});

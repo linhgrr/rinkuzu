@@ -25,13 +25,14 @@ export interface RenderedCommunicationMail {
 
 interface MailFrameProps {
   preview: string;
+  lang?: string;
   children: ReactNode;
   footer?: ReactNode;
 }
 
-function MailFrame({ preview, children, footer }: MailFrameProps) {
+function MailFrame({ preview, children, footer, lang = 'vi' }: MailFrameProps) {
   return (
-    <Html lang="vi">
+    <Html lang={lang}>
       <Head />
       <Preview>{preview}</Preview>
       <Body style={{ backgroundColor: '#f6f4ef', fontFamily: 'Arial, sans-serif', margin: 0 }}>
@@ -251,4 +252,94 @@ export async function renderCampaign(input: {
       {input.blocks.map(campaignBlock)}
     </MailFrame>,
   );
+}
+
+export type ReviewReminderLocale = 'vi' | 'en';
+
+interface ReviewReminderCopy {
+  subject: (title: string, missed: number) => string;
+  intro: (title: string, missed: number) => string;
+  why: string;
+  button: (missed: number) => string;
+  footer: string;
+  unsubscribe: string;
+}
+
+/**
+ * Copy for the 2-day review email (RIN-915). Product term: personalized /
+ * cá nhân hóa, never adaptive. The email never carries answers.
+ */
+const REVIEW_REMINDER_COPY: Record<ReviewReminderLocale, ReviewReminderCopy> = {
+  vi: {
+    subject: (title, missed) =>
+      missed > 0 ? `Ôn lại ${missed} câu chưa đúng trong “${title}”` : `Ôn lại “${title}”`,
+    intro: (title, missed) =>
+      missed > 0
+        ? `Hai ngày trước bạn đã làm bài “${title}” và còn ${missed} câu chưa đúng.`
+        : `Hai ngày trước bạn đã làm bài “${title}”.`,
+    why: 'Ôn lại lúc này giúp bạn nhớ lâu hơn. Rinkuzu sẽ đưa bạn qua những câu đó trong một lượt ôn tập cá nhân hóa.',
+    button: (missed) => (missed > 0 ? `Ôn lại ${missed} câu` : 'Ôn lại bài'),
+    footer:
+      'Bạn nhận email này vì đã chọn nhận nhắc ôn tập trên trang kết quả. Mỗi tuần tối đa một email.',
+    unsubscribe: 'Hủy nhận nhắc ôn tập',
+  },
+  en: {
+    subject: (title, missed) =>
+      missed > 0
+        ? `Review the ${missed} ${missed === 1 ? 'question' : 'questions'} you missed in “${title}”`
+        : `Review “${title}”`,
+    intro: (title, missed) =>
+      missed > 0
+        ? `Two days ago you took “${title}” and missed ${missed} ${missed === 1 ? 'question' : 'questions'}.`
+        : `Two days ago you took “${title}”.`,
+    why: 'Reviewing now helps it stick. Rinkuzu will take you through those questions in a personalized review.',
+    button: (missed) =>
+      missed > 0
+        ? `Review ${missed} ${missed === 1 ? 'question' : 'questions'}`
+        : 'Review the quiz',
+    footer:
+      'You get this email because you asked for a review reminder on your results page. At most one email a week.',
+    unsubscribe: 'Unsubscribe from review reminders',
+  },
+};
+
+export async function renderReviewReminder(input: {
+  locale: ReviewReminderLocale;
+  quizTitle: string;
+  missedCount: number;
+  retryUrl: string;
+  unsubscribeUrl: string;
+}): Promise<RenderedCommunicationMail & { subject: string }> {
+  const copy = REVIEW_REMINDER_COPY[input.locale];
+  const subject = copy.subject(input.quizTitle, input.missedCount).slice(0, 200);
+  const mail = await renderElement(
+    <MailFrame
+      lang={input.locale}
+      preview={copy.intro(input.quizTitle, input.missedCount)}
+      footer={
+        <Text style={{ color: '#736b63', fontSize: '12px', lineHeight: '18px' }}>
+          {copy.footer} <Link href={input.unsubscribeUrl}>{copy.unsubscribe}</Link>.
+        </Text>
+      }
+    >
+      <Text style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>
+        {copy.intro(input.quizTitle, input.missedCount)}
+      </Text>
+      <Text style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>{copy.why}</Text>
+      <Section style={{ margin: '22px 0' }}>
+        <Button
+          href={input.retryUrl}
+          style={{
+            backgroundColor: '#9a5c32',
+            borderRadius: '8px',
+            color: '#fff',
+            padding: '12px 20px',
+          }}
+        >
+          {copy.button(input.missedCount)}
+        </Button>
+      </Section>
+    </MailFrame>,
+  );
+  return { ...mail, subject };
 }

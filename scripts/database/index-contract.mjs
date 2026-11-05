@@ -622,6 +622,12 @@ export const INDEX_CONTRACT = Object.freeze([
     { externalEmailId: 1 },
     { sparse: true },
   ),
+  required(
+    'emailoutboxes.user-reminders',
+    'emailoutboxes',
+    { userId: 1, kind: 1, updatedAt: -1 },
+    { partialFilterExpression: { userId: { $type: 'objectId' } } },
+  ),
   required('webhookevents.external-event', 'webhookevents', { externalId: 1 }, { unique: true }),
   required(
     'webhookevents.expiration',

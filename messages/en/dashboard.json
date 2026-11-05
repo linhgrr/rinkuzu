@@ -71,7 +71,6 @@
       "title": "Personalize Your Learning Path with AI",
       "description": "AI analyzes your progress and recommends the right lessons, quizzes, and skills to improve next.",
       "cta": "Start learning",
-      "starterCta": "Start a 2-minute quiz",
       "adaptiveLink": "Or personalize learning by uploading a PDF"
     },
     "starter": {
@@ -104,8 +103,7 @@
     },
     "continueLearning": {
       "title": "Continue Learning",
-      "subtitle": "Resume your quizzes or AI learning paths from where you left off",
-      "emptyAction": "Start learning"
+      "subtitle": "Resume your quizzes or AI learning paths from where you left off"
     },
     "recentOwnedQuizzes": {
       "title": "Your recent quizzes",

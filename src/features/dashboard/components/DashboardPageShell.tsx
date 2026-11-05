@@ -71,7 +71,6 @@ export async function DashboardPageShell({
       title: t('hero.title'),
       description: t('hero.description'),
       cta: t('hero.cta'),
-      starterCta: t('hero.starterCta'),
       adaptiveLink: t('hero.adaptiveLink'),
     },
     starter: {
@@ -88,7 +87,6 @@ export async function DashboardPageShell({
     continueLearning: {
       title: t('continueLearning.title'),
       subtitle: t('continueLearning.subtitle'),
-      emptyAction: t('continueLearning.emptyAction'),
     },
     recentOwnedQuizzes: {
       title: t('recentOwnedQuizzes.title'),

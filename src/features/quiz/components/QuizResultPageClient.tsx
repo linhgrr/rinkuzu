@@ -648,13 +648,18 @@ function guestResultPath(encodedSlug: string, attemptId: string | null, score: n
   return `${ROUTES.QUIZ.RESULT(encodedSlug)}?${params.toString()}`;
 }
 
-/** A guest whose attempt cannot be read here (no token, or the read failed): RIN-912. */
+/**
+ * A guest attempt that cannot be read here (no token, or the read failed): RIN-912.
+ * Also shown, without the save card, to a guest who just signed in from that card:
+ * their attempt is not linked to the account until parts 3–4 (RIN-920/921) ship.
+ */
 function GuestScoreOnlyResult({
   backHomeLabel,
   encodedSlug,
   redoLabel,
   resultPath,
   score,
+  showSaveCard,
   t,
 }: {
   backHomeLabel: string;
@@ -662,6 +667,7 @@ function GuestScoreOnlyResult({
   redoLabel: string;
   resultPath: string;
   score: number;
+  showSaveCard: boolean;
   t: (key: string) => string;
 }) {
   return (
@@ -677,7 +683,7 @@ function GuestScoreOnlyResult({
             <p className="text-4xl font-bold text-brand-trust">{score}%</p>
           </CardContent>
         </Card>
-        <GuestSaveResultCard resultPath={resultPath} variant="scoreOnly" />
+        {showSaveCard ? <GuestSaveResultCard resultPath={resultPath} variant="scoreOnly" /> : null}
         <QuizResultActions
           backHomeLabel={backHomeLabel}
           encodedSlug={encodedSlug}
@@ -724,7 +730,14 @@ function QuizResultContent() {
   // Where sign-in comes back to; never carries the email or the token.
   const resultPath = guestResultPath(encodedSlug, attemptId, urlScore ?? result?.score ?? null);
 
-  if ((state.error !== null || !result) && reader === 'guest' && urlScore !== null) {
+  // A member read that fails while this browser still holds the guest token is the
+  // guest who just signed in to save this result: keep their score, not a 404.
+  const holdsGuestScore =
+    (state.error !== null || !result) &&
+    urlScore !== null &&
+    (reader === 'guest' || (attemptId !== null && findGuestClaimToken(attemptId) !== null));
+
+  if (holdsGuestScore) {
     return (
       <GuestScoreOnlyResult
         backHomeLabel={t('backHome')}
@@ -732,6 +745,7 @@ function QuizResultContent() {
         redoLabel={tProfile('redo')}
         resultPath={resultPath}
         score={urlScore}
+        showSaveCard={reader === 'guest'}
         t={t}
       />
     );

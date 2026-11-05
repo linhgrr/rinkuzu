@@ -210,4 +210,41 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(fetchPageDataMock).toHaveBeenCalledWith('attempt-1', 'en', undefined);
     expect(screen.queryByRole('region', { name: 'guestSaveTitle' })).not.toBeInTheDocument();
   });
+  it('shows the URL score without the save card when a just-signed-in guest cannot read the attempt yet', async () => {
+    // Until parts 3–4 link the guest attempt to the new account, the member read 404s.
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    addGuestClaim({
+      attemptId: 'attempt-1',
+      token: FAKE_TOKEN,
+      quizSlug: 'demo',
+      takenAt: Date.now(),
+    });
+    fetchPageDataMock.mockRejectedValueOnce(
+      new ApiResponseError({ message: 'Not found', status: 404, payload: {} }),
+    );
+
+    render(<QuizResultPageClient />);
+
+    expect(await screen.findByText('guestReviewUnavailable')).toHaveAttribute('role', 'status');
+    expect(screen.getByText('80%')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'guestSaveTitle' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'redo' })).toHaveAttribute('href', '/quiz/demo');
+    expect(
+      screen.queryByRole('heading', { name: 'errors.api.notFoundTitle' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the not-found state for a signed-in reader whose browser holds no guest token', async () => {
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    fetchPageDataMock.mockRejectedValueOnce(
+      new ApiResponseError({ message: 'Not found', status: 404, payload: {} }),
+    );
+
+    render(<QuizResultPageClient />);
+
+    expect(
+      await screen.findByRole('heading', { name: 'errors.api.notFoundTitle' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('80%')).not.toBeInTheDocument();
+  });
 });

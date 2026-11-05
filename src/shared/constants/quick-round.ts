@@ -4,7 +4,10 @@
  */
 export const QUICK_ROUND_SIZE = 10;
 
-/** A quiz needs strictly more questions than this to offer a quick round. */
+/**
+ * A quiz needs strictly more questions than this to offer a quick round.
+ * @public Consumed by the quick-round player copy ([UX][RIN-933]); drop this tag there.
+ */
 export const QUICK_ROUND_MIN_QUIZ_SIZE = 15;
 
 export function isQuickRoundEligible(questionCount: number): boolean {

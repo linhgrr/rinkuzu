@@ -3,7 +3,7 @@ import type { QuizQuestion } from '@/entities/Quiz';
 export type AttemptAnswer = number | number[];
 
 /** RIN-933: a quick round plays a chosen subset of a long quiz. No `mode` means a full attempt. */
-export type AttemptMode = 'quick' | 'full';
+type AttemptMode = 'quick' | 'full';
 
 export interface AttemptUserPreview {
   id: string;

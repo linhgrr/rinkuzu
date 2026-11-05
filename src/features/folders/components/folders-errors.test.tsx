@@ -117,5 +117,7 @@ describe('AddFolderModal create failure (RIN-755)', () => {
     expect(JSON.stringify(toastErrorMock.mock.calls)).not.toContain('E11000');
     expect(document.body.textContent).not.toContain('E11000');
     expect(onCreated).not.toHaveBeenCalled();
+    // The submit button is released so the learner can retry (reset lives in `finally`).
+    expect(screen.getByRole('button', { name: 'createFolder' })).toBeEnabled();
   });
 });

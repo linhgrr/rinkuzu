@@ -177,6 +177,9 @@ describe('the webhook diagnostics panel', () => {
       await screen.findByText('errors.api.conflict · errors.api.codeLabel'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/not waiting on a replay/i)).not.toBeInTheDocument();
+    // The row is usable again: the busy flag is released on the failure path too.
+    expect(screen.getByRole('button', { name: /^replay$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /reveal/i })).toBeEnabled();
   });
 
   it('reports a failed load rather than an empty list', () => {

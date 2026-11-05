@@ -44,7 +44,8 @@ export function OcrModelPanel() {
       if (signal?.aborted) return;
       setError(describeError(loadError, t('ocrModelLoadError')));
     } finally {
-      if (!signal?.aborted) setLoading(false);
+      // Unconditional: an aborted load only happens on unmount, where the update is a no-op.
+      setLoading(false);
     }
   }
 

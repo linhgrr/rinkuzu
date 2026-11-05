@@ -21,6 +21,7 @@ import { HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
 import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { getCorrectAnswerIndexes, getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import {
   deleteProfileBookmark,
   fetchProfileBookmarkListViewModel,
@@ -214,13 +215,10 @@ function BookmarkCard({
           <div className="text-sm">
             <span className="font-medium text-neutral-700">{t('correct')}:</span>
             <div className="mt-1 space-y-1 text-green-600">
-              {correctAnswers.map((answer, index) => (
-                <div
-                  key={`${correctAnswerIndexes[index] ?? index}-${answer}`}
-                  className="flex gap-1"
-                >
+              {toStableContentEntries(correctAnswers).map(({ content: answer, key, sourceIndex }) => (
+                <div key={key} className="flex gap-1">
                   <span className="flex-shrink-0">
-                    {String.fromCharCode(65 + (correctAnswerIndexes[index] ?? index))}.
+                    {String.fromCharCode(65 + (correctAnswerIndexes[sourceIndex] ?? sourceIndex))}.
                   </span>
                   <QuestionContent content={answer} variant="answer" className="min-w-0 flex-1" />
                 </div>

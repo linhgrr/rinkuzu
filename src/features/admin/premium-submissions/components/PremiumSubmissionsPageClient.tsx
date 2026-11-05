@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import {
   decidePremiumSubmission,
   fetchPremiumSubmissions,
@@ -16,6 +17,23 @@ import {
   type PremiumSubmissionStatusViewModel,
   type PremiumSubmissionViewModel,
 } from '@/features/admin/premium-submissions/api/premium-submissions-api';
+
+interface ReviewIssueKeyFields {
+  code: string;
+  questionIndex?: number;
+  message: string;
+}
+
+/** Keys review issues by their content so identical issues stay distinct without the array index. */
+function keyedReviewIssues<T extends ReviewIssueKeyFields>(issues: readonly T[]) {
+  const fingerprints = issues.map((issue) =>
+    JSON.stringify([issue.code, issue.questionIndex ?? null, issue.message]),
+  );
+  return toStableContentEntries(fingerprints).flatMap(({ key, sourceIndex }) => {
+    const issue = issues[sourceIndex];
+    return issue ? [{ issue, key }] : [];
+  });
+}
 
 export function PremiumSubmissionsPageClient() {
   const t = useTranslations('admin');
@@ -227,11 +245,8 @@ export function PremiumSubmissionsPageClient() {
                       <strong>{criterion.key}</strong> ({criterion.score}): {criterion.note}
                     </li>
                   ))}
-                  {selected.reviewResult.issues.map((issue, index) => (
-                    <li
-                      key={`${issue.code}:${issue.questionIndex ?? index}`}
-                      className="text-red-700"
-                    >
+                  {keyedReviewIssues(selected.reviewResult.issues).map(({ issue, key }) => (
+                    <li key={key} className="text-red-700">
                       {issue.questionIndex === undefined ? '' : `#${issue.questionIndex + 1} · `}
                       {issue.message}
                     </li>

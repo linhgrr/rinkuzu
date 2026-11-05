@@ -20,6 +20,7 @@ import {
 } from '@/features/quiz/api/premium-quiz-api';
 import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 
 interface PremiumFlashcardClientProps {
   metadata: PremiumCatalogMetadataViewModel;
@@ -239,9 +240,9 @@ export function PremiumFlashcardClient({ metadata, slug }: PremiumFlashcardClien
           />
         ) : null}
         <ol className="mt-6 grid gap-3">
-          {card.question.options.map((option, index) => (
+          {toStableContentEntries(card.question.options).map(({ content: option, key, sourceIndex: index }) => (
             <li
-              key={`${index}:${option}`}
+              key={key}
               className={`rounded-xl border p-4 text-sm ${reveal && correctIndexes.has(index) ? 'border-green-400 bg-green-50 font-semibold text-green-800' : 'border-line-blue/40 text-ink'}`}
             >
               <div className="flex gap-1">

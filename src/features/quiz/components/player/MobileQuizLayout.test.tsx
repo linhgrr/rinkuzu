@@ -212,7 +212,7 @@ describe('MobileQuizLayout', () => {
       expect(indicator(box)?.className).not.toContain('rounded-full');
     }
     // Long option text wraps beside an indicator pinned to the first line.
-    expect(indicator(checkboxes[0]!)?.className).toContain('mt-0.5');
+    for (const box of checkboxes) expect(indicator(box)?.className).toContain('mt-0.5');
   });
 
   it('labels the finish button in sentence case and never styles it as disabled', () => {

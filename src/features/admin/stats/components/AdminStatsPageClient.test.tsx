@@ -23,6 +23,9 @@ vi.mock('@/features/admin/stats/components/LearnerLookupSection', () => ({
 vi.mock('@/features/admin/stats/components/PersonalLearningSection', () => ({
   PersonalLearningSection: () => <section>personal-learning-workspace</section>,
 }));
+vi.mock('@/features/admin/stats/components/ReviewEmailSection', () => ({
+  ReviewEmailSection: () => <section>review-email-panel</section>,
+}));
 vi.mock('@/features/admin/stats/components/LlmUsageSection', () => ({
   LlmUsageSection: () => <section>llm-workspace</section>,
 }));
@@ -44,6 +47,7 @@ describe('AdminStatsPageClient', () => {
     render(<AdminStatsPageClient />);
 
     expect(await screen.findByText('errors.api.generic')).toBeInTheDocument();
+    expect(await screen.findByText('review-email-panel')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'statsWorkspaceLearnerLookup' }));
 
     expect(await screen.findByText('learner-lookup-workspace')).toBeInTheDocument();

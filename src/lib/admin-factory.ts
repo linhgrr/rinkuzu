@@ -9,6 +9,9 @@ import { UserTestAccountRepository } from '@/repositories/UserTestAccountReposit
 import { AdminTestAccountService } from '@/services/admin/AdminTestAccountService';
 import { ActivationStatsService } from '@/services/admin/ActivationStatsService';
 import { AdminService } from '@/services/admin/AdminService';
+import { ReviewEmailStatsService } from '@/services/admin/ReviewEmailStatsService';
+import { ReviewEmailStatsRepository } from '@/repositories/ReviewEmailStatsRepository';
+import { reviewReminderQaRecipients } from '@/lib/communication/review-reminder-policy';
 
 let adminService: AdminService | undefined;
 
@@ -42,4 +45,14 @@ export function getAdminTestAccountService(): AdminTestAccountService {
     audit: new AdminAuditRepository(),
   });
   return testAccountService;
+}
+
+let reviewEmailStatsService: ReviewEmailStatsService | undefined;
+
+export function getReviewEmailStatsService(): ReviewEmailStatsService {
+  reviewEmailStatsService ??= new ReviewEmailStatsService({
+    stats: new ReviewEmailStatsRepository(),
+    qaEmails: () => [...reviewReminderQaRecipients()],
+  });
+  return reviewEmailStatsService;
 }

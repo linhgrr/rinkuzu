@@ -129,6 +129,7 @@
   "total": "Total",
   "singleChoiceHelper": "Select one answer",
   "multipleChoiceHelper": "Select multiple answers",
+  "dismissBookmarkMessage": "Dismiss bookmark message",
   "removeBookmarkTitle": "Remove bookmark?",
   "removeBookmarkConfirm": "Remove this question from your bookmarks?",
   "removeBookmark": "Remove bookmark",

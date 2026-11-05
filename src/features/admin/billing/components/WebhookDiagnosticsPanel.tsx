@@ -13,6 +13,7 @@ import type { AdminWebhookDiagnosticViewModel } from '@/features/admin/billing/t
 import type { UseWebhookDiagnostics } from '@/features/admin/billing/hooks/useWebhookDiagnostics';
 import { WEBHOOK_VERIFICATION_CLASSES } from '@/services/billing/domain/webhook-diagnostics';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
+import { withPending } from '@/lib/async/with-pending';
 
 const CLASS_FILTERS = [
   { value: '', label: 'All' },
@@ -99,40 +100,41 @@ function WebhookRow({
   const [revealed, setRevealed] = useState<string | null>(null);
   const [note, setNote] = useState('');
 
-  const run = async (action: () => Promise<void>) => {
-    setBusy(true);
+  // Returns the action's result, or undefined when it failed (the error is already shown).
+  // Callers apply their own state after it resolves, so no setter runs inside a callback.
+  async function run<T>(action: () => Promise<T>): Promise<T | undefined> {
     setError('');
     try {
-      await action();
+      return await withPending(setBusy, action);
     } catch (caught) {
       setError(describeError(caught));
+      return undefined;
     }
-    setBusy(false);
-  };
+  }
 
-  const reveal = () =>
-    run(async () => {
-      const result = await revealWebhookPayload(row.id);
-      setRevealed(result.payload);
-      setNote(
-        result.payload === null
-          ? result.unreadable
-            ? 'A body is stored but no configured key can open it.'
-            : 'No body was retained for this row.'
-          : '',
-      );
-    });
+  async function reveal() {
+    const result = await run(() => revealWebhookPayload(row.id));
+    if (!result) return;
+    setRevealed(result.payload);
+    setNote(
+      result.payload === null
+        ? result.unreadable
+          ? 'A body is stored but no configured key can open it.'
+          : 'No body was retained for this row.'
+        : '',
+    );
+  }
 
-  const replay = () =>
-    run(async () => {
-      const result = await replayWebhook(row.id);
-      setNote(
-        result.outcome === 'reclassified'
-          ? `Retained body parsed and recorded${result.duplicate ? ' (already known)' : ''}.`
-          : 'Queued for the next drain tick.',
-      );
-      onChanged();
-    });
+  async function replay() {
+    const result = await run(() => replayWebhook(row.id));
+    if (!result) return;
+    setNote(
+      result.outcome === 'reclassified'
+        ? `Retained body parsed and recorded${result.duplicate ? ' (already known)' : ''}.`
+        : 'Queued for the next drain tick.',
+    );
+    onChanged();
+  }
 
   return (
     <div className="rounded-lg border border-line p-3 text-sm">

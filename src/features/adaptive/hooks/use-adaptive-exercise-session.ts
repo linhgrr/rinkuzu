@@ -26,6 +26,7 @@ import type {
   TranslateFn,
 } from '@/features/adaptive/types/learning';
 import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytics/client';
+import { withPending } from '@/lib/async/with-pending';
 
 type RouterLike = {
   push: (href: string) => void;
@@ -192,6 +193,12 @@ export const useAdaptiveExerciseSession = ({
     router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
   }, [router, sessionId]);
 
+  // The ref guards re-entry synchronously; the state drives the UI. They move together.
+  const setSubmissionPending = (pending: boolean) => {
+    submittingRef.current = pending;
+    setSubmitting(pending);
+  };
+
   const handleSubmit = async () => {
     if (
       submittingRef.current ||
@@ -201,23 +208,23 @@ export const useAdaptiveExerciseSession = ({
     )
       return;
 
-    submittingRef.current = true;
-    setSubmitting(true);
     try {
-      router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
-      if (submitIdempotencyRef.current?.exerciseId !== exercise.exercise_id) {
-        submitIdempotencyRef.current = {
-          exerciseId: exercise.exercise_id,
-          key:
-            typeof crypto !== 'undefined' && 'randomUUID' in crypto
-              ? crypto.randomUUID()
-              : `${exercise.exercise_id}-${Date.now()}`,
-        };
-      }
-      const result = await submitAnswer(sessionId, {
-        exercise_id: exercise.exercise_id,
-        idempotency_key: submitIdempotencyRef.current.key,
-        answer: toSubmitAnswerPayload(answerDraft),
+      const result = await withPending(setSubmissionPending, () => {
+        router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
+        if (submitIdempotencyRef.current?.exerciseId !== exercise.exercise_id) {
+          submitIdempotencyRef.current = {
+            exerciseId: exercise.exercise_id,
+            key:
+              typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID()
+                : `${exercise.exercise_id}-${Date.now()}`,
+          };
+        }
+        return submitAnswer(sessionId, {
+          exercise_id: exercise.exercise_id,
+          idempotency_key: submitIdempotencyRef.current.key,
+          answer: toSubmitAnswerPayload(answerDraft),
+        });
       });
       if (!isMountedRef.current) return;
 
@@ -234,25 +241,14 @@ export const useAdaptiveExerciseSession = ({
       saveSessionExerciseOutcome(sessionId, { result, exercise });
       clearSessionExerciseDraft(sessionId, exercise.exercise_id);
       submitIdempotencyRef.current = null;
-      submittingRef.current = false;
-      setSubmitting(false);
       router.push(ADAPTIVE_ROUTES.result(sessionId));
     } catch (err) {
-      if (!isMountedRef.current) {
-        submittingRef.current = false;
-        return;
-      }
-
-      if (isSessionNotFoundError(err)) {
-        setError(t('exercise.failedToSubmitAnswer'));
-        submittingRef.current = false;
-        setSubmitting(false);
-        return;
-      }
-
-      setError(resolveExerciseFeedback(err, t, 'submit'));
-      submittingRef.current = false;
-      setSubmitting(false);
+      if (!isMountedRef.current) return;
+      setError(
+        isSessionNotFoundError(err)
+          ? t('exercise.failedToSubmitAnswer')
+          : resolveExerciseFeedback(err, t, 'submit'),
+      );
     }
   };
 

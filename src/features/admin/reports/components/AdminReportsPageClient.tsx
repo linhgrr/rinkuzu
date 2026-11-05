@@ -311,13 +311,16 @@ export function AdminReportsPageClient() {
 
   useEffect(() => {
     const controller = new AbortController();
+    // Set by the cleanup: a newer filter (or unmount) owns the list now.
+    let cancelled = false;
 
     async function loadReports() {
       try {
         const reports = await fetchAdminReportViewModels(state.statusFilter, controller.signal);
+        if (cancelled) return;
         dispatch({ type: 'loadSuccess', value: reports });
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (cancelled) return;
         console.error('Error fetching reports:', error);
         dispatch({ type: 'patch', value: { status: 'ready' } });
       }
@@ -326,7 +329,10 @@ export function AdminReportsPageClient() {
     dispatch({ type: 'patch', value: { status: 'loading' } });
     void loadReports();
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [state.statusFilter]);
 
   const openReportModal = (report: AdminReportViewModel) => {

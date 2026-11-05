@@ -37,7 +37,9 @@ export function ExploreSearchInput({
         value={value}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') onCommit(value);
+          // IME users (Vietnamese Telex, CJK) press Enter to confirm a composition, not to search.
+          if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+          onCommit(value);
         }}
         className="h-12 pl-12"
         aria-label={placeholder}

@@ -172,16 +172,14 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
   const submit = async () => {
     if (!quote || !termsAccepted || submitting) return;
     setSubmitting(true);
-    // The pending state may only survive when the browser is genuinely leaving
-    // for the provider. Every other exit — including a rejected checkout URL —
-    // has to clear it, or the pay button stays stuck mid-spin.
-    let leavingForProvider = false;
+    // Every exit clears `submitting` — including a rejected checkout URL — or the
+    // pay button stays stuck mid-spin. A provider redirect needs no pending state:
+    // `setOrder` has already replaced the pay form with the order view.
     try {
       const created = await createCheckoutOrder(quote.token, idempotencyKey);
       setOrder(created);
       if (created.checkoutUrl) {
         const target = assertTrustedPayosCheckoutUrl(created.checkoutUrl);
-        leavingForProvider = true;
         window.location.assign(target);
         return;
       }
@@ -192,7 +190,7 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
         setIdempotencyKey(crypto.randomUUID());
       }
     } finally {
-      if (!leavingForProvider) setSubmitting(false);
+      setSubmitting(false);
     }
   };
 

@@ -21,6 +21,9 @@ vi.mock('next-intl', () => ({
     if (key === 'optionImageAlt') {
       return `Option ${values?.['option'] ?? ''} image`;
     }
+    if (key === 'finishProgress') {
+      return `Finish (${values?.['answered'] ?? ''}/${values?.['total'] ?? ''} answered)`;
+    }
     return key;
   },
 }));
@@ -170,5 +173,99 @@ describe('MobileQuizLayout', () => {
 
     expect(onIndexChange).toHaveBeenCalledWith(1);
     expect(onAnswersChange).toHaveBeenCalledWith([-1, 0]);
+  });
+
+  it('marks multi-select options as square checkboxes and single-select as round radios', () => {
+    render(
+      <MobileQuizLayout
+        quiz={{
+          slug: 'mixed',
+          title: 'Mixed',
+          questions: [
+            { id: 's', question: 'Single question', options: ['S1', 'S2'], type: 'single' },
+            { id: 'm', question: 'Multi question', options: ['M1', 'M2'], type: 'multiple' },
+          ],
+        }}
+        userAnswers={[0, [1]]}
+        currentQuestionIndex={0}
+        onAnswersChange={vi.fn()}
+        onIndexChange={vi.fn()}
+        onComplete={vi.fn()}
+        onExit={vi.fn()}
+        submitting={false}
+      />,
+    );
+
+    expect(screen.getByRole('radiogroup', { name: 'singleChoiceHelper' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'multipleChoiceHelper' })).toBeTruthy();
+
+    const radios = screen.getAllByRole('radio');
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(radios.map((radio) => radio.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+    expect(checkboxes.map((box) => box.getAttribute('aria-checked'))).toEqual(['false', 'true']);
+
+    const indicator = (option: HTMLElement) =>
+      option.querySelector<HTMLElement>('[data-option-indicator]');
+    for (const radio of radios) expect(indicator(radio)?.className).toContain('rounded-full');
+    for (const box of checkboxes) {
+      expect(indicator(box)?.className).toContain('rounded-md');
+      expect(indicator(box)?.className).not.toContain('rounded-full');
+    }
+    // Long option text wraps beside an indicator pinned to the first line.
+    expect(indicator(checkboxes[0]!)?.className).toContain('mt-0.5');
+  });
+
+  it('labels the finish button in sentence case and never styles it as disabled', () => {
+    const { rerender } = render(
+      <MobileQuizLayout
+        quiz={{ slug: 'scroll-quiz', title: 'Scroll quiz', questions: scrollQuestions }}
+        userAnswers={[0, -1]}
+        currentQuestionIndex={0}
+        onAnswersChange={vi.fn()}
+        onIndexChange={vi.fn()}
+        onComplete={vi.fn()}
+        onExit={vi.fn()}
+        submitting={false}
+      />,
+    );
+
+    const partial = screen.getByRole('button', { name: 'Finish (1/2 answered)' });
+    expect(partial.className).not.toContain('bg-neutral-100');
+    expect(partial.className).toContain('bg-brand-trust');
+    fireEvent.click(partial);
+    expect(screen.getByRole('dialog', { name: 'submitQuiz?' })).toBeTruthy();
+
+    rerender(
+      <MobileQuizLayout
+        quiz={{ slug: 'scroll-quiz', title: 'Scroll quiz', questions: scrollQuestions }}
+        userAnswers={[0, 1]}
+        currentQuestionIndex={0}
+        onAnswersChange={vi.fn()}
+        onIndexChange={vi.fn()}
+        onComplete={vi.fn()}
+        onExit={vi.fn()}
+        submitting={false}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Finish (2/2 answered)' }).className).toContain(
+      'bg-brand-trust',
+    );
+  });
+
+  it('marks the player so the analytics consent banner stays out of the way', () => {
+    render(
+      <MobileQuizLayout
+        quiz={{ slug: 'scroll-quiz', title: 'Scroll quiz', questions: scrollQuestions }}
+        userAnswers={[-1, -1]}
+        currentQuestionIndex={0}
+        onAnswersChange={vi.fn()}
+        onIndexChange={vi.fn()}
+        onComplete={vi.fn()}
+        onExit={vi.fn()}
+        submitting={false}
+      />,
+    );
+
+    expect(document.querySelector('[data-quiz-player]')).toBeTruthy();
   });
 });

@@ -73,6 +73,7 @@
   "answered": "answered",
   "progress": "Progress",
   "complete": "complete",
+  "finishProgress": "Finish ({answered}/{total} answered)",
   "askRinChan": "Ask Rin-chan",
   "discussion": "Discussion",
   "submitQuiz": "Submit Quiz",

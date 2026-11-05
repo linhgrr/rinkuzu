@@ -358,7 +358,7 @@ export function DesktopQuizLayout({
   };
 
   return (
-    <div className="min-h-screen">
+    <div data-quiz-player className="min-h-screen">
       <DesktopQuizHeader
         quizTitle={quizTitle}
         {...(sessionEmail !== undefined ? { sessionEmail } : {})}

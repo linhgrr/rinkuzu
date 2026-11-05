@@ -136,6 +136,42 @@ describe('POST /api/billing/webhooks/[provider]', () => {
     });
   });
 
+  it('refuses a payment signed with a key that is not ours', async () => {
+    // A well-formed HMAC is not proof on its own: it has to be the HMAC our
+    // checksum key produces over this exact `data` object.
+    const forged = JSON.parse(PAYMENT) as { data: Record<string, unknown>; signature: string };
+    const payload = Object.keys(forged.data)
+      .sort()
+      .map((key) => `${key}=${String(forged.data[key])}`)
+      .join('&');
+    forged.signature = crypto
+      .createHmac('sha256', 'an-attacker-key-of-at-least-32-characters')
+      .update(payload)
+      .digest('hex');
+
+    const response = await POST(webhookRequest(JSON.stringify(forged)), PARAMS);
+
+    expect(response.status).toBe(400);
+    expect(recordPaymentEventMock).not.toHaveBeenCalled();
+    expect(recordDiagnosticMock.mock.calls[0]?.[0]).toMatchObject({
+      verificationClass: 'unauthenticated',
+      rejectionReason: 'invalid_signature',
+    });
+  });
+
+  it('refuses a payment that carries no signature at all', async () => {
+    const { signature: _omitted, ...unsigned } = JSON.parse(PAYMENT) as Record<string, unknown>;
+
+    const response = await POST(webhookRequest(JSON.stringify(unsigned)), PARAMS);
+
+    expect(response.status).toBe(400);
+    expect(recordPaymentEventMock).not.toHaveBeenCalled();
+    expect(recordDiagnosticMock.mock.calls[0]?.[0]).toMatchObject({
+      verificationClass: 'unauthenticated',
+      rejectionReason: 'invalid_envelope',
+    });
+  });
+
   it('writes nothing at all once a source has spent its budget', async () => {
     consumeRateLimitMock.mockRejectedValue(
       new BillingDomainError('rate_limit_exceeded', 'Too many billing requests', 429),

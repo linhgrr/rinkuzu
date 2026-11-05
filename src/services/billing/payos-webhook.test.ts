@@ -4,7 +4,7 @@ import { join } from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { WEBHOOK_REJECTION_REASONS } from './domain/webhook-diagnostics';
 import {
-  classifyPayOSWebhook,
+  verifyAndClassifyPayOSWebhook,
   webhookRejectionErrorCode,
   webhookRejectionStatus,
   webhookVerificationClass,
@@ -63,7 +63,7 @@ describe('PayOS webhook classification', () => {
   });
 
   it('accepts and normalizes a successful payment event', () => {
-    const outcome = classifyPayOSWebhook(signedWebhook(successfulPayment));
+    const outcome = verifyAndClassifyPayOSWebhook(signedWebhook(successfulPayment));
 
     expect(outcome.kind).toBe('accepted');
     if (outcome.kind !== 'accepted') throw new Error('Expected an accepted webhook');
@@ -77,7 +77,7 @@ describe('PayOS webhook classification', () => {
     // A cancellation notice carries none of the fields a payment carries. It is
     // not discarded: the order code makes it a reconciliation trigger, because
     // the provider's API and not the notice decides what actually happened.
-    const outcome = classifyPayOSWebhook(
+    const outcome = verifyAndClassifyPayOSWebhook(
       signedWebhook({ code: '01', desc: 'cancelled', orderCode: 123 }),
     );
 
@@ -89,7 +89,7 @@ describe('PayOS webhook classification', () => {
   });
 
   it('reports no order code when an ignored notice names none', () => {
-    const outcome = classifyPayOSWebhook(signedWebhook({ code: '01', desc: 'cancelled' }));
+    const outcome = verifyAndClassifyPayOSWebhook(signedWebhook({ code: '01', desc: 'cancelled' }));
 
     expect(outcome.kind).toBe('ignored');
     if (outcome.kind !== 'ignored') throw new Error('Expected an ignored webhook');
@@ -97,7 +97,7 @@ describe('PayOS webhook classification', () => {
   });
 
   it('separates a verified but unreadable payload from a bad signature', () => {
-    const unreadable = classifyPayOSWebhook(
+    const unreadable = verifyAndClassifyPayOSWebhook(
       signedWebhook({ ...successfulPayment, reference: undefined }),
     );
     expect(unreadable.kind).toBe('unsupported_schema');
@@ -108,7 +108,7 @@ describe('PayOS webhook classification', () => {
 
     const tampered = JSON.parse(signedWebhook(successfulPayment)) as { signature: string };
     tampered.signature = '0'.repeat(64);
-    const rejected = classifyPayOSWebhook(JSON.stringify(tampered));
+    const rejected = verifyAndClassifyPayOSWebhook(JSON.stringify(tampered));
 
     expect(rejected.kind).toBe('rejected');
     if (rejected.kind !== 'rejected') throw new Error('Expected a rejected webhook');
@@ -121,11 +121,11 @@ describe('PayOS webhook classification', () => {
     // window, so there is no key list here to fall back to. A payload signed
     // with anything else is unauthenticated, which is what makes a one-sided
     // key change visible in the diagnostics instead of silently accepted.
-    expect(classifyPayOSWebhook(signedWebhook(successfulPayment, checksumKey)).kind).toBe(
+    expect(verifyAndClassifyPayOSWebhook(signedWebhook(successfulPayment, checksumKey)).kind).toBe(
       'accepted',
     );
 
-    const other = classifyPayOSWebhook(signedWebhook(successfulPayment, otherKey));
+    const other = verifyAndClassifyPayOSWebhook(signedWebhook(successfulPayment, otherKey));
     expect(other.kind).toBe('rejected');
     if (other.kind !== 'rejected') throw new Error('Expected a rejected webhook');
     expect(other.reason).toBe('invalid_signature');
@@ -140,15 +140,17 @@ describe('PayOS webhook classification', () => {
       { kid: 'current', secret: checksumKey },
     ]);
 
-    expect(classifyPayOSWebhook(signedWebhook(successfulPayment, otherKey)).kind).toBe('rejected');
-    expect(classifyPayOSWebhook(signedWebhook(successfulPayment, checksumKey)).kind).toBe(
+    expect(verifyAndClassifyPayOSWebhook(signedWebhook(successfulPayment, otherKey)).kind).toBe(
+      'rejected',
+    );
+    expect(verifyAndClassifyPayOSWebhook(signedWebhook(successfulPayment, checksumKey)).kind).toBe(
       'accepted',
     );
   });
 
   it('refuses to verify anything when no checksum key is configured', () => {
     delete process.env['PAYOS_CHECKSUM_KEY'];
-    const outcome = classifyPayOSWebhook(signedWebhook(successfulPayment));
+    const outcome = verifyAndClassifyPayOSWebhook(signedWebhook(successfulPayment));
 
     expect(outcome.kind).toBe('rejected');
     if (outcome.kind !== 'rejected') throw new Error('Expected a rejected webhook');
@@ -159,12 +161,12 @@ describe('PayOS webhook classification', () => {
   });
 
   it('rejects malformed JSON and an unrecognizable envelope separately', () => {
-    const malformed = classifyPayOSWebhook('{not json');
+    const malformed = verifyAndClassifyPayOSWebhook('{not json');
     expect(malformed.kind).toBe('rejected');
     if (malformed.kind !== 'rejected') throw new Error('Expected a rejected webhook');
     expect(malformed.reason).toBe('malformed_json');
 
-    const envelope = classifyPayOSWebhook(JSON.stringify({ hello: 'world' }));
+    const envelope = verifyAndClassifyPayOSWebhook(JSON.stringify({ hello: 'world' }));
     expect(envelope.kind).toBe('rejected');
     if (envelope.kind !== 'rejected') throw new Error('Expected a rejected webhook');
     expect(envelope.reason).toBe('invalid_envelope');
@@ -172,7 +174,9 @@ describe('PayOS webhook classification', () => {
   });
 
   it('rejects an oversized body before parsing it', () => {
-    const outcome = classifyPayOSWebhook(JSON.stringify({ padding: 'x'.repeat(70 * 1024) }));
+    const outcome = verifyAndClassifyPayOSWebhook(
+      JSON.stringify({ padding: 'x'.repeat(70 * 1024) }),
+    );
 
     expect(outcome.kind).toBe('rejected');
     if (outcome.kind !== 'rejected') throw new Error('Expected a rejected webhook');

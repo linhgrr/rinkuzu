@@ -186,7 +186,13 @@ function optionalOrderCode(event: Record<string, unknown>): number | null {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-export function classifyPayOSWebhook(rawBody: string): PayOSWebhookOutcome {
+/**
+ * Verifies the checksum before anything in the body is trusted, then
+ * classifies what was verified. The name says "verify" on purpose: callers —
+ * the webhook route above all — should show at a glance that the HMAC check
+ * happens, rather than leaving a reviewer to trace it into this module.
+ */
+export function verifyAndClassifyPayOSWebhook(rawBody: string): PayOSWebhookOutcome {
   const base = facts(rawBody);
   if (base.byteSize > MAX_WEBHOOK_BYTES) {
     return { ...base, kind: 'rejected', reason: 'payload_too_large' };

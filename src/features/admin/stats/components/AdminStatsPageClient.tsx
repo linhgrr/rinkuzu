@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/features/admin/stats/components/StatsModal';
 import { EntitlementTelemetrySection } from '@/features/admin/stats/components/EntitlementTelemetrySection';
+import { ActivationFunnelSection } from '@/features/admin/stats/components/ActivationFunnelSection';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 const KpiSparkline = dynamic(
@@ -592,6 +593,12 @@ function AdminStatsContent({
         ))}
       </nav>
       {workspace === 'overview' ? <AdminStatsErrorBanner error={error} /> : null}
+      {/* Fetches on its own, so it renders even when the overview stats failed. */}
+      {workspace === 'overview' ? (
+        <div className="mb-6">
+          <ActivationFunnelSection />
+        </div>
+      ) : null}
       {workspace === 'overview' && stats ? (
         <div className="space-y-6">
           <OverviewCards stats={stats} t={t} />

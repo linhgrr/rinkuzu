@@ -1,4 +1,5 @@
 import type {
+  AdminActivationStatsDto,
   AdminStatsDto,
   AdminActivityStatsListDto,
   AdminCreatorStatsListDto,
@@ -11,6 +12,7 @@ import {
 } from '@/features/admin/stats/mappers/admin-stats.mapper';
 import { toStatsModalResultViewModel } from '@/features/admin/stats/mappers/stats-modal.mapper';
 import type {
+  ActivationFunnelViewModel,
   AdminGrowthPeriodViewModel,
   AdminGrowthTrendsViewModel,
   AdminStatsViewModel,
@@ -49,4 +51,29 @@ export async function fetchGrowthTrendsViewModel(
 ): Promise<AdminGrowthTrendsViewModel> {
   const dto = await fetchApiData<AdminGrowthTrendsDto>(`/api/admin/stats/growth?days=${days}`);
   return toAdminGrowthTrendsViewModel(dto);
+}
+
+export async function fetchActivationFunnelViewModel(
+  signal?: AbortSignal,
+): Promise<ActivationFunnelViewModel> {
+  const dto = await fetchApiData<AdminActivationStatsDto>('/api/admin/stats/activation?weeks=8', {
+    cache: 'no-store',
+    ...(signal ? { signal } : {}),
+  });
+  const now = Date.parse(dto.generatedAt);
+  return {
+    adaptiveAvailable: dto.sources.adaptive === 'ok',
+    weeks: dto.weeks
+      .map((week) => ({
+        isoWeek: week.isoWeek,
+        monday: week.start.slice(0, 10),
+        signups: week.signups,
+        signedIn: week.signedIn,
+        startedQuiz: week.startedQuiz,
+        activated: week.activated,
+        returnedWeek1: week.returnedWeek1,
+        inProgress: Date.parse(week.start) <= now && now <= Date.parse(week.end),
+      }))
+      .reverse(),
+  };
 }

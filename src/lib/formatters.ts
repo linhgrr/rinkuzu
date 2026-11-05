@@ -158,3 +158,30 @@ export function formatDateTime(
 
   return resolveDateTimeFormatter(locale, options).format(date);
 }
+
+const DAY_FIRST_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: DEFAULT_DATE_TIME_ZONE,
+};
+
+const SPELLED_MONTH_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  ...SHORT_DATE_OPTIONS,
+  timeZone: DEFAULT_DATE_TIME_ZONE,
+};
+
+const viCalendarDate = new Intl.DateTimeFormat('vi-VN', DAY_FIRST_DATE_OPTIONS);
+const enCalendarDate = new Intl.DateTimeFormat('en-US', SPELLED_MONTH_DATE_OPTIONS);
+
+/**
+ * A calendar date that reads unambiguously in the page locale: 02/11/2026 in
+ * Vietnamese, Nov 2, 2026 in English. `formatDate` with no locale printed the
+ * US 11/02/2026 on both locales, which a Vietnamese reader takes for 11 Feb.
+ */
+export function formatCalendarDate(value: DateInput, locale: string, emptyLabel = 'N/A'): string {
+  const date = toValidDate(value);
+  if (!date) return emptyLabel;
+
+  return (isVi(locale) ? viCalendarDate : enCalendarDate).format(date);
+}

@@ -4,7 +4,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useReducer, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -452,6 +452,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
   // every few seconds, so effects key on the stable user id, not the object.
   const userId = session?.user?.id;
   const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -493,7 +494,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       try {
         dispatch({ type: 'fetch:start' });
         setLoadError(null);
-        const data = await fetchProfileSettingsViewModel();
+        const data = await fetchProfileSettingsViewModel(locale);
 
         if (!isActive) {
           return;
@@ -515,16 +516,19 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     return () => {
       isActive = false;
     };
-  }, [userId, loadAttempt]);
+  }, [userId, loadAttempt, locale]);
 
   const handleSaveProfile = async () => {
     dispatch({ type: 'profile:save:start' });
 
     try {
-      const data = await updateProfileSettingsViewModel({
-        displayName: state.displayName,
-        bio: state.bio,
-      });
+      const data = await updateProfileSettingsViewModel(
+        {
+          displayName: state.displayName,
+          bio: state.bio,
+        },
+        locale,
+      );
       dispatch({ type: 'profile:save:success', profile: data });
       toast.success(t('profileUpdated'));
     } catch (error: unknown) {

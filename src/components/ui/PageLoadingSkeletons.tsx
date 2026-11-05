@@ -6,7 +6,12 @@ interface PageSkeletonProps {
 
 export function CenteredCardPageSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="min-h-screen bg-surface-page px-4 py-8" aria-busy="true" aria-label={label}>
+    <div
+      className="min-h-screen bg-surface-page px-4 py-8"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center">
         <div className="w-full rounded-2xl border border-line bg-white p-6 shadow-sm">
           <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-2xl bg-surface-blue">
@@ -32,7 +37,12 @@ export function CenteredCardPageSkeleton({ label }: PageSkeletonProps) {
 
 export function QuizWorkspacePageSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-8" aria-busy="true" aria-label={label}>
+    <div
+      className="min-h-screen bg-neutral-50 px-4 py-8"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="space-y-2">
@@ -60,7 +70,12 @@ export function QuizWorkspacePageSkeleton({ label }: PageSkeletonProps) {
 
 export function FlashcardPageSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-8" aria-busy="true" aria-label={label}>
+    <div
+      className="min-h-screen bg-neutral-50 px-4 py-8"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       <div className="mx-auto flex min-h-[70vh] max-w-5xl flex-col justify-center">
         <div className="mb-8 space-y-2 text-center">
           <Skeleton className="mx-auto h-8 w-64 max-w-full rounded-md" />
@@ -81,7 +96,7 @@ export function FlashcardPageSkeleton({ label }: PageSkeletonProps) {
 
 export function ProfileSettingsPageSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label={label}>
+    <div className="space-y-6" role="status" aria-busy="true" aria-label={label}>
       <div className="rounded-2xl border border-line-blue/30 bg-white p-5 sm:p-7">
         <div className="flex items-center gap-4 sm:gap-5">
           <Skeleton className="size-20 shrink-0 rounded-full sm:size-[88px]" />
@@ -138,7 +153,12 @@ export function ProfileSettingsPageSkeleton({ label }: PageSkeletonProps) {
 
 export function SubscriptionPageSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="min-h-screen bg-surface-page px-4 py-8" aria-busy="true" aria-label={label}>
+    <div
+      className="min-h-screen bg-surface-page px-4 py-8"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 space-y-2">
           <Skeleton className="h-9 w-72 max-w-full rounded-md" />
@@ -169,7 +189,12 @@ export function SubscriptionPageSkeleton({ label }: PageSkeletonProps) {
 
 export function QuizResultPageSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="min-h-screen bg-surface-page px-4 py-8" aria-busy="true" aria-label={label}>
+    <div
+      className="min-h-screen bg-surface-page px-4 py-8"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="rounded-2xl border border-line-blue/30 bg-white p-6">
@@ -198,7 +223,7 @@ export function QuizResultPageSkeleton({ label }: PageSkeletonProps) {
 
 export function ModalListSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="space-y-2 py-2" aria-busy="true" aria-label={label}>
+    <div className="space-y-2 py-2" role="status" aria-busy="true" aria-label={label}>
       {Array.from({ length: 5 }, (_, index) => (
         <div key={`modal-list-skeleton-${index}`} className="rounded-xl border border-line p-4">
           <div className="flex items-center justify-between gap-4">
@@ -216,7 +241,12 @@ export function ModalListSkeleton({ label }: PageSkeletonProps) {
 
 export function RedirectPageSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-8" aria-busy="true" aria-label={label}>
+    <div
+      className="min-h-screen bg-neutral-50 px-4 py-8"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center">
         <div className="w-full rounded-2xl border border-line-blue/30 bg-white p-8 shadow-sm">
           <Skeleton className="mx-auto size-14 rounded-2xl" />
@@ -232,6 +262,7 @@ export function PdfPanelSkeleton({ label }: PageSkeletonProps) {
   return (
     <div
       className="flex h-full min-h-[400px] w-full items-center justify-center bg-neutral-50 p-6"
+      role="status"
       aria-busy="true"
       aria-label={label}
     >
@@ -249,7 +280,12 @@ export function PdfPanelSkeleton({ label }: PageSkeletonProps) {
 
 export function FolderGridSkeleton({ label }: PageSkeletonProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label={label}>
+    <div
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       {Array.from({ length: 3 }, (_, index) => (
         <Skeleton key={`folder-card-skeleton-${index}`} className="h-36 rounded-xl" />
       ))}
@@ -259,7 +295,7 @@ export function FolderGridSkeleton({ label }: PageSkeletonProps) {
 
 export function DropdownListSkeleton({ label, rows = 3 }: PageSkeletonProps & { rows?: number }) {
   return (
-    <div className="space-y-1 px-2 py-2" aria-busy="true" aria-label={label}>
+    <div className="space-y-1 px-2 py-2" role="status" aria-busy="true" aria-label={label}>
       {Array.from({ length: rows }, (_, index) => (
         <Skeleton key={`dropdown-list-skeleton-${index}`} className="h-9 rounded-lg" />
       ))}
@@ -271,6 +307,7 @@ export function PanelBlockSkeleton({ label }: PageSkeletonProps) {
   return (
     <div
       className="rounded-xl border border-line-blue/30 bg-white p-5 shadow-sm"
+      role="status"
       aria-busy="true"
       aria-label={label}
     >

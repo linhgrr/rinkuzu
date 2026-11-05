@@ -3,7 +3,7 @@
 import { Link } from '@/i18n/navigation';
 import { useReducer } from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -303,15 +303,18 @@ function BookmarksSkeleton() {
 }
 
 export default function ProfileBookmarks() {
+  const locale = useLocale();
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(profileBookmarksReducer, initialState);
   const itemsPerPage = 10;
   const showMutationError = useApiErrorToast();
 
+  // The locale is part of the key: the date labels are formatted for it, so a
+  // cached English page must not be served after switching to Vietnamese.
   const { data, error, isLoading, mutate } = useSWR(
-    `/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}`,
-    fetchProfileBookmarkListViewModel,
+    [`/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}`, locale] as const,
+    ([url, pageLocale]) => fetchProfileBookmarkListViewModel(url, pageLocale),
   );
 
   const bookmarks = data?.bookmarks ?? [];

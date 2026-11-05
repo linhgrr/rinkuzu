@@ -4,36 +4,39 @@ import { toProfileHistoryViewModel } from '@/features/profile/mappers/profile-hi
 describe('toProfileHistoryViewModel', () => {
   it('maps user attempt history without deleted-quiz compatibility state', () => {
     expect(
-      toProfileHistoryViewModel({
-        attempts: [
-          {
-            id: 'attempt-1',
-            score: 88,
-            takenAt: '2026-07-02T00:00:00.000Z',
-            totalQuestions: 10,
-            quiz: {
-              title: 'Algebra',
-              slug: 'algebra',
-              description: 'Linear equations',
+      toProfileHistoryViewModel(
+        {
+          attempts: [
+            {
+              id: 'attempt-1',
+              score: 88,
+              takenAt: '2026-07-02T00:00:00.000Z',
+              totalQuestions: 10,
+              quiz: {
+                title: 'Algebra',
+                slug: 'algebra',
+                description: 'Linear equations',
+              },
             },
+          ],
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            totalItems: 1,
+            itemsPerPage: 10,
+            hasNextPage: false,
+            hasPrevPage: false,
           },
-        ],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 1,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPrevPage: false,
         },
-      }),
+        'en',
+      ),
     ).toEqual({
       attempts: [
         {
           id: 'attempt-1',
           score: 88,
           takenAt: '2026-07-02T00:00:00.000Z',
-          takenAtLabel: '07/02/2026',
+          takenAtLabel: 'Jul 2, 2026',
           totalQuestions: 10,
           quiz: {
             title: 'Algebra',
@@ -54,26 +57,58 @@ describe('toProfileHistoryViewModel', () => {
   });
 
   it('omits an absent quiz description', () => {
-    const result = toProfileHistoryViewModel({
-      attempts: [
-        {
-          id: 'attempt-1',
-          score: 88,
-          takenAt: '2026-07-02T00:00:00.000Z',
-          totalQuestions: 10,
-          quiz: { title: 'Algebra', slug: 'algebra' },
+    const result = toProfileHistoryViewModel(
+      {
+        attempts: [
+          {
+            id: 'attempt-1',
+            score: 88,
+            takenAt: '2026-07-02T00:00:00.000Z',
+            totalQuestions: 10,
+            quiz: { title: 'Algebra', slug: 'algebra' },
+          },
+        ],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 1,
+          itemsPerPage: 10,
+          hasNextPage: false,
+          hasPrevPage: false,
         },
-      ],
-      pagination: {
-        currentPage: 1,
-        totalPages: 1,
-        totalItems: 1,
-        itemsPerPage: 10,
-        hasNextPage: false,
-        hasPrevPage: false,
       },
-    });
+      'en',
+    );
 
     expect(result.attempts[0]?.quiz).not.toHaveProperty('description');
+  });
+});
+
+describe('toProfileHistoryViewModel taken-at label', () => {
+  const dto = {
+    attempts: [
+      {
+        id: 'attempt-1',
+        score: 5,
+        takenAt: '2026-11-01T18:30:00.000Z',
+        totalQuestions: 10,
+        quiz: { title: 'Algebra', slug: 'algebra' },
+      },
+    ],
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 1,
+      itemsPerPage: 10,
+      hasNextPage: false,
+      hasPrevPage: false,
+    },
+  };
+
+  it.each([
+    ['vi', '02/11/2026'],
+    ['en', 'Nov 2, 2026'],
+  ])('follows the %s page locale', (locale, label) => {
+    expect(toProfileHistoryViewModel(dto, locale).attempts[0]?.takenAtLabel).toBe(label);
   });
 });

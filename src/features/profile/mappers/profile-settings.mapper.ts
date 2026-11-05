@@ -1,8 +1,11 @@
 import type { AccountProfileDto } from '@/dtos/account';
 import type { ProfileSettingsViewModel } from '@/features/profile/types/profile-settings-view-model';
-import { formatDate } from '@/lib/formatters';
+import { formatCalendarDate } from '@/lib/formatters';
 
-export function toProfileSettingsViewModel(profile: AccountProfileDto): ProfileSettingsViewModel {
+export function toProfileSettingsViewModel(
+  profile: AccountProfileDto,
+  locale: string,
+): ProfileSettingsViewModel {
   const subscription = profile.subscription
     ? {
         plan: profile.subscription.plan,
@@ -29,7 +32,7 @@ export function toProfileSettingsViewModel(profile: AccountProfileDto): ProfileS
     ...(profile.avatar !== undefined && { avatar: profile.avatar }),
     role: profile.role,
     createdAt: profile.createdAt,
-    createdAtLabel: formatDate(profile.createdAt),
+    createdAtLabel: formatCalendarDate(profile.createdAt, locale),
     ...(subscription !== undefined && { subscription }),
   };
 }

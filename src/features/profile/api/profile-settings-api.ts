@@ -12,20 +12,23 @@ import type {
   UpdateProfileSettingsInput,
 } from '@/features/profile/types/profile-settings-view-model';
 
-export async function fetchProfileSettingsViewModel(): Promise<ProfileSettingsViewModel> {
+export async function fetchProfileSettingsViewModel(
+  locale: string,
+): Promise<ProfileSettingsViewModel> {
   const data = await fetchApiData<AccountProfileDto>('/api/user/profile');
-  return toProfileSettingsViewModel(data);
+  return toProfileSettingsViewModel(data, locale);
 }
 
 export async function updateProfileSettingsViewModel(
   input: UpdateProfileSettingsInput,
+  locale: string,
 ): Promise<ProfileSettingsViewModel> {
   const data = await fetchApiData<AccountProfileDto>('/api/user/profile', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  return toProfileSettingsViewModel(data);
+  return toProfileSettingsViewModel(data, locale);
 }
 
 export async function changeProfilePassword(

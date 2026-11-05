@@ -168,6 +168,7 @@ describe('ProfileSettings control center', () => {
     }
 
     expect(fetchProfileMock).toHaveBeenCalledTimes(1);
+    expect(fetchProfileMock).toHaveBeenCalledWith('en');
     expect(screen.queryByLabelText('loading')).toBeNull();
     expect(screen.getByLabelText<HTMLInputElement>('displayName').value).toBe('Typed name');
   });

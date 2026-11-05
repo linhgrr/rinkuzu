@@ -1,5 +1,45 @@
 import { describe, expect, it } from 'vitest';
-import { renderCampaign, renderFeedbackInvitation } from './templates';
+import { renderCampaign, renderFeedbackInvitation, renderReviewReminder } from './templates';
+
+describe('review reminder email (RIN-915)', () => {
+  const retryUrl =
+    'https://www.rinkuzu.app/vi/quiz/cell-biology?retryOf=6a8ed209f04328ac17443d91&utm_source=email&utm_campaign=w1-review';
+  const unsubscribeUrl = 'https://www.rinkuzu.app/unsubscribe?t=token';
+
+  it.each(['vi', 'en'] as const)('renders the %s email with both links', async (locale) => {
+    const mail = await renderReviewReminder({
+      locale,
+      quizTitle: 'Cell biology',
+      missedCount: 3,
+      retryUrl,
+      unsubscribeUrl,
+    });
+    expect(mail.html).toContain(retryUrl.replaceAll('&', '&amp;'));
+    expect(mail.html).toContain(unsubscribeUrl);
+    expect(mail.html).toContain(`lang="${locale}"`);
+    expect(`${mail.subject}\n${mail.text}`).not.toMatch(/adaptive|thích ứng/iu);
+    expect(mail.subject).toBe(
+      locale === 'vi'
+        ? 'Ôn lại 3 câu chưa đúng trong “Cell biology”'
+        : 'Review the 3 questions you missed in “Cell biology”',
+    );
+    expect(mail.text).toContain(
+      locale === 'vi'
+        ? 'Hai ngày trước bạn đã làm bài “Cell biology” và còn 3 câu chưa đúng.'
+        : 'Two days ago you took “Cell biology” and missed 3 questions.',
+    );
+    expect(mail.text).toContain(`${unsubscribeUrl}`);
+  });
+
+  it('uses the product term personalized / cá nhân hóa', async () => {
+    const input = { quizTitle: 'Biology', missedCount: 1, retryUrl, unsubscribeUrl };
+    const vietnamese = await renderReviewReminder({ ...input, locale: 'vi' });
+    const english = await renderReviewReminder({ ...input, locale: 'en' });
+    expect(vietnamese.text).toContain('cá nhân hóa');
+    expect(english.text).toContain('personalized');
+    expect(english.subject).toBe('Review the 1 question you missed in “Biology”');
+  });
+});
 
 describe('communication email templates', () => {
   const preferencesUrl = 'https://rinkuzu.app/feedback/preferences?token=abc';

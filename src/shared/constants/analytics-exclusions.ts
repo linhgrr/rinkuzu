@@ -1,3 +1,5 @@
+import { ACCOUNT_DISABLE_DISABLED } from './account-disable';
+
 /**
  * Accounts that never count as learners in ground-truth analytics
  * (`/api/admin/stats/activation`).
@@ -73,5 +75,29 @@ export function isNonIndexableQuizOwner(owner: QuizOwnerIndexingFields): boolean
     ANALYTICS_TEST_EMAIL_PATTERN.test(email) ||
     ANALYTICS_EXCLUDED_EMAILS.includes(email) ||
     COMPANY_TEST_EMAIL_PATTERN.test(email)
+  );
+}
+
+export interface LearnerExclusionFields {
+  email?: string | null;
+  role?: string | null;
+  disable?: number | null;
+  isTestAccount?: boolean | null;
+}
+
+/**
+ * In-memory form of the activation-stats learner rule (`LEARNER_FILTER` in
+ * `AdminStatsRepository`): true for an admin, a disabled account, an
+ * admin-flagged test account, a reserved test domain or a listed company
+ * address. Server-only: it reads the email.
+ */
+export function isAnalyticsExcludedAccount(user: LearnerExclusionFields): boolean {
+  const email = user.email?.trim().toLowerCase() ?? '';
+  return (
+    user.role === 'admin' ||
+    user.disable === ACCOUNT_DISABLE_DISABLED ||
+    user.isTestAccount === true ||
+    ANALYTICS_EXCLUDED_EMAILS.includes(email) ||
+    ANALYTICS_TEST_EMAIL_PATTERN.test(email)
   );
 }

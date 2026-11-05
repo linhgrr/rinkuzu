@@ -27,10 +27,14 @@ export interface OutboundCommunicationEmail {
   idempotencyKey: string;
   entityType: string;
   entityId: string;
+  /** Extra provider tags, e.g. `campaign=w1-review` for the admin counts. */
+  tags?: ReadonlyArray<{ name: string; value: string }>;
+  /** Extra headers, e.g. RFC 8058 `List-Unsubscribe`. */
+  headers?: Readonly<Record<string, string>>;
 }
 
 export async function sendCommunicationEmail(input: OutboundCommunicationEmail): Promise<string> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...input.headers };
   if (input.inReplyTo) headers['In-Reply-To'] = input.inReplyTo;
   if (input.references?.length) headers['References'] = input.references.join(' ');
 
@@ -46,6 +50,10 @@ export async function sendCommunicationEmail(input: OutboundCommunicationEmail):
       tags: [
         { name: 'entity_type', value: input.entityType.slice(0, 256) },
         { name: 'entity_id', value: input.entityId.slice(0, 256) },
+        ...(input.tags ?? []).map((tag) => ({
+          name: tag.name.slice(0, 256),
+          value: tag.value.slice(0, 256),
+        })),
       ],
     },
     { idempotencyKey: input.idempotencyKey.slice(0, 256) },

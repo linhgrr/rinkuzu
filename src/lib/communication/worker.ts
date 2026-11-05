@@ -25,6 +25,8 @@ import {
   WebhookEvent,
   type FeedbackStatus,
   type MarketingTopic,
+  type OutboxEntityType,
+  type OutboxKind,
 } from '@/models/Communication';
 import User from '@/models/User';
 import { ACCOUNT_DISABLE_ACTIVE } from '@/shared/constants/account-disable';
@@ -37,6 +39,7 @@ import {
   getReceivingEmail,
   marketingTopicId,
   sendCommunicationEmail,
+  type OutboundCommunicationEmail,
 } from './resend';
 import {
   extractFeedbackReplyToken,
@@ -54,6 +57,7 @@ import {
   isClosedFeedbackStatus,
   OPEN_FEEDBACK_STATUSES,
 } from './internal';
+import { prepareReviewReminder, REVIEW_REMINDER_SENDING_ENABLED } from './review-reminder';
 
 function configuredRate(name: string, fallback: number): number {
   const value = process.env[name]?.trim();
@@ -744,6 +748,8 @@ async function processOutbox(
       {
         availableAt: { $lte: now },
         $or: [{ status: 'pending' }, { status: 'processing', leaseUntil: { $lte: now } }],
+        // Review emails wait for the one-click unsubscribe route (RIN-915).
+        ...(REVIEW_REMINDER_SENDING_ENABLED ? {} : { kind: { $ne: 'review_reminder' } }),
       },
       leaseClaimUpdate(now, leaseToken),
       { sort: { availableAt: 1 }, new: true },
@@ -758,13 +764,31 @@ async function processOutbox(
         }
         if (outcome === 'lease_lost') continue;
       }
+      let content: Pick<
+        OutboundCommunicationEmail,
+        'subject' | 'html' | 'text' | 'tags' | 'headers'
+      > = { subject: item.subject, html: item.html, text: item.text };
+      if (item.kind === 'review_reminder') {
+        const prepared = await prepareReviewReminder(item, now);
+        if (prepared.decision === 'cancel') {
+          await cancelOutbox(item, leaseToken, prepared.reason);
+          canceled += 1;
+          continue;
+        }
+        if (prepared.decision === 'wait') {
+          await EmailOutbox.updateOne(
+            { _id: item._id, leaseToken },
+            { $set: { status: 'pending' }, $unset: { leaseToken: '', leaseUntil: '' } },
+          );
+          continue;
+        }
+        content = prepared.mail;
+      }
       const externalEmailId = await sendCommunicationEmail({
         to: item.to,
         from: item.from,
         replyTo: item.replyTo,
-        subject: item.subject,
-        html: item.html,
-        text: item.text,
+        ...content,
         inReplyTo: item.inReplyTo,
         references: item.references,
         idempotencyKey: item.idempotencyKey ?? item.dedupeKey,
@@ -793,7 +817,14 @@ async function processOutbox(
       await EmailOutbox.updateOne(
         { _id: item._id, leaseToken },
         {
-          $set: { status: 'completed', externalEmailId },
+          // A review email is rendered at send time; keep what actually went out.
+          $set: {
+            status: 'completed',
+            externalEmailId,
+            subject: content.subject,
+            html: content.html,
+            text: content.text,
+          },
           $unset: { leaseToken: '', leaseUntil: '', lastError: '' },
         },
       );
@@ -1144,8 +1175,8 @@ export async function communicationHealth(): Promise<{
   preparingCampaigns: number;
   stuckDetails: {
     id: string;
-    kind: 'support_notification' | 'feedback_invitation' | 'feedback_reply' | 'feedback_reminder';
-    entityType: 'support_ticket' | 'feedback_conversation';
+    kind: OutboxKind;
+    entityType: OutboxEntityType;
     status: 'pending' | 'processing' | 'completed' | 'dead' | 'canceled';
     attempts: number;
     availableAt: string;

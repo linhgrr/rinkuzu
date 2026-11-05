@@ -101,6 +101,13 @@ export const marketingPreferenceSchema = z.strictObject({
   source: z.enum(['settings', 'prompt']).default('settings'),
 });
 
+/** Result-page review-email tick (RIN-915). `optIn: false` un-ticks it. */
+export const reviewReminderRequestSchema = z.strictObject({
+  attemptId: z.string().regex(/^[a-f0-9]{24}$/u, 'Invalid attempt id'),
+  optIn: z.boolean().default(true),
+  locale: z.enum(['vi', 'en']).default('vi'),
+});
+
 const headingBlockSchema = z.strictObject({
   id: z.uuid(),
   type: z.literal('heading'),

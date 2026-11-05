@@ -136,5 +136,8 @@
   "previousQuestion": "Câu hỏi trước",
   "nextQuestion": "Câu hỏi tiếp theo",
   "questionImageAlt": "Hình ảnh cho câu hỏi {number}",
-  "optionImageAlt": "Hình ảnh cho đáp án {option}"
+  "optionImageAlt": "Hình ảnh cho đáp án {option}",
+  "starterIntro": "Thử một bài quiz 2 phút để xem Rinkuzu hoạt động thế nào",
+  "starterIntroLabel": "Quiz khởi động",
+  "starterSkip": "Bỏ qua"
 }

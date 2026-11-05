@@ -3,6 +3,7 @@ import { hash } from 'bcryptjs';
 import { MongoClient, ObjectId, type Db } from 'mongodb';
 import type { Page, TestInfo } from '@playwright/test';
 import { createE2EUserEmail } from './fixture-identifiers';
+import { skipPostSignInStarter } from './post-signin';
 
 /**
  * Seeded admin and regular accounts for admin E2E flows, removed again after
@@ -88,6 +89,7 @@ export async function login(page: Page, user: SeededUser): Promise<void> {
     window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
   });
   await page.goto('/en/login?callbackUrl=%2Fdashboard');
+  await skipPostSignInStarter(page);
   await page.getByLabel('Email Address').fill(user.email);
   await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
   await Promise.all([

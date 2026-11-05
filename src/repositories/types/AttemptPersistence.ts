@@ -36,6 +36,8 @@ export interface AttemptPersistenceRecord {
   score: number;
   totalQuestions: number;
   takenAt: Date;
+  retryOfAttemptId?: MongoIdLike;
+  questionIndices?: number[];
 }
 
 export interface RecentAttemptActivityPersistenceRecord {

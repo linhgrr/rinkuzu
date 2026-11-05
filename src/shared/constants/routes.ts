@@ -6,6 +6,8 @@
 export const ROUTES = {
   HOME: '/',
   DASHBOARD: '/dashboard',
+  /** Post-sign-in landing (RIN-913): starter quiz for a new learner, else the dashboard. */
+  START: '/start',
   LOGIN: '/login',
   REGISTER: '/register',
   CREATE_QUIZ: '/create',

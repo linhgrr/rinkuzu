@@ -1,3 +1,4 @@
+import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { DiscussionRepository } from '@/repositories/DiscussionRepository';
 import { FolderRepository } from '@/repositories/FolderRepository';
 import { QuizAttemptProgressRepository } from '@/repositories/QuizAttemptProgressRepository';
@@ -20,6 +21,7 @@ export function getQuizService(): QuizService {
     new QuizAttemptProgressRepository(),
     new FolderRepository(),
     getPremiumQuizService(),
+    new AttemptRepository(),
   );
   return quizService;
 }

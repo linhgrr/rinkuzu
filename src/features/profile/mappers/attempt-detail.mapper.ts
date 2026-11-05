@@ -50,5 +50,9 @@ export function toAttemptDetailViewModel(
       ...(dto.quiz.description !== undefined && { description: dto.quiz.description }),
       questions: dto.quiz.questions.map(toAttemptQuestionViewModel),
     },
+    missedCount: dto.missedCount,
+    nextQuiz: dto.nextQuiz,
+    ...(dto.retryOfAttemptId !== undefined && { retryOfAttemptId: dto.retryOfAttemptId }),
+    ...(dto.questionIndices !== undefined && { questionIndices: dto.questionIndices }),
   };
 }

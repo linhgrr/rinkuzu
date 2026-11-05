@@ -42,6 +42,7 @@ describe('createOptionalQuizSlugReadRoute', () => {
       slug: 'algebra',
       userId: 'user-1',
       session: expect.objectContaining({ user: expect.objectContaining({ role: 'user' }) }),
+      request: expect.any(Request),
     });
     expect(response.status).toBe(200);
   });
@@ -57,7 +58,12 @@ describe('createOptionalQuizSlugReadRoute', () => {
 
     await callRoute(handler);
 
-    expect(load).toHaveBeenCalledWith({ slug: 'algebra', userId: null, session: null });
+    expect(load).toHaveBeenCalledWith({
+      slug: 'algebra',
+      userId: null,
+      session: null,
+      request: expect.any(Request),
+    });
   });
 
   it('rejects invalid slugs before calling the loader', async () => {

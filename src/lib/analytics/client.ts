@@ -26,7 +26,9 @@ export type AnalyticsEventName =
   | 'adaptive_session_started'
   | 'adaptive_answer_submitted'
   | 'first_question_answered'
-  | 'quiz_completed';
+  | 'quiz_completed'
+  /** Skip on the post-sign-in starter quiz intro (RIN-913). */
+  | 'starter_quiz_skipped';
 
 export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>;
 export type AnalyticsLoginMethod = 'credentials' | 'google';

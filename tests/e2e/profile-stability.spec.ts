@@ -3,6 +3,7 @@ import { hash } from 'bcryptjs';
 import { MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Browser, type Page, type TestInfo } from '@playwright/test';
 import { createE2EUserEmail } from './support/fixture-identifiers';
+import { skipPostSignInStarter } from './support/post-signin';
 
 /**
  * /profile must stay put while the SessionProvider polls (RIN-676).
@@ -94,6 +95,7 @@ async function login(page: Page, user: SeededUser): Promise<void> {
     window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
   });
   await page.goto('/en/login?callbackUrl=%2Fdashboard');
+  await skipPostSignInStarter(page);
   await page.getByLabel('Email Address').fill(user.email);
   await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
   await Promise.all([

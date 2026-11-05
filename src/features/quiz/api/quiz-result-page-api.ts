@@ -16,7 +16,10 @@ const EMPTY_BOOKMARK_LOOKUP: QuizResultBookmarkLookup = {
 };
 
 async function fetchBookmarkLookup(result: QuizResultViewModel): Promise<QuizResultBookmarkLookup> {
-  const lookupLimit = Math.min(Math.max(result.quiz.questions.length, 1), 100);
+  const quizQuestionSpan = result.questionIndices
+    ? Math.max(-1, ...result.questionIndices) + 1
+    : result.quiz.questions.length;
+  const lookupLimit = Math.min(Math.max(quizQuestionSpan, 1), 100);
   const params = new URLSearchParams({
     quizSlug: result.quiz.slug,
     limit: String(lookupLimit),
@@ -25,10 +28,19 @@ async function fetchBookmarkLookup(result: QuizResultViewModel): Promise<QuizRes
 
   const bookmarkedQuestions = new Set<number>();
   const bookmarkIdsByQuestion: Record<number, string> = {};
+  // Bookmarks store the quiz question index; a retry attempt shows a subset, so translate
+  // to the position on this result page and skip bookmarks of questions not shown.
+  const positionByQuizIndex = result.questionIndices
+    ? new Map(result.questionIndices.map((quizIndex, position) => [quizIndex, position]))
+    : null;
 
   data.bookmarks.forEach((bookmark) => {
-    bookmarkedQuestions.add(bookmark.questionIndex);
-    bookmarkIdsByQuestion[bookmark.questionIndex] = bookmark.id;
+    const position = positionByQuizIndex
+      ? positionByQuizIndex.get(bookmark.questionIndex)
+      : bookmark.questionIndex;
+    if (position === undefined) return;
+    bookmarkedQuestions.add(position);
+    bookmarkIdsByQuestion[position] = bookmark.id;
   });
 
   return {
@@ -91,7 +103,7 @@ export async function createQuizResultBookmark(
         questionImage: input.question.questionImage,
         optionImages: input.question.optionImages,
       },
-      questionIndex: input.questionIndex,
+      questionIndex: input.result.questionIndices?.[input.questionIndex] ?? input.questionIndex,
     }),
   });
 

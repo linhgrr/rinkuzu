@@ -8,6 +8,7 @@ import type { ProductScope } from '@/lib/routing/pathname';
 
 export const AUTH_REQUIRED_PATH_PREFIXES = [
   ROUTES.DASHBOARD,
+  ROUTES.START,
   '/adaptive/upload',
   '/adaptive/processing',
   '/adaptive/exercise',

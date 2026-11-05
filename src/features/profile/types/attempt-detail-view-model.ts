@@ -16,4 +16,9 @@ export interface AttemptDetailViewModel {
     description?: string;
     questions: AttemptQuestionDetailViewModel[];
   };
+  missedCount: number;
+  nextQuiz: { slug: string; title: string } | null;
+  retryOfAttemptId?: string;
+  /** Retry-missed attempt: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
+  questionIndices?: number[];
 }

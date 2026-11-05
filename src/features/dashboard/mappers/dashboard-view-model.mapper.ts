@@ -6,6 +6,7 @@ import type {
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { ROUTES } from '@/shared/constants/routes';
+import { pickStarterQuizIndex } from '@/services/dashboard/starter-quizzes';
 import { buildWeekDays } from '@/features/dashboard/mappers/dashboard-week-days';
 import { formatDate } from '@/lib/formatters';
 import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
@@ -190,8 +191,7 @@ function buildStarter({
 }: BuildStarterInput): DashboardStarterViewModel | null {
   if (!isNewLearner || starterQuizzes.length === 0) return null;
 
-  const localeIndex = starterQuizzes.findIndex((quiz) => quiz.locale === locale);
-  const primaryIndex = Math.max(localeIndex, 0);
+  const primaryIndex = pickStarterQuizIndex(starterQuizzes, locale);
   const primary = starterQuizzes[primaryIndex];
   if (!primary) return null;
 

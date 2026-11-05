@@ -12,7 +12,10 @@ import type {
 } from '@/interfaces/repositories/IDashboardRepository';
 import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
 import type { QuizFindFilter } from '@/interfaces/repositories/IQuizRepository';
-import type { IDashboardService } from '@/interfaces/services/IDashboardService';
+import type {
+  IDashboardService,
+  PostSignInTargetInput,
+} from '@/interfaces/services/IDashboardService';
 import {
   buildAdaptiveServiceHeaders,
   buildAdaptiveUrl,
@@ -24,8 +27,11 @@ import { DashboardDtoMapper } from '@/mappers/dashboard/DashboardDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 import type { QuizListItemDto } from '@/dtos/quiz';
 import type { components } from '@/generated/adaptive-api';
+import { ROUTES } from '@/shared/constants/routes';
+import { POST_SIGNIN_STARTER_ENTRY } from '@/shared/constants/starter-quiz';
 import {
   STARTER_QUIZ_ALLOWLIST,
+  pickStarterQuizIndex,
   resolveStarterQuizzes,
   type StarterQuizAllowlistEntry,
 } from '@/services/dashboard/starter-quizzes';
@@ -148,6 +154,27 @@ export class DashboardService implements IDashboardService {
       logger.warn({ error }, 'Failed resolving starter quizzes for home dashboard');
       return NO_STARTER_STATE;
     }
+  }
+
+  /**
+   * Where sign-in with no explicit destination lands (RIN-913): a new learner goes
+   * straight into the starter quiz in their locale; anyone else, a learner who
+   * skipped, or any lookup failure goes to the dashboard. Uses the same
+   * eligibility as the dashboard starter block, which does not check adaptive
+   * uploads either.
+   */
+  async getPostSignInHref({
+    userId,
+    locale,
+    starterSkipped,
+  }: PostSignInTargetInput): Promise<string> {
+    if (starterSkipped) return ROUTES.DASHBOARD;
+    const { isNewLearner, starterQuizzes } = await this.getStarterState(userId);
+    if (!isNewLearner) return ROUTES.DASHBOARD;
+    const starter = starterQuizzes[pickStarterQuizIndex(starterQuizzes, locale)];
+    return starter
+      ? `${ROUTES.QUIZ.VIEW(starter.slug)}?entry=${POST_SIGNIN_STARTER_ENTRY}`
+      : ROUTES.DASHBOARD;
   }
 
   async getBootstrapData(userId: string): Promise<DashboardBootstrapDto> {

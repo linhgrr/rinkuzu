@@ -104,6 +104,11 @@ describe('activation stats integration', () => {
     return { _integrationRun: runId, user: ids[key], quiz, takenAt, score: 50 };
   }
 
+  // A retry-missed attempt (RIN-914) is a normal attempt plus two optional fields.
+  function retryAttempt(key: keyof typeof ids, takenAt: Date, quiz = sharedQuiz) {
+    return { ...attempt(key, takenAt, quiz), retryOfAttemptId: id(), questionIndices: [1, 3] };
+  }
+
   function events(
     userId: string,
     firstCompletionAt: Date | null,
@@ -188,8 +193,9 @@ describe('activation stats integration', () => {
         attempt('a', plus(signup.a, 8 * DAY)),
         // B: signs up Sunday of W01, first attempt Monday of W02 (cross-week),
         // returns 1 ms before day 14 → activated W01, retained, first attempt W02.
+        // The return is a retry-missed attempt: it must count for w1Retained.
         attempt('b', at('2001-01-08T01:00:00.000Z')),
-        attempt('b', plus(signup.b, 14 * DAY - 1)),
+        retryAttempt('b', plus(signup.b, 14 * DAY - 1)),
         // C: first attempt exactly 7 days after signup → not activated; first attempt W02.
         attempt('c', plus(signup.c, 7 * DAY)),
         // E: activated, returns exactly on day 14 → not retained (window is days 7–13).
@@ -198,8 +204,8 @@ describe('activation stats integration', () => {
         // F: first attempt before the window; a later one never counts as first.
         attempt('f', plus(signup.f, DAY)),
         attempt('f', at('2001-01-10T00:00:00.000Z')),
-        // G: activated on signup day in W03.
-        attempt('g', plus(signup.g, 3_600_000)),
+        // G: activated on signup day in W03, by a retry-missed attempt (counts like any attempt).
+        retryAttempt('g', plus(signup.g, 3_600_000)),
         // I: first attempt exactly on day 7 → not quiz-activated, but a return.
         attempt('i', plus(signup.i, 7 * DAY)),
         // Excluded accounts are invisible everywhere.

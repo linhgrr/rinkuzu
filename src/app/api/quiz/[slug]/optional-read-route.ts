@@ -11,6 +11,7 @@ interface OptionalQuizSlugReadContext {
   slug: string;
   userId: string | null;
   session: Session | null;
+  request: Request;
 }
 
 interface OptionalQuizSlugReadRouteOptions<TData> {
@@ -22,7 +23,7 @@ interface OptionalQuizSlugReadRouteOptions<TData> {
 export function createOptionalQuizSlugReadRoute<TData>(
   options: OptionalQuizSlugReadRouteOptions<TData>,
 ) {
-  return withOptionalAuth(async (_request, { params, userId, session }) => {
+  return withOptionalAuth(async (request, { params, userId, session }) => {
     try {
       const parsedParams = parseRouteParams(params, quizSlugRouteParamsSchema);
       if (!parsedParams.ok) return parsedParams.response;
@@ -31,6 +32,7 @@ export function createOptionalQuizSlugReadRoute<TData>(
         slug: parsedParams.data.slug,
         userId,
         session,
+        request,
       });
 
       return result.success ? apiOk(result.data) : apiServiceErr(result);

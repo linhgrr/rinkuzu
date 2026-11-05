@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
@@ -74,6 +74,8 @@ interface DesktopQuizLayoutProps {
   submitQuiz: () => Promise<boolean>;
   submitting: boolean;
   submit: DesktopQuizSubmitControls;
+  /** Shown above the question card, e.g. the post-sign-in starter intro (RIN-913). */
+  notice?: ReactNode;
   t: TranslateFn;
 }
 
@@ -340,6 +342,7 @@ export function DesktopQuizLayout({
   submitQuiz,
   submitting,
   submit,
+  notice,
   t,
 }: DesktopQuizLayoutProps) {
   const [discussionLoaded, setDiscussionLoaded] = useState(
@@ -372,6 +375,7 @@ export function DesktopQuizLayout({
       >
         <div className="flex">
           <div className={`flex-1 ${discussion.collapsed ? '' : 'pr-6'}`}>
+            {notice ? <div className="mb-4">{notice}</div> : null}
             <QuizQuestionCard
               question={currentQuestion}
               questionIndex={currentQuestionIndex}

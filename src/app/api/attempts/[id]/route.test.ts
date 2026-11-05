@@ -108,9 +108,11 @@ describe('GET /api/attempts/[id]', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(getAttemptDetailsMock).toHaveBeenCalledWith(attemptId, {
-      guestEmail: 'Guest@Example.com',
-    });
+    expect(getAttemptDetailsMock).toHaveBeenCalledWith(
+      attemptId,
+      { guestEmail: 'Guest@Example.com' },
+      {},
+    );
     await expect(response.json()).resolves.toMatchObject({
       success: true,
       data: detail,
@@ -127,7 +129,24 @@ describe('GET /api/attempts/[id]', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(getAttemptDetailsMock).toHaveBeenCalledWith(attemptId, { userId: 'user-1' });
+    expect(getAttemptDetailsMock).toHaveBeenCalledWith(attemptId, { userId: 'user-1' }, {});
+  });
+
+  it('passes the learner locale through for the next-quiz pick', async () => {
+    authMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'user@example.com', role: 'user' },
+    });
+
+    const response = await GET(request(`http://localhost/api/attempts/${attemptId}?locale=vi`), {
+      params: Promise.resolve({ id: attemptId }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(getAttemptDetailsMock).toHaveBeenCalledWith(
+      attemptId,
+      { userId: 'user-1' },
+      { locale: 'vi' },
+    );
   });
 
   it('maps ownership and not-found service failures', async () => {

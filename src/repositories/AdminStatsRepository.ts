@@ -20,7 +20,8 @@ import {
 import { ACCOUNT_DISABLE_DISABLED } from '@/shared/constants/account-disable';
 import {
   anyDateIn,
-  claimedAttemptTime,
+  attemptUnionStage,
+  EFFECTIVE_FIRST_TAKEN_AT,
   FUNNEL_GROUP_FIELDS,
   FUNNEL_WEEK_ACCUMULATORS,
   funnelFlags,
@@ -98,9 +99,6 @@ const DAILY_GROUP_STAGE = {
 } as const;
 
 const DAY_MS = 86_400_000;
-
-/** When an attempt counts as taken; the one place RIN-920 changes (claim time). */
-const ATTEMPT_AT = '$takenAt';
 
 /**
  * Who counts as a learner: not an admin, not disabled, not flagged as a test
@@ -338,27 +336,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
     return [
       { $match: { createdAt: { $gte: from, $lt: to }, ...LEARNER_FILTER } },
       { $project: { _id: 0, uid: '$_id', signupAt: '$createdAt' } },
-      {
-        $unionWith: {
-          coll: AttemptModel.collection.name,
-          pipeline: [
-            {
-              $match: {
-                takenAt: { $gte: from, $lt: new Date(to.getTime() + 14 * DAY_MS) },
-                user: { $type: 'objectId' },
-              },
-            },
-            {
-              $project: {
-                _id: 0,
-                uid: '$user',
-                takenAt: ATTEMPT_AT,
-                claimedTakenAt: claimedAttemptTime(ATTEMPT_AT),
-              },
-            },
-          ],
-        },
-      },
+      attemptUnionStage(AttemptModel.collection.name, from, to),
       {
         $unionWith: {
           coll: QuizModel.collection.name,
@@ -428,6 +406,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
    * is outside the window), so the first-ever date is the earlier of the two.
    * The path is the one whose first falls in that week; `both` when both
    * firsts share the week.
+   * A claimed first attempt counts at `claimedAt` (`EFFECTIVE_FIRST_TAKEN_AT`).
    */
   static firstAttemptPipeline(
     from: Date,
@@ -442,7 +421,14 @@ export class AdminStatsRepository implements IAdminStatsRepository {
     return [
       { $match: { user: { $type: 'objectId' } } },
       { $sort: { user: -1, takenAt: 1 } },
-      { $group: { _id: '$user', firstTakenAt: { $first: '$takenAt' } } },
+      {
+        $group: {
+          _id: '$user',
+          firstTakenAt: { $first: '$takenAt' },
+          firstClaimedAt: { $first: '$claimedAt' },
+        },
+      },
+      { $addFields: { firstTakenAt: EFFECTIVE_FIRST_TAKEN_AT } },
       {
         $match: {
           _id: { $nin: [...excludedUserIds] },

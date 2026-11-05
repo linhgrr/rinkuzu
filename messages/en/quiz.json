@@ -135,5 +135,8 @@
   "previousQuestion": "Previous question",
   "nextQuestion": "Next question",
   "questionImageAlt": "Image for question {number}",
-  "optionImageAlt": "Image for option {option}"
+  "optionImageAlt": "Image for option {option}",
+  "starterIntro": "Try a 2-minute quiz to see how Rinkuzu works",
+  "starterIntroLabel": "Starter quiz",
+  "starterSkip": "Skip"
 }

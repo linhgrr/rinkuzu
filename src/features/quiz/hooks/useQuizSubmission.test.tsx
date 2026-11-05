@@ -62,7 +62,10 @@ describe('useQuizSubmission', () => {
     const { result, onSubmitError, onSubmitSuccess } = renderSubmissionHook();
 
     await act(async () => expect(await result.current.completeSubmit()).toBe(false));
+    // A rejected request releases the pending flag so the learner can retry.
+    expect(result.current.submitting).toBe(false);
     await act(async () => expect(await result.current.completeSubmit()).toBe(true));
+    expect(result.current.submitting).toBe(false);
 
     expect(submitAttemptMock.mock.calls.map(([input]) => input.idempotencyKey)).toEqual([
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',

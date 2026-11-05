@@ -240,24 +240,26 @@ export function PremiumFlashcardClient({ metadata, slug }: PremiumFlashcardClien
           />
         ) : null}
         <ol className="mt-6 grid gap-3">
-          {toStableContentEntries(card.question.options).map(({ content: option, key, sourceIndex: index }) => (
-            <li
-              key={key}
-              className={`rounded-xl border p-4 text-sm ${reveal && correctIndexes.has(index) ? 'border-green-400 bg-green-50 font-semibold text-green-800' : 'border-line-blue/40 text-ink'}`}
-            >
-              <div className="flex gap-1">
-                <span>{String.fromCharCode(65 + index)}.</span>
-                <QuestionContent content={option} variant="answer" />
-              </div>
-              {card.question.optionImages?.[index] ? (
-                <ImageDisplay
-                  src={card.question.optionImages[index]}
-                  alt={t('optionImageAlt', { option: String.fromCharCode(65 + index) })}
-                  className="mt-3"
-                />
-              ) : null}
-            </li>
-          ))}
+          {toStableContentEntries(card.question.options).map(
+            ({ content: option, key, sourceIndex: index }) => (
+              <li
+                key={key}
+                className={`rounded-xl border p-4 text-sm ${reveal && correctIndexes.has(index) ? 'border-green-400 bg-green-50 font-semibold text-green-800' : 'border-line-blue/40 text-ink'}`}
+              >
+                <div className="flex gap-1">
+                  <span>{String.fromCharCode(65 + index)}.</span>
+                  <QuestionContent content={option} variant="answer" />
+                </div>
+                {card.question.optionImages?.[index] ? (
+                  <ImageDisplay
+                    src={card.question.optionImages[index]}
+                    alt={t('optionImageAlt', { option: String.fromCharCode(65 + index) })}
+                    className="mt-3"
+                  />
+                ) : null}
+              </li>
+            ),
+          )}
         </ol>
         {!reveal ? (
           <Button className="mt-6 w-full" loading={loading} onClick={() => void showAnswer()}>

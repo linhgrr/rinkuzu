@@ -89,20 +89,25 @@ export function ReviewPageClient() {
   const showMutationError = useApiErrorToast();
 
   useEffect(() => {
+    // A retry (or unmount) supersedes this load: its late result is dropped.
+    let cancelled = false;
     const fetchDueReviews = async () => {
       dispatch({ type: 'setPhase', value: 'loading' });
 
       try {
-        dispatch({
-          type: 'loadQuestions',
-          questions: await fetchDueReviewQuestionViewModels(),
-        });
+        const questions = await fetchDueReviewQuestionViewModels();
+        if (cancelled) return;
+        dispatch({ type: 'loadQuestions', questions });
       } catch (error) {
+        if (cancelled) return;
         dispatch({ type: 'loadError', error });
       }
     };
 
     void fetchDueReviews();
+    return () => {
+      cancelled = true;
+    };
   }, [loadAttempt]);
 
   const handleReviewSubmit = async (rating: ReviewRating) => {

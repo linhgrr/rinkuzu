@@ -215,14 +215,17 @@ function BookmarkCard({
           <div className="text-sm">
             <span className="font-medium text-neutral-700">{t('correct')}:</span>
             <div className="mt-1 space-y-1 text-green-600">
-              {toStableContentEntries(correctAnswers).map(({ content: answer, key, sourceIndex }) => (
-                <div key={key} className="flex gap-1">
-                  <span className="flex-shrink-0">
-                    {String.fromCharCode(65 + (correctAnswerIndexes[sourceIndex] ?? sourceIndex))}.
-                  </span>
-                  <QuestionContent content={answer} variant="answer" className="min-w-0 flex-1" />
-                </div>
-              ))}
+              {toStableContentEntries(correctAnswers).map(
+                ({ content: answer, key, sourceIndex }) => (
+                  <div key={key} className="flex gap-1">
+                    <span className="flex-shrink-0">
+                      {String.fromCharCode(65 + (correctAnswerIndexes[sourceIndex] ?? sourceIndex))}
+                      .
+                    </span>
+                    <QuestionContent content={answer} variant="answer" className="min-w-0 flex-1" />
+                  </div>
+                ),
+              )}
             </div>
           </div>
           <QuestionOptionsPreview

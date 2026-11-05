@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction-api';
+import { withPending } from '@/lib/async/with-pending';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 
 interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestion[] }> {
@@ -36,9 +37,10 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
   const submittingRef = useRef(false);
   const idempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
 
-  const finishSubmission = () => {
-    submittingRef.current = false;
-    setSubmitting(false);
+  // The ref guards re-entry synchronously; the state drives the UI. They move together.
+  const setSubmissionPending = (pending: boolean) => {
+    submittingRef.current = pending;
+    setSubmitting(pending);
   };
 
   const submitQuizAnswers = async (answersToSubmit: QuizAnswer[]) => {
@@ -70,18 +72,14 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
   ): Promise<boolean> => {
     if (!quiz || submittingRef.current) return false;
 
-    submittingRef.current = true;
     onSubmitStart?.();
-    setSubmitting(true);
     try {
-      await submitQuizAnswers(answers);
+      await withPending(setSubmissionPending, () => submitQuizAnswers(answers));
       if (closeConfirmation) setShowSubmitConfirm(false);
-      finishSubmission();
       return true;
     } catch (error) {
       console.error('Quiz submission error:', error);
       onSubmitError(error);
-      finishSubmission();
       return false;
     }
   };

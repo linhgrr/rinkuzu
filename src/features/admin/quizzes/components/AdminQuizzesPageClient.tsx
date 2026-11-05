@@ -171,9 +171,8 @@ export function AdminQuizzesPageClient() {
         if (cancelled) return;
         dispatch({ type: 'loaded', quizzes: data.quizzes, pagination: data.pagination });
       } catch (error) {
-        if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) {
-          return;
-        }
+        if (cancelled) return;
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         dispatch({
           type: 'patch',
           value: {

@@ -72,6 +72,26 @@ describe('quiz-interaction-api', () => {
     });
   });
 
+  it('sends a guest claim token and no email for a signed-out submit (RIN-912)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+      attemptId: 'attempt-3',
+    });
+    await submitQuizAttemptViewModel({
+      slug: 'quiz',
+      answers: [1],
+      idempotencyKey: 'idem-3',
+      guestClaimToken: 'fake-token',
+    });
+    expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
+      answers: [1],
+      idempotencyKey: 'idem-3',
+      guestClaimToken: 'fake-token',
+    });
+  });
+
   it('loads, saves, and deletes saved progress through the progress route', async () => {
     fetchApiDataMock.mockResolvedValueOnce({
       progress: {

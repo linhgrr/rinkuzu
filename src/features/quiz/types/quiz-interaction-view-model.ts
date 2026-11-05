@@ -39,7 +39,9 @@ export interface SubmitQuizAttemptInput {
   slug: string;
   answers: QuizAnswer[];
   idempotencyKey: string;
-  userEmail: string;
+  /** Signed-in legacy field; guests send `guestClaimToken` instead (RIN-912). */
+  userEmail?: string;
+  guestClaimToken?: string;
 }
 
 export interface AddQuizDiscussionCommentInput {

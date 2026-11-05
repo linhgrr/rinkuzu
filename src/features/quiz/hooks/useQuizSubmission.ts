@@ -68,7 +68,6 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
       slug,
       answers,
       idempotencyKey: pending.key,
-      ...(sessionEmail ? { userEmail: sessionEmail } : {}),
       ...(pending.guestClaimToken ? { guestClaimToken: pending.guestClaimToken } : {}),
     });
 

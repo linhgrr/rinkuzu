@@ -96,7 +96,6 @@ export interface IQuizService {
     answers: (number | number[])[],
     idempotencyKey: string,
     session: Session | null,
-    userEmail?: string,
     retryOfAttemptId?: string,
     guestClaimToken?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>>;

@@ -3,7 +3,10 @@ import { redirect } from '@/i18n/navigation';
 import { getCurrentSession } from '@/lib/auth/session';
 import { getPostSignInHref } from '@/lib/dashboard-factory';
 import { ROUTES } from '@/shared/constants/routes';
-import { STARTER_SKIPPED_COOKIE } from '@/shared/constants/starter-quiz';
+import {
+  GUEST_CLAIM_PENDING_COOKIE,
+  STARTER_SKIPPED_COOKIE,
+} from '@/shared/constants/starter-quiz';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +30,9 @@ export default async function StartPage({ params }: { params: Promise<{ locale: 
   const href = await getPostSignInHref({
     userId: session.user.id,
     locale,
-    starterSkipped: cookieStore.has(STARTER_SKIPPED_COOKIE),
+    // A pending guest claim is not a new learner: the dashboard claims it (RIN-921).
+    starterSkipped:
+      cookieStore.has(STARTER_SKIPPED_COOKIE) || cookieStore.has(GUEST_CLAIM_PENDING_COOKIE),
   });
   return redirect({ href, locale });
 }

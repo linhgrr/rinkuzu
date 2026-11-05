@@ -383,7 +383,8 @@ describe('QuizPlayService progress operations', () => {
       [2],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       null,
-      'guest@example.com',
+      undefined,
+      'T'.repeat(43),
     );
 
     assertFail(result);
@@ -421,7 +422,7 @@ describe('QuizPlayService progress operations', () => {
     expect(quizRepository.findBySlug).not.toHaveBeenCalled();
   });
 
-  it('resolves guest email identities and rejects missing identification', async () => {
+  it('rejects a guest submit without a claim token (RIN-921)', async () => {
     const { service, quizRepository, attemptProgressRepository } = createService();
     vi.mocked(quizRepository.findForPlay).mockResolvedValue({
       id: quizId,
@@ -448,27 +449,15 @@ describe('QuizPlayService progress operations', () => {
       totalQuestions: 1,
     });
 
-    const guest = await service.submitQuizAttempt(
-      'quiz',
-      [0],
-      '018f7494-8bd8-7b8a-a387-3bc5a14f22a2',
-      null,
-      '  Guest@Example.com ',
-    );
-    assertOk(guest);
-    expect(attemptProgressRepository.recordSubmittedAttempt).toHaveBeenCalledWith(
-      expect.objectContaining({ guestEmail: 'guest@example.com' }),
-    );
-
     const missing = await service.submitQuizAttempt(
       'quiz',
       [0],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a3',
       null,
-      undefined,
     );
     assertFail(missing);
     expect(missing).toMatchObject({ statusCode: 400, error: 'User identification required' });
+    expect(attemptProgressRepository.recordSubmittedAttempt).not.toHaveBeenCalled();
   });
 
   it('stores only the claim-token hash for a guest token submit (RIN-912)', async () => {
@@ -504,7 +493,6 @@ describe('QuizPlayService progress operations', () => {
       [1],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a4',
       null,
-      'legacy@example.com',
       undefined,
       token,
     );
@@ -644,7 +632,8 @@ describe('QuizPlayService progress operations', () => {
       [0],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a6',
       null,
-      'guest@example.com',
+      undefined,
+      'T'.repeat(43),
     );
 
     assertFail(result);

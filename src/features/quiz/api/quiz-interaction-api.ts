@@ -29,7 +29,6 @@ export async function submitQuizAttemptViewModel({
   slug,
   answers,
   idempotencyKey,
-  userEmail,
   guestClaimToken,
 }: SubmitQuizAttemptInput): Promise<QuizAttemptResultViewModel> {
   const encodedSlug = routePathSegment(slug);
@@ -39,7 +38,6 @@ export async function submitQuizAttemptViewModel({
     body: JSON.stringify({
       answers,
       idempotencyKey,
-      ...(userEmail ? { userEmail } : {}),
       ...(guestClaimToken ? { guestClaimToken } : {}),
     }),
   });

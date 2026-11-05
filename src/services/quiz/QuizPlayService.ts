@@ -244,7 +244,6 @@ export class QuizPlayService {
     answers: QuizAttemptAnswer[],
     idempotencyKey: string,
     session: Session | null,
-    userEmail?: string,
     retryOfAttemptId?: string,
     guestClaimToken?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
@@ -266,7 +265,6 @@ export class QuizPlayService {
       if (sourceAccessError) return sourceAccessError;
 
       let authenticatedUserId: string | undefined;
-      let guestEmail: string | undefined;
       let guestClaimTokenHash: string | undefined;
       if (session?.user?.id) {
         authenticatedUserId = session.user.id;
@@ -283,9 +281,6 @@ export class QuizPlayService {
       } else if (guestClaimToken) {
         // RIN-912: no email is collected; only the token's hash identifies the guest.
         guestClaimTokenHash = hashGuestClaimToken(guestClaimToken);
-      } else if (userEmail) {
-        // Legacy guest path, removed in RIN-912 part 4.
-        guestEmail = userEmail.trim().toLowerCase();
       } else {
         return {
           success: false,
@@ -321,9 +316,7 @@ export class QuizPlayService {
         ? { userId: authenticatedUserId }
         : guestClaimTokenHash
           ? { guestClaimTokenHash }
-          : guestEmail
-            ? { guestEmail }
-            : null;
+          : null;
       if (!attemptIdentity) {
         throw new TypeError('Attempt identity is required');
       }

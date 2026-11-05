@@ -28,7 +28,9 @@ export type AnalyticsEventName =
   | 'first_question_answered'
   | 'quiz_completed'
   /** Skip on the post-sign-in starter quiz intro (RIN-913). */
-  | 'starter_quiz_skipped';
+  | 'starter_quiz_skipped'
+  /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
+  | 'guest_attempt_claimed';
 
 export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>;
 export type AnalyticsLoginMethod = 'credentials' | 'google';
@@ -475,10 +477,7 @@ export function capturePendingAnalyticsLogin({
       (parsed.method === 'credentials' || parsed.method === 'google') &&
       typeof parsed.locale === 'string'
     ) {
-      captureAnalyticsEvent('login_completed', {
-        method: parsed.method,
-        locale: parsed.locale,
-      });
+      captureAnalyticsEvent('login_completed', { method: parsed.method, locale: parsed.locale });
     }
   } catch {
     // Invalid or stale client state is discarded without emitting an event.

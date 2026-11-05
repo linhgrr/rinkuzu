@@ -30,6 +30,7 @@ import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { GuestSaveResultCard } from '@/features/quiz/components/result/GuestSaveResultCard';
+import { claimStoredGuestAttempts } from '@/features/quiz/api/guest-claim-api';
 import { findGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
@@ -379,6 +380,9 @@ function useQuizResultPageData(
       }
 
       try {
+        // Back from "Save your result": wait until this browser's guest results are
+        // the learner's, so the read below finds the attempt (RIN-912 part 4).
+        if (reader === 'member') await claimStoredGuestAttempts();
         const pageData = await fetchQuizResultPageData(
           attemptId,
           locale,

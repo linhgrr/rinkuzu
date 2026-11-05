@@ -27,7 +27,11 @@ export const GET = withOptionalAuth(async (request: NextRequest, { params, userI
     }
 
     const userService = getUserService();
-    const result = await userService.getAttemptDetails(parsedParams.data.id, owner);
+    const result = await userService.getAttemptDetails(
+      parsedParams.data.id,
+      owner,
+      query.data.locale === undefined ? {} : { locale: query.data.locale },
+    );
 
     if (!result.success) {
       return apiServiceErr(result);

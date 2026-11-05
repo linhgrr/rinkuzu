@@ -1,7 +1,7 @@
 import { IUserService } from '@/interfaces/services/IUserService';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
-import type { AttemptOwner } from '@/interfaces/services/IUserService';
+import type { AttemptDetailOptions, AttemptOwner } from '@/interfaces/services/IUserService';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
@@ -14,6 +14,7 @@ import type {
 import { logger } from '@/lib/logger';
 import { PublicProfileDtoMapper } from '@/mappers/user/PublicProfileDtoMapper';
 import { UserAttemptDtoMapper } from '@/mappers/user/UserAttemptDtoMapper';
+import type { NextQuizResolver } from '@/services/quiz/next-quiz';
 import type { PremiumAccessContext, PremiumAccessDecision } from '@/entities/PremiumQuiz';
 
 interface PremiumAttemptAccessPolicy {
@@ -31,6 +32,7 @@ export class UserService implements IUserService {
     private attemptRepository: IAttemptRepository,
     private quizRepository: IQuizRepository,
     private premiumAccessPolicy?: PremiumAttemptAccessPolicy,
+    private nextQuizResolver?: Pick<NextQuizResolver, 'resolve'>,
   ) {}
 
   async getPublicProfile(
@@ -84,6 +86,7 @@ export class UserService implements IUserService {
   async getAttemptDetails(
     attemptId: string,
     owner: AttemptOwner,
+    options: AttemptDetailOptions = {},
   ): Promise<ServiceResult<AttemptDetailDto>> {
     try {
       const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, owner);
@@ -111,9 +114,21 @@ export class UserService implements IUserService {
           ));
       }
 
+      const nextQuiz =
+        this.nextQuizResolver && quiz !== null
+          ? await this.nextQuizResolver.resolve({
+              owner:
+                owner.userId === undefined
+                  ? { guestEmail: owner.guestEmail }
+                  : { userId: owner.userId },
+              currentSlug: quiz.slug,
+              ...(options.locale === undefined ? {} : { locale: options.locale }),
+            })
+          : null;
+
       return {
         success: true,
-        data: UserAttemptDtoMapper.toDetailDto(attempt, !canReadPremiumContent),
+        data: UserAttemptDtoMapper.toDetailDto(attempt, !canReadPremiumContent, nextQuiz),
       };
     } catch (error) {
       logger.error({ error }, 'Get attempt details error');

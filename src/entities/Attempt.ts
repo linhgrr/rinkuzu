@@ -26,4 +26,8 @@ export interface Attempt {
   score: number;
   totalQuestions: number;
   takenAt: Date;
+  /** Set on a retry-missed attempt: the attempt whose missed questions were replayed. */
+  retryOfAttemptId?: string;
+  /** Set on a retry-missed attempt: `answers[i]` answers quiz question `questionIndices[i]`. */
+  questionIndices?: number[];
 }

@@ -27,6 +27,7 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
       parsed.body.idempotencyKey,
       session,
       parsed.body.userEmail,
+      parsed.body.retryOfAttemptId,
     );
 
     if (!result.success) {

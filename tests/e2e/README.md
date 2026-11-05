@@ -17,7 +17,7 @@ Playwright is configured in `playwright.config.ts`.
 - `critical-flows.spec.ts`
   - `@critical-auth`: real credentials session, persistence, role guard, and logout
   - `@critical-quiz`: seeded quiz, answer, persisted attempt, and result page
-  - `@critical-starter`: new learner sees the starter quiz block above the fold and opens question 1
+  - `@critical-starter`: new learner sees the starter quiz block above the fold and opens question 1; signing in with no `callbackUrl` lands straight on the starter quiz with its intro and Skip, and submitting it records the attempt (RIN-913). Other flows sign in with the skip cookie (`support/post-signin.ts`) so they still land on `/dashboard`.
   - `@critical-adaptive`: upload UI, processing state, and generated subject page
   - `@critical-subscription`: checkout handoff plus success/cancel outcomes
   - `@critical-admin`: admin route/API access and a persisted role mutation

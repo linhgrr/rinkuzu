@@ -9,6 +9,7 @@ describe('CSRF proxy policy', () => {
     '/api/internal/billing/process',
     '/api/internal/billing/reconcile',
     '/api/webhooks/resend',
+    '/api/unsubscribe',
     '/api/auth/callback/credentials',
     '/api/billing/webhooks/payos',
   ])('leaves server-authenticated POST endpoint %s to its route guard', (pathname) => {
@@ -21,6 +22,7 @@ describe('CSRF proxy policy', () => {
     '/api/internal/billing',
     '/api/internal/billing/other',
     '/api/webhooks/resend-unsafe',
+    '/api/unsubscribe/other',
     '/api/support/tickets',
   ])('keeps unrelated POST endpoint %s behind same-origin protection', (pathname) => {
     expect(isStateChangingApiRequest(pathname, 'POST')).toBe(true);

@@ -30,6 +30,7 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
       session,
       parsed.body.retryOfAttemptId,
       guestClaimToken,
+      parsed.body.mode === 'quick' ? parsed.body.questionIndices : undefined,
     );
 
     if (!result.success) {

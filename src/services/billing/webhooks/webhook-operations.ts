@@ -6,7 +6,7 @@ import type {
 import { BillingDomainError } from '../billing-domain';
 import type { SigningKey } from '../billing-config';
 import { openWebhookPayload } from '../domain/webhook-payload-cipher';
-import { classifyPayOSWebhook } from '../payos-webhook';
+import { verifyAndClassifyPayOSWebhook } from '../payos-webhook';
 import { paymentEventFromWebhook } from './payment-event';
 
 /**
@@ -204,7 +204,7 @@ async function reclassifyRetainedEvent(
       409,
     );
   }
-  const outcome = classifyPayOSWebhook(body);
+  const outcome = verifyAndClassifyPayOSWebhook(body);
   if (outcome.kind !== 'accepted') {
     throw new BillingDomainError(
       'webhook_still_unsupported',

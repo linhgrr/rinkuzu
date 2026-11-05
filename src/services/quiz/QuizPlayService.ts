@@ -30,12 +30,41 @@ import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepos
 import { objectIdSchema } from '@/lib/validation/common';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { deriveMissedQuestionIndices } from '@/services/quiz/quiz-retry';
+import { isQuickRoundEligible, QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
 
 type RetrySourceAttemptRepository = Pick<IAttemptRepository, 'findByIdWithQuiz'>;
 
-interface RetryAttemptFields {
-  retryOfAttemptId: string;
-  questionIndices: number[];
+type SubsetAttemptFields =
+  | { retryOfAttemptId: string; questionIndices: number[] }
+  | { mode: 'quick'; questionIndices: number[] };
+
+const INVALID_QUICK_ROUND = {
+  success: false,
+  error: 'Invalid quick round',
+  statusCode: 400,
+  code: 'validation_error',
+} as const;
+
+/** The questions a submit is scored against and the attempt fields that record the subset. */
+interface AttemptSubset {
+  questions: Quiz['questions'];
+  subsetFields: SubsetAttemptFields | null;
+}
+
+function attemptSubset(
+  questions: Quiz['questions'],
+  subsetFields: SubsetAttemptFields | null,
+): AttemptSubset {
+  return { questions, subsetFields };
+}
+
+function isValidQuickRound(indices: readonly number[], quizQuestionCount: number): boolean {
+  return (
+    isQuickRoundEligible(quizQuestionCount) &&
+    indices.length === QUICK_ROUND_SIZE &&
+    new Set(indices).size === indices.length &&
+    indices.every((index) => Number.isInteger(index) && index >= 0 && index < quizQuestionCount)
+  );
 }
 
 const ATTEMPT_NOT_FOUND = { success: false, error: 'Attempt not found', statusCode: 404 } as const;
@@ -80,6 +109,58 @@ export class QuizPlayService {
       };
     }
     return { success: true, data: indices };
+  }
+
+  /**
+   * The questions a submit is scored against: the whole quiz, a quick round (RIN-936) or a
+   * retry of missed questions (RIN-914), plus the attempt fields that record the subset.
+   */
+  private async resolveAttemptSubset(
+    quiz: Quiz,
+    authenticatedUserId: string | undefined,
+    retryOfAttemptId: string | undefined,
+    quickQuestionIndices: number[] | undefined,
+  ): Promise<ServiceResult<AttemptSubset>> {
+    if (quickQuestionIndices !== undefined) {
+      // The learner picks the 10; the server only checks them and scores in play order.
+      if (
+        retryOfAttemptId !== undefined ||
+        !isValidQuickRound(quickQuestionIndices, quiz.questions.length)
+      ) {
+        return INVALID_QUICK_ROUND;
+      }
+      return {
+        success: true,
+        data: attemptSubset(
+          quickQuestionIndices.flatMap((index) => quiz.questions[index] ?? []),
+          { mode: 'quick', questionIndices: quickQuestionIndices },
+        ),
+      };
+    }
+    if (retryOfAttemptId === undefined) {
+      return { success: true, data: attemptSubset(quiz.questions, null) };
+    }
+    if (!authenticatedUserId) {
+      return {
+        success: false,
+        error: 'Authentication required',
+        statusCode: 401,
+        code: 'unauthorized',
+      };
+    }
+    const retry = await this.resolveRetryQuestionIndices(
+      quiz,
+      retryOfAttemptId,
+      authenticatedUserId,
+    );
+    if (!retry.success) return retry;
+    return {
+      success: true,
+      data: attemptSubset(
+        retry.data.flatMap((index) => quiz.questions[index] ?? []),
+        { retryOfAttemptId, questionIndices: retry.data },
+      ),
+    };
   }
 
   /** `GET /api/quiz/<slug>/play?retryOf=<attemptId>`: only the missed questions, in order. */
@@ -246,6 +327,7 @@ export class QuizPlayService {
     session: Session | null,
     retryOfAttemptId?: string,
     guestClaimToken?: string,
+    quickQuestionIndices?: number[],
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
     try {
       const quiz = await this.quizRepository.findForPlay(slug);
@@ -289,26 +371,14 @@ export class QuizPlayService {
         };
       }
 
-      let questions = quiz.questions;
-      let retryFields: RetryAttemptFields | null = null;
-      if (retryOfAttemptId !== undefined) {
-        if (!authenticatedUserId) {
-          return {
-            success: false,
-            error: 'Authentication required',
-            statusCode: 401,
-            code: 'unauthorized',
-          };
-        }
-        const retry = await this.resolveRetryQuestionIndices(
-          quiz,
-          retryOfAttemptId,
-          authenticatedUserId,
-        );
-        if (!retry.success) return retry;
-        questions = retry.data.flatMap((index) => quiz.questions[index] ?? []);
-        retryFields = { retryOfAttemptId, questionIndices: retry.data };
-      }
+      const subset = await this.resolveAttemptSubset(
+        quiz,
+        authenticatedUserId,
+        retryOfAttemptId,
+        quickQuestionIndices,
+      );
+      if (!subset.success) return subset;
+      const { questions, subsetFields } = subset.data;
 
       const evaluation = evaluateQuizAttempt(questions, answers);
 
@@ -333,7 +403,7 @@ export class QuizPlayService {
           ...(quiz.description === undefined ? {} : { description: quiz.description }),
           questions,
         },
-        ...retryFields,
+        ...subsetFields,
         answers: evaluation.answers,
         score: evaluation.score,
         correctAnswers: evaluation.correctAnswers,

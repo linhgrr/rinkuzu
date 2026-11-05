@@ -19,6 +19,8 @@ export interface AttemptDetailViewModel {
   missedCount: number;
   nextQuiz: { slug: string; title: string } | null;
   retryOfAttemptId?: string;
-  /** Retry-missed attempt: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
+  /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
   questionIndices?: number[];
+  /** Quick round only (RIN-936): show "Quick round: X/10". */
+  mode?: 'quick';
 }

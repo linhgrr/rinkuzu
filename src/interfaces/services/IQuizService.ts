@@ -98,6 +98,8 @@ export interface IQuizService {
     session: Session | null,
     retryOfAttemptId?: string,
     guestClaimToken?: string,
+    /** Quick round (RIN-936): the quiz question index of each answer, in play order. */
+    quickQuestionIndices?: number[],
   ): Promise<ServiceResult<QuizAttemptResultDto>>;
 
   getQuizDiscussions(

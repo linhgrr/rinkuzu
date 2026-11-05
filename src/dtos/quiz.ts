@@ -9,6 +9,7 @@ import {
 } from '@/lib/validation/common';
 import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
+import { QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
 import type { QuizQuestionDisplay, QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';
 
 const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
@@ -215,17 +216,54 @@ export const quizProgressAnswerSchema = z.union([
   z.array(z.number().int().min(0)).max(20),
 ]);
 
-export const submitQuizAttemptRequestSchema = z.strictObject({
-  answers: z.array(quizProgressAnswerSchema),
-  idempotencyKey: z.uuid(),
-  /**
-   * Ignored: signed-in tabs still on a bundle from before RIN-921 send it, and a strict
-   * schema would fail their submit. It identifies no one; drop it after 2026-11-20.
-   */
-  userEmail: z.unknown().optional(),
-  retryOfAttemptId: objectIdSchema.optional(),
-  guestClaimToken: guestClaimTokenSchema.optional(),
-});
+export const submitQuizAttemptRequestSchema = z
+  .strictObject({
+    answers: z.array(quizProgressAnswerSchema),
+    idempotencyKey: z.uuid(),
+    /**
+     * Ignored: signed-in tabs still on a bundle from before RIN-921 send it, and a strict
+     * schema would fail their submit. It identifies no one; drop it after 2026-11-20.
+     */
+    userEmail: z.unknown().optional(),
+    retryOfAttemptId: objectIdSchema.optional(),
+    guestClaimToken: guestClaimTokenSchema.optional(),
+    /** RIN-933: `quick` plays a client-chosen subset of `QUICK_ROUND_SIZE` questions. */
+    mode: z.enum(['quick', 'full']).optional(),
+    /** Quick round only: `answers[i]` answers quiz question `questionIndices[i]` (play order). */
+    questionIndices: z.array(z.number().int().min(0)).optional(),
+  })
+  .superRefine((body, ctx) => {
+    // The quiz-dependent checks (size threshold, index range) run in the service.
+    const indices = body.questionIndices;
+    if (body.mode !== 'quick') {
+      if (indices !== undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['questionIndices'],
+          message: 'questionIndices is only allowed with mode quick',
+        });
+      }
+      return;
+    }
+    if (body.retryOfAttemptId !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['retryOfAttemptId'],
+        message: 'A quick round cannot be a retry',
+      });
+    }
+    if (
+      indices === undefined ||
+      indices.length !== QUICK_ROUND_SIZE ||
+      new Set(indices).size !== indices.length
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['questionIndices'],
+        message: `A quick round needs exactly ${QUICK_ROUND_SIZE} unique question indices`,
+      });
+    }
+  });
 
 export const addDiscussionCommentRequestSchema = z.strictObject({
   questionIndex: z.number().int().min(0),

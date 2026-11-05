@@ -59,8 +59,35 @@ const doctorConfig = {
           'src/repositories/BillingRepository.ts',
           'src/repositories/LearningProgressRepository.ts',
           'src/repositories/EntitlementLedgerRepository.ts',
+          'src/repositories/PremiumQuizRepository.ts',
+          'src/repositories/billing/promotion-lifecycle.ts',
+          // Also: the awaits before each transaction (buyer email, then
+          // startSession) stay in order so a failed lookup never leaves an
+          // un-ended session behind.
+          'src/repositories/billing/BillingOrderRepository.ts',
         ],
         rules: ['react-doctor/server-sequential-independent-await'],
+      },
+      // Each await here depends on the previous one through side effects the
+      // detector cannot see:
+      // - BillingService: promotion release needs the terminal attempts that
+      //   reconciliation produces (pinned by BillingService.test.ts).
+      // - campaigns, feedback: the email is rendered (and the contact synced)
+      //   before a campaign is claimed or a session opened, so a render or
+      //   Resend failure claims nothing and leaks no session.
+      {
+        files: [
+          'src/services/billing/BillingService.ts',
+          'src/lib/communication/campaigns.ts',
+          'src/lib/communication/feedback.ts',
+        ],
+        rules: ['react-doctor/server-sequential-independent-await'],
+      },
+      // The only `window` in these files is a property named after RateWindow
+      // (`window: RateWindow`), not the browser global.
+      {
+        files: ['src/lib/llm/rate-limit.ts', 'src/types/entitlements.ts'],
+        rules: ['react-doctor/no-unguarded-browser-global-at-module-scope'],
       },
     ],
   },

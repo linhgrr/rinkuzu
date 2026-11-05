@@ -112,7 +112,7 @@ const DAY_MS = 86_400_000;
  * its in-memory twin that the review email (RIN-915) applies at send time: a
  * rule added here must be added there, and the reverse.
  */
-const LEARNER_FILTER = {
+export const LEARNER_FILTER = {
   role: { $ne: 'admin' },
   disable: { $ne: ACCOUNT_DISABLE_DISABLED },
   isTestAccount: { $ne: true },

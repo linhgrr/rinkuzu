@@ -58,6 +58,12 @@ import {
   OPEN_FEEDBACK_STATUSES,
 } from './internal';
 import { prepareReviewReminder, reviewReminderSendingEnabled } from './review-reminder';
+import {
+  prepareActivationNudge,
+  recordActivationEmailSent,
+  sweepActivationNudges,
+} from './activation-nudge';
+import { activationNudgeSendingEnabled } from './activation-nudge-policy';
 
 function configuredRate(name: string, fallback: number): number {
   const value = process.env[name]?.trim();
@@ -734,6 +740,13 @@ function leaseClaimUpdate(
   };
 }
 
+function heldBackKinds(): { kind?: { $nin: OutboxKind[] } } {
+  const held: OutboxKind[] = [];
+  if (!reviewReminderSendingEnabled()) held.push('review_reminder');
+  if (!activationNudgeSendingEnabled()) held.push('activation_nudge');
+  return held.length > 0 ? { kind: { $nin: held } } : {};
+}
+
 async function processOutbox(
   limit: number,
 ): Promise<{ completed: number; retried: number; dead: number; canceled: number }> {
@@ -748,8 +761,9 @@ async function processOutbox(
       {
         availableAt: { $lte: now },
         $or: [{ status: 'pending' }, { status: 'processing', leaseUntil: { $lte: now } }],
-        // `REVIEW_REMINDER_SENDING_ENABLED=false` holds review emails back (RIN-915).
-        ...(reviewReminderSendingEnabled() ? {} : { kind: { $ne: 'review_reminder' } }),
+        // `REVIEW_REMINDER_SENDING_ENABLED=false` / `ACTIVATION_NUDGE_SENDING_ENABLED=false`
+        // hold those emails back (RIN-915, RIN-999).
+        ...heldBackKinds(),
       },
       leaseClaimUpdate(now, leaseToken),
       { sort: { availableAt: 1 }, new: true },
@@ -779,6 +793,25 @@ async function processOutbox(
           await EmailOutbox.updateOne(
             { _id: item._id, leaseToken },
             { $set: { status: 'pending' }, $unset: { leaseToken: '', leaseUntil: '' } },
+          );
+          continue;
+        }
+        content = prepared.mail;
+      }
+      if (item.kind === 'activation_nudge') {
+        const prepared = await prepareActivationNudge(item, now);
+        if (prepared.decision === 'cancel') {
+          await cancelOutbox(item, leaseToken, prepared.reason);
+          canceled += 1;
+          continue;
+        }
+        if (prepared.decision === 'retry') {
+          await EmailOutbox.updateOne(
+            { _id: item._id, leaseToken },
+            {
+              $set: { status: 'pending', availableAt: prepared.availableAt },
+              $unset: { leaseToken: '', leaseUntil: '' },
+            },
           );
           continue;
         }
@@ -829,6 +862,7 @@ async function processOutbox(
         },
       );
       completed += 1;
+      if (item.kind === 'activation_nudge') await recordActivationEmailSent(item);
     } catch (error) {
       const lastError = sanitizeOutboxError(error);
       const isDead = item.attempts >= 12;
@@ -1139,6 +1173,7 @@ export async function runCommunicationWorker(limit = 50): Promise<{
   campaignAudience: { synced: number; failed: number };
   campaignCancellations: number;
   expiredFeedback: number;
+  activationNudges: { enqueued: number; skipped: number };
   retention: {
     orphanedAttachments: number;
     supportTickets: number;
@@ -1146,6 +1181,8 @@ export async function runCommunicationWorker(limit = 50): Promise<{
   };
 }> {
   await connectDB();
+  // Enqueued before the outbox pass so a due nudge goes out on the same tick.
+  const activationNudges = await sweepActivationNudgesSafely();
   const [outbox, campaignAudience, campaignCancellations, expired, retention] = await Promise.all([
     processOutbox(Math.min(limit, 50)),
     processCampaignAudience(Math.min(limit, 100)),
@@ -1162,8 +1199,19 @@ export async function runCommunicationWorker(limit = 50): Promise<{
     campaignAudience,
     campaignCancellations,
     expiredFeedback: expired,
+    activationNudges,
     retention,
   };
+}
+
+/** A failed sweep is logged and retried next tick; it never stops the other queues. */
+async function sweepActivationNudgesSafely(): Promise<{ enqueued: number; skipped: number }> {
+  try {
+    return await sweepActivationNudges();
+  } catch (error) {
+    logger.warn({ lastError: sanitizeOutboxError(error) }, 'Activation nudge sweep failed');
+    return { enqueued: 0, skipped: 0 };
+  }
 }
 
 export async function communicationHealth(): Promise<{

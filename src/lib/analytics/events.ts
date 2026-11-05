@@ -19,4 +19,6 @@ export type AnalyticsEventName =
   /** Result-page week-1 return loop (RIN-917); props only `campaign` and `missed_count`. */
   | 'retry_missed_clicked'
   | 'try_another_quiz_clicked'
-  | 'review_email_opt_in';
+  | 'review_email_opt_in'
+  /** Server side, once per activation nudge accepted by the provider (RIN-999); props `trigger`, `locale`. */
+  | 'activation_email_sent';

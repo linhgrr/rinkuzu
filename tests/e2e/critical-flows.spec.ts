@@ -545,6 +545,19 @@ test.describe('production critical paths', () => {
       await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
       await expect(page.getByText('100%', { exact: true }).first()).toBeVisible();
 
+      // RIN-989: on phones the Details card squeezed the prompt to one character per line
+      // and pushed its buttons past the viewport. It must fit and wrap by words.
+      const reviewedPrompt = page.getByRole('heading', {
+        name: 'Which option proves the quiz lifecycle works?',
+      });
+      await expect(reviewedPrompt).toBeVisible();
+      const promptBox = await reviewedPrompt.boundingBox();
+      expect(promptBox?.height ?? Infinity).toBeLessThan(120);
+      const horizontalOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(horizontalOverflow).toBeLessThanOrEqual(0);
+
       const attempt = await fixture.db.collection('attempts').findOne({
         quiz: fixture.quizId,
         user: fixture.regular.id,

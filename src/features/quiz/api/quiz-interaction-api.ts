@@ -30,6 +30,7 @@ export async function submitQuizAttemptViewModel({
   answers,
   idempotencyKey,
   userEmail,
+  retryOfAttemptId,
   guestClaimToken,
 }: SubmitQuizAttemptInput): Promise<QuizAttemptResultViewModel> {
   const encodedSlug = routePathSegment(slug);
@@ -40,6 +41,7 @@ export async function submitQuizAttemptViewModel({
       answers,
       idempotencyKey,
       ...(userEmail ? { userEmail } : {}),
+      ...(retryOfAttemptId ? { retryOfAttemptId } : {}),
       ...(guestClaimToken ? { guestClaimToken } : {}),
     }),
   });

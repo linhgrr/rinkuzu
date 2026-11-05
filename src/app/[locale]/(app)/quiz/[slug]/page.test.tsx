@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   getCurrentSession,
   getQuizForPlay,
+  getRetryQuizForPlay,
   resolveSlugAlias,
   getCatalogMetadataBySlug,
   permanentRedirectMock,
 } = vi.hoisted(() => ({
   getCurrentSession: vi.fn(),
   getQuizForPlay: vi.fn(),
+  getRetryQuizForPlay: vi.fn(),
   resolveSlugAlias: vi.fn(),
   getCatalogMetadataBySlug: vi.fn(),
   permanentRedirectMock: vi.fn((target: string): never => {
@@ -19,7 +21,7 @@ const {
 vi.mock('next/navigation', () => ({ permanentRedirect: permanentRedirectMock }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession }));
 vi.mock('@/lib/quiz-factory', () => ({
-  getQuizService: () => ({ getQuizForPlay, resolveSlugAlias }),
+  getQuizService: () => ({ getQuizForPlay, getRetryQuizForPlay, resolveSlugAlias }),
 }));
 vi.mock('@/lib/premium-quiz-factory', () => ({
   getPremiumQuizService: () => ({ getCatalogMetadataBySlug }),
@@ -195,4 +197,56 @@ describe('QuizPlayerPage structured data author (RIN-840)', () => {
       expect(JSON.stringify(props)).not.toContain('fldubai');
     },
   );
+});
+
+describe('QuizPlayerPage retry-missed session (RIN-917)', () => {
+  const ATTEMPT_ID = '6a8ed20a3d0a1892cacdfe0b';
+  const quizData = (questionCount: number) => ({
+    success: true,
+    data: {
+      title: 'Quiz',
+      visibility: 'personal',
+      questionCount,
+      author: null,
+      createdAt: '2026-11-01T00:00:00.000Z',
+      updatedAt: '2026-11-01T00:00:00.000Z',
+    },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCatalogMetadataBySlug.mockResolvedValue(null);
+    getCurrentSession.mockResolvedValue({ user: { id: 'user-1', role: 'user' } });
+    getQuizForPlay.mockResolvedValue(quizData(10));
+  });
+
+  it('plays only the missed questions for a signed-in learner', async () => {
+    getRetryQuizForPlay.mockResolvedValue(quizData(3));
+
+    const page = await renderPage(NEW_SLUG, { retryOf: ATTEMPT_ID });
+
+    expect(getRetryQuizForPlay).toHaveBeenCalledWith(NEW_SLUG, ATTEMPT_ID, 'user-1', 'user');
+    expect(getQuizForPlay).not.toHaveBeenCalled();
+    expect(page).toBeTruthy();
+  });
+
+  it('falls back to the full quiz when the retry cannot be built', async () => {
+    getRetryQuizForPlay.mockResolvedValue({ success: false, error: 'Not found', statusCode: 404 });
+
+    await renderPage(NEW_SLUG, { retryOf: ATTEMPT_ID });
+
+    expect(getQuizForPlay).toHaveBeenCalledWith(NEW_SLUG, 'user', 'user-1');
+  });
+
+  it.each([
+    ['an invalid id', 'not-an-id', { user: { id: 'user-1', role: 'user' } }],
+    ['a guest', ATTEMPT_ID, null],
+  ])('ignores retryOf for %s', async (_label, retryOf, session) => {
+    getCurrentSession.mockResolvedValue(session);
+
+    await renderPage(NEW_SLUG, { retryOf });
+
+    expect(getRetryQuizForPlay).not.toHaveBeenCalled();
+    expect(getQuizForPlay).toHaveBeenCalled();
+  });
 });

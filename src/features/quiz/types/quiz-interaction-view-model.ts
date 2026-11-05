@@ -42,6 +42,8 @@ export interface SubmitQuizAttemptInput {
   /** Signed-in legacy field; guests send `guestClaimToken` instead (RIN-912). */
   userEmail?: string;
   guestClaimToken?: string;
+  /** Retry-missed session: the attempt whose misses are being retried (RIN-917). */
+  retryOfAttemptId?: string;
 }
 
 export interface AddQuizDiscussionCommentInput {

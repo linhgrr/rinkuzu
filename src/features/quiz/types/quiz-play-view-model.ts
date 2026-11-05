@@ -23,4 +23,6 @@ export interface QuizPlayViewModel {
   pdfUrl?: string;
   tags?: string[];
   questions: QuizPlayQuestionViewModel[];
+  /** Retry-missed session (RIN-914/917): `questions[i]` is quiz question `questionIndices[i]`. */
+  retry?: { ofAttemptId: string; questionIndices: number[] };
 }

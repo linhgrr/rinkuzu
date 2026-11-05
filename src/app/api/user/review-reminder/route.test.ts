@@ -1,19 +1,21 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, optInMock, optOutMock } = vi.hoisted(() => ({
+const { authMock, optInMock, optOutMock, statusMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   optInMock: vi.fn(),
   optOutMock: vi.fn(),
+  statusMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/communication/review-reminder', () => ({
   optInReviewReminder: optInMock,
   optOutReviewReminder: optOutMock,
+  reviewReminderStatus: statusMock,
 }));
 
-import { DELETE, POST } from '@/app/api/user/review-reminder/route';
+import { DELETE, GET, POST } from '@/app/api/user/review-reminder/route';
 
 const ATTEMPT_ID = '6a8ed20a3d0a1892cacdfe0b';
 const routeContext = { params: Promise.resolve({}) };
@@ -37,6 +39,27 @@ describe('/api/user/review-reminder', () => {
     });
     optInMock.mockResolvedValue({ optedIn: true, status: 'scheduled', scheduledFor: 'x' });
     optOutMock.mockResolvedValue({ optedIn: false });
+    statusMock.mockResolvedValue({ optedIn: true });
+  });
+
+  it('GET reports whether the session user is opted in (RIN-917 revisit)', async () => {
+    const response = await GET(
+      new NextRequest('http://localhost/api/user/review-reminder'),
+      routeContext,
+    );
+    expect(response.status).toBe(200);
+    expect((await response.json()).data).toEqual({ optedIn: true });
+    expect(statusMock).toHaveBeenCalledWith({ userId: 'user-1' });
+  });
+
+  it('GET requires a signed-in learner', async () => {
+    authMock.mockResolvedValueOnce(null);
+    const response = await GET(
+      new NextRequest('http://localhost/api/user/review-reminder'),
+      routeContext,
+    );
+    expect(response.status).toBe(401);
+    expect(statusMock).not.toHaveBeenCalled();
   });
 
   it('requires a signed-in learner', async () => {

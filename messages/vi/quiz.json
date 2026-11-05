@@ -135,6 +135,18 @@
   "starterIntro": "Thử một bài quiz 2 phút để xem Rinkuzu hoạt động thế nào",
   "starterIntroLabel": "Quiz khởi động",
   "starterSkip": "Bỏ qua",
+  "resultActions": {
+    "retryMissed": "Làm lại {count} câu bạn sai",
+    "tryAnother": "Thử một đề khác",
+    "reviewEmail": "Gửi email ôn tập 2 phút cho tôi sau 2 ngày",
+    "saving": "Đang lưu…",
+    "savedOn": "Đã bật. Bạn có thể tắt bất cứ lúc nào.",
+    "savedOff": "Đã tắt email nhắc.",
+    "saveError": "Không lưu được. Thử lại nhé.",
+    "tryAgain": "Thử lại",
+    "retryOfMissed": "Làm lại câu sai",
+    "retryPill": "Làm lại câu sai · {count} câu"
+  },
   "guestSaveTitle": "Lưu kết quả và nhận nhận xét cá nhân hóa",
   "guestSaveBody": "Đăng nhập một lần để giữ kết quả này và xem lại từng câu.",
   "guestSaveScoreOnlyBody": "Đăng nhập để lưu điểm này vào hồ sơ của bạn.",

@@ -18,6 +18,8 @@ interface MobileQuizLayoutProps {
   error?: string;
   /** Shown above question 1 (RIN-913). */
   notice?: ReactNode;
+  /** Pill beside the title, e.g. "Retry: 3 questions" (RIN-917). */
+  titleBadge?: string;
 }
 
 function orderedAnswersToMobileRecord(
@@ -46,6 +48,7 @@ export function MobileQuizLayout({
   submitting,
   error,
   notice,
+  titleBadge,
 }: MobileQuizLayoutProps) {
   const questionsWithId = quiz.questions.map((question) => ({
     id: question.id,
@@ -78,6 +81,7 @@ export function MobileQuizLayout({
       submitting={submitting}
       {...(error !== undefined ? { submissionError: error } : {})}
       notice={notice}
+      {...(titleBadge ? { titleBadge } : {})}
     />
   );
 }

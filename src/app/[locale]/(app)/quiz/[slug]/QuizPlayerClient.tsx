@@ -556,6 +556,24 @@ function postSignInStarterProperties(entry: string | null | undefined) {
   return entry === POST_SIGNIN_STARTER_ENTRY ? { entry: POST_SIGNIN_STARTER_ENTRY } : {};
 }
 
+/**
+ * `?retryOf` session (RIN-917): a subset of the quiz, so it never reads or writes the full
+ * quiz's saved progress, submits as a retry and shows a "Retry: N questions" pill.
+ */
+function retrySessionSetup(
+  quiz: QuizPlayViewModel | null,
+  signedIn: boolean,
+  t: (key: string, values?: Record<string, number>) => string,
+) {
+  const retry = quiz?.retry;
+  if (!retry) return { progressEnabled: signedIn, submission: {}, layout: {} };
+  return {
+    progressEnabled: false,
+    submission: { retryOfAttemptId: retry.ofAttemptId },
+    layout: { titleBadge: t('resultActions.retryPill', { count: retry.questionIndices.length }) },
+  };
+}
+
 export default function QuizPlayerClient({
   initialErrorCode,
   initialErrorStatus,
@@ -574,7 +592,8 @@ export default function QuizPlayerClient({
   const starterNotice = postSignInStarterNotice(entry, slug);
 
   const sessionEmail = session?.user?.email || undefined;
-  const progressEnabled = Boolean(session?.user?.email);
+  const retrySetup = retrySessionSetup(initialQuiz, Boolean(session?.user?.email), t);
+  const progressEnabled = retrySetup.progressEnabled;
 
   const { loadProgress, saveProgress, flushSave, clearProgress } = useQuizProgress({
     slug,
@@ -710,6 +729,7 @@ export default function QuizPlayerClient({
     quiz,
     userAnswers: state.userAnswers,
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
+    ...retrySetup.submission,
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
         journey_id: getQuizJourneyId(),
@@ -863,6 +883,7 @@ export default function QuizPlayerClient({
           submitting={submitting}
           error={state.error}
           notice={starterNotice}
+          {...retrySetup.layout}
         />
       )}
 
@@ -910,6 +931,7 @@ export default function QuizPlayerClient({
             complete: completeSubmit,
           }}
           notice={starterNotice}
+          {...retrySetup.layout}
           t={t}
         />
       )}

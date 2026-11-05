@@ -6,8 +6,8 @@ import { Suspense, useEffect, useReducer, useState, type ReactNode } from 'react
 import { useSession } from 'next-auth/react';
 import { useLocale, useTranslations } from 'next-intl';
 import { HiOutlineInformationCircle } from 'react-icons/hi';
-import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
@@ -29,6 +29,7 @@ import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
+import { ResultActions, type ResultViewer } from '@/features/quiz/components/result/ResultActions';
 import { GuestSaveResultCard } from '@/features/quiz/components/result/GuestSaveResultCard';
 import { findGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
@@ -253,7 +254,6 @@ function QuizResultActions({
 
 interface QuizResultReadyStateProps {
   aiQuestionData: AIQuestionData | null;
-  backHomeLabel: string;
   bookmarkedQuestions: Set<number>;
   bookmarkLoading: Set<number>;
   bookmarkMessage: string;
@@ -263,7 +263,7 @@ interface QuizResultReadyStateProps {
   chatTurnsByQuestion: Readonly<Record<number, number>>;
   closeAIModal: () => void;
   currentQuestionIndex: number;
-  encodedSlug: string;
+  viewer: ResultViewer;
   formatAnswer: (
     answer: number | number[],
     options: string[],
@@ -490,7 +490,6 @@ function useQuizResultPageData(
 
 function QuizResultReadyState({
   aiQuestionData,
-  backHomeLabel,
   bookmarkedQuestions,
   bookmarkLoading,
   bookmarkMessage,
@@ -500,7 +499,7 @@ function QuizResultReadyState({
   chatTurnsByQuestion,
   closeAIModal,
   currentQuestionIndex,
-  encodedSlug,
+  viewer,
   formatAnswer,
   formatCorrectAnswer,
   guestSaveCard,
@@ -526,6 +525,9 @@ function QuizResultReadyState({
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-ink">{t('quizComplete')}</h1>
             <p className="mt-2 text-ink-muted">{result.quiz.title}</p>
+            {result.retryOfAttemptId ? (
+              <p className="text-sm text-ink-muted">{t('resultActions.retryOfMissed')}</p>
+            ) : null}
             <p className="text-sm text-ink-muted" suppressHydrationWarning>
               {t('completedOn')} {result.takenAtLabel}
             </p>
@@ -561,10 +563,13 @@ function QuizResultReadyState({
 
         {guestSaveCard}
 
-        <QuizResultActions
-          backHomeLabel={backHomeLabel}
-          encodedSlug={encodedSlug}
-          redoLabel={tProfile('redo')}
+        <ResultActions
+          attemptId={result.id}
+          slug={result.quiz.slug}
+          missedCount={result.missedCount}
+          nextQuiz={result.nextQuiz}
+          viewer={viewer}
+          contentLocked={contentLocked}
         />
 
         {!contentLocked ? (
@@ -710,6 +715,7 @@ function QuizResultContent() {
   const { status: sessionStatus } = useSession();
   const reader = toResultReader(sessionStatus);
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
+  const viewer: ResultViewer = reader === 'member' ? 'signed_in' : reader;
   const { state, dispatch, stats, toggleBookmark, removeBookmark, retryLoad } =
     useQuizResultPageData(attemptId, locale, reader, guestUserEmail);
   const chatTurnCounts = Object.values(state.chatTurnsByQuestion);
@@ -763,7 +769,6 @@ function QuizResultContent() {
   return (
     <QuizResultReadyState
       aiQuestionData={state.aiQuestionData}
-      backHomeLabel={t('backHome')}
       bookmarkedQuestions={state.bookmarkedQuestions}
       bookmarkLoading={state.bookmarkLoading}
       bookmarkMessage={state.bookmarkMessage}
@@ -773,7 +778,7 @@ function QuizResultContent() {
       chatTurnsByQuestion={state.chatTurnsByQuestion}
       closeAIModal={closeAIModal}
       currentQuestionIndex={state.currentQuestionIndex}
-      encodedSlug={encodedSlug}
+      viewer={viewer}
       formatAnswer={(answer, options, type, isAnswered) =>
         formatAnswerValue(answer, options, type, t('notAnswered'), isAnswered)
       }

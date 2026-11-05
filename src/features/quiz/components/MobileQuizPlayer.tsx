@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
+import { Pill } from '@/components/ui/Pill';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
@@ -27,9 +28,12 @@ interface MobileQuizPlayerProps {
   submissionError?: string;
   /** Shown above question 1, e.g. the post-sign-in starter intro (RIN-913). */
   notice?: ReactNode;
+  /** Pill beside the title, e.g. "Retry: 3 questions" (RIN-917). */
+  titleBadge?: string;
 }
 
 interface MobileQuizHeaderProps {
+  titleBadge?: string;
   answers: MobileQuizAnswerMap;
   isSubmitting: boolean;
   onRequestExit: () => void;
@@ -68,6 +72,7 @@ function MobileQuizHeader({
   onRequestExit,
   questions,
   quizTitle,
+  titleBadge,
   t,
 }: MobileQuizHeaderProps) {
   const answeredCount = questions.filter((question) => answers[question.id] !== undefined).length;
@@ -90,7 +95,14 @@ function MobileQuizHeader({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
-            <span className="truncate text-sm font-semibold text-neutral-900">{quizTitle}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-semibold text-neutral-900">{quizTitle}</span>
+              {titleBadge ? (
+                <Pill tone="warm" className="shrink-0 px-2 py-0.5 text-xs">
+                  {titleBadge}
+                </Pill>
+              ) : null}
+            </span>
             <span className="shrink-0 text-xs font-medium text-neutral-500">
               {answeredCount}/{questions.length} {t('answered')}
             </span>
@@ -274,6 +286,7 @@ export function MobileQuizPlayer({
   submitting = false,
   submissionError,
   notice,
+  titleBadge,
 }: MobileQuizPlayerProps) {
   const t = useTranslations('quiz');
   const [submitIntent, setSubmitIntent] = useState(false);
@@ -360,6 +373,7 @@ export function MobileQuizPlayer({
         onRequestExit={() => setShowExitConfirm(true)}
         questions={questions}
         quizTitle={quizTitle}
+        {...(titleBadge ? { titleBadge } : {})}
         t={t}
       />
 

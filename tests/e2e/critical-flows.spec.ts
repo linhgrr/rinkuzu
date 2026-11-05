@@ -553,6 +553,58 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('retries the missed questions from the result page as a stored attempt @critical-retry', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const submitQuiz = async (): Promise<void> => {
+        const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+        if (await desktopSubmit.isVisible()) {
+          await desktopSubmit.click();
+        } else {
+          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        }
+      };
+      const resultUrl = new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`);
+
+      await login(page, fixture.regular);
+      await page.goto(`/en/quiz/${fixture.quizSlug}`);
+      await page.getByText('This answer is intentionally incorrect', { exact: true }).click();
+      await submitQuiz();
+      await page.waitForURL(resultUrl);
+
+      const source = await fixture.db.collection('attempts').findOne({
+        quiz: fixture.quizId,
+        user: fixture.regular.id,
+      });
+      expect(source).toMatchObject({ score: 0, totalQuestions: 1 });
+      const sourceId = String(source?._id);
+
+      // AC2: the primary action and the opt-in render with the result.
+      await expect(page.getByLabel('Email me a 2-minute review in 2 days')).not.toBeChecked();
+      await Promise.all([
+        page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}\\?retryOf=${sourceId}`)),
+        page.getByRole('link', { name: 'Retry the 1 you missed', exact: true }).click(),
+      ]);
+
+      await expect(
+        page.getByText('Retry: 1 questions').filter({ visible: true }).first(),
+      ).toBeVisible();
+      await page.getByText('Production is the correct choice', { exact: true }).click();
+      await submitQuiz();
+      await page.waitForURL(resultUrl);
+      await expect(page.getByText('Retry of missed questions', { exact: true })).toBeVisible();
+      await expect(page.getByText('100%', { exact: true }).first()).toBeVisible();
+
+      const retry = await fixture.db.collection('attempts').findOne({
+        quiz: fixture.quizId,
+        user: fixture.regular.id,
+        retryOfAttemptId: source?._id,
+      });
+      expect(retry).toMatchObject({ questionIndices: [0], score: 100, totalQuestions: 1 });
+    });
+  });
+
   test('points a new learner from the dashboard to a starter quiz @critical-starter', async ({
     page,
   }, testInfo) => {

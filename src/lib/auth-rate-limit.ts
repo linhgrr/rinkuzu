@@ -17,7 +17,9 @@ export type AuthRateLimitAction =
   | 'resend_verification_email'
   | 'reset_password_token_ip'
   | 'verify_email_ip'
-  | 'pdf_upload_intent_user';
+  | 'pdf_upload_intent_user'
+  | 'attempt_claim_user'
+  | 'attempt_claim_ip';
 
 const DEFAULTS: Record<AuthRateLimitAction, RateLimitWindow> = {
   credentials_ip: { points: 20, durationSec: 60 * 15 },
@@ -28,6 +30,8 @@ const DEFAULTS: Record<AuthRateLimitAction, RateLimitWindow> = {
   reset_password_token_ip: { points: 10, durationSec: 60 * 15 }, // 10 / 15min / IP
   verify_email_ip: { points: 20, durationSec: 60 * 15 }, // 20 / 15min / IP
   pdf_upload_intent_user: { points: 20, durationSec: 60 * 15 }, // 20 upload URLs / 15min / user
+  attempt_claim_user: { points: 10, durationSec: 60 }, // 10 guest-attempt claims / min / user
+  attempt_claim_ip: { points: 30, durationSec: 60 }, // 30 guest-attempt claims / min / IP
 };
 
 const registry = createRateLimiterRegistry<AuthRateLimitAction>(

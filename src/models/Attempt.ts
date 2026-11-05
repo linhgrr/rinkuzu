@@ -184,12 +184,16 @@ AttemptSchema.pre('validate', function validateIdentity() {
 AttemptSchema.pre('validate', function validateRetryContract() {
   const indices = this.questionIndices;
   if (Boolean(this.retryOfAttemptId) !== Boolean(indices)) {
-    this.invalidate('questionIndices', 'Retry attempts record retryOfAttemptId and questionIndices');
+    this.invalidate(
+      'questionIndices',
+      'Retry attempts record retryOfAttemptId and questionIndices',
+    );
     return;
   }
   if (!indices) return;
   const ascendingUnique = indices.every(
-    (value, index) => isNonNegativeInteger(value) && (index === 0 || value > (indices[index - 1] ?? -1)),
+    (value, index) =>
+      isNonNegativeInteger(value) && (index === 0 || value > (indices[index - 1] ?? -1)),
   );
   if (!ascendingUnique || indices.length !== this.answers.length) {
     this.invalidate(

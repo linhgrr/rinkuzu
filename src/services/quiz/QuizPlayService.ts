@@ -32,6 +32,11 @@ import { deriveMissedQuestionIndices } from '@/services/quiz/quiz-retry';
 
 type RetrySourceAttemptRepository = Pick<IAttemptRepository, 'findByIdWithQuiz'>;
 
+interface RetryAttemptFields {
+  retryOfAttemptId: string;
+  questionIndices: number[];
+}
+
 const ATTEMPT_NOT_FOUND = { success: false, error: 'Attempt not found', statusCode: 404 } as const;
 
 interface FlashcardQuizFailureContext {
@@ -103,17 +108,9 @@ export class QuizPlayService {
       const retry = await this.resolveRetryQuestionIndices(quiz, retryOfAttemptId, userId);
       if (!retry.success) return retry;
 
-      const questions = retry.data.flatMap((index) => quiz.questions[index] ?? []);
       return {
         success: true,
-        data: {
-          ...QuizDetailDtoMapper.toPlayDetail({
-            ...quiz,
-            questions,
-            questionCount: questions.length,
-          }),
-          retry: { ofAttemptId: retryOfAttemptId, questionIndices: retry.data },
-        },
+        data: QuizDetailDtoMapper.toRetryPlayDetail(quiz, retryOfAttemptId, retry.data),
       };
     } catch (error) {
       logger.error({ error }, 'Error in getRetryQuizForPlay');
@@ -291,7 +288,7 @@ export class QuizPlayService {
       }
 
       let questions = quiz.questions;
-      let retryFields: { retryOfAttemptId: string; questionIndices: number[] } | null = null;
+      let retryFields: RetryAttemptFields | null = null;
       if (retryOfAttemptId !== undefined) {
         if (!authenticatedUserId) {
           return {

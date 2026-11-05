@@ -37,4 +37,17 @@ export class QuizDetailDtoMapper {
   static toPlayDetail(quiz: Quiz): QuizPlayDetailDto {
     return { ...toDetailBase(quiz), questions: quiz.questions.map(toPlayableQuestionDto) };
   }
+
+  /** Retry-missed session: only the quiz questions at `questionIndices`, in that order. */
+  static toRetryPlayDetail(
+    quiz: Quiz,
+    ofAttemptId: string,
+    questionIndices: number[],
+  ): QuizPlayDetailDto {
+    const questions = questionIndices.flatMap((index) => quiz.questions[index] ?? []);
+    return {
+      ...QuizDetailDtoMapper.toPlayDetail({ ...quiz, questions, questionCount: questions.length }),
+      retry: { ofAttemptId, questionIndices },
+    };
+  }
 }

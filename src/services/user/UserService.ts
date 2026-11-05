@@ -1,7 +1,7 @@
 import { IUserService } from '@/interfaces/services/IUserService';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
-import type { AttemptOwner } from '@/interfaces/services/IUserService';
+import type { AttemptDetailOptions, AttemptOwner } from '@/interfaces/services/IUserService';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
@@ -86,7 +86,7 @@ export class UserService implements IUserService {
   async getAttemptDetails(
     attemptId: string,
     owner: AttemptOwner,
-    options: { locale?: string } = {},
+    options: AttemptDetailOptions = {},
   ): Promise<ServiceResult<AttemptDetailDto>> {
     try {
       const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, owner);

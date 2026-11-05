@@ -15,7 +15,12 @@ export const GET = createOptionalQuizSlugReadRoute({
   load: async ({ slug, userId, session, request }) => {
     const retryOf = readRetryOf(request);
     if (retryOf === null) {
-      return { success: false, error: 'Invalid retryOf', statusCode: 400, code: 'validation_error' };
+      return {
+        success: false,
+        error: 'Invalid retryOf',
+        statusCode: 400,
+        code: 'validation_error',
+      };
     }
     return retryOf === undefined
       ? quizService.getQuizForPlay(slug, session?.user?.role, userId ?? undefined)

@@ -102,6 +102,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       idempotencyKey,
       { user: { email: 'orphan@example.com', role: 'user' } },
       'guest@example.com',
+      undefined,
     );
   });
 
@@ -117,6 +118,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [1],
       idempotencyKey,
       { user: { email: 'session-only@example.com', role: 'user' } },
+      undefined,
       undefined,
     );
   });
@@ -138,6 +140,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       idempotencyKey,
       null,
       'guest@example.com',
+      undefined,
     );
     await expect(response.json()).resolves.toMatchObject({
       success: true,
@@ -159,6 +162,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [1],
       idempotencyKey,
       session,
+      undefined,
       undefined,
     );
   });

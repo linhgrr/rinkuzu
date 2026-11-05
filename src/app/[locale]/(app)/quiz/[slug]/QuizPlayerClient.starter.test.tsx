@@ -38,18 +38,17 @@ vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () =>
 vi.mock('@/features/quiz/hooks/useQuizProgress', () => ({ useQuizProgress: () => progress }));
 vi.mock('@/hooks/useMediaQuery', () => ({ useMediaQuery: () => media.isMobile }));
 // The real layouts load lazily and take seconds on a cold worker; these stubs only
-// show what the player hands them (the notice slot and question 1).
+// show what the player hands them (the notice slot and the id of question 1).
 interface LayoutStubProps {
   notice?: React.ReactNode;
-  questions?: { question: string }[];
-  quiz?: { questions: { question: string }[] };
+  questions?: { id: string }[];
+  quiz?: { questions: { id: string }[] };
 }
 function LayoutStub(name: string) {
   function Layout({ notice, questions, quiz }: LayoutStubProps) {
     return (
-      <div data-testid={name}>
+      <div data-testid={name} data-first-question={(questions ?? quiz?.questions)?.[0]?.id}>
         {notice}
-        <p>{(questions ?? quiz?.questions)?.[0]?.question}</p>
       </div>
     );
   }
@@ -133,14 +132,15 @@ describe('QuizPlayerClient post-sign-in starter entry (RIN-913)', () => {
 
     const layout = await screen.findByTestId(view.layout);
     expect(layout).toHaveTextContent('starterIntro');
-    expect(layout).toHaveTextContent('Two plus two?');
+    expect(layout).toHaveAttribute('data-first-question', 'q1');
     expect(screen.getByRole('link', { name: 'starterSkip' })).toHaveAttribute('href', '/dashboard');
   });
 
   it.each([undefined, null, 'newsletter'])('shows no intro for entry=%s', async (entry) => {
     renderPlayer(entry);
 
-    expect(await screen.findByText('Two plus two?')).toBeInTheDocument();
+    const layout = await screen.findByTestId('desktop-layout');
+    expect(layout).toHaveAttribute('data-first-question', 'q1');
     expect(screen.queryByText('starterIntro')).not.toBeInTheDocument();
   });
 

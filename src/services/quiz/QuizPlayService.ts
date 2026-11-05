@@ -28,6 +28,7 @@ import type { QuizAttemptAnswer } from '@/entities/QuizAttempt';
 import type { Quiz } from '@/entities/Quiz';
 import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { objectIdSchema } from '@/lib/validation/common';
+import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { deriveMissedQuestionIndices } from '@/services/quiz/quiz-retry';
 
 type RetrySourceAttemptRepository = Pick<IAttemptRepository, 'findByIdWithQuiz'>;
@@ -245,6 +246,7 @@ export class QuizPlayService {
     session: Session | null,
     userEmail?: string,
     retryOfAttemptId?: string,
+    guestClaimToken?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
     try {
       const quiz = await this.quizRepository.findForPlay(slug);
@@ -265,6 +267,7 @@ export class QuizPlayService {
 
       let authenticatedUserId: string | undefined;
       let guestEmail: string | undefined;
+      let guestClaimTokenHash: string | undefined;
       if (session?.user?.id) {
         authenticatedUserId = session.user.id;
       } else if (session?.user?.email) {
@@ -277,7 +280,11 @@ export class QuizPlayService {
           };
         }
         authenticatedUserId = user.id;
+      } else if (guestClaimToken) {
+        // RIN-912: no email is collected; only the token's hash identifies the guest.
+        guestClaimTokenHash = hashGuestClaimToken(guestClaimToken);
       } else if (userEmail) {
+        // Legacy guest path, removed in RIN-912 part 4.
         guestEmail = userEmail.trim().toLowerCase();
       } else {
         return {
@@ -312,9 +319,11 @@ export class QuizPlayService {
 
       const attemptIdentity = authenticatedUserId
         ? { userId: authenticatedUserId }
-        : guestEmail
-          ? { guestEmail }
-          : null;
+        : guestClaimTokenHash
+          ? { guestClaimTokenHash }
+          : guestEmail
+            ? { guestEmail }
+            : null;
       if (!attemptIdentity) {
         throw new TypeError('Attempt identity is required');
       }

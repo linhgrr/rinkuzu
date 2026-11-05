@@ -40,6 +40,19 @@ describe('AdminActivityDtoMapper', () => {
     expect(dto.answeredQuestions).toBe(0);
   });
 
+  it('maps a claim-token guest as a guest with no email (RIN-912)', () => {
+    const dto = AdminActivityDtoMapper.toRecentAttempt({
+      id: 'attempt-4',
+      score: 50,
+      takenAt: new Date('2026-11-05T00:00:00.000Z'),
+      isClaimTokenGuest: true,
+      quizTitle: 'Token Quiz',
+      answeredQuestions: 1,
+    });
+
+    expect(dto.actor).toEqual({ type: 'guest' });
+  });
+
   it('fails fast when attempt identity is missing', () => {
     expect(() =>
       AdminActivityDtoMapper.toRecentAttempt({

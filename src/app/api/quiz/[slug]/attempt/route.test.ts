@@ -103,6 +103,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       { user: { email: 'orphan@example.com', role: 'user' } },
       'guest@example.com',
       undefined,
+      undefined,
     );
   });
 
@@ -118,6 +119,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [1],
       idempotencyKey,
       { user: { email: 'session-only@example.com', role: 'user' } },
+      undefined,
       undefined,
       undefined,
     );
@@ -141,6 +143,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       null,
       'guest@example.com',
       undefined,
+      undefined,
     );
     await expect(response.json()).resolves.toMatchObject({
       success: true,
@@ -162,6 +165,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [1],
       idempotencyKey,
       session,
+      undefined,
       undefined,
       undefined,
     );
@@ -202,5 +206,48 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       expect.objectContaining({ error: expect.any(Error) }),
       'Submit attempt error',
     );
+  });
+
+  describe('guest claim token (RIN-912)', () => {
+    const guestClaimToken = 'abcDEF012-_'.repeat(4).slice(0, 43);
+
+    it('accepts a signed-out submit with only a claim token', async () => {
+      const response = await POST(
+        request({ answers: [0], idempotencyKey, guestClaimToken }),
+        routeContext,
+      );
+
+      expect(response.status).toBe(200);
+      expect(submitQuizAttemptMock).toHaveBeenCalledWith(
+        slug,
+        [0],
+        idempotencyKey,
+        null,
+        undefined,
+        undefined,
+        guestClaimToken,
+      );
+    });
+
+    it('rejects a malformed claim token', async () => {
+      const response = await POST(
+        request({ answers: [0], idempotencyKey, guestClaimToken: 'not-a-token' }),
+        routeContext,
+      );
+
+      expect(response.status).toBe(400);
+      expect(submitQuizAttemptMock).not.toHaveBeenCalled();
+    });
+
+    it('never echoes the token or its hash in the response', async () => {
+      const response = await POST(
+        request({ answers: [0], idempotencyKey, guestClaimToken }),
+        routeContext,
+      );
+
+      const text = await response.text();
+      expect(text).not.toContain(guestClaimToken);
+      expect(text).not.toContain('guestClaimTokenHash');
+    });
   });
 });

@@ -190,21 +190,9 @@ export class QuizService implements IQuizService {
   }
 
   async submitQuizAttempt(
-    slug: string,
-    answers: (number | number[])[],
-    idempotencyKey: string,
-    session: Session | null,
-    userEmail?: string,
-    retryOfAttemptId?: string,
+    ...args: Parameters<IQuizService['submitQuizAttempt']>
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
-    return this.playService.submitQuizAttempt(
-      slug,
-      answers,
-      idempotencyKey,
-      session,
-      userEmail,
-      retryOfAttemptId,
-    );
+    return this.playService.submitQuizAttempt(...args);
   }
 
   async getQuizDiscussions(

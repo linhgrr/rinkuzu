@@ -14,6 +14,9 @@ interface AttemptQuizSnapshotDocument {
 interface AttemptDocument {
   user?: Types.ObjectId;
   guestEmail?: string;
+  /** SHA-256 hex of the guest's claim token (RIN-912). Never returned or logged. */
+  guestClaimTokenHash?: string;
+  claimedAt?: Date;
   idempotencyKey: string;
   submissionDigest: string;
   quiz: Types.ObjectId;
@@ -96,6 +99,14 @@ const AttemptSchema = new Schema<AttemptDocument>({
     lowercase: true,
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Guest email is invalid'],
   },
+  guestClaimTokenHash: {
+    type: String,
+    select: false,
+    match: [/^[a-f0-9]{64}$/, 'Guest claim token hash must be a SHA-256 hex digest'],
+  },
+  claimedAt: {
+    type: Date,
+  },
   idempotencyKey: {
     type: String,
     required: [true, 'Idempotency key is required'],
@@ -176,8 +187,14 @@ const AttemptSchema = new Schema<AttemptDocument>({
 });
 
 AttemptSchema.pre('validate', function validateIdentity() {
-  if (Boolean(this.user) === Boolean(this.guestEmail)) {
+  // Exactly one owner: a user, a legacy guest email, or a guest claim-token hash.
+  // A claimed attempt (RIN-912 part 3) has `user` + `claimedAt` and no hash.
+  const owners = [this.user, this.guestEmail, this.guestClaimTokenHash].filter(Boolean).length;
+  if (owners !== 1) {
     this.invalidate('user', 'Exactly one attempt identity is required');
+  }
+  if (this.claimedAt && !this.user) {
+    this.invalidate('claimedAt', 'Only a user-owned attempt can be claimed');
   }
 });
 
@@ -353,6 +370,24 @@ AttemptSchema.index(
     unique: true,
     partialFilterExpression: {
       guestEmail: { $type: 'string' },
+      idempotencyKey: { $type: 'string' },
+    },
+  },
+);
+
+AttemptSchema.index(
+  { guestClaimTokenHash: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { guestClaimTokenHash: { $type: 'string' } },
+  },
+);
+AttemptSchema.index(
+  { guestClaimTokenHash: 1, idempotencyKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      guestClaimTokenHash: { $type: 'string' },
       idempotencyKey: { $type: 'string' },
     },
   },

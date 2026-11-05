@@ -31,7 +31,7 @@ export interface AdminRecentAttemptViewModel {
   takenAtLabel: string;
   answeredQuestions: number;
   actor: {
-    email: string;
+    email?: string;
     type: 'user' | 'guest';
   };
   quiz: {

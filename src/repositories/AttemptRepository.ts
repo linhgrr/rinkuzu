@@ -48,6 +48,19 @@ function toStrictObjectId(value: string): Types.ObjectId {
   return new Types.ObjectId(objectIdSchema.parse(value));
 }
 
+type AttemptOwnerFilter =
+  | { user: Types.ObjectId }
+  | { guestClaimTokenHash: string; user: null }
+  | { guestEmail: string | undefined };
+
+function toAttemptOwnerFilter(owner: AttemptOwnerIdentity): AttemptOwnerFilter {
+  if (owner.userId) return { user: toStrictObjectId(owner.userId) };
+  // Only an unclaimed guest attempt: a claimed one has a user (and no hash).
+  if (owner.guestClaimTokenHash)
+    return { guestClaimTokenHash: owner.guestClaimTokenHash, user: null };
+  return { guestEmail: owner.guestEmail };
+}
+
 export class AttemptRepository implements IAttemptRepository {
   async findByUser(
     userId: string,
@@ -80,6 +93,7 @@ export class AttemptRepository implements IAttemptRepository {
       id: serializeId(record._id, 'recentAttempt._id'),
       ...(record.userEmail === undefined ? {} : { userEmail: record.userEmail }),
       ...(record.guestEmail === undefined ? {} : { guestEmail: record.guestEmail }),
+      ...(record.isClaimTokenGuest === true ? { isClaimTokenGuest: true } : {}),
       ...(record.quizTitle === undefined ? {} : { quizTitle: record.quizTitle }),
       score: record.score,
       answeredQuestions: record.answeredQuestions,
@@ -89,9 +103,7 @@ export class AttemptRepository implements IAttemptRepository {
 
   async findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null> {
     const attemptObjectId = toStrictObjectId(attemptId);
-    const identityFilter = owner.userId
-      ? { user: toStrictObjectId(owner.userId) }
-      : { guestEmail: owner.guestEmail };
+    const identityFilter = toAttemptOwnerFilter(owner);
     await connectDB();
     const [record] = await AttemptModel.aggregate<AttemptPersistenceRecord>(
       buildAttemptDetailPipeline(attemptObjectId, identityFilter),
@@ -102,9 +114,7 @@ export class AttemptRepository implements IAttemptRepository {
   /** Which of `slugs` the owner has an attempt for; scans only that owner's attempts. */
   async findAttemptedQuizSlugs(owner: AttemptOwnerIdentity, slugs: string[]): Promise<string[]> {
     if (slugs.length === 0) return [];
-    const identityFilter = owner.userId
-      ? { user: toStrictObjectId(owner.userId) }
-      : { guestEmail: owner.guestEmail };
+    const identityFilter = toAttemptOwnerFilter(owner);
     await connectDB();
     const attempted: unknown[] = await AttemptModel.distinct('quizSnapshot.slug', {
       ...identityFilter,

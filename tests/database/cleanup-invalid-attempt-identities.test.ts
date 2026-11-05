@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createAttemptIdentityPlanSha,
+  inspectAttemptIdentityCleanup,
   validateAttemptIdentityCleanup,
 } from '../../scripts/cleanup-invalid-attempt-identities.mjs';
 
@@ -64,5 +65,28 @@ describe('invalid attempt identity cleanup guard', () => {
         plan: plan(0),
       }),
     ).not.toThrow();
+  });
+
+  it('never plans claim-token guest attempts for deletion (RIN-912)', async () => {
+    const findFilters: unknown[] = [];
+    const empty = { toArray: async () => [] };
+    const db = {
+      listCollections: () => ({ toArray: async () => [{ name: 'attempts' }, { name: 'users' }] }),
+      collection: () => ({
+        find: (filter: unknown) => {
+          findFilters.push(filter);
+          return empty;
+        },
+        aggregate: () => empty,
+        countDocuments: async () => 0,
+      }),
+    };
+
+    await inspectAttemptIdentityCleanup(db);
+
+    expect(findFilters).toHaveLength(1);
+    expect(findFilters[0]).toEqual({
+      $and: expect.arrayContaining([{ guestClaimTokenHash: { $not: { $type: 'string' } } }]),
+    });
   });
 });

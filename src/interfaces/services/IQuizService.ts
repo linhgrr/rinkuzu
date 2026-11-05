@@ -98,6 +98,7 @@ export interface IQuizService {
     session: Session | null,
     userEmail?: string,
     retryOfAttemptId?: string,
+    guestClaimToken?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>>;
 
   getQuizDiscussions(

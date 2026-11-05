@@ -44,6 +44,7 @@ export interface RecentAttemptActivityPersistenceRecord {
   _id: MongoIdLike;
   userEmail?: string;
   guestEmail?: string;
+  isClaimTokenGuest?: boolean;
   quizTitle?: string;
   score: number;
   answeredQuestions: number;

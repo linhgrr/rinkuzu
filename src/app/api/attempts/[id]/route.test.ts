@@ -27,9 +27,11 @@ const detail = {
   totalQuestions: 5,
 };
 
-function request(url: string) {
-  return new NextRequest(url);
+function request(url: string, headers?: Record<string, string>) {
+  return new NextRequest(url, headers === undefined ? undefined : { headers });
 }
+
+const claimToken = 'A'.repeat(42) + '_';
 
 describe('GET /api/attempts/[id]', () => {
   beforeEach(() => {
@@ -188,5 +190,77 @@ describe('GET /api/attempts/[id]', () => {
       expect.objectContaining({ error: expect.any(Error) }),
       'Get attempt details error',
     );
+  });
+
+  describe('guest claim token (RIN-912)', () => {
+    const context = { params: Promise.resolve({ id: attemptId }) };
+
+    it('reads the attempt with the x-guest-claim-token header', async () => {
+      authMock.mockResolvedValue(null);
+
+      const response = await GET(
+        request(`http://localhost/api/attempts/${attemptId}`, {
+          'x-guest-claim-token': claimToken,
+        }),
+        context,
+      );
+
+      expect(response.status).toBe(200);
+      expect(getAttemptDetailsMock).toHaveBeenCalledWith(
+        attemptId,
+        { guestClaimToken: claimToken },
+        {},
+      );
+    });
+
+    it('returns the service miss for a well-formed but wrong token', async () => {
+      authMock.mockResolvedValue(null);
+      getAttemptDetailsMock.mockResolvedValue({
+        success: false,
+        error: 'Attempt not found',
+        statusCode: 404,
+      });
+
+      const response = await GET(
+        request(`http://localhost/api/attempts/${attemptId}`, {
+          'x-guest-claim-token': 'B'.repeat(43),
+        }),
+        context,
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it('rejects a malformed token without calling the service', async () => {
+      authMock.mockResolvedValue(null);
+
+      const response = await GET(
+        request(`http://localhost/api/attempts/${attemptId}`, {
+          'x-guest-claim-token': 'short',
+        }),
+        context,
+      );
+
+      expect(response.status).toBe(400);
+      expect(getAttemptDetailsMock).not.toHaveBeenCalled();
+    });
+
+    it('prefers the session owner and ignores the header when signed in', async () => {
+      authMock.mockResolvedValue({ user: { id: '507f191e810c19729de860eb', role: 'user' } });
+
+      const response = await GET(
+        request(`http://localhost/api/attempts/${attemptId}`, {
+          'x-guest-claim-token': 'short',
+        }),
+        context,
+      );
+
+      expect(response.status).toBe(200);
+      expect(getAttemptDetailsMock).toHaveBeenCalledWith(
+        attemptId,
+        { userId: '507f191e810c19729de860eb' },
+        {},
+      );
+    });
   });
 });

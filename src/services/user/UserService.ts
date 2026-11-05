@@ -1,6 +1,9 @@
 import { IUserService } from '@/interfaces/services/IUserService';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type {
+  AttemptOwnerIdentity,
+  IAttemptRepository,
+} from '@/interfaces/repositories/IAttemptRepository';
 import type { AttemptDetailOptions, AttemptOwner } from '@/interfaces/services/IUserService';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
@@ -16,6 +19,7 @@ import { PublicProfileDtoMapper } from '@/mappers/user/PublicProfileDtoMapper';
 import { UserAttemptDtoMapper } from '@/mappers/user/UserAttemptDtoMapper';
 import type { NextQuizResolver } from '@/services/quiz/next-quiz';
 import type { PremiumAccessContext, PremiumAccessDecision } from '@/entities/PremiumQuiz';
+import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 
 interface PremiumAttemptAccessPolicy {
   canAccessAttempt(
@@ -24,6 +28,14 @@ interface PremiumAttemptAccessPolicy {
     submissionId: string,
     snapshotHash: string,
   ): Promise<PremiumAccessDecision>;
+}
+
+function toAttemptOwnerIdentity(owner: AttemptOwner): AttemptOwnerIdentity {
+  if (owner.userId !== undefined) return { userId: owner.userId };
+  if (owner.guestClaimToken !== undefined) {
+    return { guestClaimTokenHash: hashGuestClaimToken(owner.guestClaimToken) };
+  }
+  return { guestEmail: owner.guestEmail };
 }
 
 export class UserService implements IUserService {
@@ -89,7 +101,8 @@ export class UserService implements IUserService {
     options: AttemptDetailOptions = {},
   ): Promise<ServiceResult<AttemptDetailDto>> {
     try {
-      const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, owner);
+      const ownerIdentity = toAttemptOwnerIdentity(owner);
+      const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, ownerIdentity);
 
       if (!attempt) {
         return {
@@ -117,10 +130,7 @@ export class UserService implements IUserService {
       const nextQuiz =
         this.nextQuizResolver && quiz !== null
           ? await this.nextQuizResolver.resolve({
-              owner:
-                owner.userId === undefined
-                  ? { guestEmail: owner.guestEmail }
-                  : { userId: owner.userId },
+              owner: ownerIdentity,
               currentSlug: quiz.slug,
               ...(options.locale === undefined ? {} : { locale: options.locale }),
             })

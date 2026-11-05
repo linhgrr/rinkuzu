@@ -6,7 +6,8 @@ import { logger } from '@/lib/logger';
 import { parseParamsAndBody } from '@/lib/api/validated';
 import { quizSlugRouteParamsSchema, submitQuizAttemptRequestSchema } from '@/dtos/quiz';
 
-// Public + authenticated dual path: anonymous attempts pass `userEmail` in body.
+// Public + authenticated dual path. Anonymous attempts pass a `guestClaimToken`
+// (RIN-912; only its hash is stored) or, on the legacy path, `userEmail`.
 export const POST = withOptionalAuth(async (request: NextRequest, { params, session, email }) => {
   try {
     const parsed = await parseParamsAndBody(request, params, {
@@ -15,7 +16,8 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
     });
     if (!parsed.ok) return parsed.response;
 
-    if (!session?.user?.id && !email && !parsed.body.userEmail) {
+    const { userEmail, guestClaimToken } = parsed.body;
+    if (!session?.user?.id && !email && !userEmail && !guestClaimToken) {
       return apiErr('validation_error', 'User email is required', 400);
     }
 
@@ -26,8 +28,9 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
       parsed.body.answers,
       parsed.body.idempotencyKey,
       session,
-      parsed.body.userEmail,
+      userEmail,
       parsed.body.retryOfAttemptId,
+      guestClaimToken,
     );
 
     if (!result.success) {

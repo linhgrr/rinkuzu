@@ -7,8 +7,9 @@ import type {
 } from '@/interfaces/repositories/types';
 
 export type AttemptOwnerIdentity =
-  | { userId: string; guestEmail?: never }
-  | { userId?: never; guestEmail: string };
+  | { userId: string; guestEmail?: never; guestClaimTokenHash?: never }
+  | { userId?: never; guestEmail: string; guestClaimTokenHash?: never }
+  | { userId?: never; guestEmail?: never; guestClaimTokenHash: string };
 
 interface AttemptTakenAtFilter {
   $gte: Date;
@@ -28,6 +29,8 @@ export interface RecentAttemptActivity {
   id: string;
   userEmail?: string;
   guestEmail?: string;
+  /** True for an unclaimed guest attempt identified only by a claim token. */
+  isClaimTokenGuest?: boolean;
   quizTitle?: string;
   score: number;
   answeredQuestions: number;

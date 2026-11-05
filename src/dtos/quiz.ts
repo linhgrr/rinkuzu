@@ -7,6 +7,7 @@ import {
   routePathSegmentSchema,
   slugRouteParamSchema,
 } from '@/lib/validation/common';
+import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 import type { QuizQuestionDisplay, QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';
 
@@ -219,6 +220,7 @@ export const submitQuizAttemptRequestSchema = z.strictObject({
   idempotencyKey: z.uuid(),
   userEmail: z.string().trim().toLowerCase().pipe(z.email()).optional(),
   retryOfAttemptId: objectIdSchema.optional(),
+  guestClaimToken: guestClaimTokenSchema.optional(),
 });
 
 export const addDiscussionCommentRequestSchema = z.strictObject({

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { assertOk, assertFail } from '../../../tests/helpers/service-result-assert';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -442,6 +443,50 @@ describe('UserService', () => {
       });
     });
 
+    it('looks a claim-token guest up by the SHA-256 hash, never the raw token', async () => {
+      const { service, attemptRepository } = createService();
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(null);
+      const token = 'x'.repeat(43);
+
+      const result = await service.getAttemptDetails('attempt-1', { guestClaimToken: token });
+
+      assertFail(result);
+      expect(result.statusCode).toBe(404);
+      expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', {
+        guestClaimTokenHash: createHash('sha256').update(token).digest('hex'),
+      });
+    });
+
+    it('locks Premium questions for a claim-token guest', async () => {
+      const canAccessAttempt = vi.fn().mockResolvedValue(true);
+      const { service, attemptRepository } = createService({
+        premiumAccessPolicy: { canAccessAttempt },
+      });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          premiumSubmissionId: 'submission-1',
+          premiumSnapshotHash: 'a'.repeat(64),
+          score: 75,
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Premium Quiz',
+            slug: 'premium-quiz',
+            questions: [questionFixture('question-1')],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails('attempt-1', {
+        guestClaimToken: 'x'.repeat(43),
+      });
+
+      assertOk(result);
+      expect(canAccessAttempt).not.toHaveBeenCalled();
+      expect(result.data).toMatchObject({ historyStatus: 'content_locked' });
+    });
+
     it('keeps Premium score visible but locks questions when access has expired', async () => {
       const canAccessAttempt = vi.fn().mockResolvedValue(false);
       const { service, attemptRepository } = createService({
@@ -562,6 +607,29 @@ describe('UserService', () => {
         owner: { userId: 'user-1' },
         currentSlug: 'quiz',
         locale: 'vi',
+      });
+    });
+
+    it('picks the next quiz for a claim-token guest by the token hash', async () => {
+      const resolve = vi.fn().mockResolvedValue(null);
+      const { service, attemptRepository } = createService({ nextQuizResolver: { resolve } });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          quiz: {
+            id: 'quiz-1',
+            title: 'Quiz',
+            slug: 'quiz',
+            questions: [questionFixture('q1', 0)],
+          },
+        }),
+      );
+      const token = 'x'.repeat(43);
+
+      assertOk(await service.getAttemptDetails('attempt-1', { guestClaimToken: token }));
+
+      expect(resolve).toHaveBeenCalledWith({
+        owner: { guestClaimTokenHash: createHash('sha256').update(token).digest('hex') },
+        currentSlug: 'quiz',
       });
     });
 

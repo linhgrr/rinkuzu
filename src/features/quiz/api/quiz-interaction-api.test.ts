@@ -92,6 +92,26 @@ describe('quiz-interaction-api', () => {
     });
   });
 
+  it('sends retryOfAttemptId for a retry-missed session (RIN-917)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      score: 50,
+      correctAnswers: 1,
+      totalQuestions: 2,
+      attemptId: 'attempt-3',
+    });
+    await submitQuizAttemptViewModel({
+      slug: 'quiz',
+      answers: [1, 0],
+      idempotencyKey: 'idem-3',
+      retryOfAttemptId: '6a8ed20a3d0a1892cacdfe0b',
+    });
+    expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
+      answers: [1, 0],
+      idempotencyKey: 'idem-3',
+      retryOfAttemptId: '6a8ed20a3d0a1892cacdfe0b',
+    });
+  });
+
   it('loads, saves, and deletes saved progress through the progress route', async () => {
     fetchApiDataMock.mockResolvedValueOnce({
       progress: {

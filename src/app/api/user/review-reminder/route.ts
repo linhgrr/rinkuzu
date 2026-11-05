@@ -8,13 +8,26 @@ import {
   assertCommunicationMutationRequest,
   communicationHttpError,
 } from '@/lib/communication/http';
-import { optInReviewReminder, optOutReviewReminder } from '@/lib/communication/review-reminder';
+import {
+  optInReviewReminder,
+  optOutReviewReminder,
+  reviewReminderStatus,
+} from '@/lib/communication/review-reminder';
 
 /**
  * Result-page opt-in to the 2-day review email (RIN-911 AC3/AC4).
  * `POST { attemptId, optIn?, locale? }`: `optIn: false` un-ticks it.
  * `DELETE { attemptId }` un-ticks it too.
+ * `GET` reports `{ optedIn }` so a revisited result page shows the box ticked (RIN-917).
  */
+export const GET = withAuth(async (_request: NextRequest, { userId }) => {
+  try {
+    return apiOk(await reviewReminderStatus({ userId }));
+  } catch (error) {
+    return communicationHttpError(error, 'review-reminder-status');
+  }
+});
+
 export const POST = withAuth(async (request: NextRequest, { userId, email }) => {
   try {
     assertCommunicationMutationRequest(request);

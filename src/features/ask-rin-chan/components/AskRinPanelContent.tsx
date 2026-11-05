@@ -4,12 +4,10 @@ import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
   ExportedMessageRepository,
-  MessagePrimitive,
   ThreadPrimitive,
   useAssistantRuntime,
+  useAuiEvent,
   useAuiState,
-  type EmptyMessagePartProps,
-  type TextMessagePartProps,
   type ThreadHistoryAdapter,
 } from '@assistant-ui/react';
 import { HttpAgent } from '@ag-ui/client';
@@ -25,7 +23,6 @@ import {
 } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
-import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Modal } from '@/components/ui/Modal';
 import {
   deleteAskRinConversation,
@@ -35,8 +32,8 @@ import {
   type AskRinContextPayload,
 } from '@/lib/ask-rin-chan/client';
 import { fetchAskRinAgent } from '@/lib/ask-rin-chan/agui-fetch';
-import { isAwaitingFirstAssistantText } from '@/lib/ask-rin-chan/stream-state';
 import { useAskRinErrorMessage } from '@/features/ask-rin-chan/hooks/use-ask-rin-error-message';
+import { AskRinMessage } from './AskRinMessage';
 import styles from './AskRinPanelLayout.module.css';
 
 const CHATBOT_ICON = '/images/chatbot_icon.png';
@@ -58,50 +55,6 @@ interface AskRinRuntimeProps {
   credentials: AskRinContextCredentials;
   contextPreview?: ReactNode;
   onHistoryChange?: (summary: AskRinHistorySummary) => void;
-}
-
-function ThinkingIndicator() {
-  const t = useTranslations('adaptiveLearning.chatbot');
-  return (
-    <div className="flex items-center gap-2 text-sm text-neutral-500" aria-label={t('thinking')}>
-      <span className="size-2 animate-pulse rounded-full bg-brand-trust" />
-      <span>{t('thinking')}</span>
-    </div>
-  );
-}
-
-function AskRinText({ text, status }: TextMessagePartProps) {
-  const role = useAuiState((state) => state.message.role);
-  if (isAwaitingFirstAssistantText(role, text, status.type)) {
-    return <ThinkingIndicator />;
-  }
-  if (role === 'assistant') {
-    return <MarkdownRenderer content={text} className="text-sm leading-6 text-neutral-800" />;
-  }
-  return <p className="whitespace-pre-wrap text-sm leading-6">{text}</p>;
-}
-
-function ThinkingMessage(_props: EmptyMessagePartProps) {
-  return <ThinkingIndicator />;
-}
-
-function AskRinMessage() {
-  const role = useAuiState((state) => state.message.role);
-  const isUser = role === 'user';
-
-  return (
-    <MessagePrimitive.Root className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={
-          isUser
-            ? `${styles['userBubble']} rounded-2xl rounded-br-md bg-neutral-900 px-4 py-2.5 text-white`
-            : `${styles['assistantBubble']} rounded-2xl rounded-bl-md border bg-white px-4 py-3 shadow-sm`
-        }
-      >
-        <MessagePrimitive.Parts components={{ Text: AskRinText, Empty: ThinkingMessage }} />
-      </div>
-    </MessagePrimitive.Root>
-  );
 }
 
 function EmptyConversation() {
@@ -153,6 +106,9 @@ function AskRinThread({
   const isRunning = useAuiState((state) => state.thread.isRunning);
   const isLoading = useAuiState((state) => state.thread.isLoading);
   const [clearing, setClearing] = useState(false);
+
+  // Asking again replaces the previous run's error card with the thinking bubble (RIN-822).
+  useAuiEvent('thread.runStart', () => onError(''));
 
   useEffect(() => {
     return () => {
@@ -321,6 +277,18 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
     );
     return nextAgent;
   }, [credentials.exerciseContextId, credentials.exerciseContextToken]);
+
+  // The API reports a failed run as an in-stream RUN_ERROR, which the AG-UI runtime
+  // ends as an empty answer without calling onError (RIN-822).
+  useEffect(() => {
+    const subscription = agent.subscribe({
+      onRunErrorEvent: ({ event }) => {
+        // The client turns a learner's Stop into RUN_ERROR code "abort": no error card.
+        if (event.code !== 'abort') setError(askRinErrorMessage(event));
+      },
+    });
+    return () => subscription.unsubscribe();
+  }, [agent, askRinErrorMessage]);
 
   const history = useMemo<ThreadHistoryAdapter>(
     () => ({

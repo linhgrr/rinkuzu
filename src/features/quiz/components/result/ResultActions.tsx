@@ -18,7 +18,7 @@ import { ROUTES } from '@/shared/constants/routes';
 /** Analytics campaign for the week-1 return loop (RIN-911); events carry nothing else but `missed_count`. */
 const REVIEW_CAMPAIGN = 'w1-review';
 
-const PRIMARY_LINK = 'btn btn-primary h-[52px] w-full px-8 text-[16px] rounded-[var(--radius-lg)]';
+const PRIMARY_LINK = 'btn btn-primary w-full h-12 px-8 text-base';
 const SECONDARY_LINK = 'btn btn-secondary w-full min-h-11 text-center';
 
 export type ResultViewer = 'signed_in' | 'guest' | 'pending';
@@ -69,7 +69,7 @@ export function ResultActions({
 
   let primaryNode;
   if (viewer === 'pending' && !contentLocked) {
-    primaryNode = <Skeleton aria-hidden="true" className="h-[52px] w-full" />;
+    primaryNode = <Skeleton aria-hidden="true" className="h-12 w-full" />;
   } else if (primary === 'retry') {
     primaryNode = (
       <Link

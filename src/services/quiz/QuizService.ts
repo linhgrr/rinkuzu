@@ -183,8 +183,16 @@ export class QuizService implements IQuizService {
     idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
+    guestClaimToken?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
-    return this.playService.submitQuizAttempt(slug, answers, idempotencyKey, session, userEmail);
+    return this.playService.submitQuizAttempt(
+      slug,
+      answers,
+      idempotencyKey,
+      session,
+      userEmail,
+      guestClaimToken,
+    );
   }
 
   async getQuizDiscussions(

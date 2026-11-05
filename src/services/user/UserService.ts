@@ -1,6 +1,9 @@
 import { IUserService } from '@/interfaces/services/IUserService';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type {
+  AttemptOwnerIdentity,
+  IAttemptRepository,
+} from '@/interfaces/repositories/IAttemptRepository';
 import type { AttemptOwner } from '@/interfaces/services/IUserService';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
@@ -15,6 +18,7 @@ import { logger } from '@/lib/logger';
 import { PublicProfileDtoMapper } from '@/mappers/user/PublicProfileDtoMapper';
 import { UserAttemptDtoMapper } from '@/mappers/user/UserAttemptDtoMapper';
 import type { PremiumAccessContext, PremiumAccessDecision } from '@/entities/PremiumQuiz';
+import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 
 interface PremiumAttemptAccessPolicy {
   canAccessAttempt(
@@ -23,6 +27,14 @@ interface PremiumAttemptAccessPolicy {
     submissionId: string,
     snapshotHash: string,
   ): Promise<PremiumAccessDecision>;
+}
+
+function toAttemptOwnerIdentity(owner: AttemptOwner): AttemptOwnerIdentity {
+  if (owner.userId !== undefined) return { userId: owner.userId };
+  if (owner.guestClaimToken !== undefined) {
+    return { guestClaimTokenHash: hashGuestClaimToken(owner.guestClaimToken) };
+  }
+  return { guestEmail: owner.guestEmail };
 }
 
 export class UserService implements IUserService {
@@ -86,7 +98,10 @@ export class UserService implements IUserService {
     owner: AttemptOwner,
   ): Promise<ServiceResult<AttemptDetailDto>> {
     try {
-      const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, owner);
+      const attempt = await this.attemptRepository.findByIdWithQuiz(
+        attemptId,
+        toAttemptOwnerIdentity(owner),
+      );
 
       if (!attempt) {
         return {

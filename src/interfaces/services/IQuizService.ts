@@ -90,6 +90,7 @@ export interface IQuizService {
     idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
+    guestClaimToken?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>>;
 
   getQuizDiscussions(

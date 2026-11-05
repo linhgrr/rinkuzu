@@ -63,6 +63,78 @@ describe('Attempt model identity', () => {
     );
   });
 
+  describe('guest claim token (RIN-912)', () => {
+    const hash = 'c'.repeat(64);
+
+    it('accepts a token-only guest and keeps the hash out of default reads', async () => {
+      const attempt = new Attempt({ ...submission, guestClaimTokenHash: hash });
+
+      await expect(attempt.validate()).resolves.toBeUndefined();
+      expect(Attempt.schema.path('guestClaimTokenHash').options['select']).toBe(false);
+    });
+
+    it('rejects a user or email combined with a token hash', async () => {
+      const withUser = new Attempt({
+        ...submission,
+        user: '507f191e810c19729de860eb',
+        guestClaimTokenHash: hash,
+      });
+      const withEmail = new Attempt({
+        ...submission,
+        guestEmail: 'guest@example.com',
+        guestClaimTokenHash: hash,
+      });
+
+      await expect(withUser.validate()).rejects.toThrow('Exactly one attempt identity is required');
+      await expect(withEmail.validate()).rejects.toThrow(
+        'Exactly one attempt identity is required',
+      );
+    });
+
+    it('rejects a hash that is not SHA-256 hex', async () => {
+      const attempt = new Attempt({ ...submission, guestClaimTokenHash: 'raw-token' });
+
+      await expect(attempt.validate()).rejects.toThrow('SHA-256 hex digest');
+    });
+
+    it('allows claimedAt only on a user-owned attempt', async () => {
+      const claimed = new Attempt({
+        ...submission,
+        user: '507f191e810c19729de860eb',
+        claimedAt: new Date('2026-11-05T00:00:00Z'),
+      });
+      const unowned = new Attempt({
+        ...submission,
+        guestClaimTokenHash: hash,
+        claimedAt: new Date('2026-11-05T00:00:00Z'),
+      });
+
+      await expect(claimed.validate()).resolves.toBeUndefined();
+      await expect(unowned.validate()).rejects.toThrow('Only a user-owned attempt can be claimed');
+    });
+
+    it('declares partial unique indexes for the hash and guest idempotency', () => {
+      const indexes = Attempt.schema.indexes();
+      expect(indexes).toContainEqual([
+        { guestClaimTokenHash: 1 },
+        expect.objectContaining({
+          unique: true,
+          partialFilterExpression: { guestClaimTokenHash: { $type: 'string' } },
+        }),
+      ]);
+      expect(indexes).toContainEqual([
+        { guestClaimTokenHash: 1, idempotencyKey: 1 },
+        expect.objectContaining({
+          unique: true,
+          partialFilterExpression: {
+            guestClaimTokenHash: { $type: 'string' },
+            idempotencyKey: { $type: 'string' },
+          },
+        }),
+      ]);
+    });
+  });
+
   it('requires a valid immutable quiz snapshot for new attempts', async () => {
     const missingSnapshot = new Attempt({
       ...submission,

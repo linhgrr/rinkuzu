@@ -48,7 +48,7 @@ type AuthenticatedQuizAttemptSubmission = Extract<
   RecordQuizAttemptProgressData,
   { userId: string }
 >;
-type AttemptIdentity = { user: string } | { guestEmail: string };
+type AttemptIdentity = { user: string } | { guestEmail: string } | { guestClaimTokenHash: string };
 interface MongoTypePredicate<T extends string> {
   $type: T;
 }
@@ -64,6 +64,12 @@ interface GuestEmailEqualityPredicate {
 interface GuestEmailTypePredicate {
   guestEmail: MongoTypePredicate<'string'>;
 }
+interface GuestClaimTokenEqualityPredicate {
+  guestClaimTokenHash: string;
+}
+interface GuestClaimTokenTypePredicate {
+  guestClaimTokenHash: MongoTypePredicate<'string'>;
+}
 interface UserAttemptIdempotencyFilter {
   idempotencyKey: string;
   $and: [UserEqualityPredicate, UserTypePredicate];
@@ -72,7 +78,14 @@ interface GuestAttemptIdempotencyFilter {
   idempotencyKey: string;
   $and: [GuestEmailEqualityPredicate, GuestEmailTypePredicate];
 }
-type AttemptIdempotencyFilter = UserAttemptIdempotencyFilter | GuestAttemptIdempotencyFilter;
+interface GuestClaimTokenAttemptIdempotencyFilter {
+  idempotencyKey: string;
+  $and: [GuestClaimTokenEqualityPredicate, GuestClaimTokenTypePredicate];
+}
+type AttemptIdempotencyFilter =
+  | UserAttemptIdempotencyFilter
+  | GuestAttemptIdempotencyFilter
+  | GuestClaimTokenAttemptIdempotencyFilter;
 type QuestionProgressWrites = Parameters<typeof QuestionProgress.bulkWrite>[0];
 
 const TRANSACTION_ATTEMPTS = 2;
@@ -108,6 +121,7 @@ function createSubmissionDigest(data: RecordQuizAttemptProgressData): string {
 function attemptIdentity(data: RecordQuizAttemptProgressData): AttemptIdentity {
   if (data.userId) return { user: data.userId };
   if (data.guestEmail) return { guestEmail: data.guestEmail };
+  if (data.guestClaimTokenHash) return { guestClaimTokenHash: data.guestClaimTokenHash };
   throw new TypeError('Attempt identity is required');
 }
 
@@ -122,6 +136,15 @@ function attemptIdempotencyFilter(data: RecordQuizAttemptProgressData): AttemptI
     return {
       idempotencyKey: data.idempotencyKey,
       $and: [{ guestEmail: data.guestEmail }, { guestEmail: { $type: 'string' } }],
+    };
+  }
+  if (data.guestClaimTokenHash) {
+    return {
+      idempotencyKey: data.idempotencyKey,
+      $and: [
+        { guestClaimTokenHash: data.guestClaimTokenHash },
+        { guestClaimTokenHash: { $type: 'string' } },
+      ],
     };
   }
   throw new TypeError('Attempt identity is required');
@@ -374,6 +397,9 @@ export class QuizAttemptProgressRepository implements IQuizAttemptProgressReposi
 
           const existing = await findExistingAttempt(data, null);
           if (existing) return assertMatchingSubmission(existing, submissionDigest);
+          // A claim token is single-use: reusing it with another idempotency key is a
+          // conflict. Never rethrow the driver error here, its keyValue holds the hash.
+          if (data.guestClaimTokenHash) throw new QuizAttemptIdempotencyConflictError();
           if (transactionAttempt === TRANSACTION_ATTEMPTS) throw error;
         }
       }

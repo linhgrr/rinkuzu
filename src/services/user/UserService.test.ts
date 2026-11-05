@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { assertOk, assertFail } from '../../../tests/helpers/service-result-assert';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -437,6 +438,50 @@ describe('UserService', () => {
       expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', {
         guestEmail: 'anon@test.com',
       });
+    });
+
+    it('looks a claim-token guest up by the SHA-256 hash, never the raw token', async () => {
+      const { service, attemptRepository } = createService();
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(null);
+      const token = 'x'.repeat(43);
+
+      const result = await service.getAttemptDetails('attempt-1', { guestClaimToken: token });
+
+      assertFail(result);
+      expect(result.statusCode).toBe(404);
+      expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', {
+        guestClaimTokenHash: createHash('sha256').update(token).digest('hex'),
+      });
+    });
+
+    it('locks Premium questions for a claim-token guest', async () => {
+      const canAccessAttempt = vi.fn().mockResolvedValue(true);
+      const { service, attemptRepository } = createService({
+        premiumAccessPolicy: { canAccessAttempt },
+      });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          premiumSubmissionId: 'submission-1',
+          premiumSnapshotHash: 'a'.repeat(64),
+          score: 75,
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Premium Quiz',
+            slug: 'premium-quiz',
+            questions: [questionFixture('question-1')],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails('attempt-1', {
+        guestClaimToken: 'x'.repeat(43),
+      });
+
+      assertOk(result);
+      expect(canAccessAttempt).not.toHaveBeenCalled();
+      expect(result.data).toMatchObject({ historyStatus: 'content_locked' });
     });
 
     it('keeps Premium score visible but locks questions when access has expired', async () => {

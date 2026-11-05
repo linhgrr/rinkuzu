@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
@@ -468,6 +469,53 @@ describe('QuizPlayService progress operations', () => {
     );
     assertFail(missing);
     expect(missing).toMatchObject({ statusCode: 400, error: 'User identification required' });
+  });
+
+  it('stores only the claim-token hash for a guest token submit (RIN-912)', async () => {
+    const { service, quizRepository, attemptProgressRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      visibility: 'public',
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mockResolvedValue({
+      id: 'attempt-3',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+    const token = 'T'.repeat(43);
+
+    const result = await service.submitQuizAttempt(
+      'quiz',
+      [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a4',
+      null,
+      'legacy@example.com',
+      token,
+    );
+
+    assertOk(result);
+    const recorded = vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mock.calls[0]?.[0];
+    expect(recorded).toMatchObject({
+      guestClaimTokenHash: createHash('sha256').update(token).digest('hex'),
+    });
+    expect(recorded).not.toHaveProperty('guestEmail');
+    expect(recorded).not.toHaveProperty('userId');
+    expect(JSON.stringify(recorded)).not.toContain(token);
   });
 
   it('resolves session email to a user id and returns 404 when unknown', async () => {

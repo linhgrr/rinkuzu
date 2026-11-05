@@ -16,7 +16,7 @@ function toRecentAttemptViewModel(
     takenAtLabel: formatDateTime(attempt.takenAt),
     answeredQuestions: attempt.answeredQuestions,
     actor: {
-      email: attempt.actor.email,
+      ...(attempt.actor.email === undefined ? {} : { email: attempt.actor.email }),
       type: attempt.actor.type,
     },
     quiz: {

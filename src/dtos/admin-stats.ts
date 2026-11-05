@@ -99,7 +99,8 @@ export interface AdminRecentAttemptDto {
   takenAt: string;
   answeredQuestions: number;
   actor: {
-    email: string;
+    /** Absent for a claim-token guest (RIN-912): no email is collected. */
+    email?: string;
     type: 'user' | 'guest';
   };
   quiz: { title: string };

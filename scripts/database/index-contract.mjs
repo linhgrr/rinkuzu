@@ -51,6 +51,27 @@ export const INDEX_CONTRACT = Object.freeze([
       },
     },
   ),
+  required(
+    'attempts.guest-claim-token',
+    'attempts',
+    { guestClaimTokenHash: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { guestClaimTokenHash: { $type: 'string' } },
+    },
+  ),
+  required(
+    'attempts.guest-claim-token-idempotency',
+    'attempts',
+    { guestClaimTokenHash: 1, idempotencyKey: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        guestClaimTokenHash: { $type: 'string' },
+        idempotencyKey: { $type: 'string' },
+      },
+    },
+  ),
 
   // auditlogs
   required('auditlogs.user', 'auditlogs', { userId: 1 }),

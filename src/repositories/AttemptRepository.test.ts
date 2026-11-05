@@ -141,6 +141,26 @@ describe('AttemptRepository', () => {
       });
     });
 
+    it('scopes a claim-token owner to unclaimed attempts and never projects the hash', async () => {
+      const repository = new AttemptRepository();
+      const attemptId = '507f191e810c19729de860ea';
+      attemptMocks.aggregate.mockResolvedValueOnce([]);
+
+      await expect(
+        repository.findByIdWithQuiz(attemptId, { guestClaimTokenHash: 'd'.repeat(64) }),
+      ).resolves.toBeNull();
+
+      const [pipeline] = attemptMocks.aggregate.mock.calls[0] ?? [];
+      expect(pipeline?.[0]).toEqual({
+        $match: {
+          _id: new Types.ObjectId(attemptId),
+          guestClaimTokenHash: 'd'.repeat(64),
+          user: null,
+        },
+      });
+      expect(JSON.stringify(pipeline?.slice(1))).not.toContain('guestClaimTokenHash');
+    });
+
     it('rejects invalid attempt ids without querying Mongo', async () => {
       const repository = new AttemptRepository();
 

@@ -26,6 +26,7 @@ import {
 } from '@/services/quiz/quiz-attempt-evaluation';
 import type { QuizAttemptAnswer } from '@/entities/QuizAttempt';
 import type { Quiz } from '@/entities/Quiz';
+import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 
 interface FlashcardQuizFailureContext {
   logMessage: string;
@@ -166,6 +167,7 @@ export class QuizPlayService {
     idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
+    guestClaimToken?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
     try {
       const quiz = await this.quizRepository.findForPlay(slug);
@@ -186,6 +188,7 @@ export class QuizPlayService {
 
       let authenticatedUserId: string | undefined;
       let guestEmail: string | undefined;
+      let guestClaimTokenHash: string | undefined;
       if (session?.user?.id) {
         authenticatedUserId = session.user.id;
       } else if (session?.user?.email) {
@@ -198,7 +201,11 @@ export class QuizPlayService {
           };
         }
         authenticatedUserId = user.id;
+      } else if (guestClaimToken) {
+        // RIN-912: no email is collected; only the token's hash identifies the guest.
+        guestClaimTokenHash = hashGuestClaimToken(guestClaimToken);
       } else if (userEmail) {
+        // Legacy guest path, removed in RIN-912 part 4.
         guestEmail = userEmail.trim().toLowerCase();
       } else {
         return {
@@ -212,9 +219,11 @@ export class QuizPlayService {
 
       const attemptIdentity = authenticatedUserId
         ? { userId: authenticatedUserId }
-        : guestEmail
-          ? { guestEmail }
-          : null;
+        : guestClaimTokenHash
+          ? { guestClaimTokenHash }
+          : guestEmail
+            ? { guestEmail }
+            : null;
       if (!attemptIdentity) {
         throw new TypeError('Attempt identity is required');
       }

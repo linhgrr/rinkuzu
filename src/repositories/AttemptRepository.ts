@@ -80,6 +80,7 @@ export class AttemptRepository implements IAttemptRepository {
       id: serializeId(record._id, 'recentAttempt._id'),
       ...(record.userEmail === undefined ? {} : { userEmail: record.userEmail }),
       ...(record.guestEmail === undefined ? {} : { guestEmail: record.guestEmail }),
+      ...(record.isClaimTokenGuest === true ? { isClaimTokenGuest: true } : {}),
       ...(record.quizTitle === undefined ? {} : { quizTitle: record.quizTitle }),
       score: record.score,
       answeredQuestions: record.answeredQuestions,
@@ -91,7 +92,10 @@ export class AttemptRepository implements IAttemptRepository {
     const attemptObjectId = toStrictObjectId(attemptId);
     const identityFilter = owner.userId
       ? { user: toStrictObjectId(owner.userId) }
-      : { guestEmail: owner.guestEmail };
+      : owner.guestClaimTokenHash
+        ? // Only an unclaimed guest attempt: a claimed one has a user (and no hash).
+          { guestClaimTokenHash: owner.guestClaimTokenHash, user: null }
+        : { guestEmail: owner.guestEmail };
     await connectDB();
     const [record] = await AttemptModel.aggregate<AttemptPersistenceRecord>(
       buildAttemptDetailPipeline(attemptObjectId, identityFilter),

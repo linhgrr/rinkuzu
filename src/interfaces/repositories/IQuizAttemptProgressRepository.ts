@@ -29,10 +29,18 @@ export type RecordQuizAttemptProgressData =
   | (QuizAttemptSubmissionData & {
       userId: string;
       guestEmail?: never;
+      guestClaimTokenHash?: never;
     })
   | (QuizAttemptSubmissionData & {
       userId?: never;
       guestEmail: string;
+      guestClaimTokenHash?: never;
+    })
+  | (QuizAttemptSubmissionData & {
+      userId?: never;
+      guestEmail?: never;
+      /** SHA-256 hex of the guest claim token; never log it. */
+      guestClaimTokenHash: string;
     });
 
 export interface RecordedQuizAttempt {

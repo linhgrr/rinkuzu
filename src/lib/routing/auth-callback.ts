@@ -9,6 +9,12 @@ const BLOCKED_AUTH_CALLBACK_PATHS = new Set<string>([
   ...locales.map((locale) => `/${locale}`),
 ]);
 
+/**
+ * Values that name no real destination. The signed-out /dashboard guard and the
+ * proxy send `callbackUrl=/dashboard`, so it means "wherever sign-in lands" (RIN-913).
+ */
+const DEFAULT_AUTH_CALLBACK_PATHS = new Set<string>([ROUTES.DASHBOARD, ROUTES.START]);
+
 export type ResolvedAuthCallback = {
   /** For next-intl `router.push` / `replace` (no locale prefix). */
   intlHref: string;
@@ -18,13 +24,15 @@ export type ResolvedAuthCallback = {
 
 /**
  * Normalize an auth `callbackUrl` query value into both navigation forms.
- * Accepts either unprefixed (`/dashboard`) or prefixed (`/en/dashboard`) input.
+ * Accepts either unprefixed (`/review`) or prefixed (`/en/review`) input. With no
+ * real destination (absent, unsafe, blocked or `/dashboard`) sign-in lands on
+ * ROUTES.START, which picks the starter quiz or the dashboard (RIN-913).
  */
 export function resolveAuthCallback(
   raw: string | null | undefined,
   locale: string,
 ): ResolvedAuthCallback {
-  const fallback = ROUTES.DASHBOARD;
+  const fallback = ROUTES.START;
 
   if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
     return {
@@ -35,7 +43,10 @@ export function resolveAuthCallback(
 
   const intlHref = toIntlHref(raw);
   const pathOnly = stripLocaleFromPath(intlHref.split('?')[0] ?? intlHref);
-  const safeIntlHref = BLOCKED_AUTH_CALLBACK_PATHS.has(pathOnly) ? fallback : intlHref;
+  const safeIntlHref =
+    BLOCKED_AUTH_CALLBACK_PATHS.has(pathOnly) || DEFAULT_AUTH_CALLBACK_PATHS.has(pathOnly)
+      ? fallback
+      : intlHref;
   const [path, query] = safeIntlHref.split('?');
   const browserPath = toBrowserPath(path || fallback, locale);
 
@@ -48,12 +59,12 @@ export function resolveAuthCallback(
 /**
  * The safe, locale-unprefixed callback path worth forwarding to the next auth
  * step (sign-up link, verification email, verify page), or null when the value
- * would fall back to the dashboard anyway. Same guards as resolveAuthCallback:
+ * would fall back to the post-sign-in landing anyway. Same guards as resolveAuthCallback:
  * same-origin paths only, `//` rejected, auth pages and the home page blocked.
  */
 export function forwardableAuthCallback(raw: string | null | undefined): string | null {
   const { intlHref } = resolveAuthCallback(raw, defaultLocale);
-  return intlHref === ROUTES.DASHBOARD ? null : intlHref;
+  return intlHref === ROUTES.START ? null : intlHref;
 }
 
 /** `route` with `?callbackUrl=` appended when `raw` is safe to forward. */

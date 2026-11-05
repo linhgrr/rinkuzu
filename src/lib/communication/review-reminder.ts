@@ -128,7 +128,7 @@ export async function optOutReviewReminder(input: {
   return { optedIn: false };
 }
 
-export interface PreparedReviewReminder {
+interface PreparedReviewReminder {
   subject: string;
   html: string;
   text: string;

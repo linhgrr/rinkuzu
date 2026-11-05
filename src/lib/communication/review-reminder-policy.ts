@@ -15,21 +15,21 @@ import { ACCOUNT_DISABLE_DISABLED } from '@/shared/constants/account-disable';
 const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 
-export const REVIEW_REMINDER_DELAY_MS = 48 * HOUR_MS;
+const REVIEW_REMINDER_DELAY_MS = 48 * HOUR_MS;
 /** A learner gets at most one review email per 7 days. */
 export const REVIEW_REMINDER_CAP_MS = 7 * DAY_MS;
 /** The spec allows ±2 h, so an opt-in later than 46 h after the attempt is refused. */
-export const REVIEW_REMINDER_LATEST_OPT_IN_MS = REVIEW_REMINDER_DELAY_MS - 2 * HOUR_MS;
+const REVIEW_REMINDER_LATEST_OPT_IN_MS = REVIEW_REMINDER_DELAY_MS - 2 * HOUR_MS;
 /**
  * The spec allows ±2 h around the due time. A row still unsent 2 h after it
  * became due (sending switched off, worker outage) is canceled rather than
  * sent days late with "two days ago" copy. Applies to QA recipients too.
  */
-export const REVIEW_REMINDER_SEND_WINDOW_MS = 2 * HOUR_MS;
+const REVIEW_REMINDER_SEND_WINDOW_MS = 2 * HOUR_MS;
 export const REVIEW_REMINDER_CAMPAIGN = 'w1-review';
 /** QA sends carry their own campaign tag so they never count in admin aggregates. */
 export const REVIEW_REMINDER_QA_CAMPAIGN = 'w1-review-qa';
-export const REVIEW_REMINDER_TOPIC = 'study_reminders';
+const REVIEW_REMINDER_TOPIC = 'study_reminders';
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -43,10 +43,7 @@ export function reviewReminderQaRecipients(env: Environment = process.env): Read
   );
 }
 
-export function isReviewReminderQaRecipient(
-  email: string,
-  env: Environment = process.env,
-): boolean {
+function isReviewReminderQaRecipient(email: string, env: Environment = process.env): boolean {
   return reviewReminderQaRecipients(env).has(email.trim().toLowerCase());
 }
 
@@ -54,7 +51,7 @@ export function isReviewReminderQaRecipient(
  * Delay between the attempt and the email: 48 h, or for a QA recipient only,
  * `REVIEW_EMAIL_QA_DELAY_MINUTES` when it is a positive number.
  */
-export function reviewReminderDelayMs(email: string, env: Environment = process.env): number {
+function reviewReminderDelayMs(email: string, env: Environment = process.env): number {
   if (!isReviewReminderQaRecipient(email, env)) return REVIEW_REMINDER_DELAY_MS;
   const minutes = Number(env['REVIEW_EMAIL_QA_DELAY_MINUTES']?.trim() ?? '');
   return Number.isFinite(minutes) && minutes > 0
@@ -159,7 +156,10 @@ export function unsubscribeToken(userId: string, secret: string, topic = REVIEW_
 
 const UNSUBSCRIBE_TOKEN_PATTERN = /^([a-f0-9]{24})\.([a-z_]{1,32})\.([A-Za-z0-9_-]{43})$/u;
 
-/** The `(userId, topic)` a token was signed for, or `null` when it is not authentic. */
+/**
+ * The `(userId, topic)` a token was signed for, or `null` when it is not authentic.
+ * @public Consumed by the one-click unsubscribe route (RIN-915 part 2); drop this tag there.
+ */
 export function verifyUnsubscribeToken(
   token: string,
   secret: string,

@@ -5,7 +5,6 @@ import {
   REVIEW_REMINDER_CAMPAIGN,
   reviewReminderAvailableAt,
   reviewReminderDedupeKey,
-  reviewReminderDelayMs,
   reviewReminderQaRecipients,
   reviewRetryUrl,
   unsubscribeToken,
@@ -147,11 +146,11 @@ describe('review reminder schedule', () => {
       REVIEW_EMAIL_QA_RECIPIENTS: 'qa@fldubai.com',
       REVIEW_EMAIL_QA_DELAY_MINUTES: '5',
     };
-    expect(reviewReminderDelayMs('qa@fldubai.com', env)).toBe(5 * 60_000);
-    expect(reviewReminderDelayMs('learner@gmail.com', env)).toBe(48 * HOUR);
-    expect(
-      reviewReminderDelayMs('qa@fldubai.com', { REVIEW_EMAIL_QA_RECIPIENTS: 'qa@fldubai.com' }),
-    ).toBe(48 * HOUR);
+    const dueFor = (email: string, environment: Record<string, string>) =>
+      reviewReminderAvailableAt({ takenAt: TAKEN_AT, email, now: TAKEN_AT, env: environment });
+    expect(dueFor('qa@fldubai.com', env)).toEqual(new Date(TAKEN_AT.getTime() + 5 * MINUTE));
+    expect(dueFor('learner@gmail.com', env)).toEqual(DUE);
+    expect(dueFor('qa@fldubai.com', { REVIEW_EMAIL_QA_RECIPIENTS: 'qa@fldubai.com' })).toEqual(DUE);
     // A late QA opt-in is sent at the next tick instead of being refused.
     const late = new Date(TAKEN_AT.getTime() + 50 * HOUR);
     expect(

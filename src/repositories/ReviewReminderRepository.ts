@@ -25,19 +25,19 @@ export interface ReminderAttempt {
   totalQuestions: number;
 }
 
-export interface ReminderRecipient {
+interface ReminderRecipient {
   email: string;
   role?: string;
   disable?: number;
   isTestAccount?: boolean;
 }
 
-export interface ReminderPreference {
+interface ReminderPreference {
   studyReminders?: boolean;
   locale?: string | null;
 }
 
-export interface ReminderQuiz {
+interface ReminderQuiz {
   slug: string;
   title: string;
 }
@@ -50,12 +50,12 @@ export interface ReminderSendFacts {
   quiz: ReminderQuiz | null;
 }
 
-export interface ReminderRowState {
+interface ReminderRowState {
   status: string;
   availableAt: Date;
 }
 
-export interface ReminderUpsertConflict {
+interface ReminderUpsertConflict {
   conflict: ReminderRowState;
 }
 
@@ -66,7 +66,7 @@ export interface ReminderConsentEvent {
   ipHash: string | null;
 }
 
-export interface OwnedReminderAttempt extends ReminderAttempt {
+interface OwnedReminderAttempt extends ReminderAttempt {
   userId: Types.ObjectId;
 }
 

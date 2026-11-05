@@ -32,7 +32,7 @@ export type MarketingTopic = (typeof MARKETING_TOPICS)[number];
  * `MARKETING_TOPICS` and never target it.
  */
 const CONSENT_TOPICS = [...MARKETING_TOPICS, 'study_reminders'] as const;
-export type ConsentTopic = (typeof CONSENT_TOPICS)[number];
+type ConsentTopic = (typeof CONSENT_TOPICS)[number];
 
 const CONSENT_SOURCES = [
   'settings',
@@ -41,7 +41,7 @@ const CONSENT_SOURCES = [
   'admin_suppression',
   'result_page_review',
 ] as const;
-export type ConsentSource = (typeof CONSENT_SOURCES)[number];
+type ConsentSource = (typeof CONSENT_SOURCES)[number];
 
 const OUTBOX_KINDS = [
   'support_notification',

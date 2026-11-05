@@ -39,6 +39,26 @@ describe('BillingPayOSAdapter response handling', () => {
       await expect(adapter.getPayment(1234)).resolves.toBeNull();
     });
 
+    it('still reports no payment when a 404 body breaks off while being read', async () => {
+      const broken = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.error(new Error('connection reset'));
+        },
+      });
+      fetchMock.mockResolvedValue(new Response(broken, { status: 404 }));
+      await expect(adapter.getPayment(1234)).resolves.toBeNull();
+    });
+
+    it('keeps the status of a 5xx whose body cannot be read', async () => {
+      const broken = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.error(new Error('connection reset'));
+        },
+      });
+      fetchMock.mockResolvedValue(new Response(broken, { status: 503 }));
+      await expect(adapter.getPayment(1234)).rejects.toThrow('PayOS responded with HTTP 503');
+    });
+
     it('raises a status-bearing error for an unreadable gateway failure', async () => {
       fetchMock.mockResolvedValue(respond(502, '<html>Bad Gateway</html>', 'text/html'));
       await expect(adapter.getPayment(1234)).rejects.toThrow('PayOS responded with HTTP 502');

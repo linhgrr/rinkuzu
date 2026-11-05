@@ -182,4 +182,37 @@ describe('QuizAttemptProgressRepository', () => {
     expect(modelMocks.attemptCreate).not.toHaveBeenCalled();
     expect(session.endSession).toHaveBeenCalledOnce();
   });
+
+  it('stores a quick round and binds its idempotency key to the played indices (RIN-936)', async () => {
+    const quick = { ...submission, mode: 'quick' as const, questionIndices: [16] };
+
+    await new QuizAttemptProgressRepository().recordSubmittedAttempt(quick);
+
+    const created = modelMocks.attemptCreate.mock.calls[0]?.[0]?.[0];
+    expect(created).toMatchObject({ mode: 'quick', questionIndices: [16] });
+    expect(created).not.toHaveProperty('retryOfAttemptId');
+    const stored = {
+      _id: 'attempt-1',
+      submissionDigest: created?.submissionDigest as string,
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    };
+    modelMocks.attemptLean.mockResolvedValue(stored);
+    modelMocks.attemptCreate.mockClear();
+
+    await expect(
+      new QuizAttemptProgressRepository().recordSubmittedAttempt(quick),
+    ).resolves.toMatchObject({ id: 'attempt-1' });
+    await expect(
+      new QuizAttemptProgressRepository().recordSubmittedAttempt({
+        ...quick,
+        questionIndices: [3],
+      }),
+    ).rejects.toBeInstanceOf(QuizAttemptIdempotencyConflictError);
+    await expect(
+      new QuizAttemptProgressRepository().recordSubmittedAttempt(submission),
+    ).rejects.toBeInstanceOf(QuizAttemptIdempotencyConflictError);
+    expect(modelMocks.attemptCreate).not.toHaveBeenCalled();
+  });
 });

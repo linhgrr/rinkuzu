@@ -643,5 +643,18 @@
   "learnerLookupPipelineStatus": "Trạng thái pipeline",
   "learnerLookupProgressStatus": "Trạng thái tiến độ",
   "learnerLookupProgress": "Tiến độ",
-  "learnerLookupLastActivity": "Hoạt động gần nhất"
+  "learnerLookupLastActivity": "Hoạt động gần nhất",
+  "activationFunnelTitle": "Phễu phiên đầu tiên",
+  "activationFunnelDescription": "8 tuần đăng ký gần nhất, mới nhất ở trên. Mỗi bước kèm tỷ lệ trên số đăng ký.",
+  "activationFunnelWeek": "Tuần đăng ký",
+  "activationFunnelSignups": "Đăng ký",
+  "activationFunnelSignedIn": "Đã đăng nhập",
+  "activationFunnelStartedQuiz": "Đã bắt đầu quiz",
+  "activationFunnelActivated": "Đã kích hoạt",
+  "activationFunnelReturnedWeek1": "Quay lại trong tuần 1",
+  "activationFunnelInProgress": "đang diễn ra",
+  "activationFunnelCaption": "Tuần theo ISO, giờ UTC. Không tính tài khoản nội bộ và tài khoản thử nghiệm. Mỗi bước được tính trong 7 ngày kể từ khi đăng ký.",
+  "activationFunnelAdaptiveUnavailable": "Không có dữ liệu học cá nhân hóa: số liệu chỉ tính bài quiz.",
+  "activationFunnelLoading": "Đang tải phễu phiên đầu tiên…",
+  "activationFunnelError": "Không tải được phễu phiên đầu tiên."
 }

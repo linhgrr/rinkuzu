@@ -52,7 +52,7 @@ function pathnameFor(file: string): string {
 const SELF_AUTHENTICATING_GUARDS = [
   'assertInternalBillingRequest',
   'withInternalBillingTick',
-  'classifyPayOSWebhook',
+  'verifyAndClassifyPayOSWebhook',
 ];
 
 describe('self-authenticating API routes and the proxy same-origin guard', () => {

@@ -1,26 +1,16 @@
 'use client';
 
-import { useRouter, Link } from '@/i18n/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useEffect, useReducer, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytics/client';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, Badge } from '@/components/ui/Card';
+import { Card, CardHeader } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { Input } from '@/components/ui/Input';
 import { preloadMathRenderer } from '@/components/ui/preloadMathRenderer';
 import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import {
-  HiOutlineLightBulb,
-  HiOutlineArrowLeft,
-  HiOutlineMail,
-  HiOutlineExclamationCircle,
-  HiOutlineDocumentText,
-  HiOutlineLightningBolt,
-  HiOutlineRefresh,
-} from 'react-icons/hi';
+import { HiOutlineDocumentText } from 'react-icons/hi';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
@@ -353,12 +343,10 @@ type QuizPlayerStatus = 'loading' | 'ready' | 'error';
 interface QuizPlayerState {
   quiz: QuizPlayerQuiz | null;
   status: QuizPlayerStatus;
-  /** Inline copy for the email gate and the submit flow (already localized). */
+  /** Inline copy for the submit flow (already localized). */
   error: string;
   /** Why the quiz could not load; rendered by ErrorState, never as text (RIN-753). */
   loadError: unknown;
-  userEmail: string;
-  showEmailInput: boolean;
   currentQuestionIndex: number;
   userAnswers: QuizAnswer[];
   showExitModal: boolean;
@@ -370,7 +358,6 @@ interface QuizPlayerState {
 
 type QuizPlayerAction =
   | { type: 'patch'; value: Partial<QuizPlayerState> }
-  | { type: 'setSessionEmail'; email: string }
   | { type: 'loadQuizSuccess'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
   | {
       type: 'loadQuizWithResume';
@@ -392,8 +379,6 @@ const initialQuizPlayerState: QuizPlayerState = {
   status: 'loading',
   error: '',
   loadError: null,
-  userEmail: '',
-  showEmailInput: true,
   currentQuestionIndex: 0,
   userAnswers: [],
   showExitModal: false,
@@ -407,12 +392,6 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
   switch (action.type) {
     case 'patch':
       return { ...state, ...action.value };
-    case 'setSessionEmail':
-      return {
-        ...state,
-        userEmail: action.email,
-        showEmailInput: false,
-      };
     case 'loadQuizSuccess':
       return {
         ...state,
@@ -558,121 +537,6 @@ function QuizPremiumState({ onClose, t }: { onClose: () => void; t: (key: string
   );
 }
 
-function QuizEmailGate({
-  encodedSlug,
-  error,
-  onStartQuiz,
-  onUserEmailChange,
-  quiz,
-  t,
-  userEmail,
-}: {
-  encodedSlug: string;
-  error: string;
-  onStartQuiz: () => void;
-  onUserEmailChange: (value: string) => void;
-  quiz: QuizPlayerQuiz;
-  t: (key: string) => string;
-  userEmail: string;
-}) {
-  return (
-    <div className="min-h-screen">
-      <div className="flex items-center justify-center min-h-[80vh] px-4">
-        <Card
-          variant="glass"
-          className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp"
-        >
-          <QuizGateHeader
-            title={quiz.title}
-            {...(quiz.description ? { subtitle: quiz.description } : {})}
-          />
-          <CardContent>
-            <div className="space-y-6">
-              <div className="flex justify-center gap-x-8 py-4 bg-surface-warm/50 rounded-xl">
-                <div className="text-center">
-                  <Badge variant="purple" className="mb-1">
-                    {quiz.questions.length} {t('questions')}
-                  </Badge>
-                </div>
-                <div className="text-center">
-                  <Badge variant="info" className="mb-1">
-                    {t('noTimeLimit')}
-                  </Badge>
-                </div>
-              </div>
-
-              {error && (
-                <Card variant="bordered" className="border-red-200 bg-red-50 p-4">
-                  <div className="flex items-center text-red-700">
-                    <HiOutlineExclamationCircle className="size-5 mr-2 flex-shrink-0" />
-                    <span className="text-sm font-medium">{error}</span>
-                  </div>
-                </Card>
-              )}
-
-              <Card variant="bordered" className="border-green-200 bg-green-50 p-4">
-                <div className="text-center text-brand-trust">
-                  <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-brand-trust" />
-                  <p className="text-sm font-medium">
-                    <Link href="/login" className="underline hover:text-brand-trust-hover">
-                      {t('login')}
-                    </Link>{' '}
-                    {t('loginToTrack')}
-                  </p>
-                </div>
-              </Card>
-
-              <div>
-                <Input
-                  label={t('yourEmail')}
-                  id="email"
-                  type="email"
-                  value={userEmail}
-                  onChange={(event) => onUserEmailChange(event.target.value)}
-                  placeholder={t('enterEmailAddress')}
-                  required
-                  icon={<HiOutlineMail className="size-5" />}
-                />
-                <p className="mt-2 text-xs text-ink-muted">{t('weWillUseEmail')}</p>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={onStartQuiz}
-                  variant="gradient"
-                  size="lg"
-                  className="w-full bg-brand-action-strong text-white hover:bg-brand-action-strong-hover"
-                >
-                  <HiOutlineLightningBolt className="size-5 mr-2" />
-                  {t('startQuiz')}
-                </Button>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Link href="/">
-                    <Button variant="outline" className="w-full">
-                      <HiOutlineArrowLeft className="size-4 mr-2" />
-                      {t('backHome')}
-                    </Button>
-                  </Link>
-                  <Link href={`/quiz/${encodedSlug}/flashcards`}>
-                    <Button
-                      variant="accent"
-                      className="w-full bg-brand-action-strong text-white hover:bg-brand-action-strong-hover"
-                    >
-                      <HiOutlineRefresh className="size-4 mr-2" />
-                      {t('flashcards')}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
 interface QuizPlayerClientProps {
   initialErrorCode: string | null | undefined;
   /** HTTP status of the server-side load failure; the server's text never reaches the client. */
@@ -716,12 +580,6 @@ export default function QuizPlayerClient({
     slug,
     enabled: progressEnabled,
   });
-
-  useEffect(() => {
-    if (session?.user?.email) {
-      dispatch({ type: 'setSessionEmail', email: session.user.email });
-    }
-  }, [session]);
 
   useEffect(() => {
     // Fetch KaTeX while auth settles, before the first math question mounts (RIN-679).
@@ -819,15 +677,6 @@ export default function QuizPlayerClient({
     loadProgress,
   ]);
 
-  const startQuiz = () => {
-    if (!sessionEmail && !state.userEmail.trim()) {
-      dispatch({ type: 'patch', value: { error: 'Please enter your email to start the quiz' } });
-      return;
-    }
-
-    dispatch({ type: 'patch', value: { showEmailInput: false, error: '' } });
-  };
-
   const quiz = state.quiz;
   const currentQuestion = quiz?.questions[state.currentQuestionIndex] || null;
   const answeredQuestions = quiz ? countAnswered(quiz, state.userAnswers) : 0;
@@ -860,7 +709,6 @@ export default function QuizPlayerClient({
     slug,
     quiz,
     userAnswers: state.userAnswers,
-    userEmail: state.userEmail,
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
@@ -874,13 +722,11 @@ export default function QuizPlayerClient({
       // navigation. This prevents the submit flow from racing the progress
       // cleanup and avoids resurrecting a just-completed attempt.
       await clearProgress();
+      // A guest's claim token stays in localStorage; the URL never carries an email (RIN-912).
       const params = new URLSearchParams({
         attemptId,
         score: String(score),
       });
-      if (!sessionEmail && state.userEmail.trim()) {
-        params.set('userEmail', state.userEmail.trim().toLowerCase());
-      }
       push(`/quiz/${encodedSlug}/result?${params.toString()}`);
     },
     onSubmitStart: () => dispatch({ type: 'patch', value: { error: '' } }),
@@ -991,20 +837,6 @@ export default function QuizPlayerClient({
     );
   }
 
-  if (state.showEmailInput && !sessionEmail && quiz) {
-    return (
-      <QuizEmailGate
-        encodedSlug={encodedSlug}
-        error={state.error}
-        onStartQuiz={startQuiz}
-        onUserEmailChange={(value) => dispatch({ type: 'patch', value: { userEmail: value } })}
-        quiz={quiz}
-        t={t}
-        userEmail={state.userEmail}
-      />
-    );
-  }
-
   if (!quiz || !currentQuestion) {
     return null;
   }
@@ -1013,7 +845,7 @@ export default function QuizPlayerClient({
     <>
       {state.resumePrompt && <div className="min-h-screen" aria-hidden="true" />}
 
-      {!state.resumePrompt && isMobile && !state.showEmailInput && (
+      {!state.resumePrompt && isMobile && (
         <MobileQuizLayout
           quiz={quiz}
           userAnswers={state.userAnswers}
@@ -1040,7 +872,6 @@ export default function QuizPlayerClient({
           quizTitle={quiz.title}
           questions={quiz.questions}
           {...(sessionEmail !== undefined ? { sessionEmail } : {})}
-          userEmail={state.userEmail}
           currentQuestionIndex={state.currentQuestionIndex}
           setCurrentQuestionIndex={(index) =>
             dispatch({ type: 'setCurrentQuestionIndex', value: index })

@@ -116,6 +116,7 @@ function createSubmissionDigest(data: RecordQuizAttemptProgressData): string {
         premiumSnapshotHash: data.premiumSnapshotHash,
         retryOfAttemptId: data.retryOfAttemptId,
         questionIndices: data.questionIndices,
+        mode: data.mode,
       }),
     )
     .digest('hex');
@@ -323,9 +324,9 @@ async function createAttempt(
             ...question,
           })),
         },
-        ...(data.retryOfAttemptId !== undefined && data.questionIndices !== undefined
-          ? { retryOfAttemptId: data.retryOfAttemptId, questionIndices: data.questionIndices }
-          : {}),
+        ...(data.retryOfAttemptId === undefined ? {} : { retryOfAttemptId: data.retryOfAttemptId }),
+        ...(data.questionIndices === undefined ? {} : { questionIndices: data.questionIndices }),
+        ...(data.mode === undefined ? {} : { mode: data.mode }),
         answers: data.answers.map(AnswerPersistenceMapper.toPersistence),
         score: data.score,
         correctAnswers: data.correctAnswers,

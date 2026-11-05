@@ -33,6 +33,9 @@ vi.mock('@/features/admin/stats/components/EntitlementTelemetrySection', () => (
   EntitlementTelemetrySection: () => <section>entitlements-workspace</section>,
 }));
 vi.mock('@/features/admin/stats/components/StatsModal', () => ({ default: () => null }));
+vi.mock('@/features/admin/stats/components/ActivationFunnelSection', () => ({
+  ActivationFunnelSection: () => <section>activation-funnel</section>,
+}));
 
 import { AdminStatsPageClient } from './AdminStatsPageClient';
 
@@ -47,10 +50,13 @@ describe('AdminStatsPageClient', () => {
     render(<AdminStatsPageClient />);
 
     expect(await screen.findByText('errors.api.generic')).toBeInTheDocument();
+    // The funnel fetches its own route, so it stays on the overview when the stats fail.
+    expect(screen.getByText('activation-funnel')).toBeInTheDocument();
     expect(await screen.findByText('review-email-panel')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'statsWorkspaceLearnerLookup' }));
 
     expect(await screen.findByText('learner-lookup-workspace')).toBeInTheDocument();
     expect(screen.queryByText('errors.api.generic')).not.toBeInTheDocument();
+    expect(screen.queryByText('activation-funnel')).not.toBeInTheDocument();
   });
 });

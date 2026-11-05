@@ -11,7 +11,7 @@ import type {
 import { billingHttpError } from '@/services/billing/billing-http';
 import { hashRequestSourceIp, webhookAbuseBucket } from '@/services/billing/billing-security';
 import {
-  classifyPayOSWebhook,
+  verifyAndClassifyPayOSWebhook,
   MAX_WEBHOOK_BYTES,
   webhookRejectionErrorCode,
   webhookRejectionStatus,
@@ -63,7 +63,7 @@ export async function POST(
     const abuseBucket = webhookAbuseBucket(request);
 
     const rawBody = await request.text();
-    const outcome = classifyPayOSWebhook(rawBody);
+    const outcome = verifyAndClassifyPayOSWebhook(rawBody);
     const facts: WebhookRequestFacts = {
       rawPayloadHash: outcome.rawPayloadHash,
       byteSizeBytes: outcome.byteSize,

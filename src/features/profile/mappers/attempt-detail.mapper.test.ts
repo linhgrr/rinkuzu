@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { AttemptDetailDto } from '@/dtos/user';
 import { toAttemptDetailViewModel } from '@/features/profile/mappers/attempt-detail.mapper';
 
 describe('toAttemptDetailViewModel', () => {
@@ -50,34 +51,37 @@ describe('toAttemptDetailViewModel', () => {
   });
 
   it('carries the retry mapping, missed count and next quiz to the result page', () => {
-    const result = toAttemptDetailViewModel(
-      {
-        id: 'attempt-2',
-        score: 0,
-        totalQuestions: 1,
-        takenAt: '2026-07-02T00:00:00.000Z',
-        answers: [0],
-        historyStatus: 'complete',
-        quiz: {
-          title: 'Algebra',
-          slug: 'algebra',
-          questions: [
-            {
-              id: 'q3',
-              question: '3 + 3?',
-              options: ['5', '6'],
-              type: 'single',
-              correctIndex: 1,
-              userAnswer: 0,
-              isCorrect: false,
-            },
-          ],
-        },
-        missedCount: 1,
-        nextQuiz: { slug: 'starter', title: 'Starter' },
-        retryOfAttemptId: 'attempt-1',
-        questionIndices: [2],
+    const dto: AttemptDetailDto = {
+      id: 'attempt-2',
+      score: 0,
+      totalQuestions: 1,
+      takenAt: '2026-07-02T00:00:00.000Z',
+      answers: [0],
+      historyStatus: 'complete',
+      quiz: {
+        title: 'Algebra',
+        slug: 'algebra',
+        questions: [
+          {
+            id: 'q3',
+            question: '3 + 3?',
+            options: ['5', '6'],
+            type: 'single',
+            correctIndex: 1,
+            userAnswer: 0,
+            isCorrect: false,
+          },
+        ],
       },
+      missedCount: 1,
+      nextQuiz: { slug: 'starter', title: 'Starter' },
+      retryOfAttemptId: 'attempt-1',
+      questionIndices: [2],
+    };
+    const { retryOfAttemptId: _retry, ...plain } = dto;
+    const result = toAttemptDetailViewModel(dto, 'en');
+    const quick = toAttemptDetailViewModel(
+      { ...plain, mode: 'quick', questionIndices: [17] },
       'en',
     );
 
@@ -87,5 +91,7 @@ describe('toAttemptDetailViewModel', () => {
       retryOfAttemptId: 'attempt-1',
       questionIndices: [2],
     });
+    expect(result).not.toHaveProperty('mode');
+    expect(quick).toMatchObject({ mode: 'quick', questionIndices: [17] });
   });
 });

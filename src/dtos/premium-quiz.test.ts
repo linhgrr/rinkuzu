@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { decidePremiumSubmissionRequestSchema } from '@/dtos/premium-quiz';
+import {
+  decidePremiumSubmissionRequestSchema,
+  premiumSessionSubmitRequestSchema,
+} from '@/dtos/premium-quiz';
 
 describe('Premium submission decision DTO', () => {
   it.each([1, 2, 3, 4, 5])('accepts an approval reward of %s credits', (credits) => {
@@ -33,4 +36,18 @@ describe('Premium submission decision DTO', () => {
       );
     },
   );
+});
+
+describe('Premium session submit DTO', () => {
+  it('rejects a quick round: quick mode exists only on the normal submit path (RIN-936)', () => {
+    const idempotencyKey = '018f7494-8bd8-7b8a-a387-3bc5a14f22a1';
+    expect(premiumSessionSubmitRequestSchema.safeParse({ idempotencyKey }).success).toBe(true);
+    expect(
+      premiumSessionSubmitRequestSchema.safeParse({
+        idempotencyKey,
+        mode: 'quick',
+        questionIndices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      }).success,
+    ).toBe(false);
+  });
 });

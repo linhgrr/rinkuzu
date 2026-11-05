@@ -72,6 +72,7 @@ export class AttemptPersistenceMapper {
         ? {}
         : { retryOfAttemptId: serializeId(record.retryOfAttemptId, 'attempt.retryOfAttemptId') }),
       ...(record.questionIndices == null ? {} : { questionIndices: record.questionIndices }),
+      ...(record.mode == null ? {} : { mode: record.mode }),
     };
   }
 }

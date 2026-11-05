@@ -54,5 +54,6 @@ export function toAttemptDetailViewModel(
     nextQuiz: dto.nextQuiz,
     ...(dto.retryOfAttemptId !== undefined && { retryOfAttemptId: dto.retryOfAttemptId }),
     ...(dto.questionIndices !== undefined && { questionIndices: dto.questionIndices }),
+    ...(dto.mode !== undefined && { mode: dto.mode }),
   };
 }

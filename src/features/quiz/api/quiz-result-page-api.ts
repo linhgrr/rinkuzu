@@ -51,6 +51,7 @@ async function fetchBookmarkLookup(result: QuizResultViewModel): Promise<QuizRes
 
 export type FetchQuizResultPageDataOptions = {
   userEmail?: string;
+  guestClaimToken?: string;
 };
 
 export async function fetchQuizResultPageData(
@@ -58,15 +59,20 @@ export async function fetchQuizResultPageData(
   locale: string,
   options?: FetchQuizResultPageDataOptions,
 ): Promise<QuizResultPageDataViewModel> {
+  const guestOptions = {
+    ...(options?.userEmail ? { userEmail: options.userEmail } : {}),
+    ...(options?.guestClaimToken ? { guestClaimToken: options.guestClaimToken } : {}),
+  };
+  const isGuest = Object.keys(guestOptions).length > 0;
   const result = await fetchAttemptDetailViewModel(
     attemptId,
     locale,
-    options?.userEmail ? { userEmail: options.userEmail } : undefined,
+    isGuest ? guestOptions : undefined,
   );
 
-  // Bookmarks require an authenticated session. Guests identify via userEmail
-  // and must not hit the protected bookmark list endpoint.
-  if (options?.userEmail) {
+  // Bookmarks require an authenticated session. Guests identify via a claim token
+  // (or a legacy userEmail) and must not hit the protected bookmark list endpoint.
+  if (isGuest) {
     return { result, bookmarks: EMPTY_BOOKMARK_LOOKUP };
   }
 

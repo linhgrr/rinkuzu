@@ -15,6 +15,7 @@ function toProfileHistoryAttemptViewModel(
     takenAt: attempt.takenAt,
     takenAtLabel: formatCalendarDate(attempt.takenAt, locale),
     totalQuestions: attempt.totalQuestions,
+    ...(attempt.mode !== undefined && { mode: attempt.mode }),
     quiz: {
       title: attempt.quiz.title,
       slug: attempt.quiz.slug,

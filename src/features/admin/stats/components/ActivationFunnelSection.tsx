@@ -38,10 +38,11 @@ function FunnelRow({ week, t }: { week: ActivationFunnelWeekViewModel; t: Transl
         scope="row"
         className="sticky left-0 bg-white px-3 py-2 text-left font-medium whitespace-nowrap text-neutral-900"
       >
-        <span>{week.isoWeek}</span>
-        <span className="ml-2 text-xs font-normal text-neutral-500">{week.monday}</span>
+        {/* Stacked, so the sticky column stays narrow on a 375 px screen. */}
+        <span className="block">{week.isoWeek}</span>
+        <span className="block text-xs font-normal text-neutral-500">{week.monday}</span>
         {week.inProgress ? (
-          <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+          <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
             {t('activationFunnelInProgress')}
           </span>
         ) : null}

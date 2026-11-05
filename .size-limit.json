@@ -8,7 +8,7 @@
       "limit": "220 KiB",
       "patterns": [
         "^/_not-found$",
-        "^/\\[locale\\](?:/(?:about|blog(?:/.*)?|contact|cookies|faq|pricing|privacy|terms))?$"
+        "^/\\[locale\\](?:/(?:about|blog(?:/.*)?|contact|cookies|faq|pricing|privacy|terms|unsubscribe))?$"
       ]
     },
     {
@@ -30,7 +30,7 @@
       "name": "dashboard-admin",
       "limit": "340 KiB",
       "patterns": [
-        "^/\\[locale\\]/(?:admin(?:/.*)?|bookmarks|checkout|create(?:/.*)?|dashboard|draft(?:/.*)?|edit(?:/.*)?|feedback(?:/.*)?|history(?:/.*)?|my-quizzes(?:/.*)?|payment(?:/.*)?|premium-quizzes|profile(?:/.*)?|review|subscription|support(?:/.*)?|test-image-upload|users(?:/.*)?)$"
+        "^/\\[locale\\]/(?:admin(?:/.*)?|bookmarks|checkout|create(?:/.*)?|dashboard|draft(?:/.*)?|edit(?:/.*)?|feedback(?:/.*)?|history(?:/.*)?|my-quizzes(?:/.*)?|payment(?:/.*)?|premium-quizzes|profile(?:/.*)?|review|start|subscription|support(?:/.*)?|test-image-upload|users(?:/.*)?)$"
       ]
     },
     {

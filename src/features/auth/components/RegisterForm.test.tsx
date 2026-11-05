@@ -163,12 +163,12 @@ describe('RegisterForm callbackUrl', () => {
     expect(onSwitchMode).toHaveBeenCalledWith('/quiz/nhap-mon-ai');
   });
 
-  it('keeps the dashboard when there is no callbackUrl', async () => {
+  it('lands on the post-sign-in start route when there is no callbackUrl', async () => {
     await renderVi();
 
     expect(screen.getByRole('button', { name: 'mock-google-button' })).toHaveAttribute(
       'data-callback-url',
-      '/vi/dashboard',
+      '/vi/start',
     );
     expect(screen.getByRole('link', { name: 'signIn' })).toHaveAttribute('href', '/login');
 
@@ -177,14 +177,14 @@ describe('RegisterForm callbackUrl', () => {
   });
 
   it.each([['//evil.com'], ['https://evil.com'], ['/vi/register']])(
-    'falls back to the dashboard for an unsafe callbackUrl %j',
+    'falls back to the post-sign-in start route for an unsafe callbackUrl %j',
     async (callbackUrl) => {
       navigationMock.search = `callbackUrl=${encodeURIComponent(callbackUrl)}`;
       await renderVi();
 
       expect(screen.getByRole('button', { name: 'mock-google-button' })).toHaveAttribute(
         'data-callback-url',
-        '/vi/dashboard',
+        '/vi/start',
       );
       expect(screen.getByRole('link', { name: 'signIn' })).toHaveAttribute('href', '/login');
 

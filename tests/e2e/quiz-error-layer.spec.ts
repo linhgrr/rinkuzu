@@ -5,6 +5,7 @@ import { expect, test, type Page } from '@playwright/test';
 import viErrors from '../../messages/vi/errors.json';
 import viQuiz from '../../messages/vi/quiz.json';
 import { createE2EUserEmail } from './support/fixture-identifiers';
+import { skipPostSignInStarter } from './support/post-signin';
 
 /**
  * RIN-805: the API error layer (RIN-748/RIN-753) on the real quiz surfaces.
@@ -183,6 +184,7 @@ test.describe('quiz API error layer (RIN-805)', () => {
       window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
     });
     await page.goto('/en/login?callbackUrl=%2Fdashboard');
+    await skipPostSignInStarter(page);
     await page.getByLabel('Email Address').fill(learner.email);
     await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
     await Promise.all([

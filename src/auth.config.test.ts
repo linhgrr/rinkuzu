@@ -8,23 +8,30 @@ describe('resolveAuthRedirectTarget', () => {
   const baseUrl = 'https://www.rinkuzu.app';
 
   it('returns an absolute same-origin URL for relative paths', () => {
+    expect(resolveAuthRedirectTarget('/en/profile', baseUrl)).toBe(
+      'https://www.rinkuzu.app/en/profile',
+    );
+  });
+
+  it('sends a sign-in with no real destination to the post-sign-in landing (RIN-913)', () => {
     expect(resolveAuthRedirectTarget('/en/dashboard', baseUrl)).toBe(
-      'https://www.rinkuzu.app/en/dashboard',
+      'https://www.rinkuzu.app/en/start',
+    );
+    expect(resolveAuthRedirectTarget('https://www.rinkuzu.app/vi/start', baseUrl)).toBe(
+      'https://www.rinkuzu.app/vi/start',
     );
   });
 
   it('rejects absolute external URLs', () => {
     expect(resolveAuthRedirectTarget('https://evil.example/phish', baseUrl)).toBe(
-      'https://www.rinkuzu.app/vi/dashboard',
+      'https://www.rinkuzu.app/vi/start',
     );
   });
 
   it('rejects auth endpoint loops', () => {
-    expect(resolveAuthRedirectTarget('/login', baseUrl)).toBe(
-      'https://www.rinkuzu.app/vi/dashboard',
-    );
+    expect(resolveAuthRedirectTarget('/login', baseUrl)).toBe('https://www.rinkuzu.app/vi/start');
     expect(resolveAuthRedirectTarget('/en/register', baseUrl)).toBe(
-      'https://www.rinkuzu.app/en/dashboard',
+      'https://www.rinkuzu.app/en/start',
     );
   });
 

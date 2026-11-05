@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
@@ -25,6 +25,8 @@ interface MobileQuizPlayerProps {
   onExit?: () => void;
   submitting?: boolean;
   submissionError?: string;
+  /** Shown above question 1, e.g. the post-sign-in starter intro (RIN-913). */
+  notice?: ReactNode;
 }
 
 interface MobileQuizHeaderProps {
@@ -271,6 +273,7 @@ export function MobileQuizPlayer({
   onExit,
   submitting = false,
   submissionError,
+  notice,
 }: MobileQuizPlayerProps) {
   const t = useTranslations('quiz');
   const [submitIntent, setSubmitIntent] = useState(false);
@@ -362,6 +365,7 @@ export function MobileQuizPlayer({
 
       <main ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain p-4">
         <div className="mx-auto max-w-xl space-y-4">
+          {notice}
           {questions.map((question, questionIndex) => (
             <MobileQuestionCard
               key={question.id}

@@ -36,6 +36,8 @@ import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-mod
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
+import { StarterQuizIntro } from '@/features/quiz/components/player/StarterQuizIntro';
+import { POST_SIGNIN_STARTER_ENTRY } from '@/shared/constants/starter-quiz';
 
 function QuizLayoutLoadingFallback() {
   const t = useTranslations('quiz');
@@ -677,6 +679,17 @@ interface QuizPlayerClientProps {
   initialErrorStatus: number | null;
   initialQuiz: QuizPlayViewModel | null;
   slug: string;
+  /** `?entry=` from the URL; `post_signin_starter` when /start opened this quiz (RIN-913). */
+  entry?: string | null;
+}
+
+// Opened by /start right after sign-in (RIN-913): intro + Skip, tagged completion.
+function postSignInStarterNotice(entry: string | null | undefined, slug: string) {
+  return entry === POST_SIGNIN_STARTER_ENTRY ? <StarterQuizIntro quizSlug={slug} /> : null;
+}
+
+function postSignInStarterProperties(entry: string | null | undefined) {
+  return entry === POST_SIGNIN_STARTER_ENTRY ? { entry: POST_SIGNIN_STARTER_ENTRY } : {};
 }
 
 export default function QuizPlayerClient({
@@ -684,6 +697,7 @@ export default function QuizPlayerClient({
   initialErrorStatus,
   initialQuiz,
   slug,
+  entry,
 }: QuizPlayerClientProps) {
   const t = useTranslations('quiz');
   const { data: session, status: sessionStatus } = useSession();
@@ -693,6 +707,7 @@ export default function QuizPlayerClient({
   const [state, dispatch] = useReducer(quizPlayerReducer, initialQuizPlayerState);
 
   const isMobile = useMediaQuery(MEDIA_MAX_MD);
+  const starterNotice = postSignInStarterNotice(entry, slug);
 
   const sessionEmail = session?.user?.email || undefined;
   const progressEnabled = Boolean(session?.user?.email);
@@ -853,6 +868,7 @@ export default function QuizPlayerClient({
         question_count: quiz?.questions.length ?? 0,
         score,
         authenticated: Boolean(sessionEmail),
+        ...postSignInStarterProperties(entry),
       });
       // Cancel pending/in-flight autosaves and wait for the DELETE before
       // navigation. This prevents the submit flow from racing the progress
@@ -1014,6 +1030,7 @@ export default function QuizPlayerClient({
           }}
           submitting={submitting}
           error={state.error}
+          notice={starterNotice}
         />
       )}
 
@@ -1061,6 +1078,7 @@ export default function QuizPlayerClient({
             unansweredCount,
             complete: completeSubmit,
           }}
+          notice={starterNotice}
           t={t}
         />
       )}

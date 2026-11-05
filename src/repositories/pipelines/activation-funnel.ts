@@ -123,6 +123,59 @@ export const FUNNEL_WEEK_ACCUMULATORS = {
 } as const;
 
 /** `time` for an attempt a guest made and then claimed into the account (RIN-918); absent otherwise. */
-export function claimedAttemptTime(time: string): Record<string, unknown> {
+function claimedAttemptTime(time: unknown): Record<string, unknown> {
   return { $cond: [{ $eq: [{ $type: '$claimedAt' }, 'date'] }, time, '$$REMOVE'] };
 }
+
+/**
+ * When an attempt counts as taken: a guest attempt claimed into an account
+ * (RIN-920) counts at `claimedAt`, so the signup week gets the credit.
+ */
+const ATTEMPT_AT = { $ifNull: ['$claimedAt', '$takenAt'] } as const;
+
+/** A claim is at most this long after `takenAt` (`GUEST_ATTEMPT_CLAIM_WINDOW_MS`). */
+const CLAIM_WINDOW_MS = DAY_MS;
+
+/**
+ * Learners' attempts for the cohort group, at their effective time. The
+ * `takenAt` range (`Attempt {takenAt:-1}`) is widened by the claim window so
+ * the index scan still bounds the read; the effective time is filtered after
+ * it, so a claim inside the window counts even when `takenAt` is before it.
+ */
+export function attemptUnionStage(coll: string, from: Date, to: Date): PipelineStage.UnionWith {
+  return {
+    $unionWith: {
+      coll,
+      pipeline: [
+        {
+          $match: {
+            takenAt: {
+              $gte: new Date(from.getTime() - CLAIM_WINDOW_MS),
+              $lt: new Date(to.getTime() + 14 * DAY_MS),
+            },
+            user: { $type: 'objectId' },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            uid: '$user',
+            takenAt: ATTEMPT_AT,
+            claimedTakenAt: claimedAttemptTime(ATTEMPT_AT),
+          },
+        },
+        { $match: { takenAt: { $gte: from } } },
+      ],
+    },
+  };
+}
+
+/**
+ * First-ever attempt time from `$group` fields `firstTakenAt` and
+ * `firstClaimedAt` (both `$first` after the `{user, takenAt}` sort): a claimed
+ * first attempt counts at its claim. `$first` of `claimedAt` reads the first
+ * attempt's document (DISTINCT_SCAN + FETCH, still one document per user).
+ * When the earliest-taken attempt was claimed, a later own attempt inside its
+ * 24 h claim window could be earlier by effective time; this ignores that.
+ */
+export const EFFECTIVE_FIRST_TAKEN_AT = { $ifNull: ['$firstClaimedAt', '$firstTakenAt'] } as const;

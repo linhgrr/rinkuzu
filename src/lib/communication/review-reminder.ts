@@ -14,18 +14,26 @@ import {
   reviewReminderDedupeKey,
   reviewReminderQaRecipients,
   reviewRetryUrl,
+  oneClickUnsubscribeUrl,
+  unsubscribePageUrl,
   unsubscribeToken,
-  unsubscribeUrl,
+  verifyUnsubscribeToken,
   type ReviewReminderCancelReason,
 } from './review-reminder-policy';
 import { renderReviewReminder, type ReviewReminderLocale } from './templates';
 
 /**
- * Sending is held until the one-click unsubscribe page and its RFC 8058 POST
- * handler are live (RIN-915 part 2). Until then the worker never claims a
- * `review_reminder` row, so opted-in rows simply wait.
+ * Kill switch for review emails. On by default now that the one-click
+ * unsubscribe page and its RFC 8058 POST handler are live (RIN-915 part 2);
+ * `REVIEW_REMINDER_SENDING_ENABLED=false` stops the worker claiming
+ * `review_reminder` rows. Rows held back past their send window are later
+ * canceled (`too_late`), never sent days late.
  */
-export const REVIEW_REMINDER_SENDING_ENABLED = false;
+export function reviewReminderSendingEnabled(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  return env['REVIEW_REMINDER_SENDING_ENABLED']?.trim().toLowerCase() !== 'false';
+}
 
 /** Body stored at enqueue time; the real email is rendered at send time. */
 const DEFERRED_BODY = 'Rendered at send time (review_reminder).';
@@ -176,10 +184,7 @@ export async function prepareReviewReminder(
 
   const locale = reminderLocale(facts.preference?.locale);
   const site = siteUrl();
-  const unsubscribe = unsubscribeUrl(
-    site,
-    unsubscribeToken(userId.toString(), communicationEnvironment('AUTH_SECRET')),
-  );
+  const token = unsubscribeToken(userId.toString(), communicationEnvironment('AUTH_SECRET'));
   const rendered = await renderReviewReminder({
     locale,
     quizTitle: facts.quiz.title,
@@ -190,7 +195,7 @@ export async function prepareReviewReminder(
       slug: facts.quiz.slug,
       attemptId: attempt.id.toString(),
     }),
-    unsubscribeUrl: unsubscribe,
+    unsubscribeUrl: unsubscribePageUrl(site, locale, token),
   });
   return {
     decision: 'send',
@@ -203,9 +208,41 @@ export async function prepareReviewReminder(
         },
       ],
       headers: {
-        'List-Unsubscribe': `<${unsubscribe}>`,
+        // No unsubscribe mailbox exists, so the header carries the HTTPS URL only.
+        'List-Unsubscribe': `<${oneClickUnsubscribeUrl(site, token)}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     },
   };
+}
+
+export type UnsubscribeLinkState = 'invalid' | 'subscribed' | 'unsubscribed';
+
+function verifiedUserId(token: string): string | null {
+  return verifyUnsubscribeToken(token, communicationEnvironment('AUTH_SECRET'))?.userId ?? null;
+}
+
+/**
+ * What the signed-out unsubscribe page shows for a link. A tampered token is
+ * `invalid`; a missing account or preference reads as `unsubscribed`, so the
+ * page never reveals whether an account exists.
+ */
+export async function unsubscribeLinkState(token: string): Promise<UnsubscribeLinkState> {
+  const userId = verifiedUserId(token);
+  if (!userId) return 'invalid';
+  return (await repository.studyRemindersEnabled(requiredObjectId(userId, 'user id')))
+    ? 'subscribed'
+    : 'unsubscribed';
+}
+
+/**
+ * One-click unsubscribe (RFC 8058 POST or the page button): records the
+ * opt-out with source `unsubscribe` and cancels pending review emails.
+ * Idempotent; returns false for a token that is not authentic.
+ */
+export async function unsubscribeWithToken(token: string, ip: string | null): Promise<boolean> {
+  const userId = verifiedUserId(token);
+  if (!userId) return false;
+  await optOutReviewReminder({ userId, source: 'unsubscribe', ip });
+  return true;
 }

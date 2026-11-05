@@ -20,12 +20,18 @@ import {
 import { ACCOUNT_DISABLE_DISABLED } from '@/shared/constants/account-disable';
 import {
   anyDateIn,
-  claimedAttemptTime,
+  attemptUnionStage,
+  EFFECTIVE_FIRST_TAKEN_AT,
   FUNNEL_GROUP_FIELDS,
   FUNNEL_WEEK_ACCUMULATORS,
   funnelFlags,
   funnelUnionStages,
 } from '@/repositories/pipelines/activation-funnel';
+import {
+  pathCountAccumulators,
+  unionDocuments,
+  utcWeekStart,
+} from '@/repositories/pipelines/activation-stages';
 
 interface DailyCountAggregate {
   _id: string;
@@ -99,12 +105,12 @@ const DAILY_GROUP_STAGE = {
 
 const DAY_MS = 86_400_000;
 
-/** When an attempt counts as taken; the one place RIN-920 changes (claim time). */
-const ATTEMPT_AT = '$takenAt';
-
 /**
  * Who counts as a learner: not an admin, not disabled, not flagged as a test
  * account by an admin, not a test/QA address (reserved domains, constant list).
+ * Keep in step with `isAnalyticsExcludedAccount` (shared/constants/analytics-exclusions),
+ * its in-memory twin that the review email (RIN-915) applies at send time: a
+ * rule added here must be added there, and the reverse.
  */
 const LEARNER_FILTER = {
   role: { $ne: 'admin' },
@@ -113,36 +119,8 @@ const LEARNER_FILTER = {
   email: { $nin: [...ANALYTICS_EXCLUDED_EMAILS], $not: ANALYTICS_TEST_EMAIL_PATTERN },
 } as const;
 
-function utcWeekStart(date: string): Record<string, unknown> {
-  return { $dateTrunc: { date, unit: 'week', startOfWeek: 'monday', timezone: 'UTC' } };
-}
-
-/** `quiz only`, `adaptive only` and `both` sums over two boolean fields. */
-function pathCountAccumulators(quiz: string, adaptive: string): Record<string, unknown> {
-  const count = (condition: unknown) => ({ $sum: { $cond: [condition, 1, 0] } });
-  return {
-    byQuiz: count({ $and: [quiz, { $not: [adaptive] }] }),
-    byAdaptive: count({ $and: [adaptive, { $not: [quiz] }] }),
-    byBoth: count({ $and: [quiz, adaptive] }),
-  };
-}
-
 function toPathCounts(row: ActivationPathAggregate): AdminActivationPathCounts {
   return { quiz: row.byQuiz, adaptive: row.byAdaptive, both: row.byBoth };
-}
-
-/**
- * In-memory rows injected with `$unionWith: { pipeline: [{ $documents }] }`
- * (MongoDB 6.0+). The adaptive events live in the API database, which a
- * cross-database `$unionWith` cannot reach; they are a handful of rows.
- * Nothing is injected for an empty list.
- */
-function unionDocuments(documents: readonly Record<string, unknown>[]): PipelineStage[] {
-  if (documents.length === 0) return [];
-  const stage: PipelineStage.UnionWith = {
-    $unionWith: { pipeline: [{ $documents: [...documents] }] },
-  } as PipelineStage.UnionWith;
-  return [stage];
 }
 
 export class AdminStatsRepository implements IAdminStatsRepository {
@@ -335,27 +313,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
     return [
       { $match: { createdAt: { $gte: from, $lt: to }, ...LEARNER_FILTER } },
       { $project: { _id: 0, uid: '$_id', signupAt: '$createdAt' } },
-      {
-        $unionWith: {
-          coll: AttemptModel.collection.name,
-          pipeline: [
-            {
-              $match: {
-                takenAt: { $gte: from, $lt: new Date(to.getTime() + 14 * DAY_MS) },
-                user: { $type: 'objectId' },
-              },
-            },
-            {
-              $project: {
-                _id: 0,
-                uid: '$user',
-                takenAt: ATTEMPT_AT,
-                claimedTakenAt: claimedAttemptTime(ATTEMPT_AT),
-              },
-            },
-          ],
-        },
-      },
+      attemptUnionStage(AttemptModel.collection.name, from, to),
       {
         $unionWith: {
           coll: QuizModel.collection.name,
@@ -425,6 +383,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
    * is outside the window), so the first-ever date is the earlier of the two.
    * The path is the one whose first falls in that week; `both` when both
    * firsts share the week.
+   * A claimed first attempt counts at `claimedAt` (`EFFECTIVE_FIRST_TAKEN_AT`).
    */
   static firstAttemptPipeline(
     from: Date,
@@ -439,7 +398,14 @@ export class AdminStatsRepository implements IAdminStatsRepository {
     return [
       { $match: { user: { $type: 'objectId' } } },
       { $sort: { user: -1, takenAt: 1 } },
-      { $group: { _id: '$user', firstTakenAt: { $first: '$takenAt' } } },
+      {
+        $group: {
+          _id: '$user',
+          firstTakenAt: { $first: '$takenAt' },
+          firstClaimedAt: { $first: '$claimedAt' },
+        },
+      },
+      { $addFields: { firstTakenAt: EFFECTIVE_FIRST_TAKEN_AT } },
       {
         $match: {
           _id: { $nin: [...excludedUserIds] },

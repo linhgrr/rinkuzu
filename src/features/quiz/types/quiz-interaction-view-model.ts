@@ -40,6 +40,8 @@ export interface SubmitQuizAttemptInput {
   answers: QuizAnswer[];
   idempotencyKey: string;
   userEmail: string;
+  /** Retry-missed session: the attempt whose misses are being retried (RIN-917). */
+  retryOfAttemptId?: string;
 }
 
 export interface AddQuizDiscussionCommentInput {

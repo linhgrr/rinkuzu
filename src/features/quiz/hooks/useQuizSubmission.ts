@@ -11,6 +11,8 @@ interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestio
   userAnswers: QuizAnswer[];
   userEmail: string;
   sessionEmail?: string;
+  /** Retry-missed session: submitted so the server stores a retry attempt (RIN-917). */
+  retryOfAttemptId?: string;
   onSubmitSuccess: (attemptId: string, score: number) => void | Promise<void>;
   onSubmitStart?: () => void;
   /** Receives the thrown value; the caller turns it into localized copy (RIN-753). */
@@ -25,6 +27,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
   userAnswers,
   userEmail,
   sessionEmail,
+  retryOfAttemptId,
   onSubmitSuccess,
   onSubmitStart,
   onSubmitError,
@@ -60,6 +63,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
       answers: payload.answers,
       idempotencyKey: idempotencyRef.current.key,
       userEmail: payload.userEmail,
+      ...(retryOfAttemptId ? { retryOfAttemptId } : {}),
     });
 
     idempotencyRef.current = null;

@@ -710,7 +710,12 @@ export default function QuizPlayerClient({
   const starterNotice = postSignInStarterNotice(entry, slug);
 
   const sessionEmail = session?.user?.email || undefined;
-  const progressEnabled = Boolean(session?.user?.email);
+  const retry = initialQuiz?.retry;
+  // A retry session is a subset of the quiz: never mix it with the full quiz's saved progress.
+  const progressEnabled = Boolean(session?.user?.email) && !retry;
+  const retryBadge = retry
+    ? t('resultActions.retryPill', { count: retry.questionIndices.length })
+    : undefined;
 
   const { loadProgress, saveProgress, flushSave, clearProgress } = useQuizProgress({
     slug,
@@ -862,6 +867,7 @@ export default function QuizPlayerClient({
     userAnswers: state.userAnswers,
     userEmail: state.userEmail,
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
+    ...(retry ? { retryOfAttemptId: retry.ofAttemptId } : {}),
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
         journey_id: getQuizJourneyId(),
@@ -1031,6 +1037,7 @@ export default function QuizPlayerClient({
           submitting={submitting}
           error={state.error}
           notice={starterNotice}
+          {...(retryBadge ? { titleBadge: retryBadge } : {})}
         />
       )}
 
@@ -1079,6 +1086,7 @@ export default function QuizPlayerClient({
             complete: completeSubmit,
           }}
           notice={starterNotice}
+          {...(retryBadge ? { titleBadge: retryBadge } : {})}
           t={t}
         />
       )}

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Pill } from '@/components/ui/Pill';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
@@ -76,6 +77,8 @@ interface DesktopQuizLayoutProps {
   submit: DesktopQuizSubmitControls;
   /** Shown above the question card, e.g. the post-sign-in starter intro (RIN-913). */
   notice?: ReactNode;
+  /** Pill beside the title, e.g. "Retry: 3 questions" (RIN-917). */
+  titleBadge?: string;
   t: TranslateFn;
 }
 
@@ -88,6 +91,7 @@ interface DesktopQuizHeaderProps {
   answeredQuestions: number;
   progress: number;
   onExit: () => void;
+  titleBadge?: string;
   t: TranslateFn;
 }
 
@@ -125,6 +129,7 @@ function DesktopQuizHeader({
   answeredQuestions,
   progress,
   onExit,
+  titleBadge,
   t,
 }: DesktopQuizHeaderProps) {
   return (
@@ -141,7 +146,10 @@ function DesktopQuizHeader({
               {t('exitQuiz')}
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-neutral-900">{quizTitle}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-semibold text-neutral-900">{quizTitle}</h1>
+                {titleBadge ? <Pill tone="warm">{titleBadge}</Pill> : null}
+              </div>
               <div className="text-sm">
                 {sessionEmail ? (
                   <Badge variant="success" className="text-xs">
@@ -343,6 +351,7 @@ export function DesktopQuizLayout({
   submitting,
   submit,
   notice,
+  titleBadge,
   t,
 }: DesktopQuizLayoutProps) {
   const [discussionLoaded, setDiscussionLoaded] = useState(
@@ -367,6 +376,7 @@ export function DesktopQuizLayout({
         answeredQuestions={answeredQuestions}
         progress={progress}
         onExit={exit.open}
+        {...(titleBadge ? { titleBadge } : {})}
         t={t}
       />
 

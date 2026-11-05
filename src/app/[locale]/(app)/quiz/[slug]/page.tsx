@@ -1,6 +1,7 @@
 import { getCurrentSession } from '@/lib/auth/session';
 import { permanentRedirect } from 'next/navigation';
 import { getQuizService } from '@/lib/quiz-factory';
+import { quizPlayQuerySchema } from '@/dtos/quiz';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
 import type { QuizPlayAuthorViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
@@ -26,6 +27,24 @@ function toQueryString(searchParams: QuizPageSearchParams): string {
   }
   const serialized = query.toString();
   return serialized ? `?${serialized}` : '';
+}
+
+/**
+ * `?retryOf=<attemptId>` (RIN-917) plays only the questions missed in that attempt.
+ * An invalid, foreign or guest `retryOf` falls back to the full quiz silently.
+ */
+async function loadQuizForPlay(
+  slug: string,
+  retryOf: string | null,
+  session: Awaited<ReturnType<typeof getCurrentSession>>,
+) {
+  const quizService = getQuizService();
+  const userId = session?.user?.id;
+  if (retryOf && userId && quizPlayQuerySchema.safeParse({ retryOf }).success) {
+    const retry = await quizService.getRetryQuizForPlay(slug, retryOf, userId, session?.user?.role);
+    if (retry.success) return retry;
+  }
+  return quizService.getQuizForPlay(slug, session?.user?.role, userId);
 }
 
 export default async function QuizPlayerPage({
@@ -66,11 +85,7 @@ export default async function QuizPlayerPage({
       />
     );
   }
-  const result = await getQuizService().getQuizForPlay(
-    slug,
-    session?.user?.role,
-    session?.user?.id,
-  );
+  const result = await loadQuizForPlay(slug, firstValue(query['retryOf']), session);
 
   if (!result.success && result.statusCode === 404) {
     // Former slugs (RIN-624) only cost a lookup after a miss.

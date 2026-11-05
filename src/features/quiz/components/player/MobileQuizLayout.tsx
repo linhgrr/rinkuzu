@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { MobileQuizPlayer } from '@/features/quiz/components/MobileQuizPlayer';
 import { mapMobileAnswersToOrderedAnswers } from '@/features/quiz/lib/mobileAnswerMapping';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
@@ -15,6 +16,8 @@ interface MobileQuizLayoutProps {
   onExit: () => void;
   submitting: boolean;
   error?: string;
+  /** Shown above question 1 (RIN-913). */
+  notice?: ReactNode;
 }
 
 function orderedAnswersToMobileRecord(
@@ -42,6 +45,7 @@ export function MobileQuizLayout({
   onExit,
   submitting,
   error,
+  notice,
 }: MobileQuizLayoutProps) {
   const questionsWithId = quiz.questions.map((question) => ({
     id: question.id,
@@ -73,6 +77,7 @@ export function MobileQuizLayout({
       onExit={onExit}
       submitting={submitting}
       {...(error !== undefined ? { submissionError: error } : {})}
+      notice={notice}
     />
   );
 }

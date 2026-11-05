@@ -37,6 +37,18 @@ export const STARTER_QUIZ_ALLOWLIST: readonly StarterQuizAllowlistEntry[] = [
 
 const STARTER_QUIZ_MAX_QUESTIONS = 15;
 
+/** Index of the starter to lead with: the first in the UI locale, else the first; -1 when empty. */
+export function pickStarterQuizIndex(
+  starterQuizzes: readonly Pick<StarterQuizDto, 'locale'>[],
+  locale: string,
+): number {
+  if (starterQuizzes.length === 0) return -1;
+  return Math.max(
+    starterQuizzes.findIndex((quiz) => quiz.locale === locale),
+    0,
+  );
+}
+
 function getDropReason(
   candidate: DashboardStarterQuizCandidateRecord | undefined,
 ): StarterQuizDropReason | null {

@@ -158,3 +158,106 @@ describe('DashboardService', () => {
     });
   });
 });
+
+// RIN-913: the post-sign-in landing sends a new learner straight into a starter quiz.
+describe('DashboardService.getPostSignInHref', () => {
+  const twoLocaleAllowlist = [
+    { slug: 'fake-starter-vi', locale: 'vi' },
+    { slug: 'fake-starter-en', locale: 'en' },
+  ];
+  const candidate = (slug: string) => ({
+    slug,
+    title: `Fake ${slug}`,
+    visibility: 'public',
+    questionCount: 7,
+    isPremium: false,
+  });
+
+  function createStarterRepository(): IDashboardRepository {
+    const repository = createRepository();
+    vi.mocked(repository.findStarterQuizCandidates).mockResolvedValue([
+      candidate('fake-starter-vi'),
+      candidate('fake-starter-en'),
+    ]);
+    return repository;
+  }
+
+  it.each([
+    { locale: 'vi', slug: 'fake-starter-vi' },
+    { locale: 'en', slug: 'fake-starter-en' },
+  ])('sends a new $locale learner to the $locale starter quiz', async ({ locale, slug }) => {
+    const service = new DashboardService(
+      createStarterRepository(),
+      createQuizRepository(),
+      twoLocaleAllowlist,
+    );
+
+    await expect(
+      service.getPostSignInHref({ userId: 'user-1', locale, starterSkipped: false }),
+    ).resolves.toBe(`/quiz/${slug}?entry=post_signin_starter`);
+  });
+
+  it('falls back to the first starter when none matches the UI locale', async () => {
+    const service = new DashboardService(
+      createStarterRepository(),
+      createQuizRepository(),
+      twoLocaleAllowlist,
+    );
+
+    await expect(
+      service.getPostSignInHref({ userId: 'user-1', locale: 'ja', starterSkipped: false }),
+    ).resolves.toBe('/quiz/fake-starter-vi?entry=post_signin_starter');
+  });
+
+  it.each([
+    { label: 'a submitted attempt', key: 'hasSubmittedAttempt' as const },
+    { label: 'an authored quiz', key: 'hasAuthoredQuiz' as const },
+  ])('keeps a returning learner with $label on the dashboard', async ({ key }) => {
+    const repository = createStarterRepository();
+    vi.mocked(repository[key]).mockResolvedValue(true);
+    const service = new DashboardService(repository, createQuizRepository(), twoLocaleAllowlist);
+
+    await expect(
+      service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
+    ).resolves.toBe('/dashboard');
+  });
+
+  it('lands on the dashboard when no starter resolves', async () => {
+    const repository = createStarterRepository();
+    vi.mocked(repository.findStarterQuizCandidates).mockResolvedValue([]);
+    const service = new DashboardService(repository, createQuizRepository(), twoLocaleAllowlist);
+
+    await expect(
+      service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
+    ).resolves.toBe('/dashboard');
+  });
+
+  it('lands on the dashboard with an empty allowlist', async () => {
+    const service = new DashboardService(createStarterRepository(), createQuizRepository(), []);
+
+    await expect(
+      service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
+    ).resolves.toBe('/dashboard');
+  });
+
+  it('fails open to the dashboard when a lookup throws', async () => {
+    const repository = createStarterRepository();
+    vi.mocked(repository.hasSubmittedAttempt).mockRejectedValue(new Error('db down'));
+    const service = new DashboardService(repository, createQuizRepository(), twoLocaleAllowlist);
+
+    await expect(
+      service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
+    ).resolves.toBe('/dashboard');
+  });
+
+  it('honours the skip cookie without touching the database', async () => {
+    const repository = createStarterRepository();
+    const service = new DashboardService(repository, createQuizRepository(), twoLocaleAllowlist);
+
+    await expect(
+      service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: true }),
+    ).resolves.toBe('/dashboard');
+    expect(repository.hasSubmittedAttempt).not.toHaveBeenCalled();
+    expect(repository.findStarterQuizCandidates).not.toHaveBeenCalled();
+  });
+});

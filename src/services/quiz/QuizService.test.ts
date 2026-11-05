@@ -225,6 +225,7 @@ describe('QuizService facade', () => {
       'idem',
       session,
       'user@example.com',
+      undefined,
     );
 
     await service.getQuizFlashcards('algebra', session);

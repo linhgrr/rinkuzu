@@ -152,12 +152,12 @@ describe('useAuthRequiredPrompt', () => {
     );
   });
 
-  it('falls back to the dashboard for blocked callback paths', () => {
+  it('falls back to the post-sign-in landing for blocked callback paths', () => {
     expect(buildAuthRequiredHref('/vi', 'vi')).toBe(
-      `/login?callbackUrl=${encodeURIComponent('/dashboard')}`,
+      `/login?callbackUrl=${encodeURIComponent('/start')}`,
     );
     expect(buildAuthRequiredHref('//evil.example/x', 'vi')).toBe(
-      `/login?callbackUrl=${encodeURIComponent('/dashboard')}`,
+      `/login?callbackUrl=${encodeURIComponent('/start')}`,
     );
   });
 });

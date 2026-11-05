@@ -4,6 +4,7 @@ import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { createE2EUserEmail } from './support/fixture-identifiers';
 import { STARTER_QUIZ_ALLOWLIST } from '../../src/services/dashboard/starter-quizzes';
+import { skipPostSignInStarter } from './support/post-signin';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
 const E2E_CONTROL_TOKEN = 'rinkuzu-e2e-control';
@@ -429,6 +430,7 @@ async function login(page: Page, user: SeededUser): Promise<SessionPayload> {
     window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
   });
   await page.goto('/en/login?callbackUrl=%2Fdashboard');
+  await skipPostSignInStarter(page);
   await page.getByLabel('Email Address').fill(user.email);
   await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
   await Promise.all([
@@ -575,6 +577,50 @@ test.describe('production critical paths', () => {
         page.getByTestId('starter-quiz-primary').click(),
       ]);
       await expect(page.getByText(E2E_STARTER_QUIZ.question)).toBeVisible();
+    });
+  });
+
+  test('sends a new learner signing in with no destination into the starter quiz @critical-starter', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      // RIN-913: no callbackUrl and no skip cookie. The target fixture has no
+      // attempt and no authored quiz, so /start opens the starter quiz.
+      await page.addInitScript(() => {
+        window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+      });
+      await page.goto('/en/login');
+      await page.getByLabel('Email Address').fill(fixture.target.email);
+      await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+      await Promise.all([
+        page.waitForURL(new RegExp(`/en/quiz/${starterSlug}\\?entry=post_signin_starter$`)),
+        page.getByRole('button', { name: 'Sign In', exact: true }).click(),
+      ]);
+
+      await expect(page.getByText('Try a 2-minute quiz to see how Rinkuzu works')).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Skip', exact: true })).toHaveAttribute(
+        'href',
+        '/en/dashboard',
+      );
+      await expect(page.getByText(E2E_STARTER_QUIZ.question)).toBeVisible();
+      await page.getByText('The starter card', { exact: true }).click();
+
+      const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+      if (await desktopSubmit.isVisible()) {
+        await desktopSubmit.click();
+      } else {
+        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+      }
+      await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=`));
+      await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
+
+      const starterQuiz = await fixture.db.collection('quizzes').findOne({ slug: starterSlug });
+      const attempt = await fixture.db.collection('attempts').findOne({
+        quiz: starterQuiz?._id,
+        user: fixture.target.id,
+      });
+      expect(attempt).toMatchObject({ score: 100, totalQuestions: 1 });
     });
   });
 

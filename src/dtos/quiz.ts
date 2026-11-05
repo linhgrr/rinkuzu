@@ -157,7 +157,14 @@ export interface QuizDetailDto extends QuizListItemDto {
 
 export interface QuizPlayDetailDto extends Omit<QuizDetailDto, 'questions'> {
   questions: PlayableQuizQuestionDto[];
+  /** Present on a retry-missed session: `questions[i]` is quiz question `questionIndices[i]`. */
+  retry?: { ofAttemptId: string; questionIndices: number[] };
 }
+
+/** `GET /api/quiz/<slug>/play?retryOf=<attemptId>` (RIN-914). */
+export const quizPlayQuerySchema = z.object({
+  retryOf: objectIdSchema.optional(),
+});
 
 export interface QuizListDto {
   quizzes: QuizListItemDto[];
@@ -211,6 +218,7 @@ export const submitQuizAttemptRequestSchema = z.strictObject({
   answers: z.array(quizProgressAnswerSchema),
   idempotencyKey: z.uuid(),
   userEmail: z.string().trim().toLowerCase().pipe(z.email()).optional(),
+  retryOfAttemptId: objectIdSchema.optional(),
 });
 
 export const addDiscussionCommentRequestSchema = z.strictObject({

@@ -13,6 +13,10 @@ export const dynamic = 'force-dynamic';
 
 type QuizPageSearchParams = Record<string, string | string[] | undefined>;
 
+function firstValue(value: string | string[] | undefined): string | null {
+  return (Array.isArray(value) ? value[0] : value) ?? null;
+}
+
 function toQueryString(searchParams: QuizPageSearchParams): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(searchParams)) {
@@ -31,7 +35,11 @@ export default async function QuizPlayerPage({
   params: Promise<{ locale: string; slug: string }>;
   searchParams: Promise<QuizPageSearchParams>;
 }) {
-  const [{ locale, slug }, session] = await Promise.all([params, getCurrentSession()]);
+  const [{ locale, slug }, session, query] = await Promise.all([
+    params,
+    getCurrentSession(),
+    searchParams,
+  ]);
   const premiumMetadata = await getPremiumQuizService().getCatalogMetadataBySlug(slug);
   if (premiumMetadata) {
     const description =
@@ -69,7 +77,7 @@ export default async function QuizPlayerPage({
     const canonicalSlug = await getQuizService().resolveSlugAlias(slug);
     if (canonicalSlug) {
       permanentRedirect(
-        `/${locale}/quiz/${encodeURIComponent(canonicalSlug)}${toQueryString(await searchParams)}`,
+        `/${locale}/quiz/${encodeURIComponent(canonicalSlug)}${toQueryString(query)}`,
       );
     }
   }
@@ -119,6 +127,7 @@ export default async function QuizPlayerPage({
         initialErrorStatus={null}
         initialQuiz={quiz}
         slug={slug}
+        entry={firstValue(query['entry'])}
       />
     </>
   );

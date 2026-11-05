@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 const attemptMocks = vi.hoisted(() => ({
   aggregate: vi.fn(),
   populate: vi.fn(),
+  distinct: vi.fn(),
 }));
 
 vi.mock('@/lib/mongoose', () => ({
@@ -13,6 +14,7 @@ vi.mock('@/lib/mongoose', () => ({
 vi.mock('@/models/Attempt', () => ({
   default: {
     aggregate: attemptMocks.aggregate,
+    distinct: attemptMocks.distinct,
   },
 }));
 
@@ -177,6 +179,23 @@ describe('AttemptRepository', () => {
         repository.findByIdWithQuiz('507f191e810c19729de860ea', { userId: 'not-valid' }),
       ).rejects.toThrow(ZodError);
       expect(attemptMocks.aggregate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findAttemptedQuizSlugs', () => {
+    it('scopes a claim-token owner to its unclaimed attempts', async () => {
+      const repository = new AttemptRepository();
+      attemptMocks.distinct.mockResolvedValueOnce(['algebra']);
+
+      await expect(
+        repository.findAttemptedQuizSlugs({ guestClaimTokenHash: 'd'.repeat(64) }, ['algebra']),
+      ).resolves.toEqual(['algebra']);
+
+      expect(attemptMocks.distinct).toHaveBeenCalledWith('quizSnapshot.slug', {
+        guestClaimTokenHash: 'd'.repeat(64),
+        user: null,
+        'quizSnapshot.slug': { $in: ['algebra'] },
+      });
     });
   });
 

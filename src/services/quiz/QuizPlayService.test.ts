@@ -505,6 +505,7 @@ describe('QuizPlayService progress operations', () => {
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a4',
       null,
       'legacy@example.com',
+      undefined,
       token,
     );
 

@@ -52,6 +52,13 @@ export interface IQuizService {
     userId?: string,
   ): Promise<ServiceResult<QuizPlayDetailDto>>;
 
+  getRetryQuizForPlay(
+    slug: string,
+    retryOfAttemptId: string,
+    userId?: string,
+    userRole?: string,
+  ): Promise<ServiceResult<QuizPlayDetailDto>>;
+
   getSavedQuizProgress(
     slug: string,
     userId: string,
@@ -90,6 +97,7 @@ export interface IQuizService {
     idempotencyKey: string,
     session: Session | null,
     userEmail?: string,
+    retryOfAttemptId?: string,
     guestClaimToken?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>>;
 

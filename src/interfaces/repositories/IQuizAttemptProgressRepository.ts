@@ -23,6 +23,9 @@ interface QuizAttemptSubmissionData {
   takenAt: Date;
   premiumSubmissionId?: string;
   premiumSnapshotHash?: string;
+  /** Retry-missed attempt: the source attempt and the quiz question index of each answer. */
+  retryOfAttemptId?: string;
+  questionIndices?: number[];
 }
 
 export type RecordQuizAttemptProgressData =

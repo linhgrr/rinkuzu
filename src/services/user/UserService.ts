@@ -4,7 +4,7 @@ import type {
   AttemptOwnerIdentity,
   IAttemptRepository,
 } from '@/interfaces/repositories/IAttemptRepository';
-import type { AttemptOwner } from '@/interfaces/services/IUserService';
+import type { AttemptDetailOptions, AttemptOwner } from '@/interfaces/services/IUserService';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
@@ -17,6 +17,7 @@ import type {
 import { logger } from '@/lib/logger';
 import { PublicProfileDtoMapper } from '@/mappers/user/PublicProfileDtoMapper';
 import { UserAttemptDtoMapper } from '@/mappers/user/UserAttemptDtoMapper';
+import type { NextQuizResolver } from '@/services/quiz/next-quiz';
 import type { PremiumAccessContext, PremiumAccessDecision } from '@/entities/PremiumQuiz';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 
@@ -43,6 +44,7 @@ export class UserService implements IUserService {
     private attemptRepository: IAttemptRepository,
     private quizRepository: IQuizRepository,
     private premiumAccessPolicy?: PremiumAttemptAccessPolicy,
+    private nextQuizResolver?: Pick<NextQuizResolver, 'resolve'>,
   ) {}
 
   async getPublicProfile(
@@ -96,12 +98,11 @@ export class UserService implements IUserService {
   async getAttemptDetails(
     attemptId: string,
     owner: AttemptOwner,
+    options: AttemptDetailOptions = {},
   ): Promise<ServiceResult<AttemptDetailDto>> {
     try {
-      const attempt = await this.attemptRepository.findByIdWithQuiz(
-        attemptId,
-        toAttemptOwnerIdentity(owner),
-      );
+      const ownerIdentity = toAttemptOwnerIdentity(owner);
+      const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, ownerIdentity);
 
       if (!attempt) {
         return {
@@ -126,9 +127,18 @@ export class UserService implements IUserService {
           ));
       }
 
+      const nextQuiz =
+        this.nextQuizResolver && quiz !== null
+          ? await this.nextQuizResolver.resolve({
+              owner: ownerIdentity,
+              currentSlug: quiz.slug,
+              ...(options.locale === undefined ? {} : { locale: options.locale }),
+            })
+          : null;
+
       return {
         success: true,
-        data: UserAttemptDtoMapper.toDetailDto(attempt, !canReadPremiumContent),
+        data: UserAttemptDtoMapper.toDetailDto(attempt, !canReadPremiumContent, nextQuiz),
       };
     } catch (error) {
       logger.error({ error }, 'Get attempt details error');

@@ -6,6 +6,7 @@ import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepos
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { Attempt } from '@/entities/Attempt';
 import type { QuizQuestion } from '@/entities/Quiz';
+import type { NextQuizResolver } from '@/services/quiz/next-quiz';
 import { UserService } from './UserService';
 
 interface ServiceOverrides {
@@ -20,6 +21,7 @@ interface ServiceOverrides {
       snapshotHash: string,
     ) => Promise<boolean>;
   };
+  nextQuizResolver?: Pick<NextQuizResolver, 'resolve'>;
 }
 
 function questionFixture(id: string, correctIndex = 0): QuizQuestion {
@@ -104,6 +106,7 @@ function createService(overrides: ServiceOverrides = {}) {
       attemptRepository,
       quizRepository,
       overrides.premiumAccessPolicy,
+      overrides.nextQuizResolver,
     ),
   };
 }
@@ -571,6 +574,84 @@ describe('UserService', () => {
       assertFail(result);
       expect(result.error).toBe('Failed to get attempt details');
       expect(result.statusCode).toBe(500);
+    });
+
+    it('adds missedCount and the next quiz in the requested locale (RIN-914)', async () => {
+      const resolve = vi.fn().mockResolvedValue({ slug: 'next-starter', title: 'Next starter' });
+      const { service, attemptRepository } = createService({ nextQuizResolver: { resolve } });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          totalQuestions: 2,
+          answers: [0, -1],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Quiz',
+            slug: 'quiz',
+            questions: [questionFixture('q1', 0), questionFixture('q2', 1)],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails(
+        'attempt-1',
+        { userId: 'user-1' },
+        { locale: 'vi' },
+      );
+
+      assertOk(result);
+      expect(result.data).toMatchObject({
+        missedCount: 1,
+        nextQuiz: { slug: 'next-starter', title: 'Next starter' },
+      });
+      expect(resolve).toHaveBeenCalledWith({
+        owner: { userId: 'user-1' },
+        currentSlug: 'quiz',
+        locale: 'vi',
+      });
+    });
+
+    it('picks the next quiz for a claim-token guest by the token hash', async () => {
+      const resolve = vi.fn().mockResolvedValue(null);
+      const { service, attemptRepository } = createService({ nextQuizResolver: { resolve } });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          quiz: {
+            id: 'quiz-1',
+            title: 'Quiz',
+            slug: 'quiz',
+            questions: [questionFixture('q1', 0)],
+          },
+        }),
+      );
+      const token = 'x'.repeat(43);
+
+      assertOk(await service.getAttemptDetails('attempt-1', { guestClaimToken: token }));
+
+      expect(resolve).toHaveBeenCalledWith({
+        owner: { guestClaimTokenHash: createHash('sha256').update(token).digest('hex') },
+        currentSlug: 'quiz',
+      });
+    });
+
+    it('returns nextQuiz null without a resolver', async () => {
+      const { service, attemptRepository } = createService();
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Quiz',
+            slug: 'quiz',
+            questions: [questionFixture('q1', 0)],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails('attempt-1', { guestEmail: 'g@example.test' });
+
+      assertOk(result);
+      expect(result.data.nextQuiz).toBeNull();
     });
   });
 });

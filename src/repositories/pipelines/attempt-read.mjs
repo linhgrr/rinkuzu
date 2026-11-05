@@ -71,6 +71,8 @@ export function buildAttemptDetailPipeline(attemptId, identityFilter) {
         takenAt: 1,
         premiumSubmission: 1,
         premiumSnapshotHash: 1,
+        retryOfAttemptId: 1,
+        questionIndices: 1,
         quiz: buildQuizProjection({ includeQuestions: true }),
       },
     },

@@ -113,6 +113,8 @@ function createSubmissionDigest(data: RecordQuizAttemptProgressData): string {
         answers: data.answers,
         premiumSubmissionId: data.premiumSubmissionId,
         premiumSnapshotHash: data.premiumSnapshotHash,
+        retryOfAttemptId: data.retryOfAttemptId,
+        questionIndices: data.questionIndices,
       }),
     )
     .digest('hex');
@@ -320,6 +322,9 @@ async function createAttempt(
             ...question,
           })),
         },
+        ...(data.retryOfAttemptId !== undefined && data.questionIndices !== undefined
+          ? { retryOfAttemptId: data.retryOfAttemptId, questionIndices: data.questionIndices }
+          : {}),
         answers: data.answers.map(AnswerPersistenceMapper.toPersistence),
         score: data.score,
         correctAnswers: data.correctAnswers,

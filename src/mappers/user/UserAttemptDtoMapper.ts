@@ -9,6 +9,7 @@ import type { Attempt, AttemptAnswer, AttemptQuizSnapshot } from '@/entities/Att
 import type { QuizQuestion } from '@/entities/Quiz';
 import { serializeDate } from '@/lib/date-serialization';
 import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
+import { countMissedAnswers } from '@/services/quiz/quiz-retry';
 
 function requireQuizSnapshot(attempt: Attempt): AttemptQuizSnapshot {
   if (typeof attempt.quiz !== 'object' || attempt.quiz === null) {
@@ -50,7 +51,11 @@ export class UserAttemptDtoMapper {
     };
   }
 
-  static toDetailDto(attempt: Attempt, contentLocked = false): AttemptDetailDto {
+  static toDetailDto(
+    attempt: Attempt,
+    contentLocked = false,
+    nextQuiz: AttemptDetailDto['nextQuiz'] = null,
+  ): AttemptDetailDto {
     const quiz = requireQuizSnapshot(attempt);
     if (!quiz.questions) {
       throw new TypeError('attempt.quiz.questions is required');
@@ -80,6 +85,10 @@ export class UserAttemptDtoMapper {
         ...(quiz.description !== undefined && { description: quiz.description }),
         questions,
       },
+      missedCount: countMissedAnswers(attempt),
+      nextQuiz,
+      ...(attempt.retryOfAttemptId !== undefined && { retryOfAttemptId: attempt.retryOfAttemptId }),
+      ...(attempt.questionIndices !== undefined && { questionIndices: attempt.questionIndices }),
     };
   }
 

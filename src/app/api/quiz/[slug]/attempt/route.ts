@@ -29,6 +29,7 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
       parsed.body.idempotencyKey,
       session,
       userEmail,
+      parsed.body.retryOfAttemptId,
       guestClaimToken,
     );
 

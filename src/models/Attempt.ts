@@ -28,6 +28,8 @@ interface AttemptDocument {
   totalQuestions: number;
   answers: SelectedAnswerPersistenceRecord[];
   takenAt: Date;
+  retryOfAttemptId?: Types.ObjectId;
+  questionIndices?: number[];
 }
 
 const AttemptQuizSnapshotSchema = new Schema<AttemptQuizSnapshotDocument>(
@@ -170,6 +172,18 @@ const AttemptSchema = new Schema<AttemptDocument>({
     type: Date,
     default: Date.now,
   },
+  // Retry-missed attempts (RIN-914): optional and additive. `questionIndices[i]` is the quiz
+  // question index answered by `answers[i]`; the snapshot already holds only those questions.
+  retryOfAttemptId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Attempt',
+    immutable: true,
+  },
+  questionIndices: {
+    type: [Number],
+    default: undefined,
+    immutable: true,
+  },
 });
 
 AttemptSchema.pre('validate', function validateIdentity() {
@@ -181,6 +195,28 @@ AttemptSchema.pre('validate', function validateIdentity() {
   }
   if (this.claimedAt && !this.user) {
     this.invalidate('claimedAt', 'Only a user-owned attempt can be claimed');
+  }
+});
+
+AttemptSchema.pre('validate', function validateRetryContract() {
+  const indices = this.questionIndices;
+  if (Boolean(this.retryOfAttemptId) !== Boolean(indices)) {
+    this.invalidate(
+      'questionIndices',
+      'Retry attempts record retryOfAttemptId and questionIndices',
+    );
+    return;
+  }
+  if (!indices) return;
+  const ascendingUnique = indices.every(
+    (value, index) =>
+      isNonNegativeInteger(value) && (index === 0 || value > (indices[index - 1] ?? -1)),
+  );
+  if (!ascendingUnique || indices.length !== this.answers.length) {
+    this.invalidate(
+      'questionIndices',
+      'questionIndices must be ascending unique indices, one per answer',
+    );
   }
 });
 

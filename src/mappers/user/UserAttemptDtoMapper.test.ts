@@ -63,4 +63,24 @@ describe('UserAttemptDtoMapper', () => {
       quiz: { questions: [] },
     });
   });
+
+  it('renders a quick round with its played questions, mode and indices (RIN-936)', () => {
+    const quick: Attempt = { ...attempt, mode: 'quick', questionIndices: [17, 4] };
+
+    const detail = UserAttemptDtoMapper.toDetailDto(quick);
+
+    expect(detail).toMatchObject({
+      mode: 'quick',
+      questionIndices: [17, 4],
+      historyStatus: 'complete',
+      totalQuestions: 2,
+    });
+    expect(detail.quiz.questions.map((question) => question.id)).toEqual([
+      'question-1',
+      'question-2',
+    ]);
+    expect(UserAttemptDtoMapper.toSummaryDto(quick)).toMatchObject({ mode: 'quick' });
+    expect(UserAttemptDtoMapper.toSummaryDto(attempt)).not.toHaveProperty('mode');
+    expect(UserAttemptDtoMapper.toDetailDto(attempt)).not.toHaveProperty('mode');
+  });
 });

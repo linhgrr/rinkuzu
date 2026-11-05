@@ -38,6 +38,7 @@ export interface AttemptPersistenceRecord {
   takenAt: Date;
   retryOfAttemptId?: MongoIdLike;
   questionIndices?: number[];
+  mode?: 'quick' | 'full';
 }
 
 export interface RecentAttemptActivityPersistenceRecord {

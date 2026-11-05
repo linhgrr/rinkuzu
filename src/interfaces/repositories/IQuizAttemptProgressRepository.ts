@@ -25,7 +25,10 @@ interface QuizAttemptSubmissionData {
   premiumSnapshotHash?: string;
   /** Retry-missed attempt: the source attempt and the quiz question index of each answer. */
   retryOfAttemptId?: string;
+  /** Retry (ascending) or quick round (play order): the quiz question index of each answer. */
   questionIndices?: number[];
+  /** Quick round (RIN-936); absent on full and retry attempts. */
+  mode?: 'quick';
 }
 
 export type RecordQuizAttemptProgressData =

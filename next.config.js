@@ -173,6 +173,13 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'cdn.rinkuzu.app',
+        port: '',
+        pathname: '/images/**',
+      },
+      // Legacy ImgBB images until the RIN-959 migration rewrites them.
+      {
+        protocol: 'https',
         hostname: 'i.ibb.co',
         port: '',
         pathname: '/**',

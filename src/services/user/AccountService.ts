@@ -102,6 +102,7 @@ export class AccountService implements IAccountService {
         return { success: false, error: 'User not found', statusCode: 404 };
       }
       const upload = await this.imageStorage.upload({
+        kind: 'avatar',
         bytes: avatar.bytes,
         contentType: avatar.contentType,
         filename: `avatar-${profile.id}`,

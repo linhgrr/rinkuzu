@@ -21,10 +21,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-function renderSubmissionHook(
-  userAnswers: Array<number | number[]> = [1],
-  sessionEmail?: string,
-) {
+function renderSubmissionHook(userAnswers: Array<number | number[]> = [1], sessionEmail?: string) {
   const onSubmitSuccess = vi.fn();
   const onSubmitError = vi.fn();
   const hook = renderHook(
@@ -150,7 +147,7 @@ describe('useQuizSubmission', () => {
           slug: 'architecture',
           quiz: { questions: [{ type: 'single' }] },
           userAnswers: [1],
-            onSubmitSuccess,
+          onSubmitSuccess,
           onSubmitError: vi.fn(),
           mapAnswersToOriginalOrder: (_quiz, answers) => answers,
           isQuestionAnswered: (_question, answer) => answer !== -1,

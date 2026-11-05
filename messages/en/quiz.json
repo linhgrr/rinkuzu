@@ -67,11 +67,6 @@
   "loadingQuizInfo": "Loading quiz information...",
   "noTimeLimit": "No time limit",
   "login": "Login",
-  "loginToTrack": "to track your progress and save your results",
-  "yourEmail": "Your Email",
-  "enterEmailAddress": "Enter your email address",
-  "weWillUseEmail": "We'll use this to track your progress",
-  "startQuiz": "Start Quiz",
   "backHome": "Back Home",
   "exitQuiz": "Exit Quiz",
   "of": "of",
@@ -139,5 +134,12 @@
   "optionImageAlt": "Image for option {option}",
   "starterIntro": "Try a 2-minute quiz to see how Rinkuzu works",
   "starterIntroLabel": "Starter quiz",
-  "starterSkip": "Skip"
+  "starterSkip": "Skip",
+  "guestSaveTitle": "Save your result and get your personalized review",
+  "guestSaveBody": "Sign in once to keep this result and review every question.",
+  "guestSaveScoreOnlyBody": "Sign in to add this score to your profile.",
+  "guestSaveWithGoogle": "Save with Google",
+  "guestSaveSignInEmail": "Sign in with email",
+  "guestSaveCreateAccount": "Create an account",
+  "guestReviewUnavailable": "We can't open the question review on this device. Your score is still shown above."
 }

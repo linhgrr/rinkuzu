@@ -4,6 +4,8 @@
  * The token never goes to analytics, logs or URLs.
  */
 
+import { z } from 'zod';
+
 /** @public Read by the sign-in claim step (RIN-912 part 4). */
 export const GUEST_CLAIMS_STORAGE_KEY = 'rinkuzu.guestClaims.v1';
 
@@ -28,16 +30,15 @@ export function createGuestClaimToken(): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+const guestClaimSchema = z.object({
+  attemptId: z.string(),
+  token: z.string(),
+  quizSlug: z.string(),
+  takenAt: z.number(),
+});
+
 function isGuestClaim(value: unknown): value is GuestClaim {
-  if (typeof value !== 'object' || value === null) return false;
-  const claim = value as Record<string, unknown>;
-  return (
-    typeof claim.attemptId === 'string' &&
-    typeof claim.token === 'string' &&
-    typeof claim.quizSlug === 'string' &&
-    typeof claim.takenAt === 'number' &&
-    Number.isFinite(claim.takenAt)
-  );
+  return guestClaimSchema.safeParse(value).success;
 }
 
 function getStorage(): Storage | null {

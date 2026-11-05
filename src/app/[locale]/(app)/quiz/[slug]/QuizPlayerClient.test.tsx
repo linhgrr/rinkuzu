@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction-api';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
@@ -9,10 +9,11 @@ import { findGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 import QuizPlayerClient from './QuizPlayerClient';
 
 // Stable identities: the player's load effect depends on the router and progress callbacks.
-const { refreshMock, pushMock, router, progress } = vi.hoisted(() => {
+const { refreshMock, pushMock, router, progress, layoutSubmit } = vi.hoisted(() => {
   const refresh = vi.fn();
   const push = vi.fn();
   return {
+    layoutSubmit: { complete: null as null | (() => Promise<boolean>) },
     refreshMock: refresh,
     pushMock: push,
     router: { push, back: () => undefined, refresh },
@@ -57,25 +58,24 @@ vi.mock('@/features/quiz/api/quiz-interaction-api', () => ({
   submitQuizAttemptViewModel: vi.fn(),
 }));
 // The real layouts load lazily and take seconds on a cold worker; this stub shows
-// question 1 and submits through the player's real useQuizSubmission.
+// question 1 and hands out the submit action wired to the player's real useQuizSubmission.
 vi.mock('@/features/quiz/components/player/DesktopQuizLayout', () => ({
   DesktopQuizLayout: ({
     currentQuestion,
     error,
     submit,
   }: {
-    currentQuestion: { question: string };
+    currentQuestion: { id: string };
     error: string;
     submit: { complete: () => Promise<boolean> };
-  }) => (
-    <div data-testid="desktop-layout">
-      <p>{currentQuestion.question}</p>
-      {error ? <p role="alert">{error}</p> : null}
-      <button type="button" onClick={() => void submit.complete()}>
-        stub-submit
-      </button>
-    </div>
-  ),
+  }) => {
+    layoutSubmit.complete = submit.complete;
+    return (
+      <div data-testid="desktop-layout" data-question-id={currentQuestion.id}>
+        {error ? <p role="alert">{error}</p> : null}
+      </div>
+    );
+  },
 }));
 
 vi.mock('@/features/quiz/components/PremiumRequiredModal', () => ({
@@ -175,7 +175,7 @@ describe('QuizPlayerClient signed-out play (RIN-912)', () => {
   it('shows question 1 straight away with no email field', async () => {
     renderPlayer();
 
-    expect(await screen.findByText('Two plus two?')).toBeInTheDocument();
+    expect(await screen.findByTestId('desktop-layout')).toHaveAttribute('data-question-id', 'q1');
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'startQuiz' })).not.toBeInTheDocument();
   });
@@ -191,9 +191,10 @@ describe('QuizPlayerClient signed-out play (RIN-912)', () => {
       });
     renderPlayer();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'stub-submit' }));
+    await screen.findByTestId('desktop-layout');
+    await act(async () => expect(await layoutSubmit.complete?.()).toBe(false));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'stub-submit' }));
+    await act(async () => expect(await layoutSubmit.complete?.()).toBe(true));
     await waitFor(() => expect(pushMock).toHaveBeenCalledOnce());
 
     const [first, retry] = vi.mocked(submitQuizAttemptViewModel).mock.calls.map(([input]) => input);
@@ -203,7 +204,9 @@ describe('QuizPlayerClient signed-out play (RIN-912)', () => {
     expect(first).not.toHaveProperty('userEmail');
     expect(retry).not.toHaveProperty('userEmail');
     expect(findGuestClaimToken('attempt-1')).toBe(first?.guestClaimToken);
-    expect(pushMock).toHaveBeenCalledWith('/quiz/private-quiz/result?attemptId=attempt-1&score=100');
+    expect(pushMock).toHaveBeenCalledWith(
+      '/quiz/private-quiz/result?attemptId=attempt-1&score=100',
+    );
     // The token never reaches analytics.
     expect(JSON.stringify(vi.mocked(captureAnalyticsEvent).mock.calls)).not.toContain(
       first?.guestClaimToken,

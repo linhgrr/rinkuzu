@@ -20,6 +20,12 @@ export const REVIEW_REMINDER_DELAY_MS = 48 * HOUR_MS;
 export const REVIEW_REMINDER_CAP_MS = 7 * DAY_MS;
 /** The spec allows ±2 h, so an opt-in later than 46 h after the attempt is refused. */
 export const REVIEW_REMINDER_LATEST_OPT_IN_MS = REVIEW_REMINDER_DELAY_MS - 2 * HOUR_MS;
+/**
+ * The spec allows ±2 h around the due time. A row still unsent 2 h after it
+ * became due (sending switched off, worker outage) is canceled rather than
+ * sent days late with "two days ago" copy. Applies to QA recipients too.
+ */
+export const REVIEW_REMINDER_SEND_WINDOW_MS = 2 * HOUR_MS;
 export const REVIEW_REMINDER_CAMPAIGN = 'w1-review';
 /** QA sends carry their own campaign tag so they never count in admin aggregates. */
 export const REVIEW_REMINDER_QA_CAMPAIGN = 'w1-review-qa';
@@ -93,7 +99,8 @@ export type ReviewReminderCancelReason =
   | 'opted_out'
   | 'later_attempt'
   | 'weekly_cap'
-  | 'excluded_account';
+  | 'excluded_account'
+  | 'too_late';
 
 export interface ReviewReminderFacts {
   now: Date;
@@ -120,6 +127,9 @@ export type ReviewReminderDecision =
  */
 export function evaluateReviewReminder(facts: ReviewReminderFacts): ReviewReminderDecision {
   if (facts.now.getTime() < facts.availableAt.getTime()) return { decision: 'wait' };
+  if (facts.now.getTime() > facts.availableAt.getTime() + REVIEW_REMINDER_SEND_WINDOW_MS) {
+    return { decision: 'cancel', reason: 'too_late' };
+  }
   const { user } = facts;
   if (!user) return { decision: 'cancel', reason: 'user_missing' };
   if (user.disable === ACCOUNT_DISABLE_DISABLED) {

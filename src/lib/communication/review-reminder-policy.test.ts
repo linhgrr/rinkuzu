@@ -14,7 +14,8 @@ import {
   type ReviewReminderFacts,
 } from './review-reminder-policy';
 
-const HOUR = 3_600_000;
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
 const TAKEN_AT = new Date('2026-11-02T10:00:00.000Z');
 const DUE = new Date(TAKEN_AT.getTime() + 48 * HOUR);
 const SECRET = 'test-auth-secret-at-least-32-characters';
@@ -52,6 +53,29 @@ describe('review reminder eligibility (AC5)', () => {
     expect(evaluateReviewReminder(facts())).toEqual({ decision: 'wait' });
     vi.setSystemTime(DUE);
     expect(evaluateReviewReminder(facts())).toEqual({ decision: 'send', qa: false });
+  });
+
+  it.each([
+    ['at 48 h', 0, { decision: 'send', qa: false }],
+    ['at 49 h 59 m', HOUR + 59 * MINUTE, { decision: 'send', qa: false }],
+    ['at exactly 50 h', 2 * HOUR, { decision: 'send', qa: false }],
+    ['at 50 h 01 m', 2 * HOUR + MINUTE, { decision: 'cancel', reason: 'too_late' }],
+    ['days late', 5 * 24 * HOUR, { decision: 'cancel', reason: 'too_late' }],
+  ] as const)('decides %s after the attempt', (_label, afterDue, expected) => {
+    vi.setSystemTime(new Date(DUE.getTime() + afterDue));
+    expect(evaluateReviewReminder(facts())).toEqual(expected);
+  });
+
+  it('cancels a late send for QA recipients too', () => {
+    vi.setSystemTime(new Date(DUE.getTime() + 2 * HOUR + MINUTE));
+    const qa = { ...LEARNER, email: 'rinkuzu-ops@fldubai.com', role: 'admin' };
+    const qaRecipients = reviewReminderQaRecipients({
+      REVIEW_EMAIL_QA_RECIPIENTS: 'rinkuzu-ops@fldubai.com',
+    });
+    expect(evaluateReviewReminder(facts({ user: qa, qaRecipients }))).toEqual({
+      decision: 'cancel',
+      reason: 'too_late',
+    });
   });
 
   it.each([

@@ -4,6 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction-api';
+import { findGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 
 vi.mock('@/features/quiz/api/quiz-interaction-api', () => ({
   submitQuizAttemptViewModel: vi.fn(),
@@ -20,7 +21,10 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-function renderSubmissionHook(userAnswers: Array<number | number[]> = [1]) {
+function renderSubmissionHook(
+  userAnswers: Array<number | number[]> = [1],
+  sessionEmail?: string,
+) {
   const onSubmitSuccess = vi.fn();
   const onSubmitError = vi.fn();
   const hook = renderHook(
@@ -29,7 +33,7 @@ function renderSubmissionHook(userAnswers: Array<number | number[]> = [1]) {
         slug: 'architecture',
         quiz: { questions: [{ type: 'single' }] },
         userAnswers: answers,
-        userEmail: 'guest@example.com',
+        ...(sessionEmail ? { sessionEmail } : {}),
         onSubmitSuccess,
         onSubmitError,
         mapAnswersToOriginalOrder: (_quiz, mappedAnswers) => mappedAnswers,
@@ -44,7 +48,11 @@ describe('useQuizSubmission', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     randomUUID.mockReturnValueOnce('018f7494-8bd8-7b8a-a387-3bc5a14f22a1');
-    vi.stubGlobal('crypto', { randomUUID });
+    window.localStorage.clear();
+    vi.stubGlobal('crypto', {
+      randomUUID,
+      getRandomValues: (bytes: Uint8Array) => bytes.fill(7),
+    });
   });
 
   afterEach(() => {
@@ -74,6 +82,40 @@ describe('useQuizSubmission', () => {
     expect(randomUUID).toHaveBeenCalledOnce();
     expect(onSubmitError).toHaveBeenCalledWith(temporary);
     expect(onSubmitSuccess).toHaveBeenCalledWith('attempt-1', 100);
+  });
+
+  it('sends a guest claim token, no email, reuses it on retry and stores it (RIN-912)', async () => {
+    submitAttemptMock.mockRejectedValueOnce(new Error('temporary')).mockResolvedValueOnce({
+      attemptId: 'attempt-1',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+    const { result } = renderSubmissionHook();
+
+    await act(async () => expect(await result.current.completeSubmit()).toBe(false));
+    await act(async () => expect(await result.current.completeSubmit()).toBe(true));
+
+    const inputs = submitAttemptMock.mock.calls.map(([input]) => input);
+    expect(inputs[0]?.guestClaimToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(inputs[1]?.guestClaimToken).toBe(inputs[0]?.guestClaimToken);
+    expect(inputs.every((input) => !('userEmail' in input))).toBe(true);
+    expect(findGuestClaimToken('attempt-1')).toBe(inputs[0]?.guestClaimToken);
+  });
+
+  it('sends no guest claim token for a signed-in learner', async () => {
+    submitAttemptMock.mockResolvedValueOnce({
+      attemptId: 'attempt-1',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+    const { result } = renderSubmissionHook([1], 'learner@example.com');
+
+    await act(async () => expect(await result.current.completeSubmit()).toBe(true));
+
+    expect(submitAttemptMock.mock.calls[0]?.[0]).not.toHaveProperty('guestClaimToken');
+    expect(findGuestClaimToken('attempt-1')).toBeNull();
   });
 
   it('blocks a second submission while the first request is in flight', async () => {
@@ -108,8 +150,7 @@ describe('useQuizSubmission', () => {
           slug: 'architecture',
           quiz: { questions: [{ type: 'single' }] },
           userAnswers: [1],
-          userEmail: 'guest@example.com',
-          onSubmitSuccess,
+            onSubmitSuccess,
           onSubmitError: vi.fn(),
           mapAnswersToOriginalOrder: (_quiz, answers) => answers,
           isQuestionAnswered: (_question, answer) => answer !== -1,

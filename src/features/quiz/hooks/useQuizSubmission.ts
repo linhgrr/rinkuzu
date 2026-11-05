@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction-api';
+import { addGuestClaim, createGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 import { withPending } from '@/lib/async/with-pending';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 
@@ -9,7 +10,7 @@ interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestio
   slug: string;
   quiz: TQuiz | null;
   userAnswers: QuizAnswer[];
-  userEmail: string;
+  /** Absent for a signed-out learner, who submits with a guest claim token (RIN-912). */
   sessionEmail?: string;
   onSubmitSuccess: (attemptId: string, score: number) => void | Promise<void>;
   onSubmitStart?: () => void;
@@ -19,11 +20,17 @@ interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestio
   isQuestionAnswered: (question: TQuestion, answer: QuizAnswer) => boolean;
 }
 
+interface PendingSubmission {
+  fingerprint: string;
+  key: string;
+  /** Kept with the idempotency key so a retry of the same answers reuses both. */
+  guestClaimToken: string | null;
+}
+
 export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQuestion>({
   slug,
   quiz,
   userAnswers,
-  userEmail,
   sessionEmail,
   onSubmitSuccess,
   onSubmitStart,
@@ -35,7 +42,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
   const submittingRef = useRef(false);
-  const idempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  const idempotencyRef = useRef<PendingSubmission | null>(null);
 
   // The ref guards re-entry synchronously; the state drives the UI. They move together.
   const setSubmissionPending = (pending: boolean) => {
@@ -46,22 +53,33 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
   const submitQuizAnswers = async (answersToSubmit: QuizAnswer[]) => {
     if (!quiz) return;
 
-    const payload = {
-      answers: mapAnswersToOriginalOrder(quiz, answersToSubmit),
-      userEmail: sessionEmail || userEmail.trim(),
-    };
-    const fingerprint = JSON.stringify({ slug, ...payload });
+    const answers = mapAnswersToOriginalOrder(quiz, answersToSubmit);
+    const fingerprint = JSON.stringify({ slug, answers, sessionEmail: sessionEmail ?? null });
     if (idempotencyRef.current?.fingerprint !== fingerprint) {
-      idempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+      idempotencyRef.current = {
+        fingerprint,
+        key: crypto.randomUUID(),
+        guestClaimToken: sessionEmail ? null : createGuestClaimToken(),
+      };
     }
+    const pending = idempotencyRef.current;
 
     const data = await submitQuizAttemptViewModel({
       slug,
-      answers: payload.answers,
-      idempotencyKey: idempotencyRef.current.key,
-      userEmail: payload.userEmail,
+      answers,
+      idempotencyKey: pending.key,
+      ...(sessionEmail ? { userEmail: sessionEmail } : {}),
+      ...(pending.guestClaimToken ? { guestClaimToken: pending.guestClaimToken } : {}),
     });
 
+    if (pending.guestClaimToken) {
+      addGuestClaim({
+        attemptId: data.attemptId,
+        token: pending.guestClaimToken,
+        quizSlug: slug,
+        takenAt: Date.now(),
+      });
+    }
     idempotencyRef.current = null;
     await onSubmitSuccess(data.attemptId, data.score);
   };

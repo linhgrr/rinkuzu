@@ -1,16 +1,21 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction-api';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { findGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 import QuizPlayerClient from './QuizPlayerClient';
 
 // Stable identities: the player's load effect depends on the router and progress callbacks.
-const { refreshMock, router, progress } = vi.hoisted(() => {
+const { refreshMock, pushMock, router, progress } = vi.hoisted(() => {
   const refresh = vi.fn();
+  const push = vi.fn();
   return {
     refreshMock: refresh,
-    router: { push: () => undefined, back: () => undefined, refresh },
+    pushMock: push,
+    router: { push, back: () => undefined, refresh },
     progress: {
       loadProgress: () => Promise.resolve(null),
       saveProgress: () => undefined,
@@ -41,6 +46,36 @@ vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () =>
 
 vi.mock('@/features/quiz/hooks/useQuizProgress', () => ({
   useQuizProgress: () => progress,
+}));
+
+vi.mock('@/hooks/useMediaQuery', () => ({ useMediaQuery: () => false }));
+vi.mock('@/lib/analytics/client', () => ({
+  captureAnalyticsEvent: vi.fn(),
+  captureAnalyticsEventOnce: vi.fn(),
+}));
+vi.mock('@/features/quiz/api/quiz-interaction-api', () => ({
+  submitQuizAttemptViewModel: vi.fn(),
+}));
+// The real layouts load lazily and take seconds on a cold worker; this stub shows
+// question 1 and submits through the player's real useQuizSubmission.
+vi.mock('@/features/quiz/components/player/DesktopQuizLayout', () => ({
+  DesktopQuizLayout: ({
+    currentQuestion,
+    error,
+    submit,
+  }: {
+    currentQuestion: { question: string };
+    error: string;
+    submit: { complete: () => Promise<boolean> };
+  }) => (
+    <div data-testid="desktop-layout">
+      <p>{currentQuestion.question}</p>
+      {error ? <p role="alert">{error}</p> : null}
+      <button type="button" onClick={() => void submit.complete()}>
+        stub-submit
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('@/features/quiz/components/PremiumRequiredModal', () => ({
@@ -103,10 +138,9 @@ describe('QuizPlayerClient load failures (RIN-753)', () => {
   });
 });
 
-// RIN-682 (QA on the PR): the guest start screen failed Lighthouse color-contrast.
-// White on --brand-action is 2.57:1 and text-accent on bg-green-50 2.44:1;
-// the strong action fill and the trust text token clear 4.5:1.
-describe('QuizPlayerClient guest start screen contrast (RIN-682)', () => {
+// RIN-912: play first. A signed-out learner gets question 1 with no email gate and
+// submits with a guest claim token (replaces the RIN-682 contrast test of the removed gate).
+describe('QuizPlayerClient signed-out play (RIN-912)', () => {
   const quiz = {
     id: 'quiz-1',
     title: 'Fake quiz',
@@ -122,8 +156,13 @@ describe('QuizPlayerClient guest start screen contrast (RIN-682)', () => {
     ],
   };
 
-  it('puts white labels on the strong action fill and the sign-in hint on trust text', async () => {
-    render(
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+  });
+
+  function renderPlayer() {
+    return render(
       <QuizPlayerClient
         initialErrorCode={null}
         initialErrorStatus={null}
@@ -131,13 +170,43 @@ describe('QuizPlayerClient guest start screen contrast (RIN-682)', () => {
         slug="private-quiz"
       />,
     );
+  }
 
-    for (const name of ['startQuiz', 'flashcards']) {
-      const button = await screen.findByRole('button', { name });
-      expect(button).toHaveClass('bg-brand-action-strong', 'text-white');
-    }
-    const hint = screen.getByText('loginToTrack', { exact: false }).parentElement;
-    expect(hint).toHaveClass('text-brand-trust');
-    expect(hint).not.toHaveClass('text-accent');
+  it('shows question 1 straight away with no email field', async () => {
+    renderPlayer();
+
+    expect(await screen.findByText('Two plus two?')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'startQuiz' })).not.toBeInTheDocument();
+  });
+
+  it('submits with a guest claim token and no email, reuses it on retry, keeps the URL clean', async () => {
+    vi.mocked(submitQuizAttemptViewModel)
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({
+        attemptId: 'attempt-1',
+        score: 100,
+        correctAnswers: 1,
+        totalQuestions: 1,
+      });
+    renderPlayer();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'stub-submit' }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'stub-submit' }));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledOnce());
+
+    const [first, retry] = vi.mocked(submitQuizAttemptViewModel).mock.calls.map(([input]) => input);
+    expect(first?.guestClaimToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(retry?.guestClaimToken).toBe(first?.guestClaimToken);
+    expect(retry?.idempotencyKey).toBe(first?.idempotencyKey);
+    expect(first).not.toHaveProperty('userEmail');
+    expect(retry).not.toHaveProperty('userEmail');
+    expect(findGuestClaimToken('attempt-1')).toBe(first?.guestClaimToken);
+    expect(pushMock).toHaveBeenCalledWith('/quiz/private-quiz/result?attemptId=attempt-1&score=100');
+    // The token never reaches analytics.
+    expect(JSON.stringify(vi.mocked(captureAnalyticsEvent).mock.calls)).not.toContain(
+      first?.guestClaimToken,
+    );
   });
 });

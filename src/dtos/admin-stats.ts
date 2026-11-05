@@ -275,5 +275,4 @@ export const adminReviewEmailStatsSchema = z
   })
   .strict();
 
-export type AdminReviewEmailWeekDto = z.infer<typeof adminReviewEmailWeekSchema>;
 export type AdminReviewEmailStatsDto = z.infer<typeof adminReviewEmailStatsSchema>;

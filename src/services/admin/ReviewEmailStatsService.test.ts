@@ -80,6 +80,25 @@ describe('ReviewEmailStatsService', () => {
     expect(result.success && result.data.weeks[0]?.opened).toBeNull();
   });
 
+  it('uses the system clock when no clock is injected', async () => {
+    vi.useFakeTimers({ now: NOW });
+    try {
+      const subject = new ReviewEmailStatsService({
+        stats: {
+          getWeeklyCounts: async () => ({ sends: [], consents: [], opensTracked: true }),
+        },
+        qaEmails: () => [],
+      });
+
+      const result = await subject.getWeekly(1);
+
+      expect(result.success && result.data.generatedAt).toBe(NOW.toISOString());
+      expect(result.success && result.data.weeks[0]?.isoWeek).toBe('2026-W45');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('fails without internals when the database read fails', async () => {
     const { service: subject } = service(new Error('mongo down'));
 

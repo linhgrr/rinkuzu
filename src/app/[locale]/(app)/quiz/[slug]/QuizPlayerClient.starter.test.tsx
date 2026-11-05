@@ -7,7 +7,8 @@ import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import QuizPlayerClient from './QuizPlayerClient';
 
 // Stable identities: the player's load effect depends on the router and progress callbacks.
-const { router, progress, session, submission } = vi.hoisted(() => ({
+const { router, progress, session, submission, media } = vi.hoisted(() => ({
+  media: { isMobile: false },
   router: { push: vi.fn(), back: () => undefined, refresh: () => undefined },
   progress: {
     loadProgress: () => Promise.resolve(null),
@@ -35,7 +36,31 @@ vi.mock('@/i18n/navigation', () => ({
 const translate = (key: string) => key;
 vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
 vi.mock('@/features/quiz/hooks/useQuizProgress', () => ({ useQuizProgress: () => progress }));
-vi.mock('@/hooks/useMediaQuery', () => ({ useMediaQuery: () => false }));
+vi.mock('@/hooks/useMediaQuery', () => ({ useMediaQuery: () => media.isMobile }));
+// The real layouts load lazily and take seconds on a cold worker; these stubs only
+// show what the player hands them (the notice slot and question 1).
+interface LayoutStubProps {
+  notice?: React.ReactNode;
+  questions?: { question: string }[];
+  quiz?: { questions: { question: string }[] };
+}
+function LayoutStub(name: string) {
+  function Layout({ notice, questions, quiz }: LayoutStubProps) {
+    return (
+      <div data-testid={name}>
+        {notice}
+        <p>{(questions ?? quiz?.questions)?.[0]?.question}</p>
+      </div>
+    );
+  }
+  return Layout;
+}
+vi.mock('@/features/quiz/components/player/DesktopQuizLayout', () => ({
+  DesktopQuizLayout: LayoutStub('desktop-layout'),
+}));
+vi.mock('@/features/quiz/components/player/MobileQuizLayout', () => ({
+  MobileQuizLayout: LayoutStub('mobile-layout'),
+}));
 vi.mock('@/lib/analytics/client', () => ({
   captureAnalyticsEvent: vi.fn(),
   captureAnalyticsEventOnce: vi.fn(),
@@ -96,19 +121,26 @@ describe('QuizPlayerClient post-sign-in starter entry (RIN-913)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     submission.onSubmitSuccess = null;
+    media.isMobile = false;
   });
 
-  it('shows the intro with Skip above question 1 only for entry=post_signin_starter', async () => {
+  it.each([
+    { layout: 'desktop-layout', isMobile: false },
+    { layout: 'mobile-layout', isMobile: true },
+  ])('hands the intro with Skip to the $layout for entry=post_signin_starter', async (view) => {
+    media.isMobile = view.isMobile;
     renderPlayer('post_signin_starter');
 
-    expect(await screen.findByText('starterIntro', {}, { timeout: 5_000 })).toBeInTheDocument();
+    const layout = await screen.findByTestId(view.layout);
+    expect(layout).toHaveTextContent('starterIntro');
+    expect(layout).toHaveTextContent('Two plus two?');
     expect(screen.getByRole('link', { name: 'starterSkip' })).toHaveAttribute('href', '/dashboard');
   });
 
   it.each([undefined, null, 'newsletter'])('shows no intro for entry=%s', async (entry) => {
     renderPlayer(entry);
 
-    expect(await screen.findByText('Two plus two?', {}, { timeout: 5_000 })).toBeInTheDocument();
+    expect(await screen.findByText('Two plus two?')).toBeInTheDocument();
     expect(screen.queryByText('starterIntro')).not.toBeInTheDocument();
   });
 

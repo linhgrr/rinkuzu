@@ -114,6 +114,14 @@ export class ReviewReminderRepository {
     };
   }
 
+  /** True when `studyReminders` is ticked for the learner. */
+  async isOptedIn(userId: Types.ObjectId): Promise<boolean> {
+    const preference = await MarketingPreference.findOne({ userId }, { studyReminders: 1 }).lean<{
+      studyReminders?: boolean;
+    } | null>();
+    return preference?.studyReminders === true;
+  }
+
   /** Ticks `studyReminders`; true when it was already ticked before this write. */
   async optIn(userId: Types.ObjectId, locale: string, now: Date): Promise<boolean> {
     const previous = await MarketingPreference.findOneAndUpdate(

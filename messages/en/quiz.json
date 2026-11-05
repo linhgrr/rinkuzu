@@ -139,5 +139,18 @@
   "optionImageAlt": "Image for option {option}",
   "starterIntro": "Try a 2-minute quiz to see how Rinkuzu works",
   "starterIntroLabel": "Starter quiz",
-  "starterSkip": "Skip"
+  "starterSkip": "Skip",
+  "resultActions": {
+    "retryMissed": "Retry the {count} you missed",
+    "tryAnother": "Try another quiz",
+    "reviewEmail": "Email me a 2-minute review in 2 days",
+    "saving": "Saving…",
+    "savedOn": "Done. You can turn this off any time.",
+    "savedOff": "Reminder turned off.",
+    "saveError": "Couldn't save. Try again.",
+    "tryAgain": "Try again",
+    "guestSignIn": "<link>Sign in</link> to retry missed questions and get a review email.",
+    "retryOfMissed": "Retry of missed questions",
+    "retryPill": "Retry: {count} questions"
+  }
 }

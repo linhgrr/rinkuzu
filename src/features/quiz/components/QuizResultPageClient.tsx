@@ -1,11 +1,11 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Link } from '@/i18n/navigation';
 import { Suspense, useEffect, useReducer, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
@@ -27,6 +27,7 @@ import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
+import { ResultActions, type ResultViewer } from '@/features/quiz/components/result/ResultActions';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuestionType } from '@/shared/constants/question-type';
@@ -225,30 +226,8 @@ function formatAnswerValue(
     : notAnsweredLabel;
 }
 
-function QuizResultActions({
-  backHomeLabel,
-  encodedSlug,
-  redoLabel,
-}: {
-  backHomeLabel: string;
-  encodedSlug: string;
-  redoLabel: string;
-}) {
-  return (
-    <div className="mb-8 flex flex-wrap justify-center gap-3">
-      <Link href={`/quiz/${encodedSlug}`}>
-        <Button variant="outline">{redoLabel}</Button>
-      </Link>
-      <Link href="/">
-        <Button>{backHomeLabel}</Button>
-      </Link>
-    </div>
-  );
-}
-
 interface QuizResultReadyStateProps {
   aiQuestionData: AIQuestionData | null;
-  backHomeLabel: string;
   bookmarkedQuestions: Set<number>;
   bookmarkLoading: Set<number>;
   bookmarkMessage: string;
@@ -258,7 +237,8 @@ interface QuizResultReadyStateProps {
   chatTurnsByQuestion: Readonly<Record<number, number>>;
   closeAIModal: () => void;
   currentQuestionIndex: number;
-  encodedSlug: string;
+  resultPath: string;
+  viewer: ResultViewer;
   formatAnswer: (
     answer: number | number[],
     options: string[],
@@ -465,7 +445,6 @@ function useQuizResultPageData(
 
 function QuizResultReadyState({
   aiQuestionData,
-  backHomeLabel,
   bookmarkedQuestions,
   bookmarkLoading,
   bookmarkMessage,
@@ -475,7 +454,8 @@ function QuizResultReadyState({
   chatTurnsByQuestion,
   closeAIModal,
   currentQuestionIndex,
-  encodedSlug,
+  resultPath,
+  viewer,
   formatAnswer,
   formatCorrectAnswer,
   onCancelRemove,
@@ -500,6 +480,9 @@ function QuizResultReadyState({
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-ink">{t('quizComplete')}</h1>
             <p className="mt-2 text-ink-muted">{result.quiz.title}</p>
+            {result.retryOfAttemptId ? (
+              <p className="text-sm text-ink-muted">{t('resultActions.retryOfMissed')}</p>
+            ) : null}
             <p className="text-sm text-ink-muted" suppressHydrationWarning>
               {t('completedOn')} {result.takenAtLabel}
             </p>
@@ -533,10 +516,14 @@ function QuizResultReadyState({
           />
         )}
 
-        <QuizResultActions
-          backHomeLabel={backHomeLabel}
-          encodedSlug={encodedSlug}
-          redoLabel={tProfile('redo')}
+        <ResultActions
+          attemptId={result.id}
+          resultPath={resultPath}
+          slug={result.quiz.slug}
+          missedCount={result.missedCount}
+          nextQuiz={result.nextQuiz}
+          viewer={viewer}
+          contentLocked={contentLocked}
         />
 
         {!contentLocked ? (
@@ -611,6 +598,14 @@ function QuizResultContent() {
   const attemptId = get('attemptId');
   const guestUserEmail = get('userEmail');
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
+  const { status: sessionStatus } = useSession();
+  const viewer: ResultViewer =
+    guestUserEmail !== null || sessionStatus === 'unauthenticated'
+      ? 'guest'
+      : sessionStatus === 'loading'
+        ? 'pending'
+        : 'signed_in';
+  const resultPath = `/quiz/${encodedSlug}/result${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`;
   const { state, dispatch, stats, toggleBookmark, removeBookmark, retryLoad } =
     useQuizResultPageData(attemptId, locale, guestUserEmail);
   const chatTurnCounts = Object.values(state.chatTurnsByQuestion);
@@ -640,7 +635,6 @@ function QuizResultContent() {
   return (
     <QuizResultReadyState
       aiQuestionData={state.aiQuestionData}
-      backHomeLabel={t('backHome')}
       bookmarkedQuestions={state.bookmarkedQuestions}
       bookmarkLoading={state.bookmarkLoading}
       bookmarkMessage={state.bookmarkMessage}
@@ -650,7 +644,8 @@ function QuizResultContent() {
       chatTurnsByQuestion={state.chatTurnsByQuestion}
       closeAIModal={closeAIModal}
       currentQuestionIndex={state.currentQuestionIndex}
-      encodedSlug={encodedSlug}
+      resultPath={resultPath}
+      viewer={viewer}
       formatAnswer={(answer, options, type, isAnswered) =>
         formatAnswerValue(answer, options, type, t('notAnswered'), isAnswered)
       }

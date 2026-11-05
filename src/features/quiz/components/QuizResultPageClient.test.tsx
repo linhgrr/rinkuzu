@@ -30,6 +30,8 @@ vi.mock('@/i18n/navigation', () => ({
 const translate = (key: string) => key;
 vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
 
+vi.mock('next-auth/react', () => ({ useSession: () => ({ status: 'authenticated' }) }));
+
 vi.mock('@/lib/routing/useRequiredRouteParam', () => ({
   useRequiredRouteParam: () => 'demo',
 }));

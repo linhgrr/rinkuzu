@@ -28,7 +28,11 @@ export type AnalyticsEventName =
   | 'first_question_answered'
   | 'quiz_completed'
   /** Skip on the post-sign-in starter quiz intro (RIN-913). */
-  | 'starter_quiz_skipped';
+  | 'starter_quiz_skipped'
+  /** Result-page week-1 return loop (RIN-917); props only `campaign` and `missed_count`. */
+  | 'retry_missed_clicked'
+  | 'try_another_quiz_clicked'
+  | 'review_email_opt_in';
 
 export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>;
 export type AnalyticsLoginMethod = 'credentials' | 'google';

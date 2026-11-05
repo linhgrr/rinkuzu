@@ -106,6 +106,13 @@ export async function optInReviewReminder(input: {
   return { optedIn: true, status: 'capped', scheduledFor: null };
 }
 
+/** Whether the learner currently has `study_reminders` ticked (result-page revisit). */
+export async function reviewReminderStatus(input: {
+  userId: string;
+}): Promise<{ optedIn: boolean }> {
+  return { optedIn: await repository.isOptedIn(requiredObjectId(input.userId, 'user id')) };
+}
+
 /**
  * Opt-out of `study_reminders` (result page untick, or the unsubscribe link):
  * records the event when the preference changes and cancels pending rows.

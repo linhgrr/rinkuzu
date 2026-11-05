@@ -130,12 +130,27 @@ async function request(endpoint: string, init: RequestInit): Promise<PayOSRespon
     },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
-  // Read as text and parse defensively: consuming JSON before checking status
+  // The status is decided before the body is touched: consuming JSON first
   // turned an empty 404 or an HTML gateway error into a parse failure, which
   // masked the status the caller actually needed. `getPayment` in particular
   // must be able to see a 404 to report "no such payment".
-  const raw = await response.text();
-  return { status: response.status, body: parseEnvelope(raw) };
+  if (!response.ok) {
+    return { status: response.status, body: await failureEnvelope(response) };
+  }
+  return { status: response.status, body: parseEnvelope(await response.text()) };
+}
+
+/**
+ * An error response is read only for PayOS's `desc`. A body that cannot be
+ * read at all (the connection drops mid-page) yields no envelope instead of
+ * an exception, so the caller still gets the status it branches on.
+ */
+async function failureEnvelope(response: Response): Promise<PayOSResponse['body']> {
+  try {
+    return parseEnvelope(await response.text());
+  } catch {
+    return null;
+  }
 }
 
 function paymentSignature(input: PaymentSignatureInput): string {

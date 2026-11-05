@@ -184,19 +184,27 @@ const activationPathCountsSchema = z
   .object({ quiz: countSchema, adaptive: countSchema, both: countSchema })
   .strict();
 
+/** The cohort split, plus `claimedGuest`: a subset of activated, not a fourth path. */
+const cohortPathCountsSchema = activationPathCountsSchema
+  .extend({ claimedGuest: countSchema })
+  .strict();
+
 const adminActivationWeekSchema = z
   .object({
     isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
     start: isoInstantSchema,
     end: isoInstantSchema,
     signups: countSchema,
+    signedIn: countSchema,
     material: countSchema,
+    startedQuiz: countSchema,
     activated: countSchema,
-    activatedBy: activationPathCountsSchema,
+    activatedBy: cohortPathCountsSchema,
     weeklyActivatedLearners: countSchema,
     weeklyActivatedBy: activationPathCountsSchema,
     w1Retained: countSchema.nullable(),
     w1RetentionRate: z.number().min(0).max(1).nullable(),
+    returnedWeek1: countSchema.nullable(),
     complete: z.boolean(),
   })
   .strict();
@@ -214,7 +222,9 @@ export const adminActivationStatsSchema = z
         week: z.string(),
         exclusions: z.string(),
         signups: z.string(),
+        signedIn: z.string(),
         material: z.string(),
+        startedQuiz: z.string(),
         activated: z.string(),
         activatedBy: z.string(),
         weeklyActivatedLearners: z.string(),
@@ -223,6 +233,7 @@ export const adminActivationStatsSchema = z
         succeededUpload: z.string(),
         w1Retained: z.string(),
         w1RetentionRate: z.string(),
+        returnedWeek1: z.string(),
         complete: z.string(),
         sources: z.string(),
         limitations: z.string(),

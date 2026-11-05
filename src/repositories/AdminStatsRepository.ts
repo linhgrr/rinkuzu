@@ -18,6 +18,14 @@ import {
   ANALYTICS_TEST_EMAIL_PATTERN,
 } from '@/shared/constants/analytics-exclusions';
 import { ACCOUNT_DISABLE_DISABLED } from '@/shared/constants/account-disable';
+import {
+  anyDateIn,
+  claimedAttemptTime,
+  FUNNEL_GROUP_FIELDS,
+  FUNNEL_WEEK_ACCUMULATORS,
+  funnelFlags,
+  funnelUnionStages,
+} from '@/repositories/pipelines/activation-funnel';
 
 interface DailyCountAggregate {
   _id: string;
@@ -39,9 +47,13 @@ interface ActivationPathAggregate {
 
 interface CohortAggregate extends ActivationPathAggregate {
   signups: number;
+  signedIn: number;
   material: number;
+  startedQuiz: number;
   activated: number;
+  byClaimedGuest: number;
   w1Retained: number;
+  returnedWeek1: number;
 }
 
 interface FirstCompletionAggregate extends ActivationPathAggregate {
@@ -87,6 +99,9 @@ const DAILY_GROUP_STAGE = {
 
 const DAY_MS = 86_400_000;
 
+/** When an attempt counts as taken; the one place RIN-920 changes (claim time). */
+const ATTEMPT_AT = '$takenAt';
+
 /**
  * Who counts as a learner: not an admin, not disabled, not flagged as a test
  * account by an admin, not a test/QA address (reserved domains, constant list).
@@ -128,21 +143,6 @@ function unionDocuments(documents: readonly Record<string, unknown>[]): Pipeline
     $unionWith: { pipeline: [{ $documents: [...documents] }] },
   } as PipelineStage.UnionWith;
   return [stage];
-}
-
-/** True when any date in `dates` lies in `[from, to)`. */
-function anyDateIn(dates: string, from: unknown, to: unknown): Record<string, unknown> {
-  return {
-    $anyElementTrue: [
-      {
-        $map: {
-          input: dates,
-          as: 'd',
-          in: { $and: [{ $gte: ['$$d', from] }, { $lt: ['$$d', to] }] },
-        },
-      },
-    ],
-  };
 }
 
 export class AdminStatsRepository implements IAdminStatsRepository {
@@ -230,8 +230,11 @@ export class AdminStatsRepository implements IAdminStatsRepository {
         signups: row.signups,
         material: row.material,
         activated: row.activated,
-        activatedBy: toPathCounts(row),
+        activatedBy: { ...toPathCounts(row), claimedGuest: row.byClaimedGuest },
         w1Retained: row.w1Retained,
+        signedIn: row.signedIn,
+        startedQuiz: row.startedQuiz,
+        returnedWeek1: row.returnedWeek1,
       })),
       firstAttempts: firstAttempts.map((row) => ({
         weekStart: row._id,
@@ -313,6 +316,9 @@ export class AdminStatsRepository implements IAdminStatsRepository {
    * learner on both paths is one group and is counted once. A completion
    * counts like an attempt (activation, retention); a succeeded upload counts
    * toward `material`.
+   *
+   * First-session funnel (RIN-932): sign-ins and in-progress quizzes join
+   * the same group (`pipelines/activation-funnel`).
    */
   static cohortPipeline(
     from: Date,
@@ -339,7 +345,14 @@ export class AdminStatsRepository implements IAdminStatsRepository {
                 user: { $type: 'objectId' },
               },
             },
-            { $project: { _id: 0, uid: '$user', takenAt: 1 } },
+            {
+              $project: {
+                _id: 0,
+                uid: '$user',
+                takenAt: ATTEMPT_AT,
+                claimedTakenAt: claimedAttemptTime(ATTEMPT_AT),
+              },
+            },
           ],
         },
       },
@@ -352,12 +365,14 @@ export class AdminStatsRepository implements IAdminStatsRepository {
           ],
         },
       },
+      ...funnelUnionStages(from, to),
       ...unionDocuments(adaptiveDocuments),
       {
         $group: {
           _id: '$uid',
           signupAt: { $max: '$signupAt' },
           takenAts: { $push: '$takenAt' },
+          ...FUNNEL_GROUP_FIELDS,
           quizAts: { $push: '$quizAt' },
           completedAts: { $push: '$completedAt' },
           uploadedAts: { $push: '$uploadedAt' },
@@ -374,6 +389,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
           returned: {
             $or: [anyDateIn('$takenAts', day7, day14), anyDateIn('$completedAts', day7, day14)],
           },
+          ...funnelFlags(signupAt, day7),
         },
       },
       { $addFields: { activated: { $or: ['$byQuiz', '$byAdaptive'] } } },
@@ -389,6 +405,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
           activated: { $sum: { $cond: ['$activated', 1, 0] } },
           ...pathCountAccumulators('$byQuiz', '$byAdaptive'),
           w1Retained: { $sum: { $cond: [{ $and: ['$activated', '$returned'] }, 1, 0] } },
+          ...FUNNEL_WEEK_ACCUMULATORS,
         },
       },
       { $sort: { _id: 1 } },

@@ -29,14 +29,31 @@ export interface AdminActivationPathCounts {
   both: number;
 }
 
-/** Per-signup-week cohort counts; `weekStart` is Monday 00:00 UTC. */
+/**
+ * The cohort's path split plus `claimedGuest`: activated learners with a
+ * qualifying attempt they claimed from a guest session. A subset, not a fourth path.
+ */
+export interface AdminActivationCohortPathCounts extends AdminActivationPathCounts {
+  claimedGuest: number;
+}
+
+/**
+ * Per-signup-week cohort counts; `weekStart` is Monday 00:00 UTC. The funnel
+ * runs signups ⊇ startedQuiz ⊇ activated, all within 7 days of signup.
+ */
 interface AdminActivationCohortRecord {
   weekStart: Date;
   signups: number;
   material: number;
   activated: number;
-  activatedBy: AdminActivationPathCounts;
+  activatedBy: AdminActivationCohortPathCounts;
   w1Retained: number;
+  /** At least one `login_success` within 7 days of signup. */
+  signedIn: number;
+  /** Activated, or an unsubmitted quiz with an answer updated after signup. */
+  startedQuiz: number;
+  /** A sign-in, attempt or adaptive completion on a later Asia/Ho_Chi_Minh day, within 7 days. */
+  returnedWeek1: number;
 }
 
 /**

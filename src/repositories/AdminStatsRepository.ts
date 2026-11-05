@@ -105,6 +105,9 @@ const ATTEMPT_AT = '$takenAt';
 /**
  * Who counts as a learner: not an admin, not disabled, not flagged as a test
  * account by an admin, not a test/QA address (reserved domains, constant list).
+ * Keep in step with `isAnalyticsExcludedAccount` (shared/constants/analytics-exclusions),
+ * its in-memory twin that the review email (RIN-915) applies at send time: a
+ * rule added here must be added there, and the reverse.
  */
 const LEARNER_FILTER = {
   role: { $ne: 'admin' },

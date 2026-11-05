@@ -17,6 +17,7 @@ export type AuthRateLimitAction =
   | 'resend_verification_email'
   | 'reset_password_token_ip'
   | 'verify_email_ip'
+  | 'unsubscribe_ip'
   | 'pdf_upload_intent_user';
 
 const DEFAULTS: Record<AuthRateLimitAction, RateLimitWindow> = {
@@ -27,6 +28,7 @@ const DEFAULTS: Record<AuthRateLimitAction, RateLimitWindow> = {
   resend_verification_email: { points: 3, durationSec: 60 * 60 }, // 3 / hour / email
   reset_password_token_ip: { points: 10, durationSec: 60 * 15 }, // 10 / 15min / IP
   verify_email_ip: { points: 20, durationSec: 60 * 15 }, // 20 / 15min / IP
+  unsubscribe_ip: { points: 30, durationSec: 60 * 15 }, // 30 / 15min / IP (RIN-915)
   pdf_upload_intent_user: { points: 20, durationSec: 60 * 15 }, // 20 upload URLs / 15min / user
 };
 

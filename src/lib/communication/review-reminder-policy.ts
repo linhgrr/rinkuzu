@@ -31,6 +31,20 @@ export const REVIEW_REMINDER_CAMPAIGN = 'w1-review';
 export const REVIEW_REMINDER_QA_CAMPAIGN = 'w1-review-qa';
 const REVIEW_REMINDER_TOPIC = 'study_reminders';
 
+/**
+ * Email a `study_reminders` unsubscribe link came from (RIN-1044), carried as
+ * the unsigned `?c=` parameter. It only attributes the opt-out, which applies
+ * to every later send either way; links without it are the review email's.
+ */
+const UNSUBSCRIBE_CAMPAIGNS = ['activation_nudge'] as const;
+export type UnsubscribeCampaign = (typeof UNSUBSCRIBE_CAMPAIGNS)[number];
+const UNSUBSCRIBE_CAMPAIGN_PARAM = 'c';
+
+/** The known campaign named by a `?c=` value, or `null` for anything else. */
+export function unsubscribeCampaign(value: unknown): UnsubscribeCampaign | null {
+  return UNSUBSCRIBE_CAMPAIGNS.find((campaign) => campaign === value) ?? null;
+}
+
 type Environment = Readonly<Record<string, string | undefined>>;
 
 /** Lowercased `REVIEW_EMAIL_QA_RECIPIENTS` (comma separated); empty when unset. */
@@ -192,9 +206,15 @@ export function reviewRetryUrl(input: {
 }
 
 /** Footer link: the signed-out confirm page in the learner's locale. */
-export function unsubscribePageUrl(siteUrl: string, locale: string, token: string): string {
+export function unsubscribePageUrl(
+  siteUrl: string,
+  locale: string,
+  token: string,
+  campaign: UnsubscribeCampaign | null = null,
+): string {
   const url = new URL(`/${encodeURIComponent(locale)}/unsubscribe`, siteUrl);
   url.searchParams.set('t', token);
+  if (campaign) url.searchParams.set(UNSUBSCRIBE_CAMPAIGN_PARAM, campaign);
   return url.toString();
 }
 
@@ -202,8 +222,13 @@ export function unsubscribePageUrl(siteUrl: string, locale: string, token: strin
  * `List-Unsubscribe` target: mail clients POST `List-Unsubscribe=One-Click`
  * here (RFC 8058); a plain GET redirects to the confirm page.
  */
-export function oneClickUnsubscribeUrl(siteUrl: string, token: string): string {
+export function oneClickUnsubscribeUrl(
+  siteUrl: string,
+  token: string,
+  campaign: UnsubscribeCampaign | null = null,
+): string {
   const url = new URL('/api/unsubscribe', siteUrl);
   url.searchParams.set('t', token);
+  if (campaign) url.searchParams.set(UNSUBSCRIBE_CAMPAIGN_PARAM, campaign);
   return url.toString();
 }

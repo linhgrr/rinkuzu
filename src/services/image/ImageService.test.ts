@@ -15,6 +15,7 @@ class ImageStorageStub implements IImageStorage {
 }
 
 const image = {
+  kind: 'question' as const,
   bytes: new Uint8Array([1, 2, 3]),
   contentType: 'image/png',
   filename: 'question.png',

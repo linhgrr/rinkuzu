@@ -53,6 +53,7 @@ vi.mock('@/lib/env', () => ({
     OBJECT_STORAGE_ACCESS_KEY: 'test-access-key',
     OBJECT_STORAGE_SECRET_KEY: 'test-secret-key',
     OBJECT_STORAGE_BUCKET: 'test-bucket',
+    IMAGE_PUBLIC_BASE_URL: 'https://img.example.test',
   },
 }));
 
@@ -154,6 +155,28 @@ describe('s3 object storage helpers', () => {
     await expect(getSignedPremiumSourceUrl('uploads/quiz_extract/source.pdf')).rejects.toThrow(
       'Invalid Premium source key',
     );
+  });
+
+  it('fetch-copies public R2 images from the image host into the private Premium namespace', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: { 'content-type': 'image/webp', 'content-length': '3' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const key = await copyPremiumAssetToPrivateStorage(
+        'https://img.example.test/images/question/2026/a.webp',
+        '507f191e810c19729de860ea',
+      );
+      expect(key).toMatch(/^premium\/assets\/507f191e810c19729de860ea\/[a-f0-9]{64}\.webp$/);
+      expect(putObjectInputs).toEqual([
+        expect.objectContaining({ Bucket: 'test-bucket', Key: key, ContentType: 'image/webp' }),
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('rejects external Premium image hosts outside the migration allowlist', async () => {

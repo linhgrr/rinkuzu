@@ -28,6 +28,12 @@ const QUIZ_PDF_OBJECT_ROOT = 'uploads/quiz_extract';
 const PREMIUM_ASSET_OBJECT_ROOT = 'premium/assets';
 const PREMIUM_SOURCE_OBJECT_ROOT = 'uploads/premium_sources';
 const MAX_PREMIUM_ASSET_BYTES = 10 * 1024 * 1024;
+/** Public image hosts a Premium asset may be fetch-copied from (i.ibb.co until RIN-959 cleanup). */
+const PREMIUM_COPY_SOURCE_HOSTS = new Set(
+  ['i.ibb.co', env.IMAGE_PUBLIC_BASE_URL ? new URL(env.IMAGE_PUBLIC_BASE_URL).hostname : '']
+    .filter(Boolean)
+    .map((host) => host.toLowerCase()),
+);
 
 /**
  * Return the only object-storage namespace a user-owned quiz PDF may occupy.
@@ -147,7 +153,10 @@ export async function copyPremiumAssetToPrivateStorage(
   } catch {
     throw new Error('Premium quiz image URL is invalid');
   }
-  if (parsed.protocol !== 'https:' || parsed.hostname.toLowerCase() !== 'i.ibb.co') {
+  if (
+    parsed.protocol !== 'https:' ||
+    !PREMIUM_COPY_SOURCE_HOSTS.has(parsed.hostname.toLowerCase())
+  ) {
     throw new Error('Premium quiz images must come from managed image storage');
   }
 

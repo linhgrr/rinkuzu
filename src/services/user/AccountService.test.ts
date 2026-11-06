@@ -52,7 +52,9 @@ class ImageStorageStub implements IImageStorage {
   // Optional provider delete is intentionally absent: avatar rows only store display URLs.
 }
 
-function uploadedImage(displayUrl = 'https://images.example/avatar.webp'): ImageUploadResult {
+function uploadedImage(
+  displayUrl = 'https://cdn.rinkuzu.app/images/avatar/2026/avatar.webp',
+): ImageUploadResult {
   return {
     id: 'image-id',
     url: displayUrl,
@@ -203,9 +205,10 @@ describe('AccountService', () => {
 
     expect(result).toEqual({
       success: true,
-      data: { avatar: 'https://images.example/avatar.webp' },
+      data: { avatar: 'https://cdn.rinkuzu.app/images/avatar/2026/avatar.webp' },
     });
     expect(imageStorage.upload).toHaveBeenCalledWith({
+      kind: 'avatar',
       bytes: new Uint8Array([1, 2, 3]),
       contentType: 'image/webp',
       filename: `avatar-${accountId}`,
@@ -242,7 +245,9 @@ describe('AccountService', () => {
 
   it('clears an existing avatar and treats an empty avatar as idempotent', async () => {
     repository.findProfileByEmail
-      .mockResolvedValueOnce(profile({ avatar: 'https://images.example/avatar.webp' }))
+      .mockResolvedValueOnce(
+        profile({ avatar: 'https://cdn.rinkuzu.app/images/avatar/2026/avatar.webp' }),
+      )
       .mockResolvedValueOnce(profile());
     repository.clearAvatar.mockResolvedValue(true);
 
@@ -255,7 +260,7 @@ describe('AccountService', () => {
       data: { email: 'user@example.com', avatar: null, deleted: true },
     });
     expect(repository.clearAvatar).toHaveBeenCalledTimes(1);
-    // ImgBB remote delete is intentionally not attempted: only display URLs are
+    // Remote image delete is intentionally not attempted: only display URLs are
     // persisted on the user profile, not provider deleteUrl tokens.
     expect('deleteByUrl' in imageStorage).toBe(false);
   });

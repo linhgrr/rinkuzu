@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
@@ -31,7 +32,7 @@ const required = <T>(value: T | undefined, label: string): T => {
 };
 
 const makeTemporaryRoot = () => {
-  const root = fs.mkdtempSync(path.join(process.cwd(), '.perf-test-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-test-'));
   temporaryRoots.push(root);
   return root;
 };

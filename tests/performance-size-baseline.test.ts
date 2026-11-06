@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -21,7 +22,7 @@ const writeFile = (root: string, relativePath: string, contents: string) => {
 };
 
 const createFixture = () => {
-  const root = fs.mkdtempSync(path.join(process.cwd(), '.perf-baseline-test-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-baseline-test-'));
   temporaryRoots.push(root);
   for (const requiredPath of [
     '.next/BUILD_ID',

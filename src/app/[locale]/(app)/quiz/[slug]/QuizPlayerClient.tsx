@@ -573,6 +573,26 @@ function quickRoundQuiz(quiz: QuizPlayViewModel, slug: string) {
   return { quiz: { ...quiz, questions, questionCount: questions.length }, questionIndices };
 }
 
+/** A quick round never reads or overwrites the full quiz's saved progress. */
+function playModeSetup(
+  playMode: QuizPlayMode | null,
+  retrySetup: ReturnType<typeof retrySessionSetup>,
+  t: (key: string) => string,
+) {
+  if (playMode !== 'quick') {
+    return {
+      progressEnabled: retrySetup.progressEnabled,
+      analyticsMode: 'full' as const,
+      layoutProps: retrySetup.layout,
+    };
+  }
+  return {
+    progressEnabled: false,
+    analyticsMode: 'quick' as const,
+    layoutProps: { titleBadge: t('quickRound.pill') },
+  };
+}
+
 function initialPlayMode(
   quiz: QuizPlayViewModel | null,
   mode: string | null | undefined,
@@ -642,11 +662,7 @@ export default function QuizPlayerClient({
   const sessionEmail = session?.user?.email || undefined;
   const retrySetup = retrySessionSetup(initialQuiz, Boolean(session?.user?.email), t);
   const [playMode, setPlayMode] = useState(() => initialPlayMode(initialQuiz, mode));
-  // A quick round never reads or overwrites the full quiz's saved progress.
-  const progressEnabled = retrySetup.progressEnabled && playMode !== 'quick';
-  const analyticsMode = playMode === 'quick' ? 'quick' : 'full';
-  const layoutProps =
-    playMode === 'quick' ? { titleBadge: t('quickRound.pill') } : retrySetup.layout;
+  const { progressEnabled, analyticsMode, layoutProps } = playModeSetup(playMode, retrySetup, t);
 
   const { loadProgress, saveProgress, flushSave, clearProgress } = useQuizProgress({
     slug,

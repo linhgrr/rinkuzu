@@ -217,6 +217,29 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(fetchPageDataMock).toHaveBeenCalledWith('attempt-1', 'en', undefined);
     expect(screen.queryByRole('region', { name: 'guestSaveTitle' })).not.toBeInTheDocument();
   });
+  it('titles a quick round and offers Another 10 and the full quiz (RIN-933)', async () => {
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    fetchPageDataMock.mockResolvedValueOnce({
+      result: { ...guestResult, mode: 'quick' },
+      bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+    });
+
+    render(<QuizResultPageClient />);
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'quickRound.resultTitle' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'quickRound.another' })).toHaveAttribute(
+      'href',
+      '/quiz/demo?mode=quick',
+    );
+    expect(screen.getByRole('link', { name: 'quickRound.fullQuiz' })).toHaveAttribute(
+      'href',
+      '/quiz/demo?mode=full',
+    );
+    expect(screen.queryByRole('link', { name: 'redo' })).not.toBeInTheDocument();
+  });
+
   it('shows the URL score without the save card when a just-signed-in guest cannot read the attempt yet', async () => {
     // The claim failed (429, offline), so the token is kept and the member read 404s.
     session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };

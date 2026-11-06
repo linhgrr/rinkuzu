@@ -693,6 +693,85 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('plays a quick round of 10 on a long quiz and offers Another 10 @critical-quiz', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const longQuizId = new ObjectId();
+      const longSlug = `${fixture.quizSlug}-long`;
+      const now = new Date();
+      // More than 15 questions, so the quiz offers a quick round (RIN-933).
+      await fixture.db.collection('quizzes').insertOne({
+        _id: longQuizId,
+        _e2eRun: fixture.runId,
+        author: fixture.regular.id,
+        createdAt: now,
+        questions: Array.from({ length: 16 }, (_, index) => ({
+          _id: new ObjectId(),
+          correctIndex: 0,
+          options: [`Right answer ${index + 1}`, `Wrong answer ${index + 1}`],
+          question: `Long fixture question ${index + 1}?`,
+          type: 'single',
+        })),
+        slug: longSlug,
+        title: 'Production Long Quiz',
+        updatedAt: now,
+        visibility: 'public',
+      });
+
+      try {
+        await login(page, fixture.regular);
+        await page.goto(`/en/quiz/${longSlug}`);
+        // AC1: a long quiz offers the choice.
+        await expect(
+          page.getByRole('button', { name: 'Quick round: 10 questions (~3 min)', exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('button', { name: 'Full quiz (16 questions)', exact: true }),
+        ).toBeVisible();
+
+        // AC5: the deep link skips the choice and plays 10 questions.
+        await page.goto(`/en/quiz/${longSlug}?mode=quick`);
+        await expect(
+          page.getByText('Quick round', { exact: true }).filter({ visible: true }).first(),
+        ).toBeVisible();
+        await page
+          .getByText(/^Right answer \d+$/)
+          .filter({ visible: true })
+          .first()
+          .click();
+        const isMobile = (page.viewportSize()?.width ?? 1280) < 768;
+        if (isMobile) {
+          await page.getByRole('button', { name: /complete \(1\/10 answered\)/i }).click();
+        } else {
+          for (let step = 0; step < 9; step += 1) {
+            await page.getByRole('button', { name: 'Next', exact: true }).click();
+          }
+          await page.getByRole('button', { name: 'Submit Quiz', exact: true }).click();
+        }
+        await page.getByRole('dialog').getByRole('button', { name: 'Submit', exact: true }).click();
+        await page.waitForURL(new RegExp(`/en/quiz/${longSlug}/result\?attemptId=`));
+
+        // AC3: the quick result and its next step.
+        await expect(
+          page.getByRole('heading', { level: 1, name: 'Quick round: 1/10' }),
+        ).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Another 10', exact: true })).toHaveAttribute(
+          'href',
+          `/en/quiz/${longSlug}?mode=quick`,
+        );
+        const attempt = await fixture.db.collection('attempts').findOne({
+          quiz: longQuizId,
+          user: fixture.regular.id,
+        });
+        expect(attempt).toMatchObject({ mode: 'quick', totalQuestions: 10 });
+        expect(new Set(attempt?.['questionIndices'] as number[]).size).toBe(10);
+      } finally {
+        await fixture.db.collection('attempts').deleteMany({ quiz: longQuizId });
+      }
+    });
+  });
+
   test('points a new learner from the dashboard to a starter quiz @critical-starter', async ({
     page,
   }, testInfo) => {

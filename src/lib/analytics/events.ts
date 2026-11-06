@@ -13,6 +13,8 @@ export type AnalyticsEventName =
   | 'adaptive_session_started'
   | 'adaptive_answer_submitted'
   | 'first_question_answered'
+  /** One quiz start; props only `mode` (quick or full) and `question_count` (RIN-933). */
+  | 'quiz_started'
   | 'quiz_completed'
   /** Skip on the post-sign-in starter quiz intro (RIN-913). */
   | 'starter_quiz_skipped'

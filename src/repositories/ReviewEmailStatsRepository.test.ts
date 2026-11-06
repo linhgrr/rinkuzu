@@ -25,6 +25,20 @@ const TO = new Date('2026-11-09T00:00:00.000Z');
 const EXCLUDED = [new Types.ObjectId()];
 const QA = ['qa@fake.test'];
 
+/** The few aggregation operators the `$cond` uses, evaluated against one event. */
+function evaluate(expression: unknown, event: Record<string, unknown>): unknown {
+  if (typeof expression === 'string' && expression.startsWith('$')) {
+    return event[expression.slice(1)];
+  }
+  if (expression === null || typeof expression !== 'object') return expression;
+  const [operator, raw] = Object.entries(expression)[0] ?? [];
+  const args = (raw as unknown[]).map((arg) => evaluate(arg, event));
+  if (operator === '$and') return args.every(Boolean);
+  if (operator === '$eq') return args[0] === args[1];
+  if (operator === '$ifNull') return args[0] ?? args[1];
+  throw new Error(`unsupported operator ${operator}`);
+}
+
 describe('ReviewEmailStatsRepository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,6 +75,20 @@ describe('ReviewEmailStatsRepository', () => {
       consents: [{ weekStart: FROM, optIns: 2, unsubscribed: 1 }],
       opensTracked: false,
     });
+  });
+
+  it('counts review-email unsubscribes only, not activation-nudge ones (RIN-1044)', async () => {
+    await new ReviewEmailStatsRepository().getWeeklyCounts(FROM, TO, QA);
+
+    const [consentPipeline] = mocks.consentAggregate.mock.calls[0] ?? [];
+    const condition = consentPipeline[1].$group.unsubscribed.$sum.$cond[0];
+    const counted = (event: Record<string, unknown>) => evaluate(condition, event) === true;
+    const unsubscribe = { action: 'opt_out', source: 'unsubscribe' };
+
+    expect(counted(unsubscribe)).toBe(true); // review link, and every event before RIN-1044
+    expect(counted({ ...unsubscribe, campaign: null })).toBe(true);
+    expect(counted({ ...unsubscribe, campaign: 'activation_nudge' })).toBe(false);
+    expect(counted({ action: 'opt_out', source: 'result_page_review' })).toBe(false);
   });
 
   it('reports opens as tracked once any open webhook is on record', async () => {

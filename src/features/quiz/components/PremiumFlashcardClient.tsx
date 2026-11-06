@@ -7,7 +7,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { QuestionContent } from '@/components/ui/QuestionContent';
-import { PremiumCreditCost } from '@/features/quiz/components/PremiumCreditCost';
+import { PremiumUnlockCard } from '@/features/quiz/components/PremiumUnlockCard';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
 import {
   fetchPremiumFlashcard,
@@ -156,26 +156,13 @@ export function PremiumFlashcardClient({ metadata, slug }: PremiumFlashcardClien
 
   if (unlockRequired) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <SurfaceCard className="p-8 text-center">
-          <h1 className="text-2xl font-semibold text-ink">{metadata.title}</h1>
-          <p className="mt-4 text-sm text-ink-muted">{t('premiumUnlockDescription')}</p>
-          {error ? (
-            <p role="alert" className="mt-4 text-sm text-error">
-              {error}
-            </p>
-          ) : null}
-          <Button
-            className="mt-5"
-            loading={loading}
-            aria-label={t('premiumUnlockButton')}
-            title={t('premiumUnlockButton')}
-            onClick={() => void unlock()}
-          >
-            <PremiumCreditCost />
-          </Button>
-        </SurfaceCard>
-      </main>
+      <PremiumUnlockCard
+        title={metadata.title}
+        description={t('premiumUnlockDescription')}
+        loading={loading}
+        error={error}
+        onUnlock={unlock}
+      />
     );
   }
 
@@ -187,15 +174,15 @@ export function PremiumFlashcardClient({ metadata, slug }: PremiumFlashcardClien
     }
     // The whole deck failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <main className="mx-auto max-w-xl px-4 py-8 sm:py-12">
+      <div className="mx-auto max-w-xl px-4 py-8 sm:py-12">
         <h1 className="text-center text-2xl font-semibold text-ink">{metadata.title}</h1>
         <ErrorState error={loadError} variant="page" onRetry={begin} />
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="premium-protected-content relative mx-auto min-h-screen max-w-3xl px-4 py-8">
+    <div className="premium-protected-content relative mx-auto min-h-screen max-w-3xl px-4 py-8">
       <div
         className="pointer-events-none fixed inset-0 z-40 grid grid-cols-3 content-around overflow-hidden opacity-10"
         aria-hidden="true"
@@ -286,6 +273,6 @@ export function PremiumFlashcardClient({ metadata, slug }: PremiumFlashcardClien
           </Button>
         </div>
       </SurfaceCard>
-    </main>
+    </div>
   );
 }

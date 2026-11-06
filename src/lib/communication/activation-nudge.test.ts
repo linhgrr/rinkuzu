@@ -241,7 +241,7 @@ describe('activation nudge send time (RIN-999)', () => {
     if (prepared.decision !== 'send') return;
     expect(prepared.mail.subject).toBe('Bài quiz 2 phút của bạn đã sẵn sàng');
     expect(prepared.mail.headers['List-Unsubscribe']).toMatch(
-      /^<https:\/\/www\.rinkuzu\.app\/api\/unsubscribe\?t=/u,
+      /^<https:\/\/www\.rinkuzu\.app\/api\/unsubscribe\?t=[^&>]+&c=activation_nudge>$/u,
     );
     expect(prepared.mail.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
     // The CTA is the tracked redirect (RIN-1000), never the quiz URL itself.
@@ -250,6 +250,7 @@ describe('activation nudge send time (RIN-999)', () => {
     );
     expect(prepared.mail.html).toContain('&amp;l=vi');
     expect(prepared.mail.html).toContain('/vi/unsubscribe?t=');
+    expect(prepared.mail.html).toContain('c=activation_nudge');
     expect(prepared.mail.tags).toEqual([{ name: 'campaign', value: 'activation_nudge' }]);
   });
 

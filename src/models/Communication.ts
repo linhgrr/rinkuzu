@@ -173,6 +173,8 @@ interface MarketingConsentEventDocument extends Document {
   action: 'opt_in' | 'opt_out';
   source: ConsentSource;
   ipHash?: string | null;
+  /** Email of an unsubscribe-link opt-out; absent means the w1-review email (RIN-1044). */
+  campaign?: string;
   createdAt: Date;
 }
 
@@ -450,6 +452,7 @@ const MarketingConsentEventSchema = new Schema<MarketingConsentEventDocument>(
     action: { type: String, enum: ['opt_in', 'opt_out'], required: true },
     source: { type: String, enum: CONSENT_SOURCES, required: true },
     ipHash: { type: String, default: null },
+    campaign: { type: String, maxlength: 32 },
   },
   { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
 );

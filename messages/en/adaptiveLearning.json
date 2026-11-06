@@ -235,7 +235,13 @@
     "viewProcessing": "View progress",
     "retryProcessing": "Retry",
     "processingFailed": "Processing failed",
-    "processingEta": "ETA {eta}"
+    "processingEta": "ETA {eta}",
+    "processingReassurance": "Usually takes a few minutes. You can leave this page, we keep working.",
+    "cancellingProcessing": "Cancelling…",
+    "cancelProcessingTitle": "Cancel processing?",
+    "cancelProcessingDescription": "Rinkuzu stops preparing this document. You can upload it again later.",
+    "cancelProcessingConfirm": "Cancel processing",
+    "keepProcessing": "Keep processing"
   },
   "history": {
     "title": "Exercise History",

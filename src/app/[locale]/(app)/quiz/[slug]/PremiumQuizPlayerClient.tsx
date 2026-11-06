@@ -3,11 +3,9 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { SurfaceCard } from '@/components/ui/SurfaceCard';
-import { PremiumCreditCost } from '@/features/quiz/components/PremiumCreditCost';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
+import { PremiumUnlockCard } from '@/features/quiz/components/PremiumUnlockCard';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
 import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
@@ -233,44 +231,29 @@ export default function PremiumQuizPlayerClient({
 
   if (unlockRequired) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <SurfaceCard className="p-8 text-center">
-          <h1 className="text-2xl font-semibold text-ink">{title}</h1>
-          <p className="mt-5 rounded-xl bg-brand-trust/5 p-4 text-sm text-ink">
-            {t('premiumUnlockDescription')}
-          </p>
-          {error ? (
-            <p role="alert" className="mt-4 text-sm text-error">
-              {error}
-            </p>
-          ) : null}
-          <Button
-            className="mt-5"
-            loading={loading}
-            aria-label={t('premiumUnlockButton')}
-            title={t('premiumUnlockButton')}
-            onClick={() => void unlock()}
-          >
-            <PremiumCreditCost />
-          </Button>
-        </SurfaceCard>
-      </main>
+      <PremiumUnlockCard
+        title={title}
+        description={t('premiumUnlockDescription')}
+        loading={loading}
+        error={error}
+        onUnlock={unlock}
+      />
     );
   }
 
   if (!question || !currentBatch) {
     // The whole player failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <main className="mx-auto max-w-xl px-4 py-8 sm:py-12">
+      <div className="mx-auto max-w-xl px-4 py-8 sm:py-12">
         <h1 className="text-center text-2xl font-semibold text-ink">{title}</h1>
         <ErrorState error={loadError} variant="page" onRetry={begin} />
-      </main>
+      </div>
     );
   }
 
   const selected = answers[currentIndex];
   return (
-    <main className="premium-protected-content relative mx-auto min-h-screen max-w-4xl px-4 py-8">
+    <div className="premium-protected-content relative mx-auto min-h-screen max-w-4xl px-4 py-8">
       <div
         className="pointer-events-none fixed inset-0 z-40 grid grid-cols-3 content-around overflow-hidden opacity-10"
         aria-hidden="true"
@@ -336,6 +319,6 @@ export default function PremiumQuizPlayerClient({
           t={t}
         />
       </div>
-    </main>
+    </div>
   );
 }

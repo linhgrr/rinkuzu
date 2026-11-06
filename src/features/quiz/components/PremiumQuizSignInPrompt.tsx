@@ -35,7 +35,7 @@ export function PremiumQuizSignInPrompt({
     : ROUTES.QUIZ.VIEW(slug);
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-16">
+    <div className="mx-auto max-w-xl px-4 py-16">
       <SurfaceCard className="p-8 text-center">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-trust">
           Quiz Premium
@@ -57,6 +57,6 @@ export function PremiumQuizSignInPrompt({
           </Link>
         </div>
       </SurfaceCard>
-    </main>
+    </div>
   );
 }

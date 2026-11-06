@@ -6,6 +6,10 @@ import { readAndValidateSearchParams } from '@/lib/api/request';
 import { extractRequestContext } from '@/lib/audit';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
 import { unsubscribeWithToken } from '@/lib/communication/review-reminder';
+import {
+  unsubscribeCampaign,
+  type UnsubscribeCampaign,
+} from '@/lib/communication/review-reminder-policy';
 import { logger } from '@/lib/logger';
 
 /**
@@ -23,17 +27,35 @@ import { logger } from '@/lib/logger';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
-const unsubscribeQuerySchema = z.object({ t: z.string().max(256).default('') });
+const unsubscribeQuerySchema = z.object({
+  t: z.string().max(256).default(''),
+  c: z.string().max(32).optional(),
+});
 
-/** The `?t=` token; anything malformed reads as an empty (invalid) token. */
-function tokenOf(request: NextRequest): string {
-  const query = readAndValidateSearchParams(request, unsubscribeQuerySchema);
-  return query.success ? query.data.t : '';
+interface UnsubscribeLink {
+  token: string;
+  campaign: UnsubscribeCampaign | null;
 }
 
-function pageUrl(request: NextRequest, token: string, locale: string | null, failed = false) {
+/**
+ * The `?t=` token and the `?c=` campaign (RIN-1044). Anything malformed reads
+ * as an empty (invalid) token; an unknown campaign reads as none.
+ */
+function linkOf(request: NextRequest): UnsubscribeLink {
+  const query = readAndValidateSearchParams(request, unsubscribeQuerySchema);
+  if (!query.success) return { token: '', campaign: null };
+  return { token: query.data.t, campaign: unsubscribeCampaign(query.data.c) };
+}
+
+function pageUrl(
+  request: NextRequest,
+  link: UnsubscribeLink,
+  locale: string | null,
+  failed = false,
+) {
   const url = new URL(locale ? `/${locale}/unsubscribe` : '/unsubscribe', request.nextUrl.origin);
-  url.searchParams.set('t', token);
+  url.searchParams.set('t', link.token);
+  if (link.campaign) url.searchParams.set('c', link.campaign);
   if (failed) url.searchParams.set('result', 'error');
   return url;
 }
@@ -48,23 +70,25 @@ async function formLocale(request: NextRequest): Promise<string | null> {
 }
 
 export function GET(request: NextRequest) {
-  const token = tokenOf(request);
-  return NextResponse.redirect(pageUrl(request, token, null), { status: 303, headers: NO_STORE });
+  return NextResponse.redirect(pageUrl(request, linkOf(request), null), {
+    status: 303,
+    headers: NO_STORE,
+  });
 }
 
 export async function POST(request: NextRequest) {
-  const token = tokenOf(request);
+  const link = linkOf(request);
   const pageLocale = await formLocale(request);
   const { ip } = extractRequestContext(request);
   const rate = await checkAuthRateLimit('unsubscribe_ip', ip ?? 'unknown');
   if (!rate.allowed) return rateLimitResponse(rate);
 
   try {
-    await unsubscribeWithToken(token, ip);
+    await unsubscribeWithToken(link.token, ip, link.campaign);
   } catch (error) {
     logger.error({ error, operation: 'one-click-unsubscribe' }, 'Unsubscribe failed');
     if (pageLocale) {
-      return NextResponse.redirect(pageUrl(request, token, pageLocale, true), {
+      return NextResponse.redirect(pageUrl(request, link, pageLocale, true), {
         status: 303,
         headers: NO_STORE,
       });
@@ -72,7 +96,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse(null, { status: 500, headers: NO_STORE });
   }
   if (pageLocale) {
-    return NextResponse.redirect(pageUrl(request, token, pageLocale), {
+    return NextResponse.redirect(pageUrl(request, link, pageLocale), {
       status: 303,
       headers: NO_STORE,
     });

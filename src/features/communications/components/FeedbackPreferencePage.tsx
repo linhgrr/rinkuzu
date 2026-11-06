@@ -85,7 +85,7 @@ export function FeedbackPreferencePage({ token, initialAction }: FeedbackPrefere
       <div className="flex w-full flex-col gap-2">
         <Button
           size="lg"
-          className="h-auto min-h-13 w-full whitespace-normal px-4 py-3"
+          className="h-auto min-h-[52px] w-full whitespace-normal px-4 py-3"
           loading={pending === initialAction}
           disabled={pending !== null}
           onClick={() => apply(initialAction)}
@@ -96,7 +96,7 @@ export function FeedbackPreferencePage({ token, initialAction }: FeedbackPrefere
           <Button
             variant="outline"
             size="lg"
-            className="h-auto min-h-13 w-full whitespace-normal px-4 py-3"
+            className="h-auto min-h-[52px] w-full whitespace-normal px-4 py-3"
             loading={pending === 'opt_out'}
             disabled={pending !== null}
             onClick={() => apply('opt_out')}

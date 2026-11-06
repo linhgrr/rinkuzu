@@ -68,7 +68,11 @@
     "decline": "Decline this invitation",
     "optOut": "Do not send future invitations",
     "optOutAll": "Decline all future invitations",
-    "error": "Could not update your choice"
+    "metaTitle": "Feedback invitations | RinKuzu",
+    "doneTitle": "Choice saved",
+    "invalidTitle": "This link isn't valid",
+    "invalidDescription": "It may have expired. Check that you opened the full link from the email.",
+    "home": "Go to RinKuzu"
   },
   "admin": {
     "campaignLoadError": "Could not load the campaign.",

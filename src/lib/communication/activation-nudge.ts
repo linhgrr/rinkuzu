@@ -59,6 +59,7 @@ function decide(
   blockers: NudgeBlockers,
   adaptive: ReadonlySet<string>,
   now: Date,
+  trigger?: string | null,
 ): ActivationNudgeDecision {
   const id = learner.id.toString();
   return evaluateActivationNudge({
@@ -67,6 +68,7 @@ function decide(
     activated: blockers.attempted.has(id) || adaptive.has(id),
     unsubscribed: blockers.unsubscribed.has(id),
     alreadyNudged: blockers.nudged.has(id),
+    trigger,
   });
 }
 
@@ -97,7 +99,11 @@ export async function sweepActivationNudges(
       : new Set<string>();
   let enqueued = 0;
   for (const learner of candidates) {
-    if (decide(learner, blockers, adaptive, now).decision !== 'send') continue;
+    const verdict = decide(learner, blockers, adaptive, now);
+    // Activated through personalized learning only: no Attempt marks them, so
+    // record a canceled row; the cheap checks then skip them on every later
+    // tick instead of asking the adaptive API again for up to 6 days.
+    if (verdict.decision === 'skip' && verdict.reason !== 'activated') continue;
     const inserted = await repository.enqueue({
       dedupeKey: activationNudgeDedupeKey(learner.id.toString()),
       userId: learner.id,
@@ -106,8 +112,9 @@ export async function sweepActivationNudges(
       locale: activationNudgeLocale(learner.locale),
       trigger: '24h',
       availableAt: now,
+      ...(verdict.decision === 'skip' ? { canceledReason: verdict.reason } : {}),
     });
-    if (inserted) enqueued += 1;
+    if (inserted && verdict.decision === 'send') enqueued += 1;
   }
   return { enqueued, skipped: learners.length - enqueued };
 }
@@ -130,19 +137,24 @@ export type ActivationNudgePreparation =
  * activated, unsubscribed or been excluded since the sweep.
  */
 export async function prepareActivationNudge(
-  item: { _id: Types.ObjectId; entityId: Types.ObjectId; locale?: string | null },
+  item: {
+    _id: Types.ObjectId;
+    entityId: Types.ObjectId;
+    locale?: string | null;
+    trigger?: string | null;
+  },
   now: Date = new Date(),
 ): Promise<ActivationNudgePreparation> {
   const learner = await repository.findLearner(item.entityId);
   if (!learner) return { decision: 'cancel', reason: 'user_missing' };
   const blockers = await repository.blockers([learner.id], item._id);
-  const first = decide(learner, blockers, new Set(), now);
+  const first = decide(learner, blockers, new Set(), now, item.trigger);
   if (first.decision === 'skip') return { decision: 'cancel', reason: first.reason };
   const adaptive = await adaptiveCompleters(learner.createdAt, now);
   if (!adaptive) {
     return { decision: 'retry', availableAt: new Date(now.getTime() + ADAPTIVE_RETRY_MS) };
   }
-  const verdict = decide(learner, blockers, adaptive, now);
+  const verdict = decide(learner, blockers, adaptive, now, item.trigger);
   if (verdict.decision === 'skip') return { decision: 'cancel', reason: verdict.reason };
 
   const locale = activationNudgeLocale(item.locale ?? learner.locale);

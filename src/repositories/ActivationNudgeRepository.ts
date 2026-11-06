@@ -49,6 +49,8 @@ export interface NudgeRow {
   locale: string;
   trigger: '24h' | 'backfill';
   availableAt: Date;
+  /** Insert the row already canceled, so later sweeps skip the account. */
+  canceledReason?: string;
 }
 
 interface UserRecord {
@@ -164,7 +166,8 @@ export class ActivationNudgeRepository {
             html: DEFERRED_BODY,
             text: DEFERRED_BODY,
             references: [],
-            status: 'pending',
+            status: row.canceledReason ? 'canceled' : 'pending',
+            ...(row.canceledReason ? { lastError: row.canceledReason } : {}),
             availableAt: row.availableAt,
             attempts: 0,
             trigger: row.trigger,

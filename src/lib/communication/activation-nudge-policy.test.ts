@@ -62,6 +62,23 @@ describe('activation nudge eligibility (RIN-999)', () => {
     expect(evaluateActivationNudge(facts(overrides))).toEqual({ decision: 'skip', reason });
   });
 
+  it('stops a 24h nudge after the 7-day look-back, but not a backfill one', () => {
+    const late = { ...LEARNER, createdAt: new Date(NOW.getTime() - 7 * 24 * HOUR - 1) };
+    expect(evaluateActivationNudge(facts({ user: late, trigger: '24h' }))).toEqual({
+      decision: 'skip',
+      reason: 'too_late',
+    });
+    expect(evaluateActivationNudge(facts({ user: late }))).toEqual({
+      decision: 'skip',
+      reason: 'too_late',
+    });
+    expect(evaluateActivationNudge(facts({ user: late, trigger: 'backfill' }))).toEqual({
+      decision: 'send',
+    });
+    const lastMoment = { ...LEARNER, createdAt: new Date(NOW.getTime() - 7 * 24 * HOUR) };
+    expect(evaluateActivationNudge(facts({ user: lastMoment }))).toEqual({ decision: 'send' });
+  });
+
   it('sweeps signups in (now − 7 d, now − 24 h]', () => {
     expect(activationNudgeSignupWindow(NOW)).toEqual({
       after: new Date('2026-10-30T12:00:00.000Z'),

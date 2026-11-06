@@ -57,6 +57,7 @@ export function activationNudgeLocale(value: string | null | undefined): Activat
 export type ActivationNudgeSkipReason =
   | 'user_missing'
   | 'too_early'
+  | 'too_late'
   | 'excluded_account'
   | 'activated'
   | 'unsubscribed'
@@ -75,6 +76,12 @@ export interface ActivationNudgeFacts {
   unsubscribed: boolean;
   /** Another `activation_nudge` row exists for this account (any status). */
   alreadyNudged: boolean;
+  /**
+   * The row's trigger. A `24h` nudge is not sent once the signup is older
+   * than the sweep's look-back (7 d), e.g. after a long adaptive outage kept
+   * the row retrying; the backfill has no such cap.
+   */
+  trigger?: string | null | undefined;
 }
 
 export type ActivationNudgeDecision =
@@ -87,6 +94,12 @@ export function evaluateActivationNudge(facts: ActivationNudgeFacts): Activation
   if (!user) return { decision: 'skip', reason: 'user_missing' };
   if (facts.now.getTime() - user.createdAt.getTime() < ACTIVATION_NUDGE_DELAY_MS) {
     return { decision: 'skip', reason: 'too_early' };
+  }
+  if (
+    facts.trigger !== 'backfill' &&
+    facts.now.getTime() - user.createdAt.getTime() > ACTIVATION_NUDGE_LOOKBACK_MS
+  ) {
+    return { decision: 'skip', reason: 'too_late' };
   }
   if (isAnalyticsExcludedAccount(user)) return { decision: 'skip', reason: 'excluded_account' };
   if (facts.activated) return { decision: 'skip', reason: 'activated' };

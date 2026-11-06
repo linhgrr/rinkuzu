@@ -191,9 +191,13 @@ describe('KnowledgeGraph load error (RIN-1010)', () => {
     useKnowledgeGraphMock.mockReturnValue({
       data: undefined,
       isLoading: false,
+      isValidating: false,
       error: new Error('503'),
-      mutate,
-    } as unknown as ReturnType<typeof useKnowledgeGraph>);
+      mutate: async () => {
+        mutate();
+        return undefined;
+      },
+    });
 
     render(<KnowledgeGraph sessionId="session-1" />);
 

@@ -159,13 +159,6 @@ describe('activation nudge sweep (RIN-999)', () => {
     ['a bounce or complaint', () => void (state.undeliverable = [LEARNER_ID])],
     ['a feedback opt-out', () => void (state.feedbackOptOut = [LEARNER_ID])],
     [
-      'an adaptive completion',
-      () =>
-        state.adaptive.mockResolvedValue([
-          { userId: LEARNER_ID.toString(), completions: [NOW], succeededUploads: [] },
-        ]),
-    ],
-    [
       'a signup under 24 h ago',
       () => void (state.users = [learner({ createdAt: new Date(NOW.getTime() - HOUR) })]),
     ],
@@ -174,6 +167,23 @@ describe('activation nudge sweep (RIN-999)', () => {
     arrange();
     await expect(sweepActivationNudges(NOW)).resolves.toEqual({ enqueued: 0, skipped: 1 });
     expect(state.rows.size).toBe(0);
+  });
+
+  it('records a canceled row for an adaptive-only activation and stops asking the API', async () => {
+    state.adaptive.mockResolvedValue([
+      { userId: LEARNER_ID.toString(), completions: [NOW], succeededUploads: [] },
+    ]);
+
+    await expect(sweepActivationNudges(NOW)).resolves.toEqual({ enqueued: 0, skipped: 1 });
+    expect(theRow()).toMatchObject({ status: 'canceled', lastError: 'activated' });
+    expect(state.adaptive).toHaveBeenCalledTimes(1);
+
+    await expect(sweepActivationNudges(new Date(NOW.getTime() + 2 * 60_000))).resolves.toEqual({
+      enqueued: 0,
+      skipped: 1,
+    });
+    expect(state.adaptive).toHaveBeenCalledTimes(1);
+    expect(state.rows.size).toBe(1);
   });
 
   it('enqueues nothing while the kill switch is off', async () => {
@@ -232,6 +242,17 @@ describe('activation nudge send time (RIN-999)', () => {
       decision: 'retry',
       availableAt: new Date(NOW.getTime() + 30 * 60_000),
     });
+  });
+
+  it('cancels a 24h row still retrying after the 7-day look-back', async () => {
+    await sweepActivationNudges(NOW);
+    const row = theRow();
+    const late = new Date(NOW.getTime() + 7 * 24 * HOUR);
+
+    await expect(
+      prepareActivationNudge({ ...row, entityId: row.userId, trigger: '24h' }, late),
+    ).resolves.toEqual({ decision: 'cancel', reason: 'too_late' });
+    expect(state.adaptive).toHaveBeenCalledTimes(1);
   });
 
   it('emits activation_email_sent with trigger and locale only', async () => {

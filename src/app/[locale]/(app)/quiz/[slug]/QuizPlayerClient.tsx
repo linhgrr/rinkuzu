@@ -27,7 +27,7 @@ import { routePathSegment } from '@/lib/routing/routeParams';
 import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { StarterQuizIntro } from '@/features/quiz/components/player/StarterQuizIntro';
-import { POST_SIGNIN_STARTER_ENTRY } from '@/shared/constants/starter-quiz';
+import { POST_SIGNIN_STARTER_ENTRY, TRACKED_QUIZ_ENTRIES } from '@/shared/constants/starter-quiz';
 import { isQuickRoundEligible } from '@/shared/constants/quick-round';
 import {
   drawQuickRound,
@@ -608,7 +608,10 @@ interface QuizPlayerClientProps {
   initialErrorStatus: number | null;
   initialQuiz: QuizPlayViewModel | null;
   slug: string;
-  /** `?entry=` from the URL; `post_signin_starter` when /start opened this quiz (RIN-913). */
+  /**
+   * `?entry=` from the URL: `post_signin_starter` when /start opened this quiz
+   * (RIN-913), `activation_email` from the activation nudge (RIN-1000).
+   */
   entry?: string | null;
   /** `?mode=quick|full` from the URL: skips the quick-round choice on a long quiz (RIN-933). */
   mode?: string | null;
@@ -619,8 +622,9 @@ function postSignInStarterNotice(entry: string | null | undefined, slug: string)
   return entry === POST_SIGNIN_STARTER_ENTRY ? <StarterQuizIntro quizSlug={slug} /> : null;
 }
 
-function postSignInStarterProperties(entry: string | null | undefined) {
-  return entry === POST_SIGNIN_STARTER_ENTRY ? { entry: POST_SIGNIN_STARTER_ENTRY } : {};
+// `entry` on quiz_completed: the /start starter (RIN-913) or the activation email (RIN-1000).
+function trackedEntryProperties(entry: string | null | undefined) {
+  return entry && TRACKED_QUIZ_ENTRIES.includes(entry) ? { entry } : {};
 }
 
 /**
@@ -840,7 +844,7 @@ export default function QuizPlayerClient({
         score,
         authenticated: Boolean(sessionEmail),
         mode: analyticsMode,
-        ...postSignInStarterProperties(entry),
+        ...trackedEntryProperties(entry),
       });
       // Only a submitted round counts as seen, so the next draw prefers the rest.
       if (state.quickIndices) markQuickRoundSeen(slug, state.quickIndices);

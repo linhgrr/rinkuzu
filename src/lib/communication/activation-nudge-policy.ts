@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
 import {
   isAnalyticsExcludedAccount,
   type LearnerExclusionFields,
@@ -6,11 +8,13 @@ import {
   pickStarterQuizIndex,
   type StarterQuizAllowlistEntry,
 } from '@/services/dashboard/starter-quizzes';
+import { ACTIVATION_EMAIL_ENTRY } from '@/shared/constants/starter-quiz';
 
 /**
  * Pure rules for the one-time activation nudge (RIN-998 / RIN-999): who is
  * swept, the per-account dedupe key, eligibility (enqueue and send time) and
- * the CTA URL. No database access, so every rule is table-testable.
+ * the CTA URL and the signed click token. No database access, so every rule
+ * is table-testable.
  */
 
 const HOUR_MS = 3_600_000;
@@ -124,8 +128,8 @@ export function activationNudgeFirstName(
 }
 
 /**
- * The CTA target: the locale-matched starter quiz. Kept in one function so
- * the click-tracking issue swaps it for a tracked redirect in one place.
+ * Where a click lands: the locale-matched starter quiz. The email links to
+ * {@link activationClickUrl}, which records the click and redirects here.
  */
 export function activationNudgeCtaUrl(input: {
   siteUrl: string;
@@ -137,8 +141,56 @@ export function activationNudgeCtaUrl(input: {
     ? `/${input.locale}/quiz/${encodeURIComponent(starter.slug)}`
     : `/${input.locale}/dashboard`;
   const url = new URL(path, input.siteUrl);
-  url.searchParams.set('entry', 'activation_email');
+  url.searchParams.set('entry', ACTIVATION_EMAIL_ENTRY);
   url.searchParams.set('utm_source', 'email');
   url.searchParams.set('utm_campaign', ACTIVATION_NUDGE_CAMPAIGN);
+  return url.toString();
+}
+
+/** A click link works for this long after the email is rendered; later it just redirects. */
+const ACTIVATION_CLICK_TOKEN_TTL_MS = 30 * DAY_MS;
+const ACTIVATION_CLICK_TOKEN_PATTERN = /^([a-f0-9]{24})\.([a-z0-9]{1,12})\.([A-Za-z0-9_-]{43})$/u;
+
+function activationClickSignature(userId: string, expires: string, secret: string): string {
+  if (!secret.trim()) throw new Error('Activation click token secret is required');
+  return createHmac('sha256', secret)
+    .update(`rinkuzu:activation-click:v1:${userId}:${expires}`)
+    .digest('base64url');
+}
+
+/** Signed `userId.expiry.signature` for the email's CTA (RIN-1000); expires after 30 days. */
+export function activationClickToken(userId: string, secret: string, now: Date): string {
+  const expires = Math.floor((now.getTime() + ACTIVATION_CLICK_TOKEN_TTL_MS) / 1000).toString(36);
+  return `${userId}.${expires}.${activationClickSignature(userId, expires, secret)}`;
+}
+
+/** The learner a click token was signed for, or `null` when it is forged or expired. */
+export function verifyActivationClickToken(
+  token: string,
+  secret: string,
+  now: Date,
+): { userId: string } | null {
+  const match = ACTIVATION_CLICK_TOKEN_PATTERN.exec(token);
+  if (!match) return null;
+  const [, userId = '', expires = '', signature = ''] = match;
+  const expected = Buffer.from(activationClickSignature(userId, expires, secret));
+  const actual = Buffer.from(signature);
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
+  if (Number.parseInt(expires, 36) * 1000 < now.getTime()) return null;
+  return { userId };
+}
+
+/**
+ * The email's CTA href: the tracked redirect. `l` picks the starter quiz even
+ * when the token is invalid, so a bad link still lands somewhere useful.
+ */
+export function activationClickUrl(
+  siteUrl: string,
+  locale: ActivationNudgeLocale,
+  token: string,
+): string {
+  const url = new URL('/api/email/activation-click', siteUrl);
+  url.searchParams.set('t', token);
+  url.searchParams.set('l', locale);
   return url.toString();
 }

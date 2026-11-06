@@ -46,6 +46,16 @@ describe('resolveAuthCallback', () => {
     expect(resolveAuthCallback('/dashboard/settings', 'en').intlHref).toBe('/dashboard/settings');
   });
 
+  it('keeps entry=activation_email on the quiz it returns to (RIN-1000)', () => {
+    const quiz = '/quiz/en-starter?entry=activation_email&utm_source=email';
+    const login = new URL(withAuthCallback('/login', quiz), 'https://www.rinkuzu.app');
+
+    expect(resolveAuthCallback(login.searchParams.get('callbackUrl'), 'en')).toEqual({
+      intlHref: quiz,
+      browserUrl: '/en/quiz/en-starter?entry=activation_email&utm_source=email',
+    });
+  });
+
   it('accepts both prefixed and unprefixed app paths', () => {
     expect(resolveAuthCallback('/en/profile', 'en')).toEqual({
       intlHref: '/profile',

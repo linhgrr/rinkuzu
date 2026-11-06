@@ -17,6 +17,17 @@ interface OutboxRow {
   locale: string;
 }
 
+interface OutboxFilter {
+  dedupeKey: string;
+  kind?: string;
+  status?: string;
+}
+
+interface OutboxUpdate {
+  $setOnInsert?: object;
+  $set?: Record<string, unknown>;
+}
+
 interface IdFilter {
   userId?: { $in: Types.ObjectId[] };
   _id?: { $ne: Types.ObjectId };
@@ -34,7 +45,16 @@ const state = vi.hoisted(() => ({
 }));
 
 const outbox = vi.hoisted(() => ({
-  updateOne: vi.fn(async (filter: { dedupeKey: string }, update: { $setOnInsert: object }) => {
+  updateOne: vi.fn(async (filter: OutboxFilter, update: OutboxUpdate) => {
+    if (update.$set) {
+      const row = state.rows.get(filter.dedupeKey) as Record<string, unknown> | undefined;
+      const matches =
+        row?.['kind'] === filter.kind &&
+        row?.['status'] === filter.status &&
+        (row?.['clickedAt'] ?? null) === null;
+      if (row && matches) Object.assign(row, update.$set);
+      return { modifiedCount: row && matches ? 1 : 0 };
+    }
     if (state.rows.has(filter.dedupeKey)) return { upsertedCount: 0 };
     state.rows.set(filter.dedupeKey, { _id: new Types.ObjectId(), ...update.$setOnInsert });
     return { upsertedCount: 1 };
@@ -101,8 +121,10 @@ vi.mock('@/models/Communication', () => ({
   FeedbackOutreachPreference: { distinct: vi.fn(async () => state.feedbackOptOut) },
 }));
 
+import { activationClickToken } from './activation-nudge-policy';
 import {
   prepareActivationNudge,
+  recordActivationClick,
   recordActivationEmailSent,
   sweepActivationNudges,
 } from './activation-nudge';
@@ -118,6 +140,11 @@ function learner(overrides: Record<string, unknown> = {}) {
     createdAt: new Date(NOW.getTime() - 30 * HOUR),
     ...overrides,
   };
+}
+
+function clickedAt(): unknown {
+  const [row] = [...state.rows.values()] as Array<Record<string, unknown>>;
+  return row?.['clickedAt'];
 }
 
 function theRow(): OutboxRow {
@@ -217,7 +244,11 @@ describe('activation nudge send time (RIN-999)', () => {
       /^<https:\/\/www\.rinkuzu\.app\/api\/unsubscribe\?t=/u,
     );
     expect(prepared.mail.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
-    expect(prepared.mail.html).toContain('entry=activation_email');
+    // The CTA is the tracked redirect (RIN-1000), never the quiz URL itself.
+    expect(prepared.mail.html).toContain(
+      'https://www.rinkuzu.app/api/email/activation-click?t=6a8ed209f04328ac17443d91.',
+    );
+    expect(prepared.mail.html).toContain('&amp;l=vi');
     expect(prepared.mail.html).toContain('/vi/unsubscribe?t=');
     expect(prepared.mail.tags).toEqual([{ name: 'campaign', value: 'activation_nudge' }]);
   });
@@ -261,5 +292,71 @@ describe('activation nudge send time (RIN-999)', () => {
       trigger: '24h',
       locale: 'en',
     });
+  });
+});
+
+describe('activation nudge click (RIN-1000)', () => {
+  const STARTER_EN =
+    'https://www.rinkuzu.app/en/quiz/how-to-remember-what-you-study-7-question-starter-quiz-093947?entry=activation_email&utm_source=email&utm_campaign=activation_nudge';
+
+  async function sentRow(): Promise<string> {
+    await sweepActivationNudges(NOW);
+    Object.assign(theRow(), { status: 'completed' });
+    return activationClickToken(LEARNER_ID.toString(), ENVIRONMENT['AUTH_SECRET'] ?? '', NOW);
+  }
+
+  it('records the first click once, emits activation_email_clicked and lands on the starter', async () => {
+    const token = await sentRow();
+    const later = new Date(NOW.getTime() + HOUR);
+
+    await expect(recordActivationClick(token, 'en', later)).resolves.toBe(STARTER_EN);
+    await expect(
+      recordActivationClick(token, 'en', new Date(later.getTime() + HOUR)),
+    ).resolves.toBe(STARTER_EN);
+
+    expect(clickedAt()).toEqual(later);
+    expect(state.capture).toHaveBeenCalledTimes(1);
+    expect(state.capture).toHaveBeenCalledWith('activation_email_clicked', LEARNER_ID.toString(), {
+      locale: 'en',
+    });
+  });
+
+  it('redirects a forged, expired or empty token to the starter and records nothing', async () => {
+    const token = await sentRow();
+    const expired = new Date(NOW.getTime() + 31 * 24 * HOUR);
+    outbox.updateOne.mockClear();
+
+    for (const [value, at] of [
+      [`${token.slice(0, -1)}A`, NOW],
+      [token, expired],
+      ['', NOW],
+    ] as const) {
+      await expect(recordActivationClick(value, 'en', at)).resolves.toBe(STARTER_EN);
+    }
+    expect(outbox.updateOne).not.toHaveBeenCalled();
+    expect(state.capture).not.toHaveBeenCalled();
+    expect(clickedAt()).toBeUndefined();
+  });
+
+  it('does not count a click on an account whose nudge was never sent', async () => {
+    await sweepActivationNudges(NOW);
+    const token = activationClickToken(
+      LEARNER_ID.toString(),
+      ENVIRONMENT['AUTH_SECRET'] ?? '',
+      NOW,
+    );
+
+    await expect(recordActivationClick(token, 'vi', NOW)).resolves.toContain(
+      '/vi/quiz/cach-ghi-nho-nhung-gi-ban-hoc-quiz-khoi-dong-7-cau-096007?entry=activation_email',
+    );
+    expect(state.capture).not.toHaveBeenCalled();
+  });
+
+  it('still redirects when the database write fails', async () => {
+    const token = await sentRow();
+    outbox.updateOne.mockRejectedValueOnce(new Error('db down'));
+
+    await expect(recordActivationClick(token, 'en', NOW)).resolves.toBe(STARTER_EN);
+    expect(state.capture).not.toHaveBeenCalled();
   });
 });

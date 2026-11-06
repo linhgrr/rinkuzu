@@ -13,6 +13,8 @@ import {
 import { STARTER_QUIZ_ALLOWLIST } from '@/services/dashboard/starter-quizzes';
 import {
   ACTIVATION_NUDGE_CAMPAIGN,
+  activationClickToken,
+  activationClickUrl,
   activationNudgeCtaUrl,
   activationNudgeDedupeKey,
   activationNudgeFirstName,
@@ -20,6 +22,7 @@ import {
   activationNudgeSendingEnabled,
   activationNudgeSignupWindow,
   evaluateActivationNudge,
+  verifyActivationClickToken,
   type ActivationNudgeDecision,
   type ActivationNudgeSkipReason,
 } from './activation-nudge-policy';
@@ -160,11 +163,12 @@ export async function prepareActivationNudge(
   const locale = activationNudgeLocale(item.locale ?? learner.locale);
   const site = siteUrl();
   const userId = learner.id.toString();
-  const token = unsubscribeToken(userId, communicationEnvironment('AUTH_SECRET'));
+  const secret = communicationEnvironment('AUTH_SECRET');
+  const token = unsubscribeToken(userId, secret);
   const rendered = await renderActivationNudge({
     locale,
     firstName: activationNudgeFirstName(learner.name, locale),
-    ctaUrl: activationNudgeCtaUrl({ siteUrl: site, locale, allowlist: STARTER_QUIZ_ALLOWLIST }),
+    ctaUrl: activationClickUrl(site, locale, activationClickToken(userId, secret, now)),
     unsubscribeUrl: unsubscribePageUrl(site, locale, token),
   });
   return {
@@ -192,4 +196,43 @@ export async function recordActivationEmailSent(item: {
     locale: activationNudgeLocale(item.locale),
   });
   if (!sent) logger.info({ event: 'activation_email_sent' }, 'Server analytics event not recorded');
+}
+
+/**
+ * A click on the email's CTA (RIN-1000): stamps `clickedAt` on the learner's
+ * sent nudge row the first time and emits `activation_email_clicked`, then
+ * returns the starter quiz to redirect to. A forged, expired or unknown token,
+ * or a failed write, records nothing and lands on the same quiz, so the
+ * response is no oracle. Never throws.
+ */
+export async function recordActivationClick(
+  token: string,
+  requestedLocale: string | null | undefined,
+  now: Date = new Date(),
+): Promise<string> {
+  const locale = activationNudgeLocale(requestedLocale);
+  const destination = activationNudgeCtaUrl({
+    siteUrl: siteUrl(),
+    locale,
+    allowlist: STARTER_QUIZ_ALLOWLIST,
+  });
+  try {
+    const verified = verifyActivationClickToken(
+      token,
+      communicationEnvironment('AUTH_SECRET'),
+      now,
+    );
+    if (!verified) return destination;
+    const first = await repository.recordClick(activationNudgeDedupeKey(verified.userId), now);
+    if (!first) return destination;
+    const sent = await captureServerEvent('activation_email_clicked', verified.userId, { locale });
+    if (!sent)
+      logger.info({ event: 'activation_email_clicked' }, 'Server analytics event not recorded');
+  } catch (error) {
+    logger.warn(
+      { operation: 'activation-click', errorName: error instanceof Error ? error.name : 'unknown' },
+      'Activation click not recorded',
+    );
+  }
+  return destination;
 }

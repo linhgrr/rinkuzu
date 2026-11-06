@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  activationClickToken,
+  activationClickUrl,
   activationNudgeCtaUrl,
   activationNudgeDedupeKey,
   activationNudgeFirstName,
@@ -9,6 +11,7 @@ import {
   activationNudgeSignupWindow,
   evaluateActivationNudge,
   type ActivationNudgeFacts,
+  verifyActivationClickToken,
 } from './activation-nudge-policy';
 
 const HOUR = 3_600_000;
@@ -129,5 +132,30 @@ describe('activation nudge first name and CTA', () => {
     expect(
       activationNudgeCtaUrl({ siteUrl: 'https://www.rinkuzu.app', locale: 'vi', allowlist }),
     ).toContain('/vi/quiz/vi-starter?entry=activation_email');
+  });
+});
+
+describe('activation click token (RIN-1000)', () => {
+  const SECRET = 'test-secret';
+  const USER = '0123456789abcdef01234567';
+  const SENT = new Date('2026-11-06T12:00:00.000Z');
+
+  it('verifies a fresh token for its user and rejects a forged, foreign or expired one', () => {
+    const token = activationClickToken(USER, SECRET, SENT);
+    expect(verifyActivationClickToken(token, SECRET, new Date(SENT.getTime() + HOUR))).toEqual({
+      userId: USER,
+    });
+    expect(verifyActivationClickToken(token, 'other-secret', SENT)).toBeNull();
+    expect(verifyActivationClickToken(`${token.slice(0, -1)}A`, SECRET, SENT)).toBeNull();
+    expect(verifyActivationClickToken('not-a-token', SECRET, SENT)).toBeNull();
+    expect(verifyActivationClickToken('', SECRET, SENT)).toBeNull();
+    const later = new Date(SENT.getTime() + 31 * 24 * HOUR);
+    expect(verifyActivationClickToken(token, SECRET, later)).toBeNull();
+  });
+
+  it('builds the tracked click URL with the token and the locale', () => {
+    const url = new URL(activationClickUrl('https://www.rinkuzu.app', 'en', 'tok.en'));
+    expect(url.pathname).toBe('/api/email/activation-click');
+    expect(Object.fromEntries(url.searchParams)).toEqual({ t: 'tok.en', l: 'en' });
   });
 });

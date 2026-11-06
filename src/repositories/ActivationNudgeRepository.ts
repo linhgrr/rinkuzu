@@ -101,6 +101,12 @@ export class ActivationNudgeRepository {
     return users.length === 0 ? [] : ActivationNudgeRepository.withLocales(users);
   }
 
+  /** Every account (excluded ones too) created in `(after, until]`; `User {createdAt:-1}`. */
+  async countSignupsBetween(after: Date, until: Date): Promise<number> {
+    await connectDB();
+    return User.countDocuments({ createdAt: { $gt: after, $lte: until } });
+  }
+
   async findLearner(userId: Types.ObjectId): Promise<NudgeLearner | null> {
     await connectDB();
     const user = await User.findById(userId).select(USER_FIELDS).lean<UserRecord | null>();

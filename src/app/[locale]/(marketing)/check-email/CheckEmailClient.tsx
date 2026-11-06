@@ -17,6 +17,7 @@ import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { resendVerificationSchema, type ForgotPasswordInput } from '@/lib/validation/auth';
 
 const DEFAULT_RESEND_COOLDOWN = 60;
+const ADDRESS_HINT_ID = 'check-email-address-hint';
 
 function CheckEmailContent() {
   const t = useTranslations('auth');
@@ -127,6 +128,13 @@ function CheckEmailContent() {
                   </p>
                 )}
 
+                {/* The verify link carries only the token, never the address (RIN-1048). */}
+                {!initialEmail && (
+                  <p id={ADDRESS_HINT_ID} className="-mb-3 text-sm text-neutral-600">
+                    {t('checkEmailTypeAddressHint')}
+                  </p>
+                )}
+
                 <Input
                   label={t('emailAddress')}
                   id="email"
@@ -136,6 +144,7 @@ function CheckEmailContent() {
                   placeholder={t('enterEmail')}
                   icon={<HiOutlineMail className="size-5" />}
                   aria-invalid={errors.email ? true : undefined}
+                  aria-describedby={initialEmail ? undefined : ADDRESS_HINT_ID}
                   {...register('email')}
                 />
                 {errors.email && (

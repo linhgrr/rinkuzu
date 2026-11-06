@@ -64,13 +64,15 @@ test.describe('create from PDF error states (RIN-991)', () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await withAccounts(testInfo, async ({ regular }) => {
       await login(page, regular);
+      // A plain outage, not an entitlement error: quota_exceeded / premium_required
+      // deliberately open the upgrade modal instead of the inline alert (RIN-1087).
       await page.route('**/api/storage/presigned-url', (route) =>
         route.fulfill({
-          status: 429,
+          status: 503,
           contentType: 'application/json',
           body: JSON.stringify({
             success: false,
-            error: { code: 'quota_exceeded', message: 'Quota exceeded' },
+            error: { code: 'service_unavailable', message: 'Service unavailable' },
           }),
         }),
       );
@@ -90,7 +92,7 @@ test.describe('create from PDF error states (RIN-991)', () => {
       // The submit-step alert is the one that takes focus (tabindex=-1).
       const alert = page.locator('[role="alert"][tabindex="-1"]');
       await expect(alert).toBeVisible();
-      await expect(alert).not.toHaveText('');
+      await expect(alert).toHaveText(enCreate.serviceTemporarilyUnavailable);
       await expect(alert).toBeFocused();
       await expect(alert).toBeInViewport();
       await expect(submit).toBeInViewport();

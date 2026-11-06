@@ -23,9 +23,7 @@ const COPY = {
 
 test.describe('guest app header (RIN-958) @critical-auth', () => {
   for (const locale of ['vi', 'en'] as const) {
-    test(`a guest gets Sign in back to the page and no Log out (${locale})`, async ({
-      page,
-    }, testInfo) => {
+    test(`a guest gets Sign in back to the page and no Log out (${locale})`, async ({ page }) => {
       const copy = COPY[locale];
       for (const viewport of VIEWPORTS) {
         await page.setViewportSize(viewport);
@@ -46,11 +44,6 @@ test.describe('guest app header (RIN-958) @critical-auth', () => {
             page.locator('#mobile-app-menu').getByRole('link', { name: copy.signIn, exact: true }),
           ).toBeVisible();
         }
-
-        await testInfo.attach(`guest-header-${locale}-${viewport.width}.png`, {
-          body: await page.screenshot(),
-          contentType: 'image/png',
-        });
       }
 
       await page.setViewportSize(VIEWPORTS[0]);

@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
 import useSWR from 'swr';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
-import { fetchCreditWallet } from '@/features/profile/api/credit-wallet-api';
+import { CREDIT_WALLET_KEY, fetchCreditWallet } from '@/features/profile/api/credit-wallet-api';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { matchesPrefix, toBrowserPath } from '@/lib/routing/pathname';
 import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
@@ -1046,7 +1046,7 @@ export function AppChrome({ children }: AppChromeProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: creditData, isLoading: creditLoading } = useSWR(
-    session?.user ? '/api/credits' : null,
+    session?.user ? CREDIT_WALLET_KEY : null,
     fetchCreditWallet,
     {
       refreshInterval: 30_000,

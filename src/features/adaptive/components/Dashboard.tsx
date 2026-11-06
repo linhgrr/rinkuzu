@@ -3,11 +3,13 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { CancelProcessingModal } from './sections/CancelProcessingModal';
 import { DashboardDeleteModal } from './sections/DashboardDeleteModal';
 import { HeroSection } from './sections/HeroSection';
 import { LibrarySection } from './sections/Library';
 import { RecentActivity, UploadMaterialCard } from './sections/OverviewSidebar';
 import { useAdaptiveDashboard } from '@/features/adaptive/hooks/use-adaptive-dashboard';
+import { useCancelProcessingConfirm } from '@/features/adaptive/hooks/use-cancel-processing-confirm';
 import type { SessionHistoryItem } from '@/features/adaptive/types/history';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 
@@ -63,6 +65,7 @@ export default function AdaptiveLearningDashboard({
   });
 
   const dashboardSubjects = filteredSubjects;
+  const cancelConfirm = useCancelProcessingConfirm(cancel);
 
   useEffect(() => {
     setSearchQuery(searchParams.get('search') ?? '');
@@ -92,7 +95,8 @@ export default function AdaptiveLearningDashboard({
             loadingJobId={loadingJobId}
             onGoUpload={handleGoUpload}
             onOpenSubject={handleOpenSubject}
-            onCancel={cancel}
+            onCancel={cancelConfirm.request}
+            onViewProcessing={handleViewProcessing}
             busyJobId={busyJobId}
             t={tDashboard}
           />
@@ -112,7 +116,7 @@ export default function AdaptiveLearningDashboard({
             onViewProcessing={handleViewProcessing}
             onDelete={handleDeleteClick}
             onRetry={retry}
-            onCancel={cancel}
+            onCancel={cancelConfirm.request}
             busyJobId={busyJobId}
             t={tDashboard}
           />
@@ -129,6 +133,15 @@ export default function AdaptiveLearningDashboard({
         isLoading={!!deletingJobId}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+        t={tDashboard}
+      />
+
+      <CancelProcessingModal
+        isOpen={cancelConfirm.targetJobId !== null}
+        isLoading={cancelConfirm.pending}
+        error={cancelConfirm.error}
+        onConfirm={() => void cancelConfirm.confirm()}
+        onCancel={cancelConfirm.dismiss}
         t={tDashboard}
       />
     </div>

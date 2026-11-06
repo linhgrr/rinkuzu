@@ -7,7 +7,6 @@ import {
   HiOutlineEye,
   HiOutlineRefresh,
   HiOutlineTrash,
-  HiOutlineX,
 } from 'react-icons/hi';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +16,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
 import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
+import { CancelProcessingButton } from './CancelProcessingButton';
 import styles from './AdaptiveDashboardLayout.module.css';
 
 type LibraryProps = {
@@ -170,17 +170,7 @@ export function SubjectCard({
             >
               <HiOutlineEye className="size-4" aria-hidden="true" /> {t('viewProcessing')}
             </Button>
-            <Button
-              variant="ghost"
-              disabled={busy}
-              onClick={(event) => {
-                event.stopPropagation();
-                onCancel?.(subject.jobId);
-              }}
-              className="min-h-11 bg-transparent px-0 text-sm font-semibold text-red-600"
-            >
-              <HiOutlineX className="size-4" aria-hidden="true" /> {t('cancelProcessing')}
-            </Button>
+            <CancelProcessingButton busy={busy} onCancel={() => onCancel?.(subject.jobId)} t={t} />
           </div>
         ) : null}
         <div className="mb-2 flex items-center justify-between text-sm">
@@ -200,6 +190,9 @@ export function SubjectCard({
             ? subject.runtime.stageLabel
             : subject.lastOpenedLabel}
         </p>
+        {subject.runtime.kind === 'processing' ? (
+          <p className="mt-1 text-xs leading-normal text-ink-muted">{t('processingReassurance')}</p>
+        ) : null}
       </div>
     </article>
   );

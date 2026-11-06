@@ -23,7 +23,7 @@ interface QuizCardProps {
   quizId: string;
   onDelete?: (quiz: QuizCardQuiz, quizId: string) => void;
   /** Short status shown next to the question count, e.g. "Unlocked" on owned Premium cards. */
-  badge?: string;
+  badge?: string | undefined;
 }
 
 function getAuthor(quiz: QuizCardQuiz): UserIdentity {

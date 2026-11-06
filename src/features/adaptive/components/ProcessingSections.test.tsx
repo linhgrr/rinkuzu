@@ -5,6 +5,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import enAdaptive from '@/../messages/en/adaptiveLearning.json';
 import viAdaptive from '@/../messages/vi/adaptiveLearning.json';
+import enErrors from '@/../messages/en/errors.json';
+import viErrors from '@/../messages/vi/errors.json';
 import type { ProcessingErrorState } from '@/features/adaptive/hooks/use-processing-state';
 import { ProcessingStatusCard } from './ProcessingSections';
 
@@ -111,10 +113,23 @@ describe('ProcessingStatusCard failure actions (RIN-809, RIN-1004)', () => {
   });
 
   it('never tells the learner to upload again for a step failure they can retry', () => {
-    for (const messages of [enAdaptive, viAdaptive]) {
-      const { failedAtStep, pipelineTimeout, pipelineCancelled } = messages.processing.errors;
-      for (const copy of [failedAtStep, pipelineTimeout, pipelineCancelled]) {
-        expect(copy).not.toMatch(/upload|tải lại tài liệu|tải tài liệu lên/i);
+    const locales = [
+      { adaptive: enAdaptive, errors: enErrors },
+      { adaptive: viAdaptive, errors: viErrors },
+    ];
+    for (const { adaptive, errors } of locales) {
+      const { failedAtStep, pipelineTimeout, pipelineCancelled, pipelineUnavailable } =
+        adaptive.processing.errors;
+      // pipeline_stalled is retryable and shows Try again (QA RIN-1092).
+      const { pipelineStalled } = errors.api.codes;
+      for (const copy of [
+        failedAtStep,
+        pipelineTimeout,
+        pipelineCancelled,
+        pipelineUnavailable,
+        pipelineStalled,
+      ]) {
+        expect(copy).not.toMatch(/upload|tải lại tài liệu|tải tài liệu lên|tải lên lại/i);
       }
     }
   });

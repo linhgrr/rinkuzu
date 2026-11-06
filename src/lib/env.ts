@@ -126,7 +126,12 @@ const envSchema = z
     AUTH_GOOGLE_ID: z.string().optional(),
     AUTH_GOOGLE_SECRET: z.string().optional(),
     SUBSCRIPTION_CRON_SECRET: subscriptionCronSecretSchema,
-    IMGBB_API_KEY: z.string().optional(),
+    // Public R2 bucket for user images, served on IMAGE_PUBLIC_BASE_URL (no trailing slash).
+    IMAGE_STORAGE_BUCKET: z.string().min(1).optional(),
+    IMAGE_PUBLIC_BASE_URL: z
+      .url()
+      .refine((value) => !value.endsWith('/'), 'IMAGE_PUBLIC_BASE_URL must not end with /')
+      .optional(),
     NEXT_PUBLIC_GA_ID: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.url().optional(),

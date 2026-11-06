@@ -25,6 +25,7 @@ export const POST = withAuth(async (request: NextRequest) => {
   }
 
   const result = await imageService.uploadImage({
+    kind: 'question',
     bytes: new Uint8Array(await file.arrayBuffer()),
     contentType: file.type,
     filename: typeof name === 'string' && name ? name : file.name,

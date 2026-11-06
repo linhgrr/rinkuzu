@@ -12,6 +12,7 @@
   "back": "Quay lại",
   "next": "Tiếp theo",
   "previous": "Trước đó",
+  "pageOf": "Trang {page}/{totalPages}",
   "close": "Đóng",
   "create": "Tạo mới",
   "update": "Cập nhật",

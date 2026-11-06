@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { uploadImageToImgBB } from './imageUploadService';
+import { uploadImage } from './imageUploadService';
 
-describe('uploadImageToImgBB', () => {
+describe('uploadImage', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -14,11 +14,11 @@ describe('uploadImageToImgBB', () => {
           success: true,
           data: {
             id: 'img-1',
-            url: 'https://i.ibb.co/original.jpg',
-            displayUrl: 'https://i.ibb.co/display.jpg',
-            thumbnailUrl: 'https://i.ibb.co/thumb.jpg',
-            mediumUrl: 'https://i.ibb.co/medium.jpg',
-            deleteUrl: 'https://i.ibb.co/delete/img-1',
+            url: 'https://cdn.rinkuzu.app/images/question/2026/img-1.jpg',
+            displayUrl: 'https://cdn.rinkuzu.app/images/question/2026/img-1.jpg',
+            thumbnailUrl: 'https://cdn.rinkuzu.app/images/question/2026/img-1.jpg',
+            mediumUrl: 'https://cdn.rinkuzu.app/images/question/2026/img-1.jpg',
+            deleteUrl: 'https://cdn.rinkuzu.app/images/question/2026/img-1.jpg',
             width: 1200,
             height: 630,
             size: 2048,
@@ -29,9 +29,9 @@ describe('uploadImageToImgBB', () => {
     );
 
     const file = new File(['image-bytes'], 'quiz-image.jpg', { type: 'image/jpeg' });
-    const result = await uploadImageToImgBB(file, 'quiz-image.jpg');
+    const result = await uploadImage(file, 'quiz-image.jpg');
 
-    expect(result.displayUrl).toBe('https://i.ibb.co/display.jpg');
+    expect(result.displayUrl).toBe('https://cdn.rinkuzu.app/images/question/2026/img-1.jpg');
     expect(fetchSpy).toHaveBeenCalledWith(
       '/api/image/upload',
       expect.objectContaining({

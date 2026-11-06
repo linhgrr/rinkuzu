@@ -12,6 +12,7 @@
   "back": "Back",
   "next": "Next",
   "previous": "Previous",
+  "pageOf": "Page {page} of {totalPages}",
   "close": "Close",
   "create": "Create",
   "update": "Update",

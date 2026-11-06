@@ -3,7 +3,7 @@ import type { ImageAssetDto } from '@/dtos/image';
 
 const UPLOAD_PROXY_URL = '/api/image/upload';
 
-export const uploadImageToImgBB = async (
+export const uploadImage = async (
   imageFile: File | Blob,
   imageName: string = '',
 ): Promise<ImageAssetDto> => {

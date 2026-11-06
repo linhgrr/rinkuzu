@@ -1235,21 +1235,32 @@ test.describe('production critical paths', () => {
       const search = page.getByLabel('Search users by email...');
       await search.fill(fixture.target.email);
       await search.press('Enter');
-      const row = page.getByRole('row').filter({ hasText: fixture.target.email });
+      // A table row from md up, a card below md (RIN-1021); the hidden layout is out of the a11y tree.
+      const row = page
+        .getByRole('row')
+        .or(page.getByRole('listitem'))
+        .filter({ hasText: fixture.target.email });
+      const openActions = () => row.getByRole('button', { name: 'Actions', exact: true }).click();
       await expect(row).toHaveCount(1);
+      // No horizontal scroll hides the row actions any more (RIN-1021).
+      await expect(row.getByRole('button', { name: 'Actions', exact: true })).toBeInViewport();
       await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
 
+      await openActions();
       await row.getByRole('button', { name: 'Mark as test', exact: true }).click();
       const confirmMark = page.getByRole('dialog');
       await expect(confirmMark).toContainText(fixture.target.email);
       await confirmMark.getByRole('button', { name: 'Mark as test', exact: true }).click();
       await expect(row.getByText('Test account', { exact: true })).toBeVisible();
+      await openActions();
       await expect(row.getByRole('button', { name: 'Unmark test', exact: true })).toBeVisible();
       expect(await readFlag()).toBe(true);
 
+      // The menu is still open from the check above.
       await row.getByRole('button', { name: 'Unmark test', exact: true }).click();
       const confirmClear = page.getByRole('dialog');
       await confirmClear.getByRole('button', { name: 'Unmark test', exact: true }).click();
+      await openActions();
       await expect(row.getByRole('button', { name: 'Mark as test', exact: true })).toBeVisible();
       await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
       expect(await readFlag()).toBe(false);

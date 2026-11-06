@@ -61,9 +61,17 @@ const learner = userRow({});
 const flagged = userRow({ id: FLAGGED_ID, email: 'qa-bot@example.com', isTestAccount: true });
 
 function rowOf(email: string): HTMLElement {
-  const row = screen.getByText(email).closest('tr');
+  // The table (md and up) and the card list (below md) both render; jsdom has no CSS.
+  const row = screen
+    .getAllByText(email)
+    .map((node) => node.closest('tr'))
+    .find((node): node is HTMLTableRowElement => node !== null);
   if (!row) throw new Error(`No table row for ${email}`);
   return row;
+}
+
+async function openActions(user: ReturnType<typeof userEvent.setup>, email: string) {
+  await user.click(within(rowOf(email)).getByRole('button', { name: 'actions' }));
 }
 
 describe('AdminUsersPageClient test-account flag', () => {
@@ -91,14 +99,17 @@ describe('AdminUsersPageClient test-account flag', () => {
     );
   });
 
-  it('badges only the flagged row and offers the matching toggle on each row', () => {
+  it('badges only the flagged row and offers the matching toggle on each row', async () => {
+    const user = userEvent.setup();
     render(<AdminUsersPageClient />);
 
     expect(within(rowOf(flagged.email)).getByText('testAccountBadge')).toBeInTheDocument();
     expect(within(rowOf(learner.email)).queryByText('testAccountBadge')).not.toBeInTheDocument();
+    await openActions(user, learner.email);
     expect(
       within(rowOf(learner.email)).getByRole('button', { name: 'markTestAccount' }),
     ).toBeInTheDocument();
+    await openActions(user, flagged.email);
     expect(
       within(rowOf(flagged.email)).getByRole('button', { name: 'unmarkTestAccount' }),
     ).toBeInTheDocument();
@@ -109,6 +120,8 @@ describe('AdminUsersPageClient test-account flag', () => {
     updateTestAccountMock.mockResolvedValue({ id: LEARNER_ID, isTestAccount: true, changed: true });
 
     render(<AdminUsersPageClient />);
+
+    await openActions(user, learner.email);
 
     await user.click(within(rowOf(learner.email)).getByRole('button', { name: 'markTestAccount' }));
     expect(updateTestAccountMock).not.toHaveBeenCalled();
@@ -137,6 +150,8 @@ describe('AdminUsersPageClient test-account flag', () => {
 
     render(<AdminUsersPageClient />);
 
+    await openActions(user, flagged.email);
+
     await user.click(
       within(rowOf(flagged.email)).getByRole('button', { name: 'unmarkTestAccount' }),
     );
@@ -158,6 +173,8 @@ describe('AdminUsersPageClient test-account flag', () => {
 
     render(<AdminUsersPageClient />);
 
+    await openActions(user, learner.email);
+
     await user.click(within(rowOf(learner.email)).getByRole('button', { name: 'markTestAccount' }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'cancel' }));
@@ -178,6 +195,8 @@ describe('AdminUsersPageClient test-account flag', () => {
 
     render(<AdminUsersPageClient />);
 
+    await openActions(user, learner.email);
+
     await user.click(within(rowOf(learner.email)).getByRole('button', { name: 'markTestAccount' }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'markTestAccount' }));
@@ -188,5 +207,97 @@ describe('AdminUsersPageClient test-account flag', () => {
     expect(screen.queryByText('User not found')).not.toBeInTheDocument();
     expect(mutateUsersMock).not.toHaveBeenCalled();
     expect(within(rowOf(learner.email)).queryByText('testAccountBadge')).not.toBeInTheDocument();
+  });
+});
+
+describe('AdminUsersPageClient row layout (RIN-1021)', () => {
+  const LONG_EMAIL = `${'a-very-long-learner-name'.repeat(3)}@long-subdomain.example.com`;
+  const longEmailUser = userRow({ id: '507f191e810c19729de860ec', email: LONG_EMAIL });
+  const selfUser = userRow({
+    id: '507f191e810c19729de860ed',
+    email: 'admin@example.com',
+    role: 'admin',
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    swrMock.mockImplementation((key: string) =>
+      key.startsWith('/api/admin/users')
+        ? {
+            data: {
+              users: [longEmailUser, selfUser, learner],
+              pagination: { page: 1, limit: 10, total: 3, totalPages: 1 },
+            },
+            isLoading: false,
+            mutate: mutateUsersMock,
+          }
+        : { data: [], isLoading: false, mutate: vi.fn() },
+    );
+  });
+
+  it('truncates a long email in a fixed-layout table and keeps the full address in title', () => {
+    render(<AdminUsersPageClient />);
+
+    expect(LONG_EMAIL.length).toBeGreaterThanOrEqual(90);
+    const emails = screen.getAllByText(LONG_EMAIL);
+    // One in the table row, one in the card list shown below md.
+    expect(emails).toHaveLength(2);
+    for (const email of emails) {
+      expect(email).toHaveAttribute('title', LONG_EMAIL);
+      expect(email).toHaveClass('truncate', 'min-w-0');
+    }
+    expect(screen.getByRole('table')).toHaveClass('table-fixed', 'w-full');
+
+    const row = rowOf(LONG_EMAIL);
+    expect(within(row).getAllByRole('cell')).toHaveLength(4);
+    // Subscription and created sit under the email instead of in their own columns.
+    expect(within(row).getByText('noSubscription')).toBeInTheDocument();
+    expect(within(row).getByText('24/08/2026')).toBeInTheDocument();
+    const trigger = within(row).getByRole('button', { name: 'actions' });
+    expect(trigger).toHaveAttribute('aria-describedby', emails[0]?.id);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('lists every action in row order and closes the menu on Escape', async () => {
+    const user = userEvent.setup();
+    render(<AdminUsersPageClient />);
+
+    const row = rowOf(LONG_EMAIL);
+    const trigger = within(row).getByRole('button', { name: 'actions' });
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    const panel = document.getElementById(trigger.getAttribute('aria-controls') ?? '');
+    if (!panel) throw new Error('Actions panel not rendered');
+    const items = Array.from(panel.querySelectorAll('a, button'), (item) => item.textContent);
+    expect(items).toEqual([
+      'Hỗ trợ',
+      'Mời phản hồi',
+      'addCredit',
+      'markTestAccount',
+      'addSubscription',
+      'makeAdmin',
+      'disable',
+    ]);
+
+    await user.tab();
+    expect(within(panel).getByRole('link', { name: 'Hỗ trợ' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
+    expect(document.getElementById(panel.id)).toBeNull();
+  });
+
+  it('offers no role, status or subscription change on your own row', async () => {
+    const user = userEvent.setup();
+    render(<AdminUsersPageClient />);
+
+    const row = rowOf(selfUser.email);
+    expect(within(row).getByText('you')).toBeInTheDocument();
+    await user.click(within(row).getByRole('button', { name: 'actions' }));
+    expect(within(row).getByRole('button', { name: 'addCredit' })).toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: 'makeUser' })).not.toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: 'disable' })).not.toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: 'addSubscription' })).not.toBeInTheDocument();
   });
 });

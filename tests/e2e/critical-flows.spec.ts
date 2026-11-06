@@ -584,7 +584,7 @@ test.describe('production critical paths', () => {
         if (await desktopSubmit.isVisible()) {
           await desktopSubmit.click();
         } else {
-          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
         }
 
         await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));

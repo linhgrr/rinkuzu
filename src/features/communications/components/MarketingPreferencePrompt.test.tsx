@@ -8,7 +8,7 @@ import { MarketingPreferencePrompt } from './MarketingPreferencePrompt';
 
 const mocks = vi.hoisted(() => ({
   mutate: vi.fn(),
-  pathname: vi.fn(() => '/dashboard'),
+  pathname: vi.fn(() => '/profile'),
   saveMarketingPreferences: vi.fn(),
   swr: vi.fn(),
 }));
@@ -57,7 +57,7 @@ describe('the marketing preference prompt', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.mutate.mockResolvedValue(undefined);
-    mocks.pathname.mockReturnValue('/dashboard');
+    mocks.pathname.mockReturnValue('/profile');
     mocks.saveMarketingPreferences.mockResolvedValue({});
   });
 
@@ -141,6 +141,42 @@ describe('the marketing preference prompt', () => {
     render(<MarketingPreferencePrompt />);
 
     expect(screen.getByRole('complementary')).toBeInTheDocument();
+  });
+
+  describe('on the dashboard (RIN-988)', () => {
+    // Docked bottom-right, the card covered the dashboard's own cards at
+    // 1440/1280/375. The dashboard renders it in the page flow instead.
+    beforeEach(() => {
+      mocks.pathname.mockReturnValue('/dashboard');
+    });
+
+    it('leaves the dashboard to its in-flow copy', () => {
+      unanswered();
+
+      render(<MarketingPreferencePrompt />);
+
+      expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+      expect(promptFlag()).toBeNull();
+    });
+
+    it('renders in flow there, without a fixed position or a reserved band', () => {
+      unanswered();
+
+      render(<MarketingPreferencePrompt placement="inline" />);
+
+      const card = screen.getByRole('complementary');
+      expect(card.className).not.toMatch(/(^|\s)(fixed|app-bottom-prompt)(\s|$)/);
+      expect(promptFlag()).toBeNull();
+    });
+
+    it('can still be dismissed in flow', async () => {
+      unanswered();
+      render(<MarketingPreferencePrompt placement="inline" />);
+
+      await userEvent.click(screen.getByRole('button', { name: 'later' }));
+
+      expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+    });
   });
 
   it('releases the space it reserved when unmounted', () => {

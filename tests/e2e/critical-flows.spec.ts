@@ -538,7 +538,7 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
 
       await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
@@ -584,7 +584,7 @@ test.describe('production critical paths', () => {
         if (await desktopSubmit.isVisible()) {
           await desktopSubmit.click();
         } else {
-          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
         }
 
         await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
@@ -650,7 +650,7 @@ test.describe('production critical paths', () => {
         if (await desktopSubmit.isVisible()) {
           await desktopSubmit.click();
         } else {
-          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
         }
       };
       const resultUrl = new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`);
@@ -742,7 +742,7 @@ test.describe('production critical paths', () => {
           .click();
         const isMobile = (page.viewportSize()?.width ?? 1280) < 768;
         if (isMobile) {
-          await page.getByRole('button', { name: /complete \(1\/10 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/10 answered\)/i }).click();
         } else {
           for (let step = 0; step < 9; step += 1) {
             await page.getByRole('button', { name: 'Next', exact: true }).click();
@@ -750,7 +750,7 @@ test.describe('production critical paths', () => {
           await page.getByRole('button', { name: 'Submit Quiz', exact: true }).click();
         }
         await page.getByRole('dialog').getByRole('button', { name: 'Submit', exact: true }).click();
-        await page.waitForURL(new RegExp(`/en/quiz/${longSlug}/result\?attemptId=`));
+        await page.waitForURL(new RegExp(`/en/quiz/${longSlug}/result\\?attemptId=`));
 
         // AC3: the quick result and its next step.
         await expect(
@@ -783,13 +783,19 @@ test.describe('production critical paths', () => {
       const block = page.getByTestId('starter-quiz-block');
       await expect(block).toBeInViewport();
       await expect(block.getByText(E2E_STARTER_QUIZ.title)).toBeVisible();
-      await expect(page.getByTestId('home-hero-cta')).toHaveAttribute(
-        'href',
-        `/en/quiz/${starterSlug}`,
-      );
+      // RIN-988: the starter is the single primary CTA. No duplicate quiz
+      // button in the hero, and no empty "Continue Learning" card.
+      await expect(page.getByTestId('home-hero-cta')).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Continue Learning' })).toHaveCount(0);
       await expect(
         page.getByRole('link', { name: 'Or personalize learning by uploading a PDF' }),
       ).toHaveAttribute('href', '/en/adaptive');
+      // The email-choices card is in the page flow, never fixed over the cards.
+      const emailChoices = page.getByTestId('marketing-prompt-inline');
+      if ((await emailChoices.count()) > 0) {
+        await expect(emailChoices).not.toHaveCSS('position', 'fixed');
+      }
+      await expect(page.getByTestId('marketing-prompt-docked')).toHaveCount(0);
 
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${starterSlug}(?:[/?#]|$)`)),
@@ -829,7 +835,7 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
       await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=`));
       await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
@@ -1314,21 +1320,35 @@ test.describe('production critical paths', () => {
       const search = page.getByLabel('Search users by email...');
       await search.fill(fixture.target.email);
       await search.press('Enter');
-      const row = page.getByRole('row').filter({ hasText: fixture.target.email });
+      // A table row from md up, a card below md (RIN-1021); the hidden layout is out of the a11y tree.
+      const row = page
+        .getByRole('row')
+        .or(page.getByRole('listitem'))
+        .filter({ hasText: fixture.target.email });
+      const openActions = () => row.getByRole('button', { name: 'Actions', exact: true }).click();
       await expect(row).toHaveCount(1);
+      // No horizontal scroll hides the row actions any more (RIN-1021). The mobile card can sit
+      // below the fold, so scroll it in vertically while pinning the row's start edge (`inline:
+      // 'start'`): actions past a horizontal scroll would still be out of the viewport.
+      await row.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'start' }));
+      await expect(row.getByRole('button', { name: 'Actions', exact: true })).toBeInViewport();
       await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
 
+      await openActions();
       await row.getByRole('button', { name: 'Mark as test', exact: true }).click();
       const confirmMark = page.getByRole('dialog');
       await expect(confirmMark).toContainText(fixture.target.email);
       await confirmMark.getByRole('button', { name: 'Mark as test', exact: true }).click();
       await expect(row.getByText('Test account', { exact: true })).toBeVisible();
+      await openActions();
       await expect(row.getByRole('button', { name: 'Unmark test', exact: true })).toBeVisible();
       expect(await readFlag()).toBe(true);
 
+      // The menu is still open from the check above.
       await row.getByRole('button', { name: 'Unmark test', exact: true }).click();
       const confirmClear = page.getByRole('dialog');
       await confirmClear.getByRole('button', { name: 'Unmark test', exact: true }).click();
+      await openActions();
       await expect(row.getByRole('button', { name: 'Mark as test', exact: true })).toBeVisible();
       await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
       expect(await readFlag()).toBe(false);

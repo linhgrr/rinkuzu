@@ -13,7 +13,7 @@ import { z } from 'zod';
  * - Question text 2000: matches product comment/report content caps.
  * - Option text 500: generous for multi-sentence choices; options stay short.
  * - Option count 2..20: existing product rule (keep unchanged).
- * - Image URLs 2048: practical URL length safety (CDN/imgbb URLs are short).
+ * - Image URLs 2048: practical URL length safety (cdn.rinkuzu.app image URLs are short).
  */
 export const MAX_QUESTIONS_PER_QUIZ = 200;
 export const MAX_QUESTION_TEXT_LENGTH = 2000;

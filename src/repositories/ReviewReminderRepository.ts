@@ -156,6 +156,12 @@ export class ReviewReminderRepository {
     return previous?.studyReminders === true;
   }
 
+  /** Any opt-out consent event for the learner, on any topic. */
+  async hasOptedOut(userId: Types.ObjectId): Promise<boolean> {
+    await connectDB();
+    return (await MarketingConsentEvent.exists({ userId, action: 'opt_out' })) !== null;
+  }
+
   async recordConsent(event: ReminderConsentEvent): Promise<void> {
     await MarketingConsentEvent.create({ ...event, topic: 'study_reminders' });
   }

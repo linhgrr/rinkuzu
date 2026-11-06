@@ -63,7 +63,7 @@ interface MobileQuizFooterProps {
   isSubmitting: boolean;
   questionsLength: number;
   submissionError?: string;
-  t: (key: string) => string;
+  t: MobileQuizTranslate;
 }
 
 function MobileQuizHeader({
@@ -136,6 +136,9 @@ function MobileQuestionCard({
   isSubmitting,
   t,
 }: MobileQuestionCardProps) {
+  const isSingle = question.type === 'single';
+  const helperId = `mobile-quiz-question-${questionIndex}-helper`;
+
   return (
     <section
       id={`mobile-quiz-question-${questionIndex}`}
@@ -173,12 +176,18 @@ function MobileQuestionCard({
           content={question.question}
           className="text-base font-medium leading-relaxed text-neutral-900"
         />
-        <p className="mt-2 text-xs text-neutral-500">
-          {question.type === 'single' ? t('singleChoiceHelper') : t('multipleChoiceHelper')}
+        <p id={helperId} className="mt-2 text-xs text-neutral-500">
+          {isSingle ? t('singleChoiceHelper') : t('multipleChoiceHelper')}
         </p>
       </div>
 
-      <div className="space-y-2.5">
+      {/* RIN-987: screen readers announce radio vs checkbox, and the indicator
+          shape (round vs square) tells sighted learners the same thing. */}
+      <div
+        role={isSingle ? 'radiogroup' : 'group'}
+        aria-labelledby={helperId}
+        className="space-y-2.5"
+      >
         {question.options.map((option, optionIndex) => {
           const optionImage = question.optionImages?.[optionIndex];
           const selected = isOptionSelected(question.id, optionIndex);
@@ -187,6 +196,8 @@ function MobileQuestionCard({
             <button
               type="button"
               key={`${optionIndex}-${option}`}
+              role={isSingle ? 'radio' : 'checkbox'}
+              aria-checked={selected}
               onClick={() => handleOptionSelect(question, questionIndex, optionIndex)}
               disabled={isSubmitting}
               className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-150 disabled:pointer-events-none disabled:opacity-70 ${
@@ -197,9 +208,11 @@ function MobileQuestionCard({
             >
               <div className="flex items-start gap-3">
                 <div
-                  className={`mt-0.5 flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-150 ${
-                    selected ? 'border-brand-action bg-brand-action' : 'border-neutral-300 bg-white'
-                  }`}
+                  data-option-indicator
+                  aria-hidden="true"
+                  className={`mt-0.5 flex size-6 flex-shrink-0 items-center justify-center border-2 transition-all duration-150 ${
+                    isSingle ? 'rounded-full' : 'rounded-md'
+                  } ${selected ? 'border-brand-action bg-brand-action' : 'border-neutral-300 bg-white'}`}
                 >
                   {selected ? <HiOutlineCheck className="size-4 text-white" /> : null}
                 </div>
@@ -252,13 +265,10 @@ function MobileQuizFooter({
         type="button"
         onClick={handleComplete}
         disabled={isSubmitting}
-        className={`flex w-full items-center justify-center gap-2 rounded-full py-4 font-semibold transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-80 disabled:active:scale-100 ${
-          answeredCount === questionsLength
-            ? 'bg-brand-trust text-white active:bg-brand-trust-hover'
-            : isSubmitting
-              ? 'bg-brand-trust text-white'
-              : 'bg-neutral-100 text-neutral-600 active:bg-neutral-200'
-        }`}
+        // RIN-987/RIN-979: the button is always clickable (a partial attempt
+        // asks for confirmation), so it always looks enabled, like desktop's
+        // primary submit. The old neutral-100 fill read as disabled.
+        className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-trust py-4 font-semibold text-white transition-all duration-200 active:scale-[0.98] active:bg-brand-trust-hover disabled:cursor-not-allowed disabled:opacity-80 disabled:active:scale-100"
       >
         {isSubmitting ? (
           <>
@@ -266,7 +276,7 @@ function MobileQuizFooter({
             {t('submitting')}
           </>
         ) : (
-          `${t('complete')} (${answeredCount}/${questionsLength} ${t('answered')})`
+          t('finishProgress', { answered: answeredCount, total: questionsLength })
         )}
       </button>
     </footer>
@@ -366,7 +376,11 @@ export function MobileQuizPlayer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-50" aria-busy={isSubmitting}>
+    <div
+      data-quiz-player
+      className="fixed inset-0 z-50 flex flex-col bg-neutral-50"
+      aria-busy={isSubmitting}
+    >
       <MobileQuizHeader
         answers={answers}
         isSubmitting={isSubmitting}

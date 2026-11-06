@@ -49,10 +49,12 @@ const OUTBOX_KINDS = [
   'feedback_reply',
   'feedback_reminder',
   'review_reminder',
+  /** One per account for its lifetime, 24 h after signup (RIN-999). */
+  'activation_nudge',
 ] as const;
 export type OutboxKind = (typeof OUTBOX_KINDS)[number];
 
-const OUTBOX_ENTITY_TYPES = ['support_ticket', 'feedback_conversation', 'attempt'] as const;
+const OUTBOX_ENTITY_TYPES = ['support_ticket', 'feedback_conversation', 'attempt', 'user'] as const;
 export type OutboxEntityType = (typeof OUTBOX_ENTITY_TYPES)[number];
 
 const CAMPAIGN_STATUSES = [
@@ -274,6 +276,11 @@ interface EmailOutboxDocument extends Document {
   leaseToken?: string | null;
   lastError?: string | null;
   externalEmailId?: string | null;
+  /** First `email.opened` of a `campaign=w1-review` email (RIN-916); set once. */
+  openedAt?: Date | null;
+  /** Activation nudge (RIN-999): what enqueued it and the locale it renders in. */
+  trigger?: '24h' | 'backfill' | null;
+  locale?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -594,6 +601,9 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     },
     ...leaseQueueFields(2_000),
     externalEmailId: { type: String, default: null },
+    openedAt: { type: Date, default: null },
+    trigger: { type: String, enum: ['24h', 'backfill', null], default: null },
+    locale: { type: String, default: null, maxlength: 8 },
   },
   { timestamps: true, versionKey: false },
 );

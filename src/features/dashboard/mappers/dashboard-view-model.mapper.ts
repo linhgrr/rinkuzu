@@ -183,7 +183,10 @@ function toStarterQuizViewModel(quiz: StarterQuizDto): DashboardStarterQuizViewM
   };
 }
 
-/** Primary = first starter in the UI locale, else the first one; up to two alternatives follow. */
+/**
+ * Only starters in the UI locale are listed (RIN-988). When none matches, the
+ * first starter still leads, so a new learner always has a quiz to start.
+ */
 function buildStarter({
   isNewLearner,
   starterQuizzes,
@@ -198,7 +201,7 @@ function buildStarter({
   return {
     primary: toStarterQuizViewModel(primary),
     alternatives: starterQuizzes
-      .filter((_, index) => index !== primaryIndex)
+      .filter((quiz, index) => index !== primaryIndex && quiz.locale === locale)
       .slice(0, STARTER_ALTERNATIVE_LIMIT)
       .map(toStarterQuizViewModel),
   };

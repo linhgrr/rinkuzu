@@ -100,6 +100,13 @@ describe('AnalyticsRoot consent banner', () => {
     );
   });
 
+  it('hides while a quiz player is on screen, so it never covers a question or the finish button', () => {
+    render(<AnalyticsRoot />);
+
+    const banner = screen.getByRole('complementary', { name: 'Analytics preference' });
+    expect(banner.className).toContain('[html:has([data-quiz-player])_&]:hidden');
+  });
+
   it('renders the Vietnamese copy and privacy link on vi pages', () => {
     mocks.setLocale('vi');
     render(<AnalyticsRoot />);

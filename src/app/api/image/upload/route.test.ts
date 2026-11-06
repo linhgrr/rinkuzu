@@ -35,7 +35,7 @@ describe('POST /api/image/upload', () => {
     authMock.mockResolvedValue(session());
     uploadImageMock.mockResolvedValue({
       success: true,
-      data: { url: 'https://cdn.example/image.png' },
+      data: { url: 'https://cdn.rinkuzu.app/images/question/2026/image.png' },
     });
   });
 
@@ -106,13 +106,14 @@ describe('POST /api/image/upload', () => {
 
     expect(response.status).toBe(200);
     expect(uploadImageMock).toHaveBeenCalledWith({
+      kind: 'question',
       bytes: expect.any(Uint8Array),
       contentType: 'image/jpeg',
       filename: 'override-name.jpg',
     });
     await expect(response.json()).resolves.toMatchObject({
       success: true,
-      data: { url: 'https://cdn.example/image.png' },
+      data: { url: 'https://cdn.rinkuzu.app/images/question/2026/image.png' },
     });
   });
 
@@ -142,6 +143,23 @@ describe('POST /api/image/upload', () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toMatchObject({
       error: { code: 'configuration_error' },
+    });
+  });
+
+  it('returns 400 validation_error when storage rejects the decoded bytes', async () => {
+    uploadImageMock.mockResolvedValueOnce({
+      success: false,
+      error: 'File must be an image',
+      statusCode: 400,
+    });
+    const formData = new FormData();
+    formData.set('image', new File(['<svg/>'], 'a.png', { type: 'image/png' }));
+
+    const response = await POST(uploadRequest(formData), { params: Promise.resolve({}) });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'validation_error', detail: 'File must be an image' },
     });
   });
 });

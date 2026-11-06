@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ImageStorageConfigurationError,
+  ImageStorageInvalidImageError,
   ImageStorageUpstreamError,
 } from '@/interfaces/services/IImageStorage';
 import { toImageStorageFailure } from '@/services/image-storage-error';
@@ -16,6 +17,11 @@ describe('toImageStorageFailure', () => {
       success: false,
       error: 'Storage unavailable',
       statusCode: 502,
+    });
+    expect(toImageStorageFailure(new ImageStorageInvalidImageError())).toEqual({
+      success: false,
+      error: 'File must be an image',
+      statusCode: 400,
     });
   });
 

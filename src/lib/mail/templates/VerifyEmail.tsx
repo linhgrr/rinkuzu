@@ -25,6 +25,7 @@ import {
   logoImg,
   main,
   paragraph,
+  EMAIL_LOGO_URL,
 } from './styles';
 
 interface VerifyEmailProps {
@@ -32,7 +33,7 @@ interface VerifyEmailProps {
 }
 
 export function VerifyEmail({ url }: VerifyEmailProps) {
-  const logoSrc = 'https://i.ibb.co/WWGXBZXm/image-removebg-preview.png';
+  const logoSrc = EMAIL_LOGO_URL;
   return (
     <Html>
       <Head />

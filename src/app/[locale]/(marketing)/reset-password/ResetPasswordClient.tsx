@@ -21,6 +21,8 @@ import {
 } from 'react-icons/hi';
 import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStrengthMeter';
 import { resetPassword } from '@/features/auth/api/auth-api';
+import { isEmailLinkProblem } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { passwordSchema } from '@/lib/validation/auth';
 import { usePasswordStrength } from '@/lib/validation/usePasswordStrength';
 
@@ -38,12 +40,13 @@ type FormValues = z.infer<typeof formSchema>;
 
 function ResetPasswordContent() {
   const t = useTranslations('auth');
+  const apiErrorMessage = useApiErrorMessage();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const token = get('token') ?? '';
 
   const [showPassword, setShowPassword] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -66,10 +69,13 @@ function ResetPasswordContent() {
     if (!token) return;
     setServerError(null);
     try {
-      const result = await resetPassword({ token, password: values.password });
-      setSuccess(result.message ?? t('resetPasswordSuccess'));
+      await resetPassword({ token, password: values.password });
+      setSuccess(true);
     } catch (caught) {
-      setServerError(caught instanceof Error ? caught.message : t('resetPasswordInvalidToken'));
+      // Never the server text (RIN-980): a bad or expired link gets this page's copy.
+      setServerError(
+        isEmailLinkProblem(caught) ? t('resetPasswordInvalidToken') : apiErrorMessage(caught),
+      );
     }
   });
 
@@ -113,7 +119,7 @@ function ResetPasswordContent() {
                   className="flex flex-col items-center gap-4 py-4 text-center"
                 >
                   <HiOutlineCheckCircle className="size-10 text-emerald-500" aria-hidden="true" />
-                  <p className="text-sm text-neutral-700">{success}</p>
+                  <p className="text-sm text-neutral-700">{t('resetPasswordSuccess')}</p>
                   <Link
                     href="/login"
                     className="font-semibold text-brand-trust hover:text-brand-trust-hover"

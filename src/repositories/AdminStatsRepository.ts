@@ -112,7 +112,7 @@ const DAY_MS = 86_400_000;
  * its in-memory twin that the review email (RIN-915) applies at send time: a
  * rule added here must be added there, and the reverse.
  */
-const LEARNER_FILTER = {
+export const LEARNER_FILTER = {
   role: { $ne: 'admin' },
   disable: { $ne: ACCOUNT_DISABLE_DISABLED },
   isTestAccount: { $ne: true },
@@ -255,16 +255,17 @@ export class AdminStatsRepository implements IAdminStatsRepository {
   /**
    * Ids of every account that is not a learner. A small set (admins, disabled
    * and test accounts), so the attempt pipeline filters on it with `$nin`
-   * instead of looking up each attempting user.
+   * instead of looking up each attempting user. `extraEmails` adds addresses
+   * to leave out as well (the review-email QA recipients, RIN-916).
    */
-  private static async excludedUserIds(): Promise<Types.ObjectId[]> {
+  static async excludedUserIds(extraEmails: readonly string[] = []): Promise<Types.ObjectId[]> {
     const rows = await UserModel.find(
       {
         $or: [
           { role: 'admin' },
           { disable: ACCOUNT_DISABLE_DISABLED },
           { isTestAccount: true },
-          { email: { $in: [...ANALYTICS_EXCLUDED_EMAILS] } },
+          { email: { $in: [...ANALYTICS_EXCLUDED_EMAILS, ...extraEmails] } },
           { email: ANALYTICS_TEST_EMAIL_PATTERN },
         ],
       },

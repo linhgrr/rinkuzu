@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   webhook: { findOne: vi.fn(), create: vi.fn(), findOneAndUpdate: vi.fn(), updateOne: vi.fn() },
   conversation: { findOne: vi.fn(), updateOne: vi.fn() },
   message: { findOneAndUpdate: vi.fn() },
-  outbox: { findOne: vi.fn() },
+  outbox: { findOne: vi.fn(), updateOne: vi.fn() },
   user: { findOne: vi.fn() },
   contactState: { updateOne: vi.fn() },
 }));
@@ -255,5 +255,60 @@ describe('out-of-order delivery events', () => {
       (call) => call[1]?.['$set']?.['status'] === 'processed',
     );
     expect(completion?.[1]['$set']).toMatchObject({ emailId: 're_email_1' });
+  });
+});
+
+function openedEvent(
+  tags: Record<string, string> | null = { campaign: 'w1-review' },
+): Extract<WebhookEventPayload, { type: 'email.opened' }> {
+  return {
+    type: 'email.opened',
+    created_at: CREATED_AT,
+    data: {
+      email_id: 're_review_1',
+      created_at: CREATED_AT,
+      from: 'RinKuzu <support@rinkuzu.app>',
+      to: [USER_EMAIL],
+      subject: 'Review',
+      ...(tags ? { tags } : {}),
+    },
+  };
+}
+
+describe('review email opens (RIN-916)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.connectDB.mockResolvedValue(undefined);
+    mocks.webhook.findOne.mockResolvedValue(null);
+    mocks.webhook.create.mockResolvedValue({ status: 'processing', payloadDigest: 'digest' });
+    mocks.webhook.updateOne.mockResolvedValue({ modifiedCount: 1 });
+    mocks.outbox.updateOne.mockResolvedValue({ modifiedCount: 1 });
+  });
+
+  it('marks the first open of a w1-review email once, keeping updatedAt', async () => {
+    await processResendWebhook('evt-open-1', 'digest', openedEvent());
+
+    expect(mocks.outbox.updateOne).toHaveBeenCalledTimes(1);
+    expect(mocks.outbox.updateOne).toHaveBeenCalledWith(
+      { externalEmailId: 're_review_1', kind: 'review_reminder', openedAt: null },
+      { $set: { openedAt: expect.any(Date) } },
+      { timestamps: false },
+    );
+  });
+
+  it('does not count a replayed open webhook again', async () => {
+    mocks.webhook.findOne.mockResolvedValue({ status: 'processed', payloadDigest: 'digest' });
+
+    const result = await processResendWebhook('evt-open-1', 'digest', openedEvent());
+
+    expect(result).toEqual({ status: 'processed', duplicate: true });
+    expect(mocks.outbox.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('ignores opens of QA sends and untagged mail', async () => {
+    await processResendWebhook('evt-open-qa', 'digest', openedEvent({ campaign: 'w1-review-qa' }));
+    await processResendWebhook('evt-open-none', 'digest', openedEvent(null));
+
+    expect(mocks.outbox.updateOne).not.toHaveBeenCalled();
   });
 });

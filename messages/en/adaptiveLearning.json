@@ -346,7 +346,6 @@
       "processingTakingLonger": "This document is taking longer than usual to process. You can keep this page open while we continue checking automatically...",
       "retryingCreateSession": "Your learning path is ready. We’re reconnecting to finish creating your session...",
       "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm session setup. Please open the subject again from the dashboard.",
-      "retryAfterFailure": "You can safely return and try this upload again.",
       "partialSuccess": "Processed with warnings: {failed} of {total} PDF batches failed, so a few concepts may be missing."
     },
     "errors": {
@@ -357,11 +356,13 @@
       "unauthorized": "Your session has expired. Please sign in again and retry.",
       "conflict": "This material is not ready to start a learning session yet.",
       "pipelineFailed": "We couldn't finish processing this material. Please try again or upload a different PDF.",
-      "pipelineTimeout": "Processing took too long and was stopped. Please try uploading the document again.",
-      "pipelineCancelled": "Processing was interrupted before completion. Please upload the document again.",
+      "pipelineTimeout": "Processing took too long and was stopped. You can try again.",
+      "pipelineCancelled": "Processing was interrupted before it finished. You can try again.",
       "pipelineUnavailable": "The processing service is temporarily unavailable. Please try again in a moment.",
       "sessionNotReady": "Your learning path is almost ready, but the session is not available yet.",
-      "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm the learning session. Please open it again from the dashboard."
+      "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm the learning session. Please open it again from the dashboard.",
+      "failedAtStep": "Something went wrong at “{step}”. You can try again safely.",
+      "failedAtStepFinal": "Something went wrong at “{step}” and this run can’t be resumed. Upload the material again, or go back to your library."
     },
     "stats": {
       "extracted": "Extracted",
@@ -370,7 +371,10 @@
     },
     "progress": "PROGRESS",
     "didYouKnow": "Did you know?",
-    "didYouKnowDescription": "Personalized learning adjusts the difficulty of questions in real-time based on your performance."
+    "didYouKnowDescription": "Personalized learning adjusts the difficulty of questions in real-time based on your performance.",
+    "tryAgain": "Try again",
+    "backToLibrary": "Back to library",
+    "stepFailed": "failed"
   },
   "exercise": {
     "loadingTitle": "AI is selecting the best exercise for you...",

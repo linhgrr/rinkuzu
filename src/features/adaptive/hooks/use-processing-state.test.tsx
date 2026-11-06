@@ -17,6 +17,7 @@ const {
   pushMock,
   getPipelineJobStatusMock,
   createSessionFromPipelineMock,
+  retryPipelineJobMock,
   getSelectedPipelineJobIdMock,
   getSelectedPipelineFilenameMock,
   getSelectedPipelineTitleMock,
@@ -30,6 +31,7 @@ const {
   pushMock: vi.fn(),
   getPipelineJobStatusMock: vi.fn(),
   createSessionFromPipelineMock: vi.fn(),
+  retryPipelineJobMock: vi.fn(),
   getSelectedPipelineJobIdMock: vi.fn(),
   getSelectedPipelineFilenameMock: vi.fn(),
   getSelectedPipelineTitleMock: vi.fn(),
@@ -52,6 +54,7 @@ vi.mock('@/i18n/navigation', () => ({
 vi.mock('@/features/adaptive/lib/adaptive-api-methods', () => ({
   getPipelineJobStatus: getPipelineJobStatusMock,
   createSessionFromPipeline: createSessionFromPipelineMock,
+  retryPipelineJob: retryPipelineJobMock,
 }));
 
 vi.mock('@/features/adaptive/lib/session-storage', () => ({
@@ -79,7 +82,7 @@ vi.mock('sonner', () => ({
 }));
 
 import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
-import { useProcessingState } from './use-processing-state';
+import { stepFromProgress, useProcessingState } from './use-processing-state';
 
 const t: TranslateFn = ((key: string, values?: Record<string, unknown>) => {
   if (!values) return key;
@@ -782,7 +785,8 @@ describe('useProcessingState', () => {
           retryable: false,
         },
         expected: {
-          message: 'processing.errors.pipelineFailed',
+          message:
+            'processing.errors.failedAtStepFinal:{"step":"processing.steps.extractingConcepts"}',
           retryable: false,
           code: 'custom_code',
           action: 'upload' as const,
@@ -806,7 +810,8 @@ describe('useProcessingState', () => {
         notice: 'processing.notices.retryAfterFailure',
       },
       {
-        name: 'quota_exceeded code key',
+        // RIN-1004: an upload-time code never explains a failure later in processing.
+        name: 'quota_exceeded code',
         job: {
           status: 'failed' as const,
           error_code: 'quota_exceeded',
@@ -814,7 +819,8 @@ describe('useProcessingState', () => {
           retryable: false,
         },
         expected: {
-          message: 'errors.api.codes.quotaExceeded',
+          message:
+            'processing.errors.failedAtStepFinal:{"step":"processing.steps.extractingConcepts"}',
           retryable: false,
           code: 'quota_exceeded',
           action: 'upload' as const,
@@ -822,7 +828,7 @@ describe('useProcessingState', () => {
         notice: null,
       },
       {
-        name: 'unsupported_media_type code key',
+        name: 'unsupported_media_type code',
         job: {
           status: 'failed' as const,
           error_code: 'unsupported_media_type',
@@ -830,7 +836,8 @@ describe('useProcessingState', () => {
           retryable: false,
         },
         expected: {
-          message: 'errors.api.codes.unsupportedMediaType',
+          message:
+            'processing.errors.failedAtStepFinal:{"step":"processing.steps.extractingConcepts"}',
           retryable: false,
           code: 'unsupported_media_type',
           action: 'upload' as const,
@@ -846,7 +853,8 @@ describe('useProcessingState', () => {
           retryable: false,
         },
         expected: {
-          message: 'processing.errors.pipelineFailed',
+          message:
+            'processing.errors.failedAtStepFinal:{"step":"processing.steps.extractingConcepts"}',
           retryable: false,
           code: null,
           action: 'upload' as const,
@@ -863,7 +871,127 @@ describe('useProcessingState', () => {
       expect(result.current.notice).toBe(notice);
       // RIN-809: the failure card is the only message.
       expect(toastErrorMock).not.toHaveBeenCalled();
-      expect(result.current.currentStep).toBe(job.status === 'cancelled' ? -1 : -1);
+      expect(result.current.currentStep).toBe(-1);
+      // progress 0.3 is inside "extracting concepts" (step 2).
+      expect(result.current.failedStep).toBe(2);
+      expect(result.current.canRetry).toBe(expected.retryable);
+    });
+
+    it.each([
+      [0, null],
+      [0.05, 1],
+      [0.3, 2],
+      [0.35, 3],
+      [0.65, 4],
+      [0.8, 5],
+      [0.95, 6],
+    ])('maps progress %s to step %s', (progress, step) => {
+      expect(stepFromProgress(progress)).toBe(step);
+    });
+
+    it('marks the last step seen while polling and names it in the message', async () => {
+      getPipelineJobStatusMock
+        .mockResolvedValueOnce(createJob({ status: 'optimizing', progress: 0.91 }))
+        .mockResolvedValueOnce(
+          createJob({
+            status: 'failed',
+            progress: 0.3,
+            error_code: 'pipeline_failed',
+            retryable: true,
+          }),
+        );
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+      expect(result.current.currentStep).toBe(6);
+      await advance(2_000);
+
+      expect(result.current.failedStep).toBe(6);
+      expect(result.current.error?.message).toBe(
+        'processing.errors.failedAtStep:{"step":"processing.steps.finalizingSession"}',
+      );
+    });
+
+    it('falls back to the generic copy when the failed step is unknown', async () => {
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({ status: 'failed', progress: 0, error_code: null, retryable: false }),
+      );
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+
+      expect(result.current.failedStep).toBeNull();
+      expect(result.current.error?.message).toBe('processing.errors.pipelineFailed');
+    });
+  });
+
+  describe('retry and back to library (RIN-1004)', () => {
+    it('re-runs the failed job in place and polls it again', async () => {
+      getPipelineJobStatusMock.mockResolvedValueOnce(
+        createJob({
+          status: 'failed',
+          progress: 0.5,
+          error_code: 'pipeline_timeout',
+          retryable: true,
+        }),
+      );
+      retryPipelineJobMock.mockResolvedValue({ job_id: JOB_ID, status: 'queued' });
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+      expect(result.current.canRetry).toBe(true);
+
+      getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'loading', progress: 0.05 }));
+      await act(async () => {
+        await result.current.handleRetry();
+      });
+      await flushMicrotasks();
+
+      expect(retryPipelineJobMock).toHaveBeenCalledWith(JOB_ID);
+      expect(result.current.error).toBeNull();
+      expect(result.current.failedStep).toBeNull();
+      expect(result.current.currentStep).toBe(1);
+      expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(2);
+      expect(pushMock).not.toHaveBeenCalled();
+    });
+
+    it('keeps the failure card and toasts when the retry is refused', async () => {
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({
+          status: 'failed',
+          progress: 0.5,
+          error_code: 'pipeline_timeout',
+          retryable: true,
+        }),
+      );
+      retryPipelineJobMock.mockRejectedValue(
+        new AdaptiveApiError({ message: 'busy', code: 'conflict', retryable: false }),
+      );
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+      await act(async () => {
+        await result.current.handleRetry();
+      });
+
+      expect(result.current.error?.code).toBe('pipeline_timeout');
+      expect(result.current.retrying).toBe(false);
+      expect(toastErrorMock).toHaveBeenCalledOnce();
+    });
+
+    it('goes back to the library without clearing the selected job', async () => {
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({ status: 'failed', progress: 0.5, error_code: null, retryable: false }),
+      );
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+      act(() => {
+        result.current.handleBackToLibrary();
+      });
+
+      expect(pushMock).toHaveBeenCalledWith(ADAPTIVE_ROUTES.dashboard);
+      expect(clearSelectedPipelineJobMock).not.toHaveBeenCalled();
     });
   });
 

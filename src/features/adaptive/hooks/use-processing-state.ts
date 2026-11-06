@@ -15,11 +15,12 @@ import {
 import {
   createSessionFromPipeline,
   getPipelineJobStatus,
+  retryPipelineJob,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { reportAdaptivePipelineTerminal } from '@/features/adaptive/lib/pipeline-analytics';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { CODE_MESSAGE_KEYS, describeApiError } from '@/lib/api/error-kind';
+import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { MEDIA_MIN_LG } from '@/shared/constants/breakpoints';
 import {
@@ -49,6 +50,28 @@ const STATUS_TO_STEP: Record<PipelineStatus, number> = {
   completed: 6,
   failed: -1,
   cancelled: -1,
+};
+
+/**
+ * Lower progress bound of steps 2-6 (the API's PipelineProgress checkpoints). A failed job keeps
+ * its progress but reports status `failed`, so this is how a reloaded page finds the failed step.
+ */
+const STEP_PROGRESS_STARTS = [0.15, 0.35, 0.5, 0.7, 0.9] as const;
+
+export function stepFromProgress(progress: number): number | null {
+  if (!(progress > 0)) return null;
+  return 1 + STEP_PROGRESS_STARTS.filter((start) => progress >= start).length;
+}
+
+/**
+ * Terminal codes with copy of their own. Anything else (pipeline_failed, quality gate, OCR, ...)
+ * gets the step-specific message: upload-time codes such as unsupported_media_type would
+ * contradict a failure that happened later in processing (RIN-1004).
+ */
+const TERMINAL_CODE_MESSAGE_KEYS: Readonly<Record<string, string>> = {
+  pipeline_timeout: 'processing.errors.pipelineTimeout',
+  pipeline_cancelled: 'processing.errors.pipelineCancelled',
+  pipeline_unavailable: 'processing.errors.pipelineUnavailable',
 };
 
 export type ProcessingStats = {
@@ -96,6 +119,13 @@ export const useProcessingState = (t: TranslateFn) => {
   const [stats, setStats] = useState<ProcessingStats | null>(null);
   const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null);
   const [creatingSession, setCreatingSession] = useState(false);
+  /** Step the job failed at (1-6); null when the failure is not a step failure. */
+  const [failedStep, setFailedStep] = useState<number | null>(null);
+  /** The failed job can be re-run in place (POST /jobs/{id}/retry). */
+  const [canRetry, setCanRetry] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  /** Bumped after a successful retry so the polling Effect starts again. */
+  const [pollGeneration, setPollGeneration] = useState(0);
   const filename = getSelectedPipelineFilename(t('processing.defaultFilename'));
   const subjectTitle = getSelectedPipelineTitle(filename);
   // Reactive viewport flag — the shared hook seeds the initial value on mount
@@ -109,6 +139,7 @@ export const useProcessingState = (t: TranslateFn) => {
   const creatingSessionRef = useRef(false);
   const pollRetryDelayRef = useRef(BASE_POLL_DELAY_MS);
   const createSessionRetryCountRef = useRef(0);
+  const lastLiveStepRef = useRef(0);
   const lastToastRef = useRef<{ message: string; at: number } | null>(null);
 
   const steps: ProcessingStep[] = [
@@ -182,53 +213,29 @@ export const useProcessingState = (t: TranslateFn) => {
     };
   };
 
-  const getTerminalProcessingError = (job: PipelineJobStatus): ProcessingErrorState => {
-    const code = job.error_code ?? null;
+  const getTerminalProcessingError = (
+    job: PipelineJobStatus,
+    step: ProcessingStep | null,
+  ): ProcessingErrorState => {
+    const cancelled = job.error_code === 'pipeline_cancelled' || job.status === 'cancelled';
+    const code = cancelled ? (job.error_code ?? 'pipeline_cancelled') : (job.error_code ?? null);
+    const retryable = cancelled || code === 'pipeline_unavailable' || Boolean(job.retryable);
+    const ownKey = code ? TERMINAL_CODE_MESSAGE_KEYS[code] : undefined;
 
-    if (code === 'pipeline_timeout') {
-      return {
-        message: t('processing.errors.pipelineTimeout'),
-        retryable: Boolean(job.retryable),
-        code,
-        action: 'upload',
-      };
-    }
+    // `job.user_message` is server text and never shown (RIN-754).
+    let message: string;
+    if (ownKey) message = t(ownKey);
+    else if (code === 'pipeline_stalled') message = apiErrorMessage({ code });
+    else if (step)
+      message = t(
+        retryable ? 'processing.errors.failedAtStep' : 'processing.errors.failedAtStepFinal',
+        {
+          step: step.label,
+        },
+      );
+    else message = t('processing.errors.pipelineFailed');
 
-    if (code === 'pipeline_cancelled' || job.status === 'cancelled') {
-      return {
-        message: t('processing.errors.pipelineCancelled'),
-        retryable: true,
-        code: code ?? 'pipeline_cancelled',
-        action: 'upload',
-      };
-    }
-
-    if (code === 'pipeline_unavailable') {
-      return {
-        message: t('processing.errors.pipelineUnavailable'),
-        retryable: true,
-        code,
-        action: 'upload',
-      };
-    }
-
-    // `job.user_message` is server text; codes with their own copy (pipeline_stalled,
-    // quota_exceeded, unsupported_media_type, ...) use the shared error keys (RIN-754).
-    if (code && CODE_MESSAGE_KEYS[code]) {
-      return {
-        message: apiErrorMessage({ code }),
-        retryable: Boolean(job.retryable),
-        code,
-        action: 'upload',
-      };
-    }
-
-    return {
-      message: t('processing.errors.pipelineFailed'),
-      retryable: Boolean(job.retryable),
-      code,
-      action: 'upload',
-    };
+    return { message, retryable, code, action: 'upload' };
   };
 
   const getRetryNotice = (err: unknown, phase: 'polling' | 'createSession') => {
@@ -399,7 +406,9 @@ export const useProcessingState = (t: TranslateFn) => {
     try {
       const job = await getPipelineJobStatus(jobId);
       pollRetryDelayRef.current = BASE_POLL_DELAY_MS;
-      setCurrentStep(STATUS_TO_STEP[job.status]);
+      const liveStep = STATUS_TO_STEP[job.status];
+      if (liveStep > 0) lastLiveStepRef.current = liveStep;
+      setCurrentStep(liveStep);
       setProgress(job.progress * 100);
       setStatusLabel(job.current_step || getStatusLabel(job.status));
 
@@ -422,7 +431,12 @@ export const useProcessingState = (t: TranslateFn) => {
       if (job.status === 'failed' || job.status === 'cancelled') {
         clearPolling();
         setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null);
-        const terminalError = getTerminalProcessingError(job);
+        const stepId =
+          lastLiveStepRef.current > 0 ? lastLiveStepRef.current : stepFromProgress(job.progress);
+        const step = steps.find((candidate) => candidate.id === stepId) ?? null;
+        const terminalError = getTerminalProcessingError(job, step);
+        setFailedStep(step ? step.id : null);
+        setCanRetry(terminalError.retryable);
         setError(terminalError);
         releasePollLock();
         return null;
@@ -468,6 +482,7 @@ export const useProcessingState = (t: TranslateFn) => {
 
     let cancelled = false;
     creatingSessionRef.current = false;
+    lastLiveStepRef.current = 0;
 
     const runLoop = async () => {
       while (!cancelled) {
@@ -492,7 +507,7 @@ export const useProcessingState = (t: TranslateFn) => {
     };
     // onPollJob is useEffectEvent — must not appear in deps (react.dev).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t]);
+  }, [t, pollGeneration]);
 
   const handleGoBack = () => {
     clearPolling();
@@ -500,6 +515,35 @@ export const useProcessingState = (t: TranslateFn) => {
     setNotice(null);
     clearSelectedPipelineJob();
     router.push(ADAPTIVE_ROUTES.upload);
+  };
+
+  const handleBackToLibrary = () => {
+    clearPolling();
+    router.push(ADAPTIVE_ROUTES.dashboard);
+  };
+
+  /** Re-runs the failed job in place, then polls it again from the first step. */
+  const handleRetry = async () => {
+    const jobId = getSelectedPipelineJobId();
+    if (!jobId || retrying) return;
+    setRetrying(true);
+    try {
+      await retryPipelineJob(jobId);
+      setError(null);
+      setNotice(null);
+      setFailedStep(null);
+      setCanRetry(false);
+      setCurrentStep(0);
+      setProgress(0);
+      setStatusLabel(t('processing.status.starting'));
+      setPollGeneration((generation) => generation + 1);
+    } catch (err) {
+      // The failure card stays; the toast says why the retry itself did not start.
+      const message = apiErrorMessage(adaptiveErrorForDisplay(err));
+      if (message) toast.error(message);
+    } finally {
+      setRetrying(false);
+    }
   };
 
   const handleErrorAction = () => {
@@ -513,14 +557,20 @@ export const useProcessingState = (t: TranslateFn) => {
   };
 
   return {
+    canRetry,
     creatingSession,
     currentStep,
     error,
+    failedStep,
+    handleBackToLibrary,
     handleErrorAction,
+    handleGoBack,
+    handleRetry,
     filename,
     notice,
     partialGraph,
     progress,
+    retrying,
     showGraphPanel,
     stats,
     statusLabel,

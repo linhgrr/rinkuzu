@@ -728,7 +728,7 @@ describe('useProcessingState', () => {
           code: 'pipeline_timeout',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
         name: 'pipeline_cancelled code',
@@ -743,7 +743,7 @@ describe('useProcessingState', () => {
           code: 'pipeline_cancelled',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
         name: 'cancelled status without code',
@@ -758,7 +758,7 @@ describe('useProcessingState', () => {
           code: 'pipeline_cancelled',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
         name: 'pipeline_unavailable',
@@ -773,7 +773,7 @@ describe('useProcessingState', () => {
           code: 'pipeline_unavailable',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
         // RIN-754: the server's user_message is never shown; unknown codes get the generic copy.
@@ -807,7 +807,7 @@ describe('useProcessingState', () => {
           code: 'pipeline_stalled',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
         // RIN-1004: an upload-time code never explains a failure later in processing.

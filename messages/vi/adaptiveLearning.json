@@ -346,7 +346,6 @@
       "processingTakingLonger": "Tài liệu này đang mất nhiều thời gian xử lý hơn bình thường. Bạn có thể cứ để trang này mở, hệ thống sẽ tiếp tục tự kiểm tra...",
       "retryingCreateSession": "Lộ trình học đã sẵn sàng. Hệ thống đang kết nối lại để hoàn tất việc tạo phiên học...",
       "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được việc tạo phiên học. Vui lòng mở lại môn học từ bảng điều khiển.",
-      "retryAfterFailure": "Bạn có thể quay lại và thử tải lại tài liệu này một cách an toàn.",
       "partialSuccess": "Đã xử lý xong nhưng có cảnh báo: {failed} trên {total} batch PDF bị lỗi nên có thể thiếu một vài khái niệm."
     },
     "errors": {

@@ -430,7 +430,9 @@ export const useProcessingState = (t: TranslateFn) => {
 
       if (job.status === 'failed' || job.status === 'cancelled') {
         clearPolling();
-        setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null);
+        // The message and the Try again button say it all; the old "try this upload again"
+        // notice contradicted a failure after the upload (RIN-1004).
+        setNotice(null);
         const stepId =
           lastLiveStepRef.current > 0 ? lastLiveStepRef.current : stepFromProgress(job.progress);
         const step = steps.find((candidate) => candidate.id === stepId) ?? null;

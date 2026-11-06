@@ -64,6 +64,7 @@ import {
   sweepActivationNudges,
 } from './activation-nudge';
 import { activationNudgeSendingEnabled } from './activation-nudge-policy';
+import { REVIEW_REMINDER_CAMPAIGN } from './review-reminder-policy';
 
 function configuredRate(name: string, fallback: number): number {
   const value = process.env[name]?.trim();
@@ -334,6 +335,24 @@ function webhookEmailId(event: WebhookEventPayload): string | null {
   return 'email_id' in event.data ? event.data.email_id : null;
 }
 
+/**
+ * Marks the first open of a `campaign=w1-review` email for the admin counts
+ * (RIN-916). Only an unopened row matches, so repeat opens count once; QA
+ * sends carry their own campaign tag and are never marked.
+ */
+async function recordReviewEmailOpen(
+  emailId: string,
+  tags: Record<string, string> | undefined,
+): Promise<void> {
+  if (tags?.['campaign'] !== REVIEW_REMINDER_CAMPAIGN) return;
+  await EmailOutbox.updateOne(
+    { externalEmailId: emailId, kind: 'review_reminder', openedAt: null },
+    { $set: { openedAt: new Date() } },
+    // Leave updatedAt alone: an open is not a change to the send.
+    { timestamps: false },
+  );
+}
+
 async function processDeliveryEvent(
   externalId: string,
   event: Exclude<WebhookEventPayload, { type: 'email.received' }>,
@@ -405,6 +424,7 @@ async function processDeliveryEvent(
       }
     }
   }
+  if (event.type === 'email.opened') await recordReviewEmailOpen(emailData.email_id, tags);
   if (
     event.type === 'email.bounced' ||
     event.type === 'email.complained' ||

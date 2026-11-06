@@ -36,7 +36,7 @@ describe('quiz-interaction-api', () => {
         slug: 'linear algebra',
         answers: [0, [1, 2]],
         idempotencyKey: 'idem-1',
-        userEmail: 'user@example.com',
+        guestClaimToken: 'T'.repeat(43),
       }),
     ).resolves.toEqual({
       score: 80,
@@ -50,7 +50,7 @@ describe('quiz-interaction-api', () => {
       body: JSON.stringify({
         answers: [0, [1, 2]],
         idempotencyKey: 'idem-1',
-        userEmail: 'user@example.com',
+        guestClaimToken: 'T'.repeat(43),
       }),
     });
 
@@ -64,7 +64,7 @@ describe('quiz-interaction-api', () => {
       slug: 'quiz',
       answers: [1],
       idempotencyKey: 'idem-2',
-      userEmail: '',
+      guestClaimToken: '',
     });
     expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
       answers: [1],
@@ -103,13 +103,11 @@ describe('quiz-interaction-api', () => {
       slug: 'quiz',
       answers: [1, 0],
       idempotencyKey: 'idem-3',
-      userEmail: 'user@example.com',
       retryOfAttemptId: '6a8ed20a3d0a1892cacdfe0b',
     });
     expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
       answers: [1, 0],
       idempotencyKey: 'idem-3',
-      userEmail: 'user@example.com',
       retryOfAttemptId: '6a8ed20a3d0a1892cacdfe0b',
     });
   });

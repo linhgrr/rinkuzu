@@ -248,3 +248,31 @@ export const adminActivationStatsSchema = z
 
 export type AdminActivationWeekDto = z.infer<typeof adminActivationWeekSchema>;
 export type AdminActivationStatsDto = z.infer<typeof adminActivationStatsSchema>;
+
+const adminReviewEmailWeekSchema = z
+  .object({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    start: isoInstantSchema,
+    end: isoInstantSchema,
+    sent: countSchema,
+    // null when Resend open tracking is off: no open was ever reported.
+    opened: countSchema.nullable(),
+    unsubscribed: countSchema,
+    optIns: countSchema,
+  })
+  .strict();
+
+/**
+ * Week-1 review email panel (RIN-916). Aggregate-only and strict, like the
+ * activation DTO: no learner ids, addresses or email content.
+ */
+export const adminReviewEmailStatsSchema = z
+  .object({
+    generatedAt: isoInstantSchema,
+    timezone: z.literal('UTC'),
+    opensTracked: z.boolean(),
+    weeks: z.array(adminReviewEmailWeekSchema),
+  })
+  .strict();
+
+export type AdminReviewEmailStatsDto = z.infer<typeof adminReviewEmailStatsSchema>;

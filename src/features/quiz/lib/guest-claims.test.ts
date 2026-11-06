@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   GUEST_CLAIMS_STORAGE_KEY,
   addGuestClaim,
+  clearGuestClaims,
   createGuestClaimToken,
   findGuestClaimToken,
   readGuestClaims,
@@ -81,4 +82,17 @@ describe('guest claims (RIN-912)', () => {
       expect(readGuestClaims(NOW)).toEqual([claim('attempt-1')]);
     },
   );
+
+  it('marks a pending claim with a value-free cookie and clears it with the claims (RIN-921)', () => {
+    addGuestClaim(claim('attempt-1'), NOW);
+    expect(document.cookie).toContain('rk_guest_claim_pending=1');
+    expect(document.cookie).not.toContain('token-attempt-1');
+    expect(document.cookie).not.toContain('attempt-1');
+
+    clearGuestClaims();
+
+    expect(window.localStorage.getItem(GUEST_CLAIMS_STORAGE_KEY)).toBeNull();
+    expect(readGuestClaims(NOW)).toEqual([]);
+    expect(document.cookie).not.toContain('rk_guest_claim_pending');
+  });
 });

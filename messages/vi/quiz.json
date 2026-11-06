@@ -74,6 +74,7 @@
   "premiumHistoryLockedDescription": "Điểm của bạn vẫn được giữ. Hãy gia hạn Premium hoặc dùng 1 credit mở quiz để xem lại câu hỏi và đáp án.",
   "browseQuizzes": "Duyệt quiz",
   "complete": "hoàn thành",
+  "finishProgress": "Hoàn thành ({answered}/{total} đã trả lời)",
   "completedOn": "Hoàn thành vào",
   "continueQuiz": "Tiếp tục quiz",
   "resumeTitle": "Tiếp tục bài làm dở?",

@@ -538,18 +538,106 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
 
       await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
       await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
       await expect(page.getByText('100%', { exact: true }).first()).toBeVisible();
 
+      // RIN-989: on phones the Details card squeezed the prompt to one character per line
+      // and pushed its buttons past the viewport. It must fit and wrap by words.
+      const reviewedPrompt = page.getByRole('heading', {
+        name: 'Which option proves the quiz lifecycle works?',
+      });
+      await expect(reviewedPrompt).toBeVisible();
+      const promptBox = await reviewedPrompt.boundingBox();
+      expect(promptBox?.height ?? Infinity).toBeLessThan(120);
+      const horizontalOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(horizontalOverflow).toBeLessThanOrEqual(0);
+
       const attempt = await fixture.db.collection('attempts').findOne({
         quiz: fixture.quizId,
         user: fixture.regular.id,
       });
       expect(attempt).toMatchObject({ score: 100, totalQuestions: 1 });
+    });
+  });
+
+  test('saves a signed-out result to the learner who signs in after it @critical-quiz-guest-claim', async ({
+    page,
+  }, testInfo) => {
+    // RIN-912 AC9: play signed out, submit, sign in from the result (email stands in
+    // for Google here), land back on the full result, and find it in /history.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const learner = fixture.target;
+      try {
+        await page.addInitScript(() => {
+          window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+        });
+        await page.goto(`/en/quiz/${fixture.quizSlug}`);
+        await expect(page.getByText('Which option proves the quiz lifecycle works?')).toBeVisible();
+        await page.getByText('Production is the correct choice', { exact: true }).click();
+        const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+        if (await desktopSubmit.isVisible()) {
+          await desktopSubmit.click();
+        } else {
+          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        }
+
+        await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
+        const attemptId = new URL(page.url()).searchParams.get('attemptId') ?? '';
+        const guestAttempt = await fixture.db
+          .collection('attempts')
+          .findOne({ _id: new ObjectId(attemptId) });
+        expect(guestAttempt).toMatchObject({ quiz: fixture.quizId, score: 100 });
+        expect(guestAttempt?.['user']).toBeUndefined();
+
+        await page.getByRole('link', { name: 'Sign in with email' }).first().click();
+        await page.waitForURL(/\/en\/login\?callbackUrl=/);
+        await page.getByLabel('Email Address').fill(learner.email);
+        await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await Promise.all([
+          page.waitForURL(
+            new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=${attemptId}`),
+          ),
+          page.getByRole('button', { name: 'Sign In', exact: true }).click(),
+        ]);
+
+        // The full review, read as the learner: no score-only fallback, no save card.
+        await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
+        await expect(
+          page.getByText('Which option proves the quiz lifecycle works?').first(),
+        ).toBeVisible();
+        await expect(page.getByText("We can't open the question review")).toHaveCount(0);
+        await expect(page.getByRole('link', { name: 'Sign in with email' })).toHaveCount(0);
+        await expect
+          .poll(() => page.evaluate(() => window.localStorage.getItem('rinkuzu.guestClaims.v1')))
+          .toBeNull();
+
+        const claimed = await fixture.db
+          .collection('attempts')
+          .findOne({ _id: new ObjectId(attemptId) });
+        expect(claimed?.['user']).toEqual(learner.id);
+        expect(claimed?.['claimedAt']).toBeInstanceOf(Date);
+
+        await page.goto('/en/history');
+        await expect(page).toHaveURL(/\/en\/history(?:[/?#]|$)/);
+        await expect(page.getByText('Production Critical Quiz').first()).toBeVisible();
+      } finally {
+        await fixture.db.collection('auth_rate_limits').deleteMany({
+          key: {
+            $in: [
+              `auth:attempt_claim_user:${learner.id.toHexString()}`,
+              'auth:attempt_claim_ip:127.0.0.1',
+              'auth:attempt_claim_ip:::1',
+              'auth:attempt_claim_ip:unknown',
+            ],
+          },
+        });
+      }
     });
   });
 
@@ -562,7 +650,7 @@ test.describe('production critical paths', () => {
         if (await desktopSubmit.isVisible()) {
           await desktopSubmit.click();
         } else {
-          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
         }
       };
       const resultUrl = new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`);
@@ -616,13 +704,19 @@ test.describe('production critical paths', () => {
       const block = page.getByTestId('starter-quiz-block');
       await expect(block).toBeInViewport();
       await expect(block.getByText(E2E_STARTER_QUIZ.title)).toBeVisible();
-      await expect(page.getByTestId('home-hero-cta')).toHaveAttribute(
-        'href',
-        `/en/quiz/${starterSlug}`,
-      );
+      // RIN-988: the starter is the single primary CTA. No duplicate quiz
+      // button in the hero, and no empty "Continue Learning" card.
+      await expect(page.getByTestId('home-hero-cta')).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Continue Learning' })).toHaveCount(0);
       await expect(
         page.getByRole('link', { name: 'Or personalize learning by uploading a PDF' }),
       ).toHaveAttribute('href', '/en/adaptive');
+      // The email-choices card is in the page flow, never fixed over the cards.
+      const emailChoices = page.getByTestId('marketing-prompt-inline');
+      if ((await emailChoices.count()) > 0) {
+        await expect(emailChoices).not.toHaveCSS('position', 'fixed');
+      }
+      await expect(page.getByTestId('marketing-prompt-docked')).toHaveCount(0);
 
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${starterSlug}(?:[/?#]|$)`)),
@@ -662,7 +756,7 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
       await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=`));
       await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();

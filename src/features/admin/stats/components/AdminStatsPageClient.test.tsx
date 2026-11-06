@@ -23,6 +23,9 @@ vi.mock('@/features/admin/stats/components/LearnerLookupSection', () => ({
 vi.mock('@/features/admin/stats/components/PersonalLearningSection', () => ({
   PersonalLearningSection: () => <section>personal-learning-workspace</section>,
 }));
+vi.mock('@/features/admin/stats/components/ReviewEmailSection', () => ({
+  ReviewEmailSection: () => <section>review-email-panel</section>,
+}));
 vi.mock('@/features/admin/stats/components/LlmUsageSection', () => ({
   LlmUsageSection: () => <section>llm-workspace</section>,
 }));
@@ -49,6 +52,7 @@ describe('AdminStatsPageClient', () => {
     expect(await screen.findByText('errors.api.generic')).toBeInTheDocument();
     // The funnel fetches its own route, so it stays on the overview when the stats fail.
     expect(screen.getByText('activation-funnel')).toBeInTheDocument();
+    expect(await screen.findByText('review-email-panel')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'statsWorkspaceLearnerLookup' }));
 
     expect(await screen.findByText('learner-lookup-workspace')).toBeInTheDocument();

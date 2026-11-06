@@ -276,6 +276,8 @@ interface EmailOutboxDocument extends Document {
   leaseToken?: string | null;
   lastError?: string | null;
   externalEmailId?: string | null;
+  /** First `email.opened` of a `campaign=w1-review` email (RIN-916); set once. */
+  openedAt?: Date | null;
   /** Activation nudge (RIN-999): what enqueued it and the locale it renders in. */
   trigger?: '24h' | 'backfill' | null;
   locale?: string | null;
@@ -599,6 +601,7 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     },
     ...leaseQueueFields(2_000),
     externalEmailId: { type: String, default: null },
+    openedAt: { type: Date, default: null },
     trigger: { type: String, enum: ['24h', 'backfill', null], default: null },
     locale: { type: String, default: null, maxlength: 8 },
   },

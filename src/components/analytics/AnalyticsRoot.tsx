@@ -62,7 +62,10 @@ export function AnalyticsRoot() {
       // instead of covering its tap targets. From lg the app sidebar
       // (`data-app-sidebar`) is fixed to the left edge, so the card's left
       // inset starts after it and it centres on the content area instead.
-      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-3 font-system shadow-xl sm:inset-x-4 sm:bottom-4 sm:flex sm:items-center sm:gap-5 sm:p-4 max-md:[html:has([data-bottom-nav])_&]:bottom-[calc(5.25rem+env(safe-area-inset-bottom))] lg:[html:has([data-app-sidebar=expanded])_&]:left-[calc(var(--app-sidebar-expanded-width)+1rem)] lg:[html:has([data-app-sidebar=collapsed])_&]:left-[calc(var(--app-sidebar-collapsed-width)+1rem)]"
+      // While a quiz player (`data-quiz-player`) is on screen the card hides,
+      // so it never covers a question, the navigator or the finish button,
+      // and it comes back on the result page (RIN-987/RIN-979).
+      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-3 font-system shadow-xl sm:inset-x-4 sm:bottom-4 sm:flex sm:items-center sm:gap-5 sm:p-4 [html:has([data-quiz-player])_&]:hidden max-md:[html:has([data-bottom-nav])_&]:bottom-[calc(5.25rem+env(safe-area-inset-bottom))] lg:[html:has([data-app-sidebar=expanded])_&]:left-[calc(var(--app-sidebar-expanded-width)+1rem)] lg:[html:has([data-app-sidebar=collapsed])_&]:left-[calc(var(--app-sidebar-collapsed-width)+1rem)]"
       aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
     >
       <p className="flex-1 text-sm leading-5 text-neutral-700 sm:leading-6">{copy.body}</p>

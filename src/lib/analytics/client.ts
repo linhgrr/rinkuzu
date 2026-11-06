@@ -460,10 +460,7 @@ export function capturePendingAnalyticsLogin({
       (parsed.method === 'credentials' || parsed.method === 'google') &&
       typeof parsed.locale === 'string'
     ) {
-      captureAnalyticsEvent('login_completed', {
-        method: parsed.method,
-        locale: parsed.locale,
-      });
+      captureAnalyticsEvent('login_completed', { method: parsed.method, locale: parsed.locale });
     }
   } catch {
     // Invalid or stale client state is discarded without emitting an event.

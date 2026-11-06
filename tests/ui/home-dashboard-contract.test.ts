@@ -40,7 +40,8 @@ describe('home dashboard contract', () => {
       };
     };
 
-    expect(messages.home.hero['starterCta']).toEqual(expect.any(String));
+    // RIN-988: the starter block is the only quiz CTA; the hero has no duplicate.
+    expect(messages.home.hero).not.toHaveProperty('starterCta');
     expect(messages.home.hero['adaptiveLink']).toEqual(expect.any(String));
     expect(Object.keys(messages.home.starter ?? {}).sort()).toEqual([
       'alternativesLabel',

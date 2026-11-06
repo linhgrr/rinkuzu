@@ -71,7 +71,6 @@
       "title": "Cá nhân hóa lộ trình học tập của bạn với AI",
       "description": "AI phân tích tiến độ và gợi ý đúng bài học, quiz và kỹ năng bạn nên cải thiện tiếp theo.",
       "cta": "Bắt đầu học",
-      "starterCta": "Làm bài trắc nghiệm 2 phút",
       "adaptiveLink": "Hoặc tải PDF lên để học cá nhân hóa"
     },
     "starter": {
@@ -104,8 +103,7 @@
     },
     "continueLearning": {
       "title": "Tiếp tục học",
-      "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại",
-      "emptyAction": "Bắt đầu học"
+      "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại"
     },
     "recentOwnedQuizzes": {
       "title": "Quiz gần đây của bạn",

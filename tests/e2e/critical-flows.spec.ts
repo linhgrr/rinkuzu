@@ -1242,7 +1242,10 @@ test.describe('production critical paths', () => {
         .filter({ hasText: fixture.target.email });
       const openActions = () => row.getByRole('button', { name: 'Actions', exact: true }).click();
       await expect(row).toHaveCount(1);
-      // No horizontal scroll hides the row actions any more (RIN-1021).
+      // No horizontal scroll hides the row actions any more (RIN-1021). The mobile card can sit
+      // below the fold, so scroll it in vertically while pinning the row's start edge (`inline:
+      // 'start'`): actions past a horizontal scroll would still be out of the viewport.
+      await row.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'start' }));
       await expect(row.getByRole('button', { name: 'Actions', exact: true })).toBeInViewport();
       await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
 

@@ -22,6 +22,7 @@ import { POST } from '@/app/api/quiz/[slug]/attempt/route';
 const slug = 'algebra';
 const idempotencyKey = '018f7494-8bd8-7b8a-a387-3bc5a14f22a1';
 const routeContext = { params: Promise.resolve({ slug }) };
+const TOKEN = 'abcDEF012-_'.repeat(4).slice(0, 43);
 
 function request(body: unknown, pathSlug = slug): NextRequest {
   return new NextRequest(`http://localhost/api/quiz/${pathSlug}/attempt`, {
@@ -43,7 +44,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
 
   it('rejects invalid route params before reading the body contract', async () => {
     const response = await POST(
-      request({ answers: [0], idempotencyKey, userEmail: 'guest@example.com' }, 'bad slug'),
+      request({ answers: [0], idempotencyKey, guestClaimToken: TOKEN }, 'bad slug'),
       { params: Promise.resolve({ slug: 'bad slug' }) },
     );
 
@@ -63,10 +64,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
   });
 
   it('rejects invalid attempt bodies', async () => {
-    const response = await POST(
-      request({ answers: [0], userEmail: 'guest@example.com' }),
-      routeContext,
-    );
+    const response = await POST(request({ answers: [0], guestClaimToken: TOKEN }), routeContext);
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
@@ -80,18 +78,30 @@ describe('POST /api/quiz/[slug]/attempt', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
-      error: { code: 'validation_error', detail: 'User email is required' },
+      error: { code: 'validation_error', detail: 'User identification required' },
     });
     expect(submitQuizAttemptMock).not.toHaveBeenCalled();
   });
 
-  it('accepts guest body email even when a session exists without a user id', async () => {
-    // Pins identity gate: missing session.user.id must still allow body userEmail
-    // (kills LogicalOperator mutant that forces email/session conjunction incorrectly).
-    authMock.mockResolvedValue({ user: { email: 'orphan@example.com', role: 'user' } });
-
+  it('rejects a signed-out submit that sends only an email (legacy path removed, RIN-921)', async () => {
     const response = await POST(
       request({ answers: [0], idempotencyKey, userEmail: 'guest@example.com' }),
+      routeContext,
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'validation_error', detail: 'User identification required' },
+    });
+    expect(submitQuizAttemptMock).not.toHaveBeenCalled();
+  });
+
+  it('ignores the email an older signed-in bundle still sends', async () => {
+    const session = { user: { id: 'user-1', email: 'user@example.com', role: 'user' } };
+    authMock.mockResolvedValue(session);
+
+    const response = await POST(
+      request({ answers: [0], idempotencyKey, userEmail: 'user@example.com' }),
       routeContext,
     );
 
@@ -100,8 +110,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       slug,
       [0],
       idempotencyKey,
-      { user: { email: 'orphan@example.com', role: 'user' } },
-      'guest@example.com',
+      session,
       undefined,
       undefined,
       undefined,
@@ -123,17 +132,12 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       undefined,
       undefined,
       undefined,
-      undefined,
     );
   });
 
-  it('accepts guest attempts with body userEmail and maps the DTO payload', async () => {
+  it('accepts guest attempts with a claim token and maps the DTO payload', async () => {
     const response = await POST(
-      request({
-        answers: [0, [1, 2]],
-        idempotencyKey,
-        userEmail: '  Guest@Example.com ',
-      }),
+      request({ answers: [0, [1, 2]], idempotencyKey, guestClaimToken: TOKEN }),
       routeContext,
     );
 
@@ -143,9 +147,8 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [0, [1, 2]],
       idempotencyKey,
       null,
-      'guest@example.com',
       undefined,
-      undefined,
+      TOKEN,
       undefined,
     );
     await expect(response.json()).resolves.toMatchObject({
@@ -168,7 +171,6 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [1],
       idempotencyKey,
       session,
-      undefined,
       undefined,
       undefined,
       undefined,
@@ -199,7 +201,6 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       session,
       undefined,
       undefined,
-      undefined,
       questionIndices,
     );
     expect(unpaired.status).toBe(400);
@@ -218,7 +219,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
     });
 
     const response = await POST(
-      request({ answers: [0], idempotencyKey, userEmail: 'guest@example.com' }),
+      request({ answers: [0], idempotencyKey, guestClaimToken: TOKEN }),
       routeContext,
     );
 
@@ -232,7 +233,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
     submitQuizAttemptMock.mockRejectedValueOnce(new Error('db down'));
 
     const response = await POST(
-      request({ answers: [0], idempotencyKey, userEmail: 'guest@example.com' }),
+      request({ answers: [0], idempotencyKey, guestClaimToken: TOKEN }),
       routeContext,
     );
 
@@ -261,7 +262,6 @@ describe('POST /api/quiz/[slug]/attempt', () => {
         [0],
         idempotencyKey,
         null,
-        undefined,
         undefined,
         guestClaimToken,
         undefined,

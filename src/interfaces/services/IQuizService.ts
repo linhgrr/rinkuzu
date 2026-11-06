@@ -96,7 +96,6 @@ export interface IQuizService {
     answers: (number | number[])[],
     idempotencyKey: string,
     session: Session | null,
-    userEmail?: string,
     retryOfAttemptId?: string,
     guestClaimToken?: string,
     /** Quick round (RIN-936): the quiz question index of each answer, in play order. */

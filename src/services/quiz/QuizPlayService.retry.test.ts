@@ -215,7 +215,6 @@ describe('QuizPlayService retry-missed submit', () => {
       [1, [0], 2],
       idempotencyKey,
       learnerSession,
-      undefined,
       sourceAttemptId,
     );
 
@@ -248,7 +247,6 @@ describe('QuizPlayService retry-missed submit', () => {
       [0, 1, [0, 2], 2],
       idempotencyKey,
       learnerSession,
-      undefined,
       sourceAttemptId,
     );
 
@@ -265,15 +263,14 @@ describe('QuizPlayService retry-missed submit', () => {
       [1, [0], 2],
       idempotencyKey,
       null,
-      'guest@example.test',
       sourceAttemptId,
+      'T'.repeat(43),
     );
     const notOwner = await service.submitQuizAttempt(
       'fake-quiz',
       [1, [0], 2],
       idempotencyKey,
       learnerSession,
-      undefined,
       sourceAttemptId,
     );
 
@@ -290,7 +287,6 @@ describe('QuizPlayService retry-missed submit', () => {
         [1, [0], 2],
         idempotencyKey,
         learnerSession,
-        undefined,
         sourceAttemptId,
       );
 

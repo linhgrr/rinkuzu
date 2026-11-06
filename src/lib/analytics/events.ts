@@ -19,4 +19,6 @@ export type AnalyticsEventName =
   /** Result-page week-1 return loop (RIN-917); props only `campaign` and `missed_count`. */
   | 'retry_missed_clicked'
   | 'try_another_quiz_clicked'
-  | 'review_email_opt_in';
+  | 'review_email_opt_in'
+  /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
+  | 'guest_attempt_claimed';

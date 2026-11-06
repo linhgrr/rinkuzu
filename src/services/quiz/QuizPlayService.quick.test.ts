@@ -7,6 +7,7 @@ import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/I
 import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { QuizPlayService } from '@/services/quiz/QuizPlayService';
 import { assertFail, assertOk } from '../../../tests/helpers/service-result-assert';
 
@@ -14,6 +15,7 @@ const quizId = '507f191e810c19729de860ea';
 const learnerId = '507f191e810c19729de860eb';
 const quickAttemptId = '507f191e810c19729de860ec';
 const idempotencyKey = '018f7494-8bd8-7b8a-a387-3bc5a14f22a1';
+const guestClaimToken = 'T'.repeat(43);
 
 /** Question `q<i>` has its correct option at `i % 3`. */
 function makeQuestions(count: number): QuizQuestion[] {
@@ -125,9 +127,8 @@ function submitQuick(
     options.answers ?? answers,
     idempotencyKey,
     options.session === undefined ? learnerSession : options.session,
-    options.session === null ? 'guest@example.test' : undefined,
     options.retryOf,
-    undefined,
+    options.session === null ? guestClaimToken : undefined,
     indices,
   );
 }
@@ -164,7 +165,7 @@ describe('QuizPlayService quick round submit (RIN-936)', () => {
 
     assertOk(result);
     expect(attemptProgressRepository.recordSubmittedAttempt.mock.calls[0]?.[0]).toMatchObject({
-      guestEmail: 'guest@example.test',
+      guestClaimTokenHash: hashGuestClaimToken(guestClaimToken),
       mode: 'quick',
     });
   });

@@ -78,4 +78,42 @@ describe('UpgradePromptProvider', () => {
 
     expect(screen.queryByRole('region', { name: 'limitReachedTitle' })).toBeNull();
   });
+
+  // A locked Premium quiz answers the session start with premium_required/unlock_required.
+  // The unlock card offers the cheaper credit unlock first (RIN-1014), so no paywall on load.
+  it('leaves a locked Premium quiz to its unlock card instead of opening the paywall', () => {
+    render(<UpgradePromptProvider>content</UpgradePromptProvider>);
+
+    act(() => {
+      reportApiError(
+        new ApiResponseError({
+          message: 'Premium subscription or one credit is required',
+          status: 403,
+          payload: null,
+          code: 'premium_required',
+          meta: { reason: 'unlock_required' },
+        }),
+      );
+    });
+
+    expect(screen.queryByRole('region', { name: 'limitReachedTitle' })).toBeNull();
+  });
+
+  it('opens the paywall when a credit unlock fails for insufficient credits', () => {
+    render(<UpgradePromptProvider>content</UpgradePromptProvider>);
+
+    act(() => {
+      reportApiError(
+        new ApiResponseError({
+          message: 'Not enough credits',
+          status: 403,
+          payload: null,
+          code: 'premium_required',
+          meta: { reason: 'insufficient_credits' },
+        }),
+      );
+    });
+
+    expect(screen.getByRole('region', { name: 'limitReachedTitle' })).toBeTruthy();
+  });
 });

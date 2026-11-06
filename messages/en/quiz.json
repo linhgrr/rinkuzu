@@ -1,6 +1,10 @@
 {
   "premiumUnlockDescription": "Premium members can access the full catalog, or spend 1 credit to unlock this quiz forever.",
-  "premiumUnlockButton": "Unlock with 1 credit",
+  "premiumUnlockButton": "Unlock · 1 credit",
+  "premiumCreditBalance": "You have {count, plural, one {# credit} other {# credits}}",
+  "premiumNotEnoughCredits": "Not enough credits",
+  "premiumUpgradeLink": "Upgrade to Premium",
+  "premiumBackToCatalog": "Back to the Premium library",
   "premiumUnlockError": "Unable to unlock. Check your credit balance or Premium plan.",
   "premiumQuestionCount": "{count, plural, one {# question} other {# questions}}",
   "premiumSignInDescription": "Sign in to take this Premium quiz. You will come straight back here.",

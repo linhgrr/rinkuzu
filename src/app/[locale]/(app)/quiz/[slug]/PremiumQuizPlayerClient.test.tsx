@@ -33,6 +33,11 @@ vi.mock('@/i18n/navigation', () => ({
 const translate = (key: string) => key;
 vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
 
+vi.mock('@/features/profile/api/credit-wallet-api', () => ({
+  CREDIT_WALLET_KEY: '/api/credits',
+  fetchCreditWallet: () => Promise.resolve({ wallet: { balance: 3 } }),
+}));
+
 vi.mock('@/features/quiz/api/premium-quiz-api', () => ({
   fetchPremiumBatch: vi.fn(),
   savePremiumAnswer: (...args: unknown[]) => saveAnswerMock(...args),
@@ -143,7 +148,7 @@ describe('PremiumQuizPlayerClient', () => {
     expect(fetchPremiumBatch).toHaveBeenCalledTimes(1);
   });
 
-  it('hides the source subtitle and renders the unlock cost as a credit icon with -1', async () => {
+  it('hides the source subtitle and labels the unlock button with the credit coin and its cost (RIN-1014)', async () => {
     startSessionMock.mockRejectedValueOnce(
       new ApiResponseError({
         message: 'Premium access required',
@@ -164,7 +169,9 @@ describe('PremiumQuizPlayerClient', () => {
 
     const unlockButton = await screen.findByRole('button', { name: 'premiumUnlockButton' });
     expect(screen.queryByText(/LMS HUST Attempt review/i)).not.toBeInTheDocument();
-    expect(unlockButton).toHaveTextContent('-1');
+    expect(unlockButton).toHaveTextContent('premiumUnlockButton');
+    // The player is a section of the app layout, which owns the only <main>.
+    expect(screen.queryByRole('main')).not.toBeInTheDocument();
     expect(unlockButton.querySelector('img')?.getAttribute('src')).toContain(
       'premium-credit-coin.png',
     );

@@ -1,6 +1,10 @@
 {
   "premiumUnlockDescription": "Tài khoản Premium xem toàn bộ kho. Hoặc dùng 1 credit để mở vĩnh viễn quiz này.",
-  "premiumUnlockButton": "Dùng 1 credit để mở khóa",
+  "premiumUnlockButton": "Mở khóa · 1 credit",
+  "premiumCreditBalance": "Bạn có {count} credit",
+  "premiumNotEnoughCredits": "Không đủ credit",
+  "premiumUpgradeLink": "Nâng cấp Premium",
+  "premiumBackToCatalog": "Quay lại kho Premium",
   "premiumUnlockError": "Không thể mở khóa. Hãy kiểm tra số dư credit hoặc gói Premium.",
   "premiumQuestionCount": "{count} câu hỏi",
   "premiumSignInDescription": "Đăng nhập để làm quiz Premium này. Bạn sẽ quay lại ngay trang này.",

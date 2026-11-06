@@ -382,8 +382,27 @@ export class PremiumQuizService {
     return this.premiumRepository.listAdmin(options);
   }
 
-  async listCatalog(options: PremiumCatalogListOptions): Promise<PremiumCatalogListResult> {
-    return this.premiumRepository.listCatalog(options);
+  /**
+   * A signed-in learner also sees which cards they already unlocked with
+   * credit (RIN-1014). Premium subscribers and admins can open every card, so
+   * only credit grants count as "unlocked".
+   */
+  async listCatalog(
+    options: PremiumCatalogListOptions,
+    userId?: string | null,
+  ): Promise<PremiumCatalogListResult> {
+    const catalog = await this.premiumRepository.listCatalog(options);
+    if (!userId || catalog.items.length === 0) return catalog;
+    const granted = new Set(
+      await this.premiumRepository.findGrantedQuizIds(
+        userId,
+        catalog.items.map((item) => item.quizId),
+      ),
+    );
+    return {
+      ...catalog,
+      items: catalog.items.map((item) => ({ ...item, unlocked: granted.has(item.quizId) })),
+    };
   }
 
   async getAdminSubmission(id: string): Promise<PremiumQuizSubmission> {

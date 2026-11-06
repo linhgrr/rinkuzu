@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { HiOutlineDotsVertical, HiOutlineLockClosed } from 'react-icons/hi';
+import { HiOutlineDotsVertical, HiOutlineLockClosed, HiOutlineLockOpen } from 'react-icons/hi';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import type { UserIdentity } from '@/components/user/user-identity';
@@ -22,6 +22,8 @@ interface QuizCardProps {
   quiz: QuizCardQuiz;
   quizId: string;
   onDelete?: (quiz: QuizCardQuiz, quizId: string) => void;
+  /** Short status shown next to the question count, e.g. "Unlocked" on owned Premium cards. */
+  badge?: string;
 }
 
 function getAuthor(quiz: QuizCardQuiz): UserIdentity {
@@ -29,7 +31,7 @@ function getAuthor(quiz: QuizCardQuiz): UserIdentity {
   return quiz.author;
 }
 
-export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
+export function QuizCard({ quiz, quizId, onDelete, badge }: QuizCardProps) {
   const t = useTranslations('profile');
   const author = getAuthor(quiz);
 
@@ -44,6 +46,12 @@ export function QuizCard({ quiz, quizId, onDelete }: QuizCardProps) {
               {quiz.premiumSubmissionStatus === 'approved' && quiz.awardedCredits
                 ? ` · +${quiz.awardedCredits}`
                 : ''}
+            </span>
+          ) : null}
+          {badge ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-success-surface px-2 py-0.5 text-xs font-medium text-green-800">
+              <HiOutlineLockOpen className="size-3.5" aria-hidden="true" />
+              {badge}
             </span>
           ) : null}
         </div>

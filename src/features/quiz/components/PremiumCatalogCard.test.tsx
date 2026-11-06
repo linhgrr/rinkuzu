@@ -57,4 +57,37 @@ describe('PremiumCatalogCard', () => {
     expect(container).not.toHaveTextContent('correctIndex');
     expect((await axe(container)).violations).toEqual([]);
   });
+
+  it('marks a card the learner already unlocked with credit (RIN-1014)', async () => {
+    const { container } = render(
+      <PremiumCatalogCard
+        item={{
+          quizId: 'quiz-id',
+          slug: 'owned-quiz',
+          title: 'Owned quiz',
+          questionCount: 6,
+          unlocked: true,
+        }}
+      />,
+    );
+
+    expect(screen.getByText('catalogUnlockedBadge')).toBeVisible();
+    expect((await axe(container)).violations).toEqual([]);
+  });
+
+  it('shows no badge on a card the learner does not own', () => {
+    render(
+      <PremiumCatalogCard
+        item={{
+          quizId: 'quiz-id',
+          slug: 'other',
+          title: 'Other',
+          questionCount: 6,
+          unlocked: false,
+        }}
+      />,
+    );
+
+    expect(screen.queryByText('catalogUnlockedBadge')).not.toBeInTheDocument();
+  });
 });

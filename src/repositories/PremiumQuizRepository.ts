@@ -635,6 +635,19 @@ export class PremiumQuizRepository implements IPremiumQuizRepository {
     );
   }
 
+  async findGrantedQuizIds(userId: string, quizIds: readonly string[]): Promise<string[]> {
+    const validIds = quizIds.filter((quizId) => Types.ObjectId.isValid(quizId));
+    if (!Types.ObjectId.isValid(userId) || validIds.length === 0) return [];
+    await connectDB();
+    const grants = await PremiumQuizAccessGrant.find({
+      user: new Types.ObjectId(userId),
+      quiz: { $in: validIds.map((quizId) => new Types.ObjectId(quizId)) },
+    })
+      .select('quiz -_id')
+      .lean<Array<{ quiz: Types.ObjectId }>>();
+    return grants.map((grant) => String(grant.quiz));
+  }
+
   async findActivePublicationByQuizId(quizId: string): Promise<PremiumQuizSubmission | null> {
     if (!Types.ObjectId.isValid(quizId)) return null;
     await connectDB();

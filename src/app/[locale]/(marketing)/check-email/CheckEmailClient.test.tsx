@@ -5,10 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
 import { CheckEmailClient } from './CheckEmailClient';
 
-const mocks = vi.hoisted(() => ({ resendVerificationEmail: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  resendVerificationEmail: vi.fn(),
+  search: 'email=learner%40example.com',
+}));
 
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams('email=learner%40example.com'),
+  useSearchParams: () => new URLSearchParams(mocks.search),
 }));
 
 vi.mock('next-intl', () => ({
@@ -37,6 +40,7 @@ async function resend(): Promise<void> {
 describe('CheckEmailClient (RIN-980: never the server text)', () => {
   beforeEach(() => {
     mocks.resendVerificationEmail.mockReset();
+    mocks.search = 'email=learner%40example.com';
   });
 
   it('shows the localized resent copy, not the server message', async () => {
@@ -74,5 +78,30 @@ describe('CheckEmailClient (RIN-980: never the server text)', () => {
 
     expect(await screen.findByText(expected)).toBeInTheDocument();
     expect(screen.queryByText(error.message)).not.toBeInTheDocument();
+  });
+});
+
+describe('CheckEmailClient (RIN-1048: hint when the address is unknown)', () => {
+  beforeEach(() => {
+    mocks.resendVerificationEmail.mockReset();
+  });
+
+  it('asks the learner to type their address when the link carried no email', () => {
+    mocks.search = '';
+
+    render(<CheckEmailClient />);
+
+    expect(screen.getByText('checkEmailTypeAddressHint')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(screen.getByRole('textbox')).toHaveAccessibleDescription('checkEmailTypeAddressHint');
+  });
+
+  it('prefills the field and shows no hint when the email is in the URL', () => {
+    mocks.search = 'email=Learner%40Example.com';
+
+    render(<CheckEmailClient />);
+
+    expect(screen.queryByText('checkEmailTypeAddressHint')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('learner@example.com');
   });
 });

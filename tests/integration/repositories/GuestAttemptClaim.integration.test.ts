@@ -7,6 +7,7 @@ import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
 import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { DashboardRepository } from '@/repositories/DashboardRepository';
+import { LearningProgressRepository } from '@/repositories/LearningProgressRepository';
 import { QuizAttemptProgressRepository } from '@/repositories/QuizAttemptProgressRepository';
 import { GuestAttemptClaimService } from '@/services/quiz/GuestAttemptClaimService';
 import { integrationDatabaseUri } from '../../setup/integration-db';
@@ -53,6 +54,7 @@ describe('guest attempt claim', () => {
       db.collection('attempts').deleteMany({ _integrationRun: runId }),
       db.collection('users').deleteMany({ _integrationRun: runId }),
       db.collection('userprogresses').deleteMany({ userId: { $in: progressUserIds } }),
+      db.collection('questionprogresses').deleteMany({ userId: { $in: progressUserIds } }),
     ]);
   }, 10_000);
 
@@ -173,5 +175,101 @@ describe('guest attempt claim', () => {
     expect(aggregates.firstAttempts).toEqual([
       { weekStart, learners: 1, activatedBy: { quiz: 1, adaptive: 0, both: 0 } },
     ]);
+  });
+
+  /** RIN-1028: a claim puts the attempt's wrong answers into the review queue, like a submit. */
+  it('writes review-queue progress for the wrong answers of a claimed attempt', async () => {
+    const db = mongoose.connection;
+    const userId = new Types.ObjectId().toHexString();
+    progressUserIds.push(userId);
+    const now = new Date();
+    const slug = `${runId}-review`;
+    const question = (text: string, correctIndex: number) => ({
+      _id: new Types.ObjectId(),
+      question: text,
+      options: ['Alpha', 'Beta', 'Gamma'],
+      type: 'single',
+      correctIndex,
+    });
+    const right = question('Fake right question', 0);
+    const wrong = question('Fake wrong question', 1);
+    const skipped = question('Fake skipped question', 2);
+    const known = question('Fake already-reviewed question', 0);
+    const multiple = {
+      _id: new Types.ObjectId(),
+      question: 'Fake multiple question',
+      options: ['Alpha', 'Beta', 'Gamma'],
+      type: 'multiple',
+      correctIndexes: [0, 2],
+    };
+    const single = (selectedIndex: number | null) => ({ kind: 'single', selectedIndex });
+    const fullToken = newToken();
+    const quickToken = newToken();
+    const full = guestAttempt(fullToken, new Date(now.getTime() - HOUR), {
+      quizSnapshot: {
+        integrity: 'complete',
+        title: 'Fake quiz',
+        slug,
+        questions: [right, wrong, skipped, known],
+      },
+      answers: [single(0), single(0), single(null), single(2)],
+      score: 25,
+      correctAnswers: 1,
+      totalQuestions: 4,
+    });
+    // A quick round: the snapshot holds only the played questions, in answer order.
+    const quick = guestAttempt(quickToken, new Date(now.getTime() - 2 * HOUR), {
+      quizSnapshot: { integrity: 'complete', title: 'Fake quiz', slug, questions: [multiple] },
+      answers: [{ kind: 'multiple', selectedIndexes: [0] }],
+      mode: 'quick',
+      questionIndices: [7],
+      score: 0,
+      correctAnswers: 0,
+      totalQuestions: 1,
+    });
+    await db.collection('attempts').insertMany([full, quick]);
+    // Progress the learner already has is never overwritten ($setOnInsert).
+    const reviewedAt = new Date(now.getTime() - DAY);
+    const nextReview = new Date(now.getTime() + 3 * DAY);
+    await db.collection('questionprogresses').insertOne({
+      userId,
+      quizSlug: slug,
+      questionId: known._id.toHexString(),
+      questionRef: { text: known.question, options: known.options, correctIndexes: [0] },
+      srsLevel: 3,
+      interval: 4,
+      easeFactor: 2.6,
+      nextReviewDate: nextReview,
+      lastReviewDate: reviewedAt,
+      correctStreak: 3,
+      totalReviews: 5,
+      totalCorrect: 4,
+      history: [],
+    });
+
+    const service = new GuestAttemptClaimService(new QuizAttemptProgressRepository(), () => now);
+    await expect(service.claim(userId, [fullToken, quickToken])).resolves.toEqual([
+      full._id.toHexString(),
+      quick._id.toHexString(),
+    ]);
+
+    const due = await new LearningProgressRepository().listDueQuestions(userId, now, 50);
+    expect(due.map((item) => item.questionId).toSorted()).toEqual(
+      [wrong, skipped, multiple].map((item) => item._id.toHexString()).toSorted(),
+    );
+    expect(due.every((item) => item.srsLevel === 0 && item.quizSlug === slug)).toBe(true);
+    const stored = await db
+      .collection('questionprogresses')
+      .findOne({ userId, questionId: known._id.toHexString() });
+    expect(stored).toMatchObject({ srsLevel: 3, totalReviews: 5, nextReviewDate: nextReview });
+
+    // A second claim (double click, second tab) finds nothing and writes nothing.
+    const before = await db.collection('questionprogresses').find({ userId }).toArray();
+    await expect(service.claim(userId, [fullToken, quickToken])).resolves.toEqual([]);
+    expect(await db.collection('questionprogresses').find({ userId }).toArray()).toEqual(before);
+    expect(await db.collection('userprogresses').findOne({ userId })).toMatchObject({
+      totalQuizzesTaken: 2,
+      totalXp: 10,
+    });
   });
 });

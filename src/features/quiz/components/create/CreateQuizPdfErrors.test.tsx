@@ -105,7 +105,8 @@ describe('CreateQuizPage (desktop) file and submit errors', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('serviceTemporarilyUnavailable');
     expect(alert.nextElementSibling).toContainElement(submit);
-    expect(alert).toHaveFocus();
+    // Focus moves in a passive effect after the alert commits, so wait for it (gate flake, RIN-1032).
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(scrollIntoView).toHaveBeenCalled();
   });
 
@@ -139,7 +140,8 @@ describe('MobileCreateQuizPage file and submit errors', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('serviceTemporarilyUnavailable');
     expect(alert.nextElementSibling).toBe(submit);
-    expect(alert).toHaveFocus();
+    // Focus moves in a passive effect after the alert commits, so wait for it (gate flake, RIN-1032).
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(scrollIntoView).toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });

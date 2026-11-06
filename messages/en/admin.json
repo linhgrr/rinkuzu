@@ -656,5 +656,16 @@
   "activationFunnelCaption": "Weeks are UTC ISO weeks. Internal and test accounts are excluded. Each step counts within 7 days of signup.",
   "activationFunnelAdaptiveUnavailable": "Personalized learning data unavailable: counts are quiz-only.",
   "activationFunnelLoading": "Loading the first-session funnel…",
-  "activationFunnelError": "Could not load the first-session funnel."
+  "activationFunnelError": "Could not load the first-session funnel.",
+  "activationEmailTitle": "Activation email",
+  "activationEmailTableLabel": "Activation emails by send week",
+  "activationEmailWeek": "Send week",
+  "activationEmailSent": "Sent",
+  "activationEmailSentDay1": "24 h",
+  "activationEmailSentBackfill": "Backfill",
+  "activationEmailClicked": "Clicked",
+  "activationEmailActivated": "Activated within 7 days",
+  "activationEmailEmpty": "No activation emails were sent in these weeks.",
+  "activationEmailCaption": "By the UTC week the email was sent. Shares are of emails sent. Activated: a completed quiz or personalized-learning completion within 7 days of the send; recent weeks are still counting. Clicks show 0 until click tracking ships.",
+  "activationFunnelTableLabel": "First-session funnel by signup week"
 }

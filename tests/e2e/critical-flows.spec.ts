@@ -963,6 +963,20 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('shows a not-found state for an unknown learning session @critical-adaptive', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      await login(page, fixture.regular);
+      await page.goto('/en/adaptive/subject/e2e-unknown-session');
+
+      await expect(page.getByText("We couldn't find this learning session.")).toBeVisible();
+      await expect(page.getByRole('button', { name: /Start Learning/ })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Back to Dashboard' }).click();
+      await page.waitForURL(/\/en\/adaptive\/?(?:[?#]|$)/);
+    });
+  });
+
   test('starts the canonical PayOS checkout @critical-subscription', async ({ page }, testInfo) => {
     await withDatabaseFixture(testInfo, async (fixture) => {
       await login(page, fixture.regular);

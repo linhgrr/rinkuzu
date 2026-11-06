@@ -150,8 +150,11 @@ const E2E_STARTER_QUIZ = {
   title: 'E2E Starter Quiz',
 } as const;
 
-async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
-  const slug = STARTER_QUIZ_ALLOWLIST[0]?.slug;
+async function ensureStarterQuiz(db: Db, now: Date, locale?: 'vi' | 'en'): Promise<string> {
+  const starter = locale
+    ? STARTER_QUIZ_ALLOWLIST.find((entry) => entry.locale === locale)
+    : STARTER_QUIZ_ALLOWLIST[0];
+  const slug = starter?.slug;
   if (!slug) throw new Error('Starter quiz allowlist is empty');
   await db.collection('users').updateOne(
     { _id: E2E_STARTER_QUIZ.author },
@@ -445,6 +448,56 @@ async function login(page: Page, user: SeededUser): Promise<SessionPayload> {
   });
   return session;
 }
+
+/**
+ * Records client analytics events in the page (RIN-1000). Consent is granted so
+ * `captureAnalyticsEvent` runs; `window.gtag` is pinned to a recorder the app
+ * cannot replace, so nothing leaves the browser through it.
+ */
+async function recordAnalyticsEvents(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'granted');
+    const events: Array<{ name: unknown; properties: unknown }> = [];
+    const record = (...args: unknown[]) => {
+      if (args[0] === 'event') events.push({ name: args[1], properties: args[2] });
+    };
+    Object.defineProperty(window, '__rkEvents', { value: events });
+    Object.defineProperty(window, 'gtag', {
+      configurable: true,
+      get: () => record,
+      set: () => undefined,
+    });
+  });
+}
+
+async function quizCompletedProperties(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    const events: unknown = Reflect.get(window, '__rkEvents');
+    if (!Array.isArray(events)) return null;
+    const completed: unknown = events.find(
+      (event: { name?: unknown }) => event.name === 'quiz_completed',
+    );
+    return completed && typeof completed === 'object' ? Reflect.get(completed, 'properties') : null;
+  });
+}
+
+async function submitStarterQuiz(page: Page, starterSlug: string): Promise<void> {
+  await expect(page.getByText(E2E_STARTER_QUIZ.question)).toBeVisible();
+  await page.getByText('The starter card', { exact: true }).click();
+  const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+  if (await desktopSubmit.isVisible()) {
+    await desktopSubmit.click();
+  } else {
+    await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
+  }
+  await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=`));
+  await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
+}
+
+/** The email CTA with an unsigned token: it must still land on the starter, recording nothing. */
+const ACTIVATION_CLICK_PATH = '/api/email/activation-click?t=not-a-signed-token&l=en';
+const ACTIVATION_LANDING_QUERY =
+  '\\?entry=activation_email&utm_source=email&utm_campaign=activation_nudge$';
 
 test.describe('production critical paths', () => {
   test('persists auth, enforces roles, and logs out @critical-auth', async ({
@@ -769,6 +822,56 @@ test.describe('production critical paths', () => {
       } finally {
         await fixture.db.collection('attempts').deleteMany({ quiz: longQuizId });
       }
+    });
+  });
+
+  test('lands an activation-email click on the starter and tags quiz_completed @critical-quiz-activation-email', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1000 AC1 + AC3, signed in: CTA → starter quiz → complete → entry=activation_email.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date(), 'en');
+      await login(page, fixture.target);
+      await recordAnalyticsEvents(page);
+
+      await page.goto(ACTIVATION_CLICK_PATH);
+      await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}${ACTIVATION_LANDING_QUERY}`));
+      // The email is no post-sign-in hand-off: no starter intro.
+      await expect(page.getByText('Try a 2-minute quiz to see how Rinkuzu works')).toHaveCount(0);
+      await submitStarterQuiz(page, starterSlug);
+
+      await expect
+        .poll(() => quizCompletedProperties(page))
+        .toMatchObject({ entry: 'activation_email', authenticated: true, score: 100 });
+      const starterQuiz = await fixture.db.collection('quizzes').findOne({ slug: starterSlug });
+      try {
+        const attempt = await fixture.db
+          .collection('attempts')
+          .findOne({ quiz: starterQuiz?._id, user: fixture.target.id });
+        expect(attempt).toMatchObject({ score: 100, totalQuestions: 1 });
+      } finally {
+        await fixture.db
+          .collection('attempts')
+          .deleteMany({ quiz: starterQuiz?._id, user: fixture.target.id });
+      }
+    });
+  });
+
+  test('lets a signed-out activation-email click play the starter as a guest @critical-quiz-activation-email', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1000 AC3, guest path: the starter is guest-playable, so it plays before sign-in.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date(), 'en');
+      await recordAnalyticsEvents(page);
+
+      await page.goto(ACTIVATION_CLICK_PATH);
+      await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}${ACTIVATION_LANDING_QUERY}`));
+      await submitStarterQuiz(page, starterSlug);
+
+      await expect
+        .poll(() => quizCompletedProperties(page))
+        .toMatchObject({ entry: 'activation_email', authenticated: false, score: 100 });
     });
   });
 

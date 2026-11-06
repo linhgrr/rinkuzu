@@ -77,7 +77,9 @@ vi.mock('@xyflow/react', () => ({
   MarkerType: {
     ArrowClosed: 'arrowclosed',
   },
-  useReactFlow: () => ({ fitView: fitViewMock }),
+  useReactFlow: () => ({ fitView: fitViewMock, setViewport: vi.fn() }),
+  useStore: (selector: (state: { width: number; height: number }) => number) =>
+    selector({ width: 800, height: 600 }),
   ReactFlowProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 

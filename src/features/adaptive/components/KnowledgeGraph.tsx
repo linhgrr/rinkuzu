@@ -13,6 +13,7 @@ import {
   Edge,
   MarkerType,
   useReactFlow,
+  useStore,
   ReactFlowProvider,
 } from '@xyflow/react';
 
@@ -31,6 +32,11 @@ import type {
   KnowledgeNode,
 } from '@/features/adaptive/types/graph';
 import ConceptDetailPanel from './ConceptDetail';
+import {
+  GRAPH_NODE_HEIGHT,
+  GRAPH_NODE_WIDTH,
+  getReadableViewport,
+} from './knowledge-graph-viewport';
 import styles from './KnowledgeGraphLayout.module.css';
 
 interface KnowledgeGraphProps {
@@ -182,7 +188,7 @@ const getLayoutedElements = (
   dagreGraph.setGraph({ rankdir: direction, nodesep: 80, ranksep: 100 });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 150, height: 70 });
+    dagreGraph.setNode(node.id, { width: GRAPH_NODE_WIDTH, height: GRAPH_NODE_HEIGHT });
   });
 
   edges.forEach((edge) => {
@@ -197,8 +203,8 @@ const getLayoutedElements = (
     node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
 
     node.position = {
-      x: nodeWithPosition.x - 75,
-      y: nodeWithPosition.y - 35,
+      x: nodeWithPosition.x - GRAPH_NODE_WIDTH / 2,
+      y: nodeWithPosition.y - GRAPH_NODE_HEIGHT / 2,
     };
 
     return node;
@@ -218,7 +224,9 @@ function GraphFlow({
   onNodeClick: (nodeId: string) => void;
   preventPageScroll: boolean;
 }) {
-  const { fitView } = useReactFlow();
+  const { fitView, setViewport } = useReactFlow();
+  const viewportWidth = useStore((state) => state.width);
+  const viewportHeight = useStore((state) => state.height);
 
   const initialNodes: Node<ConceptNodeData>[] = (() => {
     if (!graphData) return [];
@@ -272,17 +280,24 @@ function GraphFlow({
   })();
   const nodeCount = nodes.length;
 
-  // Fit view when nodes change
+  const readableViewport = getReadableViewport(nodes, direction, viewportWidth, viewportHeight);
+  const readableX = readableViewport?.x ?? null;
+  const readableY = readableViewport?.y ?? null;
+
+  // Fit view when nodes change; a graph too big for 100% opens at its first rank.
   useEffect(() => {
     if (nodeCount > 0) {
-      const fitViewTimer = window.setTimeout(
-        () => fitView({ padding: 0.2, duration: 800, minZoom: MIN_GRAPH_ZOOM }),
-        100,
-      );
+      const fitViewTimer = window.setTimeout(() => {
+        if (readableX !== null && readableY !== null) {
+          void setViewport({ x: readableX, y: readableY, zoom: MIN_GRAPH_ZOOM }, { duration: 800 });
+          return;
+        }
+        void fitView({ padding: 0.2, duration: 800, minZoom: MIN_GRAPH_ZOOM });
+      }, 100);
       return () => window.clearTimeout(fitViewTimer);
     }
     return undefined;
-  }, [direction, graphData, nodeCount, fitView]);
+  }, [direction, graphData, nodeCount, fitView, setViewport, readableX, readableY]);
 
   const handleNodeClick = (_: React.MouseEvent, node: Node<ConceptNodeData>) => {
     onNodeClick(node.id);

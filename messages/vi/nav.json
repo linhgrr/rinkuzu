@@ -11,6 +11,7 @@
   "register": "Đăng ký",
   "logout": "Đăng xuất",
   "signIn": "Đăng nhập",
+  "signInRequired": "Cần đăng nhập",
   "signOut": "Đăng xuất",
   "getStarted": "Bắt đầu",
   "premium": "Premium",

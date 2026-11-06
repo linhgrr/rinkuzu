@@ -45,7 +45,11 @@ export default function AdaptiveLearningProcessing() {
       </div>
 
       {!error && showGraphPanel && (
-        <ProcessingGraphCard partialGraph={partialGraph ?? null} t={t} />
+        <ProcessingGraphCard
+          creatingSession={creatingSession}
+          partialGraph={partialGraph ?? null}
+          t={t}
+        />
       )}
     </div>
   );

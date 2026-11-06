@@ -50,7 +50,10 @@ async function expectNoRawServerText(page: Page): Promise<void> {
 }
 
 async function expectSignInBackTo(page: Page, quizPath: string): Promise<void> {
-  const signIn = page.getByRole('link', { name: viQuiz.premiumSignInButton, exact: true });
+  // The app header has its own Sign in (RIN-958); this is the Premium card one.
+  const signIn = page
+    .locator('#app-main-content')
+    .getByRole('link', { name: viQuiz.premiumSignInButton, exact: true });
   await expect(signIn).toBeVisible();
   const href = await signIn.getAttribute('href');
   const target = new URL(href ?? '', 'http://localhost');

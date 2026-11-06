@@ -167,3 +167,49 @@ describe('ResultActions (RIN-917)', () => {
     expect(captureMock).not.toHaveBeenCalledWith('review_email_opt_in', expect.anything());
   });
 });
+
+describe('ResultActions on a quick round (RIN-933)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchOptedInMock.mockResolvedValue(false);
+  });
+
+  function linkNames() {
+    return screen.getAllByRole('link').map((link) => link.textContent);
+  }
+
+  it('orders retry, Another 10, Full quiz, Back Home with retry as the only primary', () => {
+    render(<ResultActions {...baseProps} quickRound />);
+    const [primary, ...others] = primaryLinks();
+    expect(others).toHaveLength(0);
+    expect(primary).toHaveTextContent('retryMissed:3');
+    expect(linkNames()).toEqual([
+      'retryMissed:3',
+      'quickRound.another:10',
+      'quickRound.fullQuiz',
+      'backHome',
+    ]);
+    expect(screen.getByRole('link', { name: 'quickRound.another:10' })).toHaveAttribute(
+      'href',
+      '/quiz/demo?mode=quick',
+    );
+    expect(screen.getByRole('link', { name: 'quickRound.fullQuiz' })).toHaveAttribute(
+      'href',
+      '/quiz/demo?mode=full',
+    );
+  });
+
+  it('makes Another 10 primary and hides retry when nothing was missed', () => {
+    render(<ResultActions {...baseProps} missedCount={0} quickRound />);
+    const [primary, ...others] = primaryLinks();
+    expect(others).toHaveLength(0);
+    expect(primary).toHaveTextContent('quickRound.another:10');
+    expect(linkNames()).toEqual(['quickRound.another:10', 'quickRound.fullQuiz', 'backHome']);
+  });
+
+  it('makes Another 10 primary for a guest, who cannot retry', () => {
+    render(<ResultActions {...baseProps} viewer="guest" quickRound />);
+    expect(primaryLinks()[0]).toHaveTextContent('quickRound.another:10');
+    expect(screen.queryByText('retryMissed:3')).not.toBeInTheDocument();
+  });
+});

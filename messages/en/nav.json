@@ -11,6 +11,7 @@
   "register": "Register",
   "logout": "Logout",
   "signIn": "Sign In",
+  "signInRequired": "Sign in required",
   "signOut": "Sign Out",
   "getStarted": "Get Started",
   "premium": "Premium",

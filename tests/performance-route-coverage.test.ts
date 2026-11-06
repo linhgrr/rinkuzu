@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -44,7 +45,7 @@ const listAppRoutes = () => {
 let fixtureRoot = '';
 
 beforeAll(() => {
-  fixtureRoot = fs.mkdtempSync(path.join(repoRoot, '.perf-route-coverage-test-'));
+  fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-route-coverage-test-'));
   const chunkPath = path.join(fixtureRoot, chunkSource);
   fs.mkdirSync(path.dirname(chunkPath), { recursive: true });
   fs.writeFileSync(chunkPath, 'console.log("route")');

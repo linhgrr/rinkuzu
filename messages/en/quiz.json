@@ -140,6 +140,16 @@
   "starterIntro": "Try a 2-minute quiz to see how Rinkuzu works",
   "starterIntroLabel": "Starter quiz",
   "starterSkip": "Skip",
+  "quickRound": {
+    "start": "Quick round: {count} questions (~3 min)",
+    "full": "Full quiz ({count} questions)",
+    "questionCount": "{count} questions",
+    "resumeHint": "You're on question {question}",
+    "pill": "Quick round",
+    "resultTitle": "Quick round: {correct}/{total}",
+    "another": "Another {count}",
+    "fullQuiz": "Full quiz"
+  },
   "resultActions": {
     "retryMissed": "Retry the {count} you missed",
     "tryAnother": "Try another quiz",

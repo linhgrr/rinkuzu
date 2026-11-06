@@ -343,3 +343,75 @@ export async function renderReviewReminder(input: {
   );
   return { ...mail, subject };
 }
+
+interface ActivationNudgeCopy {
+  subject: string;
+  greeting: (firstName: string | null) => string;
+  body: string;
+  button: string;
+  footer: string;
+  unsubscribe: string;
+}
+
+/**
+ * Copy for the one-time activation nudge (RIN-998). Under 80 words each, and
+ * the only learner data is the first name. Product term: personalized / cá
+ * nhân hóa, never adaptive.
+ */
+const ACTIVATION_NUDGE_COPY: Record<ReviewReminderLocale, ActivationNudgeCopy> = {
+  vi: {
+    subject: 'Bài quiz 2 phút của bạn đã sẵn sàng',
+    greeting: (firstName) => (firstName ? `Chào ${firstName},` : 'Chào bạn,'),
+    body: 'Bạn đã tạo tài khoản Rinkuzu nhưng chưa làm bài quiz nào. Bài quiz khởi động chỉ mất khoảng 2 phút, cho bạn thấy mình nhớ được gì và mở đầu lộ trình ôn tập cá nhân hóa.',
+    button: 'Làm bài quiz 2 phút',
+    footer: 'Bạn nhận email này một lần vì đã tạo tài khoản Rinkuzu.',
+    unsubscribe: 'Hủy nhận email từ Rinkuzu',
+  },
+  en: {
+    subject: 'Your 2-minute quiz is ready',
+    greeting: (firstName) => (firstName ? `Hi ${firstName},` : 'Hi there,'),
+    body: 'You created a Rinkuzu account but have not taken a quiz yet. The starter quiz takes about 2 minutes, shows you what you already remember and starts your personalized review.',
+    button: 'Take the 2-minute quiz',
+    footer: 'You get this email once because you created a Rinkuzu account.',
+    unsubscribe: 'Unsubscribe from Rinkuzu emails',
+  },
+};
+
+export async function renderActivationNudge(input: {
+  locale: ReviewReminderLocale;
+  firstName: string | null;
+  ctaUrl: string;
+  unsubscribeUrl: string;
+}): Promise<RenderedCommunicationMail & { subject: string }> {
+  const copy = ACTIVATION_NUDGE_COPY[input.locale];
+  const mail = await renderElement(
+    <MailFrame
+      lang={input.locale}
+      preview={copy.subject}
+      footer={
+        <Text style={{ color: '#736b63', fontSize: '12px', lineHeight: '18px' }}>
+          {copy.footer} <Link href={input.unsubscribeUrl}>{copy.unsubscribe}</Link>.
+        </Text>
+      }
+    >
+      <Text style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>
+        {copy.greeting(input.firstName)}
+      </Text>
+      <Text style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>{copy.body}</Text>
+      <Section style={{ margin: '22px 0' }}>
+        <Button
+          href={input.ctaUrl}
+          style={{
+            backgroundColor: '#9a5c32',
+            borderRadius: '8px',
+            color: '#fff',
+            padding: '12px 20px',
+          }}
+        >
+          {copy.button}
+        </Button>
+      </Section>
+    </MailFrame>,
+  );
+  return { ...mail, subject: copy.subject };
+}

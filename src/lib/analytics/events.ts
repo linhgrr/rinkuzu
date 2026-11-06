@@ -13,6 +13,8 @@ export type AnalyticsEventName =
   | 'adaptive_session_started'
   | 'adaptive_answer_submitted'
   | 'first_question_answered'
+  /** One quiz start; props only `mode` (quick or full) and `question_count` (RIN-933). */
+  | 'quiz_started'
   | 'quiz_completed'
   /** Skip on the post-sign-in starter quiz intro (RIN-913). */
   | 'starter_quiz_skipped'
@@ -20,5 +22,7 @@ export type AnalyticsEventName =
   | 'retry_missed_clicked'
   | 'try_another_quiz_clicked'
   | 'review_email_opt_in'
+  /** Server side, once per activation nudge accepted by the provider (RIN-999); props `trigger`, `locale`. */
+  | 'activation_email_sent'
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
   | 'guest_attempt_claimed';

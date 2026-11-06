@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { uploadImageToImgBB } from '@/services/imageUploadService';
+import { uploadImage } from '@/services/imageUploadService';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -47,7 +47,7 @@ async function uploadValidatedImage({
   setIsUploading(true);
 
   try {
-    const result = await uploadImageToImgBB(file, file.name);
+    const result = await uploadImage(file, file.name);
     onImageUploaded(result.displayUrl);
   } catch (error: unknown) {
     console.error('Failed to upload image:', error);

@@ -144,6 +144,7 @@ export default async function QuizPlayerPage({
         initialQuiz={quiz}
         slug={slug}
         entry={firstValue(query['entry'])}
+        mode={firstValue(query['mode'])}
       />
     </>
   );

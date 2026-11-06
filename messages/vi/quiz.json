@@ -140,6 +140,16 @@
   "starterIntro": "Thử một bài quiz 2 phút để xem Rinkuzu hoạt động thế nào",
   "starterIntroLabel": "Quiz khởi động",
   "starterSkip": "Bỏ qua",
+  "quickRound": {
+    "start": "Chơi nhanh: {count} câu (~3 phút)",
+    "full": "Làm toàn bộ bài ({count} câu)",
+    "questionCount": "{count} câu hỏi",
+    "resumeHint": "Bạn đang làm dở câu {question}",
+    "pill": "Chơi nhanh",
+    "resultTitle": "Chơi nhanh: {correct}/{total}",
+    "another": "{count} câu khác",
+    "fullQuiz": "Làm toàn bộ bài"
+  },
   "resultActions": {
     "retryMissed": "Làm lại {count} câu bạn sai",
     "tryAnother": "Thử một đề khác",

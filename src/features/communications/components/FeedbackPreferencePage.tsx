@@ -5,10 +5,13 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { isEmailLinkProblem } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { applyFeedbackPreference } from '../api/communications-api';
 
 export function FeedbackPreferencePage() {
   const t = useTranslations('communications.feedbackPreference');
+  const apiErrorMessage = useApiErrorMessage();
   const params = useSearchParams();
   const token = params.get('token') ?? '';
   const initialAction = params.get('action') === 'opt_out' ? 'opt_out' : 'decline';
@@ -23,7 +26,8 @@ export function FeedbackPreferencePage() {
       await applyFeedbackPreference(token, action);
       setDone(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t('error'));
+      // Never the server text (RIN-980): a bad or expired link gets this page's copy.
+      setError(isEmailLinkProblem(caught) ? t('error') : apiErrorMessage(caught));
     } finally {
       setLoading(false);
     }

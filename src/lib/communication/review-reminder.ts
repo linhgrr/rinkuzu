@@ -123,7 +123,9 @@ export async function reviewReminderStatus(input: {
 
 /**
  * Opt-out of `study_reminders` (result page untick, or the unsubscribe link):
- * records the event when the preference changes and cancels pending rows.
+ * records the event when the preference changes and cancels pending rows. The
+ * unsubscribe link also records it for a learner who never opted in (the
+ * activation nudge, RIN-999), so every later send sees the opt-out.
  */
 export async function optOutReviewReminder(input: {
   userId: string;
@@ -131,7 +133,8 @@ export async function optOutReviewReminder(input: {
   ip: string | null;
 }): Promise<{ optedIn: false }> {
   const userId = requiredObjectId(input.userId, 'user id');
-  if (await repository.optOut(userId)) {
+  const changed = await repository.optOut(userId);
+  if (changed || (input.source === 'unsubscribe' && !(await repository.hasOptedOut(userId)))) {
     await repository.recordConsent({
       userId,
       action: 'opt_out',
@@ -231,15 +234,16 @@ function verifiedUserId(token: string): string | null {
 
 /**
  * What the signed-out unsubscribe page shows for a link. A tampered token is
- * `invalid`; a missing account or preference reads as `unsubscribed`, so the
- * page never reveals whether an account exists.
+ * `invalid`. `subscribed` while the learner is opted in or has never opted
+ * out (an activation-nudge recipient); a missing account reads like any
+ * unknown id, so the page never reveals whether an account exists.
  */
 export async function unsubscribeLinkState(token: string): Promise<UnsubscribeLinkState> {
   const userId = verifiedUserId(token);
   if (!userId) return 'invalid';
-  return (await repository.studyRemindersEnabled(requiredObjectId(userId, 'user id')))
-    ? 'subscribed'
-    : 'unsubscribed';
+  const id = requiredObjectId(userId, 'user id');
+  if (await repository.studyRemindersEnabled(id)) return 'subscribed';
+  return (await repository.hasOptedOut(id)) ? 'unsubscribed' : 'subscribed';
 }
 
 /**

@@ -1,0 +1,131 @@
+import {
+  isAnalyticsExcludedAccount,
+  type LearnerExclusionFields,
+} from '@/shared/constants/analytics-exclusions';
+import {
+  pickStarterQuizIndex,
+  type StarterQuizAllowlistEntry,
+} from '@/services/dashboard/starter-quizzes';
+
+/**
+ * Pure rules for the one-time activation nudge (RIN-998 / RIN-999): who is
+ * swept, the per-account dedupe key, eligibility (enqueue and send time) and
+ * the CTA URL. No database access, so every rule is table-testable.
+ */
+
+const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
+
+/** The email goes out once a signup is at least this old. */
+const ACTIVATION_NUDGE_DELAY_MS = 24 * HOUR_MS;
+/**
+ * The sweep looks back this far, so a worker outage loses nobody; older
+ * accounts belong to the one-time backfill.
+ */
+const ACTIVATION_NUDGE_LOOKBACK_MS = 7 * DAY_MS;
+export const ACTIVATION_NUDGE_CAMPAIGN = 'activation_nudge';
+
+export type ActivationNudgeLocale = 'vi' | 'en';
+
+/**
+ * Kill switch, on by default: `ACTIVATION_NUDGE_SENDING_ENABLED=false` stops
+ * both the sweep and the worker claiming `activation_nudge` rows.
+ */
+export function activationNudgeSendingEnabled(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  return env['ACTIVATION_NUDGE_SENDING_ENABLED']?.trim().toLowerCase() !== 'false';
+}
+
+/** Signups in `(now − 7 d, now − 24 h]` are swept. */
+export function activationNudgeSignupWindow(now: Date): { after: Date; until: Date } {
+  return {
+    after: new Date(now.getTime() - ACTIVATION_NUDGE_LOOKBACK_MS),
+    until: new Date(now.getTime() - ACTIVATION_NUDGE_DELAY_MS),
+  };
+}
+
+/** One row per account for its lifetime. */
+export function activationNudgeDedupeKey(userId: string): string {
+  return `activation_nudge:${userId}`;
+}
+
+export function activationNudgeLocale(value: string | null | undefined): ActivationNudgeLocale {
+  return value === 'en' ? 'en' : 'vi';
+}
+
+export type ActivationNudgeSkipReason =
+  | 'user_missing'
+  | 'too_early'
+  | 'excluded_account'
+  | 'activated'
+  | 'unsubscribed'
+  | 'already_nudged';
+
+export interface ActivationNudgeFacts {
+  now: Date;
+  user: (LearnerExclusionFields & { createdAt: Date }) | null;
+  /** Any completed quiz attempt or adaptive completion (the activation route's definition). */
+  activated: boolean;
+  /**
+   * Unsubscribed from any Rinkuzu email: an opt-out consent event, a
+   * non-deliverable contact state (bounce, complaint, suppression) or a
+   * feedback-outreach opt-out.
+   */
+  unsubscribed: boolean;
+  /** Another `activation_nudge` row exists for this account (any status). */
+  alreadyNudged: boolean;
+}
+
+export type ActivationNudgeDecision =
+  | { decision: 'send' }
+  | { decision: 'skip'; reason: ActivationNudgeSkipReason };
+
+/** Eligibility, applied when the sweep enqueues and again when the worker sends. */
+export function evaluateActivationNudge(facts: ActivationNudgeFacts): ActivationNudgeDecision {
+  const { user } = facts;
+  if (!user) return { decision: 'skip', reason: 'user_missing' };
+  if (facts.now.getTime() - user.createdAt.getTime() < ACTIVATION_NUDGE_DELAY_MS) {
+    return { decision: 'skip', reason: 'too_early' };
+  }
+  if (isAnalyticsExcludedAccount(user)) return { decision: 'skip', reason: 'excluded_account' };
+  if (facts.activated) return { decision: 'skip', reason: 'activated' };
+  if (facts.unsubscribed) return { decision: 'skip', reason: 'unsubscribed' };
+  if (facts.alreadyNudged) return { decision: 'skip', reason: 'already_nudged' };
+  return { decision: 'send' };
+}
+
+/**
+ * The greeting name: the given name only. Vietnamese full names put it last
+ * ("Nguyễn Văn An" → "An"), English ones first. `null` when there is nothing
+ * usable, and the email then greets without a name.
+ */
+export function activationNudgeFirstName(
+  name: string | null | undefined,
+  locale: ActivationNudgeLocale,
+): string | null {
+  const parts = (name ?? '').trim().split(/\s+/u).filter(Boolean);
+  const picked = locale === 'vi' ? parts.at(-1) : parts[0];
+  if (!picked || !/^\p{L}[\p{L}\p{M}'’-]*$/u.test(picked)) return null;
+  return picked.slice(0, 30);
+}
+
+/**
+ * The CTA target: the locale-matched starter quiz. Kept in one function so
+ * the click-tracking issue swaps it for a tracked redirect in one place.
+ */
+export function activationNudgeCtaUrl(input: {
+  siteUrl: string;
+  locale: ActivationNudgeLocale;
+  allowlist: readonly StarterQuizAllowlistEntry[];
+}): string {
+  const starter = input.allowlist[pickStarterQuizIndex(input.allowlist, input.locale)];
+  const path = starter
+    ? `/${input.locale}/quiz/${encodeURIComponent(starter.slug)}`
+    : `/${input.locale}/dashboard`;
+  const url = new URL(path, input.siteUrl);
+  url.searchParams.set('entry', 'activation_email');
+  url.searchParams.set('utm_source', 'email');
+  url.searchParams.set('utm_campaign', ACTIVATION_NUDGE_CAMPAIGN);
+  return url.toString();
+}

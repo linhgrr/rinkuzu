@@ -17,6 +17,7 @@ import {
   oneClickUnsubscribeUrl,
   unsubscribePageUrl,
   unsubscribeToken,
+  type UnsubscribeCampaign,
   verifyUnsubscribeToken,
   type ReviewReminderCancelReason,
 } from './review-reminder-policy';
@@ -131,6 +132,7 @@ export async function optOutReviewReminder(input: {
   userId: string;
   source: 'result_page_review' | 'unsubscribe';
   ip: string | null;
+  campaign?: UnsubscribeCampaign | null;
 }): Promise<{ optedIn: false }> {
   const userId = requiredObjectId(input.userId, 'user id');
   const changed = await repository.optOut(userId);
@@ -140,6 +142,7 @@ export async function optOutReviewReminder(input: {
       action: 'opt_out',
       source: input.source,
       ipHash: ipHash(input.ip),
+      ...(input.campaign ? { campaign: input.campaign } : {}),
     });
   }
   await repository.cancelPending(userId, 'opted_out');
@@ -248,12 +251,17 @@ export async function unsubscribeLinkState(token: string): Promise<UnsubscribeLi
 
 /**
  * One-click unsubscribe (RFC 8058 POST or the page button): records the
- * opt-out with source `unsubscribe` and cancels pending review emails.
- * Idempotent; returns false for a token that is not authentic.
+ * opt-out with source `unsubscribe` (and the email's `campaign`, RIN-1044)
+ * and cancels pending review emails. Idempotent; returns false for a token
+ * that is not authentic.
  */
-export async function unsubscribeWithToken(token: string, ip: string | null): Promise<boolean> {
+export async function unsubscribeWithToken(
+  token: string,
+  ip: string | null,
+  campaign: UnsubscribeCampaign | null = null,
+): Promise<boolean> {
   const userId = verifiedUserId(token);
   if (!userId) return false;
-  await optOutReviewReminder({ userId, source: 'unsubscribe', ip });
+  await optOutReviewReminder({ userId, source: 'unsubscribe', ip, campaign });
   return true;
 }

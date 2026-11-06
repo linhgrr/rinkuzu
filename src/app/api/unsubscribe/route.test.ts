@@ -46,7 +46,37 @@ describe('/api/unsubscribe (RFC 8058)', () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe('');
     expect(mocks.checkAuthRateLimit).toHaveBeenCalledWith('unsubscribe_ip', '198.51.100.4');
-    expect(mocks.unsubscribeWithToken).toHaveBeenCalledWith(TOKEN, '198.51.100.4');
+    expect(mocks.unsubscribeWithToken).toHaveBeenCalledWith(TOKEN, '198.51.100.4', null);
+  });
+
+  it('passes the activation-nudge campaign through and keeps it on the redirect (RIN-1044)', async () => {
+    const request = (body: string) =>
+      new NextRequest(`${URL_WITH_TOKEN}&c=activation_nudge`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+
+    await POST(request('List-Unsubscribe=One-Click'));
+    const response = await POST(request('locale=vi'));
+
+    expect(mocks.unsubscribeWithToken).toHaveBeenNthCalledWith(1, TOKEN, null, 'activation_nudge');
+    expect(response.headers.get('location')).toBe(
+      `https://www.rinkuzu.app/vi/unsubscribe?t=${TOKEN}&c=activation_nudge`,
+    );
+  });
+
+  it('records no campaign for a review link or an unknown one', async () => {
+    await POST(post('List-Unsubscribe=One-Click'));
+    await POST(
+      new NextRequest(`${URL_WITH_TOKEN}&c=promotions`, {
+        method: 'POST',
+        body: 'List-Unsubscribe=One-Click',
+      }),
+    );
+
+    expect(mocks.unsubscribeWithToken).toHaveBeenNthCalledWith(1, TOKEN, '198.51.100.4', null);
+    expect(mocks.unsubscribeWithToken).toHaveBeenNthCalledWith(2, TOKEN, null, null);
   });
 
   it('answers a tampered token exactly like a valid one', async () => {

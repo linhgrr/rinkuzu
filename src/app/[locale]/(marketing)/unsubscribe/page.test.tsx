@@ -32,7 +32,7 @@ import UnsubscribePage from './page';
 
 const TOKEN = '6a8ed209f04328ac17443d91.study_reminders.sig';
 
-async function renderPage(query: { t?: string; result?: string }) {
+async function renderPage(query: { t?: string; c?: string; result?: string }) {
   render(
     await UnsubscribePage({
       params: Promise.resolve({ locale: 'en' }),
@@ -54,6 +54,17 @@ describe('/[locale]/unsubscribe (RIN-915)', () => {
     expect(form).toHaveAttribute('method', 'post');
     expect(form).toHaveAttribute('action', `/api/unsubscribe?t=${encodeURIComponent(TOKEN)}`);
     expect(form?.querySelector('input[name="locale"]')).toHaveValue('en');
+  });
+
+  it('activation-nudge link: the form POSTs its campaign too (RIN-1044)', async () => {
+    mocks.unsubscribeLinkState.mockResolvedValue('subscribed');
+    await renderPage({ t: TOKEN, c: 'activation_nudge' });
+
+    const form = screen.getByRole('button', { name: 'confirmButton' }).closest('form');
+    expect(form).toHaveAttribute(
+      'action',
+      `/api/unsubscribe?t=${encodeURIComponent(TOKEN)}&c=activation_nudge`,
+    );
   });
 
   it('already unsubscribed: success copy, no button', async () => {

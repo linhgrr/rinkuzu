@@ -21,6 +21,9 @@ interface ConsentWeekRow {
   unsubscribed: number;
 }
 
+/** Campaign of the w1-review email; consent events without one are its own (RIN-1044). */
+const REVIEW_REMINDER_CAMPAIGN = 'w1-review';
+
 const countWhen = (condition: unknown) => ({ $sum: { $cond: [condition, 1, 0] } });
 
 /**
@@ -71,7 +74,18 @@ export class ReviewEmailStatsRepository implements IReviewEmailStatsRepository {
               $and: [{ $eq: ['$action', 'opt_in'] }, { $eq: ['$source', 'result_page_review'] }],
             }),
             unsubscribed: countWhen({
-              $and: [{ $eq: ['$action', 'opt_out'] }, { $eq: ['$source', 'unsubscribe'] }],
+              $and: [
+                { $eq: ['$action', 'opt_out'] },
+                { $eq: ['$source', 'unsubscribe'] },
+                // Activation-nudge links carry a campaign (RIN-1044); events
+                // without one are the review email's, as before.
+                {
+                  $eq: [
+                    { $ifNull: ['$campaign', REVIEW_REMINDER_CAMPAIGN] },
+                    REVIEW_REMINDER_CAMPAIGN,
+                  ],
+                },
+              ],
             }),
           },
         },

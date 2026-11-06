@@ -165,7 +165,7 @@ export async function prepareActivationNudge(
     locale,
     firstName: activationNudgeFirstName(learner.name, locale),
     ctaUrl: activationNudgeCtaUrl({ siteUrl: site, locale, allowlist: STARTER_QUIZ_ALLOWLIST }),
-    unsubscribeUrl: unsubscribePageUrl(site, locale, token),
+    unsubscribeUrl: unsubscribePageUrl(site, locale, token, ACTIVATION_NUDGE_CAMPAIGN),
   });
   return {
     decision: 'send',
@@ -173,7 +173,7 @@ export async function prepareActivationNudge(
       ...rendered,
       tags: [{ name: 'campaign', value: ACTIVATION_NUDGE_CAMPAIGN }],
       headers: {
-        'List-Unsubscribe': `<${oneClickUnsubscribeUrl(site, token)}>`,
+        'List-Unsubscribe': `<${oneClickUnsubscribeUrl(site, token, ACTIVATION_NUDGE_CAMPAIGN)}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     },

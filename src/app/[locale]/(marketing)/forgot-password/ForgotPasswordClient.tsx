@@ -1,7 +1,7 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
@@ -12,12 +12,18 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineMail, HiOutlineExclamationCircle, HiOutlineCheckCircle } from 'react-icons/hi';
 import { requestPasswordReset } from '@/features/auth/api/auth-api';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { forgotPasswordSchema, type ForgotPasswordInput } from '@/lib/validation/auth';
+
+const DEFAULT_RETRY_AFTER_SECONDS = 60;
 
 export function ForgotPasswordClient() {
   const t = useTranslations('auth');
-  const [success, setSuccess] = useState<string | null>(null);
+  const apiErrorMessage = useApiErrorMessage();
+  const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
 
   const {
     register,
@@ -29,15 +35,37 @@ export function ForgotPasswordClient() {
     defaultValues: { email: '' },
   });
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
+
   const onSubmit = handleSubmit(async (values) => {
+    if (cooldown > 0) return;
     setServerError(null);
     try {
-      const result = await requestPasswordReset(values.email);
-      setSuccess(result.message ?? t('forgotPasswordSent'));
+      await requestPasswordReset(values.email);
+      setSuccess(true);
     } catch (caught) {
-      setServerError(caught instanceof Error ? caught.message : t('loginError'));
+      // Never the server text (RIN-980); a rate limit gets the check-email countdown.
+      const described = describeApiError(caught);
+      if (described.kind === 'rate_limited') {
+        const retry = described.retryAfterSeconds ?? DEFAULT_RETRY_AFTER_SECONDS;
+        setCooldown(retry);
+        setServerError(t('rateLimited', { seconds: retry }));
+      } else {
+        setServerError(apiErrorMessage(caught));
+      }
     }
   });
+
+  const buttonLabel =
+    cooldown > 0
+      ? t('resendVerificationCountdown', { seconds: cooldown })
+      : isSubmitting
+        ? t('forgotPasswordSubmitting')
+        : t('forgotPasswordSubmit');
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -80,7 +108,7 @@ export function ForgotPasswordClient() {
                   className="flex flex-col items-center gap-4 py-4 text-center"
                 >
                   <HiOutlineCheckCircle className="size-10 text-emerald-500" aria-hidden="true" />
-                  <p className="text-sm text-neutral-700">{success}</p>
+                  <p className="text-sm text-neutral-700">{t('forgotPasswordSent')}</p>
                   <Link
                     href="/login"
                     className="font-semibold text-brand-trust transition-colors hover:text-brand-trust-hover"
@@ -125,12 +153,12 @@ export function ForgotPasswordClient() {
                   <Button
                     type="submit"
                     loading={isSubmitting}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || cooldown > 0}
                     aria-busy={isSubmitting}
                     size="lg"
                     className="w-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
                   >
-                    {isSubmitting ? t('forgotPasswordSubmitting') : t('forgotPasswordSubmit')}
+                    {buttonLabel}
                   </Button>
 
                   <div className="text-center">

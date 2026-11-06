@@ -105,7 +105,8 @@ describe('CreateQuizPage (desktop) file and submit errors', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('serviceTemporarilyUnavailable');
     expect(alert.nextElementSibling).toContainElement(submit);
-    expect(alert).toHaveFocus();
+    // Focus moves in an effect after the alert renders: under load it lands a tick later.
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(scrollIntoView).toHaveBeenCalled();
   });
 

@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { readAndValidateSearchParams } from '@/lib/api/request';
@@ -23,6 +23,12 @@ export async function GET(request: NextRequest) {
   const query = readAndValidateSearchParams(request, clickQuerySchema);
   const token = query.success ? query.data.t : '';
   const locale = query.success ? (query.data.l ?? null) : null;
-  const destination = await recordActivationClick(token, locale);
-  return NextResponse.redirect(destination, { status: 302, headers: NO_STORE });
+  const destination = new URL(await recordActivationClick(token, locale));
+  // A path, not a URL: the browser stays on the host it clicked. A hop to the
+  // site URL's host (127.0.0.1 vs localhost, apex vs www) leaves the session
+  // cookie behind and a signed-in learner lands signed out.
+  return new Response(null, {
+    status: 302,
+    headers: { ...NO_STORE, Location: `${destination.pathname}${destination.search}` },
+  });
 }

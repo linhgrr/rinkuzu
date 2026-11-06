@@ -150,12 +150,12 @@ const E2E_STARTER_QUIZ = {
   title: 'E2E Starter Quiz',
 } as const;
 
-async function ensureStarterQuiz(db: Db, now: Date, locale?: 'vi' | 'en'): Promise<string> {
-  const starter = locale
-    ? STARTER_QUIZ_ALLOWLIST.find((entry) => entry.locale === locale)
-    : STARTER_QUIZ_ALLOWLIST[0];
-  const slug = starter?.slug;
-  if (!slug) throw new Error('Starter quiz allowlist is empty');
+// The specs run on /en, where the dashboard, /start and the activation email
+// all pick the English starter once it exists. Seeding another one would make
+// the pick depend on which spec ran first (RIN-1000).
+async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
+  const slug = STARTER_QUIZ_ALLOWLIST.find((entry) => entry.locale === 'en')?.slug;
+  if (!slug) throw new Error('Starter quiz allowlist has no English starter');
   await db.collection('users').updateOne(
     { _id: E2E_STARTER_QUIZ.author },
     {
@@ -499,6 +499,16 @@ const ACTIVATION_CLICK_PATH = '/api/email/activation-click?t=not-a-signed-token&
 const ACTIVATION_LANDING_QUERY =
   '\\?entry=activation_email&utm_source=email&utm_campaign=activation_nudge$';
 
+/** The click lands on the host it was opened on, or the session cookie is lost. */
+async function expectActivationLanding(
+  page: Page,
+  starterSlug: string,
+  testInfo: TestInfo,
+): Promise<void> {
+  await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}${ACTIVATION_LANDING_QUERY}`));
+  expect(new URL(page.url()).origin).toBe(new URL(String(testInfo.project.use.baseURL)).origin);
+}
+
 test.describe('production critical paths', () => {
   test('persists auth, enforces roles, and logs out @critical-auth', async ({
     browserName,
@@ -830,12 +840,12 @@ test.describe('production critical paths', () => {
   }, testInfo) => {
     // RIN-1000 AC1 + AC3, signed in: CTA → starter quiz → complete → entry=activation_email.
     await withDatabaseFixture(testInfo, async (fixture) => {
-      const starterSlug = await ensureStarterQuiz(fixture.db, new Date(), 'en');
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
       await login(page, fixture.target);
       await recordAnalyticsEvents(page);
 
       await page.goto(ACTIVATION_CLICK_PATH);
-      await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}${ACTIVATION_LANDING_QUERY}`));
+      await expectActivationLanding(page, starterSlug, testInfo);
       // The email is no post-sign-in hand-off: no starter intro.
       await expect(page.getByText('Try a 2-minute quiz to see how Rinkuzu works')).toHaveCount(0);
       await submitStarterQuiz(page, starterSlug);
@@ -862,11 +872,11 @@ test.describe('production critical paths', () => {
   }, testInfo) => {
     // RIN-1000 AC3, guest path: the starter is guest-playable, so it plays before sign-in.
     await withDatabaseFixture(testInfo, async (fixture) => {
-      const starterSlug = await ensureStarterQuiz(fixture.db, new Date(), 'en');
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
       await recordAnalyticsEvents(page);
 
       await page.goto(ACTIVATION_CLICK_PATH);
-      await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}${ACTIVATION_LANDING_QUERY}`));
+      await expectActivationLanding(page, starterSlug, testInfo);
       await submitStarterQuiz(page, starterSlug);
 
       await expect

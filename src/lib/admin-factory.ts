@@ -1,5 +1,6 @@
 import { AdminAuditRepository } from '@/repositories/AdminAuditRepository';
 import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
+import { ActivationEmailStatsRepository } from '@/repositories/ActivationEmailStatsRepository';
 import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
@@ -31,6 +32,7 @@ let activationStatsService: ActivationStatsService | undefined;
 export function getActivationStatsService(): ActivationStatsService {
   activationStatsService ??= new ActivationStatsService({
     stats: new AdminStatsRepository(),
+    activationEmail: new ActivationEmailStatsRepository(),
     audit: new AdminAuditRepository(),
     adaptiveEvents: fetchAdaptiveActivationEvents,
   });

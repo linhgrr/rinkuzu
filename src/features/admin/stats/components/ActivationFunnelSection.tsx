@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { fetchActivationFunnelViewModel } from '@/features/admin/stats/api/admin-stats-api';
+import { ActivationEmailTable } from '@/features/admin/stats/components/ActivationEmailTable';
 import type {
   ActivationFunnelViewModel,
   ActivationFunnelWeekViewModel,
@@ -66,7 +67,10 @@ function FunnelTable({ funnel, t }: { funnel: ActivationFunnelViewModel; t: Tran
         </p>
       )}
       <div className="overflow-x-auto rounded-lg border border-line">
-        <table className="w-full min-w-[640px] text-sm text-neutral-700">
+        <table
+          aria-label={t('activationFunnelTableLabel')}
+          className="w-full min-w-[640px] text-sm text-neutral-700"
+        >
           <thead className="bg-neutral-50 text-xs text-neutral-600">
             <tr>
               <th scope="col" className="sticky left-0 bg-neutral-50 px-3 py-2 text-left">
@@ -90,6 +94,7 @@ function FunnelTable({ funnel, t }: { funnel: ActivationFunnelViewModel; t: Tran
         </table>
       </div>
       <p className="mt-2 text-xs text-neutral-500">{t('activationFunnelCaption')}</p>
+      <ActivationEmailTable weeks={funnel.emailWeeks} t={t} />
     </>
   );
 }

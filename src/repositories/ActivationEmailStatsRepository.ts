@@ -16,8 +16,13 @@ import {
   type AdaptiveCompletionLiteral,
 } from '@/repositories/pipelines/activation-email';
 
+interface SendWeekKey {
+  weekStart: Date;
+  trigger: string;
+}
+
 interface SendWeekRow {
-  _id: { weekStart: Date; trigger: string };
+  _id: SendWeekKey;
   sent: number;
   clicked: number;
   activatedWithin7d: number;

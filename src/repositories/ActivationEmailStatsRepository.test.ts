@@ -98,7 +98,7 @@ describe('activationEmailPipeline', () => {
   it('looks up one attempt per send in [sentAt, sentAt + 7 days) by user', () => {
     const lookup = stage(pipeline, '$lookup');
     expect(lookup).toMatchObject({ from: 'attempts', localField: 'uid', foreignField: 'user' });
-    const inner = lookup.pipeline as unknown[];
+    const inner = lookup['pipeline'] as unknown[];
     expect(JSON.stringify(inner)).toContain(String(7 * DAY));
     expect(inner).toContainEqual({ $limit: 1 });
   });
@@ -109,6 +109,6 @@ describe('activationEmailPipeline', () => {
       trigger: { $ifNull: ['$trigger', '24h'] },
       clicked: { $ne: [{ $ifNull: ['$clickedAt', null] }, null] },
     });
-    expect(stage(pipeline, '$group')._id).toMatchObject({ trigger: '$trigger' });
+    expect(stage(pipeline, '$group')['_id']).toMatchObject({ trigger: '$trigger' });
   });
 });

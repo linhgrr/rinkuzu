@@ -240,7 +240,7 @@
     "cancellingProcessing": "Đang hủy…",
     "cancelProcessingTitle": "Hủy xử lý tài liệu?",
     "cancelProcessingDescription": "Rinkuzu sẽ dừng chuẩn bị tài liệu này. Bạn có thể tải lên lại sau.",
-    "cancelProcessingConfirm": "Hủy xử lý",
+    "cancelProcessingConfirm": "Dừng xử lý",
     "keepProcessing": "Tiếp tục xử lý"
   },
   "history": {

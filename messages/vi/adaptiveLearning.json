@@ -235,7 +235,13 @@
     "viewProcessing": "Xem tiến trình",
     "retryProcessing": "Thử lại",
     "processingFailed": "Xử lý thất bại",
-    "processingEta": "Còn khoảng {eta}"
+    "processingEta": "Còn khoảng {eta}",
+    "processingReassurance": "Thường mất vài phút. Bạn có thể rời trang này, chúng tôi vẫn tiếp tục xử lý.",
+    "cancellingProcessing": "Đang hủy…",
+    "cancelProcessingTitle": "Hủy xử lý tài liệu?",
+    "cancelProcessingDescription": "Rinkuzu sẽ dừng chuẩn bị tài liệu này. Bạn có thể tải lên lại sau.",
+    "cancelProcessingConfirm": "Dừng xử lý",
+    "keepProcessing": "Tiếp tục xử lý"
   },
   "history": {
     "title": "Lịch sử bài tập",

@@ -947,8 +947,10 @@ function MobileAppMenu({
 
   return (
     <div className="fixed inset-x-0 bottom-0 top-16 z-[60] lg:hidden">
+      {/* Mouse/touch dismiss only: keyboard users close with the toggle, so Tab goes to the first row. */}
       <ButtonBase
         type="button"
+        tabIndex={-1}
         className="absolute inset-0 bg-ink/20 backdrop-blur-[1px]"
         aria-label={t('dismissMenu')}
         onClick={onClose}
@@ -958,6 +960,30 @@ function MobileAppMenu({
         className={`${styles['mobileMenu']} absolute left-3 right-3 top-3 overflow-y-auto border border-line bg-surface p-3`}
         aria-label={t('mainNavigation')}
       >
+        {/* Guests see Sign in / Register first, without scrolling past the nav (RIN-985). */}
+        {account === 'guest' ? (
+          <>
+            <div className="flex flex-col gap-2">
+              <Link
+                href={withAuthCallback(ROUTES.LOGIN, pathname)}
+                onClick={onClose}
+                className={MOBILE_ACCOUNT_ROW}
+              >
+                <Icon icon={ICON.login} className="size-5" aria-hidden="true" />
+                <span className="truncate">{t('signIn')}</span>
+              </Link>
+              <Link
+                href={withAuthCallback(ROUTES.REGISTER, pathname)}
+                onClick={onClose}
+                className={MOBILE_ACCOUNT_ROW}
+              >
+                <Icon icon={ICON.user} className="size-5" aria-hidden="true" />
+                <span className="truncate">{t('register')}</span>
+              </Link>
+            </div>
+            <div className="my-3 h-px bg-line" />
+          </>
+        ) : null}
         <div className="flex flex-col gap-2">
           {visibleNav.map((entry) => (
             <MobileMenuGroup
@@ -985,29 +1011,6 @@ function MobileAppMenu({
           <>
             <div className="my-3 h-px bg-line" />
             <LogoutButton className={MOBILE_ACCOUNT_ROW} t={t} />
-          </>
-        ) : null}
-        {account === 'guest' ? (
-          <>
-            <div className="my-3 h-px bg-line" />
-            <div className="flex flex-col gap-2">
-              <Link
-                href={withAuthCallback(ROUTES.LOGIN, pathname)}
-                onClick={onClose}
-                className={MOBILE_ACCOUNT_ROW}
-              >
-                <Icon icon={ICON.login} className="size-5" aria-hidden="true" />
-                <span>{t('signIn')}</span>
-              </Link>
-              <Link
-                href={withAuthCallback(ROUTES.REGISTER, pathname)}
-                onClick={onClose}
-                className={MOBILE_ACCOUNT_ROW}
-              >
-                <Icon icon={ICON.user} className="size-5" aria-hidden="true" />
-                <span>{t('register')}</span>
-              </Link>
-            </div>
           </>
         ) : null}
       </nav>

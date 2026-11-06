@@ -14,6 +14,7 @@ import type {
 import { QuizUploadDropzone } from './QuizUploadDropzone';
 import { StarterQuizBlock } from './StarterQuizBlock';
 import { QuizCard } from '@/features/quiz/components/QuizCard';
+import { MarketingPreferencePrompt } from '@/features/communications/components/MarketingPreferencePrompt';
 import type { QuizListItemViewModel } from '@/features/quiz/types/quiz-list-view-model';
 
 interface HomeDashboardProps {
@@ -33,16 +34,25 @@ interface HomeDashboardProps {
 }
 
 const ASSET_BASE = '/images/home-redesign';
-const QUIZ_BUILDER_LIBRARY_HREF = '/my-quizzes';
 const ADAPTIVE_HREF = '/adaptive';
+/** Outline action: one orange primary per screen, the rest secondary (RIN-988). */
+const SECONDARY_ACTION_CLASS = 'btn btn-secondary';
+
+interface HomeHeroLink {
+  label: string;
+  href: string;
+}
 
 interface HomeHeroProps {
   title: string;
   description: string;
-  ctaLabel: string;
-  ctaHref: string;
-  /** Shown while the primary CTA points at a starter quiz, so upload stays one tap away. */
-  adaptiveLinkLabel?: string;
+  /**
+   * The hero's primary button. Null while the starter block is on screen: the
+   * starter is then the page's single primary CTA (RIN-988).
+   */
+  cta: HomeHeroLink | null;
+  /** Secondary upload action shown next to the starter block, so upload stays one tap away. */
+  uploadLabel?: string;
 }
 
 interface QuizBuilderCardProps {
@@ -84,7 +94,6 @@ interface ContinueLearningProps {
   title: string;
   subtitle: string;
   viewAllLabel: string;
-  emptyActionLabel: string;
 }
 
 interface QuizSectionProps {
@@ -166,7 +175,7 @@ function HeroArtwork() {
   );
 }
 
-function HomeHero({ title, description, ctaLabel, ctaHref, adaptiveLinkLabel }: HomeHeroProps) {
+function HomeHero({ title, description, cta, uploadLabel }: HomeHeroProps) {
   return (
     <section className="relative min-h-[280px] rounded-panel border border-accent bg-hero px-5 py-6 sm:min-h-[295px] sm:px-6 sm:py-7">
       <div
@@ -190,19 +199,22 @@ function HomeHero({ title, description, ctaLabel, ctaHref, adaptiveLinkLabel }: 
         <p className="font-home text-base font-normal leading-[1.4]">{description}</p>
       </div>
       <div className="relative z-10 mt-7 flex flex-col items-start gap-3 sm:mt-9">
-        <Link
-          href={ctaHref}
-          className="inline-flex rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold leading-[1.4] text-brand-action-text hover:bg-brand-action-hover sm:text-lg"
-          data-testid="home-hero-cta"
-        >
-          {ctaLabel}
-        </Link>
-        {adaptiveLinkLabel ? (
+        {cta ? (
+          <Link
+            href={cta.href}
+            className="inline-flex rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold leading-[1.4] text-brand-action-text hover:bg-brand-action-hover sm:text-lg"
+            data-testid="home-hero-cta"
+          >
+            {cta.label}
+          </Link>
+        ) : null}
+        {uploadLabel ? (
           <Link
             href={ADAPTIVE_HREF}
-            className="font-home text-base font-semibold leading-[1.4] text-ink underline underline-offset-4 hover:text-accent"
+            className={`${SECONDARY_ACTION_CLASS} h-auto min-h-11 whitespace-normal py-2 text-left font-home`}
+            data-testid="home-hero-upload"
           >
-            {adaptiveLinkLabel}
+            {uploadLabel}
           </Link>
         ) : null}
       </div>
@@ -405,14 +417,16 @@ function LearningCard({ item }: LearningCardProps) {
   );
 }
 
+/** Hidden until there is something to continue (RIN-988). */
 function ContinueLearning({
   items,
   viewAllHref,
   title,
   subtitle,
   viewAllLabel,
-  emptyActionLabel,
 }: ContinueLearningProps) {
+  if (items.length === 0) return null;
+
   return (
     <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
       <SectionHeading
@@ -421,20 +435,11 @@ function ContinueLearning({
         href={viewAllHref}
         viewAllLabel={viewAllLabel}
       />
-      {items.length > 0 ? (
-        <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 min-[1180px]:grid-cols-4">
-          {items.map((item) => (
-            <LearningCard key={item.id} item={item} />
-          ))}
-        </div>
-      ) : (
-        <Link
-          href={QUIZ_BUILDER_LIBRARY_HREF}
-          className="inline-flex min-h-10 w-fit items-center rounded-lg bg-primary px-4 py-2 font-home text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-        >
-          {emptyActionLabel}
-        </Link>
-      )}
+      <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 min-[1180px]:grid-cols-4">
+        {items.map((item) => (
+          <LearningCard key={item.id} item={item} />
+        ))}
+      </div>
     </SurfaceCard>
   );
 }
@@ -462,10 +467,7 @@ function QuizSection({
           ))}
         </div>
       ) : (
-        <Link
-          href={viewAllHref}
-          className="inline-flex min-h-10 w-fit items-center rounded-lg bg-primary px-4 py-2 font-home text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-        >
+        <Link href={viewAllHref} className={`${SECONDARY_ACTION_CLASS} w-fit font-home text-sm`}>
           {emptyActionLabel}
         </Link>
       )}
@@ -494,9 +496,8 @@ export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
             <HomeHero
               title={copy.hero.title}
               description={copy.hero.description}
-              ctaLabel={viewModel.starter ? copy.hero.starterCta : copy.hero.cta}
-              ctaHref={viewModel.heroCtaHref}
-              {...(viewModel.starter ? { adaptiveLinkLabel: copy.hero.adaptiveLink } : {})}
+              cta={viewModel.starter ? null : { label: copy.hero.cta, href: viewModel.heroCtaHref }}
+              {...(viewModel.starter ? { uploadLabel: copy.hero.adaptiveLink } : {})}
             />
             <ContinueLearning
               items={viewModel.continueLearning.items}
@@ -504,7 +505,6 @@ export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
               title={copy.continueLearning.title}
               subtitle={copy.continueLearning.subtitle}
               viewAllLabel={copy.viewAll}
-              emptyActionLabel={copy.continueLearning.emptyAction}
             />
             <QuizSection
               quizzes={viewModel.recentOwnedQuizzes}
@@ -535,6 +535,10 @@ export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
               studyTimeLabel={copy.learningProgress.studyTime}
             />
           </div>
+        </div>
+        <div className="mt-6">
+          {/* In flow, after every card: docked, it covered them (RIN-988). */}
+          <MarketingPreferencePrompt placement="inline" />
         </div>
       </div>
     </div>

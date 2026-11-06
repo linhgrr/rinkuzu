@@ -85,6 +85,17 @@ const PersonalLearningSection = dynamic(
   },
 );
 
+const ReviewEmailSection = dynamic(
+  () =>
+    import('@/features/admin/stats/components/ReviewEmailSection').then(
+      (module) => module.ReviewEmailSection,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-40 w-full animate-pulse rounded-xl bg-neutral-100" />,
+  },
+);
+
 const LearnerLookupSection = dynamic(
   () =>
     import('@/features/admin/stats/components/LearnerLookupSection').then(
@@ -606,6 +617,12 @@ function AdminStatsContent({
           <ScoreDistributionSection stats={stats} t={t} />
           <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
           <RecentActivityCard stats={stats} t={t} onOpenModal={onOpenActivity} />
+        </div>
+      ) : null}
+      {/* Loads on its own, so it stays visible when the overview statistics fail. */}
+      {workspace === 'overview' ? (
+        <div className="mt-6">
+          <ReviewEmailSection />
         </div>
       ) : null}
       {workspace === 'llm' ? <LlmUsageSection /> : null}

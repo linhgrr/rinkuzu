@@ -6,7 +6,7 @@ const isCI = Boolean(process.env['CI']);
 const usesExternalServer = Boolean(process.env['PLAYWRIGHT_BASE_URL']);
 const runsFullDeviceMatrix = process.env['PLAYWRIGHT_FULL_MATRIX'] === 'true';
 const usesSystemChrome = process.env['PLAYWRIGHT_USE_SYSTEM_CHROME'] === 'true';
-const criticalFlowPattern = /@critical-(?:auth|quiz|adaptive|subscription|admin)\b/;
+const criticalFlowPattern = /@critical-(?:auth|quiz|retry|adaptive|subscription|admin)\b/;
 const fakeAdaptiveBaseUrl = 'http://127.0.0.1:8000';
 /**
  * The token the app and the stubbed adaptive service authenticate to each other

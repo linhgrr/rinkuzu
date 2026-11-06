@@ -67,6 +67,28 @@ describe('ReportQuiz', () => {
     );
   });
 
+  // RIN-987: a red warning link on every question outweighed the question itself.
+  it.each([true, false])('shows a quiet neutral report link at rest (compact=%s)', (compact) => {
+    render(
+      <ReportQuiz
+        compact={compact}
+        quizSlug="algebra"
+        quizTitle="Algebra"
+        questionId="507f1f77bcf86cd799439011"
+        questionNumber={3}
+        questionText="2 + 2 = ?"
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'reportQuestion' });
+    const restClasses = trigger.className.split(/\s+/).filter((name) => !name.includes(':'));
+    expect(restClasses).toContain('text-neutral-500');
+    expect(restClasses.some((name) => name.includes('red'))).toBe(false);
+    expect(trigger.className).toContain('hover:text-red-700');
+    expect(trigger.className).toContain('focus-visible:text-red-700');
+    expect(trigger.querySelector('svg[data-icon="flag"]')).toBeTruthy();
+  });
+
   // RIN-682 gate run: the 2 s auto-close timer outlived the component and fired a
   // setState after jsdom was torn down ("window is not defined").
   it('cancels the auto-close timer when it unmounts after a report', async () => {

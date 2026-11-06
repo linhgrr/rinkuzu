@@ -39,9 +39,10 @@ export interface SubmitQuizAttemptInput {
   slug: string;
   answers: QuizAnswer[];
   idempotencyKey: string;
-  /** Signed-in legacy field; guests send `guestClaimToken` instead (RIN-912). */
-  userEmail?: string;
+  /** Signed-out learners only (RIN-912); the session identifies everyone else. */
   guestClaimToken?: string;
+  /** Retry-missed session: the attempt whose misses are being retried (RIN-917). */
+  retryOfAttemptId?: string;
 }
 
 export interface AddQuizDiscussionCommentInput {

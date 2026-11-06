@@ -28,6 +28,26 @@ function toQueryString(searchParams: QuizPageSearchParams): string {
   return serialized ? `?${serialized}` : '';
 }
 
+const ATTEMPT_ID_PATTERN = /^[a-f0-9]{24}$/iu;
+
+/**
+ * `?retryOf=<attemptId>` (RIN-917) plays only the questions missed in that attempt.
+ * An invalid, foreign or guest `retryOf` falls back to the full quiz silently.
+ */
+async function loadQuizForPlay(
+  slug: string,
+  retryOf: string | null,
+  session: Awaited<ReturnType<typeof getCurrentSession>>,
+) {
+  const quizService = getQuizService();
+  const userId = session?.user?.id;
+  if (retryOf && userId && ATTEMPT_ID_PATTERN.test(retryOf)) {
+    const retry = await quizService.getRetryQuizForPlay(slug, retryOf, userId, session?.user?.role);
+    if (retry.success) return retry;
+  }
+  return quizService.getQuizForPlay(slug, session?.user?.role, userId);
+}
+
 export default async function QuizPlayerPage({
   params,
   searchParams,
@@ -66,11 +86,7 @@ export default async function QuizPlayerPage({
       />
     );
   }
-  const result = await getQuizService().getQuizForPlay(
-    slug,
-    session?.user?.role,
-    session?.user?.id,
-  );
+  const result = await loadQuizForPlay(slug, firstValue(query['retryOf']), session);
 
   if (!result.success && result.statusCode === 404) {
     // Former slugs (RIN-624) only cost a lookup after a miss.

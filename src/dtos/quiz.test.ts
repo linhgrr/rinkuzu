@@ -123,12 +123,12 @@ describe('quiz DTO schemas', () => {
       submitQuizAttemptRequestSchema.parse({
         answers: [0, [1, 2], -1],
         idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
-        userEmail: ' Learner@Example.com ',
+        guestClaimToken: 'T'.repeat(43),
       }),
     ).toEqual({
       answers: [0, [1, 2], -1],
       idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
-      userEmail: 'learner@example.com',
+      guestClaimToken: 'T'.repeat(43),
     });
   });
 
@@ -136,14 +136,12 @@ describe('quiz DTO schemas', () => {
     expect(() =>
       submitQuizAttemptRequestSchema.parse({
         answers: [0],
-        userEmail: 'learner@example.com',
       }),
     ).toThrow();
     expect(() =>
       submitQuizAttemptRequestSchema.parse({
         answers: [[0.5]],
         idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
-        userEmail: 'learner@example.com',
       }),
     ).toThrow();
   });

@@ -112,6 +112,8 @@ describe('useQuizSubmission', () => {
     await act(async () => expect(await result.current.completeSubmit()).toBe(true));
 
     expect(submitAttemptMock.mock.calls[0]?.[0]).not.toHaveProperty('guestClaimToken');
+    // The session identifies the learner; the email never goes in the body (RIN-921).
+    expect(submitAttemptMock.mock.calls[0]?.[0]).not.toHaveProperty('userEmail');
     expect(findGuestClaimToken('attempt-1')).toBeNull();
   });
 

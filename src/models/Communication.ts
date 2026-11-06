@@ -274,6 +274,8 @@ interface EmailOutboxDocument extends Document {
   leaseToken?: string | null;
   lastError?: string | null;
   externalEmailId?: string | null;
+  /** First `email.opened` of a `campaign=w1-review` email (RIN-916); set once. */
+  openedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -594,6 +596,7 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     },
     ...leaseQueueFields(2_000),
     externalEmailId: { type: String, default: null },
+    openedAt: { type: Date, default: null },
   },
   { timestamps: true, versionKey: false },
 );

@@ -5,11 +5,13 @@
  */
 
 import { z } from 'zod';
+import { GUEST_CLAIM_PENDING_COOKIE } from '@/shared/constants/starter-quiz';
 
-/** @public Read by the sign-in claim step (RIN-912 part 4). */
+/** @public Tests and the e2e read the raw entry. */
 export const GUEST_CLAIMS_STORAGE_KEY = 'rinkuzu.guestClaims.v1';
 
 const GUEST_CLAIM_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const GUEST_CLAIM_MAX_AGE_SECONDS = GUEST_CLAIM_MAX_AGE_MS / 1000;
 const GUEST_CLAIMS_MAX_ENTRIES = 10;
 const TOKEN_BYTES = 32;
 
@@ -54,10 +56,7 @@ function isFresh(claim: GuestClaim, now: number): boolean {
   return now - claim.takenAt <= GUEST_CLAIM_MAX_AGE_MS;
 }
 
-/**
- * Claims younger than 24 h; anything unreadable counts as no claims.
- * @public Also read by the sign-in claim step (RIN-912 part 4).
- */
+/** Claims younger than 24 h; anything unreadable counts as no claims. */
 export function readGuestClaims(now: number = Date.now()): GuestClaim[] {
   const storage = getStorage();
   if (!storage) return [];
@@ -80,6 +79,7 @@ export function addGuestClaim(claim: GuestClaim, now: number = Date.now()): void
   ].slice(0, GUEST_CLAIMS_MAX_ENTRIES);
   try {
     storage.setItem(GUEST_CLAIMS_STORAGE_KEY, JSON.stringify(claims));
+    setPendingClaimCookie(GUEST_CLAIM_MAX_AGE_SECONDS);
   } catch {
     // Quota or disabled storage: the result page falls back to the score in the URL.
   }
@@ -87,4 +87,25 @@ export function addGuestClaim(claim: GuestClaim, now: number = Date.now()): void
 
 export function findGuestClaimToken(attemptId: string, now: number = Date.now()): string | null {
   return readGuestClaims(now).find((claim) => claim.attemptId === attemptId)?.token ?? null;
+}
+
+/**
+ * A value-free marker that `/start` reads: sign-in in a browser with a claim pending
+ * is not a new learner, so it lands on the dashboard, not the starter (RIN-921).
+ * It never carries the token or the attempt id.
+ */
+function setPendingClaimCookie(maxAgeSeconds: number): void {
+  if (typeof document === 'undefined') return;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${GUEST_CLAIM_PENDING_COOKIE}=1; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
+}
+
+/** After the sign-in claim: the server dropped anything it could not use, so forget all. */
+export function clearGuestClaims(): void {
+  try {
+    getStorage()?.removeItem(GUEST_CLAIMS_STORAGE_KEY);
+  } catch {
+    // Disabled storage: nothing was stored.
+  }
+  setPendingClaimCookie(0);
 }

@@ -43,6 +43,8 @@ export interface SubmitQuizAttemptInput {
   guestClaimToken?: string;
   /** Retry-missed session: the attempt whose misses are being retried (RIN-917). */
   retryOfAttemptId?: string;
+  /** Quick round (RIN-933): `answers[i]` answers quiz question `questionIndices[i]`. */
+  questionIndices?: number[];
 }
 
 export interface AddQuizDiscussionCommentInput {

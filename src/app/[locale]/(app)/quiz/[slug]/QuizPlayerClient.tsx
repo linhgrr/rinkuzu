@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import { useEffect, useReducer, useRef } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytics/client';
 import dynamic from 'next/dynamic';
@@ -28,6 +28,16 @@ import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { StarterQuizIntro } from '@/features/quiz/components/player/StarterQuizIntro';
 import { POST_SIGNIN_STARTER_ENTRY } from '@/shared/constants/starter-quiz';
+import { isQuickRoundEligible } from '@/shared/constants/quick-round';
+import {
+  drawQuickRound,
+  markQuickRoundSeen,
+  readQuickRoundSeen,
+} from '@/features/quiz/lib/quick-round-draw';
+import {
+  QuickRoundChoice,
+  type QuizPlayMode,
+} from '@/features/quiz/components/player/QuickRoundChoice';
 
 function QuizLayoutLoadingFallback() {
   const t = useTranslations('quiz');
@@ -338,7 +348,8 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
-type QuizPlayerStatus = 'loading' | 'ready' | 'error';
+/** `choosing`: a long quiz waits for "Quick round" or "Full quiz" (RIN-933). */
+type QuizPlayerStatus = 'loading' | 'choosing' | 'ready' | 'error';
 
 interface QuizPlayerState {
   quiz: QuizPlayerQuiz | null;
@@ -354,17 +365,27 @@ interface QuizPlayerState {
   showMobileDiscussion: boolean;
   showPremiumModal: boolean;
   resumePrompt: { currentQuestionIndex: number; userAnswers: QuizAnswer[] } | null;
+  /** 1-based question of the saved full-quiz progress, shown on the start choice. */
+  choiceResumeQuestion: number | null;
+  /** Quick round: the quiz question index of each played question (RIN-933). */
+  quickIndices: number[] | null;
 }
 
 type QuizPlayerAction =
   | { type: 'patch'; value: Partial<QuizPlayerState> }
-  | { type: 'loadQuizSuccess'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
+  | {
+      type: 'loadQuizSuccess';
+      quiz: QuizPlayerQuiz;
+      userAnswers: QuizAnswer[];
+      quickIndices?: number[];
+    }
   | {
       type: 'loadQuizWithResume';
       quiz: QuizPlayerQuiz;
       userAnswers: QuizAnswer[];
       resumePrompt: { currentQuestionIndex: number; userAnswers: QuizAnswer[] };
     }
+  | { type: 'showModeChoice'; resumeQuestion: number | null }
   | { type: 'acceptResume' }
   | { type: 'declineResume'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
   | { type: 'loadQuizError'; error: unknown }
@@ -386,6 +407,8 @@ const initialQuizPlayerState: QuizPlayerState = {
   showMobileDiscussion: false,
   showPremiumModal: false,
   resumePrompt: null,
+  choiceResumeQuestion: null,
+  quickIndices: null,
 };
 
 function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): QuizPlayerState {
@@ -402,6 +425,7 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
         error: '',
         showPremiumModal: false,
         resumePrompt: null,
+        quickIndices: action.quickIndices ?? null,
       };
     case 'loadQuizWithResume':
       return {
@@ -414,6 +438,8 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
         showPremiumModal: false,
         resumePrompt: action.resumePrompt,
       };
+    case 'showModeChoice':
+      return { ...state, status: 'choosing', choiceResumeQuestion: action.resumeQuestion };
     case 'acceptResume':
       if (!state.resumePrompt) {
         return state;
@@ -537,6 +563,25 @@ function QuizPremiumState({ onClose, t }: { onClose: () => void; t: (key: string
   );
 }
 
+/** A fresh quick-round draw (RIN-933): the quiz narrowed to 10 questions, unseen first. */
+function quickRoundQuiz(quiz: QuizPlayViewModel, slug: string) {
+  const questionIndices = drawQuickRound(quiz.questions.length, readQuickRoundSeen(slug));
+  const questions = questionIndices.flatMap((index) => {
+    const question = quiz.questions[index];
+    return question ? [question] : [];
+  });
+  return { quiz: { ...quiz, questions, questionCount: questions.length }, questionIndices };
+}
+
+function initialPlayMode(
+  quiz: QuizPlayViewModel | null,
+  mode: string | null | undefined,
+): QuizPlayMode | null {
+  // Retry sessions and short quizzes always play in full; `?mode=` skips the choice.
+  if (!quiz || quiz.retry || !isQuickRoundEligible(quiz.questions.length)) return 'full';
+  return mode === 'quick' || mode === 'full' ? mode : null;
+}
+
 interface QuizPlayerClientProps {
   initialErrorCode: string | null | undefined;
   /** HTTP status of the server-side load failure; the server's text never reaches the client. */
@@ -545,6 +590,8 @@ interface QuizPlayerClientProps {
   slug: string;
   /** `?entry=` from the URL; `post_signin_starter` when /start opened this quiz (RIN-913). */
   entry?: string | null;
+  /** `?mode=quick|full` from the URL: skips the quick-round choice on a long quiz (RIN-933). */
+  mode?: string | null;
 }
 
 // Opened by /start right after sign-in (RIN-913): intro + Skip, tagged completion.
@@ -580,6 +627,7 @@ export default function QuizPlayerClient({
   initialQuiz,
   slug,
   entry,
+  mode,
 }: QuizPlayerClientProps) {
   const t = useTranslations('quiz');
   const { data: session, status: sessionStatus } = useSession();
@@ -593,7 +641,12 @@ export default function QuizPlayerClient({
 
   const sessionEmail = session?.user?.email || undefined;
   const retrySetup = retrySessionSetup(initialQuiz, Boolean(session?.user?.email), t);
-  const progressEnabled = retrySetup.progressEnabled;
+  const [playMode, setPlayMode] = useState(() => initialPlayMode(initialQuiz, mode));
+  // A quick round never reads or overwrites the full quiz's saved progress.
+  const progressEnabled = retrySetup.progressEnabled && playMode !== 'quick';
+  const analyticsMode = playMode === 'quick' ? 'quick' : 'full';
+  const layoutProps =
+    playMode === 'quick' ? { titleBadge: t('quickRound.pill') } : retrySetup.layout;
 
   const { loadProgress, saveProgress, flushSave, clearProgress } = useQuizProgress({
     slug,
@@ -629,8 +682,26 @@ export default function QuizPlayerClient({
         return;
       }
 
+      const announceStart = (questionCount: number) =>
+        captureAnalyticsEvent('quiz_started', {
+          mode: analyticsMode,
+          question_count: questionCount,
+        });
+
       try {
         const data = initialQuiz;
+        if (playMode === 'quick') {
+          const round = quickRoundQuiz(data, slug);
+          const { quiz: quickQuiz, initialAnswers } = createQuizPlayerData(round.quiz, debugLog);
+          dispatch({
+            type: 'loadQuizSuccess',
+            quiz: quickQuiz,
+            userAnswers: initialAnswers,
+            quickIndices: round.questionIndices,
+          });
+          announceStart(quickQuiz.questions.length);
+          return;
+        }
         const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data, debugLog);
 
         let savedProgress: SavedQuizProgress | null = null;
@@ -642,7 +713,17 @@ export default function QuizPlayerClient({
           return;
         }
 
-        if (savedProgress && savedProgress.answeredCount > 0) {
+        const hasSavedProgress = Boolean(savedProgress && savedProgress.answeredCount > 0);
+        if (playMode === null) {
+          dispatch({
+            type: 'showModeChoice',
+            resumeQuestion:
+              savedProgress && hasSavedProgress ? savedProgress.currentQuestionIndex + 1 : null,
+          });
+          return;
+        }
+
+        if (savedProgress && hasSavedProgress) {
           const restoredQuiz = rebuildPlayerQuizFromLayout(
             data,
             savedProgress.questionOrder,
@@ -663,6 +744,7 @@ export default function QuizPlayerClient({
                 userAnswers: savedProgress.userAnswers,
               },
             });
+            announceStart(restoredQuiz.questions.length);
             return;
           }
 
@@ -671,6 +753,7 @@ export default function QuizPlayerClient({
         }
 
         dispatch({ type: 'loadQuizSuccess', quiz: nextQuiz, userAnswers: initialAnswers });
+        announceStart(nextQuiz.questions.length);
       } catch (error: unknown) {
         if (!isActive) {
           return;
@@ -694,6 +777,9 @@ export default function QuizPlayerClient({
     sessionStatus,
     progressEnabled,
     loadProgress,
+    playMode,
+    analyticsMode,
+    slug,
   ]);
 
   const quiz = state.quiz;
@@ -730,14 +816,18 @@ export default function QuizPlayerClient({
     userAnswers: state.userAnswers,
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
     ...retrySetup.submission,
+    ...(state.quickIndices ? { questionIndices: state.quickIndices } : {}),
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
         journey_id: getQuizJourneyId(),
         question_count: quiz?.questions.length ?? 0,
         score,
         authenticated: Boolean(sessionEmail),
+        mode: analyticsMode,
         ...postSignInStarterProperties(entry),
       });
+      // Only a submitted round counts as seen, so the next draw prefers the rest.
+      if (state.quickIndices) markQuickRoundSeen(slug, state.quickIndices);
       // Cancel pending/in-flight autosaves and wait for the DELETE before
       // navigation. This prevents the submit flow from racing the progress
       // cleanup and avoids resurrecting a just-completed attempt.
@@ -839,6 +929,22 @@ export default function QuizPlayerClient({
     return <QuizLoadingState t={t} />;
   }
 
+  if (state.status === 'choosing' && initialQuiz) {
+    return (
+      <QuickRoundChoice
+        slug={slug}
+        title={initialQuiz.title}
+        {...(initialQuiz.description ? { description: initialQuiz.description } : {})}
+        questionCount={initialQuiz.questions.length}
+        resumeQuestion={state.choiceResumeQuestion}
+        onChoose={(chosen) => {
+          dispatch({ type: 'patch', value: { status: 'loading' } });
+          setPlayMode(chosen);
+        }}
+      />
+    );
+  }
+
   if (state.showPremiumModal) {
     return (
       <QuizPremiumState
@@ -883,7 +989,7 @@ export default function QuizPlayerClient({
           submitting={submitting}
           error={state.error}
           notice={starterNotice}
-          {...retrySetup.layout}
+          {...layoutProps}
         />
       )}
 
@@ -931,7 +1037,7 @@ export default function QuizPlayerClient({
             complete: completeSubmit,
           }}
           notice={starterNotice}
-          {...retrySetup.layout}
+          {...layoutProps}
           t={t}
         />
       )}

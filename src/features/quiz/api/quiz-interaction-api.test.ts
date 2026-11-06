@@ -112,6 +112,27 @@ describe('quiz-interaction-api', () => {
     });
   });
 
+  it('sends mode quick and the played question indices for a quick round (RIN-933)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      score: 50,
+      correctAnswers: 1,
+      totalQuestions: 2,
+      attemptId: 'attempt-4',
+    });
+    await submitQuizAttemptViewModel({
+      slug: 'quiz',
+      answers: [1, 0],
+      idempotencyKey: 'idem-4',
+      questionIndices: [7, 2],
+    });
+    expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
+      answers: [1, 0],
+      idempotencyKey: 'idem-4',
+      mode: 'quick',
+      questionIndices: [7, 2],
+    });
+  });
+
   it('loads, saves, and deletes saved progress through the progress route', async () => {
     fetchApiDataMock.mockResolvedValueOnce({
       progress: {

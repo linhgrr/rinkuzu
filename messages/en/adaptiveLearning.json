@@ -245,15 +245,13 @@
   },
   "history": {
     "title": "Exercise History",
-    "loadingFromMongoDB": "Loading from MongoDB...",
-    "noMongoDBData": "No data in MongoDB for this session yet.",
+    "empty": "No exercises in this session yet. A session is saved once you answer at least 1 exercise.",
     "completed": "Completed",
     "step": "Step {step}/{total}",
     "correct": "Correct",
-    "loading": "Loading history...",
-    "loadError": "Failed to load history from MongoDB: {error}",
-    "noSession": "No sessions found in MongoDB.",
-    "sessionSaveHint": "Sessions will be saved after you answer at least one exercise.",
+    "loading": "Loading history…",
+    "loadError": "Couldn't load your history: {error}",
+    "noSession": "No saved sessions yet.",
     "table": {
       "question": "Question",
       "bloom": "Bloom",
@@ -305,7 +303,8 @@
       "limits": "Limits",
       "integrals": "Integrals",
       "advanced": "Advanced"
-    }
+    },
+    "loadError": "Couldn't load your learning path. Please try again."
   },
   "processing": {
     "title": "Analyzing Material",
@@ -494,7 +493,8 @@
     "sessionNotReady": "This learning path is still finishing setup. Please try starting again in a moment.",
     "sessionUnavailable": "We couldn't start the learning session right now. Please wait a bit and try again.",
     "sessionMissing": "We couldn't find this material anymore. Please return to the dashboard and open it again.",
-    "sessionOpenFailed": "We couldn't open this learning session right now."
+    "sessionOpenFailed": "We couldn't open this learning session right now.",
+    "notFound": "We couldn't find this learning session."
   },
   "masteryMatrix": {
     "loading": "Loading mastery matrix...",

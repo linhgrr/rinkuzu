@@ -53,7 +53,7 @@ export const ProcessingStatusCard = ({
       <h1 className="mb-2 text-2xl font-medium tracking-tight text-neutral-900">
         {error ? t('processing.failedTitle') : t('processing.title')}
       </h1>
-      <p className="mb-6 text-sm text-neutral-500">{filename}</p>
+      <p className="mb-6 text-sm text-neutral-500 [overflow-wrap:anywhere]">{filename}</p>
 
       {!error && (
         <div className="mb-8 inline-flex items-center rounded-md border border-line bg-neutral-50 px-4 py-1.5">

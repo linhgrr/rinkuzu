@@ -296,3 +296,18 @@ export function describeApiError(error: unknown): DescribedApiError {
     kind === 'validation' ? readFieldErrors(meta) : [],
   );
 }
+
+const LINK_PROBLEM_KINDS: ReadonlySet<ApiErrorKind> = new Set<ApiErrorKind>([
+  'validation',
+  'not_found',
+  'unknown',
+]);
+
+/**
+ * Emailed-link pages (verify, reset, feedback choices): a bad or expired token is a
+ * `validation`/`not_found` failure and gets the page's own "link invalid or expired" copy;
+ * rate limits, server and network failures get the shared API copy (RIN-756, RIN-980).
+ */
+export function isEmailLinkProblem(error: unknown): boolean {
+  return LINK_PROBLEM_KINDS.has(describeApiError(error).kind);
+}

@@ -26,7 +26,7 @@ export function ExploreSearchInput({
   return (
     <search className="relative block max-w-3xl">
       <HiOutlineSearch
-        className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-ink-muted"
+        className="pointer-events-none absolute left-4 top-1/2 z-10 size-5 -translate-y-1/2 text-ink-muted"
         aria-hidden="true"
       />
       <Input

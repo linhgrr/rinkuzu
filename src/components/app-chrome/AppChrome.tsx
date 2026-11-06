@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import useSWR from 'swr';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { fetchCreditWallet } from '@/features/profile/api/credit-wallet-api';
+import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
 import { ROUTES } from '@/shared/constants/routes';
@@ -33,6 +34,7 @@ const ICON = {
   premium: 'solar:medal-ribbons-star-bold-duotone',
   user: 'solar:user-circle-linear',
   logout: 'solar:logout-2-linear',
+  login: 'solar:login-2-linear',
   search: 'iconoir:search',
 } as const;
 
@@ -115,6 +117,18 @@ interface LogoutButtonProps {
   t: NavTranslate;
 }
 
+/**
+ * Who the chrome is drawing for. `unknown` while the session loads, so neither
+ * the account menu nor Sign in flashes before it is known (RIN-958).
+ */
+type AccountState = 'signed-in' | 'guest' | 'unknown';
+
+interface GuestAuthLinksProps {
+  /** Locale-unprefixed page that sign-in and sign-up return to. */
+  callbackPath: string;
+  t: NavTranslate;
+}
+
 interface AppTopbarProps extends UserMenuDropdownProps {
   collapsed: boolean;
   onToggleSidebar: () => void;
@@ -124,6 +138,8 @@ interface AppTopbarProps extends UserMenuDropdownProps {
   onSelectLocale: (locale: AppLocale) => void;
   creditBalance?: number;
   creditLoading: boolean;
+  account: AccountState;
+  authCallbackPath: string;
 }
 
 interface CreditBalanceBadgeProps {
@@ -151,6 +167,7 @@ interface MobileAppMenuProps {
   open: boolean;
   pathname: string;
   visibleNav: NavEntry[];
+  account: AccountState;
   t: NavTranslate;
   onClose: () => void;
 }
@@ -538,6 +555,20 @@ function LogoutButton({ className, t }: LogoutButtonProps) {
   );
 }
 
+/** What a guest gets in place of the account menu (RIN-958). */
+function GuestAuthLinks({ callbackPath, t }: GuestAuthLinksProps) {
+  return (
+    <>
+      <Link href={withAuthCallback(ROUTES.LOGIN, callbackPath)} className="btn btn-secondary">
+        {t('signIn')}
+      </Link>
+      <Link href={withAuthCallback(ROUTES.REGISTER, callbackPath)} className="btn btn-primary">
+        {t('register')}
+      </Link>
+    </>
+  );
+}
+
 function CreditBalanceBadge({ balance, loading, t }: CreditBalanceBadgeProps) {
   const formattedBalance = balance?.toLocaleString();
   const label = loading
@@ -576,6 +607,8 @@ function AppTopbar({
   onSelectLocale,
   creditBalance,
   creditLoading,
+  account,
+  authCallbackPath,
   avatar,
   avatarInitial,
   displayName,
@@ -682,7 +715,17 @@ function AppTopbar({
         </Link>
 
         <div className="flex items-center gap-2">
-          <CreditBalanceBadge balance={creditBalance} loading={creditLoading} t={t} />
+          {account === 'signed-in' ? (
+            <CreditBalanceBadge balance={creditBalance} loading={creditLoading} t={t} />
+          ) : null}
+          {account === 'guest' ? (
+            <Link
+              href={withAuthCallback(ROUTES.LOGIN, authCallbackPath)}
+              className="btn btn-primary"
+            >
+              {t('signIn')}
+            </Link>
+          ) : null}
           <ButtonBase
             type="button"
             onClick={onToggleMobileMenu}
@@ -739,7 +782,9 @@ function AppTopbar({
           </form>
 
           <div className="flex shrink-0 items-center gap-3">
-            <CreditBalanceBadge balance={creditBalance} loading={creditLoading} t={t} />
+            {account === 'signed-in' ? (
+              <CreditBalanceBadge balance={creditBalance} loading={creditLoading} t={t} />
+            ) : null}
 
             <ButtonBase
               type="button"
@@ -751,19 +796,26 @@ function AppTopbar({
 
             <LanguageDropdown currentLocale={currentLocale} onSelect={onSelectLocale} />
 
-            <UserMenuDropdown
-              {...(avatar !== undefined ? { avatar } : {})}
-              avatarInitial={avatarInitial}
-              {...(displayName !== undefined ? { displayName } : {})}
-              {...(email !== undefined ? { email } : {})}
-              t={t}
-            />
+            {account === 'signed-in' ? (
+              <UserMenuDropdown
+                {...(avatar !== undefined ? { avatar } : {})}
+                avatarInitial={avatarInitial}
+                {...(displayName !== undefined ? { displayName } : {})}
+                {...(email !== undefined ? { email } : {})}
+                t={t}
+              />
+            ) : null}
+            {account === 'guest' ? <GuestAuthLinks callbackPath={authCallbackPath} t={t} /> : null}
+            {account === 'unknown' ? <span className="size-11" aria-hidden="true" /> : null}
           </div>
         </div>
       </div>
     </header>
   );
 }
+
+const MOBILE_ACCOUNT_ROW =
+  'flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left font-home text-body font-semibold text-ink transition-colors hover:bg-accent-soft/60';
 
 function MobileMenuItem({ href, icon, label, active, onNavigate }: MobileMenuItemProps) {
   return (
@@ -824,7 +876,7 @@ function MobileMenuGroup({ entry, pathname, t, onNavigate }: MobileMenuGroupProp
   );
 }
 
-function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenuProps) {
+function MobileAppMenu({ open, pathname, visibleNav, account, t, onClose }: MobileAppMenuProps) {
   if (!open) return null;
 
   return (
@@ -863,11 +915,35 @@ function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenu
             />
           ))}
         </div>
-        <div className="my-3 h-px bg-line" />
-        <LogoutButton
-          className="flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left font-home text-body font-semibold text-ink transition-colors hover:bg-accent-soft/60"
-          t={t}
-        />
+        {account === 'signed-in' ? (
+          <>
+            <div className="my-3 h-px bg-line" />
+            <LogoutButton className={MOBILE_ACCOUNT_ROW} t={t} />
+          </>
+        ) : null}
+        {account === 'guest' ? (
+          <>
+            <div className="my-3 h-px bg-line" />
+            <div className="flex flex-col gap-2">
+              <Link
+                href={withAuthCallback(ROUTES.LOGIN, pathname)}
+                onClick={onClose}
+                className={MOBILE_ACCOUNT_ROW}
+              >
+                <Icon icon={ICON.login} className="size-5" aria-hidden="true" />
+                <span>{t('signIn')}</span>
+              </Link>
+              <Link
+                href={withAuthCallback(ROUTES.REGISTER, pathname)}
+                onClick={onClose}
+                className={MOBILE_ACCOUNT_ROW}
+              >
+                <Icon icon={ICON.user} className="size-5" aria-hidden="true" />
+                <span>{t('register')}</span>
+              </Link>
+            </div>
+          </>
+        ) : null}
       </nav>
     </div>
   );
@@ -893,6 +969,12 @@ export function AppChrome({ children }: AppChromeProps) {
   const mobileMenuOpen = mobileMenuState.pathname === pathname ? mobileMenuState.open : false;
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
+  const account: AccountState =
+    sessionStatus === 'authenticated' && session?.user
+      ? 'signed-in'
+      : sessionStatus === 'unauthenticated'
+        ? 'guest'
+        : 'unknown';
 
   const visibleNav = PRIMARY_NAV.filter(
     (entry) => !entry.requiredRole || entry.requiredRole === userRole,
@@ -938,6 +1020,8 @@ export function AppChrome({ children }: AppChromeProps) {
         onSelectLocale={selectLocale}
         creditBalance={creditData?.wallet.balance}
         creditLoading={creditLoading}
+        account={account}
+        authCallbackPath={pathname}
         {...(avatar !== undefined ? { avatar } : {})}
         avatarInitial={avatarInitial}
         {...(session?.user?.displayName !== undefined
@@ -950,6 +1034,7 @@ export function AppChrome({ children }: AppChromeProps) {
         open={mobileMenuOpen}
         pathname={pathname}
         visibleNav={visibleNav}
+        account={account}
         t={t}
         onClose={() => setMobileMenuState({ pathname, open: false })}
       />

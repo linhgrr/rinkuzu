@@ -60,7 +60,7 @@ export function QuickRoundChoice({
               <Button
                 variant="gradient"
                 size="lg"
-                className="h-auto min-h-12 w-full whitespace-normal bg-brand-action-strong text-white hover:bg-brand-action-strong-hover"
+                className="h-auto min-h-12 w-full whitespace-normal px-4 sm:px-8 bg-brand-action-strong text-white hover:bg-brand-action-strong-hover"
                 onClick={() => onChoose('quick')}
               >
                 <HiOutlineLightningBolt className="mr-2 size-5 shrink-0" aria-hidden="true" />
@@ -69,7 +69,7 @@ export function QuickRoundChoice({
               <Button
                 variant="outline"
                 size="lg"
-                className="h-auto min-h-12 w-full whitespace-normal"
+                className="h-auto min-h-12 w-full whitespace-normal px-4 sm:px-8"
                 onClick={() => onChoose('full')}
               >
                 {t('quickRound.full', { count: questionCount })}

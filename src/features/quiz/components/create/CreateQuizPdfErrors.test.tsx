@@ -10,6 +10,8 @@ import { MobileCreateQuizPage } from './MobileCreateQuizPage';
 
 // RIN-991: a .txt pick showed the "corrupted PDF" copy, and a failed submit
 // put its error above a long form, ~1000px away from the button at 375px.
+// The alert focuses itself in a passive effect, which can run after
+// findByRole has already seen it in the DOM, so focus is awaited (RIN-1101).
 
 const translate = (key: string) => key;
 vi.mock('next-intl', () => ({
@@ -105,7 +107,7 @@ describe('CreateQuizPage (desktop) file and submit errors', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('serviceTemporarilyUnavailable');
     expect(alert.nextElementSibling).toContainElement(submit);
-    expect(alert).toHaveFocus();
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(scrollIntoView).toHaveBeenCalled();
   });
 
@@ -139,7 +141,7 @@ describe('MobileCreateQuizPage file and submit errors', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('serviceTemporarilyUnavailable');
     expect(alert.nextElementSibling).toBe(submit);
-    expect(alert).toHaveFocus();
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(scrollIntoView).toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });

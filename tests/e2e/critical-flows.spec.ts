@@ -538,7 +538,7 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
 
       await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
@@ -584,7 +584,7 @@ test.describe('production critical paths', () => {
         if (await desktopSubmit.isVisible()) {
           await desktopSubmit.click();
         } else {
-          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
         }
 
         await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
@@ -650,7 +650,7 @@ test.describe('production critical paths', () => {
         if (await desktopSubmit.isVisible()) {
           await desktopSubmit.click();
         } else {
-          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
         }
       };
       const resultUrl = new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`);
@@ -783,13 +783,19 @@ test.describe('production critical paths', () => {
       const block = page.getByTestId('starter-quiz-block');
       await expect(block).toBeInViewport();
       await expect(block.getByText(E2E_STARTER_QUIZ.title)).toBeVisible();
-      await expect(page.getByTestId('home-hero-cta')).toHaveAttribute(
-        'href',
-        `/en/quiz/${starterSlug}`,
-      );
+      // RIN-988: the starter is the single primary CTA. No duplicate quiz
+      // button in the hero, and no empty "Continue Learning" card.
+      await expect(page.getByTestId('home-hero-cta')).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Continue Learning' })).toHaveCount(0);
       await expect(
         page.getByRole('link', { name: 'Or personalize learning by uploading a PDF' }),
       ).toHaveAttribute('href', '/en/adaptive');
+      // The email-choices card is in the page flow, never fixed over the cards.
+      const emailChoices = page.getByTestId('marketing-prompt-inline');
+      if ((await emailChoices.count()) > 0) {
+        await expect(emailChoices).not.toHaveCSS('position', 'fixed');
+      }
+      await expect(page.getByTestId('marketing-prompt-docked')).toHaveCount(0);
 
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${starterSlug}(?:[/?#]|$)`)),
@@ -829,7 +835,7 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
       await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=`));
       await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();

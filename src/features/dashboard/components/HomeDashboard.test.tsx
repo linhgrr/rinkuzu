@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { HomeDashboard } from '@/features/dashboard/components/HomeDashboard';
 import type {
   DashboardHomeCopy,
+  DashboardLearningCardViewModel,
   DashboardStarterViewModel,
 } from '@/features/dashboard/types/dashboard-view-model';
 
@@ -20,6 +21,12 @@ vi.mock('@/features/dashboard/components/QuizUploadDropzone', () => ({
   QuizUploadDropzone: () => null,
 }));
 
+vi.mock('@/features/communications/components/MarketingPreferencePrompt', () => ({
+  MarketingPreferencePrompt: ({ placement }: { placement?: string }) => (
+    <aside data-testid={`marketing-prompt-${placement ?? 'docked'}`} />
+  ),
+}));
+
 const section = { title: 'Section', subtitle: 'Subtitle', emptyAction: 'Empty' };
 const copy: DashboardHomeCopy = {
   welcomeTitle: 'Welcome back',
@@ -29,7 +36,6 @@ const copy: DashboardHomeCopy = {
     title: 'Hero',
     description: 'Hero description',
     cta: 'Start learning',
-    starterCta: 'Start a 2-minute quiz',
     adaptiveLink: 'Or upload a PDF',
   },
   starter: {
@@ -40,7 +46,7 @@ const copy: DashboardHomeCopy = {
     questionCount: (count) => `${count} questions`,
   },
   quizBuilder: { title: 'Quiz builder', subtitle: 'From PDF' },
-  continueLearning: section,
+  continueLearning: { title: 'Continue', subtitle: 'Resume' },
   recentOwnedQuizzes: section,
   recentPublicQuizzes: section,
   learningProgress: {
@@ -67,6 +73,7 @@ const starter: DashboardStarterViewModel = {
 function renderDashboard(input: {
   starter: DashboardStarterViewModel | null;
   heroCtaHref: string;
+  continueLearning?: { items: DashboardLearningCardViewModel[]; viewAllHref: string };
 }) {
   return render(
     <NextIntlClientProvider locale="en" messages={{}}>
@@ -101,13 +108,34 @@ describe('HomeDashboard starter quiz', () => {
       '/en/quiz/fake-alt',
     );
 
-    const heroCta = screen.getByTestId('home-hero-cta');
-    expect(heroCta).toHaveAttribute('href', '/en/quiz/fake-starter');
-    expect(heroCta).toHaveTextContent('Start a 2-minute quiz');
-    expect(screen.getByRole('link', { name: 'Or upload a PDF' })).toHaveAttribute(
-      'href',
-      '/en/adaptive',
-    );
+    // RIN-988: the starter card is the single primary CTA. The hero keeps
+    // only the PDF upload as a secondary action, with no duplicate quiz button.
+    expect(screen.queryByTestId('home-hero-cta')).not.toBeInTheDocument();
+    const upload = screen.getByTestId('home-hero-upload');
+    expect(upload).toHaveAttribute('href', '/en/adaptive');
+    expect(upload).toHaveTextContent('Or upload a PDF');
+    expect(upload.className).toContain('btn-secondary');
+  });
+
+  it('hides Continue Learning while there is nothing to continue', () => {
+    renderDashboard({ starter, heroCtaHref: '/quiz/fake-starter' });
+
+    expect(screen.queryByText('Continue')).not.toBeInTheDocument();
+  });
+
+  it('keeps empty quiz sections to secondary actions', () => {
+    renderDashboard({ starter, heroCtaHref: '/quiz/fake-starter' });
+
+    for (const link of screen.getAllByRole('link', { name: 'Empty' })) {
+      expect(link.className).toContain('btn-secondary');
+      expect(link.className).not.toContain('bg-primary');
+    }
+  });
+
+  it('renders the email choices in the page flow, after the dashboard cards', () => {
+    renderDashboard({ starter, heroCtaHref: '/quiz/fake-starter' });
+
+    expect(screen.getByTestId('marketing-prompt-inline')).toBeInTheDocument();
   });
 
   it('renders today’s dashboard once the learner has graduated', () => {
@@ -117,6 +145,31 @@ describe('HomeDashboard starter quiz', () => {
     const heroCta = screen.getByTestId('home-hero-cta');
     expect(heroCta).toHaveAttribute('href', '/en/adaptive');
     expect(heroCta).toHaveTextContent('Start learning');
-    expect(screen.queryByRole('link', { name: 'Or upload a PDF' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('home-hero-upload')).not.toBeInTheDocument();
+  });
+
+  it('shows Continue Learning once there is something to continue', () => {
+    renderDashboard({
+      starter: null,
+      heroCtaHref: '/adaptive',
+      continueLearning: {
+        items: [
+          {
+            id: 'fake-item',
+            title: 'Fake in-progress quiz',
+            category: 'In progress',
+            progress: 40,
+            timeLabel: 'Today',
+            href: '/quiz/fake-in-progress',
+            tone: 'warm',
+            isAi: false,
+          },
+        ],
+        viewAllHref: '/my-quizzes',
+      },
+    });
+
+    expect(screen.getByText('Continue')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Fake in-progress quiz/ })).toBeInTheDocument();
   });
 });

@@ -14,28 +14,16 @@ import type {
   RecordQuizAttemptProgressData,
 } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import { QuizAttemptIdempotencyConflictError } from '@/errors/quiz-attempt';
-import { toUtcDateKey } from '@/lib/date-serialization';
-import { retainRecentWeeklyActivity } from '@/lib/learning-progress-retention.mjs';
+import {
+  applySubmittedAttemptToUserProgress,
+  buildQuestionProgressWrites,
+} from '@/repositories/quiz-attempt-progress-writes';
 import { AnswerPersistenceMapper } from '@/repositories/mappers/AnswerPersistenceMapper';
-
-interface DailyActivity {
-  questionsReviewed: number;
-  xpEarned: number;
-  correctCount: number;
-  totalCount: number;
-}
-
-interface MutableUserProgress {
-  isNew: boolean;
-  totalXp: number;
-  totalQuizzesTaken: number;
-  currentStreak: number;
-  longestStreak: number;
-  lastActiveDate: Date;
-  streakFreezeCount: number;
-  weeklyActivity: Map<string, DailyActivity>;
-  averageAccuracy: number;
-}
+import { QuizPersistenceMapper } from '@/repositories/mappers/QuizPersistenceMapper';
+import type { QuizQuestionPersistenceRecord } from '@/repositories/types/QuizPersistence';
+import type { SelectedAnswerPersistenceRecord } from '@/repositories/types/AnswerPersistence';
+import { evaluateQuizAttempt } from '@/services/quiz/quiz-attempt-evaluation';
+import { logger } from '@/lib/logger';
 
 interface StoredSubmittedAttempt {
   _id: unknown;
@@ -87,24 +75,7 @@ type AttemptIdempotencyFilter =
   | UserAttemptIdempotencyFilter
   | GuestAttemptIdempotencyFilter
   | GuestClaimTokenAttemptIdempotencyFilter;
-type QuestionProgressWrites = Parameters<typeof QuestionProgress.bulkWrite>[0];
-
 const TRANSACTION_ATTEMPTS = 2;
-
-function correctIndexesFrom(
-  question: RecordQuizAttemptProgressData['wrongQuestions'][number]['question'],
-): number[] {
-  if (question.type === 'single') {
-    if (!Number.isInteger(question.correctIndex)) {
-      throw new TypeError('Single-choice question.correctIndex is required');
-    }
-    return [question.correctIndex];
-  }
-  if (!question.correctIndexes?.length) {
-    throw new TypeError('Multiple-choice question.correctIndexes is required');
-  }
-  return question.correctIndexes;
-}
 
 function createSubmissionDigest(data: RecordQuizAttemptProgressData): string {
   return createHash('sha256')
@@ -183,122 +154,6 @@ async function findExistingAttempt(
     .lean<StoredSubmittedAttempt>();
 }
 
-function buildQuestionProgressWrites(
-  data: RecordQuizAttemptProgressData,
-  now: Date,
-): QuestionProgressWrites {
-  const uniqueWrongQuestions = new Map(
-    data.wrongQuestions.map((wrong) => [wrong.questionId, wrong]),
-  );
-
-  return Array.from(uniqueWrongQuestions.values()).map((wrong) => ({
-    updateOne: {
-      filter: {
-        userId: data.userId,
-        quizSlug: data.quizSlug,
-        questionId: wrong.questionId,
-      },
-      update: {
-        $setOnInsert: {
-          userId: data.userId,
-          quizSlug: data.quizSlug,
-          questionId: wrong.questionId,
-          questionRef: {
-            text: wrong.question.question,
-            options: wrong.question.options,
-            correctIndexes: correctIndexesFrom(wrong.question),
-          },
-          srsLevel: 0,
-          interval: 0,
-          easeFactor: 2.5,
-          nextReviewDate: now,
-          lastReviewDate: null,
-          correctStreak: 0,
-          totalReviews: 0,
-          totalCorrect: 0,
-          history: [],
-        },
-      },
-      upsert: true,
-    },
-  }));
-}
-
-function applySubmittedAttemptToUserProgress(
-  progress: MutableUserProgress,
-  data: Pick<AuthenticatedQuizAttemptSubmission, 'correctAnswers' | 'totalQuestions'>,
-  now: Date,
-): void {
-  const xpGain = data.correctAnswers * 10;
-  progress.totalXp += xpGain;
-  progress.totalQuizzesTaken += 1;
-
-  const lastActive = progress.isNew ? null : new Date(progress.lastActiveDate);
-  const todayKey = toUtcDateKey(now, 'attempt.takenAt');
-  const lastActiveKey = lastActive ? toUtcDateKey(lastActive, 'userProgress.lastActiveDate') : null;
-
-  if (todayKey !== lastActiveKey) {
-    if (lastActiveKey) {
-      const yesterday = new Date(now);
-      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-      const yesterdayKey = toUtcDateKey(yesterday, 'yesterday');
-
-      if (lastActiveKey === yesterdayKey) {
-        progress.currentStreak += 1;
-      } else {
-        const twoDaysAgo = new Date(now);
-        twoDaysAgo.setUTCDate(twoDaysAgo.getUTCDate() - 2);
-        const twoDaysAgoKey = toUtcDateKey(twoDaysAgo, 'twoDaysAgo');
-
-        if (lastActiveKey === twoDaysAgoKey && progress.streakFreezeCount > 0) {
-          progress.streakFreezeCount -= 1;
-          progress.currentStreak += 1;
-        } else {
-          progress.currentStreak = 1;
-        }
-      }
-    } else {
-      progress.currentStreak = 1;
-    }
-
-    progress.lastActiveDate = now;
-    progress.longestStreak = Math.max(progress.longestStreak, progress.currentStreak);
-  }
-
-  const currentActivity = progress.weeklyActivity.get(todayKey) ?? {
-    questionsReviewed: 0,
-    xpEarned: 0,
-    correctCount: 0,
-    totalCount: 0,
-  };
-  currentActivity.questionsReviewed += data.totalQuestions;
-  currentActivity.xpEarned += xpGain;
-  currentActivity.correctCount += data.correctAnswers;
-  currentActivity.totalCount += data.totalQuestions;
-  progress.weeklyActivity.set(todayKey, currentActivity);
-
-  const last7Days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(now);
-    date.setUTCDate(date.getUTCDate() - (6 - index));
-    return toUtcDateKey(date, 'weeklyActivity.date');
-  });
-  let totalCorrectWeek = 0;
-  let totalQuestionsWeek = 0;
-  for (const dayKey of last7Days) {
-    const activity = progress.weeklyActivity.get(dayKey);
-    if (activity) {
-      totalCorrectWeek += activity.correctCount;
-      totalQuestionsWeek += activity.totalCount;
-    }
-  }
-  progress.averageAccuracy =
-    totalQuestionsWeek > 0 ? Math.round((totalCorrectWeek / totalQuestionsWeek) * 100) : 0;
-  progress.weeklyActivity = retainRecentWeeklyActivity(
-    progress.weeklyActivity,
-    progress.lastActiveDate,
-  );
-}
-
 async function createAttempt(
   data: RecordQuizAttemptProgressData,
   submissionDigest: string,
@@ -366,10 +221,49 @@ async function recordAuthenticatedProgress(
   await QuizProgress.deleteOne({ userId: data.userId, quiz: data.quizId }).session(session);
 }
 
+interface ClaimedAttemptSnapshot {
+  slug: string;
+  questions: QuizQuestionPersistenceRecord[];
+}
+
 interface ClaimedAttemptRecord {
   _id: unknown;
   correctAnswers: number;
   totalQuestions: number;
+  quizSnapshot: ClaimedAttemptSnapshot;
+  answers: SelectedAnswerPersistenceRecord[];
+}
+
+interface ClaimedGuestAttempt {
+  id: string;
+  record: ClaimedAttemptRecord;
+}
+
+/**
+ * RIN-1028: the review-queue write a signed-in submit makes, for a claimed
+ * attempt. Wrong questions come from the same evaluation a submit uses, over
+ * the attempt's own snapshot (a retry or quick round already holds only the
+ * played questions, in answer order), and the same `$setOnInsert` writes:
+ * existing QuestionProgress is never touched.
+ */
+async function recordClaimedQuestionProgress(
+  userId: string,
+  claimed: ClaimedGuestAttempt,
+  now: Date,
+): Promise<void> {
+  const { quizSnapshot, answers } = claimed.record;
+  const questions = quizSnapshot.questions.map((question, index) =>
+    QuizPersistenceMapper.toQuestionEntity(question, index),
+  );
+  const { wrongQuestions } = evaluateQuizAttempt(
+    questions,
+    answers.map(AnswerPersistenceMapper.toEntity),
+  );
+  const writes = buildQuestionProgressWrites(
+    { userId, quizSlug: quizSnapshot.slug, wrongQuestions },
+    now,
+  );
+  if (writes.length > 0) await QuestionProgress.bulkWrite(writes, { ordered: false });
 }
 
 /**
@@ -383,7 +277,7 @@ async function claimOneGuestAttempt(
   now: Date,
   claimableSince: Date,
   session: ClientSession,
-): Promise<string | null> {
+): Promise<ClaimedGuestAttempt | null> {
   const claimed = await AttemptModel.findOneAndUpdate(
     {
       guestClaimTokenHash: tokenHash,
@@ -392,7 +286,18 @@ async function claimOneGuestAttempt(
       takenAt: { $gte: claimableSince },
     },
     { $set: { user: userId, claimedAt: now }, $unset: { guestClaimTokenHash: '' } },
-    { new: true, projection: { _id: 1, correctAnswers: 1, totalQuestions: 1 }, session },
+    {
+      new: true,
+      projection: {
+        _id: 1,
+        correctAnswers: 1,
+        totalQuestions: 1,
+        'quizSnapshot.slug': 1,
+        'quizSnapshot.questions': 1,
+        answers: 1,
+      },
+      session,
+    },
   ).lean<ClaimedAttemptRecord>();
   if (!claimed) return null;
 
@@ -402,7 +307,7 @@ async function claimOneGuestAttempt(
   userProgress ??= new UserProgress({ userId });
   applySubmittedAttemptToUserProgress(userProgress, claimed, now);
   await userProgress.save({ session });
-  return serializeId(claimed._id, 'attempt._id');
+  return { id: serializeId(claimed._id, 'attempt._id'), record: claimed };
 }
 
 async function recordSubmissionTransaction(
@@ -473,10 +378,24 @@ export class QuizAttemptProgressRepository
     const claimedIds: string[] = [];
     try {
       for (const tokenHash of new Set(tokenHashes)) {
-        const claimedId = await session.withTransaction(async () =>
+        const claimed = await session.withTransaction(async () =>
           claimOneGuestAttempt(userId, tokenHash, now, claimableSince, session),
         );
-        if (claimedId) claimedIds.push(claimedId);
+        if (!claimed) continue;
+        claimedIds.push(claimed.id);
+        // After the commit, on its own: a failed write here would abort the claim
+        // transaction, and the claim must stand without it (RIN-1028 AC5).
+        try {
+          await recordClaimedQuestionProgress(userId, claimed, now);
+        } catch (error) {
+          logger.warn(
+            {
+              attemptId: claimed.id,
+              errorClass: error instanceof Error ? error.name : typeof error,
+            },
+            'Claimed guest attempt saved without review-queue progress',
+          );
+        }
       }
     } finally {
       await session.endSession();

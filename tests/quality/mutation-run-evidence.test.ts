@@ -46,6 +46,7 @@ import {
 import {
   executeMutationGate,
   parseMutationGateArgs,
+  moveFile,
   resolveMutationShardCount,
   resolveShardTimeoutMs,
   resolveStrykerTimeoutMs,
@@ -1684,5 +1685,35 @@ describe('sharded full mutation campaign (RIN-889)', () => {
     ]);
     expect(meta.shards[3].error).toContain('campaign budget');
     expect(meta.shards.every((s: { vitestRelated: boolean }) => s.vitestRelated)).toBe(true);
+  });
+});
+
+describe('moveFile', () => {
+  const exdev = () => Object.assign(new Error('EXDEV'), { code: 'EXDEV' });
+
+  it('falls back to copy and remove when rename crosses volumes', () => {
+    const calls: string[] = [];
+    moveFile('a', 'b', {
+      renameSync: () => {
+        throw exdev();
+      },
+      copyFileSync: (from, to) => void calls.push(`copy ${String(from)} ${String(to)}`),
+      rmSync: (from) => void calls.push(`rm ${String(from)}`),
+    });
+    expect(calls).toEqual(['copy a b', 'rm a']);
+  });
+
+  it('rethrows other rename errors without copying', () => {
+    const copy: string[] = [];
+    expect(() =>
+      moveFile('a', 'b', {
+        renameSync: () => {
+          throw Object.assign(new Error('boom'), { code: 'EACCES' });
+        },
+        copyFileSync: () => void copy.push('x'),
+        rmSync: () => undefined,
+      }),
+    ).toThrow('boom');
+    expect(copy).toEqual([]);
   });
 });

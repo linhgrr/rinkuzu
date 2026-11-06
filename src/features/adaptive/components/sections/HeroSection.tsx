@@ -153,10 +153,10 @@ export const HeroSection = ({
           ) : null}
           {subject && processingRuntime ? (
             <>
-              <p className="mt-2 font-home text-sm leading-normal text-ink-muted">
+              <p className="mt-1.5 font-home text-xs leading-4 text-ink-muted">
                 {t('processingReassurance')}
               </p>
-              <div className="mt-4 flex flex-col items-stretch gap-2 sm:mt-5 sm:flex-row sm:items-center sm:gap-5">
+              <div className="mt-3 flex flex-col items-stretch gap-2 sm:mt-4 sm:flex-row sm:items-center sm:gap-5">
                 <Button onClick={() => onViewProcessing?.(subject)} className={heroActionClass}>
                   {t('viewProcessing')}
                 </Button>

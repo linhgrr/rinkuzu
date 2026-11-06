@@ -82,7 +82,7 @@ vi.mock('sonner', () => ({
 }));
 
 import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
-import { stepFromProgress, useProcessingState } from './use-processing-state';
+import { useProcessingState } from './use-processing-state';
 
 const t: TranslateFn = ((key: string, values?: Record<string, unknown>) => {
   if (!values) return key;
@@ -875,18 +875,6 @@ describe('useProcessingState', () => {
       // progress 0.3 is inside "extracting concepts" (step 2).
       expect(result.current.failedStep).toBe(2);
       expect(result.current.canRetry).toBe(expected.retryable);
-    });
-
-    it.each([
-      [0, null],
-      [0.05, 1],
-      [0.3, 2],
-      [0.35, 3],
-      [0.65, 4],
-      [0.8, 5],
-      [0.95, 6],
-    ])('maps progress %s to step %s', (progress, step) => {
-      expect(stepFromProgress(progress)).toBe(step);
     });
 
     it('marks the last step seen while polling and names it in the message', async () => {

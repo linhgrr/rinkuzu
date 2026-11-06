@@ -102,6 +102,9 @@ const ProcessingStepList = ({ currentStep, failedStep, steps, t }: StepListProps
 );
 
 const ACTION_BUTTON_CLASS = 'min-h-11 w-full gap-2 px-6 text-sm font-medium sm:w-auto';
+// Secondary recovery actions keep the control border token the design contract asks for.
+const actionButtonClass = (variant: 'primary' | 'secondary') =>
+  variant === 'secondary' ? `${ACTION_BUTTON_CLASS} border-control-border` : ACTION_BUTTON_CLASS;
 
 const ProcessingFailureButtons = ({
   action,
@@ -113,7 +116,7 @@ const ProcessingFailureButtons = ({
   t,
 }: ProcessingFailureActions & { action: ProcessingErrorState['action']; t: TranslateFn }) => {
   const backToLibrary = (variant: 'primary' | 'secondary') => (
-    <Button variant={variant} onClick={onBackToLibrary} className={ACTION_BUTTON_CLASS}>
+    <Button variant={variant} onClick={onBackToLibrary} className={actionButtonClass(variant)}>
       <HiOutlineArrowLeft data-icon="back" aria-hidden="true" className="size-4" />
       {t('processing.backToLibrary')}
     </Button>
@@ -121,7 +124,7 @@ const ProcessingFailureButtons = ({
   // Label and icon say what the button does (RIN-809): upload opens the upload form for a
   // new file; only "Try again" re-runs this job.
   const uploadAgain = (variant: 'primary' | 'secondary') => (
-    <Button variant={variant} onClick={onUploadAgain} className={ACTION_BUTTON_CLASS}>
+    <Button variant={variant} onClick={onUploadAgain} className={actionButtonClass(variant)}>
       <HiOutlineCloudUpload data-icon="upload" aria-hidden="true" className="size-4" />
       {t('processing.uploadAgain')}
     </Button>

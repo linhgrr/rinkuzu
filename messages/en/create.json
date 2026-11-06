@@ -78,6 +78,7 @@
   "pdfTooManyPages": "This PDF has {pages} pages. Your current plan supports up to {maxPages} pages.",
   "pdfTooLarge": "This file exceeds {size}MB. Compress the PDF or reduce image quality and try again.",
   "pdfUnreadable": "We could not read this PDF. Check that it is not corrupted or password-protected.",
+  "pdfWrongType": "Only PDF files are supported. Choose a .pdf file.",
   "hidePDFPreview": "Hide PDF Preview",
   "showPDFPreview": "Show PDF Preview",
   "createQuizBackground": "Create Quiz",

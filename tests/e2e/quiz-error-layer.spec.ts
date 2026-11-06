@@ -195,7 +195,11 @@ test.describe('quiz API error layer (RIN-805)', () => {
     await page.goto(`/vi/quiz/${slug}`);
     await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
     await expect(page.getByText(viQuiz.premiumUnlockDescription)).toBeVisible();
-    await expect(page.getByRole('button', { name: viQuiz.premiumUnlockButton })).toBeVisible();
+    // RIN-1014: at 0 credits the unlock is disabled and labelled, with the balance shown.
+    await expect(page.getByRole('button', { name: viQuiz.premiumNotEnoughCredits })).toBeDisabled();
+    await expect(
+      page.getByText(viQuiz.premiumCreditBalance.replace('{count}', '0'), { exact: true }),
+    ).toBeVisible();
     for (const errorTitle of ERROR_TITLES) {
       await expect(page.getByRole('heading', { name: errorTitle, exact: true })).toHaveCount(0);
     }

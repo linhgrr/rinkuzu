@@ -742,7 +742,7 @@ test.describe('production critical paths', () => {
           .click();
         const isMobile = (page.viewportSize()?.width ?? 1280) < 768;
         if (isMobile) {
-          await page.getByRole('button', { name: /complete \(1\/10 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/10 answered\)/i }).click();
         } else {
           for (let step = 0; step < 9; step += 1) {
             await page.getByRole('button', { name: 'Next', exact: true }).click();

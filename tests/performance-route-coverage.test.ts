@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -44,7 +45,7 @@ const listAppRoutes = () => {
 let fixtureRoot = '';
 
 beforeAll(() => {
-  fixtureRoot = fs.mkdtempSync(path.join(repoRoot, '.perf-route-coverage-test-'));
+  fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-route-coverage-test-'));
   const chunkPath = path.join(fixtureRoot, chunkSource);
   fs.mkdirSync(path.dirname(chunkPath), { recursive: true });
   fs.writeFileSync(chunkPath, 'console.log("route")');
@@ -100,6 +101,12 @@ const withoutPatternToken = (token: string) => {
 
 describe('.size-limit.json route coverage', () => {
   const routes = listAppRoutes();
+
+  // RIN-1066: a fixture inside the repo root crashed the gate's parallel `eslint .` walk.
+  it('keeps its fixture outside the repository tree', () => {
+    const relative = path.relative(repoRoot, fixtureRoot);
+    expect(relative.startsWith('..') || path.isAbsolute(relative)).toBe(true);
+  });
 
   it('derives route ids the way the Next.js build reports them', () => {
     expect(routes).toContain('/[locale]');

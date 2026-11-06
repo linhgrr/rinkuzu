@@ -750,7 +750,7 @@ test.describe('production critical paths', () => {
           await page.getByRole('button', { name: 'Submit Quiz', exact: true }).click();
         }
         await page.getByRole('dialog').getByRole('button', { name: 'Submit', exact: true }).click();
-        await page.waitForURL(new RegExp(`/en/quiz/${longSlug}/result\?attemptId=`));
+        await page.waitForURL(new RegExp(`/en/quiz/${longSlug}/result\\?attemptId=`));
 
         // AC3: the quick result and its next step.
         await expect(

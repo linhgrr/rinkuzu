@@ -81,6 +81,34 @@ describe('useQuizSubmission', () => {
     expect(onSubmitSuccess).toHaveBeenCalledWith('attempt-1', 100);
   });
 
+  it('submits a quick round with its played question indices (RIN-933)', async () => {
+    submitAttemptMock.mockResolvedValueOnce({
+      attemptId: 'attempt-1',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+    const { result } = renderHook(() =>
+      useQuizSubmission({
+        slug: 'architecture',
+        quiz: { questions: [{ type: 'single' }] },
+        userAnswers: [1],
+        sessionEmail: 'learner@example.test',
+        questionIndices: [12],
+        onSubmitSuccess: vi.fn(),
+        onSubmitError: vi.fn(),
+        mapAnswersToOriginalOrder: (_quiz, mappedAnswers) => mappedAnswers,
+        isQuestionAnswered: (_question, answer) => answer !== -1,
+      }),
+    );
+
+    await act(async () => expect(await result.current.completeSubmit()).toBe(true));
+
+    expect(submitAttemptMock).toHaveBeenCalledWith(
+      expect.objectContaining({ answers: [1], questionIndices: [12] }),
+    );
+  });
+
   it('sends a guest claim token, no email, reuses it on retry and stores it (RIN-912)', async () => {
     submitAttemptMock.mockRejectedValueOnce(new Error('temporary')).mockResolvedValueOnce({
       attemptId: 'attempt-1',

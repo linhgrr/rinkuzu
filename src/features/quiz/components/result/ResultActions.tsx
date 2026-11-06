@@ -12,6 +12,7 @@ import {
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { cn } from '@/lib/utils';
+import { QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
 
 /** Analytics campaign for the week-1 return loop (RIN-911); events carry nothing else but `missed_count`. */
 const REVIEW_CAMPAIGN = 'w1-review';
@@ -28,17 +29,21 @@ interface ResultActionsProps {
   nextQuiz: { slug: string; title: string } | null;
   viewer: ResultViewer;
   contentLocked: boolean;
+  /** Result of a quick round (RIN-933): "Another 10" and "Full quiz" replace the redo link. */
+  quickRound?: boolean;
 }
 
-type PrimaryAction = 'retry' | 'another' | 'home';
+type PrimaryAction = 'retry' | 'another' | 'quickAnother' | 'home';
 
 function choosePrimary(
   canPersonalize: boolean,
   missedCount: number,
   hasNextQuiz: boolean,
+  quickRound: boolean,
 ): PrimaryAction {
+  if (canPersonalize && missedCount > 0) return 'retry';
+  if (quickRound) return 'quickAnother';
   if (!canPersonalize) return 'home';
-  if (missedCount > 0) return 'retry';
   return hasNextQuiz ? 'another' : 'home';
 }
 
@@ -55,12 +60,17 @@ export function ResultActions({
   nextQuiz,
   viewer,
   contentLocked,
+  quickRound = false,
 }: ResultActionsProps) {
   const t = useTranslations('quiz.resultActions');
   const tQuiz = useTranslations('quiz');
   const encodedSlug = routePathSegment(slug);
   const canPersonalize = viewer === 'signed_in' && !contentLocked;
-  const primary = choosePrimary(canPersonalize, missedCount, nextQuiz !== null);
+  const primary = choosePrimary(canPersonalize, missedCount, nextQuiz !== null, quickRound);
+  const quickAnother = {
+    href: `/quiz/${encodedSlug}?mode=quick`,
+    label: tQuiz('quickRound.another', { count: QUICK_ROUND_SIZE }),
+  };
   const analytics = { campaign: REVIEW_CAMPAIGN, missed_count: missedCount };
 
   let primaryNode;
@@ -86,6 +96,12 @@ export function ResultActions({
         {t('tryAnother')}
       </Link>
     );
+  } else if (primary === 'quickAnother') {
+    primaryNode = (
+      <Link href={quickAnother.href} className={PRIMARY_LINK}>
+        {quickAnother.label}
+      </Link>
+    );
   } else {
     primaryNode = (
       <Link href="/" className={PRIMARY_LINK}>
@@ -95,6 +111,8 @@ export function ResultActions({
   }
 
   const showHomeAsSecondary = primary !== 'home' || viewer === 'pending';
+  // Three quick-round secondaries stack; two sit side by side from 400 px.
+  const stackSecondaries = !showHomeAsSecondary || (quickRound && primary !== 'quickAnother');
 
   return (
     <div className="mx-auto mb-8 flex w-full max-w-md flex-col gap-3">
@@ -102,12 +120,20 @@ export function ResultActions({
       <div
         className={cn(
           'grid gap-3',
-          showHomeAsSecondary ? 'grid-cols-1 min-[400px]:grid-cols-2' : 'grid-cols-1',
+          stackSecondaries ? 'grid-cols-1' : 'grid-cols-1 min-[400px]:grid-cols-2',
         )}
       >
-        <Link href={`/quiz/${encodedSlug}`} className={SECONDARY_LINK}>
-          {tQuiz('redo')}
-        </Link>
+        {quickRound ? (
+          <QuickRoundSecondaries
+            another={primary === 'quickAnother' ? null : quickAnother}
+            fullHref={`/quiz/${encodedSlug}?mode=full`}
+            fullLabel={tQuiz('quickRound.fullQuiz')}
+          />
+        ) : (
+          <Link href={`/quiz/${encodedSlug}`} className={SECONDARY_LINK}>
+            {tQuiz('redo')}
+          </Link>
+        )}
         {showHomeAsSecondary ? (
           <Link href="/" className={SECONDARY_LINK}>
             {tQuiz('backHome')}
@@ -116,6 +142,29 @@ export function ResultActions({
       </div>
       {canPersonalize ? <ReviewEmailOptIn attemptId={attemptId} missedCount={missedCount} /> : null}
     </div>
+  );
+}
+
+function QuickRoundSecondaries({
+  another,
+  fullHref,
+  fullLabel,
+}: {
+  another: { href: string; label: string } | null;
+  fullHref: string;
+  fullLabel: string;
+}) {
+  return (
+    <>
+      {another ? (
+        <Link href={another.href} className={SECONDARY_LINK}>
+          {another.label}
+        </Link>
+      ) : null}
+      <Link href={fullHref} className={SECONDARY_LINK}>
+        {fullLabel}
+      </Link>
+    </>
   );
 }
 

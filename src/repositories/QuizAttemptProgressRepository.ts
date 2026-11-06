@@ -215,6 +215,9 @@ async function recordAuthenticatedProgress(
   applySubmittedAttemptToUserProgress(userProgress, data, now);
   await userProgress.save({ session });
 
+  // A quick round is 10 of the quiz's questions: the learner's saved full-quiz
+  // progress (resume) stays where it was (RIN-937).
+  if (data.mode === 'quick') return;
   await QuizProgress.deleteOne({ userId: data.userId, quiz: data.quizId }).session(session);
 }
 

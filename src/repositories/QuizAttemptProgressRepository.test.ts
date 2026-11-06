@@ -189,6 +189,17 @@ describe('QuizAttemptProgressRepository', () => {
     expect(session.endSession).toHaveBeenCalledOnce();
   });
 
+  it('keeps the saved full-quiz progress when a quick round is submitted (RIN-937)', async () => {
+    await new QuizAttemptProgressRepository().recordSubmittedAttempt({
+      ...submission,
+      mode: 'quick',
+      questionIndices: [16],
+    });
+
+    expect(userProgress.save).toHaveBeenCalledWith({ session });
+    expect(modelMocks.quizProgressDeleteOne).not.toHaveBeenCalled();
+  });
+
   it('stores a quick round and binds its idempotency key to the played indices (RIN-936)', async () => {
     const quick = { ...submission, mode: 'quick' as const, questionIndices: [16] };
 

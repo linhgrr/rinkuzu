@@ -164,6 +164,70 @@ describe('AppChrome', () => {
       expect(screen.queryByRole('link', { name: 'signIn' })).not.toBeInTheDocument();
     });
 
+    it('gives a guest no bell, a logo to the landing page and only entries they can open (RIN-978)', () => {
+      sessionState.current = { data: null, status: 'unauthenticated' } satisfies SessionState;
+      routeState.pathname = '/quizzes';
+      const { container } = renderChrome();
+
+      expect(screen.queryByRole('button', { name: 'Notifications' })).not.toBeInTheDocument();
+      screen
+        .getAllByRole('link', { name: 'RinKuzu' })
+        .forEach((link) => expect(link).toHaveAttribute('href', '/'));
+
+      const sidebar = container.querySelector('[data-app-sidebar]') as HTMLElement;
+      for (const hidden of ['home', 'myQuizzes', 'review', 'history', 'bookmarks', 'settings']) {
+        expect(within(sidebar).queryByRole('link', { name: hidden })).not.toBeInTheDocument();
+      }
+      expect(within(sidebar).getByRole('link', { name: /createQuiz/ })).toHaveAttribute(
+        'href',
+        '/login?callbackUrl=%2Fcreate',
+      );
+      expect(within(sidebar).getByRole('link', { name: /createQuiz/ })).toHaveAccessibleName(
+        'createQuiz (signInRequired)',
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'openMenu' }));
+      const mobileMenu = screen.getByRole('navigation', { name: 'mainNavigation' });
+      expect(within(mobileMenu).queryByRole('link', { name: 'history' })).not.toBeInTheDocument();
+      expect(within(mobileMenu).getByRole('link', { name: /adaptiveUpload/ })).toHaveAttribute(
+        'href',
+        '/login?callbackUrl=%2Fadaptive%2Fupload',
+      );
+    });
+
+    it('keeps the bell, dashboard logo and full navigation for a signed-in learner', () => {
+      const { container } = renderChrome();
+
+      expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
+      screen
+        .getAllByRole('link', { name: 'RinKuzu' })
+        .forEach((link) => expect(link).toHaveAttribute('href', '/dashboard'));
+      const sidebar = container.querySelector('[data-app-sidebar]') as HTMLElement;
+      expect(within(sidebar).getByRole('link', { name: 'history' })).toHaveAttribute(
+        'href',
+        '/history',
+      );
+      expect(within(sidebar).getByRole('link', { name: 'createQuiz' })).toHaveAttribute(
+        'href',
+        '/create',
+      );
+    });
+
+    it.each([
+      ['guest', { data: null, status: 'unauthenticated' } satisfies SessionState],
+      ['learner', SIGNED_IN],
+    ])('plays a quiz without the sidebar on desktop, as on mobile, for a %s', (_who, state) => {
+      sessionState.current = state;
+      routeState.pathname = '/quiz/some-quiz';
+      const { container } = renderChrome();
+
+      expect(container.querySelector('[data-app-sidebar]')).not.toBeInTheDocument();
+      expect(container.querySelector('#app-main-content')?.className).not.toMatch(
+        /mainContent(Expanded|Collapsed)/,
+      );
+      expect(screen.queryByRole('button', { name: 'Collapse sidebar' })).not.toBeInTheDocument();
+    });
+
     it('keeps the account menu and Log out for a signed-in learner', () => {
       renderChrome();
 

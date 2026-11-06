@@ -9,7 +9,7 @@ import useSWR from 'swr';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { fetchCreditWallet } from '@/features/profile/api/credit-wallet-api';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
-import { toBrowserPath } from '@/lib/routing/pathname';
+import { matchesPrefix, toBrowserPath } from '@/lib/routing/pathname';
 import { DESKTOP_BOTTOM_NAV, DESKTOP_PRIMARY_NAV } from '@/shared/constants/nav';
 import { ROUTES } from '@/shared/constants/routes';
 import { ButtonBase } from '@/components/ui/ButtonBase';
@@ -18,6 +18,7 @@ import { resetAnalyticsIdentity } from '@/lib/analytics/client';
 import { FloatingSupportButton } from '@/features/communications/components/FloatingSupportButton';
 import { MarketingPreferencePrompt } from '@/features/communications/components/MarketingPreferencePrompt';
 import styles from './AppChromeLayout.module.css';
+import { toGuestNav, type NavEntry } from './guest-nav';
 
 const ICON = {
   home: 'material-symbols:home-outline-rounded',
@@ -36,27 +37,12 @@ const ICON = {
   logout: 'solar:logout-2-linear',
   login: 'solar:login-2-linear',
   search: 'iconoir:search',
+  lock: 'solar:lock-keyhole-minimalistic-linear',
 } as const;
 
 // Single source of truth: sub-item row height. The sliding active indicator
 // strides by this value, so both must stay in sync.
 const SUB_ITEM_HEIGHT_PX = 40;
-
-interface NavSubItem {
-  href: string;
-  labelKey: string;
-  matchPrefix?: string;
-}
-
-interface NavEntry {
-  id: string;
-  labelKey: string;
-  icon: string;
-  href?: string;
-  matchPrefix?: string;
-  items?: NavSubItem[];
-  requiredRole?: 'admin';
-}
 
 type NavTranslate = (key: string) => string;
 type AppLocale = 'en' | 'vi';
@@ -65,10 +51,17 @@ interface ShellIconProps {
   name: string;
 }
 
+interface LockedMarkProps {
+  label: string | null;
+  iconHidden?: boolean;
+}
+
 interface SidebarSubItemProps {
   href: string;
   label: string;
   active: boolean;
+  /** Set for a guest when the page needs sign-in (RIN-978). */
+  lockedLabel: string | null;
 }
 
 interface SidebarItemProps {
@@ -77,6 +70,7 @@ interface SidebarItemProps {
   label: string;
   active: boolean;
   trailing?: boolean;
+  lockedLabel: string | null;
   collapsed: boolean;
   expanded?: boolean;
   onToggle?: () => void;
@@ -95,6 +89,7 @@ interface AppSidebarProps {
   collapsed: boolean;
   pathname: string;
   visibleNav: NavEntry[];
+  bottomNav: NavEntry[];
   t: NavTranslate;
   expandedGroups: string[];
   toggleGroup: (id: string) => void;
@@ -140,6 +135,10 @@ interface AppTopbarProps extends UserMenuDropdownProps {
   creditLoading: boolean;
   account: AccountState;
   authCallbackPath: string;
+  /** Where the logo goes: the dashboard, or the landing page for a guest. */
+  homeHref: string;
+  /** Quiz play: no sidebar, so no sidebar-width logo column or toggle (RIN-978). */
+  focusMode: boolean;
 }
 
 interface CreditBalanceBadgeProps {
@@ -153,6 +152,7 @@ interface MobileMenuItemProps {
   icon?: string;
   label: string;
   active: boolean;
+  lockedLabel: string | null;
   onNavigate: () => void;
 }
 
@@ -167,9 +167,16 @@ interface MobileAppMenuProps {
   open: boolean;
   pathname: string;
   visibleNav: NavEntry[];
+  bottomNav: NavEntry[];
   account: AccountState;
   t: NavTranslate;
   onClose: () => void;
+}
+
+interface ChromeNav {
+  visibleNav: NavEntry[];
+  bottomNav: NavEntry[];
+  homeHref: string;
 }
 
 interface AppChromeProps {
@@ -201,6 +208,7 @@ function mapDesktopNav(defs: typeof DESKTOP_PRIMARY_NAV): NavEntry[] {
 
 const PRIMARY_NAV: NavEntry[] = mapDesktopNav(DESKTOP_PRIMARY_NAV);
 const BOTTOM_NAV: NavEntry[] = mapDesktopNav(DESKTOP_BOTTOM_NAV);
+const GUEST_BOTTOM_NAV: NavEntry[] = toGuestNav(BOTTOM_NAV);
 
 function isHrefActive(pathname: string, href?: string, matchPrefix?: string) {
   if (!href) return false;
@@ -220,7 +228,21 @@ function ShellIcon({ name }: ShellIconProps) {
   );
 }
 
-function SidebarSubItem({ href, label, active }: SidebarSubItemProps) {
+/** Lock glyph plus the spoken "sign in required" for a guest-locked entry (RIN-978). */
+function LockedMark({ label, iconHidden }: LockedMarkProps) {
+  if (label === null) return null;
+  return (
+    <>
+      {iconHidden ? null : (
+        <Icon icon={ICON.lock} className="size-4 shrink-0 text-ink-muted" aria-hidden="true" />
+      )}
+      {/* A bare space: the accessible name reads "Create quiz (Sign in required)". */}{' '}
+      <span className="sr-only">({label})</span>
+    </>
+  );
+}
+
+function SidebarSubItem({ href, label, active, lockedLabel }: SidebarSubItemProps) {
   return (
     <Link
       href={href}
@@ -231,6 +253,7 @@ function SidebarSubItem({ href, label, active }: SidebarSubItemProps) {
     >
       <span className="h-10 w-px border-l border-dashed border-line-blue/70" aria-hidden="true" />
       <span className="whitespace-nowrap">{label}</span>
+      <LockedMark label={lockedLabel} />
     </Link>
   );
 }
@@ -241,6 +264,7 @@ function SidebarItem({
   label,
   active,
   trailing,
+  lockedLabel,
   collapsed,
   expanded,
   onToggle,
@@ -255,6 +279,7 @@ function SidebarItem({
         <ShellIcon name={icon} />
         {collapsed ? null : <span className="truncate">{label}</span>}
       </span>
+      <LockedMark label={lockedLabel} iconHidden={collapsed} />
       {trailing && !collapsed ? (
         <Icon
           icon={ICON.arrow}
@@ -311,6 +336,7 @@ function NavSection({
         icon={entry.icon}
         label={t(entry.labelKey)}
         active={active}
+        lockedLabel={entry.locked ? t('signInRequired') : null}
         collapsed={collapsed}
       />
     );
@@ -328,6 +354,7 @@ function NavSection({
         label={t(entry.labelKey)}
         active={active}
         trailing
+        lockedLabel={null}
         collapsed={collapsed}
         expanded={expanded}
         onToggle={() => toggleGroup(entry.id)}
@@ -351,6 +378,7 @@ function NavSection({
               href={item.href}
               label={t(item.labelKey)}
               active={isHrefActive(pathname, item.href, item.matchPrefix)}
+              lockedLabel={item.locked ? t('signInRequired') : null}
             />
           ))}
         </div>
@@ -363,6 +391,7 @@ function AppSidebar({
   collapsed,
   pathname,
   visibleNav,
+  bottomNav,
   t,
   expandedGroups,
   toggleGroup,
@@ -392,7 +421,7 @@ function AppSidebar({
 
       <div className="flex w-full flex-col gap-4">
         <div className={`h-px bg-line ${collapsed ? 'w-full' : styles['sidebarDivider']}`} />
-        {BOTTOM_NAV.map((entry) => (
+        {bottomNav.map((entry) => (
           <NavSection
             key={entry.id}
             entry={entry}
@@ -609,6 +638,8 @@ function AppTopbar({
   creditLoading,
   account,
   authCallbackPath,
+  homeHref,
+  focusMode,
   avatar,
   avatarInitial,
   displayName,
@@ -619,88 +650,103 @@ function AppTopbar({
     <header
       className={`${styles['topbar']} fixed inset-x-0 top-0 z-50 flex border-b border-line bg-surface`}
     >
-      <div
-        className={`relative hidden h-full items-center border-r border-line transition-[width] duration-300 ease-out lg:flex ${
-          collapsed
-            ? `${styles['topbarSidebarCollapsed']} justify-center px-3`
-            : `${styles['topbarSidebarExpanded']} justify-between px-5 lg:pl-8`
-        }`}
-      >
-        {collapsed ? (
-          <div className="group relative size-[44px] shrink-0">
-            <Link
-              href={ROUTES.DASHBOARD}
-              className="relative flex size-[44px] items-center justify-center overflow-hidden rounded-lg transition-[opacity,transform] duration-200 ease-out group-hover:scale-90 group-hover:opacity-0"
-              aria-label="RinKuzu"
-            >
-              <Image
-                src="/images/auth_logo.webp"
-                alt="RinKuzu"
-                width={130}
-                height={40}
-                className="pointer-events-none absolute -translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
-                priority
-              />
-              <Image
-                src="/images/rinku88-icon.png"
-                alt=""
-                width={48}
-                height={48}
-                className="size-[44px] object-contain transition-[opacity,transform] duration-200 ease-out"
-                aria-hidden="true"
-              />
-            </Link>
-            <ButtonBase
-              type="button"
-              onClick={onToggleSidebar}
-              className="pointer-events-none absolute inset-0 flex scale-90 items-center justify-center rounded-lg text-ink opacity-0 transition-[opacity,transform,background-color] duration-200 ease-out hover:bg-accent-soft/60 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
-              aria-label="Open sidebar"
-              title="Open sidebar"
-              tabIndex={-1}
-            >
-              <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
-            </ButtonBase>
-          </div>
-        ) : (
-          <>
-            <Link
-              href={ROUTES.DASHBOARD}
-              className="relative flex h-10 items-center overflow-hidden"
-              aria-label="RinKuzu"
-            >
-              <Image
-                src="/images/auth_logo.webp"
-                alt="RinKuzu"
-                width={130}
-                height={40}
-                className="object-contain opacity-100 transition-[opacity,transform] duration-200 ease-out"
-                priority
-              />
-              <Image
-                src="/images/rinku88-icon.png"
-                alt=""
-                width={48}
-                height={48}
-                className="pointer-events-none absolute size-12 translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
-                aria-hidden="true"
-              />
-            </Link>
-            <ButtonBase
-              type="button"
-              onClick={onToggleSidebar}
-              className="flex size-10 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
-              aria-label="Collapse sidebar"
-              title="Collapse sidebar"
-            >
-              <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
-            </ButtonBase>
-          </>
-        )}
-      </div>
+      {focusMode ? (
+        <div className="hidden h-full shrink-0 items-center px-8 lg:flex">
+          <Link href={homeHref} className="flex h-10 items-center" aria-label="RinKuzu">
+            <Image
+              src="/images/auth_logo.webp"
+              alt="RinKuzu"
+              width={130}
+              height={40}
+              className="object-contain"
+              priority
+            />
+          </Link>
+        </div>
+      ) : (
+        <div
+          className={`relative hidden h-full items-center border-r border-line transition-[width] duration-300 ease-out lg:flex ${
+            collapsed
+              ? `${styles['topbarSidebarCollapsed']} justify-center px-3`
+              : `${styles['topbarSidebarExpanded']} justify-between px-5 lg:pl-8`
+          }`}
+        >
+          {collapsed ? (
+            <div className="group relative size-[44px] shrink-0">
+              <Link
+                href={homeHref}
+                className="relative flex size-[44px] items-center justify-center overflow-hidden rounded-lg transition-[opacity,transform] duration-200 ease-out group-hover:scale-90 group-hover:opacity-0"
+                aria-label="RinKuzu"
+              >
+                <Image
+                  src="/images/auth_logo.webp"
+                  alt="RinKuzu"
+                  width={130}
+                  height={40}
+                  className="pointer-events-none absolute -translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
+                  priority
+                />
+                <Image
+                  src="/images/rinku88-icon.png"
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="size-[44px] object-contain transition-[opacity,transform] duration-200 ease-out"
+                  aria-hidden="true"
+                />
+              </Link>
+              <ButtonBase
+                type="button"
+                onClick={onToggleSidebar}
+                className="pointer-events-none absolute inset-0 flex scale-90 items-center justify-center rounded-lg text-ink opacity-0 transition-[opacity,transform,background-color] duration-200 ease-out hover:bg-accent-soft/60 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
+                aria-label="Open sidebar"
+                title="Open sidebar"
+                tabIndex={-1}
+              >
+                <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
+              </ButtonBase>
+            </div>
+          ) : (
+            <>
+              <Link
+                href={homeHref}
+                className="relative flex h-10 items-center overflow-hidden"
+                aria-label="RinKuzu"
+              >
+                <Image
+                  src="/images/auth_logo.webp"
+                  alt="RinKuzu"
+                  width={130}
+                  height={40}
+                  className="object-contain opacity-100 transition-[opacity,transform] duration-200 ease-out"
+                  priority
+                />
+                <Image
+                  src="/images/rinku88-icon.png"
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="pointer-events-none absolute size-12 translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
+                  aria-hidden="true"
+                />
+              </Link>
+              <ButtonBase
+                type="button"
+                onClick={onToggleSidebar}
+                className="flex size-10 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+              >
+                <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
+              </ButtonBase>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="flex h-full w-full items-center justify-between px-4 lg:hidden">
         <Link
-          href={ROUTES.DASHBOARD}
+          href={homeHref}
           className="relative flex h-10 items-center overflow-hidden"
           aria-label="RinKuzu"
         >
@@ -786,13 +832,15 @@ function AppTopbar({
               <CreditBalanceBadge balance={creditBalance} loading={creditLoading} t={t} />
             ) : null}
 
-            <ButtonBase
-              type="button"
-              className="flex h-11 w-12 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
-              aria-label="Notifications"
-            >
-              <Icon icon={ICON.bell} className="size-6" aria-hidden="true" />
-            </ButtonBase>
+            {account === 'signed-in' ? (
+              <ButtonBase
+                type="button"
+                className="flex h-11 w-12 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
+                aria-label="Notifications"
+              >
+                <Icon icon={ICON.bell} className="size-6" aria-hidden="true" />
+              </ButtonBase>
+            ) : null}
 
             <LanguageDropdown currentLocale={currentLocale} onSelect={onSelectLocale} />
 
@@ -817,7 +865,14 @@ function AppTopbar({
 const MOBILE_ACCOUNT_ROW =
   'flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left font-home text-body font-semibold text-ink transition-colors hover:bg-accent-soft/60';
 
-function MobileMenuItem({ href, icon, label, active, onNavigate }: MobileMenuItemProps) {
+function MobileMenuItem({
+  href,
+  icon,
+  label,
+  active,
+  lockedLabel,
+  onNavigate,
+}: MobileMenuItemProps) {
   return (
     <Link
       href={href}
@@ -829,6 +884,7 @@ function MobileMenuItem({ href, icon, label, active, onNavigate }: MobileMenuIte
     >
       {icon ? <ShellIcon name={icon} /> : <span className="ml-9" aria-hidden="true" />}
       <span className="truncate">{label}</span>
+      <LockedMark label={lockedLabel} />
     </Link>
   );
 }
@@ -846,6 +902,7 @@ function MobileMenuGroup({ entry, pathname, t, onNavigate }: MobileMenuGroupProp
           icon={entry.icon}
           label={t(entry.labelKey)}
           active={active}
+          lockedLabel={entry.locked ? t('signInRequired') : null}
           onNavigate={onNavigate}
         />
       ) : (
@@ -867,6 +924,7 @@ function MobileMenuGroup({ entry, pathname, t, onNavigate }: MobileMenuGroupProp
               href={item.href}
               label={t(item.labelKey)}
               active={isHrefActive(pathname, item.href, item.matchPrefix)}
+              lockedLabel={item.locked ? t('signInRequired') : null}
               onNavigate={onNavigate}
             />
           ))}
@@ -876,7 +934,15 @@ function MobileMenuGroup({ entry, pathname, t, onNavigate }: MobileMenuGroupProp
   );
 }
 
-function MobileAppMenu({ open, pathname, visibleNav, account, t, onClose }: MobileAppMenuProps) {
+function MobileAppMenu({
+  open,
+  pathname,
+  visibleNav,
+  bottomNav,
+  account,
+  t,
+  onClose,
+}: MobileAppMenuProps) {
   if (!open) return null;
 
   return (
@@ -905,7 +971,7 @@ function MobileAppMenu({ open, pathname, visibleNav, account, t, onClose }: Mobi
         </div>
         <div className="my-3 h-px bg-line" />
         <div className="flex flex-col gap-2">
-          {BOTTOM_NAV.map((entry) => (
+          {bottomNav.map((entry) => (
             <MobileMenuGroup
               key={entry.id}
               entry={entry}
@@ -949,6 +1015,28 @@ function MobileAppMenu({ open, pathname, visibleNav, account, t, onClose }: Mobi
   );
 }
 
+function accountStateOf(status: string, hasUser: boolean): AccountState {
+  if (status === 'authenticated' && hasUser) return 'signed-in';
+  return status === 'unauthenticated' ? 'guest' : 'unknown';
+}
+
+/** A guest gets only what they can open, and a logo to the landing page (RIN-978). */
+function chromeNavFor(account: AccountState, userRole: string | undefined): ChromeNav {
+  const roleNav = PRIMARY_NAV.filter(
+    (entry) => !entry.requiredRole || entry.requiredRole === userRole,
+  );
+  if (account !== 'guest') {
+    return { visibleNav: roleNav, bottomNav: BOTTOM_NAV, homeHref: ROUTES.DASHBOARD };
+  }
+  return { visibleNav: toGuestNav(roleNav), bottomNav: GUEST_BOTTOM_NAV, homeHref: ROUTES.HOME };
+}
+
+/** Left padding that clears the sidebar; none when quiz play hides it. */
+function mainContentInset(focusMode: boolean, collapsed: boolean): string {
+  if (focusMode) return '';
+  return (collapsed ? styles['mainContentCollapsed'] : styles['mainContentExpanded']) ?? '';
+}
+
 export function AppChrome({ children }: AppChromeProps) {
   const { data: session, status: sessionStatus } = useSession();
   const t = useTranslations('nav');
@@ -969,16 +1057,10 @@ export function AppChrome({ children }: AppChromeProps) {
   const mobileMenuOpen = mobileMenuState.pathname === pathname ? mobileMenuState.open : false;
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
-  const account: AccountState =
-    sessionStatus === 'authenticated' && session?.user
-      ? 'signed-in'
-      : sessionStatus === 'unauthenticated'
-        ? 'guest'
-        : 'unknown';
-
-  const visibleNav = PRIMARY_NAV.filter(
-    (entry) => !entry.requiredRole || entry.requiredRole === userRole,
-  );
+  const account = accountStateOf(sessionStatus, Boolean(session?.user));
+  const { visibleNav, bottomNav, homeHref } = chromeNavFor(account, userRole);
+  // Mobile plays full-screen with no bottom nav; desktop drops the sidebar to match.
+  const focusMode = matchesPrefix(pathname, '/quiz');
 
   const toggleGroup = (id: string) =>
     setExpandedGroups((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
@@ -1022,6 +1104,8 @@ export function AppChrome({ children }: AppChromeProps) {
         creditLoading={creditLoading}
         account={account}
         authCallbackPath={pathname}
+        homeHref={homeHref}
+        focusMode={focusMode}
         {...(avatar !== undefined ? { avatar } : {})}
         avatarInitial={avatarInitial}
         {...(session?.user?.displayName !== undefined
@@ -1034,24 +1118,29 @@ export function AppChrome({ children }: AppChromeProps) {
         open={mobileMenuOpen}
         pathname={pathname}
         visibleNav={visibleNav}
+        bottomNav={bottomNav}
         account={account}
         t={t}
         onClose={() => setMobileMenuState({ pathname, open: false })}
       />
-      <AppSidebar
-        collapsed={collapsed}
-        pathname={pathname}
-        visibleNav={visibleNav}
-        t={t}
-        expandedGroups={expandedGroups}
-        toggleGroup={toggleGroup}
-      />
+      {focusMode ? null : (
+        <AppSidebar
+          collapsed={collapsed}
+          pathname={pathname}
+          visibleNav={visibleNav}
+          bottomNav={bottomNav}
+          t={t}
+          expandedGroups={expandedGroups}
+          toggleGroup={toggleGroup}
+        />
+      )}
       <div
         id="app-main-content"
         tabIndex={-1}
-        className={`${styles['mainContent']} transition-[padding] duration-300 ease-out ${
-          collapsed ? styles['mainContentCollapsed'] : styles['mainContentExpanded']
-        }`}
+        className={`${styles['mainContent']} transition-[padding] duration-300 ease-out ${mainContentInset(
+          focusMode,
+          collapsed,
+        )}`}
       >
         {children}
       </div>

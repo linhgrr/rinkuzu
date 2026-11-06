@@ -538,7 +538,7 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
 
       await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
@@ -650,7 +650,7 @@ test.describe('production critical paths', () => {
         if (await desktopSubmit.isVisible()) {
           await desktopSubmit.click();
         } else {
-          await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
         }
       };
       const resultUrl = new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`);
@@ -756,7 +756,7 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
       await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=`));
       await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();

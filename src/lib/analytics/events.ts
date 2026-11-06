@@ -22,5 +22,7 @@ export type AnalyticsEventName =
   | 'retry_missed_clicked'
   | 'try_another_quiz_clicked'
   | 'review_email_opt_in'
+  /** Server side, once per activation nudge accepted by the provider (RIN-999); props `trigger`, `locale`. */
+  | 'activation_email_sent'
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
   | 'guest_attempt_claimed';

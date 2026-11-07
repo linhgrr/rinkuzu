@@ -6,8 +6,11 @@
   min-width: 140px;
 }
 
-.legend {
-  max-width: calc(100% - 5rem);
+/* The legend floats over the canvas only from sm up; on a phone it is a full-width strip. */
+@media (min-width: 640px) {
+  .legend {
+    max-width: calc(100% - 5rem);
+  }
 }
 
 .embeddedViewport {
@@ -16,6 +19,11 @@
 
 .placeholder {
   height: 400px;
+}
+
+/* The load error is a short message and two buttons: no 170px of empty card above it (RIN-1116). */
+.errorPlaceholder {
+  min-height: 260px;
 }
 
 .expandedModal {

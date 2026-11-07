@@ -19,6 +19,7 @@ import {
 
 import dagre from 'dagre';
 import { Lock, Maximize2 } from 'lucide-react';
+import { HiOutlineBookOpen } from 'react-icons/hi';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
@@ -34,8 +35,9 @@ import type {
 import ConceptDetailPanel from './ConceptDetail';
 import {
   GRAPH_NODE_HEIGHT,
-  GRAPH_NODE_WIDTH,
+  getGraphLayout,
   getReadableViewport,
+  type GraphLayout,
 } from './knowledge-graph-viewport';
 import styles from './KnowledgeGraphLayout.module.css';
 
@@ -101,6 +103,9 @@ interface ConceptNodeData extends Record<string, unknown> {
   status: KnowledgeNode['status'];
   mastery: number;
   direction: GraphDirection;
+  /** Phone layout: fixed narrow width that matches the dagre layout (RIN-1116). */
+  compact?: boolean;
+  nodeWidth?: number;
 }
 
 const MAX_LABEL_LENGTH = 25;
@@ -124,6 +129,9 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
     <div
       className={`${styles['conceptNode']} relative rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 ${isLocked ? 'border-dashed border-line' : 'hover:border-line-blue'}`}
       style={{
+        ...(data.compact && data.nodeWidth
+          ? { width: data.nodeWidth, minWidth: data.nodeWidth }
+          : undefined),
         borderColor: getNodeBorderColor(data.status),
         backgroundColor: isFilled ? color : undefined,
         color: isFilled ? 'white' : undefined,
@@ -182,13 +190,15 @@ const getLayoutedElements = (
   nodes: Node<ConceptNodeData>[],
   edges: Edge[],
   direction: GraphDirection,
+  layout: GraphLayout,
 ) => {
+  const { nodeWidth } = layout;
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 80, ranksep: 100 });
+  dagreGraph.setGraph({ rankdir: direction, nodesep: layout.nodeSeparation, ranksep: 100 });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: GRAPH_NODE_WIDTH, height: GRAPH_NODE_HEIGHT });
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: GRAPH_NODE_HEIGHT });
   });
 
   edges.forEach((edge) => {
@@ -203,7 +213,7 @@ const getLayoutedElements = (
     node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
 
     node.position = {
-      x: nodeWithPosition.x - GRAPH_NODE_WIDTH / 2,
+      x: nodeWithPosition.x - nodeWidth / 2,
       y: nodeWithPosition.y - GRAPH_NODE_HEIGHT / 2,
     };
 
@@ -227,6 +237,7 @@ function GraphFlow({
   const { fitView, setViewport } = useReactFlow();
   const viewportWidth = useStore((state) => state.width);
   const viewportHeight = useStore((state) => state.height);
+  const layout = getGraphLayout(direction, viewportWidth);
 
   const initialNodes: Node<ConceptNodeData>[] = (() => {
     if (!graphData) return [];
@@ -240,6 +251,8 @@ function GraphFlow({
         status: n.status,
         mastery: n.mastery,
         direction,
+        compact: layout.compact,
+        nodeWidth: layout.nodeWidth,
       },
     }));
   })();
@@ -276,11 +289,17 @@ function GraphFlow({
 
   const { nodes, edges } = (() => {
     if (initialNodes.length === 0) return { nodes: [], edges: [] };
-    return getLayoutedElements(initialNodes, initialEdges, direction);
+    return getLayoutedElements(initialNodes, initialEdges, direction, layout);
   })();
   const nodeCount = nodes.length;
 
-  const readableViewport = getReadableViewport(nodes, direction, viewportWidth, viewportHeight);
+  const readableViewport = getReadableViewport(
+    nodes,
+    direction,
+    viewportWidth,
+    viewportHeight,
+    layout.nodeWidth,
+  );
   const readableX = readableViewport?.x ?? null;
   const readableY = readableViewport?.y ?? null;
 
@@ -358,7 +377,7 @@ function KnowledgeGraphViewport({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : styles['embeddedViewport']}`}
+      className={`relative flex w-full flex-col overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : styles['embeddedViewport']}`}
     >
       {!isExpanded ? (
         <div
@@ -401,18 +420,7 @@ function KnowledgeGraphViewport({
         </Button>
       ) : null}
 
-      <div
-        className={`${styles['legend']} pointer-events-none absolute bottom-4 right-4 z-10 flex flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg border border-line bg-white/90 px-3 py-2 font-mono text-xs shadow-sm backdrop-blur-sm sm:right-5`}
-      >
-        {legendItems.map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <div className={`h-2 w-2 rounded-full ${item.color}`} />
-            <span className="uppercase tracking-widest text-neutral-700">{item.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="h-full w-full">
+      <div className="min-h-0 w-full flex-1">
         {renderGraph ? (
           <ReactFlowProvider>
             <GraphFlow
@@ -423,6 +431,20 @@ function KnowledgeGraphViewport({
             />
           </ReactFlowProvider>
         ) : null}
+      </div>
+
+      {/* On a phone the legend is a strip below the canvas, clear of the graph, the zoom
+          controls and the floating help button; from sm up it floats bottom-right (RIN-1116). */}
+      <div
+        data-testid="knowledge-graph-legend"
+        className={`${styles['legend']} flex flex-wrap gap-x-4 gap-y-2 border-t border-line bg-white py-3 pl-4 pr-16 font-mono text-xs sm:pointer-events-none sm:absolute sm:bottom-4 sm:right-5 sm:z-10 sm:justify-end sm:rounded-lg sm:border sm:bg-white/90 sm:px-3 sm:py-2 sm:shadow-sm sm:backdrop-blur-sm`}
+      >
+        {legendItems.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            <div className={`h-2 w-2 rounded-full ${item.color}`} />
+            <span className="uppercase tracking-widest text-neutral-700">{item.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -478,7 +500,11 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     { color: 'bg-brand-trust', label: t('knowledgeGraph.legend.mastered') },
     { color: 'bg-brand-action', label: t('knowledgeGraph.legend.inProgress') },
     { color: 'bg-white border border-line', label: t('knowledgeGraph.legend.available') },
-    { color: 'bg-neutral-200', label: t('knowledgeGraph.legend.locked') },
+    // Locked nodes are white with a dashed border, so the swatch is too (RIN-1116).
+    {
+      color: 'bg-white border border-dashed border-line',
+      label: t('knowledgeGraph.legend.locked'),
+    },
   ];
 
   const closeExpandedGraph = () => {
@@ -503,9 +529,10 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   if (graphFetchError) {
     return (
       <div
-        className={`${styles['placeholder']} flex w-full items-center justify-center rounded-xl border border-line bg-neutral-50 px-4`}
+        className={`${styles['errorPlaceholder']} flex w-full items-center justify-center rounded-xl border border-line bg-neutral-50 px-4 py-10`}
       >
         <div className="space-y-4 text-center">
+          <HiOutlineBookOpen className="mx-auto size-10 text-neutral-400" aria-hidden="true" />
           <p role="alert" className="text-base text-red-700">
             {t('knowledgeGraph.loadError')}
           </p>

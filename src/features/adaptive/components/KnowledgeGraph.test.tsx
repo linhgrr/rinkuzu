@@ -8,10 +8,11 @@ import type { ConceptDetail, KnowledgeGraphData } from '@/features/adaptive/type
 import { useKnowledgeGraph } from '@/hooks/useAdaptive';
 import KnowledgeGraph from './KnowledgeGraph';
 
-const { fitViewMock, pushMock, reactFlowProps } = vi.hoisted(() => ({
+const { fitViewMock, pushMock, reactFlowProps, flowSize } = vi.hoisted(() => ({
   fitViewMock: vi.fn(),
   pushMock: vi.fn(),
   reactFlowProps: { current: null as Record<string, unknown> | null },
+  flowSize: { width: 800, height: 600 },
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -45,7 +46,7 @@ vi.mock('@xyflow/react', () => ({
     onNodeClick?: (event: MouseEvent<HTMLElement>, node: { id: string }) => void;
     children?: ReactNode;
   } & Record<string, unknown>) => {
-    reactFlowProps.current = rest;
+    reactFlowProps.current = { ...rest, nodes };
     return (
       <div data-testid="react-flow">
         {nodes.map((node) => (
@@ -78,8 +79,7 @@ vi.mock('@xyflow/react', () => ({
     ArrowClosed: 'arrowclosed',
   },
   useReactFlow: () => ({ fitView: fitViewMock, setViewport: vi.fn() }),
-  useStore: (selector: (state: { width: number; height: number }) => number) =>
-    selector({ width: 800, height: 600 }),
+  useStore: (selector: (state: { width: number; height: number }) => number) => selector(flowSize),
   ReactFlowProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
@@ -115,6 +115,8 @@ const getConceptDetailMock = vi.mocked(getConceptDetail);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  flowSize.width = 800;
+  flowSize.height = 600;
   useKnowledgeGraphMock.mockReturnValue({
     data: graphData,
     isLoading: false,
@@ -137,7 +139,14 @@ describe('KnowledgeGraph', () => {
 });
 
 type ConceptNodeProps = {
-  data: { label: string; status: string; mastery: number; direction: 'TB' | 'LR' };
+  data: {
+    label: string;
+    status: string;
+    mastery: number;
+    direction: 'TB' | 'LR';
+    compact?: boolean;
+    nodeWidth?: number;
+  };
 };
 
 function renderConceptNode(data: ConceptNodeProps['data']) {
@@ -208,5 +217,87 @@ describe('KnowledgeGraph load error (RIN-1010)', () => {
     expect(mutate).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'exercise.backToDashboard' }));
     expect(pushMock).toHaveBeenCalledWith('/adaptive');
+  });
+});
+
+const siblingGraph: KnowledgeGraphData = {
+  nodes: ['root', 'left', 'right'].map((id, index) => ({
+    id,
+    index,
+    name: id,
+    status: 'available' as const,
+    mastery: 0,
+    visited: false,
+  })),
+  edges: [
+    { source: 'root', target: 'left' },
+    { source: 'root', target: 'right' },
+  ],
+};
+
+type LaidOutNode = { id: string; position: { x: number; y: number }; data: { compact?: boolean } };
+
+function renderGraphAt(width: number) {
+  flowSize.width = width;
+  useKnowledgeGraphMock.mockReturnValue({
+    data: siblingGraph,
+    isLoading: false,
+    error: undefined,
+  } as ReturnType<typeof useKnowledgeGraph>);
+  render(<KnowledgeGraph sessionId="session-1" />);
+  const nodes = reactFlowProps.current?.['nodes'] as LaidOutNode[];
+  const find = (id: string) => {
+    const node = nodes.find((candidate) => candidate.id === id);
+    if (!node) throw new Error(`node ${id} missing`);
+    return node;
+  };
+  return { left: find('left'), right: find('right') };
+}
+
+describe('KnowledgeGraph on a phone (RIN-1116)', () => {
+  it('keeps the legend in the card flow below the canvas on mobile and floating from sm up', () => {
+    render(<KnowledgeGraph sessionId="session-1" />);
+
+    const legend = screen.getByTestId('knowledge-graph-legend');
+    // Static on mobile, so it never covers the graph, the zoom controls or the help button.
+    expect(legend.className).not.toMatch(/(?:^|\s)absolute(?:\s|$)/);
+    expect(legend.className).toContain('sm:absolute');
+    expect(legend.className).toContain('sm:right-5');
+    expect(
+      screen.getByTestId('react-flow').compareDocumentPosition(legend) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('lays two sibling concepts out side by side within a 375px canvas', () => {
+    const { left, right } = renderGraphAt(341);
+
+    expect(left.data.compact).toBe(true);
+    const span =
+      Math.max(left.position.x, right.position.x) +
+      128 -
+      Math.min(left.position.x, right.position.x);
+    expect(span + 48).toBeLessThanOrEqual(341);
+  });
+
+  it('keeps the desktop spacing at 1280px', () => {
+    const { left, right } = renderGraphAt(1000);
+
+    expect(left.data.compact).toBe(false);
+    expect(Math.abs(right.position.x - left.position.x)).toBe(150 + 80);
+  });
+
+  it('gives compact nodes a fixed width that matches the layout', () => {
+    render(<KnowledgeGraph sessionId="session-1" />);
+    const { container } = renderConceptNode({
+      label: 'Phone concept',
+      status: 'available',
+      mastery: 0,
+      direction: 'TB',
+      compact: true,
+      nodeWidth: 128,
+    });
+
+    expect((container.firstElementChild as HTMLElement).style.width).toBe('128px');
   });
 });

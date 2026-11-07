@@ -13,8 +13,10 @@ import {
   Settings2,
   Trash2,
 } from 'lucide-react';
+import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { TabBar } from '@/components/ui/TabBar';
 import { Select } from '@/components/ui/Select';
 import { ApiResponseError } from '@/lib/api/client';
@@ -85,6 +87,8 @@ export function AiSettingsClient({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  // The first load failed: nothing to show but ErrorState with Retry (RIN-1022).
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [providerCreateOpen, setProviderCreateOpen] = useState(false);
   const [providerToDelete, setProviderToDelete] = useState<
     AiSettingsViewModel['providers'][number] | null
@@ -162,8 +166,7 @@ export function AiSettingsClient({
     const timer = window.setTimeout(() => {
       void load(controller.signal)
         .catch((cause) => {
-          if (!controller.signal.aborted)
-            setError(describeError(cause, t('aiSettingsUnexpectedError')));
+          if (!controller.signal.aborted) setLoadError(cause);
         })
         .finally(() => {
           if (!controller.signal.aborted) setLoading(false);
@@ -173,7 +176,7 @@ export function AiSettingsClient({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [load, t, describeError]);
+  }, [load]);
 
   const selectedProvider = snapshot?.providers.find(
     (provider) => provider.id === selectedProviderId,
@@ -396,6 +399,23 @@ export function AiSettingsClient({
 
   if (loading) {
     return <AdminPageShell>{t('loading')}</AdminPageShell>;
+  }
+
+  if (!snapshot && loadError) {
+    return (
+      <AdminPageShell>
+        <AdminPageHeader title={t('aiSettingsTitle')} />
+        <ErrorState
+          error={loadError}
+          onRetry={() =>
+            load().then(
+              () => setLoadError(null),
+              (cause: unknown) => setLoadError(cause),
+            )
+          }
+        />
+      </AdminPageShell>
+    );
   }
 
   return (

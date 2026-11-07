@@ -5,11 +5,7 @@ import type { Types } from 'mongoose';
 import { fetchAdaptiveActivationEvents } from '@/lib/adaptive/activation-events';
 import { captureServerEvent } from '@/lib/analytics/server';
 import { logger } from '@/lib/logger';
-import {
-  ActivationNudgeRepository,
-  type NudgeBlockers,
-  type NudgeLearner,
-} from '@/repositories/ActivationNudgeRepository';
+import { ActivationNudgeRepository } from '@/repositories/ActivationNudgeRepository';
 import { STARTER_QUIZ_ALLOWLIST } from '@/services/dashboard/starter-quizzes';
 import {
   ACTIVATION_NUDGE_CAMPAIGN,
@@ -21,11 +17,15 @@ import {
   activationNudgeLocale,
   activationNudgeSendingEnabled,
   activationNudgeSignupWindow,
-  evaluateActivationNudge,
+  decideActivationNudge,
   verifyActivationClickToken,
-  type ActivationNudgeDecision,
   type ActivationNudgeSkipReason,
 } from './activation-nudge-policy';
+import {
+  runActivationNudgeBackfill,
+  type ActivationNudgeBackfillMode,
+  type ActivationNudgeBackfillReport,
+} from './activation-nudge-backfill';
 import { siteUrl } from './internal';
 import { communicationEnvironment } from './resend';
 import {
@@ -57,24 +57,6 @@ async function adaptiveCompleters(from: Date, to: Date): Promise<Set<string> | n
   }
 }
 
-function decide(
-  learner: NudgeLearner,
-  blockers: NudgeBlockers,
-  adaptive: ReadonlySet<string>,
-  now: Date,
-  trigger?: string | null,
-): ActivationNudgeDecision {
-  const id = learner.id.toString();
-  return evaluateActivationNudge({
-    now,
-    user: learner,
-    activated: blockers.attempted.has(id) || adaptive.has(id),
-    unsubscribed: blockers.unsubscribed.has(id),
-    alreadyNudged: blockers.nudged.has(id),
-    trigger,
-  });
-}
-
 /**
  * One sweep (every worker tick): enqueue one row per eligible learner who
  * signed up in `(now − 7 d, now − 24 h]`. Idempotent: a second sweep finds the
@@ -93,7 +75,7 @@ export async function sweepActivationNudges(
   if (learners.length === 0) return { enqueued: 0, skipped: 0 };
   const blockers = await repository.blockers(learners.map((learner) => learner.id));
   const candidates = learners.filter(
-    (learner) => decide(learner, blockers, new Set(), now).decision === 'send',
+    (learner) => decideActivationNudge(learner, blockers, new Set(), now).decision === 'send',
   );
   // Asked only when someone is left; send time checks again, so an outage here is not fatal.
   const adaptive =
@@ -102,7 +84,7 @@ export async function sweepActivationNudges(
       : new Set<string>();
   let enqueued = 0;
   for (const learner of candidates) {
-    const verdict = decide(learner, blockers, adaptive, now);
+    const verdict = decideActivationNudge(learner, blockers, adaptive, now);
     // Activated through personalized learning only: no Attempt marks them, so
     // record a canceled row; the cheap checks then skip them on every later
     // tick instead of asking the adaptive API again for up to 6 days.
@@ -151,13 +133,13 @@ export async function prepareActivationNudge(
   const learner = await repository.findLearner(item.entityId);
   if (!learner) return { decision: 'cancel', reason: 'user_missing' };
   const blockers = await repository.blockers([learner.id], item._id);
-  const first = decide(learner, blockers, new Set(), now, item.trigger);
+  const first = decideActivationNudge(learner, blockers, new Set(), now, item.trigger);
   if (first.decision === 'skip') return { decision: 'cancel', reason: first.reason };
   const adaptive = await adaptiveCompleters(learner.createdAt, now);
   if (!adaptive) {
     return { decision: 'retry', availableAt: new Date(now.getTime() + ADAPTIVE_RETRY_MS) };
   }
-  const verdict = decide(learner, blockers, adaptive, now, item.trigger);
+  const verdict = decideActivationNudge(learner, blockers, adaptive, now, item.trigger);
   if (verdict.decision === 'skip') return { decision: 'cancel', reason: verdict.reason };
 
   const locale = activationNudgeLocale(item.locale ?? learner.locale);
@@ -235,4 +217,18 @@ export async function recordActivationClick(
     );
   }
   return destination;
+}
+
+/** The one-time backfill (RIN-1002) against the live collections; counts only. */
+export async function backfillActivationNudges(
+  mode: ActivationNudgeBackfillMode,
+  now: Date = new Date(),
+): Promise<ActivationNudgeBackfillReport> {
+  return runActivationNudgeBackfill({
+    mode,
+    now,
+    source: repository,
+    adaptiveCompleters,
+    from: communicationEnvironment('SUPPORT_MAIL_FROM'),
+  });
 }

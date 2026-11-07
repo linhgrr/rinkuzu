@@ -68,7 +68,11 @@
     "decline": "Từ chối lời mời này",
     "optOut": "Không nhận lời mời trong tương lai",
     "optOutAll": "Từ chối tất cả lời mời sau này",
-    "error": "Không thể cập nhật"
+    "metaTitle": "Lời mời phản hồi | RinKuzu",
+    "doneTitle": "Đã lưu lựa chọn",
+    "invalidTitle": "Liên kết này không hợp lệ",
+    "invalidDescription": "Liên kết có thể đã hết hạn. Hãy kiểm tra bạn đã mở đúng và đủ liên kết trong email.",
+    "home": "Về RinKuzu"
   },
   "admin": {
     "campaignLoadError": "Không thể tải campaign.",

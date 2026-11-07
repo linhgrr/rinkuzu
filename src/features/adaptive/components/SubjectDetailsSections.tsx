@@ -95,6 +95,19 @@ export const SubjectDetailsBackButton = ({ onClick, t }: SubjectDetailsBackButto
   </div>
 );
 
+export const SubjectDetailsNotFound = ({ onBack, t }: { onBack: () => void; t: TranslateFn }) => (
+  <div className="pb-12 font-home text-ink">
+    <Card className="mx-auto max-w-xl space-y-5 p-8 text-center">
+      <HiOutlineBookOpen className="mx-auto size-10 text-neutral-400" aria-hidden="true" />
+      <p className="text-base text-neutral-700">{t('subjectDetails.notFound')}</p>
+      <Button onClick={onBack}>
+        <HiOutlineArrowLeft className="size-5" aria-hidden="true" />
+        {t('subjectDetails.backToDashboard')}
+      </Button>
+    </Card>
+  </div>
+);
+
 export const SubjectDetailsHero = ({
   filename,
   loading,
@@ -234,14 +247,13 @@ export const SubjectDetailsTabContent = ({
     {activeTab === 'mastery' && <MasteryMatrix sessionId={sessionId} filterActiveOnly />}
     {activeTab === 'history' &&
       (historyLoading ? (
-        <PanelBlockSkeleton label={t('history.loadingFromMongoDB')} />
+        <PanelBlockSkeleton label={t('history.loading')} />
       ) : historyDetail ? (
         <ExerciseHistoryTable exercises={historyDetail.exercise_history} />
       ) : (
         <div className="rounded-xl border border-line bg-surface py-12 text-center shadow-sm">
           <HiOutlineClipboardList className="mx-auto mb-3 size-10 text-neutral-300" />
-          <p className="text-sm text-neutral-500">{t('history.noMongoDBData')}</p>
-          <p className="mt-1 text-xs text-neutral-400">{t('history.sessionSaveHint')}</p>
+          <p className="mx-auto max-w-md px-4 text-sm text-neutral-500">{t('history.empty')}</p>
         </div>
       ))}
   </div>

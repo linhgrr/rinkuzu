@@ -1,4 +1,6 @@
 import { getCurrentSession } from '@/lib/auth/session';
+import { randomInt } from 'node:crypto';
+import { headers } from 'next/headers';
 import { permanentRedirect } from 'next/navigation';
 import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
@@ -28,6 +30,13 @@ function toQueryString(searchParams: QuizPageSearchParams): string {
   return serialized ? `?${serialized}` : '';
 }
 
+/** Client hint first, then the user agent; tablets and desktops get the desktop layout. */
+function looksLikePhone(requestHeaders: Headers): boolean {
+  const mobileHint = requestHeaders.get('sec-ch-ua-mobile');
+  if (mobileHint) return mobileHint === '?1';
+  return /Mobi|iPhone|iPod/iu.test(requestHeaders.get('user-agent') ?? '');
+}
+
 const ATTEMPT_ID_PATTERN = /^[a-f0-9]{24}$/iu;
 
 /**
@@ -55,10 +64,11 @@ export default async function QuizPlayerPage({
   params: Promise<{ locale: string; slug: string }>;
   searchParams: Promise<QuizPageSearchParams>;
 }) {
-  const [{ locale, slug }, session, query] = await Promise.all([
+  const [{ locale, slug }, session, query, requestHeaders] = await Promise.all([
     params,
     getCurrentSession(),
     searchParams,
+    headers(),
   ]);
   const premiumMetadata = await getPremiumQuizService().getCatalogMetadataBySlug(slug);
   if (premiumMetadata) {
@@ -146,6 +156,9 @@ export default async function QuizPlayerPage({
         slug={slug}
         entry={firstValue(query['entry'])}
         mode={firstValue(query['mode'])}
+        // The first question is server-rendered from this seed and layout guess (RIN-1032).
+        shuffleSeed={randomInt(2 ** 31)}
+        initialMobile={looksLikePhone(requestHeaders)}
       />
     </>
   );

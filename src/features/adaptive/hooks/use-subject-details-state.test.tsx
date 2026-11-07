@@ -179,6 +179,34 @@ describe('useSubjectDetailsState', () => {
       expect(result.current.summary).toBe('t:subjectDetails.summaryFallback');
     });
 
+    it('keeps the recoverable shell when the session is gone but its job is saved', async () => {
+      getJobIdMock.mockReturnValue('job-missing');
+      getSessionStatusMock.mockRejectedValueOnce(new Error('Session not found'));
+
+      const { result } = renderHook(() => useSubjectDetailsState('session-missing', t));
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(result.current.notFound).toBe(false);
+    });
+
+    it('flags notFound when the session is unknown and no job is saved', async () => {
+      getSessionStatusMock.mockRejectedValueOnce(new Error('Session not found'));
+
+      const { result } = renderHook(() => useSubjectDetailsState('session-unknown', t));
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(result.current.notFound).toBe(true);
+    });
+
+    it('does not flag notFound for other bootstrap errors', async () => {
+      getSessionStatusMock.mockRejectedValueOnce(new Error('network down'));
+
+      const { result } = renderHook(() => useSubjectDetailsState('session-err', t));
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(result.current.notFound).toBe(false);
+    });
+
     it('recognizes session_not_found snake_case message', async () => {
       getSessionStatusMock.mockRejectedValueOnce(new Error('session_not_found'));
 

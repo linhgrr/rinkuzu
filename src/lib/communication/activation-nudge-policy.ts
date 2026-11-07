@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import type { NudgeBlockers, NudgeLearner } from '@/repositories/ActivationNudgeRepository';
 import {
   isAnalyticsExcludedAccount,
   type LearnerExclusionFields,
@@ -67,6 +68,7 @@ export type ActivationNudgeSkipReason =
   | 'unsubscribed'
   | 'already_nudged';
 
+/** @public Table-tested directly; production callers go through `decideActivationNudge`. */
 export interface ActivationNudgeFacts {
   now: Date;
   user: (LearnerExclusionFields & { createdAt: Date }) | null;
@@ -92,7 +94,11 @@ export type ActivationNudgeDecision =
   | { decision: 'send' }
   | { decision: 'skip'; reason: ActivationNudgeSkipReason };
 
-/** Eligibility, applied when the sweep enqueues and again when the worker sends. */
+/**
+ * Eligibility, applied when the sweep or the backfill enqueues and again when
+ * the worker sends.
+ * @public Table-tested directly; production callers go through `decideActivationNudge`.
+ */
 export function evaluateActivationNudge(facts: ActivationNudgeFacts): ActivationNudgeDecision {
   const { user } = facts;
   if (!user) return { decision: 'skip', reason: 'user_missing' };
@@ -110,6 +116,29 @@ export function evaluateActivationNudge(facts: ActivationNudgeFacts): Activation
   if (facts.unsubscribed) return { decision: 'skip', reason: 'unsubscribed' };
   if (facts.alreadyNudged) return { decision: 'skip', reason: 'already_nudged' };
   return { decision: 'send' };
+}
+
+/**
+ * `evaluateActivationNudge` for one learner of a batch: the sweep, the
+ * worker's send-time check and the backfill all decide through this.
+ * `adaptive` holds the ids with an adaptive completion.
+ */
+export function decideActivationNudge(
+  learner: NudgeLearner,
+  blockers: NudgeBlockers,
+  adaptive: ReadonlySet<string>,
+  now: Date,
+  trigger?: string | null,
+): ActivationNudgeDecision {
+  const id = learner.id.toString();
+  return evaluateActivationNudge({
+    now,
+    user: learner,
+    activated: blockers.attempted.has(id) || adaptive.has(id),
+    unsubscribed: blockers.unsubscribed.has(id),
+    alreadyNudged: blockers.nudged.has(id),
+    trigger,
+  });
 }
 
 /**

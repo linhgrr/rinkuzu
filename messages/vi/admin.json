@@ -656,5 +656,16 @@
   "activationFunnelCaption": "Tuần theo ISO, giờ UTC. Không tính tài khoản nội bộ và tài khoản thử nghiệm. Mỗi bước được tính trong 7 ngày kể từ khi đăng ký.",
   "activationFunnelAdaptiveUnavailable": "Không có dữ liệu học cá nhân hóa: số liệu chỉ tính bài quiz.",
   "activationFunnelLoading": "Đang tải phễu phiên đầu tiên…",
-  "activationFunnelError": "Không tải được phễu phiên đầu tiên."
+  "activationFunnelError": "Không tải được phễu phiên đầu tiên.",
+  "activationEmailTitle": "Email kích hoạt",
+  "activationEmailTableLabel": "Email kích hoạt theo tuần gửi",
+  "activationEmailWeek": "Tuần gửi",
+  "activationEmailSent": "Đã gửi",
+  "activationEmailSentDay1": "24 giờ",
+  "activationEmailSentBackfill": "Gửi bù",
+  "activationEmailClicked": "Đã nhấp",
+  "activationEmailActivated": "Kích hoạt trong 7 ngày",
+  "activationEmailEmpty": "Chưa có email kích hoạt nào được gửi trong các tuần này.",
+  "activationEmailCaption": "Theo tuần gửi email (giờ UTC). Tỷ lệ tính trên số email đã gửi. Kích hoạt: hoàn thành một bài quiz hoặc một lượt học cá nhân hóa trong 7 ngày sau khi gửi; các tuần gần đây vẫn đang được tính. Lượt nhấp hiển thị 0 cho đến khi có theo dõi lượt nhấp.",
+  "activationFunnelTableLabel": "Phễu phiên đầu tiên theo tuần đăng ký"
 }

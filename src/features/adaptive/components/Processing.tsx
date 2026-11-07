@@ -10,14 +10,19 @@ import styles from './ProcessingLayout.module.css';
 export default function AdaptiveLearningProcessing() {
   const t = useTranslations('adaptiveLearning');
   const {
+    canRetry,
     creatingSession,
     currentStep,
     error,
+    failedStep,
     filename,
-    handleErrorAction,
+    handleBackToLibrary,
+    handleGoBack,
+    handleRetry,
     notice,
     partialGraph,
     progress,
+    retrying,
     showGraphPanel,
     stats,
     statusLabel,
@@ -28,12 +33,17 @@ export default function AdaptiveLearningProcessing() {
     <div className="mx-auto mt-8 flex w-full max-w-6xl flex-col items-stretch gap-8 pt-4 lg:flex-row">
       <div className={`${styles['statusColumn']} flex-shrink-0`}>
         <ProcessingStatusCard
+          canRetry={canRetry}
           creatingSession={creatingSession}
           currentStep={currentStep}
           error={error}
+          failedStep={failedStep}
           filename={filename}
-          handleErrorAction={handleErrorAction}
           notice={notice}
+          onBackToLibrary={handleBackToLibrary}
+          onRetry={() => void handleRetry()}
+          onUploadAgain={handleGoBack}
+          retrying={retrying}
           progress={progress}
           stats={stats}
           statusLabel={statusLabel}

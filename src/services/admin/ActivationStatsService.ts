@@ -1,5 +1,9 @@
 import type { AdminActivationStatsDto, AdminActivationWeekDto } from '@/dtos/admin-stats';
 import { adminActivationStatsSchema } from '@/dtos/admin-stats';
+import type {
+  ActivationEmailWeekRecord,
+  IActivationEmailStatsRepository,
+} from '@/interfaces/repositories/IActivationEmailStatsRepository';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type {
   AdminActivationAggregates,
@@ -27,6 +31,8 @@ const NO_PATH: AdminActivationPathCounts = { quiz: 0, adaptive: 0, both: 0 };
 const NO_COHORT_PATH: AdminActivationCohortPathCounts = { ...NO_PATH, claimedGuest: 0 };
 
 type AdaptiveSourceStatus = AdminActivationStatsDto['sources']['adaptive'];
+type ActivationEmailWeekDto = AdminActivationStatsDto['activationEmail']['weeks'][number];
+type ActivationEmailCounts = ActivationEmailWeekDto['byTrigger']['24h'];
 
 export type ActivationStatsActor =
   | { kind: 'admin'; userId: string; email: string }
@@ -66,6 +72,8 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
     'sources.adaptive is ok when the Path B events were read from the API, unavailable when that read failed or took over 2 s: every number is then quiz-only, and the response is not cached.',
   limitations:
     'Unsubmitted in-progress quiz attempts are not counted as material. A learner whose session is still live comes back without signing in again, so they count in returnedWeek1 only if they also attempt or complete. Adaptive learners with 1-4 answers and no completion are not visible to the web (Path B reports completions only), so they are missing from startedQuiz. Sign-in events are kept 180 days.',
+  activationEmail:
+    'One-time activation nudge emails (RIN-999), bucketed by the UTC ISO week they were sent in (the worker slot of the delivery the provider accepted), not by signup week. sent: delivered nudges of non-excluded learners. clicked: sends whose CTA click was recorded (0 until click tracking ships). activatedWithin7d: sends followed by a completed quiz attempt or adaptive completion in [send, send + 7 days); final 7 days after the week ends. byTrigger splits each count by what enqueued the email: 24h (the sweep 24 h after signup) or backfill; the totals are their sums.',
 };
 
 interface CacheEntry {
@@ -82,6 +90,7 @@ type AdaptiveActivationEventsReader = (
 
 export interface ActivationStatsServiceDeps {
   stats: Pick<IAdminStatsRepository, 'getActivationAggregates'>;
+  activationEmail: IActivationEmailStatsRepository;
   audit: IAdminAuditRepository;
   adaptiveEvents: AdaptiveActivationEventsReader;
   now?: () => Date;
@@ -167,7 +176,10 @@ export class ActivationStatsService {
       new Date(to.getTime() + ADAPTIVE_EVENTS_TAIL_MS),
       actorId,
     );
-    const aggregates = await this.deps.stats.getActivationAggregates(from, to, adaptive.events);
+    const [aggregates, emailSends] = await Promise.all([
+      this.deps.stats.getActivationAggregates(from, to, adaptive.events),
+      this.deps.activationEmail.getWeeklySends(from, to, adaptive.events),
+    ]);
     const rows = buildActivationWeeks(windows, aggregates, now);
     // Parse, not cast: the strict schema is what guarantees nothing but
     // aggregates leaves this service.
@@ -177,6 +189,7 @@ export class ActivationStatsService {
       definitions: ACTIVATION_DEFINITIONS,
       sources: { adaptive: adaptive.status },
       weeks: rows,
+      activationEmail: { weeks: buildActivationEmailWeeks(windows, emailSends) },
     });
   }
 }
@@ -215,6 +228,39 @@ function buildActivationWeeks(
           : Math.round((w1Retained / activated) * 10_000) / 10_000,
       returnedWeek1: returnFinal ? (cohort?.returnedWeek1 ?? 0) : null,
       complete: final,
+    };
+  });
+}
+
+const NO_EMAIL: ActivationEmailCounts = { sent: 0, clicked: 0, activatedWithin7d: 0 };
+
+function addEmailCounts(
+  total: ActivationEmailCounts,
+  row: ActivationEmailCounts,
+): ActivationEmailCounts {
+  return {
+    sent: total.sent + row.sent,
+    clicked: total.clicked + row.clicked,
+    activatedWithin7d: total.activatedWithin7d + row.activatedWithin7d,
+  };
+}
+
+/** One row per window, zeros where nothing was sent; totals are the trigger sums. */
+function buildActivationEmailWeeks(
+  windows: ReturnType<typeof trailingIsoWeeks>,
+  sends: readonly ActivationEmailWeekRecord[],
+): ActivationEmailWeekDto[] {
+  return windows.map((window) => {
+    const key = window.start.getTime();
+    const byTrigger = { '24h': NO_EMAIL, backfill: NO_EMAIL };
+    for (const row of sends) {
+      if (row.weekStart.getTime() !== key) continue;
+      byTrigger[row.trigger] = addEmailCounts(byTrigger[row.trigger], row);
+    }
+    return {
+      isoWeek: window.isoWeek,
+      ...addEmailCounts(byTrigger['24h'], byTrigger.backfill),
+      byTrigger,
     };
   });
 }

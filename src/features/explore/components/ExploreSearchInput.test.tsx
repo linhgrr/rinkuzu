@@ -27,3 +27,15 @@ describe('ExploreSearchInput Enter key', () => {
     expect(onCommit).not.toHaveBeenCalled();
   });
 });
+
+describe('ExploreSearchInput icon', () => {
+  it('paints the search icon above the field background (RIN-1014)', () => {
+    const { container } = render(
+      <ExploreSearchInput initialQuery="" placeholder="Search quizzes" onCommit={vi.fn()} />,
+    );
+
+    // The Input wrapper is position:relative and comes later in the DOM, so an
+    // absolute icon without a z-index is painted under the white field.
+    expect(container.querySelector('search > svg')).toHaveClass('z-10');
+  });
+});

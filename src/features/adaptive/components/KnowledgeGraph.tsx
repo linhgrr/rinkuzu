@@ -13,6 +13,7 @@ import {
   Edge,
   MarkerType,
   useReactFlow,
+  useStore,
   ReactFlowProvider,
 } from '@xyflow/react';
 
@@ -22,6 +23,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { getConceptDetail } from '@/features/adaptive/lib/adaptive-api-methods';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
+import { useRouter } from '@/i18n/navigation';
 import { useKnowledgeGraph } from '@/hooks/useAdaptive';
 import type {
   ConceptDetail,
@@ -29,6 +32,11 @@ import type {
   KnowledgeNode,
 } from '@/features/adaptive/types/graph';
 import ConceptDetailPanel from './ConceptDetail';
+import {
+  GRAPH_NODE_HEIGHT,
+  GRAPH_NODE_WIDTH,
+  getReadableViewport,
+} from './knowledge-graph-viewport';
 import styles from './KnowledgeGraphLayout.module.css';
 
 interface KnowledgeGraphProps {
@@ -95,17 +103,26 @@ interface ConceptNodeData extends Record<string, unknown> {
   direction: GraphDirection;
 }
 
+const MAX_LABEL_LENGTH = 25;
+
+/**
+ * Labels are 12px (`text-xs`); the graph never zooms out below 100% so they stay
+ * readable, and learners pan to see the rest (RIN-1010).
+ */
+const MIN_GRAPH_ZOOM = 1;
+
 function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   const color = getNodeColor(data.status);
   const opacity = getMasteryOpacity(data.mastery);
   const isLocked = data.status === 'locked';
   const isFilled = data.status === 'mastered' || data.status === 'in_progress';
   const showDot = data.status === 'in_progress';
+  const isTruncated = data.label.length > MAX_LABEL_LENGTH;
   const targetPosition = data.direction === 'LR' ? Position.Left : Position.Top;
   const sourcePosition = data.direction === 'LR' ? Position.Right : Position.Bottom;
   return (
     <div
-      className={`${styles['conceptNode']} relative rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 ${isLocked ? 'border-line opacity-60' : 'hover:border-line-blue'}`}
+      className={`${styles['conceptNode']} relative rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 ${isLocked ? 'border-dashed border-line' : 'hover:border-line-blue'}`}
       style={{
         borderColor: getNodeBorderColor(data.status),
         backgroundColor: isFilled ? color : undefined,
@@ -114,14 +131,16 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
     >
       <Handle type="target" position={targetPosition} className="!h-1.5 !w-1.5 !bg-neutral-400" />
       <div className="flex flex-col items-center justify-center gap-1.5">
+        {/* Locked nodes stay at full opacity: neutral-700 keeps contrast above 4.5:1 (RIN-1010). */}
         <div
-          className={`text-center text-xs font-medium tracking-tight ${isFilled ? 'text-white' : 'text-neutral-900'}`}
+          title={isTruncated ? data.label : undefined}
+          className={`text-center text-xs font-medium tracking-tight ${isFilled ? 'text-white' : isLocked ? 'text-neutral-700' : 'text-neutral-900'}`}
         >
-          {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
+          {isTruncated ? `${data.label.substring(0, MAX_LABEL_LENGTH - 1)}…` : data.label}
         </div>
 
         {isLocked ? (
-          <Lock aria-hidden className="size-3 text-neutral-400" strokeWidth={2.25} />
+          <Lock aria-hidden className="size-3 text-neutral-500" strokeWidth={2.25} />
         ) : (
           <div className="flex items-center gap-1.5">
             {showDot && <div className="size-1.5 rounded-full bg-white" style={{ opacity }} />}
@@ -169,7 +188,7 @@ const getLayoutedElements = (
   dagreGraph.setGraph({ rankdir: direction, nodesep: 80, ranksep: 100 });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 150, height: 70 });
+    dagreGraph.setNode(node.id, { width: GRAPH_NODE_WIDTH, height: GRAPH_NODE_HEIGHT });
   });
 
   edges.forEach((edge) => {
@@ -184,8 +203,8 @@ const getLayoutedElements = (
     node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
 
     node.position = {
-      x: nodeWithPosition.x - 75,
-      y: nodeWithPosition.y - 35,
+      x: nodeWithPosition.x - GRAPH_NODE_WIDTH / 2,
+      y: nodeWithPosition.y - GRAPH_NODE_HEIGHT / 2,
     };
 
     return node;
@@ -205,7 +224,9 @@ function GraphFlow({
   onNodeClick: (nodeId: string) => void;
   preventPageScroll: boolean;
 }) {
-  const { fitView } = useReactFlow();
+  const { fitView, setViewport } = useReactFlow();
+  const viewportWidth = useStore((state) => state.width);
+  const viewportHeight = useStore((state) => state.height);
 
   const initialNodes: Node<ConceptNodeData>[] = (() => {
     if (!graphData) return [];
@@ -259,14 +280,24 @@ function GraphFlow({
   })();
   const nodeCount = nodes.length;
 
-  // Fit view when nodes change
+  const readableViewport = getReadableViewport(nodes, direction, viewportWidth, viewportHeight);
+  const readableX = readableViewport?.x ?? null;
+  const readableY = readableViewport?.y ?? null;
+
+  // Fit view when nodes change; a graph too big for 100% opens at its first rank.
   useEffect(() => {
     if (nodeCount > 0) {
-      const fitViewTimer = window.setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 100);
+      const fitViewTimer = window.setTimeout(() => {
+        if (readableX !== null && readableY !== null) {
+          void setViewport({ x: readableX, y: readableY, zoom: MIN_GRAPH_ZOOM }, { duration: 800 });
+          return;
+        }
+        void fitView({ padding: 0.2, duration: 800, minZoom: MIN_GRAPH_ZOOM });
+      }, 100);
       return () => window.clearTimeout(fitViewTimer);
     }
     return undefined;
-  }, [direction, graphData, nodeCount, fitView]);
+  }, [direction, graphData, nodeCount, fitView, setViewport, readableX, readableY]);
 
   const handleNodeClick = (_: React.MouseEvent, node: Node<ConceptNodeData>) => {
     onNodeClick(node.id);
@@ -282,8 +313,8 @@ function GraphFlow({
       nodesDraggable={false}
       nodesConnectable={false}
       fitView
-      fitViewOptions={{ padding: 0.2 }}
-      minZoom={0.2}
+      fitViewOptions={{ padding: 0.2, minZoom: MIN_GRAPH_ZOOM }}
+      minZoom={MIN_GRAPH_ZOOM}
       maxZoom={2}
       panOnScroll={false}
       preventScrolling={preventPageScroll}
@@ -403,7 +434,9 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     data: graphData,
     isLoading: loading,
     error: graphFetchError,
+    mutate: retryGraph,
   } = useKnowledgeGraph(sessionId);
+  const router = useRouter();
   const [selectedConceptState, setSelectedConceptState] = useState<SelectedConceptState | null>(
     null,
   );
@@ -470,11 +503,19 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   if (graphFetchError) {
     return (
       <div
-        className={`${styles['placeholder']} flex w-full items-center justify-center rounded-xl border border-red-100 bg-red-50`}
+        className={`${styles['placeholder']} flex w-full items-center justify-center rounded-xl border border-line bg-neutral-50 px-4`}
       >
-        <p role="alert" className="text-sm text-red-700">
-          {t('processing.errors.generic')}
-        </p>
+        <div className="space-y-4 text-center">
+          <p role="alert" className="text-base text-red-700">
+            {t('knowledgeGraph.loadError')}
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button variant="outline" onClick={() => router.push(ADAPTIVE_ROUTES.dashboard)}>
+              {t('exercise.backToDashboard')}
+            </Button>
+            <Button onClick={() => void retryGraph()}>{t('exercise.tryAgain')}</Button>
+          </div>
+        </div>
       </div>
     );
   }

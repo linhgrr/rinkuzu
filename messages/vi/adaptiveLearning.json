@@ -351,7 +351,6 @@
       "processingTakingLonger": "Tài liệu này đang mất nhiều thời gian xử lý hơn bình thường. Bạn có thể cứ để trang này mở, hệ thống sẽ tiếp tục tự kiểm tra...",
       "retryingCreateSession": "Lộ trình học đã sẵn sàng. Hệ thống đang kết nối lại để hoàn tất việc tạo phiên học...",
       "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được việc tạo phiên học. Vui lòng mở lại môn học từ bảng điều khiển.",
-      "retryAfterFailure": "Bạn có thể quay lại và thử tải lại tài liệu này một cách an toàn.",
       "partialSuccess": "Đã xử lý xong nhưng có cảnh báo: {failed} trên {total} batch PDF bị lỗi nên có thể thiếu một vài khái niệm."
     },
     "errors": {
@@ -362,11 +361,13 @@
       "unauthorized": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại rồi thử lại.",
       "conflict": "Tài liệu này chưa sẵn sàng để tạo phiên học.",
       "pipelineFailed": "Không thể hoàn tất việc xử lý tài liệu này. Vui lòng thử lại hoặc tải lên một PDF khác.",
-      "pipelineTimeout": "Quá trình xử lý mất quá nhiều thời gian và đã bị dừng. Vui lòng tải lại tài liệu và thử lại.",
-      "pipelineCancelled": "Quá trình xử lý đã bị gián đoạn trước khi hoàn tất. Vui lòng tải lại tài liệu.",
+      "pipelineTimeout": "Quá trình xử lý mất quá nhiều thời gian và đã bị dừng. Bạn có thể thử lại.",
+      "pipelineCancelled": "Quá trình xử lý đã bị gián đoạn trước khi hoàn tất. Bạn có thể thử lại.",
       "pipelineUnavailable": "Dịch vụ xử lý hiện tạm thời không khả dụng. Vui lòng thử lại sau ít phút.",
       "sessionNotReady": "Lộ trình học gần như đã sẵn sàng nhưng phiên học chưa thể mở ngay lúc này.",
-      "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được phiên học. Vui lòng mở lại từ bảng điều khiển."
+      "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được phiên học. Vui lòng mở lại từ bảng điều khiển.",
+      "failedAtStep": "Đã xảy ra lỗi ở bước “{step}”. Bạn có thể thử lại an toàn.",
+      "failedAtStepFinal": "Đã xảy ra lỗi ở bước “{step}” và không thể tiếp tục lượt xử lý này. Hãy tải tài liệu lên lại hoặc quay về thư viện."
     },
     "stats": {
       "extracted": "Đã trích xuất",
@@ -375,7 +376,10 @@
     },
     "progress": "Tiến độ",
     "didYouKnow": "Bạn có biết?",
-    "didYouKnowDescription": "AI của chúng tôi sử dụng mô hình ngôn ngữ tiên tiến để hiểu nội dung và tạo ra lộ trình học tập hiệu quả nhất cho bạn."
+    "didYouKnowDescription": "AI của chúng tôi sử dụng mô hình ngôn ngữ tiên tiến để hiểu nội dung và tạo ra lộ trình học tập hiệu quả nhất cho bạn.",
+    "tryAgain": "Thử lại",
+    "backToLibrary": "Về thư viện",
+    "stepFailed": "lỗi"
   },
   "exercise": {
     "loadingTitle": "AI đang chọn bài tập phù hợp nhất cho bạn...",

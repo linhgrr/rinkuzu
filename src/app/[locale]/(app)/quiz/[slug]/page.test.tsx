@@ -7,7 +7,9 @@ const {
   resolveSlugAlias,
   getCatalogMetadataBySlug,
   permanentRedirectMock,
+  requestHeaders,
 } = vi.hoisted(() => ({
+  requestHeaders: { current: new Headers() },
   getCurrentSession: vi.fn(),
   getQuizForPlay: vi.fn(),
   getRetryQuizForPlay: vi.fn(),
@@ -18,6 +20,7 @@ const {
   }),
 }));
 
+vi.mock('next/headers', () => ({ headers: () => Promise.resolve(requestHeaders.current) }));
 vi.mock('next/navigation', () => ({ permanentRedirect: permanentRedirectMock }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession }));
 vi.mock('@/lib/quiz-factory', () => ({
@@ -39,6 +42,7 @@ vi.mock('@/features/quiz/components/PremiumQuizSignInPrompt', () => ({
 import type { ReactElement, ReactNode } from 'react';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
 import QuizPlayerPage from './page';
+import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
 
@@ -248,5 +252,61 @@ describe('QuizPlayerPage retry-missed session (RIN-917)', () => {
 
     expect(getRetryQuizForPlay).not.toHaveBeenCalled();
     expect(getQuizForPlay).toHaveBeenCalled();
+  });
+});
+
+describe('QuizPlayerPage server-rendered first question (RIN-1032)', () => {
+  const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile/15E148';
+  const DESKTOP = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0 Safari/537.36';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCatalogMetadataBySlug.mockResolvedValue(null);
+    getCurrentSession.mockResolvedValue(null);
+    getQuizForPlay.mockResolvedValue({
+      success: true,
+      data: {
+        title: 'Quiz',
+        visibility: 'personal',
+        questionCount: 7,
+        author: null,
+        createdAt: '2026-11-01T00:00:00.000Z',
+        updatedAt: '2026-11-01T00:00:00.000Z',
+      },
+    });
+  });
+
+  async function playerProps(headerValues: Record<string, string>) {
+    requestHeaders.current = new Headers(headerValues);
+    const page = (await renderPage(NEW_SLUG)) as ReactElement<{ children: ReactNode[] }>;
+    const player = page.props.children.find(
+      (child): child is ReactElement<Record<string, unknown>> =>
+        (child as ReactElement | null)?.type === QuizPlayerClient,
+    );
+    return player?.props ?? {};
+  }
+
+  it.each([
+    ['a phone user agent', { 'user-agent': IPHONE }, true],
+    ['a desktop user agent', { 'user-agent': DESKTOP }, false],
+    [
+      'the mobile client hint over the user agent',
+      { 'user-agent': IPHONE, 'sec-ch-ua-mobile': '?0' },
+      false,
+    ],
+  ])('guesses the layout from %s', async (_label, headerValues, mobile) => {
+    const props = await playerProps(headerValues);
+
+    expect(props['initialMobile']).toBe(mobile);
+    expect(props['shuffleSeed']).toEqual(expect.any(Number));
+  });
+
+  it('draws a new seed for every request', async () => {
+    const seeds = new Set<unknown>();
+    for (let request = 0; request < 5; request += 1) {
+      seeds.add((await playerProps({ 'user-agent': DESKTOP }))['shuffleSeed']);
+    }
+
+    expect(seeds.size).toBeGreaterThan(1);
   });
 });

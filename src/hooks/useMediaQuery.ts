@@ -31,11 +31,14 @@ export function matchesMedia(query: string): boolean {
  * Reactive media query hook. Subscribes to `change` events so the component
  * re-renders only when the boolean match flips — not on every pixel change.
  * Use this when the match drives rendering (derived boolean state).
+ *
+ * `serverValue` is what the server render and hydration assume (default `false`), for example a
+ * phone guess from the request, so a server-rendered layout hydrates without a swap (RIN-1032).
  */
-export function useMediaQuery(query: string): boolean {
+export function useMediaQuery(query: string, serverValue?: boolean): boolean {
   return useSyncExternalStore(
     (onStoreChange) => subscribeToMediaQuery(query, onStoreChange),
     () => matchesMedia(query),
-    getServerMediaQuerySnapshot,
+    serverValue === undefined ? getServerMediaQuerySnapshot : () => serverValue,
   );
 }

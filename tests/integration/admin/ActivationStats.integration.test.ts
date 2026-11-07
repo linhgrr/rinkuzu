@@ -5,6 +5,7 @@ import mongoose, { Types } from 'mongoose';
 import type { AdminAdaptiveLearnerEvents } from '@/interfaces/repositories/IAdminStatsRepository';
 import { AdminAuditRepository } from '@/repositories/AdminAuditRepository';
 import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
+import { ActivationEmailStatsRepository } from '@/repositories/ActivationEmailStatsRepository';
 import { ActivationStatsService } from '@/services/admin/ActivationStatsService';
 import { integrationDatabaseUri } from '../../setup/integration-db';
 
@@ -388,6 +389,7 @@ describe('activation stats integration', () => {
     const adaptiveReader = vi.fn().mockResolvedValue(adaptiveEvents());
     const service = new ActivationStatsService({
       stats: new AdminStatsRepository(),
+      activationEmail: new ActivationEmailStatsRepository(),
       audit: new AdminAuditRepository(),
       adaptiveEvents: adaptiveReader,
       // Monday of W05: exactly 14 days after W02 ended.

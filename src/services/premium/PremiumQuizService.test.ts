@@ -126,6 +126,7 @@ function setup() {
     grantAdminCredits: vi.fn(),
     unlock: vi.fn(),
     hasGrant: vi.fn(),
+    findGrantedQuizIds: vi.fn(),
     findActivePublicationByQuizId: vi.fn(),
     findActivePublicationBySlug: vi.fn(),
     createSession: vi.fn(),
@@ -179,6 +180,47 @@ describe('PremiumQuizService', () => {
       page: 1,
       limit: 12,
     });
+  });
+
+  it('marks the catalog items a signed-in learner already unlocked with credit (RIN-1014)', async () => {
+    const { service, premiumRepository } = setup();
+    const owned = '507f191e810c19729de860ea';
+    const other = '507f191e810c19729de860eb';
+    premiumRepository.listCatalog.mockResolvedValue({
+      items: [
+        { quizId: owned, title: 'Owned', slug: 'owned', questionCount: 3 },
+        { quizId: other, title: 'Other', slug: 'other', questionCount: 4 },
+      ],
+      page: 1,
+      limit: 12,
+      totalItems: 2,
+      totalPages: 1,
+    });
+    premiumRepository.findGrantedQuizIds.mockResolvedValue([owned]);
+
+    const result = await service.listCatalog({ page: 1, limit: 12 }, 'learner-1');
+
+    expect(premiumRepository.findGrantedQuizIds).toHaveBeenCalledWith('learner-1', [owned, other]);
+    expect(result.items.map((item) => [item.quizId, item.unlocked])).toEqual([
+      [owned, true],
+      [other, false],
+    ]);
+  });
+
+  it('skips the grant lookup for anonymous visitors and empty pages', async () => {
+    const { service, premiumRepository } = setup();
+    premiumRepository.listCatalog.mockResolvedValue({
+      items: [],
+      page: 1,
+      limit: 12,
+      totalItems: 0,
+      totalPages: 0,
+    });
+
+    await service.listCatalog({ page: 1, limit: 12 }, 'learner-1');
+    await service.listCatalog({ page: 1, limit: 12 }, null);
+
+    expect(premiumRepository.findGrantedQuizIds).not.toHaveBeenCalled();
   });
 
   it('trims the reason and delegates an idempotent admin credit grant', async () => {

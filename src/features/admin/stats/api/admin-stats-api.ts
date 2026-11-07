@@ -61,8 +61,29 @@ export async function fetchActivationFunnelViewModel(
     ...(signal ? { signal } : {}),
   });
   const now = Date.parse(dto.generatedAt);
+  const inProgress = (start: string, end: string) =>
+    Date.parse(start) <= now && now <= Date.parse(end);
+  const bounds = new Map(dto.weeks.map((week) => [week.isoWeek, week]));
   return {
     adaptiveAvailable: dto.sources.adaptive === 'ok',
+    emailWeeks: dto.activationEmail.weeks
+      .flatMap((email) => {
+        const week = bounds.get(email.isoWeek);
+        if (!week) return [];
+        return [
+          {
+            isoWeek: email.isoWeek,
+            monday: week.start.slice(0, 10),
+            sent: email.sent,
+            sentDay1: email.byTrigger['24h'].sent,
+            sentBackfill: email.byTrigger.backfill.sent,
+            clicked: email.clicked,
+            activatedWithin7d: email.activatedWithin7d,
+            inProgress: inProgress(week.start, week.end),
+          },
+        ];
+      })
+      .reverse(),
     weeks: dto.weeks
       .map((week) => ({
         isoWeek: week.isoWeek,
@@ -72,7 +93,7 @@ export async function fetchActivationFunnelViewModel(
         startedQuiz: week.startedQuiz,
         activated: week.activated,
         returnedWeek1: week.returnedWeek1,
-        inProgress: Date.parse(week.start) <= now && now <= Date.parse(week.end),
+        inProgress: inProgress(week.start, week.end),
       }))
       .reverse(),
   };

@@ -121,9 +121,27 @@ export interface ActivationFunnelWeekViewModel {
   inProgress: boolean;
 }
 
+/** One send week of activation nudge emails: aggregate counts only (RIN-1001). */
+export interface ActivationEmailWeekViewModel {
+  isoWeek: string;
+  /** Monday of the week, `YYYY-MM-DD` (UTC). */
+  monday: string;
+  sent: number;
+  /** Sent by the sweep 24 h after signup. */
+  sentDay1: number;
+  /** Sent by the backfill. */
+  sentBackfill: number;
+  clicked: number;
+  activatedWithin7d: number;
+  /** The week that contains `generatedAt`. */
+  inProgress: boolean;
+}
+
 export interface ActivationFunnelViewModel {
   /** False when the adaptive API did not answer: every count is quiz-only. */
   adaptiveAvailable: boolean;
   /** Newest week first. */
   weeks: ActivationFunnelWeekViewModel[];
+  /** Same weeks by send week, newest first. */
+  emailWeeks: ActivationEmailWeekViewModel[];
 }

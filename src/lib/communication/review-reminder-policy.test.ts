@@ -8,6 +8,7 @@ import {
   reviewReminderQaRecipients,
   reviewRetryUrl,
   oneClickUnsubscribeUrl,
+  unsubscribeCampaign,
   unsubscribePageUrl,
   unsubscribeToken,
   verifyUnsubscribeToken,
@@ -206,5 +207,17 @@ describe('unsubscribe token', () => {
     expect(oneClickUnsubscribeUrl('https://www.rinkuzu.app', 'abc.def')).toBe(
       'https://www.rinkuzu.app/api/unsubscribe?t=abc.def',
     );
+  });
+
+  it('tags activation-nudge links with their campaign and ignores unknown ones (RIN-1044)', () => {
+    expect(unsubscribePageUrl('https://www.rinkuzu.app', 'vi', 'abc.def', 'activation_nudge')).toBe(
+      'https://www.rinkuzu.app/vi/unsubscribe?t=abc.def&c=activation_nudge',
+    );
+    expect(oneClickUnsubscribeUrl('https://www.rinkuzu.app', 'abc.def', 'activation_nudge')).toBe(
+      'https://www.rinkuzu.app/api/unsubscribe?t=abc.def&c=activation_nudge',
+    );
+    expect(unsubscribeCampaign('activation_nudge')).toBe('activation_nudge');
+    expect(unsubscribeCampaign('w1-review')).toBeNull();
+    expect(unsubscribeCampaign(['activation_nudge'])).toBeNull();
   });
 });

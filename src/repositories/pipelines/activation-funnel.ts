@@ -131,7 +131,7 @@ function claimedAttemptTime(time: unknown): Record<string, unknown> {
  * When an attempt counts as taken: a guest attempt claimed into an account
  * (RIN-920) counts at `claimedAt`, so the signup week gets the credit.
  */
-const ATTEMPT_AT = { $ifNull: ['$claimedAt', '$takenAt'] } as const;
+export const ATTEMPT_AT = { $ifNull: ['$claimedAt', '$takenAt'] } as const;
 
 /** A claim is at most this long after `takenAt` (`GUEST_ATTEMPT_CLAIM_WINDOW_MS`). */
 const CLAIM_WINDOW_MS = DAY_MS;

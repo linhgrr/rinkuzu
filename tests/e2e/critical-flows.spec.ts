@@ -481,9 +481,19 @@ async function quizCompletedProperties(page: Page): Promise<unknown> {
   });
 }
 
+/**
+ * RIN-1133: the first question is server-rendered (RIN-1032) and its options stay disabled
+ * until React hydrates them, so the click waits for that. Assert the answer took, here and
+ * not later on the Finish button.
+ */
+async function answerFirstQuestion(page: Page, option: string): Promise<void> {
+  await page.getByText(option, { exact: true }).click();
+  await expect(page.getByRole('radio', { checked: true })).toHaveCount(1);
+}
+
 async function submitStarterQuiz(page: Page, starterSlug: string): Promise<void> {
   await expect(page.getByText(E2E_STARTER_QUIZ.question)).toBeVisible();
-  await page.getByText('The starter card', { exact: true }).click();
+  await answerFirstQuestion(page, 'The starter card');
   const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
   if (await desktopSubmit.isVisible()) {
     await desktopSubmit.click();
@@ -595,7 +605,7 @@ test.describe('production critical paths', () => {
       await login(page, fixture.regular);
       await page.goto(`/en/quiz/${fixture.quizSlug}`);
       await expect(page.getByText('Which option proves the quiz lifecycle works?')).toBeVisible();
-      await page.getByText('Production is the correct choice', { exact: true }).click();
+      await answerFirstQuestion(page, 'Production is the correct choice');
 
       const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
       if (await desktopSubmit.isVisible()) {
@@ -642,7 +652,7 @@ test.describe('production critical paths', () => {
         });
         await page.goto(`/en/quiz/${fixture.quizSlug}`);
         await expect(page.getByText('Which option proves the quiz lifecycle works?')).toBeVisible();
-        await page.getByText('Production is the correct choice', { exact: true }).click();
+        await answerFirstQuestion(page, 'Production is the correct choice');
         const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
         if (await desktopSubmit.isVisible()) {
           await desktopSubmit.click();
@@ -741,7 +751,7 @@ test.describe('production critical paths', () => {
       await expect(
         page.getByText('Retry: 1 question', { exact: true }).filter({ visible: true }).first(),
       ).toBeVisible();
-      await page.getByText('Production is the correct choice', { exact: true }).click();
+      await answerFirstQuestion(page, 'Production is the correct choice');
       await submitQuiz();
       await page.waitForURL(resultUrl);
       await expect(page.getByText('Retry of missed questions', { exact: true })).toBeVisible();
@@ -942,7 +952,7 @@ test.describe('production critical paths', () => {
         '/en/dashboard',
       );
       await expect(page.getByText(E2E_STARTER_QUIZ.question)).toBeVisible();
-      await page.getByText('The starter card', { exact: true }).click();
+      await answerFirstQuestion(page, 'The starter card');
 
       const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
       if (await desktopSubmit.isVisible()) {

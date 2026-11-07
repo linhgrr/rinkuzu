@@ -642,6 +642,29 @@ function startedPlayerState(start: QuizPlayerAction | null): QuizPlayerState {
 
 const subscribeToNothing = () => () => undefined;
 
+/**
+ * True when the player mounts on the client without server HTML, for example "Play another quick
+ * round". Hydration reads false and keeps it: a re-render right after hydration would reach the
+ * lazy layout's Suspense boundary while its chunk is still loading on a slow phone, and React 19
+ * then replaces the server-rendered options silently, losing a tap on them (RIN-1133).
+ */
+function useClientOnlyMount() {
+  const [probe] = useState(createMountProbe);
+  return useSyncExternalStore(subscribeToNothing, probe.clientSnapshot, probe.serverSnapshot);
+}
+
+/** React reads the server snapshot only on the server and while hydrating. */
+function createMountProbe() {
+  let hydrating = false;
+  return {
+    clientSnapshot: () => !hydrating,
+    serverSnapshot: () => {
+      hydrating = true;
+      return false;
+    },
+  };
+}
+
 /** A quick round never reads or overwrites the full quiz's saved progress. */
 function playModeSetup(
   playMode: QuizPlayMode | null,
@@ -735,11 +758,7 @@ export default function QuizPlayerClient({
   const encodedSlug = routePathSegment(slug);
 
   const isMobile = useMediaQuery(MEDIA_MAX_MD, initialMobile);
-  const clientMount = useSyncExternalStore(
-    subscribeToNothing,
-    () => true,
-    () => false,
-  );
+  const clientMount = useClientOnlyMount();
   const starterNotice = postSignInStarterNotice(entry, slug);
 
   const sessionEmail = session?.user?.email || undefined;

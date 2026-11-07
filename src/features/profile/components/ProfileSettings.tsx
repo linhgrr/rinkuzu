@@ -381,11 +381,6 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
   const currentPasswordRef = useRef<HTMLInputElement>(null);
   const newPasswordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
-  const passwordFieldRefs = {
-    currentPassword: currentPasswordRef,
-    newPassword: newPasswordRef,
-    confirmPassword: confirmPasswordRef,
-  };
   const [state, dispatch] = useReducer(profileSettingsReducer, initialState);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
   const [syncedInitialTab, setSyncedInitialTab] = useState<ProfileTab>(initialTab);
@@ -470,7 +465,13 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
   const rejectPassword = (errors: PasswordFieldErrors) => {
     dispatch({ type: 'password:invalid', errors });
     const field = firstInvalidPasswordField(errors);
-    if (field) passwordFieldRefs[field].current?.focus();
+    if (!field) return;
+    const fieldRefs = {
+      currentPassword: currentPasswordRef,
+      newPassword: newPasswordRef,
+      confirmPassword: confirmPasswordRef,
+    };
+    fieldRefs[field].current?.focus();
   };
 
   const handleChangePassword = async () => {
@@ -635,7 +636,9 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
             ) : (
               <PasswordSection
                 errors={state.passwordErrors}
-                fieldRefs={passwordFieldRefs}
+                currentPasswordRef={currentPasswordRef}
+                newPasswordRef={newPasswordRef}
+                confirmPasswordRef={confirmPasswordRef}
                 onFieldChange={(field, value) =>
                   dispatch({ type: 'password:setField', field, value })
                 }

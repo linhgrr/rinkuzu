@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
 
-export const PASSWORD_FIELDS = ['currentPassword', 'newPassword', 'confirmPassword'] as const;
+const PASSWORD_FIELDS = ['currentPassword', 'newPassword', 'confirmPassword'] as const;
 export type PasswordField = (typeof PASSWORD_FIELDS)[number];
 /** Translation keys of the `profile` namespace, one per field that failed. */
 export type PasswordFieldErrors = Partial<Record<PasswordField, string>>;
@@ -94,7 +94,9 @@ export function GooglePasswordCard({ t }: { t: Translate }) {
 
 interface PasswordSectionProps {
   errors: PasswordFieldErrors;
-  fieldRefs: Record<PasswordField, RefObject<HTMLInputElement | null>>;
+  currentPasswordRef: RefObject<HTMLInputElement | null>;
+  newPasswordRef: RefObject<HTMLInputElement | null>;
+  confirmPasswordRef: RefObject<HTMLInputElement | null>;
   onFieldChange: (field: PasswordField, value: string) => void;
   onSavePassword: () => void;
   onTogglePasswordVisibility: () => void;
@@ -105,8 +107,10 @@ interface PasswordSectionProps {
 }
 
 export function PasswordSection({
+  confirmPasswordRef,
+  currentPasswordRef,
   errors,
-  fieldRefs,
+  newPasswordRef,
   onFieldChange,
   onSavePassword,
   onTogglePasswordVisibility,
@@ -133,7 +137,7 @@ export function PasswordSection({
         }}
       >
         <Input
-          ref={fieldRefs.currentPassword}
+          ref={currentPasswordRef}
           label={t('currentPassword')}
           type="password"
           value={values.currentPassword}
@@ -146,7 +150,7 @@ export function PasswordSection({
         />
 
         <Input
-          ref={fieldRefs.newPassword}
+          ref={newPasswordRef}
           label={t('newPassword')}
           type={showNewPassword ? 'text' : 'password'}
           value={values.newPassword}
@@ -171,7 +175,7 @@ export function PasswordSection({
         </button>
 
         <Input
-          ref={fieldRefs.confirmPassword}
+          ref={confirmPasswordRef}
           label={t('confirmNewPassword')}
           type="password"
           value={values.confirmPassword}

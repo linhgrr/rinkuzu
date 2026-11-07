@@ -3,8 +3,8 @@
   "cancelledProcessing": "Cancelled processing \"{title}\"",
   "removedDraft": "Deleted draft \"{title}\"",
   "deleteFailed": "Could not delete the draft. Please try again.",
-  "processingFiles": "Processing {count} files",
-  "quizzesReady": "{count} quizzes ready",
+  "processingFiles": "{count, plural, one {Processing # file} other {Processing # files}}",
+  "quizzesReady": "{count, plural, one {# quiz ready} other {# quizzes ready}}",
   "expired": "Expired",
   "days": "{count} days",
   "hoursMinutes": "{hours}h {minutes}m",
@@ -31,5 +31,13 @@
   "timedOut": "PDF processing timed out",
   "readyTitle": "\"{title}\" is ready!",
   "readyDescription": "{count, plural, one {# question extracted} other {# questions extracted}}",
-  "view": "View"
+  "view": "View",
+  "meta": {
+    "editTitle": "Edit draft quiz | RinKuzu"
+  },
+  "notFound": {
+    "title": "Draft not found",
+    "description": "This draft may have expired, been published, or you may not have access to it.",
+    "backToDashboard": "Back to dashboard"
+  }
 }

@@ -35,6 +35,7 @@
   },
   "manualEditorTitle": "Build your quiz",
   "manualEditorDescription": "Add questions and answers. Your changes save automatically.",
+  "draftEditorDescription": "Check the questions. Your changes save automatically.",
   "autosaveSaving": "Saving...",
   "autosavePending": "Unsaved changes",
   "autosaveSaved": "Saved",

@@ -129,7 +129,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
         questionsCount: (count) =>
           isManualDraft ? t('questionsInDraft', { count }) : t('questionsExtracted', { count }),
         metaTitle: t('quizTitle'),
-        metaDescription: isManualDraft ? t('manualEditorDescription') : t('uploadDescription'),
+        metaDescription: isManualDraft ? t('manualEditorDescription') : t('draftEditorDescription'),
         title: t('quizTitle'),
         titlePlaceholder: t('enterTitle'),
         description: t('descriptionOptional'),

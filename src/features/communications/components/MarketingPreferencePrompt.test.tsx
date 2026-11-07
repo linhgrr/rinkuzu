@@ -120,6 +120,10 @@ describe('the marketing preference prompt', () => {
     ['a quiz in progress', '/quiz/photosynthesis-basics'],
     ['an adaptive exercise', '/adaptive/exercise/session-1'],
     ['an adaptive result', '/adaptive/result/session-1'],
+    // RIN-993: docked, it covered Folder and Premium at 375 and the sticky
+    // Cancel/Publish bar at 1440 on the quiz editors.
+    ['the draft editor', '/vi/draft/draft-1/edit'],
+    ['the quiz editor', '/edit/quiz-1'],
   ])('stays away from %s', (_label, path) => {
     // Floating an unrelated opt-in over someone working through a question
     // covers the answers they are reading and asks them to decide something

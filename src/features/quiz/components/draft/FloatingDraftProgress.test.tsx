@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   removeDraft: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
+  pathname: vi.fn(() => '/create'),
 }));
 
 const completedDraft = {
@@ -29,6 +30,7 @@ vi.mock('@/i18n/navigation', () => ({
   Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
   ),
+  usePathname: () => mocks.pathname(),
 }));
 
 vi.mock('next-intl', () => ({
@@ -80,6 +82,17 @@ describe('FloatingDraftProgress', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.pathname.mockReturnValue('/create');
+  });
+
+  // RIN-993: on the quiz editors the pill sat on the sticky Publish bar (375)
+  // and its right edge (1280). The ready toast still comes from DraftSyncProvider.
+  it.each(['/vi/draft/draft-ready/edit', '/edit/quiz-1'])('stays off the editor at %s', (path) => {
+    mocks.pathname.mockReturnValue(path);
+
+    render(<FloatingDraftProgress />);
+
+    expect(screen.queryByRole('button', { name: 'quizzesReady' })).not.toBeInTheDocument();
   });
 
   it('deletes a completed draft on the server before removing it locally', async () => {

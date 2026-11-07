@@ -7,19 +7,26 @@ import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { getJobIdForSession, getSessionExerciseOutcome } from '../lib/session-storage';
 import { buildExercisePromptText } from '@/features/adaptive/lib/exercise-prompt';
 import { BLOOM_LABELS } from '@/features/adaptive/types/learning';
+import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
 import type { SessionHistoryDetail } from '@/features/adaptive/types/history';
 import type { Exercise, SubmitResult, TranslateFn } from '@/features/adaptive/types/learning';
 
 interface ResultState {
   result: SubmitResult | null;
   exercise: Exercise | null;
+  answer: ExerciseAnswerDraft | null;
   isChatOpen: boolean;
   hydrating: boolean;
 }
 
 type ResultStateAction =
   | { type: 'hydrateStart' }
-  | { type: 'hydrateComplete'; result: SubmitResult | null; exercise: Exercise | null }
+  | {
+      type: 'hydrateComplete';
+      result: SubmitResult | null;
+      exercise: Exercise | null;
+      answer: ExerciseAnswerDraft | null;
+    }
   | { type: 'setChatOpen'; value: boolean };
 
 type DerivedResultOutcome = {
@@ -36,6 +43,7 @@ function resultStateReducer(state: ResultState, action: ResultStateAction): Resu
         ...state,
         result: action.result,
         exercise: action.exercise,
+        answer: action.answer,
         hydrating: false,
       };
     case 'setChatOpen':
@@ -108,6 +116,7 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
   const [state, dispatch] = useReducer(resultStateReducer, {
     result: null,
     exercise: null,
+    answer: null,
     isChatOpen: false,
     hydrating: true,
   });
@@ -125,12 +134,14 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
 
       let nextResult: SubmitResult | null = null;
       let nextExercise: Exercise | null = null;
+      let nextAnswer: ExerciseAnswerDraft | null = null;
 
       try {
         const storedOutcome = getSessionExerciseOutcome(sessionId);
         if (storedOutcome) {
           nextResult = storedOutcome.result;
           nextExercise = storedOutcome.exercise;
+          nextAnswer = storedOutcome.answer ?? null;
         } else {
           const jobId = getJobIdForSession(sessionId);
           if (jobId) {
@@ -145,10 +156,16 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
       } catch {
         nextResult = null;
         nextExercise = null;
+        nextAnswer = null;
       }
 
       if (!cancelled) {
-        dispatch({ type: 'hydrateComplete', result: nextResult, exercise: nextExercise });
+        dispatch({
+          type: 'hydrateComplete',
+          result: nextResult,
+          exercise: nextExercise,
+          answer: nextAnswer,
+        });
       }
     };
 
@@ -159,7 +176,7 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
     };
   }, [sessionId]);
 
-  const { exercise, hydrating, isChatOpen, result } = state;
+  const { answer, exercise, hydrating, isChatOpen, result } = state;
   const isCorrect = result?.is_correct ?? false;
 
   const masteryPercent = Math.round((result?.mastery_after ?? 0) * 100);
@@ -184,6 +201,15 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
     router.push(ADAPTIVE_ROUTES.dashboard);
   };
 
+  // The adaptive dashboard is the learner's personalized subject list.
+  const handleChooseSubject = () => {
+    router.push(ADAPTIVE_ROUTES.dashboard);
+  };
+
+  const handleBackToSubject = () => {
+    router.push(ADAPTIVE_ROUTES.subject(sessionId));
+  };
+
   const handleNext = () => {
     if (!result) return;
 
@@ -204,10 +230,13 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
   };
 
   return {
+    answer,
     averageMasteryPercent,
     chatContext,
     closeChat,
     exercise,
+    handleBackToSubject,
+    handleChooseSubject,
     handleGoDashboard,
     handleNext,
     hydrating,

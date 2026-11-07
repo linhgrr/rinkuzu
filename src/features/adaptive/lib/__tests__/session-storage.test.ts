@@ -63,6 +63,12 @@ describe('adaptive session storage', () => {
     expect(getSessionExerciseOutcome('session-1')).toEqual({ exercise, result });
   });
 
+  it('round-trips the learner answer with the outcome (RIN-1011)', () => {
+    const answer = { type: 'mcq' as const, selection: 'B' };
+    saveSessionExerciseOutcome('session-1', { exercise, result, answer });
+    expect(getSessionExerciseOutcome('session-1')).toEqual({ exercise, result, answer });
+  });
+
   it('removes corrupt versioned outcome caches', () => {
     localStorage.setItem(
       'al_session_outcome:v1:session-1',

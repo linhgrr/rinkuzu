@@ -59,6 +59,23 @@
       "waiting_for_user": "Waiting for your reply",
       "resolved": "Resolved",
       "closed": "Closed"
+    },
+    "pageTitle": "Support",
+    "addImages": "Add images",
+    "removeImage": "Remove image {name}",
+    "backToRequests": "Back to requests",
+    "authorYou": "You",
+    "authorSupport": "Rinkuzu Support",
+    "authorLearner": "Learner",
+    "resolvedNote": "This request is resolved. Replying will reopen it.",
+    "closedReopenNote": "This request is closed. Reopen it to reply.",
+    "closedFinalNote": "This request is closed and can no longer be reopened.",
+    "newRequest": "Open a new request",
+    "errors": {
+      "subjectTooShort": "Enter a subject of at least 4 characters.",
+      "bodyRequired": "Write your message.",
+      "replyRequired": "Write your reply.",
+      "attachmentRejected": "Only PNG, JPEG or WebP images up to 5 MB each, 3 at most."
     }
   },
   "feedbackPreference": {

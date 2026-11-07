@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
@@ -20,6 +20,7 @@ import {
   remindFeedback,
   replyFeedback,
 } from '../api/communications-api';
+import { DetailLoadError } from './DetailLoadError';
 
 export function AdminFeedbackConversationPage({ id }: { id: string }) {
   const locale = useLocale();
@@ -31,11 +32,6 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
   const [actionError, setActionError] = useState('');
-  // Described once per error object: the 15 s refresh re-renders, and describing logs.
-  const loadError = useMemo(
-    () => (error ? describeError(error, t('feedbackLoadError')) : ''),
-    [describeError, error, t],
-  );
 
   async function reply(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -68,7 +64,14 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
   if (error)
     return (
       <AdminPageShell>
-        <ErrorState message={loadError} onRetry={() => mutate()} />
+        <DetailLoadError
+          href="/admin/feedback"
+          label={t('backToFeedback')}
+          title={t('feedbackTitle')}
+          error={error}
+          message={t('feedbackLoadError')}
+          onRetry={() => mutate()}
+        />
       </AdminPageShell>
     );
   if (!data) return <div className="p-8">Đang tải…</div>;

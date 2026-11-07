@@ -10,6 +10,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { AdminReportsPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
@@ -37,6 +38,10 @@ import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface AdminReportsState {
   status: 'loading' | 'ready';
+  /** Raw load failure; the list is replaced by ErrorState until a reload succeeds (RIN-1159). */
+  loadError: unknown;
+  /** Bumped by Retry to rerun the load effect for the same filter. */
+  reloadToken: number;
   reports: AdminReportViewModel[];
   statusFilter: AdminReportFilterViewModel;
   selectedReport: AdminReportViewModel | null;
@@ -54,6 +59,8 @@ const REPORT_FILTERS: AdminReportFilterViewModel[] = ['all', 'pending', 'resolve
 
 const initialState: AdminReportsState = {
   status: 'loading',
+  loadError: null,
+  reloadToken: 0,
   reports: [],
   statusFilter: 'all',
   selectedReport: null,
@@ -92,7 +99,7 @@ function adminReportsReducer(
     case 'patch':
       return { ...state, ...action.value };
     case 'loadSuccess':
-      return { ...state, status: 'ready', reports: action.value };
+      return { ...state, status: 'ready', loadError: null, reports: action.value };
     default:
       return state;
   }
@@ -322,7 +329,7 @@ export function AdminReportsPageClient() {
       } catch (error) {
         if (cancelled) return;
         console.error('Error fetching reports:', error);
-        dispatch({ type: 'patch', value: { status: 'ready' } });
+        dispatch({ type: 'patch', value: { status: 'ready', loadError: error } });
       }
     }
 
@@ -333,7 +340,7 @@ export function AdminReportsPageClient() {
       cancelled = true;
       controller.abort();
     };
-  }, [state.statusFilter]);
+  }, [state.statusFilter, state.reloadToken]);
 
   const openReportModal = (report: AdminReportViewModel) => {
     dispatch({
@@ -413,7 +420,14 @@ export function AdminReportsPageClient() {
             />
 
             <div className="space-y-4">
-              {state.reports.length === 0 ? (
+              {state.loadError ? (
+                <ErrorState
+                  error={state.loadError}
+                  onRetry={() =>
+                    dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } })
+                  }
+                />
+              ) : state.reports.length === 0 ? (
                 <Card className="p-12">
                   <EmptyState
                     title={tAdmin('noReportsTitle')}

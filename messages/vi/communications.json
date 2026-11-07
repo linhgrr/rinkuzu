@@ -48,6 +48,8 @@
     "next": "Trang sau",
     "conversationLoading": "Đang tải cuộc trao đổi…",
     "conversationError": "Không thể tải ticket hỗ trợ.",
+    "conversationTitle": "Yêu cầu hỗ trợ",
+    "noMessages": "Yêu cầu này chưa có tin nhắn nào.",
     "history": "Lịch sử trao đổi",
     "attachmentAlt": "Ảnh đính kèm hỗ trợ",
     "reply": "Phản hồi",
@@ -101,7 +103,14 @@
     "feedbackRemindError": "Không thể gửi lời nhắc",
     "feedbackCompleteError": "Không thể hoàn tất cuộc trao đổi",
     "supportCreateError": "Không thể tạo cuộc hỗ trợ",
-    "scheduleTimeInvalid": "Hãy chọn thời gian gửi hợp lệ"
+    "scheduleTimeInvalid": "Hãy chọn thời gian gửi hợp lệ",
+    "campaignsLoadError": "Không thể tải danh sách campaign.",
+    "campaignTitle": "Campaign",
+    "backToCampaigns": "Quay lại danh sách campaign",
+    "feedbackListLoadError": "Không thể tải các cuộc trao đổi góp ý.",
+    "feedbackTitle": "Cuộc trao đổi góp ý",
+    "backToFeedback": "Quay lại danh sách góp ý",
+    "supportListLoadError": "Không thể tải inbox hỗ trợ."
   },
   "unsubscribe": {
     "metaTitle": "Hủy nhận email | RinKuzu",

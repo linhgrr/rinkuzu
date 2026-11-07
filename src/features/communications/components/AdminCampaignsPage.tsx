@@ -20,7 +20,11 @@ export function AdminCampaignsPage() {
   const t = useTranslations('communications.admin');
   const describeError = useAdminApiErrorMessage();
   const [page, setPage] = useState(1);
-  const { data, mutate } = useSWR(`/api/admin/campaigns?page=${page}`, () => fetchCampaigns(page), {
+  const {
+    data,
+    error: loadError,
+    mutate,
+  } = useSWR(`/api/admin/campaigns?page=${page}`, () => fetchCampaigns(page), {
     refreshInterval: 20_000,
   });
   const [name, setName] = useState('');
@@ -117,11 +121,20 @@ export function AdminCampaignsPage() {
             </form>
           </CardContent>
         </Card>
-        <Card>
+        {/* On a failed load the list (now the error) comes first below xl, on the first screen. */}
+        <Card className={loadError ? 'order-first xl:order-none' : undefined}>
           <CardHeader>
             <CardTitle>Campaigns</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* A failed load replaced the list with nothing at all (RIN-1159). */}
+            {loadError ? (
+              <ErrorState
+                error={loadError}
+                message={t('campaignsLoadError')}
+                onRetry={() => mutate()}
+              />
+            ) : null}
             {data?.items.map((campaign) => (
               <ButtonBase
                 key={campaign.id}

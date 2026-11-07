@@ -11,6 +11,11 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import {
+  SECTION_BODY_PADDING,
+  SECTION_CARD_CLASS,
+  SECTION_HEADER_CLASS,
+} from '@/features/profile/components/profile-section-classes';
 import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
 
 const PASSWORD_FIELDS = ['currentPassword', 'newPassword', 'confirmPassword'] as const;
@@ -56,7 +61,7 @@ function visibleErrors(values: PasswordValues, errors: PasswordFieldErrors): Pas
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="border-b border-neutral-100 px-6 py-5">
+    <div className={SECTION_HEADER_CLASS}>
       <div className="flex items-center gap-2">
         <HiOutlineLockClosed className="size-5 text-brand-trust" aria-hidden="true" />
         <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
@@ -68,9 +73,9 @@ function SectionHeader({ title }: { title: string }) {
 /** A Google-only account has no password here, so it gets no password inputs. */
 export function GooglePasswordCard({ t }: { t: Translate }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className={SECTION_CARD_CLASS}>
       <SectionHeader title={t('passwordSectionTitle')} />
-      <div className="flex items-start gap-3 p-6">
+      <div className={`flex items-start gap-3 ${SECTION_BODY_PADDING}`}>
         <HiOutlineInformationCircle
           className="mt-0.5 size-5 shrink-0 text-brand-trust"
           aria-hidden="true"
@@ -126,11 +131,11 @@ export function PasswordSection({
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={SECTION_CARD_CLASS}>
       <SectionHeader title={t('changePassword')} />
       <form
         noValidate
-        className="space-y-4 p-6"
+        className={`space-y-4 ${SECTION_BODY_PADDING}`}
         onSubmit={(event) => {
           event.preventDefault();
           onSavePassword();

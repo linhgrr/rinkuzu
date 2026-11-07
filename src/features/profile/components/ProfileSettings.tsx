@@ -38,6 +38,11 @@ import {
   type PasswordField,
   type PasswordFieldErrors,
 } from '@/features/profile/components/ProfileSecuritySection';
+import {
+  SECTION_BODY_PADDING,
+  SECTION_CARD_CLASS,
+  SECTION_HEADER_CLASS,
+} from '@/features/profile/components/profile-section-classes';
 import { MarketingPreferencesPage } from '@/features/communications/components/MarketingPreferencesPage';
 import {
   HiOutlineUser,
@@ -226,14 +231,14 @@ function PersonalInfoSection({
   uploadingAvatar,
 }: PersonalInfoSectionProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
+    <Card className={SECTION_CARD_CLASS}>
+      <div className={SECTION_HEADER_CLASS}>
         <div className="flex items-center gap-2">
           <HiOutlineUser className="size-5 text-brand-trust" />
           <h2 className="text-lg font-semibold text-neutral-900">{t('personalInfo')}</h2>
         </div>
       </div>
-      <div className="space-y-6 p-6">
+      <div className={`space-y-6 ${SECTION_BODY_PADDING}`}>
         <div className="flex items-center gap-5">
           <div className="group relative">
             {profile.avatar ? (
@@ -336,14 +341,14 @@ function PersonalInfoSection({
 
 function AccountSection({ profile, t }: AccountSectionProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
+    <Card className={SECTION_CARD_CLASS}>
+      <div className={SECTION_HEADER_CLASS}>
         <div className="flex items-center gap-2">
           <HiOutlineShieldCheck className="size-5 text-brand-trust" />
           <h2 className="text-lg font-semibold text-neutral-900">{t('accountSection')}</h2>
         </div>
       </div>
-      <div className="space-y-4 p-6">
+      <div className={`space-y-4 ${SECTION_BODY_PADDING}`}>
         <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-4">
           <div className="flex items-center gap-3">
             <HiOutlineSparkles className="size-5 text-yellow-500" />
@@ -576,7 +581,11 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     <div className="space-y-6">
       <ProfileHero
         initials={initials}
-        onEditProfile={() => selectTab('personal')}
+        onEditProfile={
+          activeTab === 'overview' || activeTab === 'personal'
+            ? () => selectTab('personal')
+            : undefined
+        }
         profile={state.profile}
         t={t}
       />

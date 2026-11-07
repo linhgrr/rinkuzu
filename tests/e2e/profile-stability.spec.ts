@@ -191,6 +191,17 @@ test.describe('profile page stability', () => {
           'true',
         );
       }
+
+      // RIN-1016: on a phone the tab bar scrolls; a deep link to the last tab
+      // still shows it whole, and Edit profile is not offered on Security.
+      await page.setViewportSize({ width: 375, height: 812 });
+      for (const { tab, name } of DEEP_LINK_TABS.slice(-2)) {
+        await page.goto(`/en/profile?tab=${tab}`);
+        await expect(page.getByRole('tab', { name, exact: true })).toBeInViewport({ ratio: 1 });
+      }
+      await page.goto('/en/profile?tab=security');
+      await expect(page.getByLabel('Current Password')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Edit profile' })).toHaveCount(0);
     });
   });
 });

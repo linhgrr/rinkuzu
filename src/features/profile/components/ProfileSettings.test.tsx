@@ -147,6 +147,31 @@ describe('ProfileSettings control center', () => {
     expect(screen.getByLabelText('displayName')).toBeTruthy();
   });
 
+  it('offers Edit profile only on the overview and personal tabs', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue({
+      email: 'learner@example.com',
+      displayName: 'Learner',
+      role: 'user',
+      createdAt: '2026-07-01T00:00:00.000Z',
+      createdAtLabel: '01/07/2026',
+    });
+
+    render(<ProfileSettings initialTab="security" />);
+
+    await screen.findByLabelText('currentPassword');
+    expect(screen.queryByRole('button', { name: 'editProfile' })).toBeNull();
+
+    for (const tab of ['planQuotaTab', 'emailPreferencesTab']) {
+      await user.click(screen.getByRole('tab', { name: tab }));
+      expect(screen.queryByRole('button', { name: 'editProfile' })).toBeNull();
+    }
+    for (const tab of ['overviewTab', 'personalTab']) {
+      await user.click(screen.getByRole('tab', { name: tab }));
+      expect(screen.getByRole('button', { name: 'editProfile' })).toBeTruthy();
+    }
+  });
+
   it('keeps the loaded page and typed input when the session poll returns a new object for the same user', async () => {
     const user = userEvent.setup();
     fetchProfileMock.mockResolvedValue(learnerProfile);

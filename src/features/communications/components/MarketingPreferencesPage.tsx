@@ -74,11 +74,11 @@ function MarketingPreferencesForm({
 
   return (
     <div id="email-preferences" className={embedded ? 'max-w-2xl' : 'mx-auto max-w-2xl px-4 py-8'}>
-      <Card>
-        <CardHeader>
+      <Card className="p-0 sm:p-6">
+        <CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <CardTitle>{t('title')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-5 p-4 pt-4 sm:p-6 sm:pt-4">
           <p className="text-sm text-ink-muted">{t('description')}</p>
           <label className="flex items-start gap-3 rounded-lg border border-line p-4">
             <input

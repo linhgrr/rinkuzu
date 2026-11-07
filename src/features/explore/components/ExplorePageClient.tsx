@@ -98,7 +98,7 @@ function SignedOutPrompt({ message, callbackPath }: { message: string; callbackP
       <p className="font-home text-sm text-ink-muted">{message}</p>
       <Link
         href={`${ROUTES.LOGIN}?callbackUrl=${encodeURIComponent(callbackPath)}`}
-        className="inline-flex min-h-10 shrink-0 items-center rounded-full bg-brand-action-strong px-4 font-home text-sm font-semibold text-white hover:bg-brand-action-strong-hover"
+        className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-brand-action-strong px-4 font-home text-sm font-semibold text-white transition-colors hover:bg-brand-action-strong-hover focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] active:bg-brand-action-strong-hover"
       >
         {t('signInCta')}
       </Link>

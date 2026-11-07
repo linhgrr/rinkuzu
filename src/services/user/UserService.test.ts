@@ -5,7 +5,7 @@ import type { IUserRepository } from '@/interfaces/repositories/IUserRepository'
 import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { Attempt } from '@/entities/Attempt';
-import type { QuizQuestion } from '@/entities/Quiz';
+import type { Quiz, QuizQuestion } from '@/entities/Quiz';
 import type { NextQuizResolver } from '@/services/quiz/next-quiz';
 import { UserService } from './UserService';
 
@@ -652,6 +652,92 @@ describe('UserService', () => {
 
       assertOk(result);
       expect(result.data.nextQuiz).toBeNull();
+    });
+  });
+
+  describe('getAttemptDetails share facts (RIN-1179)', () => {
+    function liveQuiz(overrides: Partial<Quiz> = {}): Quiz {
+      return {
+        id: 'quiz-1',
+        title: 'Quiz',
+        slug: 'quiz',
+        author: 'author-1',
+        questions: [],
+        visibility: 'public',
+        questionCount: 40,
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+        updatedAt: new Date('2025-01-01T00:00:00Z'),
+        ...overrides,
+      };
+    }
+
+    function quickRoundAttempt(overrides: Partial<Attempt> = {}): Attempt {
+      return attemptFixture({
+        totalQuestions: 1,
+        answers: [0],
+        mode: 'quick',
+        quiz: { id: 'quiz-1', title: 'Quiz', slug: 'quiz', questions: [questionFixture('q1')] },
+        ...overrides,
+      });
+    }
+
+    it('marks a public quiz shareable with the live question count, not the attempt count', async () => {
+      const { service, attemptRepository, quizRepository } = createService();
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(quickRoundAttempt());
+      quizRepository.findSummaryBySlug.mockResolvedValue(liveQuiz());
+
+      const result = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
+
+      assertOk(result);
+      expect(quizRepository.findSummaryBySlug).toHaveBeenCalledWith('quiz');
+      expect(result.data.totalQuestions).toBe(1);
+      expect(result.data.quiz).toMatchObject({ id: 'quiz-1', shareable: true, questionCount: 40 });
+    });
+
+    it('never marks a personal (private) quiz shareable', async () => {
+      const { service, attemptRepository, quizRepository } = createService();
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(quickRoundAttempt());
+      quizRepository.findSummaryBySlug.mockResolvedValue(liveQuiz({ visibility: 'personal' }));
+
+      const result = await service.getAttemptDetails('attempt-1', { guestEmail: 'g@example.test' });
+
+      assertOk(result);
+      expect(result.data.quiz.shareable).toBe(false);
+    });
+
+    it('never marks a Premium attempt shareable and skips the live lookup', async () => {
+      const canAccessAttempt = vi.fn().mockResolvedValue(true);
+      const { service, attemptRepository, quizRepository } = createService({
+        premiumAccessPolicy: { canAccessAttempt },
+      });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        quickRoundAttempt({
+          premiumSubmissionId: 'submission-1',
+          premiumSnapshotHash: 'c'.repeat(64),
+        }),
+      );
+      quizRepository.findSummaryBySlug.mockResolvedValue(liveQuiz());
+
+      const result = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
+
+      assertOk(result);
+      expect(result.data.quiz.shareable).toBe(false);
+      expect(quizRepository.findSummaryBySlug).not.toHaveBeenCalled();
+    });
+
+    it('is not shareable when the slug now belongs to another quiz or is gone', async () => {
+      const { service, attemptRepository, quizRepository } = createService();
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(quickRoundAttempt());
+      quizRepository.findSummaryBySlug.mockResolvedValueOnce(liveQuiz({ id: 'other-quiz' }));
+      quizRepository.findSummaryBySlug.mockResolvedValueOnce(null);
+
+      const moved = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
+      const gone = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
+
+      assertOk(moved);
+      assertOk(gone);
+      expect(moved.data.quiz).toMatchObject({ shareable: false, questionCount: 1 });
+      expect(gone.data.quiz).toMatchObject({ shareable: false, questionCount: 1 });
     });
   });
 });

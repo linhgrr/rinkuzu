@@ -160,7 +160,11 @@
     "saveError": "Couldn't save. Try again.",
     "tryAgain": "Try again",
     "retryOfMissed": "Retry of missed questions",
-    "retryPill": "Retry: {count, plural, one {# question} other {# questions}}"
+    "retryPill": "Retry: {count, plural, one {# question} other {# questions}}",
+    "share": "Send to a classmate",
+    "shareText": "I just did {count, plural, one {# question} other {# questions}} on {title}. See what you score",
+    "shareCopied": "Link copied",
+    "shareCopyFailed": "Couldn't copy the link"
   },
   "guestSaveTitle": "Save your result and get your personalized review",
   "guestSaveBody": "Sign in once to keep this result and review every question.",

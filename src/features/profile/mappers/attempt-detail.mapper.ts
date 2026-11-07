@@ -45,10 +45,13 @@ export function toAttemptDetailViewModel(
     answers: dto.answers,
     historyStatus: dto.historyStatus,
     quiz: {
+      id: dto.quiz.id,
       title: dto.quiz.title,
       slug: dto.quiz.slug,
       ...(dto.quiz.description !== undefined && { description: dto.quiz.description }),
       questions: dto.quiz.questions.map(toAttemptQuestionViewModel),
+      shareable: dto.quiz.shareable,
+      questionCount: dto.quiz.questionCount,
     },
     missedCount: dto.missedCount,
     nextQuiz: dto.nextQuiz,

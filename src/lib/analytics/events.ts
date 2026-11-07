@@ -22,6 +22,8 @@ export type AnalyticsEventName =
   | 'retry_missed_clicked'
   | 'try_another_quiz_clicked'
   | 'review_email_opt_in'
+  /** Result-page share of a public quiz (RIN-1179); props only quizId, method, mode, isGuest. */
+  | 'quiz_result_shared'
   /** Server side, once per activation nudge accepted by the provider (RIN-999); props `trigger`, `locale`. */
   | 'activation_email_sent'
   /** Server side, first tracked CTA click of an activation nudge (RIN-1000); props `locale` only. */

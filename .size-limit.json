@@ -8,7 +8,7 @@
       "limit": "220 KiB",
       "patterns": [
         "^/_not-found$",
-        "^/\\[locale\\](?:/(?:about|blog(?:/.*)?|contact|cookies|faq|pricing|privacy|terms|unsubscribe))?$"
+        "^/\\[locale\\](?:/(?:about|blog(?:/.*)?|contact|cookies|faq|pricing|privacy|terms|try|unsubscribe))?$"
       ]
     },
     {

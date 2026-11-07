@@ -5,8 +5,11 @@ import type { PostSignInTargetInput } from '@/interfaces/services/IDashboardServ
 import { DashboardRepository } from '@/repositories/DashboardRepository';
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { DashboardService } from '@/services/dashboard/DashboardService';
+import { LandingStarterResolver } from '@/services/quiz/landing-starter';
 
-const dashboardService = new DashboardService(new DashboardRepository(), new QuizRepository());
+const dashboardRepository = new DashboardRepository();
+const dashboardService = new DashboardService(dashboardRepository, new QuizRepository());
+const landingStarterResolver = new LandingStarterResolver(dashboardRepository);
 
 export const getDashboardBootstrapData = cache(
   async (userId: string): Promise<DashboardBootstrapDto> =>
@@ -20,4 +23,9 @@ export async function getPostSignInHref(input: PostSignInTargetInput): Promise<s
 
 export async function getDashboardStats(userId: string): Promise<DashboardStatsDto> {
   return dashboardService.getStats(userId);
+}
+
+/** Slug of the homepage play-first starter for `locale` (RIN-1178); null when none; never throws. */
+export async function getLandingStarterSlug(locale: string): Promise<string | null> {
+  return landingStarterResolver.resolve(locale);
 }

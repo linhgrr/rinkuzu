@@ -718,7 +718,8 @@ function postSignInStarterNotice(entry: string | null | undefined, slug: string)
   return entry === POST_SIGNIN_STARTER_ENTRY ? <StarterQuizIntro quizSlug={slug} /> : null;
 }
 
-// `entry` on quiz_completed: the /start starter (RIN-913) or the activation email (RIN-1000).
+// `entry` on quiz_started/quiz_completed: the /start starter (RIN-913), the activation
+// email (RIN-1000) or the homepage play-first button (RIN-1178).
 function trackedEntryProperties(entry: string | null | undefined) {
   return entry && TRACKED_QUIZ_ENTRIES.includes(entry) ? { entry } : {};
 }
@@ -801,6 +802,7 @@ export default function QuizPlayerClient({
       captureAnalyticsEvent('quiz_started', {
         mode: analyticsMode,
         question_count: questionCount,
+        ...trackedEntryProperties(entry),
       });
 
     // The first render already started the quiz (RIN-1032): only announce it.
@@ -920,6 +922,7 @@ export default function QuizPlayerClient({
     playMode,
     analyticsMode,
     slug,
+    entry,
   ]);
 
   const quiz = state.quiz;

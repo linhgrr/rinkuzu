@@ -161,6 +161,34 @@ describe('QuizPlayerClient post-sign-in starter entry (RIN-913)', () => {
     expect(await completeQuiz()).toMatchObject({ entry: 'activation_email', score: 80 });
   });
 
+  it('tags quiz_started and quiz_completed with entry=landing, without the starter intro (RIN-1178)', async () => {
+    renderPlayer('landing');
+
+    await waitFor(() =>
+      expect(captureAnalyticsEvent).toHaveBeenCalledWith(
+        'quiz_started',
+        expect.objectContaining({ entry: 'landing', question_count: 1 }),
+      ),
+    );
+    expect(screen.queryByText('starterIntro')).not.toBeInTheDocument();
+    expect(await completeQuiz()).toMatchObject({ entry: 'landing', score: 80 });
+  });
+
+  it.each([undefined, 'newsletter'])(
+    'leaves entry out of quiz_started for entry=%s',
+    async (entry) => {
+      renderPlayer(entry);
+
+      await waitFor(() =>
+        expect(captureAnalyticsEvent).toHaveBeenCalledWith('quiz_started', expect.anything()),
+      );
+      const started = vi
+        .mocked(captureAnalyticsEvent)
+        .mock.calls.find(([event]) => event === 'quiz_started')?.[1];
+      expect(started).not.toHaveProperty('entry');
+    },
+  );
+
   it.each([undefined, 'newsletter'])(
     'leaves entry out of quiz_completed for entry=%s',
     async (entry) => {

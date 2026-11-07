@@ -483,11 +483,12 @@ async function quizCompletedProperties(page: Page): Promise<unknown> {
 
 /**
  * Picks an answer once React owns the option (RIN-1129). The player server-renders the first
- * question (RIN-1032), so on a phone the option is visible before its click handler exists, and a
- * click in that window is dropped: the answer never registers and the mobile footer stays at
- * "Finish (0/1 answered)". React tags each node it has hydrated with a `__reactProps$<id>` key
- * holding that node's handlers, so wait for that key on the control that takes the answer (the
- * mobile option button, or the desktop option's input), not for visibility.
+ * question (RIN-1032), so on a phone the option is visible, with `document.readyState` already
+ * `complete`, before React owns it. A click on that server-rendered node is usually replayed, but
+ * React then replaces the node, and under load about 1 in 20 such clicks was lost: the radio stayed
+ * unchecked and the mobile footer stayed at "Finish (0/1 answered)". React tags each node it owns
+ * with a `__reactProps$<id>` key holding its handlers, so wait for that key on the control that
+ * takes the answer (the mobile option button, or the desktop option's input), not for visibility.
  */
 async function chooseOption(page: Page, text: string): Promise<void> {
   const option = page.getByText(text, { exact: true });

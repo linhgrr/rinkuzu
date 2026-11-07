@@ -32,7 +32,11 @@ interface OrdersState {
   bucket: AdminOrderBucketViewModel;
   searchInput: string;
   searchTerm: string;
-  error: string;
+  /**
+   * A failed list load, raw so the page can render ErrorState with Retry (RIN-1022).
+   * Kept while a retry runs, so the tiles never flash zeros in between.
+   */
+  loadError: unknown;
   reloadToken: number;
   detail: AdminBillingOrderDetailViewModel | null;
   detailLoading: boolean;
@@ -57,7 +61,7 @@ const INITIAL_STATE: OrdersState = {
   bucket: 'attention',
   searchInput: '',
   searchTerm: '',
-  error: '',
+  loadError: null,
   reloadToken: 0,
   detail: null,
   detailLoading: false,
@@ -72,7 +76,7 @@ function reducer(state: OrdersState, action: OrdersAction): OrdersState {
       orders: action.value.orders,
       health: action.value.health,
       pagination: action.value.pagination,
-      error: '',
+      loadError: null,
     };
   }
   return { ...state, ...action.value };
@@ -104,17 +108,11 @@ export function useAdminBillingOrders(): UseAdminBillingOrders {
       .then((value) => dispatch({ type: 'loadSuccess', value }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        dispatch({
-          type: 'patch',
-          value: {
-            status: 'ready',
-            error: describeError(error),
-          },
-        });
+        dispatch({ type: 'patch', value: { status: 'ready', loadError: error } });
       });
 
     return () => controller.abort();
-  }, [bucket, limit, page, searchTerm, reloadToken, describeError]);
+  }, [bucket, limit, page, searchTerm, reloadToken]);
 
   const openDetail = useCallback(
     (orderId: string) => {

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { getUserDisplayName } from '@/components/user/user-identity';
@@ -42,6 +43,9 @@ interface State {
   pagination: AdminQuizzesPaginationViewModel;
   loading: boolean;
   error: string;
+  /** A failed list load: replaces the stats and the list with ErrorState and Retry (RIN-1022). */
+  loadError: unknown;
+  reloadToken: number;
   searchInput: string;
   appliedSearch: string;
   visibility: AdminQuizVisibilityViewModel;
@@ -76,6 +80,8 @@ const initialState: State = {
   },
   loading: true,
   error: '',
+  loadError: null,
+  reloadToken: 0,
   searchInput: '',
   appliedSearch: '',
   visibility: 'all',
@@ -99,6 +105,7 @@ function reducer(state: State, action: Action): State {
         pagination: action.pagination,
         loading: false,
         error: '',
+        loadError: null,
       };
     case 'removed':
       return {
@@ -159,7 +166,7 @@ export function AdminQuizzesPageClient() {
     let cancelled = false;
 
     async function loadQuizzes() {
-      dispatch({ type: 'patch', value: { loading: true, error: '' } });
+      dispatch({ type: 'patch', value: { loading: true, error: '', loadError: null } });
       try {
         const data = await fetchAdminQuizListViewModel({
           page: state.page,
@@ -173,13 +180,7 @@ export function AdminQuizzesPageClient() {
       } catch (error) {
         if (cancelled) return;
         if (error instanceof DOMException && error.name === 'AbortError') return;
-        dispatch({
-          type: 'patch',
-          value: {
-            loading: false,
-            error: describeError(error, t('quizManagementLoadError')),
-          },
-        });
+        dispatch({ type: 'patch', value: { loading: false, loadError: error } });
       }
     }
 
@@ -189,7 +190,7 @@ export function AdminQuizzesPageClient() {
       cancelled = true;
       controller.abort();
     };
-  }, [state.page, state.appliedSearch, state.visibility, t, describeError]);
+  }, [state.page, state.appliedSearch, state.visibility, state.reloadToken]);
 
   const pageStats = {
     public: state.quizzes.filter((quiz) => quiz.visibility === 'public').length,
@@ -296,119 +297,129 @@ export function AdminQuizzesPageClient() {
         </div>
       </header>
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-3">
-        {[
-          [state.pagination.total, t('totalQuizzes')],
-          [pageStats.public, t('publicOnPage')],
-          [pageStats.personal, t('personalOnPage')],
-        ].map(([value, label]) => (
-          <SurfaceCard key={String(label)} className="p-5">
-            <div className="font-home text-2xl font-semibold text-ink">{value}</div>
-            <div className="mt-1 font-home text-xs text-ink-muted">{label}</div>
-          </SurfaceCard>
-        ))}
-      </section>
-
-      {state.error ? (
-        <div className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{state.error}</div>
-      ) : null}
-
-      <section className="mt-6 overflow-hidden rounded-2xl border border-line-blue/30 bg-white">
-        {state.loading ? (
-          <AdminQuizzesListSkeleton />
-        ) : state.quizzes.length === 0 ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center text-center">
-            <HiOutlineDocumentText className="size-12 text-ink/25" />
-            <h2 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzesFound')}</h2>
-            <p className="mt-1 text-sm text-ink/50">{t('noQuizzesCreated')}</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-line-blue/25">
-            {state.quizzes.map((quiz) => (
-              <article
-                key={quiz.id}
-                className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-lg font-semibold text-ink">{quiz.title}</h2>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        quiz.visibility === 'personal'
-                          ? 'bg-neutral-100 text-neutral-600'
-                          : 'bg-green-50 text-green-700'
-                      }`}
-                    >
-                      {quiz.visibility === 'personal' ? (
-                        <span className="inline-flex items-center gap-1">
-                          <HiOutlineLockClosed className="size-3" />
-                          {t('personal')}
-                        </span>
-                      ) : (
-                        t('public')
-                      )}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/55">
-                    <AdminQuizAuthorLink author={quiz.author} />
-                    <span>•</span>
-                    <span>{t('questionTotal', { count: quiz.questionCount })}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={state.previewingQuizId === quiz.id}
-                    onClick={() => void previewQuiz(quiz)}
-                  >
-                    <HiOutlineEye className="mr-1 size-4" />
-                    {t('previewWithAnswers')}
-                  </Button>
-                  <Link href={ROUTES.EDIT.QUIZ(quiz.id)}>
-                    <Button size="sm" variant="outline">
-                      <HiOutlinePencil className="mr-1 size-4" />
-                      {t('editQuiz')}
-                    </Button>
-                  </Link>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={state.togglingQuizId === quiz.id}
-                    onClick={() => dispatch({ type: 'patch', value: { quizToToggle: quiz } })}
-                  >
-                    {quiz.visibility === 'public' ? (
-                      <HiOutlineLockClosed className="mr-1 size-4" />
-                    ) : (
-                      <HiOutlineGlobeAlt className="mr-1 size-4" />
-                    )}
-                    {quiz.visibility === 'public' ? t('quizMakePrivate') : t('quizMakePublic')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-red-200 text-red-600 hover:border-red-300 hover:text-red-700"
-                    onClick={() => dispatch({ type: 'patch', value: { quizToDelete: quiz } })}
-                  >
-                    <HiOutlineTrash className="mr-1 size-4" />
-                    {t('delete')}
-                  </Button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {state.pagination.totalPages > 1 ? (
-        <Pagination
-          currentPage={state.pagination.page}
-          totalPages={state.pagination.totalPages}
-          onPageChange={(page) => dispatch({ type: 'patch', value: { page } })}
-          className="mt-8 justify-center"
+      {state.loadError ? (
+        <ErrorState
+          error={state.loadError}
+          onRetry={() => dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } })}
+          className="mt-6"
         />
-      ) : null}
+      ) : (
+        <>
+          <section className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              [state.pagination.total, t('totalQuizzes')],
+              [pageStats.public, t('publicOnPage')],
+              [pageStats.personal, t('personalOnPage')],
+            ].map(([value, label]) => (
+              <SurfaceCard key={String(label)} className="p-5">
+                <div className="font-home text-2xl font-semibold text-ink">{value}</div>
+                <div className="mt-1 font-home text-xs text-ink-muted">{label}</div>
+              </SurfaceCard>
+            ))}
+          </section>
+
+          {state.error ? (
+            <div className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{state.error}</div>
+          ) : null}
+
+          <section className="mt-6 overflow-hidden rounded-2xl border border-line-blue/30 bg-white">
+            {state.loading ? (
+              <AdminQuizzesListSkeleton />
+            ) : state.quizzes.length === 0 ? (
+              <div className="flex min-h-[320px] flex-col items-center justify-center text-center">
+                <HiOutlineDocumentText className="size-12 text-ink/25" />
+                <h2 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzesFound')}</h2>
+                <p className="mt-1 text-sm text-ink/50">{t('noQuizzesCreated')}</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-line-blue/25">
+                {state.quizzes.map((quiz) => (
+                  <article
+                    key={quiz.id}
+                    className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="truncate text-lg font-semibold text-ink">{quiz.title}</h2>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            quiz.visibility === 'personal'
+                              ? 'bg-neutral-100 text-neutral-600'
+                              : 'bg-green-50 text-green-700'
+                          }`}
+                        >
+                          {quiz.visibility === 'personal' ? (
+                            <span className="inline-flex items-center gap-1">
+                              <HiOutlineLockClosed className="size-3" />
+                              {t('personal')}
+                            </span>
+                          ) : (
+                            t('public')
+                          )}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/55">
+                        <AdminQuizAuthorLink author={quiz.author} />
+                        <span>•</span>
+                        <span>{t('questionTotal', { count: quiz.questionCount })}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={state.previewingQuizId === quiz.id}
+                        onClick={() => void previewQuiz(quiz)}
+                      >
+                        <HiOutlineEye className="mr-1 size-4" />
+                        {t('previewWithAnswers')}
+                      </Button>
+                      <Link href={ROUTES.EDIT.QUIZ(quiz.id)}>
+                        <Button size="sm" variant="outline">
+                          <HiOutlinePencil className="mr-1 size-4" />
+                          {t('editQuiz')}
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={state.togglingQuizId === quiz.id}
+                        onClick={() => dispatch({ type: 'patch', value: { quizToToggle: quiz } })}
+                      >
+                        {quiz.visibility === 'public' ? (
+                          <HiOutlineLockClosed className="mr-1 size-4" />
+                        ) : (
+                          <HiOutlineGlobeAlt className="mr-1 size-4" />
+                        )}
+                        {quiz.visibility === 'public' ? t('quizMakePrivate') : t('quizMakePublic')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-200 text-red-600 hover:border-red-300 hover:text-red-700"
+                        onClick={() => dispatch({ type: 'patch', value: { quizToDelete: quiz } })}
+                      >
+                        <HiOutlineTrash className="mr-1 size-4" />
+                        {t('delete')}
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {state.pagination.totalPages > 1 ? (
+            <Pagination
+              currentPage={state.pagination.page}
+              totalPages={state.pagination.totalPages}
+              onPageChange={(page) => dispatch({ type: 'patch', value: { page } })}
+              className="mt-8 justify-center"
+            />
+          ) : null}
+        </>
+      )}
 
       {state.previewQuiz ? (
         <QuizPreviewModal

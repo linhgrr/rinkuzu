@@ -19,6 +19,7 @@ import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { TabBar } from '@/components/ui/TabBar';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import {
@@ -44,6 +45,11 @@ interface State {
   saving: boolean;
   refreshing: boolean;
   error: string;
+  /**
+   * A failed list load: ErrorState with Retry replaces the stats, the form and the table
+   * (RIN-1022). Kept while a retry runs, so the stats never flash zeros in between.
+   */
+  loadError: unknown;
   success: string;
   label: string;
   apiKey: string;
@@ -68,6 +74,7 @@ const initialState: State = {
   saving: false,
   refreshing: false,
   error: '',
+  loadError: null,
   success: '',
   label: '',
   apiKey: '',
@@ -97,6 +104,7 @@ function reducer(state: State, action: Action): State {
         loading: false,
         refreshing: false,
         error: '',
+        loadError: null,
       };
     case 'upsert':
       return {
@@ -193,11 +201,7 @@ function AdminOcrKeysContent() {
     } catch (error) {
       dispatch({
         type: 'patch',
-        value: {
-          loading: false,
-          refreshing: false,
-          error: describeError(error, t('ocrKeysLoadError')),
-        },
+        value: { loading: false, refreshing: false, loadError: error },
       });
     }
   }
@@ -357,224 +361,235 @@ function AdminOcrKeysContent() {
 
       {activeTab === 'keys' ? (
         <div id="ocr-keys-panel" role="tabpanel" aria-labelledby="ocr-keys-tab">
-          <section className="mb-6 grid gap-4 md:grid-cols-4">
-            <div className="rounded-lg border border-line-blue/30 bg-white p-4">
-              <div className="text-2xl font-semibold text-ink">{state.keys.length}</div>
-              <div className="mt-1 text-sm text-ink/55">{t('ocrKeysTotal')}</div>
-            </div>
-            <div className="rounded-lg border border-line-blue/30 bg-white p-4">
-              <div className="text-2xl font-semibold text-ink">{activeKeyCount}</div>
-              <div className="mt-1 text-sm text-ink/55">{t('ocrKeysActive')}</div>
-            </div>
-            <div className="rounded-lg border border-line-blue/30 bg-white p-4">
-              <div className="text-2xl font-semibold text-ink">{failedKeyCount}</div>
-              <div className="mt-1 text-sm text-ink/55">{t('ocrKeysFailed')}</div>
-            </div>
-            <div className="rounded-lg border border-line-blue/30 bg-white p-4">
-              <div className="text-2xl font-semibold text-ink">
-                {state.fallbackEnvConfigured ? t('yes') : t('no')}
-              </div>
-              <div className="mt-1 text-sm text-ink/55">{t('ocrKeysEnvFallback')}</div>
-            </div>
-          </section>
-
-          {state.error ? (
-            <div className="mb-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-              {state.error}
-            </div>
-          ) : null}
-          {state.success ? (
-            <div className="mb-5 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {state.success}
-            </div>
-          ) : null}
-
-          <form
-            onSubmit={handleCreate}
-            className="mb-6 grid gap-3 rounded-lg border border-line-blue/30 bg-white p-4 lg:grid-cols-[minmax(180px,1fr)_minmax(260px,2fr)_120px_auto]"
-          >
-            <input
-              value={state.label}
-              onChange={(event) =>
-                dispatch({ type: 'patch', value: { label: event.target.value } })
-              }
-              placeholder={t('ocrKeysLabelPlaceholder')}
-              className="h-11 rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-accent"
-            />
-            <label className="flex h-11 items-center gap-2 rounded-lg border border-line bg-white px-3">
-              <HiOutlineEyeOff className="size-5 shrink-0 text-ink/40" />
-              <input
-                value={state.apiKey}
-                onChange={(event) =>
-                  dispatch({ type: 'patch', value: { apiKey: event.target.value } })
-                }
-                type="password"
-                autoComplete="off"
-                placeholder={t('ocrKeysSecretPlaceholder')}
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-              />
-            </label>
-            <input
-              value={state.priority}
-              onChange={(event) =>
-                dispatch({ type: 'patch', value: { priority: event.target.value } })
-              }
-              inputMode="numeric"
-              placeholder={t('ocrKeysPriority')}
-              className="h-11 rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-accent"
-            />
-            <Button type="submit" size="sm" loading={state.saving} className="h-11 justify-center">
-              <HiOutlineSave className="size-4" />
-              {t('ocrKeysAdd')}
-            </Button>
-          </form>
-
-          <section className="overflow-hidden rounded-lg border border-line-blue/30 bg-white">
-            <div className="border-b border-line-blue/25 px-5 py-4">
-              <h2 className="text-lg font-semibold text-ink">{t('ocrKeysTableTitle')}</h2>
-            </div>
-            {state.loading ? (
-              <div className="space-y-3 p-5 font-home" aria-busy="true">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={`ocr-key-skeleton-${index}`}
-                    className="flex items-center justify-between gap-4"
-                  >
-                    <Skeleton className="h-5 w-48 rounded-md" />
-                    <Skeleton className="h-6 w-20 rounded-full" />
-                    <Skeleton className="h-5 w-32 rounded-md" />
-                    <Skeleton className="h-8 w-24 rounded-md" />
+          {state.loadError ? (
+            <ErrorState error={state.loadError} onRetry={() => loadKeys()} className="mb-6" />
+          ) : (
+            <>
+              <section className="mb-6 grid gap-4 md:grid-cols-4">
+                <div className="rounded-lg border border-line-blue/30 bg-white p-4">
+                  <div className="text-2xl font-semibold text-ink">{state.keys.length}</div>
+                  <div className="mt-1 text-sm text-ink/55">{t('ocrKeysTotal')}</div>
+                </div>
+                <div className="rounded-lg border border-line-blue/30 bg-white p-4">
+                  <div className="text-2xl font-semibold text-ink">{activeKeyCount}</div>
+                  <div className="mt-1 text-sm text-ink/55">{t('ocrKeysActive')}</div>
+                </div>
+                <div className="rounded-lg border border-line-blue/30 bg-white p-4">
+                  <div className="text-2xl font-semibold text-ink">{failedKeyCount}</div>
+                  <div className="mt-1 text-sm text-ink/55">{t('ocrKeysFailed')}</div>
+                </div>
+                <div className="rounded-lg border border-line-blue/30 bg-white p-4">
+                  <div className="text-2xl font-semibold text-ink">
+                    {state.fallbackEnvConfigured ? t('yes') : t('no')}
                   </div>
-                ))}
-              </div>
-            ) : state.keys.length === 0 ? (
-              <div className="p-8 text-center text-sm text-ink/60">{t('ocrKeysEmpty')}</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-full text-left text-sm">
-                  <thead className="bg-neutral-50 text-xs uppercase text-ink/50">
-                    <tr>
-                      <th className="px-5 py-3 font-semibold">{t('ocrKeysKey')}</th>
-                      <th className="px-5 py-3 font-semibold">{t('status')}</th>
-                      <th className="px-5 py-3 font-semibold">{t('ocrKeysUsage')}</th>
-                      <th className="px-5 py-3 font-semibold">{t('ocrKeysLastUsed')}</th>
-                      <th className="px-5 py-3 font-semibold">{t('ocrKeysReplace')}</th>
-                      <th className="px-5 py-3 text-right font-semibold">{t('actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line-blue/20">
-                    {state.keys.map((key) => (
-                      <tr key={key.id} className="align-top">
-                        <td className="px-5 py-4">
-                          <div className="flex min-w-0 items-start gap-3">
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
-                              <HiOutlineKey className="size-5" />
-                            </span>
-                            <div className="min-w-0">
-                              <div className="font-semibold text-ink">{key.label}</div>
-                              <div className="mt-1 font-mono text-xs text-ink/60">
-                                {key.maskedKey}
-                              </div>
-                              <div className="mt-1 text-xs text-ink/45">
-                                {key.provider} · {t('ocrKeysPriority')} {key.priority}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="space-y-2">
-                            <Badge variant={statusVariant[key.status]}>
-                              {t(`ocrKeyStatus.${key.status}`)}
-                            </Badge>
-                            {key.lastErrorMessage ? (
-                              <div className="max-w-56 text-xs text-red-600">
-                                {key.lastErrorCode ? `${key.lastErrorCode}: ` : ''}
-                                {key.lastErrorMessage}
-                              </div>
-                            ) : null}
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-ink/70">
-                          <div>{t('ocrKeysSuccessCount', { count: key.successCount })}</div>
-                          <div>{t('ocrKeysFailureCount', { count: key.failureCount })}</div>
-                        </td>
-                        <td className="px-5 py-4 text-ink/70">
-                          <div>{formatDate(key.lastUsedAt, locale)}</div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex min-w-64 gap-2">
-                            <input
-                              value={state.replacementKeyById[key.id] ?? ''}
-                              onChange={(event) =>
-                                dispatch({
-                                  type: 'replacement',
-                                  keyId: key.id,
-                                  value: event.target.value,
-                                })
-                              }
-                              type="password"
-                              autoComplete="off"
-                              placeholder={t('ocrKeysNewSecretPlaceholder')}
-                              className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-accent"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              loading={state.rowActionKeyId === key.id}
-                              onClick={() => void replaceKey(key)}
-                            >
-                              <HiOutlineSave className="size-4" />
-                            </Button>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              loading={state.rowActionKeyId === key.id}
-                              onClick={() => void testKey(key)}
-                            >
-                              <HiOutlineCheckCircle className="size-4" />
-                              {t('ocrKeysTest')}
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              loading={state.rowActionKeyId === key.id}
-                              onClick={() => void patchKey(key.id, { enabled: !key.enabled })}
-                            >
-                              {key.enabled ? (
-                                <HiOutlineXCircle className="size-4" />
-                              ) : (
-                                <HiOutlineCheckCircle className="size-4" />
-                              )}
-                              {key.enabled ? t('disable') : t('enable')}
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="destructive"
-                              loading={state.rowActionKeyId === key.id}
-                              onClick={() =>
-                                dispatch({ type: 'patch', value: { keyToDelete: key } })
-                              }
-                            >
-                              <HiOutlineTrash className="size-4" />
-                              {t('delete')}
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
+                  <div className="mt-1 text-sm text-ink/55">{t('ocrKeysEnvFallback')}</div>
+                </div>
+              </section>
+
+              {state.error ? (
+                <div className="mb-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {state.error}
+                </div>
+              ) : null}
+              {state.success ? (
+                <div className="mb-5 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  {state.success}
+                </div>
+              ) : null}
+
+              <form
+                onSubmit={handleCreate}
+                className="mb-6 grid gap-3 rounded-lg border border-line-blue/30 bg-white p-4 lg:grid-cols-[minmax(180px,1fr)_minmax(260px,2fr)_120px_auto]"
+              >
+                <input
+                  value={state.label}
+                  onChange={(event) =>
+                    dispatch({ type: 'patch', value: { label: event.target.value } })
+                  }
+                  placeholder={t('ocrKeysLabelPlaceholder')}
+                  className="h-11 rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-accent"
+                />
+                <label className="flex h-11 items-center gap-2 rounded-lg border border-line bg-white px-3">
+                  <HiOutlineEyeOff className="size-5 shrink-0 text-ink/40" />
+                  <input
+                    value={state.apiKey}
+                    onChange={(event) =>
+                      dispatch({ type: 'patch', value: { apiKey: event.target.value } })
+                    }
+                    type="password"
+                    autoComplete="off"
+                    placeholder={t('ocrKeysSecretPlaceholder')}
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                  />
+                </label>
+                <input
+                  value={state.priority}
+                  onChange={(event) =>
+                    dispatch({ type: 'patch', value: { priority: event.target.value } })
+                  }
+                  inputMode="numeric"
+                  placeholder={t('ocrKeysPriority')}
+                  className="h-11 rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-accent"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  loading={state.saving}
+                  className="h-11 justify-center"
+                >
+                  <HiOutlineSave className="size-4" />
+                  {t('ocrKeysAdd')}
+                </Button>
+              </form>
+
+              <section className="overflow-hidden rounded-lg border border-line-blue/30 bg-white">
+                <div className="border-b border-line-blue/25 px-5 py-4">
+                  <h2 className="text-lg font-semibold text-ink">{t('ocrKeysTableTitle')}</h2>
+                </div>
+                {state.loading ? (
+                  <div className="space-y-3 p-5 font-home" aria-busy="true">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div
+                        key={`ocr-key-skeleton-${index}`}
+                        className="flex items-center justify-between gap-4"
+                      >
+                        <Skeleton className="h-5 w-48 rounded-md" />
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                        <Skeleton className="h-5 w-32 rounded-md" />
+                        <Skeleton className="h-8 w-24 rounded-md" />
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+                  </div>
+                ) : state.keys.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-ink/60">{t('ocrKeysEmpty')}</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-full text-left text-sm">
+                      <thead className="bg-neutral-50 text-xs uppercase text-ink/50">
+                        <tr>
+                          <th className="px-5 py-3 font-semibold">{t('ocrKeysKey')}</th>
+                          <th className="px-5 py-3 font-semibold">{t('status')}</th>
+                          <th className="px-5 py-3 font-semibold">{t('ocrKeysUsage')}</th>
+                          <th className="px-5 py-3 font-semibold">{t('ocrKeysLastUsed')}</th>
+                          <th className="px-5 py-3 font-semibold">{t('ocrKeysReplace')}</th>
+                          <th className="px-5 py-3 text-right font-semibold">{t('actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line-blue/20">
+                        {state.keys.map((key) => (
+                          <tr key={key.id} className="align-top">
+                            <td className="px-5 py-4">
+                              <div className="flex min-w-0 items-start gap-3">
+                                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                                  <HiOutlineKey className="size-5" />
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-ink">{key.label}</div>
+                                  <div className="mt-1 font-mono text-xs text-ink/60">
+                                    {key.maskedKey}
+                                  </div>
+                                  <div className="mt-1 text-xs text-ink/45">
+                                    {key.provider} · {t('ocrKeysPriority')} {key.priority}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="space-y-2">
+                                <Badge variant={statusVariant[key.status]}>
+                                  {t(`ocrKeyStatus.${key.status}`)}
+                                </Badge>
+                                {key.lastErrorMessage ? (
+                                  <div className="max-w-56 text-xs text-red-600">
+                                    {key.lastErrorCode ? `${key.lastErrorCode}: ` : ''}
+                                    {key.lastErrorMessage}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 text-ink/70">
+                              <div>{t('ocrKeysSuccessCount', { count: key.successCount })}</div>
+                              <div>{t('ocrKeysFailureCount', { count: key.failureCount })}</div>
+                            </td>
+                            <td className="px-5 py-4 text-ink/70">
+                              <div>{formatDate(key.lastUsedAt, locale)}</div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex min-w-64 gap-2">
+                                <input
+                                  value={state.replacementKeyById[key.id] ?? ''}
+                                  onChange={(event) =>
+                                    dispatch({
+                                      type: 'replacement',
+                                      keyId: key.id,
+                                      value: event.target.value,
+                                    })
+                                  }
+                                  type="password"
+                                  autoComplete="off"
+                                  placeholder={t('ocrKeysNewSecretPlaceholder')}
+                                  className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-accent"
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  loading={state.rowActionKeyId === key.id}
+                                  onClick={() => void replaceKey(key)}
+                                >
+                                  <HiOutlineSave className="size-4" />
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  loading={state.rowActionKeyId === key.id}
+                                  onClick={() => void testKey(key)}
+                                >
+                                  <HiOutlineCheckCircle className="size-4" />
+                                  {t('ocrKeysTest')}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  loading={state.rowActionKeyId === key.id}
+                                  onClick={() => void patchKey(key.id, { enabled: !key.enabled })}
+                                >
+                                  {key.enabled ? (
+                                    <HiOutlineXCircle className="size-4" />
+                                  ) : (
+                                    <HiOutlineCheckCircle className="size-4" />
+                                  )}
+                                  {key.enabled ? t('disable') : t('enable')}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  loading={state.rowActionKeyId === key.id}
+                                  onClick={() =>
+                                    dispatch({ type: 'patch', value: { keyToDelete: key } })
+                                  }
+                                >
+                                  <HiOutlineTrash className="size-4" />
+                                  {t('delete')}
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
 
           <ConfirmModal
             isOpen={!!state.keyToDelete}

@@ -97,7 +97,8 @@ export function AdminSupportPage() {
             </form>
           </CardContent>
         </Card>
-        <Card>
+        {/* On a failed load the list (now the error) comes first below xl, on the first screen. */}
+        <Card className={loadError ? 'order-first xl:order-none' : undefined}>
           <CardHeader>
             <CardTitle>Inbox hỗ trợ</CardTitle>
           </CardHeader>

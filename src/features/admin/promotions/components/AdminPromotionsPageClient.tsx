@@ -108,6 +108,15 @@ export function AdminPromotionsPageClient() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <AdminPageHeader title={t('title')} description={t('description')} />
+      {/* Directly under the header, so it is on the first screen at 375 (RIN-1159). */}
+      {loadError ? (
+        <ErrorState
+          error={loadError}
+          message={t('loadError')}
+          onRetry={() => mutate()}
+          className="mt-6"
+        />
+      ) : null}
       <Card className="mt-6 grid gap-4 p-5 md:grid-cols-3">
         <Input
           label={t('code')}
@@ -190,9 +199,6 @@ export function AdminPromotionsPageClient() {
       </Card>
 
       <div className="mt-6 grid gap-4">
-        {loadError ? (
-          <ErrorState error={loadError} message={t('loadError')} onRetry={() => mutate()} />
-        ) : null}
         {loading && (
           <div className="space-y-4" aria-busy="true">
             {Array.from({ length: 3 }).map((_, index) => (

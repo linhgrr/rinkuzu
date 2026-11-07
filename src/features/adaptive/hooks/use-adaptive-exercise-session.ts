@@ -72,6 +72,7 @@ export const useAdaptiveExerciseSession = ({
   const [loadingExercise, setLoadingExercise] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [showTheory, setShowTheory] = useState(false);
 
   const isMountedRef = useRef(true);
@@ -100,6 +101,7 @@ export const useAdaptiveExerciseSession = ({
     setLoadingTheory(false);
     setLoadingExercise(true);
     setError(null);
+    setSubmitError(null);
     answerDraftRef.current = null;
     setAnswerDraft(null);
     setConcept(null);
@@ -167,6 +169,7 @@ export const useAdaptiveExerciseSession = ({
 
   const setAndSaveAnswerDraft = (draft: ExerciseAnswerDraft) => {
     submitIdempotencyRef.current = null;
+    setSubmitError(null);
     answerDraftRef.current = draft;
     setAnswerDraft(draft);
     if (exercise) {
@@ -208,6 +211,7 @@ export const useAdaptiveExerciseSession = ({
     )
       return;
 
+    setSubmitError(null);
     try {
       const result = await withPending(setSubmissionPending, () => {
         router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
@@ -238,13 +242,14 @@ export const useAdaptiveExerciseSession = ({
         learning_mode: 'adaptive',
         journey_id: sessionId,
       });
-      saveSessionExerciseOutcome(sessionId, { result, exercise });
+      saveSessionExerciseOutcome(sessionId, { result, exercise, answer: answerDraft });
       clearSessionExerciseDraft(sessionId, exercise.exercise_id);
       submitIdempotencyRef.current = null;
       router.push(ADAPTIVE_ROUTES.result(sessionId));
     } catch (err) {
       if (!isMountedRef.current) return;
-      setError(
+      // Keep the question and the learner's answer on screen: the failure is inline (RIN-1011).
+      setSubmitError(
         isSessionNotFoundError(err)
           ? t('exercise.failedToSubmitAnswer')
           : resolveExerciseFeedback(err, t, 'submit'),
@@ -335,6 +340,7 @@ export const useAdaptiveExerciseSession = ({
     loadingExercise,
     submitting,
     error,
+    submitError,
     showTheory,
     setShowTheory,
     selectChoice,

@@ -197,6 +197,7 @@ describe('useResultState', () => {
 
     expect(hook.current.result).toEqual(result);
     expect(hook.current.exercise).toEqual(exercise);
+    expect(hook.current.answer).toBeNull();
     expect(hook.current.isCorrect).toBe(true);
     expect(hook.current.masteryPercent).toBe(75);
     expect(hook.current.averageMasteryPercent).toBe(50);
@@ -393,6 +394,20 @@ describe('useResultState', () => {
     expect(errorHook.current.result).toBeNull();
   });
 
+  it('exposes the stored learner answer (RIN-1011)', async () => {
+    const answer = { type: 'mcq' as const, selection: 'B' };
+    getSessionExerciseOutcomeMock.mockReturnValue({
+      exercise: createExercise(),
+      result: createResult(),
+      answer,
+    });
+
+    const { result: hook } = renderHook(() => useResultState('session-1', t));
+    await waitFor(() => expect(hook.current.hydrating).toBe(false));
+
+    expect(hook.current.answer).toEqual(answer);
+  });
+
   it('navigates dashboard/next and toggles chat open state', async () => {
     const exercise = createExercise();
     const result = createResult({ session_completed: false });
@@ -412,6 +427,11 @@ describe('useResultState', () => {
       hook.current.handleNext();
     });
     expect(pushMock).toHaveBeenCalledWith(ADAPTIVE_ROUTES.exercise('session-1'));
+
+    act(() => {
+      hook.current.handleBackToSubject();
+    });
+    expect(pushMock).toHaveBeenCalledWith(ADAPTIVE_ROUTES.subject('session-1'));
 
     act(() => {
       hook.current.openChat();

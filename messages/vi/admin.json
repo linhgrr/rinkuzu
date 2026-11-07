@@ -667,5 +667,43 @@
   "activationEmailActivated": "Kích hoạt trong 7 ngày",
   "activationEmailEmpty": "Chưa có email kích hoạt nào được gửi trong các tuần này.",
   "activationEmailCaption": "Theo tuần gửi email (giờ UTC). Tỷ lệ tính trên số email đã gửi. Kích hoạt: hoàn thành một bài quiz hoặc một lượt học cá nhân hóa trong 7 ngày sau khi gửi; các tuần gần đây vẫn đang được tính. Lượt nhấp hiển thị 0 cho đến khi có theo dõi lượt nhấp.",
-  "activationFunnelTableLabel": "Phễu phiên đầu tiên theo tuần đăng ký"
+  "activationFunnelTableLabel": "Phễu phiên đầu tiên theo tuần đăng ký",
+  "subscriptionsPage": {
+    "description": "Quản lý gói đăng ký và trạng thái thanh toán của người dùng",
+    "filterAll": "Tất cả gói đăng ký",
+    "statuses": {
+      "completed": "Đang hiệu lực",
+      "pending": "Đang chờ",
+      "cancelled": "Đã hủy",
+      "failed": "Thất bại",
+      "expired": "Hết hạn"
+    },
+    "cardTitle": "Gói đăng ký",
+    "showing": "Hiển thị {from} đến {to} trong {total} gói đăng ký",
+    "emptyHint": "Hãy thử đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái.",
+    "columns": {
+      "user": "Người dùng",
+      "plan": "Gói",
+      "amount": "Số tiền",
+      "status": "Trạng thái",
+      "startDate": "Ngày bắt đầu",
+      "endDate": "Ngày kết thúc",
+      "actions": "Thao tác"
+    },
+    "viewDetails": "Xem chi tiết",
+    "detailTitle": "Chi tiết gói đăng ký",
+    "userEmail": "Email người dùng",
+    "payosOrderId": "Mã đơn PayOS",
+    "payosTransactionId": "Mã giao dịch PayOS",
+    "createdAt": "Tạo lúc",
+    "updatedAt": "Cập nhật lúc",
+    "revokeTitle": "Thu hồi Premium",
+    "revokeWarning": "Thao tác này thu hồi <strong>mọi</strong> quyền lợi trên tài khoản, kể cả lần gia hạn khách hàng đã trả riêng, và không thể hoàn tác từ trang này. Để thu hồi một đơn hàng, hãy ghi nhận hoàn tiền hoặc chargeback trên đơn đó.",
+    "revokeReason": "Lý do (được ghi vào sổ quyền lợi)",
+    "revokeReasonPlaceholder": "VD: đã xác nhận thanh toán gian lận, ticket RIN-1234",
+    "revokeConfirmLabel": "Nhập {word} để xác nhận",
+    "revoking": "Đang thu hồi…",
+    "noActivePremium": "Tài khoản này không có Premium đang hoạt động nên không có gì để thu hồi.",
+    "revoked": "Đã thu hồi Premium của tài khoản này"
+  }
 }

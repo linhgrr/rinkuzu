@@ -667,5 +667,43 @@
   "activationEmailActivated": "Activated within 7 days",
   "activationEmailEmpty": "No activation emails were sent in these weeks.",
   "activationEmailCaption": "By the UTC week the email was sent. Shares are of emails sent. Activated: a completed quiz or personalized-learning completion within 7 days of the send; recent weeks are still counting. Clicks show 0 until click tracking ships.",
-  "activationFunnelTableLabel": "First-session funnel by signup week"
+  "activationFunnelTableLabel": "First-session funnel by signup week",
+  "subscriptionsPage": {
+    "description": "Manage user subscriptions and payment statuses",
+    "filterAll": "All subscriptions",
+    "statuses": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "expired": "Expired"
+    },
+    "cardTitle": "Subscriptions",
+    "showing": "Showing {from} to {to} of {total} subscriptions",
+    "emptyHint": "Try adjusting the current search or status filter.",
+    "columns": {
+      "user": "User",
+      "plan": "Plan",
+      "amount": "Amount",
+      "status": "Status",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "actions": "Actions"
+    },
+    "viewDetails": "View details",
+    "detailTitle": "Subscription details",
+    "userEmail": "User email",
+    "payosOrderId": "PayOS order ID",
+    "payosTransactionId": "PayOS transaction ID",
+    "createdAt": "Created at",
+    "updatedAt": "Updated at",
+    "revokeTitle": "Revoke Premium",
+    "revokeWarning": "This revokes <strong>every</strong> grant on this account, including any renewal the customer paid for separately, and cannot be undone from this page. To claw back a single order, record a refund or chargeback on that order instead.",
+    "revokeReason": "Reason (recorded in the entitlement ledger)",
+    "revokeReasonPlaceholder": "e.g. confirmed fraudulent payment, ticket RIN-1234",
+    "revokeConfirmLabel": "Type {word} to confirm",
+    "revoking": "Revoking…",
+    "noActivePremium": "This account has no active Premium, so there is nothing to revoke.",
+    "revoked": "Premium revoked for this account"
+  }
 }

@@ -9,11 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Textarea } from '@/components/ui/Input';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
-import {
-  formatCommunicationTimestamp,
-  formatFeedbackStatus,
-  isFeedbackConversationClosed,
-} from '../lib/format';
+import { formatCommunicationTimestamp, isFeedbackConversationClosed } from '../lib/format';
 import {
   completeFeedback,
   fetchFeedbackDetail,
@@ -71,7 +67,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
         <ErrorState message={loadError} onRetry={() => mutate()} />
       </AdminPageShell>
     );
-  if (!data) return <div className="p-8">Đang tải…</div>;
+  if (!data) return <div className="p-8">{t('loading')}</div>;
   const closed = isFeedbackConversationClosed(data.conversation.status);
   // The invitation is in the outbox but the provider has not accepted it yet.
   // Replying or reminding now would race the invitation itself, so both are
@@ -88,12 +84,11 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
             <div>
               <CardTitle>{data.conversation.subject}</CardTitle>
               <p className="text-sm text-ink-muted">
-                {data.conversation.userEmail} · {formatFeedbackStatus(data.conversation.status)}
+                {data.conversation.userEmail} · {t(`feedback.statuses.${data.conversation.status}`)}
               </p>
               {queued ? (
                 <p role="status" className="mt-1 text-sm text-warning">
-                  Email mời chưa được gửi đi. Hệ thống đang thử gửi lại; trạng thái sẽ chuyển sang
-                  “Đã gửi” khi nhà cung cấp email xác nhận.
+                  {t('feedback.queuedNote')}
                 </p>
               ) : null}
             </div>
@@ -107,7 +102,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                     disabled={loading}
                     onClick={() => void action(() => remindFeedback(id), t('feedbackRemindError'))}
                   >
-                    Nhắc lại
+                    {t('feedback.remind')}
                   </Button>
                 ) : null}
                 <Button
@@ -121,7 +116,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                     )
                   }
                 >
-                  Hoàn tất
+                  {t('feedback.complete')}
                 </Button>
               </div>
             ) : null}
@@ -138,9 +133,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
               >
                 <p className="whitespace-pre-wrap text-sm leading-6">{message.body}</p>
                 {message.hasAttachments ? (
-                  <p className="mt-2 text-xs text-warning">
-                    Email có attachment; file không được tải về.
-                  </p>
+                  <p className="mt-2 text-xs text-warning">{t('feedback.attachmentNote')}</p>
                 ) : null}
                 <time className="mt-2 block text-xs text-ink-muted">
                   {formatCommunicationTimestamp(message.createdAt, locale)}
@@ -155,7 +148,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
           <CardContent className="pt-6">
             <form className="space-y-4" onSubmit={reply}>
               <Textarea
-                label="Trả lời qua email"
+                label={t('feedback.replyLabel')}
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
                 required
@@ -163,7 +156,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                 maxLength={20_000}
               />
               <Button type="submit" loading={loading}>
-                Gửi email
+                {t('feedback.sendReply')}
               </Button>
             </form>
           </CardContent>

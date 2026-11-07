@@ -110,7 +110,6 @@ interface SubscriptionsTableProps {
   subscriptions: AdminSubscriptionViewModel[];
   pagination: AdminSubscriptionsPaginationViewModel;
   noResultsLabel: string;
-  loadingLabel: string;
   onViewDetails: (subscription: AdminSubscriptionViewModel) => void;
 }
 
@@ -167,17 +166,17 @@ function adminSubscriptionsReducer(
   }
 }
 
-function getStatusBadge(status: AdminSubscriptionStatusViewModel) {
+function getStatusBadge(status: AdminSubscriptionStatusViewModel, label: string) {
   switch (status) {
     case 'completed':
-      return <Badge variant="success">{status}</Badge>;
+      return <Badge variant="success">{label}</Badge>;
     case 'pending':
-      return <Badge variant="warning">{status}</Badge>;
+      return <Badge variant="warning">{label}</Badge>;
     case 'cancelled':
     case 'failed':
-      return <Badge variant="danger">{status}</Badge>;
+      return <Badge variant="danger">{label}</Badge>;
     case 'expired':
-      return <Badge variant="default">{status}</Badge>;
+      return <Badge variant="default">{label}</Badge>;
   }
 }
 
@@ -214,6 +213,7 @@ function SubscriptionSearchBar({
 }
 
 function SubscriptionStatusFilters({ currentFilter, onChange }: SubscriptionStatusFiltersProps) {
+  const t = useTranslations('admin.subscriptionsPage');
   return (
     <div className="mb-6 flex flex-wrap gap-2">
       <Button
@@ -225,20 +225,20 @@ function SubscriptionStatusFilters({ currentFilter, onChange }: SubscriptionStat
             : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
         }`}
       >
-        All Subscriptions
+        {t('filterAll')}
       </Button>
       {STATUS_OPTIONS.map((status) => (
         <Button
           key={status}
           onClick={() => onChange(status)}
           variant="ghost"
-          className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-medium capitalize transition-colors ${
+          className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
             currentFilter === status
               ? 'border border-green-200 bg-green-100 text-brand-trust'
               : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
           }`}
         >
-          {status}
+          {t(`statuses.${status}`)}
         </Button>
       ))}
     </div>
@@ -249,53 +249,51 @@ function SubscriptionsTable({
   subscriptions,
   pagination,
   noResultsLabel,
-  loadingLabel,
   onViewDetails,
 }: SubscriptionsTableProps) {
+  const t = useTranslations('admin.subscriptionsPage');
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Subscriptions</CardTitle>
+        <CardTitle>{t('cardTitle')}</CardTitle>
         <CardDescription>
           {pagination.total > 0
-            ? `Showing ${(pagination.page - 1) * pagination.limit + 1} to ${Math.min(
-                pagination.page * pagination.limit,
-                pagination.total,
-              )} of ${pagination.total} subscriptions`
-            : 'No subscriptions found'}
+            ? t('showing', {
+                from: (pagination.page - 1) * pagination.limit + 1,
+                to: Math.min(pagination.page * pagination.limit, pagination.total),
+                total: pagination.total,
+              })
+            : noResultsLabel}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {subscriptions.length === 0 ? (
-          <EmptyState
-            title={noResultsLabel}
-            description="Try adjusting the current search or status filter."
-          />
+          <EmptyState title={noResultsLabel} description={t('emptyHint')} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-neutral-50 text-xs uppercase text-neutral-700">
                 <tr>
                   <th scope="col" className="px-6 py-3">
-                    User
+                    {t('columns.user')}
                   </th>
                   <th scope="col" className="px-6 py-3">
-                    Plan
+                    {t('columns.plan')}
                   </th>
                   <th scope="col" className="px-6 py-3">
-                    Amount
+                    {t('columns.amount')}
                   </th>
                   <th scope="col" className="px-6 py-3">
-                    Status
+                    {t('columns.status')}
                   </th>
                   <th scope="col" className="px-6 py-3">
-                    Start Date
+                    {t('columns.startDate')}
                   </th>
                   <th scope="col" className="px-6 py-3">
-                    End Date
+                    {t('columns.endDate')}
                   </th>
                   <th scope="col" className="px-6 py-3">
-                    Actions
+                    {t('columns.actions')}
                   </th>
                 </tr>
               </thead>
@@ -307,7 +305,9 @@ function SubscriptionsTable({
                     </td>
                     <td className="px-6 py-4">{getPlanBadge(subscription.plan.name)}</td>
                     <td className="px-6 py-4">{subscription.amountLabel}</td>
-                    <td className="px-6 py-4">{getStatusBadge(subscription.status)}</td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(subscription.status, t(`statuses.${subscription.status}`))}
+                    </td>
                     <td className="px-6 py-4 text-neutral-500">{subscription.startDateLabel}</td>
                     <td className="px-6 py-4 text-neutral-500">{subscription.endDateLabel}</td>
                     <td className="px-6 py-4">
@@ -317,7 +317,7 @@ function SubscriptionsTable({
                         onClick={() => onViewDetails(subscription)}
                         className="min-h-[40px] px-3 text-brand-trust hover:text-brand-trust"
                       >
-                        <HiOutlineEye className="mr-1 size-4" /> View Details
+                        <HiOutlineEye className="mr-1 size-4" /> {t('viewDetails')}
                       </Button>
                     </td>
                   </tr>
@@ -325,9 +325,6 @@ function SubscriptionsTable({
               </tbody>
             </table>
           </div>
-        )}
-        {subscriptions.length === 0 ? null : (
-          <p className="mt-4 text-sm text-neutral-500">{loadingLabel}</p>
         )}
       </CardContent>
     </Card>
@@ -344,6 +341,7 @@ function SubscriptionDetailModal({
   onClose,
   onRevoke,
 }: SubscriptionDetailModalProps) {
+  const t = useTranslations('admin.subscriptionsPage');
   const busy = actionLoadingId === subscription?.id;
   const canRevoke =
     subscription !== null &&
@@ -353,50 +351,60 @@ function SubscriptionDetailModal({
     !busy;
 
   return (
-    <Modal isOpen={!!subscription} onClose={onClose} title="Subscription Details">
+    <Modal isOpen={!!subscription} onClose={onClose} title={t('detailTitle')}>
       {subscription ? (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <SubscriptionDetailField label="User Email" value={subscription.userEmail} />
-            <SubscriptionDetailField label="Plan" value={getPlanBadge(subscription.plan.name)} />
-            <SubscriptionDetailField label="Amount" value={subscription.amountLabel} />
-            <SubscriptionDetailField label="Status" value={getStatusBadge(subscription.status)} />
+            <SubscriptionDetailField label={t('userEmail')} value={subscription.userEmail} />
             <SubscriptionDetailField
-              label="PayOS Order ID"
+              label={t('columns.plan')}
+              value={getPlanBadge(subscription.plan.name)}
+            />
+            <SubscriptionDetailField label={t('columns.amount')} value={subscription.amountLabel} />
+            <SubscriptionDetailField
+              label={t('columns.status')}
+              value={getStatusBadge(subscription.status, t(`statuses.${subscription.status}`))}
+            />
+            <SubscriptionDetailField
+              label={t('payosOrderId')}
               value={<span className="font-mono text-sm">{subscription.payosOrderId}</span>}
             />
             <SubscriptionDetailField
-              label="PayOS Transaction ID"
+              label={t('payosTransactionId')}
               value={
                 <span className="font-mono text-sm">{subscription.payosTransactionIdLabel}</span>
               }
             />
-            <SubscriptionDetailField label="Start Date" value={subscription.startDateLabel} />
-            <SubscriptionDetailField label="End Date" value={subscription.endDateLabel} />
-            <SubscriptionDetailField label="Created At" value={subscription.createdAtLabel} />
-            <SubscriptionDetailField label="Updated At" value={subscription.updatedAtLabel} />
+            <SubscriptionDetailField
+              label={t('columns.startDate')}
+              value={subscription.startDateLabel}
+            />
+            <SubscriptionDetailField
+              label={t('columns.endDate')}
+              value={subscription.endDateLabel}
+            />
+            <SubscriptionDetailField label={t('createdAt')} value={subscription.createdAtLabel} />
+            <SubscriptionDetailField label={t('updatedAt')} value={subscription.updatedAtLabel} />
           </div>
 
           {subscription.isActive ? (
             <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-4">
               <div>
-                <p className="text-sm font-semibold text-red-800">Revoke Premium</p>
+                <p className="text-sm font-semibold text-red-800">{t('revokeTitle')}</p>
                 <p className="mt-1 text-sm text-red-700">
-                  This revokes <strong>every</strong> grant on this account, including any renewal
-                  the customer paid for separately, and cannot be undone from this page. To claw
-                  back a single order, record a refund or chargeback on that order instead.
+                  {t.rich('revokeWarning', { strong: (chunks) => <strong>{chunks}</strong> })}
                 </p>
               </div>
               <Input
-                label="Reason (recorded in the entitlement ledger)"
+                label={t('revokeReason')}
                 value={reason}
                 maxLength={500}
                 disabled={busy}
                 onChange={(event) => onReasonChange(event.target.value)}
-                placeholder="e.g. confirmed fraudulent payment, ticket RIN-1234"
+                placeholder={t('revokeReasonPlaceholder')}
               />
               <Input
-                label={`Type ${REVOKE_CONFIRMATION} to confirm`}
+                label={t('revokeConfirmLabel', { word: REVOKE_CONFIRMATION })}
                 value={confirmation}
                 maxLength={16}
                 disabled={busy}
@@ -410,13 +418,11 @@ function SubscriptionDetailModal({
                 onClick={() => onRevoke(subscription.id)}
                 className="min-h-[40px] w-full justify-center px-3 text-sm font-medium"
               >
-                {busy ? 'Revoking…' : 'Revoke Premium'}
+                {busy ? t('revoking') : t('revokeTitle')}
               </Button>
             </div>
           ) : (
-            <p className="border-t pt-4 text-sm text-neutral-500">
-              This account has no active Premium, so there is nothing to revoke.
-            </p>
+            <p className="border-t pt-4 text-sm text-neutral-500">{t('noActivePremium')}</p>
           )}
         </div>
       ) : null}
@@ -437,6 +443,7 @@ export function AdminSubscriptionsPageClient() {
   const t = useTranslations('admin');
   const describeError = useAdminApiErrorMessage();
   const tCommon = useTranslations('common');
+  const tPage = useTranslations('admin.subscriptionsPage');
   const [state, dispatch] = useReducer(adminSubscriptionsReducer, initialState);
 
   useEffect(() => {
@@ -528,7 +535,7 @@ export function AdminSubscriptionsPageClient() {
     try {
       await revokeAdminSubscription({ subscriptionId, reason: state.revokeReason.trim() });
       dispatch({ type: 'revoked', subscriptionId });
-      dispatch({ type: 'patch', value: { success: 'Premium revoked for this account' } });
+      dispatch({ type: 'patch', value: { success: tPage('revoked') } });
     } catch (error) {
       dispatch({
         type: 'patch',
@@ -543,10 +550,7 @@ export function AdminSubscriptionsPageClient() {
   return (
     <AdminPageShell>
       <div className="mx-auto max-w-6xl">
-        <AdminPageHeader
-          title={t('subscriptions')}
-          description="Manage user subscriptions and payment statuses"
-        />
+        <AdminPageHeader title={t('subscriptions')} description={tPage('description')} />
 
         <SubscriptionSearchBar
           searchTerm={state.searchInput}
@@ -575,7 +579,6 @@ export function AdminSubscriptionsPageClient() {
               subscriptions={state.subscriptions}
               pagination={state.pagination}
               noResultsLabel={t('noSubscriptionsFound')}
-              loadingLabel={t('loadingStatistics')}
               onViewDetails={(subscription) =>
                 dispatch({
                   type: 'patch',

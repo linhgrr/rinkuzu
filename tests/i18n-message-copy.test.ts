@@ -33,6 +33,38 @@ function flatten(tree: MessageTree, prefix = ''): Array<[string, string]> {
 }
 
 describe('i18n message copy', () => {
+  it('ships the same namespace files in every locale', () => {
+    const [base, ...others] = locales;
+    for (const locale of others) {
+      expect(namespaceFiles(locale), `${locale} namespace files`).toEqual(namespaceFiles(base));
+    }
+  });
+
+  it('keeps the admin subscriptions and communications copy in its own language (RIN-1160)', () => {
+    // English copy has no accented letters; Vietnamese copy always has some. The
+    // language picker names each language in itself.
+    const accented = /(?![\u0000-\u007f])\p{L}/u;
+    const sections: Array<[string, string]> = [
+      ['admin.json', 'subscriptionsPage.'],
+      ['communications.json', 'admin.'],
+    ];
+    // Vietnamese that happens to need no accent, and the picker's own name for English.
+    const UNACCENTED_VI = new Set(['admin.localeEn', 'admin.nextPage']);
+    const offenders: string[] = [];
+    for (const [file, prefix] of sections) {
+      for (const [key, value] of flatten(readMessages('en', file))) {
+        if (!key.startsWith(prefix) || key === 'admin.localeVi') continue;
+        if (accented.test(value)) offenders.push(`en/${file} ${key}: ${value}`);
+      }
+      for (const [key, value] of flatten(readMessages('vi', file))) {
+        if (!key.startsWith(prefix) || UNACCENTED_VI.has(key)) continue;
+        if (!accented.test(value)) offenders.push(`vi/${file} ${key}: ${value}`);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps every locale on the same message keys', () => {
     const [base, ...others] = locales;
     for (const file of namespaceFiles(base)) {

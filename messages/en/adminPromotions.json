@@ -24,5 +24,8 @@
   "loadError": "Could not load promotions",
   "created": "Promotion created",
   "createError": "Could not create promotion",
-  "archiveError": "Could not archive promotion"
+  "archiveError": "Could not archive promotion",
+  "archiveConfirmTitle": "Archive {code}?",
+  "archiveConfirmMessage": "Archived codes stop working at checkout right away but stay in the history.",
+  "archiveConfirm": "Archive code"
 }

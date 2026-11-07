@@ -24,5 +24,8 @@
   "loadError": "Không tải được promo",
   "created": "Đã tạo promo",
   "createError": "Không tạo được promo",
-  "archiveError": "Không archive được promo"
+  "archiveError": "Không archive được promo",
+  "archiveConfirmTitle": "Archive mã {code}?",
+  "archiveConfirmMessage": "Mã đã archive sẽ ngừng dùng được khi thanh toán ngay lập tức nhưng vẫn còn trong lịch sử.",
+  "archiveConfirm": "Archive mã"
 }

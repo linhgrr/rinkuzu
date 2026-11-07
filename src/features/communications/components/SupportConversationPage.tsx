@@ -4,7 +4,6 @@ import { useId, useRef, useState, type FormEvent } from 'react';
 import Image, { type ImageLoaderProps } from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
-import { HiOutlineChevronLeft } from 'react-icons/hi';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
@@ -23,6 +22,7 @@ import type {
   SupportDetailViewModel,
   SupportTicketViewModel,
 } from '../types/communication-view-model';
+import { BackToListLink, DetailLoadError } from './DetailLoadError';
 import { SupportAttachmentPicker } from './SupportAttachmentPicker';
 import {
   SupportFieldMessage,
@@ -68,15 +68,8 @@ export function SupportConversationPage({ ticketId, admin = false }: SupportConv
       .finally(() => setReopening(false));
   }
 
-  const backLink = (
-    <Link
-      href={admin ? '/admin/support' : '/support'}
-      className="inline-flex items-center gap-1 rounded-md text-sm font-semibold text-ink-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-    >
-      <HiOutlineChevronLeft className="size-4" aria-hidden="true" />
-      {t('backToRequests')}
-    </Link>
-  );
+  const listHref = admin ? '/admin/support' : '/support';
+  const backLink = <BackToListLink href={listHref} label={t('backToRequests')} />;
 
   if (isLoading)
     return (
@@ -87,9 +80,15 @@ export function SupportConversationPage({ ticketId, admin = false }: SupportConv
     );
   if (error || !data)
     return (
-      <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-        {backLink}
-        <SupportFormAlert message={t('conversationError')} />
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <DetailLoadError
+          href={listHref}
+          label={t('backToRequests')}
+          title={t('conversationTitle')}
+          error={error}
+          message={t('conversationError')}
+          onRetry={() => mutate()}
+        />
       </div>
     );
   const { ticket } = data;
@@ -148,6 +147,10 @@ function SupportMessageList({
   const locale = useLocale();
   const t = useTranslations('communications.support');
   const learnerLabel = admin ? t('authorLearner') : t('authorYou');
+
+  if (messages.length === 0) {
+    return <p className="text-sm text-ink-muted">{t('noMessages')}</p>;
+  }
 
   return (
     <ol className="space-y-4" aria-label={t('history')}>

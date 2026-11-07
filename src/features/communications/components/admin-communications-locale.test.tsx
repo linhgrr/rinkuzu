@@ -1,9 +1,9 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enCommon from '@/../messages/en/common.json';
 import enCommunications from '@/../messages/en/communications.json';
@@ -14,11 +14,19 @@ import viErrors from '@/../messages/vi/errors.json';
 import { AdminCampaignsPage } from './AdminCampaignsPage';
 import { AdminFeedbackPage } from './AdminFeedbackPage';
 import { AdminSupportPage } from './AdminSupportPage';
+import { CampaignBlockEditor } from './CampaignBlockEditor';
+import { SupportConversationPage } from './SupportConversationPage';
+import type { CampaignBlockViewModel } from '../types/communication-view-model';
 
 const mocks = vi.hoisted(() => ({ swr: vi.fn() }));
 
 vi.mock('swr', () => ({ default: (...args: unknown[]) => mocks.swr(...args) }));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  Link: ({ href, children }: { href: string; children: ReactNode }) => (
+    <a href={href}>{children}</a>
+  ),
+}));
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
 vi.mock('../api/communications-api', () => ({
   createCampaign: vi.fn(),
@@ -27,6 +35,11 @@ vi.mock('../api/communications-api', () => ({
   fetchCampaigns: vi.fn(),
   fetchFeedbackList: vi.fn(),
   fetchSupportTickets: vi.fn(),
+  addSupportMessage: vi.fn(),
+  fetchSupportDetail: vi.fn(),
+  reopenSupport: vi.fn(),
+  updateSupportStatus: vi.fn(),
+  uploadSupportImage: vi.fn(),
 }));
 
 const MESSAGES = {
@@ -113,5 +126,95 @@ describe('admin communications pages follow the page locale (RIN-1160)', () => {
     unmount();
     renderAt('vi', <AdminFeedbackPage />);
     expect(screen.getByRole('button', { name: 'Gửi lời mời' })).toBeInTheDocument();
+  });
+});
+
+const BLOCKS: CampaignBlockViewModel[] = [
+  { id: 'b1', type: 'heading', text: 'November news', level: 2 },
+  { id: 'b2', type: 'paragraph', text: 'Hello' },
+  { id: 'b3', type: 'image', url: 'https://example.com/a.png', label: 'Cover' },
+  { id: 'b4', type: 'button', url: 'https://example.com', label: 'Open' },
+  { id: 'b5', type: 'divider' },
+  { id: 'b6', type: 'spacer', height: 24 },
+];
+
+const TICKET_DETAIL = {
+  ticket: {
+    id: 't1',
+    userId: 'u1',
+    userEmail: 'learner@example.com',
+    subject: 'Upload help',
+    category: 'other',
+    status: 'waiting_for_admin',
+    priority: 'normal',
+    createdBy: 'user',
+    lastMessageAt: '2026-11-07T10:00:00.000Z',
+    resolvedAt: null,
+    closedAt: null,
+    reopenUntil: null,
+    canReopen: false,
+    revision: 1,
+    createdAt: '2026-11-07T10:00:00.000Z',
+    updatedAt: '2026-11-07T10:00:00.000Z',
+  },
+  messages: [
+    {
+      id: 'm1',
+      authorRole: 'user',
+      body: 'My upload fails',
+      attachments: [],
+      createdAt: '2026-11-07T10:00:00.000Z',
+    },
+  ],
+};
+
+describe('campaign block editor and support conversation follow the page locale (RIN-1160 QA)', () => {
+  beforeEach(() => {
+    mocks.swr.mockReturnValue({ data: TICKET_DETAIL, isLoading: false, mutate: vi.fn() });
+  });
+
+  it('block editor shows no Vietnamese at en, including the default text of a new block', () => {
+    const onChange = vi.fn();
+    const { container } = renderAt(
+      'en',
+      <CampaignBlockEditor blocks={BLOCKS} onChange={onChange} />,
+    );
+    expect(pageCopy(container)).not.toMatch(VIETNAMESE_LETTERS);
+    expect(screen.getByRole('button', { name: 'Delete block 2 (Paragraph)' })).toHaveTextContent(
+      'Delete',
+    );
+    expect(screen.getByRole('button', { name: 'Move block 1 down' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Button label')).toBeInTheDocument();
+
+    screen.getByRole('button', { name: '+ Paragraph' }).click();
+    screen.getByRole('button', { name: '+ Heading' }).click();
+    screen.getByRole('button', { name: '+ Image' }).click();
+    screen.getByRole('button', { name: '+ Button' }).click();
+    const added = onChange.mock.calls.map(([blocks]) => JSON.stringify(blocks.at(-1)));
+    expect(added.join(' ')).not.toMatch(VIETNAMESE_LETTERS);
+    expect(added[0]).toContain('"text":"Content"');
+  });
+
+  it('block editor renders the vi strings at vi', () => {
+    const onChange = vi.fn();
+    renderAt('vi', <CampaignBlockEditor blocks={BLOCKS} onChange={onChange} />);
+    expect(screen.getByRole('button', { name: 'Xóa khối 2 (đoạn văn)' })).toHaveTextContent('Xóa');
+    expect(screen.getByLabelText('Nhãn nút')).toBeInTheDocument();
+    expect(screen.getByText('khoảng trống')).toBeInTheDocument();
+    expect(screen.queryByText(/^(heading|paragraph|spacer)$/u)).toBeNull();
+    screen.getByRole('button', { name: '+ Thêm đoạn văn' }).click();
+    expect(onChange.mock.calls[0]?.[0].at(-1)).toMatchObject({ text: 'Nội dung' });
+  });
+
+  it('admin support conversation shows its status actions in the page language', () => {
+    const { container, unmount } = renderAt('en', <SupportConversationPage ticketId="t1" admin />);
+    const header = within(container);
+    expect(header.getByRole('button', { name: 'Mark resolved' })).toBeInTheDocument();
+    expect(header.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(pageCopy(container)).not.toMatch(VIETNAMESE_LETTERS);
+    unmount();
+    renderAt('vi', <SupportConversationPage ticketId="t1" admin />);
+    expect(screen.getByRole('button', { name: 'Đã xử lý' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Đóng' })).toBeInTheDocument();
   });
 });

@@ -209,7 +209,9 @@
         "waiting_for_user": "Chờ người dùng",
         "resolved": "Đã xử lý",
         "closed": "Đã đóng"
-      }
+      },
+      "markResolved": "Đã xử lý",
+      "close": "Đóng"
     },
     "campaignLoadError": "Không thể tải campaign.",
     "campaignCreateError": "Không thể tạo campaign",
@@ -220,7 +222,34 @@
     "feedbackRemindError": "Không thể gửi lời nhắc",
     "feedbackCompleteError": "Không thể hoàn tất cuộc trao đổi",
     "supportCreateError": "Không thể tạo cuộc hỗ trợ",
-    "scheduleTimeInvalid": "Hãy chọn thời gian gửi hợp lệ"
+    "scheduleTimeInvalid": "Hãy chọn thời gian gửi hợp lệ",
+    "blockEditor": {
+      "blockTypes": {
+        "heading": "tiêu đề",
+        "paragraph": "đoạn văn",
+        "image": "hình ảnh",
+        "button": "nút",
+        "divider": "đường kẻ",
+        "spacer": "khoảng trống"
+      },
+      "addBlock": "+ Thêm {type}",
+      "moveUp": "Di chuyển khối {index} lên",
+      "moveDown": "Di chuyển khối {index} xuống",
+      "remove": "Xóa",
+      "removeLabel": "Xóa khối {index} ({type})",
+      "content": "Nội dung",
+      "level": "Cấp",
+      "altText": "Văn bản thay thế",
+      "buttonLabel": "Nhãn nút",
+      "url": "Đường dẫn HTTPS",
+      "height": "Chiều cao",
+      "defaults": {
+        "heading": "Tiêu đề",
+        "paragraph": "Nội dung",
+        "image": "Hình ảnh",
+        "button": "Xem thêm"
+      }
+    }
   },
   "unsubscribe": {
     "metaTitle": "Hủy nhận email | RinKuzu",

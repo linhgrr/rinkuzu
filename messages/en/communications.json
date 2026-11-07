@@ -209,7 +209,9 @@
         "waiting_for_user": "Waiting for user",
         "resolved": "Resolved",
         "closed": "Closed"
-      }
+      },
+      "markResolved": "Mark resolved",
+      "close": "Close"
     },
     "campaignLoadError": "Could not load the campaign.",
     "campaignCreateError": "Could not create the campaign",
@@ -220,7 +222,34 @@
     "feedbackRemindError": "Could not send the reminder",
     "feedbackCompleteError": "Could not complete the conversation",
     "supportCreateError": "Could not create the support conversation",
-    "scheduleTimeInvalid": "Choose a valid send time"
+    "scheduleTimeInvalid": "Choose a valid send time",
+    "blockEditor": {
+      "blockTypes": {
+        "heading": "Heading",
+        "paragraph": "Paragraph",
+        "image": "Image",
+        "button": "Button",
+        "divider": "Divider",
+        "spacer": "Spacer"
+      },
+      "addBlock": "+ {type}",
+      "moveUp": "Move block {index} up",
+      "moveDown": "Move block {index} down",
+      "remove": "Delete",
+      "removeLabel": "Delete block {index} ({type})",
+      "content": "Content",
+      "level": "Level",
+      "altText": "Alt text",
+      "buttonLabel": "Button label",
+      "url": "HTTPS URL",
+      "height": "Height",
+      "defaults": {
+        "heading": "Heading",
+        "paragraph": "Content",
+        "image": "Image",
+        "button": "Learn more"
+      }
+    }
   },
   "unsubscribe": {
     "metaTitle": "Unsubscribe | RinKuzu",

@@ -177,13 +177,6 @@ const nextConfig = {
         port: '',
         pathname: '/images/**',
       },
-      // Legacy ImgBB images until the RIN-959 migration rewrites them.
-      {
-        protocol: 'https',
-        hostname: 'i.ibb.co',
-        port: '',
-        pathname: '/**',
-      },
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',

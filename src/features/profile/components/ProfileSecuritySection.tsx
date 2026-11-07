@@ -81,10 +81,10 @@ export function GooglePasswordCard({ t }: { t: Translate }) {
             href={GOOGLE_ACCOUNT_SECURITY_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-trust hover:underline"
+            className="text-sm font-medium text-brand-trust hover:underline"
           >
             {t('googlePasswordLink')}
-            <HiOutlineExternalLink className="size-4" aria-hidden="true" />
+            <HiOutlineExternalLink className="ml-1 inline size-4 align-[-3px]" aria-hidden="true" />
           </a>
         </div>
       </div>

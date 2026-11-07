@@ -91,6 +91,24 @@ describe('ExplorePageClient session gating (RIN-680)', () => {
     expect(screen.queryByTestId('adaptive-skeleton')).not.toBeInTheDocument();
   });
 
+  it('signed out: the Sign in link has a visible keyboard focus ring and a 44px touch target (RIN-761)', () => {
+    session.status = 'unauthenticated';
+    render(<ExplorePageClient />);
+
+    for (const cta of screen.getAllByRole('link', { name: 'signInCta' })) {
+      // Same tokenized ring as `.btn:focus-visible` in globals.css.
+      expect(cta).toHaveClass(
+        'focus-visible:outline',
+        'focus-visible:outline-3',
+        'focus-visible:outline-offset-2',
+        'focus-visible:outline-[var(--focus-ring)]',
+      );
+      // min-h-11 = 44px; min-h-10 (40px) is under the touch-target minimum.
+      expect(cta).toHaveClass('min-h-11');
+      expect(cta).not.toHaveClass('min-h-10');
+    }
+  });
+
   it('signed out on the "mine" tab: prompts sign-in and keeps the search in the callback', () => {
     session.status = 'unauthenticated';
     search.params = new URLSearchParams('type=mine&q=bio');

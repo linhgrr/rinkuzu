@@ -34,6 +34,8 @@ interface SubjectDetailsState {
   didPrefetchStartLearning: boolean;
   startingSession: boolean;
   sessionNotice: string | null;
+  /** The adaptive API has no such session and no saved job can recreate it. */
+  notFound: boolean;
 }
 
 type SubjectDetailsAction =
@@ -52,6 +54,7 @@ function createInitialState(t: TranslateFn): SubjectDetailsState {
     didPrefetchStartLearning: false,
     startingSession: false,
     sessionNotice: null,
+    notFound: false,
   };
 }
 
@@ -85,6 +88,7 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     didPrefetchStartLearning,
     startingSession,
     sessionNotice,
+    notFound,
   } = state;
 
   useEffect(() => {
@@ -104,6 +108,8 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
       } catch (error) {
         if (isSessionNotFoundError(error)) {
           nextState.activeTab = 'history';
+          // With a saved job the learner can still read history and restart the path.
+          nextState.notFound = !mappedJobId;
         }
       }
 
@@ -215,6 +221,7 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     historyDetail,
     historyLoading,
     loading,
+    notFound,
     sessionNotice,
     setActiveTab: (tab: SubjectTab) => dispatch({ type: 'setActiveTab', value: tab }),
     startingSession,

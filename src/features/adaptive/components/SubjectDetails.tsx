@@ -5,6 +5,7 @@ import { useSubjectDetailsState } from '@/features/adaptive/hooks/use-subject-de
 import {
   SubjectDetailsBackButton,
   SubjectDetailsHero,
+  SubjectDetailsNotFound,
   SubjectDetailsTabContent,
   SubjectDetailsTabs,
 } from './SubjectDetailsSections';
@@ -20,12 +21,17 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
     historyDetail,
     historyLoading,
     loading,
+    notFound,
     sessionNotice,
     setActiveTab,
     startingSession,
     status,
     summary,
   } = useSubjectDetailsState(sessionId, t);
+
+  if (notFound) {
+    return <SubjectDetailsNotFound onBack={handleBackToDashboard} t={t} />;
+  }
 
   return (
     <div className="space-y-8 pb-12 font-home text-ink">

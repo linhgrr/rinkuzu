@@ -245,15 +245,13 @@
   },
   "history": {
     "title": "Lịch sử bài tập",
-    "loadingFromMongoDB": "Đang tải từ MongoDB...",
-    "noMongoDBData": "Chưa có dữ liệu trong MongoDB cho phiên này.",
+    "empty": "Chưa có bài tập nào trong phiên này. Phiên học được lưu sau khi bạn trả lời ít nhất 1 bài.",
     "completed": "Hoàn thành",
     "step": "Bước {step}/{total}",
     "correct": "Đúng",
-    "loading": "Đang tải lịch sử...",
-    "loadError": "Không thể tải lịch sử từ MongoDB: {error}",
-    "noSession": "Chưa có session nào được lưu trong MongoDB.",
-    "sessionSaveHint": "Phiên học sẽ được lưu sau khi bạn trả lời ít nhất 1 bài tập.",
+    "loading": "Đang tải lịch sử…",
+    "loadError": "Không tải được lịch sử: {error}",
+    "noSession": "Chưa có phiên học nào được lưu.",
     "table": {
       "question": "Câu hỏi",
       "bloom": "Bloom",
@@ -305,7 +303,8 @@
       "limits": "Giới hạn",
       "integrals": "Tích phân",
       "advanced": "Nâng cao"
-    }
+    },
+    "loadError": "Chưa tải được lộ trình học. Vui lòng thử lại."
   },
   "processing": {
     "title": "Đang phân tích tài liệu",
@@ -498,7 +497,8 @@
     "sessionNotReady": "Lộ trình học này vẫn đang hoàn tất thiết lập. Vui lòng thử bắt đầu lại sau ít phút.",
     "sessionUnavailable": "Hiện chưa thể bắt đầu phiên học. Vui lòng đợi thêm một chút rồi thử lại.",
     "sessionMissing": "Không còn tìm thấy tài liệu này. Vui lòng quay lại bảng điều khiển và mở lại.",
-    "sessionOpenFailed": "Hiện chưa thể mở phiên học này."
+    "sessionOpenFailed": "Hiện chưa thể mở phiên học này.",
+    "notFound": "Không tìm thấy phiên học này."
   },
   "masteryMatrix": {
     "loading": "Đang tải ma trận độ thành thạo...",

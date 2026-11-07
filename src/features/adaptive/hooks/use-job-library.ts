@@ -23,7 +23,8 @@ export type UseJobLibraryResult = {
   loading: boolean;
   busyJobId: string | null;
   retry: (jobId: string) => Promise<void>;
-  cancel: (jobId: string) => Promise<void>;
+  /** Null when cancelled; localized copy otherwise, shown inline in the confirm dialog (RIN-1005). */
+  cancel: (jobId: string) => Promise<string | null>;
   refresh: () => Promise<void>;
 };
 
@@ -70,11 +71,12 @@ export function useJobLibrary({
     }
   };
 
-  const cancelWithToast = async (jobId: string): Promise<void> => {
+  const cancelReportingError = async (jobId: string): Promise<string | null> => {
     try {
       await poller.cancel(jobId);
+      return null;
     } catch (err) {
-      toastError(err);
+      return apiErrorMessage(adaptiveErrorForDisplay(err));
     }
   };
 
@@ -83,7 +85,7 @@ export function useJobLibrary({
     loading: enabled && !hasLoaded,
     busyJobId,
     retry: retryWithToast,
-    cancel: cancelWithToast,
+    cancel: cancelReportingError,
     refresh: poller.tickNow,
   };
 }

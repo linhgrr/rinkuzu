@@ -1,4 +1,6 @@
 import { getCurrentSession } from '@/lib/auth/session';
+import { randomInt } from 'node:crypto';
+import { headers } from 'next/headers';
 import { permanentRedirect } from 'next/navigation';
 import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
@@ -28,6 +30,33 @@ function toQueryString(searchParams: QuizPageSearchParams): string {
   return serialized ? `?${serialized}` : '';
 }
 
+/** Client hint first, then the user agent; tablets and desktops get the desktop layout. */
+function looksLikePhone(requestHeaders: Headers): boolean {
+  const mobileHint = requestHeaders.get('sec-ch-ua-mobile');
+  if (mobileHint) return mobileHint === '?1';
+  return /Mobi|iPhone|iPod/iu.test(requestHeaders.get('user-agent') ?? '');
+}
+
+const ATTEMPT_ID_PATTERN = /^[a-f0-9]{24}$/iu;
+
+/**
+ * `?retryOf=<attemptId>` (RIN-917) plays only the questions missed in that attempt.
+ * An invalid, foreign or guest `retryOf` falls back to the full quiz silently.
+ */
+async function loadQuizForPlay(
+  slug: string,
+  retryOf: string | null,
+  session: Awaited<ReturnType<typeof getCurrentSession>>,
+) {
+  const quizService = getQuizService();
+  const userId = session?.user?.id;
+  if (retryOf && userId && ATTEMPT_ID_PATTERN.test(retryOf)) {
+    const retry = await quizService.getRetryQuizForPlay(slug, retryOf, userId, session?.user?.role);
+    if (retry.success) return retry;
+  }
+  return quizService.getQuizForPlay(slug, session?.user?.role, userId);
+}
+
 export default async function QuizPlayerPage({
   params,
   searchParams,
@@ -35,10 +64,11 @@ export default async function QuizPlayerPage({
   params: Promise<{ locale: string; slug: string }>;
   searchParams: Promise<QuizPageSearchParams>;
 }) {
-  const [{ locale, slug }, session, query] = await Promise.all([
+  const [{ locale, slug }, session, query, requestHeaders] = await Promise.all([
     params,
     getCurrentSession(),
     searchParams,
+    headers(),
   ]);
   const premiumMetadata = await getPremiumQuizService().getCatalogMetadataBySlug(slug);
   if (premiumMetadata) {
@@ -52,6 +82,7 @@ export default async function QuizPlayerPage({
           slug={slug}
           title={premiumMetadata.title}
           questionCount={premiumMetadata.questionCount}
+          entry={firstValue(query['entry'])}
           {...description}
         />
       );
@@ -66,11 +97,7 @@ export default async function QuizPlayerPage({
       />
     );
   }
-  const result = await getQuizService().getQuizForPlay(
-    slug,
-    session?.user?.role,
-    session?.user?.id,
-  );
+  const result = await loadQuizForPlay(slug, firstValue(query['retryOf']), session);
 
   if (!result.success && result.statusCode === 404) {
     // Former slugs (RIN-624) only cost a lookup after a miss.
@@ -128,6 +155,10 @@ export default async function QuizPlayerPage({
         initialQuiz={quiz}
         slug={slug}
         entry={firstValue(query['entry'])}
+        mode={firstValue(query['mode'])}
+        // The first question is server-rendered from this seed and layout guess (RIN-1032).
+        shuffleSeed={randomInt(2 ** 31)}
+        initialMobile={looksLikePhone(requestHeaders)}
       />
     </>
   );

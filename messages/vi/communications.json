@@ -68,7 +68,11 @@
     "decline": "Từ chối lời mời này",
     "optOut": "Không nhận lời mời trong tương lai",
     "optOutAll": "Từ chối tất cả lời mời sau này",
-    "error": "Không thể cập nhật"
+    "metaTitle": "Lời mời phản hồi | RinKuzu",
+    "doneTitle": "Đã lưu lựa chọn",
+    "invalidTitle": "Liên kết này không hợp lệ",
+    "invalidDescription": "Liên kết có thể đã hết hạn. Hãy kiểm tra bạn đã mở đúng và đủ liên kết trong email.",
+    "home": "Về RinKuzu"
   },
   "admin": {
     "campaignLoadError": "Không thể tải campaign.",
@@ -84,11 +88,11 @@
   },
   "unsubscribe": {
     "metaTitle": "Hủy nhận email | RinKuzu",
-    "confirmTitle": "Ngừng nhận email nhắc ôn tập?",
-    "confirmDescription": "Bạn sẽ không còn nhận email nhắc ôn lại các câu đã làm sai hai ngày sau mỗi bài quiz.",
+    "confirmTitle": "Ngừng nhận email nhắc nhở từ RinKuzu?",
+    "confirmDescription": "Bạn sẽ không còn nhận email nhắc học, như nhắc ôn lại các câu đã làm sai hay nhắc làm bài quiz khởi động.",
     "confirmButton": "Hủy nhận",
     "doneTitle": "Bạn đã hủy nhận email",
-    "doneDescription": "Bạn sẽ không nhận email nhắc ôn tập nữa.",
+    "doneDescription": "Bạn sẽ không nhận email nhắc nhở từ RinKuzu nữa.",
     "invalidTitle": "Liên kết này không hợp lệ",
     "invalidDescription": "Hãy kiểm tra bạn đã mở đúng và đủ liên kết trong email.",
     "errorTitle": "Đã có lỗi xảy ra",

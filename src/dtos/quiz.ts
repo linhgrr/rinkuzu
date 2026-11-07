@@ -220,7 +220,11 @@ export const submitQuizAttemptRequestSchema = z
   .strictObject({
     answers: z.array(quizProgressAnswerSchema),
     idempotencyKey: z.uuid(),
-    userEmail: z.string().trim().toLowerCase().pipe(z.email()).optional(),
+    /**
+     * Ignored: signed-in tabs still on a bundle from before RIN-921 send it, and a strict
+     * schema would fail their submit. It identifies no one; drop it after 2026-11-20.
+     */
+    userEmail: z.unknown().optional(),
     retryOfAttemptId: objectIdSchema.optional(),
     guestClaimToken: guestClaimTokenSchema.optional(),
     /** RIN-933: `quick` plays a client-chosen subset of `QUICK_ROUND_SIZE` questions. */

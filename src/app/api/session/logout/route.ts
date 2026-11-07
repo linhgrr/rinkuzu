@@ -32,6 +32,23 @@ type AuthSignOutResult = {
 
 const AUTH_SESSION_COOKIE = /^(?:__Secure-)?authjs\.session-token(?:\.\d+)?$/;
 
+/**
+ * Whether the request carries an Auth.js session cookie at all. A guest has
+ * none, so there is nothing to clear and logging out has already happened
+ * (RIN-958): answer like a successful logout instead of the fail-closed 500.
+ */
+function hasSessionCookie(request: Request): boolean {
+  const header = request.headers.get('cookie');
+  if (!header) return false;
+  return header
+    .split(';')
+    .some((pair) => AUTH_SESSION_COOKIE.test(pair.split('=', 1)[0]?.trim() ?? ''));
+}
+
+function seeOther(location: string): Response {
+  return new Response(null, { status: 303, headers: { Location: location } });
+}
+
 function isSignOutCookie(value: unknown): value is AuthSignOutCookie {
   if (!value || typeof value !== 'object') return false;
   const cookie = value as Partial<AuthSignOutCookie>;
@@ -47,6 +64,10 @@ export async function POST(request: Request): Promise<Response> {
   const formData = await request.formData();
   const locale = readLocale(formData);
   const redirectTo = logoutRedirectTarget(formData, locale);
+  if (!hasSessionCookie(request)) {
+    return seeOther(new URL(redirectTo, request.url).toString());
+  }
+
   const result = (await signOut({ redirect: false, redirectTo })) as AuthSignOutResult;
   const cookies = Array.isArray(result.cookies) ? result.cookies.filter(isSignOutCookie) : [];
 

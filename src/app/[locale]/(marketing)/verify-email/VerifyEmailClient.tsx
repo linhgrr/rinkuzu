@@ -9,7 +9,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineCheckCircle, HiOutlineExclamationCircle, HiOutlineMail } from 'react-icons/hi';
 import { verifyEmail } from '@/features/auth/api/auth-api';
-import { describeApiError } from '@/lib/api/error-kind';
+import { isEmailLinkProblem } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { markAnalyticsSignupPending } from '@/lib/analytics/client';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
@@ -80,11 +80,9 @@ function VerifyEmailContent() {
         // A bad or expired link (`invalid_token`) needs nothing beyond the title's link copy;
         // rate limits, server and network failures add the shared API copy. Never the server
         // text (RIN-756).
-        const { kind } = describeApiError(error);
-        const linkProblem = kind === 'validation' || kind === 'not_found' || kind === 'unknown';
         dispatch({
           type: 'error',
-          message: linkProblem ? null : apiErrorMessage(error),
+          message: isEmailLinkProblem(error) ? null : apiErrorMessage(error),
         });
       });
   }, [locale, token, t, apiErrorMessage]);

@@ -57,4 +57,14 @@ describe('/start post-sign-in landing (RIN-913)', () => {
       expect.objectContaining({ starterSkipped: true }),
     );
   });
+
+  it('treats a browser with a pending guest claim as not new (RIN-921)', async () => {
+    cookieStore.has.mockImplementation((name: string) => name === 'rk_guest_claim_pending');
+    getPostSignInHref.mockResolvedValue('/dashboard');
+
+    await expect(renderStart('en')).rejects.toThrow('redirect:en:/dashboard');
+    expect(getPostSignInHref).toHaveBeenCalledWith(
+      expect.objectContaining({ starterSkipped: true }),
+    );
+  });
 });

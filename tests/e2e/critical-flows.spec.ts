@@ -150,9 +150,12 @@ const E2E_STARTER_QUIZ = {
   title: 'E2E Starter Quiz',
 } as const;
 
+// The specs run on /en, where the dashboard, /start and the activation email
+// all pick the English starter once it exists. Seeding another one would make
+// the pick depend on which spec ran first (RIN-1000).
 async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
-  const slug = STARTER_QUIZ_ALLOWLIST[0]?.slug;
-  if (!slug) throw new Error('Starter quiz allowlist is empty');
+  const slug = STARTER_QUIZ_ALLOWLIST.find((entry) => entry.locale === 'en')?.slug;
+  if (!slug) throw new Error('Starter quiz allowlist has no English starter');
   await db.collection('users').updateOne(
     { _id: E2E_STARTER_QUIZ.author },
     {
@@ -446,6 +449,66 @@ async function login(page: Page, user: SeededUser): Promise<SessionPayload> {
   return session;
 }
 
+/**
+ * Records client analytics events in the page (RIN-1000). Consent is granted so
+ * `captureAnalyticsEvent` runs; `window.gtag` is pinned to a recorder the app
+ * cannot replace, so nothing leaves the browser through it.
+ */
+async function recordAnalyticsEvents(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'granted');
+    const events: Array<{ name: unknown; properties: unknown }> = [];
+    const record = (...args: unknown[]) => {
+      if (args[0] === 'event') events.push({ name: args[1], properties: args[2] });
+    };
+    Object.defineProperty(window, '__rkEvents', { value: events });
+    Object.defineProperty(window, 'gtag', {
+      configurable: true,
+      get: () => record,
+      set: () => undefined,
+    });
+  });
+}
+
+async function quizCompletedProperties(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    const events: unknown = Reflect.get(window, '__rkEvents');
+    if (!Array.isArray(events)) return null;
+    const completed: unknown = events.find(
+      (event: { name?: unknown }) => event.name === 'quiz_completed',
+    );
+    return completed && typeof completed === 'object' ? Reflect.get(completed, 'properties') : null;
+  });
+}
+
+async function submitStarterQuiz(page: Page, starterSlug: string): Promise<void> {
+  await expect(page.getByText(E2E_STARTER_QUIZ.question)).toBeVisible();
+  await page.getByText('The starter card', { exact: true }).click();
+  const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+  if (await desktopSubmit.isVisible()) {
+    await desktopSubmit.click();
+  } else {
+    await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
+  }
+  await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=`));
+  await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
+}
+
+/** The email CTA with an unsigned token: it must still land on the starter, recording nothing. */
+const ACTIVATION_CLICK_PATH = '/api/email/activation-click?t=not-a-signed-token&l=en';
+const ACTIVATION_LANDING_QUERY =
+  '\\?entry=activation_email&utm_source=email&utm_campaign=activation_nudge$';
+
+/** The click lands on the host it was opened on, or the session cookie is lost. */
+async function expectActivationLanding(
+  page: Page,
+  starterSlug: string,
+  testInfo: TestInfo,
+): Promise<void> {
+  await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}${ACTIVATION_LANDING_QUERY}`));
+  expect(new URL(page.url()).origin).toBe(new URL(String(testInfo.project.use.baseURL)).origin);
+}
+
 test.describe('production critical paths', () => {
   test('persists auth, enforces roles, and logs out @critical-auth', async ({
     browserName,
@@ -538,18 +601,287 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
 
       await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
       await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
       await expect(page.getByText('100%', { exact: true }).first()).toBeVisible();
 
+      // RIN-989: on phones the Details card squeezed the prompt to one character per line
+      // and pushed its buttons past the viewport. It must fit and wrap by words.
+      const reviewedPrompt = page.getByRole('heading', {
+        name: 'Which option proves the quiz lifecycle works?',
+      });
+      await expect(reviewedPrompt).toBeVisible();
+      const promptBox = await reviewedPrompt.boundingBox();
+      expect(promptBox?.height ?? Infinity).toBeLessThan(120);
+      const horizontalOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(horizontalOverflow).toBeLessThanOrEqual(0);
+
       const attempt = await fixture.db.collection('attempts').findOne({
         quiz: fixture.quizId,
         user: fixture.regular.id,
       });
       expect(attempt).toMatchObject({ score: 100, totalQuestions: 1 });
+    });
+  });
+
+  test('saves a signed-out result to the learner who signs in after it @critical-quiz-guest-claim', async ({
+    page,
+  }, testInfo) => {
+    // RIN-912 AC9: play signed out, submit, sign in from the result (email stands in
+    // for Google here), land back on the full result, and find it in /history.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const learner = fixture.target;
+      try {
+        await page.addInitScript(() => {
+          window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+        });
+        await page.goto(`/en/quiz/${fixture.quizSlug}`);
+        await expect(page.getByText('Which option proves the quiz lifecycle works?')).toBeVisible();
+        await page.getByText('Production is the correct choice', { exact: true }).click();
+        const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+        if (await desktopSubmit.isVisible()) {
+          await desktopSubmit.click();
+        } else {
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
+        }
+
+        await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
+        const attemptId = new URL(page.url()).searchParams.get('attemptId') ?? '';
+        const guestAttempt = await fixture.db
+          .collection('attempts')
+          .findOne({ _id: new ObjectId(attemptId) });
+        expect(guestAttempt).toMatchObject({ quiz: fixture.quizId, score: 100 });
+        expect(guestAttempt?.['user']).toBeUndefined();
+
+        await page.getByRole('link', { name: 'Sign in with email' }).first().click();
+        await page.waitForURL(/\/en\/login\?callbackUrl=/);
+        await page.getByLabel('Email Address').fill(learner.email);
+        await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await Promise.all([
+          page.waitForURL(
+            new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=${attemptId}`),
+          ),
+          page.getByRole('button', { name: 'Sign In', exact: true }).click(),
+        ]);
+
+        // The full review, read as the learner: no score-only fallback, no save card.
+        await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
+        await expect(
+          page.getByText('Which option proves the quiz lifecycle works?').first(),
+        ).toBeVisible();
+        await expect(page.getByText("We can't open the question review")).toHaveCount(0);
+        await expect(page.getByRole('link', { name: 'Sign in with email' })).toHaveCount(0);
+        await expect
+          .poll(() => page.evaluate(() => window.localStorage.getItem('rinkuzu.guestClaims.v1')))
+          .toBeNull();
+
+        const claimed = await fixture.db
+          .collection('attempts')
+          .findOne({ _id: new ObjectId(attemptId) });
+        expect(claimed?.['user']).toEqual(learner.id);
+        expect(claimed?.['claimedAt']).toBeInstanceOf(Date);
+
+        await page.goto('/en/history');
+        await expect(page).toHaveURL(/\/en\/history(?:[/?#]|$)/);
+        await expect(page.getByText('Production Critical Quiz').first()).toBeVisible();
+      } finally {
+        await fixture.db.collection('auth_rate_limits').deleteMany({
+          key: {
+            $in: [
+              `auth:attempt_claim_user:${learner.id.toHexString()}`,
+              'auth:attempt_claim_ip:127.0.0.1',
+              'auth:attempt_claim_ip:::1',
+              'auth:attempt_claim_ip:unknown',
+            ],
+          },
+        });
+      }
+    });
+  });
+
+  test('retries the missed questions from the result page as a stored attempt @critical-retry', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const submitQuiz = async (): Promise<void> => {
+        const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+        if (await desktopSubmit.isVisible()) {
+          await desktopSubmit.click();
+        } else {
+          await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
+        }
+      };
+      const resultUrl = new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`);
+
+      await login(page, fixture.regular);
+      await page.goto(`/en/quiz/${fixture.quizSlug}`);
+      await page.getByText('This answer is intentionally incorrect', { exact: true }).click();
+      await submitQuiz();
+      await page.waitForURL(resultUrl);
+
+      const source = await fixture.db.collection('attempts').findOne({
+        quiz: fixture.quizId,
+        user: fixture.regular.id,
+      });
+      expect(source).toMatchObject({ score: 0, totalQuestions: 1 });
+      const sourceId = String(source?._id);
+
+      // AC2: the primary action and the opt-in render with the result.
+      await expect(page.getByLabel('Email me a 2-minute review in 2 days')).not.toBeChecked();
+      await Promise.all([
+        page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}\\?retryOf=${sourceId}`)),
+        page.getByRole('link', { name: 'Retry the 1 you missed', exact: true }).click(),
+      ]);
+
+      await expect(
+        page.getByText('Retry: 1 question', { exact: true }).filter({ visible: true }).first(),
+      ).toBeVisible();
+      await page.getByText('Production is the correct choice', { exact: true }).click();
+      await submitQuiz();
+      await page.waitForURL(resultUrl);
+      await expect(page.getByText('Retry of missed questions', { exact: true })).toBeVisible();
+      await expect(page.getByText('100%', { exact: true }).first()).toBeVisible();
+
+      const retry = await fixture.db.collection('attempts').findOne({
+        quiz: fixture.quizId,
+        user: fixture.regular.id,
+        retryOfAttemptId: source?._id,
+      });
+      expect(retry).toMatchObject({ questionIndices: [0], score: 100, totalQuestions: 1 });
+    });
+  });
+
+  test('plays a quick round of 10 on a long quiz and offers Another 10 @critical-quiz', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const longQuizId = new ObjectId();
+      const longSlug = `${fixture.quizSlug}-long`;
+      const now = new Date();
+      // More than 15 questions, so the quiz offers a quick round (RIN-933).
+      await fixture.db.collection('quizzes').insertOne({
+        _id: longQuizId,
+        _e2eRun: fixture.runId,
+        author: fixture.regular.id,
+        createdAt: now,
+        questions: Array.from({ length: 16 }, (_, index) => ({
+          _id: new ObjectId(),
+          correctIndex: 0,
+          options: [`Right answer ${index + 1}`, `Wrong answer ${index + 1}`],
+          question: `Long fixture question ${index + 1}?`,
+          type: 'single',
+        })),
+        slug: longSlug,
+        title: 'Production Long Quiz',
+        updatedAt: now,
+        visibility: 'public',
+      });
+
+      try {
+        await login(page, fixture.regular);
+        await page.goto(`/en/quiz/${longSlug}`);
+        // AC1: a long quiz offers the choice.
+        await expect(
+          page.getByRole('button', { name: 'Quick round: 10 questions (~3 min)', exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('button', { name: 'Full quiz (16 questions)', exact: true }),
+        ).toBeVisible();
+
+        // AC5: the deep link skips the choice and plays 10 questions.
+        await page.goto(`/en/quiz/${longSlug}?mode=quick`);
+        await expect(
+          page.getByText('Quick round', { exact: true }).filter({ visible: true }).first(),
+        ).toBeVisible();
+        await page
+          .getByText(/^Right answer \d+$/)
+          .filter({ visible: true })
+          .first()
+          .click();
+        const isMobile = (page.viewportSize()?.width ?? 1280) < 768;
+        if (isMobile) {
+          await page.getByRole('button', { name: /finish \(1\/10 answered\)/i }).click();
+        } else {
+          for (let step = 0; step < 9; step += 1) {
+            await page.getByRole('button', { name: 'Next', exact: true }).click();
+          }
+          await page.getByRole('button', { name: 'Submit Quiz', exact: true }).click();
+        }
+        await page.getByRole('dialog').getByRole('button', { name: 'Submit', exact: true }).click();
+        await page.waitForURL(new RegExp(`/en/quiz/${longSlug}/result\\?attemptId=`));
+
+        // AC3: the quick result and its next step.
+        await expect(
+          page.getByRole('heading', { level: 1, name: 'Quick round: 1/10' }),
+        ).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Another 10', exact: true })).toHaveAttribute(
+          'href',
+          `/en/quiz/${longSlug}?mode=quick`,
+        );
+        const attempt = await fixture.db.collection('attempts').findOne({
+          quiz: longQuizId,
+          user: fixture.regular.id,
+        });
+        expect(attempt).toMatchObject({ mode: 'quick', totalQuestions: 10 });
+        expect(new Set(attempt?.['questionIndices'] as number[]).size).toBe(10);
+      } finally {
+        await fixture.db.collection('attempts').deleteMany({ quiz: longQuizId });
+      }
+    });
+  });
+
+  test('lands an activation-email click on the starter and tags quiz_completed @critical-quiz-activation-email', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1000 AC1 + AC3, signed in: CTA → starter quiz → complete → entry=activation_email.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      await login(page, fixture.target);
+      await recordAnalyticsEvents(page);
+
+      await page.goto(ACTIVATION_CLICK_PATH);
+      await expectActivationLanding(page, starterSlug, testInfo);
+      // The email is no post-sign-in hand-off: no starter intro.
+      await expect(page.getByText('Try a 2-minute quiz to see how Rinkuzu works')).toHaveCount(0);
+      await submitStarterQuiz(page, starterSlug);
+
+      await expect
+        .poll(() => quizCompletedProperties(page))
+        .toMatchObject({ entry: 'activation_email', authenticated: true, score: 100 });
+      const starterQuiz = await fixture.db.collection('quizzes').findOne({ slug: starterSlug });
+      try {
+        const attempt = await fixture.db
+          .collection('attempts')
+          .findOne({ quiz: starterQuiz?._id, user: fixture.target.id });
+        expect(attempt).toMatchObject({ score: 100, totalQuestions: 1 });
+      } finally {
+        await fixture.db
+          .collection('attempts')
+          .deleteMany({ quiz: starterQuiz?._id, user: fixture.target.id });
+      }
+    });
+  });
+
+  test('lets a signed-out activation-email click play the starter as a guest @critical-quiz-activation-email', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1000 AC3, guest path: the starter is guest-playable, so it plays before sign-in.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      await recordAnalyticsEvents(page);
+
+      await page.goto(ACTIVATION_CLICK_PATH);
+      await expectActivationLanding(page, starterSlug, testInfo);
+      await submitStarterQuiz(page, starterSlug);
+
+      await expect
+        .poll(() => quizCompletedProperties(page))
+        .toMatchObject({ entry: 'activation_email', authenticated: false, score: 100 });
     });
   });
 
@@ -564,13 +896,19 @@ test.describe('production critical paths', () => {
       const block = page.getByTestId('starter-quiz-block');
       await expect(block).toBeInViewport();
       await expect(block.getByText(E2E_STARTER_QUIZ.title)).toBeVisible();
-      await expect(page.getByTestId('home-hero-cta')).toHaveAttribute(
-        'href',
-        `/en/quiz/${starterSlug}`,
-      );
+      // RIN-988: the starter is the single primary CTA. No duplicate quiz
+      // button in the hero, and no empty "Continue Learning" card.
+      await expect(page.getByTestId('home-hero-cta')).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Continue Learning' })).toHaveCount(0);
       await expect(
         page.getByRole('link', { name: 'Or personalize learning by uploading a PDF' }),
       ).toHaveAttribute('href', '/en/adaptive');
+      // The email-choices card is in the page flow, never fixed over the cards.
+      const emailChoices = page.getByTestId('marketing-prompt-inline');
+      if ((await emailChoices.count()) > 0) {
+        await expect(emailChoices).not.toHaveCSS('position', 'fixed');
+      }
+      await expect(page.getByTestId('marketing-prompt-docked')).toHaveCount(0);
 
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${starterSlug}(?:[/?#]|$)`)),
@@ -610,7 +948,7 @@ test.describe('production critical paths', () => {
       if (await desktopSubmit.isVisible()) {
         await desktopSubmit.click();
       } else {
-        await page.getByRole('button', { name: /complete \(1\/1 answered\)/i }).click();
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
       }
       await page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=`));
       await expect(page.getByRole('heading', { name: 'Quiz Complete!' })).toBeVisible();
@@ -735,6 +1073,20 @@ test.describe('production critical paths', () => {
       );
       await expect(page.getByRole('heading', { name: subjectName })).toBeVisible();
       await expect(page.getByText('4', { exact: true }).first()).toBeVisible();
+    });
+  });
+
+  test('shows a not-found state for an unknown learning session @critical-adaptive', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      await login(page, fixture.regular);
+      await page.goto('/en/adaptive/subject/e2e-unknown-session');
+
+      await expect(page.getByText("We couldn't find this learning session.")).toBeVisible();
+      await expect(page.getByRole('button', { name: /Start Learning/ })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Back to Dashboard' }).click();
+      await page.waitForURL(/\/en\/adaptive\/?(?:[?#]|$)/);
     });
   });
 
@@ -1095,21 +1447,35 @@ test.describe('production critical paths', () => {
       const search = page.getByLabel('Search users by email...');
       await search.fill(fixture.target.email);
       await search.press('Enter');
-      const row = page.getByRole('row').filter({ hasText: fixture.target.email });
+      // A table row from md up, a card below md (RIN-1021); the hidden layout is out of the a11y tree.
+      const row = page
+        .getByRole('row')
+        .or(page.getByRole('listitem'))
+        .filter({ hasText: fixture.target.email });
+      const openActions = () => row.getByRole('button', { name: 'Actions', exact: true }).click();
       await expect(row).toHaveCount(1);
+      // No horizontal scroll hides the row actions any more (RIN-1021). The mobile card can sit
+      // below the fold, so scroll it in vertically while pinning the row's start edge (`inline:
+      // 'start'`): actions past a horizontal scroll would still be out of the viewport.
+      await row.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'start' }));
+      await expect(row.getByRole('button', { name: 'Actions', exact: true })).toBeInViewport();
       await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
 
+      await openActions();
       await row.getByRole('button', { name: 'Mark as test', exact: true }).click();
       const confirmMark = page.getByRole('dialog');
       await expect(confirmMark).toContainText(fixture.target.email);
       await confirmMark.getByRole('button', { name: 'Mark as test', exact: true }).click();
       await expect(row.getByText('Test account', { exact: true })).toBeVisible();
+      await openActions();
       await expect(row.getByRole('button', { name: 'Unmark test', exact: true })).toBeVisible();
       expect(await readFlag()).toBe(true);
 
+      // The menu is still open from the check above.
       await row.getByRole('button', { name: 'Unmark test', exact: true }).click();
       const confirmClear = page.getByRole('dialog');
       await confirmClear.getByRole('button', { name: 'Unmark test', exact: true }).click();
+      await openActions();
       await expect(row.getByRole('button', { name: 'Mark as test', exact: true })).toBeVisible();
       await expect(row.getByText('Test account', { exact: true })).toHaveCount(0);
       expect(await readFlag()).toBe(false);

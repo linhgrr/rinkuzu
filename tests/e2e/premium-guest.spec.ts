@@ -111,9 +111,11 @@ test.describe('premium quiz guest state (RIN-747)', () => {
         await expect(page.getByText(copy.count)).toBeVisible();
         await expect(page.getByText(description)).toBeVisible();
         await expect(page.getByText('Unauthorized')).toHaveCount(0);
-        const signIn = page.getByRole('link', { name: copy.signIn, exact: true });
+        // The app header has its own Sign in (RIN-958); this is the quiz card one.
+        const main = page.locator('#app-main-content');
+        const signIn = main.getByRole('link', { name: copy.signIn, exact: true });
         await expect(signIn).toBeVisible();
-        await expect(page.getByRole('link', { name: copy.signUp })).toBeVisible();
+        await expect(main.getByRole('link', { name: copy.signUp })).toBeVisible();
 
         await testInfo.attach(`premium-guest-${locale}-${viewport.width}.png`, {
           body: await page.screenshot({ fullPage: true }),
@@ -121,7 +123,10 @@ test.describe('premium quiz guest state (RIN-747)', () => {
         });
       }
 
-      await page.getByRole('link', { name: copy.signIn, exact: true }).click();
+      await page
+        .locator('#app-main-content')
+        .getByRole('link', { name: copy.signIn, exact: true })
+        .click();
       await expect(page).toHaveURL(
         (url) =>
           url.pathname.endsWith('/login') &&

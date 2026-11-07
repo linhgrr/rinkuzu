@@ -1,5 +1,55 @@
 import { describe, expect, it } from 'vitest';
-import { renderCampaign, renderFeedbackInvitation, renderReviewReminder } from './templates';
+import {
+  renderActivationNudge,
+  renderCampaign,
+  renderFeedbackInvitation,
+  renderReviewReminder,
+} from './templates';
+
+describe('activation nudge email (RIN-999)', () => {
+  const ctaUrl =
+    'https://www.rinkuzu.app/en/quiz/starter?entry=activation_email&utm_source=email&utm_campaign=activation_nudge';
+  const unsubscribeUrl = 'https://www.rinkuzu.app/en/unsubscribe?t=token';
+
+  it.each([
+    ['vi', 'Bài quiz 2 phút của bạn đã sẵn sàng', 'Chào Jamie,'],
+    ['en', 'Your 2-minute quiz is ready', 'Hi Jamie,'],
+  ] as const)(
+    'renders the %s email under 80 words with one CTA',
+    async (locale, subject, hello) => {
+      const mail = await renderActivationNudge({
+        locale,
+        firstName: 'Jamie',
+        ctaUrl,
+        unsubscribeUrl,
+      });
+      expect(mail.subject).toBe(subject);
+      expect(mail.html).toContain(`lang="${locale}"`);
+      expect(mail.html).toContain(ctaUrl.replaceAll('&', '&amp;'));
+      expect(mail.html).toContain(unsubscribeUrl);
+      expect(mail.text).toContain(hello);
+      expect(`${mail.subject}
+${mail.text}`).not.toMatch(/adaptive|thích ứng/iu);
+      expect(mail.text).toMatch(locale === 'vi' ? /cá nhân hóa/u : /personalized/u);
+      const words = mail.text
+        .replace(/https?:\/\/\S+|\[[^\]]*\]/gu, ' ')
+        .split(/\s+/u)
+        .filter((word) => /[\p{L}\d]/u.test(word));
+      expect(words.length).toBeLessThan(80);
+      expect(mail.html.match(/<a /gu)).toHaveLength(2);
+    },
+  );
+
+  it('greets without a name when there is none', async () => {
+    const mail = await renderActivationNudge({
+      locale: 'en',
+      firstName: null,
+      ctaUrl,
+      unsubscribeUrl,
+    });
+    expect(mail.text).toContain('Hi there,');
+  });
+});
 
 describe('review reminder email (RIN-915)', () => {
   const retryUrl =

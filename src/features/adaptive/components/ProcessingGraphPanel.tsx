@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import {
   Background,
   Controls,
@@ -38,7 +36,6 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
       <div className="text-center text-xs font-mono tracking-wider text-neutral-700">
         {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
       </div>
-      <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-line/30" />
       <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-neutral-400" />
     </div>
   );
@@ -81,7 +78,6 @@ const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], dire
 
 function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelinePartialGraph | null }) {
   const { fitView } = useReactFlow();
-  const t = useTranslations('adaptiveLearning');
 
   const initialNodes: Node<ConceptNodeData>[] = (() => {
     if (!partialGraph?.nodes) return [];
@@ -118,9 +114,8 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelinePartialGrap
     }
   }, [partialGraph, nodeCount, fitView]);
 
-  if (!partialGraph || nodeCount === 0) {
-    return <PanelBlockSkeleton label={t('processing.waitingForConcepts')} />;
-  }
+  // The card shows a static placeholder until concepts exist (RIN-1003).
+  if (!partialGraph || nodeCount === 0) return null;
 
   return (
     <ReactFlow

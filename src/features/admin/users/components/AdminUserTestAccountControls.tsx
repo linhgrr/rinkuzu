@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import type { AdminUserViewModel } from '@/features/admin/users/types/admin-users-view-model';
@@ -15,11 +14,6 @@ type TranslateFn = (key: string, values?: Record<string, string | number | Date>
 interface TestAccountUserProps {
   user: AdminUserViewModel;
   t: TranslateFn;
-}
-
-interface TestAccountToggleButtonProps extends TestAccountUserProps {
-  disabled: boolean;
-  onOpen: (user: AdminUserViewModel) => void;
 }
 
 interface TestAccountModalProps {
@@ -37,25 +31,6 @@ export function TestAccountBadge({ user, t }: TestAccountUserProps) {
     <Badge variant="warning" className="mt-1 w-fit">
       {t('testAccountBadge')}
     </Badge>
-  );
-}
-
-export function TestAccountToggleButton({
-  user,
-  t,
-  disabled,
-  onOpen,
-}: TestAccountToggleButtonProps) {
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => onOpen(user)}
-      disabled={disabled}
-      className="min-h-[40px] px-3"
-    >
-      {user.isTestAccount ? t('unmarkTestAccount') : t('markTestAccount')}
-    </Button>
   );
 }
 

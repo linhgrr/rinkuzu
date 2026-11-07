@@ -17,6 +17,7 @@ import {
   oneClickUnsubscribeUrl,
   unsubscribePageUrl,
   unsubscribeToken,
+  type UnsubscribeCampaign,
   verifyUnsubscribeToken,
   type ReviewReminderCancelReason,
 } from './review-reminder-policy';
@@ -114,22 +115,34 @@ export async function optInReviewReminder(input: {
   return { optedIn: true, status: 'capped', scheduledFor: null };
 }
 
+/** Whether the learner currently has `study_reminders` ticked (result-page revisit). */
+export async function reviewReminderStatus(input: {
+  userId: string;
+}): Promise<{ optedIn: boolean }> {
+  return { optedIn: await repository.isOptedIn(requiredObjectId(input.userId, 'user id')) };
+}
+
 /**
  * Opt-out of `study_reminders` (result page untick, or the unsubscribe link):
- * records the event when the preference changes and cancels pending rows.
+ * records the event when the preference changes and cancels pending rows. The
+ * unsubscribe link also records it for a learner who never opted in (the
+ * activation nudge, RIN-999), so every later send sees the opt-out.
  */
 export async function optOutReviewReminder(input: {
   userId: string;
   source: 'result_page_review' | 'unsubscribe';
   ip: string | null;
+  campaign?: UnsubscribeCampaign | null;
 }): Promise<{ optedIn: false }> {
   const userId = requiredObjectId(input.userId, 'user id');
-  if (await repository.optOut(userId)) {
+  const changed = await repository.optOut(userId);
+  if (changed || (input.source === 'unsubscribe' && !(await repository.hasOptedOut(userId)))) {
     await repository.recordConsent({
       userId,
       action: 'opt_out',
       source: input.source,
       ipHash: ipHash(input.ip),
+      ...(input.campaign ? { campaign: input.campaign } : {}),
     });
   }
   await repository.cancelPending(userId, 'opted_out');
@@ -224,25 +237,31 @@ function verifiedUserId(token: string): string | null {
 
 /**
  * What the signed-out unsubscribe page shows for a link. A tampered token is
- * `invalid`; a missing account or preference reads as `unsubscribed`, so the
- * page never reveals whether an account exists.
+ * `invalid`. `subscribed` while the learner is opted in or has never opted
+ * out (an activation-nudge recipient); a missing account reads like any
+ * unknown id, so the page never reveals whether an account exists.
  */
 export async function unsubscribeLinkState(token: string): Promise<UnsubscribeLinkState> {
   const userId = verifiedUserId(token);
   if (!userId) return 'invalid';
-  return (await repository.studyRemindersEnabled(requiredObjectId(userId, 'user id')))
-    ? 'subscribed'
-    : 'unsubscribed';
+  const id = requiredObjectId(userId, 'user id');
+  if (await repository.studyRemindersEnabled(id)) return 'subscribed';
+  return (await repository.hasOptedOut(id)) ? 'unsubscribed' : 'subscribed';
 }
 
 /**
  * One-click unsubscribe (RFC 8058 POST or the page button): records the
- * opt-out with source `unsubscribe` and cancels pending review emails.
- * Idempotent; returns false for a token that is not authentic.
+ * opt-out with source `unsubscribe` (and the email's `campaign`, RIN-1044)
+ * and cancels pending review emails. Idempotent; returns false for a token
+ * that is not authentic.
  */
-export async function unsubscribeWithToken(token: string, ip: string | null): Promise<boolean> {
+export async function unsubscribeWithToken(
+  token: string,
+  ip: string | null,
+  campaign: UnsubscribeCampaign | null = null,
+): Promise<boolean> {
   const userId = verifiedUserId(token);
   if (!userId) return false;
-  await optOutReviewReminder({ userId, source: 'unsubscribe', ip });
+  await optOutReviewReminder({ userId, source: 'unsubscribe', ip, campaign });
   return true;
 }

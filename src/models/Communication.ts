@@ -49,10 +49,12 @@ const OUTBOX_KINDS = [
   'feedback_reply',
   'feedback_reminder',
   'review_reminder',
+  /** One per account for its lifetime, 24 h after signup (RIN-999). */
+  'activation_nudge',
 ] as const;
 export type OutboxKind = (typeof OUTBOX_KINDS)[number];
 
-const OUTBOX_ENTITY_TYPES = ['support_ticket', 'feedback_conversation', 'attempt'] as const;
+const OUTBOX_ENTITY_TYPES = ['support_ticket', 'feedback_conversation', 'attempt', 'user'] as const;
 export type OutboxEntityType = (typeof OUTBOX_ENTITY_TYPES)[number];
 
 const CAMPAIGN_STATUSES = [
@@ -171,6 +173,8 @@ interface MarketingConsentEventDocument extends Document {
   action: 'opt_in' | 'opt_out';
   source: ConsentSource;
   ipHash?: string | null;
+  /** Email of an unsubscribe-link opt-out; absent means the w1-review email (RIN-1044). */
+  campaign?: string;
   createdAt: Date;
 }
 
@@ -274,6 +278,13 @@ interface EmailOutboxDocument extends Document {
   leaseToken?: string | null;
   lastError?: string | null;
   externalEmailId?: string | null;
+  /** First `email.opened` of a `campaign=w1-review` email (RIN-916); set once. */
+  openedAt?: Date | null;
+  /** Activation nudge (RIN-999): what enqueued it and the locale it renders in. */
+  trigger?: '24h' | 'backfill' | null;
+  locale?: string | null;
+  /** First tracked CTA click of an activation nudge (RIN-1000); set once. */
+  clickedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -441,6 +452,7 @@ const MarketingConsentEventSchema = new Schema<MarketingConsentEventDocument>(
     action: { type: String, enum: ['opt_in', 'opt_out'], required: true },
     source: { type: String, enum: CONSENT_SOURCES, required: true },
     ipHash: { type: String, default: null },
+    campaign: { type: String, maxlength: 32 },
   },
   { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
 );
@@ -594,6 +606,10 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     },
     ...leaseQueueFields(2_000),
     externalEmailId: { type: String, default: null },
+    openedAt: { type: Date, default: null },
+    trigger: { type: String, enum: ['24h', 'backfill', null], default: null },
+    locale: { type: String, default: null, maxlength: 8 },
+    clickedAt: { type: Date, default: null },
   },
   { timestamps: true, versionKey: false },
 );

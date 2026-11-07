@@ -13,15 +13,19 @@ import {
   Edge,
   MarkerType,
   useReactFlow,
+  useStore,
   ReactFlowProvider,
 } from '@xyflow/react';
 
 import dagre from 'dagre';
 import { Lock, Maximize2 } from 'lucide-react';
+import { HiOutlineBookOpen } from 'react-icons/hi';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { getConceptDetail } from '@/features/adaptive/lib/adaptive-api-methods';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
+import { useRouter } from '@/i18n/navigation';
 import { useKnowledgeGraph } from '@/hooks/useAdaptive';
 import type {
   ConceptDetail,
@@ -29,6 +33,12 @@ import type {
   KnowledgeNode,
 } from '@/features/adaptive/types/graph';
 import ConceptDetailPanel from './ConceptDetail';
+import {
+  GRAPH_NODE_HEIGHT,
+  getGraphLayout,
+  getReadableViewport,
+  type GraphLayout,
+} from './knowledge-graph-viewport';
 import styles from './KnowledgeGraphLayout.module.css';
 
 interface KnowledgeGraphProps {
@@ -93,7 +103,18 @@ interface ConceptNodeData extends Record<string, unknown> {
   status: KnowledgeNode['status'];
   mastery: number;
   direction: GraphDirection;
+  /** Phone layout: fixed narrow width that matches the dagre layout (RIN-1116). */
+  compact?: boolean;
+  nodeWidth?: number;
 }
+
+const MAX_LABEL_LENGTH = 25;
+
+/**
+ * Labels are 12px (`text-xs`); the graph never zooms out below 100% so they stay
+ * readable, and learners pan to see the rest (RIN-1010).
+ */
+const MIN_GRAPH_ZOOM = 1;
 
 function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   const color = getNodeColor(data.status);
@@ -101,12 +122,16 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   const isLocked = data.status === 'locked';
   const isFilled = data.status === 'mastered' || data.status === 'in_progress';
   const showDot = data.status === 'in_progress';
+  const isTruncated = data.label.length > MAX_LABEL_LENGTH;
   const targetPosition = data.direction === 'LR' ? Position.Left : Position.Top;
   const sourcePosition = data.direction === 'LR' ? Position.Right : Position.Bottom;
   return (
     <div
-      className={`${styles['conceptNode']} relative rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 ${isLocked ? 'border-line opacity-60' : 'hover:border-line-blue'}`}
+      className={`${styles['conceptNode']} relative rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 ${isLocked ? 'border-dashed border-line' : 'hover:border-line-blue'}`}
       style={{
+        ...(data.compact && data.nodeWidth
+          ? { width: data.nodeWidth, minWidth: data.nodeWidth }
+          : undefined),
         borderColor: getNodeBorderColor(data.status),
         backgroundColor: isFilled ? color : undefined,
         color: isFilled ? 'white' : undefined,
@@ -114,14 +139,16 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
     >
       <Handle type="target" position={targetPosition} className="!h-1.5 !w-1.5 !bg-neutral-400" />
       <div className="flex flex-col items-center justify-center gap-1.5">
+        {/* Locked nodes stay at full opacity: neutral-700 keeps contrast above 4.5:1 (RIN-1010). */}
         <div
-          className={`text-center text-xs font-medium tracking-tight ${isFilled ? 'text-white' : 'text-neutral-900'}`}
+          title={isTruncated ? data.label : undefined}
+          className={`text-center text-xs font-medium tracking-tight ${isFilled ? 'text-white' : isLocked ? 'text-neutral-700' : 'text-neutral-900'}`}
         >
-          {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
+          {isTruncated ? `${data.label.substring(0, MAX_LABEL_LENGTH - 1)}…` : data.label}
         </div>
 
         {isLocked ? (
-          <Lock aria-hidden className="size-3 text-neutral-400" strokeWidth={2.25} />
+          <Lock aria-hidden className="size-3 text-neutral-500" strokeWidth={2.25} />
         ) : (
           <div className="flex items-center gap-1.5">
             {showDot && <div className="size-1.5 rounded-full bg-white" style={{ opacity }} />}
@@ -163,13 +190,15 @@ const getLayoutedElements = (
   nodes: Node<ConceptNodeData>[],
   edges: Edge[],
   direction: GraphDirection,
+  layout: GraphLayout,
 ) => {
+  const { nodeWidth } = layout;
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 80, ranksep: 100 });
+  dagreGraph.setGraph({ rankdir: direction, nodesep: layout.nodeSeparation, ranksep: 100 });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 150, height: 70 });
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: GRAPH_NODE_HEIGHT });
   });
 
   edges.forEach((edge) => {
@@ -184,8 +213,8 @@ const getLayoutedElements = (
     node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
 
     node.position = {
-      x: nodeWithPosition.x - 75,
-      y: nodeWithPosition.y - 35,
+      x: nodeWithPosition.x - nodeWidth / 2,
+      y: nodeWithPosition.y - GRAPH_NODE_HEIGHT / 2,
     };
 
     return node;
@@ -205,7 +234,10 @@ function GraphFlow({
   onNodeClick: (nodeId: string) => void;
   preventPageScroll: boolean;
 }) {
-  const { fitView } = useReactFlow();
+  const { fitView, setViewport } = useReactFlow();
+  const viewportWidth = useStore((state) => state.width);
+  const viewportHeight = useStore((state) => state.height);
+  const layout = getGraphLayout(direction, viewportWidth);
 
   const initialNodes: Node<ConceptNodeData>[] = (() => {
     if (!graphData) return [];
@@ -219,6 +251,8 @@ function GraphFlow({
         status: n.status,
         mastery: n.mastery,
         direction,
+        compact: layout.compact,
+        nodeWidth: layout.nodeWidth,
       },
     }));
   })();
@@ -255,18 +289,34 @@ function GraphFlow({
 
   const { nodes, edges } = (() => {
     if (initialNodes.length === 0) return { nodes: [], edges: [] };
-    return getLayoutedElements(initialNodes, initialEdges, direction);
+    return getLayoutedElements(initialNodes, initialEdges, direction, layout);
   })();
   const nodeCount = nodes.length;
 
-  // Fit view when nodes change
+  const readableViewport = getReadableViewport(
+    nodes,
+    direction,
+    viewportWidth,
+    viewportHeight,
+    layout.nodeWidth,
+  );
+  const readableX = readableViewport?.x ?? null;
+  const readableY = readableViewport?.y ?? null;
+
+  // Fit view when nodes change; a graph too big for 100% opens at its first rank.
   useEffect(() => {
     if (nodeCount > 0) {
-      const fitViewTimer = window.setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 100);
+      const fitViewTimer = window.setTimeout(() => {
+        if (readableX !== null && readableY !== null) {
+          void setViewport({ x: readableX, y: readableY, zoom: MIN_GRAPH_ZOOM }, { duration: 800 });
+          return;
+        }
+        void fitView({ padding: 0.2, duration: 800, minZoom: MIN_GRAPH_ZOOM });
+      }, 100);
       return () => window.clearTimeout(fitViewTimer);
     }
     return undefined;
-  }, [direction, graphData, nodeCount, fitView]);
+  }, [direction, graphData, nodeCount, fitView, setViewport, readableX, readableY]);
 
   const handleNodeClick = (_: React.MouseEvent, node: Node<ConceptNodeData>) => {
     onNodeClick(node.id);
@@ -282,8 +332,8 @@ function GraphFlow({
       nodesDraggable={false}
       nodesConnectable={false}
       fitView
-      fitViewOptions={{ padding: 0.2 }}
-      minZoom={0.2}
+      fitViewOptions={{ padding: 0.2, minZoom: MIN_GRAPH_ZOOM }}
+      minZoom={MIN_GRAPH_ZOOM}
       maxZoom={2}
       panOnScroll={false}
       preventScrolling={preventPageScroll}
@@ -327,7 +377,7 @@ function KnowledgeGraphViewport({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : styles['embeddedViewport']}`}
+      className={`relative flex w-full flex-col overflow-hidden rounded-xl border border-line bg-white ${isExpanded ? 'h-full' : styles['embeddedViewport']}`}
     >
       {!isExpanded ? (
         <div
@@ -370,18 +420,7 @@ function KnowledgeGraphViewport({
         </Button>
       ) : null}
 
-      <div
-        className={`${styles['legend']} pointer-events-none absolute bottom-4 right-4 z-10 flex flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg border border-line bg-white/90 px-3 py-2 font-mono text-xs shadow-sm backdrop-blur-sm sm:right-5`}
-      >
-        {legendItems.map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <div className={`h-2 w-2 rounded-full ${item.color}`} />
-            <span className="uppercase tracking-widest text-neutral-700">{item.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="h-full w-full">
+      <div className="min-h-0 w-full flex-1">
         {renderGraph ? (
           <ReactFlowProvider>
             <GraphFlow
@@ -393,6 +432,20 @@ function KnowledgeGraphViewport({
           </ReactFlowProvider>
         ) : null}
       </div>
+
+      {/* On a phone the legend is a strip below the canvas, clear of the graph, the zoom
+          controls and the floating help button; from sm up it floats bottom-right (RIN-1116). */}
+      <div
+        data-testid="knowledge-graph-legend"
+        className={`${styles['legend']} flex flex-wrap gap-x-4 gap-y-2 border-t border-line bg-white py-3 pl-4 pr-16 font-mono text-xs sm:pointer-events-none sm:absolute sm:bottom-4 sm:right-5 sm:z-10 sm:justify-end sm:rounded-lg sm:border sm:bg-white/90 sm:px-3 sm:py-2 sm:shadow-sm sm:backdrop-blur-sm`}
+      >
+        {legendItems.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            <div className={`h-2 w-2 rounded-full ${item.color}`} />
+            <span className="uppercase tracking-widest text-neutral-700">{item.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -403,7 +456,9 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     data: graphData,
     isLoading: loading,
     error: graphFetchError,
+    mutate: retryGraph,
   } = useKnowledgeGraph(sessionId);
+  const router = useRouter();
   const [selectedConceptState, setSelectedConceptState] = useState<SelectedConceptState | null>(
     null,
   );
@@ -445,7 +500,11 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     { color: 'bg-brand-trust', label: t('knowledgeGraph.legend.mastered') },
     { color: 'bg-brand-action', label: t('knowledgeGraph.legend.inProgress') },
     { color: 'bg-white border border-line', label: t('knowledgeGraph.legend.available') },
-    { color: 'bg-neutral-200', label: t('knowledgeGraph.legend.locked') },
+    // Locked nodes are white with a dashed border, so the swatch is too (RIN-1116).
+    {
+      color: 'bg-white border border-dashed border-line',
+      label: t('knowledgeGraph.legend.locked'),
+    },
   ];
 
   const closeExpandedGraph = () => {
@@ -470,11 +529,20 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   if (graphFetchError) {
     return (
       <div
-        className={`${styles['placeholder']} flex w-full items-center justify-center rounded-xl border border-red-100 bg-red-50`}
+        className={`${styles['errorPlaceholder']} flex w-full items-center justify-center rounded-xl border border-line bg-neutral-50 px-4 py-10`}
       >
-        <p role="alert" className="text-sm text-red-700">
-          {t('processing.errors.generic')}
-        </p>
+        <div className="space-y-4 text-center">
+          <HiOutlineBookOpen className="mx-auto size-10 text-neutral-400" aria-hidden="true" />
+          <p role="alert" className="text-base text-red-700">
+            {t('knowledgeGraph.loadError')}
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button variant="outline" onClick={() => router.push(ADAPTIVE_ROUTES.dashboard)}>
+              {t('exercise.backToDashboard')}
+            </Button>
+            <Button onClick={() => void retryGraph()}>{t('exercise.tryAgain')}</Button>
+          </div>
+        </div>
       </div>
     );
   }

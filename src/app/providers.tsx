@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 import { UpgradePromptProvider } from '@/features/subscription/components/UpgradePromptProvider';
 import { AnalyticsIdentity } from '@/components/analytics/AnalyticsIdentity';
 import { SingleSessionGuard } from '@/features/auth/components/SingleSessionGuard';
+import { GuestAttemptClaimer } from '@/features/quiz/components/GuestAttemptClaimer';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -25,6 +26,7 @@ export default function Providers({ children, session }: ProvidersProps) {
     >
       <SingleSessionGuard />
       <AnalyticsIdentity />
+      <GuestAttemptClaimer />
       <UpgradePromptProvider>{children}</UpgradePromptProvider>
       <Toaster richColors position="top-right" />
     </SessionProvider>

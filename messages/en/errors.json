@@ -44,7 +44,7 @@
       "quotaExceededTitle": "You've used all your credits",
       "quotaExceeded": "You've reached your limit. Upgrade to keep going.",
       "pipelineStalledTitle": "Processing got stuck",
-      "pipelineStalled": "Your document didn't finish processing. Retry, or upload it again if it keeps failing.",
+      "pipelineStalled": "Your document didn't finish processing. You can try again.",
       "pipelineNotCompletedTitle": "Still processing",
       "pipelineNotCompleted": "Wait for processing to finish, then try again.",
       "askRinConversationBusyTitle": "Rin is still answering",

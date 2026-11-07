@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runMutationGate as evaluateMutationEvidence } from './check-mutation-report.mjs';
@@ -43,6 +43,21 @@ const MIN_STRYKER_TIMEOUT_MS = 60_000;
 const MAX_STRYKER_TIMEOUT_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_MAX_BUFFER = 32 * 1024 * 1024;
 const DIAGNOSTIC_TAIL_MAX_CHARS = 8 * 1024;
+
+/**
+ * Move a file, falling back to copy + remove when source and target sit on
+ * different filesystems (EXDEV): the gate mounts the shard cache as its own
+ * volume, and rename(2) cannot cross volumes.
+ */
+export function moveFile(from, to, fs = { renameSync, copyFileSync, rmSync }) {
+  try {
+    fs.renameSync(from, to);
+  } catch (error) {
+    if (error?.code !== 'EXDEV') throw error;
+    fs.copyFileSync(from, to);
+    fs.rmSync(from, { force: true });
+  }
+}
 
 export function parseMutationGateArgs(argv) {
   /** @type {string | null} */
@@ -555,7 +570,7 @@ function runMutationShard(root, paths, shard, shardCount, files, ctx) {
       strykerStderrTail: diagnosticTail(result.stderr),
     };
   }
-  renameSync(paths.reportPath, shardReportPath);
+  moveFile(paths.reportPath, shardReportPath);
   try {
     const report = JSON.parse(readFileSync(shardReportPath, 'utf8'));
     const reported = Object.keys(report?.files ?? {})

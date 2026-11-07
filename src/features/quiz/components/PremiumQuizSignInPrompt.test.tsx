@@ -42,6 +42,26 @@ describe('PremiumQuizSignInPrompt', () => {
     );
   });
 
+  it('keeps a tracked entry on the way back to the quiz (RIN-1000)', () => {
+    render(
+      <PremiumQuizSignInPrompt slug="q" title="Quiz" questionCount={1} entry="activation_email" />,
+    );
+
+    expect(screen.getByRole('link', { name: 'premiumSignInButton' })).toHaveAttribute(
+      'href',
+      '/login?callbackUrl=%2Fquiz%2Fq%3Fentry%3Dactivation_email',
+    );
+  });
+
+  it('drops an entry it does not track', () => {
+    render(<PremiumQuizSignInPrompt slug="q" title="Quiz" questionCount={1} entry="other" />);
+
+    expect(screen.getByRole('link', { name: 'premiumSignInButton' })).toHaveAttribute(
+      'href',
+      '/login?callbackUrl=%2Fquiz%2Fq',
+    );
+  });
+
   it('omits the description paragraph when the quiz has none', () => {
     render(<PremiumQuizSignInPrompt slug="q" title="Quiz" questionCount={1} />);
     expect(screen.queryByText('Trắc nghiệm LMS')).not.toBeInTheDocument();

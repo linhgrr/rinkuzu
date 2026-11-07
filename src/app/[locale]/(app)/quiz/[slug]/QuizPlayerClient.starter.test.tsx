@@ -150,9 +150,23 @@ describe('QuizPlayerClient post-sign-in starter entry (RIN-913)', () => {
     expect(await completeQuiz()).toMatchObject({ entry: 'post_signin_starter', score: 80 });
   });
 
-  it('leaves entry out of quiz_completed otherwise', async () => {
-    renderPlayer();
+  it('tags quiz_completed with entry=activation_email, without the starter intro (RIN-1000)', async () => {
+    renderPlayer('activation_email');
 
-    expect(await completeQuiz()).not.toHaveProperty('entry');
+    expect(await screen.findByTestId('desktop-layout')).toHaveAttribute(
+      'data-first-question',
+      'q1',
+    );
+    expect(screen.queryByText('starterIntro')).not.toBeInTheDocument();
+    expect(await completeQuiz()).toMatchObject({ entry: 'activation_email', score: 80 });
   });
+
+  it.each([undefined, 'newsletter'])(
+    'leaves entry out of quiz_completed for entry=%s',
+    async (entry) => {
+      renderPlayer(entry);
+
+      expect(await completeQuiz()).not.toHaveProperty('entry');
+    },
+  );
 });

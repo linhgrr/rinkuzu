@@ -142,7 +142,7 @@ export function QuizQuestionCard({
           <Button variant="outline" onClick={onPrevious} disabled={questionIndex === 0}>
             {t('previous')}
           </Button>
-          <div className="text-sm text-neutral-600">
+          <div className="whitespace-nowrap text-sm text-neutral-600">
             {questionIndex + 1} / {questionCount}
           </div>
           {questionIndex === questionCount - 1 ? (

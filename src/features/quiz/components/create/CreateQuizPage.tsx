@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/Card';
 import { PdfPanelSkeleton, RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
@@ -31,6 +31,11 @@ import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import { ROUTES } from '@/shared/constants/routes';
 import { toCreateQuizDraftInput } from '@/features/quiz/components/create/create-quiz-draft-input';
+import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
+import {
+  getPdfRejectionMessage,
+  isPdfFile,
+} from '@/features/quiz/components/create/pdf-file-error';
 import {
   HiOutlineArrowRight,
   HiOutlineDocumentText,
@@ -53,7 +58,10 @@ interface CreateQuizState {
   pdfFile: File | null;
   showPDFViewer: boolean;
   extracting: boolean;
+  /** File-level errors (type, size, pages), shown above the card. */
   error: string;
+  /** Submit-step errors, shown next to the submit button (RIN-991). */
+  submitError: string;
 }
 
 type CreateQuizAction =
@@ -79,6 +87,7 @@ const initialCreateQuizState: CreateQuizState = {
   showPDFViewer: false,
   extracting: false,
   error: '',
+  submitError: '',
 };
 
 function createQuizReducer(state: CreateQuizState, action: CreateQuizAction): CreateQuizState {
@@ -100,26 +109,6 @@ function createQuizReducer(state: CreateQuizState, action: CreateQuizAction): Cr
     default:
       return state;
   }
-}
-
-function StatusAlert({ message }: { message: string }) {
-  if (!message) {
-    return null;
-  }
-
-  return (
-    <Card
-      variant="bordered"
-      className="border-red-200 bg-red-50 p-4 mb-6 max-w-2xl mx-auto"
-      role="alert"
-      aria-live="polite"
-    >
-      <div className="flex items-center text-red-700">
-        <HiOutlineExclamationCircle className="size-5 mr-2 flex-shrink-0" />
-        <span className="text-sm font-medium">{message}</span>
-      </div>
-    </Card>
-  );
 }
 
 function PreviewPlaceholder({ message }: { message: string }) {
@@ -345,6 +334,7 @@ function UploadSection({
 
 interface FormCardProps {
   error: string;
+  submitError: string;
   getInputProps: ReturnType<typeof useDropzone>['getInputProps'];
   getRootProps: ReturnType<typeof useDropzone>['getRootProps'];
   interaction: {
@@ -380,6 +370,7 @@ function CreateQuizFormCard({
   aiPrompt,
   description,
   error,
+  submitError,
   getInputProps,
   getRootProps,
   interaction,
@@ -402,16 +393,14 @@ function CreateQuizFormCard({
 
   return (
     <>
-      <StatusAlert message={error} />
+      <CreateQuizErrorAlert message={error} className="mx-auto mb-6 max-w-2xl" />
 
       <Card
         variant="glass"
         className="max-w-2xl mx-auto backdrop-blur-xl border-white/30 shadow-xl"
       >
         <CardHeader className="text-center">
-          <CardTitle size="lg" className="text-neutral-900">
-            {t('uploadPDFDocument')}
-          </CardTitle>
+          <h1 className="text-2xl font-semibold text-ink">{t('uploadPDFDocument')}</h1>
           <CardDescription className="text-base">{t('uploadDescription')}</CardDescription>
         </CardHeader>
 
@@ -484,6 +473,8 @@ function CreateQuizFormCard({
                   </Button>
                 </div>
               )}
+
+              <CreateQuizErrorAlert message={submitError} focusOnShow />
 
               <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                 <Link href="/">
@@ -576,6 +567,10 @@ export function CreateQuizPage() {
 
   const selectPdf = useCallback(
     async (file: File) => {
+      if (!isPdfFile(file)) {
+        dispatch({ type: 'patch', value: { error: t('pdfWrongType') } });
+        return;
+      }
       try {
         const pageCount = await getPdfPageCount(file);
         if (pageCount > uploadPolicy.maxPages) {
@@ -587,7 +582,7 @@ export function CreateQuizPage() {
           });
           return;
         }
-        dispatch({ type: 'patch', value: { error: '' } });
+        dispatch({ type: 'patch', value: { error: '', submitError: '' } });
         dispatch({ type: 'setPdfFile', file });
       } catch {
         dispatch({ type: 'patch', value: { error: t('pdfUnreadable') } });
@@ -619,14 +614,10 @@ export function CreateQuizPage() {
       }
     },
     onDropRejected: (rejections) => {
-      if (rejections[0]?.errors.some((error) => error.code === 'file-too-large')) {
-        dispatch({
-          type: 'patch',
-          value: { error: t('pdfTooLarge', { size: MAX_QUIZ_PDF_MB }) },
-        });
-      } else {
-        dispatch({ type: 'patch', value: { error: t('pdfUnreadable') } });
-      }
+      dispatch({
+        type: 'patch',
+        value: { error: getPdfRejectionMessage(rejections, t, MAX_QUIZ_PDF_MB) },
+      });
     },
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
@@ -639,16 +630,16 @@ export function CreateQuizPage() {
     event.preventDefault();
 
     if (!state.title.trim()) {
-      dispatch({ type: 'patch', value: { error: t('titleRequired') } });
+      dispatch({ type: 'patch', value: { submitError: t('titleRequired') } });
       return;
     }
 
     if (!state.pdfFile) {
-      dispatch({ type: 'patch', value: { error: t('uploadOnePDF') } });
+      dispatch({ type: 'patch', value: { submitError: t('uploadOnePDF') } });
       return;
     }
 
-    dispatch({ type: 'patch', value: { extracting: true, error: '' } });
+    dispatch({ type: 'patch', value: { extracting: true, error: '', submitError: '' } });
 
     let pendingS3Key: string | null = null;
     try {
@@ -683,7 +674,7 @@ export function CreateQuizPage() {
       dispatch({
         type: 'patch',
         value: {
-          error: getCreateQuizDraftErrorMessage(error, t, apiErrorMessage),
+          submitError: getCreateQuizDraftErrorMessage(error, t, apiErrorMessage),
           extracting: false,
         },
       });
@@ -705,6 +696,7 @@ export function CreateQuizPage() {
               aiPrompt={state.aiPrompt}
               description={state.description}
               error={state.error}
+              submitError={state.submitError}
               getInputProps={getInputProps}
               getRootProps={getRootProps}
               interaction={{

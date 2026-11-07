@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
@@ -17,7 +18,7 @@ const required = <T>(value: T | undefined, label: string): T => {
 };
 
 const makeRouteFixture = () => {
-  const root = fs.mkdtempSync(path.join(process.cwd(), '.perf-policy-test-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-policy-test-'));
   temporaryRoots.push(root);
   const chunkPath = path.join(root, '.next', 'static', 'chunks', 'route.js');
   fs.mkdirSync(path.dirname(chunkPath), { recursive: true });

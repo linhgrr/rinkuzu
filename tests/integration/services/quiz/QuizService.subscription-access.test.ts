@@ -113,7 +113,8 @@ describe('QuizService personal source access gates', () => {
       [0],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       null,
-      'anon@example.com',
+      undefined,
+      'T'.repeat(43),
     );
 
     assertFail(result);

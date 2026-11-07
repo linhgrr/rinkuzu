@@ -209,6 +209,21 @@ const adminActivationWeekSchema = z
   })
   .strict();
 
+/** Activation nudge sends of one trigger (RIN-1001). */
+const activationEmailCountsSchema = z
+  .object({ sent: countSchema, clicked: countSchema, activatedWithin7d: countSchema })
+  .strict();
+
+/** One UTC ISO week of activation nudges, by send week; the totals are the trigger sums. */
+const activationEmailWeekSchema = activationEmailCountsSchema
+  .extend({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    byTrigger: z
+      .object({ '24h': activationEmailCountsSchema, backfill: activationEmailCountsSchema })
+      .strict(),
+  })
+  .strict();
+
 /**
  * Aggregate-only by contract: integers, rates, dates and definition strings.
  * Strict at every level so a future field cannot leak learner data unnoticed.
@@ -237,14 +252,45 @@ export const adminActivationStatsSchema = z
         complete: z.string(),
         sources: z.string(),
         limitations: z.string(),
+        activationEmail: z.string(),
       })
       .strict(),
     // 'unavailable': the adaptive API did not answer, so every number is
     // quiz-only and undercounts Path B learners.
     sources: z.object({ adaptive: z.enum(['ok', 'unavailable']) }).strict(),
     weeks: z.array(adminActivationWeekSchema),
+    // Same weeks as `weeks`, bucketed by send week rather than signup week.
+    activationEmail: z.object({ weeks: z.array(activationEmailWeekSchema) }).strict(),
   })
   .strict();
 
 export type AdminActivationWeekDto = z.infer<typeof adminActivationWeekSchema>;
 export type AdminActivationStatsDto = z.infer<typeof adminActivationStatsSchema>;
+
+const adminReviewEmailWeekSchema = z
+  .object({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    start: isoInstantSchema,
+    end: isoInstantSchema,
+    sent: countSchema,
+    // null when Resend open tracking is off: no open was ever reported.
+    opened: countSchema.nullable(),
+    unsubscribed: countSchema,
+    optIns: countSchema,
+  })
+  .strict();
+
+/**
+ * Week-1 review email panel (RIN-916). Aggregate-only and strict, like the
+ * activation DTO: no learner ids, addresses or email content.
+ */
+export const adminReviewEmailStatsSchema = z
+  .object({
+    generatedAt: isoInstantSchema,
+    timezone: z.literal('UTC'),
+    opensTracked: z.boolean(),
+    weeks: z.array(adminReviewEmailWeekSchema),
+  })
+  .strict();
+
+export type AdminReviewEmailStatsDto = z.infer<typeof adminReviewEmailStatsSchema>;

@@ -17,6 +17,13 @@ export interface QuizResultPageDataViewModel {
   bookmarks: QuizResultBookmarkLookup;
 }
 
+/** Result-page review-email tick or untick (RIN-917). */
+export interface SaveReviewReminderInput {
+  attemptId: string;
+  optIn: boolean;
+  locale: 'vi' | 'en';
+}
+
 export interface QuizResultBookmarkMutationViewModel {
   id: string;
 }

@@ -44,7 +44,7 @@
       "quotaExceededTitle": "Bạn đã dùng hết lượt",
       "quotaExceeded": "Lượt dùng của bạn đã hết. Nâng cấp để tiếp tục học ngay.",
       "pipelineStalledTitle": "Xử lý tài liệu bị gián đoạn",
-      "pipelineStalled": "Tài liệu của bạn chưa xử lý xong. Hãy thử lại; nếu vẫn lỗi, hãy tải lên lại.",
+      "pipelineStalled": "Tài liệu của bạn chưa xử lý xong. Bạn có thể thử lại.",
       "pipelineNotCompletedTitle": "Tài liệu chưa xử lý xong",
       "pipelineNotCompleted": "Hãy đợi quá trình xử lý hoàn tất rồi thử lại.",
       "askRinConversationBusyTitle": "Rin đang trả lời",

@@ -14,6 +14,7 @@ import {
   FREE_PRICING_FEATURE_KEYS,
   PREMIUM_PRICING_FEATURE_KEYS,
 } from '@/features/subscription/constants/pricing-features';
+import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -28,7 +29,7 @@ interface PremiumPlanView {
   id: string;
   name: string;
   price: number;
-  durationDisplay: string;
+  months: number;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -111,7 +112,9 @@ export default async function PricingPage({ params }: Props) {
                 )}
                 <CardHeader>
                   <CardTitle>{plan.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{plan.durationDisplay}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatPlanDuration(t, plan.months)}
+                  </p>
                   <span className="text-4xl font-bold">{formatVndCurrency(plan.price)}</span>
                 </CardHeader>
                 <CardContent>
@@ -181,7 +184,7 @@ async function loadPremiumPlans(): Promise<PremiumPlanView[]> {
         id: plan.id,
         name: plan.name,
         price: plan.price,
-        durationDisplay: DurationUtils.getDurationInfo(plan.duration).displayName,
+        months: DurationUtils.getDurationInfo(plan.duration).months,
       });
     }
     return premiumPlans;

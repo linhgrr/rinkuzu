@@ -197,7 +197,8 @@ describe('toDashboardViewModel', () => {
       });
     }
 
-    it('points a new learner at the first starter in their locale, with up to two alternatives', () => {
+    it('points a new learner at the first starter in their locale, with alternatives in that locale only', () => {
+      // RIN-988: the /en dashboard listed a vi-titled starter.
       const viewModel = build({ isNewLearner: true, locale: 'en' });
 
       expect(viewModel.starter?.primary).toEqual({
@@ -206,11 +207,15 @@ describe('toDashboardViewModel', () => {
         questionCount: 8,
         href: '/quiz/fake-en-1',
       });
-      expect(viewModel.starter?.alternatives.map((quiz) => quiz.slug)).toEqual([
-        'fake-vi-1',
-        'fake-vi-2',
-      ]);
+      expect(viewModel.starter?.alternatives.map((quiz) => quiz.slug)).toEqual(['fake-en-2']);
       expect(viewModel.heroCtaHref).toBe('/quiz/fake-en-1');
+    });
+
+    it('lists only vi starters on the vi dashboard', () => {
+      const viewModel = build({ isNewLearner: true, locale: 'vi' });
+
+      expect(viewModel.starter?.primary.slug).toBe('fake-vi-1');
+      expect(viewModel.starter?.alternatives.map((quiz) => quiz.slug)).toEqual(['fake-vi-2']);
     });
 
     it('falls back to the first starter when none matches the locale', () => {

@@ -2,7 +2,8 @@
   "loading": "Loading checkout…",
   "noPlan": {
     "title": "No plan selected",
-    "action": "Choose a Premium plan"
+    "action": "Choose a Premium plan",
+    "unavailable": "This plan is not available"
   },
   "shell": {
     "navigation": "Checkout navigation",
@@ -63,7 +64,8 @@
     "continuePayment": "Continue to PayOS · {amount}",
     "verify": "Check status",
     "cancel": "Cancel order",
-    "choosePlan": "Choose another plan"
+    "choosePlan": "Choose another plan",
+    "retry": "Try again"
   },
   "errors": {
     "quote": "Unable to create a quote",

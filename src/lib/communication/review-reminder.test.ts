@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   user: { findById: vi.fn() },
   outbox: { updateOne: vi.fn(), updateMany: vi.fn(), findOne: vi.fn(), exists: vi.fn() },
   preference: { findOneAndUpdate: vi.fn(), updateOne: vi.fn(), findOne: vi.fn() },
-  consentEvent: { create: vi.fn() },
+  consentEvent: { create: vi.fn(), exists: vi.fn() },
 }));
 
 /** Thenable stand-in for a chained Mongoose query. */
@@ -288,6 +288,7 @@ describe('one-click unsubscribe (AC7)', () => {
         source: 'unsubscribe',
       }),
     );
+    expect(mocks.consentEvent.create.mock.calls[0]?.[0]).not.toHaveProperty('campaign');
     expect(mocks.outbox.updateMany).toHaveBeenCalledWith(
       { userId: new Types.ObjectId(USER_ID), kind: 'review_reminder', status: 'pending' },
       { $set: { status: 'canceled', lastError: 'opted_out' } },
@@ -296,10 +297,38 @@ describe('one-click unsubscribe (AC7)', () => {
 
   it('is idempotent: an already unsubscribed learner gets no second event', async () => {
     mocks.preference.findOneAndUpdate.mockReturnValue(query(null));
+    mocks.consentEvent.exists.mockResolvedValue({ _id: new Types.ObjectId() });
 
     await expect(unsubscribeWithToken(token, null)).resolves.toBe(true);
 
     expect(mocks.consentEvent.create).not.toHaveBeenCalled();
+    expect(mocks.outbox.updateMany).toHaveBeenCalledOnce();
+  });
+
+  it('records the opt-out for a learner who never opted in (activation nudge, RIN-999)', async () => {
+    mocks.preference.findOneAndUpdate.mockReturnValue(query(null));
+    mocks.consentEvent.exists.mockResolvedValue(null);
+
+    await expect(unsubscribeWithToken(token, null)).resolves.toBe(true);
+
+    expect(mocks.consentEvent.exists).toHaveBeenCalledWith({
+      userId: new Types.ObjectId(USER_ID),
+      action: 'opt_out',
+    });
+    expect(mocks.consentEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'opt_out', source: 'unsubscribe' }),
+    );
+  });
+
+  it('records the activation-nudge campaign on the opt-out event (RIN-1044)', async () => {
+    mocks.preference.findOneAndUpdate.mockReturnValue(query(null));
+    mocks.consentEvent.exists.mockResolvedValue(null);
+
+    await expect(unsubscribeWithToken(token, null, 'activation_nudge')).resolves.toBe(true);
+
+    expect(mocks.consentEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'unsubscribe', campaign: 'activation_nudge' }),
+    );
     expect(mocks.outbox.updateMany).toHaveBeenCalledOnce();
   });
 
@@ -312,11 +341,15 @@ describe('one-click unsubscribe (AC7)', () => {
     expect(mocks.outbox.updateMany).not.toHaveBeenCalled();
   });
 
-  it('reads the page state; a missing preference reads as unsubscribed', async () => {
+  it('reads the page state: opted in or never opted out is subscribed', async () => {
     mocks.preference.findOne.mockReturnValue(query({ studyReminders: true }));
     await expect(unsubscribeLinkState(token)).resolves.toBe('subscribed');
 
     mocks.preference.findOne.mockReturnValue(query(null));
+    mocks.consentEvent.exists.mockResolvedValue(null);
+    await expect(unsubscribeLinkState(token)).resolves.toBe('subscribed');
+
+    mocks.consentEvent.exists.mockResolvedValue({ _id: new Types.ObjectId() });
     await expect(unsubscribeLinkState(token)).resolves.toBe('unsubscribed');
   });
 });

@@ -1,19 +1,22 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
 import { addGuestClaim } from '@/features/quiz/lib/guest-claims';
 import { QuizResultPageClient } from './QuizResultPageClient';
 
-const { fetchPageDataMock, searchParams, router, session, signInMock } = vi.hoisted(() => ({
-  fetchPageDataMock: vi.fn(),
-  signInMock: vi.fn(),
-  session: { value: { data: { user: { id: 'u1' } }, status: 'authenticated' } as object },
-  searchParams: { value: new URLSearchParams('attemptId=attempt-1') },
-  router: { push: () => undefined, back: () => undefined },
-}));
+const { claimMock, fetchPageDataMock, searchParams, router, session, signInMock } = vi.hoisted(
+  () => ({
+    claimMock: vi.fn(() => Promise.resolve()),
+    fetchPageDataMock: vi.fn(),
+    signInMock: vi.fn(),
+    session: { value: { data: { user: { id: 'u1' } }, status: 'authenticated' } as object },
+    searchParams: { value: new URLSearchParams('attemptId=attempt-1') },
+    router: { push: () => undefined, back: () => undefined },
+  }),
+);
 
 vi.mock('next-auth/react', () => ({
   useSession: () => session.value,
@@ -48,6 +51,10 @@ vi.mock('@/features/quiz/api/quiz-result-page-api', () => ({
   createQuizResultBookmark: vi.fn(),
   deleteQuizResultBookmark: vi.fn(),
   fetchQuizResultPageData: (...args: unknown[]) => fetchPageDataMock(...args),
+}));
+
+vi.mock('@/features/quiz/api/guest-claim-api', () => ({
+  claimStoredGuestAttempts: () => claimMock(),
 }));
 
 describe('QuizResultPageClient load failures (RIN-753)', () => {
@@ -210,8 +217,31 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(fetchPageDataMock).toHaveBeenCalledWith('attempt-1', 'en', undefined);
     expect(screen.queryByRole('region', { name: 'guestSaveTitle' })).not.toBeInTheDocument();
   });
+  it('titles a quick round and offers Another 10 and the full quiz (RIN-933)', async () => {
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    fetchPageDataMock.mockResolvedValueOnce({
+      result: { ...guestResult, mode: 'quick' },
+      bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+    });
+
+    render(<QuizResultPageClient />);
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'quickRound.resultTitle' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'quickRound.another' })).toHaveAttribute(
+      'href',
+      '/quiz/demo?mode=quick',
+    );
+    expect(screen.getByRole('link', { name: 'quickRound.fullQuiz' })).toHaveAttribute(
+      'href',
+      '/quiz/demo?mode=full',
+    );
+    expect(screen.queryByRole('link', { name: 'redo' })).not.toBeInTheDocument();
+  });
+
   it('shows the URL score without the save card when a just-signed-in guest cannot read the attempt yet', async () => {
-    // Until parts 3–4 link the guest attempt to the new account, the member read 404s.
+    // The claim failed (429, offline), so the token is kept and the member read 404s.
     session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
     addGuestClaim({
       attemptId: 'attempt-1',
@@ -232,6 +262,48 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(
       screen.queryByRole('heading', { name: 'errors.api.notFoundTitle' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('reads a just-signed-in learner result only after the guest claim settles (RIN-921)', async () => {
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    let settleClaim: () => void = () => undefined;
+    claimMock.mockImplementationOnce(() => new Promise<void>((resolve) => (settleClaim = resolve)));
+    fetchPageDataMock.mockResolvedValueOnce({
+      result: guestResult,
+      bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+    });
+
+    render(<QuizResultPageClient />);
+
+    await waitFor(() => expect(claimMock).toHaveBeenCalledTimes(1));
+    expect(fetchPageDataMock).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole('heading', { name: 'errors.api.notFoundTitle' }),
+    ).not.toBeInTheDocument();
+
+    settleClaim();
+
+    expect(await screen.findByRole('link', { name: 'redo' })).toBeInTheDocument();
+    expect(fetchPageDataMock).toHaveBeenCalledWith('attempt-1', 'en', undefined);
+  });
+
+  it('never claims for a guest reader', async () => {
+    session.value = { data: null, status: 'unauthenticated' };
+    fetchPageDataMock.mockResolvedValueOnce({
+      result: guestResult,
+      bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+    });
+    addGuestClaim({
+      attemptId: 'attempt-1',
+      token: FAKE_TOKEN,
+      quizSlug: 'demo',
+      takenAt: Date.now(),
+    });
+
+    render(<QuizResultPageClient />);
+
+    expect(await screen.findByRole('link', { name: 'redo' })).toBeInTheDocument();
+    expect(claimMock).not.toHaveBeenCalled();
   });
 
   it('keeps the not-found state for a signed-in reader whose browser holds no guest token', async () => {

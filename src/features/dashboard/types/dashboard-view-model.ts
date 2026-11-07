@@ -59,7 +59,6 @@ export interface DashboardHomeCopy {
     title: string;
     description: string;
     cta: string;
-    starterCta: string;
     adaptiveLink: string;
   };
   starter: {
@@ -76,7 +75,6 @@ export interface DashboardHomeCopy {
   continueLearning: {
     title: string;
     subtitle: string;
-    emptyAction: string;
   };
   recentOwnedQuizzes: {
     title: string;

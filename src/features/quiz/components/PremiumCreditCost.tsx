@@ -1,8 +1,9 @@
 import Image from 'next/image';
 
-export function PremiumCreditCost() {
+/** The credit coin with a visible label, e.g. "Unlock · 1 credit" (RIN-1014). */
+export function PremiumCreditCost({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-2 tabular-nums">
+    <span className="inline-flex items-center gap-2">
       <Image
         src="/images/premium-credit-coin.png"
         alt=""
@@ -12,7 +13,7 @@ export function PremiumCreditCost() {
         className="size-7 shrink-0 object-contain"
         aria-hidden="true"
       />
-      <span>-1</span>
+      <span>{label}</span>
     </span>
   );
 }

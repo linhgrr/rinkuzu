@@ -59,12 +59,12 @@ export function QuestionReviewList({
   tProfile,
 }: QuestionReviewListProps) {
   return (
-    <Card className="mb-8">
-      <CardHeader>
+    <Card className="mb-8 max-md:p-0">
+      <CardHeader className="max-md:px-4 max-md:pt-4">
         <CardTitle>{tProfile('details')}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
+      <CardContent className="max-md:p-4">
+        <div className="space-y-4 md:space-y-6">
           {questions.map((questionResult, index) => {
             const isAnswered = isQuestionAnswered(questionResult, questionResult.userAnswer);
             const chatTurns = chatTurnsByQuestion[index] ?? 0;
@@ -72,7 +72,7 @@ export function QuestionReviewList({
             return (
               <div
                 key={questionResult.id}
-                className={`border rounded-lg p-4 ${
+                className={`border rounded-lg p-3 md:p-4 ${
                   questionResult.isCorrect
                     ? 'border-green-200 bg-green-50'
                     : isAnswered
@@ -80,8 +80,11 @@ export function QuestionReviewList({
                       : 'border-line bg-neutral-50'
                 }`}
               >
-                <div className="mb-3">
-                  <div className="mb-5 flex gap-x-2">
+                <div className="mb-3 flex flex-wrap items-start gap-2 md:gap-y-0">
+                  <div
+                    data-review-part="actions"
+                    className="order-2 flex w-full flex-wrap gap-2 md:order-1 md:mb-5"
+                  >
                     <Button
                       variant="outline"
                       onClick={() => onToggleBookmark(index, questionResult)}
@@ -115,44 +118,48 @@ export function QuestionReviewList({
                     </Button>
                   </div>
 
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex min-w-0 flex-1 items-start gap-1 font-semibold text-neutral-900">
-                      <span className="flex-shrink-0">{index + 1}.</span>
-                      <QuestionContent
-                        content={questionResult.question}
-                        variant="compact"
-                        headingLevel={3}
-                        className="min-w-0 flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center gap-x-2">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          questionResult.type === 'single'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        {questionResult.type === 'single'
-                          ? tProfile('singleChoice')
-                          : tProfile('multipleChoice')}
-                      </span>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          questionResult.isCorrect
-                            ? 'bg-green-100 text-green-800'
-                            : isAnswered
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-neutral-100 text-neutral-600'
-                        }`}
-                      >
-                        {questionResult.isCorrect
-                          ? `✓ ${tProfile('correct')}`
+                  <div
+                    data-review-part="prompt"
+                    className="order-3 flex w-full min-w-0 items-start gap-1 font-semibold text-neutral-900 md:order-2 md:w-auto md:flex-1"
+                  >
+                    <span className="flex-shrink-0">{index + 1}.</span>
+                    <QuestionContent
+                      content={questionResult.question}
+                      variant="compact"
+                      headingLevel={3}
+                      className="min-w-0 flex-1 break-words"
+                    />
+                  </div>
+                  <div
+                    data-review-part="badges"
+                    className="order-1 flex w-full flex-wrap items-center gap-2 md:order-3 md:w-auto md:shrink-0"
+                  >
+                    <span
+                      className={`whitespace-nowrap px-2 py-1 rounded text-xs font-medium ${
+                        questionResult.type === 'single'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-green-100 text-green-800'
+                      }`}
+                    >
+                      {questionResult.type === 'single'
+                        ? tProfile('singleChoice')
+                        : tProfile('multipleChoice')}
+                    </span>
+                    <span
+                      className={`whitespace-nowrap px-2 py-1 rounded text-xs font-medium ${
+                        questionResult.isCorrect
+                          ? 'bg-green-100 text-green-800'
                           : isAnswered
-                            ? `✗ ${t('incorrect')}`
-                            : `— ${t('notAnswered')}`}
-                      </span>
-                    </div>
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-neutral-100 text-neutral-600'
+                      }`}
+                    >
+                      {questionResult.isCorrect
+                        ? `✓ ${tProfile('correct')}`
+                        : isAnswered
+                          ? `✗ ${t('incorrect')}`
+                          : `— ${t('notAnswered')}`}
+                    </span>
                   </div>
                 </div>
 
@@ -179,11 +186,12 @@ export function QuestionReviewList({
                         isAnswered,
                       )}
                       className={
-                        questionResult.isCorrect
+                        'min-w-0 flex-1 break-words ' +
+                        (questionResult.isCorrect
                           ? 'text-green-600'
                           : isAnswered
                             ? 'text-red-600'
-                            : 'text-neutral-500'
+                            : 'text-neutral-500')
                       }
                     />
                   </div>
@@ -196,7 +204,7 @@ export function QuestionReviewList({
                       <QuestionContent
                         content={formatCorrectAnswer(questionResult)}
                         variant="answer"
-                        className="text-green-600"
+                        className="min-w-0 flex-1 break-words text-green-600"
                       />
                     </div>
                   )}
@@ -239,7 +247,7 @@ export function QuestionReviewList({
                                 <QuestionContent
                                   content={option}
                                   variant="option"
-                                  className="min-w-0 flex-1"
+                                  className="min-w-0 flex-1 break-words"
                                 />
                               </div>
 

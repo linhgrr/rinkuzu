@@ -6,10 +6,19 @@ vi.mock('@/auth', () => ({ signOut: signOutMock }));
 
 import { POST } from '@/app/api/session/logout/route';
 
-function logoutRequest(locale: string, reason?: string): Request {
+const SESSION_COOKIE = 'authjs.session-token=fake-session-token';
+
+function logoutRequest(
+  locale: string,
+  reason?: string,
+  cookie: string | null = SESSION_COOKIE,
+): Request {
   return new Request('http://localhost/api/session/logout', {
     method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      ...(cookie ? { cookie } : {}),
+    },
     body: new URLSearchParams({ locale, ...(reason ? { reason } : {}) }),
   });
 }
@@ -90,6 +99,38 @@ describe('POST /api/session/logout', () => {
       success: false,
       error: { code: 'internal_error' },
     });
+  });
+
+  it('redirects a guest without a session cookie home instead of failing (RIN-958)', async () => {
+    signOutMock.mockResolvedValue({ redirect: 'http://localhost/vi', cookies: [] });
+
+    const response = await POST(logoutRequest('vi', undefined, 'authjs.callback-url=%2Fvi'));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe('http://localhost/vi');
+    expect(response.headers.getSetCookie()).toEqual([]);
+    expect(signOutMock).not.toHaveBeenCalled();
+  });
+
+  it('redirects a guest with no cookies at all to the replaced-session login (RIN-958)', async () => {
+    const response = await POST(logoutRequest('en', 'session_replaced', null));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost/en/login?reason=session_replaced',
+    );
+    expect(signOutMock).not.toHaveBeenCalled();
+  });
+
+  it('treats a chunked secure session cookie as a session', async () => {
+    signOutMock.mockResolvedValue({ redirect: 'http://localhost/en', cookies: [] });
+
+    const response = await POST(
+      logoutRequest('en', undefined, 'theme=dark; __Secure-authjs.session-token.0=chunk'),
+    );
+
+    expect(signOutMock).toHaveBeenCalled();
+    expect(response.status).toBe(500);
   });
 
   it('rejects an unexpected cross-origin redirect returned by Auth.js', async () => {

@@ -64,6 +64,8 @@ export interface ReminderConsentEvent {
   action: 'opt_in' | 'opt_out';
   source: 'result_page_review' | 'unsubscribe';
   ipHash: string | null;
+  /** Email an unsubscribe link came from; absent for the review email (RIN-1044). */
+  campaign?: 'activation_nudge';
 }
 
 interface OwnedReminderAttempt extends ReminderAttempt {
@@ -114,6 +116,14 @@ export class ReviewReminderRepository {
     };
   }
 
+  /** True when `studyReminders` is ticked for the learner. */
+  async isOptedIn(userId: Types.ObjectId): Promise<boolean> {
+    const preference = await MarketingPreference.findOne({ userId }, { studyReminders: 1 }).lean<{
+      studyReminders?: boolean;
+    } | null>();
+    return preference?.studyReminders === true;
+  }
+
   /** Ticks `studyReminders`; true when it was already ticked before this write. */
   async optIn(userId: Types.ObjectId, locale: string, now: Date): Promise<boolean> {
     const previous = await MarketingPreference.findOneAndUpdate(
@@ -146,6 +156,12 @@ export class ReviewReminderRepository {
       { new: false },
     ).lean<{ studyReminders?: boolean } | null>();
     return previous?.studyReminders === true;
+  }
+
+  /** Any opt-out consent event for the learner, on any topic. */
+  async hasOptedOut(userId: Types.ObjectId): Promise<boolean> {
+    await connectDB();
+    return (await MarketingConsentEvent.exists({ userId, action: 'opt_out' })) !== null;
   }
 
   async recordConsent(event: ReminderConsentEvent): Promise<void> {

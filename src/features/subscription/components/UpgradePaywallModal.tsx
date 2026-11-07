@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { fetchSubscriptionPageViewModel } from '@/features/subscription/api/subscription-page-api';
 import type { SubscriptionPlanViewModel } from '@/features/subscription/types/subscription-page-view-model';
+import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
 import { formatVndCurrency } from '@/lib/formatters';
 
 export type UpgradePromptKind = 'quota' | 'feature';
@@ -187,19 +188,24 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
                       <p className="mt-2 text-2xl font-semibold tracking-tight text-neutral-900">
                         {plan.priceLabel}
                       </p>
-                      <p className="mt-1 text-sm text-neutral-500">{plan.durationDisplay}</p>
+                      <p className="mt-1 text-sm text-neutral-500">
+                        {formatPlanDuration(tPricing, plan.calculatedMonths)}
+                      </p>
                       <p className="mt-2 text-sm font-medium text-accent">
                         {t('paywall.perMonth', { price: formatVndCurrency(monthlyPrice) })}
                       </p>
-                      <Button
-                        className="mt-auto w-full"
-                        variant={isBestValue ? 'primary' : 'outline'}
-                        loading={submittingPlanId === plan.id}
-                        disabled={submittingPlanId !== null}
-                        onClick={() => handlePurchase(plan)}
-                      >
-                        {t('paywall.choosePlan', { plan: plan.name })}
-                      </Button>
+                      {/* pt-2 keeps the per-month hint off the CTA when the card is full. */}
+                      <div className="mt-auto pt-2">
+                        <Button
+                          className="w-full"
+                          variant={isBestValue ? 'primary' : 'outline'}
+                          loading={submittingPlanId === plan.id}
+                          disabled={submittingPlanId !== null}
+                          onClick={() => handlePurchase(plan)}
+                        >
+                          {t('paywall.choosePlan', { plan: plan.name })}
+                        </Button>
+                      </div>
                     </article>
                   );
                 })}

@@ -48,6 +48,8 @@
     "next": "Next",
     "conversationLoading": "Loading conversation…",
     "conversationError": "Could not load this support ticket.",
+    "conversationTitle": "Support request",
+    "noMessages": "No messages in this request yet.",
     "history": "Conversation history",
     "attachmentAlt": "Support attachment",
     "reply": "Reply",
@@ -101,7 +103,14 @@
     "feedbackRemindError": "Could not send the reminder",
     "feedbackCompleteError": "Could not complete the conversation",
     "supportCreateError": "Could not create the support conversation",
-    "scheduleTimeInvalid": "Choose a valid send time"
+    "scheduleTimeInvalid": "Choose a valid send time",
+    "campaignsLoadError": "Could not load campaigns.",
+    "campaignTitle": "Campaign",
+    "backToCampaigns": "Back to campaigns",
+    "feedbackListLoadError": "Could not load feedback conversations.",
+    "feedbackTitle": "Feedback conversation",
+    "backToFeedback": "Back to feedback",
+    "supportListLoadError": "Could not load the support inbox."
   },
   "unsubscribe": {
     "metaTitle": "Unsubscribe | RinKuzu",

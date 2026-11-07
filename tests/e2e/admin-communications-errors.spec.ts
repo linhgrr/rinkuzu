@@ -2,7 +2,9 @@ import { expect, test, type Page } from '@playwright/test';
 import { login, withAccounts } from './support/admin-accounts';
 
 /**
- * Load errors on the admin campaign and feedback conversation pages (RIN-827, RIN-846).
+ * Load errors on the admin campaign, feedback conversation and support ticket pages
+ * (RIN-827, RIN-846). Since RIN-1159 each keeps an h1 and a Back link, and shows no
+ * "Code:" line: the code is for logs, not admins.
  *
  * The admin login, gate and pages run for real. Only the detail GET is answered
  * by `page.route` with a 500 envelope, so the flow needs no campaign or
@@ -18,12 +20,24 @@ const PAGES = [
     path: `/en/admin/campaigns/${FAKE_ID}`,
     api: `/api/admin/campaigns/${FAKE_ID}`,
     copy: 'Could not load the campaign.',
+    heading: 'Campaign',
+    back: { name: 'Back to campaigns', href: '/en/admin/campaigns' },
   },
   {
     name: 'feedback conversation',
     path: `/en/admin/feedback/${FAKE_ID}`,
     api: `/api/admin/feedback/${FAKE_ID}`,
     copy: 'Could not load the conversation.',
+    heading: 'Feedback conversation',
+    back: { name: 'Back to feedback', href: '/en/admin/feedback' },
+  },
+  {
+    name: 'support ticket',
+    path: `/en/admin/support/${FAKE_ID}`,
+    api: `/api/admin/support/${FAKE_ID}`,
+    copy: 'Could not load this support ticket.',
+    heading: 'Support request',
+    back: { name: 'Back to requests', href: '/en/admin/support' },
   },
 ] as const;
 
@@ -47,7 +61,7 @@ async function failDetailRoute(page: Page, api: string): Promise<() => number> {
 
 test.describe('admin communications load errors', () => {
   for (const target of PAGES) {
-    test(`${target.name}: localized error box with code and a working Retry @critical-admin-communications`, async ({
+    test(`${target.name}: h1, Back link, localized error box without a code, and a working Retry @critical-admin-communications`, async ({
       page,
     }, testInfo) => {
       test.setTimeout(60_000);
@@ -58,8 +72,12 @@ test.describe('admin communications load errors', () => {
 
         const alert = page.getByRole('alert').filter({ hasText: target.copy });
         await expect(alert).toBeVisible({ timeout: 30_000 });
-        await expect(alert).toContainText('Code: internal_error');
+        await expect(alert).not.toContainText('Code:');
         await expect(alert).not.toContainText(SERVER_TEXT);
+        await expect(page.getByRole('heading', { level: 1, name: target.heading })).toBeVisible();
+        await expect(
+          page.locator('#app-main-content').getByRole('link', { name: target.back.name }),
+        ).toHaveAttribute('href', target.back.href);
 
         // Readable on the device the project runs: the box stays inside the viewport.
         const box = await alert.boundingBox();

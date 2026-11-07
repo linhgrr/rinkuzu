@@ -23,7 +23,11 @@ export function AdminFeedbackPage() {
   const describeError = useAdminApiErrorMessage();
   const initialUserId = params.get('userId') ?? '';
   const [page, setPage] = useState(1);
-  const { data, mutate } = useSWR(`feedback:${initialUserId}:${page}`, () =>
+  const {
+    data,
+    error: loadError,
+    mutate,
+  } = useSWR(`feedback:${initialUserId}:${page}`, () =>
     fetchFeedbackList(initialUserId || undefined, page),
   );
   const [userId, setUserId] = useState(initialUserId);
@@ -98,6 +102,14 @@ export function AdminFeedbackPage() {
             <CardTitle>Các cuộc trao đổi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* A failed load replaced the list with nothing at all (RIN-1159). */}
+            {loadError ? (
+              <ErrorState
+                error={loadError}
+                message={t('feedbackListLoadError')}
+                onRetry={() => mutate()}
+              />
+            ) : null}
             {data?.items.map((conversation) => (
               <ButtonBase
                 key={conversation.id}

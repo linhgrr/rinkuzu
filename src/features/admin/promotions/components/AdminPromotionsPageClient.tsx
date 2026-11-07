@@ -7,6 +7,8 @@ import useSWR from 'swr';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -37,21 +39,22 @@ function promotionValue(promotion: AdminPromotion): string {
 export function AdminPromotionsPageClient() {
   const t = useTranslations('adminPromotions');
   const describeError = useAdminApiErrorMessage();
-  const { data, isLoading, isValidating, mutate } = useSWR(
-    'admin-promotions',
-    fetchAdminPromotions,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      onError: (error: unknown) => {
-        toast.error(describeError(error, t('loadError')));
-      },
-    },
-  );
-  const items = data ?? [];
-  const loading = isLoading || isValidating;
+  const {
+    data,
+    error: loadError,
+    isLoading,
+    isValidating,
+    mutate,
+  } = useSWR('admin-promotions', fetchAdminPromotions, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+  const items = loadError ? [] : (data ?? []);
+  // While a Retry is in flight the ErrorState shows its own spinner; no skeleton under it.
+  const loading = (isLoading || isValidating) && !loadError;
   const [saving, setSaving] = useState(false);
   const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [promotionToArchive, setPromotionToArchive] = useState<AdminPromotion | null>(null);
   const [code, setCode] = useState('');
   const [kind, setKind] = useState<PromotionKind>('percentage');
   const [percentage, setPercentage] = useState(10);
@@ -98,6 +101,7 @@ export function AdminPromotionsPageClient() {
       toast.error(describeError(error, t('archiveError')));
     } finally {
       setArchivingId(null);
+      setPromotionToArchive(null);
     }
   };
 
@@ -186,6 +190,9 @@ export function AdminPromotionsPageClient() {
       </Card>
 
       <div className="mt-6 grid gap-4">
+        {loadError ? (
+          <ErrorState error={loadError} message={t('loadError')} onRetry={() => mutate()} />
+        ) : null}
         {loading && (
           <div className="space-y-4" aria-busy="true">
             {Array.from({ length: 3 }).map((_, index) => (
@@ -231,7 +238,7 @@ export function AdminPromotionsPageClient() {
                 variant="outline"
                 loading={archivingId === promotion.id}
                 disabled={Boolean(archivingId)}
-                onClick={() => void archive(promotion.id)}
+                onClick={() => setPromotionToArchive(promotion)}
               >
                 {t('archive')}
               </Button>
@@ -239,6 +246,19 @@ export function AdminPromotionsPageClient() {
           </SurfaceCard>
         ))}
       </div>
+
+      <ConfirmModal
+        isOpen={promotionToArchive !== null}
+        title={t('archiveConfirmTitle', { code: promotionToArchive?.code ?? '' })}
+        message={t('archiveConfirmMessage')}
+        confirmText={t('archiveConfirm')}
+        confirmVariant="destructive"
+        isLoading={archivingId !== null}
+        onCancel={() => setPromotionToArchive(null)}
+        onConfirm={() => {
+          if (promotionToArchive) void archive(promotionToArchive.id);
+        }}
+      />
     </div>
   );
 }

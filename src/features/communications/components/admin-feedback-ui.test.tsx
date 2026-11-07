@@ -8,8 +8,17 @@ import { AdminFeedbackConversationPage } from './AdminFeedbackConversationPage';
 
 const mocks = vi.hoisted(() => ({ swr: vi.fn(), mutate: vi.fn() }));
 
-const translate = (key: string) => key;
-vi.mock('next-intl', () => ({ useLocale: () => 'vi', useTranslations: () => translate }));
+// Real vi copy: these assertions are about what an admin reads (RIN-1160).
+vi.mock('next-intl', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next-intl')>();
+  const { default: communications } = await import('@/../messages/vi/communications.json');
+  const translate = actual.createTranslator({
+    locale: 'vi',
+    messages: { communications },
+    namespace: 'communications.admin',
+  });
+  return { ...actual, useLocale: () => 'vi', useTranslations: () => translate };
+});
 vi.mock('swr', () => ({ default: (...args: unknown[]) => mocks.swr(...args) }));
 vi.mock('../api/communications-api', () => ({
   completeFeedback: vi.fn(),
@@ -88,7 +97,7 @@ describe('admin feedback conversation status honesty', () => {
 
     render(<AdminFeedbackConversationPage id={CONVERSATION_ID} />);
 
-    expect(screen.getByText(/User đã opt-out/u)).toBeInTheDocument();
+    expect(screen.getByText(/Người dùng đã hủy nhận/u)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nhắc lại' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Hoàn tất' })).not.toBeInTheDocument();
   });

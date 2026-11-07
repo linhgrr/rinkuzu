@@ -27,7 +27,7 @@ export function AdminSupportPage() {
     mutate,
   } = useSWR(`/api/admin/support?page=${page}`, () => fetchSupportTickets(true, page));
   const [userId, setUserId] = useState(() => params.get('userId') ?? '');
-  const [subject, setSubject] = useState('RinKuzu hỗ trợ bạn');
+  const [subject, setSubject] = useState(() => t('support.defaultSubject'));
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,32 +59,29 @@ export function AdminSupportPage() {
 
   return (
     <AdminPageShell>
-      <AdminPageHeader
-        title="Support Center"
-        description="Trao đổi hỗ trợ riêng với từng user; email chỉ dùng để thông báo."
-      />
+      <AdminPageHeader title={t('support.title')} description={t('support.description')} />
       <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Mở ticket cho user</CardTitle>
+            <CardTitle>{t('support.createTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={create}>
               <Input
-                label="User ID"
+                label={t('support.userId')}
                 value={userId}
                 onChange={(event) => setUserId(event.target.value)}
                 required
                 pattern="[a-fA-F0-9]{24}"
               />
               <Input
-                label="Tiêu đề"
+                label={t('support.subject')}
                 value={subject}
                 onChange={(event) => setSubject(event.target.value)}
                 required
               />
               <Textarea
-                label="Nội dung"
+                label={t('support.body')}
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
                 required
@@ -92,7 +89,7 @@ export function AdminSupportPage() {
               />
               {error ? <ErrorState message={error} /> : null}
               <Button type="submit" loading={loading}>
-                Tạo và gửi thông báo
+                {t('support.create')}
               </Button>
             </form>
           </CardContent>
@@ -100,7 +97,7 @@ export function AdminSupportPage() {
         {/* On a failed load the list (now the error) comes first below xl, on the first screen. */}
         <Card className={loadError ? 'order-first xl:order-none' : undefined}>
           <CardHeader>
-            <CardTitle>Inbox hỗ trợ</CardTitle>
+            <CardTitle>{t('support.inboxTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {/* A failed load replaced the list with nothing at all (RIN-1159). */}
@@ -120,14 +117,14 @@ export function AdminSupportPage() {
               >
                 <span className="font-semibold">{ticket.subject}</span>
                 <span className="mt-1 block text-sm text-ink-muted">
-                  {ticket.userEmail} · {ticket.status.replaceAll('_', ' ')}
+                  {ticket.userEmail} · {t(`support.statuses.${ticket.status}`)}
                 </span>
               </ButtonBase>
             ))}
             {data && data.pagination.totalPages > 1 ? (
               <div className="flex items-center justify-between pt-2">
                 <Button variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                  Trang trước
+                  {t('previousPage')}
                 </Button>
                 <span className="text-sm text-ink-muted">
                   {page}/{data.pagination.totalPages}
@@ -137,7 +134,7 @@ export function AdminSupportPage() {
                   disabled={page >= data.pagination.totalPages}
                   onClick={() => setPage(page + 1)}
                 >
-                  Trang sau
+                  {t('nextPage')}
                 </Button>
               </div>
             ) : null}

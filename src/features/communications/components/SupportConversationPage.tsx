@@ -38,6 +38,7 @@ interface SupportConversationPageProps {
 
 export function SupportConversationPage({ ticketId, admin = false }: SupportConversationPageProps) {
   const t = useTranslations('communications.support');
+  const tAdmin = useTranslations('communications.admin.support');
   const apiErrorMessage = useApiErrorMessage();
   const { data, error, isLoading, mutate } = useSWR(
     `support:${admin}:${ticketId}`,
@@ -113,10 +114,10 @@ export function SupportConversationPage({ ticketId, admin = false }: SupportConv
             {admin ? (
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => changeStatus('resolved')}>
-                  Đã xử lý
+                  {tAdmin('markResolved')}
                 </Button>
                 <Button variant="destructive" size="sm" onClick={() => changeStatus('closed')}>
-                  Đóng
+                  {tAdmin('close')}
                 </Button>
               </div>
             ) : null}

@@ -208,7 +208,7 @@ describe('admin communications pages use the API error layer', () => {
 
     renderVi(<AdminCampaignDetailPage id="campaign-1" />);
     await user.type(screen.getByLabelText('Thời gian gửi'), '2026-12-01T09:00');
-    await user.type(screen.getByLabelText('Nhập GỬI 12'), 'GỬI 12');
+    await user.type(screen.getByLabelText('Nhập GỬI 12 để xác nhận'), 'GỬI 12');
     await user.click(screen.getByRole('button', { name: 'Lên lịch gửi' }));
 
     const alert = await screen.findByRole('alert');
@@ -403,7 +403,7 @@ describe('admin communications pages use the API error layer', () => {
       reject: mocks.createCampaign,
       fill: async (user: ReturnType<typeof userEvent.setup>) => {
         await user.type(screen.getByLabelText('Tên nội bộ'), 'Tháng 11');
-        await user.type(screen.getByLabelText('Email subject'), 'Có gì mới');
+        await user.type(screen.getByLabelText('Tiêu đề email'), 'Có gì mới');
         await user.type(screen.getByLabelText('Đoạn nội dung đầu tiên'), 'Xin chào');
       },
       submit: 'Tạo bản nháp',
@@ -414,7 +414,7 @@ describe('admin communications pages use the API error layer', () => {
       ui: <AdminFeedbackPage />,
       reject: mocks.createFeedbackInvitation,
       fill: async (user: ReturnType<typeof userEvent.setup>) => {
-        await user.type(screen.getByLabelText('User ID'), USER_ID);
+        await user.type(screen.getByLabelText('Mã người dùng'), USER_ID);
       },
       submit: 'Gửi lời mời',
       fallback: admin.feedbackInviteError,
@@ -424,7 +424,7 @@ describe('admin communications pages use the API error layer', () => {
       ui: <AdminSupportPage />,
       reject: mocks.createSupportTicket,
       fill: async (user: ReturnType<typeof userEvent.setup>) => {
-        await user.type(screen.getByLabelText('User ID'), USER_ID);
+        await user.type(screen.getByLabelText('Mã người dùng'), USER_ID);
         await user.type(screen.getByLabelText('Nội dung'), 'Xin chào');
       },
       submit: 'Tạo và gửi thông báo',

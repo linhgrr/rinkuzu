@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { CampaignBlockEditor } from './CampaignBlockEditor';
+import { campaignStatusLabel } from '../lib/admin-labels';
 import { DetailLoadError } from './DetailLoadError';
 import {
   cancelCampaign,
@@ -45,7 +46,7 @@ export function AdminCampaignDetailPage({ id }: { id: string }) {
         />
       </AdminPageShell>
     );
-  if (!data) return <div className="p-8">Đang tải…</div>;
+  if (!data) return <div className="p-8">{t('loading')}</div>;
   return (
     <CampaignEditor
       key={`${id}:${data.campaign.revision}`}
@@ -122,7 +123,7 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
 
   async function save(event: FormEvent): Promise<void> {
     event.preventDefault();
-    await action(() => persistDraft(), 'Đã lưu bản nháp');
+    await action(() => persistDraft(), t('campaignDetail.saved'));
   }
 
   function persistDraft(): Promise<CampaignDetailViewModel> {
@@ -142,7 +143,7 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
     }
     void action(
       () => scheduleCampaign(id, campaign.revision, instant.toISOString(), confirmation),
-      'Đã lên lịch',
+      t('campaignDetail.scheduled'),
     );
   }
 
@@ -154,7 +155,9 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
         <div>
           <h1 className="text-2xl font-bold">{campaign.name}</h1>
           <p className="text-ink-muted">
-            {campaign.status} · {campaign.recipientCount} recipients · revision {campaign.revision}
+            {campaignStatusLabel(t, campaign.status)} ·{' '}
+            {t('recipients', { count: campaign.recipientCount })} ·{' '}
+            {t('revision', { revision: campaign.revision })}
           </p>
         </div>
         {['draft', 'preparing_audience', 'ready', 'scheduled', 'sending'].includes(
@@ -166,47 +169,47 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
             disabled={busy}
             onClick={() => setConfirmCancel(true)}
           >
-            Dừng khẩn cấp
+            {t('campaignDetail.emergencyStop')}
           </Button>
         ) : null}
       </div>
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <Card>
           <CardHeader>
-            <CardTitle>Block editor</CardTitle>
+            <CardTitle>{t('campaignDetail.editorTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={save}>
               <Input
-                label="Tên nội bộ"
+                label={t('internalName')}
                 value={name}
                 disabled={!draft}
                 onChange={(event) => setName(event.target.value)}
               />
               <Input
-                label="Subject"
+                label={t('emailSubject')}
                 value={subject}
                 disabled={!draft}
                 onChange={(event) => setSubject(event.target.value)}
               />
               <Input
-                label="Preview text"
+                label={t('previewText')}
                 value={previewText}
                 disabled={!draft}
                 onChange={(event) => setPreviewText(event.target.value)}
               />
               <Select
-                label="Ngôn ngữ audience"
+                label={t('audienceLocale')}
                 value={locale}
                 disabled={!draft}
                 onChange={(event) => setLocale(event.target.value)}
               >
-                <option value="">Tất cả ngôn ngữ</option>
-                <option value="vi">Tiếng Việt</option>
-                <option value="en">English</option>
+                <option value="">{t('allLocales')}</option>
+                <option value="vi">{t('localeVi')}</option>
+                <option value="en">{t('localeEn')}</option>
               </Select>
               <Input
-                label="Plan ID (không bắt buộc)"
+                label={t('planIdOptional')}
                 value={planId}
                 disabled={!draft}
                 onChange={(event) => setPlanId(event.target.value)}
@@ -214,7 +217,7 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
               <CampaignBlockEditor blocks={blocks} disabled={!draft} onChange={setBlocks} />
               {draft ? (
                 <Button type="submit" loading={busy} disabled={busy || !isDirty}>
-                  Lưu bản nháp
+                  {t('campaignDetail.saveDraft')}
                 </Button>
               ) : null}
             </form>
@@ -223,7 +226,7 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Kiểm soát gửi</CardTitle>
+              <CardTitle>{t('campaignDetail.controlsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {draft ? (
@@ -236,11 +239,11 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
                     onClick={() =>
                       action(
                         () => withCurrentDraft((revision) => testCampaign(id, revision)),
-                        'Đã gửi test',
+                        t('campaignDetail.testSent'),
                       )
                     }
                   >
-                    Gửi test cho admin
+                    {t('campaignDetail.sendTest')}
                   </Button>
                   <Button
                     className="w-full"
@@ -249,40 +252,39 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
                     onClick={() =>
                       action(
                         () => withCurrentDraft((revision) => prepareCampaign(id, revision)),
-                        'Đang chuẩn bị audience',
+                        t('campaignDetail.preparing'),
                       )
                     }
                   >
-                    Cố định audience
+                    {t('campaignDetail.lockAudience')}
                   </Button>
                   {isDirty ? (
-                    <p className="text-sm text-warning">
-                      Nội dung chưa lưu sẽ được lưu tự động trước khi test hoặc cố định audience.
-                    </p>
+                    <p className="text-sm text-warning">{t('campaignDetail.autosaveNote')}</p>
                   ) : null}
                   {campaign.testedAt ? (
                     <p className="text-sm text-ink-muted">
-                      Bản hiện tại đã test:{' '}
-                      {campaign.testedContentHash === campaign.contentHash ? 'có' : 'không'}
+                      {t('campaignDetail.testedCurrent', {
+                        tested: campaign.testedContentHash === campaign.contentHash ? 'yes' : 'no',
+                      })}
                     </p>
                   ) : null}
                 </>
               ) : null}
               {campaign.status === 'preparing_audience' ? (
-                <p className="text-sm text-ink-muted">
-                  Worker đang đồng bộ contacts vào immutable Resend segment…
-                </p>
+                <p className="text-sm text-ink-muted">{t('campaignDetail.preparingNote')}</p>
               ) : null}
               {campaign.status === 'ready' ? (
                 <>
                   <Input
-                    label="Thời gian gửi"
+                    label={t('campaignDetail.sendTime')}
                     type="datetime-local"
                     value={scheduledAt}
                     onChange={(event) => setScheduledAt(event.target.value)}
                   />
                   <Input
-                    label={`Nhập GỬI ${campaign.recipientCount}`}
+                    label={t('campaignDetail.confirmLabel', {
+                      word: `GỬI ${campaign.recipientCount}`,
+                    })}
                     value={confirmation}
                     onChange={(event) => setConfirmation(event.target.value)}
                   />
@@ -292,7 +294,7 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
                     disabled={busy || !scheduledAt || !confirmation}
                     onClick={schedule}
                   >
-                    Lên lịch gửi
+                    {t('campaignDetail.schedule')}
                   </Button>
                 </>
               ) : null}
@@ -306,12 +308,12 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Preview</CardTitle>
+              <CardTitle>{t('campaignDetail.previewTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-hidden rounded-lg border border-line bg-white p-5 text-slate-900">
                 <p className="mb-4 text-xs text-slate-500">
-                  {previewText || 'Không có preview text'}
+                  {previewText || t('campaignDetail.noPreviewText')}
                 </p>
                 <CampaignPreview blocks={blocks} />
               </div>
@@ -319,13 +321,13 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Metrics tổng hợp</CardTitle>
+              <CardTitle>{t('campaignDetail.metricsTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-2 gap-3 text-sm">
                 {Object.entries(campaign.metrics).map(([key, value]) => (
                   <div key={key}>
-                    <dt className="text-ink-muted">{key}</dt>
+                    <dt className="text-ink-muted">{t(`campaignDetail.metrics.${key}`)}</dt>
                     <dd className="text-lg font-semibold">{value}</dd>
                   </div>
                 ))}
@@ -339,15 +341,16 @@ function CampaignEditor({ id, detail, onRefresh }: CampaignEditorProps) {
       </div>
       <ConfirmModal
         isOpen={confirmCancel}
-        title="Dừng khẩn cấp campaign?"
-        message="Các lượt gửi chưa bắt đầu sẽ bị hủy. Hành động này không thể hoàn tác."
-        confirmText="Dừng campaign"
+        title={t('campaignDetail.stopTitle')}
+        message={t('campaignDetail.stopMessage')}
+        confirmText={t('campaignDetail.stopConfirm')}
         isLoading={busy}
         onCancel={() => setConfirmCancel(false)}
         onConfirm={() => {
-          void action(() => cancelCampaign(id, campaign.revision), 'Đã dừng campaign').finally(() =>
-            setConfirmCancel(false),
-          );
+          void action(
+            () => cancelCampaign(id, campaign.revision),
+            t('campaignDetail.stopped'),
+          ).finally(() => setConfirmCancel(false));
         }}
       />
     </AdminPageShell>

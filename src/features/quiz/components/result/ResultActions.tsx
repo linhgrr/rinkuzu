@@ -234,7 +234,7 @@ function ReviewEmailOptIn({ attemptId, missedCount }: { attemptId: string; misse
       <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink">
         <input
           type="checkbox"
-          className="size-5 shrink-0 accent-[var(--brand-trust)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          className="size-5 shrink-0 accent-[var(--brand-trust)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
           checked={checked}
           disabled={phase === 'saving'}
           aria-busy={phase === 'saving'}

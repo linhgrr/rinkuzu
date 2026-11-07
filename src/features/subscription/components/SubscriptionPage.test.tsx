@@ -11,7 +11,8 @@ const { fetchSubscriptionPageMock, routerPushMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('next-intl', () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}:${key}`,
+  useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) =>
+    `${namespace}:${key}${values ? `:${JSON.stringify(values)}` : ''}`,
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -42,7 +43,6 @@ describe('SubscriptionPage plan comparison', () => {
           name: 'Premium Monthly',
           price: 99000,
           priceLabel: '99.000 ₫',
-          durationDisplay: '1 month',
           calculatedMonths: 1,
         },
       ],
@@ -54,6 +54,8 @@ describe('SubscriptionPage plan comparison', () => {
 
     expect(await screen.findByRole('heading', { name: 'pricing:free.name' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Premium Monthly' })).toBeTruthy();
+    // RIN-1015: localised duration, not the catalogue's English "1 Month".
+    expect(screen.getByText('pricing:planDuration:{"months":1}')).toBeTruthy();
     expect(
       (screen.getByRole('button', { name: 'subscription:currentPlan' }) as HTMLButtonElement)
         .disabled,
@@ -76,7 +78,6 @@ describe('SubscriptionPage plan comparison', () => {
           name: 'Premium Monthly',
           price: 99000,
           priceLabel: '99.000 ₫',
-          durationDisplay: '1 month',
           calculatedMonths: 1,
         },
       ],

@@ -3,6 +3,7 @@
     "title": "Pricing | RinKuzu",
     "description": "RinKuzu pricing: learn with Ask Rin-chan, generate quizzes from PDFs, and get personalized practice for free; Premium unlocks the full curated Quiz Premium catalog and higher limits."
   },
+  "planDuration": "{months, plural, one {# month} other {# months}}",
   "hero": {
     "title": "Simple, Transparent Pricing",
     "subtitle": "Start free. Upgrade when you're ready for full personalized learning."

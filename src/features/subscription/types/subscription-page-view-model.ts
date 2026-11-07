@@ -3,7 +3,6 @@ export interface SubscriptionPlanViewModel {
   name: string;
   price: number;
   priceLabel: string;
-  durationDisplay: string;
   calculatedMonths: number;
 }
 

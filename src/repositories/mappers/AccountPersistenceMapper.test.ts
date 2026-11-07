@@ -34,6 +34,15 @@ describe('AccountPersistenceMapper', () => {
     });
   });
 
+  it('passes hasPassword through when the record carries it (RIN-1017)', () => {
+    expect(AccountPersistenceMapper.toProfile({ ...profile, hasPassword: false })).toMatchObject({
+      hasPassword: false,
+    });
+    expect(AccountPersistenceMapper.toProfile({ ...profile, hasPassword: true })).toMatchObject({
+      hasPassword: true,
+    });
+  });
+
   it('maps subscription payos and date fields when present', () => {
     const startDate = new Date('2026-07-01T00:00:00.000Z');
     const endDate = new Date('2026-08-01T00:00:00.000Z');

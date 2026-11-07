@@ -272,24 +272,31 @@ describe('ProfileSettings API errors (RIN-755)', () => {
     expect(JSON.stringify(toastErrorMock.mock.calls)).not.toContain('learner@example.com');
   });
 
-  it('says the current password is wrong for a 400, without the server text', async () => {
+  it('marks Current Password inline for a wrong current password, focused and announced (RIN-1017)', async () => {
     changePasswordMock.mockRejectedValueOnce(serverFailure(400, 'validation_error'));
 
     await submitPasswordChange();
 
-    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('currentPasswordIncorrect'));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('currentPasswordIncorrect');
+    const current = screen.getByLabelText('currentPassword');
+    expect(current.getAttribute('aria-invalid')).toBe('true');
+    expect(current.getAttribute('aria-describedby')).toContain(alert.id);
+    expect(document.activeElement).toBe(current);
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
-  it('says the account has no password, not that it is wrong, for password_not_set', async () => {
+  it('swaps the form for the Google info card on password_not_set, without a toast', async () => {
     changePasswordMock.mockRejectedValueOnce(serverFailure(400, 'password_not_set'));
 
     await submitPasswordChange();
 
-    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('passwordNotSet'));
-    expect(toastErrorMock).not.toHaveBeenCalledWith('currentPasswordIncorrect');
+    expect(await screen.findByText('googlePasswordInfo')).toBeTruthy();
+    expect(screen.queryByLabelText('currentPassword')).toBeNull();
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
-  it('blames the new password, not the current one, when the 400 names newPassword', async () => {
+  it('blames the new password inline, not the current one, when the 400 names newPassword', async () => {
     changePasswordMock.mockRejectedValueOnce(
       serverFailure(400, 'validation_error', {
         fields: { newPassword: 'Password must be at least 8 characters' },
@@ -298,11 +305,15 @@ describe('ProfileSettings API errors (RIN-755)', () => {
 
     await submitPasswordChange();
 
-    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('newPasswordRejected'));
-    expect(toastErrorMock).not.toHaveBeenCalledWith('currentPasswordIncorrect');
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('newPasswordRejected');
+    expect(screen.getByLabelText('newPassword').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByLabelText('currentPassword').getAttribute('aria-invalid')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByLabelText('newPassword'));
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
-  it('rejects a new password shorter than 8 characters before calling the server', async () => {
+  it('rejects a new password shorter than 8 characters inline before calling the server', async () => {
     const user = userEvent.setup();
     fetchProfileMock.mockResolvedValue(learnerProfile);
     render(<ProfileSettings initialTab="security" />);
@@ -311,8 +322,76 @@ describe('ProfileSettings API errors (RIN-755)', () => {
     await user.type(screen.getByLabelText('confirmNewPassword'), 'seven77');
     await user.click(screen.getByRole('button', { name: 'updatePassword' }));
 
-    expect(toastErrorMock).toHaveBeenCalledWith('passwordMinLength');
+    expect(screen.getByRole('alert').textContent).toBe('passwordMinLength');
+    expect(document.activeElement).toBe(screen.getByLabelText('newPassword'));
     expect(changePasswordMock).not.toHaveBeenCalled();
+    expect(toastErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the minimum length as helper text under New Password', async () => {
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+
+    const field = await screen.findByLabelText('newPassword');
+    const hint = screen.getByText('passwordMinLengthHint');
+    expect(field.getAttribute('aria-describedby')).toBe(hint.id);
+  });
+
+  it('keeps Update Password enabled and says inline which field is missing', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+    await user.type(await screen.findByLabelText('newPassword'), 'new-secret-1');
+    await user.type(screen.getByLabelText('confirmNewPassword'), 'new-secret-1');
+    await user.click(screen.getByRole('button', { name: 'updatePassword' }));
+
+    expect(screen.getByRole('alert').textContent).toBe('currentPasswordRequired');
+    expect(document.activeElement).toBe(screen.getByLabelText('currentPassword'));
+    expect(changePasswordMock).not.toHaveBeenCalled();
+
+    // Typing in the field clears its error.
+    await user.type(screen.getByLabelText('currentPassword'), 'o');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('shows a mismatch inline and announced', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+    await user.type(await screen.findByLabelText('newPassword'), 'new-secret-1');
+    await user.type(screen.getByLabelText('confirmNewPassword'), 'new-secret-2');
+
+    expect(screen.getByRole('alert').textContent).toBe('passwordsDoNotMatch');
+    expect(screen.getByLabelText('confirmNewPassword').getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('clears every field after a successful change', async () => {
+    changePasswordMock.mockResolvedValueOnce({
+      email: 'learner@example.com',
+      passwordChanged: true,
+    });
+
+    await submitPasswordChange();
+
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>('currentPassword').value).toBe(''),
+    );
+    expect(screen.getByLabelText<HTMLInputElement>('newPassword').value).toBe('');
+    expect(screen.getByLabelText<HTMLInputElement>('confirmNewPassword').value).toBe('');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('never shows password inputs to a Google-only account (RIN-1017)', async () => {
+    fetchProfileMock.mockResolvedValue({ ...learnerProfile, hasPassword: false });
+    render(<ProfileSettings initialTab="security" />);
+
+    expect(await screen.findByText('googlePasswordInfo')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'passwordSectionTitle' })).toBeTruthy();
+    const link = screen.getByRole('link', { name: 'googlePasswordLink' });
+    expect(link.getAttribute('href')).toBe('https://myaccount.google.com/security');
+    expect(link.getAttribute('rel')).toContain('noopener');
+    expect(document.querySelector('input[type="password"]')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'updatePassword' })).toBeNull();
   });
 
   it('sends an expired session to sign-in instead of toasting', async () => {

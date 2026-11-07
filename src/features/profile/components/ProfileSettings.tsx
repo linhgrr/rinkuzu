@@ -14,7 +14,6 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ProfileSettingsPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorToast } from '@/lib/api/use-api-error';
-import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
 import { AVATAR_ALLOWED_MEDIA_TYPES, AVATAR_MAX_FILE_SIZE } from '@/shared/constants/avatar';
 import {
   changeProfilePassword,
@@ -31,16 +30,21 @@ import {
   QuickAccessCard,
 } from '@/features/profile/components/ProfileControlCenter';
 import type { ProfileTab } from '@/features/profile/lib/profile-tabs';
+import {
+  GooglePasswordCard,
+  PasswordSection,
+  firstInvalidPasswordField,
+  validatePasswordChange,
+  type PasswordField,
+  type PasswordFieldErrors,
+} from '@/features/profile/components/ProfileSecuritySection';
 import { MarketingPreferencesPage } from '@/features/communications/components/MarketingPreferencesPage';
 import {
   HiOutlineUser,
-  HiOutlineLockClosed,
   HiOutlinePhotograph,
   HiOutlineMail,
   HiOutlineShieldCheck,
   HiOutlineSparkles,
-  HiOutlineEye,
-  HiOutlineEyeOff,
   HiOutlineTrash,
 } from 'react-icons/hi';
 
@@ -53,6 +57,7 @@ interface ProfileSettingsState {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+  passwordErrors: PasswordFieldErrors;
   showNewPassword: boolean;
   savingPassword: boolean;
   uploadingAvatar: boolean;
@@ -77,20 +82,6 @@ interface PersonalInfoSectionProps {
   uploadingAvatar: boolean;
 }
 
-interface PasswordSectionProps {
-  confirmPassword: string;
-  currentPassword: string;
-  newPassword: string;
-  onConfirmPasswordChange: (value: string) => void;
-  onCurrentPasswordChange: (value: string) => void;
-  onNewPasswordChange: (value: string) => void;
-  onSavePassword: () => void;
-  onTogglePasswordVisibility: () => void;
-  savingPassword: boolean;
-  showNewPassword: boolean;
-  t: ProfileSettingsTranslate;
-}
-
 interface AccountSectionProps {
   profile: ProfileSettingsViewModel;
   t: ProfileSettingsTranslate;
@@ -104,11 +95,9 @@ type ProfileSettingsAction =
   | { type: 'profile:save:start' }
   | { type: 'profile:save:success'; profile: ProfileSettingsViewModel }
   | { type: 'profile:save:finish' }
-  | {
-      type: 'password:setField';
-      field: 'currentPassword' | 'newPassword' | 'confirmPassword';
-      value: string;
-    }
+  | { type: 'password:setField'; field: PasswordField; value: string }
+  | { type: 'password:invalid'; errors: PasswordFieldErrors }
+  | { type: 'password:notSet' }
   | { type: 'password:toggleVisibility' }
   | { type: 'password:save:start' }
   | { type: 'password:save:success' }
@@ -128,6 +117,7 @@ const initialState: ProfileSettingsState = {
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
+  passwordErrors: {},
   showNewPassword: false,
   savingPassword: false,
   uploadingAvatar: false,
@@ -167,8 +157,24 @@ function profileSettingsReducer(
       };
     case 'profile:save:finish':
       return { ...state, savingProfile: false };
-    case 'password:setField':
-      return { ...state, [action.field]: action.value };
+    case 'password:setField': {
+      // Editing a field clears the error it showed; the others stay until resubmit.
+      const { [action.field]: _cleared, ...passwordErrors } = state.passwordErrors;
+      return { ...state, [action.field]: action.value, passwordErrors };
+    }
+    case 'password:invalid':
+      return { ...state, savingPassword: false, passwordErrors: action.errors };
+    case 'password:notSet':
+      // The server says there is no password (Google sign-in): swap the form for the info card.
+      return {
+        ...state,
+        profile: state.profile ? { ...state.profile, hasPassword: false } : state.profile,
+        savingPassword: false,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        passwordErrors: {},
+      };
     case 'password:toggleVisibility':
       return { ...state, showNewPassword: !state.showNewPassword };
     case 'password:save:start':
@@ -180,6 +186,7 @@ function profileSettingsReducer(
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
+        passwordErrors: {},
       };
     case 'password:save:finish':
       return { ...state, savingPassword: false };
@@ -327,91 +334,6 @@ function PersonalInfoSection({
   );
 }
 
-function PasswordSection({
-  confirmPassword,
-  currentPassword,
-  newPassword,
-  onConfirmPasswordChange,
-  onCurrentPasswordChange,
-  onNewPasswordChange,
-  onSavePassword,
-  onTogglePasswordVisibility,
-  savingPassword,
-  showNewPassword,
-  t,
-}: PasswordSectionProps) {
-  return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
-        <div className="flex items-center gap-2">
-          <HiOutlineLockClosed className="size-5 text-brand-trust" />
-          <h2 className="text-lg font-semibold text-neutral-900">{t('changePassword')}</h2>
-        </div>
-      </div>
-      <div className="space-y-4 p-6">
-        <Input
-          label={t('currentPassword')}
-          type="password"
-          value={currentPassword}
-          onChange={(event) => onCurrentPasswordChange(event.target.value)}
-          placeholder={t('currentPasswordPlaceholder')}
-          autoComplete="current-password"
-          icon={<HiOutlineLockClosed className="size-full" />}
-          iconPosition="left"
-        />
-
-        <Input
-          label={t('newPassword')}
-          type={showNewPassword ? 'text' : 'password'}
-          value={newPassword}
-          onChange={(event) => onNewPasswordChange(event.target.value)}
-          placeholder={t('newPasswordPlaceholder')}
-          autoComplete="new-password"
-          icon={<HiOutlineLockClosed className="size-full" />}
-          {...(newPassword.length > 0 && newPassword.length < PASSWORD_MIN_LENGTH
-            ? { error: t('passwordMinLength') }
-            : {})}
-        />
-        <button
-          type="button"
-          onClick={onTogglePasswordVisibility}
-          className="-mt-2 flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700"
-        >
-          {showNewPassword ? (
-            <HiOutlineEyeOff className="size-3.5" />
-          ) : (
-            <HiOutlineEye className="size-3.5" />
-          )}
-          {showNewPassword ? t('hidePassword') : t('showPassword')}
-        </button>
-
-        <Input
-          label={t('confirmNewPassword')}
-          type="password"
-          value={confirmPassword}
-          onChange={(event) => onConfirmPasswordChange(event.target.value)}
-          placeholder={t('confirmNewPasswordPlaceholder')}
-          autoComplete="new-password"
-          icon={<HiOutlineLockClosed className="size-full" />}
-          {...(confirmPassword.length > 0 && confirmPassword !== newPassword
-            ? { error: t('passwordsDoNotMatch') }
-            : {})}
-        />
-
-        <div className="flex justify-end pt-2">
-          <Button
-            type="button"
-            onClick={onSavePassword}
-            disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
-          >
-            {savingPassword ? t('saving') : t('updatePassword')}
-          </Button>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 function AccountSection({ profile, t }: AccountSectionProps) {
   return (
     <Card className="overflow-hidden">
@@ -456,6 +378,14 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentPasswordRef = useRef<HTMLInputElement>(null);
+  const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+  const passwordFieldRefs = {
+    currentPassword: currentPasswordRef,
+    newPassword: newPasswordRef,
+    confirmPassword: confirmPasswordRef,
+  };
   const [state, dispatch] = useReducer(profileSettingsReducer, initialState);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
   const [syncedInitialTab, setSyncedInitialTab] = useState<ProfileTab>(initialTab);
@@ -537,14 +467,20 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     }
   };
 
-  const handleChangePassword = async () => {
-    if (state.newPassword !== state.confirmPassword) {
-      toast.error(t('passwordsDoNotMatch'));
-      return;
-    }
+  const rejectPassword = (errors: PasswordFieldErrors) => {
+    dispatch({ type: 'password:invalid', errors });
+    const field = firstInvalidPasswordField(errors);
+    if (field) passwordFieldRefs[field].current?.focus();
+  };
 
-    if (state.newPassword.length < PASSWORD_MIN_LENGTH) {
-      toast.error(t('passwordMinLength'));
+  const handleChangePassword = async () => {
+    const invalid = validatePasswordChange({
+      currentPassword: state.currentPassword,
+      newPassword: state.newPassword,
+      confirmPassword: state.confirmPassword,
+    });
+    if (firstInvalidPasswordField(invalid)) {
+      rejectPassword(invalid);
       return;
     }
 
@@ -558,18 +494,19 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       dispatch({ type: 'password:save:success' });
       toast.success(t('passwordChanged'));
     } catch (error: unknown) {
-      dispatch({ type: 'password:save:finish' });
       // The server text stays hidden. `password_not_set` is an account with no password
       // (Google sign-in). Otherwise a 400 naming no field is a wrong current password;
       // one naming `newPassword` (too short, same as the current one) is about the new one.
+      // Those show inline on their field (RIN-1017); network and server errors still toast.
       const described = describeApiError(error);
       if (described.code === 'password_not_set') {
-        toast.error(t('passwordNotSet'));
+        dispatch({ type: 'password:notSet' });
       } else if (described.kind === 'validation' && described.fieldErrors.includes('newPassword')) {
-        toast.error(t('newPasswordRejected'));
+        rejectPassword({ newPassword: 'newPasswordRejected' });
       } else if (described.kind === 'validation' && described.fieldErrors.length === 0) {
-        toast.error(t('currentPasswordIncorrect'));
+        rejectPassword({ currentPassword: 'currentPasswordIncorrect' });
       } else {
+        dispatch({ type: 'password:save:finish' });
         showMutationError(error);
       }
     }
@@ -693,25 +630,27 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
 
         {activeTab === 'security' ? (
           <div className="max-w-2xl">
-            <PasswordSection
-              confirmPassword={state.confirmPassword}
-              currentPassword={state.currentPassword}
-              newPassword={state.newPassword}
-              onConfirmPasswordChange={(value) =>
-                dispatch({ type: 'password:setField', field: 'confirmPassword', value })
-              }
-              onCurrentPasswordChange={(value) =>
-                dispatch({ type: 'password:setField', field: 'currentPassword', value })
-              }
-              onNewPasswordChange={(value) =>
-                dispatch({ type: 'password:setField', field: 'newPassword', value })
-              }
-              onSavePassword={handleChangePassword}
-              onTogglePasswordVisibility={() => dispatch({ type: 'password:toggleVisibility' })}
-              savingPassword={state.savingPassword}
-              showNewPassword={state.showNewPassword}
-              t={t}
-            />
+            {state.profile.hasPassword === false ? (
+              <GooglePasswordCard t={t} />
+            ) : (
+              <PasswordSection
+                errors={state.passwordErrors}
+                fieldRefs={passwordFieldRefs}
+                onFieldChange={(field, value) =>
+                  dispatch({ type: 'password:setField', field, value })
+                }
+                onSavePassword={handleChangePassword}
+                onTogglePasswordVisibility={() => dispatch({ type: 'password:toggleVisibility' })}
+                savingPassword={state.savingPassword}
+                showNewPassword={state.showNewPassword}
+                t={t}
+                values={{
+                  currentPassword: state.currentPassword,
+                  newPassword: state.newPassword,
+                  confirmPassword: state.confirmPassword,
+                }}
+              />
+            )}
           </div>
         ) : null}
 

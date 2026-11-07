@@ -82,6 +82,7 @@ export default async function QuizPlayerPage({
           slug={slug}
           title={premiumMetadata.title}
           questionCount={premiumMetadata.questionCount}
+          entry={firstValue(query['entry'])}
           {...description}
         />
       );

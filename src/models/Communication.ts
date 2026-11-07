@@ -283,6 +283,8 @@ interface EmailOutboxDocument extends Document {
   /** Activation nudge (RIN-999): what enqueued it and the locale it renders in. */
   trigger?: '24h' | 'backfill' | null;
   locale?: string | null;
+  /** First tracked CTA click of an activation nudge (RIN-1000); set once. */
+  clickedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -607,6 +609,7 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     openedAt: { type: Date, default: null },
     trigger: { type: String, enum: ['24h', 'backfill', null], default: null },
     locale: { type: String, default: null, maxlength: 8 },
+    clickedAt: { type: Date, default: null },
   },
   { timestamps: true, versionKey: false },
 );

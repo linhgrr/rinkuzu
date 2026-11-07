@@ -24,5 +24,7 @@ export type AnalyticsEventName =
   | 'review_email_opt_in'
   /** Server side, once per activation nudge accepted by the provider (RIN-999); props `trigger`, `locale`. */
   | 'activation_email_sent'
+  /** Server side, first tracked CTA click of an activation nudge (RIN-1000); props `locale` only. */
+  | 'activation_email_clicked'
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
   | 'guest_attempt_claimed';

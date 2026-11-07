@@ -188,4 +188,18 @@ export class ActivationNudgeRepository {
       throw error;
     }
   }
+
+  /**
+   * Stamps the first CTA click on the account's nudge row. True only for the
+   * click that set it; later clicks, and accounts without a sent row, are no-ops.
+   * Served by the unique `{dedupeKey}` index.
+   */
+  async recordClick(dedupeKey: string, at: Date): Promise<boolean> {
+    await connectDB();
+    const result = await EmailOutbox.updateOne(
+      { dedupeKey, kind: 'activation_nudge', status: 'completed', clickedAt: null },
+      { $set: { clickedAt: at } },
+    );
+    return result.modifiedCount === 1;
+  }
 }

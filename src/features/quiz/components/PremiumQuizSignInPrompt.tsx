@@ -3,12 +3,15 @@ import { Link } from '@/i18n/navigation';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
+import { TRACKED_QUIZ_ENTRIES } from '@/shared/constants/starter-quiz';
 
 interface PremiumQuizSignInPromptProps {
   slug: string;
   title: string;
   questionCount: number;
   description?: string;
+  /** `?entry=` of the visit; a tracked one survives the sign-in round trip (RIN-1000). */
+  entry?: string | null;
 }
 
 /**
@@ -22,10 +25,14 @@ export function PremiumQuizSignInPrompt({
   title,
   questionCount,
   description,
+  entry,
 }: PremiumQuizSignInPromptProps) {
   const t = useTranslations('quiz');
   // next-intl Link hrefs are locale-unprefixed; the auth forms add the locale.
-  const quizPath = ROUTES.QUIZ.VIEW(slug);
+  const tracked = entry && TRACKED_QUIZ_ENTRIES.includes(entry) ? entry : null;
+  const quizPath = tracked
+    ? `${ROUTES.QUIZ.VIEW(slug)}?entry=${encodeURIComponent(tracked)}`
+    : ROUTES.QUIZ.VIEW(slug);
 
   return (
     <div className="mx-auto max-w-xl px-4 py-16">

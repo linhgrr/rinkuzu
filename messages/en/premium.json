@@ -27,8 +27,10 @@
   "paywall": {
     "quotaTitle": "Keep learning with Rin-chan",
     "quotaDescription": "You have used today's free allowance. Premium raises your limits and unlocks the full curated Quiz Premium catalog.",
+    "quotaDescriptionNoPlans": "You have used today's free allowance. It resets automatically, so you can keep learning with Rin-chan after the reset.",
     "featureTitle": "Unlock this learning feature",
     "featureDescription": "Premium unlocks the full curated Quiz Premium catalog and raises limits across the AI learning tools.",
+    "featureDescriptionNoPlans": "This learning feature is not part of the Free plan, and no plan that includes it is on sale right now.",
     "currentPlan": "Current plan",
     "freeResetNote": "You can keep using other free features. Allowances reset on the schedule shown in your profile.",
     "availablePlans": "Available Premium plans",

@@ -542,6 +542,7 @@
     "suggestSteps": "Walk me through the solution step by step",
     "loadingHistory": "Loading your conversation...",
     "retry": "Try again",
+    "retryMessage": "Retry",
     "errorHistory": "Could not load the conversation. You can still ask a new question.",
     "errorClear": "Could not clear the conversation.",
     "stop": "Stop generating",
@@ -563,7 +564,7 @@
     "errorContextExpired": "This question has changed or expired. Refresh the page and try again.",
     "errorImageUnsupported": "Rin-chan cannot read the image in this question right now. Please try another question.",
     "errorInvalidRequest": "Rin-chan could not understand this request. Please rephrase and try again.",
-    "errorQuota": "You have reached your Ask Rin-chan limit. Choose a plan to continue.",
+    "errorQuota": "You have reached today's Ask Rin-chan limit. Come back after the reset.",
     "errorRateLimited": "You are asking too quickly. Wait a moment and try again.",
     "errorRunFailed": "Rin-chan couldn't finish this answer. Please ask again.",
     "errorInterrupted": "_The response was interrupted before completion. Ask again and Rin-chan can continue._"

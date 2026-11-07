@@ -46,6 +46,7 @@ const THINKING = 'adaptiveLearning.chatbot.thinking';
 const RUN_FAILED = 'adaptiveLearning.chatbot.errorRunFailed';
 const PLACEHOLDER = 'adaptiveLearning.chatbot.placeholder';
 const SEND = 'adaptiveLearning.chatbot.send';
+const RETRY = 'adaptiveLearning.chatbot.retryMessage';
 // The first render in a worker is cold and can take over 1 s under gate contention.
 const SLOW = { timeout: 5_000 };
 
@@ -186,6 +187,55 @@ describe('AskRinPanelContent run states', () => {
 
     expect(await screen.findByText(THINKING, {}, SLOW)).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('resends the same question once when the learner taps Retry after a failed run', async () => {
+    const failed = queueSseRun();
+    await openPanelAndAsk('Why is it 4?');
+    await act(async () => startAssistantMessage(failed, 'run-1'));
+    await act(async () => failRun(failed, 'run-1'));
+    await screen.findByRole('alert', {}, SLOW);
+
+    const retry = queueSseRun();
+    fireEvent.click(await screen.findByRole('button', { name: RETRY }, SLOW));
+    await act(async () => startAssistantMessage(retry, 'run-2'));
+
+    expect(await screen.findByText(THINKING, {}, SLOW)).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: RETRY })).toBeNull();
+    expect(mocks.fetchAskRinAgent).toHaveBeenCalledTimes(2);
+    const body = JSON.parse(String(mocks.fetchAskRinAgent.mock.calls[1]?.[1]?.body)) as {
+      messages: { role: string; content: string }[];
+    };
+    const userMessages = body.messages.filter((message) => message.role === 'user');
+    expect(userMessages.map((message) => message.content)).toEqual(['Why is it 4?']);
+    expect(screen.getAllByText('Why is it 4?', { ignore: 'textarea, script, style' })).toHaveLength(
+      1,
+    );
+  });
+
+  it('offers Retry when the daily limit is reported', async () => {
+    const run = queueSseRun();
+    await openPanelAndAsk('Why is it 4?');
+    await act(async () => {
+      startAssistantMessage(run, 'run-1');
+      run.send({ type: 'TEXT_MESSAGE_END', messageId: 'assistant-run-1' });
+      run.send({ type: 'RUN_ERROR', message: 'limit', code: 'quota_exceeded' });
+      run.close();
+    });
+
+    const alert = await screen.findByRole('alert', {}, SLOW);
+    expect(alert.textContent).toContain('adaptiveLearning.chatbot.errorQuota');
+    expect(await screen.findByRole('button', { name: RETRY }, SLOW)).toBeTruthy();
+  });
+
+  it('offers no Retry while an answer is still streaming', async () => {
+    const run = queueSseRun();
+    await openPanelAndAsk('Why is it 4?');
+    await act(async () => startAssistantMessage(run, 'run-1'));
+    await screen.findByText(THINKING, {}, SLOW);
+
+    expect(screen.queryByRole('button', { name: RETRY })).toBeNull();
   });
 
   it('shows neither the bubble nor an error after the learner stops the answer', async () => {

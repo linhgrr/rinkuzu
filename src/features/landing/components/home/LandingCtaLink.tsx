@@ -4,8 +4,8 @@ import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
-export type LandingCta = 'play_first' | 'upload' | 'register';
-export type LandingCtaPosition = 'hero' | 'bottom';
+type LandingCta = 'play_first' | 'upload' | 'register';
+type LandingCtaPosition = 'hero' | 'bottom';
 
 interface LandingCtaLinkProps {
   href: string;

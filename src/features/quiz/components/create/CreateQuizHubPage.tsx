@@ -178,20 +178,25 @@ export function CreateQuizHubPage() {
               </Button>
             </div>
           ) : drafts?.length ? (
-            <div className="mt-5 grid gap-3">
+            <div data-testid="quiz-drafts-list" className="mt-5 grid grid-cols-1 gap-3">
               {drafts.map((draft) => {
                 const canContinue = !['queued', 'processing'].includes(draft.status);
                 return (
                   <Card key={draft.id} className="border-line bg-white p-0 shadow-none">
                     <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0 sm:flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
                           {draft.sourceType === 'manual' ? (
                             <HiOutlinePencilAlt className="size-5 shrink-0 text-brand-trust" />
                           ) : (
                             <HiOutlineDocumentText className="size-5 shrink-0 text-neutral-600" />
                           )}
-                          <h3 className="truncate font-semibold text-neutral-950">{draft.title}</h3>
+                          <h3
+                            title={draft.title}
+                            className="line-clamp-2 min-w-0 break-words font-semibold text-neutral-950 sm:line-clamp-1"
+                          >
+                            {draft.title}
+                          </h3>
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
                           <span>{t(`draftStatus.${draft.status}`)}</span>

@@ -188,6 +188,8 @@ test.describe('support centre', () => {
       );
 
       await page.setViewportSize({ width: 375, height: 812 });
+      await page.reload();
+      await expect(main.getByRole('heading', { level: 1 })).toHaveText(SUBJECT);
       await expectNoHorizontalOverflow(page);
 
       const back = main.getByRole('link', { name: 'Back to requests' });
@@ -197,6 +199,21 @@ test.describe('support centre', () => {
       await expect(page).toHaveURL(/\/en\/support$/);
       await expect(main.getByRole('heading', { level: 1 })).toHaveText('Support');
       await expectNoHorizontalOverflow(page);
+
+      // The same pages in Vietnamese show Vietnamese UI copy, including the picker and errors.
+      await page.goto('/vi/support');
+      await expect(main.getByRole('heading', { level: 1 })).toHaveText('Hỗ trợ');
+      await expect(main.getByRole('button', { name: 'Thêm ảnh' })).toBeVisible();
+      await main.getByRole('button', { name: 'Gửi yêu cầu' }).click();
+      await expect(main.getByRole('textbox', { name: 'Tiêu đề' })).toHaveAccessibleDescription(
+        'Nhập tiêu đề từ 4 ký tự trở lên.',
+      );
+      await page.goto(`/vi/support/${learner.ticketId.toHexString()}`);
+      await expect(main.getByRole('link', { name: 'Quay lại danh sách yêu cầu' })).toBeVisible();
+      const viHistory = main.getByRole('list', { name: 'Lịch sử trao đổi' });
+      await expect(viHistory.getByRole('listitem').first()).toContainText('Bạn');
+      await expect(viHistory.getByRole('listitem').last()).toContainText('Hỗ trợ Rinkuzu');
+      await expect(main.getByText('Đã xử lý', { exact: true })).toBeVisible();
     });
   });
 });

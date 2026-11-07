@@ -172,10 +172,10 @@ describe('toDashboardViewModel', () => {
 
   describe('starter quizzes', () => {
     const starterQuizzes = [
-      { slug: 'fake-vi-1', title: 'Fake VI 1', questionCount: 10, locale: 'vi' },
-      { slug: 'fake-en-1', title: 'Fake EN 1', questionCount: 8, locale: 'en' },
-      { slug: 'fake-vi-2', title: 'Fake VI 2', questionCount: 12, locale: 'vi' },
-      { slug: 'fake-en-2', title: 'Fake EN 2', questionCount: 5, locale: 'en' },
+      { slug: 'fake-vi-1', title: 'Fake VI 1', questionCount: 10, locale: 'vi', quick: false },
+      { slug: 'fake-en-1', title: 'Fake EN 1', questionCount: 8, locale: 'en', quick: false },
+      { slug: 'fake-vi-2', title: 'Fake VI 2', questionCount: 12, locale: 'vi', quick: false },
+      { slug: 'fake-en-2', title: 'Fake EN 2', questionCount: 5, locale: 'en', quick: false },
     ];
 
     function build(input: {
@@ -235,6 +235,20 @@ describe('toDashboardViewModel', () => {
 
       expect(viewModel.starter).toBeNull();
       expect(viewModel.heroCtaHref).toBe('/adaptive');
+    });
+
+    it('links a quick starter to its quick round', () => {
+      const viewModel = build({
+        isNewLearner: true,
+        locale: 'en',
+        starters: [
+          { slug: 'fake-long', title: 'Long', questionCount: 10, locale: 'en', quick: true },
+        ],
+      });
+
+      expect(viewModel.starter?.primary.href).toBe('/quiz/fake-long?mode=quick');
+      expect(viewModel.starter?.primary.questionCount).toBe(10);
+      expect(viewModel.heroCtaHref).toBe('/quiz/fake-long?mode=quick');
     });
 
     it('keeps the hero on /adaptive when every starter was dropped', () => {

@@ -3,7 +3,6 @@ import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { createE2EUserEmail } from './support/fixture-identifiers';
-import { STARTER_QUIZ_ALLOWLIST } from '../../src/services/dashboard/starter-quizzes';
 import { skipPostSignInStarter } from './support/post-signin';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
@@ -148,14 +147,16 @@ const E2E_STARTER_QUIZ = {
   authorEmail: 'e2e-starter-author@example.com',
   question: 'Which option opens the starter quiz?',
   title: 'E2E Starter Quiz',
+  /** The English seed row of scripts/migrate-starter-quizzes.mjs (RIN-1181). */
+  slug: 'how-to-remember-what-you-study-7-question-starter-quiz-093947',
 } as const;
 
 // The specs run on /en, where the dashboard, /start and the activation email
 // all pick the English starter once it exists. Seeding another one would make
-// the pick depend on which spec ran first (RIN-1000).
+// the pick depend on which spec ran first (RIN-1000). Starters live in the
+// `starterquizzes` collection, keyed on the quiz id (RIN-1181).
 async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
-  const slug = STARTER_QUIZ_ALLOWLIST.find((entry) => entry.locale === 'en')?.slug;
-  if (!slug) throw new Error('Starter quiz allowlist has no English starter');
+  const slug = E2E_STARTER_QUIZ.slug;
   await db.collection('users').updateOne(
     { _id: E2E_STARTER_QUIZ.author },
     {
@@ -190,6 +191,18 @@ async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
         updatedAt: now,
         visibility: 'public',
       },
+    },
+    { upsert: true },
+  );
+  const quiz = await db
+    .collection<{ _id: ObjectId }>('quizzes')
+    .findOne({ slug }, { projection: { _id: 1 } });
+  if (!quiz) throw new Error('E2E starter quiz was not seeded');
+  await db.collection('starterquizzes').updateOne(
+    { quiz: quiz._id },
+    {
+      $setOnInsert: { createdAt: now, locale: 'en', order: 2, quiz: quiz._id },
+      $set: { updatedAt: now },
     },
     { upsert: true },
   );

@@ -41,6 +41,7 @@ import PremiumPlaySession from '@/models/PremiumPlaySession';
 import PremiumQuizAccessGrant from '@/models/PremiumQuizAccessGrant';
 import PremiumQuizSubmission from '@/models/PremiumQuizSubmission';
 import Report from '@/models/Report';
+import StarterQuiz from '@/models/StarterQuiz';
 import User from '@/models/User';
 import UserProgress from '@/models/UserProgress';
 
@@ -77,6 +78,7 @@ const MODELS = {
   quizzes: Quiz,
   quizprogresses: QuizProgress,
   reports: Report,
+  starterquizzes: StarterQuiz,
   users: User,
   userprogresses: UserProgress,
 };

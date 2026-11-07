@@ -1,15 +1,13 @@
-import type { IDashboardRepository } from '@/interfaces/repositories/IDashboardRepository';
+import type { IStarterQuizReadRepository } from '@/interfaces/repositories/IStarterQuizReadRepository';
 import type { AttemptOwnerIdentity } from '@/interfaces/repositories/IAttemptRepository';
 import { logger } from '@/lib/logger';
-import {
-  STARTER_QUIZ_ALLOWLIST,
-  resolveStarterQuizzes,
-  type StarterQuizAllowlistEntry,
-} from '@/services/dashboard/starter-quizzes';
+import { loadStarterQuizzes } from '@/services/dashboard/starter-quizzes';
 
 export interface NextQuizDto {
   slug: string;
   title: string;
+  /** A long starter: the link opens its quick round (`?mode=quick`, RIN-1177). */
+  quick: boolean;
 }
 
 export interface AttemptedQuizSlugLookup {
@@ -24,34 +22,32 @@ export interface NextQuizRequest {
 }
 
 /**
- * Picks the next quiz for the result page (RIN-914): the first allowlisted starter quiz in the
- * learner's locale that is still public, short and free, and that they have not attempted.
- * Fails open to `null`: the result page must render even when this lookup breaks.
+ * Picks the next quiz for the result page (RIN-914): the first eligible starter quiz in the
+ * learner's locale that they have not attempted. Fails open to `null`: the result page must
+ * render even when this lookup breaks.
  */
 export class NextQuizResolver {
   constructor(
-    private readonly candidates: Pick<IDashboardRepository, 'findStarterQuizCandidates'>,
+    private readonly starters: IStarterQuizReadRepository,
     private readonly attempts: AttemptedQuizSlugLookup,
-    private readonly allowlist: readonly StarterQuizAllowlistEntry[] = STARTER_QUIZ_ALLOWLIST,
   ) {}
 
   async resolve({ owner, currentSlug, locale }: NextQuizRequest): Promise<NextQuizDto | null> {
-    const entries = this.allowlist.filter(
-      (entry) => entry.slug !== currentSlug && (locale === undefined || entry.locale === locale),
-    );
-    if (entries.length === 0) return null;
-
     try {
-      const slugs = entries.map(({ slug }) => slug);
-      const [candidates, attempted] = await Promise.all([
-        this.candidates.findStarterQuizCandidates(slugs),
-        this.attempts.findAttemptedQuizSlugs(owner, slugs),
-      ]);
-      const attemptedSlugs = new Set(attempted);
-      const next = resolveStarterQuizzes({ allowlist: entries, candidates }).starterQuizzes.find(
-        (quiz) => !attemptedSlugs.has(quiz.slug),
+      const { starterQuizzes } = await loadStarterQuizzes(this.starters);
+      const options = starterQuizzes.filter(
+        (quiz) => quiz.slug !== currentSlug && (locale === undefined || quiz.locale === locale),
       );
-      return next ? { slug: next.slug, title: next.title } : null;
+      if (options.length === 0) return null;
+
+      const attempted = new Set(
+        await this.attempts.findAttemptedQuizSlugs(
+          owner,
+          options.map(({ slug }) => slug),
+        ),
+      );
+      const next = options.find((quiz) => !attempted.has(quiz.slug));
+      return next ? { slug: next.slug, title: next.title, quick: next.quick } : null;
     } catch (error) {
       logger.warn({ error }, 'Failed resolving next quiz for result page');
       return null;

@@ -116,12 +116,12 @@ describe('activation nudge first name and CTA', () => {
   });
 
   it('points at the locale-matched starter quiz with the entry and UTM params', () => {
-    const allowlist = [
-      { slug: 'vi-starter', locale: 'vi' },
-      { slug: 'en-starter', locale: 'en' },
+    const starters = [
+      { slug: 'vi-starter', locale: 'vi', quick: false },
+      { slug: 'en-starter', locale: 'en', quick: false },
     ];
     const en = new URL(
-      activationNudgeCtaUrl({ siteUrl: 'https://www.rinkuzu.app', locale: 'en', allowlist }),
+      activationNudgeCtaUrl({ siteUrl: 'https://www.rinkuzu.app', locale: 'en', starters }),
     );
     expect(en.pathname).toBe('/en/quiz/en-starter');
     expect(Object.fromEntries(en.searchParams)).toEqual({
@@ -130,8 +130,27 @@ describe('activation nudge first name and CTA', () => {
       utm_campaign: 'activation_nudge',
     });
     expect(
-      activationNudgeCtaUrl({ siteUrl: 'https://www.rinkuzu.app', locale: 'vi', allowlist }),
+      activationNudgeCtaUrl({ siteUrl: 'https://www.rinkuzu.app', locale: 'vi', starters }),
     ).toContain('/vi/quiz/vi-starter?entry=activation_email');
+  });
+
+  it('opens a long starter as a quick round and falls back to the dashboard with no starter', () => {
+    const quick = new URL(
+      activationNudgeCtaUrl({
+        siteUrl: 'https://www.rinkuzu.app',
+        locale: 'en',
+        starters: [{ slug: 'long-starter', locale: 'en', quick: true }],
+      }),
+    );
+    expect(quick.pathname).toBe('/en/quiz/long-starter');
+    expect(quick.searchParams.get('mode')).toBe('quick');
+    expect(quick.searchParams.get('entry')).toBe('activation_email');
+
+    const none = new URL(
+      activationNudgeCtaUrl({ siteUrl: 'https://www.rinkuzu.app', locale: 'vi', starters: [] }),
+    );
+    expect(none.pathname).toBe('/vi/dashboard');
+    expect(none.searchParams.has('mode')).toBe(false);
   });
 });
 

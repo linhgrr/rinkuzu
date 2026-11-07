@@ -26,7 +26,7 @@ interface ResultActionsProps {
   attemptId: string;
   slug: string;
   missedCount: number;
-  nextQuiz: { slug: string; title: string } | null;
+  nextQuiz: { slug: string; title: string; quick?: boolean } | null;
   viewer: ResultViewer;
   contentLocked: boolean;
   /** Result of a quick round (RIN-933): "Another 10" and "Full quiz" replace the redo link. */
@@ -89,7 +89,7 @@ export function ResultActions({
   } else if (primary === 'another' && nextQuiz) {
     primaryNode = (
       <Link
-        href={`/quiz/${routePathSegment(nextQuiz.slug)}`}
+        href={`/quiz/${routePathSegment(nextQuiz.slug)}${nextQuiz.quick ? '?mode=quick' : ''}`}
         className={PRIMARY_LINK}
         onClick={() => captureAnalyticsEvent('try_another_quiz_clicked', analytics)}
       >

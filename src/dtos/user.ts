@@ -84,7 +84,7 @@ export interface AttemptDetailDto {
   /** Questions answered wrong or left blank in this attempt. */
   missedCount: number;
   /** Next allowlisted starter quiz in the learner's locale they have not attempted, or null. */
-  nextQuiz: { slug: string; title: string } | null;
+  nextQuiz: { slug: string; title: string; quick?: boolean } | null;
   /** Retry-missed attempt only: the source attempt id. */
   retryOfAttemptId?: string;
   /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */

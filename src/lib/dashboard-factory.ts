@@ -6,7 +6,12 @@ import { DashboardRepository } from '@/repositories/DashboardRepository';
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { DashboardService } from '@/services/dashboard/DashboardService';
 
-const dashboardService = new DashboardService(new DashboardRepository(), new QuizRepository());
+const dashboardRepository = new DashboardRepository();
+const dashboardService = new DashboardService(
+  dashboardRepository,
+  new QuizRepository(),
+  dashboardRepository,
+);
 
 export const getDashboardBootstrapData = cache(
   async (userId: string): Promise<DashboardBootstrapDto> =>

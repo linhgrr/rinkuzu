@@ -23,7 +23,7 @@ function metadataFor(locale: string) {
 describe('draft layout metadata', () => {
   it('uses a page-specific, localised title', async () => {
     expect((await metadataFor('en')).title).toBe('Edit draft quiz | RinKuzu');
-    expect((await metadataFor('vi')).title).toBe('Chỉnh sửa bản nháp quiz | RinKuzu');
+    expect((await metadataFor('vi')).title).toBe('Chỉnh sửa quiz nháp | RinKuzu');
   });
 
   it('keeps the private page out of the index', async () => {

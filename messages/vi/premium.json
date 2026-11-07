@@ -27,8 +27,10 @@
   "paywall": {
     "quotaTitle": "Tiếp tục học cùng Rin-chan",
     "quotaDescription": "Bạn đã dùng hết lượt miễn phí hôm nay. Premium tăng hạn mức và mở khóa toàn bộ kho Quiz Premium tuyển chọn.",
+    "quotaDescriptionNoPlans": "Bạn đã dùng hết lượt miễn phí hôm nay. Hạn mức sẽ tự làm mới, sau đó bạn có thể tiếp tục học cùng Rin-chan.",
     "featureTitle": "Mở khóa phần học này",
     "featureDescription": "Premium mở khóa toàn bộ kho Quiz Premium tuyển chọn và tăng hạn mức cho các công cụ AI.",
+    "featureDescriptionNoPlans": "Phần học này không nằm trong gói Miễn phí và hiện chưa có gói nào bao gồm nó đang mở bán.",
     "currentPlan": "Gói hiện tại",
     "freeResetNote": "Bạn vẫn có thể tiếp tục dùng các tính năng miễn phí khác. Hạn mức sẽ tự làm mới theo chu kỳ hiển thị trong hồ sơ.",
     "availablePlans": "Các gói Premium đang mở bán",

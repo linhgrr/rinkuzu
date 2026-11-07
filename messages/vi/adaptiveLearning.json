@@ -542,6 +542,7 @@
     "suggestSteps": "Hướng dẫn mình giải từng bước",
     "loadingHistory": "Đang tải cuộc trò chuyện...",
     "retry": "Thử lại",
+    "retryMessage": "Thử lại",
     "errorHistory": "Không tải được lịch sử. Bạn vẫn có thể hỏi câu mới.",
     "errorClear": "Không thể xóa cuộc trò chuyện.",
     "stop": "Dừng trả lời",
@@ -563,7 +564,7 @@
     "errorContextExpired": "Câu hỏi này đã thay đổi hoặc hết hạn. Hãy tải lại trang rồi thử lại.",
     "errorImageUnsupported": "Rin-chan chưa thể đọc hình trong câu hỏi này. Bạn hãy thử một câu khác nhé.",
     "errorInvalidRequest": "Rin-chan chưa hiểu yêu cầu này. Bạn hãy diễn đạt lại rồi thử nhé.",
-    "errorQuota": "Bạn đã dùng hết lượt Ask Rin-chan. Hãy chọn gói phù hợp để tiếp tục.",
+    "errorQuota": "Bạn đã dùng hết lượt Ask Rin-chan hôm nay. Hãy quay lại sau khi hạn mức được làm mới.",
     "errorRateLimited": "Bạn đang hỏi hơi nhanh. Hãy chờ một chút rồi thử lại nhé.",
     "errorRunFailed": "Rin-chan chưa trả lời xong. Bạn hãy hỏi lại nhé.",
     "errorInterrupted": "_Phản hồi bị gián đoạn trước khi hoàn tất. Bạn có thể hỏi lại để Rin-chan tiếp tục._"

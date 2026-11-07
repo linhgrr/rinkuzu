@@ -1013,7 +1013,8 @@ export function AdminUsersPageClient() {
             <UsersResultsInfo
               users={users}
               pagination={pagination}
-              searchTerm={state.searchTerm}
+              // Stale rows after a failed refetch came from the previous query, not this term.
+              searchTerm={usersError ? '' : state.searchTerm}
               t={t}
             />
 

@@ -36,21 +36,31 @@ function fulfillServerError(route: Route): Promise<void> {
   });
 }
 
-/** The first list GET fails; later ones wait for `release()`, then reach the real API. */
-async function failThenHold(page: Page, api: string): Promise<{ release: () => void }> {
+/**
+ * List GETs fail until `hold()`; after that they wait for `release()`, then reach the real
+ * API. Modes, not a hit count: a dev build runs each load effect twice.
+ */
+async function failThenHold(
+  page: Page,
+  api: string,
+): Promise<{ hold: () => void; release: () => void }> {
   let release: () => void = () => undefined;
   const released = new Promise<void>((done) => {
     release = done;
   });
-  let hits = 0;
+  let holding = false;
   await page.route(new RegExp(`${api}(\\?|$)`), async (route) => {
     if (route.request().method() !== 'GET') return route.fallback();
-    hits += 1;
-    if (hits === 1) return fulfillServerError(route);
+    if (!holding) return fulfillServerError(route);
     await released;
     return route.fallback();
   });
-  return { release };
+  return {
+    hold: () => {
+      holding = true;
+    },
+    release,
+  };
 }
 
 /** ErrorState is the alert that holds a button; the route announcer is an alert too. */
@@ -69,7 +79,7 @@ test.describe('admin list Retry', () => {
       test.setTimeout(60_000);
       await withAccounts(testInfo, async ({ admin }) => {
         await login(page, admin);
-        const { release } = await failThenHold(page, list.api);
+        const { hold, release } = await failThenHold(page, list.api);
         await page.goto(list.path);
 
         const alert = errorState(page);
@@ -80,6 +90,7 @@ test.describe('admin list Retry', () => {
         // The pending button hides its label, so hold the button itself, not its name.
         const retry = alert.locator('button').first();
         await expect(retry).toHaveText('Retry');
+        hold();
         await retry.click();
 
         await expect(alert).toHaveAttribute('aria-busy', 'true');

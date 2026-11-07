@@ -372,6 +372,9 @@ describe('AdminUsersPageClient load failure (RIN-1158)', () => {
     expect(within(rowOf(learner.email)).getByText(learner.email)).toBeInTheDocument();
     expect(screen.getByText('totalUsers')).toBeInTheDocument();
     expect(screen.queryByText('internal detail')).not.toBeInTheDocument();
+    // The stale rows are not results for the new search term.
+    await user.type(screen.getByPlaceholderText('searchUsers'), 'learner{Enter}');
+    expect(screen.queryByText('matching')).not.toBeInTheDocument();
 
     await user.click(within(alert).getByRole('button', { name: 'common.retry' }));
 

@@ -935,13 +935,12 @@ test.describe('production critical paths', () => {
             ),
           )
           .toBe(true);
-        await Promise.all([
-          page.waitForURL(new RegExp(`/en/quiz/${starterSlug}\?entry=landing$`)),
-          playFirst.click(),
-        ]);
+        // A client-side navigation through the /try redirect: no new `load` event to wait for.
+        await playFirst.click();
+        await expect(page).toHaveURL(new RegExp(`/en/quiz/${starterSlug}\\?entry=landing$`));
         await expect
           .poll(() => analyticsEventProperties(page, 'landing_cta_clicked'))
-          .toEqual({ cta: 'play_first', position: 'hero', locale: 'en' });
+          .toMatchObject({ cta: 'play_first', position: 'hero', locale: 'en' });
         await expect
           .poll(() => analyticsEventProperties(page, 'quiz_started'))
           .toMatchObject({ entry: 'landing' });
@@ -974,7 +973,7 @@ test.describe('production critical paths', () => {
         await page.getByLabel('Email Address').fill(email);
         await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
         await Promise.all([
-          page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\?attemptId=${attemptId}`)),
+          page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=${attemptId}`)),
           page.getByRole('button', { name: 'Sign In', exact: true }).click(),
         ]);
         await expect

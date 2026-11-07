@@ -470,15 +470,18 @@ async function recordAnalyticsEvents(page: Page): Promise<void> {
   });
 }
 
-async function quizCompletedProperties(page: Page): Promise<unknown> {
-  return page.evaluate(() => {
+/** Properties of the first recorded `name` event, or null before it fires. */
+async function analyticsEventProperties(page: Page, name: string): Promise<unknown> {
+  return page.evaluate((eventName) => {
     const events: unknown = Reflect.get(window, '__rkEvents');
     if (!Array.isArray(events)) return null;
-    const completed: unknown = events.find(
-      (event: { name?: unknown }) => event.name === 'quiz_completed',
-    );
-    return completed && typeof completed === 'object' ? Reflect.get(completed, 'properties') : null;
-  });
+    const found: unknown = events.find((event: { name?: unknown }) => event.name === eventName);
+    return found && typeof found === 'object' ? Reflect.get(found, 'properties') : null;
+  }, name);
+}
+
+async function quizCompletedProperties(page: Page): Promise<unknown> {
+  return analyticsEventProperties(page, 'quiz_completed');
 }
 
 /**
@@ -906,6 +909,105 @@ test.describe('production critical paths', () => {
       await expect
         .poll(() => quizCompletedProperties(page))
         .toMatchObject({ entry: 'activation_email', authenticated: false, score: 100 });
+    });
+  });
+
+  test('plays the starter from the homepage as a guest and claims it on sign-up @critical-quiz-landing', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1178 AC4/AC5: homepage play-first button -> /try -> starter as a guest -> finish
+    // -> "Create an account" on the save card -> the attempt belongs to the new account.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      const email = `e2e-landing-${randomUUID().slice(0, 12)}@example.com`;
+      let attemptId = '';
+      await recordAnalyticsEvents(page);
+      try {
+        await page.goto('/en');
+        const playFirst = page
+          .getByRole('link', { name: 'Try a 2-minute quiz, no account' })
+          .first();
+        await expect(playFirst).toBeInViewport();
+        await expect
+          .poll(() =>
+            playFirst.evaluate((node) =>
+              Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+            ),
+          )
+          .toBe(true);
+        await Promise.all([
+          page.waitForURL(new RegExp(`/en/quiz/${starterSlug}\?entry=landing$`)),
+          playFirst.click(),
+        ]);
+        await expect
+          .poll(() => analyticsEventProperties(page, 'landing_cta_clicked'))
+          .toEqual({ cta: 'play_first', position: 'hero', locale: 'en' });
+        await expect
+          .poll(() => analyticsEventProperties(page, 'quiz_started'))
+          .toMatchObject({ entry: 'landing' });
+
+        await submitStarterQuiz(page, starterSlug);
+        await expect
+          .poll(() => quizCompletedProperties(page))
+          .toMatchObject({ entry: 'landing', authenticated: false, score: 100 });
+        const resultUrl = new URL(page.url());
+        attemptId = resultUrl.searchParams.get('attemptId') ?? '';
+
+        await page.getByRole('link', { name: 'Create an account' }).first().click();
+        await page.waitForURL(/\/en\/register\?callbackUrl=/);
+        await page.getByLabel('Email Address').fill(email);
+        await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await page.getByLabel('Confirm password').fill(E2E_PASSWORD);
+        await page.getByRole('checkbox').check();
+        await page.getByRole('button', { name: 'Create Account', exact: true }).click();
+        await expect(page.getByText('Check your email')).toBeVisible();
+
+        // Stands in for the verification link in the email.
+        const created = await fixture.db
+          .collection('users')
+          .findOneAndUpdate({ email }, { $set: { emailVerified: new Date() } });
+        const userId = created?.['_id'];
+        expect(userId).toBeInstanceOf(ObjectId);
+
+        const resultPath = `${resultUrl.pathname.replace(/^\/en/, '')}${resultUrl.search}`;
+        await page.goto(`/en/login?callbackUrl=${encodeURIComponent(resultPath)}`);
+        await page.getByLabel('Email Address').fill(email);
+        await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await Promise.all([
+          page.waitForURL(new RegExp(`/en/quiz/${starterSlug}/result\?attemptId=${attemptId}`)),
+          page.getByRole('button', { name: 'Sign In', exact: true }).click(),
+        ]);
+        await expect
+          .poll(async () => {
+            const attempt = await fixture.db
+              .collection('attempts')
+              .findOne({ _id: new ObjectId(attemptId) });
+            return attempt?.['user']?.toString() ?? null;
+          })
+          .toBe(String(userId));
+      } finally {
+        const created = await fixture.db.collection('users').findOne({ email });
+        const ownedAttempts = [
+          ...(ObjectId.isValid(attemptId) ? [{ _id: new ObjectId(attemptId) }] : []),
+          ...(created ? [{ user: created['_id'] }] : []),
+        ];
+        await Promise.all([
+          ownedAttempts.length > 0
+            ? fixture.db.collection('attempts').deleteMany({ $or: ownedAttempts })
+            : Promise.resolve(),
+          fixture.db.collection('auditlogs').deleteMany({ email }),
+          fixture.db.collection('auth_rate_limits').deleteMany({
+            key: {
+              $in: [
+                ...ownedCredentialsRateLimitKeys([email]),
+                ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
+              ],
+            },
+          }),
+          fixture.db.collection('auth_rate_limits').deleteMany({ key: /^auth:register_ip:/ }),
+        ]);
+        await fixture.db.collection('users').deleteMany({ email });
+      }
     });
   });
 

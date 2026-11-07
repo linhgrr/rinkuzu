@@ -27,4 +27,6 @@ export type AnalyticsEventName =
   /** Server side, first tracked CTA click of an activation nudge (RIN-1000); props `locale` only. */
   | 'activation_email_clicked'
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
-  | 'guest_attempt_claimed';
+  | 'guest_attempt_claimed'
+  /** Homepage CTA click (RIN-1178); props only `cta`, `position` and `locale`. */
+  | 'landing_cta_clicked';

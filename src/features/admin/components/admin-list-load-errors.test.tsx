@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { SWRConfig } from 'swr';
@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   archivePromotion: vi.fn(),
   fetchReports: vi.fn(),
   fetchPremium: vi.fn(),
+  fetchQuizzes: vi.fn(),
+  fetchSubscriptions: vi.fn(),
 }));
 
 // Stable `t`: the pages list the error describer as a load-effect dependency.
@@ -49,6 +51,20 @@ vi.mock('@/features/admin/premium-submissions/api/premium-submissions-api', () =
   startPremiumReview: vi.fn(),
 }));
 
+vi.mock('@/features/quiz/components/QuizPreviewModal', () => ({ QuizPreviewModal: () => null }));
+vi.mock('@/features/admin/quizzes/api/admin-quizzes-api', () => ({
+  fetchAdminQuizListViewModel: (...args: unknown[]) => mocks.fetchQuizzes(...args),
+  fetchAdminQuizDetailViewModel: vi.fn(),
+  deleteAdminQuiz: vi.fn(),
+  setAdminQuizVisibility: vi.fn(),
+}));
+vi.mock('@/features/admin/subscriptions/api/admin-subscriptions-api', () => ({
+  fetchAdminSubscriptionsViewModel: (...args: unknown[]) => mocks.fetchSubscriptions(...args),
+  revokeAdminSubscription: vi.fn(),
+}));
+
+import { AdminQuizzesPageClient } from '@/features/admin/quizzes/components/AdminQuizzesPageClient';
+import { AdminSubscriptionsPageClient } from '@/features/admin/subscriptions/components/AdminSubscriptionsPageClient';
 import { AdminPromotionsPageClient } from '@/features/admin/promotions/components/AdminPromotionsPageClient';
 import { AdminReportsPageClient } from '@/features/admin/reports/components/AdminReportsPageClient';
 import { PremiumSubmissionsPageClient } from '@/features/admin/premium-submissions/components/PremiumSubmissionsPageClient';
@@ -88,6 +104,107 @@ function expectLoadError(alert: HTMLElement, body = 'errors.api.server'): void {
   expect(screen.queryByText(/codeLabel|Code:/)).not.toBeInTheDocument();
   expect(screen.queryByText('internal detail')).not.toBeInTheDocument();
 }
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+const emptyPagination = { page: 1, limit: 12, total: 0, totalPages: 0 };
+
+/**
+ * Retry keeps ErrorState up with a pending button until the refetch settles: no skeleton
+ * flash, no stat cards in between (RIN-1166).
+ */
+async function expectPendingRetry(
+  user: ReturnType<typeof userEvent.setup>,
+  absentWhilePending: string,
+): Promise<void> {
+  await user.click(screen.getByRole('button', { name: 'common.retry' }));
+
+  const alert = screen.getByRole('alert');
+  expect(alert).toHaveAttribute('aria-busy', 'true');
+  expect(within(alert).getByRole('button', { name: 'common.retry' })).toBeDisabled();
+  expect(screen.queryByLabelText(/^Loading/)).not.toBeInTheDocument();
+  expect(screen.queryByText(absentWhilePending)).not.toBeInTheDocument();
+}
+
+describe('admin list Retry stays pending until the refetch settles (RIN-1166)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  it('quizzes: no filters in the error state, pending Retry, then the list', async () => {
+    const user = userEvent.setup();
+    const reload = deferred<unknown>();
+    mocks.fetchQuizzes.mockRejectedValueOnce(serverError).mockReturnValueOnce(reload.promise);
+    renderFresh(<AdminQuizzesPageClient />);
+
+    expectLoadError(await screen.findByRole('alert'));
+    expect(screen.queryByPlaceholderText('searchQuizzes')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+
+    await expectPendingRetry(user, 'totalQuizzes');
+
+    reload.resolve({
+      quizzes: [],
+      pagination: { ...emptyPagination, hasNextPage: false, hasPrevPage: false },
+    });
+
+    expect(await screen.findByText('noQuizzesFound')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('searchQuizzes')).toBeInTheDocument();
+  });
+
+  it('quizzes: a Retry that fails again keeps ErrorState and re-enables Retry', async () => {
+    const user = userEvent.setup();
+    mocks.fetchQuizzes.mockRejectedValue(serverError);
+    renderFresh(<AdminQuizzesPageClient />);
+
+    await user.click(await screen.findByRole('button', { name: 'common.retry' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'common.retry' })).toBeEnabled());
+    expect(screen.getByRole('alert')).not.toHaveAttribute('aria-busy');
+    expect(mocks.fetchQuizzes).toHaveBeenCalledTimes(2);
+  });
+
+  it('subscriptions: pending Retry, then the table', async () => {
+    const user = userEvent.setup();
+    const reload = deferred<unknown>();
+    mocks.fetchSubscriptions.mockRejectedValueOnce(serverError).mockReturnValueOnce(reload.promise);
+    renderFresh(<AdminSubscriptionsPageClient />);
+
+    expectLoadError(await screen.findByRole('alert'));
+
+    await expectPendingRetry(user, 'noSubscriptionsFound');
+
+    reload.resolve({ subscriptions: [], pagination: { ...emptyPagination, limit: 10 } });
+
+    expect(await screen.findByText('noSubscriptionsFound')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('reports: pending Retry, then the empty state', async () => {
+    const user = userEvent.setup();
+    const reload = deferred<unknown>();
+    mocks.fetchReports.mockRejectedValueOnce(serverError).mockReturnValueOnce(reload.promise);
+    renderFresh(<AdminReportsPageClient />);
+
+    expectLoadError(await screen.findByRole('alert'));
+
+    await expectPendingRetry(user, 'noReportsTitle');
+    expect(screen.getByRole('heading', { level: 1, name: 'quizReports' })).toBeInTheDocument();
+
+    reload.resolve([]);
+
+    expect(await screen.findByText('noReportsTitle')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
 
 describe('admin lists that used to fail silently (RIN-1159)', () => {
   beforeEach(() => {

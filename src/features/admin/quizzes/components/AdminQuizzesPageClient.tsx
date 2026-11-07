@@ -27,6 +27,7 @@ import {
   fetchAdminQuizListViewModel,
   setAdminQuizVisibility,
 } from '@/features/admin/quizzes/api/admin-quizzes-api';
+import { useReloadSettled } from '@/features/admin/hooks/useReloadSettled';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { ROUTES } from '@/shared/constants/routes';
 import {
@@ -43,7 +44,10 @@ interface State {
   pagination: AdminQuizzesPaginationViewModel;
   loading: boolean;
   error: string;
-  /** A failed list load: replaces the stats and the list with ErrorState and Retry (RIN-1022). */
+  /**
+   * A failed list load: replaces the filters, the stats and the list with ErrorState and Retry
+   * (RIN-1022). Kept while a retry runs, so Retry stays pending with no skeleton flash (RIN-1166).
+   */
   loadError: unknown;
   reloadToken: number;
   searchInput: string;
@@ -160,13 +164,14 @@ export function AdminQuizzesPageClient() {
   const t = useTranslations('admin');
   const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { waitForReload, settleReload } = useReloadSettled();
 
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
 
     async function loadQuizzes() {
-      dispatch({ type: 'patch', value: { loading: true, error: '', loadError: null } });
+      dispatch({ type: 'patch', value: { loading: true, error: '' } });
       try {
         const data = await fetchAdminQuizListViewModel({
           page: state.page,
@@ -182,6 +187,7 @@ export function AdminQuizzesPageClient() {
         if (error instanceof DOMException && error.name === 'AbortError') return;
         dispatch({ type: 'patch', value: { loading: false, loadError: error } });
       }
+      settleReload();
     }
 
     void loadQuizzes();
@@ -190,7 +196,7 @@ export function AdminQuizzesPageClient() {
       cancelled = true;
       controller.abort();
     };
-  }, [state.page, state.appliedSearch, state.visibility, state.reloadToken]);
+  }, [state.page, state.appliedSearch, state.visibility, state.reloadToken, settleReload]);
 
   const pageStats = {
     public: state.quizzes.filter((quiz) => quiz.visibility === 'public').length,
@@ -267,40 +273,45 @@ export function AdminQuizzesPageClient() {
           <h1 className="text-3xl font-semibold text-ink">{t('quizManagement')}</h1>
           <p className="mt-2 text-ink/60">{t('quizManagementDescription')}</p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="min-w-[280px]">
-            <AdminSearchInput
-              value={state.searchInput}
-              onChange={(value) => dispatch({ type: 'patch', value: { searchInput: value } })}
-              placeholder={t('searchQuizzes')}
-              onEnter={applySearch}
-            />
+        {state.loadError ? null : (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="min-w-[280px]">
+              <AdminSearchInput
+                value={state.searchInput}
+                onChange={(value) => dispatch({ type: 'patch', value: { searchInput: value } })}
+                placeholder={t('searchQuizzes')}
+                onEnter={applySearch}
+              />
+            </div>
+            <Select
+              value={state.visibility}
+              aria-label={t('allVisibility')}
+              onChange={(event) =>
+                dispatch({
+                  type: 'patch',
+                  value: {
+                    visibility: event.target.value as AdminQuizVisibilityViewModel,
+                    page: 1,
+                  },
+                })
+              }
+              className="bg-surface"
+            >
+              <option value="all">{t('allVisibility')}</option>
+              <option value="public">{t('publicQuizzes')}</option>
+              <option value="personal">{t('personalQuizzes')}</option>
+            </Select>
           </div>
-          <Select
-            value={state.visibility}
-            aria-label={t('allVisibility')}
-            onChange={(event) =>
-              dispatch({
-                type: 'patch',
-                value: {
-                  visibility: event.target.value as AdminQuizVisibilityViewModel,
-                  page: 1,
-                },
-              })
-            }
-            className="bg-surface"
-          >
-            <option value="all">{t('allVisibility')}</option>
-            <option value="public">{t('publicQuizzes')}</option>
-            <option value="personal">{t('personalQuizzes')}</option>
-          </Select>
-        </div>
+        )}
       </header>
 
       {state.loadError ? (
         <ErrorState
           error={state.loadError}
-          onRetry={() => dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } })}
+          onRetry={() => {
+            dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } });
+            return waitForReload();
+          }}
           className="mt-6"
         />
       ) : (

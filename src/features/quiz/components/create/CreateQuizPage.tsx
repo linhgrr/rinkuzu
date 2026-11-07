@@ -400,9 +400,7 @@ function CreateQuizFormCard({
         className="max-w-2xl mx-auto backdrop-blur-xl border-white/30 shadow-xl"
       >
         <CardHeader className="text-center">
-          <h1 className="text-[24px] font-semibold tracking-[-0.025em] text-neutral-900">
-            {t('uploadPDFDocument')}
-          </h1>
+          <h1 className="text-2xl font-semibold text-ink">{t('uploadPDFDocument')}</h1>
           <CardDescription className="text-base">{t('uploadDescription')}</CardDescription>
         </CardHeader>
 

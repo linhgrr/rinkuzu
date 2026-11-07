@@ -58,6 +58,42 @@ test.describe('create from PDF error states (RIN-991)', () => {
     });
   });
 
+  test('at 375px a non-PDF file keeps its message under the dropzone, not in a toast (RIN-1082)', async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await withAccounts(testInfo, async ({ regular }) => {
+      await login(page, regular);
+      const input = await openReadyDropzone(page);
+      await expect(page).toHaveURL(/\/en\/create\/pdf\/mobile/);
+
+      await input.setInputFiles({
+        name: 'notes.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('plain text notes'),
+      });
+      const alert = page.getByRole('alert').filter({ hasText: enCreate.pdfWrongType });
+      await expect(alert).toBeVisible();
+      await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
+      await expect(alert).toBeInViewport();
+
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
+      expect(overflow).toBeLessThanOrEqual(0);
+
+      await input.setInputFiles({
+        name: 'chapter-1.pdf',
+        mimeType: 'application/pdf',
+        buffer: await singlePagePdf(),
+      });
+      await expect(
+        page.getByRole('button', { name: enCreate.createQuiz, exact: true }),
+      ).toBeVisible();
+      await expect(alert).toHaveCount(0);
+    });
+  });
+
   test('at 375px a failed submit shows its error next to the button, in view and focused', async ({
     page,
   }, testInfo) => {

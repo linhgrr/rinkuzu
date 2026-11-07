@@ -4,7 +4,7 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'sonner';
-import { uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
 import { CreateQuizPage } from './CreateQuizPage';
 import { MobileCreateQuizPage } from './MobileCreateQuizPage';
 
@@ -121,13 +121,36 @@ describe('CreateQuizPage (desktop) file and submit errors', () => {
 });
 
 describe('MobileCreateQuizPage file and submit errors', () => {
-  it('shows the wrong-type message for a non-PDF file', async () => {
+  // RIN-1082: file-level errors were toasts on mobile and vanished after a
+  // few seconds, while desktop kept them in a persistent alert.
+  it('keeps the wrong-type message under the dropzone until the file changes', async () => {
     const { container } = render(<MobileCreateQuizPage />);
 
     pick(container, textFile());
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('pdfWrongType'));
-    expect(toast.error).not.toHaveBeenCalledWith('pdfUnreadable');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('pdfWrongType');
+    expect(container.querySelector('input[type="file"]')?.parentElement?.nextElementSibling).toBe(
+      alert,
+    );
+    expect(toast.error).not.toHaveBeenCalled();
+
+    pick(container, pdfFile());
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+
+  it('shows too-many-pages and unreadable PDFs in the alert, not a toast', async () => {
+    const { container } = render(<MobileCreateQuizPage />);
+
+    vi.mocked(getPdfPageCount).mockResolvedValueOnce(31);
+    pick(container, pdfFile());
+    expect(await screen.findByRole('alert')).toHaveTextContent('pdfTooManyPages');
+
+    vi.mocked(getPdfPageCount).mockRejectedValueOnce(new Error('bad pdf'));
+    pick(container, pdfFile());
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('pdfUnreadable'));
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('shows a failed submit right above the button and focuses it', async () => {
@@ -146,11 +169,17 @@ describe('MobileCreateQuizPage file and submit errors', () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it('has the same single page heading as desktop', () => {
+  it('has the same single page heading as desktop, with the same classes', () => {
+    const { unmount } = render(<CreateQuizPage />);
+    const desktopClass = screen.getByRole('heading', { level: 1 }).className;
+    unmount();
     render(<MobileCreateQuizPage />);
 
     const headings = screen.getAllByRole('heading', { level: 1 });
     expect(headings).toHaveLength(1);
     expect(headings[0]).toHaveTextContent('uploadPDFDocument');
+    // RIN-1082: the app h1 style (profile, checkout, quiz player).
+    expect(headings[0]).toHaveClass('text-2xl', 'font-semibold', 'text-ink');
+    expect(headings[0]?.className).toBe(desktopClass);
   });
 });

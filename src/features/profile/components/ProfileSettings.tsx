@@ -61,6 +61,12 @@ interface ProfileSettingsState {
 
 type ProfileSettingsTranslate = (key: string) => string;
 
+// Below 640px the card itself has no padding, so the section header and body
+// (p-4) are the only inset and inputs span the card. From sm up: unchanged.
+const SECTION_CARD_CLASS = 'overflow-hidden p-0 sm:p-6';
+const SECTION_HEADER_CLASS = 'border-b border-neutral-100 px-4 py-4 sm:px-6 sm:py-5';
+const SECTION_BODY_PADDING = 'p-4 sm:p-6';
+
 interface PersonalInfoSectionProps {
   bio: string;
   displayName: string;
@@ -219,14 +225,14 @@ function PersonalInfoSection({
   uploadingAvatar,
 }: PersonalInfoSectionProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
+    <Card className={SECTION_CARD_CLASS}>
+      <div className={SECTION_HEADER_CLASS}>
         <div className="flex items-center gap-2">
           <HiOutlineUser className="size-5 text-brand-trust" />
           <h2 className="text-lg font-semibold text-neutral-900">{t('personalInfo')}</h2>
         </div>
       </div>
-      <div className="space-y-6 p-6">
+      <div className={`space-y-6 ${SECTION_BODY_PADDING}`}>
         <div className="flex items-center gap-5">
           <div className="group relative">
             {profile.avatar ? (
@@ -341,14 +347,14 @@ function PasswordSection({
   t,
 }: PasswordSectionProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
+    <Card className={SECTION_CARD_CLASS}>
+      <div className={SECTION_HEADER_CLASS}>
         <div className="flex items-center gap-2">
           <HiOutlineLockClosed className="size-5 text-brand-trust" />
           <h2 className="text-lg font-semibold text-neutral-900">{t('changePassword')}</h2>
         </div>
       </div>
-      <div className="space-y-4 p-6">
+      <div className={`space-y-4 ${SECTION_BODY_PADDING}`}>
         <Input
           label={t('currentPassword')}
           type="password"
@@ -414,14 +420,14 @@ function PasswordSection({
 
 function AccountSection({ profile, t }: AccountSectionProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
+    <Card className={SECTION_CARD_CLASS}>
+      <div className={SECTION_HEADER_CLASS}>
         <div className="flex items-center gap-2">
           <HiOutlineShieldCheck className="size-5 text-brand-trust" />
           <h2 className="text-lg font-semibold text-neutral-900">{t('accountSection')}</h2>
         </div>
       </div>
-      <div className="space-y-4 p-6">
+      <div className={`space-y-4 ${SECTION_BODY_PADDING}`}>
         <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-4">
           <div className="flex items-center gap-3">
             <HiOutlineSparkles className="size-5 text-yellow-500" />
@@ -638,7 +644,11 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     <div className="space-y-6">
       <ProfileHero
         initials={initials}
-        onEditProfile={() => selectTab('personal')}
+        onEditProfile={
+          activeTab === 'overview' || activeTab === 'personal'
+            ? () => selectTab('personal')
+            : undefined
+        }
         profile={state.profile}
         t={t}
       />

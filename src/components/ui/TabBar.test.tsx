@@ -1,9 +1,9 @@
 /** @vitest-environment jsdom */
 
 import { useState } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TabBar } from './TabBar';
 
 type View = 'overview' | 'details' | 'history';
@@ -55,5 +55,66 @@ describe('TabBar', () => {
     await user.keyboard('{Home}');
     expect(overview).toHaveFocus();
     expect(overview).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('centres the selected tab in an overflowing bar and fades the side with hidden tabs', async () => {
+    const user = userEvent.setup();
+    const observers: Array<() => void> = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          observers.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    // A 200px bar over 600px of tabs; each tab is 200px wide at x = index * 200 - scrollLeft.
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(200);
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(600);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      const index = options.findIndex((option) => option.tabId === this.id);
+      if (index < 0) return { left: 0, width: 200 } as DOMRect;
+      return { left: index * 200 - (this.parentElement?.scrollLeft ?? 0), width: 200 } as DOMRect;
+    });
+    const scrollTo = vi.fn();
+    const originalScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo');
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+      configurable: true,
+      value: scrollTo,
+    });
+
+    try {
+      function StartsOnLastTab() {
+        const [value, setValue] = useState<View>('history');
+        return <TabBar ariaLabel="Views" options={options} value={value} onChange={setValue} />;
+      }
+      render(<StartsOnLastTab />);
+
+      // Mount: jump (no animation) so a ?tab= deep link shows its selected tab.
+      expect(scrollTo).toHaveBeenLastCalledWith({ left: 400, behavior: 'auto' });
+
+      act(() => observers.forEach((callback) => callback()));
+      expect(screen.getByTestId('tab-bar-fade-end')).toBeInTheDocument();
+      expect(screen.queryByTestId('tab-bar-fade-start')).toBeNull();
+
+      const list = screen.getByRole('tablist');
+      Object.defineProperty(list, 'scrollLeft', { configurable: true, value: 400 });
+      fireEvent.scroll(list);
+      expect(screen.getByTestId('tab-bar-fade-start')).toBeInTheDocument();
+      expect(screen.queryByTestId('tab-bar-fade-end')).toBeNull();
+
+      await user.click(screen.getByRole('tab', { name: 'Overview' }));
+      expect(scrollTo).toHaveBeenLastCalledWith({ left: 0, behavior: 'smooth' });
+    } finally {
+      if (originalScrollTo)
+        Object.defineProperty(HTMLElement.prototype, 'scrollTo', originalScrollTo);
+      else Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
   });
 });

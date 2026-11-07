@@ -1,3 +1,4 @@
+import type { NudgeBlockers, NudgeLearner } from '@/repositories/ActivationNudgeRepository';
 import {
   isAnalyticsExcludedAccount,
   type LearnerExclusionFields,
@@ -57,11 +58,13 @@ export function activationNudgeLocale(value: string | null | undefined): Activat
 export type ActivationNudgeSkipReason =
   | 'user_missing'
   | 'too_early'
+  | 'too_late'
   | 'excluded_account'
   | 'activated'
   | 'unsubscribed'
   | 'already_nudged';
 
+/** @public Table-tested directly; production callers go through `decideActivationNudge`. */
 export interface ActivationNudgeFacts {
   now: Date;
   user: (LearnerExclusionFields & { createdAt: Date }) | null;
@@ -75,24 +78,63 @@ export interface ActivationNudgeFacts {
   unsubscribed: boolean;
   /** Another `activation_nudge` row exists for this account (any status). */
   alreadyNudged: boolean;
+  /**
+   * The row's trigger. A `24h` nudge is not sent once the signup is older
+   * than the sweep's look-back (7 d), e.g. after a long adaptive outage kept
+   * the row retrying; the backfill has no such cap.
+   */
+  trigger?: string | null | undefined;
 }
 
 export type ActivationNudgeDecision =
   | { decision: 'send' }
   | { decision: 'skip'; reason: ActivationNudgeSkipReason };
 
-/** Eligibility, applied when the sweep enqueues and again when the worker sends. */
+/**
+ * Eligibility, applied when the sweep or the backfill enqueues and again when
+ * the worker sends.
+ * @public Table-tested directly; production callers go through `decideActivationNudge`.
+ */
 export function evaluateActivationNudge(facts: ActivationNudgeFacts): ActivationNudgeDecision {
   const { user } = facts;
   if (!user) return { decision: 'skip', reason: 'user_missing' };
   if (facts.now.getTime() - user.createdAt.getTime() < ACTIVATION_NUDGE_DELAY_MS) {
     return { decision: 'skip', reason: 'too_early' };
   }
+  if (
+    facts.trigger !== 'backfill' &&
+    facts.now.getTime() - user.createdAt.getTime() > ACTIVATION_NUDGE_LOOKBACK_MS
+  ) {
+    return { decision: 'skip', reason: 'too_late' };
+  }
   if (isAnalyticsExcludedAccount(user)) return { decision: 'skip', reason: 'excluded_account' };
   if (facts.activated) return { decision: 'skip', reason: 'activated' };
   if (facts.unsubscribed) return { decision: 'skip', reason: 'unsubscribed' };
   if (facts.alreadyNudged) return { decision: 'skip', reason: 'already_nudged' };
   return { decision: 'send' };
+}
+
+/**
+ * `evaluateActivationNudge` for one learner of a batch: the sweep, the
+ * worker's send-time check and the backfill all decide through this.
+ * `adaptive` holds the ids with an adaptive completion.
+ */
+export function decideActivationNudge(
+  learner: NudgeLearner,
+  blockers: NudgeBlockers,
+  adaptive: ReadonlySet<string>,
+  now: Date,
+  trigger?: string | null,
+): ActivationNudgeDecision {
+  const id = learner.id.toString();
+  return evaluateActivationNudge({
+    now,
+    user: learner,
+    activated: blockers.attempted.has(id) || adaptive.has(id),
+    unsubscribed: blockers.unsubscribed.has(id),
+    alreadyNudged: blockers.nudged.has(id),
+    trigger,
+  });
 }
 
 /**

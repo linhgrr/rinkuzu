@@ -59,6 +59,8 @@ export interface PremiumCatalogMetadataViewModel {
 
 export interface PremiumCatalogItemViewModel extends PremiumCatalogMetadataViewModel {
   slug: string;
+  /** Signed-in learners only: true when they already unlocked it with credit. */
+  unlocked?: boolean;
 }
 
 export interface PremiumCatalogListViewModel {

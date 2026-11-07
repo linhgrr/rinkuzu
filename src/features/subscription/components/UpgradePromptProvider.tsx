@@ -13,6 +13,16 @@ import {
 
 const DISMISS_KEY = 'rinkuzu-upgrade-prompt-dismissed';
 
+// A locked Premium quiz reports `unlock_required` on load; its unlock card offers the
+// credit unlock first and only an `insufficient_credits` failure opens the paywall (RIN-1014).
+function isHandledInline(meta: unknown): boolean {
+  return (
+    typeof meta === 'object' &&
+    meta !== null &&
+    (meta as { reason?: unknown }).reason === 'unlock_required'
+  );
+}
+
 function isDismissed(): boolean {
   if (typeof window === 'undefined') return false;
   return window.localStorage.getItem(DISMISS_KEY) === '1';
@@ -31,7 +41,7 @@ export function UpgradePromptProvider({ children }: { children: ReactNode }) {
     };
 
     return subscribeToApiErrors((error) => {
-      if (!isPremiumLimitError(error)) return;
+      if (!isPremiumLimitError(error) || isHandledInline(error.meta)) return;
 
       if (isDismissed()) {
         toast.info(t('limitReachedTitle'), {

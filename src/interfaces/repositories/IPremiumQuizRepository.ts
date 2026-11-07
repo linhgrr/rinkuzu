@@ -44,6 +44,8 @@ interface PremiumCatalogItem {
   slug: string;
   description?: string;
   questionCount: number;
+  /** Present only for a signed-in learner: true when they unlocked it with credit. */
+  unlocked?: boolean;
 }
 
 export interface PremiumCatalogListOptions {
@@ -166,6 +168,8 @@ export interface IPremiumQuizRepository {
   grantAdminCredits(data: AdminCreditGrantData): Promise<AdminCreditGrantResult>;
   unlock(data: PremiumUnlockData): Promise<PremiumUnlockResult>;
   hasGrant(userId: string, quizId: string): Promise<boolean>;
+  /** The subset of quizIds the learner holds a credit-unlock grant for. */
+  findGrantedQuizIds(userId: string, quizIds: readonly string[]): Promise<string[]>;
   findActivePublicationByQuizId(quizId: string): Promise<PremiumQuizSubmission | null>;
   findActivePublicationBySlug(slug: string): Promise<PremiumQuizSubmission | null>;
   createSession(data: CreatePremiumSessionData): Promise<PremiumPlaySession>;

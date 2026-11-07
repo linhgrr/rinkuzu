@@ -7,6 +7,7 @@ import { HiOutlineSparkles } from 'react-icons/hi';
 import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import { cn } from '@/lib/utils';
+import { CancelProcessingButton } from './CancelProcessingButton';
 import styles from './AdaptiveDashboardLayout.module.css';
 
 type HeroProps = {
@@ -16,9 +17,13 @@ type HeroProps = {
   onGoUpload: () => void;
   onOpenSubject: (jobId: string) => void;
   onCancel?: (jobId: string) => void;
+  onViewProcessing?: (subject: DashboardSubject) => void;
   busyJobId?: string | null;
   t: TranslateFn;
 };
+
+const heroActionClass =
+  'h-auto w-full rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold text-white hover:bg-brand-action-hover sm:w-auto sm:text-lg';
 
 function PersonalLearningArtwork() {
   return (
@@ -72,6 +77,7 @@ export const HeroSection = ({
   onGoUpload,
   onOpenSubject,
   onCancel,
+  onViewProcessing,
   busyJobId,
   t,
 }: HeroProps) => {
@@ -145,37 +151,43 @@ export const HeroSection = ({
               </div>
             </>
           ) : null}
-          <Button
-            onClick={() => {
-              if (!subject) {
-                onGoUpload();
-                return;
-              }
-              if (subject.runtime.kind === 'processing') {
-                onCancel?.(subject.jobId);
-                return;
-              }
-              if (subject.runtime.kind === 'ready') {
-                onOpenSubject(subject.jobId);
-              }
-            }}
-            disabled={isOpening || isBusy || subject?.runtime.kind === 'retryable'}
-            className={cn(
-              'h-auto w-full rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold text-white hover:bg-brand-action-hover sm:w-auto sm:text-lg',
-              subject ? 'mt-5 sm:mt-6' : '',
-              isProcessing && 'bg-red-600 hover:bg-red-700',
-            )}
-          >
-            {subject
-              ? isProcessing
-                ? isBusy
-                  ? t('cancelProcessing')
-                  : t('cancelProcessing')
-                : isOpening
+          {subject && processingRuntime ? (
+            <>
+              <p className="mt-1.5 font-home text-xs leading-4 text-ink-muted">
+                {t('processingReassurance')}
+              </p>
+              <div className="mt-3 flex flex-col items-stretch gap-2 sm:mt-4 sm:flex-row sm:items-center sm:gap-5">
+                <Button onClick={() => onViewProcessing?.(subject)} className={heroActionClass}>
+                  {t('viewProcessing')}
+                </Button>
+                <CancelProcessingButton
+                  busy={isBusy}
+                  onCancel={() => onCancel?.(subject.jobId)}
+                  t={t}
+                />
+              </div>
+            </>
+          ) : (
+            <Button
+              onClick={() => {
+                if (!subject) {
+                  onGoUpload();
+                  return;
+                }
+                if (subject.runtime.kind === 'ready') {
+                  onOpenSubject(subject.jobId);
+                }
+              }}
+              disabled={isOpening || isBusy || subject?.runtime.kind === 'retryable'}
+              className={cn(heroActionClass, subject ? 'mt-5 sm:mt-6' : '')}
+            >
+              {subject
+                ? isOpening
                   ? t('creatingSession')
                   : t('continueLearning')
-              : t('uploadDocument')}
-          </Button>
+                : t('uploadDocument')}
+            </Button>
+          )}
         </div>
       </div>
     </section>

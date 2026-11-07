@@ -10,6 +10,7 @@ import {
   unsubscribeLinkState,
   type UnsubscribeLinkState,
 } from '@/lib/communication/review-reminder';
+import { unsubscribeCampaign } from '@/lib/communication/review-reminder-policy';
 import { logger } from '@/lib/logger';
 
 /**
@@ -22,7 +23,11 @@ import { logger } from '@/lib/logger';
 
 type Props = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ t?: string | string[]; result?: string | string[] }>;
+  searchParams: Promise<{
+    t?: string | string[];
+    c?: string | string[];
+    result?: string | string[];
+  }>;
 };
 
 type PageState = UnsubscribeLinkState | 'error';
@@ -63,7 +68,9 @@ export default async function UnsubscribePage({ params, searchParams }: Props) {
   const token = typeof query.t === 'string' ? query.t : '';
   const state = await resolveState(token, query.result === 'error');
   const t = await getTranslations({ locale, namespace: 'communications.unsubscribe' });
-  const action = `/api/unsubscribe?t=${encodeURIComponent(token)}`;
+  // The nudge's campaign rides along so the opt-out is attributed (RIN-1044).
+  const campaign = unsubscribeCampaign(query.c);
+  const action = `/api/unsubscribe?t=${encodeURIComponent(token)}${campaign ? `&c=${campaign}` : ''}`;
   const showForm = state === 'subscribed' || (state === 'error' && token.length > 0);
 
   return (

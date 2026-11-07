@@ -153,6 +153,32 @@ describe('AppChrome', () => {
       expect(screen.queryByRole('button', { name: 'logout' })).not.toBeInTheDocument();
     });
 
+    it('puts Sign in and Register first in the guest mobile menu, focus order included (RIN-985)', () => {
+      sessionState.current = { data: null, status: 'unauthenticated' } satisfies SessionState;
+      routeState.pathname = '/explore';
+      renderChrome();
+
+      fireEvent.click(screen.getByRole('button', { name: 'openMenu' }));
+      const mobileMenu = screen.getByRole('navigation', { name: 'mainNavigation' });
+      const [first, second] = within(mobileMenu).getAllByRole('link');
+      expect(first).toHaveAccessibleName('signIn');
+      expect(first).toHaveAttribute('href', '/login?callbackUrl=%2Fexplore');
+      expect(second).toHaveAccessibleName('register');
+      expect(second).toHaveAttribute('href', '/register?callbackUrl=%2Fexplore');
+      // Tab from the menu toggle lands on Sign in, not on the mouse-only backdrop.
+      expect(screen.getByRole('button', { name: 'dismissMenu' })).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('keeps Log out as the last mobile menu row for a signed-in learner (RIN-985)', () => {
+      renderChrome();
+
+      fireEvent.click(screen.getByRole('button', { name: 'openMenu' }));
+      const mobileMenu = screen.getByRole('navigation', { name: 'mainNavigation' });
+      expect(within(mobileMenu).getAllByRole('link')[0]).toHaveAccessibleName('home');
+      const rows = Array.from(mobileMenu.querySelectorAll('a, button'));
+      expect(rows.at(-1)).toHaveAccessibleName('logout');
+    });
+
     it('shows neither account menu nor Sign in while the session is loading', () => {
       sessionState.current = { data: null, status: 'loading' } satisfies SessionState;
       renderChrome();

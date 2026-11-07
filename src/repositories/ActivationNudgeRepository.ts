@@ -49,6 +49,8 @@ export interface NudgeRow {
   locale: string;
   trigger: '24h' | 'backfill';
   availableAt: Date;
+  /** Insert the row already canceled, so later sweeps skip the account. */
+  canceledReason?: string;
 }
 
 interface UserRecord {
@@ -97,6 +99,12 @@ export class ActivationNudgeRepository {
       .limit(limit)
       .lean<UserRecord[]>();
     return users.length === 0 ? [] : ActivationNudgeRepository.withLocales(users);
+  }
+
+  /** Every account (excluded ones too) created in `(after, until]`; `User {createdAt:-1}`. */
+  async countSignupsBetween(after: Date, until: Date): Promise<number> {
+    await connectDB();
+    return User.countDocuments({ createdAt: { $gt: after, $lte: until } });
   }
 
   async findLearner(userId: Types.ObjectId): Promise<NudgeLearner | null> {
@@ -164,7 +172,8 @@ export class ActivationNudgeRepository {
             html: DEFERRED_BODY,
             text: DEFERRED_BODY,
             references: [],
-            status: 'pending',
+            status: row.canceledReason ? 'canceled' : 'pending',
+            ...(row.canceledReason ? { lastError: row.canceledReason } : {}),
             availableAt: row.availableAt,
             attempts: 0,
             trigger: row.trigger,

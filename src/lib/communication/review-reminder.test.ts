@@ -288,6 +288,7 @@ describe('one-click unsubscribe (AC7)', () => {
         source: 'unsubscribe',
       }),
     );
+    expect(mocks.consentEvent.create.mock.calls[0]?.[0]).not.toHaveProperty('campaign');
     expect(mocks.outbox.updateMany).toHaveBeenCalledWith(
       { userId: new Types.ObjectId(USER_ID), kind: 'review_reminder', status: 'pending' },
       { $set: { status: 'canceled', lastError: 'opted_out' } },
@@ -317,6 +318,18 @@ describe('one-click unsubscribe (AC7)', () => {
     expect(mocks.consentEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'opt_out', source: 'unsubscribe' }),
     );
+  });
+
+  it('records the activation-nudge campaign on the opt-out event (RIN-1044)', async () => {
+    mocks.preference.findOneAndUpdate.mockReturnValue(query(null));
+    mocks.consentEvent.exists.mockResolvedValue(null);
+
+    await expect(unsubscribeWithToken(token, null, 'activation_nudge')).resolves.toBe(true);
+
+    expect(mocks.consentEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'unsubscribe', campaign: 'activation_nudge' }),
+    );
+    expect(mocks.outbox.updateMany).toHaveBeenCalledOnce();
   });
 
   it('rejects a tampered token without touching the database', async () => {

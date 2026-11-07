@@ -3,6 +3,7 @@ import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page } from '@playwright/test';
 import viErrors from '../../messages/vi/errors.json';
+import viPremium from '../../messages/vi/premium.json';
 import viQuiz from '../../messages/vi/quiz.json';
 import { createE2EUserEmail } from './support/fixture-identifiers';
 import { skipPostSignInStarter } from './support/post-signin';
@@ -70,14 +71,79 @@ async function expectPageNotFound(page: Page): Promise<void> {
   await expectNoRawServerText(page);
 }
 
+function approvedSubmission(input: {
+  id: ObjectId;
+  sourceQuiz: ObjectId;
+  runId: string;
+  title: string;
+  slug: string;
+  now: Date;
+}) {
+  const question = (text: string) => ({
+    _id: new ObjectId(),
+    correctIndex: 0,
+    options: ['Right', 'Wrong'],
+    question: text,
+    type: 'single',
+  });
+  return {
+    _id: input.id,
+    _e2eRun: input.runId,
+    sourceQuiz: input.sourceQuiz,
+    author: new ObjectId(),
+    version: 1,
+    status: 'approved',
+    sourceType: 'manual',
+    rightsAttested: true,
+    snapshot: {
+      title: input.title,
+      slug: input.slug,
+      // The run id lets the catalog test search for exactly this run's quizzes.
+      description: `A fake Premium quiz used only by the error-layer E2E (${input.runId}).`,
+      questions: [question('First premium question?'), question('Second premium question?')],
+    },
+    snapshotHash: `e2e-${input.runId}-${input.slug}`,
+    questionHashes: [],
+    duplicateReport: {
+      exactDocumentRewarded: false,
+      exactQuiz: false,
+      sharedQuestionCount: 0,
+      highestSimilarity: 0,
+      matches: [],
+    },
+    reviewStatus: 'completed',
+    awardedCredits: 0,
+    active: true,
+    createdAt: input.now,
+    updatedAt: input.now,
+  };
+}
+
+async function signIn(page: Page, email: string): Promise<void> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+  });
+  await page.goto('/en/login?callbackUrl=%2Fdashboard');
+  await skipPostSignInStarter(page);
+  await page.getByLabel('Email Address').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+  await Promise.all([
+    page.waitForURL(/\/en\/dashboard(?:[/?#]|$)/),
+    page.getByRole('button', { name: 'Sign In', exact: true }).click(),
+  ]);
+}
+
 test.describe('quiz API error layer (RIN-805)', () => {
   let client: MongoClient;
   let db: Db;
   let runId: string;
   let submissionId: ObjectId;
+  let ownedSubmissionId: ObjectId;
+  let ownedQuizId: ObjectId;
   let learner: { id: ObjectId; email: string };
   let slug: string;
   const title = 'E2E Premium Error Layer Quiz';
+  const ownedTitle = 'E2E Premium Owned Quiz';
 
   test.beforeAll(async () => {
     const { databaseName, uri } = requireCiMongoUri();
@@ -89,45 +155,20 @@ test.describe('quiz API error layer (RIN-805)', () => {
     submissionId = new ObjectId();
     slug = `e2e-premium-error-layer-${runId}`;
     learner = { id: new ObjectId(), email: createE2EUserEmail('regular', runId) };
-    const question = (text: string) => ({
-      _id: new ObjectId(),
-      correctIndex: 0,
-      options: ['Right', 'Wrong'],
-      question: text,
-      type: 'single',
-    });
-
-    await db.collection('premiumquizsubmissions').insertOne({
-      _id: submissionId,
-      _e2eRun: runId,
-      sourceQuiz: new ObjectId(),
-      author: new ObjectId(),
-      version: 1,
-      status: 'approved',
-      sourceType: 'manual',
-      rightsAttested: true,
-      snapshot: {
-        title,
-        slug,
-        description: 'A fake Premium quiz used only by the error-layer E2E.',
-        questions: [question('First premium question?'), question('Second premium question?')],
-      },
-      snapshotHash: `e2e-${runId}`,
-      questionHashes: [],
-      duplicateReport: {
-        exactDocumentRewarded: false,
-        exactQuiz: false,
-        sharedQuestionCount: 0,
-        highestSimilarity: 0,
-        matches: [],
-      },
-      reviewStatus: 'completed',
-      awardedCredits: 0,
-      active: true,
-      createdAt: now,
-      updatedAt: now,
-    });
-    // A free learner: no subscription, no credits, no grant for this quiz.
+    ownedSubmissionId = new ObjectId();
+    ownedQuizId = new ObjectId();
+    await db.collection('premiumquizsubmissions').insertMany([
+      approvedSubmission({ id: submissionId, sourceQuiz: new ObjectId(), runId, title, slug, now }),
+      approvedSubmission({
+        id: ownedSubmissionId,
+        sourceQuiz: ownedQuizId,
+        runId,
+        title: ownedTitle,
+        slug: `e2e-premium-owned-${runId}`,
+        now,
+      }),
+    ]);
+    // A free learner: no subscription, no credits, no grant for the first quiz.
     await db.collection('users').insertOne({
       _id: learner.id,
       email: learner.email,
@@ -143,13 +184,20 @@ test.describe('quiz API error layer (RIN-805)', () => {
       failedLoginAttempts: 0,
       password: await hash(E2E_PASSWORD, 4),
     });
+    // RIN-1014: the learner already unlocked the second quiz with credit.
+    await db
+      .collection('premiumquizaccessgrants')
+      .insertOne({ user: learner.id, quiz: ownedQuizId, createdAt: now });
   });
 
   test.afterAll(async () => {
     if (!db) return;
     try {
       await Promise.all([
-        db.collection('premiumquizsubmissions').deleteOne({ _id: submissionId }),
+        db
+          .collection('premiumquizsubmissions')
+          .deleteMany({ _id: { $in: [submissionId, ownedSubmissionId] } }),
+        db.collection('premiumquizaccessgrants').deleteMany({ user: learner.id }),
         db.collection('auditlogs').deleteMany({
           $or: [{ userId: learner.id }, { email: learner.email }],
         }),
@@ -183,26 +231,31 @@ test.describe('quiz API error layer (RIN-805)', () => {
   });
 
   test('a learner without credit or subscription sees the unlock card', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
-    });
-    await page.goto('/en/login?callbackUrl=%2Fdashboard');
-    await skipPostSignInStarter(page);
-    await page.getByLabel('Email Address').fill(learner.email);
-    await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
-    await Promise.all([
-      page.waitForURL(/\/en\/dashboard(?:[/?#]|$)/),
-      page.getByRole('button', { name: 'Sign In', exact: true }).click(),
-    ]);
+    await signIn(page, learner.email);
 
     await page.goto(`/vi/quiz/${slug}`);
     await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
     await expect(page.getByText(viQuiz.premiumUnlockDescription)).toBeVisible();
-    await expect(page.getByRole('button', { name: viQuiz.premiumUnlockButton })).toBeVisible();
+    // RIN-1014: at 0 credits the unlock is disabled and labelled, with the balance shown.
+    await expect(page.getByRole('button', { name: viQuiz.premiumNotEnoughCredits })).toBeDisabled();
+    await expect(
+      page.getByText(viQuiz.premiumCreditBalance.replace('{count}', '0'), { exact: true }),
+    ).toBeVisible();
     for (const errorTitle of ERROR_TITLES) {
       await expect(page.getByRole('heading', { name: errorTitle, exact: true })).toHaveCount(0);
     }
     await expectNoRawServerText(page);
+  });
+
+  test('the catalog marks only the quiz the learner unlocked (RIN-1014)', async ({ page }) => {
+    await signIn(page, learner.email);
+
+    await page.goto(`/vi/premium-quizzes?q=${encodeURIComponent(runId)}`);
+    const cardFor = (name: string) =>
+      page.locator('article').filter({ has: page.getByRole('link', { name }) });
+    await expect(cardFor(ownedTitle).getByText(viPremium.catalogUnlockedBadge)).toBeVisible();
+    await expect(cardFor(title)).toBeVisible();
+    await expect(cardFor(title).getByText(viPremium.catalogUnlockedBadge)).toHaveCount(0);
   });
 
   test('an unknown quiz slug shows the page-level not-found state', async ({ page }) => {

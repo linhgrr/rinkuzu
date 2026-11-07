@@ -61,15 +61,50 @@ function setup(now = NOW) {
       ],
     }),
   };
+  const activationEmail = {
+    getWeeklySends: vi.fn().mockResolvedValue([
+      // W43: both triggers, summed into the week totals.
+      {
+        weekStart: new Date('2026-10-19T00:00:00.000Z'),
+        trigger: '24h',
+        sent: 4,
+        clicked: 1,
+        activatedWithin7d: 2,
+      },
+      {
+        weekStart: new Date('2026-10-19T00:00:00.000Z'),
+        trigger: 'backfill',
+        sent: 3,
+        clicked: 0,
+        activatedWithin7d: 1,
+      },
+      // A week outside the window is dropped, not appended.
+      {
+        weekStart: new Date('2026-09-28T00:00:00.000Z'),
+        trigger: '24h',
+        sent: 9,
+        clicked: 9,
+        activatedWithin7d: 9,
+      },
+    ]),
+  };
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
   const adaptiveEvents = vi.fn().mockResolvedValue(ADAPTIVE_EVENTS);
   const service = new ActivationStatsService({
     stats,
+    activationEmail,
     audit,
     adaptiveEvents,
     now: () => new Date(clock),
   });
-  return { service, stats, audit, adaptiveEvents, advance: (ms: number) => (clock += ms) };
+  return {
+    service,
+    stats,
+    activationEmail,
+    audit,
+    adaptiveEvents,
+    advance: (ms: number) => (clock += ms),
+  };
 }
 
 describe('ActivationStatsService', () => {
@@ -133,6 +168,47 @@ describe('ActivationStatsService', () => {
       returnedWeek1: null,
       complete: false,
     });
+  });
+
+  it('adds activation-email sends per window week, split by trigger (RIN-1001)', async () => {
+    const { service, activationEmail } = setup();
+    const result = await service.getWeeklyActivation(4, { kind: 'service' });
+    if (!result.success) throw new Error(result.error);
+
+    // Same window and the same adaptive read as the funnel.
+    expect(activationEmail.getWeeklySends).toHaveBeenCalledWith(
+      new Date('2026-10-12T00:00:00.000Z'),
+      new Date('2026-11-09T00:00:00.000Z'),
+      ADAPTIVE_EVENTS,
+    );
+    const none = { sent: 0, clicked: 0, activatedWithin7d: 0 };
+    expect(result.data.activationEmail.weeks).toEqual([
+      { isoWeek: '2026-W42', ...none, byTrigger: { '24h': none, backfill: none } },
+      {
+        isoWeek: '2026-W43',
+        sent: 7,
+        clicked: 1,
+        activatedWithin7d: 3,
+        byTrigger: {
+          '24h': { sent: 4, clicked: 1, activatedWithin7d: 2 },
+          backfill: { sent: 3, clicked: 0, activatedWithin7d: 1 },
+        },
+      },
+      { isoWeek: '2026-W44', ...none, byTrigger: { '24h': none, backfill: none } },
+      { isoWeek: '2026-W45', ...none, byTrigger: { '24h': none, backfill: none } },
+    ]);
+    expect(result.data.definitions.activationEmail).toMatch(/send \+ 7 days/);
+  });
+
+  it('counts activation-email sends quiz-only when the adaptive API fails', async () => {
+    const { service, activationEmail, adaptiveEvents } = setup();
+    adaptiveEvents.mockRejectedValueOnce(new Error('timeout'));
+    await service.getWeeklyActivation(4, { kind: 'service' });
+    expect(activationEmail.getWeeklySends).toHaveBeenLastCalledWith(
+      expect.any(Date),
+      expect.any(Date),
+      [],
+    );
   });
 
   it('reads adaptive events from the first week to 14 days after the last, as the actor', async () => {
@@ -244,6 +320,15 @@ describe('ActivationStatsService', () => {
     expect(serialized).not.toMatch(/\b[a-f0-9]{24}\b/i);
     expect(serialized).not.toMatch(/"(?:_id|id|userId|email|name|title)"/);
 
+    for (const week of result.data.activationEmail.weeks) {
+      expect(Object.keys(week).sort()).toEqual([
+        'activatedWithin7d',
+        'byTrigger',
+        'clicked',
+        'isoWeek',
+        'sent',
+      ]);
+    }
     for (const week of result.data.weeks) {
       for (const [key, value] of Object.entries(week)) {
         if (['isoWeek', 'start', 'end'].includes(key)) expect(typeof value).toBe('string');
@@ -304,5 +389,34 @@ describe('ActivationStatsService', () => {
         sources: { adaptive: 'ok', learners: [ADAPTIVE_LEARNER] },
       }).success,
     ).toBe(false);
+    const emailWeek = valid.activationEmail.weeks[0];
+    if (!emailWeek) throw new Error('no activation-email week');
+    for (const leak of [
+      { weeks: [{ ...emailWeek, emails: ['x'] }] },
+      {
+        weeks: [
+          {
+            ...emailWeek,
+            byTrigger: { ...emailWeek.byTrigger, manual: emailWeek.byTrigger['24h'] },
+          },
+        ],
+      },
+      {
+        weeks: [
+          {
+            ...emailWeek,
+            byTrigger: {
+              ...emailWeek.byTrigger,
+              backfill: { ...emailWeek.byTrigger.backfill, userIds: [] },
+            },
+          },
+        ],
+      },
+      { weeks: [], recipients: [] },
+    ]) {
+      expect(
+        adminActivationStatsSchema.safeParse({ ...valid, activationEmail: leak }).success,
+      ).toBe(false);
+    }
   });
 });

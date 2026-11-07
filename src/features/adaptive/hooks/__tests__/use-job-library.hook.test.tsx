@@ -63,20 +63,41 @@ describe('useJobLibrary', () => {
     expect(listJobsMock).toHaveBeenCalledTimes(1);
   });
 
-  it('reports retry and cancel failures as localized copy without leaking a busy state', async () => {
+  it('reports retry failures as a localized toast without leaking a busy state', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     retryJobMock.mockRejectedValueOnce(new Error('retry failed'));
-    cancelJobMock.mockRejectedValueOnce('cancel failed');
     const { result } = renderJobLibrary(false);
 
     await act(async () => result.current.retry('job-retry'));
     expect(toastErrorMock).toHaveBeenCalledWith(viErrors.api.generic);
     expect(toastErrorMock).not.toHaveBeenCalledWith('retry failed');
     expect(result.current.busyJobId).toBeNull();
+  });
 
-    await act(async () => result.current.cancel('job-cancel'));
-    expect(toastErrorMock).toHaveBeenCalledTimes(2);
-    expect(toastErrorMock).toHaveBeenLastCalledWith(viErrors.api.generic);
+  it('returns a cancel failure as localized copy for the confirm dialog, not a toast (RIN-1005)', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    cancelJobMock.mockRejectedValueOnce('cancel failed');
+    const { result } = renderJobLibrary(false);
+
+    let outcome: string | null | undefined;
+    await act(async () => {
+      outcome = await result.current.cancel('job-cancel');
+    });
+    expect(outcome).toBe(viErrors.api.generic);
+    expect(toastErrorMock).not.toHaveBeenCalled();
     expect(result.current.busyJobId).toBeNull();
+  });
+
+  it('returns null when the cancel succeeds (RIN-1005)', async () => {
+    cancelJobMock.mockResolvedValueOnce({ job_id: 'job-cancel', status: 'cancelling' });
+    listJobsMock.mockResolvedValue([]);
+    const { result } = renderJobLibrary(false);
+
+    let outcome: string | null | undefined;
+    await act(async () => {
+      outcome = await result.current.cancel('job-cancel');
+    });
+    expect(outcome).toBeNull();
+    expect(cancelJobMock).toHaveBeenCalledWith('job-cancel');
   });
 });

@@ -115,6 +115,15 @@ describe('AccountService', () => {
     });
   });
 
+  it('tells the client whether the account has a password, never the hash (RIN-1017)', async () => {
+    repository.findProfileByEmail.mockResolvedValue(profile({ hasPassword: false }));
+
+    const read = await service.getProfile('user@example.com');
+
+    expect(read.success && read.data.hasPassword).toBe(false);
+    expect(JSON.stringify(read)).not.toContain('passwordHash');
+  });
+
   it('reports missing profiles consistently', async () => {
     repository.findProfileByEmail.mockResolvedValue(null);
     repository.updateProfileByEmail.mockResolvedValue(null);

@@ -158,8 +158,8 @@ export class R2ImageStorage implements IImageStorage {
   }
 
   /**
-   * Delete an image this adapter stored. URLs outside `<publicBaseUrl>/images/` (legacy
-   * ImgBB URLs included) are no-ops; a missing object counts as deleted.
+   * Delete an image this adapter stored. URLs outside `<publicBaseUrl>/images/` (other
+   * hosts included) are no-ops; a missing object counts as deleted.
    */
   async deleteByUrl(deleteUrl: string): Promise<void> {
     const { bucket, publicBaseUrl } = this.config;

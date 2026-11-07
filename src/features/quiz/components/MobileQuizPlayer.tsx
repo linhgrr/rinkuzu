@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Pill } from '@/components/ui/Pill';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuestionContent } from '@/components/ui/QuestionContent';
+import { useHydrated } from '@/hooks/useHydrated';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
@@ -137,6 +138,8 @@ function MobileQuestionCard({
   t,
 }: MobileQuestionCardProps) {
   const isSingle = question.type === 'single';
+  // Server-rendered options stay disabled until hydration, or a tap is lost (RIN-1133).
+  const hydrated = useHydrated();
   const helperId = `mobile-quiz-question-${questionIndex}-helper`;
 
   return (
@@ -199,7 +202,7 @@ function MobileQuestionCard({
               role={isSingle ? 'radio' : 'checkbox'}
               aria-checked={selected}
               onClick={() => handleOptionSelect(question, questionIndex, optionIndex)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !hydrated}
               className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-150 disabled:pointer-events-none disabled:opacity-70 ${
                 selected
                   ? 'border-brand-action bg-orange-50'

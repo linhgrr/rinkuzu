@@ -122,6 +122,7 @@ const sessionOutcomeSchema = z.strictObject({
   version: z.literal(1),
   result: submitResultSchema,
   exercise: exerciseSchema,
+  answer: z.lazy(() => exerciseAnswerDraftSchema).optional(),
 });
 
 const exerciseAnswerDraftSchema = z.discriminatedUnion('type', [
@@ -258,6 +259,8 @@ export function clearSelectedPipelineJob(expectedJobId?: string): void {
 interface SessionExerciseOutcome {
   result: SubmitResult;
   exercise: Exercise;
+  /** The learner's submitted answer; absent on outcomes stored before RIN-1011. */
+  answer?: ExerciseAnswerDraft;
 }
 
 export function saveSessionExerciseOutcome(
@@ -278,6 +281,7 @@ export function getSessionExerciseOutcome(sessionId: string): SessionExerciseOut
       return {
         result: parsed.data.result,
         exercise: parsed.data.exercise,
+        ...(parsed.data.answer ? { answer: parsed.data.answer } : {}),
       };
     }
   } catch {

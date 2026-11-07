@@ -248,6 +248,7 @@ describe('useAdaptiveExerciseSession mutation coverage', () => {
       'session-a',
       expect.objectContaining({
         exercise: expect.objectContaining({ exercise_id: 'exercise-1' }),
+        answer: { type: 'mcq', selection: 'A' },
       }),
     );
     expect(clearDraftMock).toHaveBeenCalledWith('session-a', 'exercise-1');
@@ -300,11 +301,11 @@ describe('useAdaptiveExerciseSession mutation coverage', () => {
     act(() => result.current.selectChoice('A'));
 
     await act(async () => result.current.handleSubmit());
-    expect(result.current.error).toBe('t:exercise.submitUnavailable');
+    expect(result.current.submitError).toBe('t:exercise.submitUnavailable');
     expect(result.current.submitting).toBe(false);
 
     await act(async () => result.current.handleSubmit());
-    expect(result.current.error).toBe('t:exercise.failedToSubmitAnswer');
+    expect(result.current.submitError).toBe('t:exercise.failedToSubmitAnswer');
     expect(result.current.submitting).toBe(false);
   });
 
@@ -318,7 +319,7 @@ describe('useAdaptiveExerciseSession mutation coverage', () => {
     act(() => result.current.selectChoice('B'));
     await act(async () => result.current.handleSubmit());
 
-    expect(result.current.error).toBe('t:exercise.failedToSubmitAnswer');
+    expect(result.current.submitError).toBe('t:exercise.failedToSubmitAnswer');
     expect(result.current.submitting).toBe(false);
     expect(result.current.answerDraft).toEqual({ type: 'mcq', selection: 'B' });
   });

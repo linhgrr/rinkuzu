@@ -19,6 +19,7 @@ export interface AccountProfilePersistenceRecord {
   role: 'admin' | 'user';
   createdAt: Date;
   subscription?: AccountSubscriptionPersistenceRecord;
+  hasPassword?: boolean;
 }
 
 export interface AccountCredentialsPersistenceRecord {

@@ -48,7 +48,37 @@ function requiredStorageConfig(environment) {
     secretAccessKey: environment.OBJECT_STORAGE_SECRET_KEY,
     bucket: environment.OBJECT_STORAGE_BUCKET,
     forcePathStyle: environment.OBJECT_STORAGE_ADDRESSING_STYLE === 'path',
+    imageHost: imageCdnHost(environment),
   };
+}
+
+const DEFAULT_IMAGE_PUBLIC_BASE_URL = 'https://cdn.rinkuzu.app';
+
+/**
+ * Host of the public R2 image CDN (`IMAGE_PUBLIC_BASE_URL`, default cdn.rinkuzu.app).
+ * @param {Record<string, string | undefined>} [environment]
+ * @returns {string}
+ */
+export function imageCdnHost(environment = process.env) {
+  return new URL(
+    environment.IMAGE_PUBLIC_BASE_URL || DEFAULT_IMAGE_PUBLIC_BASE_URL,
+  ).hostname.toLowerCase();
+}
+
+/**
+ * Only https URLs on the image CDN may be fetch-copied into the private Premium namespace.
+ * @param {string} sourceUrl
+ * @param {string} imageHost
+ * @returns {boolean}
+ */
+export function isCopyableImageUrl(sourceUrl, imageHost) {
+  let parsed;
+  try {
+    parsed = new URL(sourceUrl);
+  } catch {
+    return false;
+  }
+  return parsed.protocol === 'https:' && parsed.hostname.toLowerCase() === imageHost;
 }
 
 function extractOwnedKey(sourceUrl, config) {
@@ -134,11 +164,10 @@ export function createLegacyPremiumStorage(environment = process.env) {
         );
         return destination;
       }
-      const parsed = new URL(sourceUrl);
-      if (parsed.protocol !== 'https:' || parsed.hostname.toLowerCase() !== 'i.ibb.co') {
+      if (!isCopyableImageUrl(sourceUrl, config.imageHost)) {
         throw new Error(`Unsupported legacy image host for quiz ${quizId}`);
       }
-      const response = await fetch(parsed, { redirect: 'error', cache: 'no-store' });
+      const response = await fetch(new URL(sourceUrl), { redirect: 'error', cache: 'no-store' });
       if (!response.ok) throw new Error(`Could not copy legacy image for quiz ${quizId}`);
       const contentType = response.headers.get('content-type')?.split(';', 1)[0]?.toLowerCase();
       if (!contentType?.startsWith('image/')) throw new Error('Legacy asset is not an image');

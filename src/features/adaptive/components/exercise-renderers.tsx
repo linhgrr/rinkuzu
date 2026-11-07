@@ -225,6 +225,8 @@ type ExerciseQuestionViewProps = {
   onSubmit: () => void;
   canSubmit: boolean;
   submitting: boolean;
+  /** Inline submit failure; the question and the learner's answer stay on screen (RIN-1011). */
+  submitError?: string | null;
   t: RichTranslateFn;
 };
 
@@ -249,10 +251,11 @@ export const ExerciseQuestionView = ({
   onSubmit,
   canSubmit,
   submitting,
+  submitError = null,
   t,
 }: ExerciseQuestionViewProps) => (
   <div
-    className={`${styles['learningViewport']} mx-auto flex max-w-5xl flex-col font-home text-ink`}
+    className={`${styles['learningViewport']} mx-auto flex max-w-5xl flex-col pb-[4.5rem] font-home text-ink lg:pb-0`}
   >
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
@@ -366,6 +369,14 @@ export const ExerciseQuestionView = ({
                 level: localizedBloomLabel,
               })}
             </p>
+            {submitError ? (
+              <div
+                role="alert"
+                className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              >
+                {submitError}
+              </div>
+            ) : null}
             <Button
               className="h-12 min-h-12 w-full justify-center rounded-full bg-brand-action py-2 text-sm font-medium text-brand-action-text shadow-sm transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover sm:h-11 sm:min-h-11 sm:hover:scale-[1.02] md:text-base"
               onClick={onSubmit}

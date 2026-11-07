@@ -51,6 +51,21 @@ export interface AskRinPanelProps {
   onHistoryChange?: (summary: AskRinHistorySummary) => void;
 }
 
+interface AskRinFailure {
+  message: string;
+  retryable: boolean;
+}
+
+const NO_FAILURE: AskRinFailure = { message: '', retryable: false };
+
+function findLastUserMessageId(messages: readonly { id: string; role: string }[]): string | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === 'user') return message.id;
+  }
+  return null;
+}
+
 interface AskRinRuntimeProps {
   credentials: AskRinContextCredentials;
   contextPreview?: ReactNode;
@@ -92,10 +107,12 @@ function AskRinThread({
   credentials,
   contextPreview,
   error,
+  runFailed,
   onError,
   onHistoryReset,
 }: Omit<AskRinRuntimeProps, 'onHistoryChange'> & {
   error: string;
+  runFailed: boolean;
   onError: (message: string) => void;
   onHistoryReset: () => void;
 }) {
@@ -106,6 +123,13 @@ function AskRinThread({
   const isRunning = useAuiState((state) => state.thread.isRunning);
   const isLoading = useAuiState((state) => state.thread.isLoading);
   const [clearing, setClearing] = useState(false);
+  const failedQuestionId = runFailed && !isRunning ? findLastUserMessageId(messages) : null;
+
+  // Retry reruns from the learner's own message, so the same text is sent once more (RIN-1019).
+  const retryFailedQuestion = () => {
+    if (!failedQuestionId) return;
+    runtime.thread.startRun({ parentId: failedQuestionId });
+  };
 
   // Asking again replaces the previous run's error card with the thinking bubble (RIN-822).
   useAuiEvent('thread.runStart', () => onError(''));
@@ -196,6 +220,19 @@ function AskRinThread({
               </ThreadPrimitive.Empty>
               <div className="space-y-4">
                 <ThreadPrimitive.Messages components={{ Message: AskRinMessage }} />
+                {failedQuestionId ? (
+                  <div className="-mt-2 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={retryFailedQuestion}
+                      className="text-neutral-600"
+                    >
+                      {t('retryMessage')}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </>
           )}
@@ -253,7 +290,9 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
   const historyErrorLabel = t('errorHistory');
   const interruptedLabel = t('errorInterrupted');
   const askRinErrorMessage = useAskRinErrorMessage();
-  const [error, setError] = useState('');
+  // Only a failed send offers Retry; history or clear errors do not (RIN-1019).
+  const [failure, setFailure] = useState<AskRinFailure>(NO_FAILURE);
+  const showError = (message: string) => setFailure({ message, retryable: false });
   const historyCallbackRef = useRef(onHistoryChange);
   const historySummaryRef = useRef<AskRinHistorySummary>({ totalMessages: 0, totalTurns: 0 });
 
@@ -284,7 +323,9 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
     const subscription = agent.subscribe({
       onRunErrorEvent: ({ event }) => {
         // The client turns a learner's Stop into RUN_ERROR code "abort": no error card.
-        if (event.code !== 'abort') setError(askRinErrorMessage(event));
+        if (event.code !== 'abort') {
+          setFailure({ message: askRinErrorMessage(event), retryable: true });
+        }
       },
     });
     return () => subscription.unsubscribe();
@@ -300,7 +341,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
           const summary = { totalMessages: messages.length, totalTurns };
           historySummaryRef.current = summary;
           historyCallbackRef.current?.(summary);
-          setError('');
+          setFailure(NO_FAILURE);
           return ExportedMessageRepository.fromArray(
             fromAgUiMessages(
               messages.map((message) => ({
@@ -315,7 +356,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
           );
         } catch {
           // Context copy ("you can still ask") rather than the server text (RIN-756).
-          setError(historyErrorLabel);
+          setFailure({ message: historyErrorLabel, retryable: false });
           return ExportedMessageRepository.fromArray([]);
         }
       },
@@ -337,7 +378,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
     agent,
     adapters: { history },
     onError: (runError) => {
-      setError(askRinErrorMessage(runError));
+      setFailure({ message: askRinErrorMessage(runError), retryable: true });
     },
   });
 
@@ -353,8 +394,9 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
         credentials={credentials}
         contextPreview={contextPreview}
         onHistoryReset={resetHistorySummary}
-        error={error}
-        onError={setError}
+        error={failure.message}
+        runFailed={failure.retryable}
+        onError={showError}
       />
     </AssistantRuntimeProvider>
   );

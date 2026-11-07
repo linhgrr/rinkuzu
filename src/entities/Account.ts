@@ -17,6 +17,8 @@ export interface AccountProfile {
   role: 'admin' | 'user';
   createdAt: Date;
   subscription?: AccountSubscription;
+  /** false for accounts that only sign in with Google (no password hash). */
+  hasPassword?: boolean;
 }
 
 export interface AccountCredentials {

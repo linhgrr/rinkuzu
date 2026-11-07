@@ -275,10 +275,30 @@ describe('useAdaptiveExerciseSession', () => {
 
     await act(async () => result.current.handleSubmit());
 
-    expect(result.current.error).toBe('exercise.failedToSubmitAnswer');
+    expect(result.current.submitError).toBe('exercise.failedToSubmitAnswer');
     expect(result.current.submitting).toBe(false);
     expect(result.current.answerDraft).toEqual({ type: 'mcq', selection: 'A' });
     expect(saveOutcomeMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the question on screen after a submit failure and clears the banner on edit (RIN-1011)', async () => {
+    getLearningStepMock.mockResolvedValue(createStep('concept-a'));
+    submitAnswerMock.mockRejectedValueOnce(new Error('upstream 503'));
+    const { result } = renderHook(() =>
+      useAdaptiveExerciseSession({ sessionId: 'session-a', router: createRouter(), t }),
+    );
+    await waitFor(() => expect(result.current.exercise).not.toBeNull());
+    act(() => result.current.selectChoice('A'));
+
+    await act(async () => result.current.handleSubmit());
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.exercise).not.toBeNull();
+    expect(result.current.concept).not.toBeNull();
+    expect(result.current.submitError).toBe('exercise.failedToSubmitAnswer');
+
+    act(() => result.current.selectChoice('B'));
+    expect(result.current.submitError).toBeNull();
   });
 
   it('does not publish a completed submit after unmount', async () => {
@@ -475,7 +495,7 @@ describe('useAdaptiveExerciseSession', () => {
 
     act(() => result.current.selectChoice('A'));
     await act(async () => result.current.handleSubmit());
-    expect(result.current.error).toBe('exercise.submitUnavailable');
+    expect(result.current.submitError).toBe('exercise.submitUnavailable');
     expect(result.current.submitting).toBe(false);
   });
 });

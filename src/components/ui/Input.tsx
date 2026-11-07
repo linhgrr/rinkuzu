@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   inputSize?: 'sm' | 'md' | 'lg';
   error?: string;
+  /** Helper text under the field; hidden while an error is shown. */
+  hint?: string;
   label?: string;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
@@ -17,6 +19,7 @@ function Input({
   className,
   inputSize = 'md',
   error,
+  hint,
   label,
   icon,
   iconPosition = 'left',
@@ -26,6 +29,14 @@ function Input({
 }: InputProps) {
   const reactId = React.useId();
   const inputId = id || reactId;
+  const errorId = `${inputId}-error`;
+  const hintId = `${inputId}-hint`;
+  const showHint = Boolean(hint) && !error;
+  // Screen readers read the error (or hint) with the field, not only on its own (RIN-1017).
+  const describedBy =
+    [props['aria-describedby'], showHint ? hintId : null, error ? errorId : null]
+      .filter(Boolean)
+      .join(' ') || undefined;
 
   const iconSizes = {
     sm: 'w-4 h-4',
@@ -63,6 +74,8 @@ function Input({
           )}
           ref={ref}
           {...props}
+          aria-invalid={error ? true : props['aria-invalid']}
+          aria-describedby={describedBy}
         />
 
         {icon && iconPosition === 'right' && (
@@ -73,9 +86,18 @@ function Input({
       </div>
 
       {error && (
-        <p className="mt-1.5 flex items-center font-home text-xs text-error">
-          <HiOutlineExclamationCircle className="size-4 mr-1 flex-shrink-0" />
+        <p
+          id={errorId}
+          role="alert"
+          className="mt-1.5 flex items-center font-home text-xs text-error"
+        >
+          <HiOutlineExclamationCircle className="size-4 mr-1 flex-shrink-0" aria-hidden="true" />
           {error}
+        </p>
+      )}
+      {showHint && (
+        <p id={hintId} className="mt-1.5 font-home text-xs text-ink-muted">
+          {hint}
         </p>
       )}
     </div>

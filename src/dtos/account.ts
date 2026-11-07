@@ -26,6 +26,8 @@ export interface AccountProfileDto {
   role: 'admin' | 'user';
   createdAt: string;
   subscription?: AccountSubscriptionDto;
+  /** false for accounts that only sign in with Google (no password to change). */
+  hasPassword?: boolean;
 }
 
 export interface UpdateAccountProfileDto {

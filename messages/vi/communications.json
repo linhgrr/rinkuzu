@@ -59,6 +59,23 @@
       "waiting_for_user": "Chờ bạn phản hồi",
       "resolved": "Đã xử lý",
       "closed": "Đã đóng"
+    },
+    "pageTitle": "Hỗ trợ",
+    "addImages": "Thêm ảnh",
+    "removeImage": "Xóa ảnh {name}",
+    "backToRequests": "Quay lại danh sách yêu cầu",
+    "authorYou": "Bạn",
+    "authorSupport": "Hỗ trợ Rinkuzu",
+    "authorLearner": "Học viên",
+    "resolvedNote": "Yêu cầu này đã được xử lý. Nếu bạn phản hồi, yêu cầu sẽ được mở lại.",
+    "closedReopenNote": "Yêu cầu này đã đóng. Hãy mở lại để tiếp tục trao đổi.",
+    "closedFinalNote": "Yêu cầu này đã đóng và không thể mở lại.",
+    "newRequest": "Tạo yêu cầu mới",
+    "errors": {
+      "subjectTooShort": "Nhập tiêu đề từ 4 ký tự trở lên.",
+      "bodyRequired": "Nhập nội dung yêu cầu.",
+      "replyRequired": "Nhập nội dung phản hồi.",
+      "attachmentRejected": "Chỉ nhận ảnh PNG, JPEG hoặc WebP, tối đa 5 MB/ảnh và 3 ảnh."
     }
   },
   "feedbackPreference": {

@@ -179,15 +179,22 @@ describe('s3 object storage helpers', () => {
     }
   });
 
-  it('rejects external Premium image hosts outside the migration allowlist', async () => {
-    await expect(
-      copyPremiumAssetToPrivateStorage(
-        'https://images.example.com/source.jpg',
-        '507f191e810c19729de860ea',
-      ),
-    ).rejects.toThrow('Premium quiz images must come from managed image storage');
-    expect(putObjectInputs).toEqual([]);
-  });
+  it.each(['https://images.example.com/source.jpg', 'https://i.ibb.co/abc123/source.jpg'])(
+    'rejects external Premium image host %s (only the image CDN is allowed)',
+    async (url) => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+      try {
+        await expect(
+          copyPremiumAssetToPrivateStorage(url, '507f191e810c19729de860ea'),
+        ).rejects.toThrow('Premium quiz images must come from managed image storage');
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(putObjectInputs).toEqual([]);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
 
   it('best-effort deletes owned URLs only, dedupes keys, and never throws on upstream failure', async () => {
     sendMock.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('upstream unavailable'));

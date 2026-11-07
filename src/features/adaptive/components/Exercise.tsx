@@ -49,6 +49,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     loadingExercise,
     submitting,
     error,
+    submitError,
     showTheory,
     setShowTheory,
     selectChoice,
@@ -128,6 +129,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
       onSubmit={() => void handleSubmit()}
       canSubmit={canSubmit}
       submitting={submitting}
+      submitError={submitError}
       t={t}
     />
   );

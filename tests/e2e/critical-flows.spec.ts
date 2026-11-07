@@ -850,6 +850,33 @@ test.describe('production critical paths', () => {
           'href',
           `/en/quiz/${longSlug}?mode=quick`,
         );
+
+        // RIN-1179: "Send to a classmate" on a public quiz copies the share link when
+        // the browser has no share sheet (stubbed so every project takes the copy path).
+        await page.evaluate(() => {
+          Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
+          Object.defineProperty(navigator, 'clipboard', {
+            value: {
+              writeText: async (text: string) => {
+                Reflect.set(window, 'rkSharedLink', text);
+              },
+            },
+            configurable: true,
+          });
+        });
+        await page.getByRole('button', { name: 'Send to a classmate', exact: true }).click();
+        await expect(page.getByText('Link copied', { exact: true })).toBeVisible();
+        const sharedLink = new URL(
+          await page.evaluate(() => String(Reflect.get(window, 'rkSharedLink') ?? 'about:blank')),
+        );
+        expect(sharedLink.pathname).toBe(`/en/quiz/${longSlug}`);
+        expect(Object.fromEntries(sharedLink.searchParams)).toEqual({
+          utm_source: 'share',
+          utm_medium: 'result',
+          utm_campaign: 'quiz-share',
+          mode: 'quick',
+        });
+
         const attempt = await fixture.db.collection('attempts').findOne({
           quiz: longQuizId,
           user: fixture.regular.id,

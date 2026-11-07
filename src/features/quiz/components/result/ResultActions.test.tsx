@@ -213,3 +213,47 @@ describe('ResultActions on a quick round (RIN-933)', () => {
     expect(screen.queryByText('retryMissed:3')).not.toBeInTheDocument();
   });
 });
+
+describe('ResultActions share button (RIN-1179)', () => {
+  const share = {
+    quizId: 'quiz-1',
+    slug: 'demo',
+    title: 'Demo',
+    quizQuestionCount: 40,
+    answeredCount: 10,
+  };
+  const shareButton = () => screen.queryByRole('button', { name: 'share' });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchOptedInMock.mockResolvedValue(false);
+  });
+
+  it.each([
+    ['signed-in', { viewer: 'signed_in' as const }],
+    ['guest', { viewer: 'guest' as const }],
+    ['pending viewer', { viewer: 'pending' as const }],
+    ['quick round', { quickRound: true }],
+  ])(
+    'shows "Send to a classmate" for a shareable quiz (%s) without adding a primary',
+    (_, props) => {
+      render(<ResultActions {...baseProps} {...props} share={share} />);
+
+      expect(shareButton()).toBeInTheDocument();
+      expect(shareButton()).toHaveClass('btn-secondary');
+      expect(
+        screen.queryAllByRole('link').filter((l) => l.className.includes('btn-primary')).length,
+      ).toBeLessThanOrEqual(1);
+    },
+  );
+
+  it('hides it for a quiz the server did not mark shareable (private or Premium)', () => {
+    render(<ResultActions {...baseProps} share={null} />);
+    expect(shareButton()).not.toBeInTheDocument();
+  });
+
+  it('hides it when the result content is locked', () => {
+    render(<ResultActions {...baseProps} contentLocked share={share} />);
+    expect(shareButton()).not.toBeInTheDocument();
+  });
+});

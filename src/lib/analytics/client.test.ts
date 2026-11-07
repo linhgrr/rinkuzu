@@ -112,6 +112,28 @@ describe('analytics client', () => {
     expect(captures[0]?.['$current_url']).toBe('http://localhost:3000/en/pdf-to-quiz');
   });
 
+  it('attributes a signup to a "Send to a classmate" quiz link (RIN-1179)', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/vi/quiz/sinh-hoc?utm_source=share&utm_medium=result&utm_campaign=quiz-share&mode=quick',
+    );
+    const analytics = await loadAnalytics();
+
+    analytics.grantAnalyticsConsent();
+    analytics.trackAnalyticsPageView(window.location.href, 'Quiz');
+    analytics.captureAnalyticsEvent('signup_completed', { method: 'credentials' });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(2));
+    const signup = posthogMock.capture.mock.calls.find((call) => call[0] === 'signup_completed');
+    expect(signup?.[1]).toMatchObject({
+      landing_path: '/vi/quiz/sinh-hoc',
+      utm_source: 'share',
+      utm_medium: 'result',
+      utm_campaign: 'quiz-share',
+    });
+  });
+
   it('reports a missing-consent journey separately by emitting and storing no attribution', async () => {
     window.history.replaceState({}, '', '/en/?utm_source=private-value');
     const analytics = await loadAnalytics();

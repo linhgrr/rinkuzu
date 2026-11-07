@@ -160,7 +160,11 @@
     "saveError": "Không lưu được. Thử lại nhé.",
     "tryAgain": "Thử lại",
     "retryOfMissed": "Làm lại câu sai",
-    "retryPill": "Làm lại câu sai · {count} câu"
+    "retryPill": "Làm lại câu sai · {count} câu",
+    "share": "Gửi cho bạn cùng lớp",
+    "shareText": "Mình vừa làm {count} câu về {title}, thử xem bạn được mấy điểm",
+    "shareCopied": "Đã sao chép liên kết",
+    "shareCopyFailed": "Không sao chép được liên kết"
   },
   "guestSaveTitle": "Lưu kết quả và nhận nhận xét cá nhân hóa",
   "guestSaveBody": "Đăng nhập một lần để giữ kết quả này và xem lại từng câu.",

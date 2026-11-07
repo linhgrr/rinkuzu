@@ -76,10 +76,15 @@ export interface AttemptDetailDto {
   answers: (number | number[])[];
   historyStatus: 'complete' | 'quiz_modified' | 'content_locked';
   quiz: {
+    id: string;
     title: string;
     slug: string;
     description?: string;
     questions: AttemptQuestionDetailDto[];
+    /** Public, non-Premium quiz whose result page may offer "Send to a classmate" (RIN-1179). */
+    shareable: boolean;
+    /** Questions in the live quiz; `totalQuestions` is this attempt's count (10 for a quick round). */
+    questionCount: number;
   };
   /** Questions answered wrong or left blank in this attempt. */
   missedCount: number;

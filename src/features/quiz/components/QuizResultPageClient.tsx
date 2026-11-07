@@ -31,6 +31,7 @@ import { QuestionReviewList } from '@/features/quiz/components/result/QuestionRe
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { ResultActions, type ResultViewer } from '@/features/quiz/components/result/ResultActions';
 import { GuestSaveResultCard } from '@/features/quiz/components/result/GuestSaveResultCard';
+import type { QuizShareTarget } from '@/features/quiz/components/result/ShareResultButton';
 import { claimStoredGuestAttempts } from '@/features/quiz/api/guest-claim-api';
 import { findGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
@@ -492,6 +493,18 @@ function useQuizResultPageData(
   };
 }
 
+/** "Send to a classmate" target (RIN-1179); null unless the server marked the quiz shareable. */
+function shareTargetFor(result: QuizResult): QuizShareTarget | null {
+  if (!result.quiz.shareable) return null;
+  return {
+    quizId: result.quiz.id,
+    slug: result.quiz.slug,
+    title: result.quiz.title,
+    quizQuestionCount: result.quiz.questionCount,
+    answeredCount: result.totalQuestions,
+  };
+}
+
 function QuizResultReadyState({
   aiQuestionData,
   bookmarkedQuestions,
@@ -582,6 +595,7 @@ function QuizResultReadyState({
           viewer={viewer}
           contentLocked={contentLocked}
           quickRound={result.mode === 'quick'}
+          share={shareTargetFor(result)}
         />
 
         {!contentLocked ? (

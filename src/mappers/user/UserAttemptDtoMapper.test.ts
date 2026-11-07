@@ -49,6 +49,22 @@ describe('UserAttemptDtoMapper', () => {
     expect(multipleQuestion).not.toHaveProperty('correctIndex');
   });
 
+  it('maps the share facts and never marks a locked result shareable (RIN-1179)', () => {
+    const fallback = UserAttemptDtoMapper.toDetailDto(attempt);
+    const shared = UserAttemptDtoMapper.toDetailDto(attempt, false, null, {
+      shareable: true,
+      questionCount: 40,
+    });
+    const locked = UserAttemptDtoMapper.toDetailDto(attempt, true, null, {
+      shareable: true,
+      questionCount: 40,
+    });
+
+    expect(fallback.quiz).toMatchObject({ id: 'quiz-1', shareable: false, questionCount: 2 });
+    expect(shared.quiz).toMatchObject({ id: 'quiz-1', shareable: true, questionCount: 40 });
+    expect(locked.quiz.shareable).toBe(false);
+  });
+
   it('omits an absent quiz description from summary DTOs', () => {
     expect(UserAttemptDtoMapper.toSummaryDto(attempt).quiz).not.toHaveProperty('description');
   });

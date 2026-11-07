@@ -6,6 +6,10 @@ import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
+  ShareResultButton,
+  type QuizShareTarget,
+} from '@/features/quiz/components/result/ShareResultButton';
+import {
   fetchReviewReminderOptedIn,
   saveReviewReminder,
 } from '@/features/quiz/api/review-reminder-api';
@@ -31,6 +35,8 @@ interface ResultActionsProps {
   contentLocked: boolean;
   /** Result of a quick round (RIN-933): "Another 10" and "Full quiz" replace the redo link. */
   quickRound?: boolean;
+  /** Public, non-Premium quiz only (RIN-1179): renders "Send to a classmate" as the last row. */
+  share?: QuizShareTarget | null;
 }
 
 type PrimaryAction = 'retry' | 'another' | 'quickAnother' | 'home';
@@ -61,6 +67,7 @@ export function ResultActions({
   viewer,
   contentLocked,
   quickRound = false,
+  share = null,
 }: ResultActionsProps) {
   const t = useTranslations('quiz.resultActions');
   const tQuiz = useTranslations('quiz');
@@ -140,6 +147,9 @@ export function ResultActions({
           </Link>
         ) : null}
       </div>
+      {share && !contentLocked ? (
+        <ShareResultButton share={share} isGuest={viewer === 'guest'} />
+      ) : null}
       {canPersonalize ? <ReviewEmailOptIn attemptId={attemptId} missedCount={missedCount} /> : null}
     </div>
   );

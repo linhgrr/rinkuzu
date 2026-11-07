@@ -13,7 +13,10 @@ describe('toAttemptDetailViewModel', () => {
         answers: [1, [0, 1]],
         historyStatus: 'complete',
         quiz: {
+          id: 'quiz-1',
           title: 'Algebra',
+          shareable: true,
+          questionCount: 40,
           slug: 'algebra',
           questions: [
             {
@@ -47,6 +50,7 @@ describe('toAttemptDetailViewModel', () => {
     expect(result.quiz.questions[0]).not.toHaveProperty('questionImage');
     expect(result.quiz.questions[1]).not.toHaveProperty('correctIndex');
     expect(result).toMatchObject({ totalQuestions: 2, historyStatus: 'complete' });
+    expect(result.quiz).toMatchObject({ id: 'quiz-1', shareable: true, questionCount: 40 });
     expect(result).not.toHaveProperty('questionIndices');
   });
 
@@ -59,7 +63,10 @@ describe('toAttemptDetailViewModel', () => {
       answers: [0],
       historyStatus: 'complete',
       quiz: {
+        id: 'quiz-1',
         title: 'Algebra',
+        shareable: false,
+        questionCount: 1,
         slug: 'algebra',
         questions: [
           {

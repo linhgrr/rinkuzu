@@ -46,6 +46,7 @@ export class AccountDtoMapper {
       ...(profile.bio === undefined ? {} : { bio: profile.bio }),
       ...(profile.avatar === undefined ? {} : { avatar: profile.avatar }),
       ...(subscription === undefined ? {} : { subscription }),
+      ...(profile.hasPassword === undefined ? {} : { hasPassword: profile.hasPassword }),
     };
   }
 

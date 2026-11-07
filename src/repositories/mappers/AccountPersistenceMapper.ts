@@ -23,6 +23,7 @@ export class AccountPersistenceMapper {
       ...(record.subscription === undefined
         ? {}
         : { subscription: toSubscription(record.subscription) }),
+      ...(record.hasPassword === undefined ? {} : { hasPassword: record.hasPassword }),
     };
   }
 

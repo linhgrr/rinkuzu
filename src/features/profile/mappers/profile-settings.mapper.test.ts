@@ -63,6 +63,24 @@ describe('toProfileSettingsViewModel', () => {
   });
 });
 
+describe('toProfileSettingsViewModel hasPassword (RIN-1017)', () => {
+  const base = {
+    email: 'learner@example.com',
+    role: 'user',
+    createdAt: '2026-07-02T00:00:00.000Z',
+  } as const;
+
+  it('keeps hasPassword false for a Google-only account', () => {
+    expect(toProfileSettingsViewModel({ ...base, hasPassword: false }, 'en').hasPassword).toBe(
+      false,
+    );
+  });
+
+  it('omits hasPassword when the API does not send it', () => {
+    expect(toProfileSettingsViewModel(base, 'en')).not.toHaveProperty('hasPassword');
+  });
+});
+
 describe('toProfileSettingsViewModel member-since label', () => {
   // 18:30Z on 1 Nov is already 2 Nov in Asia/Ho_Chi_Minh, the zone every label is pinned to.
   const profile = {

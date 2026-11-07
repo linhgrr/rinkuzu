@@ -21,6 +21,10 @@ const PROFILE_PROJECTION = {
   role: 1,
   createdAt: 1,
   subscription: 1,
+  // A boolean only: the hash itself never leaves the database (RIN-1017).
+  hasPassword: {
+    $and: [{ $eq: [{ $type: '$password' }, 'string'] }, { $ne: ['$password', ''] }],
+  },
 } as const;
 
 export class AccountRepository implements IAccountRepository {

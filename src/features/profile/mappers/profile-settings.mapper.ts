@@ -34,5 +34,6 @@ export function toProfileSettingsViewModel(
     createdAt: profile.createdAt,
     createdAtLabel: formatCalendarDate(profile.createdAt, locale),
     ...(subscription !== undefined && { subscription }),
+    ...(profile.hasPassword !== undefined && { hasPassword: profile.hasPassword }),
   };
 }

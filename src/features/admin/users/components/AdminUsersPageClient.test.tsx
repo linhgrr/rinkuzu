@@ -351,6 +351,33 @@ describe('AdminUsersPageClient load failure (RIN-1158)', () => {
     expect(mutateUsersMock).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps ErrorState, not the skeleton, while Retry refetches (RIN-1166)', () => {
+    listResponse({ error: serverError, isLoading: true, isValidating: true });
+    render(<AdminUsersPageClient />);
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Loading users')).not.toBeInTheDocument();
+  });
+
+  it('keeps the loaded rows and shows an inline error when a refetch fails (RIN-1166)', async () => {
+    const user = userEvent.setup();
+    listResponse({
+      data: { users: [learner], pagination: { page: 1, limit: 10, total: 1, totalPages: 1 } },
+      error: serverError,
+    });
+    render(<AdminUsersPageClient />);
+
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByText('errors.api.server')).toBeInTheDocument();
+    expect(within(rowOf(learner.email)).getByText(learner.email)).toBeInTheDocument();
+    expect(screen.getByText('totalUsers')).toBeInTheDocument();
+    expect(screen.queryByText('internal detail')).not.toBeInTheDocument();
+
+    await user.click(within(alert).getByRole('button', { name: 'common.retry' }));
+
+    expect(mutateUsersMock).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the empty state only after a successful empty response', () => {
     listResponse({
       data: { users: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } },

@@ -801,7 +801,8 @@ export function AdminUsersPageClient() {
     : { page: state.page, limit, total: 0, totalPages: 0 };
 
   // Full-page skeleton only on cold start (no data yet). Filter/page/search refetches keep controls mounted.
-  const isColdStart = usersLoading && !usersData;
+  // A Retry after a failed first load keeps ErrorState up with a pending button instead (RIN-1166).
+  const isColdStart = usersLoading && !usersData && !usersError;
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
@@ -978,7 +979,7 @@ export function AdminUsersPageClient() {
       <div className="mx-auto max-w-6xl">
         <AdminPageHeader title={t('userManagement')} description={t('manageUserAccounts')} />
 
-        {usersError ? (
+        {usersError && !usersData ? (
           // A failed load replaces the stats and the table: zeros would read as data (RIN-1022).
           <ErrorState error={usersError} onRetry={() => mutateUsers()} className="mb-6" />
         ) : (
@@ -993,6 +994,11 @@ export function AdminUsersPageClient() {
               t={t}
               tCommon={tCommon}
             />
+
+            {usersError ? (
+              // A failed refetch keeps the loaded rows; this says they may be stale (RIN-1166).
+              <ErrorState error={usersError} onRetry={() => mutateUsers()} className="mb-6" />
+            ) : null}
 
             {state.localError ? <ErrorState message={state.localError} className="mb-6" /> : null}
 

@@ -34,11 +34,15 @@ import {
   HiOutlineCheck,
   HiOutlineX,
 } from 'react-icons/hi';
+import { useReloadSettled } from '@/features/admin/hooks/useReloadSettled';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface AdminReportsState {
   status: 'loading' | 'ready';
-  /** Raw load failure; the list is replaced by ErrorState until a reload succeeds (RIN-1159). */
+  /**
+   * Raw load failure; the filters and the list are replaced by ErrorState until a reload
+   * succeeds (RIN-1159). Kept while a retry runs: Retry stays pending, no skeleton (RIN-1166).
+   */
   loadError: unknown;
   /** Bumped by Retry to rerun the load effect for the same filter. */
   reloadToken: number;
@@ -315,6 +319,7 @@ export function AdminReportsPageClient() {
   const describeError = useAdminApiErrorMessage();
   const tAdmin = useTranslations('admin');
   const [state, dispatch] = useReducer(adminReportsReducer, initialState);
+  const { waitForReload, settleReload } = useReloadSettled();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -331,6 +336,7 @@ export function AdminReportsPageClient() {
         console.error('Error fetching reports:', error);
         dispatch({ type: 'patch', value: { status: 'ready', loadError: error } });
       }
+      settleReload();
     }
 
     dispatch({ type: 'patch', value: { status: 'loading' } });
@@ -340,7 +346,7 @@ export function AdminReportsPageClient() {
       cancelled = true;
       controller.abort();
     };
-  }, [state.statusFilter, state.reloadToken]);
+  }, [state.statusFilter, state.reloadToken, settleReload]);
 
   const openReportModal = (report: AdminReportViewModel) => {
     dispatch({
@@ -406,7 +412,7 @@ export function AdminReportsPageClient() {
   return (
     <AdminPageShell contentClassName="bg-neutral-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {state.status === 'loading' ? (
+        {state.status === 'loading' && !state.loadError ? (
           <AdminReportsPageSkeleton />
         ) : (
           <>
@@ -414,18 +420,21 @@ export function AdminReportsPageClient() {
               title={tAdmin('quizReports')}
               description={tAdmin('reportsDescription')}
             />
-            <ReportFilterBar
-              statusFilter={state.statusFilter}
-              onChange={(status) => dispatch({ type: 'patch', value: { statusFilter: status } })}
-            />
+            {state.loadError ? null : (
+              <ReportFilterBar
+                statusFilter={state.statusFilter}
+                onChange={(status) => dispatch({ type: 'patch', value: { statusFilter: status } })}
+              />
+            )}
 
             <div className="space-y-4">
               {state.loadError ? (
                 <ErrorState
                   error={state.loadError}
-                  onRetry={() =>
-                    dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } })
-                  }
+                  onRetry={() => {
+                    dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } });
+                    return waitForReload();
+                  }}
                 />
               ) : state.reports.length === 0 ? (
                 <Card className="p-12">

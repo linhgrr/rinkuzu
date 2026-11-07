@@ -33,6 +33,7 @@ import type {
   AdminSubscriptionsPaginationViewModel,
 } from '@/features/admin/subscriptions/types/admin-subscriptions-view-model';
 import { DERIVED_SUBSCRIPTION_STATUSES } from '@/shared/constants/subscription-status';
+import { useReloadSettled } from '@/features/admin/hooks/useReloadSettled';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 // Entitlement status is derived from the projection window, so these are the
@@ -48,7 +49,10 @@ interface AdminSubscriptionsState {
   subscriptions: AdminSubscriptionViewModel[];
   actionLoading: string | null;
   error: string;
-  /** A failed list load: replaces the table with ErrorState and Retry (RIN-1022). */
+  /**
+   * A failed list load: replaces the table with ErrorState and Retry (RIN-1022). Kept while a
+   * retry runs, so Retry stays pending with no skeleton flash (RIN-1166).
+   */
   loadError: unknown;
   reloadToken: number;
   success: string;
@@ -444,10 +448,11 @@ export function AdminSubscriptionsPageClient() {
   const describeError = useAdminApiErrorMessage();
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(adminSubscriptionsReducer, initialState);
+  const { waitForReload, settleReload } = useReloadSettled();
 
   useEffect(() => {
     const controller = new AbortController();
-    dispatch({ type: 'patch', value: { status: 'loading', loadError: null, success: '' } });
+    dispatch({ type: 'patch', value: { status: 'loading', success: '' } });
 
     void fetchAdminSubscriptionsViewModel({
       page: state.pagination.page,
@@ -456,13 +461,17 @@ export function AdminSubscriptionsPageClient() {
       statusFilter: state.statusFilter,
       signal: controller.signal,
     })
-      .then((value) => dispatch({ type: 'loadSuccess', value }))
+      .then((value) => {
+        dispatch({ type: 'loadSuccess', value });
+        settleReload();
+      })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         dispatch({
           type: 'patch',
           value: { status: 'ready', loadError: error },
         });
+        settleReload();
       });
 
     return () => controller.abort();
@@ -472,6 +481,7 @@ export function AdminSubscriptionsPageClient() {
     state.searchTerm,
     state.statusFilter,
     state.reloadToken,
+    settleReload,
   ]);
 
   const setSearchInput = (searchInput: string) => {
@@ -554,9 +564,10 @@ export function AdminSubscriptionsPageClient() {
         {state.loadError ? (
           <ErrorState
             error={state.loadError}
-            onRetry={() =>
-              dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } })
-            }
+            onRetry={() => {
+              dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } });
+              return waitForReload();
+            }}
             className="mb-6"
           />
         ) : (

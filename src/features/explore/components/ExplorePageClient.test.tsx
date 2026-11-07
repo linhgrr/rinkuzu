@@ -99,7 +99,7 @@ describe('ExplorePageClient session gating (RIN-680)', () => {
       // Same tokenized ring as `.btn:focus-visible` in globals.css.
       expect(cta).toHaveClass(
         'focus-visible:outline',
-        'focus-visible:outline-3',
+        'focus-visible:outline-[3px]',
         'focus-visible:outline-offset-2',
         'focus-visible:outline-[var(--focus-ring)]',
       );

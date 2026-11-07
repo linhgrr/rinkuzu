@@ -35,6 +35,7 @@
   },
   "manualEditorTitle": "Soạn quiz của bạn",
   "manualEditorDescription": "Thêm câu hỏi và đáp án. Mọi thay đổi sẽ được tự động lưu.",
+  "draftEditorDescription": "Kiểm tra lại các câu hỏi. Mọi thay đổi sẽ được tự động lưu.",
   "autosaveSaving": "Đang lưu...",
   "autosavePending": "Có thay đổi chưa lưu",
   "autosaveSaved": "Đã lưu",

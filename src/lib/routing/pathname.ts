@@ -121,8 +121,10 @@ export function isAdaptiveExerciseModePath(pathname: string): boolean {
  * halfway through a quiz: it covers the answers they are reading and asks them
  * to make an unrelated decision first. Reserving the space it occupies keeps
  * content reachable; not showing it here is what keeps the task uninterrupted.
+ * The quiz editors count too: their sticky Cancel/Publish bar sits exactly where
+ * a docked prompt lands (RIN-993).
  */
-const FOCUSED_TASK_PREFIXES = [...EXERCISE_MODE_PREFIXES, '/quiz'];
+const FOCUSED_TASK_PREFIXES = [...EXERCISE_MODE_PREFIXES, '/quiz', '/draft', '/edit'];
 
 export function isFocusedTaskPath(pathname: string): boolean {
   const pathWithoutLocale = stripLocaleFromPath(pathname);

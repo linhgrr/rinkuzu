@@ -31,5 +31,13 @@
   "timedOut": "Hết thời gian chờ xử lý PDF",
   "readyTitle": "\"{title}\" đã sẵn sàng!",
   "readyDescription": "{count} câu hỏi được trích xuất",
-  "view": "Xem"
+  "view": "Xem",
+  "meta": {
+    "editTitle": "Chỉnh sửa bản nháp quiz | RinKuzu"
+  },
+  "notFound": {
+    "title": "Không tìm thấy bản nháp",
+    "description": "Bản nháp này có thể đã hết hạn, đã được xuất bản, hoặc bạn không có quyền truy cập.",
+    "backToDashboard": "Quay về bảng điều khiển"
+  }
 }

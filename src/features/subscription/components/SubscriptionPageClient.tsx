@@ -18,6 +18,7 @@ import {
   FREE_PRICING_FEATURE_KEYS,
   PREMIUM_PRICING_FEATURE_KEYS,
 } from '@/features/subscription/constants/pricing-features';
+import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
 
 async function loadSubscriptionPage(dispatch: Dispatch<SubscriptionPageAction>): Promise<void> {
   dispatch({ type: 'loadStart' });
@@ -164,7 +165,9 @@ export function SubscriptionPageClient() {
                   <div className="text-2xl md:text-4xl font-bold text-accent mb-2">
                     {plan.priceLabel}
                   </div>
-                  <p className="text-sm md:text-base text-ink-muted">{plan.durationDisplay}</p>
+                  <p className="text-sm md:text-base text-ink-muted">
+                    {formatPlanDuration(tPricing, plan.calculatedMonths)}
+                  </p>
                 </div>
 
                 <p className="mb-3 font-medium text-green-700">

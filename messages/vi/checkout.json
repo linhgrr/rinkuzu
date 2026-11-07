@@ -2,7 +2,8 @@
   "loading": "Đang tải trang thanh toán…",
   "noPlan": {
     "title": "Bạn chưa chọn gói",
-    "action": "Chọn gói Premium"
+    "action": "Chọn gói Premium",
+    "unavailable": "Gói này không còn khả dụng"
   },
   "shell": {
     "navigation": "Điều hướng thanh toán",
@@ -63,7 +64,8 @@
     "continuePayment": "Tiếp tục đến PayOS · {amount}",
     "verify": "Kiểm tra lại",
     "cancel": "Hủy đơn",
-    "choosePlan": "Quay lại chọn gói"
+    "choosePlan": "Quay lại chọn gói",
+    "retry": "Thử lại"
   },
   "errors": {
     "quote": "Không thể tạo báo giá",

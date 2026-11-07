@@ -27,6 +27,12 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { ApiResponseError } from '@/lib/api/client';
 import { formatVndCurrency } from '@/lib/formatters';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
+import {
+  CheckoutEmptyState,
+  CheckoutQuoteFailure,
+  isUnavailablePlan,
+  type QuoteFailure,
+} from './CheckoutEmptyState';
 
 type CheckoutStatusKey =
   | 'status.fulfilled'
@@ -91,6 +97,12 @@ function errorMessageKey(error: unknown, fallback: CheckoutErrorKey): CheckoutEr
   return error.code ? (keys[error.code] ?? fallback) : fallback;
 }
 
+function quoteFailureFor(error: unknown): QuoteFailure {
+  return isUnavailablePlan(error)
+    ? { unavailable: true }
+    : { unavailable: false, messageKey: errorMessageKey(error, 'errors.quote') };
+}
+
 type CheckoutClientProps = {
   planId: string | null;
   orderId: string | null;
@@ -101,6 +113,8 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
   const t = useTranslations('checkout');
   const router = useRouter();
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [quoteFailure, setQuoteFailure] = useState<QuoteFailure | null>(null);
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [order, setOrder] = useState<CheckoutOrder | null>(null);
   const [promoCode, setPromoCode] = useState('');
   const [promoOpen, setPromoOpen] = useState(false);
@@ -144,9 +158,9 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
     if (!planId) return;
     void requestCheckoutQuote(planId, null)
       .then(setQuote)
-      .catch((error: unknown) => toast.error(t(errorMessageKey(error, 'errors.quote'))))
+      .catch((error: unknown) => setQuoteFailure(quoteFailureFor(error)))
       .finally(() => setLoading(false));
-  }, [hasProviderCallback, orderId, planId, t]);
+  }, [hasProviderCallback, orderId, planId, quoteAttempt, t]);
 
   const linkExpired =
     order !== null && order.collectionStatus === 'unpaid' && hasExpiredLink(order);
@@ -201,15 +215,19 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
   }
 
   if (!planId && !orderId) {
+    return <CheckoutEmptyState title={t('noPlan.title')} />;
+  }
+
+  if (quoteFailure) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-12">
-        <Card className="p-6 text-center">
-          <h1 className="text-xl font-semibold text-ink">{t('noPlan.title')}</h1>
-          <Button className="mt-5" onClick={() => router.push('/subscription')}>
-            {t('noPlan.action')}
-          </Button>
-        </Card>
-      </div>
+      <CheckoutQuoteFailure
+        failure={quoteFailure}
+        onRetry={() => {
+          setLoading(true);
+          setQuoteFailure(null);
+          setQuoteAttempt((value) => value + 1);
+        }}
+      />
     );
   }
 

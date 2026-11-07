@@ -48,6 +48,8 @@
     "next": "Trang sau",
     "conversationLoading": "Đang tải cuộc trao đổi…",
     "conversationError": "Không thể tải ticket hỗ trợ.",
+    "conversationTitle": "Yêu cầu hỗ trợ",
+    "noMessages": "Yêu cầu này chưa có tin nhắn nào.",
     "history": "Lịch sử trao đổi",
     "attachmentAlt": "Ảnh đính kèm hỗ trợ",
     "reply": "Phản hồi",
@@ -213,8 +215,8 @@
       "markResolved": "Đã xử lý",
       "close": "Đóng"
     },
-    "campaignLoadError": "Không thể tải campaign.",
-    "campaignCreateError": "Không thể tạo campaign",
+    "campaignLoadError": "Không thể tải chiến dịch.",
+    "campaignCreateError": "Không thể tạo chiến dịch",
     "campaignActionError": "Thao tác thất bại",
     "feedbackInviteError": "Không thể gửi lời mời",
     "feedbackLoadError": "Không thể tải cuộc trao đổi.",
@@ -249,7 +251,14 @@
         "image": "Hình ảnh",
         "button": "Xem thêm"
       }
-    }
+    },
+    "campaignsLoadError": "Không thể tải danh sách chiến dịch.",
+    "campaignTitle": "Chiến dịch",
+    "backToCampaigns": "Quay lại danh sách chiến dịch",
+    "feedbackListLoadError": "Không thể tải các cuộc trao đổi góp ý.",
+    "feedbackTitle": "Cuộc trao đổi góp ý",
+    "backToFeedback": "Quay lại danh sách góp ý",
+    "supportListLoadError": "Không thể tải hộp thư hỗ trợ."
   },
   "unsubscribe": {
     "metaTitle": "Hủy nhận email | RinKuzu",

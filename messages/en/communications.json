@@ -48,6 +48,8 @@
     "next": "Next",
     "conversationLoading": "Loading conversation…",
     "conversationError": "Could not load this support ticket.",
+    "conversationTitle": "Support request",
+    "noMessages": "No messages in this request yet.",
     "history": "Conversation history",
     "attachmentAlt": "Support attachment",
     "reply": "Reply",
@@ -249,7 +251,14 @@
         "image": "Image",
         "button": "Learn more"
       }
-    }
+    },
+    "campaignsLoadError": "Could not load campaigns.",
+    "campaignTitle": "Campaign",
+    "backToCampaigns": "Back to campaigns",
+    "feedbackListLoadError": "Could not load feedback conversations.",
+    "feedbackTitle": "Feedback conversation",
+    "backToFeedback": "Back to feedback",
+    "supportListLoadError": "Could not load the support inbox."
   },
   "unsubscribe": {
     "metaTitle": "Unsubscribe | RinKuzu",

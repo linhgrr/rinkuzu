@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SubscriptionDurationType, PREDEFINED_DURATIONS } from '@/types/subscription';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Modal } from '@/components/ui/Modal';
 import { HiOutlinePlus } from 'react-icons/hi';
 import {
@@ -402,6 +404,8 @@ export function AdminPlansPageClient() {
     success: '',
   });
   const [showCreateForm, setShowCreateForm] = useState(false);
+  // A failed list load, kept apart from mutation errors: it replaces the list (RIN-1022).
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const pushSuccess = (message: string) => {
     setStatus((prev) => ({ ...prev, success: message, error: '' }));
@@ -431,15 +435,21 @@ export function AdminPlansPageClient() {
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setStatus((prev) => ({
-          ...prev,
-          loading: false,
-          error: describeError(error),
-        }));
+        setLoadError(error);
+        setStatus((prev) => ({ ...prev, loading: false }));
       });
 
     return () => controller.abort();
-  }, [describeError]);
+  }, []);
+
+  const retryLoad = () =>
+    fetchAdminBillingPlanViewModels().then(
+      (data) => {
+        setPlans(data);
+        setLoadError(null);
+      },
+      (error: unknown) => setLoadError(error),
+    );
 
   const handleSavePlan = async (planId: string, payload: AdminBillingPlanMutationInput) => {
     try {
@@ -516,33 +526,37 @@ export function AdminPlansPageClient() {
               createLabel={`${tCommon('create')} Plan`}
             />
 
-            {status.error && (
-              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
-                {status.error}
-              </div>
-            )}
-
-            {status.success && (
-              <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
-                {status.success}
-              </div>
-            )}
-
-            {plans.length === 0 ? (
-              <div className="py-12 text-center">
-                <div className="font-home text-ink-muted">{t('noPlansFound')}</div>
-              </div>
+            {loadError ? (
+              <ErrorState error={loadError} onRetry={retryLoad} className="mb-6" />
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {plans.map((plan) => (
-                  <PlanCard
-                    key={plan.id}
-                    plan={plan}
-                    onSave={handleSavePlan}
-                    onDelete={(planId) => handleDeletePlan(planId)}
-                  />
-                ))}
-              </div>
+              <>
+                {status.error && (
+                  <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+                    {status.error}
+                  </div>
+                )}
+
+                {status.success && (
+                  <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+                    {status.success}
+                  </div>
+                )}
+
+                {plans.length === 0 ? (
+                  <EmptyState title={t('noPlansFound')} />
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {plans.map((plan) => (
+                      <PlanCard
+                        key={plan.id}
+                        plan={plan}
+                        onSave={handleSavePlan}
+                        onDelete={(planId) => handleDeletePlan(planId)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

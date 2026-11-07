@@ -1,10 +1,10 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
-import type { ReactElement } from 'react';
+import type { AnchorHTMLAttributes, ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import viCommon from '@/../messages/vi/common.json';
 import enCommunications from '@/../messages/en/communications.json';
@@ -14,12 +14,14 @@ import { ApiResponseError } from '@/lib/api/client';
 import type {
   CampaignDetailViewModel,
   FeedbackDetailViewModel,
+  SupportDetailViewModel,
 } from '../types/communication-view-model';
 import { AdminCampaignDetailPage } from './AdminCampaignDetailPage';
 import { AdminCampaignsPage } from './AdminCampaignsPage';
 import { AdminFeedbackConversationPage } from './AdminFeedbackConversationPage';
 import { AdminFeedbackPage } from './AdminFeedbackPage';
 import { AdminSupportPage } from './AdminSupportPage';
+import { SupportConversationPage } from './SupportConversationPage';
 
 const mocks = vi.hoisted(() => ({
   swr: vi.fn(),
@@ -34,7 +36,15 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('swr', () => ({ default: (...args: unknown[]) => mocks.swr(...args) }));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: mocks.push, back: vi.fn() }),
+  usePathname: () => '/admin',
+  Link: ({ href, children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
 vi.mock('../api/communications-api', () => ({
   cancelCampaign: vi.fn(),
@@ -47,6 +57,11 @@ vi.mock('../api/communications-api', () => ({
   fetchFeedbackDetail: vi.fn(),
   fetchFeedbackList: vi.fn(),
   fetchSupportTickets: vi.fn(),
+  fetchSupportDetail: vi.fn(),
+  addSupportMessage: vi.fn(),
+  reopenSupport: vi.fn(),
+  updateSupportStatus: vi.fn(),
+  uploadSupportImage: vi.fn(),
   prepareCampaign: vi.fn(),
   remindFeedback: vi.fn(),
   replyFeedback: mocks.replyFeedback,
@@ -58,6 +73,7 @@ vi.mock('../api/communications-api', () => ({
 const USER_ID = '6a8ed209f04328ac17443d92';
 const SERVER_TEXT = 'Mongo timeout for learner secret@example.com';
 const admin = viCommunications.admin;
+const support = viCommunications.support;
 
 function renderVi(ui: ReactElement) {
   return render(
@@ -144,6 +160,30 @@ function feedbackDetail(
   };
 }
 
+function supportDetail(): SupportDetailViewModel {
+  return {
+    ticket: {
+      id: 'ticket-1',
+      userId: 'user-1',
+      userEmail: 'learner@example.test',
+      subject: 'Không đổi được email',
+      category: 'account',
+      status: 'open',
+      priority: 'normal',
+      createdBy: 'user',
+      lastMessageAt: '2026-11-01T10:00:00.000Z',
+      resolvedAt: null,
+      closedAt: null,
+      reopenUntil: null,
+      canReopen: false,
+      revision: 0,
+      createdAt: '2026-11-01T10:00:00.000Z',
+      updatedAt: '2026-11-01T10:00:00.000Z',
+    },
+    messages: [],
+  };
+}
+
 /** The shared ErrorState surface box, not a bare text-error line (RIN-846). */
 function expectErrorBox(alert: HTMLElement): void {
   expect(alert).toHaveClass('bg-error-surface');
@@ -180,7 +220,7 @@ describe('admin communications pages use the API error layer', () => {
     expect(mocks.mutate).not.toHaveBeenCalled();
   });
 
-  it('shows the localized load error, never the server text, when the campaign cannot load', () => {
+  it('keeps an h1 and a Back link when the campaign cannot load, with no code or server text', () => {
     mocks.swr.mockReturnValue({
       data: undefined,
       error: apiError(500, 'internal_error'),
@@ -189,9 +229,15 @@ describe('admin communications pages use the API error layer', () => {
 
     renderVi(<AdminCampaignDetailPage id="campaign-1" />);
 
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(admin.campaignTitle);
+    expect(screen.getByRole('link', { name: admin.backToCampaigns })).toHaveAttribute(
+      'href',
+      '/admin/campaigns',
+    );
     const alert = screen.getByRole('alert');
     expectErrorBox(alert);
-    expect(alert).toHaveTextContent(`${admin.campaignLoadError} · Mã: internal_error`);
+    expect(alert).toHaveTextContent(admin.campaignLoadError);
+    expect(alert).not.toHaveTextContent('Mã:');
     expect(alert).not.toHaveTextContent(SERVER_TEXT);
   });
 
@@ -251,9 +297,15 @@ describe('admin communications pages use the API error layer', () => {
     });
 
     renderVi(<AdminFeedbackConversationPage id="feedback-1" />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(admin.feedbackTitle);
+    expect(screen.getByRole('link', { name: admin.backToFeedback })).toHaveAttribute(
+      'href',
+      '/admin/feedback',
+    );
     const alert = screen.getByRole('alert');
     expectErrorBox(alert);
-    expect(alert).toHaveTextContent(`${admin.feedbackLoadError} · Mã: internal_error`);
+    expect(alert).toHaveTextContent(admin.feedbackLoadError);
+    expect(alert).not.toHaveTextContent('Mã:');
     await user.click(screen.getByRole('button', { name: viCommon.retry }));
 
     expect(mocks.mutate).toHaveBeenCalledTimes(1);
@@ -270,6 +322,73 @@ describe('admin communications pages use the API error layer', () => {
     const alert = await screen.findByRole('alert');
     const list = screen.getByRole('list');
     expect(alert.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it.each([
+    { page: 'campaigns', ui: <AdminCampaignsPage />, copy: admin.campaignsLoadError },
+    { page: 'feedback', ui: <AdminFeedbackPage />, copy: admin.feedbackListLoadError },
+    { page: 'support', ui: <AdminSupportPage />, copy: admin.supportListLoadError },
+  ])('$page: a failed list load shows ErrorState with Retry, not a blank card', async (row) => {
+    const user = userEvent.setup();
+    mocks.swr.mockReturnValue({
+      data: undefined,
+      error: apiError(500, 'internal_error'),
+      mutate: mocks.mutate,
+    });
+
+    renderVi(row.ui);
+
+    const alert = screen.getByRole('alert');
+    expectErrorBox(alert);
+    expect(alert).toHaveTextContent(row.copy);
+    expect(alert).not.toHaveTextContent('Mã:');
+    expect(alert).not.toHaveTextContent(SERVER_TEXT);
+    await user.click(within(alert).getByRole('button', { name: viCommon.retry }));
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('support detail: a failed load keeps an h1, a Back link and Retry', async () => {
+    const user = userEvent.setup();
+    mocks.swr.mockReturnValue({
+      data: undefined,
+      error: apiError(500, 'internal_error'),
+      isLoading: false,
+      mutate: mocks.mutate,
+    });
+
+    renderVi(<SupportConversationPage ticketId="ticket-1" admin />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(support.conversationTitle);
+    expect(screen.getByRole('link', { name: support.backToRequests })).toHaveAttribute(
+      'href',
+      '/admin/support',
+    );
+    const alert = screen.getByRole('alert');
+    expectErrorBox(alert);
+    expect(alert).toHaveTextContent(support.conversationError);
+    expect(alert).not.toHaveTextContent('Mã:');
+    expect(alert).not.toHaveTextContent(SERVER_TEXT);
+    await user.click(within(alert).getByRole('button', { name: viCommon.retry }));
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('support detail: a ticket with no messages says so, with no error', () => {
+    mocks.swr.mockReturnValue({
+      data: supportDetail(),
+      error: undefined,
+      isLoading: false,
+      mutate: mocks.mutate,
+    });
+
+    renderVi(<SupportConversationPage ticketId="ticket-1" admin />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Không đổi được email');
+    expect(screen.getByText(support.noMessages)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: support.backToRequests })).toHaveAttribute(
+      'href',
+      '/admin/support',
+    );
   });
 
   it('has the invalid schedule time copy in both locales', () => {

@@ -48,6 +48,9 @@ interface AdminSubscriptionsState {
   subscriptions: AdminSubscriptionViewModel[];
   actionLoading: string | null;
   error: string;
+  /** A failed list load: replaces the table with ErrorState and Retry (RIN-1022). */
+  loadError: unknown;
+  reloadToken: number;
   success: string;
   searchInput: string;
   searchTerm: string;
@@ -81,6 +84,8 @@ const initialState: AdminSubscriptionsState = {
   subscriptions: [],
   actionLoading: null,
   error: '',
+  loadError: null,
+  reloadToken: 0,
   success: '',
   searchInput: '',
   searchTerm: '',
@@ -143,6 +148,7 @@ function adminSubscriptionsReducer(
         subscriptions: action.value.subscriptions,
         pagination: action.value.pagination,
         error: '',
+        loadError: null,
       };
     case 'revoked': {
       // The ledger holds no grants after a revoke, so the derived status is
@@ -448,7 +454,7 @@ export function AdminSubscriptionsPageClient() {
 
   useEffect(() => {
     const controller = new AbortController();
-    dispatch({ type: 'patch', value: { status: 'loading', success: '' } });
+    dispatch({ type: 'patch', value: { status: 'loading', loadError: null, success: '' } });
 
     void fetchAdminSubscriptionsViewModel({
       page: state.pagination.page,
@@ -462,10 +468,7 @@ export function AdminSubscriptionsPageClient() {
         if (controller.signal.aborted) return;
         dispatch({
           type: 'patch',
-          value: {
-            status: 'ready',
-            error: describeError(error),
-          },
+          value: { status: 'ready', loadError: error },
         });
       });
 
@@ -475,7 +478,7 @@ export function AdminSubscriptionsPageClient() {
     state.pagination.page,
     state.searchTerm,
     state.statusFilter,
-    describeError,
+    state.reloadToken,
   ]);
 
   const setSearchInput = (searchInput: string) => {
@@ -552,54 +555,69 @@ export function AdminSubscriptionsPageClient() {
       <div className="mx-auto max-w-6xl">
         <AdminPageHeader title={t('subscriptions')} description={tPage('description')} />
 
-        <SubscriptionSearchBar
-          searchTerm={state.searchInput}
-          statusFilter={state.statusFilter}
-          clearLabel={tCommon('clear')}
-          searchPlaceholder={t('searchByEmailPlaceholder')}
-          onSearchTermChange={setSearchInput}
-          onSubmit={handleSearch}
-          onClear={handleClearFilters}
-        />
-
-        <SubscriptionStatusFilters currentFilter={state.statusFilter} onChange={setStatusFilter} />
-
-        {state.error ? <ErrorState message={state.error} className="mb-6" /> : null}
-        {state.success ? (
-          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
-            {state.success}
-          </div>
-        ) : null}
-
-        {state.status === 'loading' ? (
-          <AdminSubscriptionsPageSkeleton />
+        {state.loadError ? (
+          <ErrorState
+            error={state.loadError}
+            onRetry={() =>
+              dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } })
+            }
+            className="mb-6"
+          />
         ) : (
           <>
-            <SubscriptionsTable
-              subscriptions={state.subscriptions}
-              pagination={state.pagination}
-              noResultsLabel={t('noSubscriptionsFound')}
-              onViewDetails={(subscription) =>
-                dispatch({
-                  type: 'patch',
-                  value: {
-                    selectedSubscription: subscription,
-                    revokeReason: '',
-                    revokeConfirmation: '',
-                  },
-                })
-              }
+            <SubscriptionSearchBar
+              searchTerm={state.searchInput}
+              statusFilter={state.statusFilter}
+              clearLabel={tCommon('clear')}
+              searchPlaceholder={t('searchByEmailPlaceholder')}
+              onSearchTermChange={setSearchInput}
+              onSubmit={handleSearch}
+              onClear={handleClearFilters}
             />
 
-            {state.pagination.totalPages > 1 ? (
-              <div className="mt-6">
-                <Pagination
-                  currentPage={state.pagination.page}
-                  totalPages={state.pagination.totalPages}
-                  onPageChange={handlePageChange}
-                />
+            <SubscriptionStatusFilters
+              currentFilter={state.statusFilter}
+              onChange={setStatusFilter}
+            />
+
+            {state.error ? <ErrorState message={state.error} className="mb-6" /> : null}
+            {state.success ? (
+              <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+                {state.success}
               </div>
             ) : null}
+
+            {state.status === 'loading' ? (
+              <AdminSubscriptionsPageSkeleton />
+            ) : (
+              <>
+                <SubscriptionsTable
+                  subscriptions={state.subscriptions}
+                  pagination={state.pagination}
+                  noResultsLabel={t('noSubscriptionsFound')}
+                  onViewDetails={(subscription) =>
+                    dispatch({
+                      type: 'patch',
+                      value: {
+                        selectedSubscription: subscription,
+                        revokeReason: '',
+                        revokeConfirmation: '',
+                      },
+                    })
+                  }
+                />
+
+                {state.pagination.totalPages > 1 ? (
+                  <div className="mt-6">
+                    <Pagination
+                      currentPage={state.pagination.page}
+                      totalPages={state.pagination.totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                ) : null}
+              </>
+            )}
           </>
         )}
 

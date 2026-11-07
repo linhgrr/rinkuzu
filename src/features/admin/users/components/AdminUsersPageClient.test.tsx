@@ -17,8 +17,11 @@ vi.mock('next-auth/react', () => ({
 }));
 vi.mock('next-intl', () => ({
   useTranslations: () => translate,
+  useLocale: () => 'en',
 }));
 vi.mock('@/i18n/navigation', () => ({
+  usePathname: () => '/admin/users',
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
   Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
     <a href={String(href)} {...props}>
       {children}
@@ -299,5 +302,62 @@ describe('AdminUsersPageClient row layout (RIN-1021)', () => {
     expect(within(row).queryByRole('button', { name: 'makeUser' })).not.toBeInTheDocument();
     expect(within(row).queryByRole('button', { name: 'disable' })).not.toBeInTheDocument();
     expect(within(row).queryByRole('button', { name: 'addSubscription' })).not.toBeInTheDocument();
+  });
+});
+
+describe('AdminUsersPageClient load failure (RIN-1158)', () => {
+  const serverError = new ApiResponseError({
+    message: 'internal detail',
+    status: 500,
+    payload: null,
+    code: 'internal',
+  });
+
+  function listResponse(overrides: Record<string, unknown>) {
+    swrMock.mockImplementation((key: string) =>
+      key.startsWith('/api/admin/users')
+        ? { data: undefined, isLoading: false, mutate: mutateUsersMock, ...overrides }
+        : { data: [], isLoading: false, mutate: vi.fn() },
+    );
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mutateUsersMock.mockResolvedValue(undefined);
+  });
+
+  it('shows ErrorState with Retry in place of the stat cards and the table', () => {
+    listResponse({ error: serverError });
+    render(<AdminUsersPageClient />);
+
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByText('errors.api.server')).toBeInTheDocument();
+    expect(within(alert).getByRole('button', { name: 'common.retry' })).toBeInTheDocument();
+    expect(screen.queryByText('totalUsers')).not.toBeInTheDocument();
+    expect(screen.queryByText('allUsers')).not.toBeInTheDocument();
+    expect(screen.queryByText('noUsersFound')).not.toBeInTheDocument();
+    expect(screen.queryByText(/codeLabel|Code:/)).not.toBeInTheDocument();
+    expect(screen.queryByText('internal detail')).not.toBeInTheDocument();
+  });
+
+  it('refetches the list on Retry', async () => {
+    const user = userEvent.setup();
+    listResponse({ error: serverError });
+    render(<AdminUsersPageClient />);
+
+    await user.click(screen.getByRole('button', { name: 'common.retry' }));
+
+    expect(mutateUsersMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the empty state only after a successful empty response', () => {
+    listResponse({
+      data: { users: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } },
+    });
+    render(<AdminUsersPageClient />);
+
+    expect(screen.getByText('noUsersFound')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

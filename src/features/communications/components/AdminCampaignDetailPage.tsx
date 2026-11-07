@@ -14,6 +14,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { CampaignBlockEditor } from './CampaignBlockEditor';
 import { campaignStatusLabel } from '../lib/admin-labels';
+import { DetailLoadError } from './DetailLoadError';
 import {
   cancelCampaign,
   fetchCampaignDetail,
@@ -29,19 +30,20 @@ import type {
 
 export function AdminCampaignDetailPage({ id }: { id: string }) {
   const t = useTranslations('communications.admin');
-  const describeError = useAdminApiErrorMessage();
   const { data, error, mutate } = useSWR(`campaign:${id}`, () => fetchCampaignDetail(id), {
     refreshInterval: 10_000,
   });
-  // Described once per error object: the 10 s refresh re-renders, and describing logs.
-  const loadError = useMemo(
-    () => (error ? describeError(error, t('campaignLoadError')) : ''),
-    [describeError, error, t],
-  );
   if (error)
     return (
       <AdminPageShell>
-        <ErrorState message={loadError} onRetry={() => mutate()} />
+        <DetailLoadError
+          href="/admin/campaigns"
+          label={t('backToCampaigns')}
+          title={t('campaignTitle')}
+          error={error}
+          message={t('campaignLoadError')}
+          onRetry={() => mutate()}
+        />
       </AdminPageShell>
     );
   if (!data) return <div className="p-8">{t('loading')}</div>;

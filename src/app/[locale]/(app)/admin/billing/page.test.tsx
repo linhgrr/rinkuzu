@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiResponseError } from '@/lib/api/client';
 
 const { useOrdersMock, useDiagnosticsMock } = vi.hoisted(() => ({
   useOrdersMock: vi.fn(),
@@ -8,7 +9,16 @@ const { useOrdersMock, useDiagnosticsMock } = vi.hoisted(() => ({
 }));
 
 const translate = vi.hoisted(() => (key: string) => key);
-vi.mock('next-intl', () => ({ useTranslations: () => translate }));
+vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
+vi.mock('@/i18n/navigation', () => ({
+  usePathname: () => '/admin/billing',
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock('@/features/admin/billing/hooks/useAdminBillingOrders', () => ({
   useAdminBillingOrders: useOrdersMock,
 }));
@@ -36,7 +46,7 @@ function orders() {
     bucket: 'attention' as const,
     searchInput: '',
     status: 'ready' as const,
-    error: '',
+    loadError: null,
     setBucket: vi.fn(),
     setSearchInput: vi.fn(),
     submitSearch: vi.fn(),
@@ -114,12 +124,28 @@ describe('the admin billing page', () => {
     expect(screen.getByRole('button', { name: 'Webhooks' })).toBeInTheDocument();
   });
 
-  it('surfaces a failed order query rather than an empty table', () => {
-    useOrdersMock.mockReturnValue({ ...orders(), error: 'Failed to load billing orders' });
+  it('replaces the tiles and the table with ErrorState and Retry when the query fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const view = {
+      ...orders(),
+      loadError: new ApiResponseError({
+        message: 'internal detail',
+        status: 500,
+        payload: null,
+        code: 'internal',
+      }),
+    };
+    useOrdersMock.mockReturnValue(view);
 
     render(<AdminBillingPage />);
 
-    expect(screen.getByText('Failed to load billing orders')).toBeInTheDocument();
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByText('errors.api.server')).toBeInTheDocument();
+    expect(screen.queryByText('Orders needing attention')).not.toBeInTheDocument();
+    expect(screen.queryByText('0 orders')).not.toBeInTheDocument();
+    expect(screen.queryByText(/codeLabel|Code:/)).not.toBeInTheDocument();
+    await userEvent.setup().click(within(alert).getByRole('button', { name: 'common.retry' }));
+    expect(view.reload).toHaveBeenCalledTimes(1);
   });
 
   it('delegates every bucket to the hook rather than filtering in the view', () => {

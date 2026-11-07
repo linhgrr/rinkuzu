@@ -21,9 +21,11 @@ export function AdminSupportPage() {
   const t = useTranslations('communications.admin');
   const describeError = useAdminApiErrorMessage();
   const [page, setPage] = useState(1);
-  const { data, mutate } = useSWR(`/api/admin/support?page=${page}`, () =>
-    fetchSupportTickets(true, page),
-  );
+  const {
+    data,
+    error: loadError,
+    mutate,
+  } = useSWR(`/api/admin/support?page=${page}`, () => fetchSupportTickets(true, page));
   const [userId, setUserId] = useState(() => params.get('userId') ?? '');
   const [subject, setSubject] = useState(() => t('support.defaultSubject'));
   const [body, setBody] = useState('');
@@ -92,11 +94,20 @@ export function AdminSupportPage() {
             </form>
           </CardContent>
         </Card>
-        <Card>
+        {/* On a failed load the list (now the error) comes first below xl, on the first screen. */}
+        <Card className={loadError ? 'order-first xl:order-none' : undefined}>
           <CardHeader>
             <CardTitle>{t('support.inboxTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* A failed load replaced the list with nothing at all (RIN-1159). */}
+            {loadError ? (
+              <ErrorState
+                error={loadError}
+                message={t('supportListLoadError')}
+                onRetry={() => mutate()}
+              />
+            ) : null}
             {data?.items.map((ticket) => (
               <ButtonBase
                 key={ticket.id}

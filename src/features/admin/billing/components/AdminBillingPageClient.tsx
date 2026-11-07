@@ -61,7 +61,12 @@ export function AdminBillingPageClient() {
           description="Payment pipeline health, per-order provider facts, and the webhook door's own record"
         />
 
-        <BillingHealthTiles health={orders.health} />
+        {/* A failed load replaces the tiles and the table: zeros would read as data (RIN-1022). */}
+        {orders.loadError ? (
+          <ErrorState error={orders.loadError} onRetry={orders.reload} className="mb-6" />
+        ) : (
+          <BillingHealthTiles health={orders.health} />
+        )}
 
         <div className="mb-6 flex flex-wrap gap-2 border-b border-line">
           {(['orders', 'webhooks'] as const).map((candidate) => (
@@ -82,7 +87,7 @@ export function AdminBillingPageClient() {
 
         {tab === 'webhooks' ? (
           <WebhookDiagnosticsPanel diagnostics={diagnostics} />
-        ) : (
+        ) : orders.loadError ? null : (
           <>
             <form onSubmit={handleSearch} className="mb-4 flex flex-wrap items-center gap-3">
               <div className="max-w-md min-w-60 flex-1">
@@ -117,8 +122,6 @@ export function AdminBillingPageClient() {
             {activeBucket ? (
               <p className="mb-6 text-sm text-neutral-500">{activeBucket.hint}</p>
             ) : null}
-
-            {orders.error ? <ErrorState message={orders.error} className="mb-6" /> : null}
 
             <Card>
               <CardHeader>

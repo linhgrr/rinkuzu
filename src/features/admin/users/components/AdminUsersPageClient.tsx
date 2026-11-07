@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useReducer } from 'react';
+import { useReducer } from 'react';
 import type { FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
@@ -794,12 +794,6 @@ export function AdminUsersPageClient() {
   });
 
   const { data: plansData } = useSWR('/api/admin/plans', () => fetchAdminBillingPlanViewModels());
-  // Described once per error object, not on every render: describing logs (RIN-827).
-  const usersErrorMessage = useMemo(
-    () => (usersError ? describeError(usersError) : ''),
-    [describeError, usersError],
-  );
-
   const users = usersData?.users ?? [];
   const plans = plansData ?? [];
   const pagination: AdminUsersPaginationViewModel = usersData
@@ -984,64 +978,66 @@ export function AdminUsersPageClient() {
       <div className="mx-auto max-w-6xl">
         <AdminPageHeader title={t('userManagement')} description={t('manageUserAccounts')} />
 
-        <UsersSearchBar
-          searchTerm={state.searchInput}
-          statusFilter={state.statusFilter}
-          onSearchTermChange={(value) => dispatch({ type: 'setSearchInput', value })}
-          onStatusFilterChange={(value) => dispatch({ type: 'setStatusFilter', value })}
-          onSubmit={handleSearch}
-          onClear={() => dispatch({ type: 'resetSearch' })}
-          t={t}
-          tCommon={tCommon}
-        />
-
-        {usersError || state.localError ? (
-          <ErrorState
-            message={usersError ? usersErrorMessage : state.localError}
-            className="mb-6"
-          />
-        ) : null}
-
-        {state.success ? (
-          <div className="mb-6 rounded-md bg-green-50 p-4">
-            <div className="text-sm text-green-700">{state.success}</div>
-          </div>
-        ) : null}
-
-        <UsersStatsCards users={users} pagination={pagination} t={t} />
-
-        <UsersResultsInfo
-          users={users}
-          pagination={pagination}
-          searchTerm={state.searchTerm}
-          t={t}
-        />
-
-        <UsersTable
-          users={users}
-          {...(session?.user?.email !== undefined ? { sessionEmail: session.user.email } : {})}
-          actionLoading={state.actionLoading}
-          searchTerm={state.searchTerm}
-          t={t}
-          onOpenCreditModal={(user) =>
-            dispatch({ type: 'openCreditModal', user, idempotencyKey: crypto.randomUUID() })
-          }
-          onOpenSubscriptionModal={(user) => dispatch({ type: 'openSubscriptionModal', user })}
-          onOpenRoleModal={(user) => dispatch({ type: 'openRoleModal', user })}
-          onOpenStatusModal={(user) => dispatch({ type: 'openStatusModal', user })}
-          onOpenTestAccountModal={(user) => dispatch({ type: 'openTestAccountModal', user })}
-        />
-
-        {pagination.totalPages > 1 ? (
-          <div className="mt-8">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={(newPage) => dispatch({ type: 'setPage', value: newPage })}
-              className="justify-center"
+        {usersError ? (
+          // A failed load replaces the stats and the table: zeros would read as data (RIN-1022).
+          <ErrorState error={usersError} onRetry={() => mutateUsers()} className="mb-6" />
+        ) : (
+          <>
+            <UsersSearchBar
+              searchTerm={state.searchInput}
+              statusFilter={state.statusFilter}
+              onSearchTermChange={(value) => dispatch({ type: 'setSearchInput', value })}
+              onStatusFilterChange={(value) => dispatch({ type: 'setStatusFilter', value })}
+              onSubmit={handleSearch}
+              onClear={() => dispatch({ type: 'resetSearch' })}
+              t={t}
+              tCommon={tCommon}
             />
-          </div>
-        ) : null}
+
+            {state.localError ? <ErrorState message={state.localError} className="mb-6" /> : null}
+
+            {state.success ? (
+              <div className="mb-6 rounded-md bg-green-50 p-4">
+                <div className="text-sm text-green-700">{state.success}</div>
+              </div>
+            ) : null}
+
+            <UsersStatsCards users={users} pagination={pagination} t={t} />
+
+            <UsersResultsInfo
+              users={users}
+              pagination={pagination}
+              searchTerm={state.searchTerm}
+              t={t}
+            />
+
+            <UsersTable
+              users={users}
+              {...(session?.user?.email !== undefined ? { sessionEmail: session.user.email } : {})}
+              actionLoading={state.actionLoading}
+              searchTerm={state.searchTerm}
+              t={t}
+              onOpenCreditModal={(user) =>
+                dispatch({ type: 'openCreditModal', user, idempotencyKey: crypto.randomUUID() })
+              }
+              onOpenSubscriptionModal={(user) => dispatch({ type: 'openSubscriptionModal', user })}
+              onOpenRoleModal={(user) => dispatch({ type: 'openRoleModal', user })}
+              onOpenStatusModal={(user) => dispatch({ type: 'openStatusModal', user })}
+              onOpenTestAccountModal={(user) => dispatch({ type: 'openTestAccountModal', user })}
+            />
+
+            {pagination.totalPages > 1 ? (
+              <div className="mt-8">
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={(newPage) => dispatch({ type: 'setPage', value: newPage })}
+                  className="justify-center"
+                />
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
 
       <RoleModal

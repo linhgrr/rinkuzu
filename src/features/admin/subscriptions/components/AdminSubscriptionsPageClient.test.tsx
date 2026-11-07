@@ -87,6 +87,16 @@ describe('admin subscriptions page follows the page locale (RIN-1160)', () => {
     ).toBeNull();
   });
 
+  it('says "no subscriptions" once, as the empty-state heading (RIN-1171)', async () => {
+    mocks.fetch.mockResolvedValue(listResult([]));
+    renderAt('en');
+
+    expect(
+      await screen.findByRole('heading', { name: enAdmin.noSubscriptionsFound }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(enAdmin.noSubscriptionsFound)).toHaveLength(1);
+  });
+
   it('renders the list and revoke dialog in English at en, naming the word to type', async () => {
     const user = userEvent.setup();
     mocks.fetch.mockResolvedValue(listResult([SUBSCRIPTION]));

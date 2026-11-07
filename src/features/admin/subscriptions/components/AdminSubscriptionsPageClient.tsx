@@ -266,15 +266,16 @@ function SubscriptionsTable({
     <Card>
       <CardHeader>
         <CardTitle>{t('cardTitle')}</CardTitle>
-        <CardDescription>
-          {pagination.total > 0
-            ? t('showing', {
-                from: (pagination.page - 1) * pagination.limit + 1,
-                to: Math.min(pagination.page * pagination.limit, pagination.total),
-                total: pagination.total,
-              })
-            : noResultsLabel}
-        </CardDescription>
+        {/* The empty state below already says "no subscriptions"; don't repeat it here (RIN-1171). */}
+        {pagination.total > 0 ? (
+          <CardDescription>
+            {t('showing', {
+              from: (pagination.page - 1) * pagination.limit + 1,
+              to: Math.min(pagination.page * pagination.limit, pagination.total),
+              total: pagination.total,
+            })}
+          </CardDescription>
+        ) : null}
       </CardHeader>
       <CardContent>
         {subscriptions.length === 0 ? (

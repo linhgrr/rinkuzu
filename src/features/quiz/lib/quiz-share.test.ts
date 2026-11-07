@@ -1,18 +1,22 @@
 import { describe, expect, it } from 'vitest';
+import { siteUrl } from '@/lib/seo';
 import { buildQuizShareUrl, quizShareMode } from './quiz-share';
+
+// The origin comes from NEXT_PUBLIC_SITE_URL, which differs between local runs and the gate.
+const ORIGIN = siteUrl.origin;
 
 const UTM = 'utm_source=share&utm_medium=result&utm_campaign=quiz-share';
 
 describe('buildQuizShareUrl', () => {
   it('builds the canonical public quiz URL with the share UTM parameters', () => {
     expect(buildQuizShareUrl({ slug: 'sinh-hoc-10', locale: 'vi', questionCount: 12 })).toBe(
-      `http://localhost:3000/vi/quiz/sinh-hoc-10?${UTM}`,
+      `${ORIGIN}/vi/quiz/sinh-hoc-10?${UTM}`,
     );
   });
 
   it('uses the locale path', () => {
     expect(buildQuizShareUrl({ slug: 'biology', locale: 'en', questionCount: 12 })).toBe(
-      `http://localhost:3000/en/quiz/biology?${UTM}`,
+      `${ORIGIN}/en/quiz/biology?${UTM}`,
     );
   });
 
@@ -28,7 +32,7 @@ describe('buildQuizShareUrl', () => {
   it('encodes the slug as one path segment', () => {
     const url = buildQuizShareUrl({ slug: 'đề thi/1?x', locale: 'vi', questionCount: 3 });
 
-    expect(url).toBe(`http://localhost:3000/vi/quiz/${encodeURIComponent('đề thi/1?x')}?${UTM}`);
+    expect(url).toBe(`${ORIGIN}/vi/quiz/${encodeURIComponent('đề thi/1?x')}?${UTM}`);
     expect(new URL(url).pathname.split('/')).toHaveLength(4);
   });
 

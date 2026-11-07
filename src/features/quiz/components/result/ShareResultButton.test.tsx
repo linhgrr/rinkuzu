@@ -3,6 +3,7 @@
 import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { siteUrl } from '@/lib/seo';
 import { ShareResultButton } from './ShareResultButton';
 
 const { captureMock, copyMock, toastSuccessMock, toastErrorMock } = vi.hoisted(() => ({
@@ -32,8 +33,7 @@ const SHARE = {
   quizQuestionCount: 40,
   answeredCount: 10,
 };
-const QUICK_URL =
-  'http://localhost:3000/vi/quiz/sinh-hoc?utm_source=share&utm_medium=result&utm_campaign=quiz-share&mode=quick';
+const QUICK_URL = `${siteUrl.origin}/vi/quiz/sinh-hoc?utm_source=share&utm_medium=result&utm_campaign=quiz-share&mode=quick`;
 
 function setNavigatorShare(share: ((data: ShareData) => Promise<void>) | undefined) {
   Object.defineProperty(navigator, 'share', { value: share, configurable: true, writable: true });
@@ -114,7 +114,7 @@ describe('ShareResultButton (RIN-1179)', () => {
 
     await waitFor(() => expect(toastSuccessMock).toHaveBeenCalledWith('shareCopied'));
     expect(copyMock).toHaveBeenCalledWith(
-      'http://localhost:3000/vi/quiz/sinh-hoc?utm_source=share&utm_medium=result&utm_campaign=quiz-share',
+      `${siteUrl.origin}/vi/quiz/sinh-hoc?utm_source=share&utm_medium=result&utm_campaign=quiz-share`,
     );
     expect(captureMock).toHaveBeenCalledWith('quiz_result_shared', {
       quizId: 'quiz-1',

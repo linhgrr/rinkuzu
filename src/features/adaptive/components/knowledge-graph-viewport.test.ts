@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getReadableViewport } from './knowledge-graph-viewport';
+import { getGraphLayout, getReadableViewport } from './knowledge-graph-viewport';
 
 const at = (x: number, y: number) => ({ position: { x, y } });
 
@@ -24,16 +24,49 @@ describe('getReadableViewport', () => {
     expect(viewport).toEqual({ zoom: 1, x: 24, y: (500 - 270) / 2 });
   });
 
-  it('keeps the top-down cross axis centred even when the graph is wider than the view', () => {
-    const nodes = [at(0, 0), at(900, 0), at(450, 600)];
+  it('centres a graph wider than the view on its first two ranks, not on the whole graph', () => {
+    // Rank 0 at x=150, rank 1 spans 150..422, rank 2 spans 0..1050 (RIN-1116).
+    const nodes = [at(150, 0), at(150, 170), at(294, 170), at(0, 340), at(922, 340)];
 
-    const viewport = getReadableViewport(nodes, 'TB', 375, 600);
+    const viewport = getReadableViewport(nodes, 'TB', 341, 500, 128);
 
-    expect(viewport).toEqual({ zoom: 1, x: (375 - 1050) / 2, y: 88 });
+    expect(viewport).toEqual({ zoom: 1, x: (341 - 272) / 2 - 150, y: 88 });
+  });
+
+  it('anchors the first two ranks at the left edge when even they are wider than the view', () => {
+    const nodes = [at(300, 0), at(0, 170), at(300, 170), at(600, 170), at(300, 340)];
+
+    const viewport = getReadableViewport(nodes, 'TB', 341, 500);
+
+    expect(viewport).toEqual({ zoom: 1, x: 24, y: 88 });
   });
 
   it('returns null without nodes or a measured viewport', () => {
     expect(getReadableViewport([], 'TB', 800, 600)).toBeNull();
     expect(getReadableViewport([at(0, 0), at(0, 900)], 'TB', 0, 0)).toBeNull();
+  });
+});
+
+describe('getGraphLayout', () => {
+  it('keeps the desktop layout at 1280px and wider', () => {
+    expect(getGraphLayout('TB', 1000)).toEqual({
+      compact: false,
+      nodeWidth: 150,
+      nodeSeparation: 80,
+    });
+    expect(getGraphLayout('LR', 341)).toEqual({
+      compact: false,
+      nodeWidth: 150,
+      nodeSeparation: 80,
+    });
+  });
+
+  it('narrows a top-down graph on a phone so two sibling concepts fit at 100% (RIN-1116)', () => {
+    for (const width of [326, 341]) {
+      const layout = getGraphLayout('TB', width);
+      expect(layout.compact).toBe(true);
+      // Two siblings plus 24px on each side fit the canvas of a 360px and a 375px phone.
+      expect(2 * layout.nodeWidth + layout.nodeSeparation + 48).toBeLessThanOrEqual(width);
+    }
   });
 });

@@ -6,9 +6,11 @@ const {
   getRetryQuizForPlay,
   resolveSlugAlias,
   getCatalogMetadataBySlug,
+  getQuizMetadataBySlug,
   permanentRedirectMock,
   requestHeaders,
 } = vi.hoisted(() => ({
+  getQuizMetadataBySlug: vi.fn(),
   requestHeaders: { current: new Headers() },
   getCurrentSession: vi.fn(),
   getQuizForPlay: vi.fn(),
@@ -24,7 +26,12 @@ vi.mock('next/headers', () => ({ headers: () => Promise.resolve(requestHeaders.c
 vi.mock('next/navigation', () => ({ permanentRedirect: permanentRedirectMock }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession }));
 vi.mock('@/lib/quiz-factory', () => ({
-  getQuizService: () => ({ getQuizForPlay, getRetryQuizForPlay, resolveSlugAlias }),
+  getQuizService: () => ({
+    getQuizForPlay,
+    getRetryQuizForPlay,
+    resolveSlugAlias,
+    getQuizMetadataBySlug,
+  }),
 }));
 vi.mock('@/lib/premium-quiz-factory', () => ({
   getPremiumQuizService: () => ({ getCatalogMetadataBySlug }),
@@ -41,7 +48,7 @@ vi.mock('@/features/quiz/components/PremiumQuizSignInPrompt', () => ({
 
 import type { ReactElement, ReactNode } from 'react';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
-import QuizPlayerPage from './page';
+import QuizPlayerPage, { generateMetadata } from './page';
 import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
@@ -308,5 +315,32 @@ describe('QuizPlayerPage server-rendered first question (RIN-1032)', () => {
     }
 
     expect(seeds.size).toBeGreaterThan(1);
+  });
+});
+
+describe('QuizPlayerPage metadata (RIN-1180)', () => {
+  beforeEach(() => {
+    getQuizMetadataBySlug.mockReset();
+  });
+
+  it('passes ?mode=quick to the share card of a long public quiz', async () => {
+    getQuizMetadataBySlug.mockResolvedValue({
+      title: 'Sinh học',
+      slug: NEW_SLUG,
+      visibility: 'public',
+      questionCount: 30,
+      ownerIndexable: true,
+    });
+
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ locale: 'vi', slug: NEW_SLUG }),
+      searchParams: Promise.resolve({ mode: ['quick', 'full'] }),
+    });
+
+    const images = metadata.openGraph?.images as { url: string }[];
+    const image = new URL(images[0]?.url ?? '');
+    expect(image.searchParams.get('count')).toBe('30');
+    expect(image.searchParams.get('quick')).toBe('1');
+    expect(metadata.openGraph?.url).toMatch(new RegExp(`/vi/quiz/${NEW_SLUG}$`, 'u'));
   });
 });

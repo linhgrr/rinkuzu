@@ -1,22 +1,14 @@
 import { ImageResponse } from 'next/og';
+import { parseOgParams } from './parse-og-params';
 
 export const runtime = 'edge';
 
 const SIZE = { width: 1200, height: 630 };
-const MAX_TITLE = 110;
-
-function clampTitle(raw: string | null): string {
-  const defaultTitle = 'AI Quiz Generator from PDF · Knowledge-Graph Personalized Learning';
-  if (!raw) return defaultTitle;
-  const trimmed = raw.trim();
-  if (!trimmed) return defaultTitle;
-  return trimmed.length > MAX_TITLE ? `${trimmed.slice(0, MAX_TITLE - 1)}…` : trimmed;
-}
+const LIGHT_MINT = '#e9fdf4';
 
 export function GET(request: Request): ImageResponse {
   const { searchParams } = new URL(request.url);
-  const title = clampTitle(searchParams.get('title'));
-  const eyebrow = searchParams.get('eyebrow')?.trim() || 'rinkuzu.app';
+  const { title, eyebrow, detail } = parseOgParams(searchParams);
 
   return new ImageResponse(
     <div
@@ -48,7 +40,7 @@ export function GET(request: Request): ImageResponse {
         >
           R
         </div>
-        <span style={{ color: '#e9fdf4', fontSize: 34, fontWeight: 700, letterSpacing: -0.5 }}>
+        <span style={{ color: LIGHT_MINT, fontSize: 34, fontWeight: 700, letterSpacing: -0.5 }}>
           RinKuzu
         </span>
       </div>
@@ -77,6 +69,9 @@ export function GET(request: Request): ImageResponse {
         >
           {title}
         </span>
+        {detail ? (
+          <span style={{ color: LIGHT_MINT, fontSize: 34, fontWeight: 600 }}>{detail}</span>
+        ) : null}
       </div>
 
       <span style={{ color: '#9fb6cd', fontSize: 28, fontWeight: 500 }}>

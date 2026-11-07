@@ -209,17 +209,17 @@ export const ResultContent = ({
           </CardContent>
         </Card>
 
-        <div className="flex gap-4 pb-6">
+        <div className="flex flex-col-reverse gap-3 pb-6 sm:flex-row sm:gap-4">
           <Button
             variant="ghost"
-            className="h-12 flex-1 rounded-xl border border-control-border font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+            className="h-12 rounded-xl border border-control-border font-semibold text-neutral-600 sm:flex-1 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
             onClick={onGoDashboard}
           >
             <HiOutlineHome className="mr-2 size-5" />
             {t('result.dashboard')}
           </Button>
           <Button
-            className="h-12 flex-[2] rounded-xl bg-brand-action font-semibold text-brand-action-text shadow-md transition-[background-color,transform] hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
+            className="h-12 rounded-xl bg-brand-action sm:flex-[2] font-semibold text-brand-action-text shadow-md transition-[background-color,transform] hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
             onClick={onHandleNext}
           >
             {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}

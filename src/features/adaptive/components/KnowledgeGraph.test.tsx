@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import type { ComponentType, MouseEvent, ReactNode } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getConceptDetail } from '@/features/adaptive/lib/adaptive-api-methods';
 import type { ConceptDetail, KnowledgeGraphData } from '@/features/adaptive/types/graph';
@@ -262,11 +262,29 @@ describe('KnowledgeGraph on a phone (RIN-1116)', () => {
     // Static on mobile, so it never covers the graph, the zoom controls or the help button.
     expect(legend.className).not.toMatch(/(?:^|\s)absolute(?:\s|$)/);
     expect(legend.className).toContain('sm:absolute');
-    expect(legend.className).toContain('sm:right-5');
+    expect(legend.className).toContain('sm:left-1/2');
+    expect(legend.className).toContain('sm:-translate-x-1/2');
+    expect(legend.className).not.toContain('sm:right-5');
     expect(
       screen.getByTestId('react-flow').compareDocumentPosition(legend) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it('outlines the Available and Locked swatches in the strong node border, Locked dashed (RIN-1119)', () => {
+    render(<KnowledgeGraph sessionId="session-1" />);
+
+    const legend = screen.getByTestId('knowledge-graph-legend');
+    const swatch = (label: string) => {
+      const item = within(legend).getByText(label).parentElement;
+      const dot = item?.querySelector('[data-legend-swatch]');
+      if (!dot) throw new Error(`swatch for ${label} missing`);
+      return dot.className;
+    };
+    expect(swatch('knowledgeGraph.legend.available')).toMatch(/border-line-blue/);
+    expect(swatch('knowledgeGraph.legend.available')).not.toMatch(/border-dashed/);
+    expect(swatch('knowledgeGraph.legend.locked')).toMatch(/border-line-blue/);
+    expect(swatch('knowledgeGraph.legend.locked')).toMatch(/border-dashed/);
   });
 
   it('lays two sibling concepts out side by side within a 375px canvas', () => {

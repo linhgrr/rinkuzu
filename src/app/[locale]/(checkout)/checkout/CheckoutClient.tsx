@@ -359,7 +359,7 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
             <button
               type="button"
               onClick={() => setPromoOpen(true)}
-              className="flex min-h-11 items-center gap-2 rounded-lg font-semibold text-ink underline decoration-line-blue underline-offset-4 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+              className="flex min-h-11 items-center gap-2 rounded-lg font-semibold text-ink underline decoration-line-blue underline-offset-4 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >
               <HiOutlineTag className="size-5" aria-hidden="true" />
               {t('promo.prompt')}
@@ -374,7 +374,7 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
             checked={termsAccepted}
             onChange={(event) => setTermsAccepted(event.target.checked)}
             aria-labelledby="checkout-terms-copy"
-            className="mt-0.5 size-5 shrink-0 accent-[var(--brand-trust)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            className="mt-0.5 size-5 shrink-0 accent-[var(--brand-trust)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
           />
           <p id="checkout-terms-copy">
             {t('terms.prefix')}{' '}

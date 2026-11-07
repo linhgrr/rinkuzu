@@ -434,14 +434,15 @@ function KnowledgeGraphViewport({
       </div>
 
       {/* On a phone the legend is a strip below the canvas, clear of the graph, the zoom
-          controls and the floating help button; from sm up it floats bottom-right (RIN-1116). */}
+          controls and the floating help button (RIN-1116). From sm up it floats bottom-centre:
+          bottom-right sat under the logged-in help button (RIN-1119). */}
       <div
         data-testid="knowledge-graph-legend"
-        className={`${styles['legend']} flex flex-wrap gap-x-4 gap-y-2 border-t border-line bg-white py-3 pl-4 pr-16 font-mono text-xs sm:pointer-events-none sm:absolute sm:bottom-4 sm:right-5 sm:z-10 sm:justify-end sm:rounded-lg sm:border sm:bg-white/90 sm:px-3 sm:py-2 sm:shadow-sm sm:backdrop-blur-sm`}
+        className={`${styles['legend']} flex flex-wrap gap-x-4 gap-y-2 border-t border-line bg-white py-3 pl-4 pr-16 font-mono text-xs sm:pointer-events-none sm:absolute sm:bottom-4 sm:left-1/2 sm:z-10 sm:w-max sm:-translate-x-1/2 sm:justify-center sm:rounded-lg sm:border sm:bg-white/90 sm:px-3 sm:py-2 sm:shadow-sm sm:backdrop-blur-sm`}
       >
         {legendItems.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5">
-            <div className={`h-2 w-2 rounded-full ${item.color}`} />
+            <div data-legend-swatch className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
             <span className="uppercase tracking-widest text-neutral-700">{item.label}</span>
           </div>
         ))}
@@ -499,10 +500,15 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   const legendItems = [
     { color: 'bg-brand-trust', label: t('knowledgeGraph.legend.mastered') },
     { color: 'bg-brand-action', label: t('knowledgeGraph.legend.inProgress') },
-    { color: 'bg-white border border-line', label: t('knowledgeGraph.legend.available') },
-    // Locked nodes are white with a dashed border, so the swatch is too (RIN-1116).
+    // Available and Locked nodes are white with a pale border; an 8px swatch in that pale
+    // colour vanished on the white legend, so the swatch takes the strong node border
+    // (RIN-1119). Locked stays dashed like its node (RIN-1116).
     {
-      color: 'bg-white border border-dashed border-line',
+      color: 'bg-white border border-line-blue',
+      label: t('knowledgeGraph.legend.available'),
+    },
+    {
+      color: 'bg-white border border-dashed border-line-blue',
       label: t('knowledgeGraph.legend.locked'),
     },
   ];

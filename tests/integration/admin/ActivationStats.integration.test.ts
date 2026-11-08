@@ -389,6 +389,7 @@ describe('activation stats integration', () => {
     const adaptiveReader = vi.fn().mockResolvedValue(adaptiveEvents());
     const service = new ActivationStatsService({
       stats: new AdminStatsRepository(),
+      segments: new AdminStatsRepository(),
       activationEmail: new ActivationEmailStatsRepository(),
       audit: new AdminAuditRepository(),
       adaptiveEvents: adaptiveReader,

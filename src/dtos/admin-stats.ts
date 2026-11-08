@@ -174,6 +174,8 @@ export const adminActivationQuerySchema = z.object({
     .min(1)
     .max(ADMIN_ACTIVATION_MAX_WEEKS)
     .default(ADMIN_ACTIVATION_DEFAULT_WEEKS),
+  /** Split by signup locale or country (RIN-1268); absent = today's response. */
+  by: z.enum(['locale', 'country']).optional(),
 });
 
 const isoInstantSchema = z.iso.datetime();
@@ -294,3 +296,50 @@ export const adminReviewEmailStatsSchema = z
   .strict();
 
 export type AdminReviewEmailStatsDto = z.infer<typeof adminReviewEmailStatsSchema>;
+
+/**
+ * One segment key of the activation breakdown: a locale, an ISO-3166 alpha-2
+ * country, `unknown` (no signup value recorded) or `other` (countries with
+ * fewer signups than the fold threshold). Nothing else can be a key.
+ */
+const activationSegmentKeySchema = z.string().regex(/^(?:[A-Z]{2}|en|vi|unknown|other)$/);
+
+const activationSegmentCountsSchema = z
+  .object({ signups: countSchema, activated: countSchema })
+  .strict();
+
+const adminActivationBreakdownWeekSchema = z
+  .object({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    start: isoInstantSchema,
+    end: isoInstantSchema,
+    complete: z.boolean(),
+    segments: z.record(activationSegmentKeySchema, activationSegmentCountsSchema),
+  })
+  .strict();
+
+/**
+ * `GET /api/admin/stats/activation?by=locale|country` (RIN-1268). Aggregate
+ * counts per ISO week and segment; strict like the default response.
+ */
+export const adminActivationBreakdownSchema = z
+  .object({
+    generatedAt: isoInstantSchema,
+    timezone: z.literal('UTC'),
+    by: z.enum(['locale', 'country']),
+    definitions: z
+      .object({
+        segments: z.string(),
+        signups: z.string(),
+        activated: z.string(),
+        complete: z.string(),
+      })
+      .strict(),
+    sources: z.object({ adaptive: z.enum(['ok', 'unavailable']) }).strict(),
+    /** Every key that appears in `weeks[].segments`, in display order. */
+    segments: z.array(activationSegmentKeySchema),
+    weeks: z.array(adminActivationBreakdownWeekSchema),
+  })
+  .strict();
+
+export type AdminActivationBreakdownDto = z.infer<typeof adminActivationBreakdownSchema>;

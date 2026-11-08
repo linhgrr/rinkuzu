@@ -30,8 +30,10 @@ export function getAdminService(): AdminService {
 let activationStatsService: ActivationStatsService | undefined;
 
 export function getActivationStatsService(): ActivationStatsService {
+  const stats = new AdminStatsRepository();
   activationStatsService ??= new ActivationStatsService({
-    stats: new AdminStatsRepository(),
+    stats,
+    segments: stats,
     activationEmail: new ActivationEmailStatsRepository(),
     audit: new AdminAuditRepository(),
     adaptiveEvents: fetchAdaptiveActivationEvents,

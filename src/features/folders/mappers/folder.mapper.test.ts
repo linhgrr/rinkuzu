@@ -31,6 +31,7 @@ describe('toFolderLibraryQuizViewModels', () => {
         hasNextPage: false,
         hasPrevPage: false,
       },
+      counts: { all: 1, inProgress: 0, complete: 0 },
     });
 
     expect(result).not.toHaveProperty('description');

@@ -78,11 +78,17 @@ export class LearningProgressService implements ILearningProgressService {
         page: options.page,
         limit: options.limit,
         ...(options.folder !== undefined && { folder: options.folder }),
+        ...(options.status !== undefined && { status: options.status }),
+        ...(options.q !== undefined && { q: options.q }),
       });
 
       return {
         success: true,
-        data: LearningProgressDtoMapper.toLibraryListDto(library.items, library.pagination),
+        data: LearningProgressDtoMapper.toLibraryListDto(
+          library.items,
+          library.pagination,
+          library.counts,
+        ),
       };
     } catch (error) {
       logger.error({ error, userId }, 'Get quiz library error');

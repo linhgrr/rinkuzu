@@ -28,8 +28,8 @@ describe('loadBlogPosts', () => {
       heroImageAlt: 'A laptop showing a quiz dashboard',
       author: 'rinkuzu-team',
     });
-    expect(posts[0].content).toContain('Body content goes here.');
-    expect(posts[0].content).not.toContain('title:');
+    expect(posts[0]?.content).toContain('Body content goes here.');
+    expect(posts[0]?.content).not.toContain('title:');
   });
 
   it('throws when a required frontmatter field is missing', () => {

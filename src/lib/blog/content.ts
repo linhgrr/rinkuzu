@@ -41,7 +41,7 @@ export const parseFrontmatter = (
     throw new BlogContentError(`Missing frontmatter block in ${filePath}`);
   }
   try {
-    return { data: parseYaml(match[1]), content: raw.slice(match[0].length) };
+    return { data: parseYaml(match[1] ?? ''), content: raw.slice(match[0].length) };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new BlogContentError(`Invalid YAML frontmatter in ${filePath}: ${reason}`);

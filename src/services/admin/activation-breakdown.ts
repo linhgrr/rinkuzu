@@ -9,7 +9,7 @@ import { DAY_MS, type IsoWeekWindow } from '@/lib/analytics/iso-week';
 type SegmentCounts = { signups: number; activated: number };
 
 /** Countries with fewer signups than this over the whole window fold into `other`. */
-export const COUNTRY_FOLD_MIN_SIGNUPS = 3;
+const COUNTRY_FOLD_MIN_SIGNUPS = 3;
 
 const LOCALE_KEYS = ['en', 'vi', 'unknown'] as const;
 const COUNTRY_CODE = /^[A-Z]{2}$/;

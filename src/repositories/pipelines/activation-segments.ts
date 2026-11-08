@@ -36,9 +36,16 @@ export function toSegmentWeekRecord(row: SegmentCohortAggregate): ActivationSegm
  * Fragments that carry `field` through the cohort pipeline and group by
  * `{weekStart, segment}`; all empty (and the week key unchanged) without one.
  */
-export function segmentStages(field?: ActivationSegmentField) {
+export interface SegmentStages {
+  source: Record<string, unknown>;
+  perUser: Record<string, unknown>;
+  perSignup: Record<string, unknown>;
+  weekKey: string | Record<string, string>;
+}
+
+export function segmentStages(field?: ActivationSegmentField): SegmentStages {
   if (field === undefined) {
-    return { source: {}, perUser: {}, perSignup: {}, weekKey: '$weekStart' as const };
+    return { source: {}, perUser: {}, perSignup: {}, weekKey: '$weekStart' };
   }
   return {
     source: { segment: { $ifNull: ['$' + field, null] } },

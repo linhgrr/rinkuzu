@@ -185,6 +185,12 @@
   "removeBookmarkTitle": "Xóa câu hỏi đã lưu?",
   "removeBookmarkConfirm": "Xóa câu hỏi đã lưu khỏi \"{title}\"? Bạn vẫn có thể lưu lại sau.",
   "refreshBookmarksError": "Đã xóa câu hỏi nhưng chưa thể làm mới danh sách.",
+  "bookmarkCount": "{count} câu",
+  "bookmarkQuizFilterLabel": "Bài",
+  "bookmarkQuizFilterAll": "Tất cả các bài ({count})",
+  "bookmarkQuizFilterEmpty": "Không còn câu đã lưu của bài này",
+  "bookmarkQuizFilterShowAll": "Xem tất cả",
+  "openQuiz": "Mở bài",
   "removeAvatarConfirmTitle": "Xóa ảnh đại diện?",
   "removeAvatarConfirmMessage": "Ảnh đại diện hiện tại sẽ bị xóa khỏi tài khoản của bạn.",
   "uploadAvatar": "Tải lên ảnh đại diện"

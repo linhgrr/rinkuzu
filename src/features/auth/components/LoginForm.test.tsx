@@ -126,6 +126,7 @@ describe('LoginForm', () => {
         password: 'secret',
         redirect: false,
         callbackUrl: '/en/explore?type=mine',
+        locale: 'en',
       });
     });
     expect(markAnalyticsLoginPendingMock).toHaveBeenCalledWith('credentials', 'en');

@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
+import { locales, type Locale } from '@/i18n/config';
 import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
 import {
   ACCOUNT_DISABLE_ACTIVE,
@@ -23,6 +24,8 @@ interface UserDocument extends Document {
   disabledBy?: Types.ObjectId | null;
   /** Set by an admin in /admin/users; excluded from activation stats. Absent = false. */
   isTestAccount?: boolean;
+  /** UI locale of signup, else of the first sign-in that knew one (RIN-1263). Absent = unknown. */
+  locale?: Locale;
   /** Monotonic session generation; increments on login and real disable/restore. */
   authVersion: number;
   authIdentities?: Array<{ provider: string; subject: string }>;
@@ -91,6 +94,7 @@ const UserSchema = new Schema<UserDocument>({
   disabledAt: { type: Date, default: null },
   disabledBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   isTestAccount: { type: Boolean, default: false },
+  locale: { type: String, enum: locales, required: false },
   authVersion: {
     type: Number,
     required: true,

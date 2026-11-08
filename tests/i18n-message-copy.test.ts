@@ -105,4 +105,15 @@ describe('i18n message copy', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('gives the needs-work state one name on the badge, filter and stat card (RIN-1222)', () => {
+    // The badge (history rows, quiz result) may use title case; the words must match.
+    for (const locale of locales) {
+      const profile = readMessages(locale, 'profile.json');
+      const names = ['needsWork', 'historyFilterNeedsWork', 'historyNeedsWorkCount'].map((key) =>
+        String(profile[key]).toLocaleLowerCase(locale),
+      );
+      expect(new Set(names).size, `${locale}/profile.json ${names.join(' | ')}`).toBe(1);
+    }
+  });
 });

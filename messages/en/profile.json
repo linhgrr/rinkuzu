@@ -1,4 +1,22 @@
 {
+  "meta": {
+    "myQuizzes": {
+      "title": "My quizzes | RinKuzu",
+      "description": "The quizzes you created or saved on RinKuzu."
+    },
+    "folders": {
+      "title": "Folders | RinKuzu",
+      "description": "Your quiz folders on RinKuzu."
+    },
+    "history": {
+      "title": "Quiz history | RinKuzu",
+      "description": "Your past quiz attempts and scores on RinKuzu."
+    },
+    "bookmarks": {
+      "title": "Saved questions | RinKuzu",
+      "description": "The questions you saved to review on RinKuzu."
+    }
+  },
   "title": "Profile",
   "myQuizzes": "My Quizzes",
   "weekRange": "Week of {range}",

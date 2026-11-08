@@ -1,0 +1,300 @@
+/** @vitest-environment jsdom */
+
+import type { ReactNode } from 'react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { axe } from 'jest-axe';
+import { SWRConfig } from 'swr';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ProfileBookmarkQuizListViewModel } from '@/features/profile/types/profile-bookmark-view-model';
+import ProfileBookmarks from './ProfileBookmarks';
+import ProfileHistory from './ProfileHistory';
+import ProfileQuizzes from './ProfileQuizzes';
+
+const {
+  fetchHistoryMock,
+  fetchBookmarksMock,
+  fetchBookmarkQuizzesMock,
+  fetchLibraryMock,
+  foldersState,
+} = vi.hoisted(() => ({
+  fetchHistoryMock: vi.fn(),
+  fetchBookmarksMock: vi.fn(),
+  fetchBookmarkQuizzesMock: vi.fn(
+    async (): Promise<ProfileBookmarkQuizListViewModel> => ({ quizzes: [], total: 0 }),
+  ),
+  fetchLibraryMock: vi.fn(),
+  foldersState: {
+    folders: [] as { id: string; name: string; quizCount: number }[],
+  },
+}));
+
+vi.mock('next-intl', () => ({
+  useTranslations: (namespace?: string) => (key: string) =>
+    namespace ? `${namespace}.${key}` : key,
+  useLocale: () => 'en',
+}));
+
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ children, href, ...props }: { children: ReactNode; href: string }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+  usePathname: () => '/my-quizzes',
+  useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
+}));
+
+vi.mock('@/features/profile/api/profile-history-api', () => ({
+  fetchProfileHistoryViewModel: fetchHistoryMock,
+}));
+
+vi.mock('@/features/profile/api/profile-bookmarks-api', () => ({
+  fetchProfileBookmarkListViewModel: fetchBookmarksMock,
+  deleteProfileBookmark: vi.fn(),
+  fetchProfileBookmarkQuizzes: fetchBookmarkQuizzesMock,
+}));
+
+vi.mock('@/features/profile/api/profile-quizzes-api', () => ({
+  fetchProfileQuizLibraryPage: fetchLibraryMock,
+}));
+
+vi.mock('@/features/profile/api/premium-submissions-api', () => ({
+  fetchMyPremiumSubmissions: async () => [],
+}));
+
+vi.mock('@/features/dashboard/components/QuizUploadDropzone', () => ({
+  QuizUploadDropzone: () => <div data-testid="upload-dropzone" />,
+}));
+
+vi.mock('@/features/folders/hooks/useFolders', () => ({
+  useFolders: () => ({
+    folders: foldersState.folders,
+    unfiledCount: 0,
+    isLoading: false,
+    error: undefined,
+    mutate: vi.fn(),
+  }),
+}));
+
+const emptyPagination = { page: 1, limit: 10, total: 0, totalPages: 0 };
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+  foldersState.folders = [];
+  fetchBookmarkQuizzesMock.mockResolvedValue({ quizzes: [], total: 0 });
+  // axe runs on the whole document; start each test from an empty body.
+  document.body.innerHTML = '';
+});
+
+/** Exactly one h1, and no heading jumps more than one level down (axe heading-order). */
+function expectHeadingOutline(h1Text: string) {
+  const headings = Array.from(document.querySelectorAll<HTMLElement>('h1, h2, h3, h4, h5, h6'));
+  const h1s = headings.filter((heading) => heading.tagName === 'H1');
+  expect(h1s).toHaveLength(1);
+  expect(h1s[0]?.textContent).toBe(h1Text);
+  expect(headings[0]?.tagName).toBe('H1');
+
+  let previous = 1;
+  for (const heading of headings) {
+    const level = Number(heading.tagName.slice(1));
+    expect(level, `${heading.tagName} "${heading.textContent}"`).toBeLessThanOrEqual(previous + 1);
+    previous = level;
+  }
+}
+
+/** The same two axe rules the acceptance criteria name, on the settled page. */
+async function expectAxeHeadingRulesClean() {
+  const results = await axe(document.documentElement, {
+    runOnly: { type: 'rule', values: ['heading-order', 'page-has-heading-one'] },
+  });
+  expect(results.violations).toEqual([]);
+}
+
+function renderBookmarks() {
+  return render(
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      <ProfileBookmarks />
+    </SWRConfig>,
+  );
+}
+
+const quiz = {
+  id: 'quiz-1',
+  title: 'Fake biology quiz',
+  slug: 'fake-biology-quiz',
+  description: '',
+  status: 'published',
+  libraryStatus: 'complete',
+  questionCount: 4,
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+  ownedByMe: true,
+  displayDate: '2026-10-01T00:00:00.000Z',
+};
+
+const emptyLibrary = {
+  quizzes: [],
+  counts: { all: 0, inProgress: 0, complete: 0 },
+  hasMore: false,
+};
+
+const historySummary = { totalAttempts: 3, averageScore: 67, needsWorkCount: 1 };
+
+// RIN-1200: the visible page title is the page's h1 in every state, so heading
+// navigation starts at the top and the h1 never flickers in and out.
+describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () => {
+  it('history: h1 while loading, then in the empty state', async () => {
+    fetchHistoryMock.mockResolvedValue({
+      attempts: [],
+      pagination: emptyPagination,
+      summary: { totalAttempts: 0, averageScore: null, needsWorkCount: 0 },
+    });
+    render(<ProfileHistory />);
+    expectHeadingOutline('profile.quizHistory');
+
+    await screen.findByText('profile.noHistory');
+    expectHeadingOutline('profile.quizHistory');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('history: h1 with a list of attempts', async () => {
+    fetchHistoryMock.mockResolvedValue({
+      attempts: [
+        {
+          id: 'attempt-1',
+          score: 75,
+          quiz: { title: 'Fake chemistry quiz', slug: 'fake-chemistry-quiz' },
+          totalQuestions: 4,
+          correctAnswers: 3,
+          completedAt: '2026-10-01T00:00:00.000Z',
+          completedAtLabel: 'Oct 1, 2026',
+          timeSpentLabel: '2m',
+        },
+      ],
+      pagination: { ...emptyPagination, total: 1, totalPages: 1 },
+      summary: historySummary,
+    });
+    render(<ProfileHistory />);
+
+    await screen.findByText('Fake chemistry quiz');
+    expectHeadingOutline('profile.quizHistory');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('history: h1 when a filter matches no attempt', async () => {
+    fetchHistoryMock.mockResolvedValue({
+      attempts: [],
+      pagination: emptyPagination,
+      summary: historySummary,
+    });
+    render(<ProfileHistory />);
+
+    await screen.findByText('profile.historyEmptyNeedsWork');
+    expectHeadingOutline('profile.quizHistory');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('history: h1 in the error state', async () => {
+    fetchHistoryMock.mockRejectedValue(new Error('offline'));
+    render(<ProfileHistory />);
+
+    await waitFor(() => expect(fetchHistoryMock).toHaveBeenCalled());
+    await screen.findByRole('button', { name: /retry/i });
+    expectHeadingOutline('profile.quizHistory');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('bookmarks: h1 while loading, then in the empty state', async () => {
+    fetchBookmarksMock.mockResolvedValue({ bookmarks: [], pagination: emptyPagination });
+    renderBookmarks();
+    expectHeadingOutline('profile.bookmarkedQuestions');
+
+    await screen.findByText('profile.noBookmarks');
+    expectHeadingOutline('profile.bookmarkedQuestions');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('bookmarks: h1 in the error state', async () => {
+    fetchBookmarksMock.mockRejectedValue(new Error('offline'));
+    renderBookmarks();
+
+    await screen.findByRole('button', { name: /retry/i });
+    expectHeadingOutline('profile.bookmarkedQuestions');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('bookmarks: h1 above the "no bookmarks for this quiz" state (RIN-1208 filter)', async () => {
+    fetchBookmarkQuizzesMock.mockResolvedValue({
+      quizzes: [{ slug: 'sample-quiz', title: 'Sample quiz', count: 1 }],
+      total: 1,
+    });
+    fetchBookmarksMock.mockResolvedValue({ bookmarks: [], pagination: emptyPagination });
+    renderBookmarks();
+
+    const select = await screen.findByLabelText<HTMLSelectElement>(
+      'profile.bookmarkQuizFilterLabel',
+    );
+    await waitFor(() => expect(select.disabled).toBe(false));
+    fireEvent.change(select, { target: { value: 'sample-quiz' } });
+
+    await screen.findByText('profile.bookmarkQuizFilterEmpty');
+    expectHeadingOutline('profile.bookmarkedQuestions');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('my quizzes: h1 while loading, then in the empty state', async () => {
+    fetchLibraryMock.mockResolvedValue(emptyLibrary);
+    render(<ProfileQuizzes />);
+    expectHeadingOutline('profile.myQuizzes');
+
+    await screen.findByText('profile.noQuizzes');
+    expectHeadingOutline('profile.myQuizzes');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('my quizzes: month groups sit one level under the h1', async () => {
+    fetchLibraryMock.mockResolvedValue({
+      quizzes: [quiz],
+      counts: { all: 1, inProgress: 0, complete: 1 },
+      hasMore: false,
+    });
+    render(<ProfileQuizzes />);
+
+    await screen.findByText('Fake biology quiz');
+    expectHeadingOutline('profile.myQuizzes');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('my quizzes: h1 when the filter matches no quiz', async () => {
+    fetchLibraryMock.mockResolvedValue({
+      quizzes: [],
+      counts: { all: 3, inProgress: 0, complete: 3 },
+      hasMore: false,
+    });
+    render(<ProfileQuizzes />);
+
+    await screen.findByText('profile.noFilterMatches');
+    expectHeadingOutline('profile.myQuizzes');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('my quizzes: h1 in the error state', async () => {
+    fetchLibraryMock.mockRejectedValue(new Error('offline'));
+    render(<ProfileQuizzes />);
+
+    await screen.findByRole('button', { name: /retry/i });
+    expectHeadingOutline('profile.myQuizzes');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('folders tab: the h1 names the active tab', async () => {
+    fetchLibraryMock.mockResolvedValue(emptyLibrary);
+    foldersState.folders = [{ id: 'folder-1', name: 'Fake folder', quizCount: 2 }];
+    render(<ProfileQuizzes tab="folders" />);
+
+    await screen.findByText('Fake folder');
+    expectHeadingOutline('profile.tabFolders');
+    await expectAxeHeadingRulesClean();
+  });
+});

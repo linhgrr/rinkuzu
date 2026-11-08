@@ -137,8 +137,13 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
 
         {tab === 'folders' ? (
           <section
+            aria-labelledby="folders-page-title"
             className={`${styles['libraryPanel']} rounded-panel border border-line-blue/35 bg-white p-5 shadow-quiz-card`}
           >
+            {/* The tab bar already shows "Folders"; the h1 names the page for heading navigation (RIN-1200). */}
+            <h1 id="folders-page-title" className="sr-only">
+              {t('tabFolders')}
+            </h1>
             <FoldersView />
           </section>
         ) : (
@@ -156,7 +161,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                 aria-hidden="true"
               />
 
-              <h2 className="relative text-lg font-semibold text-ink">{t('myQuizzes')}</h2>
+              <h1 className="relative text-lg font-semibold text-ink">{t('myQuizzes')}</h1>
               <div className="relative mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 max-w-full overflow-x-auto [&_button]:whitespace-nowrap">
                   <SegmentedControl

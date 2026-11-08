@@ -12,16 +12,28 @@ interface EmptyStateProps {
   description?: string;
   action?: ReactNode;
   className?: string;
+  /** Title heading level; 2 when the empty state sits directly under the page h1 (RIN-1200). */
+  headingLevel?: 2 | 3;
 }
 
-export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+  className,
+  headingLevel = 3,
+}: EmptyStateProps) {
   const tCommon = useTranslations('common');
   const displayTitle = title ?? tCommon('noData');
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
 
   return (
     <div className={cn('py-12 text-center font-home', className)}>
       {icon && <div className="mb-4 flex justify-center text-ink-muted">{icon}</div>}
-      {displayTitle && <h3 className="font-home text-lg font-semibold text-ink">{displayTitle}</h3>}
+      {displayTitle && (
+        <Heading className="font-home text-lg font-semibold text-ink">{displayTitle}</Heading>
+      )}
       {description && <p className="font-home mt-1.5 text-sm text-ink-muted">{description}</p>}
       {action && <div className="mt-6">{action}</div>}
     </div>

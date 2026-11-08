@@ -160,7 +160,7 @@ function BookmarkCard({
           <QuestionContent
             content={bookmark.question.text}
             variant="compact"
-            headingLevel={3}
+            headingLevel={2}
             className="font-home text-lg font-semibold text-ink"
           />
           <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
@@ -343,7 +343,7 @@ export default function ProfileBookmarks() {
   // header and the select mounted (focus stays on the select, WCAG 3.2.2) and only
   // the list waits; the count pill hides until the new page arrives.
   if (isLoading && !quizList && !quizListError) {
-    return <BookmarksSkeleton />;
+    return <BookmarksSkeleton t={t} />;
   }
 
   return (

@@ -1,4 +1,22 @@
 {
+  "meta": {
+    "myQuizzes": {
+      "title": "Bài của tôi | RinKuzu",
+      "description": "Các bài quiz bạn đã tạo hoặc lưu trên RinKuzu."
+    },
+    "folders": {
+      "title": "Thư mục | RinKuzu",
+      "description": "Các thư mục quiz của bạn trên RinKuzu."
+    },
+    "history": {
+      "title": "Lịch sử làm bài | RinKuzu",
+      "description": "Các lượt làm bài và điểm số trước đây của bạn trên RinKuzu."
+    },
+    "bookmarks": {
+      "title": "Câu hỏi đã lưu | RinKuzu",
+      "description": "Các câu hỏi bạn đã lưu để ôn lại trên RinKuzu."
+    }
+  },
   "title": "Hồ sơ",
   "myQuizzes": "Quiz của tôi",
   "weekRange": "Tuần {range}",

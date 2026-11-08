@@ -36,7 +36,7 @@ function EmptyLibrary() {
       className={`${styles['emptyState']} relative flex flex-col items-center justify-center text-center`}
     >
       <HiOutlineDocumentText className="size-12 text-ink/25" />
-      <h3 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h3>
+      <h2 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h2>
       <p className="mt-1 max-w-sm text-sm text-ink/55">{t('createFirst')}</p>
       <Link href="/create" className="mt-5">
         <Button>{t('newQuiz')}</Button>
@@ -52,9 +52,9 @@ function NoMatches({ query, onClearSearch }: { query: string; onClearSearch: () 
       className={`${styles['emptyState']} relative flex flex-col items-center justify-center text-center`}
     >
       <HiOutlineSearch className="size-12 text-ink/25" aria-hidden="true" />
-      <h3 className="mt-4 max-w-full break-words text-lg font-semibold text-ink">
+      <h2 className="mt-4 max-w-full break-words text-lg font-semibold text-ink">
         {query ? t('noSearchMatches', { q: query }) : t('noFilterMatches')}
-      </h3>
+      </h2>
       {query ? (
         <Button variant="secondary" className="mt-5" onClick={onClearSearch}>
           {t('clearSearch')}
@@ -103,12 +103,12 @@ export function ProfileQuizList({
         <div className="relative mt-6 space-y-9">
           {groupedQuizzes.map((month) => (
             <section key={month.key} aria-labelledby={`quiz-month-${month.key}`}>
-              <h3
+              <h2
                 id={`quiz-month-${month.key}`}
                 className="mb-5 text-lg font-semibold capitalize text-ink"
               >
                 {month.label}
-              </h3>
+              </h2>
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {month.quizzes.map((quiz) => (

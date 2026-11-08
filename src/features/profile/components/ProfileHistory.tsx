@@ -1,7 +1,7 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, EmptyStateExploreAction } from '@/components/ui/EmptyState';
@@ -129,10 +129,19 @@ function AttemptTakenAt({ iso, label }: AttemptTakenAtProps) {
   );
 }
 
-function HistorySkeleton() {
+/** The page's one h1, shown in the loading, empty, error and list states (RIN-1200). */
+function HistoryTitle({ children }: { children: ReactNode }) {
+  return (
+    <h1 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
+      {children}
+    </h1>
+  );
+}
+
+function HistorySkeleton({ title }: { title: string }) {
   return (
     <div className="space-y-6 font-home" aria-busy="true">
-      <Skeleton className="h-8 w-48 rounded-md" />
+      <HistoryTitle>{title}</HistoryTitle>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
           <SurfaceCard key={`history-stat-skeleton-${index}`} className="p-4">
@@ -277,16 +286,14 @@ function ProfileHistory() {
   };
 
   if (state.loading && state.summary === null) {
-    return <HistorySkeleton />;
+    return <HistorySkeleton title={t('quizHistory')} />;
   }
 
   const hasAnyAttempt = (state.summary?.totalAttempts ?? 0) > 0;
 
   return (
     <div className="space-y-6 font-home text-ink">
-      <h2 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
-        {t('quizHistory')}
-      </h2>
+      <HistoryTitle>{t('quizHistory')}</HistoryTitle>
 
       {state.error ? (
         <ErrorState
@@ -301,6 +308,7 @@ function ProfileHistory() {
           <EmptyState
             icon={<HiOutlineDocumentText className="size-14 text-ink-muted" />}
             title={t('noHistory')}
+            headingLevel={2}
             description={t('historyEmptyHint')}
             action={<EmptyStateExploreAction />}
           />
@@ -327,6 +335,7 @@ function ProfileHistory() {
               <SurfaceCard className="p-6">
                 <EmptyState
                   className="py-6"
+                  headingLevel={2}
                   icon={<HiOutlineDocumentText className="size-10 text-ink-muted" />}
                   title={
                     state.filter === 'passed' ? t('historyEmptyPassed') : t('historyEmptyNeedsWork')
@@ -346,9 +355,9 @@ function ProfileHistory() {
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-x-2.5 flex-wrap gap-y-1.5 mb-1.5">
-                          <h3 className="font-home text-base sm:text-lg font-semibold text-ink truncate max-w-[200px] sm:max-w-md">
+                          <h2 className="font-home text-base sm:text-lg font-semibold text-ink truncate max-w-[200px] sm:max-w-md">
                             {attempt.quiz.title}
-                          </h3>
+                          </h2>
                           <Pill
                             tone={badge.tone}
                             className="flex shrink-0 items-center gap-1 whitespace-nowrap"

@@ -45,16 +45,27 @@ interface BookmarksBodyProps {
   children: ReactNode;
 }
 
+interface BookmarksTitleProps {
+  t: TranslateFn;
+}
+
 interface EmptyBookmarksStateProps {
   t: TranslateFn;
+}
+
+/** The page h1 (RIN-1200): also rendered by the first-load skeleton so it never flickers. */
+function BookmarksTitle({ t }: BookmarksTitleProps) {
+  return (
+    <h1 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
+      {t('bookmarkedQuestions')}
+    </h1>
+  );
 }
 
 export function BookmarksHeader({ count, t }: BookmarksHeaderProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
-        {t('bookmarkedQuestions')}
-      </h2>
+      <BookmarksTitle t={t} />
       {count !== null ? <Pill tone="neutral">{t('bookmarkCount', { count })}</Pill> : null}
     </div>
   );
@@ -89,6 +100,7 @@ function StaleQuizFilterState({ onShowAll, t }: StaleQuizFilterStateProps) {
         <EmptyState
           icon={<HiOutlineTag className="size-12 text-neutral-400" />}
           title={t('bookmarkQuizFilterEmpty')}
+          headingLevel={2}
           action={
             <Button variant="outline" size="sm" onClick={onShowAll} className="font-home">
               {t('bookmarkQuizFilterShowAll')}
@@ -107,6 +119,7 @@ function EmptyBookmarksState({ t }: EmptyBookmarksStateProps) {
         <EmptyState
           icon={<HiOutlineTag className="size-12 text-neutral-400" />}
           title={t('noBookmarks')}
+          headingLevel={2}
           description={t('bookmarksEmptyHint')}
           action={<EmptyStateExploreAction />}
         />
@@ -135,12 +148,12 @@ function BookmarksListSkeleton() {
   );
 }
 
-/** First load only: header placeholder plus the card placeholders. */
-export function BookmarksSkeleton() {
+/** First load only: the real h1, a count placeholder and the card placeholders. */
+export function BookmarksSkeleton({ t }: BookmarksTitleProps) {
   return (
     <div className="space-y-4 font-home" aria-busy="true">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-48 rounded-md" />
+        <BookmarksTitle t={t} />
         <Skeleton className="h-6 w-24 rounded-full" />
       </div>
       <BookmarksListSkeleton />

@@ -1,5 +1,6 @@
 import type {
   LibraryQuiz,
+  LibraryQuizCounts,
   QuestionReviewProgress,
   QuestionReviewProgressDraft,
   StreakFreezePurchaseOptions,
@@ -11,8 +12,17 @@ import type {
   RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
+export type LibraryQuizStatusFilter = 'in_progress' | 'complete';
+
 export interface LibraryQuizListOptions extends RepositoryPaginationOptions {
   folder?: string | null;
+  status?: LibraryQuizStatusFilter;
+  /** Literal, case-insensitive title fragment; never interpreted as a pattern. */
+  q?: string;
+}
+
+export interface LibraryQuizPage extends PaginatedRepositoryResult<LibraryQuiz> {
+  counts: LibraryQuizCounts;
 }
 
 export interface ReviewProgressMutation {
@@ -28,10 +38,7 @@ export interface ReviewProgressTransactionResult {
 }
 
 export interface ILearningProgressRepository {
-  listLibraryQuizzes(
-    userId: string,
-    options: LibraryQuizListOptions,
-  ): Promise<PaginatedRepositoryResult<LibraryQuiz>>;
+  listLibraryQuizzes(userId: string, options: LibraryQuizListOptions): Promise<LibraryQuizPage>;
 
   listDueQuestions(userId: string, now: Date, limit: number): Promise<QuestionReviewProgress[]>;
 

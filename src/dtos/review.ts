@@ -22,6 +22,12 @@ export const submitReviewRequestSchema = z.object({
   questionRef: questionReferenceSchema.optional(),
 });
 
+const LIBRARY_STATUS_FILTERS = ['in_progress', 'complete'] as const satisfies readonly Exclude<
+  QuizLibraryStatus,
+  'not_started'
+>[];
+const LIBRARY_SEARCH_MAX_LENGTH = 80;
+
 export const libraryListQuerySchema = z.strictObject({
   folder: z
     .union([z.literal(UNFILED_FOLDER_TARGET), objectIdSchema])
@@ -29,6 +35,8 @@ export const libraryListQuerySchema = z.strictObject({
     .transform((target) => (target === UNFILED_FOLDER_TARGET ? null : target)),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(100),
+  status: z.enum(LIBRARY_STATUS_FILTERS).optional(),
+  q: z.string().trim().min(1).max(LIBRARY_SEARCH_MAX_LENGTH).optional(),
 });
 
 /** Public library author identity — stable non-PII fields only (no email). */
@@ -59,9 +67,18 @@ export interface LibraryQuizDto {
   displayDate: string;
 }
 
+/** Whole-library counts for the current folder scope; independent of status, q and page. */
+interface LibraryCountsDto {
+  all: number;
+  inProgress: number;
+  complete: number;
+}
+
 export interface LibraryListDto {
   quizzes: LibraryQuizDto[];
+  /** Reflects the filtered list (status and q applied). */
   pagination: PaginationMeta;
+  counts: LibraryCountsDto;
 }
 
 export interface DueReviewQuestionDto {

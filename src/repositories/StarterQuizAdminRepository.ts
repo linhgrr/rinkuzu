@@ -5,6 +5,7 @@ import StarterQuizModel from '@/models/StarterQuiz';
 import type {
   IStarterQuizAdminRepository,
   StarterQuizInsertInput,
+  StarterQuizLocale,
   StarterQuizRowChange,
   StarterQuizRowRecord,
 } from '@/interfaces/repositories/IStarterQuizAdminRepository';
@@ -12,7 +13,7 @@ import type {
 interface StarterQuizRowPersistence {
   _id: Types.ObjectId;
   quiz: Types.ObjectId;
-  locale: string;
+  locale: StarterQuizLocale;
   order: number;
 }
 

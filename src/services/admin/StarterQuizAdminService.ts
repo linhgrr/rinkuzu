@@ -42,6 +42,11 @@ interface StarterQuizAuditInput {
   details: Record<string, string>;
 }
 
+interface StarterQuizRowsWithTarget {
+  rows: StarterQuizRowRecord[];
+  target: StarterQuizRowRecord | undefined;
+}
+
 type StarterQuizListResult = ServiceResult<AdminStarterQuizListDto>;
 
 const AUDIT_FAILED: ServiceFailure = {
@@ -189,8 +194,7 @@ export class StarterQuizAdminService {
   ): Promise<StarterQuizListResult> {
     const { starterRepository } = this.deps;
     try {
-      const rows = await starterRepository.listStarterQuizRows();
-      const target = rows.find((row) => row.id === id);
+      const { rows, target } = await this.loadRows(id);
       if (!target) return NOT_FOUND;
 
       const locale = patch.locale ?? target.locale;
@@ -231,8 +235,7 @@ export class StarterQuizAdminService {
   ): Promise<StarterQuizListResult> {
     const { starterRepository } = this.deps;
     try {
-      const rows = await starterRepository.listStarterQuizRows();
-      const target = rows.find((row) => row.id === id);
+      const { rows, target } = await this.loadRows(id);
       if (!target) return NOT_FOUND;
       if (!(await starterRepository.deleteStarterQuiz(id))) return NOT_FOUND;
 
@@ -254,6 +257,11 @@ export class StarterQuizAdminService {
       logger.error({ error, starterId: id }, 'Unmark starter quiz error');
       return UPDATE_FAILED;
     }
+  }
+
+  private async loadRows(id: string): Promise<StarterQuizRowsWithTarget> {
+    const rows = await this.deps.starterRepository.listStarterQuizRows();
+    return { rows, target: rows.find((row) => row.id === id) };
   }
 
   private async buildList(): Promise<AdminStarterQuizListDto> {

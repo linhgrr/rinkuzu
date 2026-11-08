@@ -1,14 +1,16 @@
+export type StarterQuizLocale = 'vi' | 'en';
+
 /** One stored starter row (RIN-1177), with its own id for admin edits. */
 export interface StarterQuizRowRecord {
   id: string;
   quizId: string;
-  locale: string;
+  locale: StarterQuizLocale;
   order: number;
 }
 
 export interface StarterQuizInsertInput {
   quizId: string;
-  locale: string;
+  locale: StarterQuizLocale;
   order: number;
   actorId: string;
   /** Re-insert under a known id (undoing an unmark whose audit write failed). */
@@ -17,7 +19,7 @@ export interface StarterQuizInsertInput {
 
 export interface StarterQuizRowChange {
   id: string;
-  locale?: string;
+  locale?: StarterQuizLocale;
   order?: number;
 }
 

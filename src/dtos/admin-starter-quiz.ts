@@ -4,8 +4,6 @@ import { objectIdSchema } from '@/lib/validation/common';
 const adminStarterQuizLocaleSchema = z.enum(['vi', 'en']);
 const adminStarterQuizOrderSchema = z.number().int().min(1).max(1000);
 
-export type AdminStarterQuizLocale = z.infer<typeof adminStarterQuizLocaleSchema>;
-
 export const adminStarterQuizIdParamsSchema = z.object({ id: objectIdSchema });
 
 /** POST: mark a quiz as a starter; `order` is a 1-based position, default last. */
@@ -32,7 +30,7 @@ export const adminStarterQuizUpdateBodySchema = z
 
 export type AdminStarterQuizUpdateBodyDto = z.infer<typeof adminStarterQuizUpdateBodySchema>;
 
-export type AdminStarterQuizDropReason = 'missing' | 'not-public' | 'premium' | 'empty';
+type AdminStarterQuizDropReason = 'missing' | 'not-public' | 'premium' | 'empty';
 
 export interface AdminStarterQuizItemDto {
   /** The starter row id, used in PATCH/DELETE paths. */

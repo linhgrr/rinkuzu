@@ -1,6 +1,7 @@
 import type {
   AttemptDetailDto,
   AttemptQuestionDetailDto,
+  UserAttemptHistorySummaryDto,
   UserAttemptListDto,
   UserAttemptSummaryDto,
 } from '@/dtos/user';
@@ -35,10 +36,19 @@ interface AttemptQuizShareFacts {
 }
 
 export class UserAttemptDtoMapper {
-  static toListDto(attempts: Attempt[], pagination: PaginationMeta): UserAttemptListDto {
+  static toListDto(
+    attempts: Attempt[],
+    pagination: PaginationMeta,
+    summary: UserAttemptHistorySummaryDto,
+  ): UserAttemptListDto {
     return {
       attempts: attempts.map(UserAttemptDtoMapper.toSummaryDto),
       pagination,
+      summary: {
+        totalAttempts: summary.totalAttempts,
+        averageScore: summary.averageScore,
+        needsWorkCount: summary.needsWorkCount,
+      },
     };
   }
 

@@ -292,6 +292,7 @@ describe('UserService', () => {
           hasNextPage: false,
           hasPrevPage: false,
         },
+        summary: { totalAttempts: 1, averageScore: 80, needsWorkCount: 0 },
       });
 
       const result = await service.getUserAttempts('user-1', { page: 1, limit: 10 });
@@ -329,6 +330,7 @@ describe('UserService', () => {
           hasNextPage: false,
           hasPrevPage: false,
         },
+        summary: { totalAttempts: 1, averageScore: 80, needsWorkCount: 0 },
       });
 
       await expect(service.getUserAttempts('user-1', { page: 1, limit: 10 })).rejects.toThrow(
@@ -348,6 +350,7 @@ describe('UserService', () => {
           hasNextPage: true,
           hasPrevPage: true,
         },
+        summary: { totalAttempts: 1, averageScore: 80, needsWorkCount: 0 },
       });
 
       const result = await service.getUserAttempts('user-1', { page: 2, limit: 10 });
@@ -357,6 +360,37 @@ describe('UserService', () => {
         limit: 10,
       });
       expect(result.pagination.currentPage).toBe(2);
+    });
+
+    it('forwards the result filter and returns the repository summary unchanged (RIN-1197)', async () => {
+      const { service, attemptRepository } = createService();
+      const summary = { totalAttempts: 25, averageScore: 64.2, needsWorkCount: 9 };
+      attemptRepository.findByUser.mockResolvedValue({
+        items: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 9,
+          itemsPerPage: 10,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+        summary,
+      });
+
+      const result = await service.getUserAttempts('user-1', {
+        page: 1,
+        limit: 10,
+        result: 'needs_work',
+      });
+
+      expect(attemptRepository.findByUser).toHaveBeenCalledWith('user-1', {
+        page: 1,
+        limit: 10,
+        result: 'needs_work',
+      });
+      expect(result.summary).toEqual(summary);
+      expect(result.pagination.totalItems).toBe(9);
     });
   });
 

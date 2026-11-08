@@ -4,17 +4,16 @@ import { buildPaginationMeta } from '@/lib/pagination';
 import type { Attempt } from '@/entities/Attempt';
 import type {
   AttemptCountFilter,
+  AttemptHistoryPage,
+  AttemptHistoryQuery,
+  AttemptHistorySummary,
   AttemptOwnerIdentity,
   AttemptScoreStats,
   IAttemptRepository,
   RecentAttemptActivity,
 } from '@/interfaces/repositories/IAttemptRepository';
-import type {
-  CountBuckets,
-  CountBucketThresholds,
-  PaginatedRepositoryResult,
-  RepositoryPaginationOptions,
-} from '@/interfaces/repositories/types';
+import type { CountBuckets, CountBucketThresholds } from '@/interfaces/repositories/types';
+import { ATTEMPT_PASS_MARK } from '@/shared/constants/attempt-result';
 import { AttemptPersistenceMapper } from '@/repositories/mappers/AttemptPersistenceMapper';
 import type {
   AttemptPersistenceRecord,
@@ -38,10 +37,28 @@ type AttemptListFacetMeta = {
   totalItems: number;
 };
 
+type AttemptListFacetSummary = {
+  totalAttempts: number;
+  averageScore: number | null;
+  needsWorkCount: number;
+};
+
 type AttemptListFacetResult = {
   items: AttemptPersistenceRecord[];
   meta: AttemptListFacetMeta[];
+  summary?: AttemptListFacetSummary[];
 };
+
+function toHistorySummary(record: AttemptListFacetSummary | undefined): AttemptHistorySummary {
+  if (!record || record.totalAttempts === 0) {
+    return { totalAttempts: 0, averageScore: null, needsWorkCount: 0 };
+  }
+  return {
+    totalAttempts: record.totalAttempts,
+    averageScore: record.averageScore === null ? null : Math.round(record.averageScore * 10) / 10,
+    needsWorkCount: record.needsWorkCount,
+  };
+}
 
 /** Strict 24-hex ObjectId; invalid values fail before any Mongo query. */
 function toStrictObjectId(value: string): Types.ObjectId {
@@ -62,18 +79,18 @@ function toAttemptOwnerFilter(owner: AttemptOwnerIdentity): AttemptOwnerFilter {
 }
 
 export class AttemptRepository implements IAttemptRepository {
-  async findByUser(
-    userId: string,
-    options: RepositoryPaginationOptions,
-  ): Promise<PaginatedRepositoryResult<Attempt>> {
+  async findByUser(userId: string, options: AttemptHistoryQuery): Promise<AttemptHistoryPage> {
     const userObjectId = toStrictObjectId(userId);
     await connectDB();
 
-    const { page, limit } = options;
+    const { page, limit, result: resultFilter } = options;
     const skip = (page - 1) * limit;
 
     const [result] = await AttemptModel.aggregate<AttemptListFacetResult>(
-      buildUserAttemptListPipeline(userObjectId, skip, limit),
+      buildUserAttemptListPipeline(userObjectId, skip, limit, {
+        ...(resultFilter === undefined ? {} : { result: resultFilter }),
+        passMark: ATTEMPT_PASS_MARK,
+      }),
     );
     const records = result?.items ?? [];
     const totalItems = result?.meta[0]?.totalItems ?? 0;
@@ -81,6 +98,7 @@ export class AttemptRepository implements IAttemptRepository {
     return {
       items: records.map(AttemptPersistenceMapper.toEntity),
       pagination: buildPaginationMeta(page, limit, totalItems),
+      summary: toHistorySummary(result?.summary?.[0]),
     };
   }
 

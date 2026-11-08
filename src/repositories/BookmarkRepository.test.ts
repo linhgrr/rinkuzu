@@ -114,6 +114,68 @@ describe('BookmarkRepository.findByUserId', () => {
   });
 });
 
+describe('BookmarkRepository.countByQuiz', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('groups only that user bookmarks by quiz in one aggregation, most bookmarks first', async () => {
+    bookmarkMocks.aggregate.mockResolvedValueOnce([
+      {
+        quizzes: [
+          { _id: 'algebra', title: 'Algebra', count: 3 },
+          { _id: 'biology', title: 'Biology', count: 1 },
+        ],
+        total: [{ total: 4 }],
+      },
+    ]);
+    const repository = new BookmarkRepository();
+
+    await expect(repository.countByQuiz('user-1', 100)).resolves.toEqual({
+      quizzes: [
+        { slug: 'algebra', title: 'Algebra', count: 3 },
+        { slug: 'biology', title: 'Biology', count: 1 },
+      ],
+      total: 4,
+    });
+    expect(bookmarkMocks.aggregate).toHaveBeenCalledOnce();
+    expect(bookmarkMocks.aggregate).toHaveBeenCalledWith([
+      { $match: { userId: 'user-1' } },
+      { $sort: { 'quiz.slug': 1, createdAt: -1 } },
+      {
+        $group: {
+          _id: '$quiz.slug',
+          title: { $first: '$quiz.title' },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $facet: {
+          quizzes: [{ $sort: { count: -1, _id: 1 } }, { $limit: 100 }],
+          total: [{ $group: { _id: null, total: { $sum: '$count' } } }],
+        },
+      },
+    ]);
+  });
+
+  it('returns no quizzes and a zero total when the user has no bookmarks', async () => {
+    bookmarkMocks.aggregate.mockResolvedValueOnce([{ quizzes: [], total: [] }]);
+    const repository = new BookmarkRepository();
+
+    await expect(repository.countByQuiz('user-1', 100)).resolves.toEqual({
+      quizzes: [],
+      total: 0,
+    });
+  });
+
+  it('treats a missing facet document as empty', async () => {
+    bookmarkMocks.aggregate.mockResolvedValueOnce([]);
+    const repository = new BookmarkRepository();
+
+    await expect(repository.countByQuiz('user-1', 5)).resolves.toEqual({ quizzes: [], total: 0 });
+  });
+});
+
 describe('BookmarkRepository.create', () => {
   beforeEach(() => {
     vi.clearAllMocks();

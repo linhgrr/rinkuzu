@@ -5,7 +5,7 @@ import {
   ComposerPrimitive,
   ExportedMessageRepository,
   ThreadPrimitive,
-  useAssistantRuntime,
+  useAui,
   useAuiEvent,
   useAuiState,
   type ThreadHistoryAdapter,
@@ -74,7 +74,7 @@ interface AskRinRuntimeProps {
 
 function EmptyConversation() {
   const t = useTranslations('adaptiveLearning.chatbot');
-  const runtime = useAssistantRuntime();
+  const aui = useAui();
   const suggestions = [t('suggestExplain'), t('suggestHint'), t('suggestSteps')];
 
   return (
@@ -92,7 +92,7 @@ function EmptyConversation() {
         {suggestions.map((suggestion) => (
           <ButtonBase
             key={suggestion}
-            onClick={() => runtime.thread.append(suggestion)}
+            onClick={() => aui.thread().append(suggestion)}
             className={`${styles['borderMuted']} rounded-xl border bg-white px-4 py-3 text-left text-sm text-neutral-700 transition-colors hover:border-green-300 hover:bg-green-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust`}
           >
             {suggestion}
@@ -118,7 +118,7 @@ function AskRinThread({
 }) {
   const t = useTranslations('adaptiveLearning.chatbot');
   const tCommon = useTranslations('common');
-  const runtime = useAssistantRuntime();
+  const aui = useAui();
   const messages = useAuiState((state) => state.thread.messages);
   const isRunning = useAuiState((state) => state.thread.isRunning);
   const isLoading = useAuiState((state) => state.thread.isLoading);
@@ -128,7 +128,7 @@ function AskRinThread({
   // Retry reruns from the learner's own message, so the same text is sent once more (RIN-1019).
   const retryFailedQuestion = () => {
     if (!failedQuestionId) return;
-    runtime.thread.startRun({ parentId: failedQuestionId });
+    aui.thread().startRun({ parentId: failedQuestionId });
   };
 
   // Asking again replaces the previous run's error card with the thinking bubble (RIN-822).
@@ -136,9 +136,9 @@ function AskRinThread({
 
   useEffect(() => {
     return () => {
-      if (runtime.thread.getState().isRunning) runtime.thread.cancelRun();
+      if (aui.thread().getState().isRunning) aui.thread().cancelRun();
     };
-  }, [runtime]);
+  }, [aui]);
 
   const clearConversation = async () => {
     if (clearing || isRunning) return;
@@ -146,7 +146,7 @@ function AskRinThread({
     onError('');
     try {
       await deleteAskRinConversation(credentials.exerciseContextId);
-      runtime.thread.reset();
+      aui.thread().reset();
       onHistoryReset();
     } catch {
       // Context copy rather than the server text (RIN-756).

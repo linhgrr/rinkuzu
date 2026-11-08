@@ -3,12 +3,15 @@ import { z } from 'zod';
 import { locales } from '@/i18n/config';
 import { objectIdRouteParamSchema } from '@/lib/validation/common';
 import type { QuizQuestionReview } from '@/shared/types/quiz-question';
+import { ATTEMPT_RESULT_FILTERS } from '@/shared/constants/attempt-result';
 
 export const attemptIdRouteParamsSchema = z.strictObject({ id: objectIdRouteParamSchema });
 
 export const userAttemptListQuerySchema = z.strictObject({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
+  /** Narrows the list to attempts below / at or above the pass mark (RIN-1197). */
+  result: z.enum(ATTEMPT_RESULT_FILTERS).optional(),
 });
 
 export const attemptDetailQuerySchema = z.strictObject({
@@ -61,9 +64,20 @@ export interface UserAttemptSummaryDto {
   };
 }
 
+/** Totals over all of the user's attempts, independent of `result`, `page` and `limit`. */
+export interface UserAttemptHistorySummaryDto {
+  totalAttempts: number;
+  /** Mean score in percent (one decimal); `null` with no attempts. */
+  averageScore: number | null;
+  /** Attempts below the pass mark (the "Needs Work" badge). */
+  needsWorkCount: number;
+}
+
 export interface UserAttemptListDto {
   attempts: UserAttemptSummaryDto[];
+  /** Follows the `result` filter. */
   pagination: PaginationMeta;
+  summary: UserAttemptHistorySummaryDto;
 }
 
 export type AttemptQuestionDetailDto = QuizQuestionReview;

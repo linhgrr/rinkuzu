@@ -36,6 +36,7 @@ vi.mock('@/features/profile/api/profile-history-api', () => ({
 
 vi.mock('@/features/profile/api/profile-bookmarks-api', () => ({
   fetchProfileBookmarkListViewModel: fetchBookmarksMock,
+  fetchProfileBookmarkQuizzes: async () => ({ quizzes: [], total: 0 }),
   deleteProfileBookmark: vi.fn(),
 }));
 

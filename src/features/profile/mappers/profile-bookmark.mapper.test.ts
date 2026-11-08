@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { toProfileBookmarkListViewModel } from '@/features/profile/mappers/profile-bookmark.mapper';
+import {
+  toProfileBookmarkListViewModel,
+  toProfileBookmarkQuizListViewModel,
+} from '@/features/profile/mappers/profile-bookmark.mapper';
 
 const emptyPagination = {
   currentPage: 1,
@@ -139,5 +142,19 @@ describe('toProfileBookmarkListViewModel date labels', () => {
     const [mapped] = toProfileBookmarkListViewModel(dto, locale).bookmarks;
     expect(mapped?.createdAtLabel).toBe(label);
     expect(mapped?.updatedAtLabel).toBe(label);
+  });
+});
+
+describe('toProfileBookmarkQuizListViewModel (RIN-1208)', () => {
+  it('keeps order, counts and the overall total', () => {
+    const dto = {
+      quizzes: [
+        { slug: 'biology-basics', title: 'Biology basics', count: 8 },
+        { slug: 'world-history', title: 'World history', count: 4 },
+      ],
+      total: 12,
+    };
+
+    expect(toProfileBookmarkQuizListViewModel(dto)).toEqual(dto);
   });
 });

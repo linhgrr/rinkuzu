@@ -13,6 +13,7 @@ import { EmptyState, EmptyStateExploreAction } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useApiErrorToast } from '@/lib/api/use-api-error';
 import { Pill } from '@/components/ui/Pill';
+import { Select } from '@/components/ui/Select';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
@@ -25,8 +26,12 @@ import { toStableContentEntries } from '@/lib/collections/stable-content-entries
 import {
   deleteProfileBookmark,
   fetchProfileBookmarkListViewModel,
+  fetchProfileBookmarkQuizzes,
 } from '@/features/profile/api/profile-bookmarks-api';
-import type { ProfileBookmarkViewModel } from '@/features/profile/types/profile-bookmark-view-model';
+import type {
+  ProfileBookmarkQuizListViewModel,
+  ProfileBookmarkViewModel,
+} from '@/features/profile/types/profile-bookmark-view-model';
 
 const chatbotIcon = '/images/chatbot_icon.png';
 
@@ -44,6 +49,20 @@ interface HydratedDateTextProps {
 }
 
 interface BookmarksHeaderProps {
+  /** Bookmarks in the current (possibly filtered) list; hidden until the list arrives. */
+  count: number | null;
+  t: TranslateFn;
+}
+
+interface BookmarkQuizFilterProps {
+  quizList: ProfileBookmarkQuizListViewModel | undefined;
+  value: string;
+  onChange: (quizSlug: string) => void;
+  t: TranslateFn;
+}
+
+interface StaleQuizFilterStateProps {
+  onShowAll: () => void;
   t: TranslateFn;
 }
 
@@ -71,6 +90,8 @@ interface EmptyBookmarksStateProps {
 
 interface ProfileBookmarksState {
   currentPage: number;
+  /** '' = all quizzes. */
+  quizSlug: string;
   currentBookmark: ProfileBookmarkViewModel | null;
   activeModal: BookmarkModal;
   removingBookmarkId: string | null;
@@ -80,6 +101,7 @@ interface ProfileBookmarksState {
 type ProfileBookmarksAction =
   | { type: 'patch'; value: Partial<ProfileBookmarksState> }
   | { type: 'setPage'; value: number }
+  | { type: 'setQuiz'; value: string }
   | { type: 'openAiModal'; bookmark: ProfileBookmarkViewModel }
   | { type: 'openRemoveModal'; bookmark: ProfileBookmarkViewModel }
   | { type: 'setHistoryTurns'; bookmarkId: string; turns: number }
@@ -87,6 +109,7 @@ type ProfileBookmarksAction =
 
 const initialState: ProfileBookmarksState = {
   currentPage: 1,
+  quizSlug: '',
   currentBookmark: null,
   activeModal: null,
   removingBookmarkId: null,
@@ -102,6 +125,8 @@ function profileBookmarksReducer(
       return { ...state, ...action.value };
     case 'setPage':
       return { ...state, currentPage: action.value };
+    case 'setQuiz':
+      return { ...state, quizSlug: action.value, currentPage: 1 };
     case 'openAiModal':
       return { ...state, currentBookmark: action.bookmark, activeModal: 'ai' };
     case 'openRemoveModal':
@@ -140,11 +165,54 @@ function HydratedDateText({ dateString, label }: HydratedDateTextProps) {
   );
 }
 
-function BookmarksHeader({ t }: BookmarksHeaderProps) {
+function BookmarksHeader({ count, t }: BookmarksHeaderProps) {
   return (
-    <h2 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
-      {t('bookmarkedQuestions')}
-    </h2>
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
+        {t('bookmarkedQuestions')}
+      </h2>
+      {count !== null ? <Pill tone="neutral">{t('bookmarkCount', { count })}</Pill> : null}
+    </div>
+  );
+}
+
+/** "Quiz" select: All plus each quiz with bookmarks, most first; disabled until the list arrives. */
+function BookmarkQuizFilter({ quizList, value, onChange, t }: BookmarkQuizFilterProps) {
+  return (
+    <div className="w-full sm:max-w-[360px]">
+      <Select
+        label={t('bookmarkQuizFilterLabel')}
+        value={value}
+        disabled={!quizList}
+        onChange={(event) => onChange(event.target.value)}
+        className="truncate"
+      >
+        <option value="">{t('bookmarkQuizFilterAll', { count: quizList?.total ?? 0 })}</option>
+        {quizList?.quizzes.map((quiz) => (
+          <option key={quiz.slug} value={quiz.slug} title={quiz.title}>
+            {`${quiz.title} (${quiz.count})`}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
+}
+
+function StaleQuizFilterState({ onShowAll, t }: StaleQuizFilterStateProps) {
+  return (
+    <Card>
+      <CardContent className="py-12 text-center">
+        <EmptyState
+          icon={<HiOutlineTag className="size-12 text-neutral-400" />}
+          title={t('bookmarkQuizFilterEmpty')}
+          action={
+            <Button variant="outline" size="sm" onClick={onShowAll} className="font-home">
+              {t('bookmarkQuizFilterShowAll')}
+            </Button>
+          }
+        />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -170,13 +238,8 @@ function BookmarkCard({
             className="font-home text-lg font-semibold text-ink"
           />
           <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-            <div className="font-home text-sm text-ink-muted">
-              <Link
-                href={`/quiz/${bookmark.quiz.slug}`}
-                className="text-accent hover:underline font-medium"
-              >
-                {bookmark.quiz.title}
-              </Link>
+            <div className="font-home text-sm font-medium text-ink-muted">
+              {bookmark.quiz.title}
             </div>
             <Pill tone={bookmark.question.type === 'single' ? 'warm' : 'cool'}>
               {bookmark.question.type === 'single' ? t('singleChoice') : t('multipleChoice')}
@@ -184,7 +247,15 @@ function BookmarkCard({
             <HydratedDateText dateString={bookmark.createdAt} label={bookmark.createdAtLabel} />
           </div>
         </div>
-        <div className="flex w-full gap-2 sm:w-auto">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          {/* 44px tap target on phones; the hidden title makes the name unique per card. */}
+          <Link
+            href={`/quiz/${bookmark.quiz.slug}`}
+            className="inline-flex min-h-11 items-center px-1 font-home text-sm font-medium text-accent hover:underline sm:min-h-9"
+          >
+            {t('openQuiz')}
+            <span className="sr-only">: {bookmark.quiz.title}</span>
+          </Link>
           <Button
             variant="outline"
             size="sm"
@@ -313,13 +384,37 @@ export default function ProfileBookmarks() {
 
   // The locale is part of the key: the date labels are formatted for it, so a
   // cached English page must not be served after switching to Vietnamese.
+  const quizQuery = state.quizSlug ? `&quizSlug=${encodeURIComponent(state.quizSlug)}` : '';
   const { data, error, isLoading, mutate } = useSWR(
-    [`/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}`, locale] as const,
+    [`/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}${quizQuery}`, locale] as const,
     ([url, pageLocale]) => fetchProfileBookmarkListViewModel(url, pageLocale),
   );
+  const {
+    data: quizList,
+    error: quizListError,
+    mutate: mutateQuizList,
+  } = useSWR('/api/bookmarks/quizzes', fetchProfileBookmarkQuizzes);
 
   const bookmarks = data?.bookmarks ?? [];
   const pagination = data?.pagination ?? null;
+  const isFiltered = state.quizSlug !== '';
+  // No select when the learner has no bookmarks at all, or when the quiz list failed.
+  const showQuizFilter =
+    !quizListError && (quizList ? quizList.total > 0 : isFiltered || bookmarks.length > 0);
+  const setQuiz = (quizSlug: string) => dispatch({ type: 'setQuiz', value: quizSlug });
+
+  // The removed bookmark may have been the last of the chosen quiz: refetch the quiz
+  // list and fall back to "All quizzes" when that quiz is gone from it.
+  const refreshAfterRemove = async () => {
+    const [nextQuizList] = await Promise.all([mutateQuizList(), mutate()]);
+    if (
+      isFiltered &&
+      nextQuizList &&
+      !nextQuizList.quizzes.some((q) => q.slug === state.quizSlug)
+    ) {
+      setQuiz('');
+    }
+  };
 
   const openAIModal = (bookmark: ProfileBookmarkViewModel) => {
     dispatch({ type: 'openAiModal', bookmark });
@@ -335,7 +430,7 @@ export default function ProfileBookmarks() {
     try {
       await deleteProfileBookmark(bookmarkId);
       dispatch({ type: 'closeModal' });
-      void mutate().catch(() => {
+      void refreshAfterRemove().catch(() => {
         toast.error(t('refreshBookmarksError'));
       });
     } catch (requestError) {
@@ -351,11 +446,19 @@ export default function ProfileBookmarks() {
 
   return (
     <div className="space-y-6">
-      <BookmarksHeader t={t} />
+      <BookmarksHeader count={pagination ? pagination.totalItems : null} t={t} />
+      {quizListError ? <ErrorState error={quizListError} onRetry={() => mutateQuizList()} /> : null}
+      {showQuizFilter ? (
+        <BookmarkQuizFilter quizList={quizList} value={state.quizSlug} onChange={setQuiz} t={t} />
+      ) : null}
       {error ? <ErrorState error={error} onRetry={() => mutate()} className="mb-4" /> : null}
 
       {error && bookmarks.length === 0 ? null : bookmarks.length === 0 ? (
-        <EmptyBookmarksState t={t} />
+        isFiltered ? (
+          <StaleQuizFilterState onShowAll={() => setQuiz('')} t={t} />
+        ) : (
+          <EmptyBookmarksState t={t} />
+        )
       ) : (
         <div className="space-y-6">
           <BookmarksList

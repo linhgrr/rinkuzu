@@ -35,6 +35,9 @@ export type QuizEditorQuestionInputViewModel = QuizEditorQuestionViewModel exten
     : never
   : never;
 
+/** Who can see a quiz: `personal` is shown to the owner as "Private". */
+export type QuizVisibilityViewModel = 'public' | 'personal';
+
 export interface QuizEditViewModel {
   id: string;
   title: string;
@@ -42,7 +45,7 @@ export interface QuizEditViewModel {
   slug: string;
   author: QuizEditorAuthorViewModel | null;
   folder: string | null;
-  visibility: 'public' | 'personal';
+  visibility: QuizVisibilityViewModel;
   questionCount: number;
   createdAt: string;
   updatedAt: string;
@@ -58,4 +61,6 @@ export interface UpdateQuizEditInput {
   questions: QuizEditorQuestionInputViewModel[];
   submitToPremium: boolean;
   rightsAttested?: boolean;
+  /** Sent only when the owner changed it (RIN-1275). */
+  visibility?: QuizVisibilityViewModel;
 }

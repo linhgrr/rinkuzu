@@ -1,6 +1,7 @@
 'use client';
 
 import { useReducer, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -11,19 +12,22 @@ import {
   HiOutlineSave,
   HiOutlineTrash,
 } from 'react-icons/hi';
-import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
+import QuizMetaForm, { type QuizVisibilityLabels } from '@/features/quiz/components/QuizMetaForm';
 import { QuestionEditor } from '@/features/quiz/components/editor/QuestionEditor';
 import {
   createQuizEditorWorkspaceState,
+  effectiveQuizVisibility,
   quizEditorWorkspaceReducer,
   type QuizEditorWorkspaceAction,
   type QuizEditorWorkspaceState,
 } from '@/features/quiz/lib/quiz-editor-workspace-state';
 import { toQuestionInputs } from '@/features/quiz/lib/question-editor-mutations';
+import { QuizVisibilityConflictError } from '@/features/quiz/lib/quiz-visibility-conflict';
 import { questionListSchema } from '@/lib/validation/question';
 import type {
   QuizEditorQuestionInputViewModel,
   QuizEditorQuestionViewModel,
+  QuizVisibilityViewModel,
 } from '@/features/quiz/types/quiz-editor-view-model';
 
 const PDFViewer = dynamic(() => import('@/features/quiz/components/PDFViewer'), { ssr: false });
@@ -39,6 +43,8 @@ export type QuizEditorWorkspaceSubmitPayload = {
   description: string;
   selectedFolderId: string | null;
   submitToPremium: boolean;
+  /** What to save: `personal` whenever Premium is ticked (RIN-1275). */
+  visibility: QuizVisibilityViewModel;
   /** API-ready questions (single | multiple + optional images). */
   questions: QuizEditorQuestionInputViewModel[];
 };
@@ -58,6 +64,8 @@ type QuizEditorWorkspaceLabels = {
   premiumDescription: string;
   premiumRightsLabel?: string;
   premiumRightsDescription?: string;
+  /** Shows the owner's Private / Public control when given (RIN-1275). */
+  visibility?: QuizVisibilityLabels;
   premiumVerificationRequired?: string;
   verifyEmailCta?: string;
   cancel: string;
@@ -80,6 +88,7 @@ type QuizEditorWorkspaceProps = {
     description?: string | null;
     selectedFolderId?: string | null;
     submitToPremium?: boolean;
+    visibility?: QuizVisibilityViewModel;
     questions: QuizEditorQuestionViewModel[];
   };
   pdfUrl?: string | null;
@@ -183,21 +192,38 @@ export function QuizEditorWorkspace({
         ...(initial.selectedFolderId !== undefined
           ? { selectedFolderId: initial.selectedFolderId }
           : {}),
+        ...(initial.visibility !== undefined ? { visibility: initial.visibility } : {}),
         showPDFViewer: Boolean(pdfUrl),
       }),
   );
   const [hasValidationError, setHasValidationError] = useState(false);
   const [invalidQuestionIndexes, setInvalidQuestionIndexes] = useState<number[]>([]);
+  const [visibilityError, setVisibilityError] = useState('');
   const dispatchEditorAction = (action: QuizEditorWorkspaceAction) => {
     const nextState = quizEditorWorkspaceReducer(state, action);
     dispatch(action);
+    setVisibilityError('');
     onChange?.({
       title: nextState.title,
       description: nextState.description,
       selectedFolderId: nextState.selectedFolderId,
       submitToPremium: nextState.submitToPremium,
+      visibility: effectiveQuizVisibility(nextState),
       questions: toQuestionInputs(nextState.questions),
     });
+  };
+  const visibilityControlId = 'quiz-meta-visibility';
+  const handleVisibilityConflict = (message: string) => {
+    // Re-enable the form first so the Private option can take focus.
+    flushSync(() => {
+      dispatch({ type: 'setSubmitting', value: false });
+      dispatch({ type: 'setVisibility', value: 'personal' });
+      setVisibilityError(message);
+    });
+    document
+      .getElementById(visibilityControlId)
+      ?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')
+      ?.focus();
   };
 
   const handleSubmit = async (event?: React.FormEvent) => {
@@ -228,6 +254,7 @@ export function QuizEditorWorkspace({
 
     setHasValidationError(false);
     setInvalidQuestionIndexes([]);
+    setVisibilityError('');
     dispatch({ type: 'setSubmitting', value: true });
     try {
       await onSubmit({
@@ -235,9 +262,14 @@ export function QuizEditorWorkspace({
         description: state.description.trim(),
         selectedFolderId: state.selectedFolderId,
         submitToPremium: state.submitToPremium,
+        visibility: effectiveQuizVisibility(state),
         questions,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof QuizVisibilityConflictError) {
+        handleVisibilityConflict(error.message);
+        return;
+      }
       dispatch({ type: 'setSubmitting', value: false });
     }
   };
@@ -339,7 +371,17 @@ export function QuizEditorWorkspace({
                     premiumDescription: labels.premiumDescription,
                     premiumRightsLabel: labels.premiumRightsLabel,
                     premiumRightsDescription: labels.premiumRightsDescription,
+                    visibility: labels.visibility,
                   }}
+                  {...(labels.visibility
+                    ? {
+                        visibility: state.visibility,
+                        onVisibilityChange: (value: QuizVisibilityViewModel) =>
+                          dispatchEditorAction({ type: 'setVisibility', value }),
+                        visibilityError,
+                        visibilityControlId,
+                      }
+                    : {})}
                   {...(showPremiumToggle ? { submitToPremium: state.submitToPremium } : {})}
                   premiumEligible={premiumEligible}
                   premiumEligibilityMessage={labels.premiumVerificationRequired}

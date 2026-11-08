@@ -1,4 +1,7 @@
-import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
+import type {
+  QuizEditorQuestionViewModel,
+  QuizVisibilityViewModel,
+} from '@/features/quiz/types/quiz-editor-view-model';
 import type { QuestionType } from '@/shared/constants/question-type';
 import {
   addOption,
@@ -26,6 +29,8 @@ export interface QuizEditorWorkspaceState {
   title: string;
   description: string;
   submitToPremium: boolean;
+  /** The owner's choice, kept while Premium (which forces private) is ticked. */
+  visibility: QuizVisibilityViewModel;
   selectedFolderId: string | null;
   showPDFViewer: boolean;
   questionToRemove: number | null;
@@ -36,6 +41,7 @@ export type QuizEditorWorkspaceAction =
   | { type: 'setTitle'; value: string }
   | { type: 'setDescription'; value: string }
   | { type: 'setSubmitToPremium'; value: boolean }
+  | { type: 'setVisibility'; value: QuizVisibilityViewModel }
   | { type: 'setSelectedFolder'; value: string | null }
   | { type: 'setShowPDFViewer'; value: boolean }
   | { type: 'togglePdfViewer' }
@@ -64,6 +70,7 @@ export function createQuizEditorWorkspaceState(input: {
   title: string;
   description?: string | null;
   submitToPremium?: boolean;
+  visibility?: QuizVisibilityViewModel;
   selectedFolderId?: string | null;
   showPDFViewer?: boolean;
 }): QuizEditorWorkspaceState {
@@ -72,11 +79,19 @@ export function createQuizEditorWorkspaceState(input: {
     title: input.title,
     description: input.description ?? '',
     submitToPremium: input.submitToPremium ?? false,
+    visibility: input.visibility ?? 'personal',
     selectedFolderId: input.selectedFolderId ?? null,
     showPDFViewer: input.showPDFViewer ?? true,
     questionToRemove: null,
     isSubmitting: false,
   };
+}
+
+/** What a save sends: a Premium submission is always private (RIN-1271). */
+export function effectiveQuizVisibility(
+  state: Pick<QuizEditorWorkspaceState, 'submitToPremium' | 'visibility'>,
+): QuizVisibilityViewModel {
+  return state.submitToPremium ? 'personal' : state.visibility;
 }
 
 export function quizEditorWorkspaceReducer(
@@ -90,6 +105,8 @@ export function quizEditorWorkspaceReducer(
       return { ...state, description: action.value };
     case 'setSubmitToPremium':
       return { ...state, submitToPremium: action.value };
+    case 'setVisibility':
+      return { ...state, visibility: action.value };
     case 'setSelectedFolder':
       return { ...state, selectedFolderId: action.value };
     case 'setShowPDFViewer':

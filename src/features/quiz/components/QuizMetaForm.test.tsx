@@ -1,5 +1,7 @@
 /** @vitest-environment jsdom */
 
+import '@testing-library/jest-dom/vitest';
+
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -119,5 +121,122 @@ describe('QuizMetaForm', () => {
       'href',
       '/check-email',
     );
+  });
+
+  describe('visibility control (RIN-1275)', () => {
+    const visibilityLabels = {
+      label: 'Who can see this quiz',
+      private: 'Private',
+      public: 'Public',
+      privateHelper: 'Only you can see this quiz.',
+      publicHelper: 'Anyone with the link can see this quiz, and it may appear in search.',
+      premiumHelper: 'Premium submissions stay private while they are reviewed.',
+    };
+    const baseProps = {
+      title: 'Quiz',
+      onTitleChange: vi.fn(),
+      description: '',
+      onDescriptionChange: vi.fn(),
+      selectedFolderId: null,
+      onFolderChange: vi.fn(),
+      labels: { ...labels, visibility: visibilityLabels },
+      submitToPremium: false,
+      onPremiumChange: vi.fn(),
+    };
+
+    it('shows Private with its helper and reports a switch to Public', async () => {
+      const user = userEvent.setup();
+      const onVisibilityChange = vi.fn();
+      render(
+        <QuizMetaForm
+          {...baseProps}
+          visibility="personal"
+          onVisibilityChange={onVisibilityChange}
+        />,
+      );
+
+      const group = screen.getByRole('group', { name: 'Who can see this quiz' });
+      expect(group).toHaveAccessibleDescription('Only you can see this quiz.');
+      expect(screen.getByRole('button', { name: 'Private' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByText('Only you can see this quiz.')).toHaveAttribute(
+        'aria-live',
+        'polite',
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Public' }));
+      expect(onVisibilityChange).toHaveBeenCalledWith('public');
+    });
+
+    it('explains what Public means', () => {
+      render(<QuizMetaForm {...baseProps} visibility="public" onVisibilityChange={vi.fn()} />);
+
+      expect(screen.getByRole('button', { name: 'Public' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(
+        screen.getByRole('group', { name: 'Who can see this quiz' }),
+      ).toHaveAccessibleDescription(visibilityLabels.publicHelper);
+    });
+
+    it('locks the control to Private while Premium is ticked', () => {
+      render(
+        <QuizMetaForm
+          {...baseProps}
+          submitToPremium
+          visibility="public"
+          onVisibilityChange={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: 'Private' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByRole('button', { name: 'Public' })).toBeDisabled();
+      expect(
+        screen.getByRole('group', { name: 'Who can see this quiz' }),
+      ).toHaveAccessibleDescription(visibilityLabels.premiumHelper);
+    });
+
+    it('disables the control while the form is pending', () => {
+      render(
+        <QuizMetaForm {...baseProps} disabled visibility="personal" onVisibilityChange={vi.fn()} />,
+      );
+
+      expect(screen.getByRole('button', { name: 'Private' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Public' })).toBeDisabled();
+    });
+
+    it('shows a visibility error as an alert tied to the control', () => {
+      render(
+        <QuizMetaForm
+          {...baseProps}
+          visibility="personal"
+          onVisibilityChange={vi.fn()}
+          visibilityError="This quiz is in the Premium catalog, so it can't be made public."
+        />,
+      );
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        "This quiz is in the Premium catalog, so it can't be made public.",
+      );
+      expect(
+        screen.getByRole('group', { name: 'Who can see this quiz' }),
+      ).toHaveAccessibleDescription(
+        "Only you can see this quiz. This quiz is in the Premium catalog, so it can't be made public.",
+      );
+    });
+
+    it('is absent when no visibility handler is given', () => {
+      render(<QuizMetaForm {...baseProps} />);
+
+      expect(
+        screen.queryByRole('group', { name: 'Who can see this quiz' }),
+      ).not.toBeInTheDocument();
+    });
   });
 });

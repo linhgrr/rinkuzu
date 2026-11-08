@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 import enCreate from '../../../../../messages/en/create.json';
@@ -7,7 +7,13 @@ import enErrors from '../../../../../messages/en/errors.json';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { DraftEditPage } from './DraftEditPage';
 
+const { workspaceProps, submitQuizDraftMock } = vi.hoisted(() => ({
+  workspaceProps: { current: null as null | Record<string, unknown> },
+  submitQuizDraftMock: vi.fn(),
+}));
+
 vi.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
+vi.mock('@/lib/quiz/draftApi', () => ({ submitQuizDraft: submitQuizDraftMock }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/features/quiz/hooks/useQuizDraftAutosave', () => {
   const autosave = {
@@ -22,17 +28,19 @@ vi.mock('@/features/quiz/hooks/useQuizDraftAutosave', () => {
   return { useQuizDraftAutosave: () => autosave };
 });
 vi.mock('@/features/quiz/components/editor/QuizEditorWorkspace', () => ({
-  QuizEditorWorkspace: ({
-    labels,
-  }: {
+  QuizEditorWorkspace: (props: {
     labels: { pageTitle: string; metaTitle: string; metaDescription: string };
-  }) => (
-    <section>
-      <h1>{labels.pageTitle}</h1>
-      <h2>{labels.metaTitle}</h2>
-      <p>{labels.metaDescription}</p>
-    </section>
-  ),
+  }) => {
+    workspaceProps.current = props;
+    const { labels } = props;
+    return (
+      <section>
+        <h1>{labels.pageTitle}</h1>
+        <h2>{labels.metaTitle}</h2>
+        <p>{labels.metaDescription}</p>
+      </section>
+    );
+  },
 }));
 
 function draft(sourceType: QuizDraft['sourceType']): QuizDraft {
@@ -93,5 +101,39 @@ describe('DraftEditPage copy', () => {
     expect(
       screen.getByText('Add questions and answers. Your changes save automatically.'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('DraftEditPage visibility at publish (RIN-1275)', () => {
+  it('starts Private, passes the visibility copy and always sends the choice', async () => {
+    submitQuizDraftMock.mockResolvedValue({ quizId: 'quiz-1', slug: 'cell-biology', warnings: [] });
+    renderDraft('pdf');
+
+    const props = workspaceProps.current as {
+      initial: { visibility?: string };
+      labels: { visibility?: { label: string; publicHelper: string } };
+      onSubmit: (payload: unknown) => Promise<void>;
+    };
+    expect(props.initial.visibility).toBe('personal');
+    expect(props.labels.visibility).toMatchObject({
+      label: 'Who can see this quiz',
+      publicHelper: 'Anyone with the link can see this quiz, and it may appear in search.',
+    });
+
+    await act(async () => {
+      await props.onSubmit({
+        title: 'Cell biology',
+        description: '',
+        selectedFolderId: null,
+        submitToPremium: false,
+        visibility: 'public',
+        questions: [{ question: 'Q?', options: ['A', 'B'], type: 'single', correctIndex: 0 }],
+      });
+    });
+
+    expect(submitQuizDraftMock).toHaveBeenCalledWith(
+      'draft-1',
+      expect.objectContaining({ visibility: 'public' }),
+    );
   });
 });

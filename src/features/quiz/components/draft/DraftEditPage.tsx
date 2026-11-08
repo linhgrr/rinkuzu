@@ -7,6 +7,7 @@ import useSWR from 'swr';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
 import { QuizEditorWorkspace } from '@/features/quiz/components/editor/QuizEditorWorkspace';
+import { useQuizVisibilityLabels } from '@/features/quiz/hooks/useQuizVisibilityLabels';
 import { Button } from '@/components/ui/Button';
 import { useQuizDraftAutosave } from '@/features/quiz/hooks/useQuizDraftAutosave';
 import { toEditorQuestions } from '@/features/quiz/lib/question-editor-mutations';
@@ -26,6 +27,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
   const t = useTranslations('create');
   const apiErrorMessage = useApiErrorMessage();
   const tCommon = useTranslations('common');
+  const visibilityLabels = useQuizVisibilityLabels();
   const { data: session } = useSession();
   const { push } = useRouter();
   const removeDraft = useDraftStore((store) => store.removeDraft);
@@ -62,6 +64,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
         description: restoredPayload?.description ?? initialDraft.description,
         selectedFolderId: restoredPayload?.selectedFolderId ?? initialDraft.folderId ?? null,
         submitToPremium: restoredPayload?.submitToPremium ?? initialDraft.submitToPremium,
+        visibility: restoredPayload?.visibility ?? 'personal',
         questions: initialQuestions,
       }}
       {...(pdfUrl !== undefined ? { pdfUrl } : {})}
@@ -135,6 +138,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
         description: t('descriptionOptional'),
         descriptionPlaceholder: t('provideContext'),
         folder: t('folderLabel'),
+        visibility: visibilityLabels,
         premiumLabel: t('premiumQuiz'),
         premiumDescription: t('premiumQuizDescription'),
         premiumRightsLabel: t('premiumRightsLabel'),
@@ -173,6 +177,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
             questions: payload.questions,
             submitToPremium: payload.submitToPremium,
             ...(payload.submitToPremium ? { rightsAttested: true } : {}),
+            visibility: payload.visibility,
           });
           autosave.discardRecovery();
           removeDraft(initialDraft.id);

@@ -20,6 +20,11 @@ import type { QuizEditViewModel } from '@/features/quiz/types/quiz-editor-view-m
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { formatDate } from '@/lib/formatters';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
+import {
+  QuizVisibilityConflictError,
+  isQuizVisibilityConflict,
+} from '@/features/quiz/lib/quiz-visibility-conflict';
+import { useQuizVisibilityLabels } from '@/features/quiz/hooks/useQuizVisibilityLabels';
 
 function EditQuizLoadingState({ label }: { label: string }) {
   return <QuizWorkspacePageSkeleton label={label} />;
@@ -123,6 +128,7 @@ export function EditQuizPage() {
   const apiErrorMessage = useApiErrorMessage();
   const tCommon = useTranslations('common');
   const tQuiz = useTranslations('quiz');
+  const visibilityLabels = useQuizVisibilityLabels();
   const { data: session } = useSession();
   const { push } = useRouter();
   const quizId = useRequiredRouteParam('id');
@@ -205,6 +211,7 @@ export function EditQuizPage() {
             // RIN-1271: private no longer means "submitted to Premium", so the
             // Premium checkbox starts unticked and a save never resubmits.
             submitToPremium: false,
+            visibility: quiz.visibility,
             questions: quiz.questions,
           }}
           {...(quiz.pdfUrl !== undefined ? { pdfUrl: quiz.pdfUrl } : {})}
@@ -237,6 +244,7 @@ export function EditQuizPage() {
             premiumDescription: t('premiumQuizDescription'),
             premiumRightsLabel: t('premiumRightsLabel'),
             premiumRightsDescription: t('premiumRightsDescription'),
+            ...(canEdit ? { visibility: visibilityLabels } : {}),
             premiumVerificationRequired: t('premiumVerificationRequired'),
             verifyEmailCta: t('verifyEmailCta'),
             cancel: tCommon('cancel'),
@@ -295,6 +303,8 @@ export function EditQuizPage() {
             }
             setStatusError('');
             setStatusSuccess('');
+            // RIN-1275: send visibility only when the owner changed it.
+            const visibilityChanged = payload.visibility !== quiz.visibility;
             try {
               const updatedQuiz = await updateQuizEditViewModel(quizId, {
                 title: payload.title,
@@ -303,6 +313,7 @@ export function EditQuizPage() {
                 questions: payload.questions,
                 submitToPremium: payload.submitToPremium,
                 ...(payload.submitToPremium ? { rightsAttested: true } : {}),
+                ...(visibilityChanged ? { visibility: payload.visibility } : {}),
               });
               setQuiz(updatedQuiz);
               setStatusSuccess(t('updateSuccess'));
@@ -310,6 +321,13 @@ export function EditQuizPage() {
                 push('/my-quizzes');
               }, 2000);
             } catch (error) {
+              if (
+                visibilityChanged &&
+                payload.visibility === 'public' &&
+                isQuizVisibilityConflict(error)
+              ) {
+                throw new QuizVisibilityConflictError(t('visibilityPremiumConflict'));
+              }
               setStatusError(apiErrorMessage(error, t('updateFailed')));
               throw error;
             }

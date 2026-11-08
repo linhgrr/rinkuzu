@@ -48,4 +48,38 @@ describe('SegmentedControl', () => {
     expect(onChange).toHaveBeenCalledWith('private');
     expect((await axe(container)).violations).toEqual([]);
   });
+
+  it('disables every option and links the helper text when asked', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <>
+        <SegmentedControl
+          id="visibility"
+          ariaLabel="Who can see this quiz"
+          ariaDescribedBy="visibility-help"
+          disabled
+          value="personal"
+          options={[
+            { value: 'personal', label: 'Private' },
+            { value: 'public', label: 'Public' },
+          ]}
+          onChange={onChange}
+        />
+        <p id="visibility-help">Only you can see this quiz.</p>
+      </>,
+    );
+
+    const group = screen.getByRole('group', { name: 'Who can see this quiz' });
+    expect(group).toHaveAttribute('id', 'visibility');
+    expect(group).toHaveAccessibleDescription('Only you can see this quiz.');
+    for (const name of ['Private', 'Public']) {
+      const option = screen.getByRole('button', { name });
+      expect(option).toBeDisabled();
+      expect(option).toHaveClass('disabled:cursor-not-allowed', 'disabled:opacity-60');
+    }
+
+    await user.click(screen.getByRole('button', { name: 'Public' }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

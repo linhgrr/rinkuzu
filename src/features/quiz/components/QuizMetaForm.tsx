@@ -1,9 +1,21 @@
 'use client';
 
 import { Input, Textarea } from '@/components/ui/Input';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { FolderSelector } from '@/features/folders/components/FolderSelector';
 import { Link } from '@/i18n/navigation';
 import { HiOutlineLockClosed, HiOutlineTag } from 'react-icons/hi';
+import type { QuizVisibilityViewModel } from '@/features/quiz/types/quiz-editor-view-model';
+
+/** Copy for the owner's Private / Public control (RIN-1275). */
+export type QuizVisibilityLabels = {
+  label: string;
+  private: string;
+  public: string;
+  privateHelper: string;
+  publicHelper: string;
+  premiumHelper: string;
+};
 
 type QuizMetaLabels = {
   title: string;
@@ -18,6 +30,7 @@ type QuizMetaLabels = {
   promptLabel?: string;
   promptPlaceholder?: string;
   promptHelper?: string;
+  visibility?: QuizVisibilityLabels | undefined;
 };
 
 type QuizMetaFormProps = {
@@ -42,7 +55,69 @@ type QuizMetaFormProps = {
   aiPrompt?: string;
   onAiPromptChange?: (value: string) => void;
   aiPromptMaxLength?: number;
+  /** The owner's choice; shown as Private while Premium is ticked. */
+  visibility?: QuizVisibilityViewModel;
+  onVisibilityChange?: (value: QuizVisibilityViewModel) => void;
+  visibilityError?: string | undefined;
+  visibilityControlId?: string;
 };
+
+type QuizVisibilityFieldProps = {
+  id: string;
+  labels: QuizVisibilityLabels;
+  value: QuizVisibilityViewModel;
+  onChange: (value: QuizVisibilityViewModel) => void;
+  lockedByPremium: boolean;
+  disabled: boolean;
+  error: string | undefined;
+};
+
+function QuizVisibilityField({
+  id,
+  labels,
+  value,
+  onChange,
+  lockedByPremium,
+  disabled,
+  error,
+}: QuizVisibilityFieldProps) {
+  const helperId = `${id}-helper`;
+  const errorId = `${id}-error`;
+  const shown: QuizVisibilityViewModel = lockedByPremium ? 'personal' : value;
+  const helper = lockedByPremium
+    ? labels.premiumHelper
+    : shown === 'public'
+      ? labels.publicHelper
+      : labels.privateHelper;
+
+  return (
+    <div>
+      <p id={`${id}-label`} className="mb-3 block text-sm font-semibold text-neutral-700">
+        {labels.label}
+      </p>
+      <SegmentedControl
+        id={id}
+        ariaLabel={labels.label}
+        ariaDescribedBy={error ? `${helperId} ${errorId}` : helperId}
+        disabled={disabled || lockedByPremium}
+        value={shown}
+        options={[
+          { value: 'personal', label: labels.private },
+          { value: 'public', label: labels.public },
+        ]}
+        onChange={onChange}
+      />
+      <p id={helperId} aria-live="polite" className="mt-2 text-xs text-neutral-600">
+        {helper}
+      </p>
+      {error ? (
+        <p id={errorId} role="alert" className="mt-2 text-xs font-semibold text-red-700">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export default function QuizMetaForm({
   title,
@@ -66,6 +141,10 @@ export default function QuizMetaForm({
   aiPrompt,
   onAiPromptChange,
   aiPromptMaxLength = 2000,
+  visibility,
+  onVisibilityChange,
+  visibilityError,
+  visibilityControlId = 'quiz-meta-visibility',
 }: QuizMetaFormProps) {
   const showPremium = typeof submitToPremium === 'boolean' && typeof onPremiumChange === 'function';
   const showPrompt = typeof aiPrompt === 'string' && typeof onAiPromptChange === 'function';
@@ -128,6 +207,18 @@ export default function QuizMetaForm({
           disabled={disabled}
         />
       </div>
+
+      {visibility !== undefined && onVisibilityChange && labels.visibility ? (
+        <QuizVisibilityField
+          id={visibilityControlId}
+          labels={labels.visibility}
+          value={visibility}
+          onChange={onVisibilityChange}
+          lockedByPremium={submitToPremium === true}
+          disabled={disabled}
+          error={visibilityError}
+        />
+      ) : null}
 
       {showPremium && (
         <div className="bg-gradient-to-r from-green-50 to-green-50/50 p-4 rounded-xl border border-green-100">

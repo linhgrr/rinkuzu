@@ -433,6 +433,16 @@ export const INDEX_CONTRACT = Object.freeze([
   required('starter-quizzes.quiz', 'starterquizzes', { quiz: 1 }, { unique: true }),
   required('starter-quizzes.order', 'starterquizzes', { order: 1 }),
 
+  // Admin-curated topic hubs (RIN-1248): tens of topics, a quiz in at most one topic.
+  required('quiz-topics.slug', 'quiztopics', { slug: 1 }, { unique: true }),
+  required('quiz-topics.order', 'quiztopics', { order: 1 }),
+  required('quiz-topic-assignments.quiz', 'quiztopicassignments', { quizId: 1 }, { unique: true }),
+  required('quiz-topic-assignments.topic-order', 'quiztopicassignments', {
+    topicId: 1,
+    order: 1,
+    createdAt: -1,
+  }),
+
   // Premium quiz submissions, reviews, credits, and protected play sessions
   required('premium-submissions.author-recent', 'premiumquizsubmissions', {
     author: 1,

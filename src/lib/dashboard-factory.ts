@@ -8,7 +8,11 @@ import { DashboardService } from '@/services/dashboard/DashboardService';
 import { LandingStarterResolver } from '@/services/quiz/landing-starter';
 
 const dashboardRepository = new DashboardRepository();
-const dashboardService = new DashboardService(dashboardRepository, new QuizRepository());
+const dashboardService = new DashboardService(
+  dashboardRepository,
+  new QuizRepository(),
+  dashboardRepository,
+);
 const landingStarterResolver = new LandingStarterResolver(dashboardRepository);
 
 export const getDashboardBootstrapData = cache(
@@ -25,7 +29,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStatsD
   return dashboardService.getStats(userId);
 }
 
-/** Slug of the homepage play-first starter for `locale` (RIN-1178); null when none; never throws. */
-export async function getLandingStarterSlug(locale: string): Promise<string | null> {
-  return landingStarterResolver.resolve(locale);
+/** Locale-unprefixed href of the homepage play-first starter (RIN-1178); null when none; never throws. */
+export async function getLandingStarterHref(locale: string): Promise<string | null> {
+  return landingStarterResolver.resolveHref(locale);
 }

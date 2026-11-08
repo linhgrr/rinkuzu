@@ -29,11 +29,11 @@ import type { QuizListItemDto } from '@/dtos/quiz';
 import type { components } from '@/generated/adaptive-api';
 import { ROUTES } from '@/shared/constants/routes';
 import { POST_SIGNIN_STARTER_ENTRY } from '@/shared/constants/starter-quiz';
+import type { IStarterQuizReadRepository } from '@/interfaces/repositories/IStarterQuizReadRepository';
 import {
-  STARTER_QUIZ_ALLOWLIST,
+  loadStarterQuizzes,
   pickStarterQuizIndex,
-  resolveStarterQuizzes,
-  type StarterQuizAllowlistEntry,
+  starterQuizHref,
 } from '@/services/dashboard/starter-quizzes';
 
 type ApiSchemas = components['schemas'];
@@ -69,7 +69,7 @@ export class DashboardService implements IDashboardService {
   constructor(
     private readonly repository: IDashboardRepository,
     private readonly quizRepository: IDashboardQuizRepository,
-    private readonly starterAllowlist: readonly StarterQuizAllowlistEntry[] = STARTER_QUIZ_ALLOWLIST,
+    private readonly starterRepository: IStarterQuizReadRepository,
   ) {}
 
   async getStats(userId: string): Promise<DashboardStatsDto> {
@@ -135,19 +135,17 @@ export class DashboardService implements IDashboardService {
    */
   private async getStarterState(userId: string): Promise<DashboardStarterState> {
     try {
-      const [hasSubmittedAttempt, hasAuthoredQuiz, candidates] = await Promise.all([
-        this.repository.hasSubmittedAttempt(userId),
-        this.repository.hasAuthoredQuiz(userId),
-        this.repository.findStarterQuizCandidates(this.starterAllowlist.map(({ slug }) => slug)),
-      ]);
+      const [hasSubmittedAttempt, hasAuthoredQuiz, { starterQuizzes, dropped }] = await Promise.all(
+        [
+          this.repository.hasSubmittedAttempt(userId),
+          this.repository.hasAuthoredQuiz(userId),
+          loadStarterQuizzes(this.starterRepository),
+        ],
+      );
       if (hasSubmittedAttempt || hasAuthoredQuiz) return NO_STARTER_STATE;
 
-      const { starterQuizzes, dropped } = resolveStarterQuizzes({
-        allowlist: this.starterAllowlist,
-        candidates,
-      });
-      for (const { slug, reason } of dropped) {
-        logger.warn({ slug, reason }, 'Dropped starter quiz from home dashboard allowlist');
+      for (const { quizId, reason } of dropped) {
+        logger.warn({ quizId, reason }, 'Dropped ineligible starter quiz from home dashboard');
       }
       return { isNewLearner: true, starterQuizzes };
     } catch (error) {
@@ -173,7 +171,7 @@ export class DashboardService implements IDashboardService {
     if (!isNewLearner) return ROUTES.DASHBOARD;
     const starter = starterQuizzes[pickStarterQuizIndex(starterQuizzes, locale)];
     return starter
-      ? `${ROUTES.QUIZ.VIEW(starter.slug)}?entry=${POST_SIGNIN_STARTER_ENTRY}`
+      ? starterQuizHref(starter, { entry: POST_SIGNIN_STARTER_ENTRY })
       : ROUTES.DASHBOARD;
   }
 

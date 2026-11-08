@@ -1,16 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { DashboardStarterQuizCandidateRecord } from '@/interfaces/repositories/IDashboardRepository';
+import type { StarterQuizCandidateRecord } from '@/interfaces/repositories/IStarterQuizReadRepository';
 import { NextQuizResolver } from '@/services/quiz/next-quiz';
 
-const allowlist = [
-  { slug: 'vi-one', locale: 'vi' },
-  { slug: 'en-one', locale: 'en' },
-  { slug: 'vi-two', locale: 'vi' },
-  { slug: 'vi-three', locale: 'vi' },
-];
+const slugs = ['vi-one', 'en-one', 'vi-two', 'vi-three'];
+const entries = slugs.map((slug, index) => ({
+  quizId: `id-${slug}`,
+  locale: slug.slice(0, 2),
+  order: index + 1,
+}));
 
-function candidate(slug: string, extra: Partial<DashboardStarterQuizCandidateRecord> = {}) {
+function candidate(slug: string, extra: Partial<StarterQuizCandidateRecord> = {}) {
   return {
+    quizId: `id-${slug}`,
     slug,
     title: `Title ${slug}`,
     visibility: 'public',
@@ -20,19 +21,15 @@ function candidate(slug: string, extra: Partial<DashboardStarterQuizCandidateRec
   };
 }
 
-function createResolver(
-  attempted: string[],
-  candidates = allowlist.map(({ slug }) => candidate(slug)),
-) {
+function createResolver(attempted: string[], candidates = slugs.map((slug) => candidate(slug))) {
+  const listStarterQuizEntries = vi.fn().mockResolvedValue(entries);
   const findStarterQuizCandidates = vi.fn().mockResolvedValue(candidates);
   const findAttemptedQuizSlugs = vi.fn().mockResolvedValue(attempted);
   return {
     resolver: new NextQuizResolver(
-      { findStarterQuizCandidates },
+      { listStarterQuizEntries, findStarterQuizCandidates },
       { findAttemptedQuizSlugs },
-      allowlist,
     ),
-    findStarterQuizCandidates,
     findAttemptedQuizSlugs,
   };
 }
@@ -40,31 +37,29 @@ function createResolver(
 const owner = { userId: '507f191e810c19729de860eb' };
 
 describe('NextQuizResolver', () => {
-  it('picks the first allowlisted quiz in the locale the learner has not attempted', async () => {
+  it('picks the first starter in the locale the learner has not attempted', async () => {
     const { resolver, findAttemptedQuizSlugs } = createResolver(['vi-two']);
 
     await expect(resolver.resolve({ owner, currentSlug: 'vi-one', locale: 'vi' })).resolves.toEqual(
-      {
-        slug: 'vi-three',
-        title: 'Title vi-three',
-      },
+      { slug: 'vi-three', title: 'Title vi-three', quick: false },
     );
     expect(findAttemptedQuizSlugs).toHaveBeenCalledWith(owner, ['vi-two', 'vi-three']);
   });
 
-  it('skips allowlisted quizzes that are no longer public, short and free', async () => {
+  it('skips starters that are no longer public and free, and marks a long one quick', async () => {
     const { resolver } = createResolver(
       [],
       [
         candidate('vi-one', { visibility: 'private' }),
         candidate('vi-two', { isPremium: true }),
-        candidate('vi-three'),
+        candidate('vi-three', { questionCount: 30 }),
       ],
     );
 
     await expect(resolver.resolve({ owner, currentSlug: 'other', locale: 'vi' })).resolves.toEqual({
       slug: 'vi-three',
       title: 'Title vi-three',
+      quick: true,
     });
   });
 
@@ -76,13 +71,13 @@ describe('NextQuizResolver', () => {
     ).resolves.toBeNull();
   });
 
-  it('returns null without querying when the locale has no other entry', async () => {
-    const { resolver, findStarterQuizCandidates } = createResolver([]);
+  it('returns null without an attempt lookup when the locale has no other starter', async () => {
+    const { resolver, findAttemptedQuizSlugs } = createResolver([]);
 
     await expect(
       resolver.resolve({ owner, currentSlug: 'en-one', locale: 'en' }),
     ).resolves.toBeNull();
-    expect(findStarterQuizCandidates).not.toHaveBeenCalled();
+    expect(findAttemptedQuizSlugs).not.toHaveBeenCalled();
   });
 
   it('fails open to null when a lookup throws', async () => {

@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IDashboardRepository } from '@/interfaces/repositories/IDashboardRepository';
 import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
+import type {
+  IStarterQuizReadRepository,
+  StarterQuizCandidateRecord,
+  StarterQuizEntryRecord,
+} from '@/interfaces/repositories/IStarterQuizReadRepository';
 import { fetchApiData } from '@/lib/api/client';
 import { logger } from '@/lib/logger';
 import { DashboardService } from '@/services/dashboard/DashboardService';
@@ -21,10 +26,38 @@ vi.mock('@/lib/logger', () => ({
 
 const now = new Date('2026-07-01T00:00:00Z');
 
-const starterAllowlist = [
-  { slug: 'fake-starter-a', locale: 'vi' },
-  { slug: 'fake-starter-gone', locale: 'en' },
-];
+function candidate(
+  slug: string,
+  extra: Partial<StarterQuizCandidateRecord> = {},
+): StarterQuizCandidateRecord {
+  return {
+    quizId: `id-${slug}`,
+    slug,
+    title: `Fake ${slug}`,
+    visibility: 'public',
+    questionCount: 7,
+    isPremium: false,
+    ...extra,
+  };
+}
+
+function entry(slug: string, locale: string, order: number): StarterQuizEntryRecord {
+  return { quizId: `id-${slug}`, locale, order };
+}
+
+const starterEntries = [entry('fake-starter-a', 'vi', 1), entry('fake-starter-gone', 'en', 2)];
+
+function createStarters(
+  entries: StarterQuizEntryRecord[] = starterEntries,
+  candidates: StarterQuizCandidateRecord[] = [
+    candidate('fake-starter-a', { title: 'Fake starter', questionCount: 10 }),
+  ],
+) {
+  return {
+    listStarterQuizEntries: vi.fn().mockResolvedValue(entries),
+    findStarterQuizCandidates: vi.fn().mockResolvedValue(candidates),
+  } satisfies IStarterQuizReadRepository;
+}
 
 function createRepository(): IDashboardRepository {
   return {
@@ -42,15 +75,6 @@ function createRepository(): IDashboardRepository {
     ]),
     hasSubmittedAttempt: vi.fn().mockResolvedValue(false),
     hasAuthoredQuiz: vi.fn().mockResolvedValue(false),
-    findStarterQuizCandidates: vi.fn().mockResolvedValue([
-      {
-        slug: 'fake-starter-a',
-        title: 'Fake starter',
-        visibility: 'public',
-        questionCount: 10,
-        isPremium: false,
-      },
-    ]),
   };
 }
 
@@ -71,7 +95,7 @@ describe('DashboardService', () => {
   it('builds a fully typed dashboard bootstrap DTO', async () => {
     const repository = createRepository();
     const quizRepository = createQuizRepository();
-    const service = new DashboardService(repository, quizRepository);
+    const service = new DashboardService(repository, quizRepository, createStarters());
 
     const result = await service.getBootstrapData('user-1');
 
@@ -97,36 +121,43 @@ describe('DashboardService', () => {
   describe('starter quizzes for new learners', () => {
     it('marks a user with no attempts and no quizzes as new and resolves starters', async () => {
       const repository = createRepository();
-      const service = new DashboardService(repository, createQuizRepository(), starterAllowlist);
+      const starters = createStarters();
+      const service = new DashboardService(repository, createQuizRepository(), starters);
 
       const result = await service.getBootstrapData('user-1');
 
       expect(result.isNewLearner).toBe(true);
       expect(result.starterQuizzes).toEqual([
-        { slug: 'fake-starter-a', title: 'Fake starter', questionCount: 10, locale: 'vi' },
+        {
+          slug: 'fake-starter-a',
+          title: 'Fake starter',
+          questionCount: 10,
+          locale: 'vi',
+          quick: false,
+        },
       ]);
       expect(repository.hasSubmittedAttempt).toHaveBeenCalledWith('user-1');
       expect(repository.hasAuthoredQuiz).toHaveBeenCalledWith('user-1');
-      expect(repository.findStarterQuizCandidates).toHaveBeenCalledWith([
-        'fake-starter-a',
-        'fake-starter-gone',
+      expect(starters.findStarterQuizCandidates).toHaveBeenCalledWith([
+        'id-fake-starter-a',
+        'id-fake-starter-gone',
       ]);
     });
 
-    it('logs each dropped allowlist entry by slug only', async () => {
+    it('logs each dropped starter by quiz id only', async () => {
       const service = new DashboardService(
         createRepository(),
         createQuizRepository(),
-        starterAllowlist,
+        createStarters(),
       );
 
       await service.getBootstrapData('user-1');
 
       const dropLogs = vi
         .mocked(logger.warn)
-        .mock.calls.filter(([, message]) => String(message).includes('Dropped starter quiz'));
+        .mock.calls.filter(([, message]) => String(message).includes('Dropped'));
       expect(dropLogs).toEqual([
-        [{ slug: 'fake-starter-gone', reason: 'missing' }, expect.any(String)],
+        [{ quizId: 'id-fake-starter-gone', reason: 'missing' }, expect.any(String)],
       ]);
       expect(JSON.stringify(dropLogs)).not.toContain('user-1');
     });
@@ -137,7 +168,7 @@ describe('DashboardService', () => {
     ] as const)('graduates a learner with %s', async (_label, method) => {
       const repository = createRepository();
       vi.mocked(repository[method]).mockResolvedValue(true);
-      const service = new DashboardService(repository, createQuizRepository(), starterAllowlist);
+      const service = new DashboardService(repository, createQuizRepository(), createStarters());
 
       const result = await service.getBootstrapData('user-1');
 
@@ -146,9 +177,9 @@ describe('DashboardService', () => {
     });
 
     it('fails open to the current dashboard when a lookup throws', async () => {
-      const repository = createRepository();
-      vi.mocked(repository.findStarterQuizCandidates).mockRejectedValue(new Error('db down'));
-      const service = new DashboardService(repository, createQuizRepository(), starterAllowlist);
+      const starters = createStarters();
+      starters.listStarterQuizEntries.mockRejectedValue(new Error('db down'));
+      const service = new DashboardService(createRepository(), createQuizRepository(), starters);
 
       const result = await service.getBootstrapData('user-1');
 
@@ -161,25 +192,13 @@ describe('DashboardService', () => {
 
 // RIN-913: the post-sign-in landing sends a new learner straight into a starter quiz.
 describe('DashboardService.getPostSignInHref', () => {
-  const twoLocaleAllowlist = [
-    { slug: 'fake-starter-vi', locale: 'vi' },
-    { slug: 'fake-starter-en', locale: 'en' },
-  ];
-  const candidate = (slug: string) => ({
-    slug,
-    title: `Fake ${slug}`,
-    visibility: 'public',
-    questionCount: 7,
-    isPremium: false,
-  });
+  const twoLocaleEntries = [entry('fake-starter-vi', 'vi', 1), entry('fake-starter-en', 'en', 2)];
 
-  function createStarterRepository(): IDashboardRepository {
-    const repository = createRepository();
-    vi.mocked(repository.findStarterQuizCandidates).mockResolvedValue([
+  function createTwoLocaleStarters() {
+    return createStarters(twoLocaleEntries, [
       candidate('fake-starter-vi'),
       candidate('fake-starter-en'),
     ]);
-    return repository;
   }
 
   it.each([
@@ -187,9 +206,9 @@ describe('DashboardService.getPostSignInHref', () => {
     { locale: 'en', slug: 'fake-starter-en' },
   ])('sends a new $locale learner to the $locale starter quiz', async ({ locale, slug }) => {
     const service = new DashboardService(
-      createStarterRepository(),
+      createRepository(),
       createQuizRepository(),
-      twoLocaleAllowlist,
+      createTwoLocaleStarters(),
     );
 
     await expect(
@@ -197,11 +216,23 @@ describe('DashboardService.getPostSignInHref', () => {
     ).resolves.toBe(`/quiz/${slug}?entry=post_signin_starter`);
   });
 
+  it('opens a long starter as a quick round', async () => {
+    const starters = createStarters(
+      [entry('fake-long', 'vi', 1)],
+      [candidate('fake-long', { questionCount: 40 })],
+    );
+    const service = new DashboardService(createRepository(), createQuizRepository(), starters);
+
+    await expect(
+      service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
+    ).resolves.toBe('/quiz/fake-long?mode=quick&entry=post_signin_starter');
+  });
+
   it('falls back to the first starter when none matches the UI locale', async () => {
     const service = new DashboardService(
-      createStarterRepository(),
+      createRepository(),
       createQuizRepository(),
-      twoLocaleAllowlist,
+      createTwoLocaleStarters(),
     );
 
     await expect(
@@ -213,9 +244,13 @@ describe('DashboardService.getPostSignInHref', () => {
     { label: 'a submitted attempt', key: 'hasSubmittedAttempt' as const },
     { label: 'an authored quiz', key: 'hasAuthoredQuiz' as const },
   ])('keeps a returning learner with $label on the dashboard', async ({ key }) => {
-    const repository = createStarterRepository();
+    const repository = createRepository();
     vi.mocked(repository[key]).mockResolvedValue(true);
-    const service = new DashboardService(repository, createQuizRepository(), twoLocaleAllowlist);
+    const service = new DashboardService(
+      repository,
+      createQuizRepository(),
+      createTwoLocaleStarters(),
+    );
 
     await expect(
       service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
@@ -223,17 +258,20 @@ describe('DashboardService.getPostSignInHref', () => {
   });
 
   it('lands on the dashboard when no starter resolves', async () => {
-    const repository = createStarterRepository();
-    vi.mocked(repository.findStarterQuizCandidates).mockResolvedValue([]);
-    const service = new DashboardService(repository, createQuizRepository(), twoLocaleAllowlist);
+    const starters = createStarters(twoLocaleEntries, []);
+    const service = new DashboardService(createRepository(), createQuizRepository(), starters);
 
     await expect(
       service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
     ).resolves.toBe('/dashboard');
   });
 
-  it('lands on the dashboard with an empty allowlist', async () => {
-    const service = new DashboardService(createStarterRepository(), createQuizRepository(), []);
+  it('lands on the dashboard with no starter rows', async () => {
+    const service = new DashboardService(
+      createRepository(),
+      createQuizRepository(),
+      createStarters([], []),
+    );
 
     await expect(
       service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
@@ -241,9 +279,13 @@ describe('DashboardService.getPostSignInHref', () => {
   });
 
   it('fails open to the dashboard when a lookup throws', async () => {
-    const repository = createStarterRepository();
+    const repository = createRepository();
     vi.mocked(repository.hasSubmittedAttempt).mockRejectedValue(new Error('db down'));
-    const service = new DashboardService(repository, createQuizRepository(), twoLocaleAllowlist);
+    const service = new DashboardService(
+      repository,
+      createQuizRepository(),
+      createTwoLocaleStarters(),
+    );
 
     await expect(
       service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: false }),
@@ -251,13 +293,14 @@ describe('DashboardService.getPostSignInHref', () => {
   });
 
   it('honours the skip cookie without touching the database', async () => {
-    const repository = createStarterRepository();
-    const service = new DashboardService(repository, createQuizRepository(), twoLocaleAllowlist);
+    const repository = createRepository();
+    const starters = createTwoLocaleStarters();
+    const service = new DashboardService(repository, createQuizRepository(), starters);
 
     await expect(
       service.getPostSignInHref({ userId: 'user-1', locale: 'vi', starterSkipped: true }),
     ).resolves.toBe('/dashboard');
     expect(repository.hasSubmittedAttempt).not.toHaveBeenCalled();
-    expect(repository.findStarterQuizCandidates).not.toHaveBeenCalled();
+    expect(starters.listStarterQuizEntries).not.toHaveBeenCalled();
   });
 });

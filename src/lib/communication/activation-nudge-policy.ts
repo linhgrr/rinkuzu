@@ -5,10 +5,8 @@ import {
   isAnalyticsExcludedAccount,
   type LearnerExclusionFields,
 } from '@/shared/constants/analytics-exclusions';
-import {
-  pickStarterQuizIndex,
-  type StarterQuizAllowlistEntry,
-} from '@/services/dashboard/starter-quizzes';
+import type { StarterQuizDto } from '@/dtos/dashboard';
+import { pickStarterQuizIndex } from '@/services/dashboard/starter-quizzes';
 import { ACTIVATION_EMAIL_ENTRY } from '@/shared/constants/starter-quiz';
 
 /**
@@ -157,19 +155,21 @@ export function activationNudgeFirstName(
 }
 
 /**
- * Where a click lands: the locale-matched starter quiz. The email links to
+ * Where a click lands: the locale-matched eligible starter quiz (its quick
+ * round when long), else the dashboard. The email links to
  * {@link activationClickUrl}, which records the click and redirects here.
  */
 export function activationNudgeCtaUrl(input: {
   siteUrl: string;
   locale: ActivationNudgeLocale;
-  allowlist: readonly StarterQuizAllowlistEntry[];
+  starters: readonly Pick<StarterQuizDto, 'slug' | 'locale' | 'quick'>[];
 }): string {
-  const starter = input.allowlist[pickStarterQuizIndex(input.allowlist, input.locale)];
+  const starter = input.starters[pickStarterQuizIndex(input.starters, input.locale)];
   const path = starter
     ? `/${input.locale}/quiz/${encodeURIComponent(starter.slug)}`
     : `/${input.locale}/dashboard`;
   const url = new URL(path, input.siteUrl);
+  if (starter?.quick) url.searchParams.set('mode', 'quick');
   url.searchParams.set('entry', ACTIVATION_EMAIL_ENTRY);
   url.searchParams.set('utm_source', 'email');
   url.searchParams.set('utm_campaign', ACTIVATION_NUDGE_CAMPAIGN);

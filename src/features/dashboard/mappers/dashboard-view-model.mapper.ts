@@ -6,7 +6,7 @@ import type {
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { ROUTES } from '@/shared/constants/routes';
-import { pickStarterQuizIndex } from '@/services/dashboard/starter-quizzes';
+import { pickStarterQuizIndex, starterQuizHref } from '@/services/dashboard/starter-quizzes';
 import { buildWeekDays } from '@/features/dashboard/mappers/dashboard-week-days';
 import { formatDate } from '@/lib/formatters';
 import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
@@ -179,7 +179,7 @@ function toStarterQuizViewModel(quiz: StarterQuizDto): DashboardStarterQuizViewM
     slug: quiz.slug,
     title: quiz.title,
     questionCount: quiz.questionCount,
-    href: ROUTES.QUIZ.VIEW(quiz.slug),
+    href: starterQuizHref(quiz),
   };
 }
 

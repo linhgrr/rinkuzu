@@ -1,17 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { DashboardStarterQuizCandidateRecord } from '@/interfaces/repositories/IDashboardRepository';
+import type { StarterQuizCandidateRecord } from '@/interfaces/repositories/IStarterQuizReadRepository';
 import { LandingStarterResolver } from '@/services/quiz/landing-starter';
 
 vi.mock('@/lib/logger', () => ({ logger: { warn: vi.fn() } }));
 
-const allowlist = [
-  { slug: 'vi-one', locale: 'vi' },
-  { slug: 'en-one', locale: 'en' },
-  { slug: 'vi-two', locale: 'vi' },
-];
+const slugs = ['vi-one', 'en-one', 'vi-two'];
+const entries = slugs.map((slug, index) => ({
+  quizId: `id-${slug}`,
+  locale: slug.slice(0, 2),
+  order: index + 1,
+}));
 
-function candidate(slug: string, extra: Partial<DashboardStarterQuizCandidateRecord> = {}) {
+function candidate(slug: string, extra: Partial<StarterQuizCandidateRecord> = {}) {
   return {
+    quizId: `id-${slug}`,
     slug,
     title: `Title ${slug}`,
     visibility: 'public',
@@ -21,55 +23,56 @@ function candidate(slug: string, extra: Partial<DashboardStarterQuizCandidateRec
   };
 }
 
-function createResolver(candidates = allowlist.map(({ slug }) => candidate(slug))) {
+function createResolver(candidates = slugs.map((slug) => candidate(slug))) {
+  const listStarterQuizEntries = vi.fn().mockResolvedValue(entries);
   const findStarterQuizCandidates = vi.fn().mockResolvedValue(candidates);
   return {
-    resolver: new LandingStarterResolver({ findStarterQuizCandidates }, allowlist),
+    resolver: new LandingStarterResolver({ listStarterQuizEntries, findStarterQuizCandidates }),
     findStarterQuizCandidates,
   };
 }
 
-describe('LandingStarterResolver (RIN-1178)', () => {
+describe('LandingStarterResolver (RIN-1178, RIN-1177)', () => {
   it.each([
-    ['vi', 'vi-one'],
-    ['en', 'en-one'],
-  ])('picks the first starter for the %s page', async (locale, slug) => {
+    ['vi', '/quiz/vi-one?entry=landing'],
+    ['en', '/quiz/en-one?entry=landing'],
+  ])('links the first stored starter for the %s page', async (locale, href) => {
     const { resolver, findStarterQuizCandidates } = createResolver();
 
-    await expect(resolver.resolve(locale)).resolves.toBe(slug);
-    expect(findStarterQuizCandidates).toHaveBeenCalledWith(
-      allowlist.filter((entry) => entry.locale === locale).map((entry) => entry.slug),
-    );
+    await expect(resolver.resolveHref(locale)).resolves.toBe(href);
+    expect(findStarterQuizCandidates).toHaveBeenCalledWith(entries.map(({ quizId }) => quizId));
   });
 
   it.each([
     ['missing', [candidate('vi-two')]],
     ['private', [candidate('vi-one', { visibility: 'private' }), candidate('vi-two')]],
-    ['too long', [candidate('vi-one', { questionCount: 40 }), candidate('vi-two')]],
     ['premium', [candidate('vi-one', { isPremium: true }), candidate('vi-two')]],
+    ['empty', [candidate('vi-one', { questionCount: 0 }), candidate('vi-two')]],
   ])('skips a %s starter for the next eligible one', async (_reason, candidates) => {
     const { resolver } = createResolver(candidates);
 
-    await expect(resolver.resolve('vi')).resolves.toBe('vi-two');
+    await expect(resolver.resolveHref('vi')).resolves.toBe('/quiz/vi-two?entry=landing');
+  });
+
+  it('opens a long starter as a quick round', async () => {
+    const { resolver } = createResolver([candidate('vi-one', { questionCount: 40 })]);
+
+    await expect(resolver.resolveHref('vi')).resolves.toBe('/quiz/vi-one?mode=quick&entry=landing');
   });
 
   it('returns null when no starter for the locale is eligible', async () => {
     const { resolver } = createResolver([candidate('vi-one', { isPremium: true })]);
 
-    await expect(resolver.resolve('vi')).resolves.toBeNull();
-  });
-
-  it('returns null without a lookup when the locale has no allowlisted starter', async () => {
-    const { resolver, findStarterQuizCandidates } = createResolver();
-
-    await expect(resolver.resolve('fr')).resolves.toBeNull();
-    expect(findStarterQuizCandidates).not.toHaveBeenCalled();
+    await expect(resolver.resolveHref('vi')).resolves.toBeNull();
+    await expect(resolver.resolveHref('fr')).resolves.toBeNull();
   });
 
   it('fails open to null when the lookup throws', async () => {
-    const findStarterQuizCandidates = vi.fn().mockRejectedValue(new Error('db down'));
-    const resolver = new LandingStarterResolver({ findStarterQuizCandidates }, allowlist);
+    const resolver = new LandingStarterResolver({
+      listStarterQuizEntries: vi.fn().mockRejectedValue(new Error('db down')),
+      findStarterQuizCandidates: vi.fn(),
+    });
 
-    await expect(resolver.resolve('en')).resolves.toBeNull();
+    await expect(resolver.resolveHref('en')).resolves.toBeNull();
   });
 });

@@ -6,7 +6,6 @@ type Row = Record<string, unknown> & { quiz: string };
 function fakeDb(slugs: readonly string[]) {
   const quizIds = new Map(slugs.map((slug, index) => [slug, `fake-quiz-${index + 1}`]));
   const rows: Row[] = [];
-  const indexes: Array<Record<string, number>> = [];
   const quizzes = {
     findOne: async (filter: Record<string, unknown>) => {
       const id = quizIds.get(String(filter['slug']));
@@ -24,12 +23,8 @@ function fakeDb(slugs: readonly string[]) {
       rows.push({ ...update.$setOnInsert, quiz: String(filter['quiz']) });
       return { upsertedCount: 1 };
     },
-    createIndex: async (key: Record<string, number>) => {
-      indexes.push(key);
-      return Object.keys(key).join('_');
-    },
   };
-  return { quizzes, starters, rows, indexes };
+  return { quizzes, starters, rows };
 }
 
 const allSlugs = STARTER_QUIZ_SEED.map(({ slug }) => slug);
@@ -63,7 +58,6 @@ describe('migrate-starter-quizzes', () => {
       inserted: 0,
     });
     expect(db.rows).toEqual([]);
-    expect(db.indexes).toEqual([]);
   });
 
   it('inserts each starter by quiz id once; a second run changes nothing', async () => {
@@ -79,8 +73,6 @@ describe('migrate-starter-quizzes', () => {
       ['fake-quiz-2', 'en', 2],
       ['fake-quiz-3', 'vi', 3],
     ]);
-    expect(db.indexes).toContainEqual({ quiz: 1 });
-    expect(db.indexes).toContainEqual({ order: 1 });
   });
 
   it('counts a slug with no quiz as missing and seeds the rest', async () => {

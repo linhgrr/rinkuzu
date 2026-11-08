@@ -10,6 +10,8 @@
  * Idempotent: an existing row for the quiz is left as it is, so a second run
  * (or a run after an admin reordered the list) changes nothing. Prints counts
  * only. Rollback: `db.starterquizzes.deleteMany({})`, which only these rows use.
+ * Creates no indexes: `starterquizzes` indexes live in
+ * scripts/database/index-contract.mjs and only sync-performance-indexes writes DDL.
  */
 import path from 'node:path';
 import process from 'node:process';
@@ -48,7 +50,6 @@ export const STARTER_QUIZ_SEED = Object.freeze([
  *     update: Record<string, unknown>,
  *     options: Record<string, unknown>,
  *   ): Promise<{ upsertedCount: number }>,
- *   createIndex(key: Record<string, number>, options?: Record<string, unknown>): Promise<string>,
  * }} StarterCollection
  * @typedef {{ seed: number, missingQuiz: number, alreadySeeded: number, toInsert: number, inserted: number }} SeedReport
  */
@@ -65,11 +66,6 @@ export async function seedStarterQuizzes({
   seed = STARTER_QUIZ_SEED,
 }) {
   const report = { seed: seed.length, missingQuiz: 0, alreadySeeded: 0, toInsert: 0, inserted: 0 };
-  if (apply) {
-    // Same keys as the StarterQuiz model; createIndex is a no-op when present.
-    await starters.createIndex({ quiz: 1 }, { unique: true });
-    await starters.createIndex({ order: 1 });
-  }
 
   for (const entry of seed) {
     const quiz = await quizzes.findOne({ slug: entry.slug }, { projection: { _id: 1 } });

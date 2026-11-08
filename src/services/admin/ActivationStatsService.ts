@@ -126,17 +126,7 @@ export class ActivationStatsService {
     actor: ActivationStatsActor,
   ): Promise<ServiceResult<AdminActivationStatsDto>> {
     try {
-      const actorId = actor.kind === 'admin' ? actor.userId : ANALYTICS_SERVICE_ACTOR_ID;
-      // One entry per call, cached or not: the audit trail records reads,
-      // not database work.
-      await this.deps.audit.record({
-        actorId,
-        actorEmail: actor.kind === 'admin' ? actor.email : ANALYTICS_SERVICE_ACTOR,
-        action: ACTIVATION_STATS_AUDIT_ACTION,
-        entityType: 'stats',
-        entityId: 'activation',
-        details: { weeks: String(weeks) },
-      });
+      const actorId = await this.recordRead(actor, { weeks: String(weeks) });
 
       const nowMs = this.now().getTime();
       const cached = this.cache.get(weeks);
@@ -162,15 +152,7 @@ export class ActivationStatsService {
     actor: ActivationStatsActor,
   ): Promise<ServiceResult<AdminActivationBreakdownDto>> {
     try {
-      const actorId = actor.kind === 'admin' ? actor.userId : ANALYTICS_SERVICE_ACTOR_ID;
-      await this.deps.audit.record({
-        actorId,
-        actorEmail: actor.kind === 'admin' ? actor.email : ANALYTICS_SERVICE_ACTOR,
-        action: ACTIVATION_STATS_AUDIT_ACTION,
-        entityType: 'stats',
-        entityId: 'activation',
-        details: { weeks: String(weeks), by },
-      });
+      const actorId = await this.recordRead(actor, { weeks: String(weeks), by });
 
       const nowMs = this.now().getTime();
       const key = `${by}:${weeks}`;
@@ -206,6 +188,26 @@ export class ActivationStatsService {
       logger.error({ error }, 'Get activation breakdown error');
       return { success: false, error: 'Failed to get activation statistics', statusCode: 500 };
     }
+  }
+
+  /**
+   * One audit entry per call, cached or not: the audit trail records reads,
+   * not database work. Returns the actor id the adaptive API is called with.
+   */
+  private async recordRead(
+    actor: ActivationStatsActor,
+    details: Record<string, string>,
+  ): Promise<string> {
+    const actorId = actor.kind === 'admin' ? actor.userId : ANALYTICS_SERVICE_ACTOR_ID;
+    await this.deps.audit.record({
+      actorId,
+      actorEmail: actor.kind === 'admin' ? actor.email : ANALYTICS_SERVICE_ACTOR,
+      action: ACTIVATION_STATS_AUDIT_ACTION,
+      entityType: 'stats',
+      entityId: 'activation',
+      details,
+    });
+    return actorId;
   }
 
   private async readAdaptiveEvents(

@@ -37,6 +37,13 @@ import {
   unionDocuments,
   utcWeekStart,
 } from '@/repositories/pipelines/activation-stages';
+import {
+  SEGMENT_FIELDS,
+  segmentStages,
+  toSegmentWeekRecord,
+  type ActivationSegmentField,
+  type SegmentCohortAggregate,
+} from '@/repositories/pipelines/activation-segments';
 
 interface DailyCountAggregate {
   _id: string;
@@ -70,20 +77,6 @@ interface CohortAggregate extends ActivationPathAggregate {
 interface FirstCompletionAggregate extends ActivationPathAggregate {
   learners: number;
 }
-
-/** A segmented cohort row (RIN-1268); only the counts the breakdown serves are read. */
-interface SegmentCohortAggregate {
-  _id: { weekStart: Date; segment?: unknown };
-  signups: number;
-  activated: number;
-}
-
-type ActivationSegmentField = 'signupLocale' | 'signupCountry';
-
-const SEGMENT_FIELDS: Record<ActivationSegmentBy, ActivationSegmentField> = {
-  locale: 'signupLocale',
-  country: 'signupCountry',
-};
 
 /** Adaptive events of a learner who exists on the web, keyed by ObjectId. */
 interface AdaptiveLearnerRow {
@@ -217,12 +210,7 @@ export class AdminStatsRepository
     const rows = await UserModel.aggregate<SegmentCohortAggregate>(
       AdminStatsRepository.cohortPipeline(from, to, learners, SEGMENT_FIELDS[by]),
     ).allowDiskUse(true);
-    return rows.map((row) => ({
-      weekStart: row._id.weekStart,
-      segment: typeof row._id.segment === 'string' ? row._id.segment : null,
-      signups: row.signups,
-      activated: row.activated,
-    }));
+    return rows.map(toSegmentWeekRecord);
   }
 
   async getActivationAggregates(
@@ -339,9 +327,7 @@ export class AdminStatsRepository
    * First-session funnel (RIN-932): sign-ins and in-progress quizzes join
    * the same group (`pipelines/activation-funnel`).
    *
-   * `segmentField` (RIN-1268) carries a User field through and groups by
-   * `{weekStart, segment}` instead of the week; without it the pipeline is
-   * unchanged.
+   * `segmentField` (RIN-1268): rows per `{weekStart, segment}` (`activation-segments`).
    */
   static cohortPipeline(
     from: Date,
@@ -349,7 +335,7 @@ export class AdminStatsRepository
     adaptive: readonly AdaptiveLearnerRow[] = [],
     segmentField?: ActivationSegmentField,
   ): PipelineStage[] {
-    const segmented = segmentField !== undefined;
+    const segment = segmentStages(segmentField);
     const signupAt = '$signupAt';
     const day7 = { $add: [signupAt, 7 * DAY_MS] };
     const day14 = { $add: [signupAt, 14 * DAY_MS] };
@@ -359,14 +345,7 @@ export class AdminStatsRepository
     ]);
     return [
       { $match: { createdAt: { $gte: from, $lt: to }, ...LEARNER_FILTER } },
-      {
-        $project: {
-          _id: 0,
-          uid: '$_id',
-          signupAt: '$createdAt',
-          ...(segmented ? { segment: { $ifNull: [`${segmentField}`, null] } } : {}),
-        },
-      },
+      { $project: { _id: 0, uid: '$_id', signupAt: '$createdAt', ...segment.source } },
       attemptUnionStage(AttemptModel.collection.name, from, to),
       {
         $unionWith: {
@@ -383,7 +362,7 @@ export class AdminStatsRepository
         $group: {
           _id: '$uid',
           signupAt: { $max: '$signupAt' },
-          ...(segmented ? { segment: { $max: '$segment' } } : {}),
+          ...segment.perUser,
           takenAts: { $push: '$takenAt' },
           ...FUNNEL_GROUP_FIELDS,
           quizAts: { $push: '$quizAt' },
@@ -395,7 +374,7 @@ export class AdminStatsRepository
       {
         $project: {
           weekStart: utcWeekStart(signupAt),
-          ...(segmented ? { segment: 1 } : {}),
+          ...segment.perSignup,
           byQuiz: anyDateIn('$takenAts', signupAt, day7),
           byAdaptive: anyDateIn('$completedAts', signupAt, day7),
           authored: anyDateIn('$quizAts', signupAt, day7),
@@ -409,7 +388,7 @@ export class AdminStatsRepository
       { $addFields: { activated: { $or: ['$byQuiz', '$byAdaptive'] } } },
       {
         $group: {
-          _id: segmented ? { weekStart: '$weekStart', segment: '$segment' } : '$weekStart',
+          _id: segment.weekKey,
           signups: { $sum: 1 },
           // Every activated signup is material: an adaptive completion needs a
           // succeeded upload before it.

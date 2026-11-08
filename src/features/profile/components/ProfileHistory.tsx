@@ -10,11 +10,14 @@ import { Pill } from '@/components/ui/Pill';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import Pagination from '@/components/ui/Pagination';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { ROUTES } from '@/shared/constants/routes';
+import { ATTEMPT_PASS_MARK, type AttemptResultFilter } from '@/shared/constants/attempt-result';
 import { fetchProfileHistoryViewModel } from '@/features/profile/api/profile-history-api';
 import type {
   ProfileHistoryAttemptViewModel,
   ProfileHistoryPaginationViewModel,
+  ProfileHistorySummaryViewModel,
 } from '@/features/profile/types/profile-history-view-model';
 import {
   HiOutlineDocumentText,
@@ -26,14 +29,19 @@ import {
   HiOutlineAcademicCap,
 } from 'react-icons/hi';
 
+type HistoryFilter = 'all' | AttemptResultFilter;
+
 interface ProfileHistoryState {
   attempts: ProfileHistoryAttemptViewModel[];
   loading: boolean;
   /** Load failure, rendered by ErrorState from the error layer (RIN-755). */
   error: unknown;
   currentPage: number;
+  filter: HistoryFilter;
   reloadKey: number;
   pagination: ProfileHistoryPaginationViewModel | null;
+  /** All-attempts stats from the API; `null` until the first successful load (RIN-1204). */
+  summary: ProfileHistorySummaryViewModel | null;
 }
 
 interface AttemptTakenAtProps {
@@ -47,9 +55,11 @@ type ProfileHistoryAction =
       type: 'fetch:success';
       attempts: ProfileHistoryAttemptViewModel[];
       pagination: ProfileHistoryPaginationViewModel;
+      summary: ProfileHistorySummaryViewModel;
     }
   | { type: 'fetch:error'; error: unknown }
   | { type: 'page:set'; page: number }
+  | { type: 'filter:set'; filter: HistoryFilter }
   | { type: 'retry' };
 
 const ITEMS_PER_PAGE = 10;
@@ -59,8 +69,10 @@ const initialState: ProfileHistoryState = {
   loading: true,
   error: null,
   currentPage: 1,
+  filter: 'all',
   reloadKey: 0,
   pagination: null,
+  summary: null,
 };
 
 function profileHistoryReducer(
@@ -75,6 +87,7 @@ function profileHistoryReducer(
         ...state,
         attempts: action.attempts,
         pagination: action.pagination,
+        summary: action.summary,
         loading: false,
         error: null,
       };
@@ -82,6 +95,10 @@ function profileHistoryReducer(
       return { ...state, loading: false, error: action.error };
     case 'page:set':
       return { ...state, currentPage: action.page, error: null };
+    case 'filter:set':
+      return action.filter === state.filter
+        ? state
+        : { ...state, filter: action.filter, currentPage: 1, error: null };
     case 'retry':
       return { ...state, error: null, reloadKey: state.reloadKey + 1 };
     default:
@@ -89,9 +106,18 @@ function profileHistoryReducer(
   }
 }
 
+function buildHistoryParams(page: number, filter: HistoryFilter): URLSearchParams {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: ITEMS_PER_PAGE.toString(),
+  });
+  if (filter !== 'all') params.set('result', filter);
+  return params;
+}
+
 function getScoreColor(score: number): string {
   if (score >= 80) return 'text-green-600';
-  if (score >= 60) return 'text-amber-600';
+  if (score >= ATTEMPT_PASS_MARK) return 'text-amber-600';
   return 'text-red-600';
 }
 
@@ -132,6 +158,48 @@ function HistorySkeleton() {
   );
 }
 
+function HistoryListSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <SurfaceCard key={`history-list-skeleton-${index}`} className="p-5">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-64 max-w-full rounded-md" />
+            <Skeleton className="h-4 w-36 rounded-md" />
+          </div>
+        </SurfaceCard>
+      ))}
+    </>
+  );
+}
+
+interface HistoryStatsProps {
+  summary: ProfileHistorySummaryViewModel;
+}
+
+/** Stats over all attempts: they do not follow the filter or the page (RIN-1204). */
+function HistoryStats({ summary }: HistoryStatsProps) {
+  const t = useTranslations('profile');
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <SurfaceCard className="p-4 text-center">
+        <div className="font-home text-2xl font-semibold text-accent">{summary.totalAttempts}</div>
+        <div className="font-home text-xs text-ink-muted mt-1">{t('totalAttempts')}</div>
+      </SurfaceCard>
+      <SurfaceCard className="p-4 text-center">
+        <div className="font-home text-2xl font-semibold text-green-600">
+          {summary.averageScore === null ? '–' : `${summary.averageScore}%`}
+        </div>
+        <div className="font-home text-xs text-ink-muted mt-1">{t('avgScore')}</div>
+      </SurfaceCard>
+      <SurfaceCard className="col-span-2 p-4 text-center sm:col-span-1">
+        <div className="font-home text-2xl font-semibold text-ink">{summary.needsWorkCount}</div>
+        <div className="font-home text-xs text-ink-muted mt-1">{t('historyNeedsWorkCount')}</div>
+      </SurfaceCard>
+    </div>
+  );
+}
+
 function ProfileHistory() {
   const locale = useLocale();
   const t = useTranslations('profile');
@@ -142,19 +210,14 @@ function ProfileHistory() {
     let isActive = true;
     dispatch({ type: 'fetch:start' });
 
-    void fetchProfileHistoryViewModel(
-      new URLSearchParams({
-        page: state.currentPage.toString(),
-        limit: ITEMS_PER_PAGE.toString(),
-      }),
-      locale,
-    )
+    void fetchProfileHistoryViewModel(buildHistoryParams(state.currentPage, state.filter), locale)
       .then((viewModel) => {
         if (!isActive) return;
         dispatch({
           type: 'fetch:success',
           attempts: viewModel.attempts,
           pagination: viewModel.pagination,
+          summary: viewModel.summary,
         });
       })
       .catch((error: unknown) => {
@@ -165,7 +228,7 @@ function ProfileHistory() {
     return () => {
       isActive = false;
     };
-  }, [state.currentPage, state.reloadKey, locale]);
+  }, [state.currentPage, state.filter, state.reloadKey, locale]);
 
   const getPerformanceBadge = (score: number) => {
     if (score >= 90)
@@ -186,7 +249,7 @@ function ProfileHistory() {
         icon: <HiOutlineThumbUp className="size-4" />,
         tone: 'cool' as const,
       };
-    if (score >= 60)
+    if (score >= ATTEMPT_PASS_MARK)
       return {
         text: t('pass'),
         icon: <HiOutlineEmojiHappy className="size-4" />,
@@ -203,9 +266,21 @@ function ProfileHistory() {
     dispatch({ type: 'page:set', page });
   };
 
-  if (state.loading && state.attempts.length === 0) {
+  const filterOptions = [
+    { value: 'all', label: t('historyFilterAll') },
+    { value: 'needs_work', label: t('historyFilterNeedsWork') },
+    { value: 'passed', label: t('historyFilterPassed') },
+  ] as const;
+
+  const handleFilterChange = (filter: HistoryFilter) => {
+    dispatch({ type: 'filter:set', filter });
+  };
+
+  if (state.loading && state.summary === null) {
     return <HistorySkeleton />;
   }
+
+  const hasAnyAttempt = (state.summary?.totalAttempts ?? 0) > 0;
 
   return (
     <div className="space-y-6 font-home text-ink">
@@ -221,7 +296,7 @@ function ProfileHistory() {
         />
       ) : null}
 
-      {state.error && state.attempts.length === 0 ? null : state.attempts.length === 0 ? (
+      {state.summary === null ? null : !hasAnyAttempt ? (
         <SurfaceCard className="p-8 text-center">
           <EmptyState
             icon={<HiOutlineDocumentText className="size-14 text-ink-muted" />}
@@ -232,87 +307,99 @@ function ProfileHistory() {
         </SurfaceCard>
       ) : (
         <div className="space-y-4">
-          {/* Stats Summary */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <SurfaceCard className="p-4 text-center">
-              <div className="font-home text-2xl font-semibold text-accent">
-                {state.pagination?.totalItems ?? state.attempts.length}
-              </div>
-              <div className="font-home text-xs text-ink-muted mt-1">{t('totalAttempts')}</div>
-            </SurfaceCard>
-            <SurfaceCard className="p-4 text-center">
-              <div className="font-home text-2xl font-semibold text-green-600">
-                {state.attempts.length > 0
-                  ? Math.round(
-                      state.attempts.reduce((sum, attempt) => sum + attempt.score, 0) /
-                        state.attempts.length,
-                    )
-                  : 0}
-                %
-              </div>
-              <div className="font-home text-xs text-ink-muted mt-1">{t('avgScore')}</div>
-            </SurfaceCard>
+          <HistoryStats summary={state.summary} />
+
+          {/* Scrolls sideways on its own if the vi labels do not fit at 375 px (RIN-1204). */}
+          <div className="-mx-1 max-w-full overflow-x-auto px-1 py-1">
+            <SegmentedControl
+              ariaLabel={t('historyFilterLabel')}
+              value={state.filter}
+              options={filterOptions}
+              onChange={handleFilterChange}
+            />
           </div>
 
           {/* Attempts List */}
-          <div className="space-y-4">
-            {state.attempts.map((attempt) => {
-              const badge = getPerformanceBadge(attempt.score);
-              return (
-                <SurfaceCard key={attempt.id} className="p-4 sm:p-5">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-x-2.5 flex-wrap gap-y-1.5 mb-1.5">
-                        <h3 className="font-home text-base sm:text-lg font-semibold text-ink truncate max-w-[200px] sm:max-w-md">
-                          {attempt.quiz.title}
-                        </h3>
-                        <Pill tone={badge.tone} className="flex items-center gap-1">
-                          {badge.icon} {badge.text}
-                        </Pill>
-                      </div>
+          <div className="space-y-4" aria-busy={state.loading}>
+            {state.loading ? (
+              <HistoryListSkeleton />
+            ) : state.attempts.length === 0 && !state.error ? (
+              <SurfaceCard className="p-6">
+                <EmptyState
+                  className="py-6"
+                  icon={<HiOutlineDocumentText className="size-10 text-ink-muted" />}
+                  title={
+                    state.filter === 'passed' ? t('historyEmptyPassed') : t('historyEmptyNeedsWork')
+                  }
+                  action={
+                    <Button variant="outline" size="sm" onClick={() => handleFilterChange('all')}>
+                      {t('historyShowAll')}
+                    </Button>
+                  }
+                />
+              </SurfaceCard>
+            ) : (
+              state.attempts.map((attempt) => {
+                const badge = getPerformanceBadge(attempt.score);
+                return (
+                  <SurfaceCard key={attempt.id} className="p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-x-2.5 flex-wrap gap-y-1.5 mb-1.5">
+                          <h3 className="font-home text-base sm:text-lg font-semibold text-ink truncate max-w-[200px] sm:max-w-md">
+                            {attempt.quiz.title}
+                          </h3>
+                          <Pill
+                            tone={badge.tone}
+                            className="flex shrink-0 items-center gap-1 whitespace-nowrap"
+                          >
+                            {badge.icon} {badge.text}
+                          </Pill>
+                        </div>
 
-                      <div className="flex items-center gap-x-4 font-home text-xs text-ink-muted mt-2">
-                        <span className="flex items-center gap-1">
-                          <HiOutlineDocumentText className="size-3.5" />{' '}
-                          {tCommon('questionsCount', { count: attempt.totalQuestions })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <HiOutlineClock className="size-3.5" />{' '}
-                          <AttemptTakenAt iso={attempt.takenAt} label={attempt.takenAtLabel} />
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                      <div className="text-right sm:text-left">
-                        <div
-                          className={`font-home text-2xl font-bold ${getScoreColor(attempt.score)}`}
-                        >
-                          {attempt.score}%
+                        <div className="flex items-center gap-x-4 font-home text-xs text-ink-muted mt-2">
+                          <span className="flex items-center gap-1">
+                            <HiOutlineDocumentText className="size-3.5" />{' '}
+                            {tCommon('questionsCount', { count: attempt.totalQuestions })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <HiOutlineClock className="size-3.5" />{' '}
+                            <AttemptTakenAt iso={attempt.takenAt} label={attempt.takenAtLabel} />
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
-                        <Link href={ROUTES.HISTORY_DETAIL(attempt.id)}>
-                          <Button variant="outline" size="sm">
-                            {t('details')}
-                          </Button>
-                        </Link>
-                        <Link href={ROUTES.QUIZ.VIEW(attempt.quiz.slug)}>
-                          <Button variant="primary" size="sm">
-                            {t('redo')}
-                          </Button>
-                        </Link>
+                      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                        <div className="text-right sm:text-left">
+                          <div
+                            className={`font-home text-2xl font-bold ${getScoreColor(attempt.score)}`}
+                          >
+                            {attempt.score}%
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Link href={ROUTES.HISTORY_DETAIL(attempt.id)}>
+                            <Button variant="outline" size="sm">
+                              {t('details')}
+                            </Button>
+                          </Link>
+                          <Link href={ROUTES.QUIZ.VIEW(attempt.quiz.slug)}>
+                            <Button variant="primary" size="sm">
+                              {t('redo')}
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </SurfaceCard>
-              );
-            })}
+                  </SurfaceCard>
+                );
+              })
+            )}
           </div>
 
           {/* Pagination */}
-          {state.pagination && state.pagination.totalPages > 1 && (
+          {!state.loading && state.pagination && state.pagination.totalPages > 1 && (
             <div className="mt-8 flex justify-center">
               <Pagination
                 currentPage={state.pagination.currentPage}

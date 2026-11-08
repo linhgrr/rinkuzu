@@ -716,6 +716,20 @@ test.describe('production critical paths', () => {
         await page.goto('/en/history');
         await expect(page).toHaveURL(/\/en\/history(?:[/?#]|$)/);
         await expect(page.getByText('Production Critical Quiz').first()).toBeVisible();
+
+        // RIN-1204: all-attempts stats and the result filter. The one claimed attempt scored
+        // 100, so "Needs work" is empty and "Show all" brings it back.
+        await expect(page.getByText('Average score')).toBeVisible();
+        await expect(page.getByText('100%').first()).toBeVisible();
+        const resultFilter = page.getByRole('group', { name: 'Filter attempts by result' });
+        await resultFilter.getByRole('button', { name: 'Needs work', exact: true }).click();
+        await expect(page.getByText('No attempts need work. Nice.')).toBeVisible();
+        await expect(page.getByText('Production Critical Quiz')).toHaveCount(0);
+        await page.getByRole('button', { name: 'Show all', exact: true }).click();
+        await expect(page.getByText('Production Critical Quiz').first()).toBeVisible();
+        await expect(
+          resultFilter.getByRole('button', { name: 'All', exact: true }),
+        ).toHaveAttribute('aria-pressed', 'true');
       } finally {
         await fixture.db.collection('auth_rate_limits').deleteMany({
           key: {

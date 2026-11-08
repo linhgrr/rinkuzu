@@ -29,6 +29,15 @@ function toEntry(
   };
 }
 
+/** A quiz exists in one language: one URL, no hreflang pair (RIN-1241 D14). */
+function toQuizEntry(
+  locale: string,
+  path: string,
+  lastModified: Date,
+): MetadataRoute.Sitemap[number] {
+  return { url: canonicalFor(locale, path), lastModified };
+}
+
 function toRequiredSitemapDate(value: Date | string, fieldName: string): Date {
   const date = value instanceof Date ? value : new Date(value);
   serializeDate(date, fieldName);
@@ -55,11 +64,13 @@ export async function buildPublicSitemapEntries(
 
   const publicQuizzes = await loadPublicQuizSitemapEntries(errorMessage);
   for (const quiz of publicQuizzes) {
-    for (const locale of locales) {
-      pushEntry(
-        toEntry(locale, quiz.path, toRequiredSitemapDate(quiz.lastModified, 'quiz.updatedAt')),
-      );
-    }
+    pushEntry(
+      toQuizEntry(
+        quiz.locale,
+        quiz.path,
+        toRequiredSitemapDate(quiz.lastModified, 'quiz.updatedAt'),
+      ),
+    );
   }
 
   entries.sort((a, b) => {

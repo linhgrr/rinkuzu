@@ -330,6 +330,8 @@ describe('QuizPlayerPage metadata (RIN-1180)', () => {
       visibility: 'public',
       questionCount: 30,
       ownerIndexable: true,
+      leadQuestionTexts: ['Quang hợp diễn ra ở đâu?'],
+      contentLocale: 'vi',
     });
 
     const metadata = await generateMetadata({

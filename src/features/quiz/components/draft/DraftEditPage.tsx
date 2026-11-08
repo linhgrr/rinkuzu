@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { useQuizDraftAutosave } from '@/features/quiz/hooks/useQuizDraftAutosave';
 import { toEditorQuestions } from '@/features/quiz/lib/question-editor-mutations';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
+import type { QuizVisibilityViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { createPdfObjectUrlFromUrl } from '@/lib/pdf';
 import { submitQuizDraft } from '@/lib/quiz/draftApi';
@@ -201,6 +202,8 @@ function toInitialAutosavePayload(payload: {
   description: string;
   selectedFolderId: string | null;
   submitToPremium: boolean;
+  /** Absent in recovery copies saved before RIN-1275. */
+  visibility?: QuizVisibilityViewModel;
   questions: QuizDraft['questions'];
 }) {
   return payload;

@@ -15,6 +15,7 @@ const payload = {
   description: '',
   selectedFolderId: null,
   submitToPremium: false,
+  visibility: 'personal' as const,
   questions: [
     {
       type: 'single' as const,

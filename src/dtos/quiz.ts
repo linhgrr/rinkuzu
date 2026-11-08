@@ -137,10 +137,16 @@ export interface QuizListItemDto {
  */
 export interface QuizMetadataDto extends QuizListItemDto {
   ownerIndexable: boolean;
+  /** Texts of the first (up to 3) questions, for the generated description (RIN-1241). */
+  leadQuestionTexts: string[];
+  /** The one language the quiz is written in; its page there is canonical (RIN-1241 D14). */
+  contentLocale: 'vi' | 'en';
 }
 
+/** An indexable public quiz (RIN-1241 D13), listed once at its content-locale URL. */
 export interface PublicQuizSitemapEntryDto {
   slug: string;
+  contentLocale: 'vi' | 'en';
   createdAt: string;
   updatedAt?: string;
 }

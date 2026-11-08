@@ -49,6 +49,12 @@ type LocalizedMetadataInput = {
   /** Extra `/og` query params after the title (e.g. a quiz's question count, RIN-1180). */
   ogImageParams?: Readonly<Record<string, string>>;
   robots?: Metadata['robots'];
+  /** Locale of the canonical URL when it differs from the page locale (RIN-1241). */
+  canonicalLocale?: Locale | string;
+  /** False for one-language pages (quizzes): no hreflang pair (RIN-1241 D14). */
+  languageAlternates?: boolean;
+  /** Title on the `/og` card when it differs from the `<title>` (RIN-1241). */
+  ogImageTitle?: string;
 };
 
 export function buildLocalizedMetadata({
@@ -59,11 +65,14 @@ export function buildLocalizedMetadata({
   imagePath,
   ogImageParams,
   robots,
+  canonicalLocale,
+  languageAlternates: withLanguageAlternates = true,
+  ogImageTitle,
 }: LocalizedMetadataInput): Metadata {
-  const canonical = canonicalFor(locale, path);
+  const canonical = canonicalFor(canonicalLocale ?? locale, path);
   // Default to the dynamic 1200x630 OG endpoint so social previews render at the
   // correct aspect ratio. Square icons (icon-512x512.png) get letterboxed/cropped.
-  const resolvedImagePath = imagePath ?? defaultOgImagePath(title, ogImageParams);
+  const resolvedImagePath = imagePath ?? defaultOgImagePath(ogImageTitle ?? title, ogImageParams);
   const imageUrl = new URL(resolvedImagePath, siteUrl).toString();
 
   return {
@@ -71,7 +80,7 @@ export function buildLocalizedMetadata({
     description,
     alternates: {
       canonical,
-      languages: languageAlternates(path),
+      ...(withLanguageAlternates ? { languages: languageAlternates(path) } : {}),
     },
     openGraph: {
       type: 'website',

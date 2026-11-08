@@ -22,7 +22,6 @@ import {
   HiOutlineTrash,
 } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
-import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Modal } from '@/components/ui/Modal';
 import {
   deleteAskRinConversation,
@@ -33,6 +32,7 @@ import {
 } from '@/lib/ask-rin-chan/client';
 import { fetchAskRinAgent } from '@/lib/ask-rin-chan/agui-fetch';
 import { useAskRinErrorMessage } from '@/features/ask-rin-chan/hooks/use-ask-rin-error-message';
+import { AskRinEmptyConversation } from './AskRinEmptyConversation';
 import { AskRinMessage } from './AskRinMessage';
 import styles from './AskRinPanelLayout.module.css';
 
@@ -72,46 +72,17 @@ interface AskRinRuntimeProps {
   onHistoryChange?: (summary: AskRinHistorySummary) => void;
 }
 
-function EmptyConversation() {
-  const t = useTranslations('adaptiveLearning.chatbot');
-  const aui = useAui();
-  const suggestions = [t('suggestExplain'), t('suggestHint'), t('suggestSteps')];
-
-  return (
-    <div className="mx-auto flex max-w-md flex-col items-center px-4 py-10 text-center">
-      <Image
-        src={CHATBOT_ICON}
-        alt={t('iconAlt')}
-        width={64}
-        height={64}
-        className="mb-4 size-16 object-contain"
-      />
-      <h3 className="text-base font-semibold text-neutral-900">{t('emptyTitle')}</h3>
-      <p className="mt-2 text-sm leading-6 text-neutral-500">{t('initialGreeting')}</p>
-      <div className="mt-5 grid w-full gap-2">
-        {suggestions.map((suggestion) => (
-          <ButtonBase
-            key={suggestion}
-            onClick={() => aui.thread().append(suggestion)}
-            className={`${styles['borderMuted']} rounded-xl border bg-white px-4 py-3 text-left text-sm text-neutral-700 transition-colors hover:border-green-300 hover:bg-green-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust`}
-          >
-            {suggestion}
-          </ButtonBase>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function AskRinThread({
   credentials,
   contextPreview,
   error,
+  historySettled,
   runFailed,
   onError,
   onHistoryReset,
 }: Omit<AskRinRuntimeProps, 'onHistoryChange'> & {
   error: string;
+  historySettled: boolean;
   runFailed: boolean;
   onError: (message: string) => void;
   onHistoryReset: () => void;
@@ -121,7 +92,9 @@ function AskRinThread({
   const aui = useAui();
   const messages = useAuiState((state) => state.thread.messages);
   const isRunning = useAuiState((state) => state.thread.isRunning);
-  const isLoading = useAuiState((state) => state.thread.isLoading);
+  // The runtime starts the history load in an effect, so its first commit reports
+  // isLoading false: without historySettled the empty state flashes first (RIN-1207).
+  const isLoading = useAuiState((state) => state.thread.isLoading) || !historySettled;
   const [clearing, setClearing] = useState(false);
   const failedQuestionId = runFailed && !isRunning ? findLastUserMessageId(messages) : null;
 
@@ -216,7 +189,7 @@ function AskRinThread({
           ) : (
             <>
               <ThreadPrimitive.Empty>
-                <EmptyConversation />
+                <AskRinEmptyConversation />
               </ThreadPrimitive.Empty>
               <div className="space-y-4">
                 <ThreadPrimitive.Messages components={{ Message: AskRinMessage }} />
@@ -292,6 +265,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
   const askRinErrorMessage = useAskRinErrorMessage();
   // Only a failed send offers Retry; history or clear errors do not (RIN-1019).
   const [failure, setFailure] = useState<AskRinFailure>(NO_FAILURE);
+  const [historySettled, setHistorySettled] = useState(false);
   const showError = (message: string) => setFailure({ message, retryable: false });
   const historyCallbackRef = useRef(onHistoryChange);
   const historySummaryRef = useRef<AskRinHistorySummary>({ totalMessages: 0, totalTurns: 0 });
@@ -342,6 +316,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
           historySummaryRef.current = summary;
           historyCallbackRef.current?.(summary);
           setFailure(NO_FAILURE);
+          setHistorySettled(true);
           return ExportedMessageRepository.fromArray(
             fromAgUiMessages(
               messages.map((message) => ({
@@ -357,6 +332,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
         } catch {
           // Context copy ("you can still ask") rather than the server text (RIN-756).
           setFailure({ message: historyErrorLabel, retryable: false });
+          setHistorySettled(true);
           return ExportedMessageRepository.fromArray([]);
         }
       },
@@ -395,6 +371,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
         contextPreview={contextPreview}
         onHistoryReset={resetHistorySummary}
         error={failure.message}
+        historySettled={historySettled}
         runFailed={failure.retryable}
         onError={showError}
       />

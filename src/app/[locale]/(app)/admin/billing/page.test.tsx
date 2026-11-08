@@ -64,7 +64,7 @@ function diagnostics() {
     pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
     verificationClass: '',
     loading: false,
-    error: '',
+    loadError: null,
     setVerificationClass: vi.fn(),
     setPage: vi.fn(),
     reload: vi.fn(),

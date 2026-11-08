@@ -6,7 +6,6 @@ import type {
   AdminBillingPaginationViewModel,
   AdminWebhookDiagnosticViewModel,
 } from '@/features/admin/billing/types/admin-billing-view-model';
-import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface DiagnosticsState {
   webhooks: AdminWebhookDiagnosticViewModel[];
@@ -14,7 +13,8 @@ interface DiagnosticsState {
   /** Empty means every verification class. */
   verificationClass: string;
   loading: boolean;
-  error: string;
+  /** A failed load, raw so the panel can render ErrorState with Retry (RIN-1022). */
+  loadError: unknown;
   reloadToken: number;
 }
 
@@ -23,7 +23,7 @@ const INITIAL_STATE: DiagnosticsState = {
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
   verificationClass: '',
   loading: false,
-  error: '',
+  loadError: null,
   reloadToken: 0,
 };
 
@@ -54,7 +54,7 @@ export interface UseWebhookDiagnostics {
   pagination: AdminBillingPaginationViewModel;
   verificationClass: string;
   loading: boolean;
-  error: string;
+  loadError: unknown;
   setVerificationClass: (value: string) => void;
   setPage: (page: number) => void;
   reload: () => void;
@@ -72,7 +72,6 @@ export interface UseWebhookDiagnostics {
  * being three separate renders that can be observed half-applied.
  */
 export function useWebhookDiagnostics(active: boolean): UseWebhookDiagnostics {
-  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const { verificationClass, reloadToken, pagination } = state;
   const { page, limit } = pagination;
@@ -80,7 +79,7 @@ export function useWebhookDiagnostics(active: boolean): UseWebhookDiagnostics {
   useEffect(() => {
     if (!active) return;
     const controller = new AbortController();
-    dispatch({ type: 'patch', value: { loading: true, error: '' } });
+    dispatch({ type: 'patch', value: { loading: true } });
 
     void fetchAdminWebhookDiagnostics({
       page,
@@ -91,29 +90,32 @@ export function useWebhookDiagnostics(active: boolean): UseWebhookDiagnostics {
       .then((result) =>
         dispatch({
           type: 'patch',
-          value: { webhooks: result.webhooks, pagination: result.pagination, loading: false },
+          value: {
+            webhooks: result.webhooks,
+            pagination: result.pagination,
+            loading: false,
+            // Cleared on success only: a Retry keeps ErrorState up until it settles (RIN-1166).
+            loadError: null,
+          },
         }),
       )
       .catch((caught: unknown) => {
         if (controller.signal.aborted) return;
         dispatch({
           type: 'patch',
-          value: {
-            loading: false,
-            error: describeError(caught),
-          },
+          value: { loading: false, loadError: caught },
         });
       });
 
     return () => controller.abort();
-  }, [active, page, limit, verificationClass, reloadToken, describeError]);
+  }, [active, page, limit, verificationClass, reloadToken]);
 
   return {
     webhooks: state.webhooks,
     pagination: state.pagination,
     verificationClass: state.verificationClass,
     loading: state.loading,
-    error: state.error,
+    loadError: state.loadError,
     setVerificationClass: useCallback((value: string) => {
       dispatch({ type: 'filter', value });
     }, []),

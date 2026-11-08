@@ -34,6 +34,12 @@ const CLASS_FILTERS = [
  * waiting on it.
  */
 export function WebhookDiagnosticsPanel({ diagnostics }: { diagnostics: UseWebhookDiagnostics }) {
+  // A failed load replaces the count, the filters and the list: "0 webhooks" and
+  // "No deliveries recorded" would read as data (RIN-1022).
+  if (diagnostics.loadError) {
+    return <ErrorState error={diagnostics.loadError} onRetry={diagnostics.reload} />;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -55,8 +61,6 @@ export function WebhookDiagnosticsPanel({ diagnostics }: { diagnostics: UseWebho
             </Button>
           ))}
         </div>
-
-        {diagnostics.error ? <ErrorState message={diagnostics.error} className="mb-4" /> : null}
 
         {diagnostics.loading ? (
           <p className="text-sm text-neutral-500">Loading…</p>

@@ -6,9 +6,27 @@ import { captureAnonymousServerEvent } from './server';
 
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 
+function knownLocale(value: string | undefined): Locale | undefined {
+  return locales.find((locale) => locale === value);
+}
+
+function refererLocale(request: NextRequest): Locale | undefined {
+  const referer = request.headers.get('referer');
+  if (!referer) return undefined;
+  try {
+    return knownLocale(new URL(referer).pathname.split('/')[1]);
+  } catch {
+    return undefined;
+  }
+}
+
+/** `NEXT_LOCALE` is not always set (RIN-1263), so the checkout page's path prefix is the fallback. */
 function requestLocale(request: NextRequest): Locale {
-  const cookie = request.cookies.get('NEXT_LOCALE')?.value;
-  return locales.find((locale) => locale === cookie) ?? defaultLocale;
+  return (
+    knownLocale(request.cookies.get('NEXT_LOCALE')?.value) ??
+    refererLocale(request) ??
+    defaultLocale
+  );
 }
 
 function requestCountry(request: NextRequest): string | null {

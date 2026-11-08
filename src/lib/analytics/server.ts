@@ -48,7 +48,10 @@ export async function captureServerEvent(
 /**
  * A server event that must not be tied to a learner (RIN-1269): a fresh random
  * distinct id per event, and `$process_person_profile: false` so PostHog
- * creates no person for it. Same best-effort contract as `captureServerEvent`.
+ * creates no person for it. `$geoip_disable: true` because the request comes
+ * from the server, whose IP would stamp the server region as
+ * `$geoip_country_code`; callers pass the learner's country explicitly. Same
+ * best-effort contract as `captureServerEvent`.
  */
 export function captureAnonymousServerEvent(
   event: AnalyticsEventName,
@@ -58,7 +61,7 @@ export function captureAnonymousServerEvent(
   return captureServerEvent(
     event,
     crypto.randomUUID(),
-    { ...properties, $process_person_profile: false },
+    { ...properties, $process_person_profile: false, $geoip_disable: true },
     env,
   );
 }

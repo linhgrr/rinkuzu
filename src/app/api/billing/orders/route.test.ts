@@ -117,6 +117,7 @@ describe('POST /api/billing/orders checkout_started_server (RIN-1269)', () => {
         plan: 'plan_monthly',
         country: 'DE',
         $process_person_profile: false,
+        $geoip_disable: true,
       },
     });
     expect(payload?.['distinct_id']).toMatch(UUID_PATTERN);
@@ -124,6 +125,7 @@ describe('POST /api/billing/orders checkout_started_server (RIN-1269)', () => {
     expect(serialized).not.toContain(USER_ID);
     expect(serialized).not.toContain(USER_EMAIL);
     expect(Object.keys(payload?.['properties'] as object).sort()).toEqual([
+      '$geoip_disable',
       '$lib',
       '$process_person_profile',
       'country',
@@ -149,6 +151,36 @@ describe('POST /api/billing/orders checkout_started_server (RIN-1269)', () => {
 
     expect(capturedPayloads()[0]?.['properties']).toMatchObject({ country: null, locale: 'vi' });
   });
+
+  it('falls back to the locale prefix of the Referer path when NEXT_LOCALE is missing', async () => {
+    await POST(orderRequest({ referer: `${ORIGIN}/en/checkout?plan=plan_monthly` }), routeContext);
+    await runAfterCallbacks();
+
+    expect(capturedPayloads()[0]?.['properties']).toMatchObject({ locale: 'en' });
+  });
+
+  it('prefers the NEXT_LOCALE cookie over the Referer path', async () => {
+    await POST(
+      orderRequest({
+        referer: `${ORIGIN}/en/checkout`,
+        cookie: `rk_billing_csrf=${CSRF}; NEXT_LOCALE=vi`,
+      }),
+      routeContext,
+    );
+    await runAfterCallbacks();
+
+    expect(capturedPayloads()[0]?.['properties']).toMatchObject({ locale: 'vi' });
+  });
+
+  it.each(['not a url', `${ORIGIN}/fr/checkout`, `${ORIGIN}/checkout`])(
+    'falls back to vi for a Referer without a known locale prefix: %s',
+    async (referer) => {
+      await POST(orderRequest({ referer }), routeContext);
+      await runAfterCallbacks();
+
+      expect(capturedPayloads()[0]?.['properties']).toMatchObject({ locale: 'vi' });
+    },
+  );
 
   it.each(['de', 'XX1', 'D', '<script>'])('drops a malformed country header %s', async (value) => {
     await POST(

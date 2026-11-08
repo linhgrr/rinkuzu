@@ -4,7 +4,8 @@ import { login, withAccounts } from './support/admin-accounts';
 /**
  * Retry on an admin list that failed to load (RIN-1166): ErrorState stays up with a
  * pending Retry until the refetch settles, with no skeleton in between, and a failed
- * refetch over a loaded users table keeps the rows.
+ * refetch over a loaded users table keeps the rows. The billing Webhooks tab (RIN-1022) shows
+ * ErrorState in place of its count and empty state.
  *
  * The admin login, gate and pages run for real. Only the list GET is answered by
  * `page.route`: a 500 envelope first, then the real response once the test releases it,
@@ -102,6 +103,37 @@ test.describe('admin list Retry', () => {
       });
     });
   }
+
+  test('billing webhooks: ErrorState with Retry instead of "0 webhooks", Retry recovers @critical-admin-lists', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await withAccounts(testInfo, async ({ admin }) => {
+      await login(page, admin);
+      const { hold, release } = await failThenHold(page, '/api/admin/billing/webhooks');
+      await page.goto('/en/admin/billing');
+
+      const main = page.locator('#app-main-content');
+      await expect(page.getByRole('heading', { level: 1, name: 'Billing orders' })).toBeVisible({
+        timeout: 30_000,
+      });
+      await main.getByRole('button', { name: 'Webhooks', exact: true }).click();
+
+      const alert = errorState(page);
+      await expect(alert).toBeVisible({ timeout: 30_000 });
+      await expect(alert).not.toContainText(SERVER_TEXT);
+      await expect(alert).not.toContainText('Code:');
+      // A failed load must not read as data (RIN-1022).
+      await expect(main.getByText(/^0 webhooks$/)).toHaveCount(0);
+      await expect(main.getByText('No deliveries recorded')).toHaveCount(0);
+
+      hold();
+      await alert.getByRole('button', { name: 'Retry' }).click();
+      release();
+      await expect(alert).toHaveCount(0, { timeout: 30_000 });
+      await expect(main.getByText(/^\d+ webhooks?$/)).toBeVisible();
+    });
+  });
 
   test('users: a failed refetch keeps the loaded table and shows an inline error @critical-admin-lists', async ({
     page,

@@ -12,7 +12,7 @@ import type {
   RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
-export type LibraryQuizStatusFilter = 'in_progress' | 'complete';
+type LibraryQuizStatusFilter = 'in_progress' | 'complete';
 
 export interface LibraryQuizListOptions extends RepositoryPaginationOptions {
   folder?: string | null;

@@ -6,7 +6,13 @@ import type { QuizLandingViewModel } from '@/features/quiz/types/quiz-landing-vi
 
 vi.mock('next-intl/server', () => ({
   getTranslations: ({ namespace }: { namespace: string }) =>
-    Promise.resolve(createTranslator({ locale: 'vi', messages: { quiz: viQuiz }, namespace })),
+    Promise.resolve(
+      createTranslator({
+        locale: 'vi',
+        messages: { quiz: viQuiz },
+        namespace: namespace as 'quiz',
+      }),
+    ),
 }));
 
 import { QuizLanding } from './QuizLanding';
@@ -20,8 +26,12 @@ function landingWith(overrides: Partial<QuizLandingViewModel> = {}): QuizLanding
     questionCount: 20,
     quickRoundEligible: true,
     previewQuestions: Array.from({ length: 5 }, (_, index) => ({
+      id: `q${index}`,
       text: `Câu hỏi số ${index + 1}`,
-      options: ['Ti thể', 'Lục lạp'],
+      options: [
+        { letter: 'A', text: 'Ti thể' },
+        { letter: 'B', text: 'Lục lạp' },
+      ],
     })),
     related: [{ slug: 'hoa-hoc', title: 'Hóa học 10', questionCount: 12 }],
     ...overrides,

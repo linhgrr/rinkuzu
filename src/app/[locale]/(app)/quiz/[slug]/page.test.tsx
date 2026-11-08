@@ -425,7 +425,7 @@ describe('QuizPlayerPage landing (RIN-1247)', () => {
     expect(player).toBeDefined();
   });
 
-  it.each([{ mode: 'quick' }, { entry: 'quiz_landing' }, { retryOf: 'x' }])(
+  it.each<Record<string, string>>([{ mode: 'quick' }, { entry: 'quiz_landing' }, { retryOf: 'x' }])(
     'skips the landing when the URL has %j',
     async (searchParams) => {
       const { landing, player } = await landingOf(searchParams);

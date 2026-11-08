@@ -1,4 +1,8 @@
-import { IQuizRepository, type QuizFindFilter } from '@/interfaces/repositories/IQuizRepository';
+import {
+  IQuizRepository,
+  type PublicQuizSitemapRecord,
+  type QuizFindFilter,
+} from '@/interfaces/repositories/IQuizRepository';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
@@ -265,14 +269,14 @@ export class QuizAdminService {
     limit,
   }: RelatedQuizzesQueryDto): Promise<RelatedQuizDto[]> {
     const rows = await this.findIndexablePublicRows(RELATED_QUIZ_WINDOW);
-    return rows
-      .filter(
-        (row) =>
-          row.slug !== excludeSlug &&
-          detectQuizContentLocale(row.title, row.leadQuestionTexts) === contentLocale,
-      )
-      .slice(0, limit)
-      .map((row) => ({ slug: row.slug, title: row.title, questionCount: row.questionCount }));
+    const related: RelatedQuizDto[] = [];
+    for (const row of rows) {
+      if (related.length >= limit) break;
+      if (row.slug === excludeSlug) continue;
+      if (detectQuizContentLocale(row.title, row.leadQuestionTexts) !== contentLocale) continue;
+      related.push({ slug: row.slug, title: row.title, questionCount: row.questionCount });
+    }
+    return related;
   }
 
   /**
@@ -280,11 +284,12 @@ export class QuizAdminService {
    * company accounts (RIN-840) and quizzes under 5 questions are excluded in the
    * query, so the limit counts only indexable quizzes.
    */
-  private async findIndexablePublicRows(limit: number) {
+  private async findIndexablePublicRows(limit: number): Promise<PublicQuizSitemapRecord[]> {
     const candidates = await this.quizRepository.findNonIndexableOwnerCandidates();
-    const excludeAuthorIds = candidates
-      .filter((owner) => isNonIndexableQuizOwner(owner))
-      .map((owner) => owner.id);
+    const excludeAuthorIds: string[] = [];
+    for (const owner of candidates) {
+      if (isNonIndexableQuizOwner(owner)) excludeAuthorIds.push(owner.id);
+    }
     const rows = await this.quizRepository.findPublicSitemapEntries({ excludeAuthorIds, limit });
     return rows.filter((row) =>
       isQuizIndexable({

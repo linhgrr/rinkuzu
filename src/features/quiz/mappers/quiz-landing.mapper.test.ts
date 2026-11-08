@@ -37,8 +37,13 @@ describe('toQuizLandingViewModel', () => {
 
     expect(landing.previewQuestions).toHaveLength(5);
     expect(landing.previewQuestions[0]).toEqual({
+      id: 'q0',
       text: 'Câu hỏi số 1',
-      options: ['Một', 'Hai', 'Ba'],
+      options: [
+        { letter: 'A', text: 'Một' },
+        { letter: 'B', text: 'Hai' },
+        { letter: 'C', text: 'Ba' },
+      ],
     });
     const serialized = JSON.stringify(landing);
     expect(serialized).not.toMatch(/correctIndex|explanation|Vì thế/u);

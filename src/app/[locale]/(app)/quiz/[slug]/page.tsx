@@ -5,7 +5,10 @@ import { headers } from 'next/headers';
 import { permanentRedirect } from 'next/navigation';
 import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
-import type { QuizPlayAuthorViewModel } from '@/features/quiz/types/quiz-play-view-model';
+import type {
+  QuizPlayAuthorViewModel,
+  QuizPlayViewModel,
+} from '@/features/quiz/types/quiz-play-view-model';
 import { QuizBreadcrumbSchema, QuizPageSchema } from '@/components/seo/QuizPageSchema';
 import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
@@ -15,7 +18,6 @@ import { buildQuizMetadata, loadQuizMetadata } from './quiz-metadata';
 import { QuizLanding } from '@/features/quiz/components/landing/QuizLanding';
 import { toQuizLandingViewModel } from '@/features/quiz/mappers/quiz-landing.mapper';
 import type { QuizLandingViewModel } from '@/features/quiz/types/quiz-landing-view-model';
-import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { buildQuizSeoDescription, isQuizIndexable } from '@/lib/seo/quiz-indexability';
 import { logger } from '@/lib/logger';
 

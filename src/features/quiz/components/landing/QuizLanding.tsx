@@ -21,10 +21,8 @@ interface QuizLandingProps {
 /** A question longer than this is clamped to 6 lines in the preview. */
 const LONG_QUESTION_LENGTH = 600;
 
-const OPTION_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
 const PRIMARY_CTA =
-  'btn btn-primary h-auto min-h-12 w-full whitespace-normal rounded-[var(--radius-lg)] px-4 text-center text-[16px] bg-brand-action-strong text-white hover:bg-brand-action-strong-hover sm:w-auto sm:px-8';
+  'btn btn-primary h-auto min-h-12 w-full whitespace-normal px-4 text-center text-base bg-brand-action-strong text-white hover:bg-brand-action-strong-hover sm:w-auto sm:px-8';
 
 const SECONDARY_CTA = 'btn btn-secondary h-auto min-h-12 whitespace-normal text-center';
 
@@ -40,7 +38,6 @@ interface PreviewQuestionProps {
 }
 
 function PreviewQuestion({ question, numberLabel, imageAlt }: PreviewQuestionProps) {
-  const optionImages = question.optionImages ?? [];
   return (
     <li className="space-y-2 py-4 first:pt-0 last:pb-0">
       <p className="text-sm font-medium text-ink-muted">{numberLabel}</p>
@@ -62,26 +59,23 @@ function PreviewQuestion({ question, numberLabel, imageAlt }: PreviewQuestionPro
         <QuestionContent content={question.text} />
       </div>
       <ul className="space-y-1 text-sm text-ink">
-        {question.options.map((option, index) => {
-          const optionImage = optionImages[index];
-          return (
-            <li key={`${index}:${option}`} className="flex gap-2 break-words">
-              <span className="font-medium">{OPTION_LETTERS[index] ?? index + 1}.</span>
-              <div className="min-w-0 flex-1">
-                <QuestionContent content={option} variant="option" />
-                {optionImage ? (
-                  <Image
-                    src={optionImage}
-                    alt=""
-                    width={240}
-                    height={120}
-                    className="mt-1 h-auto max-h-40 w-auto max-w-full object-contain"
-                  />
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
+        {question.options.map((option) => (
+          <li key={option.letter} className="flex gap-2 break-words">
+            <span className="font-medium">{option.letter}.</span>
+            <div className="min-w-0 flex-1">
+              <QuestionContent content={option.text} variant="option" />
+              {option.image ? (
+                <Image
+                  src={option.image}
+                  alt=""
+                  width={240}
+                  height={120}
+                  className="mt-1 h-auto max-h-40 w-auto max-w-full object-contain"
+                />
+              ) : null}
+            </div>
+          </li>
+        ))}
       </ul>
     </li>
   );
@@ -151,7 +145,7 @@ export async function QuizLanding({ locale, landing, signedIn }: QuizLandingProp
         <ol className="divide-y divide-secondary-2">
           {landing.previewQuestions.map((question, index) => (
             <PreviewQuestion
-              key={`${index}:${question.text}`}
+              key={question.id}
               question={question}
               numberLabel={t('questionNumber', { number: index + 1 })}
               imageAlt={tQuiz('questionImageAlt', { number: index + 1 })}

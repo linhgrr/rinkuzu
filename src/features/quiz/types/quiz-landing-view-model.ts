@@ -1,10 +1,16 @@
+/** One option of a previewed question, with its letter (A, B, ...). */
+export interface QuizLandingPreviewOption {
+  letter: string;
+  text: string;
+  image?: string;
+}
+
 /** A previewed question: content only, never an answer or explanation (RIN-1241 C8). */
 export interface QuizLandingPreviewQuestion {
+  id: string;
   text: string;
-  options: string[];
+  options: QuizLandingPreviewOption[];
   image?: string;
-  /** One entry per option; null where the option has no image. */
-  optionImages?: (string | null)[];
 }
 
 export interface QuizLandingRelatedQuiz {

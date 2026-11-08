@@ -53,6 +53,19 @@ describe('POST /api/ask-rin-chan/agent', () => {
     expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
   });
 
+  it('accepts and forwards the protocolVersion that @ag-ui/client 1.x sends (RIN-1195)', async () => {
+    const body = {
+      ...validBody,
+      runId: 'a19c25bf-d5fc-4c3f-a55c-ffc26f60a4b5',
+      protocolVersion: '1.0',
+    };
+    const response = await POST(request(body), routeContext);
+
+    expect(response.status).toBe(200);
+    const [, , , options] = proxyAdaptiveRequestMock.mock.calls[0] ?? [];
+    expect(JSON.parse(options.body)).toMatchObject({ protocolVersion: '1.0' });
+  });
+
   it('accepts the seven-character assistant-ui run id and meters its safe digest', async () => {
     const response = await POST(request(validBody), routeContext);
 

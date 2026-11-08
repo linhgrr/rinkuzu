@@ -41,6 +41,8 @@ export const askRinAgentRequestSchema = z
     threadId: z.string().trim().min(1).max(400),
     runId: z.string().min(1).max(128),
     parentRunId: z.string().max(128).optional(),
+    // @ag-ui/client 1.x declares the protocol it speaks on every run (RIN-1195).
+    protocolVersion: z.string().max(32).optional(),
     state: z.unknown(),
     messages: z.array(agUiMessageSchema).min(1).max(100),
     tools: z.array(z.never()).max(0),

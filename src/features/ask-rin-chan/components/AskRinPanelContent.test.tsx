@@ -158,6 +158,46 @@ describe('AskRinPanelContent run states', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('streams a full answer in the event sequence the API sends (RIN-1195)', async () => {
+    const run = queueSseRun();
+    await openPanelAndAsk('Why is it 4?');
+
+    const [, init] = mocks.fetchAskRinAgent.mock.calls[0] ?? [];
+    const body = JSON.parse(String((init as RequestInit).body));
+    expect(body).toMatchObject({
+      threadId: 'ctx-test-1',
+      protocolVersion: '1.0',
+      forwardedProps: { exerciseContextToken: 'fake-context-token' },
+    });
+
+    // Same events, fields and order as rinkuzu-ai-api's assistant/agui.py.
+    await act(async () => {
+      startAssistantMessage(run, 'run-1');
+      run.send({
+        type: 'STATE_SNAPSHOT',
+        snapshot: { conversationId: 'conv-1', exerciseContextId: 'ctx-test-1' },
+      });
+      run.send({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'assistant-run-1', delta: 'Two plus ' });
+      run.send({
+        type: 'TEXT_MESSAGE_CONTENT',
+        messageId: 'assistant-run-1',
+        delta: 'two is four.',
+      });
+      run.send({ type: 'TEXT_MESSAGE_END', messageId: 'assistant-run-1' });
+      run.send({
+        type: 'RUN_FINISHED',
+        threadId: 'ctx-test-1',
+        runId: 'run-1',
+        result: { conversationId: 'conv-1' },
+      });
+      run.close();
+    });
+
+    expect(await screen.findByText('Two plus two is four.', {}, SLOW)).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText(THINKING)).toBeNull(), SLOW);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('removes the thinking bubble and shows only the error card when the stream reports RUN_ERROR', async () => {
     const run = queueSseRun();
     await openPanelAndAsk('Why is it 4?');

@@ -27,6 +27,7 @@ describe('toProfileHistoryViewModel', () => {
             hasNextPage: false,
             hasPrevPage: false,
           },
+          summary: { totalAttempts: 1, averageScore: 88, needsWorkCount: 0 },
         },
         'en',
       ),
@@ -76,6 +77,7 @@ describe('toProfileHistoryViewModel', () => {
           hasNextPage: false,
           hasPrevPage: false,
         },
+        summary: { totalAttempts: 1, averageScore: 88, needsWorkCount: 0 },
       },
       'en',
     );
@@ -103,6 +105,7 @@ describe('toProfileHistoryViewModel taken-at label', () => {
       hasNextPage: false,
       hasPrevPage: false,
     },
+    summary: { totalAttempts: 1, averageScore: 88, needsWorkCount: 0 },
   };
 
   it.each([
@@ -133,6 +136,7 @@ describe('toProfileHistoryViewModel taken-at label', () => {
           hasNextPage: false,
           hasPrevPage: false,
         },
+        summary: { totalAttempts: 1, averageScore: 88, needsWorkCount: 0 },
       },
       'en',
     );

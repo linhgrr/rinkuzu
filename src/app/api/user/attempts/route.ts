@@ -20,6 +20,7 @@ export const GET = withAuth(async (request: NextRequest, { userId }) => {
     return apiOk({
       attempts: result.attempts,
       pagination: result.pagination,
+      summary: result.summary,
     });
   } catch (error: unknown) {
     logger.error({ error }, 'Get user attempts error');

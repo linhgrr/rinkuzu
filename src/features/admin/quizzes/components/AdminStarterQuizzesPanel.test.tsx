@@ -183,6 +183,44 @@ describe('AdminQuizzesPageClient starter panel (RIN-1183)', () => {
     expect(within(premium).getByText('droppedLabel(dropPremium)')).toBeInTheDocument();
   });
 
+  it('collapses to 3 starters on small screens with a Show all toggle (RIN-1229)', async () => {
+    const user = userEvent.setup();
+    mocks.fetchStarters.mockResolvedValue([
+      starter('a', 1),
+      starter('b', 2),
+      starter('c', 3),
+      starter('d', 4),
+      starter('e', 5),
+    ]);
+    render(<AdminQuizzesPageClient />);
+
+    const rows = within(await starterList()).getAllByRole('listitem');
+    expect(rows.map((row) => row.classList.contains('max-lg:hidden'))).toEqual([
+      false,
+      false,
+      false,
+      true,
+      true,
+    ]);
+    const toggle = screen.getByRole('button', { name: 'showAll(5)' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAttribute('aria-controls', 'admin-starter-quizzes-list');
+
+    await user.click(toggle);
+    expect(rows.some((row) => row.classList.contains('max-lg:hidden'))).toBe(false);
+    const collapse = screen.getByRole('button', { name: 'showFewer' });
+    expect(collapse).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('shows no Show all toggle with 3 starters or fewer', async () => {
+    mocks.fetchStarters.mockResolvedValue([starter('a', 1), starter('b', 2), starter('c', 3)]);
+    render(<AdminQuizzesPageClient />);
+
+    const rows = within(await starterList()).getAllByRole('listitem');
+    expect(rows.some((row) => row.classList.contains('max-lg:hidden'))).toBe(false);
+    expect(screen.queryByRole('button', { name: /showAll/ })).not.toBeInTheDocument();
+  });
+
   it('shows the empty state with how to add a starter', async () => {
     mocks.fetchStarters.mockResolvedValue([]);
     render(<AdminQuizzesPageClient />);

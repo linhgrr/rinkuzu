@@ -91,7 +91,7 @@ export interface AdminActivationEntryCounts {
 }
 
 /** A public blog post slug and its activated signups. */
-export interface AdminActivationBlogPostCount {
+interface AdminActivationBlogPostCount {
   post: string;
   activated: number;
 }

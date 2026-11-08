@@ -4,7 +4,6 @@ import { useReducer } from 'react';
 import type { FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
 import useSWR from 'swr';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { AdminUsersPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
@@ -27,14 +26,21 @@ import { ModalActions } from '@/components/ui/ModalActions';
 import { Input, Textarea } from '@/components/ui/Input';
 import Pagination from '@/components/ui/Pagination';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { HiOutlineCheck, HiOutlinePlusCircle } from 'react-icons/hi';
+import { HiOutlineCheck } from 'react-icons/hi';
 import {
   fetchAdminUserListViewModel,
   grantAdminUserCredits,
   grantAdminUserSubscription,
   updateAdminUserRole,
   updateAdminUserStatus,
+  updateAdminUserTestAccount,
 } from '@/features/admin/users/api/admin-users-api';
+import {
+  TestAccountBadge,
+  TestAccountModal,
+} from '@/features/admin/users/components/AdminUserTestAccountControls';
+import { AdminUserActionsMenu } from '@/features/admin/users/components/AdminUserActionsMenu';
+import type { AdminUserActionCallbacks } from '@/features/admin/users/components/AdminUserActionsMenu';
 import type {
   AdminUserListViewModel,
   AdminUserStatusFilter,
@@ -43,7 +49,7 @@ import type {
 } from '@/features/admin/users/types/admin-users-view-model';
 import { fetchAdminBillingPlanViewModels } from '@/features/admin/plans/api/admin-plans-api';
 import type { AdminBillingPlanViewModel } from '@/features/admin/plans/types/admin-plans-view-model';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import type { UserRole } from '@/types/next-auth';
 import {
   ACCOUNT_DISABLE_ACTIVE,
@@ -51,7 +57,7 @@ import {
 } from '@/shared/constants/account-disable';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
-type AdminUsersModal = 'status' | 'role' | 'subscription' | 'credit' | null;
+type AdminUsersModal = 'status' | 'role' | 'subscription' | 'credit' | 'testAccount' | null;
 type AdminUserActionRequest<T> = () => Promise<T>;
 
 interface AdminUsersTranslationProps {
@@ -77,20 +83,13 @@ interface UsersResultsInfoProps extends UsersStatsCardsProps {
   searchTerm: string;
 }
 
-interface UserActionCallbacks {
-  onOpenCreditModal: (user: AdminUserViewModel) => void;
-  onOpenSubscriptionModal: (user: AdminUserViewModel) => void;
-  onOpenRoleModal: (user: AdminUserViewModel) => void;
-  onOpenStatusModal: (user: AdminUserViewModel) => void;
-}
-
-interface UserRowProps extends AdminUsersTranslationProps, UserActionCallbacks {
+interface UserRowProps extends AdminUsersTranslationProps, AdminUserActionCallbacks {
   user: AdminUserViewModel;
   sessionEmail?: string | null;
   actionLoading: string | null;
 }
 
-interface UsersTableProps extends AdminUsersTranslationProps, UserActionCallbacks {
+interface UsersTableProps extends AdminUsersTranslationProps, AdminUserActionCallbacks {
   users: AdminUserViewModel[];
   sessionEmail?: string | null;
   actionLoading: string | null;
@@ -173,6 +172,7 @@ type AdminUsersAction =
   | { type: 'resetSearch' }
   | { type: 'openRoleModal'; user: AdminUserViewModel }
   | { type: 'openStatusModal'; user: AdminUserViewModel }
+  | { type: 'openTestAccountModal'; user: AdminUserViewModel }
   | { type: 'openSubscriptionModal'; user: AdminUserViewModel }
   | { type: 'openCreditModal'; user: AdminUserViewModel; idempotencyKey: string }
   | { type: 'closeModal' }
@@ -229,6 +229,12 @@ function adminUsersReducer(state: AdminUsersState, action: AdminUsersAction): Ad
         ...state,
         selectedUser: action.user,
         activeModal: 'status',
+      };
+    case 'openTestAccountModal':
+      return {
+        ...state,
+        selectedUser: action.user,
+        activeModal: 'testAccount',
       };
     case 'openSubscriptionModal':
       return {
@@ -376,122 +382,116 @@ function UsersResultsInfo({ users, pagination, searchTerm, t }: UsersResultsInfo
   );
 }
 
-function UserRow({
-  user,
-  sessionEmail,
-  actionLoading,
-  t,
-  onOpenCreditModal,
-  onOpenSubscriptionModal,
-  onOpenRoleModal,
-  onOpenStatusModal,
-}: UserRowProps) {
+interface UserIdentityProps extends AdminUsersTranslationProps {
+  user: AdminUserViewModel;
+  isSelf: boolean;
+  emailId: string;
+}
+
+/** Email (truncated, full value in `title`), then subscription and created on one line. */
+function UserIdentity({ user, isSelf, emailId, t }: UserIdentityProps) {
+  return (
+    <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-2">
+        <span
+          id={emailId}
+          title={user.email}
+          className="min-w-0 truncate text-sm font-medium text-neutral-900"
+        >
+          {user.email}
+        </span>
+        {isSelf ? (
+          <span className="inline-flex min-h-[28px] shrink-0 items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
+            {t('you')}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-500">
+        <span>{t('subscription')}:</span>
+        {getSubscriptionBadge(user, t)}
+        {user.subscription?.startDate && user.subscription.startDateLabel ? (
+          <time dateTime={user.subscription.startDate}>{user.subscription.startDateLabel}</time>
+        ) : null}
+        <span aria-hidden="true">·</span>
+        <span>
+          {t('created')}: <time dateTime={user.createdAt}>{user.createdAtLabel}</time>
+        </span>
+      </div>
+      <TestAccountBadge user={user} t={t} />
+    </div>
+  );
+}
+
+function UserStatus({ user, t }: { user: AdminUserViewModel; t: TranslateFn }) {
   const isDisabled = user.disable === ACCOUNT_DISABLE_DISABLED;
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <Badge variant={user.accountStatusVariant}>{t(user.accountStatusLabel)}</Badge>
+      {isDisabled && user.disabledAt && user.disabledAtLabel ? (
+        <span className="text-xs text-neutral-500">
+          {t('disabledAt')}: <time dateTime={user.disabledAt}>{user.disabledAtLabel}</time>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function userActionsMenuProps(
+  { user, sessionEmail, actionLoading, t, ...callbacks }: UserRowProps,
+  describedBy: string,
+) {
+  return {
+    ...callbacks,
+    user,
+    t,
+    describedBy,
+    isSelf: user.email === sessionEmail,
+    busy: actionLoading === user.id,
+  };
+}
+
+function UserRow(props: UserRowProps) {
+  const { user, sessionEmail, t } = props;
+  const emailId = `admin-user-${user.id}-email`;
 
   return (
     <tr className="hover:bg-neutral-50">
-      <td className="whitespace-nowrap px-6 py-4">
-        <div className="text-sm font-medium text-neutral-900">
-          {user.email}
-          {user.email === sessionEmail ? (
-            <span className="ml-2 inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
-              {t('you')}
-            </span>
-          ) : null}
-        </div>
+      <td className="px-4 py-4 align-top">
+        <UserIdentity user={user} isSelf={user.email === sessionEmail} emailId={emailId} t={t} />
       </td>
-      <td className="whitespace-nowrap px-6 py-4">
+      <td className="px-4 py-4 align-top">
         {getRoleBadge(user.role, user.role === 'admin' ? t('administrator') : t('user'))}
       </td>
-      <td className="whitespace-nowrap px-6 py-4">
-        <div className="flex flex-col gap-1">
-          <Badge variant={user.accountStatusVariant}>{t(user.accountStatusLabel)}</Badge>
-          {isDisabled && user.disabledAt && user.disabledAtLabel ? (
-            <span className="text-xs text-neutral-500">
-              {t('disabledAt')}: <time dateTime={user.disabledAt}>{user.disabledAtLabel}</time>
-            </span>
-          ) : null}
-        </div>
+      <td className="px-4 py-4 align-top">
+        <UserStatus user={user} t={t} />
       </td>
-      <td className="whitespace-nowrap px-6 py-4">
-        <div className="flex items-center gap-x-2">
-          {getSubscriptionBadge(user, t)}
-          {user.subscription?.startDate && user.subscription.startDateLabel ? (
-            <span className="text-sm text-neutral-500">
-              <time dateTime={user.subscription.startDate}>{user.subscription.startDateLabel}</time>
-            </span>
-          ) : null}
-        </div>
-      </td>
-      <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-500">
-        <time dateTime={user.createdAt}>{user.createdAtLabel}</time>
-      </td>
-      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-        <div className="flex justify-end gap-x-2">
-          <Link
-            href={`/admin/support?userId=${encodeURIComponent(user.id)}`}
-            className="btn btn-secondary h-9 px-3 text-xs font-medium"
-          >
-            Hỗ trợ
-          </Link>
-          <Link
-            href={`/admin/feedback?userId=${encodeURIComponent(user.id)}`}
-            className="btn btn-secondary h-9 px-3 text-xs font-medium"
-          >
-            Mời phản hồi
-          </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenCreditModal(user)}
-            disabled={actionLoading === user.id}
-            className="min-h-[40px] border-amber-300 px-3 text-amber-700 hover:bg-amber-50"
-          >
-            <HiOutlinePlusCircle className="mr-1 size-4" aria-hidden="true" />
-            {t('addCredit')}
-          </Button>
-          {user.email !== sessionEmail ? (
-            <>
-              {!isDisabled ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenSubscriptionModal(user)}
-                  disabled={actionLoading === user.id}
-                  className="min-h-[40px] border-green-300 px-3 text-green-600 hover:bg-green-50"
-                >
-                  {t('addSubscription')}
-                </Button>
-              ) : null}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenRoleModal(user)}
-                disabled={actionLoading === user.id}
-                className="min-h-[40px] px-3"
-              >
-                {user.role === 'admin' ? t('makeUser') : t('makeAdmin')}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenStatusModal(user)}
-                disabled={actionLoading === user.id}
-                className={
-                  isDisabled
-                    ? 'min-h-[40px] border-green-300 px-3 text-green-700 hover:bg-green-50'
-                    : 'min-h-[40px] border-red-300 px-3 text-red-600 hover:bg-red-50'
-                }
-              >
-                {isDisabled ? t('restore') : t('disable')}
-              </Button>
-            </>
-          ) : null}
+      <td className="px-4 py-4 text-right align-top">
+        <div className="flex justify-end">
+          <AdminUserActionsMenu {...userActionsMenuProps(props, emailId)} />
         </div>
       </td>
     </tr>
   );
 }
+
+/** Below `md` each user is a card with the same actions (RIN-1021). */
+function UserCard(props: UserRowProps) {
+  const { user, sessionEmail, t } = props;
+  const emailId = `admin-user-${user.id}-email-card`;
+
+  return (
+    <li className="flex flex-col gap-3 py-4">
+      <UserIdentity user={user} isSelf={user.email === sessionEmail} emailId={emailId} t={t} />
+      <div className="flex flex-wrap items-start gap-2">
+        {getRoleBadge(user.role, user.role === 'admin' ? t('administrator') : t('user'))}
+        <UserStatus user={user} t={t} />
+      </div>
+      <AdminUserActionsMenu {...userActionsMenuProps(props, emailId)} />
+    </li>
+  );
+}
+
+const HEADER_CELL_CLASS = 'px-4 py-3 text-xs font-medium uppercase tracking-wider text-neutral-500';
 
 function UsersTable({
   users,
@@ -499,11 +499,16 @@ function UsersTable({
   actionLoading,
   searchTerm,
   t,
-  onOpenCreditModal,
-  onOpenSubscriptionModal,
-  onOpenRoleModal,
-  onOpenStatusModal,
+  ...callbacks
 }: UsersTableProps) {
+  const rowProps = (user: AdminUserViewModel): UserRowProps => ({
+    ...callbacks,
+    user,
+    ...(sessionEmail !== undefined ? { sessionEmail } : {}),
+    actionLoading,
+    t,
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -511,72 +516,43 @@ function UsersTable({
         <CardDescription>{t('manageUserRoles')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-neutral-200">
-            <thead className="bg-neutral-50">
-              <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500"
-                >
-                  {t('user')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500"
-                >
-                  {t('role')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500"
-                >
-                  {t('accountStatus')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500"
-                >
-                  {t('subscription')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500"
-                >
-                  {t('created')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-neutral-500"
-                >
-                  {t('actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200 bg-white">
-              {users.map((user) => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  {...(sessionEmail !== undefined ? { sessionEmail } : {})}
-                  actionLoading={actionLoading}
-                  t={t}
-                  onOpenCreditModal={onOpenCreditModal}
-                  onOpenSubscriptionModal={onOpenSubscriptionModal}
-                  onOpenRoleModal={onOpenRoleModal}
-                  onOpenStatusModal={onOpenStatusModal}
-                />
-              ))}
-            </tbody>
-          </table>
+        {/* Fixed layout: a long email truncates instead of widening the table. */}
+        <table className="hidden w-full table-fixed divide-y divide-neutral-200 md:table">
+          <thead className="bg-neutral-50">
+            <tr>
+              <th scope="col" className={`${HEADER_CELL_CLASS} text-left`}>
+                {t('user')}
+              </th>
+              <th scope="col" className={`${HEADER_CELL_CLASS} w-36 text-left`}>
+                {t('role')}
+              </th>
+              <th scope="col" className={`${HEADER_CELL_CLASS} w-40 text-left`}>
+                {t('accountStatus')}
+              </th>
+              <th scope="col" className={`${HEADER_CELL_CLASS} w-36 text-right`}>
+                {t('actions')}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-200 bg-white">
+            {users.map((user) => (
+              <UserRow key={user.id} {...rowProps(user)} />
+            ))}
+          </tbody>
+        </table>
 
-          {users.length === 0 ? (
-            <EmptyState
-              title={searchTerm ? t('noUsersMatching', { term: searchTerm }) : t('noUsersFound')}
-              className="py-8"
-            />
-          ) : null}
-        </div>
+        <ul className="divide-y divide-neutral-200 md:hidden">
+          {users.map((user) => (
+            <UserCard key={user.id} {...rowProps(user)} />
+          ))}
+        </ul>
+
+        {users.length === 0 ? (
+          <EmptyState
+            title={searchTerm ? t('noUsersMatching', { term: searchTerm }) : t('noUsersFound')}
+            className="py-8"
+          />
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -790,6 +766,7 @@ function CreditModal({
 
 export function AdminUsersPageClient() {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const [state, dispatch] = useReducer(adminUsersReducer, initialState);
@@ -817,7 +794,6 @@ export function AdminUsersPageClient() {
   });
 
   const { data: plansData } = useSWR('/api/admin/plans', () => fetchAdminBillingPlanViewModels());
-
   const users = usersData?.users ?? [];
   const plans = plansData ?? [];
   const pagination: AdminUsersPaginationViewModel = usersData
@@ -825,7 +801,8 @@ export function AdminUsersPageClient() {
     : { page: state.page, limit, total: 0, totalPages: 0 };
 
   // Full-page skeleton only on cold start (no data yet). Filter/page/search refetches keep controls mounted.
-  const isColdStart = usersLoading && !usersData;
+  // A Retry after a failed first load keeps ErrorState up with a pending button instead (RIN-1166).
+  const isColdStart = usersLoading && !usersData && !usersError;
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
@@ -853,7 +830,7 @@ export function AdminUsersPageClient() {
         type: 'patch',
         value: {
           actionLoading: null,
-          localError: extractUnknownErrorMessage(error, 'Request failed'),
+          localError: describeError(error),
         },
       });
       return null;
@@ -929,6 +906,22 @@ export function AdminUsersPageClient() {
     );
   };
 
+  const handleToggleTestAccount = async () => {
+    if (!state.selectedUser) return;
+    const selectedUser = state.selectedUser;
+    const isTestAccount = !selectedUser.isTestAccount;
+
+    await runUserAction(
+      selectedUser.id,
+      () => updateAdminUserTestAccount({ userId: selectedUser.id, isTestAccount }),
+      (result) => {
+        if (!result.changed) return t('testAccountUnchanged');
+        return isTestAccount ? t('testAccountMarkedSuccess') : t('testAccountUnmarkedSuccess');
+      },
+      t('userActionRefreshWarning'),
+    );
+  };
+
   const handleAddSubscription = async () => {
     if (!state.selectedUser || !state.selectedPlanId) return;
     const selectedUser = state.selectedUser;
@@ -986,60 +979,72 @@ export function AdminUsersPageClient() {
       <div className="mx-auto max-w-6xl">
         <AdminPageHeader title={t('userManagement')} description={t('manageUserAccounts')} />
 
-        <UsersSearchBar
-          searchTerm={state.searchInput}
-          statusFilter={state.statusFilter}
-          onSearchTermChange={(value) => dispatch({ type: 'setSearchInput', value })}
-          onStatusFilterChange={(value) => dispatch({ type: 'setStatusFilter', value })}
-          onSubmit={handleSearch}
-          onClear={() => dispatch({ type: 'resetSearch' })}
-          t={t}
-          tCommon={tCommon}
-        />
-
-        {usersError || state.localError ? (
-          <ErrorState message={usersError?.message ?? state.localError} className="mb-6" />
-        ) : null}
-
-        {state.success ? (
-          <div className="mb-6 rounded-md bg-green-50 p-4">
-            <div className="text-sm text-green-700">{state.success}</div>
-          </div>
-        ) : null}
-
-        <UsersStatsCards users={users} pagination={pagination} t={t} />
-
-        <UsersResultsInfo
-          users={users}
-          pagination={pagination}
-          searchTerm={state.searchTerm}
-          t={t}
-        />
-
-        <UsersTable
-          users={users}
-          {...(session?.user?.email !== undefined ? { sessionEmail: session.user.email } : {})}
-          actionLoading={state.actionLoading}
-          searchTerm={state.searchTerm}
-          t={t}
-          onOpenCreditModal={(user) =>
-            dispatch({ type: 'openCreditModal', user, idempotencyKey: crypto.randomUUID() })
-          }
-          onOpenSubscriptionModal={(user) => dispatch({ type: 'openSubscriptionModal', user })}
-          onOpenRoleModal={(user) => dispatch({ type: 'openRoleModal', user })}
-          onOpenStatusModal={(user) => dispatch({ type: 'openStatusModal', user })}
-        />
-
-        {pagination.totalPages > 1 ? (
-          <div className="mt-8">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={(newPage) => dispatch({ type: 'setPage', value: newPage })}
-              className="justify-center"
+        {usersError && !usersData ? (
+          // A failed load replaces the stats and the table: zeros would read as data (RIN-1022).
+          <ErrorState error={usersError} onRetry={() => mutateUsers()} className="mb-6" />
+        ) : (
+          <>
+            <UsersSearchBar
+              searchTerm={state.searchInput}
+              statusFilter={state.statusFilter}
+              onSearchTermChange={(value) => dispatch({ type: 'setSearchInput', value })}
+              onStatusFilterChange={(value) => dispatch({ type: 'setStatusFilter', value })}
+              onSubmit={handleSearch}
+              onClear={() => dispatch({ type: 'resetSearch' })}
+              t={t}
+              tCommon={tCommon}
             />
-          </div>
-        ) : null}
+
+            {usersError ? (
+              // A failed refetch keeps the loaded rows; this says they may be stale (RIN-1166).
+              <ErrorState error={usersError} onRetry={() => mutateUsers()} className="mb-6" />
+            ) : null}
+
+            {state.localError ? <ErrorState message={state.localError} className="mb-6" /> : null}
+
+            {state.success ? (
+              <div className="mb-6 rounded-md bg-green-50 p-4">
+                <div className="text-sm text-green-700">{state.success}</div>
+              </div>
+            ) : null}
+
+            <UsersStatsCards users={users} pagination={pagination} t={t} />
+
+            <UsersResultsInfo
+              users={users}
+              pagination={pagination}
+              // Stale rows after a failed refetch came from the previous query, not this term.
+              searchTerm={usersError ? '' : state.searchTerm}
+              t={t}
+            />
+
+            <UsersTable
+              users={users}
+              {...(session?.user?.email !== undefined ? { sessionEmail: session.user.email } : {})}
+              actionLoading={state.actionLoading}
+              searchTerm={state.searchTerm}
+              t={t}
+              onOpenCreditModal={(user) =>
+                dispatch({ type: 'openCreditModal', user, idempotencyKey: crypto.randomUUID() })
+              }
+              onOpenSubscriptionModal={(user) => dispatch({ type: 'openSubscriptionModal', user })}
+              onOpenRoleModal={(user) => dispatch({ type: 'openRoleModal', user })}
+              onOpenStatusModal={(user) => dispatch({ type: 'openStatusModal', user })}
+              onOpenTestAccountModal={(user) => dispatch({ type: 'openTestAccountModal', user })}
+            />
+
+            {pagination.totalPages > 1 ? (
+              <div className="mt-8">
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={(newPage) => dispatch({ type: 'setPage', value: newPage })}
+                  className="justify-center"
+                />
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
 
       <RoleModal
@@ -1058,6 +1063,15 @@ export function AdminUsersPageClient() {
         actionLoading={state.actionLoading}
         onClose={() => dispatch({ type: 'closeModal' })}
         onConfirm={() => void handleToggleUserStatus()}
+        t={t}
+      />
+
+      <TestAccountModal
+        isOpen={state.activeModal === 'testAccount'}
+        selectedUser={state.selectedUser}
+        actionLoading={state.actionLoading}
+        onClose={() => dispatch({ type: 'closeModal' })}
+        onConfirm={() => void handleToggleTestAccount()}
         t={t}
       />
 

@@ -1,9 +1,10 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { Suspense } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { HiOutlineSearch } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +30,7 @@ import {
   parseSearchType,
   type SearchType,
 } from '@/features/explore/lib/search';
+import { ROUTES } from '@/shared/constants/routes';
 
 const SEARCH_TYPES: SearchType[] = ['all', 'mine', 'adaptive', 'quizzes'];
 const ALL_SECTION_LIMIT = 4;
@@ -88,6 +90,22 @@ function SectionError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+function SignedOutPrompt({ message, callbackPath }: { message: string; callbackPath: string }) {
+  const t = useTranslations('explore');
+
+  return (
+    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="font-home text-sm text-ink-muted">{message}</p>
+      <Link
+        href={`${ROUTES.LOGIN}?callbackUrl=${encodeURIComponent(callbackPath)}`}
+        className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-brand-action-strong px-4 font-home text-sm font-semibold text-white transition-colors hover:bg-brand-action-strong-hover focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] active:bg-brand-action-strong-hover"
+      >
+        {t('signInCta')}
+      </Link>
+    </div>
+  );
+}
+
 function QuizResults({ quizzes }: { quizzes: QuizListItemViewModel[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -136,6 +154,13 @@ function ExploreContent() {
   const query = searchParams.get('q')?.trim() ?? '';
   const activeType = parseSearchType(searchParams.get('type'));
   const page = parseSearchPage(searchParams.get('page'));
+  // "Mine" and adaptive subjects are per-user: never request them signed out (RIN-680).
+  const { status: sessionStatus } = useSession();
+  const isSignedIn = sessionStatus === 'authenticated';
+  const sessionPending = sessionStatus === 'loading';
+  const isSignedOut = sessionStatus === 'unauthenticated';
+  const currentSearch = searchParams.toString();
+  const callbackPath = currentSearch ? `${ROUTES.EXPLORE}?${currentSearch}` : ROUTES.EXPLORE;
   const { loadingJobId, startSubject } = useStartAdaptiveSubject({
     t: tAdaptiveDashboard,
     tAdaptive,
@@ -161,9 +186,9 @@ function ExploreContent() {
 
   const quizLimit = activeType === 'all' ? ALL_SECTION_LIMIT : PAGE_SIZE;
   const quizPage = activeType === 'all' ? 1 : page;
-  const needsOwned = activeType === 'all' || activeType === 'mine';
+  const needsOwned = isSignedIn && (activeType === 'all' || activeType === 'mine');
   const needsCommunity = activeType === 'all' || activeType === 'quizzes';
-  const needsAdaptive = activeType === 'all' || activeType === 'adaptive';
+  const needsAdaptive = isSignedIn && (activeType === 'all' || activeType === 'adaptive');
 
   const ownedKey = needsOwned
     ? buildQuizSearchKey({ query, page: quizPage, mine: true, limit: quizLimit })
@@ -180,7 +205,7 @@ function ExploreContent() {
   const {
     data: ownedData,
     error: ownedError,
-    isLoading: ownedLoading,
+    isLoading: ownedFetching,
     mutate: retryOwned,
   } = useSWR<QuizListViewModel>(ownedKey, fetchQuizListViewModel, { keepPreviousData: true });
   const {
@@ -194,11 +219,20 @@ function ExploreContent() {
   const {
     data: subjectData,
     error: adaptiveError,
-    isLoading: adaptiveLoading,
+    isLoading: adaptiveFetching,
     mutate: retryAdaptive,
   } = useSWR(needsAdaptive ? '/api/adaptive/subjects' : null, getSubjects, {
     keepPreviousData: true,
   });
+
+  const ownedLoading = sessionPending || ownedFetching;
+  const adaptiveLoading = sessionPending || adaptiveFetching;
+  const ownedSignedOut = (
+    <SignedOutPrompt message={t('sections.mine.signedOut')} callbackPath={callbackPath} />
+  );
+  const adaptiveSignedOut = (
+    <SignedOutPrompt message={t('sections.adaptive.signedOut')} callbackPath={callbackPath} />
+  );
 
   const ownedQuizzes = ownedData?.quizzes ?? EMPTY_QUIZZES;
   const ownedIds = new Set(ownedQuizzes.map((quiz) => quiz.id));
@@ -257,7 +291,7 @@ function ExploreContent() {
               onClick={() => updateUrl({ type: tab.type, page: 1 })}
               className={`min-h-10 shrink-0 rounded-full px-4 font-home text-sm font-semibold transition-colors ${
                 activeType === tab.type
-                  ? 'bg-brand-action text-white'
+                  ? 'bg-brand-action-strong text-white'
                   : 'border border-line bg-surface text-ink hover:bg-accent-soft'
               }`}
               aria-pressed={activeType === tab.type}
@@ -277,7 +311,9 @@ function ExploreContent() {
                   href={query ? `?q=${encodeURIComponent(query)}&type=mine` : '?type=mine'}
                   viewAllLabel={t('viewAll')}
                 />
-                {ownedLoading ? (
+                {isSignedOut ? (
+                  ownedSignedOut
+                ) : ownedLoading ? (
                   <QuizGridSkeleton />
                 ) : ownedError ? (
                   <SectionError onRetry={() => void retryOwned()} />
@@ -295,7 +331,9 @@ function ExploreContent() {
                   href={query ? `?q=${encodeURIComponent(query)}&type=adaptive` : '?type=adaptive'}
                   viewAllLabel={t('viewAll')}
                 />
-                {adaptiveLoading ? (
+                {isSignedOut ? (
+                  adaptiveSignedOut
+                ) : adaptiveLoading ? (
                   <AdaptiveGridSkeleton />
                 ) : adaptiveError ? (
                   <SectionError onRetry={() => void retryAdaptive()} />
@@ -335,7 +373,9 @@ function ExploreContent() {
                 subtitle={t(`sections.${activeType}.subtitle`)}
               />
               {activeType === 'mine' ? (
-                ownedLoading ? (
+                isSignedOut ? (
+                  ownedSignedOut
+                ) : ownedLoading ? (
                   <QuizGridSkeleton count={6} />
                 ) : ownedError ? (
                   <SectionError onRetry={() => void retryOwned()} />
@@ -354,6 +394,8 @@ function ExploreContent() {
                 ) : (
                   <EmptyState hasQuery={Boolean(query)} />
                 )
+              ) : isSignedOut ? (
+                adaptiveSignedOut
               ) : adaptiveLoading ? (
                 <AdaptiveGridSkeleton count={6} />
               ) : adaptiveError ? (

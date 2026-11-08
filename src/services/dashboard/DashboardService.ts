@@ -2,6 +2,7 @@ import type {
   DashboardBootstrapDto,
   DashboardInProgressQuizDto,
   DashboardStatsDto,
+  StarterQuizDto,
 } from '@/dtos/dashboard';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 import { toPipelineJobHistoryItem } from '@/features/adaptive/mappers/pipeline.mapper';
@@ -11,7 +12,10 @@ import type {
 } from '@/interfaces/repositories/IDashboardRepository';
 import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
 import type { QuizFindFilter } from '@/interfaces/repositories/IQuizRepository';
-import type { IDashboardService } from '@/interfaces/services/IDashboardService';
+import type {
+  IDashboardService,
+  PostSignInTargetInput,
+} from '@/interfaces/services/IDashboardService';
 import {
   buildAdaptiveServiceHeaders,
   buildAdaptiveUrl,
@@ -23,6 +27,14 @@ import { DashboardDtoMapper } from '@/mappers/dashboard/DashboardDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 import type { QuizListItemDto } from '@/dtos/quiz';
 import type { components } from '@/generated/adaptive-api';
+import { ROUTES } from '@/shared/constants/routes';
+import { POST_SIGNIN_STARTER_ENTRY } from '@/shared/constants/starter-quiz';
+import type { IStarterQuizReadRepository } from '@/interfaces/repositories/IStarterQuizReadRepository';
+import {
+  loadStarterQuizzes,
+  pickStarterQuizIndex,
+  starterQuizHref,
+} from '@/services/dashboard/starter-quizzes';
 
 type ApiSchemas = components['schemas'];
 const HOME_ADAPTIVE_SUBJECT_LIMIT = 4;
@@ -34,6 +46,13 @@ interface DashboardRecentQuizQuery {
   filter: QuizFindFilter;
   warningMessage: string;
 }
+
+interface DashboardStarterState {
+  isNewLearner: boolean;
+  starterQuizzes: StarterQuizDto[];
+}
+
+const NO_STARTER_STATE: DashboardStarterState = { isNewLearner: false, starterQuizzes: [] };
 
 const EMPTY_DASHBOARD_USER_PROGRESS: DashboardUserProgressRecord = {
   currentStreak: 0,
@@ -50,6 +69,7 @@ export class DashboardService implements IDashboardService {
   constructor(
     private readonly repository: IDashboardRepository,
     private readonly quizRepository: IDashboardQuizRepository,
+    private readonly starterRepository: IStarterQuizReadRepository,
   ) {}
 
   async getStats(userId: string): Promise<DashboardStatsDto> {
@@ -109,21 +129,74 @@ export class DashboardService implements IDashboardService {
     }
   }
 
+  /**
+   * A new learner (no submitted attempt, no authored quiz) is pointed at a short
+   * curated public quiz. Fails open: any lookup error renders today's dashboard.
+   */
+  private async getStarterState(userId: string): Promise<DashboardStarterState> {
+    try {
+      const [hasSubmittedAttempt, hasAuthoredQuiz, { starterQuizzes, dropped }] = await Promise.all(
+        [
+          this.repository.hasSubmittedAttempt(userId),
+          this.repository.hasAuthoredQuiz(userId),
+          loadStarterQuizzes(this.starterRepository),
+        ],
+      );
+      if (hasSubmittedAttempt || hasAuthoredQuiz) return NO_STARTER_STATE;
+
+      for (const { quizId, reason } of dropped) {
+        logger.warn({ quizId, reason }, 'Dropped ineligible starter quiz from home dashboard');
+      }
+      return { isNewLearner: true, starterQuizzes };
+    } catch (error) {
+      logger.warn({ error }, 'Failed resolving starter quizzes for home dashboard');
+      return NO_STARTER_STATE;
+    }
+  }
+
+  /**
+   * Where sign-in with no explicit destination lands (RIN-913): a new learner goes
+   * straight into the starter quiz in their locale; anyone else, a learner who
+   * skipped, or any lookup failure goes to the dashboard. Uses the same
+   * eligibility as the dashboard starter block, which does not check adaptive
+   * uploads either.
+   */
+  async getPostSignInHref({
+    userId,
+    locale,
+    starterSkipped,
+  }: PostSignInTargetInput): Promise<string> {
+    if (starterSkipped) return ROUTES.DASHBOARD;
+    const { isNewLearner, starterQuizzes } = await this.getStarterState(userId);
+    if (!isNewLearner) return ROUTES.DASHBOARD;
+    const starter = starterQuizzes[pickStarterQuizIndex(starterQuizzes, locale)];
+    return starter
+      ? starterQuizHref(starter, { entry: POST_SIGNIN_STARTER_ENTRY })
+      : ROUTES.DASHBOARD;
+  }
+
   async getBootstrapData(userId: string): Promise<DashboardBootstrapDto> {
-    const [stats, adaptiveSubjects, inProgressQuizzes, recentOwnedQuizzes, recentPublicQuizzes] =
-      await Promise.all([
-        this.getStats(userId),
-        this.getAdaptiveSubjects(userId),
-        this.getInProgressQuizzes(userId),
-        this.getRecentQuizzes({
-          filter: { author: userId },
-          warningMessage: 'Failed fetching recent owned quizzes for home dashboard',
-        }),
-        this.getRecentQuizzes({
-          filter: { visibility: 'public', excludeAuthor: userId },
-          warningMessage: 'Failed fetching recent public quizzes for home dashboard',
-        }),
-      ]);
+    const [
+      stats,
+      adaptiveSubjects,
+      inProgressQuizzes,
+      recentOwnedQuizzes,
+      recentPublicQuizzes,
+      starterState,
+    ] = await Promise.all([
+      this.getStats(userId),
+      this.getAdaptiveSubjects(userId),
+      this.getInProgressQuizzes(userId),
+      this.getRecentQuizzes({
+        filter: { author: userId },
+        warningMessage: 'Failed fetching recent owned quizzes for home dashboard',
+      }),
+      this.getRecentQuizzes({
+        filter: { visibility: 'public', excludeAuthor: userId },
+        warningMessage: 'Failed fetching recent public quizzes for home dashboard',
+      }),
+      this.getStarterState(userId),
+    ]);
 
     return {
       stats,
@@ -131,6 +204,7 @@ export class DashboardService implements IDashboardService {
       inProgressQuizzes,
       recentOwnedQuizzes,
       recentPublicQuizzes,
+      ...starterState,
     };
   }
 }

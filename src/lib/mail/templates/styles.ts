@@ -82,3 +82,6 @@ export const footer: CSSProperties = {
   color: '#6b7280',
   textAlign: 'center',
 };
+
+/** Mail clients need an absolute URL; the file is served from `public/email/logo.png`. */
+export const EMAIL_LOGO_URL = 'https://www.rinkuzu.app/email/logo.png';

@@ -2,8 +2,7 @@ import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { uploadImageToImgBB } from '@/services/imageUploadService';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { uploadImage } from '@/services/imageUploadService';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -48,13 +47,12 @@ async function uploadValidatedImage({
   setIsUploading(true);
 
   try {
-    const result = await uploadImageToImgBB(file, file.name);
+    const result = await uploadImage(file, file.name);
     onImageUploaded(result.displayUrl);
   } catch (error: unknown) {
     console.error('Failed to upload image:', error);
-    toast.error(
-      `${t('failedToUpload')}: ${extractUnknownErrorMessage(error, 'Unknown upload error')}`,
-    );
+    // The upload service's text is never shown (RIN-754).
+    toast.error(t('failedToUpload'));
   }
 
   setIsUploading(false);
@@ -192,7 +190,7 @@ function ImageUpload({
         onPaste={handlePaste}
         className={`
           relative rounded-xl border-2 border-dashed p-6 text-center
-          transition-colors duration-200 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring-soft)]
+          transition-colors duration-200 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring-soft)]
           ${
             dragActive
               ? 'border-brand-action bg-orange-50'

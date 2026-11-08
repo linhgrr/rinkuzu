@@ -1,7 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
+import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
 import { ShareButtons } from '@/components/blog/ShareButtons';
@@ -13,13 +13,12 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  const canonicalUrl = `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`;
   const base = buildLocalizedMetadata({
     locale,
     path: '/blog/knowledge-graphs-adaptive-learning-pdfs',
     title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
     description:
-      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
+      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
     imagePath: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80',
   });
   return {
@@ -28,12 +27,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ...base.openGraph,
       title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
       description:
-        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
-      url: canonicalUrl,
+        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
       type: 'article',
       publishedTime: '2026-03-20T00:00:00.000Z',
       modifiedTime: '2026-03-20T00:00:00.000Z',
-      authors: [`${siteUrl.origin}/blog/authors/rinkuzu-team`],
+      authors: [canonicalFor(locale, '/blog/authors/rinkuzu-team')],
       images: [
         {
           url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80',
@@ -47,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
       description:
-        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure an adaptive practice path.",
+        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure a personalized practice path.",
       images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80'],
     },
   };
@@ -59,7 +57,7 @@ const articleSchema = {
   name: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
   headline: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
   description:
-    "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
+    "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
   url: `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`,
   datePublished: '2026-03-20',
   dateModified: '2026-03-20',
@@ -257,8 +255,7 @@ Start with supported PDF material and create a personalized practice session.
 
 export default async function BlogPost({ params }: Props) {
   const { locale } = await params;
-  void locale;
-  const postUrl = `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`;
+  const postUrl = canonicalFor(locale, '/blog/knowledge-graphs-adaptive-learning-pdfs');
   const postTitle = "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide";
   const headings = extractHeadingsFromMarkdown(markdownContent);
 
@@ -293,7 +290,7 @@ export default async function BlogPost({ params }: Props) {
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
             Learn how prerequisite graphs combined with Bloom&apos;s six cognitive levels create a
-            adaptive practice path from supported PDF material.
+            personalized practice path from supported PDF material.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
             <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
@@ -330,7 +327,7 @@ export default async function BlogPost({ params }: Props) {
 
         {/* Article content — centered */}
         <div className="max-w-3xl mx-auto">
-          <MarkdownRenderer content={markdownContent} />
+          <MarkdownRenderer content={markdownContent} headingIds />
 
           <ShareButtons url={postUrl} title={postTitle} />
 
@@ -343,17 +340,23 @@ export default async function BlogPost({ params }: Props) {
                 See Knowledge Graphs in Action
               </h3>
               <p className="text-neutral-300 text-lg mb-8">
-                Upload a PDF and watch RinKuzu build a knowledge graph and adaptive quiz, free, in
-                from supported PDF material.
+                Upload a PDF and watch RinKuzu build a knowledge graph and a personalized quiz from
+                it, free.
               </p>
               <Link
-                href="/register"
+                href="/register?next=/adaptive/upload"
                 className="inline-flex items-center justify-center rounded-full bg-brand-trust px-10 py-4 font-bold text-white shadow-lg shadow-green-500/20 transition-[background-color,transform] hover:scale-105 hover:bg-brand-trust-hover active:scale-95"
               >
                 Get Started Free
               </Link>
               <p className="mt-4 text-xs text-neutral-400">
                 No credit card required · Free plan available
+              </p>
+              <p className="mt-2 text-sm text-neutral-300">
+                Questions about uploads or plans?{' '}
+                <Link href="/faq" className="underline hover:text-white">
+                  Read the FAQ
+                </Link>
               </p>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import type { IAuthNotifier } from '@/interfaces/services/IAuthNotifier';
+import type { IAuthNotifier, VerificationEmailOptions } from '@/interfaces/services/IAuthNotifier';
 import {
   buildPasswordChangedMessage,
   buildPasswordResetMessage,
@@ -7,8 +7,12 @@ import {
 } from '@/lib/mail';
 
 export class AuthMailNotifier implements IAuthNotifier {
-  async sendVerificationEmail(email: string, rawToken: string): Promise<void> {
-    await sendTransactionalMail(await buildVerifyEmailMessage(email, rawToken));
+  async sendVerificationEmail(
+    email: string,
+    rawToken: string,
+    options: VerificationEmailOptions = {},
+  ): Promise<void> {
+    await sendTransactionalMail(await buildVerifyEmailMessage(email, rawToken, options));
   }
 
   async sendPasswordResetEmail(email: string, rawToken: string): Promise<void> {

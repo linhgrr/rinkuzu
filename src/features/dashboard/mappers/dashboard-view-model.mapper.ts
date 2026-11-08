@@ -1,11 +1,20 @@
-import type { DashboardBootstrapDto, DashboardInProgressQuizDto } from '@/dtos/dashboard';
+import type {
+  DashboardBootstrapDto,
+  DashboardInProgressQuizDto,
+  StarterQuizDto,
+} from '@/dtos/dashboard';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { ROUTES } from '@/shared/constants/routes';
+import { pickStarterQuizIndex, starterQuizHref } from '@/services/dashboard/starter-quizzes';
 import { buildWeekDays } from '@/features/dashboard/mappers/dashboard-week-days';
 import { formatDate } from '@/lib/formatters';
 import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
-import type { DashboardViewModel } from '@/features/dashboard/types/dashboard-view-model';
+import type {
+  DashboardStarterQuizViewModel,
+  DashboardStarterViewModel,
+  DashboardViewModel,
+} from '@/features/dashboard/types/dashboard-view-model';
 import { toQuizListItemViewModel } from '@/features/quiz/mappers/quiz-list.mapper';
 import { toTimestampMs } from '@/lib/epoch';
 
@@ -27,6 +36,8 @@ export interface ToDashboardViewModelInput {
   inProgressQuizzes: DashboardBootstrapDto['inProgressQuizzes'];
   recentOwnedQuizzes: DashboardBootstrapDto['recentOwnedQuizzes'];
   recentPublicQuizzes: DashboardBootstrapDto['recentPublicQuizzes'];
+  isNewLearner: DashboardBootstrapDto['isNewLearner'];
+  starterQuizzes: DashboardBootstrapDto['starterQuizzes'];
   locale: string;
   copy: DashboardViewModelCopy;
 }
@@ -46,8 +57,16 @@ interface BuildInProgressLearningCardsInput {
 interface BuildContinueLearningInput
   extends BuildAdaptiveLearningCardsInput, BuildInProgressLearningCardsInput {}
 
+interface BuildStarterInput {
+  isNewLearner: boolean;
+  starterQuizzes: StarterQuizDto[];
+  locale: string;
+}
+
 const CONTINUE_LEARNING_CARD_LIMIT = 8;
 const QUIZ_BUILDER_LIBRARY_HREF = '/my-quizzes';
+const ADAPTIVE_UPLOAD_HREF = '/adaptive';
+const STARTER_ALTERNATIVE_LIMIT = 2;
 
 function formatLearningCardTime(
   value: string | number | null | undefined,
@@ -155,6 +174,39 @@ function buildContinueLearning({
   return { items, viewAllHref };
 }
 
+function toStarterQuizViewModel(quiz: StarterQuizDto): DashboardStarterQuizViewModel {
+  return {
+    slug: quiz.slug,
+    title: quiz.title,
+    questionCount: quiz.questionCount,
+    href: starterQuizHref(quiz),
+  };
+}
+
+/**
+ * Only starters in the UI locale are listed (RIN-988). When none matches, the
+ * first starter still leads, so a new learner always has a quiz to start.
+ */
+function buildStarter({
+  isNewLearner,
+  starterQuizzes,
+  locale,
+}: BuildStarterInput): DashboardStarterViewModel | null {
+  if (!isNewLearner || starterQuizzes.length === 0) return null;
+
+  const primaryIndex = pickStarterQuizIndex(starterQuizzes, locale);
+  const primary = starterQuizzes[primaryIndex];
+  if (!primary) return null;
+
+  return {
+    primary: toStarterQuizViewModel(primary),
+    alternatives: starterQuizzes
+      .filter((quiz, index) => index !== primaryIndex && quiz.locale === locale)
+      .slice(0, STARTER_ALTERNATIVE_LIMIT)
+      .map(toStarterQuizViewModel),
+  };
+}
+
 export function toDashboardViewModel({
   userName,
   stats,
@@ -162,9 +214,13 @@ export function toDashboardViewModel({
   inProgressQuizzes,
   recentOwnedQuizzes,
   recentPublicQuizzes,
+  isNewLearner,
+  starterQuizzes,
   locale,
   copy,
 }: ToDashboardViewModelInput): DashboardViewModel {
+  const starter = buildStarter({ isNewLearner, starterQuizzes, locale });
+
   return {
     userName,
     locale,
@@ -183,5 +239,7 @@ export function toDashboardViewModel({
     }),
     recentOwnedQuizzes: recentOwnedQuizzes.map(toQuizListItemViewModel),
     recentPublicQuizzes: recentPublicQuizzes.map(toQuizListItemViewModel),
+    starter,
+    heroCtaHref: starter ? starter.primary.href : ADAPTIVE_UPLOAD_HREF,
   };
 }

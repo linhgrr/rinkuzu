@@ -67,6 +67,7 @@ function createService() {
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn(),
     findIdBySlug: vi.fn(),
+    findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -75,6 +76,9 @@ function createService() {
     findForPlay: vi.fn(),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
+    findMetadataBySlug: vi.fn(),
+    findNonIndexableOwnerCandidates: vi.fn(),
+    findPublicSitemapEntries: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
     findTopCreators: vi.fn(),
@@ -214,13 +218,13 @@ describe('QuizService facade', () => {
       user: { id: 'user-1', role: 'user' },
       expires: '2099-01-01T00:00:00.000Z',
     };
-    await service.submitQuizAttempt('algebra', [0], 'idem', session, 'user@example.com');
+    await service.submitQuizAttempt('algebra', [0], 'idem', session, 'attempt-9');
     expect(playMocks.submitQuizAttempt).toHaveBeenCalledWith(
       'algebra',
       [0],
       'idem',
       session,
-      'user@example.com',
+      'attempt-9',
     );
 
     await service.getQuizFlashcards('algebra', session);

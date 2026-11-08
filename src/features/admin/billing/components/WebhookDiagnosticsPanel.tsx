@@ -12,6 +12,8 @@ import {
 import type { AdminWebhookDiagnosticViewModel } from '@/features/admin/billing/types/admin-billing-view-model';
 import type { UseWebhookDiagnostics } from '@/features/admin/billing/hooks/useWebhookDiagnostics';
 import { WEBHOOK_VERIFICATION_CLASSES } from '@/services/billing/domain/webhook-diagnostics';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
+import { withPending } from '@/lib/async/with-pending';
 
 const CLASS_FILTERS = [
   { value: '', label: 'All' },
@@ -32,6 +34,12 @@ const CLASS_FILTERS = [
  * waiting on it.
  */
 export function WebhookDiagnosticsPanel({ diagnostics }: { diagnostics: UseWebhookDiagnostics }) {
+  // A failed load replaces the count, the filters and the list: "0 webhooks" and
+  // "No deliveries recorded" would read as data (RIN-1022).
+  if (diagnostics.loadError) {
+    return <ErrorState error={diagnostics.loadError} onRetry={diagnostics.reload} />;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -53,8 +61,6 @@ export function WebhookDiagnosticsPanel({ diagnostics }: { diagnostics: UseWebho
             </Button>
           ))}
         </div>
-
-        {diagnostics.error ? <ErrorState message={diagnostics.error} className="mb-4" /> : null}
 
         {diagnostics.loading ? (
           <p className="text-sm text-neutral-500">Loading…</p>
@@ -92,45 +98,47 @@ function WebhookRow({
   row: AdminWebhookDiagnosticViewModel;
   onChanged: () => void;
 }) {
+  const describeError = useAdminApiErrorMessage();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [revealed, setRevealed] = useState<string | null>(null);
   const [note, setNote] = useState('');
 
-  const run = async (action: () => Promise<void>) => {
-    setBusy(true);
+  // Returns the action's result, or undefined when it failed (the error is already shown).
+  // Callers apply their own state after it resolves, so no setter runs inside a callback.
+  async function run<T>(action: () => Promise<T>): Promise<T | undefined> {
     setError('');
     try {
-      await action();
+      return await withPending(setBusy, action);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Action failed');
+      setError(describeError(caught));
+      return undefined;
     }
-    setBusy(false);
-  };
+  }
 
-  const reveal = () =>
-    run(async () => {
-      const result = await revealWebhookPayload(row.id);
-      setRevealed(result.payload);
-      setNote(
-        result.payload === null
-          ? result.unreadable
-            ? 'A body is stored but no configured key can open it.'
-            : 'No body was retained for this row.'
-          : '',
-      );
-    });
+  async function reveal() {
+    const result = await run(() => revealWebhookPayload(row.id));
+    if (!result) return;
+    setRevealed(result.payload);
+    setNote(
+      result.payload === null
+        ? result.unreadable
+          ? 'A body is stored but no configured key can open it.'
+          : 'No body was retained for this row.'
+        : '',
+    );
+  }
 
-  const replay = () =>
-    run(async () => {
-      const result = await replayWebhook(row.id);
-      setNote(
-        result.outcome === 'reclassified'
-          ? `Retained body parsed and recorded${result.duplicate ? ' (already known)' : ''}.`
-          : 'Queued for the next drain tick.',
-      );
-      onChanged();
-    });
+  async function replay() {
+    const result = await run(() => replayWebhook(row.id));
+    if (!result) return;
+    setNote(
+      result.outcome === 'reclassified'
+        ? `Retained body parsed and recorded${result.duplicate ? ' (already known)' : ''}.`
+        : 'Queued for the next drain tick.',
+    );
+    onChanged();
+  }
 
   return (
     <div className="rounded-lg border border-line p-3 text-sm">

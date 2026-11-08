@@ -51,6 +51,27 @@ export const INDEX_CONTRACT = Object.freeze([
       },
     },
   ),
+  required(
+    'attempts.guest-claim-token',
+    'attempts',
+    { guestClaimTokenHash: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { guestClaimTokenHash: { $type: 'string' } },
+    },
+  ),
+  required(
+    'attempts.guest-claim-token-idempotency',
+    'attempts',
+    { guestClaimTokenHash: 1, idempotencyKey: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        guestClaimTokenHash: { $type: 'string' },
+        idempotencyKey: { $type: 'string' },
+      },
+    },
+  ),
 
   // auditlogs
   required('auditlogs.user', 'auditlogs', { userId: 1 }),
@@ -389,6 +410,7 @@ export const INDEX_CONTRACT = Object.freeze([
 
   // quizzes
   required('quizzes.slug', 'quizzes', { slug: 1 }, { unique: true }),
+  required('quizzes.slug-aliases', 'quizzes', { slugAliases: 1 }, { sparse: true }),
   required('quizzes.recent', 'quizzes', { createdAt: -1 }),
   required('quizzes.visibility-recent', 'quizzes', { visibility: 1, createdAt: -1 }),
   required('quizzes.author-recent', 'quizzes', { author: 1, createdAt: -1 }),
@@ -406,6 +428,10 @@ export const INDEX_CONTRACT = Object.freeze([
       partialFilterExpression: { sourceDraftId: { $type: 'string' } },
     },
   ),
+
+  // Admin-curated starter quizzes (RIN-1177): a handful of rows, read in order.
+  required('starter-quizzes.quiz', 'starterquizzes', { quiz: 1 }, { unique: true }),
+  required('starter-quizzes.order', 'starterquizzes', { order: 1 }),
 
   // Premium quiz submissions, reviews, credits, and protected play sessions
   required('premium-submissions.author-recent', 'premiumquizsubmissions', {
@@ -620,6 +646,12 @@ export const INDEX_CONTRACT = Object.freeze([
     'emailoutboxes',
     { externalEmailId: 1 },
     { sparse: true },
+  ),
+  required(
+    'emailoutboxes.user-reminders',
+    'emailoutboxes',
+    { userId: 1, kind: 1, updatedAt: -1 },
+    { partialFilterExpression: { userId: { $type: 'objectId' } } },
   ),
   required('webhookevents.external-event', 'webhookevents', { externalId: 1 }, { unique: true }),
   required(

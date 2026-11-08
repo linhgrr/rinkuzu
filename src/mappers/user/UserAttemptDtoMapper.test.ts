@@ -49,6 +49,22 @@ describe('UserAttemptDtoMapper', () => {
     expect(multipleQuestion).not.toHaveProperty('correctIndex');
   });
 
+  it('maps the share facts and never marks a locked result shareable (RIN-1179)', () => {
+    const fallback = UserAttemptDtoMapper.toDetailDto(attempt);
+    const shared = UserAttemptDtoMapper.toDetailDto(attempt, false, null, {
+      shareable: true,
+      questionCount: 40,
+    });
+    const locked = UserAttemptDtoMapper.toDetailDto(attempt, true, null, {
+      shareable: true,
+      questionCount: 40,
+    });
+
+    expect(fallback.quiz).toMatchObject({ id: 'quiz-1', shareable: false, questionCount: 2 });
+    expect(shared.quiz).toMatchObject({ id: 'quiz-1', shareable: true, questionCount: 40 });
+    expect(locked.quiz.shareable).toBe(false);
+  });
+
   it('omits an absent quiz description from summary DTOs', () => {
     expect(UserAttemptDtoMapper.toSummaryDto(attempt).quiz).not.toHaveProperty('description');
   });
@@ -62,5 +78,25 @@ describe('UserAttemptDtoMapper', () => {
       answers: [],
       quiz: { questions: [] },
     });
+  });
+
+  it('renders a quick round with its played questions, mode and indices (RIN-936)', () => {
+    const quick: Attempt = { ...attempt, mode: 'quick', questionIndices: [17, 4] };
+
+    const detail = UserAttemptDtoMapper.toDetailDto(quick);
+
+    expect(detail).toMatchObject({
+      mode: 'quick',
+      questionIndices: [17, 4],
+      historyStatus: 'complete',
+      totalQuestions: 2,
+    });
+    expect(detail.quiz.questions.map((question) => question.id)).toEqual([
+      'question-1',
+      'question-2',
+    ]);
+    expect(UserAttemptDtoMapper.toSummaryDto(quick)).toMatchObject({ mode: 'quick' });
+    expect(UserAttemptDtoMapper.toSummaryDto(attempt)).not.toHaveProperty('mode');
+    expect(UserAttemptDtoMapper.toDetailDto(attempt)).not.toHaveProperty('mode');
   });
 });

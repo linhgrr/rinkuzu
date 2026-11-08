@@ -1,17 +1,23 @@
 import type { PaginationMeta } from '@/dtos/common';
 import { z } from 'zod';
+import { locales } from '@/i18n/config';
 import { objectIdRouteParamSchema } from '@/lib/validation/common';
 import type { QuizQuestionReview } from '@/shared/types/quiz-question';
+import { ATTEMPT_RESULT_FILTERS } from '@/shared/constants/attempt-result';
 
 export const attemptIdRouteParamsSchema = z.strictObject({ id: objectIdRouteParamSchema });
 
 export const userAttemptListQuerySchema = z.strictObject({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
+  /** Narrows the list to attempts below / at or above the pass mark (RIN-1197). */
+  result: z.enum(ATTEMPT_RESULT_FILTERS).optional(),
 });
 
 export const attemptDetailQuerySchema = z.strictObject({
   userEmail: z.string().trim().pipe(z.email()).optional(),
+  /** Learner locale, used to pick `nextQuiz` (RIN-914). */
+  locale: z.enum(locales).optional(),
 });
 
 /** Public profile identity — stable non-PII fields only (no email). */
@@ -49,6 +55,8 @@ export interface UserAttemptSummaryDto {
   score: number;
   takenAt: string;
   totalQuestions: number;
+  /** Quick round only (RIN-936): `totalQuestions` is the round size. */
+  mode?: 'quick';
   quiz: {
     title: string;
     slug: string;
@@ -56,12 +64,30 @@ export interface UserAttemptSummaryDto {
   };
 }
 
+/** Totals over all of the user's attempts, independent of `result`, `page` and `limit`. */
+export interface UserAttemptHistorySummaryDto {
+  totalAttempts: number;
+  /** Mean score in percent (one decimal); `null` with no attempts. */
+  averageScore: number | null;
+  /** Attempts below the pass mark (the "Needs Work" badge). */
+  needsWorkCount: number;
+}
+
 export interface UserAttemptListDto {
   attempts: UserAttemptSummaryDto[];
+  /** Follows the `result` filter. */
   pagination: PaginationMeta;
+  summary: UserAttemptHistorySummaryDto;
 }
 
 export type AttemptQuestionDetailDto = QuizQuestionReview;
+
+/** The result page's "next quiz" link (RIN-914); `quick` opens its quick round (RIN-1177). */
+interface AttemptNextQuizDto {
+  slug: string;
+  title: string;
+  quick?: boolean;
+}
 
 export interface AttemptDetailDto {
   id: string;
@@ -71,9 +97,24 @@ export interface AttemptDetailDto {
   answers: (number | number[])[];
   historyStatus: 'complete' | 'quiz_modified' | 'content_locked';
   quiz: {
+    id: string;
     title: string;
     slug: string;
     description?: string;
     questions: AttemptQuestionDetailDto[];
+    /** Public, non-Premium quiz whose result page may offer "Send to a classmate" (RIN-1179). */
+    shareable: boolean;
+    /** Questions in the live quiz; `totalQuestions` is this attempt's count (10 for a quick round). */
+    questionCount: number;
   };
+  /** Questions answered wrong or left blank in this attempt. */
+  missedCount: number;
+  /** Next eligible starter quiz in the learner's locale they have not attempted, or null. */
+  nextQuiz: AttemptNextQuizDto | null;
+  /** Retry-missed attempt only: the source attempt id. */
+  retryOfAttemptId?: string;
+  /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
+  questionIndices?: number[];
+  /** Quick round only (RIN-936). */
+  mode?: 'quick';
 }

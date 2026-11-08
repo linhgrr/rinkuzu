@@ -1,6 +1,7 @@
 import type {
   AttemptDetailDto,
   AttemptQuestionDetailDto,
+  UserAttemptHistorySummaryDto,
   UserAttemptListDto,
   UserAttemptSummaryDto,
 } from '@/dtos/user';
@@ -9,6 +10,7 @@ import type { Attempt, AttemptAnswer, AttemptQuizSnapshot } from '@/entities/Att
 import type { QuizQuestion } from '@/entities/Quiz';
 import { serializeDate } from '@/lib/date-serialization';
 import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
+import { countMissedAnswers } from '@/services/quiz/quiz-retry';
 
 function requireQuizSnapshot(attempt: Attempt): AttemptQuizSnapshot {
   if (typeof attempt.quiz !== 'object' || attempt.quiz === null) {
@@ -27,11 +29,26 @@ function isCorrectAnswer(question: QuizQuestion, userAnswer: AttemptAnswer): boo
   return question.correctIndexes.every((index) => userAnswerSet.has(index));
 }
 
+/** Share facts about the live quiz, resolved by the service (RIN-1179). */
+interface AttemptQuizShareFacts {
+  shareable: boolean;
+  questionCount: number;
+}
+
 export class UserAttemptDtoMapper {
-  static toListDto(attempts: Attempt[], pagination: PaginationMeta): UserAttemptListDto {
+  static toListDto(
+    attempts: Attempt[],
+    pagination: PaginationMeta,
+    summary: UserAttemptHistorySummaryDto,
+  ): UserAttemptListDto {
     return {
       attempts: attempts.map(UserAttemptDtoMapper.toSummaryDto),
       pagination,
+      summary: {
+        totalAttempts: summary.totalAttempts,
+        averageScore: summary.averageScore,
+        needsWorkCount: summary.needsWorkCount,
+      },
     };
   }
 
@@ -42,6 +59,7 @@ export class UserAttemptDtoMapper {
       score: attempt.score,
       takenAt: serializeDate(attempt.takenAt, 'attempt.takenAt'),
       totalQuestions: attempt.totalQuestions,
+      ...(attempt.mode === 'quick' && { mode: 'quick' as const }),
       quiz: {
         title: quiz.title,
         slug: quiz.slug,
@@ -50,11 +68,17 @@ export class UserAttemptDtoMapper {
     };
   }
 
-  static toDetailDto(attempt: Attempt, contentLocked = false): AttemptDetailDto {
+  static toDetailDto(
+    attempt: Attempt,
+    contentLocked = false,
+    nextQuiz: AttemptDetailDto['nextQuiz'] = null,
+    share?: AttemptQuizShareFacts,
+  ): AttemptDetailDto {
     const quiz = requireQuizSnapshot(attempt);
     if (!quiz.questions) {
       throw new TypeError('attempt.quiz.questions is required');
     }
+    const shareFacts = share ?? { shareable: false, questionCount: quiz.questions.length };
     const historyStatus: AttemptDetailDto['historyStatus'] = contentLocked
       ? 'content_locked'
       : attempt.answers.length === quiz.questions.length
@@ -75,11 +99,19 @@ export class UserAttemptDtoMapper {
       answers: historyStatus === 'complete' ? attempt.answers : [],
       historyStatus,
       quiz: {
+        id: quiz.id,
         title: quiz.title,
         slug: quiz.slug,
         ...(quiz.description !== undefined && { description: quiz.description }),
         questions,
+        shareable: shareFacts.shareable && !contentLocked,
+        questionCount: shareFacts.questionCount,
       },
+      missedCount: countMissedAnswers(attempt),
+      nextQuiz,
+      ...(attempt.retryOfAttemptId !== undefined && { retryOfAttemptId: attempt.retryOfAttemptId }),
+      ...(attempt.questionIndices !== undefined && { questionIndices: attempt.questionIndices }),
+      ...(attempt.mode === 'quick' && { mode: 'quick' as const }),
     };
   }
 

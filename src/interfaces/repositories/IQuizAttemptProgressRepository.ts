@@ -23,16 +23,30 @@ interface QuizAttemptSubmissionData {
   takenAt: Date;
   premiumSubmissionId?: string;
   premiumSnapshotHash?: string;
+  /** Retry-missed attempt: the source attempt and the quiz question index of each answer. */
+  retryOfAttemptId?: string;
+  /** Retry (ascending) or quick round (play order): the quiz question index of each answer. */
+  questionIndices?: number[];
+  /** Quick round (RIN-936); absent on full and retry attempts. */
+  mode?: 'quick';
 }
 
 export type RecordQuizAttemptProgressData =
   | (QuizAttemptSubmissionData & {
       userId: string;
       guestEmail?: never;
+      guestClaimTokenHash?: never;
     })
   | (QuizAttemptSubmissionData & {
       userId?: never;
       guestEmail: string;
+      guestClaimTokenHash?: never;
+    })
+  | (QuizAttemptSubmissionData & {
+      userId?: never;
+      guestEmail?: never;
+      /** SHA-256 hex of the guest claim token; never log it. */
+      guestClaimTokenHash: string;
     });
 
 export interface RecordedQuizAttempt {
@@ -44,4 +58,19 @@ export interface RecordedQuizAttempt {
 
 export interface IQuizAttemptProgressRepository {
   recordSubmittedAttempt(data: RecordQuizAttemptProgressData): Promise<RecordedQuizAttempt>;
+}
+
+export interface IGuestAttemptClaimRepository {
+  /**
+   * Attaches each unclaimed, token-identified guest attempt taken since
+   * `claimableSince` to `userId` (single use: the hash is removed) and applies
+   * the user progress a signed-in submit would have written. Returns the ids
+   * claimed; hashes that match nothing are dropped.
+   */
+  claimGuestAttempts(
+    userId: string,
+    tokenHashes: readonly string[],
+    now: Date,
+    claimableSince: Date,
+  ): Promise<string[]>;
 }

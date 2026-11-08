@@ -4,12 +4,10 @@ import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
   ExportedMessageRepository,
-  MessagePrimitive,
   ThreadPrimitive,
-  useAssistantRuntime,
+  useAui,
+  useAuiEvent,
   useAuiState,
-  type EmptyMessagePartProps,
-  type TextMessagePartProps,
   type ThreadHistoryAdapter,
 } from '@assistant-ui/react';
 import { HttpAgent } from '@ag-ui/client';
@@ -24,10 +22,7 @@ import {
   HiOutlineTrash,
 } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
-import { ButtonBase } from '@/components/ui/ButtonBase';
-import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Modal } from '@/components/ui/Modal';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {
   deleteAskRinConversation,
   getAskRinConversation,
@@ -36,8 +31,9 @@ import {
   type AskRinContextPayload,
 } from '@/lib/ask-rin-chan/client';
 import { fetchAskRinAgent } from '@/lib/ask-rin-chan/agui-fetch';
-import { getAskRinPublicErrorKey } from '@/lib/ask-rin-chan/public-error';
-import { isAwaitingFirstAssistantText } from '@/lib/ask-rin-chan/stream-state';
+import { useAskRinErrorMessage } from '@/features/ask-rin-chan/hooks/use-ask-rin-error-message';
+import { AskRinEmptyConversation } from './AskRinEmptyConversation';
+import { AskRinMessage } from './AskRinMessage';
 import styles from './AskRinPanelLayout.module.css';
 
 const CHATBOT_ICON = '/images/chatbot_icon.png';
@@ -55,111 +51,67 @@ export interface AskRinPanelProps {
   onHistoryChange?: (summary: AskRinHistorySummary) => void;
 }
 
+interface AskRinFailure {
+  message: string;
+  retryable: boolean;
+}
+
+const NO_FAILURE: AskRinFailure = { message: '', retryable: false };
+
+function findLastUserMessageId(messages: readonly { id: string; role: string }[]): string | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === 'user') return message.id;
+  }
+  return null;
+}
+
 interface AskRinRuntimeProps {
   credentials: AskRinContextCredentials;
   contextPreview?: ReactNode;
   onHistoryChange?: (summary: AskRinHistorySummary) => void;
 }
 
-function ThinkingIndicator() {
-  const t = useTranslations('adaptiveLearning.chatbot');
-  return (
-    <div className="flex items-center gap-2 text-sm text-neutral-500" aria-label={t('thinking')}>
-      <span className="size-2 animate-pulse rounded-full bg-brand-trust" />
-      <span>{t('thinking')}</span>
-    </div>
-  );
-}
-
-function AskRinText({ text, status }: TextMessagePartProps) {
-  const role = useAuiState((state) => state.message.role);
-  if (isAwaitingFirstAssistantText(role, text, status.type)) {
-    return <ThinkingIndicator />;
-  }
-  if (role === 'assistant') {
-    return <MarkdownRenderer content={text} className="text-sm leading-6 text-neutral-800" />;
-  }
-  return <p className="whitespace-pre-wrap text-sm leading-6">{text}</p>;
-}
-
-function ThinkingMessage(_props: EmptyMessagePartProps) {
-  return <ThinkingIndicator />;
-}
-
-function AskRinMessage() {
-  const role = useAuiState((state) => state.message.role);
-  const isUser = role === 'user';
-
-  return (
-    <MessagePrimitive.Root className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={
-          isUser
-            ? `${styles['userBubble']} rounded-2xl rounded-br-md bg-neutral-900 px-4 py-2.5 text-white`
-            : `${styles['assistantBubble']} rounded-2xl rounded-bl-md border bg-white px-4 py-3 shadow-sm`
-        }
-      >
-        <MessagePrimitive.Parts components={{ Text: AskRinText, Empty: ThinkingMessage }} />
-      </div>
-    </MessagePrimitive.Root>
-  );
-}
-
-function EmptyConversation() {
-  const t = useTranslations('adaptiveLearning.chatbot');
-  const runtime = useAssistantRuntime();
-  const suggestions = [t('suggestExplain'), t('suggestHint'), t('suggestSteps')];
-
-  return (
-    <div className="mx-auto flex max-w-md flex-col items-center px-4 py-10 text-center">
-      <Image
-        src={CHATBOT_ICON}
-        alt={t('iconAlt')}
-        width={64}
-        height={64}
-        className="mb-4 size-16 object-contain"
-      />
-      <h3 className="text-base font-semibold text-neutral-900">{t('emptyTitle')}</h3>
-      <p className="mt-2 text-sm leading-6 text-neutral-500">{t('initialGreeting')}</p>
-      <div className="mt-5 grid w-full gap-2">
-        {suggestions.map((suggestion) => (
-          <ButtonBase
-            key={suggestion}
-            onClick={() => runtime.thread.append(suggestion)}
-            className={`${styles['borderMuted']} rounded-xl border bg-white px-4 py-3 text-left text-sm text-neutral-700 transition-colors hover:border-green-300 hover:bg-green-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust`}
-          >
-            {suggestion}
-          </ButtonBase>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function AskRinThread({
   credentials,
   contextPreview,
   error,
+  historySettled,
+  runFailed,
   onError,
   onHistoryReset,
 }: Omit<AskRinRuntimeProps, 'onHistoryChange'> & {
   error: string;
+  historySettled: boolean;
+  runFailed: boolean;
   onError: (message: string) => void;
   onHistoryReset: () => void;
 }) {
   const t = useTranslations('adaptiveLearning.chatbot');
   const tCommon = useTranslations('common');
-  const runtime = useAssistantRuntime();
+  const aui = useAui();
   const messages = useAuiState((state) => state.thread.messages);
   const isRunning = useAuiState((state) => state.thread.isRunning);
-  const isLoading = useAuiState((state) => state.thread.isLoading);
+  // The runtime starts the history load in an effect, so its first commit reports
+  // isLoading false: without historySettled the empty state flashes first (RIN-1207).
+  const isLoading = useAuiState((state) => state.thread.isLoading) || !historySettled;
   const [clearing, setClearing] = useState(false);
+  const failedQuestionId = runFailed && !isRunning ? findLastUserMessageId(messages) : null;
+
+  // Retry reruns from the learner's own message, so the same text is sent once more (RIN-1019).
+  const retryFailedQuestion = () => {
+    if (!failedQuestionId) return;
+    aui.thread().startRun({ parentId: failedQuestionId });
+  };
+
+  // Asking again replaces the previous run's error card with the thinking bubble (RIN-822).
+  useAuiEvent('thread.runStart', () => onError(''));
 
   useEffect(() => {
     return () => {
-      if (runtime.thread.getState().isRunning) runtime.thread.cancelRun();
+      if (aui.thread().getState().isRunning) aui.thread().cancelRun();
     };
-  }, [runtime]);
+  }, [aui]);
 
   const clearConversation = async () => {
     if (clearing || isRunning) return;
@@ -167,10 +119,11 @@ function AskRinThread({
     onError('');
     try {
       await deleteAskRinConversation(credentials.exerciseContextId);
-      runtime.thread.reset();
+      aui.thread().reset();
       onHistoryReset();
-    } catch (clearError: unknown) {
-      onError(extractUnknownErrorMessage(clearError, t('errorClear')));
+    } catch {
+      // Context copy rather than the server text (RIN-756).
+      onError(t('errorClear'));
     } finally {
       setClearing(false);
     }
@@ -236,10 +189,23 @@ function AskRinThread({
           ) : (
             <>
               <ThreadPrimitive.Empty>
-                <EmptyConversation />
+                <AskRinEmptyConversation />
               </ThreadPrimitive.Empty>
               <div className="space-y-4">
                 <ThreadPrimitive.Messages components={{ Message: AskRinMessage }} />
+                {failedQuestionId ? (
+                  <div className="-mt-2 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={retryFailedQuestion}
+                      className="text-neutral-600"
+                    >
+                      {t('retryMessage')}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </>
           )}
@@ -296,7 +262,11 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
   const t = useTranslations('adaptiveLearning.chatbot');
   const historyErrorLabel = t('errorHistory');
   const interruptedLabel = t('errorInterrupted');
-  const [error, setError] = useState('');
+  const askRinErrorMessage = useAskRinErrorMessage();
+  // Only a failed send offers Retry; history or clear errors do not (RIN-1019).
+  const [failure, setFailure] = useState<AskRinFailure>(NO_FAILURE);
+  const [historySettled, setHistorySettled] = useState(false);
+  const showError = (message: string) => setFailure({ message, retryable: false });
   const historyCallbackRef = useRef(onHistoryChange);
   const historySummaryRef = useRef<AskRinHistorySummary>({ totalMessages: 0, totalTurns: 0 });
 
@@ -321,6 +291,20 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
     return nextAgent;
   }, [credentials.exerciseContextId, credentials.exerciseContextToken]);
 
+  // The API reports a failed run as an in-stream RUN_ERROR, which the AG-UI runtime
+  // ends as an empty answer without calling onError (RIN-822).
+  useEffect(() => {
+    const subscription = agent.subscribe({
+      onRunErrorEvent: ({ event }) => {
+        // The client turns a learner's Stop into RUN_ERROR code "abort": no error card.
+        if (event.code !== 'abort') {
+          setFailure({ message: askRinErrorMessage(event), retryable: true });
+        }
+      },
+    });
+    return () => subscription.unsubscribe();
+  }, [agent, askRinErrorMessage]);
+
   const history = useMemo<ThreadHistoryAdapter>(
     () => ({
       load: async () => {
@@ -331,7 +315,8 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
           const summary = { totalMessages: messages.length, totalTurns };
           historySummaryRef.current = summary;
           historyCallbackRef.current?.(summary);
-          setError('');
+          setFailure(NO_FAILURE);
+          setHistorySettled(true);
           return ExportedMessageRepository.fromArray(
             fromAgUiMessages(
               messages.map((message) => ({
@@ -344,8 +329,10 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
               })),
             ),
           );
-        } catch (historyError: unknown) {
-          setError(extractUnknownErrorMessage(historyError, historyErrorLabel));
+        } catch {
+          // Context copy ("you can still ask") rather than the server text (RIN-756).
+          setFailure({ message: historyErrorLabel, retryable: false });
+          setHistorySettled(true);
           return ExportedMessageRepository.fromArray([]);
         }
       },
@@ -367,7 +354,7 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
     agent,
     adapters: { history },
     onError: (runError) => {
-      setError(t(getAskRinPublicErrorKey(runError)));
+      setFailure({ message: askRinErrorMessage(runError), retryable: true });
     },
   });
 
@@ -383,8 +370,10 @@ function AskRinRuntime({ credentials, contextPreview, onHistoryChange }: AskRinR
         credentials={credentials}
         contextPreview={contextPreview}
         onHistoryReset={resetHistorySummary}
-        error={error}
-        onError={setError}
+        error={failure.message}
+        historySettled={historySettled}
+        runFailed={failure.retryable}
+        onError={showError}
       />
     </AssistantRuntimeProvider>
   );
@@ -401,6 +390,7 @@ function AskRinRegistration({
 }) {
   const t = useTranslations('adaptiveLearning.chatbot');
   const [credentials, setCredentials] = useState<AskRinContextCredentials | null>(null);
+  const askRinErrorMessage = useAskRinErrorMessage();
   const [registrationError, setRegistrationError] = useState('');
   const [attempt, setAttempt] = useState(0);
 
@@ -413,13 +403,13 @@ function AskRinRegistration({
       })
       .catch((contextError: unknown) => {
         if (active) {
-          setRegistrationError(t(getAskRinPublicErrorKey(contextError)));
+          setRegistrationError(askRinErrorMessage(contextError));
         }
       });
     return () => {
       active = false;
     };
-  }, [attempt, serializedContext, t]);
+  }, [attempt, serializedContext, askRinErrorMessage]);
 
   const retryRegistration = () => {
     setCredentials(null);

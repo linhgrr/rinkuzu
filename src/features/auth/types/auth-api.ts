@@ -10,4 +10,5 @@ export interface ResetPasswordInput {
 export interface RegisterAccountInput {
   email: string;
   password: string;
+  callbackUrl?: string;
 }

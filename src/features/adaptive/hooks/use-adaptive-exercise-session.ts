@@ -26,6 +26,7 @@ import type {
   TranslateFn,
 } from '@/features/adaptive/types/learning';
 import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytics/client';
+import { withPending } from '@/lib/async/with-pending';
 
 type RouterLike = {
   push: (href: string) => void;
@@ -71,6 +72,7 @@ export const useAdaptiveExerciseSession = ({
   const [loadingExercise, setLoadingExercise] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [showTheory, setShowTheory] = useState(false);
 
   const isMountedRef = useRef(true);
@@ -95,10 +97,9 @@ export const useAdaptiveExerciseSession = ({
     activeLoadRequestIdRef.current = requestId;
     activeLoadSessionIdRef.current = sessionId;
 
-    setLoadingConcept(true);
     setLoadingTheory(false);
-    setLoadingExercise(true);
     setError(null);
+    setSubmitError(null);
     answerDraftRef.current = null;
     setAnswerDraft(null);
     setConcept(null);
@@ -114,58 +115,54 @@ export const useAdaptiveExerciseSession = ({
         activeLoadSessionIdRef.current = null;
       }
     };
+    // Lowered in `withPending`'s finally, so a rejected or thrown load always clears it.
+    // A superseded load leaves it alone: the newer request owns the flags then.
+    const setStepLoading = (pending: boolean) => {
+      if (!pending && !isLatestActiveRequest()) return;
+      setLoadingConcept(pending);
+      setLoadingExercise(pending);
+    };
 
+    let step: Awaited<ReturnType<typeof getLearningStep>>;
     try {
-      const step = await getLearningStep(sessionId);
-      if (!isLatestActiveRequest()) {
-        releaseLoadingLock();
-        return;
-      }
-
-      setConcept(step.concept);
-      setLoadingConcept(false);
-      setTheory(step.theory);
-      setShowTheory(Boolean(step.theory));
-      setExercise(step.exercise);
-      captureAnalyticsEventOnce('adaptive_session_started', `adaptive-session-${sessionId}`, {
-        journey_id: sessionId,
-        exercise_type: step.exercise.exercise_type,
-        bloom_level: step.exercise.bloom_level,
-        has_theory: Boolean(step.theory),
-      });
-      const nextAnswerDraft =
-        getSessionExerciseDraft(sessionId, step.exercise.exercise_id) ??
-        createInitialExerciseAnswer(step.exercise);
-      answerDraftRef.current = nextAnswerDraft;
-      setAnswerDraft(nextAnswerDraft);
-      setLoadingTheory(false);
-      setLoadingExercise(false);
-      releaseLoadingLock();
+      step = await withPending(setStepLoading, () => getLearningStep(sessionId));
     } catch (err) {
-      if (!isLatestActiveRequest()) {
-        releaseLoadingLock();
-        return;
+      if (isLatestActiveRequest()) {
+        setError(
+          isSessionNotFoundError(err)
+            ? t('exercise.failedToLoadExercise')
+            : resolveExerciseFeedback(err, t, 'load'),
+        );
       }
-
-      if (isSessionNotFoundError(err)) {
-        setError(t('exercise.failedToLoadExercise'));
-        setLoadingConcept(false);
-        setLoadingTheory(false);
-        setLoadingExercise(false);
-        releaseLoadingLock();
-        return;
-      }
-
-      setError(resolveExerciseFeedback(err, t, 'load'));
-      setLoadingConcept(false);
-      setLoadingTheory(false);
-      setLoadingExercise(false);
       releaseLoadingLock();
+      return;
     }
+    if (!isLatestActiveRequest()) {
+      releaseLoadingLock();
+      return;
+    }
+
+    setConcept(step.concept);
+    setTheory(step.theory);
+    setShowTheory(Boolean(step.theory));
+    setExercise(step.exercise);
+    captureAnalyticsEventOnce('adaptive_session_started', `adaptive-session-${sessionId}`, {
+      journey_id: sessionId,
+      exercise_type: step.exercise.exercise_type,
+      bloom_level: step.exercise.bloom_level,
+      has_theory: Boolean(step.theory),
+    });
+    const nextAnswerDraft =
+      getSessionExerciseDraft(sessionId, step.exercise.exercise_id) ??
+      createInitialExerciseAnswer(step.exercise);
+    answerDraftRef.current = nextAnswerDraft;
+    setAnswerDraft(nextAnswerDraft);
+    releaseLoadingLock();
   };
 
   const setAndSaveAnswerDraft = (draft: ExerciseAnswerDraft) => {
     submitIdempotencyRef.current = null;
+    setSubmitError(null);
     answerDraftRef.current = draft;
     setAnswerDraft(draft);
     if (exercise) {
@@ -192,6 +189,12 @@ export const useAdaptiveExerciseSession = ({
     router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
   }, [router, sessionId]);
 
+  // The ref guards re-entry synchronously; the state drives the UI. They move together.
+  const setSubmissionPending = (pending: boolean) => {
+    submittingRef.current = pending;
+    setSubmitting(pending);
+  };
+
   const handleSubmit = async () => {
     if (
       submittingRef.current ||
@@ -201,23 +204,24 @@ export const useAdaptiveExerciseSession = ({
     )
       return;
 
-    submittingRef.current = true;
-    setSubmitting(true);
+    setSubmitError(null);
     try {
-      router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
-      if (submitIdempotencyRef.current?.exerciseId !== exercise.exercise_id) {
-        submitIdempotencyRef.current = {
-          exerciseId: exercise.exercise_id,
-          key:
-            typeof crypto !== 'undefined' && 'randomUUID' in crypto
-              ? crypto.randomUUID()
-              : `${exercise.exercise_id}-${Date.now()}`,
-        };
-      }
-      const result = await submitAnswer(sessionId, {
-        exercise_id: exercise.exercise_id,
-        idempotency_key: submitIdempotencyRef.current.key,
-        answer: toSubmitAnswerPayload(answerDraft),
+      const result = await withPending(setSubmissionPending, () => {
+        router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
+        if (submitIdempotencyRef.current?.exerciseId !== exercise.exercise_id) {
+          submitIdempotencyRef.current = {
+            exerciseId: exercise.exercise_id,
+            key:
+              typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID()
+                : `${exercise.exercise_id}-${Date.now()}`,
+          };
+        }
+        return submitAnswer(sessionId, {
+          exercise_id: exercise.exercise_id,
+          idempotency_key: submitIdempotencyRef.current.key,
+          answer: toSubmitAnswerPayload(answerDraft),
+        });
       });
       if (!isMountedRef.current) return;
 
@@ -231,28 +235,18 @@ export const useAdaptiveExerciseSession = ({
         learning_mode: 'adaptive',
         journey_id: sessionId,
       });
-      saveSessionExerciseOutcome(sessionId, { result, exercise });
+      saveSessionExerciseOutcome(sessionId, { result, exercise, answer: answerDraft });
       clearSessionExerciseDraft(sessionId, exercise.exercise_id);
       submitIdempotencyRef.current = null;
-      submittingRef.current = false;
-      setSubmitting(false);
       router.push(ADAPTIVE_ROUTES.result(sessionId));
     } catch (err) {
-      if (!isMountedRef.current) {
-        submittingRef.current = false;
-        return;
-      }
-
-      if (isSessionNotFoundError(err)) {
-        setError(t('exercise.failedToSubmitAnswer'));
-        submittingRef.current = false;
-        setSubmitting(false);
-        return;
-      }
-
-      setError(resolveExerciseFeedback(err, t, 'submit'));
-      submittingRef.current = false;
-      setSubmitting(false);
+      if (!isMountedRef.current) return;
+      // Keep the question and the learner's answer on screen: the failure is inline (RIN-1011).
+      setSubmitError(
+        isSessionNotFoundError(err)
+          ? t('exercise.failedToSubmitAnswer')
+          : resolveExerciseFeedback(err, t, 'submit'),
+      );
     }
   };
 
@@ -339,6 +333,7 @@ export const useAdaptiveExerciseSession = ({
     loadingExercise,
     submitting,
     error,
+    submitError,
     showTheory,
     setShowTheory,
     selectChoice,

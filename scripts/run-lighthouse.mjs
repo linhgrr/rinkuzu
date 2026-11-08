@@ -175,6 +175,25 @@ const writeJsonAtomic = (targetPath, value) => {
   fs.renameSync(temporaryPath, targetPath);
 };
 
+// chrome-launcher only finds CHROME_PATH or a system Chrome. Fall back to the
+// pinned Playwright Chromium (what CI installs) so the gate works without one.
+/** @param {Record<string, string | undefined>} [env] */
+export const resolveChromePath = (
+  env = process.env,
+  loadPlaywrightChromiumPath = () => require('@playwright/test').chromium.executablePath(),
+  exists = fs.existsSync,
+) => {
+  if (env.CHROME_PATH) {
+    return env.CHROME_PATH;
+  }
+  try {
+    const candidate = loadPlaywrightChromiumPath();
+    return candidate && exists(candidate) ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export const runLighthouse = (rootDir = defaultRootDir) => {
   const configPath = path.join(rootDir, 'lighthouserc.cjs');
   const lighthouseOutputDir = path.join(rootDir, 'perf', 'lighthouse');
@@ -219,11 +238,12 @@ export const runLighthouse = (rootDir = defaultRootDir) => {
       );
     }
 
+    const chromePath = resolveChromePath();
     const lhciCliPath = require.resolve('@lhci/cli/src/cli.js');
     const result = spawnSync(process.execPath, [lhciCliPath, 'autorun', '--config', configPath], {
       cwd: rootDir,
       stdio: 'inherit',
-      env: process.env,
+      env: chromePath ? { ...process.env, CHROME_PATH: chromePath } : process.env,
     });
 
     evidence.lhciExitCode = typeof result.status === 'number' ? result.status : null;

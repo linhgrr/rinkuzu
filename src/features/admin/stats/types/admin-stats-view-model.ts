@@ -31,7 +31,7 @@ export interface AdminRecentAttemptViewModel {
   takenAtLabel: string;
   answeredQuestions: number;
   actor: {
-    email: string;
+    email?: string;
     type: 'user' | 'guest';
   };
   quiz: {
@@ -104,4 +104,44 @@ export interface AdminStatsViewModel {
     }[];
   };
   growthTrends: AdminGrowthTrendsViewModel;
+}
+
+/** One signup week of the first-session funnel: aggregate counts only (RIN-935). */
+export interface ActivationFunnelWeekViewModel {
+  isoWeek: string;
+  /** Monday of the week, `YYYY-MM-DD` (UTC). */
+  monday: string;
+  signups: number;
+  signedIn: number;
+  startedQuiz: number;
+  activated: number;
+  /** null until 7 days after the week ends. */
+  returnedWeek1: number | null;
+  /** The week that contains `generatedAt`. */
+  inProgress: boolean;
+}
+
+/** One send week of activation nudge emails: aggregate counts only (RIN-1001). */
+export interface ActivationEmailWeekViewModel {
+  isoWeek: string;
+  /** Monday of the week, `YYYY-MM-DD` (UTC). */
+  monday: string;
+  sent: number;
+  /** Sent by the sweep 24 h after signup. */
+  sentDay1: number;
+  /** Sent by the backfill. */
+  sentBackfill: number;
+  clicked: number;
+  activatedWithin7d: number;
+  /** The week that contains `generatedAt`. */
+  inProgress: boolean;
+}
+
+export interface ActivationFunnelViewModel {
+  /** False when the adaptive API did not answer: every count is quiz-only. */
+  adaptiveAvailable: boolean;
+  /** Newest week first. */
+  weeks: ActivationFunnelWeekViewModel[];
+  /** Same weeks by send week, newest first. */
+  emailWeeks: ActivationEmailWeekViewModel[];
 }

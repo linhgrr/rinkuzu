@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl';
 import { CircleDollarSign, FlaskConical, Plus, Power, Save, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import {
   deleteModel,
   discoverModels,
@@ -93,6 +93,7 @@ export function ProviderModelsPanel({
   setNotice,
 }: ProviderModelsPanelProps) {
   const t = useTranslations('admin');
+  const describeError = useAdminApiErrorMessage();
   const usableKeys = useMemo(
     () =>
       [...keys].filter((key) => key.enabled).sort((left, right) => left.priority - right.priority),
@@ -291,9 +292,7 @@ export function ProviderModelsPanel({
                 setDiscoveredModels(data.model_ids ?? []);
                 setNotice(t('aiSettingsDiscoveryDone', { count: data.model_ids?.length ?? 0 }));
               })
-              .catch((cause) =>
-                setError(extractUnknownErrorMessage(cause, t('aiSettingsUnexpectedError'))),
-              )
+              .catch((cause) => setError(describeError(cause, t('aiSettingsUnexpectedError'))))
               .finally(() => setDiscovering(false));
           }}
         >

@@ -17,13 +17,14 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useRouter } from '@/i18n/navigation';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { createManualQuizDraft, deleteQuizDraft, listQuizDrafts } from '@/lib/quiz/draftApi';
 import { ROUTES } from '@/shared/constants/routes';
 import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 
 export function CreateQuizHubPage() {
   const t = useTranslations('create');
+  const apiErrorMessage = useApiErrorMessage();
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const { push } = useRouter();
@@ -55,7 +56,7 @@ export function CreateQuizHubPage() {
       push(ROUTES.DRAFT.EDIT(draft.id));
     } catch (createError) {
       toast.error(tCommon('error'), {
-        description: extractUnknownErrorMessage(createError, t('manualCreateFailed')),
+        description: apiErrorMessage(createError, t('manualCreateFailed')),
       });
       setIsCreatingManual(false);
     }
@@ -70,7 +71,7 @@ export function CreateQuizHubPage() {
       setDraftToDelete(null);
     } catch (deleteError) {
       toast.error(tCommon('error'), {
-        description: extractUnknownErrorMessage(deleteError, t('draftDeleteFailed')),
+        description: apiErrorMessage(deleteError, t('draftDeleteFailed')),
       });
     } finally {
       setIsDeleting(false);
@@ -177,20 +178,25 @@ export function CreateQuizHubPage() {
               </Button>
             </div>
           ) : drafts?.length ? (
-            <div className="mt-5 grid gap-3">
+            <div data-testid="quiz-drafts-list" className="mt-5 grid grid-cols-1 gap-3">
               {drafts.map((draft) => {
                 const canContinue = !['queued', 'processing'].includes(draft.status);
                 return (
                   <Card key={draft.id} className="border-line bg-white p-0 shadow-none">
                     <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0 sm:flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
                           {draft.sourceType === 'manual' ? (
                             <HiOutlinePencilAlt className="size-5 shrink-0 text-brand-trust" />
                           ) : (
                             <HiOutlineDocumentText className="size-5 shrink-0 text-neutral-600" />
                           )}
-                          <h3 className="truncate font-semibold text-neutral-950">{draft.title}</h3>
+                          <h3
+                            title={draft.title}
+                            className="line-clamp-2 min-w-0 break-words font-semibold text-neutral-950 sm:line-clamp-1"
+                          >
+                            {draft.title}
+                          </h3>
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
                           <span>{t(`draftStatus.${draft.status}`)}</span>

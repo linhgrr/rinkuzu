@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { OptionImage, QuestionImage } from '@/components/ui/ImageDisplay';
 import { QuestionContent } from '@/components/ui/QuestionContent';
+import { useHydrated } from '@/hooks/useHydrated';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
@@ -49,6 +50,8 @@ export function QuizQuestionCard({
   error,
   t,
 }: QuizQuestionCardProps) {
+  // Server-rendered options stay disabled until hydration, or a click is lost (RIN-1133).
+  const hydrated = useHydrated();
   return (
     <Card>
       <CardHeader>
@@ -93,6 +96,7 @@ export function QuizQuestionCard({
                   value={optionIndex}
                   checked={selected}
                   onChange={() => onSelectAnswer(optionIndex)}
+                  disabled={!hydrated}
                   className="sr-only"
                 />
                 <div
@@ -142,7 +146,7 @@ export function QuizQuestionCard({
           <Button variant="outline" onClick={onPrevious} disabled={questionIndex === 0}>
             {t('previous')}
           </Button>
-          <div className="text-sm text-neutral-600">
+          <div className="whitespace-nowrap text-sm text-neutral-600">
             {questionIndex + 1} / {questionCount}
           </div>
           {questionIndex === questionCount - 1 ? (

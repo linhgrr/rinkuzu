@@ -1,6 +1,7 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
+import { isFocusedTaskPath } from '@/lib/routing/pathname';
 import { useState, useSyncExternalStore } from 'react';
 import { useDraftStore, DraftProgress } from '@/store/useDraftStore';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ export function FloatingDraftProgress() {
   const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } =
     useDraftStore();
   const t = useTranslations('draft');
+  const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
   const [draftToCancel, setDraftToCancel] = useState<DraftProgress | null>(null);
   const [draftToRemove, setDraftToRemove] = useState<DraftProgress | null>(null);
@@ -39,7 +41,10 @@ export function FloatingDraftProgress() {
   const processingCount = getProcessingCount();
   const completedCount = getCompletedCount();
 
-  if (!mounted || !hasActiveDrafts()) {
+  // Not over a task in progress: on the quiz editors the pill covered the sticky
+  // Publish bar (RIN-993). DraftSyncProvider keeps polling and still toasts when
+  // a draft is ready.
+  if (!mounted || !hasActiveDrafts() || isFocusedTaskPath(pathname || '/')) {
     return null;
   }
 

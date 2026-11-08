@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useRouter } from '@/i18n/navigation';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
@@ -9,23 +10,28 @@ import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input, Textarea } from '@/components/ui/Input';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { createFeedbackInvitation, fetchFeedbackList } from '../api/communications-api';
-import { formatFeedbackStatus } from '../lib/format';
 
 export function AdminFeedbackPage() {
   const params = useSearchParams();
   const router = useRouter();
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const initialUserId = params.get('userId') ?? '';
   const [page, setPage] = useState(1);
-  const { data, mutate } = useSWR(`feedback:${initialUserId}:${page}`, () =>
+  const {
+    data,
+    error: loadError,
+    mutate,
+  } = useSWR(`feedback:${initialUserId}:${page}`, () =>
     fetchFeedbackList(initialUserId || undefined, page),
   );
   const [userId, setUserId] = useState(initialUserId);
-  const [subject, setSubject] = useState('Bạn thấy trải nghiệm RinKuzu thế nào?');
-  const [body, setBody] = useState(
-    'Chào bạn,\n\nMình muốn lắng nghe trải nghiệm thật của bạn khi sử dụng RinKuzu. Điều gì đang hữu ích và điều gì khiến bạn chưa hài lòng?',
-  );
+  const [subject, setSubject] = useState(() => t('feedback.defaultSubject'));
+  const [body, setBody] = useState(() => t('feedback.defaultBody'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,7 +48,7 @@ export function AdminFeedbackPage() {
       await mutate();
       router.push(`/admin/feedback/${detail.conversation.id}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể gửi lời mời');
+      setError(describeError(caught, t('feedbackInviteError')));
     } finally {
       setLoading(false);
     }
@@ -50,53 +56,55 @@ export function AdminFeedbackPage() {
 
   return (
     <AdminPageShell>
-      <AdminPageHeader
-        title="Mời phản hồi"
-        description="User trao đổi hoàn toàn bằng email; reply được đồng bộ về đây."
-      />
+      <AdminPageHeader title={t('feedback.title')} description={t('feedback.description')} />
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Mời một user</CardTitle>
+            <CardTitle>{t('feedback.inviteTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={submit}>
               <Input
-                label="User ID"
+                label={t('feedback.userId')}
                 value={userId}
                 onChange={(event) => setUserId(event.target.value)}
                 required
                 pattern="[a-fA-F0-9]{24}"
               />
               <Input
-                label="Subject"
+                label={t('feedback.subject')}
                 value={subject}
                 onChange={(event) => setSubject(event.target.value)}
                 required
               />
               <Textarea
-                label="Nội dung tự nguyện, không quảng cáo"
+                label={t('feedback.body')}
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
                 required
                 rows={8}
               />
-              {error ? (
-                <p role="alert" className="text-sm text-error">
-                  {error}
-                </p>
-              ) : null}
+              {error ? <ErrorState message={error} /> : null}
               <Button type="submit" loading={loading}>
-                Gửi lời mời
+                {t('feedback.sendInvite')}
               </Button>
             </form>
           </CardContent>
         </Card>
-        <Card>
+        {/* On a failed load the list (now the error) comes first below xl, on the first screen. */}
+        <Card className={loadError ? 'order-first xl:order-none' : undefined}>
           <CardHeader>
-            <CardTitle>Các cuộc trao đổi</CardTitle>
+            <CardTitle>{t('feedback.listTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* A failed load replaced the list with nothing at all (RIN-1159). */}
+            {loadError ? (
+              <ErrorState
+                error={loadError}
+                message={t('feedbackListLoadError')}
+                onRetry={() => mutate()}
+              />
+            ) : null}
             {data?.items.map((conversation) => (
               <ButtonBase
                 key={conversation.id}
@@ -106,14 +114,14 @@ export function AdminFeedbackPage() {
               >
                 <span className="font-semibold">{conversation.subject}</span>
                 <span className="mt-1 block text-sm text-ink-muted">
-                  {conversation.userEmail} · {formatFeedbackStatus(conversation.status)}
+                  {conversation.userEmail} · {t(`feedback.statuses.${conversation.status}`)}
                 </span>
               </ButtonBase>
             ))}
             {data && data.pagination.totalPages > 1 ? (
               <div className="flex items-center justify-between pt-2">
                 <Button variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                  Trang trước
+                  {t('previousPage')}
                 </Button>
                 <span className="text-sm text-ink-muted">
                   {page}/{data.pagination.totalPages}
@@ -123,7 +131,7 @@ export function AdminFeedbackPage() {
                   disabled={page >= data.pagination.totalPages}
                   onClick={() => setPage(page + 1)}
                 >
-                  Trang sau
+                  {t('nextPage')}
                 </Button>
               </div>
             ) : null}

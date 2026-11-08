@@ -56,6 +56,8 @@ export async function inspectAttemptIdentityCleanup(db) {
               {
                 $or: [{ guestEmail: { $exists: false } }, { guestEmail: null }, { guestEmail: '' }],
               },
+              // RIN-912: a claim-token guest attempt has no user and no email.
+              { guestClaimTokenHash: { $not: { $type: 'string' } } },
             ],
           },
           { projection: { _id: 1 } },

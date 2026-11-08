@@ -1,5 +1,95 @@
 import { describe, expect, it } from 'vitest';
-import { renderCampaign, renderFeedbackInvitation } from './templates';
+import {
+  renderActivationNudge,
+  renderCampaign,
+  renderFeedbackInvitation,
+  renderReviewReminder,
+} from './templates';
+
+describe('activation nudge email (RIN-999)', () => {
+  const ctaUrl =
+    'https://www.rinkuzu.app/en/quiz/starter?entry=activation_email&utm_source=email&utm_campaign=activation_nudge';
+  const unsubscribeUrl = 'https://www.rinkuzu.app/en/unsubscribe?t=token';
+
+  it.each([
+    ['vi', 'Bài quiz 2 phút của bạn đã sẵn sàng', 'Chào Jamie,'],
+    ['en', 'Your 2-minute quiz is ready', 'Hi Jamie,'],
+  ] as const)(
+    'renders the %s email under 80 words with one CTA',
+    async (locale, subject, hello) => {
+      const mail = await renderActivationNudge({
+        locale,
+        firstName: 'Jamie',
+        ctaUrl,
+        unsubscribeUrl,
+      });
+      expect(mail.subject).toBe(subject);
+      expect(mail.html).toContain(`lang="${locale}"`);
+      expect(mail.html).toContain(ctaUrl.replaceAll('&', '&amp;'));
+      expect(mail.html).toContain(unsubscribeUrl);
+      expect(mail.text).toContain(hello);
+      expect(`${mail.subject}
+${mail.text}`).not.toMatch(/adaptive|thích ứng/iu);
+      expect(mail.text).toMatch(locale === 'vi' ? /cá nhân hóa/u : /personalized/u);
+      const words = mail.text
+        .replace(/https?:\/\/\S+|\[[^\]]*\]/gu, ' ')
+        .split(/\s+/u)
+        .filter((word) => /[\p{L}\d]/u.test(word));
+      expect(words.length).toBeLessThan(80);
+      expect(mail.html.match(/<a /gu)).toHaveLength(2);
+    },
+  );
+
+  it('greets without a name when there is none', async () => {
+    const mail = await renderActivationNudge({
+      locale: 'en',
+      firstName: null,
+      ctaUrl,
+      unsubscribeUrl,
+    });
+    expect(mail.text).toContain('Hi there,');
+  });
+});
+
+describe('review reminder email (RIN-915)', () => {
+  const retryUrl =
+    'https://www.rinkuzu.app/vi/quiz/cell-biology?retryOf=6a8ed209f04328ac17443d91&utm_source=email&utm_campaign=w1-review';
+  const unsubscribeUrl = 'https://www.rinkuzu.app/unsubscribe?t=token';
+
+  it.each(['vi', 'en'] as const)('renders the %s email with both links', async (locale) => {
+    const mail = await renderReviewReminder({
+      locale,
+      quizTitle: 'Cell biology',
+      missedCount: 3,
+      retryUrl,
+      unsubscribeUrl,
+    });
+    expect(mail.html).toContain(retryUrl.replaceAll('&', '&amp;'));
+    expect(mail.html).toContain(unsubscribeUrl);
+    expect(mail.html).toContain(`lang="${locale}"`);
+    expect(`${mail.subject}\n${mail.text}`).not.toMatch(/adaptive|thích ứng/iu);
+    expect(mail.subject).toBe(
+      locale === 'vi'
+        ? 'Ôn lại 3 câu chưa đúng trong “Cell biology”'
+        : 'Review the 3 questions you missed in “Cell biology”',
+    );
+    expect(mail.text).toContain(
+      locale === 'vi'
+        ? 'Hai ngày trước bạn đã làm bài “Cell biology” và còn 3 câu chưa đúng.'
+        : 'Two days ago you took “Cell biology” and missed 3 questions.',
+    );
+    expect(mail.text).toContain(`${unsubscribeUrl}`);
+  });
+
+  it('uses the product term personalized / cá nhân hóa', async () => {
+    const input = { quizTitle: 'Biology', missedCount: 1, retryUrl, unsubscribeUrl };
+    const vietnamese = await renderReviewReminder({ ...input, locale: 'vi' });
+    const english = await renderReviewReminder({ ...input, locale: 'en' });
+    expect(vietnamese.text).toContain('cá nhân hóa');
+    expect(english.text).toContain('personalized');
+    expect(english.subject).toBe('Review the 1 question you missed in “Biology”');
+  });
+});
 
 describe('communication email templates', () => {
   const preferencesUrl = 'https://rinkuzu.app/feedback/preferences?token=abc';

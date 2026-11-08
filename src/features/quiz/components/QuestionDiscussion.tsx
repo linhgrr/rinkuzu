@@ -13,6 +13,7 @@ import {
 } from '@/features/quiz/api/quiz-interaction-api';
 import type { QuizDiscussionCommentViewModel } from '@/features/quiz/types/quiz-interaction-view-model';
 import { formatDateTime } from '@/lib/formatters';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface QuestionDiscussionProps {
   quizSlug: string;
@@ -89,6 +90,7 @@ export function QuestionDiscussion({
 }: QuestionDiscussionProps) {
   const { data: session } = useSession();
   const t = useTranslations('discussion');
+  const describeError = useApiErrorMessage();
   const [state, dispatch] = useReducer(questionDiscussionReducer, initialState);
 
   useEffect(() => {
@@ -115,10 +117,8 @@ export function QuestionDiscussion({
           return;
         }
 
-        dispatch({
-          type: 'fetch:error',
-          error: error instanceof Error ? error.message : t('failedToLoad'),
-        });
+        // Localized copy from the error layer, never the server's text (RIN-753).
+        dispatch({ type: 'fetch:error', error: describeError(error) || t('failedToLoad') });
       }
     };
 
@@ -127,7 +127,7 @@ export function QuestionDiscussion({
     return () => {
       isActive = false;
     };
-  }, [quizSlug, questionIndex, isCollapsed, t]);
+  }, [quizSlug, questionIndex, isCollapsed, t, describeError]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,10 +152,7 @@ export function QuestionDiscussion({
       });
       dispatch({ type: 'submit:success', comments: discussion.comments });
     } catch (error: unknown) {
-      dispatch({
-        type: 'submit:error',
-        error: error instanceof Error ? error.message : t('failedToPost'),
-      });
+      dispatch({ type: 'submit:error', error: describeError(error) || t('failedToPost') });
     }
   };
 
@@ -231,7 +228,11 @@ export function QuestionDiscussion({
               rows={2}
               maxLength={2000}
             />
-            {state.error && <p className="text-xs text-red-600">{state.error}</p>}
+            {state.error && (
+              <p role="alert" className="text-xs text-error">
+                {state.error}
+              </p>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-neutral-400">{state.newComment.length}/2000</span>
               <Button

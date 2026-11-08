@@ -21,5 +21,23 @@
   "cancelConfirmTitle": "Hủy xử lý?",
   "cancelConfirmMessage": "Hủy xử lý \"{title}\" và xóa bản nháp này khỏi máy chủ?",
   "removeReadyDraftTitle": "Xóa bản nháp đã sẵn sàng?",
-  "removeReadyDraftMessage": "Xóa \"{title}\" khỏi máy chủ? Không thể khôi phục bản nháp này."
+  "removeReadyDraftMessage": "Xóa \"{title}\" khỏi máy chủ? Không thể khôi phục bản nháp này.",
+  "failedTitle": "Lỗi xử lý \"{title}\"",
+  "failedTryAgain": "Vui lòng thử lại sau",
+  "failedRetryable": "Tính năng nhận dạng văn bản tạm thời gián đoạn. Thử lại sau vài phút thường sẽ thành công.",
+  "extractionFailed": "Trích xuất thất bại hoặc bản nháp đã hết hạn",
+  "statusFetchFailed": "Không kiểm tra được trạng thái bản nháp",
+  "timedOutTitle": "Quá lâu để xử lý \"{title}\"",
+  "timedOut": "Hết thời gian chờ xử lý PDF",
+  "readyTitle": "\"{title}\" đã sẵn sàng!",
+  "readyDescription": "{count} câu hỏi được trích xuất",
+  "view": "Xem",
+  "meta": {
+    "editTitle": "Chỉnh sửa quiz nháp | RinKuzu"
+  },
+  "notFound": {
+    "title": "Không tìm thấy bản nháp",
+    "description": "Bản nháp này có thể đã hết hạn, đã được xuất bản, hoặc bạn không có quyền truy cập.",
+    "backToDashboard": "Quay về bảng điều khiển"
+  }
 }

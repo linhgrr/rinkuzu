@@ -7,6 +7,7 @@ import HowItWorks from './HowItWorks';
 import CoreIntelligence from './CoreIntelligence';
 import Testimonials from './Testimonials';
 import BottomCta from './BottomCta';
+import LearnMore from './LearnMore';
 import TextureBackground from './TextureBackground';
 
 interface LandingPageProps {
@@ -74,6 +75,11 @@ export default function LandingPage({ isAuthenticated = false, locale }: Landing
         {/* Testimonials */}
         <section className="relative w-full pt-[40px] md:pt-[132px] pb-0 z-20">
           <Testimonials locale={locale} />
+        </section>
+
+        {/* Learn more — crawlable links to the FAQ, blog and premium quizzes */}
+        <section className="relative w-full pt-[40px] md:pt-[92px] pb-0 z-20">
+          <LearnMore locale={locale} />
         </section>
 
         {/* Bottom CTA — full viewport width */}

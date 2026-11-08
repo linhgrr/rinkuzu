@@ -123,12 +123,12 @@ describe('quiz DTO schemas', () => {
       submitQuizAttemptRequestSchema.parse({
         answers: [0, [1, 2], -1],
         idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
-        userEmail: ' Learner@Example.com ',
+        guestClaimToken: 'T'.repeat(43),
       }),
     ).toEqual({
       answers: [0, [1, 2], -1],
       idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
-      userEmail: 'learner@example.com',
+      guestClaimToken: 'T'.repeat(43),
     });
   });
 
@@ -136,16 +136,54 @@ describe('quiz DTO schemas', () => {
     expect(() =>
       submitQuizAttemptRequestSchema.parse({
         answers: [0],
-        userEmail: 'learner@example.com',
       }),
     ).toThrow();
     expect(() =>
       submitQuizAttemptRequestSchema.parse({
         answers: [[0.5]],
         idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
-        userEmail: 'learner@example.com',
       }),
     ).toThrow();
+  });
+
+  describe('quick round submit contract (RIN-936)', () => {
+    const base = {
+      answers: Array.from({ length: 10 }, () => 0),
+      idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
+    };
+    const indices = [16, 2, 9, 0, 11, 5, 14, 7, 3, 12];
+
+    it('accepts mode quick with exactly 10 unique indices, in play order', () => {
+      expect(
+        submitQuizAttemptRequestSchema.parse({ ...base, mode: 'quick', questionIndices: indices }),
+      ).toEqual({ ...base, mode: 'quick', questionIndices: indices });
+      expect(submitQuizAttemptRequestSchema.parse({ ...base, mode: 'full' })).toEqual({
+        ...base,
+        mode: 'full',
+      });
+    });
+
+    it.each([
+      ['quick without indices', { mode: 'quick' }],
+      ['9 indices', { mode: 'quick', questionIndices: indices.slice(0, 9) }],
+      ['11 indices', { mode: 'quick', questionIndices: [...indices, 20] }],
+      ['duplicate indices', { mode: 'quick', questionIndices: [...indices.slice(0, 9), 16] }],
+      ['negative index', { mode: 'quick', questionIndices: [...indices.slice(0, 9), -1] }],
+      ['fractional index', { mode: 'quick', questionIndices: [...indices.slice(0, 9), 1.5] }],
+      ['indices without quick', { questionIndices: indices }],
+      ['indices with full', { mode: 'full', questionIndices: indices }],
+      [
+        'quick combined with retry',
+        {
+          mode: 'quick',
+          questionIndices: indices,
+          retryOfAttemptId: '507f191e810c19729de860ea',
+        },
+      ],
+      ['unknown mode', { mode: 'speed' }],
+    ])('rejects %s', (_label, extra) => {
+      expect(submitQuizAttemptRequestSchema.safeParse({ ...base, ...extra }).success).toBe(false);
+    });
   });
 
   it('validates add discussion comment request payloads', () => {

@@ -179,27 +179,30 @@ function getAnimatedCardStyle(state: FlashcardState) {
 
 function FlashcardFront({ options, question }: FlashcardFrontProps) {
   return (
-    <Card className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-neutral-100 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]">
-      <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
+    <Card
+      data-flashcard-face="front"
+      className="[grid-area:1/1] flex w-full flex-col bg-white shadow-2xl rounded-2xl border-2 border-neutral-100 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]"
+    >
+      <CardContent className="flex w-full flex-1 flex-col px-5 py-6 sm:px-14 sm:py-8">
         <div className="flex-1 flex flex-col justify-center">
           <QuestionContent
             content={question}
             headingLevel={3}
-            className="mb-8 break-words text-center text-2xl font-semibold leading-relaxed text-neutral-900"
+            className="mb-6 break-words text-center text-lg font-semibold leading-relaxed text-neutral-900 sm:mb-8 sm:text-2xl"
           />
           <div className="space-y-4">
             {options.map((option, index) => (
               <div
                 key={option}
-                className="flex items-center gap-x-3 p-4 bg-neutral-50 rounded-lg border border-neutral-200 text-lg break-words"
+                className="flex items-center gap-x-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-base break-words sm:p-4 sm:text-lg"
               >
-                <span className="text-lg font-medium text-neutral-600 w-6">
+                <span className="w-6 shrink-0 text-base font-medium text-neutral-600 sm:text-lg">
                   {String.fromCharCode(65 + index)}.
                 </span>
                 <QuestionContent
                   content={option}
                   variant="option"
-                  className="min-w-0 flex-1 break-words text-lg text-neutral-700"
+                  className="min-w-0 flex-1 break-words text-base text-neutral-700 sm:text-lg"
                 />
               </div>
             ))}
@@ -220,8 +223,11 @@ function FlashcardBack({
   type,
 }: FlashcardBackProps) {
   return (
-    <Card className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-green-200 [backface-visibility:hidden] [-webkit-backface-visibility:hidden] [transform:rotateX(180deg)]">
-      <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
+    <Card
+      data-flashcard-face="back"
+      className="[grid-area:1/1] flex w-full flex-col bg-white shadow-2xl rounded-2xl border-2 border-green-200 [backface-visibility:hidden] [-webkit-backface-visibility:hidden] [transform:rotateX(180deg)]"
+    >
+      <CardContent className="flex w-full flex-1 flex-col px-5 py-6 sm:px-14 sm:py-8">
         <div className="flex-1 flex flex-col justify-center">
           <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">
             {t('correctAnswer')}
@@ -283,19 +289,19 @@ function FlashcardBack({
 
 function FlashcardActions({ canSwipe, onSwipeLeft, onSwipeRight, t }: FlashcardActionsProps) {
   return (
-    <div className="flex justify-center gap-8 mt-8 mb-2 w-full h-12">
+    <div className="mb-2 mt-6 flex h-12 w-full justify-center gap-4 px-4 sm:mt-8 sm:gap-8">
       {canSwipe && (
         <>
           <Button
             onClick={onSwipeLeft}
             variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50 px-8 py-3 text-lg rounded-full"
+            className="rounded-full border-red-300 px-6 py-3 text-base text-red-600 hover:bg-red-50 sm:px-8 sm:text-lg"
           >
             {t('dontKnow')}
           </Button>
           <Button
             onClick={onSwipeRight}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg rounded-full"
+            className="rounded-full bg-green-600 px-6 py-3 text-base text-white hover:bg-green-700 sm:px-8 sm:text-lg"
           >
             {t('knowIt')}
           </Button>
@@ -427,10 +433,10 @@ export function Flashcard({
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center overflow-hidden">
+    <div className="flex w-full flex-col items-center justify-center overflow-hidden px-4 sm:px-6">
       <button
         type="button"
-        className="relative select-none border-0 bg-transparent p-0 text-left w-[75vw] max-w-[1000px] min-w-[500px] h-[60vh] max-h-[500px] min-h-[350px] mx-auto z-10"
+        className="relative select-none border-0 bg-transparent p-0 text-left w-full max-w-5xl min-h-96 mx-auto z-10"
         aria-label={state.isFlipped ? t('showQuestion') : t('showAnswer')}
         style={animatedCardStyle}
         onMouseDown={(event) => handleDragStart({ x: event.clientX, y: event.clientY })}
@@ -462,9 +468,11 @@ export function Flashcard({
           }
         }}
       >
-        <div className="relative w-full h-full cursor-pointer [perspective:1000px] [transform-style:preserve-3d]">
+        {/* Both faces share one grid cell, so the card is as tall as its taller face:
+            no fixed height, no inner scroll, no clipped options (RIN-770). */}
+        <div className="relative w-full cursor-pointer [perspective:1000px] [transform-style:preserve-3d]">
           <div
-            className="relative w-full h-full transition-transform duration-300 ease-in-out [transform-style:preserve-3d]"
+            className="grid w-full min-h-96 transition-transform duration-300 ease-in-out [transform-style:preserve-3d]"
             style={{ transform: state.isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)' }}
           >
             <FlashcardFront options={options} question={question} />

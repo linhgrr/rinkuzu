@@ -57,6 +57,28 @@ describe('AccountRepository', () => {
       expect(mocks.aggregate.mock.calls[0]?.[0]?.[0]).toEqual({ $match: activeEmailFilter });
     });
 
+    it('findProfileByEmail derives hasPassword without projecting the hash (RIN-1017)', async () => {
+      mocks.aggregate.mockResolvedValue([
+        {
+          _id: '507f191e810c19729de860ea',
+          email,
+          role: 'user',
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          hasPassword: false,
+        },
+      ]);
+
+      const profile = await new AccountRepository().findProfileByEmail(email);
+
+      const pipeline = mocks.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[];
+      const project = pipeline.at(-1)?.['$project'] as Record<string, unknown>;
+      expect(project['password']).toBeUndefined();
+      expect(project['hasPassword']).toEqual({
+        $and: [{ $eq: [{ $type: '$password' }, 'string'] }, { $ne: ['$password', ''] }],
+      });
+      expect(profile?.hasPassword).toBe(false);
+    });
+
     it('updateProfileByEmail filters email + disable:0', async () => {
       mocks.updateOne.mockResolvedValue({ matchedCount: 1 });
       mocks.aggregate.mockResolvedValue([

@@ -3,6 +3,7 @@ import type {
   AdminUserCreditGrantDto,
   AdminUserListDto,
   AdminUserStatusDto,
+  AdminUserTestAccountDto,
 } from '@/dtos/admin-user';
 import type { AdminUserSubscriptionGrantDto } from '@/dtos/admin-billing';
 import { fetchApiData } from '@/lib/api/client';
@@ -13,6 +14,7 @@ import type {
   AdminUserRoleUpdateInput,
   AdminUserStatusUpdateInput,
   AdminUserSubscriptionGrantInput,
+  AdminUserTestAccountUpdateInput,
 } from '@/features/admin/users/types/admin-users-view-model';
 
 export async function fetchAdminUserListViewModel(url: string): Promise<AdminUserListViewModel> {
@@ -40,6 +42,20 @@ export async function updateAdminUserStatus({
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ disable }),
   });
+}
+
+export async function updateAdminUserTestAccount({
+  userId,
+  isTestAccount,
+}: AdminUserTestAccountUpdateInput): Promise<AdminUserTestAccountDto> {
+  return fetchApiData<AdminUserTestAccountDto>(
+    `/api/admin/users/${encodeURIComponent(userId)}/test-account`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isTestAccount }),
+    },
+  );
 }
 
 export async function grantAdminUserSubscription({

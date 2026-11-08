@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 import { UpgradePromptProvider } from '@/features/subscription/components/UpgradePromptProvider';
 import { AnalyticsIdentity } from '@/components/analytics/AnalyticsIdentity';
 import { SingleSessionGuard } from '@/features/auth/components/SingleSessionGuard';
+import { GuestAttemptClaimer } from '@/features/quiz/components/GuestAttemptClaimer';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -17,12 +18,15 @@ export default function Providers({ children, session }: ProvidersProps) {
   return (
     <SessionProvider
       {...(session !== undefined ? { session } : {})}
-      refetchInterval={session?.user ? 5 : 0}
-      refetchOnWindowFocus={Boolean(session?.user)}
+      // SingleSessionGuard checks the session itself (one GET per check). The
+      // provider poll costs two GETs per tick in next-auth 5 beta (RIN-687).
+      refetchInterval={0}
+      refetchOnWindowFocus={false}
       refetchWhenOffline={false}
     >
       <SingleSessionGuard />
       <AnalyticsIdentity />
+      <GuestAttemptClaimer />
       <UpgradePromptProvider>{children}</UpgradePromptProvider>
       <Toaster richColors position="top-right" />
     </SessionProvider>

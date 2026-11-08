@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
 import { createFolderViewModel } from '@/features/folders/api/folders-api';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
+import { withPending } from '@/lib/async/with-pending';
 import type { FolderSummaryViewModel } from '@/features/folders/types/folder-view-model';
 
 interface AddFolderModalProps {
@@ -18,6 +19,7 @@ interface AddFolderModalProps {
 export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalProps) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
+  const showMutationError = useApiErrorToast();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -41,15 +43,13 @@ export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalPro
       return;
     }
 
-    setSubmitting(true);
     setError('');
     try {
-      const folder = await createFolderViewModel(normalizedName);
+      const folder = await withPending(setSubmitting, () => createFolderViewModel(normalizedName));
       onCreated(folder);
       handleClose();
     } catch (requestError) {
-      setError(extractUnknownErrorMessage(requestError, t('folderCreateError')));
-      setSubmitting(false);
+      showMutationError(requestError);
     }
   }
 

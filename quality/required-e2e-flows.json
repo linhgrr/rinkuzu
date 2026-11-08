@@ -12,6 +12,11 @@
       "description": "Create or select a quiz, answer it, submit it, and observe the result"
     },
     {
+      "id": "new-learner-starter",
+      "tag": "@critical-starter",
+      "description": "A new learner sees the starter quiz block on the dashboard and opens question 1 from it"
+    },
+    {
       "id": "adaptive-learning",
       "tag": "@critical-adaptive",
       "description": "Upload learning material, observe processing, and open the generated result"
@@ -30,6 +35,26 @@
       "id": "admin-account-disable",
       "tag": "@critical-admin-disable",
       "description": "Admin disable/restore: session revocation via authVersion, filter listing, and fresh login after restore"
+    },
+    {
+      "id": "admin-quiz-visibility",
+      "tag": "@critical-admin-quiz-visibility",
+      "description": "Admin makes a public quiz private (hidden from anonymous play and the public list), the change is audited, and it is reverted"
+    },
+    {
+      "id": "admin-test-account",
+      "tag": "@critical-admin-test-account",
+      "description": "Anonymous and non-admin callers are refused the test-account route; admin marks and clears the analytics test-account flag from /admin/users, and each change is audited with the actor"
+    },
+    {
+      "id": "admin-personal-learning",
+      "tag": "@critical-admin-personal-learning",
+      "description": "Admin opens the Personalized Learning stats workspace, sees aggregate totals and the trend chart, and each window filter refetches its own figures"
+    },
+    {
+      "id": "admin-personal-learning-gate",
+      "tag": "@critical-admin-personal-learning-gate",
+      "description": "Anonymous visitors are sent to login and non-admins to the dashboard from /admin/stats, and the personal-learning summary API answers 401/403"
     }
   ]
 }

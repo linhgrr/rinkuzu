@@ -91,6 +91,7 @@ function clearAuthTokenClaims(token: Record<string, unknown>): void {
   delete token['pwc'];
   delete token['av'];
   delete token['email'];
+  delete token['nac'];
 }
 
 function assignAuthenticatedClaims(
@@ -185,6 +186,7 @@ const providers = [
               name: result.user.displayName ?? result.user.email,
               image: result.user.avatar,
               ...toAuthJsUserClaims(result.user),
+              isNewAccount: result.isNewAccount,
             };
           },
         }),
@@ -225,6 +227,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           passwordChangedAt: user.passwordChangedAt ?? null,
           authVersion: user.authVersion,
         });
+        // Lets the client tell a Google signup from a Google login for analytics.
+        if (user.isNewAccount === true) token['nac'] = true;
+        else delete token['nac'];
       }
 
       return token;

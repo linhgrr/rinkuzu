@@ -6,8 +6,9 @@ import type {
   QuizDiscussionDto,
   QuizDetailDto,
   QuizListDto,
-  QuizListItemDto,
+  PublicQuizSitemapEntryDto,
   QuizListOptionsDto,
+  QuizMetadataDto,
   QuizPlayDetailDto,
   QuizProgressResponseDto,
   ReportQuizResponseDto,
@@ -36,12 +37,26 @@ export interface IQuizService {
     userRole?: string,
   ): Promise<ServiceResult<QuizDetailDto>>;
 
-  getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null>;
+  /** Public quizzes for the sitemap, minus test/company-owned ones (RIN-840). */
+  getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]>;
+
+  /** Page metadata; `ownerIndexable` is server-only (RIN-840). */
+  getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null>;
+
+  /** Canonical slug when `slug` is a former slug (alias) of a quiz, else null. */
+  resolveSlugAlias(slug: string): Promise<string | null>;
 
   getQuizForPlay(
     slug: string,
     userRole?: string,
     userId?: string,
+  ): Promise<ServiceResult<QuizPlayDetailDto>>;
+
+  getRetryQuizForPlay(
+    slug: string,
+    retryOfAttemptId: string,
+    userId?: string,
+    userRole?: string,
   ): Promise<ServiceResult<QuizPlayDetailDto>>;
 
   getSavedQuizProgress(
@@ -81,7 +96,10 @@ export interface IQuizService {
     answers: (number | number[])[],
     idempotencyKey: string,
     session: Session | null,
-    userEmail?: string,
+    retryOfAttemptId?: string,
+    guestClaimToken?: string,
+    /** Quick round (RIN-936): the quiz question index of each answer, in play order. */
+    quickQuestionIndices?: number[],
   ): Promise<ServiceResult<QuizAttemptResultDto>>;
 
   getQuizDiscussions(

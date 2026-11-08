@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "acceptances": [
     {
-      "fingerprint": "cef94d4f11eac20e527ca4947b5b76cea166c38ece95f46cfad5cdb76a2dd5c3",
+      "fingerprint": "ad4552b693c0ede4f3d2d0ceefd00661e4c961931c79bad82ccce596b12062a5",
       "package": "@lhci/cli",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -11,12 +11,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it. Re-fingerprinted (RIN-892, 2026-11-05): npm audit now reports the chain as via [@lhci/utils, lighthouse], so the hash moved; same lockfile, same advisories, same dev-only exposure.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "0e5e642b978e2c355fba6cd6f2a6c3f439913d6929c161a31e49f8b8d7622b5f",
+      "fingerprint": "1840439355dd5ee4296b1f8fe8af0e6144a3624e9716e1b6369243c2f9b223a2",
       "package": "@lhci/utils",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -25,12 +25,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it. Re-fingerprinted 2026-11-03 (RIN-654): the @lhci/utils 0.16.0 release (patched lighthouse 13.6.0) narrowed the computed vulnerable range of the installed 0.15.1 to 0.13.0 - 0.15.1; same advisories, same dev-only exposure; upgrading to 0.16.0 is tracked in RIN-606.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "57b9019bb1d455da96df4df87a4ee4a93138c30e6ae998bdbb95716538894957",
+      "fingerprint": "a0cd3b9e0ee140dfdc3bebff4bac576d6d644f63d512eb2ea9403763ffe9261f",
       "package": "@puppeteer/browsers",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -39,12 +39,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "5dc2018b5946e7945679faa3f55111e5cbe6355d405b550c54087266939cfee0",
+      "fingerprint": "92dd43c4e9955237d0b6152446985651b7a8354fd77cd58f67f0f007df279b1e",
       "package": "@size-limit/preset-app",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -53,12 +53,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "044d0e9760d31d9b77484f22113551d0baae77338e0ac372fc3d8c03a77d8da6",
+      "fingerprint": "646b62b381055eeec05f432077f7380dadc09d6667a6f02a9dfea729adfa33cb",
       "package": "@size-limit/time",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -67,12 +67,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "21dd9e3eb272e7ea9726202baec3d0320735e45e47222b8c4c3a16fce3671d07",
+      "fingerprint": "8000f944c8f333bb11aded1c88a052d3bbdaaf9e40cdc64002d46532fb0f6428",
       "package": "estimo",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -81,12 +81,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "72882acf2074c005f4a08035917ea498deac6ac72478c6b652e75047c831cf9f",
+      "fingerprint": "33f8cb3ac995aa5a6ab960b44f815ac5205965058666a85fd557fdf53f927577",
       "package": "extract-zip",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -95,12 +95,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "70b4d178009e14e1374c4a524f118e4d95028687b819abe003c3e01b5686d346",
+      "fingerprint": "1ce58c9430b839f426faabc44130ff2deeb10aa72babde04d1993b4f1042b032",
       "package": "find-chrome-bin",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -109,12 +109,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "87a623e304baf55ee5273ad28431e45f9c46b9913996ebddb90af47c84d383c5",
+      "fingerprint": "def8d29ae8df0a91e659d6c911d6fdfc00b58ea0dc43396d910eb46c97ec7952",
       "package": "lighthouse",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -123,12 +123,12 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     },
     {
-      "fingerprint": "0339d496ab137256f10406e4e8bbdcd4c26e0c2a529b240f4c79f4bc85e838a0",
+      "fingerprint": "6d3a02e04a25392aec10696b91431a08cedb8e33a63bd77792685aaf27b25127",
       "package": "puppeteer-core",
       "kind": "risk_acceptance",
       "severity": "high",
@@ -137,9 +137,9 @@
       "toolVersion": "10.9.8",
       "advisory": "GHSA-jmr9-qjv8-65gv",
       "owner": "linhgrr",
-      "reason": "GHSA-jmr9-qjv8-65gv in extract-zip: unvalidated symlink path traversal when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. The advisory range is \"*\" — upstream has no patched release, and the only fix npm proposes is a major downgrade of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
-      "createdAt": "2026-08-30",
-      "expiresAt": "2026-09-29"
+      "reason": "GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3 in extract-zip: symlink path traversal / arbitrary file writes when unpacking an archive. Reached only through the Lighthouse and size-limit toolchain, which uses it to unpack a Chrome build downloaded from Google over TLS during a performance run. No archive here is attacker-supplied, and none of these packages ship in the application bundle. Upstream has no patched release (extract-zip latest is 2.0.1, range <=2.0.1), and the only fix npm proposes is a semver-major change of @lhci/cli, which would take the performance gate below the version its evidence format depends on. Re-review when extract-zip publishes a fix or @puppeteer/browsers drops it.",
+      "createdAt": "2026-11-02",
+      "expiresAt": "2026-12-02"
     }
   ]
 }

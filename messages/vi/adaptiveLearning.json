@@ -8,7 +8,6 @@
   "dashboardTitle": "Trung tâm học cá nhân hóa",
   "dashboardDescription": "Theo dõi lộ trình học cá nhân hóa, tải thêm tài liệu và làm chủ kiến thức với hướng dẫn từ AI.",
   "dashboardSubtitle": "Học tập cá nhân hóa với AI",
-  "backendOffline": "Backend đang offline. Chạy: cd full-demo/api && uvicorn api.main:app --reload --port 8000",
   "uploadNewMaterial": "Tải tài liệu mới",
   "uploadPdf": "Tải lên PDF",
   "continueLearning": "Tiếp tục học",
@@ -76,12 +75,13 @@
     "uploadMaterialDescription": "Tải lên giáo trình hoặc tài liệu học để tạo lộ trình học cá nhân hóa.",
     "pdfLimitHint": "Gói hiện tại hỗ trợ tối đa {maxPages} trang mỗi PDF.",
     "pdfTechnicalLimit": "Dung lượng tệp tối đa {maxSizeMb}MB.",
+    "fileInputLabel": "Chọn tệp PDF",
     "uploading": "Đang tải lên...",
     "fileRequired": "Vui lòng chọn một tệp PDF trước khi tạo lộ trình học.",
     "replaceFile": "Đổi tệp",
     "removeFile": "Xóa",
     "createLearningPath": "Tạo lộ trình học",
-    "backendOffline": "Backend đang offline. Vui lòng khởi động API server trước.",
+    "serviceTemporarilyUnavailable": "Vui lòng thử lại sau vài phút. Lượt sử dụng của bạn chưa bị trừ.",
     "uploadFailed": "Tải lên PDF thất bại",
     "errors": {
       "unauthorized": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại rồi tải PDF lên lần nữa.",
@@ -127,8 +127,8 @@
     "startLearning": "Bắt đầu học",
     "recommendedForYou": "Gợi ý cho bạn",
     "noMaterials": "Chưa có tài liệu nào",
-    "uploadPdfHint": "Upload tài liệu PDF...",
-    "uploadMaterial": "Upload tài liệu",
+    "uploadPdfHint": "Tải tài liệu PDF lên...",
+    "uploadMaterial": "Tải tài liệu lên",
     "searchPlaceholder": "Tìm tài liệu...",
     "searchAriaLabel": "Tìm tài liệu",
     "deleteMaterial": "Xóa tài liệu",
@@ -173,7 +173,7 @@
     "completedDailyGoal": "Đã hoàn thành mục tiêu ngày",
     "yesterday": "Hôm qua",
     "upNext": "TIẾP THEO",
-    "brandTitle": "Adaptive Scholar",
+    "brandTitle": "Personalized Scholar",
     "brandSubtitle": "Đồng hành cùng hành trình học tập của bạn với AI.",
     "avatarAlt": "Ảnh đại diện người dùng",
     "activeJourney": "Hành trình đang học",
@@ -235,19 +235,23 @@
     "viewProcessing": "Xem tiến trình",
     "retryProcessing": "Thử lại",
     "processingFailed": "Xử lý thất bại",
-    "processingEta": "Còn khoảng {eta}"
+    "processingEta": "Còn khoảng {eta}",
+    "processingReassurance": "Thường mất vài phút. Bạn có thể rời trang này, chúng tôi vẫn tiếp tục xử lý.",
+    "cancellingProcessing": "Đang hủy…",
+    "cancelProcessingTitle": "Hủy xử lý tài liệu?",
+    "cancelProcessingDescription": "Rinkuzu sẽ dừng chuẩn bị tài liệu này. Bạn có thể tải lên lại sau.",
+    "cancelProcessingConfirm": "Dừng xử lý",
+    "keepProcessing": "Tiếp tục xử lý"
   },
   "history": {
     "title": "Lịch sử bài tập",
-    "loadingFromMongoDB": "Đang tải từ MongoDB...",
-    "noMongoDBData": "Chưa có dữ liệu trong MongoDB cho phiên này.",
+    "empty": "Chưa có bài tập nào trong phiên này. Phiên học được lưu sau khi bạn trả lời ít nhất 1 bài.",
     "completed": "Hoàn thành",
     "step": "Bước {step}/{total}",
     "correct": "Đúng",
-    "loading": "Đang tải lịch sử...",
-    "loadError": "Không thể tải lịch sử từ MongoDB: {error}",
-    "noSession": "Chưa có session nào được lưu trong MongoDB.",
-    "sessionSaveHint": "Phiên học sẽ được lưu sau khi bạn trả lời ít nhất 1 bài tập.",
+    "loading": "Đang tải lịch sử…",
+    "loadError": "Không tải được lịch sử: {error}",
+    "noSession": "Chưa có phiên học nào được lưu.",
     "table": {
       "question": "Câu hỏi",
       "bloom": "Bloom",
@@ -299,17 +303,18 @@
       "limits": "Giới hạn",
       "integrals": "Tích phân",
       "advanced": "Nâng cao"
-    }
+    },
+    "loadError": "Chưa tải được lộ trình học. Vui lòng thử lại."
   },
   "processing": {
     "title": "Đang phân tích tài liệu",
     "description": "Vui lòng đợi trong khi AI xây dựng chương trình học cá nhân hóa của bạn.",
     "failedTitle": "Xử lý thất bại",
     "creatingSession": "Đang tạo phiên học tập...",
-    "waitingForConcepts": "Đang chờ trích xuất khái niệm...",
     "knowledgeGraph": "Sơ đồ kiến thức",
-    "visualizingStructures": "Đang trực quan hóa cấu trúc thực tế...",
-    "tryAgain": "Thử lại",
+    "graphDescription": "Các khái niệm trong tài liệu và mối liên hệ giữa chúng.",
+    "graphPlaceholder": "Sơ đồ khái niệm của bạn sẽ hiện ở đây ngay khi tìm thấy những khái niệm đầu tiên.",
+    "uploadAgain": "Tải lại tài liệu",
     "goToDashboard": "Về bảng điều khiển",
     "defaultFilename": "tai-lieu.pdf",
     "steps": {
@@ -346,7 +351,6 @@
       "processingTakingLonger": "Tài liệu này đang mất nhiều thời gian xử lý hơn bình thường. Bạn có thể cứ để trang này mở, hệ thống sẽ tiếp tục tự kiểm tra...",
       "retryingCreateSession": "Lộ trình học đã sẵn sàng. Hệ thống đang kết nối lại để hoàn tất việc tạo phiên học...",
       "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được việc tạo phiên học. Vui lòng mở lại môn học từ bảng điều khiển.",
-      "retryAfterFailure": "Bạn có thể quay lại và thử tải lại tài liệu này một cách an toàn.",
       "partialSuccess": "Đã xử lý xong nhưng có cảnh báo: {failed} trên {total} batch PDF bị lỗi nên có thể thiếu một vài khái niệm."
     },
     "errors": {
@@ -357,11 +361,13 @@
       "unauthorized": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại rồi thử lại.",
       "conflict": "Tài liệu này chưa sẵn sàng để tạo phiên học.",
       "pipelineFailed": "Không thể hoàn tất việc xử lý tài liệu này. Vui lòng thử lại hoặc tải lên một PDF khác.",
-      "pipelineTimeout": "Quá trình xử lý mất quá nhiều thời gian và đã bị dừng. Vui lòng tải lại tài liệu và thử lại.",
-      "pipelineCancelled": "Quá trình xử lý đã bị gián đoạn trước khi hoàn tất. Vui lòng tải lại tài liệu.",
+      "pipelineTimeout": "Quá trình xử lý mất quá nhiều thời gian và đã bị dừng. Bạn có thể thử lại.",
+      "pipelineCancelled": "Quá trình xử lý đã bị gián đoạn trước khi hoàn tất. Bạn có thể thử lại.",
       "pipelineUnavailable": "Dịch vụ xử lý hiện tạm thời không khả dụng. Vui lòng thử lại sau ít phút.",
       "sessionNotReady": "Lộ trình học gần như đã sẵn sàng nhưng phiên học chưa thể mở ngay lúc này.",
-      "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được phiên học. Vui lòng mở lại từ bảng điều khiển."
+      "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được phiên học. Vui lòng mở lại từ bảng điều khiển.",
+      "failedAtStep": "Đã xảy ra lỗi ở bước “{step}”. Bạn có thể thử lại an toàn.",
+      "failedAtStepFinal": "Đã xảy ra lỗi ở bước “{step}” và không thể tiếp tục lượt xử lý này. Hãy tải tài liệu lên lại hoặc quay về thư viện."
     },
     "stats": {
       "extracted": "Đã trích xuất",
@@ -370,7 +376,10 @@
     },
     "progress": "Tiến độ",
     "didYouKnow": "Bạn có biết?",
-    "didYouKnowDescription": "AI của chúng tôi sử dụng mô hình ngôn ngữ tiên tiến để hiểu nội dung và tạo ra lộ trình học tập hiệu quả nhất cho bạn."
+    "didYouKnowDescription": "AI của chúng tôi sử dụng mô hình ngôn ngữ tiên tiến để hiểu nội dung và tạo ra lộ trình học tập hiệu quả nhất cho bạn.",
+    "tryAgain": "Thử lại",
+    "backToLibrary": "Về thư viện",
+    "stepFailed": "lỗi"
   },
   "exercise": {
     "loadingTitle": "AI đang chọn bài tập phù hợp nhất cho bạn...",
@@ -450,11 +459,12 @@
   "reportIssue": "Báo lỗi câu hỏi này",
   "result": {
     "correctTitle": "Làm tốt lắm!",
-    "incorrectTitle": "Gần đúng rồi!",
+    "incorrectTitle": "Chưa đúng",
     "correctDescription": "Bạn đã nắm vững khái niệm này.",
     "incorrectDescription": "Hãy xem phần giải thích bên dưới để hiểu rõ hơn.",
     "explanationTitle": "Giải thích",
     "correctAnswerLabel": "Đáp án đúng",
+    "yourAnswerLabel": "Bạn chọn",
     "dashboard": "Bảng điều khiển",
     "continueJourney": "Tiếp tục hành trình",
     "stillConfused": "Vẫn còn bối rối?",
@@ -468,6 +478,9 @@
     "streak": "Chuỗi",
     "streakValue": "{count} ngày",
     "noResultDataFound": "Không tìm thấy dữ liệu kết quả",
+    "noResultDataDescription": "Kết quả của bài này không còn trên thiết bị. Hãy học tiếp môn này hoặc chọn môn khác.",
+    "backToSubject": "Quay lại môn học",
+    "chooseAnotherSubject": "Chọn môn khác",
     "masteryUpdate": "Cập nhật độ thành thạo",
     "averageMastery": "Độ thành thạo trung bình: {value}%",
     "stepLabel": "Bước {step}",
@@ -488,7 +501,8 @@
     "sessionNotReady": "Lộ trình học này vẫn đang hoàn tất thiết lập. Vui lòng thử bắt đầu lại sau ít phút.",
     "sessionUnavailable": "Hiện chưa thể bắt đầu phiên học. Vui lòng đợi thêm một chút rồi thử lại.",
     "sessionMissing": "Không còn tìm thấy tài liệu này. Vui lòng quay lại bảng điều khiển và mở lại.",
-    "sessionOpenFailed": "Hiện chưa thể mở phiên học này."
+    "sessionOpenFailed": "Hiện chưa thể mở phiên học này.",
+    "notFound": "Không tìm thấy phiên học này."
   },
   "masteryMatrix": {
     "loading": "Đang tải ma trận độ thành thạo...",
@@ -528,6 +542,7 @@
     "suggestSteps": "Hướng dẫn mình giải từng bước",
     "loadingHistory": "Đang tải cuộc trò chuyện...",
     "retry": "Thử lại",
+    "retryMessage": "Thử lại",
     "errorHistory": "Không tải được lịch sử. Bạn vẫn có thể hỏi câu mới.",
     "errorClear": "Không thể xóa cuộc trò chuyện.",
     "stop": "Dừng trả lời",
@@ -549,8 +564,9 @@
     "errorContextExpired": "Câu hỏi này đã thay đổi hoặc hết hạn. Hãy tải lại trang rồi thử lại.",
     "errorImageUnsupported": "Rin-chan chưa thể đọc hình trong câu hỏi này. Bạn hãy thử một câu khác nhé.",
     "errorInvalidRequest": "Rin-chan chưa hiểu yêu cầu này. Bạn hãy diễn đạt lại rồi thử nhé.",
-    "errorQuota": "Bạn đã dùng hết lượt Ask Rin-chan. Hãy chọn gói phù hợp để tiếp tục.",
+    "errorQuota": "Bạn đã dùng hết lượt Ask Rin-chan hôm nay. Hãy quay lại sau khi hạn mức được làm mới.",
     "errorRateLimited": "Bạn đang hỏi hơi nhanh. Hãy chờ một chút rồi thử lại nhé.",
+    "errorRunFailed": "Rin-chan chưa trả lời xong. Bạn hãy hỏi lại nhé.",
     "errorInterrupted": "_Phản hồi bị gián đoạn trước khi hoàn tất. Bạn có thể hỏi lại để Rin-chan tiếp tục._"
   },
   "meta": {

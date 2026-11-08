@@ -22,6 +22,7 @@ function createQuizService(quiz: Quiz) {
       questionCount: quiz.questionCount ?? quiz.questions.length,
     }),
     findIdBySlug: vi.fn().mockResolvedValue(quiz.id),
+    findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -30,6 +31,9 @@ function createQuizService(quiz: Quiz) {
     findForPlay: vi.fn().mockResolvedValue(quiz),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
+    findMetadataBySlug: vi.fn(),
+    findNonIndexableOwnerCandidates: vi.fn(),
+    findPublicSitemapEntries: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
     findTopCreators: vi.fn(),
@@ -109,7 +113,8 @@ describe('QuizService personal source access gates', () => {
       [0],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       null,
-      'anon@example.com',
+      undefined,
+      'T'.repeat(43),
     );
 
     assertFail(result);

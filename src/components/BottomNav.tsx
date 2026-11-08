@@ -13,9 +13,7 @@ import {
   HiPlus,
   HiOutlineSearch,
   HiSearch,
-  HiOutlineAcademicCap,
   HiOutlineUpload,
-  HiOutlineChartBar,
 } from 'react-icons/hi';
 import {
   getProductScope,
@@ -62,6 +60,7 @@ export default function BottomNav() {
     if (status === 'loading' && isProtectedRoute) {
       return (
         <div
+          data-bottom-nav=""
           className={`${styles['loadingBar']} md:hidden fixed bottom-0 left-0 right-0 border-t bg-white/95 px-2 pt-2 z-50 safe-area-bottom backdrop-blur-lg`}
         >
           <div className="flex justify-around items-end" aria-hidden="true">
@@ -159,14 +158,6 @@ export default function BottomNav() {
     ),
   };
 
-  const adaptiveLibraryTab: NavTab = {
-    href: '/adaptive',
-    labelKey: 'tabLibrary',
-    icon: (isActive) => (
-      <HiOutlineAcademicCap className={`size-6 ${isActive ? 'text-accent' : 'text-neutral-500'}`} />
-    ),
-  };
-
   const adaptiveUploadTab: NavTab = {
     href: '/adaptive/upload',
     labelKey: 'tabUpload',
@@ -181,14 +172,6 @@ export default function BottomNav() {
     ),
   };
 
-  const adaptiveProgressTab: NavTab = {
-    href: '/dashboard',
-    labelKey: 'tabProgress',
-    icon: (isActive) => (
-      <HiOutlineChartBar className={`size-6 ${isActive ? 'text-accent' : 'text-neutral-500'}`} />
-    ),
-  };
-
   const scope = getProductScope(pathname || '/');
   const iconById: Record<string, NavTab['icon']> = {
     home: homeTab.icon,
@@ -196,9 +179,7 @@ export default function BottomNav() {
     review: reviewTab.icon,
     create: createTab.icon,
     profile: profileTab.icon,
-    adaptiveLibrary: adaptiveLibraryTab.icon,
     adaptiveUpload: adaptiveUploadTab.icon,
-    adaptiveProgress: adaptiveProgressTab.icon,
   };
   const tabs: NavTab[] = MOBILE_TABS_BY_SCOPE[scope].map((def) => {
     const icon = iconById[def.id];
@@ -216,6 +197,7 @@ export default function BottomNav() {
 
   return (
     <div
+      data-bottom-nav=""
       className={`${styles['bar']} md:hidden fixed bottom-0 left-0 right-0 border-t bg-white/80 px-2 pt-2 z-50 safe-area-bottom backdrop-blur-xl`}
     >
       <div className="flex justify-around items-end">

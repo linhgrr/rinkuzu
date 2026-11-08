@@ -43,9 +43,10 @@ export function BookmarkPanel({
             <button
               type="button"
               onClick={onDismissMessage}
+              aria-label={t('dismissBookmarkMessage')}
               className="text-neutral-500 hover:text-neutral-700"
             >
-              {'✕'}
+              <span aria-hidden="true">{'✕'}</span>
             </button>
           </div>
         </div>

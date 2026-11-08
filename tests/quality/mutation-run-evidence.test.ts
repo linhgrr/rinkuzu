@@ -13,8 +13,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runMutationGate } from '../../scripts/check-mutation-report.mjs';
+import { partitionMutationInventory } from '../../scripts/mutation-shards.mjs';
 import {
   CRITICAL_MUTATION_PATTERNS,
+  literalPathFromStrykerMutatePattern,
   toStrykerMutatePatterns,
 } from '../../scripts/mutation-scope.mjs';
 import {
@@ -44,6 +46,10 @@ import {
 import {
   executeMutationGate,
   parseMutationGateArgs,
+  moveFile,
+  resolveMutationShardCount,
+  resolveOnlyShard,
+  resolveShardTimeoutMs,
   resolveStrykerTimeoutMs,
 } from '../../scripts/run-mutation-gate.mjs';
 
@@ -1472,5 +1478,449 @@ describe('workflow and package mutation:gate wiring', () => {
     expect(workflow).not.toMatch(/git rev-parse HEAD\^/);
     expect(workflow).not.toMatch(/resolve-mutation-scope\.mjs|MUTATION_SCOPE_PATH/);
     expect(workflow).not.toMatch(/STRYKER_VERSION/);
+  });
+});
+
+describe('sharded full mutation campaign (RIN-889)', () => {
+  // In the seeded repo the full inventory is two files; with N=3 the route
+  // lands in shard 1, the model in shard 2, and shard 3 is empty.
+  const SHARDS = 3;
+  type InvokeOptions = {
+    mutatePatterns?: string[];
+    incrementalFile?: string;
+    timeoutMs?: number;
+    env?: NodeJS.ProcessEnv;
+  };
+
+  function fakeShardInvoke(
+    root: string,
+    outcome: (shard: number) => 'ok' | 'timeout' | 'crash',
+    onShard: (options: InvokeOptions) => void = () => {},
+  ) {
+    const calls: InvokeOptions[] = [];
+    const invoke = (_root: string, options: InvokeOptions) => {
+      calls.push(options);
+      onShard(options);
+      const shard = Number(/shards\/(\d+)-of-/.exec(options.incrementalFile ?? '')?.[1]);
+      const kind = outcome(shard);
+      if (kind === 'timeout') {
+        const error = new Error(
+          `Stryker timed out after ${options.timeoutMs}ms. Re-run with a bounded MUTATION_STRYKER_TIMEOUT_MS or investigate hung workers.`,
+        );
+        return { status: null, signal: 'SIGTERM', error, stdout: '', stderr: '' };
+      }
+      if (kind === 'crash') {
+        return { status: 1, signal: null, error: undefined, stdout: '', stderr: 'dry run failed' };
+      }
+      const files = (options.mutatePatterns ?? []).map(literalPathFromStrykerMutatePattern);
+      const report = baseReport(files);
+      for (const file of files) {
+        const entry = report.files[file];
+        if (entry) entry.source = readFileSync(path.join(root, file), 'utf8');
+      }
+      writeJsonAtomic(path.join(root, 'reports/mutation/mutation.json'), report);
+      return { status: 0, signal: null, error: undefined, stdout: '', stderr: '' };
+    };
+    return { calls, invoke };
+  }
+
+  function readMeta(root: string) {
+    return JSON.parse(readFileSync(path.join(root, 'reports/mutation/gate-run-meta.json'), 'utf8'));
+  }
+
+  it('parses --shards and MUTATION_SHARDS; without them nothing changes', () => {
+    expect(parseMutationGateArgs(['--mode', 'full', '--shards', '4'])).toEqual({
+      mode: 'full',
+      baseRef: null,
+      shards: 4,
+    });
+    expect(parseMutationGateArgs(['--mode=full', '--shards=2']).shards).toBe(2);
+    expect(() => parseMutationGateArgs(['--mode', 'full', '--shards', '0'])).toThrow(/between/);
+    expect(resolveMutationShardCount(undefined, testEnv())).toBeNull();
+    expect(resolveMutationShardCount(undefined, testEnv({ MUTATION_SHARDS: '5' }))).toBe(5);
+    expect(resolveMutationShardCount(3, testEnv({ MUTATION_SHARDS: '5' }))).toBe(3);
+    expect(resolveShardTimeoutMs(testEnv())).toBe(60 * 60 * 1000);
+    expect(resolveShardTimeoutMs(testEnv({ MUTATION_SHARD_TIMEOUT_MS: '120000' }))).toBe(120_000);
+    expect(() => resolveShardTimeoutMs(testEnv({ MUTATION_SHARD_TIMEOUT_MS: '5' }))).toThrow(
+      /between/,
+    );
+  });
+
+  it('runs every shard with its own files, cache and timeout, then merges into verified evidence', () => {
+    const root = seedMinimalMutationRepo();
+    const { calls, invoke } = fakeShardInvoke(root, () => 'ok');
+    const result = executeMutationGate(root, {
+      mode: 'full',
+      shards: SHARDS,
+      env: testEnv({ MUTATION_SHARD_TIMEOUT_MS: '120000' }),
+      invokeStrykerFn: invoke,
+      // The fixture has no waiver registry; judge the merged run with the
+      // same bound-evidence validator the real evaluator starts from.
+      evaluateFn: (evalRoot: string, { env }: { env: NodeJS.ProcessEnv }) => ({
+        errors: validateMutationRunEvidence(evalRoot, { env }),
+        score: 100,
+      }),
+    });
+
+    expect(calls.map((call) => call.incrementalFile)).toEqual([
+      'reports/mutation/shards/1-of-3.incremental.json',
+      'reports/mutation/shards/2-of-3.incremental.json',
+    ]);
+    expect(calls.map((call) => call.timeoutMs)).toEqual([120_000, 120_000]);
+    expect(calls.map((call) => call.mutatePatterns)).toEqual([
+      toStrykerMutatePatterns(['src/app/api/folders/[id]/route.ts']),
+      ['src/models/User.ts'],
+    ]);
+    for (const shard of [1, 2]) {
+      const shardReport = path.join(root, `reports/mutation/shards/${shard}-of-3.mutation.json`);
+      expect(existsSync(shardReport)).toBe(true);
+    }
+    expect(result).toMatchObject({ status: 'completed', exitCode: 0 });
+    expect(result.evaluation).toMatchObject({ errors: [], score: 100 });
+    const merged = JSON.parse(
+      readFileSync(path.join(root, 'reports/mutation/mutation.json'), 'utf8'),
+    );
+    expect(Object.keys(merged.files).sort()).toEqual([
+      'src/app/api/folders/[id]/route.ts',
+      'src/models/User.ts',
+    ]);
+    expect(validateMutationRunEvidence(root, { env: testEnv() })).toEqual([]);
+    expect(readMeta(root).shards.map((s: { status: string }) => s.status)).toEqual([
+      'completed',
+      'completed',
+      'empty',
+    ]);
+  });
+
+  it('a timed-out shard gives no score, keeps the timeout text and does not stop later shards', () => {
+    const root = seedMinimalMutationRepo();
+    const { calls, invoke } = fakeShardInvoke(root, (shard) => (shard === 1 ? 'timeout' : 'ok'));
+    const result = executeMutationGate(root, {
+      mode: 'full',
+      shards: SHARDS,
+      env: testEnv(),
+      invokeStrykerFn: invoke,
+      evaluateFn: () => {
+        throw new Error('should not evaluate a partial campaign');
+      },
+    });
+    expect(calls).toHaveLength(2);
+    expect(result).toMatchObject({ status: 'failed', exitCode: 1 });
+    expect(existsSync(path.join(root, 'reports/mutation/mutation.json'))).toBe(false);
+    expect(existsSync(path.join(root, 'reports/mutation/shards/2-of-3.mutation.json'))).toBe(true);
+    const meta = readMeta(root);
+    expect(meta.status).toBe('failed');
+    expect(meta.errorMessage).toContain('Stryker timed out after');
+    expect(meta.shards.map((s: { status: string }) => s.status)).toEqual([
+      'timed_out',
+      'completed',
+      'empty',
+    ]);
+  });
+
+  it('a crashed shard fails closed without the timeout text, even next to a timeout', () => {
+    const root = seedMinimalMutationRepo();
+    const { invoke } = fakeShardInvoke(root, (shard) => (shard === 1 ? 'timeout' : 'crash'));
+    const result = executeMutationGate(root, {
+      mode: 'full',
+      shards: SHARDS,
+      env: testEnv(),
+      invokeStrykerFn: invoke,
+      evaluateFn: () => {
+        throw new Error('should not evaluate');
+      },
+    });
+    expect(result.status).toBe('failed');
+    const raw = readFileSync(path.join(root, 'reports/mutation/gate-run-meta.json'), 'utf8');
+    expect(JSON.parse(raw).failureReason).toBe('shard_failed');
+    expect(raw).not.toContain('Stryker timed out after');
+  });
+
+  it('keeps the whole campaign inside MUTATION_STRYKER_TIMEOUT_MS: later shards are shortened, then not started', () => {
+    const root = seedMinimalMutationRepo();
+    // Enough model files that all four shards are non-empty.
+    const extra = Array.from({ length: 16 }, (_, i) => `src/models/Budget${i}.ts`);
+    extra.forEach((rel, i) => write(root, rel, `export const b${i} = ${i};\n`));
+    commitAll(root, 'more models');
+    const inventory = ['src/app/api/folders/[id]/route.ts', 'src/models/User.ts', ...extra];
+    expect(partitionMutationInventory(inventory, 4).every((files) => files.length > 0)).toBe(true);
+
+    const MIN = 60_000;
+    let clock = 1_000_000;
+    // Shards 1 and 2 use their full 60 min; shard 3 then has 30 min left of
+    // the 150 min budget, uses all of it and times out; shard 4 never starts.
+    const { calls, invoke } = fakeShardInvoke(
+      root,
+      (shard) => (shard === 3 ? 'timeout' : 'ok'),
+      (options) => {
+        clock += options.timeoutMs ?? 0;
+      },
+    );
+    const result = executeMutationGate(root, {
+      mode: 'full',
+      shards: 4,
+      env: testEnv({
+        MUTATION_STRYKER_TIMEOUT_MS: String(150 * MIN),
+        MUTATION_SHARD_TIMEOUT_MS: String(60 * MIN),
+      }),
+      invokeStrykerFn: invoke,
+      now: () => clock,
+      evaluateFn: () => {
+        throw new Error('should not evaluate a partial campaign');
+      },
+    });
+
+    expect(calls.map((call) => call.timeoutMs)).toEqual([60 * MIN, 60 * MIN, 30 * MIN]);
+    expect(calls.every((call) => call.env?.['MUTATION_VITEST_RELATED'] === '1')).toBe(true);
+    expect(result).toMatchObject({ status: 'failed', exitCode: 1 });
+    expect(existsSync(path.join(root, 'reports/mutation/mutation.json'))).toBe(false);
+    const meta = readMeta(root);
+    expect(meta.failureReason).toBe('stryker_spawn_failed');
+    expect(meta.errorMessage).toMatch(/^2 of 4 mutation shards did not finish/);
+    expect(meta.errorMessage).toContain('Stryker timed out after');
+    expect(meta.shards.map((s: { status: string }) => s.status)).toEqual([
+      'completed',
+      'completed',
+      'timed_out',
+      'not_started',
+    ]);
+    expect(meta.shards[3].error).toContain('campaign budget');
+    expect(meta.shards.every((s: { vitestRelated: boolean }) => s.vitestRelated)).toBe(true);
+  });
+});
+
+describe('one shard per process: --only-shard K and --merge-shards (RIN-1224)', () => {
+  // Same fixture as RIN-889: route in shard 1, model in shard 2, shard 3 empty.
+  const SHARDS = 3;
+  type InvokeOptions = { mutatePatterns?: string[]; incrementalFile?: string; timeoutMs?: number };
+
+  function fakeInvoke(root: string, outcome: (shard: number) => 'ok' | 'timeout' = () => 'ok') {
+    const calls: InvokeOptions[] = [];
+    const invoke = (_root: string, options: InvokeOptions) => {
+      calls.push(options);
+      const shard = Number(/shards\/(\d+)-of-/.exec(options.incrementalFile ?? '')?.[1]);
+      if (outcome(shard) === 'timeout') {
+        const error = new Error(`Stryker timed out after ${options.timeoutMs}ms.`);
+        return { status: null, signal: 'SIGTERM', error, stdout: '', stderr: '' };
+      }
+      const files = (options.mutatePatterns ?? []).map(literalPathFromStrykerMutatePattern);
+      const report = baseReport(files);
+      for (const file of files) {
+        const entry = report.files[file];
+        if (entry) entry.source = readFileSync(path.join(root, file), 'utf8');
+      }
+      writeJsonAtomic(path.join(root, 'reports/mutation/mutation.json'), report);
+      return { status: 0, signal: null, error: undefined, stdout: '', stderr: '' };
+    };
+    return { calls, invoke };
+  }
+
+  const noEvaluate = () => {
+    throw new Error('a shard step never evaluates');
+  };
+  const evidenceEvaluate = (evalRoot: string, { env }: { env: NodeJS.ProcessEnv }) => ({
+    errors: validateMutationRunEvidence(evalRoot, { env }),
+    score: 100,
+  });
+
+  function runShard(root: string, shard: number, invoke: ReturnType<typeof fakeInvoke>['invoke']) {
+    return executeMutationGate(root, {
+      mode: 'full',
+      shards: SHARDS,
+      onlyShard: shard,
+      env: testEnv(),
+      invokeStrykerFn: invoke,
+      evaluateFn: noEvaluate,
+    });
+  }
+
+  function mergeShards(root: string, evaluateFn: typeof evidenceEvaluate = evidenceEvaluate) {
+    return executeMutationGate(root, {
+      mode: 'full',
+      shards: SHARDS,
+      mergeShards: true,
+      env: testEnv(),
+      invokeStrykerFn: () => {
+        throw new Error('--merge-shards never runs Stryker');
+      },
+      evaluateFn,
+    });
+  }
+
+  const readGateMeta = (root: string) =>
+    readFileSync(path.join(root, 'reports/mutation/gate-run-meta.json'), 'utf8');
+  const exists = (root: string, rel: string) => existsSync(path.join(root, rel));
+
+  it('parses --only-shard, MUTATION_ONLY_SHARD and --merge-shards', () => {
+    expect(parseMutationGateArgs(['--mode', 'full', '--only-shard', '2'])).toEqual({
+      mode: 'full',
+      baseRef: null,
+      onlyShard: 2,
+    });
+    expect(parseMutationGateArgs(['--mode=full', '--only-shard=6']).onlyShard).toBe(6);
+    expect(parseMutationGateArgs(['--mode', 'full', '--merge-shards'])).toEqual({
+      mode: 'full',
+      baseRef: null,
+      mergeShards: true,
+    });
+    expect(() => parseMutationGateArgs(['--mode', 'full', '--only-shard', '0'])).toThrow(
+      /only-shard/,
+    );
+    expect(() => parseMutationGateArgs(['--mode', 'full', '--only-shard', 'x'])).toThrow(
+      /only-shard/,
+    );
+    expect(() =>
+      parseMutationGateArgs(['--mode', 'full', '--only-shard', '1', '--merge-shards']),
+    ).toThrow(/not both/);
+    expect(resolveOnlyShard(undefined, testEnv())).toBeNull();
+    expect(resolveOnlyShard(undefined, testEnv({ MUTATION_ONLY_SHARD: '4' }))).toBe(4);
+    expect(resolveOnlyShard(2, testEnv({ MUTATION_ONLY_SHARD: '4' }))).toBe(2);
+    expect(() => resolveOnlyShard(undefined, testEnv({ MUTATION_ONLY_SHARD: '-1' }))).toThrow(
+      /only-shard/,
+    );
+  });
+
+  it('runs only shard K: its report, cache and binding meta, no merge and exit 0', () => {
+    const root = seedMinimalMutationRepo();
+    const { calls, invoke } = fakeInvoke(root);
+    const result = runShard(root, 2, invoke);
+
+    expect(result).toMatchObject({ status: 'completed', exitCode: 0, outcome: 'shard_completed' });
+    expect(calls.map((call) => call.incrementalFile)).toEqual([
+      'reports/mutation/shards/2-of-3.incremental.json',
+    ]);
+    expect(calls[0]?.mutatePatterns).toEqual(['src/models/User.ts']);
+    expect(exists(root, 'reports/mutation/shards/2-of-3.mutation.json')).toBe(true);
+    expect(exists(root, 'reports/mutation/mutation.json')).toBe(false);
+    const shardMeta = JSON.parse(
+      readFileSync(path.join(root, 'reports/mutation/shards/2-of-3.meta.json'), 'utf8'),
+    );
+    expect(shardMeta).toMatchObject({
+      shard: 2,
+      shardCount: 3,
+      status: 'completed',
+      headSha: git(root, ['rev-parse', 'HEAD']),
+      files: ['src/models/User.ts'],
+    });
+    expect(JSON.parse(readGateMeta(root)).status).toBe('started');
+  });
+
+  it('an empty shard and a shard out of range', () => {
+    const root = seedMinimalMutationRepo();
+    const { calls, invoke } = fakeInvoke(root);
+    expect(runShard(root, 3, invoke)).toMatchObject({ exitCode: 0, outcome: 'shard_completed' });
+    expect(calls).toHaveLength(0);
+    const outOfRange = runShard(root, 4, invoke);
+    expect(outOfRange).toMatchObject({ status: 'failed', exitCode: 1 });
+    expect(JSON.parse(readGateMeta(root)).failureReason).toBe('shard_count_invalid');
+  });
+
+  it('a timed-out shard exits 1 with the timeout text the gate reports as UNVERIFIED', () => {
+    const root = seedMinimalMutationRepo();
+    const { invoke } = fakeInvoke(root, () => 'timeout');
+    expect(runShard(root, 1, invoke)).toMatchObject({ status: 'failed', exitCode: 1 });
+    expect(readGateMeta(root)).toContain('Stryker timed out after');
+  });
+
+  it('--merge-shards merges this head’s shard reports into verified evidence without Stryker', () => {
+    const root = seedMinimalMutationRepo();
+    const { invoke } = fakeInvoke(root);
+    for (const shard of [1, 2, 3]) expect(runShard(root, shard, invoke).exitCode).toBe(0);
+
+    const result = mergeShards(root);
+    expect(result).toMatchObject({ status: 'completed', exitCode: 0 });
+    expect(result.evaluation).toMatchObject({ errors: [], score: 100 });
+    const merged = JSON.parse(
+      readFileSync(path.join(root, 'reports/mutation/mutation.json'), 'utf8'),
+    );
+    expect(Object.keys(merged.files).sort()).toEqual([
+      'src/app/api/folders/[id]/route.ts',
+      'src/models/User.ts',
+    ]);
+    expect(JSON.parse(readGateMeta(root)).shards.map((s: { status: string }) => s.status)).toEqual([
+      'completed',
+      'completed',
+      'empty',
+    ]);
+  });
+
+  it('--merge-shards fails closed when a shard report is missing', () => {
+    const root = seedMinimalMutationRepo();
+    const { invoke } = fakeInvoke(root);
+    runShard(root, 1, invoke);
+    expect(mergeShards(root, noEvaluate)).toMatchObject({ status: 'failed', exitCode: 1 });
+    const meta = readGateMeta(root);
+    expect(JSON.parse(meta).failureReason).toBe('shard_report_missing');
+    expect(meta).not.toContain('Stryker timed out after');
+    expect(exists(root, 'reports/mutation/mutation.json')).toBe(false);
+  });
+
+  it('--merge-shards refuses shard reports from an earlier head', () => {
+    const root = seedMinimalMutationRepo();
+    const { invoke } = fakeInvoke(root);
+    for (const shard of [1, 2, 3]) runShard(root, shard, invoke);
+    write(root, 'src/models/User.ts', 'export const user = 2;\n');
+    commitAll(root, 'new head');
+    expect(mergeShards(root, noEvaluate)).toMatchObject({ status: 'failed', exitCode: 1 });
+    expect(JSON.parse(readGateMeta(root)).failureReason).toBe('shard_report_missing');
+  });
+
+  it('--merge-shards after a timed-out shard keeps the timeout text (UNVERIFIED, not red)', () => {
+    const root = seedMinimalMutationRepo();
+    const { invoke } = fakeInvoke(root, (shard) => (shard === 2 ? 'timeout' : 'ok'));
+    for (const shard of [1, 2, 3]) runShard(root, shard, invoke);
+    expect(mergeShards(root, noEvaluate)).toMatchObject({ status: 'failed', exitCode: 1 });
+    expect(readGateMeta(root)).toContain('Stryker timed out after');
+  });
+
+  it('a changed-scope run skips shard steps and --merge-shards runs the one campaign', () => {
+    const root = seedMinimalMutationRepo();
+    const baseSha = git(root, ['rev-parse', 'HEAD']);
+    write(root, 'src/app/api/folders/[id]/route.ts', criticalSource('folders-v3'));
+    commitAll(root, 'critical-change');
+    const { calls, invoke } = fakeInvoke(root);
+    const changed = { mode: 'changed' as const, baseRef: baseSha, shards: SHARDS, env: testEnv() };
+    expect(
+      executeMutationGate(root, { ...changed, onlyShard: 1, invokeStrykerFn: invoke }),
+    ).toMatchObject({ status: 'completed', exitCode: 0, outcome: 'shard_skipped' });
+    expect(calls).toHaveLength(0);
+    executeMutationGate(root, {
+      ...changed,
+      mergeShards: true,
+      invokeStrykerFn: invoke,
+      evaluateFn: () => ({ errors: [], score: 100 }),
+    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.incrementalFile).toBeUndefined();
+  });
+});
+
+describe('moveFile', () => {
+  const exdev = () => Object.assign(new Error('EXDEV'), { code: 'EXDEV' });
+
+  it('falls back to copy and remove when rename crosses volumes', () => {
+    const calls: string[] = [];
+    moveFile('a', 'b', {
+      renameSync: () => {
+        throw exdev();
+      },
+      copyFileSync: (from, to) => void calls.push(`copy ${String(from)} ${String(to)}`),
+      rmSync: (from) => void calls.push(`rm ${String(from)}`),
+    });
+    expect(calls).toEqual(['copy a b', 'rm a']);
+  });
+
+  it('rethrows other rename errors without copying', () => {
+    const copy: string[] = [];
+    expect(() =>
+      moveFile('a', 'b', {
+        renameSync: () => {
+          throw Object.assign(new Error('boom'), { code: 'EACCES' });
+        },
+        copyFileSync: () => void copy.push('x'),
+        rmSync: () => undefined,
+      }),
+    ).toThrow('boom');
+    expect(copy).toEqual([]);
   });
 });

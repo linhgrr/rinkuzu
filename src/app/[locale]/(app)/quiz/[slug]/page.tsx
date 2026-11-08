@@ -1,43 +1,125 @@
+import type { Metadata } from 'next';
 import { getCurrentSession } from '@/lib/auth/session';
+import { randomInt } from 'node:crypto';
+import { headers } from 'next/headers';
+import { permanentRedirect } from 'next/navigation';
 import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
 import type { QuizPlayAuthorViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
-import { getUserDisplayName } from '@/components/user/user-identity';
 import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
+import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
+import { buildQuizMetadata } from './quiz-metadata';
 
 export const dynamic = 'force-dynamic';
 
-export default async function QuizPlayerPage({
-  params,
-}: {
+type QuizPageSearchParams = Record<string, string | string[] | undefined>;
+
+function firstValue(value: string | string[] | undefined): string | null {
+  return (Array.isArray(value) ? value[0] : value) ?? null;
+}
+
+function toQueryString(searchParams: QuizPageSearchParams): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) {
+      query.append(key, item);
+    }
+  }
+  const serialized = query.toString();
+  return serialized ? `?${serialized}` : '';
+}
+
+/** Client hint first, then the user agent; tablets and desktops get the desktop layout. */
+function looksLikePhone(requestHeaders: Headers): boolean {
+  const mobileHint = requestHeaders.get('sec-ch-ua-mobile');
+  if (mobileHint) return mobileHint === '?1';
+  return /Mobi|iPhone|iPod/iu.test(requestHeaders.get('user-agent') ?? '');
+}
+
+const ATTEMPT_ID_PATTERN = /^[a-f0-9]{24}$/iu;
+
+/**
+ * `?retryOf=<attemptId>` (RIN-917) plays only the questions missed in that attempt.
+ * An invalid, foreign or guest `retryOf` falls back to the full quiz silently.
+ */
+async function loadQuizForPlay(
+  slug: string,
+  retryOf: string | null,
+  session: Awaited<ReturnType<typeof getCurrentSession>>,
+) {
+  const quizService = getQuizService();
+  const userId = session?.user?.id;
+  if (retryOf && userId && ATTEMPT_ID_PATTERN.test(retryOf)) {
+    const retry = await quizService.getRetryQuizForPlay(slug, retryOf, userId, session?.user?.role);
+    if (retry.success) return retry;
+  }
+  return quizService.getQuizForPlay(slug, session?.user?.role, userId);
+}
+
+type QuizPageProps = {
   params: Promise<{ locale: string; slug: string }>;
-}) {
-  const [{ locale, slug }, session] = await Promise.all([params, getCurrentSession()]);
+  searchParams: Promise<QuizPageSearchParams>;
+};
+
+export async function generateMetadata({ params, searchParams }: QuizPageProps): Promise<Metadata> {
+  const [{ locale, slug }, query] = await Promise.all([params, searchParams]);
+  return buildQuizMetadata({ locale, slug, mode: firstValue(query['mode']) });
+}
+
+export default async function QuizPlayerPage({ params, searchParams }: QuizPageProps) {
+  const [{ locale, slug }, session, query, requestHeaders] = await Promise.all([
+    params,
+    getCurrentSession(),
+    searchParams,
+    headers(),
+  ]);
   const premiumMetadata = await getPremiumQuizService().getCatalogMetadataBySlug(slug);
   if (premiumMetadata) {
+    const description =
+      premiumMetadata.description === undefined ? {} : { description: premiumMetadata.description };
+    // A guest cannot start a Premium session (the API answers 401), so do not
+    // try: show the quiz and a sign-in that returns here (RIN-747).
+    if (!session?.user) {
+      return (
+        <PremiumQuizSignInPrompt
+          slug={slug}
+          title={premiumMetadata.title}
+          questionCount={premiumMetadata.questionCount}
+          entry={firstValue(query['entry'])}
+          {...description}
+        />
+      );
+    }
     return (
       <PremiumQuizPlayerClient
         quizId={premiumMetadata.quizId}
         slug={slug}
         title={premiumMetadata.title}
         questionCount={premiumMetadata.questionCount}
+        {...description}
       />
     );
   }
-  const result = await getQuizService().getQuizForPlay(
-    slug,
-    session?.user?.role,
-    session?.user?.id,
-  );
+  const result = await loadQuizForPlay(slug, firstValue(query['retryOf']), session);
+
+  if (!result.success && result.statusCode === 404) {
+    // Former slugs (RIN-624) only cost a lookup after a miss.
+    const canonicalSlug = await getQuizService().resolveSlugAlias(slug);
+    if (canonicalSlug) {
+      permanentRedirect(
+        `/${locale}/quiz/${encodeURIComponent(canonicalSlug)}${toQueryString(query)}`,
+      );
+    }
+  }
 
   if (!result.success) {
     return (
       <QuizPlayerClient
         initialErrorCode={result.code}
-        initialErrorMessage={result.error}
+        initialErrorStatus={result.statusCode}
         initialQuiz={null}
         slug={slug}
       />
@@ -46,7 +128,9 @@ export default async function QuizPlayerPage({
 
   const quiz = toQuizPlayViewModel(result.data);
   const author: QuizPlayAuthorViewModel | null = quiz.author;
-  const authorName = author ? getUserDisplayName(author) : 'RinKuzu Community';
+  // Structured data names a person only from a real name, never an email,
+  // its local part or a placeholder (RIN-840); otherwise RinKuzu is the author.
+  const schemaAuthorName = author?.displayName?.trim() || author?.name?.trim() || undefined;
   const fallbackDescription =
     locale === 'vi'
       ? `Luyện tập ${quiz.questionCount} câu hỏi trong quiz ${quiz.title} trên RinKuzu.`
@@ -65,7 +149,7 @@ export default async function QuizPlayerPage({
             quizSlug={slug}
             quizTitle={quiz.title}
             {...(quiz.description ? { quizDescription: quiz.description } : {})}
-            authorName={authorName}
+            {...(schemaAuthorName ? { authorName: schemaAuthorName } : {})}
             createdAt={quiz.createdAt}
             updatedAt={quiz.updatedAt}
           />
@@ -73,9 +157,14 @@ export default async function QuizPlayerPage({
       ) : null}
       <QuizPlayerClient
         initialErrorCode={null}
-        initialErrorMessage={null}
+        initialErrorStatus={null}
         initialQuiz={quiz}
         slug={slug}
+        entry={firstValue(query['entry'])}
+        mode={firstValue(query['mode'])}
+        // The first question is server-rendered from this seed and layout guess (RIN-1032).
+        shuffleSeed={randomInt(2 ** 31)}
+        initialMobile={looksLikePhone(requestHeaders)}
       />
     </>
   );

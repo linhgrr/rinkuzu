@@ -8,14 +8,21 @@ import type {
 } from '@/dtos/user';
 
 export type AttemptOwner =
-  | { userId: string; role?: string; guestEmail?: never }
-  | { userId?: never; guestEmail: string };
+  | { userId: string; role?: string; guestEmail?: never; guestClaimToken?: never }
+  | { userId?: never; guestEmail: string; guestClaimToken?: never }
+  | { userId?: never; guestEmail?: never; guestClaimToken: string };
+
+export interface AttemptDetailOptions {
+  /** Learner locale, used to pick `nextQuiz`. */
+  locale?: string;
+}
 
 export interface IUserService {
   getUserAttempts(userId: string, options: UserAttemptListQueryDto): Promise<UserAttemptListDto>;
   getAttemptDetails(
     attemptId: string,
     owner: AttemptOwner,
+    options?: AttemptDetailOptions,
   ): Promise<ServiceResult<AttemptDetailDto>>;
 
   getPublicProfile(

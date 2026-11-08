@@ -73,6 +73,9 @@ const subscriptionCronSecretSchema = z
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    // Vercel builds Preview with NODE_ENV=production; VERCEL_ENV carries the real target.
+    // Kept a plain string so an unknown value from Vercel never breaks parsing.
+    VERCEL_ENV: z.string().optional(),
     MONGODB_URI: z
       .string()
       .min(1, 'MONGODB_URI is required')
@@ -85,7 +88,9 @@ const envSchema = z
       .string()
       .min(32, 'AUTH_SECRET must be at least 32 chars')
       .refine((v) => v !== 'replace-me', 'AUTH_SECRET must be changed from the default'),
-    AUTH_URL: z.url('AUTH_URL must be a valid URL'),
+    // Required outside Vercel Preview (see superRefine). Auth.js rewrites every request
+    // origin to AUTH_URL, so a Preview must leave it unset to keep logins on its own host.
+    AUTH_URL: z.url('AUTH_URL must be a valid URL').optional(),
     AUTH_TRUST_HOST: z.enum(['true', 'false']).default('false'),
     NEXT_PUBLIC_SITE_URL: z.url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
     NEXT_PUBLIC_API_URL: z.url('NEXT_PUBLIC_API_URL must be a valid URL'),
@@ -121,16 +126,27 @@ const envSchema = z
     AUTH_GOOGLE_ID: z.string().optional(),
     AUTH_GOOGLE_SECRET: z.string().optional(),
     SUBSCRIPTION_CRON_SECRET: subscriptionCronSecretSchema,
-    IMGBB_API_KEY: z.string().optional(),
+    // Public R2 bucket for user images, served on IMAGE_PUBLIC_BASE_URL (no trailing slash).
+    IMAGE_STORAGE_BUCKET: z.string().min(1).optional(),
+    IMAGE_PUBLIC_BASE_URL: z
+      .url()
+      .refine((value) => !value.endsWith('/'), 'IMAGE_PUBLIC_BASE_URL must not end with /')
+      .optional(),
     NEXT_PUBLIC_GA_ID: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.url().optional(),
     NEXT_IMAGE_UNOPTIMIZED: z.enum(['true', 'false']).optional(),
   })
   .superRefine((data, ctx) => {
+    // Fail closed: only an explicit Vercel preview/development build relaxes production checks.
+    const isDeployedProduction =
+      data.NODE_ENV === 'production' &&
+      data.VERCEL_ENV !== 'preview' &&
+      data.VERCEL_ENV !== 'development';
+
     const mongoDatabaseName = readMongoDatabaseName(data.MONGODB_URI);
     if (
-      data.NODE_ENV === 'production' &&
+      isDeployedProduction &&
       (mongoDatabaseName === null || mongoDatabaseName.toLowerCase() === 'test')
     ) {
       ctx.addIssue({
@@ -140,7 +156,15 @@ const envSchema = z
       });
     }
 
-    if (data.NODE_ENV === 'production' && data.AUTH_TRUST_HOST !== 'true') {
+    if (data.AUTH_URL === undefined && data.VERCEL_ENV !== 'preview') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['AUTH_URL'],
+        message: 'AUTH_URL is required (only a Vercel Preview may omit it)',
+      });
+    }
+
+    if (isDeployedProduction && data.AUTH_TRUST_HOST !== 'true') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['AUTH_TRUST_HOST'],

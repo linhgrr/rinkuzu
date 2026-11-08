@@ -68,6 +68,11 @@ export class AttemptPersistenceMapper {
       ...(record.premiumSnapshotHash === undefined
         ? {}
         : { premiumSnapshotHash: record.premiumSnapshotHash }),
+      ...(record.retryOfAttemptId == null
+        ? {}
+        : { retryOfAttemptId: serializeId(record.retryOfAttemptId, 'attempt.retryOfAttemptId') }),
+      ...(record.questionIndices == null ? {} : { questionIndices: record.questionIndices }),
+      ...(record.mode == null ? {} : { mode: record.mode }),
     };
   }
 }

@@ -1,7 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
+import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
 import { ShareButtons } from '@/components/blog/ShareButtons';
@@ -13,27 +13,25 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  const canonicalUrl = `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`;
   const base = buildLocalizedMetadata({
     locale,
     path: '/blog/ai-powered-quiz-generation-guide',
-    title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
+    title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
     description:
-      "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
+      "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
     imagePath: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
   });
   return {
     ...base,
     openGraph: {
       ...base.openGraph,
-      title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
+      title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
       description:
-        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
-      url: canonicalUrl,
+        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
       type: 'article',
       publishedTime: '2026-03-27T00:00:00.000Z',
       modifiedTime: '2026-03-27T00:00:00.000Z',
-      authors: [`${siteUrl.origin}/blog/authors/rinkuzu-team`],
+      authors: [canonicalFor(locale, '/blog/authors/rinkuzu-team')],
       images: [
         {
           url: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
@@ -45,9 +43,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
+      title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
       description:
-        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
+        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
       images: ['https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80'],
     },
   };
@@ -56,10 +54,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const articleSchema = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  name: 'How AI Transforms PDF Learning into Adaptive Quizzes',
-  headline: 'How AI Transforms PDF Learning into Adaptive Quizzes',
+  name: 'How AI Transforms PDF Learning into Personalized Quizzes',
+  headline: 'How AI Transforms PDF Learning into Personalized Quizzes',
   description:
-    "Discover how RinKuzu's ALSS system turns supported PDF lecture material into adaptive quiz practice.",
+    "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
   url: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
   datePublished: '2026-03-27',
   dateModified: '2026-03-27',
@@ -97,7 +95,7 @@ const breadcrumbSchema = {
     {
       '@type': 'ListItem',
       position: 3,
-      name: 'How AI Transforms PDF Learning into Adaptive Quizzes',
+      name: 'How AI Transforms PDF Learning into Personalized Quizzes',
       item: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
     },
   ],
@@ -203,9 +201,8 @@ Start with supported PDF material and create a personalized practice session.
 
 export default async function BlogPost({ params }: Props) {
   const { locale } = await params;
-  void locale;
-  const postUrl = `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`;
-  const postTitle = 'How AI Transforms PDF Learning into Adaptive Quizzes';
+  const postUrl = canonicalFor(locale, '/blog/ai-powered-quiz-generation-guide');
+  const postTitle = 'How AI Transforms PDF Learning into Personalized Quizzes';
   const headings = extractHeadingsFromMarkdown(postContent);
 
   return (
@@ -239,7 +236,7 @@ export default async function BlogPost({ params }: Props) {
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
             Discover how RinKuzu&apos;s ALSS system, SAINT-Bloom, Dueling DQN, and Gemini, turns
-            supported PDF lecture material into adaptive quiz practice.
+            supported PDF lecture material into personalized quiz practice.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
             <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
@@ -276,7 +273,7 @@ export default async function BlogPost({ params }: Props) {
 
         {/* Article content — centered */}
         <div className="max-w-3xl mx-auto">
-          <MarkdownRenderer content={postContent} />
+          <MarkdownRenderer content={postContent} headingIds />
 
           <ShareButtons url={postUrl} title={postTitle} />
 
@@ -293,13 +290,19 @@ export default async function BlogPost({ params }: Props) {
                 complex topics with RinKuzu.
               </p>
               <Link
-                href="/register"
+                href="/register?next=/adaptive/upload"
                 className="inline-flex items-center justify-center rounded-full bg-brand-trust px-10 py-4 font-bold text-white shadow-lg shadow-green-500/20 transition-[background-color,transform] hover:scale-105 hover:bg-brand-trust-hover active:scale-95"
               >
                 Get Started Free
               </Link>
               <p className="mt-4 text-xs text-neutral-400">
                 No credit card required · Free plan available
+              </p>
+              <p className="mt-2 text-sm text-neutral-300">
+                Questions about uploads or plans?{' '}
+                <Link href="/faq" className="underline hover:text-white">
+                  Read the FAQ
+                </Link>
               </p>
             </div>
           </div>

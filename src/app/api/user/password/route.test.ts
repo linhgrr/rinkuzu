@@ -98,4 +98,21 @@ describe('PUT /api/user/password', () => {
       error: { detail: 'Current password is incorrect' },
     });
   });
+
+  it('keeps the password_not_set code for an account without a password', async () => {
+    changePasswordMock.mockResolvedValue({
+      success: false,
+      error: 'Password change is not available for this account',
+      statusCode: 400,
+      code: 'password_not_set',
+    });
+
+    const response = await PUT(
+      request({ currentPassword: 'oldpass12', newPassword: 'newpass12' }),
+      routeContext,
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: { code: 'password_not_set' } });
+  });
 });

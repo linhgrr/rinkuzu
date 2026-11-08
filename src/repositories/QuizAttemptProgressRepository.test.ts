@@ -6,6 +6,8 @@ import { QuizAttemptIdempotencyConflictError } from '@/errors/quiz-attempt';
 const modelMocks = vi.hoisted(() => ({
   attemptCreate: vi.fn(),
   attemptFindOne: vi.fn(),
+  attemptFindOneAndUpdate: vi.fn(),
+  loggerWarn: vi.fn(),
   attemptLean: vi.fn(),
   attemptSelect: vi.fn(),
   attemptSession: vi.fn(),
@@ -23,7 +25,11 @@ vi.mock('@/models/Attempt', () => ({
   default: {
     create: modelMocks.attemptCreate,
     findOne: modelMocks.attemptFindOne,
+    findOneAndUpdate: modelMocks.attemptFindOneAndUpdate,
   },
+}));
+vi.mock('@/lib/logger', () => ({
+  logger: { warn: modelMocks.loggerWarn, info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 vi.mock('@/models/QuestionProgress', () => ({
   default: { bulkWrite: modelMocks.questionBulkWrite },
@@ -181,5 +187,161 @@ describe('QuizAttemptProgressRepository', () => {
     ).rejects.toBeInstanceOf(QuizAttemptIdempotencyConflictError);
     expect(modelMocks.attemptCreate).not.toHaveBeenCalled();
     expect(session.endSession).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the saved full-quiz progress when a quick round is submitted (RIN-937)', async () => {
+    await new QuizAttemptProgressRepository().recordSubmittedAttempt({
+      ...submission,
+      mode: 'quick',
+      questionIndices: [16],
+    });
+
+    expect(userProgress.save).toHaveBeenCalledWith({ session });
+    expect(modelMocks.quizProgressDeleteOne).not.toHaveBeenCalled();
+  });
+
+  it('stores a quick round and binds its idempotency key to the played indices (RIN-936)', async () => {
+    const quick = { ...submission, mode: 'quick' as const, questionIndices: [16] };
+
+    await new QuizAttemptProgressRepository().recordSubmittedAttempt(quick);
+
+    const created = modelMocks.attemptCreate.mock.calls[0]?.[0]?.[0];
+    expect(created).toMatchObject({ mode: 'quick', questionIndices: [16] });
+    expect(created).not.toHaveProperty('retryOfAttemptId');
+    const stored = {
+      _id: 'attempt-1',
+      submissionDigest: created?.submissionDigest as string,
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    };
+    modelMocks.attemptLean.mockResolvedValue(stored);
+    modelMocks.attemptCreate.mockClear();
+
+    await expect(
+      new QuizAttemptProgressRepository().recordSubmittedAttempt(quick),
+    ).resolves.toMatchObject({ id: 'attempt-1' });
+    await expect(
+      new QuizAttemptProgressRepository().recordSubmittedAttempt({
+        ...quick,
+        questionIndices: [3],
+      }),
+    ).rejects.toBeInstanceOf(QuizAttemptIdempotencyConflictError);
+    await expect(
+      new QuizAttemptProgressRepository().recordSubmittedAttempt(submission),
+    ).rejects.toBeInstanceOf(QuizAttemptIdempotencyConflictError);
+    expect(modelMocks.attemptCreate).not.toHaveBeenCalled();
+  });
+
+  describe('claimGuestAttempts (RIN-1028)', () => {
+    const userId = '507f191e810c19729de860ec';
+    const now = new Date('2026-11-06T01:00:00.000Z');
+    const claimableSince = new Date('2026-11-05T01:00:00.000Z');
+    const claimedRecord = {
+      _id: 'attempt-guest',
+      correctAnswers: 1,
+      totalQuestions: 2,
+      quizSnapshot: {
+        slug: 'architecture',
+        questions: [
+          {
+            _id: 'q-right',
+            question: 'Layer?',
+            options: ['Domain', 'UI'],
+            type: 'single',
+            correctIndex: 0,
+          },
+          {
+            _id: 'q-wrong',
+            question: 'Port?',
+            options: ['In', 'Out'],
+            type: 'single',
+            correctIndex: 1,
+          },
+        ],
+      },
+      answers: [
+        { kind: 'single', selectedIndex: 0 },
+        { kind: 'single', selectedIndex: 0 },
+      ],
+    };
+
+    beforeEach(() => {
+      modelMocks.attemptFindOneAndUpdate.mockReturnValue({
+        lean: vi.fn().mockResolvedValue(claimedRecord),
+      });
+    });
+
+    it('writes review-queue progress for the wrong answers only, after the claim commits', async () => {
+      modelMocks.questionBulkWrite.mockResolvedValue({});
+
+      const claimed = await new QuizAttemptProgressRepository().claimGuestAttempts(
+        userId,
+        ['hash-1'],
+        now,
+        claimableSince,
+      );
+
+      expect(claimed).toEqual(['attempt-guest']);
+      expect(userProgress.save).toHaveBeenCalledWith({ session });
+      expect(modelMocks.questionBulkWrite).toHaveBeenCalledOnce();
+      const [writes, options] = modelMocks.questionBulkWrite.mock.calls[0] ?? [];
+      // Outside the transaction: no session.
+      expect(options).toEqual({ ordered: false });
+      expect(writes).toEqual([
+        {
+          updateOne: {
+            filter: { userId, quizSlug: 'architecture', questionId: 'q-wrong' },
+            update: {
+              $setOnInsert: expect.objectContaining({
+                userId,
+                quizSlug: 'architecture',
+                questionId: 'q-wrong',
+                questionRef: { text: 'Port?', options: ['In', 'Out'], correctIndexes: [1] },
+                srsLevel: 0,
+                nextReviewDate: now,
+              }),
+            },
+            upsert: true,
+          },
+        },
+      ]);
+    });
+
+    it('keeps the claim when the progress write fails and logs no learner data', async () => {
+      modelMocks.questionBulkWrite.mockRejectedValue(
+        Object.assign(new Error('write failed for q-wrong'), { name: 'MongoBulkWriteError' }),
+      );
+
+      const claimed = await new QuizAttemptProgressRepository().claimGuestAttempts(
+        userId,
+        ['hash-1'],
+        now,
+        claimableSince,
+      );
+
+      expect(claimed).toEqual(['attempt-guest']);
+      expect(userProgress.save).toHaveBeenCalledWith({ session });
+      expect(modelMocks.loggerWarn).toHaveBeenCalledOnce();
+      expect(modelMocks.loggerWarn).toHaveBeenCalledWith(
+        { attemptId: 'attempt-guest', errorClass: 'MongoBulkWriteError' },
+        expect.any(String),
+      );
+      expect(session.endSession).toHaveBeenCalledOnce();
+    });
+
+    it('writes nothing when no attempt matches the hash', async () => {
+      modelMocks.attemptFindOneAndUpdate.mockReturnValue({ lean: vi.fn().mockResolvedValue(null) });
+
+      await expect(
+        new QuizAttemptProgressRepository().claimGuestAttempts(
+          userId,
+          ['hash-1'],
+          now,
+          claimableSince,
+        ),
+      ).resolves.toEqual([]);
+      expect(modelMocks.questionBulkWrite).not.toHaveBeenCalled();
+    });
   });
 });

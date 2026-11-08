@@ -60,7 +60,7 @@
   "emptyStateDescription": "Hai cách học: tạo quiz tĩnh từ PDF, hoặc để AI dựng lộ trình học cá nhân hóa.",
   "emptyStateCreateQuiz": "Tạo quiz đầu tiên",
   "emptyStateCreateQuizSub": "Tải PDF, nhận quiz ngay",
-  "emptyStateAdaptive": "Thử Học Cá Nhân Hóa",
+  "emptyStateAdaptive": "Thử học cá nhân hóa",
   "emptyStateAdaptiveSub": "AI dẫn dắt theo nhịp của bạn",
   "emptyStateExplore": "Hoặc xem các quiz công khai",
   "home": {
@@ -70,7 +70,15 @@
     "hero": {
       "title": "Cá nhân hóa lộ trình học tập của bạn với AI",
       "description": "AI phân tích tiến độ và gợi ý đúng bài học, quiz và kỹ năng bạn nên cải thiện tiếp theo.",
-      "cta": "Bắt đầu học"
+      "cta": "Bắt đầu học",
+      "adaptiveLink": "Hoặc tải PDF lên để học cá nhân hóa"
+    },
+    "starter": {
+      "title": "Mới đến? Thử một bài trắc nghiệm 2 phút",
+      "subtitle": "Không cần tải tài liệu lên. Chọn một bài có sẵn và nhận kết quả đầu tiên sau khoảng hai phút.",
+      "start": "Bắt đầu",
+      "alternativesLabel": "Hoặc thử một bài khác",
+      "questionCount": "{count} câu hỏi"
     },
     "quizBuilder": {
       "title": "Tạo Quiz",
@@ -95,8 +103,7 @@
     },
     "continueLearning": {
       "title": "Tiếp tục học",
-      "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại",
-      "emptyAction": "Bắt đầu học"
+      "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại"
     },
     "recentOwnedQuizzes": {
       "title": "Quiz gần đây của bạn",

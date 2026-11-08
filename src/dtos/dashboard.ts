@@ -32,10 +32,22 @@ export interface DashboardInProgressQuizDto {
   updatedAt: string;
 }
 
+export interface StarterQuizDto {
+  slug: string;
+  title: string;
+  /** Questions the learner will see: the quick-round size (10) when `quick`. */
+  questionCount: number;
+  locale: string;
+  /** Over 15 questions: the link opens a quick round (`?mode=quick`, RIN-1177). */
+  quick: boolean;
+}
+
 export interface DashboardBootstrapDto {
   stats: DashboardStatsDto;
   adaptiveSubjects: PipelineJobHistoryItem[];
   inProgressQuizzes: DashboardInProgressQuizDto[];
   recentOwnedQuizzes: QuizListItemDto[];
   recentPublicQuizzes: QuizListItemDto[];
+  isNewLearner: boolean;
+  starterQuizzes: StarterQuizDto[];
 }

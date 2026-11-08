@@ -1,5 +1,5 @@
 import { getAdminQuizService } from '@/lib/admin-quiz-factory';
-import { createAdminQuizIdRoute } from './quiz-id-route';
+import { createAdminQuizIdRoute, createAdminQuizVisibilityRoute } from './quiz-id-route';
 
 const adminQuizService = getAdminQuizService();
 
@@ -10,4 +10,9 @@ export const GET = createAdminQuizIdRoute({
 export const DELETE = createAdminQuizIdRoute({
   execute: (id) => adminQuizService.deleteAdminQuiz(id),
   successMeta: { message: 'Quiz deleted successfully' },
+});
+
+export const PATCH = createAdminQuizVisibilityRoute({
+  execute: (id, visibility, actor) =>
+    adminQuizService.setAdminQuizVisibility(id, visibility, actor),
 });

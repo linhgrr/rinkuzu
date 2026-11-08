@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildMigratedPremiumSnapshot,
+  imageCdnHost,
+  isCopyableImageUrl,
   migratePremiumQuizCatalog,
   secureLegacyPremiumQuiz,
   verifyPremiumQuizCatalog,
@@ -205,6 +207,28 @@ describe('Premium quiz catalog migration', () => {
     expect(result.questionHashes).toHaveLength(1);
   });
 
+  it('fetch-copies only https images on the image CDN host, never ImgBB', () => {
+    expect(imageCdnHost({})).toBe('cdn.rinkuzu.app');
+    expect(imageCdnHost({ IMAGE_PUBLIC_BASE_URL: 'https://IMG.example.test' })).toBe(
+      'img.example.test',
+    );
+    const host = imageCdnHost({});
+    expect(isCopyableImageUrl('https://cdn.rinkuzu.app/images/question/2026/a.png', host)).toBe(
+      true,
+    );
+    expect(isCopyableImageUrl('https://CDN.rinkuzu.app/images/question/2026/a.png', host)).toBe(
+      true,
+    );
+    for (const url of [
+      'https://i.ibb.co/abc123/photo.png',
+      'http://cdn.rinkuzu.app/images/question/2026/a.png',
+      'https://cdn.rinkuzu.app.evil.test/images/a.png',
+      'not a url',
+    ]) {
+      expect(isCopyableImageUrl(url, host)).toBe(false);
+    }
+  });
+
   it('rewrites every legacy image and retains an available source PDF privately', async () => {
     const storage = {
       copyImage: async (url: string, quizId: string) =>
@@ -224,9 +248,9 @@ describe('Premium quiz catalog migration', () => {
           {
             _id: 'q1',
             question: 'Pick one',
-            questionImage: 'https://i.ibb.co/question.jpg',
+            questionImage: 'https://cdn.rinkuzu.app/images/question/2026/a.jpg',
             options: ['A', 'B'],
-            optionImages: ['https://i.ibb.co/option.jpg', undefined],
+            optionImages: ['https://cdn.rinkuzu.app/images/option/2026/b.jpg', undefined],
             type: 'single',
             correctIndex: 0,
           },

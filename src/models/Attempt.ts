@@ -14,6 +14,9 @@ interface AttemptQuizSnapshotDocument {
 interface AttemptDocument {
   user?: Types.ObjectId;
   guestEmail?: string;
+  /** SHA-256 hex of the guest's claim token (RIN-912). Never returned or logged. */
+  guestClaimTokenHash?: string;
+  claimedAt?: Date;
   idempotencyKey: string;
   submissionDigest: string;
   quiz: Types.ObjectId;
@@ -25,6 +28,9 @@ interface AttemptDocument {
   totalQuestions: number;
   answers: SelectedAnswerPersistenceRecord[];
   takenAt: Date;
+  retryOfAttemptId?: Types.ObjectId;
+  questionIndices?: number[];
+  mode?: 'quick' | 'full';
 }
 
 const AttemptQuizSnapshotSchema = new Schema<AttemptQuizSnapshotDocument>(
@@ -94,6 +100,14 @@ const AttemptSchema = new Schema<AttemptDocument>({
     lowercase: true,
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Guest email is invalid'],
   },
+  guestClaimTokenHash: {
+    type: String,
+    select: false,
+    match: [/^[a-f0-9]{64}$/, 'Guest claim token hash must be a SHA-256 hex digest'],
+  },
+  claimedAt: {
+    type: Date,
+  },
   idempotencyKey: {
     type: String,
     required: [true, 'Idempotency key is required'],
@@ -159,11 +173,74 @@ const AttemptSchema = new Schema<AttemptDocument>({
     type: Date,
     default: Date.now,
   },
+  // Retry-missed attempts (RIN-914): optional and additive. `questionIndices[i]` is the quiz
+  // question index answered by `answers[i]`; the snapshot already holds only those questions.
+  retryOfAttemptId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Attempt',
+    immutable: true,
+  },
+  questionIndices: {
+    type: [Number],
+    default: undefined,
+    immutable: true,
+  },
+  // Quick round (RIN-936): optional and additive; absent means a full attempt. A quick attempt
+  // records `questionIndices` in play order and its snapshot holds only the played questions.
+  mode: {
+    type: String,
+    enum: ['quick', 'full'],
+    immutable: true,
+  },
 });
 
 AttemptSchema.pre('validate', function validateIdentity() {
-  if (Boolean(this.user) === Boolean(this.guestEmail)) {
+  // Exactly one owner: a user, a legacy guest email, or a guest claim-token hash.
+  // A claimed attempt (RIN-912 part 3) has `user` + `claimedAt` and no hash.
+  const owners = [this.user, this.guestEmail, this.guestClaimTokenHash].filter(Boolean).length;
+  if (owners !== 1) {
     this.invalidate('user', 'Exactly one attempt identity is required');
+  }
+  if (this.claimedAt && !this.user) {
+    this.invalidate('claimedAt', 'Only a user-owned attempt can be claimed');
+  }
+});
+
+AttemptSchema.pre('validate', function validateRetryContract() {
+  const indices = this.questionIndices;
+  const isQuick = this.mode === 'quick';
+  if (isQuick && this.retryOfAttemptId) {
+    this.invalidate('questionIndices', 'A quick round cannot record retryOfAttemptId');
+    return;
+  }
+  if (Boolean(this.retryOfAttemptId) !== Boolean(indices) && !isQuick) {
+    this.invalidate(
+      'questionIndices',
+      'Retry attempts record retryOfAttemptId and questionIndices',
+    );
+    return;
+  }
+  if (isQuick) {
+    const unique =
+      indices?.every(isNonNegativeInteger) === true && new Set(indices).size === indices.length;
+    if (!indices || !unique || indices.length !== this.answers.length) {
+      this.invalidate(
+        'questionIndices',
+        'Quick rounds record unique questionIndices, one per answer',
+      );
+    }
+    return;
+  }
+  if (!indices) return;
+  const ascendingUnique = indices.every(
+    (value, index) =>
+      isNonNegativeInteger(value) && (index === 0 || value > (indices[index - 1] ?? -1)),
+  );
+  if (!ascendingUnique || indices.length !== this.answers.length) {
+    this.invalidate(
+      'questionIndices',
+      'questionIndices must be ascending unique indices, one per answer',
+    );
   }
 });
 
@@ -317,6 +394,24 @@ AttemptSchema.index(
     unique: true,
     partialFilterExpression: {
       guestEmail: { $type: 'string' },
+      idempotencyKey: { $type: 'string' },
+    },
+  },
+);
+
+AttemptSchema.index(
+  { guestClaimTokenHash: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { guestClaimTokenHash: { $type: 'string' } },
+  },
+);
+AttemptSchema.index(
+  { guestClaimTokenHash: 1, idempotencyKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      guestClaimTokenHash: { $type: 'string' },
       idempotencyKey: { $type: 'string' },
     },
   },

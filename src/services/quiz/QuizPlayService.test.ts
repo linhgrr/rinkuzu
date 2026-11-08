@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
@@ -46,6 +47,7 @@ function createService() {
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     }),
     findIdBySlug: vi.fn(),
+    findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -54,6 +56,9 @@ function createService() {
     findForPlay: vi.fn(),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
+    findMetadataBySlug: vi.fn(),
+    findNonIndexableOwnerCandidates: vi.fn(),
+    findPublicSitemapEntries: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
     findTopCreators: vi.fn(),
@@ -91,6 +96,27 @@ function createService() {
     ),
   };
 }
+
+describe('QuizPlayService slug aliases', () => {
+  it('returns the canonical slug for a former slug', async () => {
+    const { service, quizRepository } = createService();
+    vi.mocked(quizRepository.findCanonicalSlugByAlias).mockResolvedValue('cach-ghi-nho-096007');
+
+    await expect(service.resolveSlugAlias('cch-ghi-nh-096007')).resolves.toBe(
+      'cach-ghi-nho-096007',
+    );
+    expect(quizRepository.findCanonicalSlugByAlias).toHaveBeenCalledWith('cch-ghi-nh-096007');
+  });
+
+  it('returns null for an unknown slug or an alias equal to the slug (no redirect loop)', async () => {
+    const { service, quizRepository } = createService();
+    vi.mocked(quizRepository.findCanonicalSlugByAlias).mockResolvedValueOnce(null);
+    await expect(service.resolveSlugAlias('unknown')).resolves.toBeNull();
+
+    vi.mocked(quizRepository.findCanonicalSlugByAlias).mockResolvedValueOnce('same-slug');
+    await expect(service.resolveSlugAlias('same-slug')).resolves.toBeNull();
+  });
+});
 
 describe('QuizPlayService progress operations', () => {
   beforeEach(() => {
@@ -357,7 +383,8 @@ describe('QuizPlayService progress operations', () => {
       [2],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       null,
-      'guest@example.com',
+      undefined,
+      'T'.repeat(43),
     );
 
     assertFail(result);
@@ -395,7 +422,7 @@ describe('QuizPlayService progress operations', () => {
     expect(quizRepository.findBySlug).not.toHaveBeenCalled();
   });
 
-  it('resolves guest email identities and rejects missing identification', async () => {
+  it('rejects a guest submit without a claim token (RIN-921)', async () => {
     const { service, quizRepository, attemptProgressRepository } = createService();
     vi.mocked(quizRepository.findForPlay).mockResolvedValue({
       id: quizId,
@@ -422,27 +449,62 @@ describe('QuizPlayService progress operations', () => {
       totalQuestions: 1,
     });
 
-    const guest = await service.submitQuizAttempt(
-      'quiz',
-      [0],
-      '018f7494-8bd8-7b8a-a387-3bc5a14f22a2',
-      null,
-      '  Guest@Example.com ',
-    );
-    assertOk(guest);
-    expect(attemptProgressRepository.recordSubmittedAttempt).toHaveBeenCalledWith(
-      expect.objectContaining({ guestEmail: 'guest@example.com' }),
-    );
-
     const missing = await service.submitQuizAttempt(
       'quiz',
       [0],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a3',
       null,
-      undefined,
     );
     assertFail(missing);
     expect(missing).toMatchObject({ statusCode: 400, error: 'User identification required' });
+    expect(attemptProgressRepository.recordSubmittedAttempt).not.toHaveBeenCalled();
+  });
+
+  it('stores only the claim-token hash for a guest token submit (RIN-912)', async () => {
+    const { service, quizRepository, attemptProgressRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      visibility: 'public',
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mockResolvedValue({
+      id: 'attempt-3',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+    const token = 'T'.repeat(43);
+
+    const result = await service.submitQuizAttempt(
+      'quiz',
+      [1],
+      '018f7494-8bd8-7b8a-a387-3bc5a14f22a4',
+      null,
+      undefined,
+      token,
+    );
+
+    assertOk(result);
+    const recorded = vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mock.calls[0]?.[0];
+    expect(recorded).toMatchObject({
+      guestClaimTokenHash: createHash('sha256').update(token).digest('hex'),
+    });
+    expect(recorded).not.toHaveProperty('guestEmail');
+    expect(recorded).not.toHaveProperty('userId');
+    expect(JSON.stringify(recorded)).not.toContain(token);
   });
 
   it('resolves session email to a user id and returns 404 when unknown', async () => {
@@ -570,7 +632,8 @@ describe('QuizPlayService progress operations', () => {
       [0],
       '018f7494-8bd8-7b8a-a387-3bc5a14f22a6',
       null,
-      'guest@example.com',
+      undefined,
+      'T'.repeat(43),
     );
 
     assertFail(result);

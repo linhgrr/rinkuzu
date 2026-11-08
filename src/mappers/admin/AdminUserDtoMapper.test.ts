@@ -28,6 +28,7 @@ describe('AdminUserDtoMapper', () => {
       role: 'user',
       disable: 0,
       disabledAt: null,
+      isTestAccount: false,
       createdAt: '2026-07-01T00:00:00.000Z',
       subscription: {
         plan: { id: 'premium-p1m', name: 'Premium' },
@@ -36,6 +37,10 @@ describe('AdminUserDtoMapper', () => {
         isActive: true,
       },
     });
+  });
+
+  it('exposes the admin-set test-account flag', () => {
+    expect(AdminUserDtoMapper.toDto({ ...user, isTestAccount: true }).isTestAccount).toBe(true);
   });
 
   it('does not expose authentication fields or authVersion', () => {

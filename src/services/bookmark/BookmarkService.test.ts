@@ -35,6 +35,7 @@ function bookmark(): Bookmark {
 function createRepository(): Mocked<IBookmarkRepository> {
   return {
     findByUserId: vi.fn(),
+    countByQuiz: vi.fn(),
     create: vi.fn(),
     deleteByIdAndUser: vi.fn(),
   };
@@ -139,5 +140,20 @@ describe('BookmarkService', () => {
       '507f191e810c19729de860eb',
       owner.userId,
     );
+  });
+
+  it('lists the caller bookmarked quizzes with counts, capped at 100 quizzes', async () => {
+    const repository = createRepository();
+    repository.countByQuiz.mockResolvedValue({
+      quizzes: [{ slug: 'algorithms', title: 'Algorithms', count: 2 }],
+      total: 2,
+    });
+    const service = new BookmarkService(repository);
+
+    await expect(service.getBookmarkQuizzesByUser(owner.userId)).resolves.toEqual({
+      quizzes: [{ slug: 'algorithms', title: 'Algorithms', count: 2 }],
+      total: 2,
+    });
+    expect(repository.countByQuiz).toHaveBeenCalledWith(owner.userId, 100);
   });
 });

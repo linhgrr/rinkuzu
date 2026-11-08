@@ -26,6 +26,48 @@ import {
 } from '@/services/quiz/quiz-attempt-evaluation';
 import type { QuizAttemptAnswer } from '@/entities/QuizAttempt';
 import type { Quiz } from '@/entities/Quiz';
+import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import { objectIdSchema } from '@/lib/validation/common';
+import { hashGuestClaimToken } from '@/lib/guest-claim-token';
+import { deriveMissedQuestionIndices } from '@/services/quiz/quiz-retry';
+import { isQuickRoundEligible, QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
+
+type RetrySourceAttemptRepository = Pick<IAttemptRepository, 'findByIdWithQuiz'>;
+
+type SubsetAttemptFields =
+  | { retryOfAttemptId: string; questionIndices: number[] }
+  | { mode: 'quick'; questionIndices: number[] };
+
+const INVALID_QUICK_ROUND = {
+  success: false,
+  error: 'Invalid quick round',
+  statusCode: 400,
+  code: 'validation_error',
+} as const;
+
+/** The questions a submit is scored against and the attempt fields that record the subset. */
+interface AttemptSubset {
+  questions: Quiz['questions'];
+  subsetFields: SubsetAttemptFields | null;
+}
+
+function attemptSubset(
+  questions: Quiz['questions'],
+  subsetFields: SubsetAttemptFields | null,
+): AttemptSubset {
+  return { questions, subsetFields };
+}
+
+function isValidQuickRound(indices: readonly number[], quizQuestionCount: number): boolean {
+  return (
+    isQuickRoundEligible(quizQuestionCount) &&
+    indices.length === QUICK_ROUND_SIZE &&
+    new Set(indices).size === indices.length &&
+    indices.every((index) => Number.isInteger(index) && index >= 0 && index < quizQuestionCount)
+  );
+}
+
+const ATTEMPT_NOT_FOUND = { success: false, error: 'Attempt not found', statusCode: 404 } as const;
 
 interface FlashcardQuizFailureContext {
   logMessage: string;
@@ -38,7 +80,125 @@ export class QuizPlayService {
     private userRepository: IUserRepository,
     private quizProgressRepository: IQuizProgressRepository,
     private quizAttemptProgressRepository: IQuizAttemptProgressRepository,
+    private attemptRepository?: RetrySourceAttemptRepository,
   ) {}
+
+  /**
+   * Quiz question indices the learner missed in `retryOfAttemptId`, re-derived server-side.
+   * Owner only: an attempt of another user, of another quiz, or an unknown id is a 404.
+   */
+  private async resolveRetryQuestionIndices(
+    quiz: Quiz,
+    retryOfAttemptId: string,
+    userId: string,
+  ): Promise<ServiceResult<number[]>> {
+    if (!this.attemptRepository || !objectIdSchema.safeParse(retryOfAttemptId).success) {
+      return ATTEMPT_NOT_FOUND;
+    }
+    const source = await this.attemptRepository.findByIdWithQuiz(retryOfAttemptId, { userId });
+    if (!source || typeof source.quiz !== 'object' || source.quiz.id !== quiz.id) {
+      return ATTEMPT_NOT_FOUND;
+    }
+    const indices = deriveMissedQuestionIndices(source, quiz.questions);
+    if (indices.length === 0) {
+      return {
+        success: false,
+        error: 'Nothing to retry',
+        statusCode: 409,
+        code: 'nothing_to_retry',
+      };
+    }
+    return { success: true, data: indices };
+  }
+
+  /**
+   * The questions a submit is scored against: the whole quiz, a quick round (RIN-936) or a
+   * retry of missed questions (RIN-914), plus the attempt fields that record the subset.
+   */
+  private async resolveAttemptSubset(
+    quiz: Quiz,
+    authenticatedUserId: string | undefined,
+    retryOfAttemptId: string | undefined,
+    quickQuestionIndices: number[] | undefined,
+  ): Promise<ServiceResult<AttemptSubset>> {
+    if (quickQuestionIndices !== undefined) {
+      // The learner picks the 10; the server only checks them and scores in play order.
+      if (
+        retryOfAttemptId !== undefined ||
+        !isValidQuickRound(quickQuestionIndices, quiz.questions.length)
+      ) {
+        return INVALID_QUICK_ROUND;
+      }
+      return {
+        success: true,
+        data: attemptSubset(
+          quickQuestionIndices.flatMap((index) => quiz.questions[index] ?? []),
+          { mode: 'quick', questionIndices: quickQuestionIndices },
+        ),
+      };
+    }
+    if (retryOfAttemptId === undefined) {
+      return { success: true, data: attemptSubset(quiz.questions, null) };
+    }
+    if (!authenticatedUserId) {
+      return {
+        success: false,
+        error: 'Authentication required',
+        statusCode: 401,
+        code: 'unauthorized',
+      };
+    }
+    const retry = await this.resolveRetryQuestionIndices(
+      quiz,
+      retryOfAttemptId,
+      authenticatedUserId,
+    );
+    if (!retry.success) return retry;
+    return {
+      success: true,
+      data: attemptSubset(
+        retry.data.flatMap((index) => quiz.questions[index] ?? []),
+        { retryOfAttemptId, questionIndices: retry.data },
+      ),
+    };
+  }
+
+  /** `GET /api/quiz/<slug>/play?retryOf=<attemptId>`: only the missed questions, in order. */
+  async getRetryQuizForPlay(
+    slug: string,
+    retryOfAttemptId: string,
+    userId?: string,
+    userRole?: string,
+  ): Promise<ServiceResult<QuizPlayDetailDto>> {
+    if (!userId) {
+      return {
+        success: false,
+        error: 'Authentication required',
+        statusCode: 401,
+        code: 'unauthorized',
+      };
+    }
+    try {
+      const access = await requireQuizReadAccess(
+        await this.quizRepository.findBySlug(slug),
+        userId,
+        userRole,
+      );
+      if (!access.success) return access;
+      const quiz = access.data;
+
+      const retry = await this.resolveRetryQuestionIndices(quiz, retryOfAttemptId, userId);
+      if (!retry.success) return retry;
+
+      return {
+        success: true,
+        data: QuizDetailDtoMapper.toRetryPlayDetail(quiz, retryOfAttemptId, retry.data),
+      };
+    } catch (error) {
+      logger.error({ error }, 'Error in getRetryQuizForPlay');
+      return { success: false, error: 'Internal server error', statusCode: 500 };
+    }
+  }
 
   private async resolveQuizForRead(
     slug: string,
@@ -131,6 +291,11 @@ export class QuizPlayService {
     }
   }
 
+  async resolveSlugAlias(slug: string): Promise<string | null> {
+    const canonical = await this.quizRepository.findCanonicalSlugByAlias(slug);
+    return canonical && canonical !== slug ? canonical : null;
+  }
+
   async getQuizForPlay(
     slug: string,
     userRole?: string,
@@ -160,7 +325,9 @@ export class QuizPlayService {
     answers: QuizAttemptAnswer[],
     idempotencyKey: string,
     session: Session | null,
-    userEmail?: string,
+    retryOfAttemptId?: string,
+    guestClaimToken?: string,
+    quickQuestionIndices?: number[],
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
     try {
       const quiz = await this.quizRepository.findForPlay(slug);
@@ -180,7 +347,7 @@ export class QuizPlayService {
       if (sourceAccessError) return sourceAccessError;
 
       let authenticatedUserId: string | undefined;
-      let guestEmail: string | undefined;
+      let guestClaimTokenHash: string | undefined;
       if (session?.user?.id) {
         authenticatedUserId = session.user.id;
       } else if (session?.user?.email) {
@@ -193,8 +360,9 @@ export class QuizPlayService {
           };
         }
         authenticatedUserId = user.id;
-      } else if (userEmail) {
-        guestEmail = userEmail.trim().toLowerCase();
+      } else if (guestClaimToken) {
+        // RIN-912: no email is collected; only the token's hash identifies the guest.
+        guestClaimTokenHash = hashGuestClaimToken(guestClaimToken);
       } else {
         return {
           success: false,
@@ -203,12 +371,21 @@ export class QuizPlayService {
         };
       }
 
-      const evaluation = evaluateQuizAttempt(quiz.questions, answers);
+      const subset = await this.resolveAttemptSubset(
+        quiz,
+        authenticatedUserId,
+        retryOfAttemptId,
+        quickQuestionIndices,
+      );
+      if (!subset.success) return subset;
+      const { questions, subsetFields } = subset.data;
+
+      const evaluation = evaluateQuizAttempt(questions, answers);
 
       const attemptIdentity = authenticatedUserId
         ? { userId: authenticatedUserId }
-        : guestEmail
-          ? { guestEmail }
+        : guestClaimTokenHash
+          ? { guestClaimTokenHash }
           : null;
       if (!attemptIdentity) {
         throw new TypeError('Attempt identity is required');
@@ -224,8 +401,9 @@ export class QuizPlayService {
           title: quiz.title,
           slug: quiz.slug,
           ...(quiz.description === undefined ? {} : { description: quiz.description }),
-          questions: quiz.questions,
+          questions,
         },
+        ...subsetFields,
         answers: evaluation.answers,
         score: evaluation.score,
         correctAnswers: evaluation.correctAnswers,

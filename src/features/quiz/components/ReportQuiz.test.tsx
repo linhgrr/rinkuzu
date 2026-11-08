@@ -5,10 +5,15 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
+import { ApiResponseError } from '@/lib/api/client';
 
-const { reportQuizMock } = vi.hoisted(() => ({
+const { reportQuizMock, toastErrorMock } = vi.hoisted(() => ({
   reportQuizMock: vi.fn(),
+  toastErrorMock: vi.fn(),
 }));
+
+vi.mock('sonner', () => ({ toast: { error: toastErrorMock } }));
+vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 vi.mock('next-auth/react', () => ({
   useSession: () => ({ data: { user: { id: 'user-1' } } }),
@@ -16,6 +21,7 @@ vi.mock('next-auth/react', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string, values?: Record<string, number>) =>
     key === 'questionNumber' ? `Question ${values?.['number'] ?? ''}` : key,
+  useLocale: () => 'en',
 }));
 vi.mock('@/features/quiz/api/quiz-interaction-api', () => ({
   reportQuizViewModel: reportQuizMock,
@@ -59,5 +65,82 @@ describe('ReportQuiz', () => {
         'The marked answer is wrong',
       ),
     );
+  });
+
+  // RIN-987: a red warning link on every question outweighed the question itself.
+  it.each([true, false])('shows a quiet neutral report link at rest (compact=%s)', (compact) => {
+    render(
+      <ReportQuiz
+        compact={compact}
+        quizSlug="algebra"
+        quizTitle="Algebra"
+        questionId="507f1f77bcf86cd799439011"
+        questionNumber={3}
+        questionText="2 + 2 = ?"
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'reportQuestion' });
+    const restClasses = trigger.className.split(/\s+/).filter((name) => !name.includes(':'));
+    expect(restClasses).toContain('text-neutral-500');
+    expect(restClasses.some((name) => name.includes('red'))).toBe(false);
+    expect(trigger.className).toContain('hover:text-red-700');
+    expect(trigger.className).toContain('focus-visible:text-red-700');
+    expect(trigger.querySelector('svg[data-icon="flag"]')).toBeTruthy();
+  });
+
+  // RIN-682 gate run: the 2 s auto-close timer outlived the component and fired a
+  // setState after jsdom was torn down ("window is not defined").
+  it('cancels the auto-close timer when it unmounts after a report', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const { unmount } = render(
+        <ReportQuiz
+          quizSlug="algebra"
+          quizTitle="Algebra"
+          questionId="507f1f77bcf86cd799439011"
+          questionNumber={3}
+          questionText="2 + 2 = ?"
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'reportQuestion' }));
+      await user.type(screen.getByLabelText(/reportDetails/), 'The marked answer is wrong');
+      const submitButton = screen.getByRole('button', { name: 'submitReport' });
+      await waitFor(() => expect((submitButton as HTMLButtonElement).disabled).toBe(false));
+      await user.click(submitButton);
+      await waitFor(() => expect(reportQuizMock).toHaveBeenCalledOnce());
+      await waitFor(() => expect(vi.getTimerCount()).toBeGreaterThan(0));
+
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('toasts localized copy when the report fails, never the server text', async () => {
+    reportQuizMock.mockRejectedValueOnce(
+      new ApiResponseError({ message: 'reports collection locked', status: 500, payload: {} }),
+    );
+    const user = userEvent.setup();
+    render(
+      <ReportQuiz
+        quizSlug="algebra"
+        quizTitle="Algebra"
+        questionId="507f1f77bcf86cd799439011"
+        questionNumber={3}
+        questionText="2 + 2 = ?"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'reportQuestion' }));
+    await user.type(screen.getByLabelText(/reportDetails/), 'The marked answer is wrong');
+    const submitButton = screen.getByRole('button', { name: 'submitReport' });
+    await waitFor(() => expect((submitButton as HTMLButtonElement).disabled).toBe(false));
+    await user.click(submitButton);
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('errors.api.server'));
+    expect(toastErrorMock).not.toHaveBeenCalledWith('reports collection locked');
   });
 });

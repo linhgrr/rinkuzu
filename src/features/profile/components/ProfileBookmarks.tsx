@@ -3,29 +3,34 @@
 import { Link } from '@/i18n/navigation';
 import { useReducer } from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
-import useSWR from 'swr';
+import { useLocale, useTranslations } from 'next-intl';
+import useSWR, { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
 import { Pill } from '@/components/ui/Pill';
 import { QuestionContent } from '@/components/ui/QuestionContent';
-import { Skeleton } from '@/components/ui/Skeleton';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import Pagination from '@/components/ui/Pagination';
-import { HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlineTrash } from 'react-icons/hi';
 import { AskRinPanel } from '@/features/ask-rin-chan/components/AskRinPanel';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { getCorrectAnswerIndexes, getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
-import { ROUTES } from '@/shared/constants/routes';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import {
   deleteProfileBookmark,
   fetchProfileBookmarkListViewModel,
+  fetchProfileBookmarkQuizzes,
 } from '@/features/profile/api/profile-bookmarks-api';
 import type { ProfileBookmarkViewModel } from '@/features/profile/types/profile-bookmark-view-model';
+import {
+  BookmarkQuizFilter,
+  BookmarksHeader,
+  BookmarksBody,
+  BookmarksSkeleton,
+} from './ProfileBookmarksParts';
 
 const chatbotIcon = '/images/chatbot_icon.png';
 
@@ -40,14 +45,6 @@ interface BookmarkOptionImageProps {
 interface HydratedDateTextProps {
   dateString: string;
   label: string;
-}
-
-interface BookmarksHeaderProps {
-  t: TranslateFn;
-}
-
-interface BookmarksErrorBannerProps {
-  message?: string | null;
 }
 
 interface BookmarkCardProps {
@@ -68,13 +65,10 @@ interface BookmarksListProps {
   tCommon: TranslateFn;
 }
 
-interface EmptyBookmarksStateProps {
-  t: TranslateFn;
-  tCommon: TranslateFn;
-}
-
 interface ProfileBookmarksState {
   currentPage: number;
+  /** '' = all quizzes. */
+  quizSlug: string;
   currentBookmark: ProfileBookmarkViewModel | null;
   activeModal: BookmarkModal;
   removingBookmarkId: string | null;
@@ -84,6 +78,7 @@ interface ProfileBookmarksState {
 type ProfileBookmarksAction =
   | { type: 'patch'; value: Partial<ProfileBookmarksState> }
   | { type: 'setPage'; value: number }
+  | { type: 'setQuiz'; value: string }
   | { type: 'openAiModal'; bookmark: ProfileBookmarkViewModel }
   | { type: 'openRemoveModal'; bookmark: ProfileBookmarkViewModel }
   | { type: 'setHistoryTurns'; bookmarkId: string; turns: number }
@@ -91,6 +86,7 @@ type ProfileBookmarksAction =
 
 const initialState: ProfileBookmarksState = {
   currentPage: 1,
+  quizSlug: '',
   currentBookmark: null,
   activeModal: null,
   removingBookmarkId: null,
@@ -106,6 +102,8 @@ function profileBookmarksReducer(
       return { ...state, ...action.value };
     case 'setPage':
       return { ...state, currentPage: action.value };
+    case 'setQuiz':
+      return { ...state, quizSlug: action.value, currentPage: 1 };
     case 'openAiModal':
       return { ...state, currentBookmark: action.bookmark, activeModal: 'ai' };
     case 'openRemoveModal':
@@ -144,22 +142,6 @@ function HydratedDateText({ dateString, label }: HydratedDateTextProps) {
   );
 }
 
-function BookmarksHeader({ t }: BookmarksHeaderProps) {
-  return (
-    <h2 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
-      {t('bookmarkedQuestions')}
-    </h2>
-  );
-}
-
-function BookmarksErrorBanner({ message }: BookmarksErrorBannerProps) {
-  if (!message) {
-    return null;
-  }
-
-  return <ErrorState message={message} className="mb-4" />;
-}
-
 function BookmarkCard({
   bookmark,
   aiHistoryCount,
@@ -178,17 +160,12 @@ function BookmarkCard({
           <QuestionContent
             content={bookmark.question.text}
             variant="compact"
-            headingLevel={3}
+            headingLevel={2}
             className="font-home text-lg font-semibold text-ink"
           />
           <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-            <div className="font-home text-sm text-ink-muted">
-              <Link
-                href={`/quiz/${bookmark.quiz.slug}`}
-                className="text-accent hover:underline font-medium"
-              >
-                {bookmark.quiz.title}
-              </Link>
+            <div className="font-home text-sm font-medium text-ink-muted">
+              {bookmark.quiz.title}
             </div>
             <Pill tone={bookmark.question.type === 'single' ? 'warm' : 'cool'}>
               {bookmark.question.type === 'single' ? t('singleChoice') : t('multipleChoice')}
@@ -196,7 +173,16 @@ function BookmarkCard({
             <HydratedDateText dateString={bookmark.createdAt} label={bookmark.createdAtLabel} />
           </div>
         </div>
-        <div className="flex w-full gap-2 sm:w-auto">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          {/* 44px tap target on phones; the name starts with the visible text and adds the
+              quiz title, so each card's link is distinct for screen readers. */}
+          <Link
+            href={`/quiz/${bookmark.quiz.slug}`}
+            aria-label={`${t('openQuiz')}: ${bookmark.quiz.title}`}
+            className="inline-flex min-h-11 items-center px-1 font-home text-sm font-medium text-accent hover:underline sm:min-h-9"
+          >
+            {t('openQuiz')}
+          </Link>
           <Button
             variant="outline"
             size="sm"
@@ -227,17 +213,17 @@ function BookmarkCard({
           <div className="text-sm">
             <span className="font-medium text-neutral-700">{t('correct')}:</span>
             <div className="mt-1 space-y-1 text-green-600">
-              {correctAnswers.map((answer, index) => (
-                <div
-                  key={`${correctAnswerIndexes[index] ?? index}-${answer}`}
-                  className="flex gap-1"
-                >
-                  <span className="flex-shrink-0">
-                    {String.fromCharCode(65 + (correctAnswerIndexes[index] ?? index))}.
-                  </span>
-                  <QuestionContent content={answer} variant="answer" className="min-w-0 flex-1" />
-                </div>
-              ))}
+              {toStableContentEntries(correctAnswers).map(
+                ({ content: answer, key, sourceIndex }) => (
+                  <div key={key} className="flex gap-1">
+                    <span className="flex-shrink-0">
+                      {String.fromCharCode(65 + (correctAnswerIndexes[sourceIndex] ?? sourceIndex))}
+                      .
+                    </span>
+                    <QuestionContent content={answer} variant="answer" className="min-w-0 flex-1" />
+                  </div>
+                ),
+              )}
             </div>
           </div>
           <QuestionOptionsPreview
@@ -277,61 +263,57 @@ function BookmarksList({
   );
 }
 
-function EmptyBookmarksState({ t, tCommon }: EmptyBookmarksStateProps) {
-  return (
-    <Card>
-      <CardContent className="py-12 text-center">
-        <EmptyState
-          icon={<HiOutlineTag className="size-12 text-neutral-400" />}
-          title={t('noBookmarks')}
-          description={t('exploreQuizzes')}
-          action={
-            <Link href={ROUTES.DASHBOARD}>
-              <Button>{tCommon('browseQuizzes')}</Button>
-            </Link>
-          }
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-function BookmarksSkeleton() {
-  return (
-    <div className="space-y-4 font-home" aria-busy="true">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-48 rounded-md" />
-        <Skeleton className="h-6 w-24 rounded-full" />
-      </div>
-      {Array.from({ length: 4 }).map((_, index) => (
-        <SurfaceCard key={`bookmark-skeleton-${index}`} className="p-5">
-          <div className="space-y-3">
-            <Skeleton className="h-6 w-3/4 rounded-md" />
-            <Skeleton className="h-4 w-1/2 rounded-md" />
-            <div className="flex gap-2 pt-2">
-              <Skeleton className="h-8 w-24 rounded-full" />
-              <Skeleton className="h-8 w-24 rounded-full" />
-            </div>
-          </div>
-        </SurfaceCard>
-      ))}
-    </div>
-  );
-}
-
 export default function ProfileBookmarks() {
+  const locale = useLocale();
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(profileBookmarksReducer, initialState);
   const itemsPerPage = 10;
+  const { mutate: mutateCache } = useSWRConfig();
+  const showMutationError = useApiErrorToast();
 
+  // The locale is part of the key: the date labels are formatted for it, so a
+  // cached English page must not be served after switching to Vietnamese.
+  const quizQuery = state.quizSlug ? `&quizSlug=${encodeURIComponent(state.quizSlug)}` : '';
   const { data, error, isLoading, mutate } = useSWR(
-    `/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}`,
-    fetchProfileBookmarkListViewModel,
+    [`/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}${quizQuery}`, locale] as const,
+    ([url, pageLocale]) => fetchProfileBookmarkListViewModel(url, pageLocale),
   );
+  const {
+    data: quizList,
+    error: quizListError,
+    mutate: mutateQuizList,
+  } = useSWR('/api/bookmarks/quizzes', fetchProfileBookmarkQuizzes);
 
   const bookmarks = data?.bookmarks ?? [];
   const pagination = data?.pagination ?? null;
+  const isFiltered = state.quizSlug !== '';
+  // No select when the learner has no bookmarks at all, or when the quiz list failed.
+  const showQuizFilter =
+    !quizListError && (quizList ? quizList.total > 0 : isFiltered || bookmarks.length > 0);
+  const setQuiz = (quizSlug: string) => dispatch({ type: 'setQuiz', value: quizSlug });
+
+  // The removed bookmark may have been the last of the chosen quiz: refetch the quiz
+  // list and fall back to "All quizzes" when that quiz is gone from it.
+  const refreshAfterRemove = async () => {
+    const [nextQuizList] = await Promise.all([mutateQuizList(), mutate()]);
+    if (
+      isFiltered &&
+      nextQuizList &&
+      !nextQuizList.quizzes.some((q) => q.slug === state.quizSlug)
+    ) {
+      // The cached "All" page predates the removal: load it fresh before switching to it.
+      const allUrl = `/api/bookmarks?page=1&limit=${itemsPerPage}`;
+      await mutateCache(
+        [allUrl, locale] as const,
+        fetchProfileBookmarkListViewModel(allUrl, locale),
+        {
+          revalidate: false,
+        },
+      );
+      setQuiz('');
+    }
+  };
 
   const openAIModal = (bookmark: ProfileBookmarkViewModel) => {
     dispatch({ type: 'openAiModal', bookmark });
@@ -347,51 +329,59 @@ export default function ProfileBookmarks() {
     try {
       await deleteProfileBookmark(bookmarkId);
       dispatch({ type: 'closeModal' });
-      void mutate().catch(() => {
+      void refreshAfterRemove().catch(() => {
         toast.error(t('refreshBookmarksError'));
       });
-    } catch {
-      toast.error(t('removeBookmarkError'));
+    } catch (requestError) {
+      showMutationError(requestError);
     } finally {
       dispatch({ type: 'patch', value: { removingBookmarkId: null } });
     }
   };
 
-  const displayError = error ? (error instanceof Error ? error.message : tCommon('error')) : null;
-
-  if (isLoading) {
-    return <BookmarksSkeleton />;
+  // Full skeleton only before anything has loaded. A filter or page change keeps the
+  // header and the select mounted (focus stays on the select, WCAG 3.2.2) and only
+  // the list waits; the count pill hides until the new page arrives.
+  if (isLoading && !quizList && !quizListError) {
+    return <BookmarksSkeleton t={t} />;
   }
 
   return (
     <div className="space-y-6">
-      <BookmarksHeader t={t} />
-      <BookmarksErrorBanner message={displayError} />
+      <BookmarksHeader count={pagination ? pagination.totalItems : null} t={t} />
+      {quizListError ? <ErrorState error={quizListError} onRetry={() => mutateQuizList()} /> : null}
+      {showQuizFilter ? (
+        <BookmarkQuizFilter quizList={quizList} value={state.quizSlug} onChange={setQuiz} t={t} />
+      ) : null}
+      {error ? <ErrorState error={error} onRetry={() => mutate()} className="mb-4" /> : null}
 
-      {bookmarks.length === 0 ? (
-        <EmptyBookmarksState t={t} tCommon={tCommon} />
-      ) : (
-        <div className="space-y-6">
-          <BookmarksList
-            bookmarks={bookmarks}
-            historyForBookmark={(bookmarkId) => state.historyTurns[bookmarkId] ?? 0}
-            onOpenAiModal={openAIModal}
-            onOpenRemoveModal={(bookmark) => dispatch({ type: 'openRemoveModal', bookmark })}
-            t={t}
-            tCommon={tCommon}
-          />
+      <BookmarksBody
+        isLoading={isLoading}
+        hasError={Boolean(error)}
+        isEmpty={bookmarks.length === 0}
+        isFiltered={isFiltered}
+        onShowAll={() => setQuiz('')}
+        t={t}
+      >
+        <BookmarksList
+          bookmarks={bookmarks}
+          historyForBookmark={(bookmarkId) => state.historyTurns[bookmarkId] ?? 0}
+          onOpenAiModal={openAIModal}
+          onOpenRemoveModal={(bookmark) => dispatch({ type: 'openRemoveModal', bookmark })}
+          t={t}
+          tCommon={tCommon}
+        />
 
-          {pagination && pagination.totalPages > 1 ? (
-            <div className="flex justify-center">
-              <Pagination
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-                onPageChange={(page) => dispatch({ type: 'setPage', value: page })}
-              />
-            </div>
-          ) : null}
-        </div>
-      )}
+        {pagination && pagination.totalPages > 1 ? (
+          <div className="flex justify-center">
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => dispatch({ type: 'setPage', value: page })}
+            />
+          </div>
+        ) : null}
+      </BookmarksBody>
 
       {state.activeModal === 'ai' && state.currentBookmark ? (
         <AskRinPanel

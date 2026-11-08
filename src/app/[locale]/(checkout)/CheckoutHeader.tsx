@@ -25,7 +25,7 @@ export function CheckoutHeader() {
         <Link
           href="/dashboard"
           aria-label="RinKuzu"
-          className="flex h-10 items-center rounded-lg focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          className="flex h-10 items-center rounded-lg focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
         >
           <Image
             src="/images/auth_logo.webp"
@@ -40,7 +40,7 @@ export function CheckoutHeader() {
         <nav className="flex items-center gap-1 sm:gap-2" aria-label={t('navigation')}>
           <Link
             href="/contact"
-            className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-warm hover:text-ink focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-warm hover:text-ink focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
           >
             <HiOutlineQuestionMarkCircle className="size-5" aria-hidden="true" />
             <span className="hidden sm:inline">{t('support')}</span>
@@ -49,13 +49,13 @@ export function CheckoutHeader() {
             type="button"
             onClick={switchLocale}
             aria-label={nextLocale === 'vi' ? t('switchToVietnamese') : t('switchToEnglish')}
-            className="min-h-11 rounded-lg px-3 text-sm font-semibold uppercase text-ink-muted transition-colors hover:bg-surface-warm hover:text-ink focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            className="min-h-11 rounded-lg px-3 text-sm font-semibold uppercase text-ink-muted transition-colors hover:bg-surface-warm hover:text-ink focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
           >
             {nextLocale}
           </button>
           <Link
             href="/subscription"
-            className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-ink transition-colors hover:bg-surface-warm focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-ink transition-colors hover:bg-surface-warm focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
           >
             <HiOutlineArrowLeft className="size-5" aria-hidden="true" />
             <span className="hidden sm:inline">{t('backToPlans')}</span>

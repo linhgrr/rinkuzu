@@ -86,6 +86,63 @@ const overComplexFileAllowlist = [
   'src/models/Attempt.ts',
 ];
 
+// Shared so a later block that sets no-restricted-imports / no-restricted-syntax (flat config
+// replaces a rule's options, it does not merge them) keeps the repo-wide restrictions.
+const localeNavigationImportPaths = [
+  {
+    name: 'next/link',
+    message: "Use Link from '@/i18n/navigation' so locale prefixes stay correct.",
+  },
+  {
+    name: 'next/navigation',
+    importNames: ['useRouter', 'usePathname', 'redirect', 'Link'],
+    message:
+      "Use useRouter/usePathname/redirect/Link from '@/i18n/navigation' so locale prefixes stay correct. Keep notFound/useParams/useSearchParams from next/navigation.",
+  },
+];
+const sessionAnyCastSyntax = [
+  {
+    selector:
+      "TSAsExpression[typeAnnotation.type='TSAnyKeyword'][expression.type='Identifier'][expression.name='session']",
+    message:
+      "Do not cast 'session' to any. Session is fully typed via src/types/next-auth.d.ts — use session.user.id / session.user.role directly.",
+  },
+  {
+    selector:
+      "TSAsExpression[typeAnnotation.type='TSAnyKeyword'][expression.type='MemberExpression'][expression.object.name='session']",
+    message: "Do not cast 'session.X' to any. Session is fully typed via src/types/next-auth.d.ts.",
+  },
+];
+
+// API error layer (RIN-748 contract, section 6). Client code never shows server text: it maps
+// an error to a localized message with useApiErrorMessage / ErrorState. Server code
+// (src/app/api, src/lib, src/services) keeps the extractors.
+const apiErrorLayerClientFiles = [
+  'src/app/**/*.tsx',
+  'src/features/**/*.{ts,tsx}',
+  'src/components/**/*.{ts,tsx}',
+  'src/hooks/**/*.{ts,tsx}',
+];
+const API_ERROR_LAYER_MESSAGE = 'use useApiErrorMessage / ErrorState (RIN-748)';
+// `<errorish>.message` / `.detail`, where errorish is e, err, error or any *Error identifier.
+const errorishMember =
+  "MemberExpression[object.type='Identifier'][object.name=/^(e|err|error|[a-zA-Z0-9_]+Error)$/][property.name=/^(message|detail)$/]";
+// The shown value itself, or one branch of `a && b`, `a || b`, `a ?? b`, `c ? a : b`, with or without `?.`.
+const shownErrorishMember = [
+  errorishMember,
+  `ChainExpression > ${errorishMember}`,
+  `LogicalExpression > ${errorishMember}`,
+  `LogicalExpression > ChainExpression > ${errorishMember}`,
+  `ConditionalExpression > ${errorishMember}`,
+  `ConditionalExpression > ChainExpression > ${errorishMember}`,
+];
+const toastCall =
+  ":matches(CallExpression[callee.name='toast'], CallExpression[callee.object.name='toast'])";
+const apiErrorLayerSyntax = shownErrorishMember.flatMap((shown) => [
+  { selector: `JSXExpressionContainer > ${shown}`, message: API_ERROR_LAYER_MESSAGE },
+  { selector: `${toastCall} > ${shown}`, message: API_ERROR_LAYER_MESSAGE },
+]);
+
 export default defineConfig(
   ...nextVitals,
   ...nextTypeScript,
@@ -98,23 +155,7 @@ export default defineConfig(
     rules: {
       '@next/next/no-img-element': 'error',
       'import/no-duplicates': 'error',
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'next/link',
-              message: "Use Link from '@/i18n/navigation' so locale prefixes stay correct.",
-            },
-            {
-              name: 'next/navigation',
-              importNames: ['useRouter', 'usePathname', 'redirect', 'Link'],
-              message:
-                "Use useRouter/usePathname/redirect/Link from '@/i18n/navigation' so locale prefixes stay correct. Keep notFound/useParams/useSearchParams from next/navigation.",
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', { paths: localeNavigationImportPaths }],
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'react-hooks/exhaustive-deps': 'error',
       'unused-imports/no-unused-imports': 'error',
@@ -128,21 +169,7 @@ export default defineConfig(
           ignoreRestSiblings: true,
         },
       ],
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            "TSAsExpression[typeAnnotation.type='TSAnyKeyword'][expression.type='Identifier'][expression.name='session']",
-          message:
-            "Do not cast 'session' to any. Session is fully typed via src/types/next-auth.d.ts — use session.user.id / session.user.role directly.",
-        },
-        {
-          selector:
-            "TSAsExpression[typeAnnotation.type='TSAnyKeyword'][expression.type='MemberExpression'][expression.object.name='session']",
-          message:
-            "Do not cast 'session.X' to any. Session is fully typed via src/types/next-auth.d.ts.",
-        },
-      ],
+      'no-restricted-syntax': ['error', ...sessionAnyCastSyntax],
     },
   },
   {
@@ -213,6 +240,25 @@ export default defineConfig(
           ],
         },
       ],
+    },
+  },
+  {
+    files: apiErrorLayerClientFiles,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            ...localeNavigationImportPaths,
+            {
+              name: '@/lib/api/error',
+              importNames: ['extractApiErrorMessage', 'extractUnknownErrorMessage'],
+              message: `Server text is not user copy: ${API_ERROR_LAYER_MESSAGE}.`,
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': ['error', ...sessionAnyCastSyntax, ...apiErrorLayerSyntax],
     },
   },
   {

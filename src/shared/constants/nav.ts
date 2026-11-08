@@ -8,6 +8,7 @@ import type { ProductScope } from '@/lib/routing/pathname';
 
 export const AUTH_REQUIRED_PATH_PREFIXES = [
   ROUTES.DASHBOARD,
+  ROUTES.START,
   '/adaptive/upload',
   '/adaptive/processing',
   '/adaptive/exercise',
@@ -110,15 +111,7 @@ export const DESKTOP_BOTTOM_NAV: DesktopNavGroupDef[] = [
 ];
 
 /** Mobile bottom-tab hrefs by product scope (icons stay in BottomNav). */
-type MobileTabId =
-  | 'home'
-  | 'explore'
-  | 'review'
-  | 'create'
-  | 'profile'
-  | 'adaptiveLibrary'
-  | 'adaptiveUpload'
-  | 'adaptiveProgress';
+type MobileTabId = 'home' | 'explore' | 'review' | 'create' | 'profile' | 'adaptiveUpload';
 
 export type MobileTabDef = {
   id: MobileTabId;
@@ -155,31 +148,20 @@ const mobileProfile: MobileTabDef = {
   href: '/profile',
   labelKey: 'profile',
 };
-const mobileAdaptiveLibrary: MobileTabDef = {
-  id: 'adaptiveLibrary',
-  href: '/adaptive',
-  labelKey: 'tabLibrary',
-};
 const mobileAdaptiveUpload: MobileTabDef = {
   id: 'adaptiveUpload',
   href: '/adaptive/upload',
   labelKey: 'tabUpload',
   isCenter: true,
 };
-const mobileAdaptiveProgress: MobileTabDef = {
-  id: 'adaptiveProgress',
-  href: ROUTES.DASHBOARD,
-  labelKey: 'tabProgress',
-};
 
+/**
+ * The four labelled tabs keep the same position and destination on every route
+ * (RIN-689); only the unlabelled centre action follows the product area, so the
+ * adaptive pages offer "upload a PDF" where the quiz pages offer "create a quiz".
+ */
 export const MOBILE_TABS_BY_SCOPE: Record<ProductScope, MobileTabDef[]> = {
-  adaptive: [
-    mobileHome,
-    mobileAdaptiveLibrary,
-    mobileAdaptiveUpload,
-    mobileAdaptiveProgress,
-    mobileProfile,
-  ],
+  adaptive: [mobileHome, mobileReview, mobileAdaptiveUpload, mobileExplore, mobileProfile],
   quiz: [mobileHome, mobileReview, mobileCreate, mobileExplore, mobileProfile],
   hub: [mobileHome, mobileReview, mobileCreate, mobileExplore, mobileProfile],
 };

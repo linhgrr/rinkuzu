@@ -12,6 +12,7 @@ import {
   buildWebsiteSchema,
 } from '@/lib/structured-data';
 import { NextIntlClientProvider } from 'next-intl';
+import { setRequestLocale } from 'next-intl/server';
 import { SerwistProvider } from '@serwist/turbopack/react';
 import { AnalyticsRoot } from '@/components/analytics/AnalyticsRoot';
 
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
   metadataBase: siteUrl,
   title: 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
   description:
-    'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
+    'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run personalized practice sessions for students, teachers, and teams.',
   keywords: 'quiz, education, PDF, AI, teachers, students, assessment, interactive learning',
   authors: [{ name: 'RinKuzu Team' }],
   openGraph: {
@@ -61,7 +62,7 @@ export const metadata: Metadata = {
     siteName: 'RinKuzu',
     title: 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
     description:
-      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
+      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run personalized practice sessions for students, teachers, and teams.',
     url: '/',
     images: [
       {
@@ -74,9 +75,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AI Quiz Generator from PDF - Adaptive learning | RinKuzu',
+    title: 'AI Quiz Generator from PDF - Personalized learning | RinKuzu',
     description:
-      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
+      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run personalized practice sessions for students, teachers, and teams.',
     images: ['/images/navbar_logo.png'],
   },
   robots: {
@@ -134,6 +135,10 @@ export default async function LocaleLayout({
     notFound();
   }
 
+  // Static routes (the homepage is force-static) have no request headers, so next-intl
+  // would otherwise resolve the default locale ('vi') instead of the [locale] segment.
+  setRequestLocale(locale);
+
   const organizationSchema = buildOrganizationSchema();
   const websiteSchema = buildWebsiteSchema(locale);
   const webpageSchema = buildWebPageSchema(locale);
@@ -166,7 +171,7 @@ export default async function LocaleLayout({
           cacheOnNavigation={false}
           reloadOnOnline={false}
         >
-          <NextIntlClientProvider messages={null}>
+          <NextIntlClientProvider locale={locale} messages={null}>
             <JsonLd id="org-schema" data={organizationSchema} />
             <JsonLd id="website-schema" data={websiteSchema} />
             <JsonLd id="webpage-schema" data={webpageSchema} />

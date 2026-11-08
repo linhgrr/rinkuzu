@@ -38,3 +38,16 @@ export interface ProfileBookmarkListViewModel {
   bookmarks: ProfileBookmarkViewModel[];
   pagination: ProfileBookmarkPaginationViewModel;
 }
+
+interface ProfileBookmarkQuizViewModel {
+  slug: string;
+  title: string;
+  count: number;
+}
+
+/** The quizzes the learner has bookmarks in, most bookmarks first (RIN-1208). */
+export interface ProfileBookmarkQuizListViewModel {
+  quizzes: ProfileBookmarkQuizViewModel[];
+  /** Every bookmark the learner has, across all quizzes. */
+  total: number;
+}

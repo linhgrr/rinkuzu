@@ -36,12 +36,16 @@ export interface AttemptPersistenceRecord {
   score: number;
   totalQuestions: number;
   takenAt: Date;
+  retryOfAttemptId?: MongoIdLike;
+  questionIndices?: number[];
+  mode?: 'quick' | 'full';
 }
 
 export interface RecentAttemptActivityPersistenceRecord {
   _id: MongoIdLike;
   userEmail?: string;
   guestEmail?: string;
+  isClaimTokenGuest?: boolean;
   quizTitle?: string;
   score: number;
   answeredQuestions: number;

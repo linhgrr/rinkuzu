@@ -34,6 +34,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       inProgressQuizzes={bootstrapData.inProgressQuizzes}
       recentOwnedQuizzes={bootstrapData.recentOwnedQuizzes}
       recentPublicQuizzes={bootstrapData.recentPublicQuizzes}
+      isNewLearner={bootstrapData.isNewLearner}
+      starterQuizzes={bootstrapData.starterQuizzes}
     />
   );
 }

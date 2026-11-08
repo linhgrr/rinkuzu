@@ -1,55 +1,18 @@
 import type { Metadata } from 'next';
-import { getQuizService } from '@/lib/quiz-factory';
-import { buildLocalizedMetadata } from '@/lib/seo';
+import { buildQuizMetadata } from './quiz-metadata';
 
 type Props = {
   children: React.ReactNode;
   params: Promise<{ locale: string; slug: string }>;
 };
 
+/**
+ * The result and flashcards routes inherit this. The quiz page itself overrides it
+ * from page.tsx, which also receives `?mode=` for the quick-link card (RIN-1180).
+ */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
-
-  const defaultMetadata = buildLocalizedMetadata({
-    locale,
-    path: `/quiz/${slug}`,
-    title: locale === 'vi' ? 'Luyện tập quiz | RinKuzu' : 'Practice Quiz | RinKuzu',
-    description:
-      locale === 'vi'
-        ? 'Luyện tập quiz từ tài liệu học tập và nhận phản hồi ngay trên RinKuzu.'
-        : 'Take interactive quizzes generated from learning materials and get instant feedback.',
-    robots: {
-      index: false,
-      follow: false,
-    },
-  });
-
-  try {
-    const quizService = getQuizService();
-    const quiz = await quizService.getQuizMetadataBySlug(slug);
-    if (!quiz) {
-      return defaultMetadata;
-    }
-
-    const isIndexable = quiz.visibility === 'public';
-    return buildLocalizedMetadata({
-      locale,
-      path: `/quiz/${slug}`,
-      title: `${quiz.title} | RinKuzu`,
-      description:
-        quiz.description ||
-        (locale === 'vi'
-          ? 'Luyện tập quiz trên RinKuzu với lời giải rõ ràng và kết quả chi tiết.'
-          : 'Practice reviewed quizzes on RinKuzu with clear explanations and detailed results.'),
-      robots: {
-        index: isIndexable,
-        follow: isIndexable,
-      },
-    });
-  } catch (error) {
-    console.error('quiz metadata generation failed', error);
-    return defaultMetadata;
-  }
+  return buildQuizMetadata({ locale, slug, mode: null });
 }
 
 export default function QuizSlugLayout({ children }: Props) {

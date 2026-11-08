@@ -41,7 +41,9 @@ describe('fetchAttemptDetailViewModel', () => {
     await expect(fetchAttemptDetailViewModel('507f191e810c19729de860ea', 'en')).resolves.toBe(
       viewModel,
     );
-    expect(fetchApiDataMock).toHaveBeenCalledWith('/api/attempts/507f191e810c19729de860ea');
+    expect(fetchApiDataMock).toHaveBeenCalledWith(
+      '/api/attempts/507f191e810c19729de860ea?locale=en',
+    );
     expect(toAttemptDetailViewModelMock).toHaveBeenCalledWith(dto, 'en');
   });
 
@@ -55,7 +57,20 @@ describe('fetchAttemptDetailViewModel', () => {
       }),
     ).resolves.toBe(viewModel);
     expect(fetchApiDataMock).toHaveBeenCalledWith(
-      '/api/attempts/507f191e810c19729de860ea?userEmail=guest%40example.com',
+      '/api/attempts/507f191e810c19729de860ea?locale=vi&userEmail=guest%40example.com',
+    );
+  });
+
+  it('sends a guest claim token in the header, never in the URL (RIN-912)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce(dto);
+    toAttemptDetailViewModelMock.mockReturnValueOnce(viewModel);
+
+    await fetchAttemptDetailViewModel('507f191e810c19729de860ea', 'en', {
+      guestClaimToken: 'fake-token',
+    });
+    expect(fetchApiDataMock).toHaveBeenCalledWith(
+      '/api/attempts/507f191e810c19729de860ea?locale=en',
+      { headers: { 'x-guest-claim-token': 'fake-token' } },
     );
   });
 
@@ -64,6 +79,6 @@ describe('fetchAttemptDetailViewModel', () => {
     toAttemptDetailViewModelMock.mockReturnValueOnce(viewModel);
 
     await fetchAttemptDetailViewModel('id with space', 'en');
-    expect(fetchApiDataMock).toHaveBeenCalledWith('/api/attempts/id%20with%20space');
+    expect(fetchApiDataMock).toHaveBeenCalledWith('/api/attempts/id%20with%20space?locale=en');
   });
 });

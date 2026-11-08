@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 const quizModelMocks = vi.hoisted(() => ({
   aggregate: vi.fn(),
   countDocuments: vi.fn(),
+  find: vi.fn(),
   findById: vi.fn(),
   findByIdAndUpdate: vi.fn(),
   findOne: vi.fn(),
@@ -36,6 +37,7 @@ vi.mock('@/models/Quiz', () => ({
   default: {
     aggregate: quizModelMocks.aggregate,
     countDocuments: quizModelMocks.countDocuments,
+    find: quizModelMocks.find,
     findById: quizModelMocks.findById,
     findByIdAndUpdate: quizModelMocks.findByIdAndUpdate,
     findOne: quizModelMocks.findOne,
@@ -43,7 +45,12 @@ vi.mock('@/models/Quiz', () => ({
   },
 }));
 
+const userModelMocks = vi.hoisted(() => ({ find: vi.fn() }));
+
+vi.mock('@/models/User', () => ({ default: { find: userModelMocks.find } }));
+
 import { QuizRepository } from '@/repositories/QuizRepository';
+import { PUBLIC_CATALOG_OWNER_EMAILS } from '@/shared/constants/analytics-exclusions';
 
 describe('QuizRepository.findUserQuizzes', () => {
   beforeEach(() => {
@@ -412,14 +419,15 @@ describe('QuizRepository.findUserQuizzes', () => {
     ]);
     expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
       expect.objectContaining({ $group: expect.any(Object) }),
+      // RIN-634: authors are resolved before pagination, and unresolved ones dropped.
+      expect.objectContaining({ $lookup: expect.objectContaining({ from: 'users' }) }),
+      { $unwind: '$author' },
       { $sort: { quizCount: -1, totalQuestions: -1, _id: 1 } },
       {
         $facet: {
           items: [
             { $skip: 5 },
             { $limit: 5 },
-            expect.objectContaining({ $lookup: expect.any(Object) }),
-            expect.objectContaining({ $unwind: expect.any(Object) }),
             expect.objectContaining({ $project: expect.any(Object) }),
           ],
           meta: [{ $count: 'totalItems' }],
@@ -427,5 +435,90 @@ describe('QuizRepository.findUserQuizzes', () => {
       },
     ]);
     expect(quizModelMocks.countDocuments).not.toHaveBeenCalled();
+  });
+});
+
+describe('QuizRepository indexing reads (RIN-840)', () => {
+  const ownerId = new Types.ObjectId('507f191e810c19729de860eb');
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('keeps the owner email out of the quiz author preview', async () => {
+    quizModelMocks.aggregate.mockResolvedValue([
+      {
+        ...quizListRecord,
+        author: { _id: ownerId, name: 'QA' },
+        ownerIndexing: { email: 'qa-run@fldubai.com', isTestAccount: true },
+      },
+    ]);
+    const repository = new QuizRepository();
+
+    const record = await repository.findMetadataBySlug('algebra-basics');
+
+    expect(record?.owner).toEqual({
+      id: String(ownerId),
+      email: 'qa-run@fldubai.com',
+      isTestAccount: true,
+    });
+    expect(JSON.stringify(record?.quiz)).not.toContain('fldubai');
+    const pipeline = quizModelMocks.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[];
+    expect(pipeline[0]).toEqual({ $match: { slug: 'algebra-basics' } });
+    expect(JSON.stringify(pipeline.at(-1))).toContain('ownerIndexing');
+  });
+
+  it('returns null owner fields when the owner account is gone', async () => {
+    quizModelMocks.aggregate.mockResolvedValue([
+      { ...quizListRecord, author: { _id: ownerId }, ownerIndexing: {} },
+    ]);
+    const repository = new QuizRepository();
+
+    await expect(repository.findMetadataBySlug('algebra-basics')).resolves.toMatchObject({
+      owner: { id: String(ownerId), email: null, isTestAccount: null },
+    });
+  });
+
+  it('loads owner candidates with only the indexing fields', async () => {
+    const exec = vi
+      .fn()
+      .mockResolvedValue([{ _id: ownerId, email: 'qa-run@fldubai.com', isTestAccount: false }]);
+    userModelMocks.find.mockReturnValue({ lean: () => ({ exec }) });
+    const repository = new QuizRepository();
+
+    await expect(repository.findNonIndexableOwnerCandidates()).resolves.toEqual([
+      { id: String(ownerId), email: 'qa-run@fldubai.com', isTestAccount: false },
+    ]);
+    const [filter, projection] = userModelMocks.find.mock.calls[0] ?? [];
+    expect(projection).toEqual({ _id: 1, email: 1, isTestAccount: 1 });
+    expect((filter as { $or: unknown[] }).$or).toEqual(
+      expect.arrayContaining([{ isTestAccount: true }]),
+    );
+    expect(filter).toMatchObject({ email: { $nin: [...PUBLIC_CATALOG_OWNER_EMAILS] } });
+  });
+
+  it('excludes owners in the sitemap query so the limit counts indexable quizzes', async () => {
+    const exec = vi
+      .fn()
+      .mockResolvedValue([
+        { slug: 'algebra-basics', createdAt: new Date('2026-07-01T00:00:00.000Z') },
+      ]);
+    const chain = { sort: vi.fn(), limit: vi.fn(), lean: vi.fn(() => ({ exec })) };
+    chain.sort.mockReturnValue(chain);
+    chain.limit.mockReturnValue(chain);
+    quizModelMocks.find.mockReturnValue(chain);
+    const repository = new QuizRepository();
+
+    await expect(
+      repository.findPublicSitemapEntries({ excludeAuthorIds: [String(ownerId)], limit: 5000 }),
+    ).resolves.toEqual([
+      { slug: 'algebra-basics', createdAt: new Date('2026-07-01T00:00:00.000Z') },
+    ]);
+    expect(quizModelMocks.find).toHaveBeenCalledWith(
+      { visibility: 'public', author: { $nin: [ownerId] } },
+      { _id: 0, slug: 1, createdAt: 1, updatedAt: 1 },
+    );
+    expect(chain.sort).toHaveBeenCalledWith({ createdAt: -1 });
+    expect(chain.limit).toHaveBeenCalledWith(5000);
   });
 });

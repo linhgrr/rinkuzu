@@ -16,10 +16,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildLocalizedMetadata({
     locale,
     path: '/faq',
-    title: isVi ? 'Câu hỏi thường gặp | RinKuzu' : 'FAQ | RinKuzu',
+    title: isVi ? 'Hỏi đáp RinKuzu – Cách tạo quiz từ PDF bằng AI' : 'FAQ | RinKuzu',
     description: isVi
-      ? 'Câu hỏi thường gặp về RinKuzu: tạo quiz AI từ PDF, học tập thích ứng, đồ thị kiến thức, phân loại Bloom và cách sử dụng cho học sinh, sinh viên, giáo viên.'
-      : "Frequently asked questions about RinKuzu — AI quiz generator, adaptive learning, knowledge graphs, Bloom's Taxonomy, and how to use RinKuzu for students and teachers.",
+      ? 'Giải đáp nhanh: tạo quiz từ PDF trong vài phút, có miễn phí không, AI chấm và giải thích thế nào, dùng cho sinh viên và giáo viên ra sao.'
+      : "Frequently asked questions about RinKuzu — AI quiz generator, personalized learning, knowledge graphs, Bloom's Taxonomy, and how to use RinKuzu for students and teachers.",
     robots: { index: true, follow: true },
   });
 }
@@ -33,7 +33,7 @@ function getFaqCategories(isVi: boolean) {
     },
     {
       id: 'ai-features',
-      label: isVi ? 'AI & Học tập thích ứng' : 'AI & Adaptive Learning',
+      label: isVi ? 'AI & Học tập cá nhân hóa' : 'AI & Personalized Learning',
       faqs: ['5', '6', '7', '13'],
     },
     {
@@ -88,8 +88,8 @@ export default async function FAQPage({ params }: Props) {
           </h1>
           <p className="text-[var(--text-muted)] text-lg">
             {isVi
-              ? 'Mọi điều bạn cần biết về RinKuzu — nền tảng học tập thích ứng dùng AI từ tài liệu PDF.'
-              : 'Everything you need to know about RinKuzu — AI-powered adaptive learning from PDFs.'}
+              ? 'Mọi điều bạn cần biết về RinKuzu — nền tảng học tập cá nhân hóa dùng AI từ tài liệu PDF.'
+              : 'Everything you need to know about RinKuzu — AI-powered personalized learning from PDFs.'}
           </p>
         </div>
       </section>
@@ -138,6 +138,33 @@ export default async function FAQPage({ params }: Props) {
             </div>
           </div>
         ))}
+
+        {/* Keep learning */}
+        <div className="border-t border-subtle pt-10">
+          <h2 className="text-xl font-semibold text-primary mb-4">
+            {isVi ? 'Tìm hiểu thêm' : 'Keep learning'}
+          </h2>
+          <ul className="space-y-3 text-muted">
+            <li>
+              <Link
+                href="/blog/ai-powered-quiz-generation-guide"
+                className="font-medium text-brand-trust hover:text-brand-trust-hover underline"
+              >
+                {isVi
+                  ? 'AI biến tài liệu PDF thành quiz cá nhân hóa như thế nào?'
+                  : 'How AI turns PDF learning into personalized quizzes'}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={ROUTES.PREMIUM_QUIZZES}
+                className="font-medium text-brand-trust hover:text-brand-trust-hover underline"
+              >
+                {isVi ? 'Khám phá bộ quiz premium' : 'Browse premium quizzes'}
+              </Link>
+            </li>
+          </ul>
+        </div>
       </section>
 
       {/* CTA */}

@@ -120,7 +120,8 @@ const nextConfig = {
             // Do NOT use 'strict-dynamic' without nonce/hash, or inline scripts can be blocked.
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+              // us-assets.i.posthog.com serves posthog-js's remote config (config.js + /config).
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://us-assets.i.posthog.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
@@ -130,6 +131,7 @@ const nextConfig = {
                 'https://www.googletagmanager.com',
                 'https://www.google-analytics.com',
                 'https://us.i.posthog.com',
+                'https://us-assets.i.posthog.com',
                 'https://raw.githack.com',
                 'https://raw.githubusercontent.com',
                 'https://api.iconify.design',
@@ -171,9 +173,9 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'i.ibb.co',
+        hostname: 'cdn.rinkuzu.app',
         port: '',
-        pathname: '/**',
+        pathname: '/images/**',
       },
       {
         protocol: 'https',

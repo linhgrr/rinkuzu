@@ -3,8 +3,8 @@
   "cancelledProcessing": "Cancelled processing \"{title}\"",
   "removedDraft": "Deleted draft \"{title}\"",
   "deleteFailed": "Could not delete the draft. Please try again.",
-  "processingFiles": "Processing {count} files",
-  "quizzesReady": "{count} quizzes ready",
+  "processingFiles": "{count, plural, one {Processing # file} other {Processing # files}}",
+  "quizzesReady": "{count, plural, one {# quiz ready} other {# quizzes ready}}",
   "expired": "Expired",
   "days": "{count} days",
   "hoursMinutes": "{hours}h {minutes}m",
@@ -21,5 +21,23 @@
   "cancelConfirmTitle": "Cancel processing?",
   "cancelConfirmMessage": "Cancel processing \"{title}\" and delete its draft from the server?",
   "removeReadyDraftTitle": "Remove ready draft?",
-  "removeReadyDraftMessage": "Delete \"{title}\" from the server? This draft cannot be recovered."
+  "removeReadyDraftMessage": "Delete \"{title}\" from the server? This draft cannot be recovered.",
+  "failedTitle": "Could not process \"{title}\"",
+  "failedTryAgain": "Please try again later.",
+  "failedRetryable": "Text recognition is temporarily unavailable. Trying again in a few minutes usually works.",
+  "extractionFailed": "Extraction failed or the draft has expired",
+  "statusFetchFailed": "Could not check the draft status",
+  "timedOutTitle": "Processing \"{title}\" is taking too long",
+  "timedOut": "PDF processing timed out",
+  "readyTitle": "\"{title}\" is ready!",
+  "readyDescription": "{count, plural, one {# question extracted} other {# questions extracted}}",
+  "view": "View",
+  "meta": {
+    "editTitle": "Edit draft quiz | RinKuzu"
+  },
+  "notFound": {
+    "title": "Draft not found",
+    "description": "This draft may have expired, been published, or you may not have access to it.",
+    "backToDashboard": "Back to dashboard"
+  }
 }

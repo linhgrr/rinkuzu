@@ -1,4 +1,5 @@
 import type {
+  AdminActivationStatsDto,
   AdminStatsDto,
   AdminActivityStatsListDto,
   AdminCreatorStatsListDto,
@@ -11,6 +12,7 @@ import {
 } from '@/features/admin/stats/mappers/admin-stats.mapper';
 import { toStatsModalResultViewModel } from '@/features/admin/stats/mappers/stats-modal.mapper';
 import type {
+  ActivationFunnelViewModel,
   AdminGrowthPeriodViewModel,
   AdminGrowthTrendsViewModel,
   AdminStatsViewModel,
@@ -49,4 +51,50 @@ export async function fetchGrowthTrendsViewModel(
 ): Promise<AdminGrowthTrendsViewModel> {
   const dto = await fetchApiData<AdminGrowthTrendsDto>(`/api/admin/stats/growth?days=${days}`);
   return toAdminGrowthTrendsViewModel(dto);
+}
+
+export async function fetchActivationFunnelViewModel(
+  signal?: AbortSignal,
+): Promise<ActivationFunnelViewModel> {
+  const dto = await fetchApiData<AdminActivationStatsDto>('/api/admin/stats/activation?weeks=8', {
+    cache: 'no-store',
+    ...(signal ? { signal } : {}),
+  });
+  const now = Date.parse(dto.generatedAt);
+  const inProgress = (start: string, end: string) =>
+    Date.parse(start) <= now && now <= Date.parse(end);
+  const bounds = new Map(dto.weeks.map((week) => [week.isoWeek, week]));
+  return {
+    adaptiveAvailable: dto.sources.adaptive === 'ok',
+    emailWeeks: dto.activationEmail.weeks
+      .flatMap((email) => {
+        const week = bounds.get(email.isoWeek);
+        if (!week) return [];
+        return [
+          {
+            isoWeek: email.isoWeek,
+            monday: week.start.slice(0, 10),
+            sent: email.sent,
+            sentDay1: email.byTrigger['24h'].sent,
+            sentBackfill: email.byTrigger.backfill.sent,
+            clicked: email.clicked,
+            activatedWithin7d: email.activatedWithin7d,
+            inProgress: inProgress(week.start, week.end),
+          },
+        ];
+      })
+      .reverse(),
+    weeks: dto.weeks
+      .map((week) => ({
+        isoWeek: week.isoWeek,
+        monday: week.start.slice(0, 10),
+        signups: week.signups,
+        signedIn: week.signedIn,
+        startedQuiz: week.startedQuiz,
+        activated: week.activated,
+        returnedWeek1: week.returnedWeek1,
+        inProgress: inProgress(week.start, week.end),
+      }))
+      .reverse(),
+  };
 }

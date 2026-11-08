@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useReducer, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { Button } from '@/components/ui/Button';
-import { SurfaceCard } from '@/components/ui/SurfaceCard';
-import { PremiumCreditCost } from '@/features/quiz/components/PremiumCreditCost';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
+import { PremiumUnlockCard } from '@/features/quiz/components/PremiumUnlockCard';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
-import { ApiResponseError } from '@/lib/api/client';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { ROUTES } from '@/shared/constants/routes';
 import {
   fetchPremiumBatch,
@@ -19,12 +19,18 @@ import {
   type PremiumAnswerViewModel,
   type PremiumBatchViewModel,
 } from '@/features/quiz/api/premium-quiz-api';
+import { initialPremiumPlayerState, premiumPlayerReducer } from './premium-player-state';
 
 interface PremiumQuizPlayerClientProps {
   quizId: string;
   slug: string;
   title: string;
   questionCount: number;
+  description?: string;
+}
+
+function isAuthRequired(error: unknown): boolean {
+  return describeApiError(error).kind === 'auth_required';
 }
 
 export default function PremiumQuizPlayerClient({
@@ -32,38 +38,39 @@ export default function PremiumQuizPlayerClient({
   slug,
   title,
   questionCount,
+  description,
 }: PremiumQuizPlayerClientProps) {
   const t = useTranslations('quiz');
   const { push } = useRouter();
-  const [batches, setBatches] = useState<Record<number, PremiumBatchViewModel>>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Array<PremiumAnswerViewModel | null>>([]);
-  const [sessionId, setSessionId] = useState('');
-  const [watermark, setWatermark] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [unlockRequired, setUnlockRequired] = useState(false);
-  const [error, setError] = useState('');
+  const [state, dispatch] = useReducer(premiumPlayerReducer, initialPremiumPlayerState);
+  const {
+    batches,
+    currentIndex,
+    answers,
+    sessionId,
+    watermark,
+    loading,
+    unlockRequired,
+    signInRequired,
+    error,
+    loadError,
+  } = state;
   const prefetching = useRef<Promise<void> | null>(null);
+  const describeError = useApiErrorMessage();
+
+  function handleStartError(startError: unknown) {
+    dispatch({ type: 'startFailed', kind: describeApiError(startError).kind, error: startError });
+  }
 
   async function begin() {
-    setLoading(true);
-    setError('');
+    dispatch({ type: 'startRequested' });
     try {
       const batch = await startPremiumSession(quizId);
-      setBatches({ [batch.batchIndex]: batch });
-      setCurrentIndex(batch.currentQuestionIndex);
-      setAnswers(batch.answers);
-      setSessionId(batch.sessionId);
-      setWatermark(batch.watermark);
-      setUnlockRequired(false);
+      dispatch({ type: 'sessionStarted', batch });
     } catch (startError) {
-      if (startError instanceof ApiResponseError && startError.status === 403) {
-        setUnlockRequired(true);
-      } else {
-        setError(extractUnknownErrorMessage(startError, t('loadError')));
-      }
+      handleStartError(startError);
     } finally {
-      setLoading(false);
+      dispatch({ type: 'settled' });
     }
   }
 
@@ -72,29 +79,18 @@ export default function PremiumQuizPlayerClient({
     void startPremiumSession(quizId)
       .then((batch) => {
         if (!active) return;
-        setBatches({ [batch.batchIndex]: batch });
-        setCurrentIndex(batch.currentQuestionIndex);
-        setAnswers(batch.answers);
-        setSessionId(batch.sessionId);
-        setWatermark(batch.watermark);
-        setUnlockRequired(false);
-        setError('');
+        dispatch({ type: 'sessionStarted', batch });
       })
       .catch((startError: unknown) => {
-        if (!active) return;
-        if (startError instanceof ApiResponseError && startError.status === 403) {
-          setUnlockRequired(true);
-        } else {
-          setError(extractUnknownErrorMessage(startError, t('loadError')));
-        }
+        if (active) handleStartError(startError);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) dispatch({ type: 'settled' });
       });
     return () => {
       active = false;
     };
-  }, [quizId, t]);
+  }, [quizId]);
 
   const batchIndex = Math.floor(currentIndex / 3);
   const currentBatch = batches[batchIndex];
@@ -104,8 +100,7 @@ export default function PremiumQuizPlayerClient({
     if (prefetching.current) return prefetching.current;
     prefetching.current = fetchPremiumBatch(batch.sessionId, cursor)
       .then((loaded) => {
-        setBatches((current) => ({ ...current, [loaded.batchIndex]: loaded }));
-        setWatermark(loaded.watermark);
+        dispatch({ type: 'batchLoaded', batch: loaded });
       })
       .finally(() => {
         prefetching.current = null;
@@ -113,25 +108,29 @@ export default function PremiumQuizPlayerClient({
     return prefetching.current;
   }
 
+  const prefetchNextBatch = useEffectEvent((batch: PremiumBatchViewModel, cursor: string) => {
+    void loadAdjacent(batch, cursor);
+  });
+
+  // Re-running is idempotent: a loaded next batch returns early, and `loadAdjacent`
+  // shares one in-flight request.
   useEffect(() => {
     if (!currentBatch?.nextCursor || currentIndex - currentBatch.startIndex < 1) return;
     if (batches[currentBatch.batchIndex + 1]) return;
-    void loadAdjacent(currentBatch, currentBatch.nextCursor);
-    // Batch/cursor identity makes repeated renders idempotent.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBatch?.batchIndex, currentBatch?.nextCursor, currentIndex]);
+    prefetchNextBatch(currentBatch, currentBatch.nextCursor);
+  }, [batches, currentBatch, currentIndex]);
 
   async function choose(answer: PremiumAnswerViewModel) {
     if (!sessionId) return;
-    setAnswers((current) => {
-      const next = [...current];
-      next[currentIndex] = answer;
-      return next;
-    });
+    dispatch({ type: 'answerChosen', index: currentIndex, answer });
     try {
       await savePremiumAnswer(sessionId, currentIndex, answer);
     } catch (saveError) {
-      setError(extractUnknownErrorMessage(saveError, t('saveProgressError')));
+      if (isAuthRequired(saveError)) {
+        dispatch({ type: 'signInRequired' });
+        return;
+      }
+      dispatch({ type: 'actionFailed', message: describeError(saveError) });
     }
   }
 
@@ -144,32 +143,39 @@ export default function PremiumQuizPlayerClient({
       if (!cursor) return;
       await loadAdjacent(currentBatch, cursor);
     }
-    setCurrentIndex(target);
+    dispatch({ type: 'moved', index: target });
   }
 
   async function unlock() {
-    setLoading(true);
-    setError('');
+    dispatch({ type: 'actionRequested', clearError: true });
     try {
       await unlockPremiumQuiz(quizId);
       await begin();
     } catch (unlockError) {
-      setError(extractUnknownErrorMessage(unlockError, t('premiumUnlockError')));
+      if (isAuthRequired(unlockError)) {
+        dispatch({ type: 'signInRequired' });
+        return;
+      }
+      dispatch({ type: 'actionFailed', message: describeError(unlockError) });
     } finally {
-      setLoading(false);
+      dispatch({ type: 'settled' });
     }
   }
 
   async function submit() {
     if (!sessionId) return;
-    setLoading(true);
+    dispatch({ type: 'actionRequested', clearError: false });
     try {
       const submitted = await submitPremiumSession(sessionId);
       push(`${ROUTES.QUIZ.RESULT(slug)}?attemptId=${encodeURIComponent(submitted.attemptId)}`);
     } catch (submitError) {
-      setError(extractUnknownErrorMessage(submitError, t('submitError')));
+      if (isAuthRequired(submitError)) {
+        dispatch({ type: 'signInRequired' });
+        return;
+      }
+      dispatch({ type: 'actionFailed', message: describeError(submitError) });
     } finally {
-      setLoading(false);
+      dispatch({ type: 'settled' });
     }
   }
 
@@ -177,6 +183,17 @@ export default function PremiumQuizPlayerClient({
     () => Array.from({ length: 18 }, (_, index) => `${watermark}:${index}`),
     [watermark],
   );
+
+  if (signInRequired) {
+    return (
+      <PremiumQuizSignInPrompt
+        slug={slug}
+        title={title}
+        questionCount={questionCount}
+        {...(description === undefined ? {} : { description })}
+      />
+    );
+  }
 
   if (loading && !question && !unlockRequired) {
     return (
@@ -186,38 +203,29 @@ export default function PremiumQuizPlayerClient({
 
   if (unlockRequired) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <SurfaceCard className="p-8 text-center">
-          <h1 className="text-2xl font-semibold text-ink">{title}</h1>
-          <p className="mt-5 rounded-xl bg-brand-trust/5 p-4 text-sm text-ink">
-            {t('premiumUnlockDescription')}
-          </p>
-          {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
-          <Button
-            className="mt-5"
-            loading={loading}
-            aria-label={t('premiumUnlockButton')}
-            title={t('premiumUnlockButton')}
-            onClick={() => void unlock()}
-          >
-            <PremiumCreditCost />
-          </Button>
-        </SurfaceCard>
-      </main>
+      <PremiumUnlockCard
+        title={title}
+        description={t('premiumUnlockDescription')}
+        loading={loading}
+        error={error}
+        onUnlock={unlock}
+      />
     );
   }
 
   if (!question || !currentBatch) {
+    // The whole player failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <div className="mx-auto max-w-3xl p-8 text-center text-red-700">
-        {error || t('loadError')}
+      <div className="mx-auto max-w-xl px-4 py-8 sm:py-12">
+        <h1 className="text-center text-2xl font-semibold text-ink">{title}</h1>
+        <ErrorState error={loadError} variant="page" onRetry={begin} />
       </div>
     );
   }
 
   const selected = answers[currentIndex];
   return (
-    <main className="premium-protected-content relative mx-auto min-h-screen max-w-4xl px-4 py-8">
+    <div className="premium-protected-content relative mx-auto min-h-screen max-w-4xl px-4 py-8">
       <div
         className="pointer-events-none fixed inset-0 z-40 grid grid-cols-3 content-around overflow-hidden opacity-10"
         aria-hidden="true"
@@ -283,6 +291,6 @@ export default function PremiumQuizPlayerClient({
           t={t}
         />
       </div>
-    </main>
+    </div>
   );
 }

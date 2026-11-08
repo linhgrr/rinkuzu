@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 const attemptMocks = vi.hoisted(() => ({
   aggregate: vi.fn(),
   populate: vi.fn(),
+  distinct: vi.fn(),
 }));
 
 vi.mock('@/lib/mongoose', () => ({
@@ -13,6 +14,7 @@ vi.mock('@/lib/mongoose', () => ({
 vi.mock('@/models/Attempt', () => ({
   default: {
     aggregate: attemptMocks.aggregate,
+    distinct: attemptMocks.distinct,
   },
 }));
 
@@ -85,7 +87,68 @@ describe('AttemptRepository', () => {
           hasNextPage: false,
           hasPrevPage: false,
         },
+        summary: { totalAttempts: 0, averageScore: null, needsWorkCount: 0 },
       });
+    });
+
+    it('summarises every attempt with the badge pass mark, unfiltered (RIN-1197)', async () => {
+      const repository = new AttemptRepository();
+      const userId = '507f191e810c19729de860ea';
+
+      await repository.findByUser(userId, { page: 1, limit: 10 });
+
+      const [pipeline] = attemptMocks.aggregate.mock.calls[0] ?? [];
+      const facet = pipeline?.[2]?.$facet;
+      expect(facet?.summary).toEqual([
+        {
+          $group: {
+            _id: null,
+            totalAttempts: { $sum: 1 },
+            averageScore: { $avg: '$score' },
+            needsWorkCount: { $sum: { $cond: [{ $lt: ['$score', 60] }, 1, 0] } },
+          },
+        },
+      ]);
+      expect(facet?.items?.[0]).toEqual({ $skip: 0 });
+      expect(facet?.meta).toEqual([{ $count: 'totalItems' }]);
+    });
+
+    it.each([
+      ['needs_work', { score: { $lt: 60 } }],
+      ['passed', { score: { $gte: 60 } }],
+    ] as const)('filters only the list and its count for result=%s', async (result, match) => {
+      const repository = new AttemptRepository();
+      const userId = '507f191e810c19729de860ea';
+
+      await repository.findByUser(userId, { page: 2, limit: 10, result });
+
+      const [pipeline] = attemptMocks.aggregate.mock.calls[0] ?? [];
+      expect(pipeline?.[0]).toEqual({ $match: { user: new Types.ObjectId(userId) } });
+      const facet = pipeline?.[2]?.$facet;
+      expect(facet?.items?.slice(0, 3)).toEqual([{ $match: match }, { $skip: 10 }, { $limit: 10 }]);
+      expect(facet?.meta).toEqual([{ $match: match }, { $count: 'totalItems' }]);
+      expect(facet?.summary).toHaveLength(1);
+      expect(facet?.summary?.[0]).not.toHaveProperty('$match');
+    });
+
+    it('maps the summary facet and rounds the average to one decimal', async () => {
+      attemptMocks.aggregate.mockResolvedValueOnce([
+        {
+          items: [],
+          meta: [{ totalItems: 6 }],
+          summary: [{ _id: null, totalAttempts: 25, averageScore: 71.4444, needsWorkCount: 6 }],
+        },
+      ]);
+      const repository = new AttemptRepository();
+
+      const page = await repository.findByUser('507f191e810c19729de860ea', {
+        page: 1,
+        limit: 10,
+        result: 'needs_work',
+      });
+
+      expect(page.summary).toEqual({ totalAttempts: 25, averageScore: 71.4, needsWorkCount: 6 });
+      expect(page.pagination.totalItems).toBe(6);
     });
   });
 
@@ -141,6 +204,26 @@ describe('AttemptRepository', () => {
       });
     });
 
+    it('scopes a claim-token owner to unclaimed attempts and never projects the hash', async () => {
+      const repository = new AttemptRepository();
+      const attemptId = '507f191e810c19729de860ea';
+      attemptMocks.aggregate.mockResolvedValueOnce([]);
+
+      await expect(
+        repository.findByIdWithQuiz(attemptId, { guestClaimTokenHash: 'd'.repeat(64) }),
+      ).resolves.toBeNull();
+
+      const [pipeline] = attemptMocks.aggregate.mock.calls[0] ?? [];
+      expect(pipeline?.[0]).toEqual({
+        $match: {
+          _id: new Types.ObjectId(attemptId),
+          guestClaimTokenHash: 'd'.repeat(64),
+          user: null,
+        },
+      });
+      expect(JSON.stringify(pipeline?.slice(1))).not.toContain('guestClaimTokenHash');
+    });
+
     it('rejects invalid attempt ids without querying Mongo', async () => {
       const repository = new AttemptRepository();
 
@@ -157,6 +240,23 @@ describe('AttemptRepository', () => {
         repository.findByIdWithQuiz('507f191e810c19729de860ea', { userId: 'not-valid' }),
       ).rejects.toThrow(ZodError);
       expect(attemptMocks.aggregate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findAttemptedQuizSlugs', () => {
+    it('scopes a claim-token owner to its unclaimed attempts', async () => {
+      const repository = new AttemptRepository();
+      attemptMocks.distinct.mockResolvedValueOnce(['algebra']);
+
+      await expect(
+        repository.findAttemptedQuizSlugs({ guestClaimTokenHash: 'd'.repeat(64) }, ['algebra']),
+      ).resolves.toEqual(['algebra']);
+
+      expect(attemptMocks.distinct).toHaveBeenCalledWith('quizSnapshot.slug', {
+        guestClaimTokenHash: 'd'.repeat(64),
+        user: null,
+        'quizSnapshot.slug': { $in: ['algebra'] },
+      });
     });
   });
 

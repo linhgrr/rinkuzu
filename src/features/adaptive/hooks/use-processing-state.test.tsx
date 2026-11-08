@@ -8,10 +8,16 @@ import type { TranslateFn } from '@/features/adaptive/types/learning';
 import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types/pipeline';
 import { MEDIA_MIN_LG } from '@/shared/constants/breakpoints';
 
+// The analytics client reads the GA id at import; its dataLayer is the observable sink.
+vi.hoisted(() => {
+  process.env['NEXT_PUBLIC_GA_ID'] = 'G-TEST123';
+});
+
 const {
   pushMock,
   getPipelineJobStatusMock,
   createSessionFromPipelineMock,
+  retryPipelineJobMock,
   getSelectedPipelineJobIdMock,
   getSelectedPipelineFilenameMock,
   getSelectedPipelineTitleMock,
@@ -25,6 +31,7 @@ const {
   pushMock: vi.fn(),
   getPipelineJobStatusMock: vi.fn(),
   createSessionFromPipelineMock: vi.fn(),
+  retryPipelineJobMock: vi.fn(),
   getSelectedPipelineJobIdMock: vi.fn(),
   getSelectedPipelineFilenameMock: vi.fn(),
   getSelectedPipelineTitleMock: vi.fn(),
@@ -47,6 +54,7 @@ vi.mock('@/i18n/navigation', () => ({
 vi.mock('@/features/adaptive/lib/adaptive-api-methods', () => ({
   getPipelineJobStatus: getPipelineJobStatusMock,
   createSessionFromPipeline: createSessionFromPipelineMock,
+  retryPipelineJob: retryPipelineJobMock,
 }));
 
 vi.mock('@/features/adaptive/lib/session-storage', () => ({
@@ -57,6 +65,10 @@ vi.mock('@/features/adaptive/lib/session-storage', () => ({
   saveActiveSessionId: saveActiveSessionIdMock,
   saveSessionJobMapping: saveSessionJobMappingMock,
 }));
+
+// The shared error keys (`errors.api.*`) come from the root translator; stable like next-intl's.
+const rootTranslate = (key: string) => key;
+vi.mock('next-intl', () => ({ useTranslations: () => rootTranslate, useLocale: () => 'vi' }));
 
 vi.mock('@/hooks/useMediaQuery', () => ({
   useMediaQuery: (query: string) => useMediaQueryMock(query),
@@ -69,6 +81,7 @@ vi.mock('sonner', () => ({
   },
 }));
 
+import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
 import { useProcessingState } from './use-processing-state';
 
 const t: TranslateFn = ((key: string, values?: Record<string, unknown>) => {
@@ -147,7 +160,20 @@ beforeEach(() => {
   useMediaQueryMock.mockReturnValue(false);
   getPipelineJobStatusMock.mockReset();
   createSessionFromPipelineMock.mockReset();
+  window.localStorage.clear();
+  window.dataLayer = [];
 });
+
+function analyticsEvents(name: string) {
+  return (window.dataLayer ?? []).filter(
+    (entry) => Array.isArray(entry) && entry[0] === 'event' && entry[1] === name,
+  ) as [string, string, Record<string, unknown>][];
+}
+
+function trackJobWithConsent() {
+  window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'granted');
+  trackAdaptivePipelineJob(JOB_ID, 'journey-1');
+}
 
 afterEach(() => {
   vi.useRealTimers();
@@ -619,8 +645,12 @@ describe('useProcessingState', () => {
       expect(createSessionFromPipelineMock).toHaveBeenCalledTimes(4);
       expect(result.current.error).toBeNull();
 
+      const toastsBeforeLastAttempt = toastErrorMock.mock.calls.length;
       await advance(10_000);
       expect(createSessionFromPipelineMock).toHaveBeenCalledTimes(5);
+      // RIN-809: the last attempt shows the failure card; no "retrying" toast next to it.
+      expect(toastErrorMock).toHaveBeenCalledTimes(toastsBeforeLastAttempt);
+      expect(result.current.notice).toBeNull();
       expect(result.current.error).toEqual({
         message: 'processing.errors.sessionSetupUnconfirmed',
         retryable: true,
@@ -676,7 +706,8 @@ describe('useProcessingState', () => {
         code: 'unauthorized',
         action: 'dashboard',
       });
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.unauthorized');
+      // RIN-809: the failure card is the only message.
+      expect(toastErrorMock).not.toHaveBeenCalled();
       expect(result.current.creatingSession).toBe(false);
       expect(createSessionFromPipelineMock).toHaveBeenCalledTimes(1);
     });
@@ -697,7 +728,7 @@ describe('useProcessingState', () => {
           code: 'pipeline_timeout',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
         name: 'pipeline_cancelled code',
@@ -712,7 +743,7 @@ describe('useProcessingState', () => {
           code: 'pipeline_cancelled',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
         name: 'cancelled status without code',
@@ -727,7 +758,7 @@ describe('useProcessingState', () => {
           code: 'pipeline_cancelled',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
         name: 'pipeline_unavailable',
@@ -742,10 +773,11 @@ describe('useProcessingState', () => {
           code: 'pipeline_unavailable',
           action: 'upload' as const,
         },
-        notice: 'processing.notices.retryAfterFailure',
+        notice: null,
       },
       {
-        name: 'user_message branch',
+        // RIN-754: the server's user_message is never shown; unknown codes get the generic copy.
+        name: 'user_message with an unknown code',
         job: {
           status: 'failed' as const,
           error_code: 'custom_code',
@@ -753,9 +785,61 @@ describe('useProcessingState', () => {
           retryable: false,
         },
         expected: {
-          message: '  Backend said no  ',
+          message:
+            'processing.errors.failedAtStepFinal:{"step":"processing.steps.extractingConcepts"}',
           retryable: false,
           code: 'custom_code',
+          action: 'upload' as const,
+        },
+        notice: null,
+      },
+      {
+        name: 'pipeline_stalled code key',
+        job: {
+          status: 'failed' as const,
+          error_code: 'pipeline_stalled',
+          user_message: 'Worker heartbeat lost on node-7',
+          retryable: true,
+        },
+        expected: {
+          message: 'errors.api.codes.pipelineStalled',
+          retryable: true,
+          code: 'pipeline_stalled',
+          action: 'upload' as const,
+        },
+        notice: null,
+      },
+      {
+        // RIN-1004: an upload-time code never explains a failure later in processing.
+        name: 'quota_exceeded code',
+        job: {
+          status: 'failed' as const,
+          error_code: 'quota_exceeded',
+          user_message: 'Usage quota exceeded',
+          retryable: false,
+        },
+        expected: {
+          message:
+            'processing.errors.failedAtStepFinal:{"step":"processing.steps.extractingConcepts"}',
+          retryable: false,
+          code: 'quota_exceeded',
+          action: 'upload' as const,
+        },
+        notice: null,
+      },
+      {
+        name: 'unsupported_media_type code',
+        job: {
+          status: 'failed' as const,
+          error_code: 'unsupported_media_type',
+          user_message: 'application/x-msdownload rejected',
+          retryable: false,
+        },
+        expected: {
+          message:
+            'processing.errors.failedAtStepFinal:{"step":"processing.steps.extractingConcepts"}',
+          retryable: false,
+          code: 'unsupported_media_type',
           action: 'upload' as const,
         },
         notice: null,
@@ -769,7 +853,8 @@ describe('useProcessingState', () => {
           retryable: false,
         },
         expected: {
-          message: 'processing.errors.pipelineFailed',
+          message:
+            'processing.errors.failedAtStepFinal:{"step":"processing.steps.extractingConcepts"}',
           retryable: false,
           code: null,
           action: 'upload' as const,
@@ -784,9 +869,117 @@ describe('useProcessingState', () => {
 
       expect(result.current.error).toEqual(expected);
       expect(result.current.notice).toBe(notice);
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
-      expect(toastErrorMock).toHaveBeenCalledWith(expected.message);
-      expect(result.current.currentStep).toBe(job.status === 'cancelled' ? -1 : -1);
+      // RIN-809: the failure card is the only message.
+      expect(toastErrorMock).not.toHaveBeenCalled();
+      expect(result.current.currentStep).toBe(-1);
+      // progress 0.3 is inside "extracting concepts" (step 2).
+      expect(result.current.failedStep).toBe(2);
+      expect(result.current.canRetry).toBe(expected.retryable);
+    });
+
+    it('marks the last step seen while polling and names it in the message', async () => {
+      getPipelineJobStatusMock
+        .mockResolvedValueOnce(createJob({ status: 'optimizing', progress: 0.91 }))
+        .mockResolvedValueOnce(
+          createJob({
+            status: 'failed',
+            progress: 0.3,
+            error_code: 'pipeline_failed',
+            retryable: true,
+          }),
+        );
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+      expect(result.current.currentStep).toBe(6);
+      await advance(2_000);
+
+      expect(result.current.failedStep).toBe(6);
+      expect(result.current.error?.message).toBe(
+        'processing.errors.failedAtStep:{"step":"processing.steps.finalizingSession"}',
+      );
+    });
+
+    it('falls back to the generic copy when the failed step is unknown', async () => {
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({ status: 'failed', progress: 0, error_code: null, retryable: false }),
+      );
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+
+      expect(result.current.failedStep).toBeNull();
+      expect(result.current.error?.message).toBe('processing.errors.pipelineFailed');
+    });
+  });
+
+  describe('retry and back to library (RIN-1004)', () => {
+    it('re-runs the failed job in place and polls it again', async () => {
+      getPipelineJobStatusMock.mockResolvedValueOnce(
+        createJob({
+          status: 'failed',
+          progress: 0.5,
+          error_code: 'pipeline_timeout',
+          retryable: true,
+        }),
+      );
+      retryPipelineJobMock.mockResolvedValue({ job_id: JOB_ID, status: 'queued' });
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+      expect(result.current.canRetry).toBe(true);
+
+      getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'loading', progress: 0.05 }));
+      await act(async () => {
+        await result.current.handleRetry();
+      });
+      await flushMicrotasks();
+
+      expect(retryPipelineJobMock).toHaveBeenCalledWith(JOB_ID);
+      expect(result.current.error).toBeNull();
+      expect(result.current.failedStep).toBeNull();
+      expect(result.current.currentStep).toBe(1);
+      expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(2);
+      expect(pushMock).not.toHaveBeenCalled();
+    });
+
+    it('keeps the failure card and toasts when the retry is refused', async () => {
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({
+          status: 'failed',
+          progress: 0.5,
+          error_code: 'pipeline_timeout',
+          retryable: true,
+        }),
+      );
+      retryPipelineJobMock.mockRejectedValue(
+        new AdaptiveApiError({ message: 'busy', code: 'conflict', retryable: false }),
+      );
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+      await act(async () => {
+        await result.current.handleRetry();
+      });
+
+      expect(result.current.error?.code).toBe('pipeline_timeout');
+      expect(result.current.retrying).toBe(false);
+      expect(toastErrorMock).toHaveBeenCalledOnce();
+    });
+
+    it('goes back to the library without clearing the selected job', async () => {
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({ status: 'failed', progress: 0.5, error_code: null, retryable: false }),
+      );
+
+      const { result } = renderProcessingState();
+      await flushMicrotasks();
+      act(() => {
+        result.current.handleBackToLibrary();
+      });
+
+      expect(pushMock).toHaveBeenCalledWith(ADAPTIVE_ROUTES.dashboard);
+      expect(clearSelectedPipelineJobMock).not.toHaveBeenCalled();
     });
   });
 
@@ -887,7 +1080,7 @@ describe('useProcessingState', () => {
         code: 'not_found',
         action: 'upload',
       });
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.jobNotFound');
+      expect(toastErrorMock).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -940,7 +1133,7 @@ describe('useProcessingState', () => {
       },
     );
 
-    it('maps plain Error message and non-Error values in the generic friendly branch', async () => {
+    it('never shows a plain Error message; non-Error values get the generic copy too', async () => {
       getPipelineJobStatusMock
         .mockRejectedValueOnce(new Error('plain boom'))
         .mockRejectedValueOnce('string-failure');
@@ -948,7 +1141,7 @@ describe('useProcessingState', () => {
       const first = renderProcessingState();
       await flushMicrotasks();
       expect(first.result.current.error).toEqual({
-        message: 'plain boom',
+        message: 'processing.errors.generic',
         retryable: false,
         code: null,
         action: 'upload',
@@ -968,6 +1161,30 @@ describe('useProcessingState', () => {
       second.unmount();
     });
 
+    it.each([
+      { code: 'quota_exceeded', status: 429, messageKey: 'errors.api.codes.quotaExceeded' },
+      { code: 'pipeline_stalled', status: 409, messageKey: 'errors.api.codes.pipelineStalled' },
+      { code: 'forbidden', status: 403, messageKey: 'errors.api.forbidden' },
+    ])(
+      'uses the $code key for a non-retryable $status poll failure, not its message',
+      async ({ code, status, messageKey }) => {
+        getPipelineJobStatusMock.mockRejectedValueOnce(
+          new AdaptiveApiError({ message: 'raw server text', code, status }),
+        );
+
+        const { result } = renderProcessingState();
+        await flushMicrotasks();
+
+        expect(result.current.error).toEqual({
+          message: messageKey,
+          retryable: false,
+          code,
+          action: 'upload',
+        });
+        expect(toastErrorMock).not.toHaveBeenCalled();
+      },
+    );
+
     it('throttles identical toast messages within the 4s window and allows later ones', async () => {
       getPipelineJobStatusMock.mockRejectedValue(
         new AdaptiveApiError({
@@ -979,7 +1196,8 @@ describe('useProcessingState', () => {
 
       const first = renderProcessingState();
       await flushMicrotasks();
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
+      // A terminal failure shows the card only (RIN-809).
+      expect(toastErrorMock).not.toHaveBeenCalled();
       first.unmount();
 
       // remount quickly with same terminal message → still throttled via module-level? No —
@@ -1012,62 +1230,38 @@ describe('useProcessingState', () => {
       expect(result.current.notice).toBe('processing.notices.retryingCreateSession');
     });
 
-    it('allows a different toast message even inside the throttle window', async () => {
-      // Two sequential mounts with distinct terminal messages share no throttle state,
-      // so exercise one instance: completed → non-retryable create errors with different messages.
+    it('never toasts a failure that the failure card already shows (RIN-809)', async () => {
       getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'completed', progress: 1 }));
       createSessionFromPipelineMock.mockRejectedValueOnce(
-        new AdaptiveApiError({
-          message: 'auth',
-          code: 'unauthorized',
-          retryable: false,
-        }),
+        new AdaptiveApiError({ message: 'auth', code: 'unauthorized', retryable: false }),
       );
 
       const first = renderProcessingState();
       await flushMicrotasks();
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.unauthorized');
+      expect(first.result.current.error?.message).toBe('processing.errors.unauthorized');
       first.unmount();
 
-      toastErrorMock.mockClear();
-      createSessionFromPipelineMock.mockReset();
-      createSessionFromPipelineMock.mockRejectedValue(
-        new AdaptiveApiError({
-          message: 'gone',
-          code: 'not_found',
-          retryable: false,
-        }),
-      );
       getPipelineJobStatusMock.mockReset();
-      getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'completed', progress: 1 }));
-
-      renderProcessingState();
-      await flushMicrotasks();
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.jobNotFound');
-    });
-
-    it('emits a toast for terminal poll failure and throttles the same message on a rapid remount of a new instance independently', async () => {
       getPipelineJobStatusMock.mockRejectedValue(
-        new AdaptiveApiError({
-          message: 'missing',
-          code: 'conflict',
-          retryable: false,
-        }),
+        new AdaptiveApiError({ message: 'missing', code: 'conflict', retryable: false }),
       );
 
-      const a = renderProcessingState();
+      const second = renderProcessingState();
       await flushMicrotasks();
-      expect(toastErrorMock).toHaveBeenCalledTimes(1);
-      expect(toastErrorMock).toHaveBeenCalledWith('processing.errors.conflict');
-      a.unmount();
+      expect(second.result.current.error?.message).toBe('processing.errors.conflict');
+      second.unmount();
 
-      const b = renderProcessingState();
+      getPipelineJobStatusMock.mockReset();
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({ status: 'failed', error_code: 'pipeline_stalled', retryable: true }),
+      );
+
+      const third = renderProcessingState();
       await flushMicrotasks();
-      // throttle is per hook instance (ref), so a new mount always toasts
-      expect(toastErrorMock).toHaveBeenCalledTimes(2);
-      b.unmount();
+      expect(third.result.current.error).not.toBeNull();
+      third.unmount();
+
+      expect(toastErrorMock).not.toHaveBeenCalled();
     });
   });
 
@@ -1239,6 +1433,74 @@ describe('useProcessingState', () => {
       expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(1);
       await advance(1);
       expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('terminal analytics events', () => {
+    it('emits one pipeline_failed with a slug error code, even after a remount', async () => {
+      trackJobWithConsent();
+      getPipelineJobStatusMock.mockResolvedValue(
+        createJob({
+          status: 'failed',
+          error_code: 'ocr_failed',
+          error_message: 'OCR API request failed for all configured keys.',
+          created_at: 1_000,
+          updated_at: 1_042,
+        }),
+      );
+
+      const first = renderProcessingState();
+      await flushMicrotasks();
+      first.unmount();
+      renderProcessingState();
+      await flushMicrotasks();
+
+      expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(2);
+      const failed = analyticsEvents('pipeline_failed');
+      expect(failed).toHaveLength(1);
+      expect(failed[0]?.[2]).toMatchObject({
+        path: 'adaptive',
+        error_code: 'ocr_failed',
+        journey_id: 'journey-1',
+        duration_ms: 42_000,
+      });
+      expect(JSON.stringify(failed[0]?.[2])).not.toMatch(/OCR API|notes\.pdf/);
+      expect(analyticsEvents('pipeline_completed')).toHaveLength(0);
+    });
+
+    it('emits one pipeline_completed across repeated completed polls', async () => {
+      trackJobWithConsent();
+      getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'completed', progress: 1 }));
+      createSessionFromPipelineMock
+        .mockRejectedValueOnce(
+          new AdaptiveApiError({
+            message: 'not ready',
+            code: 'pipeline_not_completed',
+            status: 409,
+            retryable: true,
+          }),
+        )
+        .mockResolvedValueOnce({ session_id: 'session-ready' });
+
+      renderProcessingState();
+      await flushMicrotasks();
+      await advance(2000);
+
+      expect(getPipelineJobStatusMock).toHaveBeenCalledTimes(2);
+      const completed = analyticsEvents('pipeline_completed');
+      expect(completed).toHaveLength(1);
+      expect(completed[0]?.[2]).toMatchObject({ path: 'adaptive', journey_id: 'journey-1' });
+      expect(completed[0]?.[2]).not.toHaveProperty('error_code');
+    });
+
+    it('stays silent for a job this browser did not submit', async () => {
+      window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'granted');
+      getPipelineJobStatusMock.mockResolvedValue(createJob({ status: 'failed' }));
+
+      renderProcessingState();
+      await flushMicrotasks();
+
+      expect(analyticsEvents('pipeline_failed')).toHaveLength(0);
     });
   });
 });

@@ -10,5 +10,6 @@ export function toQuizPlayViewModel(dto: QuizPlayDetailDto): QuizPlayViewModel {
       ...copyQuizQuestionFields(question),
       type: question.type,
     })),
+    ...(dto.retry ? { retry: dto.retry } : {}),
   };
 }

@@ -8,6 +8,9 @@ import {
   cancelPipelineJob,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { createLibraryPoller, type LibraryPoller } from '@/features/adaptive/hooks/library-poller';
+import { adaptiveErrorForDisplay } from '@/features/adaptive/lib/adaptive-api-error';
+import { reportAdaptivePipelineTerminals } from '@/features/adaptive/lib/pipeline-analytics';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import type { PipelineJobListItem } from '@/features/adaptive/types/pipeline';
 
 export type UseJobLibraryArgs = {
@@ -20,7 +23,8 @@ export type UseJobLibraryResult = {
   loading: boolean;
   busyJobId: string | null;
   retry: (jobId: string) => Promise<void>;
-  cancel: (jobId: string) => Promise<void>;
+  /** Null when cancelled; localized copy otherwise, shown inline in the confirm dialog (RIN-1005). */
+  cancel: (jobId: string) => Promise<string | null>;
   refresh: () => Promise<void>;
 };
 
@@ -31,13 +35,23 @@ export function useJobLibrary({
   const [jobs, setJobs] = useState<PipelineJobListItem[]>(initialJobs);
   const [hasLoaded, setHasLoaded] = useState(initialJobs.length > 0);
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
+  const apiErrorMessage = useApiErrorMessage();
+  // Localized by code/kind, never the server's text (RIN-754).
+  const toastError = (err: unknown) => {
+    const message = apiErrorMessage(adaptiveErrorForDisplay(err));
+    if (message) toast.error(message);
+  };
 
   const [poller] = useState<LibraryPoller>(() =>
     createLibraryPoller({
       listJobs: listPipelineJobs,
       retryJob: retryPipelineJob,
       cancelJob: cancelPipelineJob,
-      onJobs: setJobs,
+      onJobs: (nextJobs) => {
+        setJobs(nextJobs);
+        // The dashboard is where users wait after uploading, so terminal outcomes surface here too.
+        reportAdaptivePipelineTerminals(nextJobs);
+      },
       onBusy: setBusyJobId,
       onTickSettled: () => setHasLoaded(true),
     }),
@@ -53,15 +67,16 @@ export function useJobLibrary({
     try {
       await poller.retry(jobId);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to retry job');
+      toastError(err);
     }
   };
 
-  const cancelWithToast = async (jobId: string): Promise<void> => {
+  const cancelReportingError = async (jobId: string): Promise<string | null> => {
     try {
       await poller.cancel(jobId);
+      return null;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to cancel job');
+      return apiErrorMessage(adaptiveErrorForDisplay(err));
     }
   };
 
@@ -70,7 +85,7 @@ export function useJobLibrary({
     loading: enabled && !hasLoaded,
     busyJobId,
     retry: retryWithToast,
-    cancel: cancelWithToast,
+    cancel: cancelReportingError,
     refresh: poller.tickNow,
   };
 }

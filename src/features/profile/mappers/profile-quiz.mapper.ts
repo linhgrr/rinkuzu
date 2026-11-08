@@ -31,6 +31,12 @@ function toProfileQuizViewModel(quiz: LibraryQuizDto): ProfileQuizViewModel {
 export function toProfileQuizLibraryViewModel(dto: LibraryListDto): ProfileQuizLibraryViewModel {
   return {
     quizzes: dto.quizzes.map(toProfileQuizViewModel),
+    counts: {
+      all: dto.counts.all,
+      inProgress: dto.counts.inProgress,
+      complete: dto.counts.complete,
+    },
+    hasMore: dto.pagination.hasNextPage,
   };
 }
 

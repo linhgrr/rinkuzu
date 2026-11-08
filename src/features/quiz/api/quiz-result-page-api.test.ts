@@ -66,4 +66,15 @@ describe('fetchQuizResultPageData', () => {
     });
     expect(fetchApiDataMock).not.toHaveBeenCalled();
   });
+
+  it('threads a guest claim token and skips the protected bookmark fetch (RIN-912)', async () => {
+    fetchAttemptDetailViewModelMock.mockResolvedValueOnce(result);
+
+    await fetchQuizResultPageData('attempt-1', 'en', { guestClaimToken: 'fake-token' });
+
+    expect(fetchAttemptDetailViewModelMock).toHaveBeenCalledWith('attempt-1', 'en', {
+      guestClaimToken: 'fake-token',
+    });
+    expect(fetchApiDataMock).not.toHaveBeenCalled();
+  });
 });

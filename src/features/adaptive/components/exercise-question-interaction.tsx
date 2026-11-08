@@ -59,7 +59,7 @@ function OptionCard<T extends OptionCardSelectionValue>({
       <div
         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors sm:h-8 sm:w-8 sm:text-sm ${
           active
-            ? 'border-brand-action bg-brand-action text-white'
+            ? 'border-brand-action bg-brand-action text-brand-action-text'
             : 'border-control-border text-neutral-500 group-hover:border-line-blue'
         }`}
       >

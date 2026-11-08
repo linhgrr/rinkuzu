@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import {
   HiOutlineArrowLeft,
@@ -16,52 +17,92 @@ import {
 import { useTranslations } from 'next-intl';
 import {
   AdaptiveApiError,
-  isAdaptiveRequestAbortedError,
-  isAdaptiveServiceUnavailableError,
+  adaptiveErrorForDisplay,
 } from '@/features/adaptive/lib/adaptive-api-error';
-import { checkApiHealth, uploadPdf } from '@/features/adaptive/lib/adaptive-api-methods';
+import {
+  checkApiReadiness,
+  uploadPdf,
+  type ApiReadinessCause,
+} from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
+import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
 import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
 import { captureAnalyticsEvent, fileSizeBucket } from '@/lib/analytics/client';
+import { withPending } from '@/lib/async/with-pending';
 import { getPdfPageCount } from '@/lib/pdf';
 import { MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 
 const DEFAULT_PIPELINE_PAGE_BATCH_SIZE = 10;
+const HEALTH_RETRY_DELAY_MS = 1_000;
+// Session and readiness failures will not clear in a second; only blips are retried.
+const TRANSIENT_HEALTH_CAUSES: ReadonlySet<ApiReadinessCause> = new Set([
+  'upstream_error',
+  'timeout',
+  'network',
+]);
+const READINESS_FAILURE = { code: 'service_unavailable', status: 503 } as const;
+
+/**
+ * What went wrong. With `error` (an API failure, RIN-754) `ErrorState` picks title, copy and
+ * actions from it and `message` is optional upload copy; without it `message` is a local check.
+ */
+type UploadFailure = { error?: unknown; message?: string };
+
+type UploadAttempt = { ok: true; jobId: string } | { ok: false; cause: ApiReadinessCause };
+
+/** Waits out one transient readiness blip, then uploads. Throws what `uploadPdf` throws. */
+async function uploadWhenReady(
+  file: File,
+  subjectName: string,
+  onReady: (progress: number) => void,
+): Promise<UploadAttempt> {
+  let readiness = await checkApiReadiness();
+  if (!readiness.ok && TRANSIENT_HEALTH_CAUSES.has(readiness.cause)) {
+    await new Promise((resolve) => setTimeout(resolve, HEALTH_RETRY_DELAY_MS));
+    readiness = await checkApiReadiness();
+  }
+  if (!readiness.ok) return { ok: false, cause: readiness.cause };
+  onReady(30);
+  const result = await uploadPdf(file, subjectName, DEFAULT_PIPELINE_PAGE_BATCH_SIZE);
+  return { ok: true, jobId: result.job_id };
+}
 
 export default function AdaptiveLearningUpload() {
   const { back, push } = useRouter();
   const t = useTranslations('adaptiveLearning');
+  // Raised only while the request runs (reset in `withPending`'s finally); `redirecting`
+  // keeps the progress view up after a success until the dashboard opens.
   const [isUploading, setIsUploading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+  const busy = isUploading || redirecting;
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<UploadFailure | null>(null);
+  /** Already-localized copy for local checks (file type, size, pages, missing file). */
+  const setError = (message: string | null) => setFailure(message === null ? null : { message });
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectName, setSubjectName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const uploadPolicy = usePdfUploadPolicy('adaptive');
 
-  const getFriendlyUploadError = (err: unknown) => {
-    if (err instanceof AdaptiveApiError) {
-      if (err.code === 'unauthorized') return t('uploadPage.errors.unauthorized');
-      if (isAdaptiveRequestAbortedError(err)) return t('uploadPage.errors.connectionInterrupted');
-      if (isAdaptiveServiceUnavailableError(err)) return t('uploadPage.errors.serviceUnavailable');
-      if (err.code === 'conflict') return t('uploadPage.errors.conflict');
-      if (err.code === 'validation_error') {
-        const validationDetail = `${err.detail ?? ''} ${err.message}`.toLowerCase();
-        if (validationDetail.includes('page')) {
-          return t('uploadPage.errors.pageLimitExceeded', { maxPages: uploadPolicy.maxPages });
-        }
-        if (
-          validationDetail.includes('readable') ||
-          validationDetail.includes('valid pdf') ||
-          validationDetail.includes('encrypted')
-        ) {
-          return t('uploadPage.errors.pdfUnreadable');
-        }
-      }
+  /** Upload-specific copy where it says more than the generic kind copy; never server text. */
+  const getUploadErrorOverride = (err: unknown): string | undefined => {
+    if (!(err instanceof AdaptiveApiError) || err.code !== 'validation_error') return undefined;
+    if (err.status === 413)
+      return t('uploadPage.errors.fileTooLarge', { maxSizeMb: MAX_PDF_UPLOAD_MB });
+    // Matched, never shown: the server's wording only picks which localized line to use.
+    const validationDetail = `${err.detail ?? ''} ${err.message}`.toLowerCase();
+    if (validationDetail.includes('page')) {
+      return t('uploadPage.errors.pageLimitExceeded', { maxPages: uploadPolicy.maxPages });
     }
-
-    return t('uploadPage.uploadFailed');
+    if (
+      validationDetail.includes('readable') ||
+      validationDetail.includes('valid pdf') ||
+      validationDetail.includes('encrypted')
+    ) {
+      return t('uploadPage.errors.pdfUnreadable');
+    }
+    return undefined;
   };
 
   const onDropRejected = (rejections: FileRejection[]) => {
@@ -84,8 +125,8 @@ export default function AdaptiveLearningUpload() {
       return;
     }
 
-    const message = firstError.message || t('uploadPage.uploadFailed');
-    setError(message);
+    // react-dropzone's own text is English and technical.
+    setError(t('uploadPage.uploadFailed'));
   };
 
   const handleUpload = async (file: File) => {
@@ -96,7 +137,6 @@ export default function AdaptiveLearningUpload() {
       return;
     }
 
-    setIsUploading(true);
     setError(null);
     setSubjectError(null);
     setUploadProgress(10);
@@ -107,38 +147,11 @@ export default function AdaptiveLearningUpload() {
       file_size_bucket: sizeBucket,
       journey_id: journeyId,
     });
+    let attempt: UploadAttempt;
     try {
-      const online = await checkApiHealth();
-      if (!online) {
-        const message = t('uploadPage.backendOffline');
-        captureAnalyticsEvent('pdf_upload_failed', {
-          file_size_bucket: sizeBucket,
-          journey_id: journeyId,
-          reason: 'service_unavailable',
-          duration_ms: Math.round(performance.now() - uploadStartedAt),
-        });
-        setError(message);
-        toast.error(message);
-        setIsUploading(false);
-        return;
-      }
-      setUploadProgress(30);
-      const result = await uploadPdf(file, normalizedSubjectName, DEFAULT_PIPELINE_PAGE_BATCH_SIZE);
-      setUploadProgress(100);
-      captureAnalyticsEvent('pdf_upload_completed', {
-        file_size_bucket: sizeBucket,
-        journey_id: journeyId,
-        duration_ms: Math.round(performance.now() - uploadStartedAt),
-      });
-      saveSelectedPipelineJob({
-        jobId: result.job_id,
-        filename: file.name,
-        subjectName: normalizedSubjectName,
-      });
-      toast.success(t('processing.status.queuedForProcessing'));
-      setTimeout(() => {
-        push(ADAPTIVE_ROUTES.dashboard);
-      }, 500);
+      attempt = await withPending(setIsUploading, () =>
+        uploadWhenReady(file, normalizedSubjectName, setUploadProgress),
+      );
     } catch (err) {
       captureAnalyticsEvent('pdf_upload_failed', {
         file_size_bucket: sizeBucket,
@@ -146,12 +159,43 @@ export default function AdaptiveLearningUpload() {
         reason: err instanceof AdaptiveApiError ? err.code : 'unknown',
         duration_ms: Math.round(performance.now() - uploadStartedAt),
       });
-      const message = getFriendlyUploadError(err);
-      setError(message);
-      toast.error(message);
-      setIsUploading(false);
+      const shown = adaptiveErrorForDisplay(err);
+      const message = getUploadErrorOverride(err);
+      setFailure({ error: shown, ...(message !== undefined && { message }) });
       setUploadProgress(0);
+      return;
     }
+    if (!attempt.ok) {
+      captureAnalyticsEvent('pdf_upload_failed', {
+        file_size_bucket: sizeBucket,
+        journey_id: journeyId,
+        reason: 'service_unavailable',
+        health_cause: attempt.cause,
+        duration_ms: Math.round(performance.now() - uploadStartedAt),
+      });
+      setFailure({
+        error: READINESS_FAILURE,
+        message: t('uploadPage.serviceTemporarilyUnavailable'),
+      });
+      return;
+    }
+    setRedirecting(true);
+    setUploadProgress(100);
+    captureAnalyticsEvent('pdf_upload_completed', {
+      file_size_bucket: sizeBucket,
+      journey_id: journeyId,
+      duration_ms: Math.round(performance.now() - uploadStartedAt),
+    });
+    trackAdaptivePipelineJob(attempt.jobId, journeyId);
+    saveSelectedPipelineJob({
+      jobId: attempt.jobId,
+      filename: file.name,
+      subjectName: normalizedSubjectName,
+    });
+    toast.success(t('processing.status.queuedForProcessing'));
+    setTimeout(() => {
+      push(ADAPTIVE_ROUTES.dashboard);
+    }, 500);
   };
 
   const onDrop = async (acceptedFiles: File[]) => {
@@ -182,7 +226,7 @@ export default function AdaptiveLearningUpload() {
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
     maxSize: uploadPolicy.maxBytes,
-    disabled: isUploading || uploadPolicy.isLoading,
+    disabled: busy || uploadPolicy.isLoading,
   });
 
   const handleOpenFileDialog = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -225,13 +269,24 @@ export default function AdaptiveLearningUpload() {
         </p>
       </div>
 
-      {error && (
+      {failure && failure.error === undefined && (
         <div
           role="alert"
           className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700"
         >
-          {error}
+          {failure.message}
         </div>
+      )}
+
+      {/* The only message for an API failure: no toast repeats it (RIN-809). Entitlement errors
+          also get the upgrade modal from UpgradePromptProvider. */}
+      {failure && failure.error !== undefined && (
+        <ErrorState
+          error={failure.error}
+          message={failure.message}
+          {...(selectedFile && !busy ? { onRetry: () => handleUpload(selectedFile) } : {})}
+          className="mb-6"
+        />
       )}
 
       <div className="max-w-3xl mx-auto space-y-10">
@@ -253,7 +308,7 @@ export default function AdaptiveLearningUpload() {
               aria-invalid={Boolean(subjectError)}
               aria-describedby={subjectError ? 'subject-name-error' : undefined}
               className="w-full bg-surface-warm text-sm font-medium hover:bg-white"
-              disabled={isUploading}
+              disabled={busy}
             />
             {subjectError && (
               <p id="subject-name-error" role="alert" className="text-sm font-medium text-red-600">
@@ -266,12 +321,12 @@ export default function AdaptiveLearningUpload() {
             {...getRootProps()}
             className={`upload-dropzone relative group cursor-pointer transition-colors duration-200 overflow-hidden
                             ${isDragActive ? '!border-brand-action bg-orange-50/30 cursor-copy' : ''}
-                            ${isUploading ? 'pointer-events-none' : ''}`}
+                            ${busy ? 'pointer-events-none' : ''}`}
           >
-            <input {...getInputProps()} />
+            <input {...getInputProps({ 'aria-label': t('uploadPage.fileInputLabel') })} />
 
             <div className="p-16 md:p-20 flex flex-col items-center justify-center text-center">
-              {!isUploading && !selectedFile ? (
+              {!busy && !selectedFile ? (
                 <>
                   <div
                     className={`w-16 h-16 rounded-md flex items-center justify-center mb-6 transition-transform duration-200 group-hover:scale-105 border ${
@@ -299,7 +354,7 @@ export default function AdaptiveLearningUpload() {
                     {t('browseFiles')}
                   </Button>
                 </>
-              ) : !isUploading && selectedFile ? (
+              ) : !busy && selectedFile ? (
                 <div className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}>
                   <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-xl border border-accent-warm bg-white text-accent">
                     <HiOutlineDocumentText className="size-8" aria-hidden="true" />
@@ -354,10 +409,10 @@ export default function AdaptiveLearningUpload() {
             <Button
               variant="primary"
               onClick={handleSubmit}
-              disabled={isUploading || !selectedFile}
+              disabled={busy || !selectedFile}
               className="min-h-12 w-full rounded-full px-7 font-semibold sm:w-auto"
             >
-              {isUploading ? t('uploadPage.uploading') : t('uploadPage.createLearningPath')}
+              {busy ? t('uploadPage.uploading') : t('uploadPage.createLearningPath')}
             </Button>
           </div>
         </div>

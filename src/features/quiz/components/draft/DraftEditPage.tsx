@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { useQuizDraftAutosave } from '@/features/quiz/hooks/useQuizDraftAutosave';
 import { toEditorQuestions } from '@/features/quiz/lib/question-editor-mutations';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { createPdfObjectUrlFromUrl } from '@/lib/pdf';
 import { submitQuizDraft } from '@/lib/quiz/draftApi';
 import { ROUTES } from '@/shared/constants/routes';
@@ -24,6 +24,7 @@ interface DraftEditPageProps {
 
 export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
   const t = useTranslations('create');
+  const apiErrorMessage = useApiErrorMessage();
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const { push } = useRouter();
@@ -128,7 +129,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
         questionsCount: (count) =>
           isManualDraft ? t('questionsInDraft', { count }) : t('questionsExtracted', { count }),
         metaTitle: t('quizTitle'),
-        metaDescription: isManualDraft ? t('manualEditorDescription') : t('uploadDescription'),
+        metaDescription: isManualDraft ? t('manualEditorDescription') : t('draftEditorDescription'),
         title: t('quizTitle'),
         titlePlaceholder: t('enterTitle'),
         description: t('descriptionOptional'),
@@ -179,7 +180,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
           push(ROUTES.QUIZ.VIEW(result.slug));
         } catch (error: unknown) {
           toast.error(tCommon('error'), {
-            description: extractUnknownErrorMessage(error, t('publishFailed')),
+            description: apiErrorMessage(error, t('publishFailed')),
           });
           throw error;
         }

@@ -24,4 +24,6 @@ export interface IDashboardRepository {
   findUserProgress(userId: string): Promise<DashboardUserProgressRecord | null>;
   countDueQuestions(userId: string, now: Date): Promise<number>;
   findInProgressQuizzes(userId: string, limit: number): Promise<DashboardInProgressQuizRecord[]>;
+  hasSubmittedAttempt(userId: string): Promise<boolean>;
+  hasAuthoredQuiz(userId: string): Promise<boolean>;
 }

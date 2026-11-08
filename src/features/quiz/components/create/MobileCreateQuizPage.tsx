@@ -1,5 +1,7 @@
 'use client';
 
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { useRouter } from '@/i18n/navigation';
 import { useCallback, useEffect, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -16,7 +18,6 @@ import { FolderSelector } from '@/features/folders/components/FolderSelector';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {
   deletePendingPdfUpload,
   getPdfPageCount,
@@ -24,11 +25,17 @@ import {
   uploadPdfViaPresignedUrl,
 } from '@/lib/pdf';
 import { createQuizDraft } from '@/lib/quiz/draftApi';
+import { getCreateQuizDraftErrorMessage } from '@/features/quiz/components/create/create-quiz-draft-error';
 import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import { ROUTES } from '@/shared/constants/routes';
+import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
+import {
+  getPdfRejectionMessage,
+  isPdfFile,
+} from '@/features/quiz/components/create/pdf-file-error';
 
 type MobileCreateState = {
   file: File | null;
@@ -37,6 +44,13 @@ type MobileCreateState = {
   selectedFolderId: string | null;
   aiPrompt: string;
   isUploading: boolean;
+  /**
+   * File-level error (wrong type, too many pages, unreadable, too large),
+   * shown under the dropzone until the file changes, as on desktop (RIN-1082).
+   */
+  fileError: string;
+  /** Submit-step error, shown right above the submit button (RIN-991). */
+  submitError: string;
 };
 
 type MobileCreateAction =
@@ -50,6 +64,8 @@ const initialState: MobileCreateState = {
   selectedFolderId: null,
   aiPrompt: '',
   isUploading: false,
+  fileError: '',
+  submitError: '',
 };
 
 function mobileCreateReducer(
@@ -63,6 +79,8 @@ function mobileCreateReducer(
       return {
         ...state,
         file: action.value,
+        fileError: '',
+        submitError: '',
         title: action.value ? action.value.name.replace(/\.pdf$/i, '') : '',
         aiPrompt: action.value ? state.aiPrompt : '',
       };
@@ -73,7 +91,7 @@ function mobileCreateReducer(
 
 export function MobileCreateQuizPage() {
   const t = useTranslations('create');
-  const tCommon = useTranslations('common');
+  const apiErrorMessage = useApiErrorMessage();
   const { push } = useRouter();
   const { addDraft } = useDraftStore();
   const consumePendingFile = usePendingQuizUploadStore((s) => s.consumeFile);
@@ -83,15 +101,27 @@ export function MobileCreateQuizPage() {
 
   const selectPdf = useCallback(
     async (file: File) => {
+      if (!isPdfFile(file)) {
+        dispatch({ type: 'patch', value: { fileError: t('pdfWrongType') } });
+        return;
+      }
       try {
         const pageCount = await getPdfPageCount(file);
         if (pageCount > uploadPolicy.maxPages) {
-          toast.error(t('pdfTooManyPages', { pages: pageCount, maxPages: uploadPolicy.maxPages }));
+          dispatch({
+            type: 'patch',
+            value: {
+              fileError: t('pdfTooManyPages', {
+                pages: pageCount,
+                maxPages: uploadPolicy.maxPages,
+              }),
+            },
+          });
           return;
         }
         dispatch({ type: 'setFile', value: file });
       } catch {
-        toast.error(t('pdfUnreadable'));
+        dispatch({ type: 'patch', value: { fileError: t('pdfUnreadable') } });
       }
     },
     [t, uploadPolicy.maxPages],
@@ -115,11 +145,10 @@ export function MobileCreateQuizPage() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     onDropRejected: (rejections) => {
-      if (rejections[0]?.errors.some((error) => error.code === 'file-too-large')) {
-        toast.error(t('pdfTooLarge', { size: MAX_QUIZ_PDF_MB }));
-      } else {
-        toast.error(t('pdfUnreadable'));
-      }
+      dispatch({
+        type: 'patch',
+        value: { fileError: getPdfRejectionMessage(rejections, t, MAX_QUIZ_PDF_MB) },
+      });
     },
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
@@ -130,7 +159,7 @@ export function MobileCreateQuizPage() {
   const handleSubmit = async () => {
     if (!state.file || !state.title.trim()) return;
 
-    dispatch({ type: 'patch', value: { isUploading: true } });
+    dispatch({ type: 'patch', value: { isUploading: true, fileError: '', submitError: '' } });
 
     let pendingS3Key: string | null = null;
     try {
@@ -168,10 +197,12 @@ export function MobileCreateQuizPage() {
       if (pendingS3Key && shouldCleanupPendingPdfUpload(error)) {
         await deletePendingPdfUpload(pendingS3Key, 'quiz').catch(() => undefined);
       }
-      toast.error(tCommon('error'), {
-        description: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
-      });
-      dispatch({ type: 'patch', value: { isUploading: false } });
+      // The upgrade modal is the prompt for entitlement errors (no double prompt).
+      const submitError =
+        describeApiError(error).kind === 'unlock_required'
+          ? ''
+          : getCreateQuizDraftErrorMessage(error, t, apiErrorMessage);
+      dispatch({ type: 'patch', value: { isUploading: false, submitError } });
     }
   };
 
@@ -183,7 +214,7 @@ export function MobileCreateQuizPage() {
     <div className="min-h-[100dvh] bg-neutral-50 px-4 py-6 pb-24">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-neutral-900">{t('createQuiz')}</h1>
+        <h1 className="text-2xl font-semibold text-ink">{t('uploadPDFDocument')}</h1>
         <p className="text-neutral-500 mt-1">{t('uploadDescription')}</p>
       </div>
 
@@ -218,6 +249,7 @@ export function MobileCreateQuizPage() {
                   type: 'patch',
                   value: {
                     file: null,
+                    fileError: '',
                     title: '',
                     description: '',
                     selectedFolderId: null,
@@ -246,6 +278,8 @@ export function MobileCreateQuizPage() {
           </div>
         )}
       </div>
+
+      <CreateQuizErrorAlert message={state.fileError} className="mt-4" />
 
       {/* Title Input */}
       {state.file && (
@@ -329,6 +363,10 @@ export function MobileCreateQuizPage() {
           />
           <p className="mt-2 text-xs text-neutral-500">{t('aiPromptHelper')}</p>
         </div>
+      )}
+
+      {state.file && (
+        <CreateQuizErrorAlert message={state.submitError} className="mt-6" focusOnShow />
       )}
 
       {/* Submit Button */}

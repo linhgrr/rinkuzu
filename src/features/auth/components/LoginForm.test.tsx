@@ -5,13 +5,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginForm } from '@/features/auth/components/LoginForm';
 
-const { markAnalyticsLoginPendingMock, replaceBrowserLocationMock, searchParamsMock, signInMock } =
-  vi.hoisted(() => ({
-    markAnalyticsLoginPendingMock: vi.fn(),
-    replaceBrowserLocationMock: vi.fn(),
-    searchParamsMock: vi.fn(() => new URLSearchParams('callbackUrl=/explore?type=mine')),
-    signInMock: vi.fn(),
-  }));
+const {
+  markAnalyticsGoogleAuthPendingMock,
+  markAnalyticsLoginPendingMock,
+  replaceBrowserLocationMock,
+  searchParamsMock,
+  signInMock,
+} = vi.hoisted(() => ({
+  markAnalyticsGoogleAuthPendingMock: vi.fn(),
+  markAnalyticsLoginPendingMock: vi.fn(),
+  replaceBrowserLocationMock: vi.fn(),
+  searchParamsMock: vi.fn(() => new URLSearchParams('callbackUrl=/explore?type=mine')),
+  signInMock: vi.fn(),
+}));
 
 vi.mock('next-auth/react', () => ({
   signIn: signInMock,
@@ -38,10 +44,15 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 vi.mock('@/features/auth/components/GoogleAuthButton', () => ({
-  GoogleAuthButton: () => null,
+  GoogleAuthButton: ({ onBeforeSignIn }: { onBeforeSignIn?: () => void }) => (
+    <button type="button" onClick={onBeforeSignIn}>
+      mock-google-button
+    </button>
+  ),
 }));
 
 vi.mock('@/lib/analytics/client', () => ({
+  markAnalyticsGoogleAuthPending: markAnalyticsGoogleAuthPendingMock,
   markAnalyticsLoginPending: markAnalyticsLoginPendingMock,
 }));
 
@@ -51,6 +62,7 @@ vi.mock('@/lib/routing/browser-navigation', () => ({
 
 describe('LoginForm', () => {
   beforeEach(() => {
+    markAnalyticsGoogleAuthPendingMock.mockReset();
     markAnalyticsLoginPendingMock.mockReset();
     replaceBrowserLocationMock.mockReset();
     searchParamsMock.mockReturnValue(new URLSearchParams('callbackUrl=/explore?type=mine'));
@@ -138,5 +150,57 @@ describe('LoginForm', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('invalidEmailPassword');
     expect(replaceBrowserLocationMock).not.toHaveBeenCalled();
+  });
+
+  async function submitCredentials() {
+    const user = userEvent.setup();
+    render(<LoginForm locale="en" />);
+    await user.type(screen.getByRole('textbox', { name: 'emailAddress' }), 'user@example.com');
+    await user.type(screen.getByLabelText('password'), 'correct-password');
+    await user.click(screen.getByRole('button', { name: 'signInButton' }));
+  }
+
+  it('shows the localized rate-limit copy when sign-in is throttled (429)', async () => {
+    signInMock.mockResolvedValue({
+      error: 'CredentialsSignin',
+      code: 'rate_limit_exceeded',
+      ok: false,
+      status: 401,
+      url: null,
+    });
+
+    await submitCredentials();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('errors.api.rateLimited');
+    expect(replaceBrowserLocationMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the localized server copy when the auth server fails (500)', async () => {
+    signInMock.mockResolvedValue({
+      error: 'Configuration',
+      ok: false,
+      status: 500,
+      url: null,
+    });
+
+    await submitCredentials();
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('errors.api.server');
+    expect(alert).not.toHaveTextContent('Configuration');
+    // Field-level validation stays untouched by server errors.
+    expect(screen.getByRole('textbox', { name: 'emailAddress' })).not.toHaveAttribute(
+      'aria-invalid',
+    );
+  });
+
+  it('marks a pending Google auth before redirecting to OAuth', async () => {
+    const user = userEvent.setup();
+    render(<LoginForm locale="en" googleEnabled />);
+
+    await user.click(screen.getByRole('button', { name: 'mock-google-button' }));
+
+    expect(markAnalyticsGoogleAuthPendingMock).toHaveBeenCalledWith('en');
+    expect(markAnalyticsLoginPendingMock).not.toHaveBeenCalled();
   });
 });

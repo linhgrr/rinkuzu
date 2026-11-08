@@ -252,6 +252,14 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
           },
         ],
         meta: [{ $count: 'totalItems' }],
+        counts: [
+          {
+            $group: expect.objectContaining({
+              _id: null,
+              all: { $sum: 1 },
+            }),
+          },
+        ],
       },
     });
 
@@ -368,6 +376,7 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
         hasNextPage: false,
         hasPrevPage: true,
       },
+      counts: { all: 0, inProgress: 0, complete: 0 },
     });
     expect(modelMocks.quizAggregate).not.toHaveBeenCalled();
   });
@@ -432,6 +441,62 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
     });
     const pipeline = modelMocks.quizAggregate.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
     expect(pipeline).toContainEqual({ $match: { effectiveFolder: null } });
+  });
+
+  it('applies status and escaped title filters to the page and total, never to the counts', async () => {
+    modelMocks.quizAggregate.mockResolvedValueOnce([
+      {
+        items: [],
+        meta: [{ totalItems: 7 }],
+        counts: [{ _id: null, all: 130, inProgress: 5, complete: 100 }],
+      },
+    ]);
+
+    const result = await new LearningProgressRepository().listLibraryQuizzes(
+      '507f191e810c19729de860ea',
+      { page: 1, limit: 24, status: 'complete', q: '50% (a.b)*' },
+    );
+
+    expect(result.counts).toEqual({ all: 130, inProgress: 5, complete: 100 });
+    expect(result.pagination).toMatchObject({ totalItems: 7, itemsPerPage: 24 });
+
+    const pipeline = modelMocks.quizAggregate.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const facet = pipeline.at(-1)?.['$facet'] as Record<string, Array<Record<string, unknown>>>;
+    const statusStage = { $match: { lastProgressAt: null, lastAttemptAt: { $ne: null } } };
+    const titleStage = { $match: { title: { $regex: '50% \\(a\\.b\\)\\*', $options: 'i' } } };
+    expect(facet['items']?.slice(0, 2)).toEqual([statusStage, titleStage]);
+    expect(facet['meta']).toEqual([statusStage, titleStage, { $count: 'totalItems' }]);
+    expect(facet['counts']).toHaveLength(1);
+    expect(facet['counts']?.[0]).toHaveProperty('$group');
+  });
+
+  it('filters in-progress quizzes by any progress timestamp', async () => {
+    await new LearningProgressRepository().listLibraryQuizzes('507f191e810c19729de860ea', {
+      page: 1,
+      limit: 24,
+      status: 'in_progress',
+    });
+    const pipeline = modelMocks.quizAggregate.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const facet = pipeline.at(-1)?.['$facet'] as Record<string, Array<Record<string, unknown>>>;
+    expect(facet['meta']).toEqual([
+      { $match: { lastProgressAt: { $ne: null } } },
+      { $count: 'totalItems' },
+    ]);
+  });
+
+  it('returns zero counts when the aggregate omits them', async () => {
+    await expect(
+      new LearningProgressRepository().listLibraryQuizzes('not-an-object-id', {
+        page: 1,
+        limit: 10,
+      }),
+    ).resolves.toMatchObject({ counts: { all: 0, inProgress: 0, complete: 0 } });
+    await expect(
+      new LearningProgressRepository().listLibraryQuizzes('507f191e810c19729de860ea', {
+        page: 1,
+        limit: 10,
+      }),
+    ).resolves.toMatchObject({ counts: { all: 0, inProgress: 0, complete: 0 } });
   });
 
   it('treats missing aggregate facets as empty library results', async () => {

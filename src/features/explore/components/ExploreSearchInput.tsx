@@ -26,7 +26,7 @@ export function ExploreSearchInput({
   return (
     <search className="relative block max-w-3xl">
       <HiOutlineSearch
-        className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-ink-muted"
+        className="pointer-events-none absolute left-4 top-1/2 z-10 size-5 -translate-y-1/2 text-ink-muted"
         aria-hidden="true"
       />
       <Input
@@ -37,7 +37,9 @@ export function ExploreSearchInput({
         value={value}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') onCommit(value);
+          // IME users (Vietnamese Telex, CJK) press Enter to confirm a composition, not to search.
+          if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+          onCommit(value);
         }}
         className="h-12 pl-12"
         aria-label={placeholder}

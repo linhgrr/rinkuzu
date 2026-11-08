@@ -59,6 +59,8 @@ export interface PremiumCatalogMetadataViewModel {
 
 export interface PremiumCatalogItemViewModel extends PremiumCatalogMetadataViewModel {
   slug: string;
+  /** Signed-in learners only: true when they already unlocked it with credit. */
+  unlocked?: boolean;
 }
 
 export interface PremiumCatalogListViewModel {
@@ -96,9 +98,10 @@ export type PremiumFlashcardRevealViewModel =
   | { questionIndex: number; type: 'single'; correctIndex: number }
   | { questionIndex: number; type: 'multiple'; correctIndexes: number[] };
 
+/** Resolves to null when the slug is not a premium quiz. */
 export function fetchPremiumCatalogMetadata(
   slug: string,
-): Promise<PremiumCatalogMetadataViewModel> {
+): Promise<PremiumCatalogMetadataViewModel | null> {
   return fetchApiData(`/api/premium-quizzes/by-slug/${encodeURIComponent(slug)}`);
 }
 

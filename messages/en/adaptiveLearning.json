@@ -8,7 +8,6 @@
   "dashboardTitle": "Personalized Learning Center",
   "dashboardDescription": "Track your personalized learning path, upload new materials, and master concepts with AI-driven guidance.",
   "dashboardSubtitle": "AI-powered personalized learning",
-  "backendOffline": "Backend offline. Start: cd full-demo/api && uvicorn api.main:app --reload --port 8000",
   "uploadNewMaterial": "Upload New Material",
   "uploadPdf": "Upload PDF",
   "continueLearning": "Continue Learning",
@@ -76,12 +75,13 @@
     "uploadMaterialDescription": "Upload a textbook or study material to create a personalized learning path.",
     "pdfLimitHint": "Your current plan supports up to {maxPages} pages per PDF.",
     "pdfTechnicalLimit": "Maximum file size: {maxSizeMb}MB.",
+    "fileInputLabel": "Choose a PDF file",
     "uploading": "Uploading...",
     "fileRequired": "Choose a PDF before creating the learning path.",
     "replaceFile": "Replace file",
     "removeFile": "Remove",
     "createLearningPath": "Create learning path",
-    "backendOffline": "Backend is offline. Please start the API server first.",
+    "serviceTemporarilyUnavailable": "Please try again in a few minutes. Your quota was not used.",
     "uploadFailed": "Failed to upload PDF",
     "errors": {
       "unauthorized": "Your session has expired. Please sign in again and upload the PDF once more.",
@@ -138,7 +138,7 @@
     "yourDocuments": "Your Documents",
     "relations": "Relations",
     "welcomeBack": "Welcome back.",
-    "mascotAlt": "Adaptive learning mascot",
+    "mascotAlt": "Personalized learning mascot",
     "goalAriaLabel": "Daily goal",
     "pickUpDescription": "Pick up right where you left off and keep your learning streak alive.",
     "continueLearning": "Continue Learning",
@@ -173,7 +173,7 @@
     "completedDailyGoal": "Completed daily goal",
     "yesterday": "Yesterday",
     "upNext": "UP NEXT",
-    "brandTitle": "Adaptive Scholar",
+    "brandTitle": "Personalized Scholar",
     "brandSubtitle": "Empowering your learning journey with AI.",
     "avatarAlt": "User avatar",
     "activeJourney": "Active Journey",
@@ -235,19 +235,23 @@
     "viewProcessing": "View progress",
     "retryProcessing": "Retry",
     "processingFailed": "Processing failed",
-    "processingEta": "ETA {eta}"
+    "processingEta": "ETA {eta}",
+    "processingReassurance": "Usually takes a few minutes. You can leave this page, we keep working.",
+    "cancellingProcessing": "Cancelling…",
+    "cancelProcessingTitle": "Cancel processing?",
+    "cancelProcessingDescription": "Rinkuzu stops preparing this document. You can upload it again later.",
+    "cancelProcessingConfirm": "Cancel processing",
+    "keepProcessing": "Keep processing"
   },
   "history": {
     "title": "Exercise History",
-    "loadingFromMongoDB": "Loading from MongoDB...",
-    "noMongoDBData": "No data in MongoDB for this session yet.",
+    "empty": "No exercises in this session yet. A session is saved once you answer at least 1 exercise.",
     "completed": "Completed",
     "step": "Step {step}/{total}",
     "correct": "Correct",
-    "loading": "Loading history...",
-    "loadError": "Failed to load history from MongoDB: {error}",
-    "noSession": "No sessions found in MongoDB.",
-    "sessionSaveHint": "Sessions will be saved after you answer at least one exercise.",
+    "loading": "Loading history…",
+    "loadError": "Couldn't load your history: {error}",
+    "noSession": "No saved sessions yet.",
     "table": {
       "question": "Question",
       "bloom": "Bloom",
@@ -299,17 +303,18 @@
       "limits": "Limits",
       "integrals": "Integrals",
       "advanced": "Advanced"
-    }
+    },
+    "loadError": "Couldn't load your learning path. Please try again."
   },
   "processing": {
     "title": "Analyzing Material",
     "description": "Please wait while our AI builds your personalized curriculum.",
     "failedTitle": "Processing Failed",
     "creatingSession": "Creating your learning session...",
-    "waitingForConcepts": "Waiting for concepts...",
     "knowledgeGraph": "Knowledge Graph",
-    "visualizingStructures": "Visualizing structures in real-time...",
-    "tryAgain": "Try Again",
+    "graphDescription": "The concepts in your material and how they connect.",
+    "graphPlaceholder": "Your concept map appears here as soon as the first concepts are found.",
+    "uploadAgain": "Upload again",
     "goToDashboard": "Go To Dashboard",
     "defaultFilename": "document.pdf",
     "steps": {
@@ -346,7 +351,6 @@
       "processingTakingLonger": "This document is taking longer than usual to process. You can keep this page open while we continue checking automatically...",
       "retryingCreateSession": "Your learning path is ready. We’re reconnecting to finish creating your session...",
       "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm session setup. Please open the subject again from the dashboard.",
-      "retryAfterFailure": "You can safely return and try this upload again.",
       "partialSuccess": "Processed with warnings: {failed} of {total} PDF batches failed, so a few concepts may be missing."
     },
     "errors": {
@@ -357,11 +361,13 @@
       "unauthorized": "Your session has expired. Please sign in again and retry.",
       "conflict": "This material is not ready to start a learning session yet.",
       "pipelineFailed": "We couldn't finish processing this material. Please try again or upload a different PDF.",
-      "pipelineTimeout": "Processing took too long and was stopped. Please try uploading the document again.",
-      "pipelineCancelled": "Processing was interrupted before completion. Please upload the document again.",
+      "pipelineTimeout": "Processing took too long and was stopped. You can try again.",
+      "pipelineCancelled": "Processing was interrupted before it finished. You can try again.",
       "pipelineUnavailable": "The processing service is temporarily unavailable. Please try again in a moment.",
       "sessionNotReady": "Your learning path is almost ready, but the session is not available yet.",
-      "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm the learning session. Please open it again from the dashboard."
+      "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm the learning session. Please open it again from the dashboard.",
+      "failedAtStep": "Something went wrong at “{step}”. You can try again safely.",
+      "failedAtStepFinal": "Something went wrong at “{step}” and this run can’t be resumed. Upload the material again, or go back to your library."
     },
     "stats": {
       "extracted": "Extracted",
@@ -370,7 +376,10 @@
     },
     "progress": "PROGRESS",
     "didYouKnow": "Did you know?",
-    "didYouKnowDescription": "Adaptive learning adjusts the difficulty of questions in real-time based on your performance."
+    "didYouKnowDescription": "Personalized learning adjusts the difficulty of questions in real-time based on your performance.",
+    "tryAgain": "Try again",
+    "backToLibrary": "Back to library",
+    "stepFailed": "failed"
   },
   "exercise": {
     "loadingTitle": "AI is selecting the best exercise for you...",
@@ -450,11 +459,12 @@
   "reportIssue": "Report an issue with this question",
   "result": {
     "correctTitle": "Excellent Work!",
-    "incorrectTitle": "Almost There!",
+    "incorrectTitle": "Not quite",
     "correctDescription": "You have mastered this concept.",
     "incorrectDescription": "Review the explanation below to bridge the gap.",
     "explanationTitle": "Explanation",
     "correctAnswerLabel": "Correct Answer",
+    "yourAnswerLabel": "Your answer",
     "dashboard": "Dashboard",
     "continueJourney": "Continue Journey",
     "stillConfused": "Still confused?",
@@ -468,6 +478,9 @@
     "streak": "Streak",
     "streakValue": "{count} Days",
     "noResultDataFound": "No result data found",
+    "noResultDataDescription": "This result is no longer on this device. Continue this subject or pick another one.",
+    "backToSubject": "Back to subject",
+    "chooseAnotherSubject": "Choose another subject",
     "masteryUpdate": "Mastery Update",
     "averageMastery": "Average Mastery: {value}%",
     "stepLabel": "Step {step}",
@@ -488,7 +501,8 @@
     "sessionNotReady": "This learning path is still finishing setup. Please try starting again in a moment.",
     "sessionUnavailable": "We couldn't start the learning session right now. Please wait a bit and try again.",
     "sessionMissing": "We couldn't find this material anymore. Please return to the dashboard and open it again.",
-    "sessionOpenFailed": "We couldn't open this learning session right now."
+    "sessionOpenFailed": "We couldn't open this learning session right now.",
+    "notFound": "We couldn't find this learning session."
   },
   "masteryMatrix": {
     "loading": "Loading mastery matrix...",
@@ -528,6 +542,7 @@
     "suggestSteps": "Walk me through the solution step by step",
     "loadingHistory": "Loading your conversation...",
     "retry": "Try again",
+    "retryMessage": "Retry",
     "errorHistory": "Could not load the conversation. You can still ask a new question.",
     "errorClear": "Could not clear the conversation.",
     "stop": "Stop generating",
@@ -549,8 +564,9 @@
     "errorContextExpired": "This question has changed or expired. Refresh the page and try again.",
     "errorImageUnsupported": "Rin-chan cannot read the image in this question right now. Please try another question.",
     "errorInvalidRequest": "Rin-chan could not understand this request. Please rephrase and try again.",
-    "errorQuota": "You have reached your Ask Rin-chan limit. Choose a plan to continue.",
+    "errorQuota": "You have reached today's Ask Rin-chan limit. Come back after the reset.",
     "errorRateLimited": "You are asking too quickly. Wait a moment and try again.",
+    "errorRunFailed": "Rin-chan couldn't finish this answer. Please ask again.",
     "errorInterrupted": "_The response was interrupted before completion. Ask again and Rin-chan can continue._"
   },
   "meta": {

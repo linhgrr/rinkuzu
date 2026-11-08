@@ -7,7 +7,9 @@ import {
   routePathSegmentSchema,
   slugRouteParamSchema,
 } from '@/lib/validation/common';
+import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
+import { QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
 import type { QuizQuestionDisplay, QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';
 
 const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
@@ -128,6 +130,21 @@ export interface QuizListItemDto {
   updatedAt: string;
 }
 
+/**
+ * Quiz page metadata (RIN-840). `ownerIndexable` is false when the owner is a
+ * test or company account: the page must then carry `noindex`. Server-only:
+ * read it in `generateMetadata`, never pass it to a client component.
+ */
+export interface QuizMetadataDto extends QuizListItemDto {
+  ownerIndexable: boolean;
+}
+
+export interface PublicQuizSitemapEntryDto {
+  slug: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export type QuizQuestionDto = QuizQuestionInputDto & {
   id: string;
 };
@@ -142,7 +159,14 @@ export interface QuizDetailDto extends QuizListItemDto {
 
 export interface QuizPlayDetailDto extends Omit<QuizDetailDto, 'questions'> {
   questions: PlayableQuizQuestionDto[];
+  /** Present on a retry-missed session: `questions[i]` is quiz question `questionIndices[i]`. */
+  retry?: { ofAttemptId: string; questionIndices: number[] };
 }
+
+/** `GET /api/quiz/<slug>/play?retryOf=<attemptId>` (RIN-914). */
+export const quizPlayQuerySchema = z.object({
+  retryOf: objectIdSchema.optional(),
+});
 
 export interface QuizListDto {
   quizzes: QuizListItemDto[];
@@ -192,11 +216,54 @@ export const quizProgressAnswerSchema = z.union([
   z.array(z.number().int().min(0)).max(20),
 ]);
 
-export const submitQuizAttemptRequestSchema = z.strictObject({
-  answers: z.array(quizProgressAnswerSchema),
-  idempotencyKey: z.uuid(),
-  userEmail: z.string().trim().toLowerCase().pipe(z.email()).optional(),
-});
+export const submitQuizAttemptRequestSchema = z
+  .strictObject({
+    answers: z.array(quizProgressAnswerSchema),
+    idempotencyKey: z.uuid(),
+    /**
+     * Ignored: signed-in tabs still on a bundle from before RIN-921 send it, and a strict
+     * schema would fail their submit. It identifies no one; drop it after 2026-11-20.
+     */
+    userEmail: z.unknown().optional(),
+    retryOfAttemptId: objectIdSchema.optional(),
+    guestClaimToken: guestClaimTokenSchema.optional(),
+    /** RIN-933: `quick` plays a client-chosen subset of `QUICK_ROUND_SIZE` questions. */
+    mode: z.enum(['quick', 'full']).optional(),
+    /** Quick round only: `answers[i]` answers quiz question `questionIndices[i]` (play order). */
+    questionIndices: z.array(z.number().int().min(0)).optional(),
+  })
+  .superRefine((body, ctx) => {
+    // The quiz-dependent checks (size threshold, index range) run in the service.
+    const indices = body.questionIndices;
+    if (body.mode !== 'quick') {
+      if (indices !== undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['questionIndices'],
+          message: 'questionIndices is only allowed with mode quick',
+        });
+      }
+      return;
+    }
+    if (body.retryOfAttemptId !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['retryOfAttemptId'],
+        message: 'A quick round cannot be a retry',
+      });
+    }
+    if (
+      indices === undefined ||
+      indices.length !== QUICK_ROUND_SIZE ||
+      new Set(indices).size !== indices.length
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['questionIndices'],
+        message: `A quick round needs exactly ${QUICK_ROUND_SIZE} unique question indices`,
+      });
+    }
+  });
 
 export const addDiscussionCommentRequestSchema = z.strictObject({
   questionIndex: z.number().int().min(0),
@@ -324,4 +391,15 @@ export interface DeleteQuizProgressResponseDto {
 
 export interface ReportQuizResponseDto {
   reportId: string;
+}
+
+/** Guest attempts a new account claims after sign-up (RIN-912 part 3). */
+const GUEST_ATTEMPT_CLAIM_MAX_TOKENS = 20;
+
+export const claimGuestAttemptsRequestSchema = z.strictObject({
+  tokens: z.array(guestClaimTokenSchema).min(1).max(GUEST_ATTEMPT_CLAIM_MAX_TOKENS),
+});
+
+export interface ClaimGuestAttemptsResponseDto {
+  claimedAttemptIds: string[];
 }

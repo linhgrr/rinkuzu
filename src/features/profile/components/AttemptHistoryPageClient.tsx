@@ -1,10 +1,11 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
@@ -16,14 +17,12 @@ import {
   HiOutlineDocumentText,
   HiOutlineRefresh,
   HiOutlineX,
-  HiOutlineXCircle,
 } from 'react-icons/hi';
 import { fetchAttemptDetailViewModel } from '@/features/profile/api/attempt-detail-api';
 import type {
   AttemptDetailViewModel,
   AttemptQuestionDetailViewModel,
 } from '@/features/profile/types/attempt-detail-view-model';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
 import { cn } from '@/lib/utils';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
@@ -31,18 +30,19 @@ import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 interface AttemptDetailState {
   attempt: AttemptDetailViewModel | null;
   loading: boolean;
-  error: string;
+  /** Load failure, rendered by ErrorState from the error layer (RIN-755). */
+  error: unknown;
 }
 
 type AttemptDetailAction =
   | { type: 'fetch:start' }
   | { type: 'fetch:success'; attempt: AttemptDetailViewModel }
-  | { type: 'fetch:error'; error: string };
+  | { type: 'fetch:error'; error: unknown };
 
 const initialAttemptDetailState: AttemptDetailState = {
   attempt: null,
   loading: true,
-  error: '',
+  error: null,
 };
 
 function AnswerContent({ value }: { value: string | string[] }) {
@@ -68,9 +68,9 @@ function attemptDetailReducer(
 ): AttemptDetailState {
   switch (action.type) {
     case 'fetch:start':
-      return { ...state, loading: true, error: '' };
+      return { ...state, loading: true, error: null };
     case 'fetch:success':
-      return { attempt: action.attempt, loading: false, error: '' };
+      return { attempt: action.attempt, loading: false, error: null };
     case 'fetch:error':
       return { ...state, loading: false, error: action.error };
     default:
@@ -383,6 +383,7 @@ export function AttemptHistoryPageClient() {
 
   const [state, dispatch] = useReducer(attemptDetailReducer, initialAttemptDetailState);
   const historyLink = '/history';
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let isActive = true;
@@ -397,10 +398,7 @@ export function AttemptHistoryPageClient() {
         }
       } catch (error: unknown) {
         if (isActive) {
-          dispatch({
-            type: 'fetch:error',
-            error: extractUnknownErrorMessage(error, t('loadError')),
-          });
+          dispatch({ type: 'fetch:error', error });
         }
       }
     };
@@ -410,7 +408,7 @@ export function AttemptHistoryPageClient() {
     return () => {
       isActive = false;
     };
-  }, [attemptId, locale, t]);
+  }, [attemptId, locale, loadAttempt]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.10),transparent_34%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]">
@@ -490,15 +488,19 @@ export function AttemptHistoryPageClient() {
             </Card>
           ) : state.error ? (
             <Card>
-              <CardContent className="px-5 py-12 text-center">
-                <div className="mb-4 flex justify-center text-red-600">
-                  <HiOutlineXCircle className="size-8" />
-                </div>
-                <h3 className="mb-2 text-lg font-semibold text-ink">{tCommon('error')}</h3>
-                <p className="mb-4 break-words text-ink-muted">{state.error}</p>
-                <Link href={historyLink}>
-                  <Button>{t('backToHistory')}</Button>
-                </Link>
+              <CardContent className="px-5">
+                <ErrorState
+                  variant="page"
+                  error={state.error}
+                  onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
+                  action={
+                    <Link href={historyLink}>
+                      <Button variant="outline" className="w-full sm:w-auto">
+                        {t('backToHistory')}
+                      </Button>
+                    </Link>
+                  }
+                />
               </CardContent>
             </Card>
           ) : state.attempt ? (

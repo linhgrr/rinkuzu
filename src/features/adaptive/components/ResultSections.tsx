@@ -5,107 +5,17 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
-import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from 'react-icons/hi';
+import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
 import type { SubmitResult, Exercise, TranslateFn } from '@/features/adaptive/types/learning';
 import styles from './LearningViewport.module.css';
-
-function normalizeMathContent(content: string): string {
-  if (!content) return content;
-
-  return content.replace(
-    /\t(?=(imes|ext|frac|sqrt|cdot|vec|left|right|mathrm|mathbf|mathit|alpha|beta|gamma|delta|theta|lambda|mu|pi|rho|sigma|phi|omega|Delta))/g,
-    '\\t',
-  );
-}
+import { ResultCorrectAnswer, ResultLearnerAnswer } from './ResultAnswers';
 
 type ResultEmptyStateProps = {
-  onGoDashboard: () => void;
+  onChooseSubject: () => void;
+  onBackToSubject: () => void;
   t: TranslateFn;
 };
-
-function ResultCorrectAnswer({
-  exercise,
-  result,
-  t,
-}: {
-  exercise: Exercise;
-  result: SubmitResult;
-  t: TranslateFn;
-}) {
-  if (exercise.exercise_type === 'matching') {
-    return (
-      <div className="grid grid-cols-1 gap-2">
-        {exercise.pairs.map((pair) => (
-          <div
-            key={`${pair.left}-${pair.right}`}
-            className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2"
-          >
-            <div className="min-w-0 flex-1 text-xs text-neutral-600">
-              <MarkdownRenderer content={normalizeMathContent(pair.left)} />
-            </div>
-            <HiArrowRight className="size-3 text-green-400" />
-            <div className="min-w-0 flex-1 text-right text-xs font-semibold text-green-700">
-              <MarkdownRenderer content={normalizeMathContent(pair.right)} />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (exercise.exercise_type === 'ordering' && Array.isArray(exercise.correct_answer)) {
-    return (
-      <div className="flex flex-wrap gap-2">
-        {exercise.correct_answer.map((item, idx) => (
-          <div
-            key={item}
-            className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
-          >
-            <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-xs font-bold text-green-700">
-              {idx + 1}
-            </span>
-            <div className="min-w-0 font-medium text-neutral-700">
-              <MarkdownRenderer content={normalizeMathContent(item)} />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
-    return (
-      <div className="space-y-1">
-        {toStableContentEntries(exercise.correct_answer).map(({ content: answer, key }) => (
-          <MarkdownRenderer key={key} content={normalizeMathContent(answer)} variant="answer" />
-        ))}
-      </div>
-    );
-  }
-
-  if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
-    return (
-      <div className="space-y-1">
-        {toStableContentEntries(exercise.correct_answer).map(({ content: answer, key }) => (
-          <MarkdownRenderer key={key} content={normalizeMathContent(answer)} variant="answer" />
-        ))}
-      </div>
-    );
-  }
-
-  if (exercise.exercise_type === 'true_false' && typeof exercise.correct_answer === 'boolean') {
-    return (
-      <span>
-        {exercise.correct_answer
-          ? t('exercise.interactions.trueLabel')
-          : t('exercise.interactions.falseLabel')}
-      </span>
-    );
-  }
-
-  return <MarkdownRenderer content={normalizeMathContent(result.correct_option)} />;
-}
 
 export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
   <div
@@ -126,24 +36,39 @@ export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
   </div>
 );
 
-export const ResultEmptyState = ({ onGoDashboard, t }: ResultEmptyStateProps) => (
+export const ResultEmptyState = ({
+  onChooseSubject,
+  onBackToSubject,
+  t,
+}: ResultEmptyStateProps) => (
   <div
     className={`${styles['learningViewport']} mx-auto flex max-w-4xl items-center justify-center`}
   >
-    <div className="space-y-4 text-center">
-      <p className="text-sm font-medium text-neutral-500">{t('result.noResultDataFound')}</p>
-      <Button
-        variant="outline"
-        className="border-control-border text-neutral-700 transition-colors hover:bg-neutral-50"
-        onClick={onGoDashboard}
-      >
-        {t('exercise.backToDashboard')}
-      </Button>
+    <div className="max-w-md space-y-4 rounded-2xl border border-line bg-white p-6 text-center shadow-sm">
+      <h1 className="text-lg font-semibold text-neutral-900">{t('result.noResultDataFound')}</h1>
+      <p className="text-sm text-neutral-500">{t('result.noResultDataDescription')}</p>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+        <Button
+          variant="outline"
+          className="min-h-11 border-control-border text-neutral-700 transition-colors hover:bg-neutral-50"
+          onClick={onBackToSubject}
+        >
+          {t('result.backToSubject')}
+        </Button>
+        <Button
+          className="min-h-11 bg-brand-action font-semibold text-brand-action-text hover:bg-brand-action-hover"
+          onClick={onChooseSubject}
+        >
+          {t('result.chooseAnotherSubject')}
+          <HiArrowRight className="ml-2 size-4" aria-hidden="true" />
+        </Button>
+      </div>
     </div>
   </div>
 );
 
 type ResultContentProps = {
+  answer: ExerciseAnswerDraft | null;
   averageMasteryPercent: number;
   exercise: Exercise;
   isCorrect: boolean;
@@ -156,6 +81,7 @@ type ResultContentProps = {
 };
 
 export const ResultContent = ({
+  answer,
   averageMasteryPercent,
   exercise,
   isCorrect,
@@ -167,7 +93,7 @@ export const ResultContent = ({
   t,
 }: ResultContentProps) => (
   <div
-    className={`${styles['learningViewport']} mx-auto flex max-w-4xl flex-col items-center justify-center py-8 font-home text-ink`}
+    className={`${styles['learningViewport']} mx-auto flex max-w-4xl flex-col items-center justify-center pb-[4.5rem] pt-8 font-home lg:pb-8 text-ink`}
   >
     <div className="mb-6 flex w-full flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left">
       <div
@@ -188,8 +114,10 @@ export const ResultContent = ({
         </p>
       </div>
       <Button
-        className="min-h-11 rounded-full bg-brand-action px-5 font-semibold text-white hover:bg-brand-action-hover sm:ml-auto"
+        variant="outline"
+        className="hidden min-h-11 rounded-full border-control-border px-5 font-semibold text-neutral-700 hover:bg-neutral-50 sm:ml-auto xl:inline-flex"
         onClick={onHandleNext}
+        data-testid="result-next-secondary"
       >
         {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}
         <HiArrowRight className="size-4" aria-hidden="true" />
@@ -224,6 +152,12 @@ export const ResultContent = ({
                   </div>
                 </div>
               </div>
+              <ResultLearnerAnswer
+                answer={answer}
+                exercise={exercise}
+                isCorrect={isCorrect}
+                t={t}
+              />
             </div>
 
             <div className="mt-6 border-t border-line/50 pt-6">
@@ -275,17 +209,17 @@ export const ResultContent = ({
           </CardContent>
         </Card>
 
-        <div className="flex gap-4 pb-6">
+        <div className="flex flex-col-reverse gap-3 pb-6 sm:flex-row sm:gap-4">
           <Button
             variant="ghost"
-            className="h-12 flex-1 rounded-xl border border-control-border font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+            className="h-12 rounded-xl border border-control-border font-semibold text-neutral-600 sm:flex-1 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
             onClick={onGoDashboard}
           >
             <HiOutlineHome className="mr-2 size-5" />
             {t('result.dashboard')}
           </Button>
           <Button
-            className="h-12 flex-[2] rounded-xl bg-brand-action font-semibold text-white shadow-md transition-[background-color,transform] hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
+            className="h-12 rounded-xl bg-brand-action sm:flex-[2] font-semibold text-brand-action-text shadow-md transition-[background-color,transform] hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
             onClick={onHandleNext}
           >
             {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}

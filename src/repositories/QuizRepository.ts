@@ -1,11 +1,17 @@
 import connectDB from '@/lib/mongoose';
+import { logger } from '@/lib/logger';
 import QuizModel from '@/models/Quiz';
 import FolderQuiz from '@/models/FolderQuiz';
+import UserModel from '@/models/User';
 import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
 import {
   IQuizRepository,
   type CreateQuizData,
+  type PublicQuizSitemapQuery,
+  type PublicQuizSitemapRecord,
   type QuizCreatorStatRecord,
+  type QuizMetadataRecord,
+  type QuizOwnerIndexingRecord,
   type QuizFindFilter,
   type QuizFindOptions,
   type UpdateQuizData,
@@ -24,8 +30,17 @@ import type {
 import { buildPaginationMeta } from '@/lib/pagination';
 import mongoose, { Types, type FilterQuery, type PipelineStage } from 'mongoose';
 import { QuizPersistenceMapper } from '@/repositories/mappers/QuizPersistenceMapper';
-import type { QuizPersistenceRecord } from '@/repositories/types/QuizPersistence';
+import type {
+  QuizMetadataPersistenceRecord,
+  QuizPersistenceRecord,
+} from '@/repositories/types/QuizPersistence';
 import { serializeId } from '@/lib/mongo-id';
+import {
+  ANALYTICS_EXCLUDED_EMAILS,
+  ANALYTICS_TEST_EMAIL_PATTERN,
+  COMPANY_TEST_EMAIL_PATTERN,
+  PUBLIC_CATALOG_OWNER_EMAILS,
+} from '@/shared/constants/analytics-exclusions';
 import {
   buildCountBucketsPipeline,
   resolveCountBuckets,
@@ -124,6 +139,18 @@ const QUIZ_SUMMARY_PROJECTION = {
   questionCount: { $size: { $ifNull: ['$questions', []] } },
 } satisfies PipelineStage.Project['$project'];
 
+/**
+ * Summary plus the owner's indexing fields under a separate key, so the email
+ * never enters the `author` preview that is mapped into DTOs (RIN-840).
+ */
+const QUIZ_METADATA_PROJECTION = {
+  ...QUIZ_SUMMARY_PROJECTION,
+  ownerIndexing: {
+    email: { $first: '$authorDoc.email' },
+    isTestAccount: { $first: '$authorDoc.isTestAccount' },
+  },
+} satisfies PipelineStage.Project['$project'];
+
 function buildFolderPlacementStages(ownerId: Types.ObjectId): PipelineStage[] {
   return [
     {
@@ -196,8 +223,16 @@ async function findQuizBySlugWithProjection(
   slug: string,
   projection: PipelineStage.Project['$project'],
 ): Promise<Quiz | null> {
+  const record = await aggregateQuizBySlug<QuizPersistenceRecord>(slug, projection);
+  return record ? QuizPersistenceMapper.toEntity(record) : null;
+}
+
+async function aggregateQuizBySlug<T>(
+  slug: string,
+  projection: PipelineStage.Project['$project'],
+): Promise<T | null> {
   await connectDB();
-  const [record] = await QuizModel.aggregate<QuizPersistenceRecord>([
+  const [record] = await QuizModel.aggregate<T>([
     { $match: { slug } },
     { $limit: 1 },
     {
@@ -211,7 +246,7 @@ async function findQuizBySlugWithProjection(
     { $project: projection },
   ]);
 
-  return record ? QuizPersistenceMapper.toEntity(record) : null;
+  return record ?? null;
 }
 
 function persistenceAuthorId(author: QuizPersistenceRecord['author']): string {
@@ -293,10 +328,89 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     return findQuizBySlugWithProjection(slug, QUIZ_SUMMARY_PROJECTION);
   }
 
+  async findMetadataBySlug(slug: string): Promise<QuizMetadataRecord | null> {
+    const record = await aggregateQuizBySlug<QuizMetadataPersistenceRecord>(
+      slug,
+      QUIZ_METADATA_PROJECTION,
+    );
+    if (!record) return null;
+    const { ownerIndexing, ...quizRecord } = record;
+    const quiz = QuizPersistenceMapper.toEntity(quizRecord);
+    const ownerId = typeof quiz.author === 'string' ? quiz.author : quiz.author.id;
+    return {
+      quiz,
+      owner: ownerIndexing
+        ? {
+            id: ownerId,
+            email: ownerIndexing.email ?? null,
+            isTestAccount: ownerIndexing.isTestAccount ?? null,
+          }
+        : null,
+    };
+  }
+
+  async findNonIndexableOwnerCandidates(): Promise<QuizOwnerIndexingRecord[]> {
+    await connectDB();
+    const rows = await UserModel.find(
+      {
+        $or: [
+          { isTestAccount: true },
+          { email: { $in: [...ANALYTICS_EXCLUDED_EMAILS] } },
+          { email: ANALYTICS_TEST_EMAIL_PATTERN },
+          { email: COMPANY_TEST_EMAIL_PATTERN },
+        ],
+        // The public catalog stays indexable whatever else matches.
+        email: { $nin: [...PUBLIC_CATALOG_OWNER_EMAILS] },
+      },
+      { _id: 1, email: 1, isTestAccount: 1 },
+    )
+      .lean<{ _id: Types.ObjectId; email?: string | null; isTestAccount?: boolean | null }[]>()
+      .exec();
+    return rows.map((row) => ({
+      id: serializeId(row._id, 'user._id'),
+      email: row.email ?? null,
+      isTestAccount: row.isTestAccount ?? null,
+    }));
+  }
+
+  async findPublicSitemapEntries({
+    excludeAuthorIds,
+    limit,
+  }: PublicQuizSitemapQuery): Promise<PublicQuizSitemapRecord[]> {
+    await connectDB();
+    const excluded = excludeAuthorIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+    const rows = await QuizModel.find(
+      {
+        visibility: 'public',
+        ...(excluded.length > 0 ? { author: { $nin: excluded } } : {}),
+      },
+      { _id: 0, slug: 1, createdAt: 1, updatedAt: 1 },
+    )
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean<{ slug: string; createdAt: Date; updatedAt?: Date }[]>()
+      .exec();
+    return rows.map((row) => ({
+      slug: row.slug,
+      createdAt: row.createdAt,
+      ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
+    }));
+  }
+
   async findIdBySlug(slug: string): Promise<string | null> {
     await connectDB();
     const record = await QuizModel.findOne({ slug }).select('_id').lean<{ _id: Types.ObjectId }>();
     return record ? String(record._id) : null;
+  }
+
+  async findCanonicalSlugByAlias(alias: string): Promise<string | null> {
+    await connectDB();
+    const record = await QuizModel.findOne({ slugAliases: alias })
+      .select('slug')
+      .lean<{ slug: string }>();
+    return record ? record.slug : null;
   }
 
   async findBySourceDraftId(sourceDraftId: string): Promise<Quiz | null> {
@@ -604,21 +718,30 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const records = result?.items ?? [];
     const total = result?.meta[0]?.totalItems ?? 0;
 
-    return {
-      items: records.map((record) => {
-        if (!record.email || !record.role || !record.joinedAt) {
-          throw new TypeError(`Quiz creator ${String(record._id)} could not be resolved`);
-        }
+    // The pipeline already drops creators without a user document. A record
+    // that still lacks a required field (a user document missing email, role or
+    // createdAt) is skipped rather than failing the whole admin Overview.
+    const items: QuizCreatorStatRecord[] = [];
+    for (const record of records) {
+      if (!record.email || !record.role || !record.joinedAt) {
+        logger.warn(
+          { creatorId: String(record._id) },
+          'Skipping top creator with an incomplete user record',
+        );
+        continue;
+      }
+      items.push({
+        id: String(record._id),
+        email: record.email,
+        role: record.role,
+        joinedAt: record.joinedAt,
+        quizCount: record.quizCount,
+        totalQuestions: record.totalQuestions,
+      });
+    }
 
-        return {
-          id: String(record._id),
-          email: record.email,
-          role: record.role,
-          joinedAt: record.joinedAt,
-          quizCount: record.quizCount,
-          totalQuestions: record.totalQuestions,
-        };
-      }),
+    return {
+      items,
       pagination: buildPaginationMeta(page, limit, total),
     };
   }

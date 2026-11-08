@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { fetchSubscriptionPageViewModel } from '@/features/subscription/api/subscription-page-api';
 import type { SubscriptionPlanViewModel } from '@/features/subscription/types/subscription-page-view-model';
+import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
 import { formatVndCurrency } from '@/lib/formatters';
 
 export type UpgradePromptKind = 'quota' | 'feature';
@@ -24,6 +25,13 @@ type PlansState =
   | { status: 'error'; plans: []; isPremium: false };
 
 const INITIAL_STATE: PlansState = { status: 'loading', plans: [], isPremium: false };
+
+function paywallDescriptionKey(kind: UpgradePromptKind, noPlansOnSale: boolean) {
+  if (kind === 'quota') {
+    return noPlansOnSale ? 'paywall.quotaDescriptionNoPlans' : 'paywall.quotaDescription';
+  }
+  return noPlansOnSale ? 'paywall.featureDescriptionNoPlans' : 'paywall.featureDescription';
+}
 
 export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallModalProps) {
   const t = useTranslations('premium');
@@ -70,9 +78,11 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
   };
 
   const closePaywall = () => onClose(suppressFuture);
+  // With nothing on sale the modal must not pitch Premium (RIN-1019).
+  const noPlansOnSale =
+    plansState.status === 'ready' && !plansState.isPremium && plansState.plans.length === 0;
   const title = kind === 'quota' ? t('paywall.quotaTitle') : t('paywall.featureTitle');
-  const description =
-    kind === 'quota' ? t('paywall.quotaDescription') : t('paywall.featureDescription');
+  const description = t(paywallDescriptionKey(kind, noPlansOnSale));
 
   return (
     <Modal
@@ -105,15 +115,19 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
         </section>
 
         <section aria-label={t('paywall.availablePlans')}>
-          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-accent-warm bg-surface-warm p-4 text-ink">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-action text-white">
-              <HiOutlineSparkles className="size-5" aria-hidden="true" />
-            </span>
-            <div>
-              <h3 className="font-semibold text-ink">{t('paywall.premiumHeading')}</h3>
-              <p className="mt-1 text-sm leading-5 text-ink-muted">{t('paywall.premiumSummary')}</p>
+          {noPlansOnSale ? null : (
+            <div className="mb-4 flex items-start gap-3 rounded-2xl border border-accent-warm bg-surface-warm p-4 text-ink">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-action text-brand-action-text">
+                <HiOutlineSparkles className="size-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h3 className="font-semibold text-ink">{t('paywall.premiumHeading')}</h3>
+                <p className="mt-1 text-sm leading-5 text-ink-muted">
+                  {t('paywall.premiumSummary')}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
           {plansState.status === 'loading' && (
             <div
@@ -153,13 +167,11 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
             </div>
           )}
 
-          {plansState.status === 'ready' &&
-            !plansState.isPremium &&
-            plansState.plans.length === 0 && (
-              <div className="rounded-2xl border border-line bg-neutral-50 p-5 text-neutral-700">
-                <p className="text-sm">{t('paywall.noPlans')}</p>
-              </div>
-            )}
+          {noPlansOnSale && (
+            <div className="rounded-2xl border border-line bg-neutral-50 p-5 text-neutral-700">
+              <p className="text-sm">{t('paywall.noPlans')}</p>
+            </div>
+          )}
 
           {plansState.status === 'ready' &&
             !plansState.isPremium &&
@@ -179,7 +191,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
                       }`}
                     >
                       {isBestValue && (
-                        <span className="mb-3 self-start rounded-full bg-brand-action px-3 py-1 text-xs font-semibold text-white">
+                        <span className="mb-3 self-start rounded-full bg-brand-action px-3 py-1 text-xs font-semibold text-brand-action-text">
                           {t('paywall.bestValue')}
                         </span>
                       )}
@@ -187,19 +199,24 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
                       <p className="mt-2 text-2xl font-semibold tracking-tight text-neutral-900">
                         {plan.priceLabel}
                       </p>
-                      <p className="mt-1 text-sm text-neutral-500">{plan.durationDisplay}</p>
+                      <p className="mt-1 text-sm text-neutral-500">
+                        {formatPlanDuration(tPricing, plan.calculatedMonths)}
+                      </p>
                       <p className="mt-2 text-sm font-medium text-accent">
                         {t('paywall.perMonth', { price: formatVndCurrency(monthlyPrice) })}
                       </p>
-                      <Button
-                        className="mt-auto w-full"
-                        variant={isBestValue ? 'primary' : 'outline'}
-                        loading={submittingPlanId === plan.id}
-                        disabled={submittingPlanId !== null}
-                        onClick={() => handlePurchase(plan)}
-                      >
-                        {t('paywall.choosePlan', { plan: plan.name })}
-                      </Button>
+                      {/* pt-2 keeps the per-month hint off the CTA when the card is full. */}
+                      <div className="mt-auto pt-2">
+                        <Button
+                          className="w-full"
+                          variant={isBestValue ? 'primary' : 'outline'}
+                          loading={submittingPlanId === plan.id}
+                          disabled={submittingPlanId !== null}
+                          onClick={() => handlePurchase(plan)}
+                        >
+                          {t('paywall.choosePlan', { plan: plan.name })}
+                        </Button>
+                      </div>
                     </article>
                   );
                 })}
@@ -212,22 +229,24 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
             </p>
           )}
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            {[
-              tPricing('premium.features.askRinChan'),
-              tPricing('premium.features.pdfQuiz'),
-              tPricing('premium.features.adaptivePath'),
-              tPricing('premium.features.premiumCatalog'),
-            ].map((benefit) => (
-              <div key={benefit} className="flex items-start gap-2 text-sm text-neutral-700">
-                <HiOutlineCheck
-                  className="mt-0.5 size-4 shrink-0 text-emerald-600"
-                  aria-hidden="true"
-                />
-                <span>{benefit}</span>
-              </div>
-            ))}
-          </div>
+          {noPlansOnSale ? null : (
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {[
+                tPricing('premium.features.askRinChan'),
+                tPricing('premium.features.pdfQuiz'),
+                tPricing('premium.features.adaptivePath'),
+                tPricing('premium.features.premiumCatalog'),
+              ].map((benefit) => (
+                <div key={benefit} className="flex items-start gap-2 text-sm text-neutral-700">
+                  <HiOutlineCheck
+                    className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                    aria-hidden="true"
+                  />
+                  <span>{benefit}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 

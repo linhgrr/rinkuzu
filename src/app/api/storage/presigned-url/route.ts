@@ -9,6 +9,8 @@ import { logger } from '@/lib/logger';
 import { createPresignedUploadUrlRequestSchema } from '@/dtos/storage';
 import { resolveEntitlements, type MeteredCapability } from '@/lib/entitlements';
 import { getLlmUsageSnapshot } from '@/lib/llm/rate-limit';
+import { reconcilePipelineUsage } from '@/lib/adaptive/pipeline-usage';
+import { reconcileQuizDraftUsage } from '@/lib/quiz/draft-usage';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
 import { parseJsonBody } from '@/lib/api/validated';
 
@@ -25,6 +27,13 @@ const UPLOAD_CAPABILITY: Record<'quiz' | 'adaptive', MeteredCapability> = {
   adaptive: 'adaptive_pipeline',
 };
 
+// Settle async work that failed since the learner last looked, so a failed
+// upload's unit is back before the quota check (RIN-589, RIN-596).
+const RECONCILE_USAGE: Record<'quiz' | 'adaptive', typeof reconcilePipelineUsage> = {
+  quiz: reconcileQuizDraftUsage,
+  adaptive: reconcilePipelineUsage,
+};
+
 export const POST = withAuth(async (request: NextRequest, { userId, session }) => {
   try {
     const input = await parseJsonBody(request, createPresignedUploadUrlRequestSchema);
@@ -36,6 +45,7 @@ export const POST = withAuth(async (request: NextRequest, { userId, session }) =
     if (session.user.role !== 'admin') {
       const entitlements = await resolveEntitlements(userId);
       const capability = UPLOAD_CAPABILITY[input.data.purpose];
+      await RECONCILE_USAGE[input.data.purpose]({ userId, userRole: session.user.role });
       const windows = await getLlmUsageSnapshot(userId, capability, entitlements);
       const exhausted = windows.find((window) => window.remaining <= 0);
       if (exhausted) {

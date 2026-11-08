@@ -46,6 +46,12 @@ const session = Object.assign(Object.create(null), {
 
 type AuthenticatedSubmission = Extract<RecordQuizAttemptProgressData, { userId: string }>;
 type GuestSubmission = Extract<RecordQuizAttemptProgressData, { guestEmail: string }>;
+type ClaimTokenSubmission = Extract<RecordQuizAttemptProgressData, { guestClaimTokenHash: string }>;
+
+function claimTokenSubmission(): ClaimTokenSubmission {
+  const { guestEmail: _guestEmail, ...rest } = guestSubmission();
+  return { ...rest, guestClaimTokenHash: 'e'.repeat(64) };
+}
 
 function baseSubmission(overrides: Partial<AuthenticatedSubmission> = {}): AuthenticatedSubmission {
   return {
@@ -525,6 +531,36 @@ describe('QuizAttemptProgressRepository mutation coverage', () => {
     ).rejects.toMatchObject({ code: 11000 });
     expect(session.withTransaction).toHaveBeenCalledTimes(2);
     expect(session.endSession).toHaveBeenCalledOnce();
+  });
+
+  it('records a claim-token guest by hash only, with no progress writes (RIN-912)', async () => {
+    const guest = claimTokenSubmission();
+
+    await new QuizAttemptProgressRepository().recordSubmittedAttempt(guest);
+
+    expect(modelMocks.attemptFindOne).toHaveBeenCalledWith({
+      idempotencyKey: guest.idempotencyKey,
+      $and: [{ guestClaimTokenHash: 'e'.repeat(64) }, { guestClaimTokenHash: { $type: 'string' } }],
+    });
+    const created = modelMocks.attemptCreate.mock.calls[0]?.[0]?.[0] as Record<string, unknown>;
+    expect(created).toMatchObject({ guestClaimTokenHash: 'e'.repeat(64) });
+    expect(created).not.toHaveProperty('user');
+    expect(created).not.toHaveProperty('guestEmail');
+    expect(modelMocks.userFindOne).not.toHaveBeenCalled();
+    expect(modelMocks.questionBulkWrite).not.toHaveBeenCalled();
+  });
+
+  it('maps a reused claim token to a conflict without leaking the driver error', async () => {
+    modelMocks.attemptCreate.mockRejectedValue({
+      code: 11000,
+      keyValue: { guestClaimTokenHash: 'e'.repeat(64) },
+    });
+    modelMocks.attemptLean.mockResolvedValue(null);
+
+    await expect(
+      new QuizAttemptProgressRepository().recordSubmittedAttempt(claimTokenSubmission()),
+    ).rejects.toBeInstanceOf(QuizAttemptIdempotencyConflictError);
+    expect(session.withTransaction).toHaveBeenCalledTimes(1);
   });
 
   it('skips question bulkWrite when there are no wrong questions', async () => {

@@ -41,7 +41,7 @@ interface StatsModalRecentAttemptViewModel {
   takenAt: string;
   answeredQuestions: number;
   actor: {
-    email: string;
+    email?: string;
     type: 'user' | 'guest';
   };
   quiz: {

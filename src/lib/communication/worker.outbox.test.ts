@@ -42,6 +42,7 @@ const mocks = vi.hoisted(() => ({
   supportMessage: { deleteMany: vi.fn() },
   webhookEvent: { countDocuments: vi.fn() },
   preference: { updateOne: vi.fn() },
+  nudge: { sweep: vi.fn(), prepare: vi.fn(), record: vi.fn() },
 }));
 
 /** Minimal thenable stand-in for a chained Mongoose query. */
@@ -77,6 +78,11 @@ vi.mock('./resend', () => ({
   marketingTopicId: vi.fn(),
   scheduleBroadcast: vi.fn(),
   syncMarketingContact: vi.fn(),
+}));
+vi.mock('./activation-nudge', () => ({
+  sweepActivationNudges: mocks.nudge.sweep,
+  prepareActivationNudge: mocks.nudge.prepare,
+  recordActivationEmailSent: mocks.nudge.record,
 }));
 vi.mock('@/models/Communication', () => ({
   EmailOutbox: mocks.outbox,
@@ -166,6 +172,97 @@ describe('communication outbox delivery', () => {
     mocks.supportTicket.find.mockReturnValue(query([]));
     mocks.supportAttachment.find.mockReturnValue(query([]));
     mocks.conversation.findById.mockReturnValue(query(conversationDoc()));
+    mocks.nudge.sweep.mockResolvedValue({ enqueued: 0, skipped: 0 });
+  });
+
+  function nudgeItem() {
+    return outboxItem({
+      kind: 'activation_nudge',
+      entityType: 'user',
+      dedupeKey: `activation_nudge:${CONVERSATION_ID}`,
+      replyTo: null,
+      attempts: 1,
+      trigger: '24h',
+      locale: 'en',
+    });
+  }
+
+  it('sweeps activation nudges each tick and survives a failed sweep (RIN-999)', async () => {
+    mocks.nudge.sweep.mockResolvedValueOnce({ enqueued: 1, skipped: 2 });
+    await expect(runCommunicationWorker(5)).resolves.toMatchObject({
+      activationNudges: { enqueued: 1, skipped: 2 },
+    });
+
+    mocks.nudge.sweep.mockRejectedValueOnce(new Error('mongo down'));
+    await expect(runCommunicationWorker(5)).resolves.toMatchObject({
+      activationNudges: { enqueued: 0, skipped: 0 },
+    });
+  });
+
+  it('sends a due activation nudge once and records activation_email_sent (RIN-999)', async () => {
+    queueOne(nudgeItem());
+    mocks.nudge.prepare.mockResolvedValue({
+      decision: 'send',
+      mail: {
+        subject: 'Your 2-minute quiz is ready',
+        html: '<p>x</p>',
+        text: 'x',
+        tags: [],
+        headers: {},
+      },
+    });
+    mocks.sendCommunicationEmail.mockResolvedValue('re_email_nudge');
+
+    const result = await runCommunicationWorker();
+
+    expect(mocks.sendCommunicationEmail).toHaveBeenCalledOnce();
+    expect(mocks.sendCommunicationEmail.mock.calls[0]?.[0]).toMatchObject({
+      idempotencyKey: `activation_nudge:${CONVERSATION_ID}`,
+      subject: 'Your 2-minute quiz is ready',
+    });
+    expect(mocks.nudge.record).toHaveBeenCalledOnce();
+    expect(result.outbox).toMatchObject({ completed: 1, canceled: 0 });
+  });
+
+  it('cancels a nudge whose learner activated after enqueue, without sending (RIN-999)', async () => {
+    queueOne(nudgeItem());
+    mocks.nudge.prepare.mockResolvedValue({ decision: 'cancel', reason: 'activated' });
+
+    const result = await runCommunicationWorker();
+
+    expect(mocks.sendCommunicationEmail).not.toHaveBeenCalled();
+    expect(mocks.nudge.record).not.toHaveBeenCalled();
+    const cancel = outboxUpdateFor((update) => update['$set']?.['status'] === 'canceled');
+    expect(cancel?.[1]['$set']).toMatchObject({ status: 'canceled', lastError: 'activated' });
+    expect(result.outbox).toMatchObject({ completed: 0, canceled: 1 });
+  });
+
+  it('holds activation nudges back while their kill switch is off (RIN-999)', async () => {
+    vi.stubEnv('ACTIVATION_NUDGE_SENDING_ENABLED', 'false');
+    try {
+      await runCommunicationWorker(5);
+      expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).toMatchObject({
+        kind: { $nin: ['activation_nudge'] },
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('claims review emails unless the kill switch is off (RIN-915)', async () => {
+    await runCommunicationWorker(5);
+    expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).not.toHaveProperty('kind');
+
+    vi.stubEnv('REVIEW_REMINDER_SENDING_ENABLED', 'false');
+    try {
+      mocks.outbox.findOneAndUpdate.mockClear();
+      await runCommunicationWorker(5);
+      expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).toMatchObject({
+        kind: { $nin: ['review_reminder'] },
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('repairs a legacy over-long Reply-To in place and sends exactly one email', async () => {

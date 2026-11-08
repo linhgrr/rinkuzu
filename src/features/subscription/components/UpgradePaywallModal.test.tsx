@@ -25,8 +25,23 @@ vi.mock('@/features/subscription/api/subscription-page-api', () => ({
 }));
 
 vi.mock('@/components/ui/Modal', () => ({
-  Modal: ({ children, isOpen, title }: { children: ReactNode; isOpen: boolean; title: string }) =>
-    isOpen ? <section aria-label={title}>{children}</section> : null,
+  Modal: ({
+    children,
+    isOpen,
+    title,
+    description,
+  }: {
+    children: ReactNode;
+    isOpen: boolean;
+    title: string;
+    description: string;
+  }) =>
+    isOpen ? (
+      <section aria-label={title}>
+        <p>{description}</p>
+        {children}
+      </section>
+    ) : null,
 }));
 
 describe('UpgradePaywallModal', () => {
@@ -44,7 +59,6 @@ describe('UpgradePaywallModal', () => {
           name: 'Eco Plus 1M',
           price: 39_000,
           priceLabel: '39.000 ₫',
-          durationDisplay: '1 tháng',
           calculatedMonths: 1,
         },
         {
@@ -52,7 +66,6 @@ describe('UpgradePaywallModal', () => {
           name: 'Eco Plus 6M',
           price: 100_000,
           priceLabel: '100.000 ₫',
-          durationDisplay: '6 tháng',
           calculatedMonths: 6,
         },
       ],
@@ -66,6 +79,9 @@ describe('UpgradePaywallModal', () => {
     expect(screen.getByText('Eco Plus 6M')).toBeTruthy();
     expect(screen.getByText('pricing:free.name')).toBeTruthy();
     expect(screen.getByText('premium:paywall.bestValue')).toBeTruthy();
+    // RIN-1015: localised duration, not the catalogue's English "6 Months".
+    expect(screen.getByText('pricing:planDuration:{"months":1}')).toBeTruthy();
+    expect(screen.getByText('pricing:planDuration:{"months":6}')).toBeTruthy();
     expect(screen.getByLabelText('premium:paywall.currentPlan')).toBeTruthy();
     await user.click(
       screen.getByRole('button', {
@@ -105,5 +121,58 @@ describe('UpgradePaywallModal', () => {
 
     expect(onClose).toHaveBeenCalledWith(true);
     expect(routerPushMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['quota', 'premium:paywall.quotaDescriptionNoPlans'],
+    ['feature', 'premium:paywall.featureDescriptionNoPlans'],
+  ] as const)(
+    'drops the Premium pitch when no plan is on sale (%s, RIN-1019)',
+    async (kind, description) => {
+      fetchSubscriptionPageMock.mockResolvedValue({
+        plans: [],
+        currentSubscription: null,
+        isPremium: false,
+      });
+
+      render(<UpgradePaywallModal isOpen kind={kind} onClose={vi.fn()} />);
+
+      expect(await screen.findByText('premium:paywall.noPlans')).toBeTruthy();
+      expect(screen.getByText(description)).toBeTruthy();
+      for (const pitch of [
+        'premium:paywall.quotaDescription',
+        'premium:paywall.featureDescription',
+        'premium:paywall.premiumHeading',
+        'premium:paywall.premiumSummary',
+        'pricing:premium.features.askRinChan',
+        'pricing:premium.features.premiumCatalog',
+      ]) {
+        expect(screen.queryByText(pitch)).toBeNull();
+      }
+      expect(screen.getByRole('button', { name: 'premium:paywall.continueFree' })).toBeTruthy();
+    },
+  );
+
+  it('keeps the Premium pitch beside live plans', async () => {
+    fetchSubscriptionPageMock.mockResolvedValue({
+      plans: [
+        {
+          id: 'eco-plus-monthly',
+          name: 'Eco Plus 1M',
+          price: 39_000,
+          priceLabel: '39.000 ₫',
+          calculatedMonths: 1,
+        },
+      ],
+      currentSubscription: null,
+      isPremium: false,
+    });
+
+    render(<UpgradePaywallModal isOpen kind="quota" onClose={vi.fn()} />);
+
+    expect(await screen.findByText('Eco Plus 1M')).toBeTruthy();
+    expect(screen.getByText('premium:paywall.quotaDescription')).toBeTruthy();
+    expect(screen.getByText('premium:paywall.premiumHeading')).toBeTruthy();
+    expect(screen.queryByText('premium:paywall.noPlans')).toBeNull();
   });
 });

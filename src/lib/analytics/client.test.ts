@@ -112,6 +112,28 @@ describe('analytics client', () => {
     expect(captures[0]?.['$current_url']).toBe('http://localhost:3000/en/pdf-to-quiz');
   });
 
+  it('attributes a signup to a "Send to a classmate" quiz link (RIN-1179)', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/vi/quiz/sinh-hoc?utm_source=share&utm_medium=result&utm_campaign=quiz-share&mode=quick',
+    );
+    const analytics = await loadAnalytics();
+
+    analytics.grantAnalyticsConsent();
+    analytics.trackAnalyticsPageView(window.location.href, 'Quiz');
+    analytics.captureAnalyticsEvent('signup_completed', { method: 'credentials' });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(2));
+    const signup = posthogMock.capture.mock.calls.find((call) => call[0] === 'signup_completed');
+    expect(signup?.[1]).toMatchObject({
+      landing_path: '/vi/quiz/sinh-hoc',
+      utm_source: 'share',
+      utm_medium: 'result',
+      utm_campaign: 'quiz-share',
+    });
+  });
+
   it('reports a missing-consent journey separately by emitting and storing no attribution', async () => {
     window.history.replaceState({}, '', '/en/?utm_source=private-value');
     const analytics = await loadAnalytics();
@@ -160,6 +182,66 @@ describe('analytics client', () => {
       posthogMock.capture.mock.invocationCallOrder[0] ?? 0,
     );
     expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it('completes a pending Google auth as a signup when the server created the account', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+    analytics.markAnalyticsGoogleAuthPending('vi');
+
+    await analytics.identifyAnalyticsUser('new-google-user', { role: 'user' });
+    analytics.capturePendingAnalyticsLogin({ isNewAccount: true });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'signup_completed',
+      expect.objectContaining({ method: 'google', locale: 'vi', journey_id: expect.any(String) }),
+      { send_instantly: true, transport: 'sendBeacon' },
+    );
+    expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it('completes a pending Google auth as a login when the account already existed', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+    analytics.markAnalyticsGoogleAuthPending('en');
+
+    await analytics.identifyAnalyticsUser('existing-google-user', { role: 'user' });
+    analytics.capturePendingAnalyticsLogin({ isNewAccount: false });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'login_completed',
+      expect.objectContaining({ method: 'google', locale: 'en' }),
+      { send_instantly: true, transport: 'sendBeacon' },
+    );
+  });
+
+  it('never reclassifies a credentials login as a signup', async () => {
+    const analytics = await loadAnalytics();
+    analytics.grantAnalyticsConsent();
+    analytics.markAnalyticsLoginPending('credentials', 'en');
+
+    await analytics.identifyAnalyticsUser('credentials-user', { role: 'user' });
+    analytics.capturePendingAnalyticsLogin({ isNewAccount: true });
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+    expect(posthogMock.capture).toHaveBeenCalledWith(
+      'login_completed',
+      expect.objectContaining({ method: 'credentials' }),
+      { send_instantly: true, transport: 'sendBeacon' },
+    );
+  });
+
+  it('does not mark or capture a Google auth when consent is withheld', async () => {
+    const analytics = await loadAnalytics();
+    analytics.denyAnalyticsConsent();
+    analytics.markAnalyticsGoogleAuthPending('en');
+
+    analytics.capturePendingAnalyticsLogin({ isNewAccount: true });
+
+    expect(window.sessionStorage.length).toBe(0);
+    expect(posthogMock.capture).not.toHaveBeenCalled();
   });
 
   it('captures verified signup only after PostHog identifies the user', async () => {
@@ -247,5 +329,99 @@ describe('analytics client', () => {
   ])('buckets %i bytes as %s', async (sizeBytes, expected) => {
     const analytics = await loadAnalytics();
     expect(analytics.fileSizeBucket(sizeBytes)).toBe(expected);
+  });
+
+  describe('pipeline terminal events', () => {
+    it('emits pipeline_failed once per run with a slug error code and no raw text', async () => {
+      const analytics = await loadAnalytics();
+      analytics.grantAnalyticsConsent();
+
+      const event = {
+        path: 'adaptive',
+        runKey: 'job-1:0',
+        outcome: 'failed',
+        errorCode: 'ocr_failed',
+        journeyId: 'journey-1',
+        durationMs: 1234.4,
+      } as const;
+      analytics.capturePipelineTerminalEventOnce(event);
+      analytics.capturePipelineTerminalEventOnce(event);
+
+      await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+      expect(posthogMock.capture).toHaveBeenCalledWith(
+        'pipeline_failed',
+        expect.objectContaining({
+          path: 'adaptive',
+          journey_id: 'journey-1',
+          duration_ms: 1234,
+          error_code: 'ocr_failed',
+        }),
+        { send_instantly: true, transport: 'sendBeacon' },
+      );
+      expect(posthogMock.capture.mock.calls[0]?.[1]).not.toHaveProperty('runKey');
+    });
+
+    it('dedupes across a reload because the emitted set lives in localStorage', async () => {
+      const first = await loadAnalytics();
+      first.grantAnalyticsConsent();
+      first.capturePipelineTerminalEventOnce({
+        path: 'quiz_draft',
+        runKey: 'draft-1',
+        outcome: 'completed',
+      });
+      await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+
+      const reloaded = await loadAnalytics();
+      reloaded.capturePipelineTerminalEventOnce({
+        path: 'quiz_draft',
+        runKey: 'draft-1',
+        outcome: 'completed',
+      });
+      reloaded.capturePipelineTerminalEventOnce({
+        path: 'quiz_draft',
+        runKey: 'draft-2',
+        outcome: 'completed',
+      });
+
+      await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(2));
+      expect(posthogMock.capture.mock.calls[0]?.[0]).toBe('pipeline_completed');
+      expect(posthogMock.capture.mock.calls[0]?.[1]).not.toHaveProperty('error_code');
+    });
+
+    it('records nothing without consent', async () => {
+      const analytics = await loadAnalytics();
+
+      analytics.capturePipelineTerminalEventOnce({
+        path: 'adaptive',
+        runKey: 'job-1:0',
+        outcome: 'completed',
+      });
+
+      expect(window.localStorage.getItem('rinkuzu_analytics_pipeline_terminal_v1')).toBeNull();
+      expect(posthogMock.capture).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['pipeline_timeout', 'pipeline_timeout'],
+      ['OCR_FAILED', 'ocr_failed'],
+      ['OCR API request failed for all configured keys.', 'unknown'],
+      [null, 'unknown'],
+      [undefined, 'unknown'],
+    ])('reports error code %s as %s', async (code, expected) => {
+      const analytics = await loadAnalytics();
+      analytics.grantAnalyticsConsent();
+
+      analytics.capturePipelineTerminalEventOnce({
+        path: 'adaptive',
+        runKey: `job-${String(code)}:0`,
+        outcome: 'failed',
+        ...(code === undefined ? {} : { errorCode: code }),
+      });
+
+      await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(1));
+      expect(posthogMock.capture.mock.calls[0]?.[1]).toEqual(
+        expect.objectContaining({ error_code: expected }),
+      );
+    });
   });
 });

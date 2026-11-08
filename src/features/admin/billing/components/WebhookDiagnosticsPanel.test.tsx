@@ -9,13 +9,24 @@ const { revealMock, replayMock } = vi.hoisted(() => ({
 
 // The shared UI states reach for translations; the panel's own copy is plain
 // English, so keys are enough to assert on here.
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
+const translate = vi.hoisted(() => (key: string) => key);
+vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
+vi.mock('@/i18n/navigation', () => ({
+  usePathname: () => '/admin/billing',
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock('@/features/admin/billing/api/admin-billing-api', () => ({
   revealWebhookPayload: revealMock,
   replayWebhook: replayMock,
   fetchAdminWebhookDiagnostics: vi.fn(),
 }));
 
+import { ApiResponseError } from '@/lib/api/client';
 import { WebhookDiagnosticsPanel } from './WebhookDiagnosticsPanel';
 import type { UseWebhookDiagnostics } from '@/features/admin/billing/hooks/useWebhookDiagnostics';
 import type { AdminWebhookDiagnosticViewModel } from '@/features/admin/billing/types/admin-billing-view-model';
@@ -44,7 +55,7 @@ function diagnostics(overrides: Partial<UseWebhookDiagnostics> = {}): UseWebhook
     pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
     verificationClass: '',
     loading: false,
-    error: '',
+    loadError: null,
     setVerificationClass: vi.fn(),
     setPage: vi.fn(),
     reload: vi.fn(),
@@ -158,24 +169,56 @@ describe('the webhook diagnostics panel', () => {
   });
 
   it('surfaces a refused action instead of failing silently', async () => {
-    replayMock.mockRejectedValue(new Error('A webhook in "processed" is not waiting on a replay'));
+    replayMock.mockRejectedValue(
+      new ApiResponseError({
+        message: 'A webhook in "processed" is not waiting on a replay',
+        status: 409,
+        payload: null,
+        code: 'conflict',
+      }),
+    );
     render(<WebhookDiagnosticsPanel diagnostics={diagnostics()} />);
 
     await userEvent.click(screen.getByRole('button', { name: /^replay$/i }));
 
-    expect(await screen.findByText(/not waiting on a replay/i)).toBeInTheDocument();
+    // Localized copy plus the code for diagnosis, never the server text (RIN-757).
+    expect(
+      await screen.findByText('errors.api.conflict · errors.api.codeLabel'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/not waiting on a replay/i)).not.toBeInTheDocument();
+    // The row is usable again: the busy flag is released on the failure path too.
+    expect(screen.getByRole('button', { name: /^replay$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /reveal/i })).toBeEnabled();
   });
 
-  it('reports a failed load rather than an empty list', () => {
+  it('reports a failed load with ErrorState and Retry, not an empty list or a zero count', async () => {
+    const reload = vi.fn();
     render(
       <WebhookDiagnosticsPanel
-        diagnostics={diagnostics({ webhooks: [], error: 'Failed to load webhook diagnostics' })}
+        diagnostics={diagnostics({
+          webhooks: [],
+          pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+          loadError: new ApiResponseError({
+            message: 'boom',
+            status: 500,
+            payload: null,
+            code: 'internal',
+          }),
+          reload,
+        })}
       />,
     );
 
     // An empty list and a broken query look identical to an operator, and that
-    // is exactly the confusion this whole surface exists to remove.
-    expect(screen.getByText(/failed to load webhook diagnostics/i)).toBeInTheDocument();
+    // is exactly the confusion this whole surface exists to remove (RIN-1022).
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.queryByText('No deliveries recorded')).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 webhooks/)).not.toBeInTheDocument();
+    // The "Code: internal" line is for logs, not for the page.
+    expect(screen.queryByText(/codeLabel/)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'common.retry' }));
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 
   it('filters by verification class', async () => {

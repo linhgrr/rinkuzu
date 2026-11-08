@@ -33,59 +33,74 @@ export function AnalyticsRoot() {
   if (consent !== null) return null;
 
   const isVietnamese = locale === 'vi';
+  // Two lines at 375 px in both locales (RIN-719): the privacy link moved to
+  // the button row, so the paragraph is only the sentence below.
   const copy = isVietnamese
     ? {
-        body: 'RinKuzu dùng analytics tùy chọn để hiểu luồng học tập và cải thiện sản phẩm. Không gửi nội dung PDF, mật khẩu hoặc câu trả lời của bạn.',
+        body: 'RinKuzu dùng analytics tùy chọn để cải thiện. Không bao giờ gửi PDF, mật khẩu hay câu trả lời.',
         accept: 'Đồng ý',
         decline: 'Từ chối',
         privacy: 'Chính sách bảo mật',
       }
     : {
-        body: 'RinKuzu uses optional analytics to understand learning flows and improve the product. We do not send your PDF content, password, or answers.',
+        body: 'We use optional analytics to improve RinKuzu. We never send your PDFs, password or answers.',
         accept: 'Allow',
         decline: 'Decline',
         privacy: 'Privacy policy',
       };
   const localePrefix = isVietnamese ? 'vi' : 'en';
+  // Both choices share one style apart from colour, so neither is easier to
+  // reach. White on `action-strong` is 5.18:1, so normal 16 px text passes AA
+  // (4.5:1); the decline button matches its size.
+  const choiceClass =
+    'min-h-11 rounded-full px-3 py-2 text-base font-semibold leading-6 sm:min-w-28 sm:px-4';
 
   return (
     <aside
-      className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-4 font-system shadow-xl sm:flex sm:items-center sm:gap-5"
+      // Below md the app's bottom nav (`data-bottom-nav`) is fixed to the
+      // bottom edge, so the card sits above it (and its raised centre button)
+      // instead of covering its tap targets. From lg the app sidebar
+      // (`data-app-sidebar`) is fixed to the left edge, so the card's left
+      // inset starts after it and it centres on the content area instead.
+      // While a quiz player (`data-quiz-player`) is on screen the card hides,
+      // so it never covers a question, the navigator or the finish button,
+      // and it comes back on the result page (RIN-987/RIN-979).
+      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-3 font-system shadow-xl sm:inset-x-4 sm:bottom-4 sm:flex sm:items-center sm:gap-5 sm:p-4 [html:has([data-quiz-player])_&]:hidden max-md:[html:has([data-bottom-nav])_&]:bottom-[calc(5.25rem+env(safe-area-inset-bottom))] lg:[html:has([data-app-sidebar=expanded])_&]:left-[calc(var(--app-sidebar-expanded-width)+1rem)] lg:[html:has([data-app-sidebar=collapsed])_&]:left-[calc(var(--app-sidebar-collapsed-width)+1rem)]"
       aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
     >
-      <p className="flex-1 text-sm leading-6 text-neutral-700">
-        {copy.body}{' '}
+      <p className="flex-1 text-sm leading-5 text-neutral-700 sm:leading-6">{copy.body}</p>
+      <div className="mt-2 flex shrink-0 items-center justify-between gap-2 sm:mt-0 sm:gap-3">
         <a
           href={`/${localePrefix}/privacy`}
-          className="font-semibold text-ink underline underline-offset-2 hover:text-accent"
+          className="inline-flex min-h-6 items-center whitespace-nowrap text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
         >
           {copy.privacy}
         </a>
-      </p>
-      <div className="mt-3 flex shrink-0 gap-2 sm:mt-0">
-        <button
-          type="button"
-          className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
-          onClick={() => {
-            denyAnalyticsConsent();
-          }}
-        >
-          {copy.decline}
-        </button>
-        <button
-          type="button"
-          // Not `bg-brand-action`. White on that token is 2.57:1 against a 3:1
-          // floor for text this size, and its dark-theme value is lighter
-          // still, so the banner failed the accessibility budget over both the
-          // landing and login pages. `action-strong` is the same colour in
-          // both themes for exactly that reason.
-          className="min-h-11 rounded-full bg-brand-action-strong px-4 py-2 text-[19px] font-bold text-white hover:bg-brand-action-hover"
-          onClick={() => {
-            grantAnalyticsConsent();
-          }}
-        >
-          {copy.accept}
-        </button>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <button
+            type="button"
+            className={`${choiceClass} border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50`}
+            onClick={() => {
+              denyAnalyticsConsent();
+            }}
+          >
+            {copy.decline}
+          </button>
+          <button
+            type="button"
+            // Not `bg-brand-action`. White on that token is 2.57:1 and its
+            // dark-theme value is lighter still, so the banner failed the
+            // accessibility budget over both the landing and login pages.
+            // `action-strong` is the same colour in both themes for exactly
+            // that reason, and so is its hover.
+            className={`${choiceClass} border border-transparent bg-brand-action-strong text-white hover:bg-brand-action-strong-hover`}
+            onClick={() => {
+              grantAnalyticsConsent();
+            }}
+          >
+            {copy.accept}
+          </button>
+        </div>
       </div>
     </aside>
   );

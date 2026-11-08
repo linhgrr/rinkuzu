@@ -17,10 +17,19 @@ Playwright is configured in `playwright.config.ts`.
 - `critical-flows.spec.ts`
   - `@critical-auth`: real credentials session, persistence, role guard, and logout
   - `@critical-quiz`: seeded quiz, answer, persisted attempt, and result page
+  - `@critical-retry`: a missed answer shows "Retry the 1 you missed" and the unticked review-email box on the result page; the `?retryOf=` session shows its "Retry: 1 question" pill, and submitting it stores a normal attempt with `retryOfAttemptId` (RIN-917). It runs on mobile too (AC2 is at 390 px). Ticking the box is not part of it: the gate's env has no `SUPPORT_MAIL_FROM`.
+  - `@critical-starter`: new learner sees the starter quiz block above the fold and opens question 1; signing in with no `callbackUrl` lands straight on the starter quiz with its intro and Skip, and submitting it records the attempt (RIN-913). Other flows sign in with the skip cookie (`support/post-signin.ts`) so they still land on `/dashboard`.
   - `@critical-adaptive`: upload UI, processing state, and generated subject page
   - `@critical-subscription`: checkout handoff plus success/cancel outcomes
   - `@critical-admin`: admin route/API access and a persisted role mutation
+  - `@critical-admin-learner-lookup`: anonymous (401 / login redirect) and non-admin (403 / dashboard redirect) are denied the lookup page and both lookup APIs; admin finds a learner by email and opens the read-only drill-down; every allowlisted field renders, nothing else does, and exactly one view is audited
+  - `@critical-admin-quiz-visibility`: admin makes a public quiz private (anonymous play 401, gone from the public list), the change is audited, and the same row makes it public again
   - `@critical-admin-disable`: admin disable/restore, authVersion session revocation, disabled/active filters, fresh login after restore
+  - `@critical-admin-test-account`: anonymous (401) and non-admin (403) callers are refused the test-account route; admin marks a user as a test account in `/admin/users` (badge shown), clears it again, and both changes are audited with the actor
+- `admin-personal-learning.spec.ts`
+  - `@critical-admin-personal-learning`: admin opens the Personalized Learning stats workspace; totals tiles and trend chart render, and each window (7d/30d/90d/all) refetches and shows its own figures
+  - `@critical-admin-personal-learning-gate`: anonymous visitors go to login, non-admins to the dashboard, and the summary API answers 401/403
+  - Aggregate figures come from `support/fake-personal-learning.mjs`; only the two signing-in accounts are seeded
 
 Fixture users are seeded with the canonical disable contract
 (`disable: 0`, `authVersion: 0`, `disabledAt: null`, `disabledBy: null`) so

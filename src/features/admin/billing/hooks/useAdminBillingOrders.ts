@@ -13,6 +13,7 @@ import type {
   AdminBillingPaginationViewModel,
   AdminOrderBucketViewModel,
 } from '@/features/admin/billing/types/admin-billing-view-model';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 /**
  * The order list, its filters, and the one order an operator is looking at.
@@ -31,7 +32,11 @@ interface OrdersState {
   bucket: AdminOrderBucketViewModel;
   searchInput: string;
   searchTerm: string;
-  error: string;
+  /**
+   * A failed list load, raw so the page can render ErrorState with Retry (RIN-1022).
+   * Kept while a retry runs, so the tiles never flash zeros in between.
+   */
+  loadError: unknown;
   reloadToken: number;
   detail: AdminBillingOrderDetailViewModel | null;
   detailLoading: boolean;
@@ -56,7 +61,7 @@ const INITIAL_STATE: OrdersState = {
   bucket: 'attention',
   searchInput: '',
   searchTerm: '',
-  error: '',
+  loadError: null,
   reloadToken: 0,
   detail: null,
   detailLoading: false,
@@ -71,7 +76,7 @@ function reducer(state: OrdersState, action: OrdersAction): OrdersState {
       orders: action.value.orders,
       health: action.value.health,
       pagination: action.value.pagination,
-      error: '',
+      loadError: null,
     };
   }
   return { ...state, ...action.value };
@@ -90,6 +95,7 @@ export interface UseAdminBillingOrders extends OrdersState {
 }
 
 export function useAdminBillingOrders(): UseAdminBillingOrders {
+  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const { bucket, searchTerm, reloadToken, pagination, detail } = state;
   const { page, limit } = pagination;
@@ -102,30 +108,27 @@ export function useAdminBillingOrders(): UseAdminBillingOrders {
       .then((value) => dispatch({ type: 'loadSuccess', value }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        dispatch({
-          type: 'patch',
-          value: {
-            status: 'ready',
-            error: error instanceof Error ? error.message : 'Failed to load billing orders',
-          },
-        });
+        dispatch({ type: 'patch', value: { status: 'ready', loadError: error } });
       });
 
     return () => controller.abort();
   }, [bucket, limit, page, searchTerm, reloadToken]);
 
-  const openDetail = useCallback((orderId: string) => {
-    dispatch({ type: 'patch', value: { detailLoading: true, detail: null, detailError: '' } });
-    void fetchAdminBillingOrderDetail(orderId)
-      .then((loaded) => dispatch({ type: 'patch', value: { detail: loaded } }))
-      .catch((error: unknown) =>
-        dispatch({
-          type: 'patch',
-          value: { detailError: error instanceof Error ? error.message : 'Failed to load order' },
-        }),
-      )
-      .finally(() => dispatch({ type: 'patch', value: { detailLoading: false } }));
-  }, []);
+  const openDetail = useCallback(
+    (orderId: string) => {
+      dispatch({ type: 'patch', value: { detailLoading: true, detail: null, detailError: '' } });
+      void fetchAdminBillingOrderDetail(orderId)
+        .then((loaded) => dispatch({ type: 'patch', value: { detail: loaded } }))
+        .catch((error: unknown) =>
+          dispatch({
+            type: 'patch',
+            value: { detailError: describeError(error) },
+          }),
+        )
+        .finally(() => dispatch({ type: 'patch', value: { detailLoading: false } }));
+    },
+    [describeError],
+  );
 
   const reload = useCallback(() => {
     dispatch({ type: 'patch', value: { reloadToken: Date.now() } });

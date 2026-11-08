@@ -27,7 +27,8 @@ type ProfileTranslate = (key: string) => string;
 
 interface ProfileHeroProps {
   initials: string;
-  onEditProfile: () => void;
+  /** Omitted on tabs where editing the profile is not the next step (Security, Email). */
+  onEditProfile?: (() => void) | undefined;
   profile: ProfileSettingsViewModel;
   t: ProfileTranslate;
 }
@@ -124,10 +125,12 @@ export function ProfileHero({ initials, onEditProfile, profile, t }: ProfileHero
           </div>
         </div>
 
-        <Button type="button" variant="outline" size="sm" onClick={onEditProfile}>
-          <HiOutlinePencilAlt className="size-4" aria-hidden="true" />
-          {t('editProfile')}
-        </Button>
+        {onEditProfile ? (
+          <Button type="button" variant="outline" size="sm" onClick={onEditProfile}>
+            <HiOutlinePencilAlt className="size-4" aria-hidden="true" />
+            {t('editProfile')}
+          </Button>
+        ) : null}
       </div>
     </Card>
   );
@@ -155,8 +158,8 @@ export function ProfileTabNavigation({ activeTab, onChange, t }: ProfileTabNavig
 
 export function QuickAccessCard({ t }: QuickAccessCardProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-line/50 px-5 py-4 sm:px-6">
+    <Card className="overflow-hidden p-0 sm:p-6">
+      <div className="border-b border-line/50 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2">
           <HiOutlineCog className="size-5 text-brand-trust" aria-hidden="true" />
           <div>
@@ -172,7 +175,7 @@ export function QuickAccessCard({ t }: QuickAccessCardProps) {
             <Link
               key={item.href}
               href={item.href}
-              className="group flex min-h-16 items-center gap-3 px-5 py-3 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] sm:px-6"
+              className="group flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] sm:px-6"
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-trust/10 text-brand-trust">
                 <Icon className="size-5" aria-hidden="true" />

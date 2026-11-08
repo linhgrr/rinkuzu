@@ -10,6 +10,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { AdminReportsPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
@@ -33,9 +34,18 @@ import {
   HiOutlineCheck,
   HiOutlineX,
 } from 'react-icons/hi';
+import { useReloadSettled } from '@/features/admin/hooks/useReloadSettled';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface AdminReportsState {
   status: 'loading' | 'ready';
+  /**
+   * Raw load failure; the filters and the list are replaced by ErrorState until a reload
+   * succeeds (RIN-1159). Kept while a retry runs: Retry stays pending, no skeleton (RIN-1166).
+   */
+  loadError: unknown;
+  /** Bumped by Retry to rerun the load effect for the same filter. */
+  reloadToken: number;
   reports: AdminReportViewModel[];
   statusFilter: AdminReportFilterViewModel;
   selectedReport: AdminReportViewModel | null;
@@ -53,6 +63,8 @@ const REPORT_FILTERS: AdminReportFilterViewModel[] = ['all', 'pending', 'resolve
 
 const initialState: AdminReportsState = {
   status: 'loading',
+  loadError: null,
+  reloadToken: 0,
   reports: [],
   statusFilter: 'all',
   selectedReport: null,
@@ -91,7 +103,7 @@ function adminReportsReducer(
     case 'patch':
       return { ...state, ...action.value };
     case 'loadSuccess':
-      return { ...state, status: 'ready', reports: action.value };
+      return { ...state, status: 'ready', loadError: null, reports: action.value };
     default:
       return state;
   }
@@ -304,28 +316,37 @@ function ReportReviewModal({
 }
 
 export function AdminReportsPageClient() {
+  const describeError = useAdminApiErrorMessage();
   const tAdmin = useTranslations('admin');
   const [state, dispatch] = useReducer(adminReportsReducer, initialState);
+  const { waitForReload, settleReload } = useReloadSettled();
 
   useEffect(() => {
     const controller = new AbortController();
+    // Set by the cleanup: a newer filter (or unmount) owns the list now.
+    let cancelled = false;
 
     async function loadReports() {
       try {
         const reports = await fetchAdminReportViewModels(state.statusFilter, controller.signal);
+        if (cancelled) return;
         dispatch({ type: 'loadSuccess', value: reports });
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (cancelled) return;
         console.error('Error fetching reports:', error);
-        dispatch({ type: 'patch', value: { status: 'ready' } });
+        dispatch({ type: 'patch', value: { status: 'ready', loadError: error } });
       }
+      settleReload();
     }
 
     dispatch({ type: 'patch', value: { status: 'loading' } });
     void loadReports();
 
-    return () => controller.abort();
-  }, [state.statusFilter]);
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [state.statusFilter, state.reloadToken, settleReload]);
 
   const openReportModal = (report: AdminReportViewModel) => {
     dispatch({
@@ -357,7 +378,7 @@ export function AdminReportsPageClient() {
       dispatch({ type: 'patch', value: { updating: false } });
     } catch (error) {
       console.error('Error updating report:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update report');
+      toast.error(describeError(error));
       dispatch({ type: 'patch', value: { updating: false } });
     }
   };
@@ -374,7 +395,7 @@ export function AdminReportsPageClient() {
       dispatch({ type: 'patch', value: { deleting: false } });
     } catch (error) {
       console.error('Error deleting report:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete report');
+      toast.error(describeError(error));
       dispatch({ type: 'patch', value: { deleting: false } });
     }
   };
@@ -391,7 +412,7 @@ export function AdminReportsPageClient() {
   return (
     <AdminPageShell contentClassName="bg-neutral-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {state.status === 'loading' ? (
+        {state.status === 'loading' && !state.loadError ? (
           <AdminReportsPageSkeleton />
         ) : (
           <>
@@ -399,13 +420,23 @@ export function AdminReportsPageClient() {
               title={tAdmin('quizReports')}
               description={tAdmin('reportsDescription')}
             />
-            <ReportFilterBar
-              statusFilter={state.statusFilter}
-              onChange={(status) => dispatch({ type: 'patch', value: { statusFilter: status } })}
-            />
+            {state.loadError ? null : (
+              <ReportFilterBar
+                statusFilter={state.statusFilter}
+                onChange={(status) => dispatch({ type: 'patch', value: { statusFilter: status } })}
+              />
+            )}
 
             <div className="space-y-4">
-              {state.reports.length === 0 ? (
+              {state.loadError ? (
+                <ErrorState
+                  error={state.loadError}
+                  onRetry={() => {
+                    dispatch({ type: 'patch', value: { reloadToken: state.reloadToken + 1 } });
+                    return waitForReload();
+                  }}
+                />
+              ) : state.reports.length === 0 ? (
                 <Card className="p-12">
                   <EmptyState
                     title={tAdmin('noReportsTitle')}

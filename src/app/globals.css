@@ -82,12 +82,22 @@
     --brand-action-text: var(--neutral-white);
     /* The action colour that carries white text. `--brand-action` is 2.57:1
        against white and its dark-theme value is lighter still, so neither
-       clears the 3:1 floor; this one does in both themes, which is why it does
-       not vary by theme. For a filled control whose label is white. */
-    --brand-action-strong: #e67020;
-    --brand-trust: var(--accent);
-    --brand-trust-hover: var(--accent-hover);
-    --brand-trust-active: var(--primary-6);
+       clears the 3:1 floor. This one is 5.18:1 (Tailwind orange-700), so a
+       normal-size white label passes AA (4.5:1) in both themes, which is why it
+       does not vary by theme. For a filled control whose label is white
+       (RIN-719; was #e67020 at 3.13:1, large text only). */
+    --brand-action-strong: #c2410c;
+    /* Its hover (orange-800, 7.31:1). Theme-stable for the same reason:
+       --brand-action-hover is #fdba74 in dark, where white reaches only 1.7:1
+       (RIN-810). */
+    --brand-action-strong-hover: #9a3412;
+    /* Trust stays in the orange family in light (Figma reskin), but at the
+       strong step: var(--accent) was 2.57:1 as text on white and 2.44:1 on
+       bg-green-50 (RIN-682). These clear 4.5:1 as text and under a white
+       label. Login/signup keep the old orange through .auth-shell. */
+    --brand-trust: var(--brand-action-strong);
+    --brand-trust-hover: var(--brand-action-strong-hover);
+    --brand-trust-active: #7c2d12;
 
     /* ===== Figma design tokens — source of truth (Rinkuzu FINAL) ===== */
     /* Primary (orange) */
@@ -163,6 +173,10 @@
     --info-surface: var(--status-1);
     --purple: var(--purple-500);
     --purple-surface: rgba(139, 92, 246, 0.1);
+    /* Badge text on those surfaces: --info is 4.13:1 and --purple 3.75:1 there;
+       these are 5.56:1 and 6.29:1 (RIN-682). */
+    --info-strong: #0559c7;
+    --purple-strong: #6d28d9;
     --error: var(--red-500);
     --error-border: rgba(229, 72, 77, 0.35);
     --error-surface: rgba(229, 72, 77, 0.08);
@@ -310,20 +324,65 @@
 
   [data-theme='dark'],
   .dark {
-    --bg-page: #10110f;
-    --bg-section: #151713;
-    --bg-surface: #1b1d19;
-    --bg-surface-muted: #242720;
-    --bg-surface-warm: #211a13;
+    /* Semantic layer, dark (RIN-791). Components use these utilities
+       (`text-ink`, `bg-surface-warm`, ...), so this is the one place dark
+       values live. Contrast pairs are pinned in
+       tests/ui/dark-theme-token-contract.test.ts. */
+    --surface: #1b1d19;
+    --surface-page: #10110f;
+    --surface-warm: #211a13;
+    --surface-blue: #171c26;
+    --hero: #2a1d12;
+    --ink: #f7f7f2;
+    --ink-strong: #ffffff;
+    --ink-muted: #b8b8b0;
+    --accent: #ff7c23;
+    /* Lighter on dark, not darker. */
+    --accent-hover: #ff9a52;
+    --accent-soft: rgba(255, 124, 35, 0.16);
+    --accent-warm: rgba(255, 124, 35, 0.26);
+    --accent-pale: rgba(255, 124, 35, 0.16);
+    /* Text on --accent: white is 2.5:1 here. White labels on a filled orange
+       control belong on --brand-action-strong, which does not vary by theme. */
+    --accent-text: #10110f;
+    --line: rgba(255, 255, 255, 0.12);
+    --line-blue: rgba(255, 255, 255, 0.24);
+    --divider-warm: rgba(255, 124, 35, 0.3);
+    --progress-track: #2c2f28;
+    --progress-blue-track: #2c3442;
+    --progress-blue: #8fa8d0;
+    --badge-cool: #232b3a;
+    --control-surface: rgba(255, 255, 255, 0.06);
+    --control-border: rgba(255, 255, 255, 0.12);
+    --card-shadow-accent: 2px 2px 0 rgba(255, 124, 35, 0.3);
+    /* #076cee is 3.9:1 on the dark surface. */
+    --info: #6aa6ff;
+    --info-surface: rgba(106, 166, 255, 0.14);
+    --success: #34d399;
+    --success-surface: rgba(52, 211, 153, 0.14);
+    --purple: #a78bfa;
+    --purple-surface: rgba(167, 139, 250, 0.16);
+    --info-strong: var(--info);
+    --purple-strong: var(--purple);
 
-    --text-primary: #f7f7f2;
-    --text-secondary: #c8c8c1;
+    /* Legacy roles resolve through the semantic layer, as in light. They are
+       re-declared so a dark subtree below <html> resolves them against its own
+       values instead of inheriting the light ones already computed above it. */
+    --bg-page: var(--surface-page);
+    --bg-section: var(--surface-warm);
+    --bg-surface: var(--surface);
+    --bg-surface-muted: var(--surface-warm);
+    --bg-surface-warm: var(--surface-warm);
+
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-muted);
+    /* Hints: intentionally dimmer than --ink-muted (5.1:1 on --surface). */
     --text-muted: #94948d;
-    --text-inverse: #10110f;
+    --text-inverse: var(--accent-text);
 
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-default: rgba(255, 255, 255, 0.12);
-    --border-strong: rgba(255, 255, 255, 0.2);
+    --border-subtle: var(--line);
+    --border-default: var(--line);
+    --border-strong: var(--line-blue);
 
     --brand-primary: #34d399;
     --brand-primary-hover: #6ee7b7;
@@ -332,8 +391,9 @@
     --brand-action: #fb923c;
     --brand-action-hover: #fdba74;
     --brand-action-active: #fed7aa;
-    --brand-action-text: #ffffff;
-    --brand-action-strong: #e67020;
+    --brand-action-text: #1c1917;
+    --brand-action-strong: #c2410c;
+    --brand-action-strong-hover: #9a3412;
 
     --brand-trust: #34d399;
     --brand-trust-hover: #6ee7b7;
@@ -658,7 +718,7 @@
 
   .badge-info {
     background: var(--info-surface);
-    color: var(--info);
+    color: var(--info-strong);
   }
 
   .badge-primary {
@@ -673,7 +733,7 @@
 
   .badge-purple {
     background: var(--purple-surface);
-    color: var(--purple);
+    color: var(--purple-strong);
   }
 
   .badge-gray {
@@ -797,7 +857,7 @@
   }
 
   .pricing-popular-badge {
-    background: var(--brand-action);
+    background: var(--brand-action-strong);
     color: white;
   }
 

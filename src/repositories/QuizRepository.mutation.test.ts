@@ -23,6 +23,7 @@ const quizModelMocks = vi.hoisted(() => ({
 const deleteQuizDependentsMock = vi.hoisted(() => vi.fn());
 const deleteOwnedPdfUrlsBestEffortMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const connectDBMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const loggerWarnMock = vi.hoisted(() => vi.fn());
 const startSessionMock = vi.hoisted(() => vi.fn());
 const folderQuizMocks = vi.hoisted(() => ({
   findOne: vi.fn(),
@@ -30,6 +31,10 @@ const folderQuizMocks = vi.hoisted(() => ({
   deleteOne: vi.fn(),
   select: vi.fn(),
   lean: vi.fn(),
+}));
+
+vi.mock('@/lib/logger', () => ({
+  logger: { warn: loggerWarnMock, info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
 vi.mock('@/lib/mongoose', () => ({
@@ -248,6 +253,20 @@ describe('QuizRepository mutation coverage', () => {
 
       chainFindOneLean(null);
       await expect(repository.findIdBySlug('missing')).resolves.toBeNull();
+    });
+
+    it('resolves a former slug alias to the canonical slug only', async () => {
+      chainFindOneLean({ slug: 'cach-ghi-nho-096007' });
+      const repository = new QuizRepository();
+
+      await expect(repository.findCanonicalSlugByAlias('cch-ghi-nh-096007')).resolves.toBe(
+        'cach-ghi-nho-096007',
+      );
+      expect(quizModelMocks.findOne).toHaveBeenCalledWith({ slugAliases: 'cch-ghi-nh-096007' });
+      expect(quizModelMocks.select).toHaveBeenCalledWith('slug');
+
+      chainFindOneLean(null);
+      await expect(repository.findCanonicalSlugByAlias('unknown')).resolves.toBeNull();
     });
 
     it('loads quizzes by sourceDraftId with author populate', async () => {
@@ -562,7 +581,7 @@ describe('QuizRepository mutation coverage', () => {
       });
     });
 
-    it('maps creator aggregates and rejects incomplete creator rows', async () => {
+    it('maps creator aggregates and skips incomplete creator rows', async () => {
       quizModelMocks.aggregate.mockResolvedValueOnce([
         {
           items: [
@@ -618,8 +637,14 @@ describe('QuizRepository mutation coverage', () => {
           meta: [{ totalItems: 1 }],
         },
       ]);
-      await expect(repository.findTopCreators({ page: 1, limit: 5 })).rejects.toThrow(
-        `Quiz creator ${AUTHOR_ID} could not be resolved`,
+      // RIN-634: an unresolvable creator used to throw and 500 the whole admin
+      // Overview. It is now skipped, and the log carries the creator id only.
+      await expect(repository.findTopCreators({ page: 1, limit: 5 })).resolves.toMatchObject({
+        items: [],
+      });
+      expect(loggerWarnMock).toHaveBeenLastCalledWith(
+        { creatorId: AUTHOR_ID },
+        'Skipping top creator with an incomplete user record',
       );
 
       quizModelMocks.aggregate.mockResolvedValueOnce([
@@ -637,7 +662,9 @@ describe('QuizRepository mutation coverage', () => {
           meta: [{ totalItems: 1 }],
         },
       ]);
-      await expect(repository.findTopCreators({ page: 1, limit: 5 })).rejects.toThrow(TypeError);
+      await expect(repository.findTopCreators({ page: 1, limit: 5 })).resolves.toMatchObject({
+        items: [],
+      });
 
       quizModelMocks.aggregate.mockResolvedValueOnce([
         {
@@ -654,8 +681,44 @@ describe('QuizRepository mutation coverage', () => {
           meta: [{ totalItems: 1 }],
         },
       ]);
-      await expect(repository.findTopCreators({ page: 1, limit: 5 })).rejects.toThrow(
-        /could not be resolved/,
+      await expect(repository.findTopCreators({ page: 1, limit: 5 })).resolves.toMatchObject({
+        items: [],
+      });
+      expect(loggerWarnMock).toHaveBeenCalledTimes(3);
+    });
+
+    it('keeps resolved creators when another row on the page is incomplete', async () => {
+      const otherId = new Types.ObjectId();
+      quizModelMocks.aggregate.mockResolvedValueOnce([
+        {
+          items: [
+            {
+              _id: otherId,
+              email: undefined,
+              role: undefined,
+              joinedAt: undefined,
+              quizCount: 9,
+              totalQuestions: 90,
+            },
+            {
+              _id: new Types.ObjectId(AUTHOR_ID),
+              email: 'teacher@example.com',
+              role: 'user',
+              joinedAt: new Date('2026-06-01T00:00:00.000Z'),
+              quizCount: 4,
+              totalQuestions: 40,
+            },
+          ],
+          meta: [{ totalItems: 2 }],
+        },
+      ]);
+
+      const result = await new QuizRepository().findTopCreators({ page: 1, limit: 10 });
+
+      expect(result.items.map((item) => item.id)).toEqual([AUTHOR_ID]);
+      expect(loggerWarnMock).toHaveBeenCalledWith(
+        { creatorId: otherId.toHexString() },
+        expect.any(String),
       );
     });
   });

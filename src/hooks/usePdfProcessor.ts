@@ -8,17 +8,22 @@
 // FloatingDraftProgress) keep working without changes.
 
 import { useEffect, useRef } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { getQuizDraft } from '@/lib/quiz/draftApi';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
+import { reportQuizDraftTerminal } from '@/lib/quiz/draftAnalytics';
 import { mapDraftStatus } from '@/lib/quiz/draftStatus';
 import { toBrowserPath } from '@/lib/routing/pathname';
 import { useDraftStore } from '@/store/useDraftStore';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS = 200; // ~10 minutes hard cap
+
+// Codes for provider-wide outages, where the same PDF will likely work again in
+// a few minutes. Anything else keeps the generic "try again later" text.
+const RETRYABLE_DRAFT_ERROR_CODES = new Set(['ocr_request_failed']);
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -46,6 +51,8 @@ async function pollOnce(draftId: string, signal: AbortSignal): Promise<QuizDraft
 
 export function usePdfProcessor() {
   const locale = useLocale();
+  const t = useTranslations('draft');
+  const apiErrorMessage = useApiErrorMessage();
   const { updateDraftProgress, completeDraft, setDraftError } = useDraftStore();
   const processingRef = useRef<Record<string, boolean>>({});
   const abortControllersRef = useRef<Record<string, AbortController>>({});
@@ -89,9 +96,9 @@ export function usePdfProcessor() {
             cleanupProcessing();
             return;
           }
-          const message = extractUnknownErrorMessage(error, 'Failed to fetch draft status');
+          const message = apiErrorMessage(error, t('statusFetchFailed'));
           setDraftError(draftId, message);
-          toast.error(`Lỗi xử lý "${title}"`, { description: message });
+          toast.error(t('failedTitle', { title }), { description: message });
           cleanupProcessing();
           return;
         }
@@ -102,14 +109,15 @@ export function usePdfProcessor() {
         }
 
         const mapped = mapDraftStatus(snapshot.status);
+        reportQuizDraftTerminal(snapshot);
 
         if (mapped === 'completed') {
           const totalQuestions = snapshot.questions.length;
           completeDraft(draftId, totalQuestions);
-          toast.success(`"${title}" đã sẵn sàng!`, {
-            description: `${totalQuestions} câu hỏi được trích xuất`,
+          toast.success(t('readyTitle', { title }), {
+            description: t('readyDescription', { count: totalQuestions }),
             action: {
-              label: 'Xem',
+              label: t('view'),
               onClick: () => {
                 window.location.href = toBrowserPath(`/draft/${draftId}/edit`, locale);
               },
@@ -122,8 +130,12 @@ export function usePdfProcessor() {
         // `submitted` (null) and the error statuses both stop polling; only
         // the error set surfaces a failure toast.
         if (mapped === 'error') {
-          setDraftError(draftId, 'Trích xuất thất bại hoặc bản nháp đã hết hạn');
-          toast.error(`Lỗi xử lý "${title}"`, { description: 'Vui lòng thử lại sau' });
+          const retryable =
+            snapshot.errorCode !== null && RETRYABLE_DRAFT_ERROR_CODES.has(snapshot.errorCode);
+          setDraftError(draftId, retryable ? t('failedRetryable') : t('extractionFailed'));
+          toast.error(t('failedTitle', { title }), {
+            description: retryable ? t('failedRetryable') : t('failedTryAgain'),
+          });
           cleanupProcessing();
           return;
         }
@@ -149,10 +161,8 @@ export function usePdfProcessor() {
       }
 
       // Hit the cap.
-      setDraftError(draftId, 'Hết thời gian chờ xử lý PDF');
-      toast.error(`Quá lâu để xử lý "${title}"`, {
-        description: 'Vui lòng thử lại sau',
-      });
+      setDraftError(draftId, t('timedOut'));
+      toast.error(t('timedOutTitle', { title }), { description: t('failedTryAgain') });
       cleanupProcessing();
     } catch (error) {
       cleanupProcessing();
@@ -172,8 +182,12 @@ export function usePdfProcessor() {
   const resumeProcessing = async (draftId: string) => {
     try {
       const draft = await getQuizDraft(draftId);
-      // Only (re)start polling while the draft is still in flight.
-      if (mapDraftStatus(draft.status) !== 'processing') return;
+      // Only (re)start polling while the draft is still in flight. The caller
+      // last saw it processing, so a draft that finished meanwhile reports here.
+      if (mapDraftStatus(draft.status) !== 'processing') {
+        reportQuizDraftTerminal(draft);
+        return;
+      }
 
       await startProcessing(draftId, draft.title);
     } catch (error) {

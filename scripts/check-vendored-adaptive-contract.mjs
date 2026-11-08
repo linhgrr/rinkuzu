@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import { generateTypes, lintOpenApi } from './adaptive-contract.shared.mjs';
@@ -50,7 +51,7 @@ assertToolVersion('prettier', lock.toolchain?.prettier);
 
 const openapiPath = path.join(root, lock.artifacts.openapi.path);
 const generatedTypesPath = path.join(root, lock.artifacts.typescript.path);
-const tempDir = mkdtempSync(path.join(root, '.adaptive-contract-check-'));
+const tempDir = mkdtempSync(path.join(os.tmpdir(), 'adaptive-contract-check-'));
 const regeneratedPath = path.join(tempDir, 'adaptive-api.d.ts');
 
 try {

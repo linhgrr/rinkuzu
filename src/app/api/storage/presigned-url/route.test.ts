@@ -1,14 +1,23 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, getSignedUrlMock, loggerErrorMock, uploadRateMock, usageSnapshotMock } =
-  vi.hoisted(() => ({
-    authMock: vi.fn(),
-    getSignedUrlMock: vi.fn(),
-    loggerErrorMock: vi.fn(),
-    uploadRateMock: vi.fn(),
-    usageSnapshotMock: vi.fn(),
-  }));
+const {
+  authMock,
+  getSignedUrlMock,
+  loggerErrorMock,
+  reconcileUsageMock,
+  reconcileQuizUsageMock,
+  uploadRateMock,
+  usageSnapshotMock,
+} = vi.hoisted(() => ({
+  authMock: vi.fn(),
+  reconcileUsageMock: vi.fn(),
+  reconcileQuizUsageMock: vi.fn(),
+  getSignedUrlMock: vi.fn(),
+  loggerErrorMock: vi.fn(),
+  uploadRateMock: vi.fn(),
+  usageSnapshotMock: vi.fn(),
+}));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/logger', () => ({
@@ -27,6 +36,12 @@ vi.mock('@/lib/entitlements', () => ({
 }));
 vi.mock('@/lib/llm/rate-limit', () => ({
   getLlmUsageSnapshot: usageSnapshotMock,
+}));
+vi.mock('@/lib/adaptive/pipeline-usage', () => ({
+  reconcilePipelineUsage: reconcileUsageMock,
+}));
+vi.mock('@/lib/quiz/draft-usage', () => ({
+  reconcileQuizDraftUsage: reconcileQuizUsageMock,
 }));
 vi.mock('@/lib/auth-rate-limit', () => ({
   checkAuthRateLimit: uploadRateMock,
@@ -157,6 +172,66 @@ describe('POST /api/storage/presigned-url', () => {
     await expect(response.json()).resolves.toMatchObject({
       error: { code: 'upstream_error', detail: 'signer down' },
     });
+  });
+
+  it('settles failed adaptive jobs before checking the adaptive quota', async () => {
+    const order: string[] = [];
+    reconcileUsageMock.mockImplementation(async () => order.push('reconcile'));
+    usageSnapshotMock.mockImplementation(async () => {
+      order.push('snapshot');
+      return [
+        {
+          window: 'month',
+          count: 1,
+          limit: 2,
+          remaining: 1,
+          resetAt: new Date('2026-12-01T00:00:00.000Z'),
+        },
+      ];
+    });
+
+    const response = await POST(request({ ...validBody, purpose: 'adaptive' }), routeContext);
+
+    expect(response.status).toBe(200);
+    expect(reconcileUsageMock).toHaveBeenCalledWith({ userId: 'user-1', userRole: 'user' });
+    expect(order).toEqual(['reconcile', 'snapshot']);
+  });
+
+  it('settles failed quiz drafts before checking the quiz_extract quota', async () => {
+    const order: string[] = [];
+    reconcileQuizUsageMock.mockImplementation(async () => order.push('reconcile'));
+    usageSnapshotMock.mockImplementation(async () => {
+      order.push('snapshot');
+      return [
+        {
+          window: 'month',
+          count: 1,
+          limit: 5,
+          remaining: 4,
+          resetAt: new Date('2026-12-01T00:00:00.000Z'),
+        },
+      ];
+    });
+
+    const response = await POST(request(validBody), routeContext);
+
+    expect(response.status).toBe(200);
+    expect(reconcileQuizUsageMock).toHaveBeenCalledWith({ userId: 'user-1', userRole: 'user' });
+    expect(reconcileUsageMock).not.toHaveBeenCalled();
+    expect(order).toEqual(['reconcile', 'snapshot']);
+  });
+
+  it('reconciles only the uploaded capability, and nothing for admins', async () => {
+    await POST(request({ ...validBody, purpose: 'adaptive' }), routeContext);
+    expect(reconcileQuizUsageMock).not.toHaveBeenCalled();
+
+    vi.clearAllMocks();
+    authMock.mockResolvedValue({ user: { ...session().user, role: 'admin' } });
+    await POST(request(validBody), routeContext);
+    await POST(request({ ...validBody, purpose: 'adaptive' }), routeContext);
+
+    expect(reconcileUsageMock).not.toHaveBeenCalled();
+    expect(reconcileQuizUsageMock).not.toHaveBeenCalled();
   });
 
   it('rejects exhausted users before issuing an upload policy', async () => {

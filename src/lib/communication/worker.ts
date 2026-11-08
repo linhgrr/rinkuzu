@@ -25,6 +25,8 @@ import {
   WebhookEvent,
   type FeedbackStatus,
   type MarketingTopic,
+  type OutboxEntityType,
+  type OutboxKind,
 } from '@/models/Communication';
 import User from '@/models/User';
 import { ACCOUNT_DISABLE_ACTIVE } from '@/shared/constants/account-disable';
@@ -37,6 +39,7 @@ import {
   getReceivingEmail,
   marketingTopicId,
   sendCommunicationEmail,
+  type OutboundCommunicationEmail,
 } from './resend';
 import {
   extractFeedbackReplyToken,
@@ -54,6 +57,14 @@ import {
   isClosedFeedbackStatus,
   OPEN_FEEDBACK_STATUSES,
 } from './internal';
+import { prepareReviewReminder, reviewReminderSendingEnabled } from './review-reminder';
+import {
+  prepareActivationNudge,
+  recordActivationEmailSent,
+  sweepActivationNudges,
+} from './activation-nudge';
+import { activationNudgeSendingEnabled } from './activation-nudge-policy';
+import { REVIEW_REMINDER_CAMPAIGN } from './review-reminder-policy';
 
 function configuredRate(name: string, fallback: number): number {
   const value = process.env[name]?.trim();
@@ -324,6 +335,24 @@ function webhookEmailId(event: WebhookEventPayload): string | null {
   return 'email_id' in event.data ? event.data.email_id : null;
 }
 
+/**
+ * Marks the first open of a `campaign=w1-review` email for the admin counts
+ * (RIN-916). Only an unopened row matches, so repeat opens count once; QA
+ * sends carry their own campaign tag and are never marked.
+ */
+async function recordReviewEmailOpen(
+  emailId: string,
+  tags: Record<string, string> | undefined,
+): Promise<void> {
+  if (tags?.['campaign'] !== REVIEW_REMINDER_CAMPAIGN) return;
+  await EmailOutbox.updateOne(
+    { externalEmailId: emailId, kind: 'review_reminder', openedAt: null },
+    { $set: { openedAt: new Date() } },
+    // Leave updatedAt alone: an open is not a change to the send.
+    { timestamps: false },
+  );
+}
+
 async function processDeliveryEvent(
   externalId: string,
   event: Exclude<WebhookEventPayload, { type: 'email.received' }>,
@@ -395,6 +424,7 @@ async function processDeliveryEvent(
       }
     }
   }
+  if (event.type === 'email.opened') await recordReviewEmailOpen(emailData.email_id, tags);
   if (
     event.type === 'email.bounced' ||
     event.type === 'email.complained' ||
@@ -730,6 +760,13 @@ function leaseClaimUpdate(
   };
 }
 
+function heldBackKinds(): { kind?: { $nin: OutboxKind[] } } {
+  const held: OutboxKind[] = [];
+  if (!reviewReminderSendingEnabled()) held.push('review_reminder');
+  if (!activationNudgeSendingEnabled()) held.push('activation_nudge');
+  return held.length > 0 ? { kind: { $nin: held } } : {};
+}
+
 async function processOutbox(
   limit: number,
 ): Promise<{ completed: number; retried: number; dead: number; canceled: number }> {
@@ -744,6 +781,9 @@ async function processOutbox(
       {
         availableAt: { $lte: now },
         $or: [{ status: 'pending' }, { status: 'processing', leaseUntil: { $lte: now } }],
+        // `REVIEW_REMINDER_SENDING_ENABLED=false` / `ACTIVATION_NUDGE_SENDING_ENABLED=false`
+        // hold those emails back (RIN-915, RIN-999).
+        ...heldBackKinds(),
       },
       leaseClaimUpdate(now, leaseToken),
       { sort: { availableAt: 1 }, new: true },
@@ -758,13 +798,50 @@ async function processOutbox(
         }
         if (outcome === 'lease_lost') continue;
       }
+      let content: Pick<
+        OutboundCommunicationEmail,
+        'subject' | 'html' | 'text' | 'tags' | 'headers'
+      > = { subject: item.subject, html: item.html, text: item.text };
+      if (item.kind === 'review_reminder') {
+        const prepared = await prepareReviewReminder(item, now);
+        if (prepared.decision === 'cancel') {
+          await cancelOutbox(item, leaseToken, prepared.reason);
+          canceled += 1;
+          continue;
+        }
+        if (prepared.decision === 'wait') {
+          await EmailOutbox.updateOne(
+            { _id: item._id, leaseToken },
+            { $set: { status: 'pending' }, $unset: { leaseToken: '', leaseUntil: '' } },
+          );
+          continue;
+        }
+        content = prepared.mail;
+      }
+      if (item.kind === 'activation_nudge') {
+        const prepared = await prepareActivationNudge(item, now);
+        if (prepared.decision === 'cancel') {
+          await cancelOutbox(item, leaseToken, prepared.reason);
+          canceled += 1;
+          continue;
+        }
+        if (prepared.decision === 'retry') {
+          await EmailOutbox.updateOne(
+            { _id: item._id, leaseToken },
+            {
+              $set: { status: 'pending', availableAt: prepared.availableAt },
+              $unset: { leaseToken: '', leaseUntil: '' },
+            },
+          );
+          continue;
+        }
+        content = prepared.mail;
+      }
       const externalEmailId = await sendCommunicationEmail({
         to: item.to,
         from: item.from,
         replyTo: item.replyTo,
-        subject: item.subject,
-        html: item.html,
-        text: item.text,
+        ...content,
         inReplyTo: item.inReplyTo,
         references: item.references,
         idempotencyKey: item.idempotencyKey ?? item.dedupeKey,
@@ -793,11 +870,19 @@ async function processOutbox(
       await EmailOutbox.updateOne(
         { _id: item._id, leaseToken },
         {
-          $set: { status: 'completed', externalEmailId },
+          // A review email is rendered at send time; keep what actually went out.
+          $set: {
+            status: 'completed',
+            externalEmailId,
+            subject: content.subject,
+            html: content.html,
+            text: content.text,
+          },
           $unset: { leaseToken: '', leaseUntil: '', lastError: '' },
         },
       );
       completed += 1;
+      if (item.kind === 'activation_nudge') await recordActivationEmailSent(item);
     } catch (error) {
       const lastError = sanitizeOutboxError(error);
       const isDead = item.attempts >= 12;
@@ -1108,6 +1193,7 @@ export async function runCommunicationWorker(limit = 50): Promise<{
   campaignAudience: { synced: number; failed: number };
   campaignCancellations: number;
   expiredFeedback: number;
+  activationNudges: { enqueued: number; skipped: number };
   retention: {
     orphanedAttachments: number;
     supportTickets: number;
@@ -1115,13 +1201,16 @@ export async function runCommunicationWorker(limit = 50): Promise<{
   };
 }> {
   await connectDB();
-  const [outbox, campaignAudience, campaignCancellations, expired, retention] = await Promise.all([
-    processOutbox(Math.min(limit, 50)),
-    processCampaignAudience(Math.min(limit, 100)),
-    processPendingCampaignCancellations(Math.min(limit, 25)),
-    expireUnansweredFeedback(Math.min(limit, 100)),
-    processCommunicationRetention(Math.min(limit, 25)),
-  ]);
+  // A row the sweep enqueues is claimed by this tick's outbox pass or the next one.
+  const [activationNudges, outbox, campaignAudience, campaignCancellations, expired, retention] =
+    await Promise.all([
+      sweepActivationNudgesSafely(),
+      processOutbox(Math.min(limit, 50)),
+      processCampaignAudience(Math.min(limit, 100)),
+      processPendingCampaignCancellations(Math.min(limit, 25)),
+      expireUnansweredFeedback(Math.min(limit, 100)),
+      processCommunicationRetention(Math.min(limit, 25)),
+    ]);
   await EmailCampaign.updateMany(
     { status: 'scheduled', scheduledAt: { $lte: new Date() } },
     { $set: { status: 'sending', sendingStartedAt: new Date() }, $inc: { revision: 1 } },
@@ -1131,8 +1220,19 @@ export async function runCommunicationWorker(limit = 50): Promise<{
     campaignAudience,
     campaignCancellations,
     expiredFeedback: expired,
+    activationNudges,
     retention,
   };
+}
+
+/** A failed sweep is logged and retried next tick; it never stops the other queues. */
+async function sweepActivationNudgesSafely(): Promise<{ enqueued: number; skipped: number }> {
+  try {
+    return await sweepActivationNudges();
+  } catch (error) {
+    logger.warn({ lastError: sanitizeOutboxError(error) }, 'Activation nudge sweep failed');
+    return { enqueued: 0, skipped: 0 };
+  }
 }
 
 export async function communicationHealth(): Promise<{
@@ -1144,8 +1244,8 @@ export async function communicationHealth(): Promise<{
   preparingCampaigns: number;
   stuckDetails: {
     id: string;
-    kind: 'support_notification' | 'feedback_invitation' | 'feedback_reply' | 'feedback_reminder';
-    entityType: 'support_ticket' | 'feedback_conversation';
+    kind: OutboxKind;
+    entityType: OutboxEntityType;
     status: 'pending' | 'processing' | 'completed' | 'dead' | 'canceled';
     attempts: number;
     availableAt: string;

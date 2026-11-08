@@ -2,10 +2,13 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it } from 'vitest';
 import { QuestionOptionsPreview } from './QuestionOptionsPreview';
+
+// KaTeX loads on demand (RIN-679); its first import is a cold transform in vitest.
+const KATEX_LOAD = { timeout: 10_000 };
 
 describe('QuestionOptionsPreview', () => {
   it('keeps correct and non-correct option states distinct', () => {
@@ -38,9 +41,9 @@ describe('QuestionOptionsPreview', () => {
         correctLabel="Correct"
       />,
     );
+    await waitFor(() => expect(container.querySelectorAll('.katex')).toHaveLength(3), KATEX_LOAD);
 
     expect(screen.getByText('all')).toHaveProperty('tagName', 'STRONG');
-    expect(container.querySelectorAll('.katex')).toHaveLength(3);
     expect(screen.getAllByText(/Correct/)).toHaveLength(2);
     expect(container.querySelectorAll('[data-rich-text="option"]')).toHaveLength(2);
     expect((await axe(container)).violations).toEqual([]);

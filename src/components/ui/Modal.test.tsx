@@ -34,6 +34,21 @@ describe('Modal', () => {
     expect((await axe(container)).violations).toEqual([]);
   });
 
+  it('keeps the title and close button in a header pinned on small screens (RIN-1019)', () => {
+    render(
+      <Modal isOpen onClose={vi.fn()} title="Details">
+        <p>Content</p>
+      </Modal>,
+    );
+
+    const header = screen.getByRole('heading', { name: 'Details' }).parentElement;
+    expect(header).toHaveClass('sticky', 'top-0', 'sm:relative');
+    const close = screen
+      .getAllByRole('button', { name: 'Close' })
+      .find((button) => button.hasAttribute('data-modal-close'));
+    expect(close?.parentElement).toBe(header);
+  });
+
   it('does not impose padding on full-bleed content without a header', () => {
     render(
       <Modal isOpen onClose={vi.fn()}>

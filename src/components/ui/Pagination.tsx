@@ -48,7 +48,10 @@ function Pagination({
   const lastVisiblePage = visiblePages[visiblePages.length - 1];
 
   return (
-    <div className={`flex justify-center items-center space-x-2 ${className}`}>
+    <nav
+      aria-label={tCommon('pagination')}
+      className={`flex flex-wrap justify-center items-center gap-2 ${className}`}
+    >
       {/* Previous Button */}
       <Button
         variant="outline"
@@ -60,8 +63,13 @@ function Pagination({
         {tCommon('previous')}
       </Button>
 
+      {/* Phones: "Page n of N" between prev/next; the number strip is too wide at 375px (RIN-977). */}
+      <span className="sm:hidden px-1 text-sm font-medium tabular-nums text-neutral-600">
+        {tCommon('pageOf', { page: currentPage, totalPages })}
+      </span>
+
       {showPageNumbers && (
-        <div className="flex items-center gap-x-1.5 mx-2">
+        <div className="hidden sm:flex items-center gap-x-1.5 mx-2">
           {/* First page if not visible */}
           {firstVisiblePage !== undefined && firstVisiblePage > 1 && (
             <>
@@ -81,10 +89,11 @@ function Pagination({
             <Button
               key={page}
               variant="outline"
+              aria-current={currentPage === page ? 'page' : undefined}
               onClick={() => onPageChange(page)}
               className={`h-10 w-10 min-w-[40px] min-h-[40px] p-0 rounded-full font-home text-sm font-semibold flex items-center justify-center transition-colors ${
                 currentPage === page
-                  ? '!border-brand-action !bg-brand-action !text-white shadow-sm'
+                  ? '!border-brand-action !bg-brand-action !text-brand-action-text shadow-sm'
                   : 'font-home text-ink hover:bg-surface-blue'
               }`}
             >
@@ -118,7 +127,7 @@ function Pagination({
         {tCommon('next')}
         <HiChevronRight className="size-4 ml-1 text-neutral-500" />
       </Button>
-    </div>
+    </nav>
   );
 }
 

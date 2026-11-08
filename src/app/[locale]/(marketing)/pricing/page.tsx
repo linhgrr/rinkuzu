@@ -14,6 +14,7 @@ import {
   FREE_PRICING_FEATURE_KEYS,
   PREMIUM_PRICING_FEATURE_KEYS,
 } from '@/features/subscription/constants/pricing-features';
+import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -28,7 +29,7 @@ interface PremiumPlanView {
   id: string;
   name: string;
   price: number;
-  durationDisplay: string;
+  months: number;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -111,7 +112,9 @@ export default async function PricingPage({ params }: Props) {
                 )}
                 <CardHeader>
                   <CardTitle>{plan.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{plan.durationDisplay}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatPlanDuration(t, plan.months)}
+                  </p>
                   <span className="text-4xl font-bold">{formatVndCurrency(plan.price)}</span>
                 </CardHeader>
                 <CardContent>
@@ -128,7 +131,7 @@ export default async function PricingPage({ params }: Props) {
                   </ul>
                   <Link
                     href={subscriptionHref}
-                    className="mt-6 inline-block w-full rounded-full bg-brand-action px-6 py-2.5 text-center font-semibold text-white transition-colors hover:bg-brand-action-hover"
+                    className="mt-6 inline-block w-full rounded-full bg-brand-action-strong px-6 py-2.5 text-center font-semibold text-white transition-colors hover:bg-brand-action-strong-hover"
                   >
                     {t('premium.cta')}
                   </Link>
@@ -161,7 +164,7 @@ export default async function PricingPage({ params }: Props) {
           <p className="text-neutral-600">{t('cta.subtitle')}</p>
           <Link
             href={registerHref}
-            className="inline-block bg-brand-action text-white font-semibold px-8 py-3 rounded-full hover:bg-brand-action-hover transition-colors shadow-sm"
+            className="inline-block bg-brand-action-strong text-white font-semibold px-8 py-3 rounded-full hover:bg-brand-action-strong-hover transition-colors shadow-sm"
           >
             {t('cta.button')}
           </Link>
@@ -181,7 +184,7 @@ async function loadPremiumPlans(): Promise<PremiumPlanView[]> {
         id: plan.id,
         name: plan.name,
         price: plan.price,
-        durationDisplay: DurationUtils.getDurationInfo(plan.duration).displayName,
+        months: DurationUtils.getDurationInfo(plan.duration).months,
       });
     }
     return premiumPlans;
@@ -198,7 +201,7 @@ function buildPricingSchema(premiumPlans: PremiumPlanView[]) {
     name: 'RinKuzu Pricing Plans',
     url: `${siteUrl.origin}/pricing`,
     description:
-      'Compare RinKuzu Free and Premium plans for AI-powered adaptive learning from PDFs.',
+      'Compare RinKuzu Free and Premium plans for AI-powered personalized learning from PDFs.',
     mainEntity: {
       '@type': 'ItemList',
       name: 'RinKuzu Pricing Plans',
@@ -208,7 +211,7 @@ function buildPricingSchema(premiumPlans: PremiumPlanView[]) {
           position: 1,
           name: 'Free Plan',
           url: `${siteUrl.origin}/pricing#free`,
-          description: 'Core PDF quiz generation, adaptive practice, and mastery tracking.',
+          description: 'Core PDF quiz generation, personalized practice, and mastery tracking.',
           offers: {
             '@type': 'Offer',
             price: '0',

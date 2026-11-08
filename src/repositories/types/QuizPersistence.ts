@@ -33,6 +33,7 @@ export interface QuizPersistenceRecord {
   title: string;
   description?: string;
   slug: string;
+  slugAliases?: string[];
   author: MongoIdLike | QuizAuthorPersistenceRecord;
   folder?: MongoIdLike | null;
   questions: QuizQuestionPersistenceRecord[];
@@ -43,4 +44,14 @@ export interface QuizPersistenceRecord {
   questionCount?: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Owner fields read only to decide quiz indexing (RIN-840). */
+interface QuizOwnerIndexingPersistenceRecord {
+  email?: string | null;
+  isTestAccount?: boolean | null;
+}
+
+export interface QuizMetadataPersistenceRecord extends QuizPersistenceRecord {
+  ownerIndexing?: QuizOwnerIndexingPersistenceRecord;
 }

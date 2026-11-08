@@ -4,5 +4,7 @@
   "noCorrectAnswer": "Không có đáp án đúng",
   "dontKnow": "Không biết",
   "knowIt": "Biết rồi",
-  "revealAnswer": "Lật xem đáp án"
+  "revealAnswer": "Lật xem đáp án",
+  "showAnswer": "Hiện đáp án",
+  "showQuestion": "Hiện câu hỏi"
 }

@@ -26,6 +26,37 @@ export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number];
 const MARKETING_TOPICS = ['product_updates', 'promotions'] as const;
 export type MarketingTopic = (typeof MARKETING_TOPICS)[number];
 
+/**
+ * Every topic a consent event can record. `study_reminders` (RIN-915) is a
+ * one-to-one reminder, not a campaign topic, so campaigns keep to
+ * `MARKETING_TOPICS` and never target it.
+ */
+const CONSENT_TOPICS = [...MARKETING_TOPICS, 'study_reminders'] as const;
+type ConsentTopic = (typeof CONSENT_TOPICS)[number];
+
+const CONSENT_SOURCES = [
+  'settings',
+  'prompt',
+  'unsubscribe',
+  'admin_suppression',
+  'result_page_review',
+] as const;
+type ConsentSource = (typeof CONSENT_SOURCES)[number];
+
+const OUTBOX_KINDS = [
+  'support_notification',
+  'feedback_invitation',
+  'feedback_reply',
+  'feedback_reminder',
+  'review_reminder',
+  /** One per account for its lifetime, 24 h after signup (RIN-999). */
+  'activation_nudge',
+] as const;
+export type OutboxKind = (typeof OUTBOX_KINDS)[number];
+
+const OUTBOX_ENTITY_TYPES = ['support_ticket', 'feedback_conversation', 'attempt', 'user'] as const;
+export type OutboxEntityType = (typeof OUTBOX_ENTITY_TYPES)[number];
+
 const CAMPAIGN_STATUSES = [
   'draft',
   'preparing_audience',
@@ -128,6 +159,9 @@ interface MarketingPreferenceDocument extends Document {
   userId: Types.ObjectId;
   productUpdates: boolean;
   promotions: boolean;
+  /** Opt-in to the 2-day review email (RIN-915). */
+  studyReminders: boolean;
+  studyRemindersOptedInAt?: Date | null;
   locale?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -135,10 +169,12 @@ interface MarketingPreferenceDocument extends Document {
 
 interface MarketingConsentEventDocument extends Document {
   userId: Types.ObjectId;
-  topic: MarketingTopic;
+  topic: ConsentTopic;
   action: 'opt_in' | 'opt_out';
-  source: 'settings' | 'prompt' | 'unsubscribe' | 'admin_suppression';
+  source: ConsentSource;
   ipHash?: string | null;
+  /** Email of an unsubscribe-link opt-out; absent means the w1-review email (RIN-1044). */
+  campaign?: string;
   createdAt: Date;
 }
 
@@ -220,9 +256,11 @@ interface EmailDeliveryEventDocument extends Document {
 }
 
 interface EmailOutboxDocument extends Document {
-  kind: 'support_notification' | 'feedback_invitation' | 'feedback_reply' | 'feedback_reminder';
-  entityType: 'support_ticket' | 'feedback_conversation';
+  kind: OutboxKind;
+  entityType: OutboxEntityType;
   entityId: Types.ObjectId;
+  /** Recipient user, set on per-learner reminders so caps survive an email change. */
+  userId?: Types.ObjectId | null;
   to: string;
   from: string;
   replyTo?: string | null;
@@ -240,6 +278,13 @@ interface EmailOutboxDocument extends Document {
   leaseToken?: string | null;
   lastError?: string | null;
   externalEmailId?: string | null;
+  /** First `email.opened` of a `campaign=w1-review` email (RIN-916); set once. */
+  openedAt?: Date | null;
+  /** Activation nudge (RIN-999): what enqueued it and the locale it renders in. */
+  trigger?: '24h' | 'backfill' | null;
+  locale?: string | null;
+  /** First tracked CTA click of an activation nudge (RIN-1000); set once. */
+  clickedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -393,6 +438,8 @@ const MarketingPreferenceSchema = new Schema<MarketingPreferenceDocument>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     productUpdates: { type: Boolean, required: true, default: false },
     promotions: { type: Boolean, required: true, default: false },
+    studyReminders: { type: Boolean, required: true, default: false },
+    studyRemindersOptedInAt: { type: Date, default: null },
     locale: { type: String, default: null },
   },
   { timestamps: true, versionKey: false },
@@ -401,14 +448,11 @@ const MarketingPreferenceSchema = new Schema<MarketingPreferenceDocument>(
 const MarketingConsentEventSchema = new Schema<MarketingConsentEventDocument>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    topic: { type: String, enum: MARKETING_TOPICS, required: true },
+    topic: { type: String, enum: CONSENT_TOPICS, required: true },
     action: { type: String, enum: ['opt_in', 'opt_out'], required: true },
-    source: {
-      type: String,
-      enum: ['settings', 'prompt', 'unsubscribe', 'admin_suppression'],
-      required: true,
-    },
+    source: { type: String, enum: CONSENT_SOURCES, required: true },
     ipHash: { type: String, default: null },
+    campaign: { type: String, maxlength: 32 },
   },
   { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
 );
@@ -540,13 +584,10 @@ EmailDeliveryEventSchema.index(
 
 const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
   {
-    kind: {
-      type: String,
-      enum: ['support_notification', 'feedback_invitation', 'feedback_reply', 'feedback_reminder'],
-      required: true,
-    },
-    entityType: { type: String, enum: ['support_ticket', 'feedback_conversation'], required: true },
+    kind: { type: String, enum: OUTBOX_KINDS, required: true },
+    entityType: { type: String, enum: OUTBOX_ENTITY_TYPES, required: true },
     entityId: { type: Schema.Types.ObjectId, required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     to: { type: String, required: true, lowercase: true },
     from: { type: String, required: true },
     replyTo: { type: String, default: null },
@@ -565,11 +606,21 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     },
     ...leaseQueueFields(2_000),
     externalEmailId: { type: String, default: null },
+    openedAt: { type: Date, default: null },
+    trigger: { type: String, enum: ['24h', 'backfill', null], default: null },
+    locale: { type: String, default: null, maxlength: 8 },
+    clickedAt: { type: Date, default: null },
   },
   { timestamps: true, versionKey: false },
 );
 EmailOutboxSchema.index({ status: 1, availableAt: 1, leaseUntil: 1 });
 EmailOutboxSchema.index({ externalEmailId: 1 }, { sparse: true });
+// Review-reminder caps and cancellations (RIN-915): per learner, newest first.
+// Partial, so the support/feedback rows (no userId) never enter it.
+EmailOutboxSchema.index(
+  { userId: 1, kind: 1, updatedAt: -1 },
+  { partialFilterExpression: { userId: { $type: 'objectId' } } },
+);
 
 const WebhookEventSchema = new Schema<WebhookEventDocument>(
   {

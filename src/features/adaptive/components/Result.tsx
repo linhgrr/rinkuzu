@@ -16,10 +16,13 @@ interface ResultProps {
 export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
   const t = useTranslations('adaptiveLearning');
   const {
+    answer,
     averageMasteryPercent,
     chatContext,
     closeChat,
     exercise,
+    handleBackToSubject,
+    handleChooseSubject,
     handleGoDashboard,
     handleNext,
     hydrating,
@@ -32,11 +35,19 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
 
   if (hydrating) return <ResultLoadingState t={t} />;
 
-  if (!result || !exercise) return <ResultEmptyState onGoDashboard={handleGoDashboard} t={t} />;
+  if (!result || !exercise)
+    return (
+      <ResultEmptyState
+        onBackToSubject={handleBackToSubject}
+        onChooseSubject={handleChooseSubject}
+        t={t}
+      />
+    );
 
   return (
     <>
       <ResultContent
+        answer={answer}
         averageMasteryPercent={averageMasteryPercent}
         exercise={exercise}
         isCorrect={isCorrect}

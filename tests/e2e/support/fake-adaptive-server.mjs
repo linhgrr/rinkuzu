@@ -1,6 +1,8 @@
 import { createServer } from 'node:http';
 import { HEADERS_TIMEOUT_MS, KEEP_ALIVE_TIMEOUT_MS } from './connection-timeouts.mjs';
+import { handleFakeAskRinRequest } from './fake-ask-rin.mjs';
 import { handleFakeLlmControlRequest, handleFakeLlmSettingsRequest } from './fake-llm-settings.mjs';
+import { handleFakePersonalLearningRequest } from './fake-personal-learning.mjs';
 
 const HOST = '127.0.0.1';
 const PORT = Number(process.env['FAKE_ADAPTIVE_PORT'] ?? 8000);
@@ -168,6 +170,10 @@ async function handleAdaptiveRequest(request, response, url) {
   if (await handleFakeLlmSettingsRequest({ readJsonBody, request, response, url, userId })) {
     return;
   }
+  if (handleFakePersonalLearningRequest({ request, response, sendError, sendOk, url })) return;
+  if (await handleFakeAskRinRequest({ readJsonBody, request, response, sendError, sendOk, url })) {
+    return;
+  }
 
   if (request.method === 'GET' && url.pathname === '/api/ready') {
     sendOk(response, {
@@ -212,6 +218,26 @@ async function handleAdaptiveRequest(request, response, url) {
       status_url: `/api/pipeline/jobs/${state.jobId}`,
       page_batch_size: 10,
       retry_after_seconds: 1,
+    });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/admin/personal-learning/subjects') {
+    // Any learner gets one fixed subject; raw_text proves the BFF allowlist drops extras.
+    sendOk(response, {
+      subjects: [
+        {
+          job_id: `e2e-lookup-job-${url.searchParams.get('user_id')}`,
+          filename: 'e2e-lookup-notes.pdf',
+          pipeline_status: 'completed',
+          progress_status: 'active',
+          accuracy: 0.8,
+          progress_percent: 50,
+          last_activity_at: '2026-10-30T12:00:00Z',
+          raw_text: 'E2E_RAW_DOCUMENT_TEXT',
+        },
+      ],
+      next_cursor: null,
     });
     return;
   }

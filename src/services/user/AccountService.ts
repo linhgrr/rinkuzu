@@ -72,6 +72,8 @@ export class AccountService implements IAccountService {
           success: false,
           error: 'Password change is not available for this account',
           statusCode: 400,
+          // OAuth-only accounts (Google) have no password; the client must not call it "incorrect".
+          code: 'password_not_set',
         };
       }
       const verification = await verifyPassword(currentPassword, credentials.passwordHash);
@@ -100,6 +102,7 @@ export class AccountService implements IAccountService {
         return { success: false, error: 'User not found', statusCode: 404 };
       }
       const upload = await this.imageStorage.upload({
+        kind: 'avatar',
         bytes: avatar.bytes,
         contentType: avatar.contentType,
         filename: `avatar-${profile.id}`,

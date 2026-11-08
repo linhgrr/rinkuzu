@@ -1,23 +1,37 @@
 /** @vitest-environment jsdom */
 
 import type { ComponentProps, ReactNode } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiResponseError } from '@/lib/api/client';
 import ProfileSettings from './ProfileSettings';
 
-const { fetchProfileMock, sessionData, translateMock } = vi.hoisted(() => ({
+const {
+  changePasswordMock,
+  fetchProfileMock,
+  routerPushMock,
+  routerReplaceMock,
+  sessionState,
+  toastErrorMock,
+  translateMock,
+} = vi.hoisted(() => ({
+  changePasswordMock: vi.fn(),
   fetchProfileMock: vi.fn(),
-  sessionData: { user: { id: 'user-1' } },
+  routerPushMock: vi.fn(),
+  routerReplaceMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+  sessionState: { current: { user: { id: 'user-1' } } },
   translateMock: (key: string) => key,
 }));
 
 vi.mock('next-auth/react', () => ({
-  useSession: () => ({ data: sessionData }),
+  useSession: () => ({ data: sessionState.current, status: 'authenticated' }),
 }));
 
 vi.mock('next-intl', () => ({
   useTranslations: () => translateMock,
+  useLocale: () => 'en',
 }));
 
 vi.mock('next/image', () => ({
@@ -30,11 +44,12 @@ vi.mock('@/i18n/navigation', () => ({
       {children}
     </a>
   ),
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: routerReplaceMock, push: routerPushMock, back: vi.fn() }),
+  usePathname: () => '/profile',
 }));
 
 vi.mock('sonner', () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: toastErrorMock, success: vi.fn() },
 }));
 
 vi.mock('@/components/ui/ConfirmModal', () => ({
@@ -42,7 +57,7 @@ vi.mock('@/components/ui/ConfirmModal', () => ({
 }));
 
 vi.mock('@/features/profile/api/profile-settings-api', () => ({
-  changeProfilePassword: vi.fn(),
+  changeProfilePassword: changePasswordMock,
   fetchProfileSettingsViewModel: fetchProfileMock,
   removeProfileAvatar: vi.fn(),
   updateProfileSettingsViewModel: vi.fn(),
@@ -59,10 +74,20 @@ vi.mock('@/features/communications/components/MarketingPreferencesPage', () => (
   MarketingPreferencesPage: () => <div data-testid="email-preferences" />,
 }));
 
+const learnerProfile = {
+  email: 'learner@example.com',
+  displayName: 'Learner',
+  bio: 'Learning one concept at a time.',
+  role: 'user',
+  createdAt: '2026-07-01T00:00:00.000Z',
+  createdAtLabel: '01/07/2026',
+};
+
 describe('ProfileSettings control center', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    sessionState.current = { user: { id: 'user-1' } };
   });
 
   it('opens on overview and exposes each focused profile panel', async () => {
@@ -120,5 +145,287 @@ describe('ProfileSettings control center', () => {
       'true',
     );
     expect(screen.getByLabelText('displayName')).toBeTruthy();
+  });
+
+  it('offers Edit profile only on the overview and personal tabs', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue({
+      email: 'learner@example.com',
+      displayName: 'Learner',
+      role: 'user',
+      createdAt: '2026-07-01T00:00:00.000Z',
+      createdAtLabel: '01/07/2026',
+    });
+
+    render(<ProfileSettings initialTab="security" />);
+
+    await screen.findByLabelText('currentPassword');
+    expect(screen.queryByRole('button', { name: 'editProfile' })).toBeNull();
+
+    for (const tab of ['planQuotaTab', 'emailPreferencesTab']) {
+      await user.click(screen.getByRole('tab', { name: tab }));
+      expect(screen.queryByRole('button', { name: 'editProfile' })).toBeNull();
+    }
+    for (const tab of ['overviewTab', 'personalTab']) {
+      await user.click(screen.getByRole('tab', { name: tab }));
+      expect(screen.getByRole('button', { name: 'editProfile' })).toBeTruthy();
+    }
+  });
+
+  it('keeps the loaded page and typed input when the session poll returns a new object for the same user', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+
+    const { rerender } = render(<ProfileSettings initialTab="personal" />);
+
+    const displayName = await screen.findByLabelText('displayName');
+    await user.clear(displayName);
+    await user.type(displayName, 'Typed name');
+
+    // next-auth hands useSession() a fresh object on every refetchInterval tick.
+    for (let tick = 0; tick < 3; tick += 1) {
+      sessionState.current = { user: { id: 'user-1' } };
+      rerender(<ProfileSettings initialTab="personal" />);
+      expect(screen.queryByLabelText('loading')).toBeNull();
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
+
+    expect(fetchProfileMock).toHaveBeenCalledTimes(1);
+    expect(fetchProfileMock).toHaveBeenCalledWith('en');
+    expect(screen.queryByLabelText('loading')).toBeNull();
+    expect(screen.getByLabelText<HTMLInputElement>('displayName').value).toBe('Typed name');
+  });
+
+  it('switches tabs without refetching and follows a new initialTab from the URL', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+
+    const { rerender } = render(<ProfileSettings initialTab="security" />);
+
+    expect(await screen.findByLabelText('currentPassword')).toBeTruthy();
+
+    await user.click(screen.getByRole('tab', { name: 'personalTab' }));
+    expect(routerReplaceMock).toHaveBeenLastCalledWith(
+      { pathname: '/profile', query: { tab: 'personal' } },
+      { scroll: false },
+    );
+    // The page re-renders with the new ?tab= after router.replace.
+    rerender(<ProfileSettings initialTab="personal" />);
+    expect(screen.getByLabelText('displayName')).toBeTruthy();
+
+    // Browser back/forward changes ?tab= without a click.
+    rerender(<ProfileSettings initialTab="plan" />);
+    expect(screen.getByRole('tab', { name: 'planQuotaTab' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
+    expect(screen.getByTestId('quota-full')).toBeTruthy();
+
+    expect(fetchProfileMock).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText('loading')).toBeNull();
+  });
+});
+
+const serverFailure = (status: number, code: string, meta?: unknown) =>
+  new ApiResponseError({
+    message: 'Mongo timeout for learner@example.com',
+    status,
+    payload: { success: false, error: { code, detail: 'learner@example.com' } },
+    code,
+    detail: 'Mongo timeout for learner@example.com',
+    meta,
+  });
+
+describe('ProfileSettings API errors (RIN-755)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+    sessionState.current = { user: { id: 'user-1' } };
+  });
+
+  it('shows an inline ErrorState with retry when the profile fails to load, never the server text', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const user = userEvent.setup();
+    fetchProfileMock
+      .mockRejectedValueOnce(serverFailure(500, 'internal_error'))
+      .mockResolvedValueOnce(learnerProfile);
+
+    render(<ProfileSettings />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('errors.api.server');
+    expect(document.body.textContent).not.toContain('learner@example.com');
+    expect(toastErrorMock).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'common.retry' }));
+
+    expect(await screen.findByRole('heading', { name: 'Learner' })).toBeTruthy();
+    expect(fetchProfileMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('offers sign-in instead of an error box when the session expired', async () => {
+    fetchProfileMock.mockRejectedValueOnce(serverFailure(401, 'unauthorized'));
+
+    render(<ProfileSettings />);
+
+    const signIn = await screen.findByRole('link', { name: 'errors.api.actions.signIn' });
+    expect(signIn.getAttribute('href')).toBe(
+      `/login?callbackUrl=${encodeURIComponent('/profile')}`,
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  async function submitPasswordChange() {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+    await user.type(await screen.findByLabelText('currentPassword'), 'old-secret');
+    await user.type(screen.getByLabelText('newPassword'), 'new-secret-1');
+    await user.type(screen.getByLabelText('confirmNewPassword'), 'new-secret-1');
+    await user.click(screen.getByRole('button', { name: 'updatePassword' }));
+  }
+
+  it('toasts localized copy when changing the password fails on the server', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    changePasswordMock.mockRejectedValueOnce(serverFailure(500, 'internal_error'));
+
+    await submitPasswordChange();
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('errors.api.server'));
+    expect(JSON.stringify(toastErrorMock.mock.calls)).not.toContain('learner@example.com');
+  });
+
+  it('marks Current Password inline for a wrong current password, focused and announced (RIN-1017)', async () => {
+    changePasswordMock.mockRejectedValueOnce(serverFailure(400, 'validation_error'));
+
+    await submitPasswordChange();
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('currentPasswordIncorrect');
+    const current = screen.getByLabelText('currentPassword');
+    expect(current.getAttribute('aria-invalid')).toBe('true');
+    expect(current.getAttribute('aria-describedby')).toContain(alert.id);
+    expect(document.activeElement).toBe(current);
+    expect(toastErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('swaps the form for the Google info card on password_not_set, without a toast', async () => {
+    changePasswordMock.mockRejectedValueOnce(serverFailure(400, 'password_not_set'));
+
+    await submitPasswordChange();
+
+    expect(await screen.findByText('googlePasswordInfo')).toBeTruthy();
+    expect(screen.queryByLabelText('currentPassword')).toBeNull();
+    expect(toastErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('blames the new password inline, not the current one, when the 400 names newPassword', async () => {
+    changePasswordMock.mockRejectedValueOnce(
+      serverFailure(400, 'validation_error', {
+        fields: { newPassword: 'Password must be at least 8 characters' },
+      }),
+    );
+
+    await submitPasswordChange();
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('newPasswordRejected');
+    expect(screen.getByLabelText('newPassword').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByLabelText('currentPassword').getAttribute('aria-invalid')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByLabelText('newPassword'));
+    expect(toastErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a new password shorter than 8 characters inline before calling the server', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+    await user.type(await screen.findByLabelText('currentPassword'), 'old-secret');
+    await user.type(screen.getByLabelText('newPassword'), 'seven77');
+    await user.type(screen.getByLabelText('confirmNewPassword'), 'seven77');
+    await user.click(screen.getByRole('button', { name: 'updatePassword' }));
+
+    expect(screen.getByRole('alert').textContent).toBe('passwordMinLength');
+    expect(document.activeElement).toBe(screen.getByLabelText('newPassword'));
+    expect(changePasswordMock).not.toHaveBeenCalled();
+    expect(toastErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the minimum length as helper text under New Password', async () => {
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+
+    const field = await screen.findByLabelText('newPassword');
+    const hint = screen.getByText('passwordMinLengthHint');
+    expect(field.getAttribute('aria-describedby')).toBe(hint.id);
+  });
+
+  it('keeps Update Password enabled and says inline which field is missing', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+    await user.type(await screen.findByLabelText('newPassword'), 'new-secret-1');
+    await user.type(screen.getByLabelText('confirmNewPassword'), 'new-secret-1');
+    await user.click(screen.getByRole('button', { name: 'updatePassword' }));
+
+    expect(screen.getByRole('alert').textContent).toBe('currentPasswordRequired');
+    expect(document.activeElement).toBe(screen.getByLabelText('currentPassword'));
+    expect(changePasswordMock).not.toHaveBeenCalled();
+
+    // Typing in the field clears its error.
+    await user.type(screen.getByLabelText('currentPassword'), 'o');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('shows a mismatch inline and announced', async () => {
+    const user = userEvent.setup();
+    fetchProfileMock.mockResolvedValue(learnerProfile);
+    render(<ProfileSettings initialTab="security" />);
+    await user.type(await screen.findByLabelText('newPassword'), 'new-secret-1');
+    await user.type(screen.getByLabelText('confirmNewPassword'), 'new-secret-2');
+
+    expect(screen.getByRole('alert').textContent).toBe('passwordsDoNotMatch');
+    expect(screen.getByLabelText('confirmNewPassword').getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('clears every field after a successful change', async () => {
+    changePasswordMock.mockResolvedValueOnce({
+      email: 'learner@example.com',
+      passwordChanged: true,
+    });
+
+    await submitPasswordChange();
+
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>('currentPassword').value).toBe(''),
+    );
+    expect(screen.getByLabelText<HTMLInputElement>('newPassword').value).toBe('');
+    expect(screen.getByLabelText<HTMLInputElement>('confirmNewPassword').value).toBe('');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('never shows password inputs to a Google-only account (RIN-1017)', async () => {
+    fetchProfileMock.mockResolvedValue({ ...learnerProfile, hasPassword: false });
+    render(<ProfileSettings initialTab="security" />);
+
+    expect(await screen.findByText('googlePasswordInfo')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'passwordSectionTitle' })).toBeTruthy();
+    const link = screen.getByRole('link', { name: 'googlePasswordLink' });
+    expect(link.getAttribute('href')).toBe('https://myaccount.google.com/security');
+    expect(link.getAttribute('rel')).toContain('noopener');
+    expect(document.querySelector('input[type="password"]')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'updatePassword' })).toBeNull();
+  });
+
+  it('sends an expired session to sign-in instead of toasting', async () => {
+    changePasswordMock.mockRejectedValueOnce(serverFailure(401, 'unauthorized'));
+
+    await submitPasswordChange();
+
+    await waitFor(() => expect(routerPushMock).toHaveBeenCalledTimes(1));
+    expect(String(routerPushMock.mock.calls[0]?.[0])).toMatch(/^\/login\?callbackUrl=/);
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 });

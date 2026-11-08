@@ -5,7 +5,12 @@ import type { components } from '@/generated/adaptive-api';
 
 type AdaptiveSchemas = components['schemas'];
 
-export type QuizDraftTransportDto = AdaptiveSchemas['QuizDraftResponseData'];
+// `error_code` is not in the published draft schema yet (RIN-565): Path B jobs
+// already carry one, and drafts are expected to follow. Reading it as optional
+// lets the failure toast pick it up as soon as the API sends it.
+export type QuizDraftTransportDto = AdaptiveSchemas['QuizDraftResponseData'] & {
+  error_code?: string | null;
+};
 export type QuizDraftSingleResponseDto = { draft: QuizDraftTransportDto };
 export type QuizDraftListResponseDto = { drafts: QuizDraftTransportDto[] };
 type QuizDraftCreateTransportDto = AdaptiveSchemas['QuizDraftCreateRequest'];

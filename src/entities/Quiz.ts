@@ -34,6 +34,8 @@ export interface Quiz {
   title: string;
   description?: string;
   slug: string;
+  /** Former slugs that permanently redirect to `slug`. */
+  slugAliases?: string[];
   author: string | QuizAuthorPreview;
   folder?: string | null;
   questions: QuizQuestion[];

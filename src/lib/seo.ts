@@ -33,12 +33,21 @@ function languageAlternates(path: string): Record<string, string> {
   return map;
 }
 
+function defaultOgImagePath(title: string, extra: LocalizedMetadataInput['ogImageParams']): string {
+  const extraQuery = Object.entries(extra ?? {})
+    .map(([key, value]) => `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('');
+  return `/og?title=${encodeURIComponent(title)}${extraQuery}`;
+}
+
 type LocalizedMetadataInput = {
   locale: Locale | string;
   path: string;
   title: string;
   description: string;
   imagePath?: string;
+  /** Extra `/og` query params after the title (e.g. a quiz's question count, RIN-1180). */
+  ogImageParams?: Readonly<Record<string, string>>;
   robots?: Metadata['robots'];
 };
 
@@ -48,12 +57,13 @@ export function buildLocalizedMetadata({
   title,
   description,
   imagePath,
+  ogImageParams,
   robots,
 }: LocalizedMetadataInput): Metadata {
   const canonical = canonicalFor(locale, path);
   // Default to the dynamic 1200x630 OG endpoint so social previews render at the
   // correct aspect ratio. Square icons (icon-512x512.png) get letterboxed/cropped.
-  const resolvedImagePath = imagePath ?? `/og?title=${encodeURIComponent(title)}`;
+  const resolvedImagePath = imagePath ?? defaultOgImagePath(title, ogImageParams);
   const imageUrl = new URL(resolvedImagePath, siteUrl).toString();
 
   return {

@@ -19,6 +19,8 @@ export interface ProfileSettingsViewModel {
   createdAt: string;
   createdAtLabel: string;
   subscription?: ProfileSettingsSubscriptionViewModel;
+  /** false: Google-only account, the security tab shows no password form. */
+  hasPassword?: boolean;
 }
 
 export interface UpdateProfileSettingsInput {

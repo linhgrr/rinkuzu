@@ -25,13 +25,14 @@ export interface RenderedCommunicationMail {
 
 interface MailFrameProps {
   preview: string;
+  lang?: string;
   children: ReactNode;
   footer?: ReactNode;
 }
 
-function MailFrame({ preview, children, footer }: MailFrameProps) {
+function MailFrame({ preview, children, footer, lang = 'vi' }: MailFrameProps) {
   return (
-    <Html lang="vi">
+    <Html lang={lang}>
       <Head />
       <Preview>{preview}</Preview>
       <Body style={{ backgroundColor: '#f6f4ef', fontFamily: 'Arial, sans-serif', margin: 0 }}>
@@ -251,4 +252,166 @@ export async function renderCampaign(input: {
       {input.blocks.map(campaignBlock)}
     </MailFrame>,
   );
+}
+
+export type ReviewReminderLocale = 'vi' | 'en';
+
+interface ReviewReminderCopy {
+  subject: (title: string, missed: number) => string;
+  intro: (title: string, missed: number) => string;
+  why: string;
+  button: (missed: number) => string;
+  footer: string;
+  unsubscribe: string;
+}
+
+/**
+ * Copy for the 2-day review email (RIN-915). Product term: personalized /
+ * cá nhân hóa, never adaptive. The email never carries answers.
+ */
+const REVIEW_REMINDER_COPY: Record<ReviewReminderLocale, ReviewReminderCopy> = {
+  vi: {
+    subject: (title, missed) =>
+      missed > 0 ? `Ôn lại ${missed} câu chưa đúng trong “${title}”` : `Ôn lại “${title}”`,
+    intro: (title, missed) =>
+      missed > 0
+        ? `Hai ngày trước bạn đã làm bài “${title}” và còn ${missed} câu chưa đúng.`
+        : `Hai ngày trước bạn đã làm bài “${title}”.`,
+    why: 'Ôn lại lúc này giúp bạn nhớ lâu hơn. Rinkuzu sẽ đưa bạn qua những câu đó trong một lượt ôn tập cá nhân hóa.',
+    button: (missed) => (missed > 0 ? `Ôn lại ${missed} câu` : 'Ôn lại bài'),
+    footer:
+      'Bạn nhận email này vì đã chọn nhận nhắc ôn tập trên trang kết quả. Mỗi tuần tối đa một email.',
+    unsubscribe: 'Hủy nhận nhắc ôn tập',
+  },
+  en: {
+    subject: (title, missed) =>
+      missed > 0
+        ? `Review the ${missed} ${missed === 1 ? 'question' : 'questions'} you missed in “${title}”`
+        : `Review “${title}”`,
+    intro: (title, missed) =>
+      missed > 0
+        ? `Two days ago you took “${title}” and missed ${missed} ${missed === 1 ? 'question' : 'questions'}.`
+        : `Two days ago you took “${title}”.`,
+    why: 'Reviewing now helps it stick. Rinkuzu will take you through those questions in a personalized review.',
+    button: (missed) =>
+      missed > 0
+        ? `Review ${missed} ${missed === 1 ? 'question' : 'questions'}`
+        : 'Review the quiz',
+    footer:
+      'You get this email because you asked for a review reminder on your results page. At most one email a week.',
+    unsubscribe: 'Unsubscribe from review reminders',
+  },
+};
+
+export async function renderReviewReminder(input: {
+  locale: ReviewReminderLocale;
+  quizTitle: string;
+  missedCount: number;
+  retryUrl: string;
+  unsubscribeUrl: string;
+}): Promise<RenderedCommunicationMail & { subject: string }> {
+  const copy = REVIEW_REMINDER_COPY[input.locale];
+  const subject = copy.subject(input.quizTitle, input.missedCount).slice(0, 200);
+  const mail = await renderElement(
+    <MailFrame
+      lang={input.locale}
+      preview={copy.intro(input.quizTitle, input.missedCount)}
+      footer={
+        <Text style={{ color: '#736b63', fontSize: '12px', lineHeight: '18px' }}>
+          {copy.footer} <Link href={input.unsubscribeUrl}>{copy.unsubscribe}</Link>.
+        </Text>
+      }
+    >
+      <Text style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>
+        {copy.intro(input.quizTitle, input.missedCount)}
+      </Text>
+      <Text style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>{copy.why}</Text>
+      <Section style={{ margin: '22px 0' }}>
+        <Button
+          href={input.retryUrl}
+          style={{
+            backgroundColor: '#9a5c32',
+            borderRadius: '8px',
+            color: '#fff',
+            padding: '12px 20px',
+          }}
+        >
+          {copy.button(input.missedCount)}
+        </Button>
+      </Section>
+    </MailFrame>,
+  );
+  return { ...mail, subject };
+}
+
+interface ActivationNudgeCopy {
+  subject: string;
+  greeting: (firstName: string | null) => string;
+  body: string;
+  button: string;
+  footer: string;
+  unsubscribe: string;
+}
+
+/**
+ * Copy for the one-time activation nudge (RIN-998). Under 80 words each, and
+ * the only learner data is the first name. Product term: personalized / cá
+ * nhân hóa, never adaptive.
+ */
+const ACTIVATION_NUDGE_COPY: Record<ReviewReminderLocale, ActivationNudgeCopy> = {
+  vi: {
+    subject: 'Bài quiz 2 phút của bạn đã sẵn sàng',
+    greeting: (firstName) => (firstName ? `Chào ${firstName},` : 'Chào bạn,'),
+    body: 'Bạn đã tạo tài khoản Rinkuzu nhưng chưa làm bài quiz nào. Bài quiz khởi động chỉ mất khoảng 2 phút, cho bạn thấy mình nhớ được gì và mở đầu lộ trình ôn tập cá nhân hóa.',
+    button: 'Làm bài quiz 2 phút',
+    footer: 'Bạn nhận email này một lần vì đã tạo tài khoản Rinkuzu.',
+    unsubscribe: 'Hủy nhận email từ Rinkuzu',
+  },
+  en: {
+    subject: 'Your 2-minute quiz is ready',
+    greeting: (firstName) => (firstName ? `Hi ${firstName},` : 'Hi there,'),
+    body: 'You created a Rinkuzu account but have not taken a quiz yet. The starter quiz takes about 2 minutes, shows you what you already remember and starts your personalized review.',
+    button: 'Take the 2-minute quiz',
+    footer: 'You get this email once because you created a Rinkuzu account.',
+    unsubscribe: 'Unsubscribe from Rinkuzu emails',
+  },
+};
+
+export async function renderActivationNudge(input: {
+  locale: ReviewReminderLocale;
+  firstName: string | null;
+  ctaUrl: string;
+  unsubscribeUrl: string;
+}): Promise<RenderedCommunicationMail & { subject: string }> {
+  const copy = ACTIVATION_NUDGE_COPY[input.locale];
+  const mail = await renderElement(
+    <MailFrame
+      lang={input.locale}
+      preview={copy.subject}
+      footer={
+        <Text style={{ color: '#736b63', fontSize: '12px', lineHeight: '18px' }}>
+          {copy.footer} <Link href={input.unsubscribeUrl}>{copy.unsubscribe}</Link>.
+        </Text>
+      }
+    >
+      <Text style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>
+        {copy.greeting(input.firstName)}
+      </Text>
+      <Text style={{ color: '#403832', fontSize: '15px', lineHeight: '24px' }}>{copy.body}</Text>
+      <Section style={{ margin: '22px 0' }}>
+        <Button
+          href={input.ctaUrl}
+          style={{
+            backgroundColor: '#9a5c32',
+            borderRadius: '8px',
+            color: '#fff',
+            padding: '12px 20px',
+          }}
+        >
+          {copy.button}
+        </Button>
+      </Section>
+    </MailFrame>,
+  );
+  return { ...mail, subject: copy.subject };
 }

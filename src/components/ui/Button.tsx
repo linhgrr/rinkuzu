@@ -39,7 +39,7 @@ function Button({
     ghost: 'btn-ghost',
     success: 'btn-success',
     destructive:
-      'border border-transparent bg-error text-white shadow-[var(--shadow-xs)] transition-[background-color,transform,box-shadow] hover:-translate-y-[1px] hover:brightness-90 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring-error)] active:translate-y-0',
+      'border border-transparent bg-error text-white shadow-[var(--shadow-xs)] transition-[background-color,transform,box-shadow] hover:-translate-y-[1px] hover:brightness-90 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring-error)] active:translate-y-0',
     link: 'h-auto rounded-none bg-transparent p-0 text-neutral-600 underline-offset-4 transition-colors hover:text-brand-trust hover:underline',
     gradient: 'btn-primary',
     accent: 'btn-primary',

@@ -13,18 +13,21 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineMail, HiOutlineExclamationCircle } from 'react-icons/hi';
 import { AuthRateLimitError, resendVerificationEmail } from '@/features/auth/api/auth-api';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { resendVerificationSchema, type ForgotPasswordInput } from '@/lib/validation/auth';
 
 const DEFAULT_RESEND_COOLDOWN = 60;
+const ADDRESS_HINT_ID = 'check-email-address-hint';
 
 function CheckEmailContent() {
   const t = useTranslations('auth');
+  const apiErrorMessage = useApiErrorMessage();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const initialEmail = (get('email') ?? '').trim().toLowerCase();
 
   const [serverError, setServerError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
   const {
@@ -47,8 +50,8 @@ function CheckEmailContent() {
     if (cooldown > 0) return;
     setServerError(null);
     try {
-      const result = await resendVerificationEmail(values.email, DEFAULT_RESEND_COOLDOWN);
-      setInfo(result.message ?? t('checkEmailDescription'));
+      await resendVerificationEmail(values.email, DEFAULT_RESEND_COOLDOWN);
+      setSent(true);
       setCooldown(DEFAULT_RESEND_COOLDOWN);
     } catch (caught) {
       if (caught instanceof AuthRateLimitError) {
@@ -56,7 +59,8 @@ function CheckEmailContent() {
         setCooldown(retry);
         setServerError(t('rateLimited', { seconds: retry }));
       } else {
-        setServerError(caught instanceof Error ? caught.message : t('loginError'));
+        // Never the server text (RIN-980).
+        setServerError(apiErrorMessage(caught));
       }
     }
   });
@@ -118,9 +122,16 @@ function CheckEmailContent() {
                   </Card>
                 )}
 
-                {info && (
+                {sent && (
                   <p className="text-sm text-emerald-700" role="status" aria-live="polite">
-                    {info}
+                    {t('checkEmailResent')}
+                  </p>
+                )}
+
+                {/* The verify link carries only the token, never the address (RIN-1048). */}
+                {!initialEmail && (
+                  <p id={ADDRESS_HINT_ID} className="-mb-3 text-sm text-neutral-600">
+                    {t('checkEmailTypeAddressHint')}
                   </p>
                 )}
 
@@ -133,6 +144,7 @@ function CheckEmailContent() {
                   placeholder={t('enterEmail')}
                   icon={<HiOutlineMail className="size-5" />}
                   aria-invalid={errors.email ? true : undefined}
+                  aria-describedby={initialEmail ? undefined : ADDRESS_HINT_ID}
                   {...register('email')}
                 />
                 {errors.email && (

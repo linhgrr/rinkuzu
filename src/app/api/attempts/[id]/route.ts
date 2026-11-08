@@ -5,9 +5,15 @@ import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { attemptDetailQuerySchema, attemptIdRouteParamsSchema } from '@/dtos/user';
 import { parseRouteParams, parseSearchParams } from '@/lib/api/validated';
+import {
+  GUEST_CLAIM_TOKEN_HEADER,
+  guestClaimTokenSchema,
+} from '@/lib/validation/guest-claim-token';
+import type { AttemptOwner } from '@/interfaces/services/IUserService';
 
-// This route accepts BOTH authenticated users (via session) and anonymous
-// users that pass `userEmail` as a query param to inspect their own attempt.
+// This route accepts authenticated users (via session) and anonymous users that
+// send their claim token in the `x-guest-claim-token` header (RIN-912) or, for
+// legacy guest-email attempts, `userEmail` as a query param.
 export const GET = withOptionalAuth(async (request: NextRequest, { params, userId, session }) => {
   try {
     const parsedParams = parseRouteParams(params, attemptIdRouteParamsSchema);
@@ -16,18 +22,29 @@ export const GET = withOptionalAuth(async (request: NextRequest, { params, userI
     const query = parseSearchParams(request, attemptDetailQuerySchema);
     if (!query.ok) return query.response;
     const userEmailParam = query.data.userEmail;
+    const claimTokenHeader = request.headers.get(GUEST_CLAIM_TOKEN_HEADER);
+    const claimToken = guestClaimTokenSchema.safeParse(claimTokenHeader);
+    if (!userId && claimTokenHeader !== null && !claimToken.success) {
+      return apiErr('validation_error', 'Guest claim token is invalid', 400);
+    }
 
-    const owner = userId
+    const owner: AttemptOwner | null = userId
       ? { userId, ...(session?.user?.role === 'admin' ? { role: 'admin' } : {}) }
-      : userEmailParam
-        ? { guestEmail: userEmailParam }
-        : null;
+      : claimToken.success
+        ? { guestClaimToken: claimToken.data }
+        : userEmailParam
+          ? { guestEmail: userEmailParam }
+          : null;
     if (!owner) {
       return apiErr('unauthorized', 'Authentication required or userEmail parameter', 401);
     }
 
     const userService = getUserService();
-    const result = await userService.getAttemptDetails(parsedParams.data.id, owner);
+    const result = await userService.getAttemptDetails(
+      parsedParams.data.id,
+      owner,
+      query.data.locale === undefined ? {} : { locale: query.data.locale },
+    );
 
     if (!result.success) {
       return apiServiceErr(result);

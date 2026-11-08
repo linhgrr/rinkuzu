@@ -1,26 +1,27 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Textarea } from '@/components/ui/Input';
-import {
-  formatCommunicationTimestamp,
-  formatFeedbackStatus,
-  isFeedbackConversationClosed,
-} from '../lib/format';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
+import { formatCommunicationTimestamp, isFeedbackConversationClosed } from '../lib/format';
 import {
   completeFeedback,
   fetchFeedbackDetail,
   remindFeedback,
   replyFeedback,
 } from '../api/communications-api';
+import { DetailLoadError } from './DetailLoadError';
 
 export function AdminFeedbackConversationPage({ id }: { id: string }) {
   const locale = useLocale();
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const { data, error, mutate } = useSWR(`feedback-detail:${id}`, () => fetchFeedbackDetail(id), {
     refreshInterval: 15_000,
   });
@@ -37,7 +38,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
       setBody('');
       await mutate();
     } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : 'Không thể trả lời');
+      setActionError(describeError(caught, t('feedbackReplyError')));
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
       await run();
       await mutate();
     } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : fallback);
+      setActionError(describeError(caught, fallback));
     } finally {
       setLoading(false);
     }
@@ -58,11 +59,18 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
 
   if (error)
     return (
-      <div role="alert" className="p-8 text-error">
-        Không thể tải cuộc trao đổi.
-      </div>
+      <AdminPageShell>
+        <DetailLoadError
+          href="/admin/feedback"
+          label={t('backToFeedback')}
+          title={t('feedbackTitle')}
+          error={error}
+          message={t('feedbackLoadError')}
+          onRetry={() => mutate()}
+        />
+      </AdminPageShell>
     );
-  if (!data) return <div className="p-8">Đang tải…</div>;
+  if (!data) return <div className="p-8">{t('loading')}</div>;
   const closed = isFeedbackConversationClosed(data.conversation.status);
   // The invitation is in the outbox but the provider has not accepted it yet.
   // Replying or reminding now would race the invitation itself, so both are
@@ -79,12 +87,11 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
             <div>
               <CardTitle>{data.conversation.subject}</CardTitle>
               <p className="text-sm text-ink-muted">
-                {data.conversation.userEmail} · {formatFeedbackStatus(data.conversation.status)}
+                {data.conversation.userEmail} · {t(`feedback.statuses.${data.conversation.status}`)}
               </p>
               {queued ? (
                 <p role="status" className="mt-1 text-sm text-warning">
-                  Email mời chưa được gửi đi. Hệ thống đang thử gửi lại; trạng thái sẽ chuyển sang
-                  “Đã gửi” khi nhà cung cấp email xác nhận.
+                  {t('feedback.queuedNote')}
                 </p>
               ) : null}
             </div>
@@ -96,9 +103,9 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                     size="sm"
                     loading={loading}
                     disabled={loading}
-                    onClick={() => void action(() => remindFeedback(id), 'Không thể gửi lời nhắc')}
+                    onClick={() => void action(() => remindFeedback(id), t('feedbackRemindError'))}
                   >
-                    Nhắc lại
+                    {t('feedback.remind')}
                   </Button>
                 ) : null}
                 <Button
@@ -108,15 +115,17 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
                   onClick={() =>
                     void action(
                       () => completeFeedback(id, data.conversation.revision),
-                      'Không thể hoàn tất cuộc trao đổi',
+                      t('feedbackCompleteError'),
                     )
                   }
                 >
-                  Hoàn tất
+                  {t('feedback.complete')}
                 </Button>
               </div>
             ) : null}
           </div>
+          {/* Under the header, next to the buttons that fail, and visible while the reply form is hidden. */}
+          {actionError ? <ErrorState message={actionError} className="mt-4" /> : null}
         </CardHeader>
         <CardContent>
           <ol className="space-y-4">
@@ -127,9 +136,7 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
               >
                 <p className="whitespace-pre-wrap text-sm leading-6">{message.body}</p>
                 {message.hasAttachments ? (
-                  <p className="mt-2 text-xs text-warning">
-                    Email có attachment; file không được tải về.
-                  </p>
+                  <p className="mt-2 text-xs text-warning">{t('feedback.attachmentNote')}</p>
                 ) : null}
                 <time className="mt-2 block text-xs text-ink-muted">
                   {formatCommunicationTimestamp(message.createdAt, locale)}
@@ -144,20 +151,15 @@ export function AdminFeedbackConversationPage({ id }: { id: string }) {
           <CardContent className="pt-6">
             <form className="space-y-4" onSubmit={reply}>
               <Textarea
-                label="Trả lời qua email"
+                label={t('feedback.replyLabel')}
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
                 required
                 rows={6}
                 maxLength={20_000}
               />
-              {actionError ? (
-                <p role="alert" className="text-error">
-                  {actionError}
-                </p>
-              ) : null}
               <Button type="submit" loading={loading}>
-                Gửi email
+                {t('feedback.sendReply')}
               </Button>
             </form>
           </CardContent>

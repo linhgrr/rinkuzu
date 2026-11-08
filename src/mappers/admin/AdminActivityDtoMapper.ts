@@ -9,7 +9,9 @@ export class AdminActivityDtoMapper {
         ? { email: attempt.userEmail, type: 'user' as const }
         : attempt.guestEmail !== undefined
           ? { email: attempt.guestEmail, type: 'guest' as const }
-          : null;
+          : attempt.isClaimTokenGuest === true
+            ? { type: 'guest' as const }
+            : null;
     const quiz = attempt.quizTitle === undefined ? null : { title: attempt.quizTitle };
 
     if (!actor) {

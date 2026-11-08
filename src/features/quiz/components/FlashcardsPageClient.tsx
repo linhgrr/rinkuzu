@@ -1,13 +1,15 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import Image from 'next/image';
 import { useEffect, useReducer, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { FlashcardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { QuestionExcerpt } from '@/components/ui/QuestionContent';
+import { preloadMathRenderer } from '@/components/ui/preloadMathRenderer';
 import { Flashcard } from '@/features/quiz/components/Flashcard';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { PremiumFlashcardClient } from '@/features/quiz/components/PremiumFlashcardClient';
@@ -25,6 +27,7 @@ import type {
   FlashcardQuizViewModel,
 } from '@/features/quiz/types/flashcard-view-model';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
+import { describeApiError } from '@/lib/api/error-kind';
 
 interface FlashcardProgress {
   knownIds: string[];
@@ -37,7 +40,8 @@ type FlashcardStatus = 'loading' | 'ready' | 'error';
 interface FlashcardPageState {
   quiz: FlashcardQuizViewModel | null;
   status: FlashcardStatus;
-  error: string;
+  /** The thrown value of a failed load; rendered by ErrorState, never as text (RIN-753). */
+  error: unknown;
   progress: FlashcardProgress;
   currentQuestions: FlashcardQuestionViewModel[];
   showPremiumModal: boolean;
@@ -45,7 +49,8 @@ interface FlashcardPageState {
 
 type FlashcardPageAction =
   | { type: 'loadQuizSuccess'; quiz: FlashcardQuizViewModel }
-  | { type: 'loadQuizError'; error: string }
+  | { type: 'loadQuizError'; error: unknown }
+  | { type: 'retryLoad' }
   | { type: 'requirePremium' }
   | { type: 'registerSwipe'; direction: 'left' | 'right' }
   | { type: 'resetProgress' }
@@ -61,7 +66,7 @@ const initialProgress: FlashcardProgress = {
 const initialFlashcardPageState: FlashcardPageState = {
   quiz: null,
   status: 'loading',
-  error: '',
+  error: null,
   progress: initialProgress,
   currentQuestions: [],
   showPremiumModal: false,
@@ -77,7 +82,7 @@ function flashcardPageReducer(
         ...state,
         quiz: action.quiz,
         status: 'ready',
-        error: '',
+        error: null,
         progress: initialProgress,
         currentQuestions: action.quiz.questions,
         showPremiumModal: false,
@@ -89,11 +94,13 @@ function flashcardPageReducer(
         error: action.error,
         showPremiumModal: false,
       };
+    case 'retryLoad':
+      return { ...state, status: 'loading', error: null, showPremiumModal: false };
     case 'requirePremium':
       return {
         ...state,
         status: 'error',
-        error: '',
+        error: null,
         showPremiumModal: true,
       };
     case 'registerSwipe': {
@@ -159,7 +166,7 @@ function FlashcardFallbackState({
   title: string;
 }) {
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+    <div className="flex items-center justify-center px-4 py-16">
       <Card className="max-w-md">
         <CardContent className="p-6 text-center">
           <h2 className="text-xl font-semibold text-neutral-900 mb-4">{title}</h2>
@@ -176,6 +183,8 @@ function FlashcardFallbackState({
 function FlashcardPremiumState({ onClose }: { onClose: () => void }) {
   return <PremiumRequiredModal isOpen onClose={onClose} />;
 }
+
+const statLabelClassName = 'text-center text-xs leading-tight text-neutral-600 sm:text-sm';
 
 function FlashcardResultsView({
   knownCount,
@@ -199,109 +208,92 @@ function FlashcardResultsView({
   unknownQuestions: FlashcardQuestionViewModel[];
 }) {
   return (
-    <div className="min-h-screen bg-neutral-50 overflow-hidden">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/explore" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <Image
-                    src="/images/auth_logo.webp"
-                    alt="RinKuzu Logo"
-                    width={96}
-                    height={40}
-                    className="h-10 w-auto object-contain"
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-8 text-center">
+        <h1 className="mb-2 text-3xl font-semibold text-neutral-900">{t('flashcards')}</h1>
+        <p className="break-words text-neutral-600">{quiz.title}</p>
+      </div>
+
+      <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-6">
+        <Card className="p-0 sm:p-6">
+          <CardContent className="px-2 py-4 text-center sm:p-6">
+            <div className="mb-2 text-2xl font-bold text-green-600 sm:text-3xl">{knownCount}</div>
+            <div className={statLabelClassName}>{t('known')}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="p-0 sm:p-6">
+          <CardContent className="px-2 py-4 text-center sm:p-6">
+            <div className="mb-2 text-2xl font-bold text-red-600 sm:text-3xl">{unknownCount}</div>
+            <div className={statLabelClassName}>{t('unknown')}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="p-0 sm:p-6">
+          <CardContent className="px-2 py-4 text-center sm:p-6">
+            <div className="mb-2 text-2xl font-bold text-brand-trust sm:text-3xl">
+              {masteryPercentage}%
+            </div>
+            <div className={statLabelClassName}>{t('mastery')}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {unknownQuestions.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>{t('unknownQuestions')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {unknownQuestions.map((question, index) => (
+                <div key={question.id} className="rounded-lg border border-red-200 bg-red-50 p-3">
+                  <div className="font-medium text-neutral-900">
+                    {t('question')} {index + 1}
+                  </div>
+                  <QuestionExcerpt
+                    content={question.question}
+                    maxLines={2}
+                    className="mt-1 text-sm text-neutral-600"
                   />
                 </div>
-              </Link>
+              ))}
             </div>
-            <div className="flex items-center gap-x-4">
-              <Link href={`/quiz/${quiz.slug}`}>
-                <Button variant="outline">{t('takeQuiz')}</Button>
-              </Link>
-              <Link href="/explore">
-                <Button variant="outline">{tCommon('browseQuizzes')}</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+          </CardContent>
+        </Card>
+      )}
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-neutral-900 mb-2">{t('flashcards')}</h1>
-          <p className="text-neutral-600">{quiz.title}</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">{knownCount}</div>
-              <div className="text-sm text-neutral-600">{tCommon('questions')}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-red-600 mb-2">{unknownCount}</div>
-              <div className="text-sm text-neutral-600">{tCommon('questions')}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-brand-trust mb-2">{masteryPercentage}%</div>
-              <div className="text-sm text-neutral-600">{t('mastery')}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {unknownQuestions.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>{t('unknownQuestions')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {unknownQuestions.map((question, index) => (
-                  <div key={question.id} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="font-medium text-neutral-900">
-                      {t('question')} {index + 1}
-                    </div>
-                    <QuestionExcerpt
-                      content={question.question}
-                      maxLines={2}
-                      className="mt-1 text-sm text-neutral-600"
-                    />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Mobile: one full-width column, primary first; no orphaned third button. */}
+      <div
+        data-testid="flashcard-results-actions"
+        className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center"
+      >
+        {unknownCount > 0 ? (
+          <Button
+            onClick={onContinuePractice}
+            className="w-full bg-brand-trust hover:bg-brand-trust-hover sm:w-auto"
+          >
+            {t('practiceContinue')}
+          </Button>
+        ) : (
+          <Button
+            onClick={onReset}
+            className="w-full bg-brand-trust hover:bg-brand-trust-hover sm:w-auto"
+          >
+            {t('start')}
+          </Button>
         )}
-
-        <div className="flex flex-wrap justify-center gap-3">
-          {unknownCount > 0 ? (
-            <Button
-              onClick={onContinuePractice}
-              className="bg-brand-trust hover:bg-brand-trust-hover"
-            >
-              {t('practiceContinue')}
-            </Button>
-          ) : (
-            <Button onClick={onReset} className="bg-brand-trust hover:bg-brand-trust-hover">
-              {t('start')}
-            </Button>
-          )}
-          <Link href={`/quiz/${quiz.slug}`}>
-            <Button variant="outline">{t('takeQuiz')}</Button>
-          </Link>
-          <Link href="/explore">
-            <Button variant="outline">{tCommon('browseQuizzes')}</Button>
-          </Link>
-        </div>
-      </main>
+        <Link href={`/quiz/${quiz.slug}`} className="block w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto">
+            {t('takeQuiz')}
+          </Button>
+        </Link>
+        <Link href="/explore" className="block w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto">
+            {tCommon('browseQuizzes')}
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -314,7 +306,6 @@ function FlashcardDeckView({
   progressPercentage,
   quiz,
   t,
-  tCommon,
   totalQuestions,
   unknownCount,
 }: {
@@ -325,91 +316,78 @@ function FlashcardDeckView({
   progressPercentage: number;
   quiz: FlashcardQuizViewModel;
   t: (key: string) => string;
-  tCommon: (key: string) => string;
   totalQuestions: number;
   unknownCount: number;
 }) {
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col items-center relative">
-      <div className="fixed top-20 left-0 right-0 z-50 flex items-center justify-between px-2 sm:px-4">
-        <div className="bg-red-100 text-red-700 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap">
-          {t('unknown')}: {unknownCount}
-        </div>
-
-        <div className="flex-1 mx-2 sm:mx-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs sm:text-sm font-medium text-neutral-700">
-              {Math.min(currentIndex + 1, totalQuestions)}/{totalQuestions}
-            </span>
-            <span className="text-xs sm:text-sm font-medium text-neutral-700">
-              {progressPercentage}%
-            </span>
-          </div>
-          <div className="w-full bg-neutral-200 rounded-full h-2">
-            <div
-              className="bg-brand-trust h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="bg-green-100 text-green-700 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap">
-          {t('known')}: {knownCount}
-        </div>
-      </div>
-
-      <nav className="bg-white shadow-sm border-b w-full">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/explore" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <Image
-                    src="/images/auth_logo.webp"
-                    alt="RinKuzu Logo"
-                    width={96}
-                    height={40}
-                    className="h-10 w-auto object-contain"
-                  />
-                </div>
-              </Link>
-            </div>
-            <div className="flex items-center gap-x-2 sm:gap-x-4">
-              <Link href={`/quiz/${quiz.slug}`}>
-                <Button variant="outline" size="sm">
+    <div className="flex w-full flex-col items-center">
+      {/* Sticky inside the content column: it inherits the sidebar offset and stops
+          under the app top bar (64px, 72px from lg) instead of covering either. */}
+      <div
+        data-testid="flashcard-progress-header"
+        className="sticky top-16 z-30 w-full border-b border-line bg-surface/95 backdrop-blur lg:top-[var(--app-chrome-height)]"
+      >
+        {/* Same max width and side padding as the card below, so the edges line up. */}
+        <div className="w-full px-4 py-2 sm:px-6 sm:py-3">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-2">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <p className="min-w-0 truncate text-sm font-semibold text-neutral-900 sm:text-base">
+                {quiz.title}
+              </p>
+              <Link href={`/quiz/${quiz.slug}`} className="shrink-0">
+                <Button variant="outline" size="sm" className="h-auto min-h-11 text-sm sm:min-h-9">
                   {t('takeQuiz')}
                 </Button>
               </Link>
-              <Link href="/explore" className="hidden sm:block">
-                <Button variant="outline" size="sm">
-                  {tCommon('browseQuizzes')}
-                </Button>
-              </Link>
+            </div>
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
+              <div className="whitespace-nowrap rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 sm:px-4 sm:py-1.5 sm:text-sm">
+                {t('unknown')}: {unknownCount}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium text-neutral-700 sm:text-sm">
+                    {Math.min(currentIndex + 1, totalQuestions)}/{totalQuestions}
+                  </span>
+                  <span className="text-xs font-medium text-neutral-700 sm:text-sm">
+                    {progressPercentage}%
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-neutral-200">
+                  <div
+                    className="h-2 rounded-full bg-brand-trust transition-all duration-300"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 sm:px-4 sm:py-1.5 sm:text-sm">
+                {t('known')}: {knownCount}
+              </div>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
-      <main className="w-full flex-1 flex flex-col items-center justify-center pt-20">
-        <div className="flex flex-col items-center justify-center min-h-[420px] w-full">
-          {currentQuestion && (
-            <Flashcard
-              key={`${currentIndex}-${currentQuestion.id}`}
-              question={currentQuestion.question}
-              options={currentQuestion.options}
-              {...(currentQuestion.correctIndex !== undefined
-                ? { correctIndex: currentQuestion.correctIndex }
-                : {})}
-              {...(currentQuestion.correctIndexes !== undefined
-                ? { correctIndexes: currentQuestion.correctIndexes }
-                : {})}
-              type={currentQuestion.type}
-              onSwipe={onSwipe}
-              isLast={currentIndex === totalQuestions - 1}
-            />
-          )}
-        </div>
-      </main>
+      <div className="flex w-full flex-1 flex-col items-center justify-center py-6 sm:py-10">
+        {currentQuestion && (
+          <Flashcard
+            key={`${currentIndex}-${currentQuestion.id}`}
+            question={currentQuestion.question}
+            options={currentQuestion.options}
+            {...(currentQuestion.correctIndex !== undefined
+              ? { correctIndex: currentQuestion.correctIndex }
+              : {})}
+            {...(currentQuestion.correctIndexes !== undefined
+              ? { correctIndexes: currentQuestion.correctIndexes }
+              : {})}
+            type={currentQuestion.type}
+            onSwipe={onSwipe}
+            isLast={currentIndex === totalQuestions - 1}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -418,7 +396,9 @@ export function FlashcardsPageClient() {
   const t = useTranslations('quiz');
   const tCommon = useTranslations('common');
   const slug = useRequiredRouteParam('slug');
+  const { status: sessionStatus } = useSession();
   const [state, dispatch] = useReducer(flashcardPageReducer, initialFlashcardPageState);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [premiumMetadata, setPremiumMetadata] = useState<PremiumCatalogMetadataViewModel | null>(
     null,
   );
@@ -430,8 +410,10 @@ export function FlashcardsPageClient() {
       try {
         try {
           const metadata = await fetchPremiumCatalogMetadata(slug);
-          if (isActive) setPremiumMetadata(metadata);
-          return;
+          if (metadata) {
+            if (isActive) setPremiumMetadata(metadata);
+            return;
+          }
         } catch (metadataError) {
           if (
             !(metadataError instanceof ApiResponseError) ||
@@ -441,6 +423,11 @@ export function FlashcardsPageClient() {
           }
         }
         const data = await fetchFlashcardQuizViewModel(slug);
+        // Keep the skeleton until KaTeX is ready so math cards paint once, with no
+        // raw LaTeX and no reflow (RIN-732). Plain quizzes resolve at once.
+        await preloadMathRenderer(
+          data.questions.flatMap((question) => [question.question, ...question.options]),
+        );
 
         if (isActive) {
           dispatch({ type: 'loadQuizSuccess', quiz: data });
@@ -450,13 +437,12 @@ export function FlashcardsPageClient() {
           return;
         }
 
-        const message = error instanceof Error ? error.message : 'Failed to load quiz';
-        const code = error instanceof ApiResponseError ? error.code : null;
-
-        if (code === 'premium_required') {
+        const { kind } = describeApiError(error);
+        if (kind === 'aborted') return;
+        if (kind === 'unlock_required') {
           dispatch({ type: 'requirePremium' });
         } else {
-          dispatch({ type: 'loadQuizError', error: message });
+          dispatch({ type: 'loadQuizError', error });
         }
       }
     };
@@ -466,10 +452,10 @@ export function FlashcardsPageClient() {
     return () => {
       isActive = false;
     };
-  }, [slug]);
+  }, [slug, loadAttempt]);
 
   if (premiumMetadata) {
-    return <PremiumFlashcardClient metadata={premiumMetadata} />;
+    return <PremiumFlashcardClient metadata={premiumMetadata} slug={slug} />;
   }
 
   const quiz = state.quiz;
@@ -495,11 +481,21 @@ export function FlashcardsPageClient() {
 
     dispatch({ type: 'registerSwipe', direction });
 
+    // SRS reviews belong to an account: guests (and a still-loading session) only
+    // practise locally, so they send nothing (RIN-798).
+    if (sessionStatus !== 'authenticated') {
+      return;
+    }
+
     void submitFlashcardReview({
       quizSlug: quiz.slug,
       question: currentQuestion,
       rating: direction === 'right' ? 'good' : 'hard',
     }).catch((error) => {
+      // A session that expired mid-run is not an error worth logging.
+      if (error instanceof ApiResponseError && error.status === 401) {
+        return;
+      }
       console.error('Failed to submit SRS review from flashcard:', error);
     });
   };
@@ -512,12 +508,16 @@ export function FlashcardsPageClient() {
     return <FlashcardPremiumState onClose={() => dispatch({ type: 'dismissPremium' })} />;
   }
 
-  if (state.error) {
+  if (state.error !== null) {
+    // The whole deck failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <FlashcardFallbackState
-        browseLabel={tCommon('browseQuizzes')}
-        description={state.error}
-        title={tCommon('error')}
+      <ErrorState
+        error={state.error}
+        variant="page"
+        onRetry={() => {
+          dispatch({ type: 'retryLoad' });
+          setLoadAttempt((attempt) => attempt + 1);
+        }}
       />
     );
   }
@@ -557,7 +557,6 @@ export function FlashcardsPageClient() {
       progressPercentage={progressPercentage}
       quiz={quiz}
       t={t}
-      tCommon={tCommon}
       totalQuestions={state.currentQuestions.length}
       unknownCount={unknownCount}
     />

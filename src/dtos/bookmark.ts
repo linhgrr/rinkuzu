@@ -49,5 +49,17 @@ export interface BookmarkListDto {
   pagination: PaginationMeta;
 }
 
+interface BookmarkQuizCountDto {
+  slug: string;
+  title: string;
+  count: number;
+}
+
+/** GET /api/bookmarks/quizzes: the caller's bookmarks grouped by quiz. */
+export interface BookmarkQuizListDto {
+  quizzes: BookmarkQuizCountDto[];
+  total: number;
+}
+
 export type BookmarkListQueryDto = z.infer<typeof bookmarkListQuerySchema>;
 export type CreateBookmarkRequestDto = z.infer<typeof createBookmarkRequestSchema>;

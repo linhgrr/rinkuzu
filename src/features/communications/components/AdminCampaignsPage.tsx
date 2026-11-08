@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useRouter } from '@/i18n/navigation';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
@@ -8,14 +9,23 @@ import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { createCampaign, fetchCampaigns } from '../api/communications-api';
+import { campaignStatusLabel } from '../lib/admin-labels';
 
 export function AdminCampaignsPage() {
   const router = useRouter();
+  const t = useTranslations('communications.admin');
+  const describeError = useAdminApiErrorMessage();
   const [page, setPage] = useState(1);
-  const { data, mutate } = useSWR(`/api/admin/campaigns?page=${page}`, () => fetchCampaigns(page), {
+  const {
+    data,
+    error: loadError,
+    mutate,
+  } = useSWR(`/api/admin/campaigns?page=${page}`, () => fetchCampaigns(page), {
     refreshInterval: 20_000,
   });
   const [name, setName] = useState('');
@@ -43,7 +53,7 @@ export function AdminCampaignsPage() {
       await mutate();
       router.push(`/admin/campaigns/${detail.campaign.id}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể tạo campaign');
+      setError(describeError(caught, t('campaignCreateError')));
     } finally {
       setLoading(false);
     }
@@ -51,76 +61,78 @@ export function AdminCampaignsPage() {
 
   return (
     <AdminPageShell>
-      <AdminPageHeader
-        title="Email Campaigns"
-        description="Broadcast chỉ gửi tới user đã opt-in đúng topic."
-      />
+      <AdminPageHeader title={t('campaigns.title')} description={t('campaigns.description')} />
       <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Tạo campaign</CardTitle>
+            <CardTitle>{t('campaigns.createTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={submit}>
               <Input
-                label="Tên nội bộ"
+                label={t('internalName')}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 required
               />
               <Input
-                label="Email subject"
+                label={t('emailSubject')}
                 value={subject}
                 onChange={(event) => setSubject(event.target.value)}
                 required
               />
               <Select
-                label="Topic"
+                label={t('topic')}
                 value={topic}
                 onChange={(event) =>
                   setTopic(event.target.value === 'promotions' ? 'promotions' : 'product_updates')
                 }
               >
-                <option value="product_updates">Cập nhật sản phẩm</option>
-                <option value="promotions">Khuyến mãi</option>
+                <option value="product_updates">{t('topics.product_updates')}</option>
+                <option value="promotions">{t('topics.promotions')}</option>
               </Select>
               <Select
-                label="Ngôn ngữ audience"
+                label={t('audienceLocale')}
                 value={locale}
                 onChange={(event) => setLocale(event.target.value)}
               >
-                <option value="">Tất cả ngôn ngữ</option>
-                <option value="vi">Tiếng Việt</option>
-                <option value="en">English</option>
+                <option value="">{t('allLocales')}</option>
+                <option value="vi">{t('localeVi')}</option>
+                <option value="en">{t('localeEn')}</option>
               </Select>
               <Input
-                label="Plan ID (không bắt buộc)"
+                label={t('planIdOptional')}
                 value={planId}
                 onChange={(event) => setPlanId(event.target.value)}
               />
               <Textarea
-                label="Đoạn nội dung đầu tiên"
+                label={t('campaigns.firstParagraph')}
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
                 required
                 rows={6}
               />
-              {error ? (
-                <p role="alert" className="text-error">
-                  {error}
-                </p>
-              ) : null}
+              {error ? <ErrorState message={error} /> : null}
               <Button type="submit" loading={loading}>
-                Tạo bản nháp
+                {t('campaigns.createDraft')}
               </Button>
             </form>
           </CardContent>
         </Card>
-        <Card>
+        {/* On a failed load the list (now the error) comes first below xl, on the first screen. */}
+        <Card className={loadError ? 'order-first xl:order-none' : undefined}>
           <CardHeader>
-            <CardTitle>Campaigns</CardTitle>
+            <CardTitle>{t('campaigns.listTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* A failed load replaced the list with nothing at all (RIN-1159). */}
+            {loadError ? (
+              <ErrorState
+                error={loadError}
+                message={t('campaignsLoadError')}
+                onRetry={() => mutate()}
+              />
+            ) : null}
             {data?.items.map((campaign) => (
               <ButtonBase
                 key={campaign.id}
@@ -130,14 +142,15 @@ export function AdminCampaignsPage() {
               >
                 <span className="font-semibold">{campaign.name}</span>
                 <span className="mt-1 block text-sm text-ink-muted">
-                  {campaign.status} · {campaign.recipientCount} recipients
+                  {campaignStatusLabel(t, campaign.status)} ·{' '}
+                  {t('recipients', { count: campaign.recipientCount })}
                 </span>
               </ButtonBase>
             ))}
             {data && data.pagination.totalPages > 1 ? (
               <div className="flex items-center justify-between pt-2">
                 <Button variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                  Trang trước
+                  {t('previousPage')}
                 </Button>
                 <span className="text-sm text-ink-muted">
                   {page}/{data.pagination.totalPages}
@@ -147,7 +160,7 @@ export function AdminCampaignsPage() {
                   disabled={page >= data.pagination.totalPages}
                   onClick={() => setPage(page + 1)}
                 >
-                  Trang sau
+                  {t('nextPage')}
                 </Button>
               </div>
             ) : null}

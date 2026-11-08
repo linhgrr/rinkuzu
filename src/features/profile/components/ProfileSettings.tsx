@@ -4,14 +4,16 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useReducer, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { ProfileSettingsPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
 import { AVATAR_ALLOWED_MEDIA_TYPES, AVATAR_MAX_FILE_SIZE } from '@/shared/constants/avatar';
 import {
   changeProfilePassword,
@@ -28,16 +30,26 @@ import {
   QuickAccessCard,
 } from '@/features/profile/components/ProfileControlCenter';
 import type { ProfileTab } from '@/features/profile/lib/profile-tabs';
+import {
+  GooglePasswordCard,
+  PasswordSection,
+  firstInvalidPasswordField,
+  validatePasswordChange,
+  type PasswordField,
+  type PasswordFieldErrors,
+} from '@/features/profile/components/ProfileSecuritySection';
+import {
+  SECTION_BODY_PADDING,
+  SECTION_CARD_CLASS,
+  SECTION_HEADER_CLASS,
+} from '@/features/profile/components/profile-section-classes';
 import { MarketingPreferencesPage } from '@/features/communications/components/MarketingPreferencesPage';
 import {
   HiOutlineUser,
-  HiOutlineLockClosed,
   HiOutlinePhotograph,
   HiOutlineMail,
   HiOutlineShieldCheck,
   HiOutlineSparkles,
-  HiOutlineEye,
-  HiOutlineEyeOff,
   HiOutlineTrash,
 } from 'react-icons/hi';
 
@@ -50,6 +62,7 @@ interface ProfileSettingsState {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+  passwordErrors: PasswordFieldErrors;
   showNewPassword: boolean;
   savingPassword: boolean;
   uploadingAvatar: boolean;
@@ -74,20 +87,6 @@ interface PersonalInfoSectionProps {
   uploadingAvatar: boolean;
 }
 
-interface PasswordSectionProps {
-  confirmPassword: string;
-  currentPassword: string;
-  newPassword: string;
-  onConfirmPasswordChange: (value: string) => void;
-  onCurrentPasswordChange: (value: string) => void;
-  onNewPasswordChange: (value: string) => void;
-  onSavePassword: () => void;
-  onTogglePasswordVisibility: () => void;
-  savingPassword: boolean;
-  showNewPassword: boolean;
-  t: ProfileSettingsTranslate;
-}
-
 interface AccountSectionProps {
   profile: ProfileSettingsViewModel;
   t: ProfileSettingsTranslate;
@@ -101,11 +100,9 @@ type ProfileSettingsAction =
   | { type: 'profile:save:start' }
   | { type: 'profile:save:success'; profile: ProfileSettingsViewModel }
   | { type: 'profile:save:finish' }
-  | {
-      type: 'password:setField';
-      field: 'currentPassword' | 'newPassword' | 'confirmPassword';
-      value: string;
-    }
+  | { type: 'password:setField'; field: PasswordField; value: string }
+  | { type: 'password:invalid'; errors: PasswordFieldErrors }
+  | { type: 'password:notSet' }
   | { type: 'password:toggleVisibility' }
   | { type: 'password:save:start' }
   | { type: 'password:save:success' }
@@ -125,6 +122,7 @@ const initialState: ProfileSettingsState = {
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
+  passwordErrors: {},
   showNewPassword: false,
   savingPassword: false,
   uploadingAvatar: false,
@@ -137,7 +135,9 @@ function profileSettingsReducer(
 ): ProfileSettingsState {
   switch (action.type) {
     case 'fetch:start':
-      return { ...state, loading: true };
+      // Runs once per signed-in user id: start from a clean slate so another
+      // user's profile or draft input never shows while the new one loads.
+      return initialState;
     case 'fetch:success':
       return {
         ...state,
@@ -162,8 +162,24 @@ function profileSettingsReducer(
       };
     case 'profile:save:finish':
       return { ...state, savingProfile: false };
-    case 'password:setField':
-      return { ...state, [action.field]: action.value };
+    case 'password:setField': {
+      // Editing a field clears the error it showed; the others stay until resubmit.
+      const { [action.field]: _cleared, ...passwordErrors } = state.passwordErrors;
+      return { ...state, [action.field]: action.value, passwordErrors };
+    }
+    case 'password:invalid':
+      return { ...state, savingPassword: false, passwordErrors: action.errors };
+    case 'password:notSet':
+      // The server says there is no password (Google sign-in): swap the form for the info card.
+      return {
+        ...state,
+        profile: state.profile ? { ...state.profile, hasPassword: false } : state.profile,
+        savingPassword: false,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        passwordErrors: {},
+      };
     case 'password:toggleVisibility':
       return { ...state, showNewPassword: !state.showNewPassword };
     case 'password:save:start':
@@ -175,6 +191,7 @@ function profileSettingsReducer(
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
+        passwordErrors: {},
       };
     case 'password:save:finish':
       return { ...state, savingPassword: false };
@@ -214,14 +231,14 @@ function PersonalInfoSection({
   uploadingAvatar,
 }: PersonalInfoSectionProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
+    <Card className={SECTION_CARD_CLASS}>
+      <div className={SECTION_HEADER_CLASS}>
         <div className="flex items-center gap-2">
           <HiOutlineUser className="size-5 text-brand-trust" />
           <h2 className="text-lg font-semibold text-neutral-900">{t('personalInfo')}</h2>
         </div>
       </div>
-      <div className="space-y-6 p-6">
+      <div className={`space-y-6 ${SECTION_BODY_PADDING}`}>
         <div className="flex items-center gap-5">
           <div className="group relative">
             {profile.avatar ? (
@@ -322,101 +339,16 @@ function PersonalInfoSection({
   );
 }
 
-function PasswordSection({
-  confirmPassword,
-  currentPassword,
-  newPassword,
-  onConfirmPasswordChange,
-  onCurrentPasswordChange,
-  onNewPasswordChange,
-  onSavePassword,
-  onTogglePasswordVisibility,
-  savingPassword,
-  showNewPassword,
-  t,
-}: PasswordSectionProps) {
-  return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
-        <div className="flex items-center gap-2">
-          <HiOutlineLockClosed className="size-5 text-brand-trust" />
-          <h2 className="text-lg font-semibold text-neutral-900">{t('changePassword')}</h2>
-        </div>
-      </div>
-      <div className="space-y-4 p-6">
-        <Input
-          label={t('currentPassword')}
-          type="password"
-          value={currentPassword}
-          onChange={(event) => onCurrentPasswordChange(event.target.value)}
-          placeholder={t('currentPasswordPlaceholder')}
-          autoComplete="current-password"
-          icon={<HiOutlineLockClosed className="size-full" />}
-          iconPosition="left"
-        />
-
-        <Input
-          label={t('newPassword')}
-          type={showNewPassword ? 'text' : 'password'}
-          value={newPassword}
-          onChange={(event) => onNewPasswordChange(event.target.value)}
-          placeholder={t('newPasswordPlaceholder')}
-          autoComplete="new-password"
-          icon={<HiOutlineLockClosed className="size-full" />}
-          {...(newPassword.length > 0 && newPassword.length < 6
-            ? { error: t('passwordMinLength') }
-            : {})}
-        />
-        <button
-          type="button"
-          onClick={onTogglePasswordVisibility}
-          className="-mt-2 flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700"
-        >
-          {showNewPassword ? (
-            <HiOutlineEyeOff className="size-3.5" />
-          ) : (
-            <HiOutlineEye className="size-3.5" />
-          )}
-          {showNewPassword ? t('hidePassword') : t('showPassword')}
-        </button>
-
-        <Input
-          label={t('confirmNewPassword')}
-          type="password"
-          value={confirmPassword}
-          onChange={(event) => onConfirmPasswordChange(event.target.value)}
-          placeholder={t('confirmNewPasswordPlaceholder')}
-          autoComplete="new-password"
-          icon={<HiOutlineLockClosed className="size-full" />}
-          {...(confirmPassword.length > 0 && confirmPassword !== newPassword
-            ? { error: t('passwordsDoNotMatch') }
-            : {})}
-        />
-
-        <div className="flex justify-end pt-2">
-          <Button
-            type="button"
-            onClick={onSavePassword}
-            disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
-          >
-            {savingPassword ? t('saving') : t('updatePassword')}
-          </Button>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 function AccountSection({ profile, t }: AccountSectionProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="border-b border-neutral-100 px-6 py-5">
+    <Card className={SECTION_CARD_CLASS}>
+      <div className={SECTION_HEADER_CLASS}>
         <div className="flex items-center gap-2">
           <HiOutlineShieldCheck className="size-5 text-brand-trust" />
           <h2 className="text-lg font-semibold text-neutral-900">{t('accountSection')}</h2>
         </div>
       </div>
-      <div className="space-y-4 p-6">
+      <div className={`space-y-4 ${SECTION_BODY_PADDING}`}>
         <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-4">
           <div className="flex items-center gap-3">
             <HiOutlineSparkles className="size-5 text-yellow-500" />
@@ -443,12 +375,26 @@ function AccountSection({ profile, t }: AccountSectionProps) {
 
 export default function ProfileSettings({ initialTab = 'overview' }: { initialTab?: ProfileTab }) {
   const { data: session } = useSession();
+  // The SessionProvider poll (refetchInterval) hands out a new session object
+  // every few seconds, so effects key on the stable user id, not the object.
+  const userId = session?.user?.id;
   const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentPasswordRef = useRef<HTMLInputElement>(null);
+  const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const [state, dispatch] = useReducer(profileSettingsReducer, initialState);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
+  const [syncedInitialTab, setSyncedInitialTab] = useState<ProfileTab>(initialTab);
+
+  // Follow ?tab= changes (browser back/forward, links) without remounting.
+  if (initialTab !== syncedInitialTab) {
+    setSyncedInitialTab(initialTab);
+    setActiveTab(initialTab);
+  }
 
   const selectTab = (tab: ProfileTab) => {
     setActiveTab(tab);
@@ -463,8 +409,12 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     );
   };
 
+  const showMutationError = useApiErrorToast();
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+
   useEffect(() => {
-    if (!session) {
+    if (!userId) {
       return;
     }
 
@@ -473,7 +423,8 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     const fetchProfile = async () => {
       try {
         dispatch({ type: 'fetch:start' });
-        const data = await fetchProfileSettingsViewModel();
+        setLoadError(null);
+        const data = await fetchProfileSettingsViewModel(locale);
 
         if (!isActive) {
           return;
@@ -486,7 +437,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
         }
 
         dispatch({ type: 'fetch:error' });
-        toast.error(extractUnknownErrorMessage(error, t('errorLoadingProfile')));
+        setLoadError(error);
       }
     };
 
@@ -495,32 +446,47 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     return () => {
       isActive = false;
     };
-  }, [session, t]);
+  }, [userId, loadAttempt, locale]);
 
   const handleSaveProfile = async () => {
     dispatch({ type: 'profile:save:start' });
 
     try {
-      const data = await updateProfileSettingsViewModel({
-        displayName: state.displayName,
-        bio: state.bio,
-      });
+      const data = await updateProfileSettingsViewModel(
+        {
+          displayName: state.displayName,
+          bio: state.bio,
+        },
+        locale,
+      );
       dispatch({ type: 'profile:save:success', profile: data });
       toast.success(t('profileUpdated'));
     } catch (error: unknown) {
       dispatch({ type: 'profile:save:finish' });
-      toast.error(extractUnknownErrorMessage(error, t('errorUpdatingProfile')));
+      showMutationError(error);
     }
   };
 
-  const handleChangePassword = async () => {
-    if (state.newPassword !== state.confirmPassword) {
-      toast.error(t('passwordsDoNotMatch'));
-      return;
-    }
+  const rejectPassword = (errors: PasswordFieldErrors) => {
+    dispatch({ type: 'password:invalid', errors });
+    const field = firstInvalidPasswordField(errors);
+    if (!field) return;
+    const fieldRefs = {
+      currentPassword: currentPasswordRef,
+      newPassword: newPasswordRef,
+      confirmPassword: confirmPasswordRef,
+    };
+    fieldRefs[field].current?.focus();
+  };
 
-    if (state.newPassword.length < 6) {
-      toast.error(t('passwordMinLength'));
+  const handleChangePassword = async () => {
+    const invalid = validatePasswordChange({
+      currentPassword: state.currentPassword,
+      newPassword: state.newPassword,
+      confirmPassword: state.confirmPassword,
+    });
+    if (firstInvalidPasswordField(invalid)) {
+      rejectPassword(invalid);
       return;
     }
 
@@ -534,8 +500,21 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       dispatch({ type: 'password:save:success' });
       toast.success(t('passwordChanged'));
     } catch (error: unknown) {
-      dispatch({ type: 'password:save:finish' });
-      toast.error(extractUnknownErrorMessage(error, t('errorChangingPassword')));
+      // The server text stays hidden. `password_not_set` is an account with no password
+      // (Google sign-in). Otherwise a 400 naming no field is a wrong current password;
+      // one naming `newPassword` (too short, same as the current one) is about the new one.
+      // Those show inline on their field (RIN-1017); network and server errors still toast.
+      const described = describeApiError(error);
+      if (described.code === 'password_not_set') {
+        dispatch({ type: 'password:notSet' });
+      } else if (described.kind === 'validation' && described.fieldErrors.includes('newPassword')) {
+        rejectPassword({ newPassword: 'newPasswordRejected' });
+      } else if (described.kind === 'validation' && described.fieldErrors.length === 0) {
+        rejectPassword({ currentPassword: 'currentPasswordIncorrect' });
+      } else {
+        dispatch({ type: 'password:save:finish' });
+        showMutationError(error);
+      }
     }
   };
 
@@ -563,7 +542,7 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       toast.success(t('avatarUpdated'));
     } catch (error: unknown) {
       dispatch({ type: 'avatar:upload:finish' });
-      toast.error(extractUnknownErrorMessage(error, t('errorUploadingAvatar')));
+      showMutationError(error);
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -579,16 +558,19 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
       toast.success(t('avatarRemoved'));
     } catch (error: unknown) {
       dispatch({ type: 'avatar:upload:finish' });
-      toast.error(extractUnknownErrorMessage(error, t('errorRemovingAvatar')));
+      showMutationError(error);
     }
   };
 
-  if (state.loading) {
-    return <ProfileSettingsPageSkeleton label={tCommon('loading')} />;
-  }
-
   if (!state.profile) {
-    return null;
+    if (state.loading) return <ProfileSettingsPageSkeleton label={tCommon('loading')} />;
+    return loadError ? (
+      <ErrorState
+        error={loadError}
+        onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
+        className="mx-auto mt-6 max-w-2xl"
+      />
+    ) : null;
   }
 
   const initials = state.profile.displayName
@@ -599,7 +581,11 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
     <div className="space-y-6">
       <ProfileHero
         initials={initials}
-        onEditProfile={() => selectTab('personal')}
+        onEditProfile={
+          activeTab === 'overview' || activeTab === 'personal'
+            ? () => selectTab('personal')
+            : undefined
+        }
         profile={state.profile}
         t={t}
       />
@@ -654,25 +640,29 @@ export default function ProfileSettings({ initialTab = 'overview' }: { initialTa
 
         {activeTab === 'security' ? (
           <div className="max-w-2xl">
-            <PasswordSection
-              confirmPassword={state.confirmPassword}
-              currentPassword={state.currentPassword}
-              newPassword={state.newPassword}
-              onConfirmPasswordChange={(value) =>
-                dispatch({ type: 'password:setField', field: 'confirmPassword', value })
-              }
-              onCurrentPasswordChange={(value) =>
-                dispatch({ type: 'password:setField', field: 'currentPassword', value })
-              }
-              onNewPasswordChange={(value) =>
-                dispatch({ type: 'password:setField', field: 'newPassword', value })
-              }
-              onSavePassword={handleChangePassword}
-              onTogglePasswordVisibility={() => dispatch({ type: 'password:toggleVisibility' })}
-              savingPassword={state.savingPassword}
-              showNewPassword={state.showNewPassword}
-              t={t}
-            />
+            {state.profile.hasPassword === false ? (
+              <GooglePasswordCard t={t} />
+            ) : (
+              <PasswordSection
+                errors={state.passwordErrors}
+                currentPasswordRef={currentPasswordRef}
+                newPasswordRef={newPasswordRef}
+                confirmPasswordRef={confirmPasswordRef}
+                onFieldChange={(field, value) =>
+                  dispatch({ type: 'password:setField', field, value })
+                }
+                onSavePassword={handleChangePassword}
+                onTogglePasswordVisibility={() => dispatch({ type: 'password:toggleVisibility' })}
+                savingPassword={state.savingPassword}
+                showNewPassword={state.showNewPassword}
+                t={t}
+                values={{
+                  currentPassword: state.currentPassword,
+                  newPassword: state.newPassword,
+                  confirmPassword: state.confirmPassword,
+                }}
+              />
+            )}
           </div>
         ) : null}
 

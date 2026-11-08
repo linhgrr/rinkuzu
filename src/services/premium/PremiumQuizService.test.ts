@@ -95,6 +95,7 @@ function setup() {
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn(),
     findIdBySlug: vi.fn(),
+    findCanonicalSlugByAlias: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -103,6 +104,9 @@ function setup() {
     findForPlay: vi.fn(),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
+    findMetadataBySlug: vi.fn(),
+    findNonIndexableOwnerCandidates: vi.fn(),
+    findPublicSitemapEntries: vi.fn(),
     count: vi.fn(),
     countByCreatedAtBuckets: vi.fn(),
     findTopCreators: vi.fn(),
@@ -122,6 +126,7 @@ function setup() {
     grantAdminCredits: vi.fn(),
     unlock: vi.fn(),
     hasGrant: vi.fn(),
+    findGrantedQuizIds: vi.fn(),
     findActivePublicationByQuizId: vi.fn(),
     findActivePublicationBySlug: vi.fn(),
     createSession: vi.fn(),
@@ -175,6 +180,47 @@ describe('PremiumQuizService', () => {
       page: 1,
       limit: 12,
     });
+  });
+
+  it('marks the catalog items a signed-in learner already unlocked with credit (RIN-1014)', async () => {
+    const { service, premiumRepository } = setup();
+    const owned = '507f191e810c19729de860ea';
+    const other = '507f191e810c19729de860eb';
+    premiumRepository.listCatalog.mockResolvedValue({
+      items: [
+        { quizId: owned, title: 'Owned', slug: 'owned', questionCount: 3 },
+        { quizId: other, title: 'Other', slug: 'other', questionCount: 4 },
+      ],
+      page: 1,
+      limit: 12,
+      totalItems: 2,
+      totalPages: 1,
+    });
+    premiumRepository.findGrantedQuizIds.mockResolvedValue([owned]);
+
+    const result = await service.listCatalog({ page: 1, limit: 12 }, 'learner-1');
+
+    expect(premiumRepository.findGrantedQuizIds).toHaveBeenCalledWith('learner-1', [owned, other]);
+    expect(result.items.map((item) => [item.quizId, item.unlocked])).toEqual([
+      [owned, true],
+      [other, false],
+    ]);
+  });
+
+  it('skips the grant lookup for anonymous visitors and empty pages', async () => {
+    const { service, premiumRepository } = setup();
+    premiumRepository.listCatalog.mockResolvedValue({
+      items: [],
+      page: 1,
+      limit: 12,
+      totalItems: 0,
+      totalPages: 0,
+    });
+
+    await service.listCatalog({ page: 1, limit: 12 }, 'learner-1');
+    await service.listCatalog({ page: 1, limit: 12 }, null);
+
+    expect(premiumRepository.findGrantedQuizIds).not.toHaveBeenCalled();
   });
 
   it('trims the reason and delegates an idempotent admin credit grant', async () => {
@@ -341,6 +387,22 @@ describe('PremiumQuizService', () => {
         sourceObjectKey: 'uploads/premium_sources/draft/source.pdf',
       }),
     );
+  });
+
+  it('refuses to start a locked quiz with unlock_required, not a bare forbidden (RIN-753)', async () => {
+    const { service, premiumRepository } = setup();
+    const approved = publication();
+    premiumRepository.findActivePublicationByQuizId.mockResolvedValue(approved);
+    entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
+    premiumRepository.hasGrant.mockResolvedValue(false);
+
+    await expect(
+      service.startSession({ userId: '507f191e810c19729de860ff' }, approved.sourceQuizId),
+    ).rejects.toMatchObject({ code: 'unlock_required' } satisfies Partial<PremiumQuizError>);
+    await expect(
+      service.startFlashcardSession({ userId: '507f191e810c19729de860ff' }, approved.sourceQuizId),
+    ).rejects.toMatchObject({ code: 'unlock_required' } satisfies Partial<PremiumQuizError>);
+    expect(premiumRepository.createSession).not.toHaveBeenCalled();
   });
 
   it('delivers at most three questions without answer keys and binds cursors to the user', async () => {

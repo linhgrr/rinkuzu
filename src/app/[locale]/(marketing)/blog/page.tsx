@@ -12,18 +12,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     locale,
     path: '/blog',
     title: isVi
-      ? 'Blog RinKuzu — Học thích ứng, AI giáo dục và đồ thị kiến thức'
-      : 'RinKuzu Blog — Adaptive Learning, AI in Education & Knowledge Graphs',
+      ? 'Blog RinKuzu — Học cá nhân hóa, AI giáo dục và đồ thị kiến thức'
+      : 'RinKuzu Blog — Personalized Learning, AI in Education & Knowledge Graphs',
     description: isVi
-      ? 'Bài viết về học thích ứng, xây dựng đồ thị kiến thức, phân loại Bloom và cách biến tài liệu PDF thành lộ trình luyện tập cá nhân hóa.'
-      : "Insights on adaptive learning, knowledge graph construction, Bloom's Taxonomy in practice, and turning PDFs into personalized practice paths.",
+      ? 'Bài viết về học cá nhân hóa, xây dựng đồ thị kiến thức, phân loại Bloom và cách biến tài liệu PDF thành lộ trình luyện tập cá nhân hóa.'
+      : "Insights on personalized learning, knowledge graph construction, Bloom's Taxonomy in practice, and turning PDFs into personalized practice paths.",
   });
 }
 
 const englishPosts = [
   {
     slug: 'ai-powered-quiz-generation-guide',
-    title: 'How AI Transforms PDF Learning into Adaptive Quizzes',
+    title: 'How AI Transforms PDF Learning into Personalized Quizzes',
     description:
       "Discover how RinKuzu uses large language models, knowledge graphs, and Bayesian Knowledge Tracing to extract concepts from lecture PDFs and generate personalized quiz questions that adapt to each learner's mastery level.",
     date: 'March 27, 2026',
@@ -38,7 +38,7 @@ const englishPosts = [
     slug: 'knowledge-graphs-adaptive-learning-pdfs',
     title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
     description:
-      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure adaptive practice from supported PDF material.",
+      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
     date: 'March 20, 2026',
     dateIso: '2026-03-20',
     readTime: '10 min read',
@@ -52,7 +52,7 @@ const englishPosts = [
 const vietnamesePosts = [
   {
     ...englishPosts[0],
-    title: 'AI biến tài liệu PDF thành quiz thích ứng như thế nào?',
+    title: 'AI biến tài liệu PDF thành quiz cá nhân hóa như thế nào?',
     description:
       'Tìm hiểu cách RinKuzu trích xuất khái niệm từ PDF bài giảng, tạo câu hỏi luyện tập và điều chỉnh nội dung theo mức độ nắm vững của người học.',
     date: '27 tháng 3, 2026',
@@ -94,15 +94,15 @@ export default async function BlogIndexPage({ params }: Props) {
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed max-w-2xl">
             {isVi
-              ? 'Kiến thức thực tiễn về học thích ứng, AI trong giáo dục, đồ thị kiến thức và cách biến PDF bài giảng thành lộ trình luyện tập cá nhân hóa.'
-              : 'Insights on adaptive learning, AI in education, knowledge graphs, and turning PDF lectures into personalized practice journeys.'}
+              ? 'Kiến thức thực tiễn về học cá nhân hóa, AI trong giáo dục, đồ thị kiến thức và cách biến PDF bài giảng thành lộ trình luyện tập cá nhân hóa.'
+              : 'Insights on personalized learning, AI in education, knowledge graphs, and turning PDF lectures into personalized practice journeys.'}
           </p>
         </div>
       </header>
 
       {/* Post list */}
       <div className="max-w-3xl mx-auto px-6 py-16 space-y-12">
-        {posts.map((post) => (
+        {posts.map((post, index) => (
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
@@ -114,6 +114,10 @@ export default async function BlogIndexPage({ params }: Props) {
                 src={post.image}
                 alt={post.imageAlt}
                 fill
+                // The first thumbnail is the LCP element (RIN-683): load it eagerly at high
+                // priority; the cards below stay lazy.
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : undefined}
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                 sizes="(max-width: 768px) 100vw, 720px"
               />

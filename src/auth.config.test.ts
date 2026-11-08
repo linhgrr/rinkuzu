@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Session } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 
@@ -8,23 +8,30 @@ describe('resolveAuthRedirectTarget', () => {
   const baseUrl = 'https://www.rinkuzu.app';
 
   it('returns an absolute same-origin URL for relative paths', () => {
+    expect(resolveAuthRedirectTarget('/en/profile', baseUrl)).toBe(
+      'https://www.rinkuzu.app/en/profile',
+    );
+  });
+
+  it('sends a sign-in with no real destination to the post-sign-in landing (RIN-913)', () => {
     expect(resolveAuthRedirectTarget('/en/dashboard', baseUrl)).toBe(
-      'https://www.rinkuzu.app/en/dashboard',
+      'https://www.rinkuzu.app/en/start',
+    );
+    expect(resolveAuthRedirectTarget('https://www.rinkuzu.app/vi/start', baseUrl)).toBe(
+      'https://www.rinkuzu.app/vi/start',
     );
   });
 
   it('rejects absolute external URLs', () => {
     expect(resolveAuthRedirectTarget('https://evil.example/phish', baseUrl)).toBe(
-      'https://www.rinkuzu.app/vi/dashboard',
+      'https://www.rinkuzu.app/vi/start',
     );
   });
 
   it('rejects auth endpoint loops', () => {
-    expect(resolveAuthRedirectTarget('/login', baseUrl)).toBe(
-      'https://www.rinkuzu.app/vi/dashboard',
-    );
+    expect(resolveAuthRedirectTarget('/login', baseUrl)).toBe('https://www.rinkuzu.app/vi/start');
     expect(resolveAuthRedirectTarget('/en/register', baseUrl)).toBe(
-      'https://www.rinkuzu.app/en/dashboard',
+      'https://www.rinkuzu.app/en/start',
     );
   });
 
@@ -86,5 +93,34 @@ describe('edge-safe auth callbacks', () => {
         role: 'user',
       },
     });
+  });
+});
+
+describe('trustHost', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function loadTrustHost(env: { AUTH_TRUST_HOST?: string; VERCEL?: string }) {
+    vi.stubEnv('AUTH_TRUST_HOST', env.AUTH_TRUST_HOST);
+    vi.stubEnv('VERCEL', env.VERCEL);
+    vi.resetModules();
+    const { default: config } = await import('@/auth.config');
+    return config.trustHost;
+  }
+
+  it('trusts the host on Vercel when AUTH_TRUST_HOST is unset (Preview)', async () => {
+    await expect(loadTrustHost({ VERCEL: '1' })).resolves.toBe(true);
+  });
+
+  it('trusts the host when AUTH_TRUST_HOST is true', async () => {
+    await expect(loadTrustHost({ AUTH_TRUST_HOST: 'true' })).resolves.toBe(true);
+  });
+
+  it('does not trust the host off Vercel without AUTH_TRUST_HOST', async () => {
+    await expect(loadTrustHost({})).resolves.toBe(false);
+    await expect(loadTrustHost({ AUTH_TRUST_HOST: 'false' })).resolves.toBe(false);
+    await expect(loadTrustHost({ VERCEL: '0' })).resolves.toBe(false);
   });
 });

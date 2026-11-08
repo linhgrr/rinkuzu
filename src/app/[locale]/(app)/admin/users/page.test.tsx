@@ -31,10 +31,18 @@ vi.mock('@/features/admin/users/api/admin-users-api', () => ({
   grantAdminUserSubscription: vi.fn(),
   updateAdminUserRole: vi.fn(),
   updateAdminUserStatus: vi.fn(),
+  updateAdminUserTestAccount: vi.fn(),
 }));
 vi.mock('@/features/admin/plans/api/admin-plans-api', () => ({
   fetchAdminBillingPlanViewModels: vi.fn(),
 }));
+
+// Row actions live in one Actions menu (RIN-1021); jsdom renders both the table row and the card.
+const openFirstActionsMenu = () => {
+  const [trigger] = screen.getAllByRole('button', { name: 'actions' });
+  if (!trigger) throw new Error('no Actions menu trigger');
+  fireEvent.click(trigger);
+};
 
 const user = {
   id: '507f191e810c19729de860ea',
@@ -43,6 +51,7 @@ const user = {
   disable: 0 as const,
   accountStatusLabel: 'accountActive' as const,
   accountStatusVariant: 'success' as const,
+  isTestAccount: false,
   createdAt: '2026-08-24T00:00:00.000Z',
   createdAtLabel: '24/08/2026',
 };
@@ -83,6 +92,7 @@ describe('AdminUsersPage credit action', () => {
 
   it('opens the modal and submits amount, reason, and a stable idempotency key', async () => {
     render(<AdminUsersPage />);
+    openFirstActionsMenu();
 
     fireEvent.click(screen.getByRole('button', { name: 'addCredit' }));
     fireEvent.change(screen.getByLabelText('creditAmount'), { target: { value: '5' } });
@@ -104,6 +114,7 @@ describe('AdminUsersPage credit action', () => {
 
   it('offers direct one-user support and feedback outreach actions', () => {
     render(<AdminUsersPage />);
+    openFirstActionsMenu();
 
     expect(screen.getByRole('link', { name: 'Hỗ trợ' })).toHaveAttribute(
       'href',

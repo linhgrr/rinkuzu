@@ -31,4 +31,24 @@ describe('home dashboard contract', () => {
 
     expect(messages.home).not.toHaveProperty('reviewToday');
   });
+
+  it.each(['en', 'vi'])('ships the new-learner starter copy in the %s locale', (locale) => {
+    const messages = JSON.parse(fs.readFileSync(`messages/${locale}/dashboard.json`, 'utf8')) as {
+      home: {
+        hero: Record<string, string>;
+        starter?: Record<string, string>;
+      };
+    };
+
+    // RIN-988: the starter block is the only quiz CTA; the hero has no duplicate.
+    expect(messages.home.hero).not.toHaveProperty('starterCta');
+    expect(messages.home.hero['adaptiveLink']).toEqual(expect.any(String));
+    expect(Object.keys(messages.home.starter ?? {}).sort()).toEqual([
+      'alternativesLabel',
+      'questionCount',
+      'start',
+      'subtitle',
+      'title',
+    ]);
+  });
 });

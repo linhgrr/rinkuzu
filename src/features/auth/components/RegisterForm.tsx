@@ -1,7 +1,8 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +10,7 @@ import { z } from 'zod';
 
 import { registerAccount } from '@/features/auth/api/auth-api';
 import { ApiResponseError } from '@/lib/api/client';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -25,14 +27,19 @@ import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
 import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStrengthMeter';
 import { emailSchema, passwordSchema } from '@/lib/validation/auth';
 import { usePasswordStrength } from '@/lib/validation/usePasswordStrength';
-import { toBrowserPath } from '@/lib/routing/pathname';
+import {
+  forwardableAuthCallback,
+  resolveAuthCallback,
+  withAuthCallback,
+} from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
-import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { captureAnalyticsEvent, markAnalyticsGoogleAuthPending } from '@/lib/analytics/client';
 
 interface RegisterFormProps {
   locale: string;
   googleEnabled?: boolean;
-  onSwitchMode?: () => void;
+  /** Called with the safe callback path (or null) so sign-in keeps it. */
+  onSwitchMode?: (callbackUrl: string | null) => void;
 }
 
 const formSchema = z
@@ -102,11 +109,18 @@ function PasswordCriteriaCard({
   );
 }
 
-export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: RegisterFormProps) {
+function RegisterFormContent({ locale, googleEnabled = false, onSwitchMode }: RegisterFormProps) {
   const t = useTranslations('auth');
+  const apiErrorMessage = useApiErrorMessage();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [serverSuccess, setServerSuccess] = useState<string | null>(null);
+  // Same guards as LoginForm: a guest who signs up from a quiz goes back to it.
+  const searchParams = useSearchParams();
+  const get = searchParams.get.bind(searchParams);
+  const { browserUrl: callbackUrl } = resolveAuthCallback(get('callbackUrl'), locale);
+  // Unprefixed path for the verification email and the sign-in link; null = dashboard.
+  const forwardedCallback = forwardableAuthCallback(get('callbackUrl'));
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -132,15 +146,18 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
     setServerError(null);
     captureAnalyticsEvent('signup_started', { method: 'credentials', locale });
     try {
-      const result = await registerAccount({ email: values.email, password: values.password });
-      setServerSuccess(result.message ?? t('accountCreatedSuccess'));
+      await registerAccount({
+        email: values.email,
+        password: values.password,
+        ...(forwardedCallback ? { callbackUrl: forwardedCallback } : {}),
+      });
+      // Localized copy, not the server's English meta.message (RIN-756).
+      setServerSuccess(t('checkEmailMessage'));
     } catch (error) {
       setServerError(
         error instanceof ApiResponseError && error.code === 'registration_method_mismatch'
           ? t('registrationMethodMismatch')
-          : error instanceof Error
-            ? error.message
-            : t('registrationFailed'),
+          : apiErrorMessage(error),
       );
     }
   });
@@ -153,8 +170,12 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
     <div>
       {googleEnabled && (
         <GoogleAuthButton
-          callbackUrl={toBrowserPath(ROUTES.DASHBOARD, locale)}
+          callbackUrl={callbackUrl}
           disabled={isSubmitting}
+          onBeforeSignIn={() => {
+            captureAnalyticsEvent('signup_started', { method: 'google', locale });
+            markAnalyticsGoogleAuthPending(locale);
+          }}
         />
       )}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>
@@ -304,14 +325,14 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
             {onSwitchMode ? (
               <button
                 type="button"
-                onClick={onSwitchMode}
+                onClick={() => onSwitchMode(forwardedCallback)}
                 className="font-semibold text-brand-trust transition-colors hover:text-brand-trust-hover"
               >
                 {t('signIn')}
               </button>
             ) : (
               <Link
-                href="/login"
+                href={withAuthCallback(ROUTES.LOGIN, forwardedCallback)}
                 className="font-semibold text-brand-trust transition-colors hover:text-brand-trust-hover"
               >
                 {t('signIn')}
@@ -321,5 +342,25 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
         </div>
       </div>
     </div>
+  );
+}
+
+function RegisterFormFallback() {
+  return (
+    <div className="space-y-4 py-6" aria-hidden="true">
+      <div className="h-12 rounded-full bg-surface-warm" />
+      <div className="h-12 rounded-full bg-surface-warm" />
+      <div className="h-12 rounded-full bg-surface-warm" />
+    </div>
+  );
+}
+
+// Suspense boundary for useSearchParams, as in LoginForm. The auth layout is
+// dynamic (it reads the session), so the fallback does not show in practice.
+export function RegisterForm(props: RegisterFormProps) {
+  return (
+    <Suspense fallback={<RegisterFormFallback />}>
+      <RegisterFormContent {...props} />
+    </Suspense>
   );
 }

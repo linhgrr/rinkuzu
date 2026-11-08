@@ -63,6 +63,78 @@ describe('Attempt model identity', () => {
     );
   });
 
+  describe('guest claim token (RIN-912)', () => {
+    const hash = 'c'.repeat(64);
+
+    it('accepts a token-only guest and keeps the hash out of default reads', async () => {
+      const attempt = new Attempt({ ...submission, guestClaimTokenHash: hash });
+
+      await expect(attempt.validate()).resolves.toBeUndefined();
+      expect(Attempt.schema.path('guestClaimTokenHash').options['select']).toBe(false);
+    });
+
+    it('rejects a user or email combined with a token hash', async () => {
+      const withUser = new Attempt({
+        ...submission,
+        user: '507f191e810c19729de860eb',
+        guestClaimTokenHash: hash,
+      });
+      const withEmail = new Attempt({
+        ...submission,
+        guestEmail: 'guest@example.com',
+        guestClaimTokenHash: hash,
+      });
+
+      await expect(withUser.validate()).rejects.toThrow('Exactly one attempt identity is required');
+      await expect(withEmail.validate()).rejects.toThrow(
+        'Exactly one attempt identity is required',
+      );
+    });
+
+    it('rejects a hash that is not SHA-256 hex', async () => {
+      const attempt = new Attempt({ ...submission, guestClaimTokenHash: 'raw-token' });
+
+      await expect(attempt.validate()).rejects.toThrow('SHA-256 hex digest');
+    });
+
+    it('allows claimedAt only on a user-owned attempt', async () => {
+      const claimed = new Attempt({
+        ...submission,
+        user: '507f191e810c19729de860eb',
+        claimedAt: new Date('2026-11-05T00:00:00Z'),
+      });
+      const unowned = new Attempt({
+        ...submission,
+        guestClaimTokenHash: hash,
+        claimedAt: new Date('2026-11-05T00:00:00Z'),
+      });
+
+      await expect(claimed.validate()).resolves.toBeUndefined();
+      await expect(unowned.validate()).rejects.toThrow('Only a user-owned attempt can be claimed');
+    });
+
+    it('declares partial unique indexes for the hash and guest idempotency', () => {
+      const indexes = Attempt.schema.indexes();
+      expect(indexes).toContainEqual([
+        { guestClaimTokenHash: 1 },
+        expect.objectContaining({
+          unique: true,
+          partialFilterExpression: { guestClaimTokenHash: { $type: 'string' } },
+        }),
+      ]);
+      expect(indexes).toContainEqual([
+        { guestClaimTokenHash: 1, idempotencyKey: 1 },
+        expect.objectContaining({
+          unique: true,
+          partialFilterExpression: {
+            guestClaimTokenHash: { $type: 'string' },
+            idempotencyKey: { $type: 'string' },
+          },
+        }),
+      ]);
+    });
+  });
+
   it('requires a valid immutable quiz snapshot for new attempts', async () => {
     const missingSnapshot = new Attempt({
       ...submission,
@@ -79,6 +151,40 @@ describe('Attempt model identity', () => {
     await expect(falseCompleteSnapshot.validate()).rejects.toThrow(
       'Quiz snapshots require at least one question',
     );
+  });
+
+  describe('quick round contract (RIN-936)', () => {
+    const playOrder = [16, 2, 9, 0, 11, 5, 14, 7, 3, 12];
+    const question = submission.quizSnapshot.questions[0];
+    const quick = {
+      ...submission,
+      user: '507f191e810c19729de860eb',
+      quizSnapshot: { ...submission.quizSnapshot, questions: playOrder.map(() => question) },
+      totalQuestions: 10,
+      correctAnswers: 10,
+      answers: playOrder.map(() => ({ kind: 'single', selectedIndex: 0 })),
+      mode: 'quick',
+      questionIndices: playOrder,
+    };
+
+    it('accepts a quick attempt with play-order indices and keeps a full attempt mode-less', async () => {
+      await expect(new Attempt(quick).validate()).resolves.toBeUndefined();
+      const full = new Attempt({ ...submission, user: '507f191e810c19729de860eb' });
+      await expect(full.validate()).resolves.toBeUndefined();
+      expect(full.mode).toBeUndefined();
+    });
+
+    it('rejects a quick attempt without indices, with duplicates, or combined with a retry', async () => {
+      const { questionIndices: _omit, ...withoutIndices } = quick;
+      await expect(new Attempt(withoutIndices).validate()).rejects.toThrow('questionIndices');
+      await expect(
+        new Attempt({ ...quick, questionIndices: [...playOrder.slice(0, 9), 16] }).validate(),
+      ).rejects.toThrow('questionIndices');
+      await expect(
+        new Attempt({ ...quick, retryOfAttemptId: '507f191e810c19729de860ec' }).validate(),
+      ).rejects.toThrow('questionIndices');
+      await expect(new Attempt({ ...quick, mode: 'speed' }).validate()).rejects.toThrow();
+    });
   });
 
   it('enforces a complete and internally consistent submission contract', async () => {

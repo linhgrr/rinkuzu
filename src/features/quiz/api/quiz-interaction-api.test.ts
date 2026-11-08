@@ -36,7 +36,7 @@ describe('quiz-interaction-api', () => {
         slug: 'linear algebra',
         answers: [0, [1, 2]],
         idempotencyKey: 'idem-1',
-        userEmail: 'user@example.com',
+        guestClaimToken: 'T'.repeat(43),
       }),
     ).resolves.toEqual({
       score: 80,
@@ -50,7 +50,7 @@ describe('quiz-interaction-api', () => {
       body: JSON.stringify({
         answers: [0, [1, 2]],
         idempotencyKey: 'idem-1',
-        userEmail: 'user@example.com',
+        guestClaimToken: 'T'.repeat(43),
       }),
     });
 
@@ -64,11 +64,72 @@ describe('quiz-interaction-api', () => {
       slug: 'quiz',
       answers: [1],
       idempotencyKey: 'idem-2',
-      userEmail: '',
+      guestClaimToken: '',
     });
     expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
       answers: [1],
       idempotencyKey: 'idem-2',
+    });
+  });
+
+  it('sends a guest claim token and no email for a signed-out submit (RIN-912)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+      attemptId: 'attempt-3',
+    });
+    await submitQuizAttemptViewModel({
+      slug: 'quiz',
+      answers: [1],
+      idempotencyKey: 'idem-3',
+      guestClaimToken: 'fake-token',
+    });
+    expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
+      answers: [1],
+      idempotencyKey: 'idem-3',
+      guestClaimToken: 'fake-token',
+    });
+  });
+
+  it('sends retryOfAttemptId for a retry-missed session (RIN-917)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      score: 50,
+      correctAnswers: 1,
+      totalQuestions: 2,
+      attemptId: 'attempt-3',
+    });
+    await submitQuizAttemptViewModel({
+      slug: 'quiz',
+      answers: [1, 0],
+      idempotencyKey: 'idem-3',
+      retryOfAttemptId: '6a8ed20a3d0a1892cacdfe0b',
+    });
+    expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
+      answers: [1, 0],
+      idempotencyKey: 'idem-3',
+      retryOfAttemptId: '6a8ed20a3d0a1892cacdfe0b',
+    });
+  });
+
+  it('sends mode quick and the played question indices for a quick round (RIN-933)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      score: 50,
+      correctAnswers: 1,
+      totalQuestions: 2,
+      attemptId: 'attempt-4',
+    });
+    await submitQuizAttemptViewModel({
+      slug: 'quiz',
+      answers: [1, 0],
+      idempotencyKey: 'idem-4',
+      questionIndices: [7, 2],
+    });
+    expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
+      answers: [1, 0],
+      idempotencyKey: 'idem-4',
+      mode: 'quick',
+      questionIndices: [7, 2],
     });
   });
 

@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
 import { QuestionReviewList } from './QuestionReviewList';
@@ -13,6 +13,9 @@ vi.mock('next/image', () => ({
     <img src={src} alt={alt} />
   ),
 }));
+
+// KaTeX loads on demand (RIN-679); its first import is a cold transform in vitest.
+const KATEX_LOAD = { timeout: 10_000 };
 
 describe('QuestionReviewList', () => {
   it('uses the shared Markdown contract for prompts, summaries and options', async () => {
@@ -40,11 +43,14 @@ describe('QuestionReviewList', () => {
         tProfile={(key) => key}
       />,
     );
+    await waitFor(
+      () => expect(container.querySelectorAll('.katex').length).toBeGreaterThanOrEqual(5),
+      KATEX_LOAD,
+    );
 
     expect(screen.getByText('both')).toHaveProperty('tagName', 'STRONG');
     expect(container.querySelector('h3')).toBeInTheDocument();
     expect(container.querySelectorAll('[data-rich-text="option"]')).toHaveLength(2);
-    expect(container.querySelectorAll('.katex').length).toBeGreaterThanOrEqual(5);
     expect((await axe(container)).violations).toEqual([]);
   });
 
@@ -81,5 +87,49 @@ describe('QuestionReviewList', () => {
 
     expect(onToggleBookmark).toHaveBeenCalledWith(0, question);
     expect(onOpenAI).toHaveBeenCalledWith(question, 0);
+  });
+
+  // RIN-989: at 375px the badges squeezed the prompt to one character per line.
+  // jsdom has no layout, so pin the mobile-first contract the layout relies on.
+  it('keeps the prompt on its own full-width row so it wraps by words on mobile', () => {
+    const longOption = 'x'.repeat(60);
+    const { container } = render(
+      <QuestionReviewList
+        questions={[
+          {
+            id: 'q1',
+            question: 'Which planet is closest to the Sun?',
+            options: [longOption, 'Venus'],
+            type: 'single',
+            correctIndex: 1,
+            userAnswer: 0,
+            isCorrect: false,
+          },
+        ]}
+        bookmarkedQuestions={new Set()}
+        bookmarkLoading={new Set()}
+        onToggleBookmark={vi.fn()}
+        onOpenAI={vi.fn()}
+        chatTurnsByQuestion={{}}
+        formatAnswer={() => longOption}
+        formatCorrectAnswer={() => 'Venus'}
+        t={(key) => key}
+        tProfile={(key) => key}
+      />,
+    );
+
+    const prompt = container.querySelector('[data-review-part="prompt"]');
+    const badges = container.querySelector('[data-review-part="badges"]');
+    const actions = container.querySelector('[data-review-part="actions"]');
+    expect(prompt).toHaveClass('w-full', 'min-w-0', 'md:w-auto', 'md:flex-1');
+    expect(badges).toHaveClass('w-full', 'flex-wrap', 'md:w-auto');
+    expect(actions).toHaveClass('w-full', 'flex-wrap');
+    // Badges sit above the prompt on mobile, actions wrap below the badges.
+    expect(badges).toHaveClass('order-1', 'md:order-3');
+    expect(actions).toHaveClass('order-2', 'md:order-1');
+    expect(prompt).toHaveClass('order-3', 'md:order-2');
+    for (const text of container.querySelectorAll('[data-rich-text]')) {
+      expect(text).toHaveClass('min-w-0', 'break-words');
+    }
   });
 });

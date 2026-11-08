@@ -29,6 +29,8 @@ export function buildRecentAttemptActivityPipeline(limit) {
         score: 1,
         takenAt: 1,
         userEmail: '$userDoc.email',
+        // A boolean only: the claim-token hash itself never leaves the database.
+        isClaimTokenGuest: { $eq: [{ $type: '$guestClaimTokenHash' }, 'string'] },
         quizTitle: '$quizSnapshot.title',
         answeredQuestions: {
           $size: {

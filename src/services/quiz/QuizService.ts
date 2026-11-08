@@ -6,8 +6,9 @@ import type {
   QuizDiscussionDto,
   QuizDetailDto,
   QuizListDto,
-  QuizListItemDto,
+  PublicQuizSitemapEntryDto,
   QuizListOptionsDto,
+  QuizMetadataDto,
   QuizPlayDetailDto,
   QuizProgressResponseDto,
   ReportQuizResponseDto,
@@ -24,6 +25,7 @@ import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { Session } from 'next-auth';
 
@@ -55,6 +57,7 @@ export class QuizService implements IQuizService {
     quizAttemptProgressRepository: IQuizAttemptProgressRepository,
     folderRepository?: IFolderRepository,
     premiumAccessPolicy?: PremiumDiscussionAccessPolicy,
+    attemptRepository?: Pick<IAttemptRepository, 'findByIdWithQuiz'>,
   ) {
     this.crudService = new QuizCrudService(quizRepository, folderRepository);
     this.playService = new QuizPlayService(
@@ -62,6 +65,7 @@ export class QuizService implements IQuizService {
       userRepository,
       quizProgressRepository,
       quizAttemptProgressRepository,
+      attemptRepository,
     );
     this.adminService = new QuizAdminService(quizRepository);
     this.discussionService = new QuizDiscussionService(
@@ -96,8 +100,16 @@ export class QuizService implements IQuizService {
     return this.crudService.getQuizById(id, userId, userRole);
   }
 
-  async getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null> {
+  async getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]> {
+    return this.adminService.getPublicSitemapQuizzes(limit);
+  }
+
+  async getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null> {
     return this.crudService.getQuizMetadataBySlug(slug);
+  }
+
+  async resolveSlugAlias(slug: string): Promise<string | null> {
+    return this.playService.resolveSlugAlias(slug);
   }
 
   async getQuizForPlay(
@@ -106,6 +118,15 @@ export class QuizService implements IQuizService {
     userId?: string,
   ): Promise<ServiceResult<QuizPlayDetailDto>> {
     return this.playService.getQuizForPlay(slug, userRole, userId);
+  }
+
+  async getRetryQuizForPlay(
+    slug: string,
+    retryOfAttemptId: string,
+    userId?: string,
+    userRole?: string,
+  ): Promise<ServiceResult<QuizPlayDetailDto>> {
+    return this.playService.getRetryQuizForPlay(slug, retryOfAttemptId, userId, userRole);
   }
 
   async getSavedQuizProgress(
@@ -169,13 +190,9 @@ export class QuizService implements IQuizService {
   }
 
   async submitQuizAttempt(
-    slug: string,
-    answers: (number | number[])[],
-    idempotencyKey: string,
-    session: Session | null,
-    userEmail?: string,
+    ...args: Parameters<IQuizService['submitQuizAttempt']>
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
-    return this.playService.submitQuizAttempt(slug, answers, idempotencyKey, session, userEmail);
+    return this.playService.submitQuizAttempt(...args);
   }
 
   async getQuizDiscussions(

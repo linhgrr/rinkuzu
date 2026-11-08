@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { FolderGridSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { HiOutlineDotsVertical, HiOutlineFolder, HiOutlinePlus } from 'react-icons/hi';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorToast } from '@/lib/api/use-api-error';
 import { deleteFolderViewModel, renameFolderViewModel } from '@/features/folders/api/folders-api';
 import { AddFolderModal } from './AddFolderModal';
 import { useFolders } from '../hooks/useFolders';
@@ -118,7 +118,7 @@ function FolderCard({
         ) : null}
       </div>
       <Link href={href} className="mt-5 block">
-        <h3 className="truncate font-semibold text-ink">{folder.name}</h3>
+        <h2 className="truncate font-semibold text-ink">{folder.name}</h2>
         <p className="mt-1 text-sm text-ink/55">{quizCountLabel}</p>
       </Link>
     </article>
@@ -130,6 +130,7 @@ export function FoldersView() {
   const tCommon = useTranslations('common');
   const { folders, unfiledCount, isLoading, error, mutate } = useFolders();
   const [state, dispatch] = useReducer(foldersViewReducer, initialFoldersViewState);
+  const showMutationError = useApiErrorToast();
 
   async function renameFolder() {
     if (!state.renaming || !state.renameValue.trim()) return;
@@ -140,7 +141,7 @@ export function FoldersView() {
       dispatch({ type: 'closeRename' });
       toast.success(t('folderRenamed'));
     } catch (requestError) {
-      toast.error(extractUnknownErrorMessage(requestError, t('folderRenameError')));
+      showMutationError(requestError);
     }
     dispatch({ type: 'setSubmitting', value: false });
   }
@@ -154,13 +155,13 @@ export function FoldersView() {
       dispatch({ type: 'closeDelete' });
       toast.success(t('folderDeleted'));
     } catch (requestError) {
-      toast.error(extractUnknownErrorMessage(requestError, t('folderDeleteError')));
+      showMutationError(requestError);
     }
     dispatch({ type: 'setSubmitting', value: false });
   }
 
   if (error) {
-    return <ErrorState message={t('foldersLoadError')} className="rounded-xl" />;
+    return <ErrorState error={error} onRetry={() => mutate()} />;
   }
 
   return (

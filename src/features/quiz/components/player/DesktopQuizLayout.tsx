@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { ButtonBase } from '@/components/ui/ButtonBase';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Pill } from '@/components/ui/Pill';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
-import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from 'react-icons/hi';
+import { HiOutlineArrowLeft, HiOutlineUser } from 'react-icons/hi';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
@@ -58,7 +59,6 @@ interface DesktopQuizLayoutProps {
   quizTitle: string;
   questions: QuizPlayQuestionViewModel[];
   sessionEmail?: string | null;
-  userEmail: string;
   currentQuestionIndex: number;
   setCurrentQuestionIndex: (index: number) => void;
   answeredQuestions: number;
@@ -74,18 +74,22 @@ interface DesktopQuizLayoutProps {
   submitQuiz: () => Promise<boolean>;
   submitting: boolean;
   submit: DesktopQuizSubmitControls;
+  /** Shown above the question card, e.g. the post-sign-in starter intro (RIN-913). */
+  notice?: ReactNode;
+  /** Pill beside the title, e.g. "Retry: 3 questions" (RIN-917). */
+  titleBadge?: string;
   t: TranslateFn;
 }
 
 interface DesktopQuizHeaderProps {
   quizTitle: string;
   sessionEmail?: string | null;
-  userEmail: string;
   currentQuestionIndex: number;
   questionCount: number;
   answeredQuestions: number;
   progress: number;
   onExit: () => void;
+  titleBadge?: string;
   t: TranslateFn;
 }
 
@@ -117,12 +121,12 @@ interface DesktopExitModalProps {
 function DesktopQuizHeader({
   quizTitle,
   sessionEmail,
-  userEmail,
   currentQuestionIndex,
   questionCount,
   answeredQuestions,
   progress,
   onExit,
+  titleBadge,
   t,
 }: DesktopQuizHeaderProps) {
   return (
@@ -139,20 +143,19 @@ function DesktopQuizHeader({
               {t('exitQuiz')}
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-neutral-900">{quizTitle}</h1>
-              <div className="text-sm">
-                {sessionEmail ? (
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-semibold text-neutral-900">{quizTitle}</h1>
+                {titleBadge ? <Pill tone="warm">{titleBadge}</Pill> : null}
+              </div>
+              {/* Guests play without an email (RIN-912): only a session shows a badge. */}
+              {sessionEmail ? (
+                <div className="text-sm">
                   <Badge variant="success" className="text-xs">
                     <HiOutlineUser className="mr-1 size-3" />
                     {sessionEmail}
                   </Badge>
-                ) : (
-                  <Badge variant="default" className="text-xs">
-                    <HiOutlineMail className="mr-1 size-3" />
-                    {userEmail}
-                  </Badge>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="flex items-center gap-x-4">
@@ -324,7 +327,6 @@ export function DesktopQuizLayout({
   quizTitle,
   questions,
   sessionEmail,
-  userEmail,
   currentQuestionIndex,
   setCurrentQuestionIndex,
   answeredQuestions,
@@ -340,6 +342,8 @@ export function DesktopQuizLayout({
   submitQuiz,
   submitting,
   submit,
+  notice,
+  titleBadge,
   t,
 }: DesktopQuizLayoutProps) {
   const [discussionLoaded, setDiscussionLoaded] = useState(
@@ -354,16 +358,16 @@ export function DesktopQuizLayout({
   };
 
   return (
-    <div className="min-h-screen">
+    <div data-quiz-player className="min-h-screen">
       <DesktopQuizHeader
         quizTitle={quizTitle}
         {...(sessionEmail !== undefined ? { sessionEmail } : {})}
-        userEmail={userEmail}
         currentQuestionIndex={currentQuestionIndex}
         questionCount={questions.length}
         answeredQuestions={answeredQuestions}
         progress={progress}
         onExit={exit.open}
+        {...(titleBadge ? { titleBadge } : {})}
         t={t}
       />
 
@@ -372,6 +376,7 @@ export function DesktopQuizLayout({
       >
         <div className="flex">
           <div className={`flex-1 ${discussion.collapsed ? '' : 'pr-6'}`}>
+            {notice ? <div className="mb-4">{notice}</div> : null}
             <QuizQuestionCard
               question={currentQuestion}
               questionIndex={currentQuestionIndex}

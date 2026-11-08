@@ -19,7 +19,7 @@ import { deleteQuizById } from '@/features/quiz/api/quiz-api';
 import type { QuizEditViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { formatDate } from '@/lib/formatters';
-import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 
 function EditQuizLoadingState({ label }: { label: string }) {
   return <QuizWorkspacePageSkeleton label={label} />;
@@ -120,6 +120,7 @@ function QuizLinkCard({
 
 export function EditQuizPage() {
   const t = useTranslations('create');
+  const apiErrorMessage = useApiErrorMessage();
   const tCommon = useTranslations('common');
   const tQuiz = useTranslations('quiz');
   const { data: session } = useSession();
@@ -135,21 +136,28 @@ export function EditQuizPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
+    // A newer quiz id (or unmount) supersedes this load: its late result is dropped.
+    let cancelled = false;
     const fetchQuiz = async () => {
       setStatus('loading');
       setLoadError('');
       try {
         const data = await fetchQuizEditViewModel(quizId);
+        if (cancelled) return;
         setQuiz(data);
         setStatus('ready');
       } catch (error) {
-        setLoadError(extractUnknownErrorMessage(error, t('loadFailed')));
+        if (cancelled) return;
+        setLoadError(apiErrorMessage(error, t('loadFailed')));
         setStatus('error');
       }
     };
 
     void fetchQuiz();
-  }, [quizId, t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [quizId, t, apiErrorMessage]);
 
   if (status === 'loading') {
     return <EditQuizLoadingState label={tCommon('loading')} />;
@@ -300,7 +308,7 @@ export function EditQuizPage() {
                 push('/my-quizzes');
               }, 2000);
             } catch (error) {
-              setStatusError(extractUnknownErrorMessage(error, t('updateFailed')));
+              setStatusError(apiErrorMessage(error, t('updateFailed')));
               throw error;
             }
           }}
@@ -323,7 +331,7 @@ export function EditQuizPage() {
               push('/my-quizzes');
             } catch (error) {
               setDeleting(false);
-              setStatusError(extractUnknownErrorMessage(error, t('deleteFailed')));
+              setStatusError(apiErrorMessage(error, t('deleteFailed')));
             }
           }}
         />

@@ -1,4 +1,8 @@
+/** Which product surface the image belongs to; it becomes part of the stored object key. */
+export type ImageKind = 'question' | 'avatar';
+
 export interface ImageUpload {
+  kind: ImageKind;
   bytes: Uint8Array;
   contentType: string;
   filename: string;
@@ -27,6 +31,14 @@ export class ImageStorageUpstreamError extends Error {
   constructor(message = 'Image upload failed') {
     super(message);
     this.name = 'ImageStorageUpstreamError';
+  }
+}
+
+/** The bytes are not a supported raster image (JPEG, PNG, WebP or GIF). */
+export class ImageStorageInvalidImageError extends Error {
+  constructor(message = 'File must be an image') {
+    super(message);
+    this.name = 'ImageStorageInvalidImageError';
   }
 }
 

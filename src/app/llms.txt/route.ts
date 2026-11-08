@@ -16,12 +16,12 @@ import { publicEnv } from '@/lib/public-env';
 const SITE_URL = publicEnv.NEXT_PUBLIC_SITE_URL;
 const SITE_NAME = 'RinKuzu';
 const DESCRIPTION =
-  "AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.";
+  "AI-powered personalized learning platform that transforms PDF documents into quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.";
 
 const LLM_CONTENT = `# ${SITE_NAME}
 
 ## Site Description
-${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
+${SITE_NAME} is an AI-powered personalized learning platform. ${DESCRIPTION}
 
 ## AI Usage Policy
 - Canonical: ${SITE_URL}
@@ -37,7 +37,7 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 3. Identifies prerequisite relationships between concepts
 4. Creates personalized quiz sessions matching your current level
 5. Tracks mastery across Bloom's cognitive taxonomy levels (Remember → Create)
-6. Provides adaptive practice that prioritizes weak concepts
+6. Provides personalized practice that prioritizes weak concepts
 
 ## Primary Use Cases
 - Students: Exam preparation, self-study, concept review
@@ -48,14 +48,14 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 ## Key Features
 - AI Quiz Generator from PDF: Upload once, get high-quality quizzes with explanations
 - Knowledge Graph: Visual prerequisite map showing concept relationships
-- Adaptive Practice: AI adjusts difficulty based on real-time performance
+- Personalized Practice: AI adjusts difficulty based on real-time performance
 - Mastery Tracking: Accuracy, weak topics, and completion trends
 - Bloom-Level Paths: Practice from recall to higher-order reasoning
 - Bilingual: English and Vietnamese
 
 ## Pricing
-- Free Plan: 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day
-- Premium Plan: Full access to the curated Quiz Premium catalog and higher limits: 50 PDF-to-quiz generations per month (up to 100 pages per file), 12 adaptive paths per month, 500 adaptive exercises per day, and 150 Ask Rin-chan messages per day
+- Free Plan: 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 personalized paths per month, 50 personalized exercises per day, and 25 Ask Rin-chan messages per day
+- Premium Plan: Full access to the curated Quiz Premium catalog and higher limits: 50 PDF-to-quiz generations per month (up to 100 pages per file), 12 personalized paths per month, 500 personalized exercises per day, and 150 Ask Rin-chan messages per day
 
 ## Contact
 - Email: support@rinkuzu.app
@@ -88,13 +88,13 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 ## Frequently Asked Questions
 
 Q: What is RinKuzu?
-A: RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys. Using knowledge graphs and Bloom's Taxonomy, it helps students, teachers, and training teams master any subject at their own pace. The system uses SAINT-Bloom knowledge tracing and Dueling DQN reinforcement learning to continuously adapt to each learner's progress.
+A: RinKuzu is an AI-powered personalized learning platform that transforms PDF documents into quiz-based learning journeys. Using knowledge graphs and Bloom's Taxonomy, it helps students, teachers, and training teams master any subject at their own pace. The system uses SAINT-Bloom knowledge tracing and Dueling DQN reinforcement learning to continuously adapt to each learner's progress.
 
 Q: How do I generate a quiz from a PDF?
 A: Upload supported PDF material and RinKuzu extracts key concepts, identifies prerequisite relationships, and generates quizzes with explanations.
 
 Q: Is RinKuzu free to use?
-A: Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 adaptive paths per month, 50 adaptive exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks the full curated Quiz Premium catalog and raises these limits. Free accounts can permanently unlock individual Premium quizzes with credits earned from approved contributions. See /pricing for details.
+A: Yes. Free includes 5 PDF-to-quiz generations per month (up to 30 pages per file), 2 personalized paths per month, 50 personalized exercises per day, and 25 Ask Rin-chan messages per day. Premium unlocks the full curated Quiz Premium catalog and raises these limits. Free accounts can permanently unlock individual Premium quizzes with credits earned from approved contributions. See /pricing for details.
 
 Q: Which languages does RinKuzu support?
 A: RinKuzu supports Vietnamese and English with a full bilingual interface. AI-generated content adapts to the language of your uploaded PDF.
@@ -105,7 +105,7 @@ A: A knowledge graph maps relationships between concepts in your material. RinKu
 Q: What is Bloom's Taxonomy?
 A: Bloom's Taxonomy classifies cognitive levels from Remember to Create. RinKuzu uses these levels to vary the kinds of practice questions it generates.
 
-Q: How does adaptive learning work on RinKuzu?
+Q: How does personalized learning work on RinKuzu?
 A: RinKuzu tracks your performance using Bayesian Knowledge Tracing (BKT), prioritizing questions on your weakest concepts. A Dueling DQN reinforcement learning agent selects the next best (concept, difficulty) pair. The AI adjusts difficulty dynamically for maximum learning efficiency.
 
 Q: What is the AI tutor Rin-chan?

@@ -1,17 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import { HiOutlineFlag } from 'react-icons/hi';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { reportQuizViewModel } from '@/features/quiz/api/quiz-interaction-api';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface ReportQuizProps {
   quizSlug: string;
@@ -37,9 +39,20 @@ export default function ReportQuiz({
 }: ReportQuizProps) {
   const { data: session } = useSession();
   const t = useTranslations('report');
+  const describeError = useApiErrorMessage();
   const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Auto-close after a successful report; the cleanup stops it firing after unmount (RIN-682).
+  useEffect(() => {
+    if (!isSubmitted) return;
+    const timer = setTimeout(() => {
+      setIsOpen(false);
+      setIsSubmitted(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isSubmitted]);
 
   const {
     register,
@@ -60,13 +73,11 @@ export default function ReportQuiz({
       await reportQuizViewModel(quizSlug, questionId, content);
       setIsSubmitted(true);
       reset({ content: '' });
-      setTimeout(() => {
-        setIsOpen(false);
-        setIsSubmitted(false);
-      }, 2000);
     } catch (error) {
       console.error('Error submitting report:', error);
-      toast.error(error instanceof Error ? error.message : t('failedToSubmit'));
+      // Secondary action: a toast with copy from the error layer (RIN-753).
+      const message = describeError(error);
+      if (message) toast.error(message);
     }
   });
 
@@ -80,21 +91,12 @@ export default function ReportQuiz({
         type="button"
         variant="ghost"
         onClick={() => setIsOpen(true)}
-        className={
-          compact
-            ? 'min-h-11 px-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700'
-            : 'h-[36px] px-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700'
-        }
+        // RIN-987: a quiet neutral link at rest (neutral-500 is 7:1 on white),
+        // so it never outweighs the question; red only on hover or focus.
+        className={`${compact ? 'min-h-11' : 'h-[36px]'} px-3 text-sm font-medium text-neutral-500 hover:bg-red-50 hover:text-red-700 focus-visible:bg-red-50 focus-visible:text-red-700`}
         title={t('reportThisQuiz')}
       >
-        <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-          />
-        </svg>
+        <HiOutlineFlag data-icon="flag" className="size-4" aria-hidden="true" />
         {t('reportQuestion')}
       </Button>
 

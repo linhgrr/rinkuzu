@@ -14,7 +14,7 @@ export function buildOrganizationSchema() {
     url: siteUrl.origin,
     logo: `${siteUrl.origin}/icons/icon-512x512.png`,
     description:
-      "RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.",
+      "RinKuzu is an AI-powered personalized learning platform that transforms PDF documents into quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.",
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'support@rinkuzu.app',
@@ -28,13 +28,8 @@ export function buildOrganizationSchema() {
       postalCode: '100000',
       addressCountry: 'VN',
     },
-    // sameAs: populated once social accounts are created — placeholder only
-    // 'sameAs': [
-    //   'https://twitter.com/rinkuzu',
-    //   'https://facebook.com/rinkuzu',
-    //   'https://linkedin.com/company/rinkuzu',
-    //   'https://instagram.com/rinkuzu',
-    // ],
+    // Only verified, Rinkuzu-owned profiles belong here.
+    sameAs: ['https://www.threads.com/@rinkuzu_app'],
   };
 }
 
@@ -60,7 +55,7 @@ export function buildWebPageSchema(locale: Locale | string) {
     name: 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
     url: canonicalFor(locale, '/'),
     description:
-      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
+      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run personalized practice sessions for students, teachers, and teams.',
     inLanguage: locale,
     primaryImageOfPage: {
       '@type': 'ImageObject',
@@ -88,7 +83,7 @@ export function buildSoftwareApplicationSchema(locale: Locale | string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'RinKuzu Adaptive Learning',
+    name: 'RinKuzu Personalized Learning',
     applicationCategory: 'EducationalApplication',
     operatingSystem: 'Web',
     url: canonicalFor(locale, '/adaptive'),
@@ -100,6 +95,6 @@ export function buildSoftwareApplicationSchema(locale: Locale | string) {
       url: canonicalFor(locale, '/pricing'),
     },
     description:
-      'Adaptive learning platform using AI to build personalized learning paths from PDF materials.',
+      'Learning platform that uses AI to build personalized learning paths from PDF materials.',
   };
 }

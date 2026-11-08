@@ -1,24 +1,16 @@
 'use client';
 
-import { useRouter, Link } from '@/i18n/navigation';
-import { useEffect, useReducer, useRef } from 'react';
+import { useRouter } from '@/i18n/navigation';
+import { useEffect, useReducer, useRef, useState, useSyncExternalStore } from 'react';
 import { useSession } from 'next-auth/react';
 import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytics/client';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
+import { Card, CardHeader } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { preloadMathRenderer } from '@/components/ui/preloadMathRenderer';
 import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
-import {
-  HiOutlineLightBulb,
-  HiOutlineArrowLeft,
-  HiOutlineMail,
-  HiOutlineExclamationCircle,
-  HiOutlineDocumentText,
-  HiOutlineLightningBolt,
-  HiOutlineRefresh,
-} from 'react-icons/hi';
+import { HiOutlineDocumentText } from 'react-icons/hi';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
@@ -32,6 +24,21 @@ import type {
 } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import { routePathSegment } from '@/lib/routing/routeParams';
+import { describeApiError } from '@/lib/api/error-kind';
+import { useApiErrorMessage } from '@/lib/api/use-api-error';
+import { StarterQuizIntro } from '@/features/quiz/components/player/StarterQuizIntro';
+import { POST_SIGNIN_STARTER_ENTRY, TRACKED_QUIZ_ENTRIES } from '@/shared/constants/starter-quiz';
+import { isQuickRoundEligible } from '@/shared/constants/quick-round';
+import {
+  drawQuickRound,
+  markQuickRoundSeen,
+  readQuickRoundSeen,
+} from '@/features/quiz/lib/quick-round-draw';
+import { seededRandom } from '@/features/quiz/lib/seeded-random';
+import {
+  QuickRoundChoice,
+  type QuizPlayMode,
+} from '@/features/quiz/components/player/QuickRoundChoice';
 
 function QuizLayoutLoadingFallback() {
   const t = useTranslations('quiz');
@@ -64,11 +71,11 @@ type QuizPlayerQuiz = Omit<QuizPlayViewModel, 'questions'> & {
   questionIndexMap: number[];
 };
 
-function shuffleArray<T>(array: T[]): T[] {
+function shuffleArray<T>(array: T[], random: () => number): T[] {
   const shuffled = [...array];
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const swapIndex = Math.floor(random() * (index + 1));
     const currentValue = shuffled[index];
     const swapValue = shuffled[swapIndex];
     if (currentValue === undefined || swapValue === undefined) {
@@ -81,7 +88,11 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-function createQuizPlayerData(rawQuiz: QuizPlayViewModel, log: (...args: unknown[]) => void) {
+function createQuizPlayerData(
+  rawQuiz: QuizPlayViewModel,
+  log: (...args: unknown[]) => void,
+  random: () => number,
+) {
   log('\n=== SHUFFLING QUIZ ===');
   log('Original questions count:', rawQuiz.questions.length);
 
@@ -89,7 +100,7 @@ function createQuizPlayerData(rawQuiz: QuizPlayViewModel, log: (...args: unknown
     question,
     originalIndex,
   }));
-  const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex);
+  const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex, random);
   const questionIndexMap: number[] = [];
 
   log('Questions shuffled order:');
@@ -104,6 +115,7 @@ function createQuizPlayerData(rawQuiz: QuizPlayViewModel, log: (...args: unknown
         option,
         originalIndex,
       })),
+      random,
     );
 
     questionIndexMap[questionIndex] = item.originalIndex;
@@ -342,14 +354,16 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
-type QuizPlayerStatus = 'loading' | 'ready' | 'error';
+/** `choosing`: a long quiz waits for "Quick round" or "Full quiz" (RIN-933). */
+type QuizPlayerStatus = 'loading' | 'choosing' | 'ready' | 'error';
 
 interface QuizPlayerState {
   quiz: QuizPlayerQuiz | null;
   status: QuizPlayerStatus;
+  /** Inline copy for the submit flow (already localized). */
   error: string;
-  userEmail: string;
-  showEmailInput: boolean;
+  /** Why the quiz could not load; rendered by ErrorState, never as text (RIN-753). */
+  loadError: unknown;
   currentQuestionIndex: number;
   userAnswers: QuizAnswer[];
   showExitModal: boolean;
@@ -357,21 +371,30 @@ interface QuizPlayerState {
   showMobileDiscussion: boolean;
   showPremiumModal: boolean;
   resumePrompt: { currentQuestionIndex: number; userAnswers: QuizAnswer[] } | null;
+  /** 1-based question of the saved full-quiz progress, shown on the start choice. */
+  choiceResumeQuestion: number | null;
+  /** Quick round: the quiz question index of each played question (RIN-933). */
+  quickIndices: number[] | null;
 }
 
 type QuizPlayerAction =
   | { type: 'patch'; value: Partial<QuizPlayerState> }
-  | { type: 'setSessionEmail'; email: string }
-  | { type: 'loadQuizSuccess'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
+  | {
+      type: 'loadQuizSuccess';
+      quiz: QuizPlayerQuiz;
+      userAnswers: QuizAnswer[];
+      quickIndices?: number[];
+    }
   | {
       type: 'loadQuizWithResume';
       quiz: QuizPlayerQuiz;
       userAnswers: QuizAnswer[];
       resumePrompt: { currentQuestionIndex: number; userAnswers: QuizAnswer[] };
     }
+  | { type: 'showModeChoice'; resumeQuestion: number | null }
   | { type: 'acceptResume' }
   | { type: 'declineResume'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
-  | { type: 'loadQuizError'; error: string }
+  | { type: 'loadQuizError'; error: unknown }
   | { type: 'requirePremium' }
   | { type: 'selectAnswer'; answerIndex: number }
   | { type: 'goToNextQuestion' }
@@ -382,8 +405,7 @@ const initialQuizPlayerState: QuizPlayerState = {
   quiz: null,
   status: 'loading',
   error: '',
-  userEmail: '',
-  showEmailInput: true,
+  loadError: null,
   currentQuestionIndex: 0,
   userAnswers: [],
   showExitModal: false,
@@ -391,18 +413,14 @@ const initialQuizPlayerState: QuizPlayerState = {
   showMobileDiscussion: false,
   showPremiumModal: false,
   resumePrompt: null,
+  choiceResumeQuestion: null,
+  quickIndices: null,
 };
 
 function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): QuizPlayerState {
   switch (action.type) {
     case 'patch':
       return { ...state, ...action.value };
-    case 'setSessionEmail':
-      return {
-        ...state,
-        userEmail: action.email,
-        showEmailInput: false,
-      };
     case 'loadQuizSuccess':
       return {
         ...state,
@@ -413,6 +431,7 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
         error: '',
         showPremiumModal: false,
         resumePrompt: null,
+        quickIndices: action.quickIndices ?? null,
       };
     case 'loadQuizWithResume':
       return {
@@ -425,6 +444,8 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
         showPremiumModal: false,
         resumePrompt: action.resumePrompt,
       };
+    case 'showModeChoice':
+      return { ...state, status: 'choosing', choiceResumeQuestion: action.resumeQuestion };
     case 'acceptResume':
       if (!state.resumePrompt) {
         return state;
@@ -447,7 +468,7 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
       return {
         ...state,
         status: 'error',
-        error: action.error,
+        loadError: action.error,
         showPremiumModal: false,
       };
     case 'requirePremium':
@@ -531,35 +552,6 @@ function QuizLoadingState({ t }: { t: (key: string) => string }) {
   return <CenteredCardPageSkeleton label={t('loadingQuiz')} />;
 }
 
-function QuizErrorState({ error, t }: { error: string; t: (key: string) => string }) {
-  return (
-    <div className="min-h-screen">
-      <div className="flex items-center justify-center min-h-[70vh] px-4">
-        <Card
-          variant="glass"
-          className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
-        >
-          <CardHeader className="text-center">
-            <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-2xl mb-4 mx-auto w-fit">
-              <HiOutlineExclamationCircle className="size-6 text-red-600" />
-            </div>
-            <CardTitle className="text-red-600 text-xl">{t('quizNotFound')}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-ink-muted mb-6">{error}</p>
-            <Link href="/">
-              <Button variant="gradient" className="w-full">
-                <HiOutlineArrowLeft className="size-4 mr-2" />
-                {t('returnHome')}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
 function QuizPremiumState({ onClose, t }: { onClose: () => void; t: (key: string) => string }) {
   return (
     <div className="min-h-screen">
@@ -577,136 +569,214 @@ function QuizPremiumState({ onClose, t }: { onClose: () => void; t: (key: string
   );
 }
 
-function QuizEmailGate({
-  encodedSlug,
-  error,
-  onStartQuiz,
-  onUserEmailChange,
+/** A fresh quick-round draw (RIN-933): the quiz narrowed to 10 questions, unseen first. */
+function quickRoundQuiz(quiz: QuizPlayViewModel, seen: readonly number[], random: () => number) {
+  const questionIndices = drawQuickRound(quiz.questions.length, seen, random);
+  const questions = questionIndices.flatMap((index) => {
+    const question = quiz.questions[index];
+    return question ? [question] : [];
+  });
+  return { quiz: { ...quiz, questions, questionCount: questions.length }, questionIndices };
+}
+
+interface PlayerStartInput {
+  quiz: QuizPlayViewModel | null;
+  playMode: QuizPlayMode | null;
+  progressEnabled: boolean;
+  /** Quiz question indices already played in this tab's quick rounds. */
+  seen: readonly number[];
+  random: () => number;
+}
+
+/**
+ * The start that needs no saved progress: a quick round, or any quiz without progress (a guest
+ * or a retry). Null when the saved full-quiz progress has to be loaded first.
+ */
+function synchronousStart({
   quiz,
-  t,
-  userEmail,
-}: {
-  encodedSlug: string;
-  error: string;
-  onStartQuiz: () => void;
-  onUserEmailChange: (value: string) => void;
-  quiz: QuizPlayerQuiz;
-  t: (key: string) => string;
-  userEmail: string;
-}) {
-  return (
-    <div className="min-h-screen">
-      <div className="flex items-center justify-center min-h-[80vh] px-4">
-        <Card
-          variant="glass"
-          className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp"
-        >
-          <QuizGateHeader
-            title={quiz.title}
-            {...(quiz.description ? { subtitle: quiz.description } : {})}
-          />
-          <CardContent>
-            <div className="space-y-6">
-              <div className="flex justify-center gap-x-8 py-4 bg-surface-warm/50 rounded-xl">
-                <div className="text-center">
-                  <Badge variant="purple" className="mb-1">
-                    {quiz.questions.length} {t('questions')}
-                  </Badge>
-                </div>
-                <div className="text-center">
-                  <Badge variant="info" className="mb-1">
-                    {t('noTimeLimit')}
-                  </Badge>
-                </div>
-              </div>
+  playMode,
+  progressEnabled,
+  seen,
+  random,
+}: PlayerStartInput): QuizPlayerAction | null {
+  if (!quiz) return null;
+  if (playMode === 'quick') {
+    const round = quickRoundQuiz(quiz, seen, random);
+    const { quiz: quickQuiz, initialAnswers } = createQuizPlayerData(round.quiz, debugLog, random);
+    return {
+      type: 'loadQuizSuccess',
+      quiz: quickQuiz,
+      userAnswers: initialAnswers,
+      quickIndices: round.questionIndices,
+    };
+  }
+  if (progressEnabled) return null;
+  if (playMode === null) return { type: 'showModeChoice', resumeQuestion: null };
+  const { quiz: playerQuiz, initialAnswers } = createQuizPlayerData(quiz, debugLog, random);
+  return { type: 'loadQuizSuccess', quiz: playerQuiz, userAnswers: initialAnswers };
+}
 
-              {error && (
-                <Card variant="bordered" className="border-red-200 bg-red-50 p-4">
-                  <div className="flex items-center text-red-700">
-                    <HiOutlineExclamationCircle className="size-5 mr-2 flex-shrink-0" />
-                    <span className="text-sm font-medium">{error}</span>
-                  </div>
-                </Card>
-              )}
+/**
+ * First render (RIN-1032): the server and the hydrating client draw from the same seed, and the
+ * tab's quick-round history (sessionStorage, which the server cannot read) only counts when the
+ * player mounts on the client, for example "Play another quick round" from a result.
+ */
+function firstRenderStart(
+  input: Omit<PlayerStartInput, 'seen' | 'random'> & { sessionLoading: boolean },
+  slug: string,
+  shuffleSeed: number | undefined,
+  clientMount: boolean,
+) {
+  // Without a known session, saved progress may exist: the load effect decides once it settles.
+  if (input.sessionLoading) return null;
+  return synchronousStart({
+    ...input,
+    seen: clientMount ? readQuickRoundSeen(slug) : [],
+    random: shuffleSeed === undefined ? Math.random : seededRandom(shuffleSeed),
+  });
+}
 
-              <Card variant="bordered" className="border-green-200 bg-green-50 p-4">
-                <div className="text-center text-accent">
-                  <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-accent" />
-                  <p className="text-sm font-medium">
-                    <Link href="/login" className="underline hover:text-green-700">
-                      {t('login')}
-                    </Link>{' '}
-                    {t('loginToTrack')}
-                  </p>
-                </div>
-              </Card>
+function startedPlayerState(start: QuizPlayerAction | null): QuizPlayerState {
+  return start ? quizPlayerReducer(initialQuizPlayerState, start) : initialQuizPlayerState;
+}
 
-              <div>
-                <Input
-                  label={t('yourEmail')}
-                  id="email"
-                  type="email"
-                  value={userEmail}
-                  onChange={(event) => onUserEmailChange(event.target.value)}
-                  placeholder={t('enterEmailAddress')}
-                  required
-                  icon={<HiOutlineMail className="size-5" />}
-                />
-                <p className="mt-2 text-xs text-ink-muted">{t('weWillUseEmail')}</p>
-              </div>
+const subscribeToNothing = () => () => undefined;
 
-              <div className="space-y-3">
-                <Button onClick={onStartQuiz} variant="gradient" size="lg" className="w-full">
-                  <HiOutlineLightningBolt className="size-5 mr-2" />
-                  {t('startQuiz')}
-                </Button>
+/**
+ * True when the player mounts on the client without server HTML, for example "Play another quick
+ * round". Hydration reads false and keeps it: a re-render right after hydration would reach the
+ * lazy layout's Suspense boundary while its chunk is still loading on a slow phone, and React 19
+ * then replaces the server-rendered options silently, losing a tap on them (RIN-1133).
+ */
+function useClientOnlyMount() {
+  const [probe] = useState(createMountProbe);
+  return useSyncExternalStore(subscribeToNothing, probe.clientSnapshot, probe.serverSnapshot);
+}
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Link href="/">
-                    <Button variant="outline" className="w-full">
-                      <HiOutlineArrowLeft className="size-4 mr-2" />
-                      {t('backHome')}
-                    </Button>
-                  </Link>
-                  <Link href={`/quiz/${encodedSlug}/flashcards`}>
-                    <Button variant="accent" className="w-full">
-                      <HiOutlineRefresh className="size-4 mr-2" />
-                      {t('flashcards')}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+/** React reads the server snapshot only on the server and while hydrating. */
+function createMountProbe() {
+  let hydrating = false;
+  return {
+    clientSnapshot: () => !hydrating,
+    serverSnapshot: () => {
+      hydrating = true;
+      return false;
+    },
+  };
+}
+
+/** A quick round never reads or overwrites the full quiz's saved progress. */
+function playModeSetup(
+  playMode: QuizPlayMode | null,
+  retrySetup: ReturnType<typeof retrySessionSetup>,
+  t: (key: string) => string,
+) {
+  if (playMode !== 'quick') {
+    return {
+      progressEnabled: retrySetup.progressEnabled,
+      analyticsMode: 'full' as const,
+      layoutProps: retrySetup.layout,
+    };
+  }
+  return {
+    progressEnabled: false,
+    analyticsMode: 'quick' as const,
+    layoutProps: { titleBadge: t('quickRound.pill') },
+  };
+}
+
+function initialPlayMode(
+  quiz: QuizPlayViewModel | null,
+  mode: string | null | undefined,
+): QuizPlayMode | null {
+  // Retry sessions and short quizzes always play in full; `?mode=` skips the choice.
+  if (!quiz || quiz.retry || !isQuickRoundEligible(quiz.questions.length)) return 'full';
+  return mode === 'quick' || mode === 'full' ? mode : null;
 }
 
 interface QuizPlayerClientProps {
   initialErrorCode: string | null | undefined;
-  initialErrorMessage: string | null;
+  /** HTTP status of the server-side load failure; the server's text never reaches the client. */
+  initialErrorStatus: number | null;
   initialQuiz: QuizPlayViewModel | null;
   slug: string;
+  /**
+   * `?entry=` from the URL: `post_signin_starter` when /start opened this quiz
+   * (RIN-913), `activation_email` from the activation nudge (RIN-1000).
+   */
+  entry?: string | null;
+  /** `?mode=quick|full` from the URL: skips the quick-round choice on a long quiz (RIN-933). */
+  mode?: string | null;
+  /** Per-request seed of the first shuffle, shared by the server render and hydration (RIN-1032). */
+  shuffleSeed?: number;
+  /** The server's guess that the request comes from a phone, so it renders the mobile layout. */
+  initialMobile?: boolean;
+}
+
+// Opened by /start right after sign-in (RIN-913): intro + Skip, tagged completion.
+function postSignInStarterNotice(entry: string | null | undefined, slug: string) {
+  return entry === POST_SIGNIN_STARTER_ENTRY ? <StarterQuizIntro quizSlug={slug} /> : null;
+}
+
+// `entry` on quiz_started/quiz_completed: the /start starter (RIN-913), the activation
+// email (RIN-1000) or the homepage play-first button (RIN-1178).
+function trackedEntryProperties(entry: string | null | undefined) {
+  return entry && TRACKED_QUIZ_ENTRIES.includes(entry) ? { entry } : {};
+}
+
+/**
+ * `?retryOf` session (RIN-917): a subset of the quiz, so it never reads or writes the full
+ * quiz's saved progress, submits as a retry and shows a "Retry: N questions" pill.
+ */
+function retrySessionSetup(
+  quiz: QuizPlayViewModel | null,
+  signedIn: boolean,
+  t: (key: string, values?: Record<string, number>) => string,
+) {
+  const retry = quiz?.retry;
+  if (!retry) return { progressEnabled: signedIn, submission: {}, layout: {} };
+  return {
+    progressEnabled: false,
+    submission: { retryOfAttemptId: retry.ofAttemptId },
+    layout: { titleBadge: t('resultActions.retryPill', { count: retry.questionIndices.length }) },
+  };
 }
 
 export default function QuizPlayerClient({
   initialErrorCode,
-  initialErrorMessage,
+  initialErrorStatus,
   initialQuiz,
   slug,
+  entry,
+  mode,
+  shuffleSeed,
+  initialMobile,
 }: QuizPlayerClientProps) {
   const t = useTranslations('quiz');
   const { data: session, status: sessionStatus } = useSession();
-  const { push } = useRouter();
+  const { push, refresh } = useRouter();
+  const describeError = useApiErrorMessage();
   const encodedSlug = routePathSegment(slug);
-  const [state, dispatch] = useReducer(quizPlayerReducer, initialQuizPlayerState);
 
-  const isMobile = useMediaQuery(MEDIA_MAX_MD);
+  const isMobile = useMediaQuery(MEDIA_MAX_MD, initialMobile);
+  const clientMount = useClientOnlyMount();
+  const starterNotice = postSignInStarterNotice(entry, slug);
 
   const sessionEmail = session?.user?.email || undefined;
-  const progressEnabled = Boolean(session?.user?.email);
+  const retrySetup = retrySessionSetup(initialQuiz, Boolean(session?.user?.email), t);
+  const [playMode, setPlayMode] = useState(() => initialPlayMode(initialQuiz, mode));
+  const { progressEnabled, analyticsMode, layoutProps } = playModeSetup(playMode, retrySetup, t);
+  // Render the first question on the server when no saved progress is needed (RIN-1032).
+  const [firstStart] = useState(() =>
+    firstRenderStart(
+      { quiz: initialQuiz, playMode, progressEnabled, sessionLoading: sessionStatus === 'loading' },
+      slug,
+      shuffleSeed,
+      clientMount,
+    ),
+  );
+  const [state, dispatch] = useReducer(quizPlayerReducer, firstStart, startedPlayerState);
+  const pendingFirstStart = useRef(firstStart);
 
   const { loadProgress, saveProgress, flushSave, clearProgress } = useQuizProgress({
     slug,
@@ -714,10 +784,13 @@ export default function QuizPlayerClient({
   });
 
   useEffect(() => {
-    if (session?.user?.email) {
-      dispatch({ type: 'setSessionEmail', email: session.user.email });
+    // Fetch KaTeX while auth settles, before the first math question mounts (RIN-679).
+    if (initialQuiz) {
+      void preloadMathRenderer(
+        initialQuiz.questions.flatMap((question) => [question.question, ...question.options]),
+      );
     }
-  }, [session]);
+  }, [initialQuiz]);
 
   useEffect(() => {
     // Wait until the auth state is settled so we know whether to look for saved progress.
@@ -725,35 +798,74 @@ export default function QuizPlayerClient({
       return;
     }
 
+    const announceStart = (questionCount: number) =>
+      captureAnalyticsEvent('quiz_started', {
+        mode: analyticsMode,
+        question_count: questionCount,
+        ...trackedEntryProperties(entry),
+      });
+
+    // The first render already started the quiz (RIN-1032): only announce it.
+    const firstRendered = pendingFirstStart.current;
+    pendingFirstStart.current = null;
+    if (firstRendered) {
+      if (firstRendered.type === 'loadQuizSuccess') {
+        announceStart(firstRendered.quiz.questions.length);
+      }
+      return;
+    }
+
     let isActive = true;
 
     const loadQuiz = async () => {
       if (!initialQuiz) {
-        if (initialErrorCode === 'premium_required') {
+        // Same classification as a client-side API error (RIN-753).
+        const failure = { code: initialErrorCode, status: initialErrorStatus ?? 404 };
+        if (describeApiError(failure).kind === 'unlock_required') {
           dispatch({ type: 'requirePremium' });
         } else {
-          dispatch({
-            type: 'loadQuizError',
-            error: initialErrorMessage || 'Quiz not found',
-          });
+          dispatch({ type: 'loadQuizError', error: failure });
         }
         return;
       }
 
       try {
         const data = initialQuiz;
-        const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data, debugLog);
-
-        let savedProgress: SavedQuizProgress | null = null;
-        if (progressEnabled) {
-          savedProgress = await loadProgress();
+        const start = synchronousStart({
+          quiz: data,
+          playMode,
+          progressEnabled,
+          seen: readQuickRoundSeen(slug),
+          random: Math.random,
+        });
+        if (start) {
+          dispatch(start);
+          if (start.type === 'loadQuizSuccess') announceStart(start.quiz.questions.length);
+          return;
         }
+        const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(
+          data,
+          debugLog,
+          Math.random,
+        );
+
+        const savedProgress: SavedQuizProgress | null = await loadProgress();
 
         if (!isActive) {
           return;
         }
 
-        if (savedProgress && savedProgress.answeredCount > 0) {
+        const hasSavedProgress = Boolean(savedProgress && savedProgress.answeredCount > 0);
+        if (playMode === null) {
+          dispatch({
+            type: 'showModeChoice',
+            resumeQuestion:
+              savedProgress && hasSavedProgress ? savedProgress.currentQuestionIndex + 1 : null,
+          });
+          return;
+        }
+
+        if (savedProgress && hasSavedProgress) {
           const restoredQuiz = rebuildPlayerQuizFromLayout(
             data,
             savedProgress.questionOrder,
@@ -774,6 +886,7 @@ export default function QuizPlayerClient({
                 userAnswers: savedProgress.userAnswers,
               },
             });
+            announceStart(restoredQuiz.questions.length);
             return;
           }
 
@@ -782,13 +895,13 @@ export default function QuizPlayerClient({
         }
 
         dispatch({ type: 'loadQuizSuccess', quiz: nextQuiz, userAnswers: initialAnswers });
+        announceStart(nextQuiz.questions.length);
       } catch (error: unknown) {
         if (!isActive) {
           return;
         }
 
-        const message = error instanceof Error ? error.message : '';
-        dispatch({ type: 'loadQuizError', error: message || 'Quiz not found' });
+        dispatch({ type: 'loadQuizError', error });
       }
     };
 
@@ -801,21 +914,16 @@ export default function QuizPlayerClient({
     clearProgress,
     encodedSlug,
     initialErrorCode,
-    initialErrorMessage,
+    initialErrorStatus,
     initialQuiz,
     sessionStatus,
     progressEnabled,
     loadProgress,
+    playMode,
+    analyticsMode,
+    slug,
+    entry,
   ]);
-
-  const startQuiz = () => {
-    if (!sessionEmail && !state.userEmail.trim()) {
-      dispatch({ type: 'patch', value: { error: 'Please enter your email to start the quiz' } });
-      return;
-    }
-
-    dispatch({ type: 'patch', value: { showEmailInput: false, error: '' } });
-  };
 
   const quiz = state.quiz;
   const currentQuestion = quiz?.questions[state.currentQuestionIndex] || null;
@@ -849,30 +957,33 @@ export default function QuizPlayerClient({
     slug,
     quiz,
     userAnswers: state.userAnswers,
-    userEmail: state.userEmail,
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
+    ...retrySetup.submission,
+    ...(state.quickIndices ? { questionIndices: state.quickIndices } : {}),
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
         journey_id: getQuizJourneyId(),
         question_count: quiz?.questions.length ?? 0,
         score,
         authenticated: Boolean(sessionEmail),
+        mode: analyticsMode,
+        ...trackedEntryProperties(entry),
       });
+      // Only a submitted round counts as seen, so the next draw prefers the rest.
+      if (state.quickIndices) markQuickRoundSeen(slug, state.quickIndices);
       // Cancel pending/in-flight autosaves and wait for the DELETE before
       // navigation. This prevents the submit flow from racing the progress
       // cleanup and avoids resurrecting a just-completed attempt.
       await clearProgress();
+      // A guest's claim token stays in localStorage; the URL never carries an email (RIN-912).
       const params = new URLSearchParams({
         attemptId,
         score: String(score),
       });
-      if (!sessionEmail && state.userEmail.trim()) {
-        params.set('userEmail', state.userEmail.trim().toLowerCase());
-      }
       push(`/quiz/${encodedSlug}/result?${params.toString()}`);
     },
     onSubmitStart: () => dispatch({ type: 'patch', value: { error: '' } }),
-    onSubmitError: (message) => dispatch({ type: 'patch', value: { error: message } }),
+    onSubmitError: (error) => dispatch({ type: 'patch', value: { error: describeError(error) } }),
     mapAnswersToOriginalOrder: (currentQuiz, answersToSubmit) =>
       mapAnswersToOriginalOrder(currentQuiz, answersToSubmit, debugLog),
     isQuestionAnswered,
@@ -961,6 +1072,22 @@ export default function QuizPlayerClient({
     return <QuizLoadingState t={t} />;
   }
 
+  if (state.status === 'choosing' && initialQuiz) {
+    return (
+      <QuickRoundChoice
+        slug={slug}
+        title={initialQuiz.title}
+        {...(initialQuiz.description ? { description: initialQuiz.description } : {})}
+        questionCount={initialQuiz.questions.length}
+        resumeQuestion={state.choiceResumeQuestion}
+        onChoose={(chosen) => {
+          dispatch({ type: 'patch', value: { status: 'loading' } });
+          setPlayMode(chosen);
+        }}
+      />
+    );
+  }
+
   if (state.showPremiumModal) {
     return (
       <QuizPremiumState
@@ -970,21 +1097,12 @@ export default function QuizPlayerClient({
     );
   }
 
-  if (state.error && !quiz) {
-    return <QuizErrorState error={state.error} t={t} />;
-  }
-
-  if (state.showEmailInput && !sessionEmail && quiz) {
+  if (state.loadError !== null && !quiz) {
+    // The whole player failed to load: page variant, copy from the error layer (RIN-753).
     return (
-      <QuizEmailGate
-        encodedSlug={encodedSlug}
-        error={state.error}
-        onStartQuiz={startQuiz}
-        onUserEmailChange={(value) => dispatch({ type: 'patch', value: { userEmail: value } })}
-        quiz={quiz}
-        t={t}
-        userEmail={state.userEmail}
-      />
+      <div className="flex min-h-[70vh] items-center justify-center px-4">
+        <ErrorState error={state.loadError} variant="page" onRetry={refresh} />
+      </div>
     );
   }
 
@@ -996,7 +1114,7 @@ export default function QuizPlayerClient({
     <>
       {state.resumePrompt && <div className="min-h-screen" aria-hidden="true" />}
 
-      {!state.resumePrompt && isMobile && !state.showEmailInput && (
+      {!state.resumePrompt && isMobile && (
         <MobileQuizLayout
           quiz={quiz}
           userAnswers={state.userAnswers}
@@ -1013,6 +1131,8 @@ export default function QuizPlayerClient({
           }}
           submitting={submitting}
           error={state.error}
+          notice={starterNotice}
+          {...layoutProps}
         />
       )}
 
@@ -1022,7 +1142,6 @@ export default function QuizPlayerClient({
           quizTitle={quiz.title}
           questions={quiz.questions}
           {...(sessionEmail !== undefined ? { sessionEmail } : {})}
-          userEmail={state.userEmail}
           currentQuestionIndex={state.currentQuestionIndex}
           setCurrentQuestionIndex={(index) =>
             dispatch({ type: 'setCurrentQuestionIndex', value: index })
@@ -1060,6 +1179,8 @@ export default function QuizPlayerClient({
             unansweredCount,
             complete: completeSubmit,
           }}
+          notice={starterNotice}
+          {...layoutProps}
           t={t}
         />
       )}

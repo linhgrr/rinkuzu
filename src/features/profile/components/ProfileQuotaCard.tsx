@@ -74,8 +74,8 @@ export function ProfileQuotaCard({ variant = 'full' }: ProfileQuotaCardProps) {
   const isSummary = variant === 'summary';
 
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-4 border-b border-line/50 px-5 py-4 sm:px-6">
+    <Card className="overflow-hidden p-0 sm:p-6">
+      <div className="flex items-center justify-between gap-4 border-b border-line/50 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2">
           <HiOutlineChartBar className="size-5 text-brand-trust" />
           <div>
@@ -89,7 +89,7 @@ export function ProfileQuotaCard({ variant = 'full' }: ProfileQuotaCardProps) {
           </span>
         ) : null}
       </div>
-      <div className="p-5 sm:p-6">
+      <div className="p-4 sm:p-6">
         {isLoading ? <p className="text-sm text-neutral-500">{t('quotaLoading')}</p> : null}
         {error ? (
           <div className="flex items-center justify-between gap-4">

@@ -61,6 +61,8 @@ describe('toProfileQuizLibraryViewModel', () => {
           displayDate: '2026-07-01T00:00:00.000Z',
         },
       ],
+      counts: { all: 1, inProgress: 0, complete: 1 },
+      hasMore: false,
     });
   });
 

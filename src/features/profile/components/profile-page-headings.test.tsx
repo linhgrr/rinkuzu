@@ -44,7 +44,7 @@ vi.mock('@/features/profile/api/profile-bookmarks-api', () => ({
 }));
 
 vi.mock('@/features/profile/api/profile-quizzes-api', () => ({
-  fetchProfileQuizLibraryViewModel: fetchLibraryMock,
+  fetchProfileQuizLibraryPage: fetchLibraryMock,
 }));
 
 vi.mock('@/features/profile/api/premium-submissions-api', () => ({
@@ -118,6 +118,13 @@ const quiz = {
   createdAt: '2026-10-01T00:00:00.000Z',
   updatedAt: '2026-10-01T00:00:00.000Z',
   ownedByMe: true,
+  displayDate: '2026-10-01T00:00:00.000Z',
+};
+
+const emptyLibrary = {
+  quizzes: [],
+  counts: { all: 0, inProgress: 0, complete: 0 },
+  hasMore: false,
 };
 
 const historySummary = { totalAttempts: 3, averageScore: 67, needsWorkCount: 1 };
@@ -206,7 +213,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
   });
 
   it('my quizzes: h1 while loading, then in the empty state', async () => {
-    fetchLibraryMock.mockResolvedValue({ quizzes: [] });
+    fetchLibraryMock.mockResolvedValue(emptyLibrary);
     render(<ProfileQuizzes />);
     expectHeadingOutline('profile.myQuizzes');
 
@@ -216,10 +223,27 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
   });
 
   it('my quizzes: month groups sit one level under the h1', async () => {
-    fetchLibraryMock.mockResolvedValue({ quizzes: [quiz] });
+    fetchLibraryMock.mockResolvedValue({
+      quizzes: [quiz],
+      counts: { all: 1, inProgress: 0, complete: 1 },
+      hasMore: false,
+    });
     render(<ProfileQuizzes />);
 
     await screen.findByText('Fake biology quiz');
+    expectHeadingOutline('profile.myQuizzes');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('my quizzes: h1 when the filter matches no quiz', async () => {
+    fetchLibraryMock.mockResolvedValue({
+      quizzes: [],
+      counts: { all: 3, inProgress: 0, complete: 3 },
+      hasMore: false,
+    });
+    render(<ProfileQuizzes />);
+
+    await screen.findByText('profile.noFilterMatches');
     expectHeadingOutline('profile.myQuizzes');
     await expectAxeHeadingRulesClean();
   });
@@ -234,7 +258,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
   });
 
   it('folders tab: the h1 names the active tab', async () => {
-    fetchLibraryMock.mockResolvedValue({ quizzes: [] });
+    fetchLibraryMock.mockResolvedValue(emptyLibrary);
     foldersState.folders = [{ id: 'folder-1', name: 'Fake folder', quizCount: 2 }];
     render(<ProfileQuizzes tab="folders" />);
 

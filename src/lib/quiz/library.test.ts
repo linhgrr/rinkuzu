@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchesLibraryStatus, resolveQuizLibraryActivity } from './library';
+import { resolveQuizLibraryActivity } from './library';
 
 describe('quiz library activity', () => {
   const createdAt = new Date('2026-01-01T00:00:00.000Z');
@@ -25,16 +25,5 @@ describe('quiz library activity', () => {
       libraryStatus: 'not_started',
       displayDate: createdAt.toISOString(),
     });
-  });
-});
-
-describe('quiz library status filtering', () => {
-  it('shows every status in the all view', () => {
-    expect(matchesLibraryStatus(undefined, 'all')).toBe(true);
-  });
-
-  it('only matches the selected activity status', () => {
-    expect(matchesLibraryStatus('in_progress', 'in_progress')).toBe(true);
-    expect(matchesLibraryStatus('complete', 'in_progress')).toBe(false);
   });
 });

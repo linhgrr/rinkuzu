@@ -1,34 +1,31 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import Image from 'next/image';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/Button';
+import { HiOutlineSearch } from 'react-icons/hi';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Input } from '@/components/ui/Input';
 import { NavigationTabBar } from '@/components/ui/NavigationTabBar';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { QuizUploadDropzone } from '@/features/dashboard/components/QuizUploadDropzone';
 import { FoldersView } from '@/features/folders/components/FoldersView';
-import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
 import { deleteQuizById } from '@/features/quiz/api/quiz-api';
 import { useApiErrorToast } from '@/lib/api/use-api-error';
-import { matchesLibraryStatus, type QuizLibraryFilter } from '@/lib/quiz/library';
-import { HiOutlineDocumentText } from 'react-icons/hi';
-import { fetchProfileQuizLibraryViewModel } from '@/features/profile/api/profile-quizzes-api';
-import { toProfileQuizMonthGroupsViewModel } from '@/features/profile/mappers/profile-quiz.mapper';
-import type { ProfileQuizViewModel } from '@/features/profile/types/profile-quiz-view-model';
-import { fetchMyPremiumSubmissions } from '@/features/profile/api/premium-submissions-api';
+import { useProfileQuizLibrary } from '@/features/profile/hooks/useProfileQuizLibrary';
+import type {
+  ProfileQuizLibraryCounts,
+  ProfileQuizViewModel,
+} from '@/features/profile/types/profile-quiz-view-model';
+import { ProfileQuizList } from './ProfileQuizList';
 import styles from './ProfileQuizzesLayout.module.css';
 
-interface State {
-  quizzes: ProfileQuizViewModel[];
-  loading: boolean;
-  /** Load failure, rendered by ErrorState from the error layer (RIN-755). */
-  error: unknown;
-  filter: QuizLibraryFilter;
+/** The API rejects longer searches (RIN-1198). */
+const SEARCH_MAX_LENGTH = 80;
+
+interface DeleteState {
   quizToDelete: ProfileQuizViewModel | null;
   deletingQuizId: string | null;
 }
@@ -37,125 +34,90 @@ interface ProfileQuizzesProps {
   tab?: 'quizzes' | 'folders';
 }
 
-type Action =
-  | { type: 'fetch:start' }
-  | { type: 'fetch:success'; quizzes: ProfileQuizViewModel[] }
-  | { type: 'fetch:error'; error: unknown }
-  | { type: 'filter:set'; filter: QuizLibraryFilter }
+type DeleteAction =
   | { type: 'delete:prompt'; quiz: ProfileQuizViewModel }
   | { type: 'delete:start'; quizId: string }
-  | { type: 'delete:success'; quizId: string }
+  | { type: 'delete:success' }
   | { type: 'delete:error' }
   | { type: 'delete:cancel' };
 
-const initialState: State = {
-  quizzes: [],
-  loading: true,
-  error: null,
-  filter: 'all',
-  quizToDelete: null,
-  deletingQuizId: null,
-};
+const initialDeleteState: DeleteState = { quizToDelete: null, deletingQuizId: null };
 
-function reducer(state: State, action: Action): State {
+function deleteReducer(state: DeleteState, action: DeleteAction): DeleteState {
   switch (action.type) {
-    case 'fetch:start':
-      return { ...state, loading: true, error: null };
-    case 'fetch:success':
-      return { ...state, quizzes: action.quizzes, loading: false, error: null };
-    case 'fetch:error':
-      return { ...state, loading: false, error: action.error };
-    case 'filter:set':
-      return { ...state, filter: action.filter };
     case 'delete:prompt':
       return { ...state, quizToDelete: action.quiz };
     case 'delete:start':
       return { ...state, deletingQuizId: action.quizId };
-    case 'delete:success':
-      return {
-        ...state,
-        quizzes: state.quizzes.filter((quiz) => quiz.id !== action.quizId),
-        deletingQuizId: null,
-        quizToDelete: null,
-      };
     case 'delete:error':
       return { ...state, deletingQuizId: null };
+    case 'delete:success':
     case 'delete:cancel':
-      return { ...state, deletingQuizId: null, quizToDelete: null };
+      return initialDeleteState;
     default:
       return state;
   }
 }
 
+type ProfileTranslate = ReturnType<typeof useTranslations<'profile'>>;
+
+/** Segment labels carry the whole-library counts once the first page has loaded (RIN-1206). */
+function toFilterOptions(t: ProfileTranslate, counts: ProfileQuizLibraryCounts | null) {
+  return [
+    {
+      value: 'all',
+      label: counts ? t('filterAllCount', { count: counts.all }) : t('filter_all'),
+    },
+    {
+      value: 'in_progress',
+      label: counts
+        ? t('filterInProgressCount', { count: counts.inProgress })
+        : t('filter_in_progress'),
+    },
+    {
+      value: 'complete',
+      label: counts ? t('filterCompleteCount', { count: counts.complete }) : t('filter_complete'),
+    },
+  ] as const;
+}
+
 export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
-  const locale = useLocale();
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [state, dispatch] = useReducer(deleteReducer, initialDeleteState);
+  const library = useProfileQuizLibrary();
   const showMutationError = useApiErrorToast();
+  const panelRef = useRef<HTMLElement>(null);
+  const loadMoreRef = useRef<HTMLButtonElement>(null);
+  /**
+   * Load more disables its button while loading. When the page lands, focus goes back to the
+   * button, or to the first new card when that was the last page (index of that card, or null).
+   */
+  const refocusFromRef = useRef<number | null>(null);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadQuizzes() {
-      dispatch({ type: 'fetch:start' });
-      try {
-        const [data, submissions] = await Promise.all([
-          fetchProfileQuizLibraryViewModel(),
-          fetchMyPremiumSubmissions(),
-        ]);
-        const latestByQuiz = new Map(
-          submissions
-            .toSorted((left, right) => left.version - right.version)
-            .map((submission) => [submission.sourceQuizId, submission]),
-        );
-        const quizzes = data.quizzes.map((quiz) => {
-          const submission = latestByQuiz.get(quiz.id);
-          return submission
-            ? {
-                ...quiz,
-                premiumSubmissionStatus: submission.status,
-                awardedCredits: submission.awardedCredits,
-              }
-            : quiz;
-        });
-        if (active) dispatch({ type: 'fetch:success', quizzes });
-      } catch (error) {
-        if (active) {
-          dispatch({ type: 'fetch:error', error });
-        }
-      }
+    const from = refocusFromRef.current;
+    if (library.phase !== 'idle' || from === null) return;
+    refocusFromRef.current = null;
+    if (loadMoreRef.current) {
+      loadMoreRef.current.focus();
+      return;
     }
+    panelRef.current?.querySelectorAll<HTMLElement>('article > a')[from]?.focus();
+  }, [library.phase]);
 
-    void loadQuizzes();
-    return () => {
-      active = false;
-    };
-  }, [loadAttempt]);
-
-  const visibleQuizzes = state.quizzes.filter((quiz) =>
-    matchesLibraryStatus(quiz.libraryStatus, state.filter),
-  );
-  const groupedQuizzes = toProfileQuizMonthGroupsViewModel({
-    quizzes: visibleQuizzes,
-    locale,
-  });
-  const filterOptions = [
-    { value: 'all', label: t('filter_all') },
-    { value: 'in_progress', label: t('filter_in_progress') },
-    { value: 'complete', label: t('filter_complete') },
-  ] as const;
+  const filterOptions = toFilterOptions(t, library.counts);
   const libraryTabs = [
     { value: 'quizzes', label: t('tabQuizzes'), href: '/my-quizzes' },
     { value: 'folders', label: t('tabFolders'), href: '/my-quizzes?tab=folders' },
   ] as const;
 
-  async function deleteQuiz(quizId: string) {
-    dispatch({ type: 'delete:start', quizId });
+  async function deleteQuiz(quiz: ProfileQuizViewModel) {
+    dispatch({ type: 'delete:start', quizId: quiz.id });
     try {
-      await deleteQuizById(quizId);
-      dispatch({ type: 'delete:success', quizId });
+      await deleteQuizById(quiz.id);
+      dispatch({ type: 'delete:success' });
+      library.removeQuiz(quiz);
       toast.success(t('quizDeleted'));
     } catch (error) {
       dispatch({ type: 'delete:error' });
@@ -187,6 +149,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
         ) : (
           <div className="grid grid-cols-1 items-start gap-6 min-[1684px]:grid-cols-[minmax(0,900px)_416px]">
             <section
+              ref={panelRef}
               className={`${styles['libraryPanel']} relative overflow-hidden rounded-panel border border-line-blue/35 bg-white p-5 shadow-quiz-card`}
             >
               <Image
@@ -198,70 +161,60 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                 aria-hidden="true"
               />
 
-              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h1 className="text-lg font-semibold text-ink">{t('myQuizzes')}</h1>
-                <SegmentedControl
-                  ariaLabel={t('myQuizzes')}
-                  value={state.filter}
-                  options={filterOptions}
-                  onChange={(filter) => dispatch({ type: 'filter:set', filter })}
-                />
+              <h1 className="relative text-lg font-semibold text-ink">{t('myQuizzes')}</h1>
+              <div className="relative mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 max-w-full overflow-x-auto [&_button]:whitespace-nowrap">
+                  <SegmentedControl
+                    ariaLabel={t('myQuizzes')}
+                    value={library.filter}
+                    options={filterOptions}
+                    onChange={library.setFilter}
+                  />
+                </div>
+                <div className="w-full sm:w-72 sm:shrink-0">
+                  <Input
+                    type="search"
+                    aria-label={t('searchMyQuizzes')}
+                    placeholder={t('searchMyQuizzes')}
+                    autoComplete="off"
+                    enterKeyHint="search"
+                    maxLength={SEARCH_MAX_LENGTH}
+                    icon={<HiOutlineSearch aria-hidden="true" className="size-5" />}
+                    value={library.searchInput}
+                    onChange={(event) => library.setSearchInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Escape' || !library.searchInput) return;
+                      event.preventDefault();
+                      library.clearSearch();
+                    }}
+                  />
+                </div>
               </div>
 
-              {state.error ? (
+              {library.error ? (
                 <ErrorState
-                  error={state.error}
-                  onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
+                  error={library.error}
+                  onRetry={library.retry}
                   className="relative mt-5"
                 />
-              ) : null}
-
-              <div aria-busy={state.loading}>
-                {state.loading ? (
-                  <div className="relative mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 6 }, (_, index) => (
-                      <QuizCardSkeleton key={`quiz-card-skeleton-${index}`} />
-                    ))}
-                  </div>
-                ) : state.error ? null : groupedQuizzes.length === 0 ? (
-                  <div
-                    className={`${styles['emptyState']} relative flex flex-col items-center justify-center text-center`}
-                  >
-                    <HiOutlineDocumentText className="size-12 text-ink/25" />
-                    <h2 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h2>
-                    <p className="mt-1 max-w-sm text-sm text-ink/55">{t('createFirst')}</p>
-                    <Link href="/create" className="mt-5">
-                      <Button>{t('newQuiz')}</Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="relative mt-6 space-y-9">
-                    {groupedQuizzes.map((month) => (
-                      <section key={month.key} aria-labelledby={`quiz-month-${month.key}`}>
-                        <h2
-                          id={`quiz-month-${month.key}`}
-                          className="mb-5 text-lg font-semibold capitalize text-ink"
-                        >
-                          {month.label}
-                        </h2>
-
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          {month.quizzes.map((quiz) => (
-                            <QuizCard
-                              key={quiz.id}
-                              quiz={quiz}
-                              quizId={quiz.id}
-                              {...(quiz.ownedByMe
-                                ? { onDelete: () => dispatch({ type: 'delete:prompt', quiz }) }
-                                : {})}
-                            />
-                          ))}
-                        </div>
-                      </section>
-                    ))}
-                  </div>
-                )}
-              </div>
+              ) : (
+                <ProfileQuizList
+                  quizzes={library.quizzes}
+                  counts={library.counts}
+                  query={library.query}
+                  loading={library.phase === 'loading'}
+                  loadingMore={library.phase === 'loading-more'}
+                  hasMore={library.hasMore}
+                  loadMoreError={library.loadMoreError}
+                  loadMoreRef={loadMoreRef}
+                  onLoadMore={(focusedButton) => {
+                    refocusFromRef.current = focusedButton ? library.quizzes.length : null;
+                    library.loadMore();
+                  }}
+                  onClearSearch={library.clearSearch}
+                  onDelete={(quiz) => dispatch({ type: 'delete:prompt', quiz })}
+                />
+              )}
             </section>
 
             <aside className="rounded-panel border border-line-blue/35 bg-white p-5 shadow-segmented">
@@ -284,7 +237,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
           confirmVariant="destructive"
           isLoading={state.deletingQuizId === state.quizToDelete?.id}
           onCancel={() => dispatch({ type: 'delete:cancel' })}
-          onConfirm={() => state.quizToDelete && void deleteQuiz(state.quizToDelete.id)}
+          onConfirm={() => state.quizToDelete && void deleteQuiz(state.quizToDelete)}
         />
       </div>
     </div>

@@ -12,6 +12,13 @@ import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 import { QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
 import type { QuizQuestionDisplay, QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';
 
+/**
+ * Owner-chosen visibility (RIN-1271). Optional everywhere: a new quiz without it
+ * is saved private (`personal`), and an update without it leaves it unchanged.
+ * `submitToPremium: true` always forces `personal`.
+ */
+const quizVisibilitySchema = z.enum(['public', 'personal']);
+
 const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
 
 export const quizIdRouteParamsSchema = z.strictObject({ id: objectIdRouteParamSchema });
@@ -24,7 +31,7 @@ export const quizListQuerySchema = z.strictObject({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   mine: queryBooleanSchema.default(false),
-  visibility: z.enum(['public', 'personal']).optional(),
+  visibility: quizVisibilitySchema.optional(),
 });
 
 export const reportQuizRequestSchema = z.strictObject({
@@ -43,6 +50,7 @@ export const quizComposeBaseFields = {
   questions: questionListSchema,
   submitToPremium: z.boolean(),
   rightsAttested: z.boolean().optional(),
+  visibility: quizVisibilitySchema.optional(),
 };
 
 export interface PremiumRightsFields {
@@ -79,6 +87,7 @@ export const updateQuizRequestSchema = z
     questions: questionListSchema.optional(),
     submitToPremium: z.boolean().optional(),
     rightsAttested: z.boolean().optional(),
+    visibility: quizVisibilitySchema.optional(),
     pdfUrl: z.url().optional(),
   })
   .refine(

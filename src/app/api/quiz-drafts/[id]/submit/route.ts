@@ -61,7 +61,7 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
     if (!parsed.ok) return parsed.response;
 
     const { id } = parsed.params;
-    const { title, folderId, description, questions, submitToPremium } = parsed.body;
+    const { title, folderId, description, questions, submitToPremium, visibility } = parsed.body;
     const premiumService = getPremiumQuizService();
     if (submitToPremium) {
       await premiumService.assertCanContribute(userId);
@@ -107,6 +107,7 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
       folderId: folderId ?? null,
       questions,
       submitToPremium,
+      ...(visibility !== undefined && { visibility }),
     });
 
     const quizId = quiz.id;

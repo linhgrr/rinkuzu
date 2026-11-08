@@ -214,6 +214,23 @@ describe('POST /api/quizzes', () => {
     });
   });
 
+  it('forwards an owner visibility and rejects unknown values (RIN-1271)', async () => {
+    const created = await POST(createRequest({ ...validCreateBody, visibility: 'public' }), {
+      params: Promise.resolve({}),
+    });
+    const invalid = await POST(createRequest({ ...validCreateBody, visibility: 'unlisted' }), {
+      params: Promise.resolve({}),
+    });
+
+    expect(created.status).toBe(201);
+    expect(invalid.status).toBe(400);
+    expect(createQuizMock).toHaveBeenCalledOnce();
+    expect(createQuizMock).toHaveBeenCalledWith(
+      '507f191e810c19729de860eb',
+      expect.objectContaining({ visibility: 'public' }),
+    );
+  });
+
   it('rejects invalid create payloads', async () => {
     const response = await POST(createRequest({ title: '' }), {
       params: Promise.resolve({}),

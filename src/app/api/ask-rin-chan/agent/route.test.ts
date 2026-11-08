@@ -66,6 +66,15 @@ describe('POST /api/ask-rin-chan/agent', () => {
     expect(JSON.parse(options.body)).toMatchObject({ protocolVersion: '1.0' });
   });
 
+  it('accepts a body without state, which @ag-ui/client 1.x drops when it is null, and forwards state null (RIN-1202)', async () => {
+    const { state: _dropped, ...body } = { ...validBody, protocolVersion: '1.0' };
+    const response = await POST(request(body), routeContext);
+
+    expect(response.status).toBe(200);
+    const [, , , options] = proxyAdaptiveRequestMock.mock.calls[0] ?? [];
+    expect(JSON.parse(options.body)).toMatchObject({ state: null });
+  });
+
   it('accepts the seven-character assistant-ui run id and meters its safe digest', async () => {
     const response = await POST(request(validBody), routeContext);
 

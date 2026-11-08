@@ -701,7 +701,9 @@ test.describe('production critical paths', () => {
         ),
         panel.getByRole('button', { name: 'Send', exact: true }).click(),
       ]);
-      expect(agentResponse.status()).toBe(200);
+      // On a rejection, name the schema issue: it is the client field the proxy now refuses.
+      const rejection = agentResponse.ok() ? '' : await agentResponse.text();
+      expect(agentResponse.status(), rejection).toBe(200);
       expect(agentResponse.headers()['content-type']).toContain('text/event-stream');
 
       await expect(

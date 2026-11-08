@@ -13,6 +13,7 @@ const { fetchListMock, setVisibilityMock, translate } = vi.hoisted(() => ({
 // Stable `t`: the page lists it as a load-effect dependency.
 vi.mock('next-intl', () => ({
   useTranslations: () => translate,
+  useLocale: () => 'en',
 }));
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
@@ -26,6 +27,11 @@ vi.mock('@/features/admin/quizzes/api/admin-quizzes-api', () => ({
   fetchAdminQuizListViewModel: (...args: unknown[]) => fetchListMock(...args),
   fetchAdminQuizDetailViewModel: vi.fn(),
   deleteAdminQuiz: vi.fn(),
+  // The starter panel (RIN-1183) loads with the page; its own tests live beside it.
+  fetchAdminStarterQuizzes: () => Promise.resolve([]),
+  markStarterQuiz: vi.fn(),
+  updateStarterQuiz: vi.fn(),
+  unmarkStarterQuiz: vi.fn(),
   setAdminQuizVisibility: (...args: unknown[]) => setVisibilityMock(...args),
 }));
 

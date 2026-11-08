@@ -3,11 +3,7 @@ import type {
   AdminQuizListDto,
   AdminQuizVisibilityChangeDto,
 } from '@/dtos/admin-quiz';
-import type {
-  AdminStarterQuizCreateBodyDto,
-  AdminStarterQuizListDto,
-  AdminStarterQuizUpdateBodyDto,
-} from '@/dtos/admin-starter-quiz';
+import type { AdminStarterQuizListDto } from '@/dtos/admin-starter-quiz';
 import type { DeleteResultDto } from '@/dtos/common';
 import { fetchApiData } from '@/lib/api/client';
 import {
@@ -19,6 +15,12 @@ import type {
   AdminQuizListQueryInput,
   AdminQuizListViewModel,
 } from '@/features/admin/quizzes/types/admin-quizzes-view-model';
+import { toAdminStarterQuizViewModels } from '@/features/admin/quizzes/mappers/admin-starter-quizzes.mapper';
+import type {
+  AdminStarterQuizMarkInput,
+  AdminStarterQuizUpdateInput,
+  AdminStarterQuizViewModel,
+} from '@/features/admin/quizzes/types/admin-starter-quizzes-view-model';
 
 export async function fetchAdminQuizListViewModel({
   page,
@@ -64,39 +66,45 @@ export async function setAdminQuizVisibility(
 const STARTER_QUIZZES_PATH = '/api/admin/starter-quizzes';
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 
-/** @public Used by the admin starter list (RIN-1177 part 3). */
+async function requestStarterQuizzes(
+  path: string,
+  init: RequestInit,
+): Promise<AdminStarterQuizViewModel[]> {
+  const data = await fetchApiData<AdminStarterQuizListDto>(path, init);
+  return toAdminStarterQuizViewModels(data);
+}
+
+/** The starters in order (RIN-1177). */
 export async function fetchAdminStarterQuizzes(
   signal?: AbortSignal,
-): Promise<AdminStarterQuizListDto> {
-  return fetchApiData<AdminStarterQuizListDto>(STARTER_QUIZZES_PATH, signal ? { signal } : {});
+): Promise<AdminStarterQuizViewModel[]> {
+  return requestStarterQuizzes(STARTER_QUIZZES_PATH, signal ? { signal } : {});
 }
 
-/** @public Mark a quiz as a starter; resolves to the new list. */
+/** Mark a quiz as a starter; resolves to the new list. */
 export async function markStarterQuiz(
-  body: AdminStarterQuizCreateBodyDto,
-): Promise<AdminStarterQuizListDto> {
-  return fetchApiData<AdminStarterQuizListDto>(STARTER_QUIZZES_PATH, {
+  input: AdminStarterQuizMarkInput,
+): Promise<AdminStarterQuizViewModel[]> {
+  return requestStarterQuizzes(STARTER_QUIZZES_PATH, {
     method: 'POST',
     headers: JSON_HEADERS,
-    body: JSON.stringify(body),
+    body: JSON.stringify(input),
   });
 }
 
-/** @public Change locale or move to a 1-based position; resolves to the new list. */
+/** Change locale or move to a 1-based position; resolves to the new list. */
 export async function updateStarterQuiz(
   starterId: string,
-  body: AdminStarterQuizUpdateBodyDto,
-): Promise<AdminStarterQuizListDto> {
-  return fetchApiData<AdminStarterQuizListDto>(`${STARTER_QUIZZES_PATH}/${starterId}`, {
+  input: AdminStarterQuizUpdateInput,
+): Promise<AdminStarterQuizViewModel[]> {
+  return requestStarterQuizzes(`${STARTER_QUIZZES_PATH}/${starterId}`, {
     method: 'PATCH',
     headers: JSON_HEADERS,
-    body: JSON.stringify(body),
+    body: JSON.stringify(input),
   });
 }
 
-/** @public Unmark a starter; resolves to the new list. */
-export async function unmarkStarterQuiz(starterId: string): Promise<AdminStarterQuizListDto> {
-  return fetchApiData<AdminStarterQuizListDto>(`${STARTER_QUIZZES_PATH}/${starterId}`, {
-    method: 'DELETE',
-  });
+/** Unmark a starter; resolves to the new list. */
+export async function unmarkStarterQuiz(starterId: string): Promise<AdminStarterQuizViewModel[]> {
+  return requestStarterQuizzes(`${STARTER_QUIZZES_PATH}/${starterId}`, { method: 'DELETE' });
 }

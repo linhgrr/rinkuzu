@@ -242,3 +242,41 @@ test.describe('single active session', () => {
     });
   });
 });
+
+// RIN-1200: each private list page names itself in an h1 and the tab title, in
+// the active locale, and stays out of the index. The h1 is the visible title, so
+// it holds once the list has loaded (the skeleton renders it too).
+const LIST_PAGES = [
+  { path: '/en/my-quizzes', h1: 'My Quizzes', title: 'My quizzes | RinKuzu' },
+  { path: '/en/my-quizzes?tab=folders', h1: 'Folders', title: 'Folders | RinKuzu' },
+  { path: '/en/history', h1: 'Quiz History', title: 'Quiz history | RinKuzu' },
+  { path: '/en/bookmarks', h1: 'Bookmarked Questions', title: 'Saved questions | RinKuzu' },
+  { path: '/vi/my-quizzes', h1: 'Quiz của tôi', title: 'Bài của tôi | RinKuzu' },
+  { path: '/vi/my-quizzes?tab=folders', h1: 'Thư mục', title: 'Thư mục | RinKuzu' },
+  { path: '/vi/history', h1: 'Lịch sử làm bài', title: 'Lịch sử làm bài | RinKuzu' },
+  { path: '/vi/bookmarks', h1: 'Câu hỏi đã lưu', title: 'Câu hỏi đã lưu | RinKuzu' },
+] as const;
+
+test.describe('profile list pages', () => {
+  test('have one h1, a localised tab title and noindex @profile-stability', async ({
+    page,
+  }, testInfo) => {
+    test.slow();
+    await withLearner(testInfo, async (learner) => {
+      await login(page, learner);
+
+      for (const { path, h1, title } of LIST_PAGES) {
+        await page.goto(path);
+        const main = page.locator('#app-main-content');
+        await expect(main.getByRole('heading', { level: 1, name: h1, exact: true })).toBeAttached();
+        await expect(main.locator('[aria-busy="true"]')).toHaveCount(0);
+        await expect(page.locator('h1')).toHaveCount(1);
+        await expect(page).toHaveTitle(title);
+        await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+          'content',
+          /noindex, nofollow/,
+        );
+      }
+    });
+  });
+});

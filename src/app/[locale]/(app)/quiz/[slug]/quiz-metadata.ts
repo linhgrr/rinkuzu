@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { getQuizService } from '@/lib/quiz-factory';
+import { detectContentLocale } from '@/lib/content-locale';
 import { buildLocalizedMetadata } from '@/lib/seo';
 import { isQuickRoundEligible } from '@/shared/constants/quick-round';
 
@@ -72,6 +73,7 @@ export async function buildQuizMetadata({
           ? 'Luyện tập quiz trên RinKuzu với lời giải rõ ràng và kết quả chi tiết.'
           : 'Practice reviewed quizzes on RinKuzu with clear explanations and detailed results.'),
       ...(ogImageParams ? { ogImageParams } : {}),
+      contentLocale: detectContentLocale(quiz.title, quiz.description),
       robots: {
         index: isIndexable,
         follow: isIndexable,

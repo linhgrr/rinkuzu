@@ -6,11 +6,13 @@ import { toSubscriptionPageViewModel } from '@/features/subscription/mappers/sub
 import type { SubscriptionPageViewModel } from '@/features/subscription/types/subscription-page-view-model';
 import { fetchApiData } from '@/lib/api/client';
 
-export async function fetchSubscriptionPageViewModel(): Promise<SubscriptionPageViewModel> {
+export async function fetchSubscriptionPageViewModel(
+  locale: string,
+): Promise<SubscriptionPageViewModel> {
   const [plans, status] = await Promise.all([
     fetchApiData<SubscriptionPlansResponseDto>('/api/billing/plans'),
     fetchApiData<SubscriptionStatusResponseDto>('/api/entitlements/status'),
   ]);
 
-  return toSubscriptionPageViewModel(plans, status);
+  return toSubscriptionPageViewModel(plans, status, locale);
 }

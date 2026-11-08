@@ -138,3 +138,36 @@ describe('quiz OG card (RIN-1180)', () => {
     expect([...image.searchParams.keys()]).toEqual(['title']);
   });
 });
+
+// RIN-1265: /en pages of a Vietnamese quiz point search engines at /vi.
+describe('quiz language metadata', () => {
+  beforeEach(() => {
+    getQuizMetadataBySlug.mockReset();
+  });
+
+  it('canonicalizes /en of a Vietnamese quiz to /vi with a vi-only hreflang', async () => {
+    getQuizMetadataBySlug.mockResolvedValue(
+      quizMetadata({ title: 'Cách ghi nhớ những gì bạn học', slug: 'cach-ghi-nho' }),
+    );
+
+    const metadata = await metadataFor('cach-ghi-nho', { locale: 'en' });
+    const viUrl = `${siteUrl.origin}/vi/quiz/cach-ghi-nho`;
+
+    expect(metadata.alternates?.canonical).toBe(viUrl);
+    expect(metadata.alternates?.languages).toEqual({ vi: viUrl, 'x-default': viUrl });
+    expect(metadata.openGraph?.url).toBe(viUrl);
+  });
+
+  it('keeps the self canonical and both locales for a quiz with no Vietnamese text', async () => {
+    getQuizMetadataBySlug.mockResolvedValue(quizMetadata({}));
+
+    const metadata = await metadataFor('biology-basics', { locale: 'en' });
+
+    expect(metadata.alternates?.canonical).toBe(`${siteUrl.origin}/en/quiz/biology-basics`);
+    expect(metadata.alternates?.languages).toEqual({
+      vi: `${siteUrl.origin}/vi/quiz/biology-basics`,
+      en: `${siteUrl.origin}/en/quiz/biology-basics`,
+      'x-default': `${siteUrl.origin}/vi/quiz/biology-basics`,
+    });
+  });
+});

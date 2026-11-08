@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { HiOutlineCheck, HiOutlineShieldCheck, HiOutlineSparkles } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +36,7 @@ function paywallDescriptionKey(kind: UpgradePromptKind, noPlansOnSale: boolean) 
 export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallModalProps) {
   const t = useTranslations('premium');
   const tPricing = useTranslations('pricing');
+  const locale = useLocale();
   const router = useRouter();
   const [plansState, setPlansState] = useState<PlansState>(INITIAL_STATE);
   const [reloadKey, setReloadKey] = useState(0);
@@ -47,7 +48,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
     if (!isOpen) return;
 
     let active = true;
-    void fetchSubscriptionPageViewModel()
+    void fetchSubscriptionPageViewModel(locale)
       .then((viewModel) => {
         if (!active) return;
         const validPlans = viewModel.plans.filter(
@@ -62,7 +63,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
     return () => {
       active = false;
     };
-  }, [isOpen, reloadKey]);
+  }, [isOpen, locale, reloadKey]);
 
   const bestMonthlyPrice = useMemo(() => {
     if (plansState.status !== 'ready' || plansState.plans.length < 2) return null;

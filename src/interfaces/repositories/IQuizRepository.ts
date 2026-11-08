@@ -51,6 +51,9 @@ export interface QuizMetadataRecord {
 
 export interface PublicQuizSitemapRecord {
   slug: string;
+  /** Title and description tell the quiz's language (RIN-1265). */
+  title: string;
+  description?: string;
   createdAt: Date;
   updatedAt?: Date;
 }

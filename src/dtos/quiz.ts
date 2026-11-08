@@ -141,6 +141,8 @@ export interface QuizMetadataDto extends QuizListItemDto {
 
 export interface PublicQuizSitemapEntryDto {
   slug: string;
+  title: string;
+  description?: string;
   createdAt: string;
   updatedAt?: string;
 }

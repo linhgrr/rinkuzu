@@ -240,6 +240,8 @@ export class QuizAdminService {
     const rows = await this.quizRepository.findPublicSitemapEntries({ excludeAuthorIds, limit });
     return rows.map((row) => ({
       slug: row.slug,
+      title: row.title,
+      ...(row.description ? { description: row.description } : {}),
       createdAt: row.createdAt.toISOString(),
       ...(row.updatedAt ? { updatedAt: row.updatedAt.toISOString() } : {}),
     }));

@@ -33,6 +33,8 @@ import { GET as localeSitemapGET } from './[locale]/sitemap.xml/route';
 
 interface FakeQuiz {
   slug: string;
+  title?: string;
+  description?: string;
   authorId: string;
   createdAt: Date;
   updatedAt?: Date;
@@ -44,8 +46,10 @@ function serveQuizzes(quizzes: FakeQuiz[]) {
       quizzes
         .filter((quiz) => !excludeAuthorIds.includes(quiz.authorId))
         .slice(0, limit)
-        .map(({ slug, createdAt, updatedAt }) => ({
+        .map(({ slug, title, description, createdAt, updatedAt }) => ({
           slug,
+          title: title ?? 'Fake quiz',
+          ...(description ? { description } : {}),
           createdAt,
           ...(updatedAt ? { updatedAt } : {}),
         })),
@@ -130,5 +134,47 @@ describe('sitemap', () => {
       { error: expect.any(Error) },
       'sitemap: quiz generation failed',
     );
+  });
+
+  // RIN-1265: a Vietnamese quiz is listed only under /vi, with hreflang for vi
+  // alone, so /en URLs never advertise Vietnamese content.
+  it('lists a Vietnamese quiz only under /vi and keeps both locales for others', async () => {
+    const createdAt = new Date('2026-11-01T00:00:00.000Z');
+    serveQuizzes([
+      {
+        slug: 'cach-ghi-nho-quiz-khoi-dong-7-cau-096007',
+        title: 'Cách ghi nhớ những gì bạn học',
+        authorId: 'learner-1',
+        createdAt,
+      },
+      {
+        slug: 'lich-su-quiz-000010',
+        title: 'Lich su',
+        description: 'Ôn tập chương một',
+        authorId: 'learner-1',
+        createdAt,
+      },
+      { slug: 'cell-biology-000011', title: 'Cell biology', authorId: 'learner-1', createdAt },
+    ]);
+
+    const entries = await sitemap();
+    const quizUrls = entries.map((entry) => entry.url).filter((url) => url.includes('/quiz/'));
+    const xml = await (await localeSitemapGET()).text();
+
+    expect(quizUrls).toEqual([
+      expect.stringMatching(/\/en\/quiz\/cell-biology-000011$/),
+      expect.stringMatching(/\/vi\/quiz\/cach-ghi-nho-quiz-khoi-dong-7-cau-096007$/),
+      expect.stringMatching(/\/vi\/quiz\/cell-biology-000011$/),
+      expect.stringMatching(/\/vi\/quiz\/lich-su-quiz-000010$/),
+    ]);
+    const viQuiz = entries.find((entry) => entry.url.endsWith('/vi/quiz/lich-su-quiz-000010'));
+    expect(viQuiz?.alternates?.languages).toEqual({
+      vi: expect.stringMatching(/\/vi\/quiz\/lich-su-quiz-000010$/),
+      'x-default': expect.stringMatching(/\/vi\/quiz\/lich-su-quiz-000010$/),
+    });
+    expect(xml).not.toContain('/en/quiz/cach-ghi-nho');
+    expect(xml).not.toContain('/en/quiz/lich-su');
+    expect(xml).toContain('hreflang="en" href="http');
+    expect(xml).toMatch(/hreflang="en" href="[^"]*\/en\/quiz\/cell-biology-000011"/);
   });
 });

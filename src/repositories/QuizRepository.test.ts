@@ -498,11 +498,14 @@ describe('QuizRepository indexing reads (RIN-840)', () => {
   });
 
   it('excludes owners in the sitemap query so the limit counts indexable quizzes', async () => {
-    const exec = vi
-      .fn()
-      .mockResolvedValue([
-        { slug: 'algebra-basics', createdAt: new Date('2026-07-01T00:00:00.000Z') },
-      ]);
+    const exec = vi.fn().mockResolvedValue([
+      {
+        slug: 'algebra-basics',
+        title: 'Algebra basics',
+        description: 'Linear equations',
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      },
+    ]);
     const chain = { sort: vi.fn(), limit: vi.fn(), lean: vi.fn(() => ({ exec })) };
     chain.sort.mockReturnValue(chain);
     chain.limit.mockReturnValue(chain);
@@ -512,11 +515,17 @@ describe('QuizRepository indexing reads (RIN-840)', () => {
     await expect(
       repository.findPublicSitemapEntries({ excludeAuthorIds: [String(ownerId)], limit: 5000 }),
     ).resolves.toEqual([
-      { slug: 'algebra-basics', createdAt: new Date('2026-07-01T00:00:00.000Z') },
+      {
+        slug: 'algebra-basics',
+        title: 'Algebra basics',
+        description: 'Linear equations',
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      },
     ]);
+    // Title and description tell the quiz's language for the sitemap (RIN-1265).
     expect(quizModelMocks.find).toHaveBeenCalledWith(
       { visibility: 'public', author: { $nin: [ownerId] } },
-      { _id: 0, slug: 1, createdAt: 1, updatedAt: 1 },
+      { _id: 0, slug: 1, title: 1, description: 1, createdAt: 1, updatedAt: 1 },
     );
     expect(chain.sort).toHaveBeenCalledWith({ createdAt: -1 });
     expect(chain.limit).toHaveBeenCalledWith(5000);

@@ -12,6 +12,7 @@ const { fetchSubscriptionPageMock, routerPushMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'en',
   useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) =>
     `${namespace}:${key}${values ? `:${JSON.stringify(values)}` : ''}`,
 }));

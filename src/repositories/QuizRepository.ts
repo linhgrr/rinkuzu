@@ -386,14 +386,18 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
         visibility: 'public',
         ...(excluded.length > 0 ? { author: { $nin: excluded } } : {}),
       },
-      { _id: 0, slug: 1, createdAt: 1, updatedAt: 1 },
+      { _id: 0, slug: 1, title: 1, description: 1, createdAt: 1, updatedAt: 1 },
     )
       .sort({ createdAt: -1 })
       .limit(limit)
-      .lean<{ slug: string; createdAt: Date; updatedAt?: Date }[]>()
+      .lean<
+        { slug: string; title: string; description?: string; createdAt: Date; updatedAt?: Date }[]
+      >()
       .exec();
     return rows.map((row) => ({
       slug: row.slug,
+      title: row.title,
+      ...(row.description ? { description: row.description } : {}),
       createdAt: row.createdAt,
       ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
     }));

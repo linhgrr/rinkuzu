@@ -71,7 +71,7 @@ export interface AdminQuizTopicListDto {
   items: AdminQuizTopicItemDto[];
 }
 
-export interface AdminQuizTopicQuizDto {
+interface AdminQuizTopicQuizDto {
   quizId: string;
   order: number;
   /** Null only when the quiz no longer exists. */

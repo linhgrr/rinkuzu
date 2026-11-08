@@ -4,7 +4,7 @@
  */
 export const QUIZ_TOPIC_LOCALES = ['vi'] as const;
 
-/** ASCII kebab-case: the hub URL is /<locale>/chu-de/<slug>. */
+/** ASCII kebab-case: the hub URL is /vi/explore/<slug> (spec RIN-1241 B). */
 export const QUIZ_TOPIC_SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /** A published topic's intro must have this many words; a draft may have fewer. */
@@ -23,6 +23,7 @@ export function isTopicIntroPublishable(intro: string): boolean {
   return words >= QUIZ_TOPIC_INTRO_MIN_WORDS && words <= QUIZ_TOPIC_INTRO_MAX_WORDS;
 }
 
+/** @public Input of `isTopicIndexable`, built by the hub read service (RIN-1249); drop this tag there. */
 export interface TopicIndexabilityInput {
   published: boolean;
   intro: string;

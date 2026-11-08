@@ -17,7 +17,12 @@ import type {
 import type { IStarterQuizReadRepository } from '@/interfaces/repositories/IStarterQuizReadRepository';
 import type { ServiceFailure, ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
-import { countIntroWords, isTopicIntroPublishable } from '@/shared/constants/quiz-topic';
+import {
+  countIntroWords,
+  isTopicIntroPublishable,
+  QUIZ_TOPIC_INTRO_MAX_WORDS,
+  QUIZ_TOPIC_INTRO_MIN_WORDS,
+} from '@/shared/constants/quiz-topic';
 
 export interface QuizTopicAdminActor {
   id: string;
@@ -74,7 +79,7 @@ const SLUG_TAKEN = failure('conflict', 'Topic slug is already used', 409);
 const QUIZ_HAS_TOPIC = failure('conflict', 'Quiz already belongs to a topic', 409);
 const INTRO_NOT_PUBLISHABLE = failure(
   'validation_error',
-  'A published topic needs an intro of 120 to 400 words',
+  `A published topic needs an intro of ${QUIZ_TOPIC_INTRO_MIN_WORDS} to ${QUIZ_TOPIC_INTRO_MAX_WORDS} words`,
   422,
 );
 

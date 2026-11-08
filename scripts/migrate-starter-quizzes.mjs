@@ -21,7 +21,7 @@ import { readCliOptions } from './cli-options.shared.mjs';
 
 export const STARTER_QUIZ_COLLECTION = 'starterquizzes';
 
-/** The former `STARTER_QUIZ_ALLOWLIST`, in its order. */
+/** The three starters formerly hard-coded in the web code, in their order. */
 export const STARTER_QUIZ_SEED = Object.freeze([
   Object.freeze({
     slug: 'cach-ghi-nho-nhung-gi-ban-hoc-quiz-khoi-dong-7-cau-096007',

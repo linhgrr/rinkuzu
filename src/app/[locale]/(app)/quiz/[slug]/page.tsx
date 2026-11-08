@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getCurrentSession } from '@/lib/auth/session';
 import { randomInt } from 'node:crypto';
 import { headers } from 'next/headers';
@@ -10,6 +11,7 @@ import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
+import { buildQuizMetadata } from './quiz-metadata';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,13 +59,17 @@ async function loadQuizForPlay(
   return quizService.getQuizForPlay(slug, session?.user?.role, userId);
 }
 
-export default async function QuizPlayerPage({
-  params,
-  searchParams,
-}: {
+type QuizPageProps = {
   params: Promise<{ locale: string; slug: string }>;
   searchParams: Promise<QuizPageSearchParams>;
-}) {
+};
+
+export async function generateMetadata({ params, searchParams }: QuizPageProps): Promise<Metadata> {
+  const [{ locale, slug }, query] = await Promise.all([params, searchParams]);
+  return buildQuizMetadata({ locale, slug, mode: firstValue(query['mode']) });
+}
+
+export default async function QuizPlayerPage({ params, searchParams }: QuizPageProps) {
   const [{ locale, slug }, session, query, requestHeaders] = await Promise.all([
     params,
     getCurrentSession(),

@@ -28,6 +28,12 @@ function isCorrectAnswer(question: QuizQuestion, userAnswer: AttemptAnswer): boo
   return question.correctIndexes.every((index) => userAnswerSet.has(index));
 }
 
+/** Share facts about the live quiz, resolved by the service (RIN-1179). */
+interface AttemptQuizShareFacts {
+  shareable: boolean;
+  questionCount: number;
+}
+
 export class UserAttemptDtoMapper {
   static toListDto(attempts: Attempt[], pagination: PaginationMeta): UserAttemptListDto {
     return {
@@ -56,11 +62,13 @@ export class UserAttemptDtoMapper {
     attempt: Attempt,
     contentLocked = false,
     nextQuiz: AttemptDetailDto['nextQuiz'] = null,
+    share?: AttemptQuizShareFacts,
   ): AttemptDetailDto {
     const quiz = requireQuizSnapshot(attempt);
     if (!quiz.questions) {
       throw new TypeError('attempt.quiz.questions is required');
     }
+    const shareFacts = share ?? { shareable: false, questionCount: quiz.questions.length };
     const historyStatus: AttemptDetailDto['historyStatus'] = contentLocked
       ? 'content_locked'
       : attempt.answers.length === quiz.questions.length
@@ -81,10 +89,13 @@ export class UserAttemptDtoMapper {
       answers: historyStatus === 'complete' ? attempt.answers : [],
       historyStatus,
       quiz: {
+        id: quiz.id,
         title: quiz.title,
         slug: quiz.slug,
         ...(quiz.description !== undefined && { description: quiz.description }),
         questions,
+        shareable: shareFacts.shareable && !contentLocked,
+        questionCount: shareFacts.questionCount,
       },
       missedCount: countMissedAnswers(attempt),
       nextQuiz,

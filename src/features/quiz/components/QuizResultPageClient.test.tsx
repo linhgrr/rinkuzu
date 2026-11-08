@@ -163,6 +163,34 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(document.body.innerHTML).not.toContain(FAKE_TOKEN);
   });
 
+  it.each([
+    [true, 1],
+    [false, 0],
+  ])(
+    'offers "Send to a classmate" only when the quiz is shareable (%s) (RIN-1179)',
+    async (shareable, count) => {
+      addGuestClaim({
+        attemptId: 'attempt-1',
+        token: FAKE_TOKEN,
+        quizSlug: 'demo',
+        takenAt: Date.now(),
+      });
+      fetchPageDataMock.mockResolvedValueOnce({
+        result: {
+          ...guestResult,
+          totalQuestions: 10,
+          quiz: { ...guestResult.quiz, id: 'quiz-1', shareable, questionCount: 40 },
+        },
+        bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+      });
+
+      render(<QuizResultPageClient />);
+
+      await screen.findByRole('region', { name: 'guestSaveTitle' });
+      expect(screen.queryAllByRole('button', { name: 'share' })).toHaveLength(count);
+    },
+  );
+
   it('shows the score from the URL and an honest note when this device has no token', async () => {
     render(<QuizResultPageClient />);
 

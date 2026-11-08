@@ -139,11 +139,8 @@ const providers = [
       const context = extractRequestContext(request);
       const result = await getAuthSignInService().authenticateCredentials(parsed.data, context);
       if (!result.success) throw toCredentialsSignInError(result);
-      await rememberSignInLocale(
-        getAuthSignInRepository(),
-        result.user.id,
-        credentials?.['locale'],
-      );
+      // `credentials` is defined here: the schema above rejected a missing email.
+      await rememberSignInLocale(getAuthSignInRepository(), result.user.id, credentials['locale']);
 
       // Credentials: repository user.id is the durable Mongo id (Auth.js keeps it).
       return {

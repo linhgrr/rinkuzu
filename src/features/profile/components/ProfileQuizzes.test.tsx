@@ -43,7 +43,11 @@ vi.mock('@/features/profile/api/premium-submissions-api', () => ({
   fetchMyPremiumSubmissions: vi.fn(async () => []),
 }));
 vi.mock('@/features/quiz/components/QuizCard', () => ({
-  QuizCard: ({ quiz }: { quiz: { title: string } }) => <article>{quiz.title}</article>,
+  QuizCard: ({ quiz }: { quiz: { title: string; slug: string } }) => (
+    <article>
+      <a href={`/quiz/${quiz.slug}`}>{quiz.title}</a>
+    </article>
+  ),
   QuizCardSkeleton: () => <div data-testid="quiz-card-skeleton" />,
 }));
 vi.mock('@/features/profile/api/profile-quizzes-api', () => ({
@@ -196,6 +200,24 @@ describe('ProfileQuizzes server search and Load more (RIN-1206)', () => {
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole('button', { name: 'loadMore' })),
     );
+  });
+
+  it('moves focus to the first new card when Load more fetched the last page', async () => {
+    const user = userEvent.setup();
+    fetchPageMock.mockResolvedValueOnce(page(['Algebra', 'Biology'], true));
+    render(<ProfileQuizzes />);
+    await screen.findByText('Algebra');
+    fetchPageMock.mockResolvedValueOnce({
+      ...page([]),
+      quizzes: [{ ...quiz('Chemistry'), displayDate: '2026-10-01T00:00:00.000Z' }],
+    });
+
+    await user.click(screen.getByRole('button', { name: 'loadMore' }));
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Chemistry' })),
+    );
+    expect(screen.queryByRole('button', { name: 'loadMore' })).toBeNull();
   });
 
   it('hides Load more on the last page', async () => {

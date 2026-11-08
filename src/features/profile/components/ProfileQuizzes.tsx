@@ -87,14 +87,23 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
   const [state, dispatch] = useReducer(deleteReducer, initialDeleteState);
   const library = useProfileQuizLibrary();
   const showMutationError = useApiErrorToast();
+  const panelRef = useRef<HTMLElement>(null);
   const loadMoreRef = useRef<HTMLButtonElement>(null);
-  /** Load more disables its button while loading; focus goes back to it when the page lands. */
-  const refocusLoadMoreRef = useRef(false);
+  /**
+   * Load more disables its button while loading. When the page lands, focus goes back to the
+   * button, or to the first new card when that was the last page (index of that card, or null).
+   */
+  const refocusFromRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (library.phase !== 'idle' || !refocusLoadMoreRef.current) return;
-    refocusLoadMoreRef.current = false;
-    loadMoreRef.current?.focus();
+    const from = refocusFromRef.current;
+    if (library.phase !== 'idle' || from === null) return;
+    refocusFromRef.current = null;
+    if (loadMoreRef.current) {
+      loadMoreRef.current.focus();
+      return;
+    }
+    panelRef.current?.querySelectorAll<HTMLElement>('article > a')[from]?.focus();
   }, [library.phase]);
 
   const filterOptions = toFilterOptions(t, library.counts);
@@ -135,6 +144,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
         ) : (
           <div className="grid grid-cols-1 items-start gap-6 min-[1684px]:grid-cols-[minmax(0,900px)_416px]">
             <section
+              ref={panelRef}
               className={`${styles['libraryPanel']} relative overflow-hidden rounded-panel border border-line-blue/35 bg-white p-5 shadow-quiz-card`}
             >
               <Image
@@ -193,7 +203,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                   loadMoreError={library.loadMoreError}
                   loadMoreRef={loadMoreRef}
                   onLoadMore={(focusedButton) => {
-                    refocusLoadMoreRef.current = focusedButton;
+                    refocusFromRef.current = focusedButton ? library.quizzes.length : null;
                     library.loadMore();
                   }}
                   onClearSearch={library.clearSearch}

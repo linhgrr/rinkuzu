@@ -58,24 +58,25 @@ vi.mock('@/features/ask-rin-chan/components/AskRinPanel', () => ({
 }));
 
 // jsdom has no dialog.showModal: a plain dialog stands in for the confirm modal.
-vi.mock('@/components/ui/ConfirmModal', () => ({
-  ConfirmModal: ({
-    isOpen,
-    confirmText,
-    onConfirm,
-  }: {
-    isOpen: boolean;
-    confirmText: string;
-    onConfirm: () => void;
-  }) =>
-    isOpen ? (
-      <div role="dialog">
-        <button type="button" onClick={onConfirm}>
-          {confirmText}
-        </button>
-      </div>
-    ) : null,
-}));
+vi.mock('@/components/ui/ConfirmModal', async () => {
+  const { Button } = await import('@/components/ui/Button');
+  return {
+    ConfirmModal: ({
+      isOpen,
+      confirmText,
+      onConfirm,
+    }: {
+      isOpen: boolean;
+      confirmText: string;
+      onConfirm: () => void;
+    }) =>
+      isOpen ? (
+        <div role="dialog">
+          <Button onClick={onConfirm}>{confirmText}</Button>
+        </div>
+      ) : null,
+  };
+});
 
 vi.mock('@/components/ui/QuestionContent', () => ({
   QuestionContent: ({ content }: { content: string }) => <div>{content}</div>,

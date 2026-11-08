@@ -175,8 +175,13 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
 
         {tab === 'folders' ? (
           <section
+            aria-labelledby="folders-page-title"
             className={`${styles['libraryPanel']} rounded-panel border border-line-blue/35 bg-white p-5 shadow-quiz-card`}
           >
+            {/* The tab bar already shows "Folders"; the h1 names the page for heading navigation (RIN-1200). */}
+            <h1 id="folders-page-title" className="sr-only">
+              {t('tabFolders')}
+            </h1>
             <FoldersView />
           </section>
         ) : (
@@ -194,7 +199,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
               />
 
               <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-lg font-semibold text-ink">{t('myQuizzes')}</h2>
+                <h1 className="text-lg font-semibold text-ink">{t('myQuizzes')}</h1>
                 <SegmentedControl
                   ariaLabel={t('myQuizzes')}
                   value={state.filter}
@@ -223,7 +228,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                     className={`${styles['emptyState']} relative flex flex-col items-center justify-center text-center`}
                   >
                     <HiOutlineDocumentText className="size-12 text-ink/25" />
-                    <h3 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h3>
+                    <h2 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h2>
                     <p className="mt-1 max-w-sm text-sm text-ink/55">{t('createFirst')}</p>
                     <Link href="/create" className="mt-5">
                       <Button>{t('newQuiz')}</Button>
@@ -233,12 +238,12 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
                   <div className="relative mt-6 space-y-9">
                     {groupedQuizzes.map((month) => (
                       <section key={month.key} aria-labelledby={`quiz-month-${month.key}`}>
-                        <h3
+                        <h2
                           id={`quiz-month-${month.key}`}
                           className="mb-5 text-lg font-semibold capitalize text-ink"
                         >
                           {month.label}
-                        </h3>
+                        </h2>
 
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                           {month.quizzes.map((quiz) => (

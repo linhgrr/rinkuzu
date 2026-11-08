@@ -142,9 +142,9 @@ function HydratedDateText({ dateString, label }: HydratedDateTextProps) {
 
 function BookmarksHeader({ t }: BookmarksHeaderProps) {
   return (
-    <h2 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
+    <h1 className="font-home text-[22px] font-semibold leading-[1.35] text-ink sm:text-2xl">
       {t('bookmarkedQuestions')}
-    </h2>
+    </h1>
   );
 }
 
@@ -166,7 +166,7 @@ function BookmarkCard({
           <QuestionContent
             content={bookmark.question.text}
             variant="compact"
-            headingLevel={3}
+            headingLevel={2}
             className="font-home text-lg font-semibold text-ink"
           />
           <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
@@ -272,6 +272,7 @@ function EmptyBookmarksState({ t }: EmptyBookmarksStateProps) {
         <EmptyState
           icon={<HiOutlineTag className="size-12 text-neutral-400" />}
           title={t('noBookmarks')}
+          headingLevel={2}
           description={t('bookmarksEmptyHint')}
           action={<EmptyStateExploreAction />}
         />
@@ -280,11 +281,11 @@ function EmptyBookmarksState({ t }: EmptyBookmarksStateProps) {
   );
 }
 
-function BookmarksSkeleton() {
+function BookmarksSkeleton({ t }: BookmarksHeaderProps) {
   return (
     <div className="space-y-4 font-home" aria-busy="true">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-48 rounded-md" />
+        <BookmarksHeader t={t} />
         <Skeleton className="h-6 w-24 rounded-full" />
       </div>
       {Array.from({ length: 4 }).map((_, index) => (
@@ -346,7 +347,7 @@ export default function ProfileBookmarks() {
   };
 
   if (isLoading) {
-    return <BookmarksSkeleton />;
+    return <BookmarksSkeleton t={t} />;
   }
 
   return (

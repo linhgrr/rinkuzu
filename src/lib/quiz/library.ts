@@ -26,10 +26,3 @@ export function resolveQuizLibraryActivity(
   }
   return { libraryStatus: 'not_started', displayDate: serializeDate(createdAt, 'quiz.createdAt') };
 }
-
-export function matchesLibraryStatus(
-  status: QuizLibraryStatus | undefined,
-  filter: QuizLibraryFilter,
-): boolean {
-  return filter === 'all' || status === filter;
-}

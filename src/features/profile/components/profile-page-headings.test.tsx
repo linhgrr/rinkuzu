@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { axe } from 'jest-axe';
 import { SWRConfig } from 'swr';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProfileBookmarks from './ProfileBookmarks';
@@ -70,6 +71,8 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   foldersState.folders = [];
+  // axe runs on the whole document; start each test from an empty body.
+  document.body.innerHTML = '';
 });
 
 /** Exactly one h1, and no heading jumps more than one level down (axe heading-order). */
@@ -86,6 +89,14 @@ function expectHeadingOutline(h1Text: string) {
     expect(level, `${heading.tagName} "${heading.textContent}"`).toBeLessThanOrEqual(previous + 1);
     previous = level;
   }
+}
+
+/** The same two axe rules the acceptance criteria name, on the settled page. */
+async function expectAxeHeadingRulesClean() {
+  const results = await axe(document.documentElement, {
+    runOnly: { type: 'rule', values: ['heading-order', 'page-has-heading-one'] },
+  });
+  expect(results.violations).toEqual([]);
 }
 
 function renderBookmarks() {
@@ -119,6 +130,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
 
     await screen.findByText('profile.noHistory');
     expectHeadingOutline('profile.quizHistory');
+    await expectAxeHeadingRulesClean();
   });
 
   it('history: h1 with a list of attempts', async () => {
@@ -141,6 +153,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
 
     await screen.findByText('Fake chemistry quiz');
     expectHeadingOutline('profile.quizHistory');
+    await expectAxeHeadingRulesClean();
   });
 
   it('history: h1 in the error state', async () => {
@@ -150,6 +163,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
     await waitFor(() => expect(fetchHistoryMock).toHaveBeenCalled());
     await screen.findByRole('button', { name: /retry/i });
     expectHeadingOutline('profile.quizHistory');
+    await expectAxeHeadingRulesClean();
   });
 
   it('bookmarks: h1 while loading, then in the empty state', async () => {
@@ -159,6 +173,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
 
     await screen.findByText('profile.noBookmarks');
     expectHeadingOutline('profile.bookmarkedQuestions');
+    await expectAxeHeadingRulesClean();
   });
 
   it('bookmarks: h1 in the error state', async () => {
@@ -167,6 +182,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
 
     await screen.findByRole('button', { name: /retry/i });
     expectHeadingOutline('profile.bookmarkedQuestions');
+    await expectAxeHeadingRulesClean();
   });
 
   it('my quizzes: h1 while loading, then in the empty state', async () => {
@@ -176,6 +192,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
 
     await screen.findByText('profile.noQuizzes');
     expectHeadingOutline('profile.myQuizzes');
+    await expectAxeHeadingRulesClean();
   });
 
   it('my quizzes: month groups sit one level under the h1', async () => {
@@ -184,6 +201,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
 
     await screen.findByText('Fake biology quiz');
     expectHeadingOutline('profile.myQuizzes');
+    await expectAxeHeadingRulesClean();
   });
 
   it('my quizzes: h1 in the error state', async () => {
@@ -192,6 +210,7 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
 
     await screen.findByRole('button', { name: /retry/i });
     expectHeadingOutline('profile.myQuizzes');
+    await expectAxeHeadingRulesClean();
   });
 
   it('folders tab: the h1 names the active tab', async () => {
@@ -201,5 +220,6 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
 
     await screen.findByText('Fake folder');
     expectHeadingOutline('profile.tabFolders');
+    await expectAxeHeadingRulesClean();
   });
 });

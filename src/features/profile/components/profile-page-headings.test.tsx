@@ -1,17 +1,27 @@
 /** @vitest-environment jsdom */
 
 import type { ReactNode } from 'react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { SWRConfig } from 'swr';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ProfileBookmarkQuizListViewModel } from '@/features/profile/types/profile-bookmark-view-model';
 import ProfileBookmarks from './ProfileBookmarks';
 import ProfileHistory from './ProfileHistory';
 import ProfileQuizzes from './ProfileQuizzes';
 
-const { fetchHistoryMock, fetchBookmarksMock, fetchLibraryMock, foldersState } = vi.hoisted(() => ({
+const {
+  fetchHistoryMock,
+  fetchBookmarksMock,
+  fetchBookmarkQuizzesMock,
+  fetchLibraryMock,
+  foldersState,
+} = vi.hoisted(() => ({
   fetchHistoryMock: vi.fn(),
   fetchBookmarksMock: vi.fn(),
+  fetchBookmarkQuizzesMock: vi.fn(
+    async (): Promise<ProfileBookmarkQuizListViewModel> => ({ quizzes: [], total: 0 }),
+  ),
   fetchLibraryMock: vi.fn(),
   foldersState: {
     folders: [] as { id: string; name: string; quizCount: number }[],
@@ -41,6 +51,7 @@ vi.mock('@/features/profile/api/profile-history-api', () => ({
 vi.mock('@/features/profile/api/profile-bookmarks-api', () => ({
   fetchProfileBookmarkListViewModel: fetchBookmarksMock,
   deleteProfileBookmark: vi.fn(),
+  fetchProfileBookmarkQuizzes: fetchBookmarkQuizzesMock,
 }));
 
 vi.mock('@/features/profile/api/profile-quizzes-api', () => ({
@@ -71,6 +82,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   foldersState.folders = [];
+  fetchBookmarkQuizzesMock.mockResolvedValue({ quizzes: [], total: 0 });
   // axe runs on the whole document; start each test from an empty body.
   document.body.innerHTML = '';
 });
@@ -208,6 +220,25 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
     renderBookmarks();
 
     await screen.findByRole('button', { name: /retry/i });
+    expectHeadingOutline('profile.bookmarkedQuestions');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('bookmarks: h1 above the "no bookmarks for this quiz" state (RIN-1208 filter)', async () => {
+    fetchBookmarkQuizzesMock.mockResolvedValue({
+      quizzes: [{ slug: 'sample-quiz', title: 'Sample quiz', count: 1 }],
+      total: 1,
+    });
+    fetchBookmarksMock.mockResolvedValue({ bookmarks: [], pagination: emptyPagination });
+    renderBookmarks();
+
+    const select = await screen.findByLabelText<HTMLSelectElement>(
+      'profile.bookmarkQuizFilterLabel',
+    );
+    await waitFor(() => expect(select.disabled).toBe(false));
+    fireEvent.change(select, { target: { value: 'sample-quiz' } });
+
+    await screen.findByText('profile.bookmarkQuizFilterEmpty');
     expectHeadingOutline('profile.bookmarkedQuestions');
     await expectAxeHeadingRulesClean();
   });

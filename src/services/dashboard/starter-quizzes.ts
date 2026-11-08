@@ -51,7 +51,8 @@ export function starterQuizHref(
   return query ? `${path}?${query}` : path;
 }
 
-function getDropReason(
+/** Why a learner could not take this starter free; null when it is live. Shared with the admin list. */
+export function getStarterQuizDropReason(
   candidate: StarterQuizCandidateRecord | undefined,
 ): StarterQuizDropReason | null {
   if (!candidate) return 'missing';
@@ -75,7 +76,7 @@ function resolveStarterQuizzes({
 
   for (const entry of entries) {
     const candidate = candidatesById.get(entry.quizId);
-    const reason = getDropReason(candidate);
+    const reason = getStarterQuizDropReason(candidate);
     if (reason || !candidate) {
       dropped.push({ quizId: entry.quizId, reason: reason ?? 'missing' });
       continue;

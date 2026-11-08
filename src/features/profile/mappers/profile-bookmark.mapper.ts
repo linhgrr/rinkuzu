@@ -1,6 +1,7 @@
-import type { BookmarkDto, BookmarkListDto } from '@/dtos/bookmark';
+import type { BookmarkDto, BookmarkListDto, BookmarkQuizListDto } from '@/dtos/bookmark';
 import type {
   ProfileBookmarkListViewModel,
+  ProfileBookmarkQuizListViewModel,
   ProfileBookmarkViewModel,
 } from '@/features/profile/types/profile-bookmark-view-model';
 import { formatCalendarDate } from '@/lib/formatters';
@@ -50,5 +51,14 @@ export function toProfileBookmarkListViewModel(
   return {
     bookmarks: dto.bookmarks.map((bookmark) => toProfileBookmarkViewModel(bookmark, locale)),
     pagination: dto.pagination,
+  };
+}
+
+export function toProfileBookmarkQuizListViewModel(
+  dto: BookmarkQuizListDto,
+): ProfileBookmarkQuizListViewModel {
+  return {
+    quizzes: dto.quizzes.map(({ slug, title, count }) => ({ slug, title, count })),
+    total: dto.total,
   };
 }

@@ -29,6 +29,7 @@ import {
   MUTATION_RERUN_MESSAGE,
 } from './mutation-run-evidence.mjs';
 import {
+  MAX_MUTATION_SHARDS,
   mergeMutationShardReports,
   MUTATION_SHARDS_DIR_RELATIVE,
   mutationShardPaths,
@@ -66,6 +67,9 @@ export function parseMutationGateArgs(argv) {
   let baseRef = null;
   /** @type {number | null} */
   let shards = null;
+  /** @type {number | null} */
+  let onlyShard = null;
+  let mergeShards = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--mode') {
@@ -80,6 +84,12 @@ export function parseMutationGateArgs(argv) {
       shards = parseMutationShardCount(argv[++i]);
     } else if (arg.startsWith('--shards=')) {
       shards = parseMutationShardCount(arg.slice('--shards='.length));
+    } else if (arg === '--only-shard') {
+      onlyShard = parseOnlyShard(argv[++i]);
+    } else if (arg.startsWith('--only-shard=')) {
+      onlyShard = parseOnlyShard(arg.slice('--only-shard='.length));
+    } else if (arg === '--merge-shards') {
+      mergeShards = true;
     } else {
       throw new Error(`Unknown mutation:gate argument: ${arg}`);
     }
@@ -90,11 +100,72 @@ export function parseMutationGateArgs(argv) {
   if (modeArg === 'changed' && (!baseRef || baseRef.length === 0)) {
     throw new Error('mutation:gate --mode changed requires --base-ref REF');
   }
+  if (onlyShard !== null && mergeShards) {
+    throw new Error(ONLY_OR_MERGE_MESSAGE);
+  }
   return {
     mode: /** @type {'changed'|'full'} */ (modeArg),
     baseRef: modeArg === 'changed' ? baseRef : null,
     ...(shards === null ? {} : { shards }),
+    ...(onlyShard === null ? {} : { onlyShard }),
+    ...(mergeShards ? { mergeShards } : {}),
   };
+}
+
+const ONLY_OR_MERGE_MESSAGE = 'mutation:gate takes --only-shard or --merge-shards, not both.';
+
+/**
+ * Parse the 1-based shard of `--only-shard K` / `MUTATION_ONLY_SHARD`. The
+ * upper bound against N is checked once N is known.
+ *
+ * @param {string | number | undefined | null} raw
+ * @returns {number}
+ */
+function parseOnlyShard(raw) {
+  const text = String(raw ?? '').trim();
+  const value = Number(text);
+  if (text === '' || !Number.isInteger(value) || value < 1 || value > MAX_MUTATION_SHARDS) {
+    throw new Error(
+      `--only-shard / MUTATION_ONLY_SHARD must be an integer between 1 and ${MAX_MUTATION_SHARDS} (got ${raw}).`,
+    );
+  }
+  return value;
+}
+
+/**
+ * Shard to run on its own: `--only-shard K` wins, else env MUTATION_ONLY_SHARD,
+ * else null (run every shard).
+ *
+ * @param {number | null | undefined} cliShard
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+export function resolveOnlyShard(cliShard, env = process.env) {
+  if (cliShard != null) return parseOnlyShard(cliShard);
+  const raw = env.MUTATION_ONLY_SHARD;
+  return raw === undefined || raw === '' ? null : parseOnlyShard(raw);
+}
+
+/**
+ * Resolve N, K and the merge flag for one invocation. `--only-shard` and
+ * `--merge-shards` need N (`--shards` / MUTATION_SHARDS) when the scope is full.
+ *
+ * @param {{ shards?: number | null, onlyShard?: number | null, mergeShards?: boolean }} options
+ * @param {NodeJS.ProcessEnv} env
+ * @param {'changed' | 'full'} campaignMode
+ */
+function resolveShardPlan(options, env, campaignMode) {
+  const shardCount =
+    campaignMode === 'full' ? resolveMutationShardCount(options.shards, env) : null;
+  const onlyShard = resolveOnlyShard(options.onlyShard, env);
+  const mergeShards = options.mergeShards === true;
+  if (onlyShard !== null && mergeShards) throw new Error(ONLY_OR_MERGE_MESSAGE);
+  if ((onlyShard !== null || mergeShards) && campaignMode === 'full' && shardCount === null) {
+    throw new Error('--only-shard and --merge-shards need --shards N or MUTATION_SHARDS.');
+  }
+  if (onlyShard !== null && shardCount !== null && onlyShard > shardCount) {
+    throw new Error(`--only-shard ${onlyShard} is outside 1..${shardCount}.`);
+  }
+  return { shardCount, onlyShard, mergeShards };
 }
 
 /**
@@ -517,7 +588,7 @@ const STRYKER_TIMEOUT_TEXT = 'Stryker timed out after';
  *   reportRelative: string;
  *   incrementalRelative: string;
  *   vitestRelated: boolean;
- *   status: 'empty' | 'completed' | 'failed' | 'timed_out' | 'not_started';
+ *   status: 'empty' | 'completed' | 'failed' | 'timed_out' | 'not_started' | 'missing';
  *   report?: any;
  *   error?: string;
  *   timeoutMs?: number;
@@ -641,13 +712,30 @@ function runShardedStrykerCampaign(root, paths, commonMeta, scope, sourceInvento
   } catch (error) {
     return fail({ failureReason: 'fingerprint_t1_failed', errorMessage: errorMessage(error) });
   }
-  if (
-    fingerprintT0.sha256 !== fingerprintT1.sha256 ||
-    fingerprintT0.entryCount !== fingerprintT1.entryCount
-  ) {
+  if (!sameFingerprint(fingerprintT0, fingerprintT1)) {
     return fail({ failureReason: 'workspace_drift_t0_t1', fingerprintT0, fingerprintT1 });
   }
+  return finishShardResults(root, paths, commonMeta, scope, results, {
+    shardCount,
+    mutateInput,
+    fingerprintT0,
+    fingerprintT1,
+  });
+}
 
+const sameFingerprint = (a, b) => a?.sha256 === b?.sha256 && a?.entryCount === b?.entryCount;
+
+/**
+ * Judge N shard results of one head: any hard failure fails closed, timeouts
+ * (and nothing worse) keep the timeout text, otherwise merge the reports into
+ * reports/mutation/mutation.json and classify it like a single full run.
+ *
+ * @param {MutationShardResult[]} results
+ * @param {{ shardCount: number, mutateInput: string[], fingerprintT0: any, fingerprintT1: any }} campaign
+ */
+function finishShardResults(root, paths, commonMeta, scope, results, campaign) {
+  const fail = (fields) => ({ ok: false, result: markFailed(root, commonMeta, fields, scope) });
+  const { shardCount, mutateInput, fingerprintT0, fingerprintT1 } = campaign;
   const hardFailure = results.find((r) => r.status === 'failed');
   if (hardFailure) {
     return fail({
@@ -689,6 +777,189 @@ function runShardedStrykerCampaign(root, paths, commonMeta, scope, sourceInvento
   };
 }
 
+const SHARD_META_SCHEMA_VERSION = 1;
+
+/**
+ * `--only-shard K` (RIN-1224): run shard K of N in its own process so the
+ * gate can check its PR queue between shards. Writes the shard report, its
+ * incremental cache and shards/<K>-of-<N>.meta.json, which binds the report
+ * to this head SHA and workspace fingerprint for `--merge-shards`. No merge,
+ * no score. A finished (or empty) shard exits 0; a timeout keeps the
+ * "Stryker timed out after" text so the gate reports UNVERIFIED; any other
+ * failure fails closed.
+ */
+function runSingleShardStep(root, paths, commonMeta, scope, sourceInventory, ctx) {
+  const fail = (fields) => markFailed(root, commonMeta, fields, scope);
+  const { shard, shardCount } = ctx;
+  const now = ctx.now ?? Date.now;
+  let timeoutMs;
+  let budgetMs;
+  let fingerprintT0;
+  try {
+    timeoutMs = resolveShardTimeoutMs(ctx.env);
+    budgetMs = resolveStrykerTimeoutMs(ctx.env, 'full');
+    fingerprintT0 = captureCampaignFingerprint(root, 'full', sourceInventory);
+  } catch (error) {
+    return fail({ failureReason: 'shard_setup_failed', errorMessage: errorMessage(error) });
+  }
+  const shardPaths = mutationShardPaths(shard, shardCount);
+  mkdirSync(path.join(root, MUTATION_SHARDS_DIR_RELATIVE), { recursive: true });
+  rmSync(path.join(root, shardPaths.metaRelative), { force: true });
+  const files = partitionMutationInventory(sourceInventory, shardCount)[shard - 1] ?? [];
+  const result = runMutationShard(root, paths, shard, shardCount, files, {
+    ...ctx,
+    now,
+    timeoutMs,
+    budgetMs,
+    deadline: now() + budgetMs,
+  });
+
+  let fingerprintT1;
+  try {
+    fingerprintT1 = captureCampaignFingerprint(root, 'full', sourceInventory);
+  } catch (error) {
+    return fail({ failureReason: 'fingerprint_t1_failed', errorMessage: errorMessage(error) });
+  }
+  if (!sameFingerprint(fingerprintT0, fingerprintT1)) {
+    return fail({ failureReason: 'workspace_drift_t0_t1', fingerprintT0, fingerprintT1 });
+  }
+  const [summary] = shardMetaSummary([result], true);
+  writeJsonAtomic(path.join(root, shardPaths.metaRelative), {
+    schemaVersion: SHARD_META_SCHEMA_VERSION,
+    ...summary,
+    shardCount,
+    files,
+    headSha: commonMeta.headSha,
+    fingerprint: fingerprintT1,
+    reportSha256:
+      result.status === 'completed' ? sha256File(path.join(root, shardPaths.reportRelative)) : null,
+    finishedAt: new Date(now()).toISOString(),
+  });
+  if (result.status === 'failed') {
+    return fail({
+      failureReason: 'shard_failed',
+      errorMessage: `Mutation shard ${shard} of ${shardCount} failed: ${result.error}`,
+      shards: [summary],
+    });
+  }
+  if (isTimeoutClass(result)) {
+    return fail({
+      failureReason: 'stryker_spawn_failed',
+      errorMessage: `Mutation shard ${shard} of ${shardCount} did not finish: ${result.error}`,
+      shards: [summary],
+    });
+  }
+  writeGateRunMeta(root, 'started', { ...commonMeta, shards: [summary] });
+  return { status: 'completed', exitCode: 0, scope, evaluation: null, outcome: 'shard_completed' };
+}
+
+/**
+ * Rebuild shard k's result from what `--only-shard k` left on disk. Anything
+ * not provably produced for this head and workspace is `missing`.
+ * `missing` exists only here; `--merge-shards` fails closed on it.
+ *
+ * @returns {MutationShardResult}
+ */
+function loadShardResult(root, shard, shardCount, files, binding) {
+  const shardPaths = mutationShardPaths(shard, shardCount);
+  const base = { shard, files: files.length, ...shardPaths, vitestRelated: true };
+  if (files.length === 0) return { ...base, status: 'empty', report: null };
+  /** @param {string} error */
+  const missing = (error) => ({ ...base, status: /** @type {const} */ ('missing'), error });
+  let meta;
+  try {
+    meta = JSON.parse(readFileSync(path.join(root, shardPaths.metaRelative), 'utf8'));
+  } catch {
+    return missing('no shard meta; run --only-shard for it first.');
+  }
+  if (meta?.headSha !== binding.headSha) {
+    return missing(`its report is for head ${meta?.headSha}, not ${binding.headSha}.`);
+  }
+  if (
+    meta.shard !== shard ||
+    meta.shardCount !== shardCount ||
+    JSON.stringify(meta.files) !== JSON.stringify(files) ||
+    !sameFingerprint(meta.fingerprint, binding.fingerprint)
+  ) {
+    return missing('the workspace or shard layout changed since the shard ran.');
+  }
+  const timing = {
+    timeoutMs: meta.timeoutMs,
+    durationMs: meta.durationMs,
+    strykerExitCode: meta.strykerExitCode,
+  };
+  if (meta.status !== 'completed')
+    return { ...base, ...timing, status: meta.status, error: meta.error };
+  const reportPath = path.join(root, shardPaths.reportRelative);
+  if (!existsSync(reportPath) || sha256File(reportPath) !== meta.reportSha256) {
+    return missing('the shard report is gone or is not the one its meta recorded.');
+  }
+  try {
+    return {
+      ...base,
+      ...timing,
+      status: 'completed',
+      report: JSON.parse(readFileSync(reportPath, 'utf8')),
+    };
+  } catch (error) {
+    return missing(errorMessage(error));
+  }
+}
+
+/**
+ * `--merge-shards` (RIN-1224): no Stryker. Merge the N shard reports that
+ * `--only-shard 1..N` produced for this head, then judge them exactly like a
+ * single-process sharded run. A missing or stale shard fails closed.
+ */
+function mergeShardCampaign(root, paths, commonMeta, scope, sourceInventory, ctx) {
+  const fail = (fields) => ({ ok: false, result: markFailed(root, commonMeta, fields, scope) });
+  const { shardCount } = ctx;
+  let fingerprint;
+  try {
+    fingerprint = captureCampaignFingerprint(root, 'full', sourceInventory);
+  } catch (error) {
+    return fail({ failureReason: 'fingerprint_t1_failed', errorMessage: errorMessage(error) });
+  }
+  const binding = { headSha: commonMeta.headSha, fingerprint };
+  const results = partitionMutationInventory(sourceInventory, shardCount).map((files, index) =>
+    loadShardResult(root, index + 1, shardCount, files, binding),
+  );
+  const missing = results.find((r) => r.status === 'missing');
+  if (missing) {
+    return fail({
+      failureReason: 'shard_report_missing',
+      errorMessage: `Mutation shard ${missing.shard} of ${shardCount} has no usable report: ${missing.error}`,
+      shards: shardMetaSummary(results, false),
+    });
+  }
+  return finishShardResults(root, paths, commonMeta, scope, results, {
+    shardCount,
+    mutateInput: [...CRITICAL_MUTATION_PATTERNS, '!src/**/*.{test,spec}.{ts,tsx}'],
+    fingerprintT0: fingerprint,
+    fingerprintT1: fingerprint,
+  });
+}
+
+function runCampaign(root, paths, commonMeta, scope, campaignMode, sourceInventory, ctx) {
+  const { shardCount, mergeShards, env, invoke } = ctx;
+  if (shardCount && mergeShards) {
+    return mergeShardCampaign(root, paths, commonMeta, scope, sourceInventory, ctx);
+  }
+  if (shardCount) {
+    return runShardedStrykerCampaign(root, paths, commonMeta, scope, sourceInventory, ctx);
+  }
+  return runStrykerCampaign(
+    root,
+    paths,
+    commonMeta,
+    scope,
+    campaignMode,
+    sourceInventory,
+    env,
+    invoke,
+  );
+}
+
 export function executeMutationGate(root, options) {
   const env = options.env ?? process.env;
   const invoke = options.invokeStrykerFn ?? invokeStryker;
@@ -722,17 +993,11 @@ export function executeMutationGate(root, options) {
   if (toolchainResult.ok === false) return toolchainResult.result;
   const { toolchain } = toolchainResult;
 
-  if (scope.outcome === 'not_applicable') {
-    return completeNotApplicable(root, paths, commonMeta, scope, env, toolchain);
-  }
-
-  const campaignMode = scope.mode === 'full' ? 'full' : 'changed';
-  const sourceInventory =
-    campaignMode === 'changed' ? [...scope.files] : expandFullCriticalInventory(root);
-
-  let shardCount;
+  const campaignMode =
+    scope.mode === 'full' && scope.outcome !== 'not_applicable' ? 'full' : 'changed';
+  let plan;
   try {
-    shardCount = campaignMode === 'full' ? resolveMutationShardCount(options.shards, env) : null;
+    plan = resolveShardPlan(options, env, campaignMode);
   } catch (error) {
     return markFailed(
       root,
@@ -741,23 +1006,30 @@ export function executeMutationGate(root, options) {
       scope,
     );
   }
-  const campaign = shardCount
-    ? runShardedStrykerCampaign(root, paths, commonMeta, scope, sourceInventory, {
-        env,
-        invoke,
-        shardCount,
-        now: options.now,
-      })
-    : runStrykerCampaign(
-        root,
-        paths,
-        commonMeta,
-        scope,
-        campaignMode,
-        sourceInventory,
-        env,
-        invoke,
-      );
+  // A shard step only means something for a full campaign; a changed or
+  // not-applicable scope is handled whole by the `--merge-shards` step.
+  if (plan.onlyShard !== null && campaignMode !== 'full') {
+    writeGateRunMeta(root, 'started', { ...commonMeta, shardStep: 'skipped' });
+    return { status: 'completed', exitCode: 0, scope, evaluation: null, outcome: 'shard_skipped' };
+  }
+
+  if (scope.outcome === 'not_applicable') {
+    return completeNotApplicable(root, paths, commonMeta, scope, env, toolchain);
+  }
+
+  const sourceInventory =
+    campaignMode === 'changed' ? [...scope.files] : expandFullCriticalInventory(root);
+  const shardCtx = { env, invoke, shardCount: plan.shardCount, now: options.now };
+  if (plan.onlyShard !== null) {
+    return runSingleShardStep(root, paths, commonMeta, scope, sourceInventory, {
+      ...shardCtx,
+      shard: plan.onlyShard,
+    });
+  }
+  const campaign = runCampaign(root, paths, commonMeta, scope, campaignMode, sourceInventory, {
+    ...shardCtx,
+    mergeShards: plan.mergeShards,
+  });
   if (campaign.ok === false) return campaign.result;
 
   const fingerprint = fingerprintRelevantInputs(root, {
@@ -822,8 +1094,15 @@ if (isMainModule) {
       mode: parsed.mode,
       baseRef: parsed.baseRef,
       shards: parsed.shards,
+      onlyShard: parsed.onlyShard,
+      mergeShards: parsed.mergeShards,
     });
-    if (result.outcome === 'not_applicable') {
+    if (result.outcome === 'shard_completed' || result.outcome === 'shard_skipped') {
+      process.stdout.write(
+        `Mutation shard step ${result.outcome === 'shard_skipped' ? 'skipped (scope is not a full campaign; --merge-shards runs it)' : 'finished'}; no score until --merge-shards.
+`,
+      );
+    } else if (result.outcome === 'not_applicable') {
       process.stdout.write(
         'Mutation gate completed: not_applicable (no critical production mutation required; no score claimed).\n',
       );

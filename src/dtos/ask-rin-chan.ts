@@ -43,7 +43,9 @@ export const askRinAgentRequestSchema = z
     parentRunId: z.string().max(128).optional(),
     // @ag-ui/client 1.x declares the protocol it speaks on every run (RIN-1195).
     protocolVersion: z.string().max(32).optional(),
-    state: z.unknown(),
+    // @ag-ui/client 1.x drops `state: null` from the body it sends; the adaptive API still
+    // expects the key, so restore the null the 0.0.x client sent (RIN-1202).
+    state: z.unknown().default(null),
     messages: z.array(agUiMessageSchema).min(1).max(100),
     tools: z.array(z.never()).max(0),
     context: z.array(z.never()).max(0),

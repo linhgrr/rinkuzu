@@ -669,6 +669,65 @@ test.describe('production critical paths', () => {
     });
   });
 
+  // RIN-1202: the real /api/ask-rin-chan/agent route validates the client's AG-UI body with a
+  // strict schema before it proxies to the adaptive API, so a field the client starts sending
+  // turns every question into a 400. No page.route here: the run goes through the proxy to the
+  // fake adaptive server, which streams the event order of rinkuzu-ai-api's assistant/agui.py.
+  test('streams an Ask Rin-chan reply through the real proxy route @critical-ask-rin', async ({
+    page,
+  }, testInfo) => {
+    // Sign-in, a played quiz and a streamed run: past the 30 s default under parallel load.
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      await login(page, fixture.regular);
+      await page.goto(`/en/quiz/${fixture.quizSlug}`);
+      await chooseOption(page, 'This answer is intentionally incorrect');
+      const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+      if (await desktopSubmit.isVisible()) {
+        await desktopSubmit.click();
+      } else {
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
+      }
+      await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
+
+      // The empty state also flashes before the history load starts, and the load replaces the
+      // thread when it lands: wait for it first, or the question is sent and then wiped.
+      const historyLoaded = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname.startsWith('/api/ask-rin-chan/conversations/') &&
+          response.request().method() === 'GET',
+      );
+      await page.getByRole('button', { name: 'Ask Rin-chan', exact: true }).click();
+      await historyLoaded;
+      const panel = page.getByRole('dialog');
+      await expect(
+        panel.getByRole('heading', { name: "Let's work through this together" }),
+      ).toBeVisible();
+
+      const question = `Why is option two wrong? ${fixture.runId}`;
+      await panel.getByRole('textbox', { name: 'Ask a question...' }).fill(question);
+      const [agentResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname === '/api/ask-rin-chan/agent' &&
+            response.request().method() === 'POST',
+        ),
+        panel.getByRole('button', { name: 'Send', exact: true }).click(),
+      ]);
+      // On a rejection, name the schema issue: it is the client field the proxy now refuses.
+      const rejection = agentResponse.ok() ? '' : await agentResponse.text();
+      expect(agentResponse.status(), rejection).toBe(200);
+      expect(agentResponse.headers()['content-type']).toContain('text/event-stream');
+
+      await expect(
+        panel.getByText(`Rin-chan read your question: "${question}". Start from the stem.`),
+      ).toBeVisible();
+      await expect(panel.getByRole('button', { name: 'Stop generating' })).toHaveCount(0);
+      await expect(panel.getByRole('alert')).toHaveCount(0);
+      await expect(panel.getByRole('button', { name: 'Retry', exact: true })).toHaveCount(0);
+    });
+  });
+
   test('saves a signed-out result to the learner who signs in after it @critical-quiz-guest-claim', async ({
     page,
   }, testInfo) => {

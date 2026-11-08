@@ -28,9 +28,8 @@ import type { ProfileBookmarkViewModel } from '@/features/profile/types/profile-
 import {
   BookmarkQuizFilter,
   BookmarksHeader,
+  BookmarksBody,
   BookmarksSkeleton,
-  EmptyBookmarksState,
-  StaleQuizFilterState,
 } from './ProfileBookmarksParts';
 
 const chatbotIcon = '/images/chatbot_icon.png';
@@ -340,7 +339,10 @@ export default function ProfileBookmarks() {
     }
   };
 
-  if (isLoading) {
+  // Full skeleton only before anything has loaded. A filter or page change keeps the
+  // header and the select mounted (focus stays on the select, WCAG 3.2.2) and only
+  // the list waits; the count pill hides until the new page arrives.
+  if (isLoading && !quizList && !quizListError) {
     return <BookmarksSkeleton />;
   }
 
@@ -353,34 +355,33 @@ export default function ProfileBookmarks() {
       ) : null}
       {error ? <ErrorState error={error} onRetry={() => mutate()} className="mb-4" /> : null}
 
-      {error && bookmarks.length === 0 ? null : bookmarks.length === 0 ? (
-        isFiltered ? (
-          <StaleQuizFilterState onShowAll={() => setQuiz('')} t={t} />
-        ) : (
-          <EmptyBookmarksState t={t} />
-        )
-      ) : (
-        <div className="space-y-6">
-          <BookmarksList
-            bookmarks={bookmarks}
-            historyForBookmark={(bookmarkId) => state.historyTurns[bookmarkId] ?? 0}
-            onOpenAiModal={openAIModal}
-            onOpenRemoveModal={(bookmark) => dispatch({ type: 'openRemoveModal', bookmark })}
-            t={t}
-            tCommon={tCommon}
-          />
+      <BookmarksBody
+        isLoading={isLoading}
+        hasError={Boolean(error)}
+        isEmpty={bookmarks.length === 0}
+        isFiltered={isFiltered}
+        onShowAll={() => setQuiz('')}
+        t={t}
+      >
+        <BookmarksList
+          bookmarks={bookmarks}
+          historyForBookmark={(bookmarkId) => state.historyTurns[bookmarkId] ?? 0}
+          onOpenAiModal={openAIModal}
+          onOpenRemoveModal={(bookmark) => dispatch({ type: 'openRemoveModal', bookmark })}
+          t={t}
+          tCommon={tCommon}
+        />
 
-          {pagination && pagination.totalPages > 1 ? (
-            <div className="flex justify-center">
-              <Pagination
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-                onPageChange={(page) => dispatch({ type: 'setPage', value: page })}
-              />
-            </div>
-          ) : null}
-        </div>
-      )}
+        {pagination && pagination.totalPages > 1 ? (
+          <div className="flex justify-center">
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => dispatch({ type: 'setPage', value: page })}
+            />
+          </div>
+        ) : null}
+      </BookmarksBody>
 
       {state.activeModal === 'ai' && state.currentBookmark ? (
         <AskRinPanel

@@ -210,6 +210,43 @@ describe('ProfileBookmarks quiz filter (RIN-1208)', () => {
     expect(screen.getByText('profile.bookmarkCount:{"count":4}')).toBeTruthy();
   });
 
+  it('keeps the same select mounted and focused while the filtered page loads', async () => {
+    renderBookmarks();
+    await waitFor(() => expect(quizSelect().disabled).toBe(false));
+
+    let resolveFiltered: (value: ProfileBookmarkListViewModel) => void = () => undefined;
+    fetchBookmarksMock.mockImplementation((url: string) =>
+      url.includes('quizSlug')
+        ? new Promise((resolve) => {
+            resolveFiltered = resolve;
+          })
+        : Promise.resolve(bookmarksFor(url)),
+    );
+    const select = quizSelect();
+    select.focus();
+    fireEvent.change(select, { target: { value: history.slug } });
+
+    // Pending: header and select stay, only the list shows a skeleton and the count hides.
+    await waitFor(() =>
+      expect(fetchBookmarksMock).toHaveBeenLastCalledWith(
+        `/api/bookmarks?page=1&limit=10&quizSlug=${history.slug}`,
+        'en',
+      ),
+    );
+    expect(quizSelect()).toBe(select);
+    expect(document.activeElement).toBe(select);
+    expect(screen.getByText('profile.bookmarkedQuestions')).toBeTruthy();
+    expect(screen.queryByText(/profile\.bookmarkCount/)).toBeNull();
+    expect(screen.queryByText('Sample question b1')).toBeNull();
+    expect(screen.getByTestId('bookmarks-list-skeleton').getAttribute('aria-busy')).toBe('true');
+
+    resolveFiltered(bookmarksFor(`quizSlug=${history.slug}`));
+    await screen.findByText('Sample question h2');
+    expect(quizSelect()).toBe(select);
+    expect(document.activeElement).toBe(select);
+    expect(screen.getByText('profile.bookmarkCount:{"count":4}')).toBeTruthy();
+  });
+
   it('resets to page 1 when the filter changes on a later page', async () => {
     fetchBookmarksMock.mockImplementation(async (url: string) =>
       url.includes('quizSlug')

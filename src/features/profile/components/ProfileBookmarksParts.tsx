@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { HiOutlineTag } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -30,6 +31,18 @@ interface BookmarkQuizFilterProps {
 interface StaleQuizFilterStateProps {
   onShowAll: () => void;
   t: TranslateFn;
+}
+
+interface BookmarksBodyProps {
+  isLoading: boolean;
+  /** The list request failed (its ErrorState is shown above the body). */
+  hasError: boolean;
+  isEmpty: boolean;
+  isFiltered: boolean;
+  onShowAll: () => void;
+  t: TranslateFn;
+  /** The bookmark cards and pagination. */
+  children: ReactNode;
 }
 
 interface EmptyBookmarksStateProps {
@@ -69,7 +82,7 @@ export function BookmarkQuizFilter({ quizList, value, onChange, t }: BookmarkQui
   );
 }
 
-export function StaleQuizFilterState({ onShowAll, t }: StaleQuizFilterStateProps) {
+function StaleQuizFilterState({ onShowAll, t }: StaleQuizFilterStateProps) {
   return (
     <Card>
       <CardContent className="py-12 text-center">
@@ -87,7 +100,7 @@ export function StaleQuizFilterState({ onShowAll, t }: StaleQuizFilterStateProps
   );
 }
 
-export function EmptyBookmarksState({ t }: EmptyBookmarksStateProps) {
+function EmptyBookmarksState({ t }: EmptyBookmarksStateProps) {
   return (
     <Card>
       <CardContent className="py-12 text-center">
@@ -102,13 +115,10 @@ export function EmptyBookmarksState({ t }: EmptyBookmarksStateProps) {
   );
 }
 
-export function BookmarksSkeleton() {
+/** Card placeholders only: shown under the header and filter while a page loads. */
+function BookmarksListSkeleton() {
   return (
-    <div className="space-y-4 font-home" aria-busy="true">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-48 rounded-md" />
-        <Skeleton className="h-6 w-24 rounded-full" />
-      </div>
+    <div className="space-y-4" aria-busy="true" data-testid="bookmarks-list-skeleton">
       {Array.from({ length: 4 }).map((_, index) => (
         <SurfaceCard key={`bookmark-skeleton-${index}`} className="p-5">
           <div className="space-y-3">
@@ -122,5 +132,44 @@ export function BookmarksSkeleton() {
         </SurfaceCard>
       ))}
     </div>
+  );
+}
+
+/** First load only: header placeholder plus the card placeholders. */
+export function BookmarksSkeleton() {
+  return (
+    <div className="space-y-4 font-home" aria-busy="true">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-48 rounded-md" />
+        <Skeleton className="h-6 w-24 rounded-full" />
+      </div>
+      <BookmarksListSkeleton />
+    </div>
+  );
+}
+
+/** The list region under the header and filter: card skeleton, empty states or the cards. */
+export function BookmarksBody({
+  isLoading,
+  hasError,
+  isEmpty,
+  isFiltered,
+  onShowAll,
+  t,
+  children,
+}: BookmarksBodyProps) {
+  if (isLoading) {
+    return <BookmarksListSkeleton />;
+  }
+  if (!isEmpty) {
+    return <div className="space-y-6">{children}</div>;
+  }
+  if (hasError) {
+    return null;
+  }
+  return isFiltered ? (
+    <StaleQuizFilterState onShowAll={onShowAll} t={t} />
+  ) : (
+    <EmptyBookmarksState t={t} />
   );
 }

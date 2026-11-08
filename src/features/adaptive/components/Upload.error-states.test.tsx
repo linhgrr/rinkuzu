@@ -214,4 +214,49 @@ describe('AdaptiveLearningUpload error states', () => {
     expect(toastErrorMock).not.toHaveBeenCalled();
     expect(screen.queryByText('Usage quota exceeded')).not.toBeInTheDocument();
   });
+
+  it('clears the uploading state after a rejected upload, then retries to the dashboard (RIN-1193)', async () => {
+    uploadPdfMock
+      .mockRejectedValueOnce(
+        new AdaptiveApiError({
+          message: 'Failed to fetch',
+          code: 'service_unavailable',
+          detail: 'Failed to fetch',
+          retryable: true,
+        }),
+      )
+      .mockResolvedValueOnce({ job_id: 'job-3' });
+    const user = await submitUpload();
+
+    expect(await screen.findByText(api.networkTitle)).toBeInTheDocument();
+    // The flag is lowered in finally: the form is usable again, not stuck "uploading".
+    expect(
+      screen.getByRole('button', { name: viAdaptive.uploadPage.createLearningPath }),
+    ).toBeEnabled();
+    expect(screen.getByLabelText(new RegExp(viAdaptive.uploadPage.subjectName))).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: viCommon.retry }));
+    await waitFor(() => expect(uploadPdfMock).toHaveBeenCalledTimes(2));
+    // After a success the progress view stays up until the dashboard opens.
+    expect(
+      await screen.findByRole('button', { name: viAdaptive.uploadPage.uploading }),
+    ).toBeDisabled();
+    expect(screen.queryByText(api.networkTitle)).not.toBeInTheDocument();
+  });
+
+  it('clears the uploading state when the readiness check itself throws (RIN-1193)', async () => {
+    checkApiReadinessMock.mockRejectedValueOnce(
+      new AdaptiveApiError({ message: RAW, code: 'service_unavailable', status: 503 }),
+    );
+    await submitUpload();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: viAdaptive.uploadPage.createLearningPath }),
+      ).toBeEnabled(),
+    );
+    expect(uploadPdfMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: viCommon.retry })).toBeInTheDocument();
+    expect(screen.queryByText(RAW)).not.toBeInTheDocument();
+  });
 });

@@ -197,6 +197,54 @@ describe('useAdaptiveExerciseSession', () => {
     expect(result.current.loadingExercise).toBe(false);
   });
 
+  it('lowers both loading flags when the load rejects and loads again on retry (RIN-1193)', async () => {
+    const first = deferred<Awaited<ReturnType<typeof getLearningStep>>>();
+    getLearningStepMock
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValueOnce(createStep('after-retry'));
+    const { result } = renderHook(() =>
+      useAdaptiveExerciseSession({ sessionId: 'session-r', router: createRouter(), t }),
+    );
+    await waitFor(() => expect(getLearningStepMock).toHaveBeenCalledTimes(1));
+    expect(result.current).toMatchObject({ loadingConcept: true, loadingExercise: true });
+
+    first.reject(new AdaptiveApiError({ message: 'down', code: 'service_unavailable' }));
+    await waitFor(() => expect(result.current.error).toBe('exercise.serviceUnavailable'));
+    expect(result.current).toMatchObject({ loadingConcept: false, loadingExercise: false });
+
+    await act(async () => result.current.loadData());
+    expect(result.current.concept?.concept_name).toBe('after-retry');
+    expect(result.current).toMatchObject({
+      error: null,
+      loadingConcept: false,
+      loadingExercise: false,
+    });
+  });
+
+  it('leaves the loading flags to the newer session when a superseded load rejects (RIN-1193)', async () => {
+    const older = deferred<Awaited<ReturnType<typeof getLearningStep>>>();
+    const newer = deferred<Awaited<ReturnType<typeof getLearningStep>>>();
+    getLearningStepMock.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
+    const { result, rerender } = renderHook(
+      ({ sessionId }) => useAdaptiveExerciseSession({ sessionId, router: createRouter(), t }),
+      { initialProps: { sessionId: 'session-old' } },
+    );
+    await waitFor(() => expect(getLearningStepMock).toHaveBeenCalledTimes(1));
+    rerender({ sessionId: 'session-new' });
+    await waitFor(() => expect(getLearningStepMock).toHaveBeenCalledTimes(2));
+
+    await act(async () => older.reject(new Error('stale')));
+    expect(result.current).toMatchObject({
+      error: null,
+      loadingConcept: true,
+      loadingExercise: true,
+    });
+
+    await act(async () => newer.resolve(createStep('newer')));
+    expect(result.current.concept?.concept_name).toBe('newer');
+    expect(result.current.loadingExercise).toBe(false);
+  });
+
   it('deduplicates an in-flight load and releases the lock for an explicit retry', async () => {
     const first = deferred<Awaited<ReturnType<typeof getLearningStep>>>();
     getLearningStepMock

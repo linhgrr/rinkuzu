@@ -97,9 +97,7 @@ export const useAdaptiveExerciseSession = ({
     activeLoadRequestIdRef.current = requestId;
     activeLoadSessionIdRef.current = sessionId;
 
-    setLoadingConcept(true);
     setLoadingTheory(false);
-    setLoadingExercise(true);
     setError(null);
     setSubmitError(null);
     answerDraftRef.current = null;
@@ -117,54 +115,49 @@ export const useAdaptiveExerciseSession = ({
         activeLoadSessionIdRef.current = null;
       }
     };
+    // Lowered in `withPending`'s finally, so a rejected or thrown load always clears it.
+    // A superseded load leaves it alone: the newer request owns the flags then.
+    const setStepLoading = (pending: boolean) => {
+      if (!pending && !isLatestActiveRequest()) return;
+      setLoadingConcept(pending);
+      setLoadingExercise(pending);
+    };
 
+    let step: Awaited<ReturnType<typeof getLearningStep>>;
     try {
-      const step = await getLearningStep(sessionId);
-      if (!isLatestActiveRequest()) {
-        releaseLoadingLock();
-        return;
-      }
-
-      setConcept(step.concept);
-      setLoadingConcept(false);
-      setTheory(step.theory);
-      setShowTheory(Boolean(step.theory));
-      setExercise(step.exercise);
-      captureAnalyticsEventOnce('adaptive_session_started', `adaptive-session-${sessionId}`, {
-        journey_id: sessionId,
-        exercise_type: step.exercise.exercise_type,
-        bloom_level: step.exercise.bloom_level,
-        has_theory: Boolean(step.theory),
-      });
-      const nextAnswerDraft =
-        getSessionExerciseDraft(sessionId, step.exercise.exercise_id) ??
-        createInitialExerciseAnswer(step.exercise);
-      answerDraftRef.current = nextAnswerDraft;
-      setAnswerDraft(nextAnswerDraft);
-      setLoadingTheory(false);
-      setLoadingExercise(false);
-      releaseLoadingLock();
+      step = await withPending(setStepLoading, () => getLearningStep(sessionId));
     } catch (err) {
-      if (!isLatestActiveRequest()) {
-        releaseLoadingLock();
-        return;
+      if (isLatestActiveRequest()) {
+        setError(
+          isSessionNotFoundError(err)
+            ? t('exercise.failedToLoadExercise')
+            : resolveExerciseFeedback(err, t, 'load'),
+        );
       }
-
-      if (isSessionNotFoundError(err)) {
-        setError(t('exercise.failedToLoadExercise'));
-        setLoadingConcept(false);
-        setLoadingTheory(false);
-        setLoadingExercise(false);
-        releaseLoadingLock();
-        return;
-      }
-
-      setError(resolveExerciseFeedback(err, t, 'load'));
-      setLoadingConcept(false);
-      setLoadingTheory(false);
-      setLoadingExercise(false);
       releaseLoadingLock();
+      return;
     }
+    if (!isLatestActiveRequest()) {
+      releaseLoadingLock();
+      return;
+    }
+
+    setConcept(step.concept);
+    setTheory(step.theory);
+    setShowTheory(Boolean(step.theory));
+    setExercise(step.exercise);
+    captureAnalyticsEventOnce('adaptive_session_started', `adaptive-session-${sessionId}`, {
+      journey_id: sessionId,
+      exercise_type: step.exercise.exercise_type,
+      bloom_level: step.exercise.bloom_level,
+      has_theory: Boolean(step.theory),
+    });
+    const nextAnswerDraft =
+      getSessionExerciseDraft(sessionId, step.exercise.exercise_id) ??
+      createInitialExerciseAnswer(step.exercise);
+    answerDraftRef.current = nextAnswerDraft;
+    setAnswerDraft(nextAnswerDraft);
+    releaseLoadingLock();
   };
 
   const setAndSaveAnswerDraft = (draft: ExerciseAnswerDraft) => {

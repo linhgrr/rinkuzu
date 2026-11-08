@@ -1,7 +1,7 @@
 'use client';
 
 import { type Dispatch, useEffect, useReducer } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -19,6 +19,7 @@ import {
   PREMIUM_PRICING_FEATURE_KEYS,
 } from '@/features/subscription/constants/pricing-features';
 import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
+import { capturePaywallEvent, usePaywallEventOnMount } from '@/lib/analytics/paywall';
 
 async function loadSubscriptionPage(dispatch: Dispatch<SubscriptionPageAction>): Promise<void> {
   dispatch({ type: 'loadStart' });
@@ -35,6 +36,7 @@ export function SubscriptionPageClient() {
   const t = useTranslations('subscription');
   const tPricing = useTranslations('pricing');
   const router = useRouter();
+  const locale = useLocale();
   const [state, dispatch] = useReducer(subscriptionPageReducer, initialSubscriptionPageState);
   const freeFeatures = FREE_PRICING_FEATURE_KEYS.map((key) => tPricing(`free.features.${key}`));
   const premiumFeatures = PREMIUM_PRICING_FEATURE_KEYS.map((key) =>
@@ -44,8 +46,10 @@ export function SubscriptionPageClient() {
   useEffect(() => {
     void loadSubscriptionPage(dispatch);
   }, []);
+  usePaywallEventOnMount('pricing_viewed', { locale, plan: null, source: 'subscription_page' });
 
   const handlePurchase = (plan: SubscriptionPlanViewModel): void => {
+    capturePaywallEvent('upgrade_clicked', { locale, plan: plan.id, source: 'subscription_page' });
     router.push(`/checkout?plan=${encodeURIComponent(plan.id)}`);
   };
 

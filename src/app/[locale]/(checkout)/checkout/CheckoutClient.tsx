@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
   HiOutlineCheckCircle,
@@ -24,6 +24,7 @@ import {
   type CheckoutQuote,
 } from '@/features/billing/api/checkout-api';
 import { Link, useRouter } from '@/i18n/navigation';
+import { usePaywallEventOnMount } from '@/lib/analytics/paywall';
 import { ApiResponseError } from '@/lib/api/client';
 import { formatVndCurrency } from '@/lib/formatters';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
@@ -125,6 +126,12 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
   const [orderAction, setOrderAction] = useState<'idle' | 'verify' | 'cancel'>('idle');
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const callbackVerificationOrderId = useRef<string | null>(null);
+  const locale = useLocale();
+  // A new checkout only: a return to an existing order is not a start (RIN-1269).
+  usePaywallEventOnMount(
+    'checkout_started',
+    planId && !orderId ? { locale, plan: planId, source: 'checkout' } : null,
+  );
 
   const loadQuote = async (code: string | null) => {
     if (!planId || quoteLoading) return;

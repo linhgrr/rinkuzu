@@ -5,12 +5,16 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SubscriptionPage from '@/app/[locale]/(app)/subscription/page';
 
-const { fetchSubscriptionPageMock, routerPushMock } = vi.hoisted(() => ({
+const { fetchSubscriptionPageMock, routerPushMock, captureMock } = vi.hoisted(() => ({
   fetchSubscriptionPageMock: vi.fn(),
   routerPushMock: vi.fn(),
+  captureMock: vi.fn(),
 }));
 
+vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: captureMock }));
+
 vi.mock('next-intl', () => ({
+  useLocale: () => 'en',
   useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) =>
     `${namespace}:${key}${values ? `:${JSON.stringify(values)}` : ''}`,
 }));
@@ -53,6 +57,13 @@ describe('SubscriptionPage plan comparison', () => {
     render(<SubscriptionPage />);
 
     expect(await screen.findByRole('heading', { name: 'pricing:free.name' })).toBeTruthy();
+    // RIN-1269: one view per page view; the click below adds the upgrade click.
+    expect(captureMock).toHaveBeenCalledTimes(1);
+    expect(captureMock).toHaveBeenCalledWith('pricing_viewed', {
+      locale: 'en',
+      plan: null,
+      source: 'subscription_page',
+    });
     expect(screen.getByRole('heading', { name: 'Premium Monthly' })).toBeTruthy();
     // RIN-1015: localised duration, not the catalogue's English "1 Month".
     expect(screen.getByText('pricing:planDuration:{"months":1}')).toBeTruthy();
@@ -66,6 +77,12 @@ describe('SubscriptionPage plan comparison', () => {
     ).toBe(false);
     await user.click(screen.getByRole('button', { name: 'subscription:subscribe' }));
     expect(routerPushMock).toHaveBeenCalledWith('/checkout?plan=premium-monthly');
+    expect(captureMock).toHaveBeenLastCalledWith('upgrade_clicked', {
+      locale: 'en',
+      plan: 'premium-monthly',
+      source: 'subscription_page',
+    });
+    expect(captureMock).toHaveBeenCalledTimes(2);
     expect(screen.getByText('pricing:free.features.askRinChan')).toBeTruthy();
     expect(screen.getByText('pricing:premium.features.premiumCatalog')).toBeTruthy();
   });

@@ -3,7 +3,7 @@ import 'server-only';
 import { logger } from '@/lib/logger';
 import type { AnalyticsEventName } from './events';
 
-type ServerEventProperties = Record<string, string | number | boolean>;
+type ServerEventProperties = Record<string, string | number | boolean | null>;
 
 const CAPTURE_TIMEOUT_MS = 3_000;
 
@@ -43,4 +43,22 @@ export async function captureServerEvent(
     logger.warn({ event }, 'Server analytics capture failed');
     return false;
   }
+}
+
+/**
+ * A server event that must not be tied to a learner (RIN-1269): a fresh random
+ * distinct id per event, and `$process_person_profile: false` so PostHog
+ * creates no person for it. Same best-effort contract as `captureServerEvent`.
+ */
+export function captureAnonymousServerEvent(
+  event: AnalyticsEventName,
+  properties: ServerEventProperties,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): Promise<boolean> {
+  return captureServerEvent(
+    event,
+    crypto.randomUUID(),
+    { ...properties, $process_person_profile: false },
+    env,
+  );
 }

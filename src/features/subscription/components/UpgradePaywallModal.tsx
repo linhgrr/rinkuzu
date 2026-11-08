@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { HiOutlineCheck, HiOutlineShieldCheck, HiOutlineSparkles } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +10,7 @@ import { fetchSubscriptionPageViewModel } from '@/features/subscription/api/subs
 import type { SubscriptionPlanViewModel } from '@/features/subscription/types/subscription-page-view-model';
 import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
 import { formatVndCurrency } from '@/lib/formatters';
+import { capturePaywallEvent } from '@/lib/analytics/paywall';
 
 export type UpgradePromptKind = 'quota' | 'feature';
 
@@ -37,6 +38,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
   const t = useTranslations('premium');
   const tPricing = useTranslations('pricing');
   const router = useRouter();
+  const locale = useLocale();
   const [plansState, setPlansState] = useState<PlansState>(INITIAL_STATE);
   const [reloadKey, setReloadKey] = useState(0);
   const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
@@ -71,6 +73,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
 
   const handlePurchase = (plan: SubscriptionPlanViewModel) => {
     if (submittingPlanId) return;
+    capturePaywallEvent('upgrade_clicked', { locale, plan: plan.id, source: 'upgrade_modal' });
     setSubmittingPlanId(plan.id);
     setPaymentError(false);
     onClose(suppressFuture);

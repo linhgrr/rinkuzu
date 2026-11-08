@@ -7,6 +7,8 @@
     "src/app/sw.ts!",
     "src/models/Abuse.ts!",
     "src/services/abuse/abuse-identity.ts!",
+    // MDX blog content source (RIN-403); drop once blog routes import it (RIN-222 part 2).
+    "src/lib/blog/content.ts!",
     "doctor.config.mjs",
     "tests/types/declaration-contracts.ts",
     // RIN-748: the API error layer ships before its call sites (sibling migration PRs).

@@ -47,6 +47,7 @@ const RUN_FAILED = 'adaptiveLearning.chatbot.errorRunFailed';
 const PLACEHOLDER = 'adaptiveLearning.chatbot.placeholder';
 const SEND = 'adaptiveLearning.chatbot.send';
 const RETRY = 'adaptiveLearning.chatbot.retryMessage';
+const EMPTY_TITLE = 'adaptiveLearning.chatbot.emptyTitle';
 // The first render in a worker is cold and can take over 1 s under gate contention.
 const SLOW = { timeout: 5_000 };
 
@@ -276,6 +277,88 @@ describe('AskRinPanelContent run states', () => {
     await screen.findByText(THINKING, {}, SLOW);
 
     expect(screen.queryByRole('button', { name: RETRY })).toBeNull();
+  });
+
+  it('keeps a question sent while the history is still loading (RIN-1207)', async () => {
+    let releaseHistory!: (conversation: unknown) => void;
+    mocks.getAskRinConversation.mockReturnValueOnce(
+      new Promise((resolve) => {
+        releaseHistory = resolve;
+      }),
+    );
+    const run = queueSseRun();
+    render(<AskRinPanelContent isOpen onClose={() => undefined} context={QUIZ_CONTEXT} />);
+    const input = await screen.findByLabelText(PLACEHOLDER, {}, SLOW);
+    await waitFor(() => expect(mocks.getAskRinConversation).toHaveBeenCalledTimes(1), SLOW);
+
+    // A learner on a slow network types and sends before the history response lands.
+    fireEvent.change(input, { target: { value: 'Why is it 4?' } });
+    // The runtime holds the send until the history import finishes (assistant-ui 0.15).
+    await waitFor(
+      () => expect((screen.getByLabelText(SEND) as HTMLButtonElement).disabled).toBe(false),
+      SLOW,
+    );
+    fireEvent.click(screen.getByLabelText(SEND));
+    expect(screen.getByLabelText('common.loading')).toBeTruthy();
+
+    await act(async () =>
+      releaseHistory({
+        messages: [
+          { messageId: 'history-user-1', role: 'user', content: 'Earlier question' },
+          { messageId: 'history-assistant-1', role: 'assistant', content: 'Earlier answer' },
+        ],
+      }),
+    );
+
+    expect(await screen.findByText('Earlier answer', {}, SLOW)).toBeTruthy();
+    expect(
+      await screen.findByText('Why is it 4?', { ignore: 'textarea, script, style' }, SLOW),
+    ).toBeTruthy();
+    await act(async () => startAssistantMessage(run, 'run-1'));
+    expect(await screen.findByText(THINKING, {}, SLOW)).toBeTruthy();
+    const body = JSON.parse(String(mocks.fetchAskRinAgent.mock.calls[0]?.[1]?.body)) as {
+      messages: { role: string; content: string }[];
+    };
+    // History first, the pending question after it.
+    expect(body.messages.map((message) => message.content)).toEqual([
+      'Earlier question',
+      'Earlier answer',
+      'Why is it 4?',
+    ]);
+  });
+
+  it('never shows the empty state before the history has loaded (RIN-1207)', async () => {
+    let releaseHistory!: (conversation: unknown) => void;
+    mocks.getAskRinConversation.mockReturnValueOnce(
+      new Promise((resolve) => {
+        releaseHistory = resolve;
+      }),
+    );
+    // Record every node ever inserted: a one-commit flash is replaced before any assertion.
+    const inserted: string[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        record.addedNodes.forEach((node) => inserted.push(node.textContent ?? ''));
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    render(<AskRinPanelContent isOpen onClose={() => undefined} context={QUIZ_CONTEXT} />);
+    await screen.findByLabelText(PLACEHOLDER, {}, SLOW);
+    await waitFor(() => expect(mocks.getAskRinConversation).toHaveBeenCalledTimes(1), SLOW);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const insertedWhileLoading = [
+      ...inserted,
+      ...observer
+        .takeRecords()
+        .flatMap((record) => [...record.addedNodes].map((node) => node.textContent ?? '')),
+    ];
+
+    expect(insertedWhileLoading.some((text) => text.includes(EMPTY_TITLE))).toBe(false);
+    expect(screen.getByLabelText('common.loading')).toBeTruthy();
+
+    await act(async () => releaseHistory({ messages: [] }));
+    observer.disconnect();
+    expect(await screen.findByText(EMPTY_TITLE, {}, SLOW)).toBeTruthy();
   });
 
   it('shows neither the bubble nor an error after the learner stops the answer', async () => {

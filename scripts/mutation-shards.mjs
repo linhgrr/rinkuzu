@@ -60,7 +60,10 @@ export function partitionMutationInventory(files, shardCount) {
 }
 
 /**
- * Repo-relative report and incremental-cache paths for shard k of N.
+ * Repo-relative report, incremental-cache and binding-meta paths for shard k
+ * of N. The meta (written by `--only-shard`) ties the report to the head SHA
+ * and workspace fingerprint it was produced for, because the shard directory
+ * is a volume that outlives the run.
  *
  * @param {number} shard 1-based
  * @param {number} shardCount
@@ -70,6 +73,7 @@ export function mutationShardPaths(shard, shardCount) {
   return {
     reportRelative: `${stem}.mutation.json`,
     incrementalRelative: `${stem}.incremental.json`,
+    metaRelative: `${stem}.meta.json`,
   };
 }
 

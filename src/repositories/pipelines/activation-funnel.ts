@@ -1,6 +1,7 @@
 import type { PipelineStage } from 'mongoose';
 import AuditLogModel from '@/models/AuditLog';
 import QuizProgressModel from '@/models/QuizProgress';
+import { attemptEntryRef } from '@/repositories/pipelines/activation-entry';
 
 /**
  * First-session funnel stages of the activation cohort pipeline (RIN-932):
@@ -162,6 +163,8 @@ export function attemptUnionStage(coll: string, from: Date, to: Date): PipelineS
             uid: '$user',
             takenAt: ATTEMPT_AT,
             claimedTakenAt: claimedAttemptTime(ATTEMPT_AT),
+            // RIN-1256: the entry point, for the activated-by-entry split.
+            attemptRef: attemptEntryRef(ATTEMPT_AT),
           },
         },
         { $match: { takenAt: { $gte: from } } },

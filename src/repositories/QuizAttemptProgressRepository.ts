@@ -182,6 +182,8 @@ async function createAttempt(
         ...(data.retryOfAttemptId === undefined ? {} : { retryOfAttemptId: data.retryOfAttemptId }),
         ...(data.questionIndices === undefined ? {} : { questionIndices: data.questionIndices }),
         ...(data.mode === undefined ? {} : { mode: data.mode }),
+        ...(data.entry === undefined ? {} : { entry: data.entry }),
+        ...(data.post === undefined ? {} : { post: data.post }),
         answers: data.answers.map(AnswerPersistenceMapper.toPersistence),
         score: data.score,
         correctAnswers: data.correctAnswers,

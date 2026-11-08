@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useReducer, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -19,6 +19,7 @@ import {
   type PremiumAnswerViewModel,
   type PremiumBatchViewModel,
 } from '@/features/quiz/api/premium-quiz-api';
+import { initialPremiumPlayerState, premiumPlayerReducer } from './premium-player-state';
 
 interface PremiumQuizPlayerClientProps {
   quizId: string;
@@ -41,52 +42,35 @@ export default function PremiumQuizPlayerClient({
 }: PremiumQuizPlayerClientProps) {
   const t = useTranslations('quiz');
   const { push } = useRouter();
-  const [batches, setBatches] = useState<Record<number, PremiumBatchViewModel>>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Array<PremiumAnswerViewModel | null>>([]);
-  const [sessionId, setSessionId] = useState('');
-  const [watermark, setWatermark] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [unlockRequired, setUnlockRequired] = useState(false);
-  // A 401 at any step means the session is gone (RIN-747): ask to sign in again
-  // instead of rendering the server's raw message.
-  const [signInRequired, setSignInRequired] = useState(false);
-  // Secondary actions (save, unlock, submit) show localized inline copy (RIN-753).
-  const [error, setError] = useState('');
-  // A failed start replaces the whole player with the page-level ErrorState.
-  const [loadError, setLoadError] = useState<unknown>(null);
+  const [state, dispatch] = useReducer(premiumPlayerReducer, initialPremiumPlayerState);
+  const {
+    batches,
+    currentIndex,
+    answers,
+    sessionId,
+    watermark,
+    loading,
+    unlockRequired,
+    signInRequired,
+    error,
+    loadError,
+  } = state;
   const prefetching = useRef<Promise<void> | null>(null);
   const describeError = useApiErrorMessage();
 
-  // 401 asks to sign in (RIN-747), unlock_required offers the unlock; the rest is a page error.
   function handleStartError(startError: unknown) {
-    const { kind } = describeApiError(startError);
-    if (kind === 'aborted') return;
-    if (kind === 'auth_required') {
-      setSignInRequired(true);
-    } else if (kind === 'unlock_required') {
-      setUnlockRequired(true);
-    } else {
-      setLoadError(startError);
-    }
+    dispatch({ type: 'startFailed', kind: describeApiError(startError).kind, error: startError });
   }
 
   async function begin() {
-    setLoading(true);
-    setError('');
-    setLoadError(null);
+    dispatch({ type: 'startRequested' });
     try {
       const batch = await startPremiumSession(quizId);
-      setBatches({ [batch.batchIndex]: batch });
-      setCurrentIndex(batch.currentQuestionIndex);
-      setAnswers(batch.answers);
-      setSessionId(batch.sessionId);
-      setWatermark(batch.watermark);
-      setUnlockRequired(false);
+      dispatch({ type: 'sessionStarted', batch });
     } catch (startError) {
       handleStartError(startError);
     } finally {
-      setLoading(false);
+      dispatch({ type: 'settled' });
     }
   }
 
@@ -95,19 +79,13 @@ export default function PremiumQuizPlayerClient({
     void startPremiumSession(quizId)
       .then((batch) => {
         if (!active) return;
-        setBatches({ [batch.batchIndex]: batch });
-        setCurrentIndex(batch.currentQuestionIndex);
-        setAnswers(batch.answers);
-        setSessionId(batch.sessionId);
-        setWatermark(batch.watermark);
-        setUnlockRequired(false);
-        setError('');
+        dispatch({ type: 'sessionStarted', batch });
       })
       .catch((startError: unknown) => {
         if (active) handleStartError(startError);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) dispatch({ type: 'settled' });
       });
     return () => {
       active = false;
@@ -122,8 +100,7 @@ export default function PremiumQuizPlayerClient({
     if (prefetching.current) return prefetching.current;
     prefetching.current = fetchPremiumBatch(batch.sessionId, cursor)
       .then((loaded) => {
-        setBatches((current) => ({ ...current, [loaded.batchIndex]: loaded }));
-        setWatermark(loaded.watermark);
+        dispatch({ type: 'batchLoaded', batch: loaded });
       })
       .finally(() => {
         prefetching.current = null;
@@ -145,19 +122,15 @@ export default function PremiumQuizPlayerClient({
 
   async function choose(answer: PremiumAnswerViewModel) {
     if (!sessionId) return;
-    setAnswers((current) => {
-      const next = [...current];
-      next[currentIndex] = answer;
-      return next;
-    });
+    dispatch({ type: 'answerChosen', index: currentIndex, answer });
     try {
       await savePremiumAnswer(sessionId, currentIndex, answer);
     } catch (saveError) {
       if (isAuthRequired(saveError)) {
-        setSignInRequired(true);
+        dispatch({ type: 'signInRequired' });
         return;
       }
-      setError(describeError(saveError));
+      dispatch({ type: 'actionFailed', message: describeError(saveError) });
     }
   }
 
@@ -170,40 +143,39 @@ export default function PremiumQuizPlayerClient({
       if (!cursor) return;
       await loadAdjacent(currentBatch, cursor);
     }
-    setCurrentIndex(target);
+    dispatch({ type: 'moved', index: target });
   }
 
   async function unlock() {
-    setLoading(true);
-    setError('');
+    dispatch({ type: 'actionRequested', clearError: true });
     try {
       await unlockPremiumQuiz(quizId);
       await begin();
     } catch (unlockError) {
       if (isAuthRequired(unlockError)) {
-        setSignInRequired(true);
+        dispatch({ type: 'signInRequired' });
         return;
       }
-      setError(describeError(unlockError));
+      dispatch({ type: 'actionFailed', message: describeError(unlockError) });
     } finally {
-      setLoading(false);
+      dispatch({ type: 'settled' });
     }
   }
 
   async function submit() {
     if (!sessionId) return;
-    setLoading(true);
+    dispatch({ type: 'actionRequested', clearError: false });
     try {
       const submitted = await submitPremiumSession(sessionId);
       push(`${ROUTES.QUIZ.RESULT(slug)}?attemptId=${encodeURIComponent(submitted.attemptId)}`);
     } catch (submitError) {
       if (isAuthRequired(submitError)) {
-        setSignInRequired(true);
+        dispatch({ type: 'signInRequired' });
         return;
       }
-      setError(describeError(submitError));
+      dispatch({ type: 'actionFailed', message: describeError(submitError) });
     } finally {
-      setLoading(false);
+      dispatch({ type: 'settled' });
     }
   }
 

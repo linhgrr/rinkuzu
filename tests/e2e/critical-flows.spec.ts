@@ -1636,6 +1636,77 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('marks, moves and unmarks a starter quiz from the admin quizzes page @critical-admin-starter-quizzes', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      // A starter must exist already, so the new one lands second and can move up (RIN-1183).
+      await ensureStarterQuiz(fixture.db, new Date());
+      const title = `E2E Starter ${fixture.runId}`;
+      await fixture.db
+        .collection('quizzes')
+        .updateOne({ _id: fixture.quizId }, { $set: { title } });
+      const starterRow = () =>
+        fixture.db.collection('starterquizzes').findOne({ quiz: fixture.quizId });
+
+      try {
+        await login(page, fixture.admin);
+        await page.goto('/en/admin/quizzes');
+        const starters = page.getByRole('list', { name: 'Starter quizzes in order' });
+        await expect(starters).toBeVisible();
+
+        const search = page.getByLabel('Search quizzes...');
+        await search.fill(title);
+        await search.press('Enter');
+        const row = page.locator('article').filter({ hasText: title });
+        await expect(row).toHaveCount(1);
+
+        // Vietnamese, so the /en starter pick of the other specs stays the same.
+        await row.getByRole('button', { name: 'Mark as starter', exact: true }).click();
+        const dialog = page.getByRole('dialog');
+        await dialog.getByLabel('Language').selectOption('vi');
+        await dialog.getByRole('button', { name: 'Mark as starter', exact: true }).click();
+        await expect(dialog).toBeHidden();
+
+        const entry = starters.getByRole('listitem').filter({ hasText: title });
+        await expect(entry.getByRole('combobox')).toHaveValue('vi');
+        await expect(
+          row.getByRole('button', { name: 'Mark as starter', exact: true }),
+        ).toBeDisabled();
+        const marked = await starterRow();
+        expect(marked?.['locale']).toBe('vi');
+        const markedOrder = Number(marked?.['order']);
+        expect(markedOrder).toBeGreaterThan(1);
+
+        await entry.getByRole('button', { name: `Move “${title}” up` }).click();
+        await expect
+          .poll(async () => Number((await starterRow())?.['order']))
+          .toBe(markedOrder - 1);
+
+        await entry.getByRole('button', { name: 'Unmark', exact: true }).click();
+        const confirm = page.getByRole('dialog');
+        await expect(confirm).toContainText(title);
+        await confirm.getByRole('button', { name: 'Unmark', exact: true }).click();
+        await expect(entry).toHaveCount(0);
+        expect(await starterRow()).toBeNull();
+
+        const audits = await fixture.db
+          .collection('adminactionaudits')
+          .find({ entityType: 'quiz', entityId: fixture.quizId.toHexString() })
+          .sort({ createdAt: 1 })
+          .toArray();
+        expect(audits.map((audit) => audit['action'])).toEqual([
+          'starter_quiz.marked',
+          'starter_quiz.reordered',
+          'starter_quiz.unmarked',
+        ]);
+      } finally {
+        await fixture.db.collection('starterquizzes').deleteMany({ quiz: fixture.quizId });
+      }
+    });
+  });
+
   test('marks and clears an audited test-account flag from the admin users page @critical-admin-test-account', async ({
     page,
     browser,

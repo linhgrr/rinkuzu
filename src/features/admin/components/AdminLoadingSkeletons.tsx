@@ -209,3 +209,7 @@ export function AdminStatsPageSkeleton() {
 export function AdminQuizzesListSkeleton() {
   return <AdminListSkeleton rows={6} />;
 }
+
+export function AdminStarterQuizzesSkeleton() {
+  return <AdminListSkeleton rows={3} />;
+}

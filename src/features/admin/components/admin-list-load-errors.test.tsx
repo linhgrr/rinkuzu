@@ -56,6 +56,11 @@ vi.mock('@/features/admin/quizzes/api/admin-quizzes-api', () => ({
   fetchAdminQuizListViewModel: (...args: unknown[]) => mocks.fetchQuizzes(...args),
   fetchAdminQuizDetailViewModel: vi.fn(),
   deleteAdminQuiz: vi.fn(),
+  // The starter panel (RIN-1183) loads with the page; its own tests live beside it.
+  fetchAdminStarterQuizzes: () => Promise.resolve([]),
+  markStarterQuiz: vi.fn(),
+  updateStarterQuiz: vi.fn(),
+  unmarkStarterQuiz: vi.fn(),
   setAdminQuizVisibility: vi.fn(),
 }));
 vi.mock('@/features/admin/subscriptions/api/admin-subscriptions-api', () => ({

@@ -4,7 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { useReducer } from 'react';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -175,13 +175,14 @@ function BookmarkCard({
           </div>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          {/* 44px tap target on phones; the hidden title makes the name unique per card. */}
+          {/* 44px tap target on phones; the name starts with the visible text and adds the
+              quiz title, so each card's link is distinct for screen readers. */}
           <Link
             href={`/quiz/${bookmark.quiz.slug}`}
+            aria-label={`${t('openQuiz')}: ${bookmark.quiz.title}`}
             className="inline-flex min-h-11 items-center px-1 font-home text-sm font-medium text-accent hover:underline sm:min-h-9"
           >
             {t('openQuiz')}
-            <span className="sr-only">: {bookmark.quiz.title}</span>
           </Link>
           <Button
             variant="outline"
@@ -269,6 +270,7 @@ export default function ProfileBookmarks() {
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(profileBookmarksReducer, initialState);
   const itemsPerPage = 10;
+  const { mutate: mutateCache } = useSWRConfig();
   const showMutationError = useApiErrorToast();
 
   // The locale is part of the key: the date labels are formatted for it, so a
@@ -301,6 +303,15 @@ export default function ProfileBookmarks() {
       nextQuizList &&
       !nextQuizList.quizzes.some((q) => q.slug === state.quizSlug)
     ) {
+      // The cached "All" page predates the removal: load it fresh before switching to it.
+      const allUrl = `/api/bookmarks?page=1&limit=${itemsPerPage}`;
+      await mutateCache(
+        [allUrl, locale] as const,
+        fetchProfileBookmarkListViewModel(allUrl, locale),
+        {
+          revalidate: false,
+        },
+      );
       setQuiz('');
     }
   };

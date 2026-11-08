@@ -291,8 +291,8 @@ describe('ProfileBookmarks "Open quiz" link (RIN-1208)', () => {
     renderBookmarks();
     await screen.findByText('Sample question b1');
 
-    const link = screen.getAllByRole('link', { name: /profile\.openQuiz/ })[0];
-    expect(link?.getAttribute('href')).toBe(`/quiz/${biology.slug}`);
-    expect(link?.textContent).toContain('Biology basics');
+    const link = screen.getByRole('link', { name: 'profile.openQuiz: Biology basics' });
+    expect(link.getAttribute('href')).toBe(`/quiz/${biology.slug}`);
+    expect(link.textContent).toBe('profile.openQuiz');
   });
 });

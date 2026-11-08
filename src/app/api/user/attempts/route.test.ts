@@ -42,6 +42,7 @@ const attemptsPayload = {
     },
   ],
   pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+  summary: { totalAttempts: 25, averageScore: 71.4, needsWorkCount: 6 },
 };
 
 describe('GET /api/user/attempts', () => {
@@ -96,6 +97,37 @@ describe('GET /api/user/attempts', () => {
       },
     });
   });
+
+  it('rejects an unknown result filter with validation_error (RIN-1197)', async () => {
+    const response = await GET(
+      request('http://localhost/api/user/attempts?result=failed'),
+      routeContext,
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error.code).toBe('validation_error');
+    expect(body.error.meta?.fields).toEqual(
+      expect.objectContaining({ result: expect.any(String) }),
+    );
+    expect(getUserAttemptsMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['needs_work', 'passed'] as const)(
+    'forwards result=%s and returns the all-attempts summary',
+    async (result) => {
+      const response = await GET(
+        request(`http://localhost/api/user/attempts?result=${result}&page=3&limit=10`),
+        routeContext,
+      );
+
+      expect(response.status).toBe(200);
+      expect(getUserAttemptsMock).toHaveBeenCalledWith('user-1', { page: 3, limit: 10, result });
+      await expect(response.json()).resolves.toMatchObject({
+        data: { summary: attemptsPayload.summary },
+      });
+    },
+  );
 
   it('maps missing users to 404 and other failures to 500', async () => {
     getUserAttemptsMock.mockRejectedValueOnce(new Error('User not found'));

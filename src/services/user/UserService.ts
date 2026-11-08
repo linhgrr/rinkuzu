@@ -95,7 +95,7 @@ export class UserService implements IUserService {
   ): Promise<UserAttemptListDto> {
     try {
       const result = await this.attemptRepository.findByUser(userId, options);
-      return UserAttemptDtoMapper.toListDto(result.items, result.pagination);
+      return UserAttemptDtoMapper.toListDto(result.items, result.pagination, result.summary);
     } catch (error) {
       logger.error({ error }, 'Get user attempts error');
       throw error;

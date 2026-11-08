@@ -1686,6 +1686,228 @@ describe('sharded full mutation campaign (RIN-889)', () => {
     expect(meta.shards[3].error).toContain('campaign budget');
     expect(meta.shards.every((s: { vitestRelated: boolean }) => s.vitestRelated)).toBe(true);
   });
+
+  describe('one gate job per shard: --only-shard k, then --merge-shards (RIN-1221)', () => {
+    type Outcome = 'ok' | 'timeout' | 'crash';
+    const passEvaluate = (evalRoot: string, { env }: { env: NodeJS.ProcessEnv }) => ({
+      errors: validateMutationRunEvidence(evalRoot, { env }),
+      score: 100,
+    });
+    const noEvaluate = () => {
+      throw new Error('should not evaluate');
+    };
+    const noStryker = () => {
+      throw new Error('should not run Stryker');
+    };
+    const shardMetaPath = (root: string, shard: number) =>
+      path.join(root, `reports/mutation/shards/${shard}-of-${SHARDS}.meta.json`);
+    const shardMeta = (root: string, shard: number) =>
+      JSON.parse(readFileSync(shardMetaPath(root, shard), 'utf8'));
+
+    function runShardJob(root: string, onlyShard: number, outcome: Outcome = 'ok') {
+      const { calls, invoke } = fakeShardInvoke(root, () => outcome);
+      const result = executeMutationGate(root, {
+        mode: 'full',
+        shards: SHARDS,
+        onlyShard,
+        env: testEnv(),
+        invokeStrykerFn: invoke,
+        evaluateFn: noEvaluate,
+      });
+      return { calls, result };
+    }
+
+    function mergeShards(root: string, evaluateFn: typeof passEvaluate = passEvaluate) {
+      return executeMutationGate(root, {
+        mode: 'full',
+        shards: SHARDS,
+        mergeShards: true,
+        env: testEnv(),
+        invokeStrykerFn: noStryker,
+        evaluateFn,
+      });
+    }
+
+    it('parses --only-shard and --merge-shards, full mode only', () => {
+      expect(
+        parseMutationGateArgs(['--mode', 'full', '--shards', '6', '--only-shard', '6']),
+      ).toEqual({ mode: 'full', baseRef: null, shards: 6, onlyShard: 6 });
+      expect(parseMutationGateArgs(['--mode=full', '--only-shard=2']).onlyShard).toBe(2);
+      expect(parseMutationGateArgs(['--mode', 'full', '--merge-shards'])).toEqual({
+        mode: 'full',
+        baseRef: null,
+        mergeShards: true,
+      });
+      expect(() =>
+        parseMutationGateArgs(['--mode', 'full', '--shards', '6', '--only-shard', '7']),
+      ).toThrow(/outside 1\.\.6/);
+      expect(() => parseMutationGateArgs(['--mode', 'full', '--only-shard', '0'])).toThrow(
+        /between 1 and/,
+      );
+      expect(() => parseMutationGateArgs(['--mode', 'full', '--only-shard'])).toThrow(
+        /between 1 and/,
+      );
+      for (const flag of [['--only-shard', '1'], ['--merge-shards']]) {
+        expect(() =>
+          parseMutationGateArgs(['--mode', 'changed', '--base-ref', 'abc', ...flag]),
+        ).toThrow(/require --mode full/);
+      }
+      expect(() =>
+        parseMutationGateArgs(['--mode', 'full', '--only-shard', '1', '--merge-shards']),
+      ).toThrow(/not both/);
+    });
+
+    it('runs only shard k, leaves its report and a head-bound result, and claims no score', () => {
+      const root = seedMinimalMutationRepo();
+      const headSha = git(root, ['rev-parse', 'HEAD']);
+      const { calls, result } = runShardJob(root, 2);
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({
+        mutatePatterns: ['src/models/User.ts'],
+        incrementalFile: 'reports/mutation/shards/2-of-3.incremental.json',
+      });
+      expect(calls[0]?.env?.['MUTATION_VITEST_RELATED']).toBe('1');
+      expect(result).toMatchObject({
+        status: 'completed',
+        exitCode: 0,
+        outcome: 'shard_completed',
+        evaluation: null,
+      });
+      expect(existsSync(path.join(root, 'reports/mutation/shards/2-of-3.mutation.json'))).toBe(
+        true,
+      );
+      expect(existsSync(path.join(root, 'reports/mutation/shards/1-of-3.mutation.json'))).toBe(
+        false,
+      );
+      expect(existsSync(path.join(root, 'reports/mutation/mutation.json'))).toBe(false);
+      expect(shardMeta(root, 2)).toMatchObject({
+        schemaVersion: 1,
+        shard: 2,
+        shardCount: 3,
+        status: 'completed',
+        headSha,
+        sourceFiles: ['src/models/User.ts'],
+      });
+    });
+
+    it('an empty shard runs nothing and passes', () => {
+      const root = seedMinimalMutationRepo();
+      const { calls, result } = runShardJob(root, 3);
+      expect(calls).toHaveLength(0);
+      expect(result).toMatchObject({ exitCode: 0, outcome: 'shard_completed' });
+      expect(shardMeta(root, 3).status).toBe('empty');
+    });
+
+    it('a timed-out shard job keeps the timeout text; a crashed one fails closed without it', () => {
+      const root = seedMinimalMutationRepo();
+      expect(runShardJob(root, 1, 'timeout').result).toMatchObject({ exitCode: 1 });
+      expect(readMeta(root).errorMessage).toMatch(
+        /^Mutation shard 1 of 3 did not finish: Stryker timed out after/,
+      );
+      expect(shardMeta(root, 1).status).toBe('timed_out');
+
+      expect(runShardJob(root, 2, 'crash').result).toMatchObject({ exitCode: 1 });
+      expect(readMeta(root).failureReason).toBe('shard_failed');
+      expect(JSON.stringify(readMeta(root))).not.toContain('Stryker timed out after');
+      expect(shardMeta(root, 2).status).toBe('failed');
+    });
+
+    it('merges the shard jobs of this head into verified evidence', () => {
+      const root = seedMinimalMutationRepo();
+      for (const shard of [1, 2, 3]) expect(runShardJob(root, shard).result.exitCode).toBe(0);
+      const result = mergeShards(root);
+
+      expect(result).toMatchObject({ status: 'completed', exitCode: 0 });
+      expect(result.evaluation).toMatchObject({ errors: [], score: 100 });
+      const merged = JSON.parse(
+        readFileSync(path.join(root, 'reports/mutation/mutation.json'), 'utf8'),
+      );
+      expect(Object.keys(merged.files).sort()).toEqual([
+        'src/app/api/folders/[id]/route.ts',
+        'src/models/User.ts',
+      ]);
+      expect(validateMutationRunEvidence(root, { env: testEnv() })).toEqual([]);
+      expect(readMeta(root).shards.map((s: { status: string }) => s.status)).toEqual([
+        'completed',
+        'completed',
+        'empty',
+      ]);
+    });
+
+    it('a missing shard is named, claims no score and is not a timeout', () => {
+      const root = seedMinimalMutationRepo();
+      runShardJob(root, 1);
+      runShardJob(root, 3);
+      const result = mergeShards(root, noEvaluate);
+
+      expect(result).toMatchObject({ status: 'failed', exitCode: 1 });
+      const meta = readMeta(root);
+      expect(meta.failureReason).toBe('shard_missing');
+      expect(meta.errorMessage).toMatch(
+        /^1 of 3 mutation shards did not finish: shard 2 \(no shard result\)/,
+      );
+      expect(JSON.stringify(meta)).not.toContain('Stryker timed out after');
+      expect(existsSync(path.join(root, 'reports/mutation/mutation.json'))).toBe(false);
+    });
+
+    it('never merges a shard result left by another head', () => {
+      const root = seedMinimalMutationRepo();
+      runShardJob(root, 1);
+      write(root, 'README.md', 'next night\n');
+      commitAll(root, 'new head');
+      runShardJob(root, 2);
+      runShardJob(root, 3);
+      mergeShards(root, noEvaluate);
+
+      const meta = readMeta(root);
+      expect(meta.failureReason).toBe('shard_missing');
+      expect(meta.errorMessage).toContain('shard 1 (result is for head');
+    });
+
+    it('a timed-out shard job makes the merge UNVERIFIED, not red', () => {
+      const root = seedMinimalMutationRepo();
+      runShardJob(root, 1, 'timeout');
+      runShardJob(root, 2);
+      runShardJob(root, 3);
+      expect(mergeShards(root, noEvaluate)).toMatchObject({ status: 'failed', exitCode: 1 });
+      const meta = readMeta(root);
+      expect(meta.failureReason).toBe('stryker_spawn_failed');
+      expect(meta.errorMessage).toMatch(
+        /^1 of 3 mutation shards did not finish: Stryker timed out after/,
+      );
+    });
+
+    it('fails closed when a shard result was produced from other inputs', () => {
+      const root = seedMinimalMutationRepo();
+      for (const shard of [1, 2, 3]) runShardJob(root, shard);
+      const tampered = shardMeta(root, 2);
+      tampered.fingerprintT1 = { ...tampered.fingerprintT1, sha256: 'f'.repeat(64) };
+      writeJsonAtomic(shardMetaPath(root, 2), tampered);
+
+      expect(mergeShards(root, noEvaluate)).toMatchObject({ status: 'failed', exitCode: 1 });
+      expect(readMeta(root)).toMatchObject({ failureReason: 'shard_failed' });
+      expect(readMeta(root).errorMessage).toContain('fingerprint mismatch');
+    });
+
+    it('fails closed without a shard count or with k outside 1..N', () => {
+      const root = seedMinimalMutationRepo();
+      const run = (options: { shards?: number; onlyShard?: number; mergeShards?: boolean }) =>
+        executeMutationGate(root, {
+          mode: 'full',
+          ...options,
+          env: testEnv(),
+          invokeStrykerFn: noStryker,
+          evaluateFn: noEvaluate,
+        });
+      expect(run({ onlyShard: 1 })).toMatchObject({ status: 'failed', exitCode: 1 });
+      expect(readMeta(root).errorMessage).toMatch(/need a shard count/);
+      expect(run({ mergeShards: true })).toMatchObject({ status: 'failed' });
+      expect(run({ shards: 3, onlyShard: 4 })).toMatchObject({ status: 'failed' });
+      expect(readMeta(root)).toMatchObject({ failureReason: 'shard_job_invalid' });
+      expect(readMeta(root).errorMessage).toMatch(/outside 1\.\.3/);
+    });
+  });
 });
 
 describe('moveFile', () => {

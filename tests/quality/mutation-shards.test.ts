@@ -5,6 +5,7 @@ import {
   mutationShardOf,
   mutationShardPaths,
   parseMutationShardCount,
+  parseMutationShardIndex,
   partitionMutationInventory,
 } from '../../scripts/mutation-shards.mjs';
 
@@ -82,8 +83,22 @@ describe('mutationShardPaths', () => {
     expect(mutationShardPaths(2, 4)).toEqual({
       reportRelative: 'reports/mutation/shards/2-of-4.mutation.json',
       incrementalRelative: 'reports/mutation/shards/2-of-4.incremental.json',
+      metaRelative: 'reports/mutation/shards/2-of-4.meta.json',
     });
   });
+});
+
+describe('parseMutationShardIndex', () => {
+  it.each(['1', '6', 3])('accepts %s', (raw) => {
+    expect(parseMutationShardIndex(raw)).toBe(Number(raw));
+  });
+
+  it.each(['', undefined, '0', '2.5', 'two', String(MAX_MUTATION_SHARDS + 1)])(
+    'rejects %s',
+    (raw) => {
+      expect(() => parseMutationShardIndex(raw)).toThrow(/shard index must be an integer/);
+    },
+  );
 });
 
 describe('mergeMutationShardReports', () => {

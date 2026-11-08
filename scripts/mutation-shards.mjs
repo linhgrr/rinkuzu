@@ -5,13 +5,7 @@ import { normalizeMutationPath } from './mutation-scope.mjs';
 export const MUTATION_SHARDS_DIR_RELATIVE = 'reports/mutation/shards';
 export const MAX_MUTATION_SHARDS = 64;
 
-/**
- * Parse a shard count from `--shards N` or `MUTATION_SHARDS`. Integer 1..64.
- *
- * @param {string | number | undefined | null} raw
- * @returns {number}
- */
-export function parseMutationShardCount(raw) {
+function parseShardInteger(raw, label) {
   const value = typeof raw === 'number' ? raw : Number(String(raw ?? '').trim());
   if (
     String(raw ?? '').trim() === '' ||
@@ -20,10 +14,31 @@ export function parseMutationShardCount(raw) {
     value > MAX_MUTATION_SHARDS
   ) {
     throw new Error(
-      `Mutation shard count must be an integer between 1 and ${MAX_MUTATION_SHARDS} (got ${raw}).`,
+      `Mutation shard ${label} must be an integer between 1 and ${MAX_MUTATION_SHARDS} (got ${raw}).`,
     );
   }
   return value;
+}
+
+/**
+ * Parse a shard count from `--shards N` or `MUTATION_SHARDS`. Integer 1..64.
+ *
+ * @param {string | number | undefined | null} raw
+ * @returns {number}
+ */
+export function parseMutationShardCount(raw) {
+  return parseShardInteger(raw, 'count');
+}
+
+/**
+ * Parse the 1-based shard of `--only-shard k`. Integer 1..64; the caller
+ * checks it against N.
+ *
+ * @param {string | number | undefined | null} raw
+ * @returns {number}
+ */
+export function parseMutationShardIndex(raw) {
+  return parseShardInteger(raw, 'index');
 }
 
 /**
@@ -60,7 +75,9 @@ export function partitionMutationInventory(files, shardCount) {
 }
 
 /**
- * Repo-relative report and incremental-cache paths for shard k of N.
+ * Repo-relative report, incremental-cache and result-meta paths for shard k of N.
+ * The meta file is what a single-shard job (`--only-shard k`) leaves for the
+ * later `--merge-shards` job: status, head SHA, inputs fingerprint, toolchain.
  *
  * @param {number} shard 1-based
  * @param {number} shardCount
@@ -70,6 +87,7 @@ export function mutationShardPaths(shard, shardCount) {
   return {
     reportRelative: `${stem}.mutation.json`,
     incrementalRelative: `${stem}.incremental.json`,
+    metaRelative: `${stem}.meta.json`,
   };
 }
 

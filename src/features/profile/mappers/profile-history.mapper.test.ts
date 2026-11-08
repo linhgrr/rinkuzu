@@ -54,7 +54,40 @@ describe('toProfileHistoryViewModel', () => {
         hasNextPage: false,
         hasPrevPage: false,
       },
+      summary: { totalAttempts: 1, averageScore: 88, needsWorkCount: 0 },
     });
+  });
+
+  it('rounds the all-attempts average for display and keeps null with no attempts (RIN-1204)', () => {
+    const pagination = {
+      currentPage: 1,
+      totalPages: 0,
+      totalItems: 0,
+      itemsPerPage: 10,
+      hasNextPage: false,
+      hasPrevPage: false,
+    };
+
+    expect(
+      toProfileHistoryViewModel(
+        {
+          attempts: [],
+          pagination,
+          summary: { totalAttempts: 25, averageScore: 66.5, needsWorkCount: 7 },
+        },
+        'en',
+      ).summary,
+    ).toEqual({ totalAttempts: 25, averageScore: 67, needsWorkCount: 7 });
+    expect(
+      toProfileHistoryViewModel(
+        {
+          attempts: [],
+          pagination,
+          summary: { totalAttempts: 0, averageScore: null, needsWorkCount: 0 },
+        },
+        'en',
+      ).summary.averageScore,
+    ).toBeNull();
   });
 
   it('omits an absent quiz description', () => {

@@ -22,7 +22,16 @@ export interface ProfileHistoryAttemptViewModel {
   };
 }
 
+/** Over all of the learner's attempts, independent of the filter and page (RIN-1204). */
+export interface ProfileHistorySummaryViewModel {
+  totalAttempts: number;
+  /** Rounded percent; `null` with no attempts. */
+  averageScore: number | null;
+  needsWorkCount: number;
+}
+
 export interface ProfileHistoryViewModel {
   attempts: ProfileHistoryAttemptViewModel[];
   pagination: ProfileHistoryPaginationViewModel;
+  summary: ProfileHistorySummaryViewModel;
 }

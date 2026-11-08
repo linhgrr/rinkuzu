@@ -2,6 +2,7 @@ import type {
   BookmarkDto,
   BookmarkListDto,
   BookmarkListQueryDto,
+  BookmarkQuizListDto,
   CreateBookmarkRequestDto,
 } from '@/dtos/bookmark';
 import type { DeleteResultDto } from '@/dtos/common';
@@ -10,6 +11,9 @@ import { IBookmarkService, type BookmarkOwner } from '@/interfaces/services/IBoo
 import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import { BookmarkDtoMapper } from '@/mappers/bookmark/BookmarkDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
+
+/** The quiz filter lists at most this many quizzes (spec RIN-1199). */
+const MAX_BOOKMARK_QUIZZES = 100;
 
 export class BookmarkService implements IBookmarkService {
   constructor(private bookmarkRepository: IBookmarkRepository) {}
@@ -27,6 +31,14 @@ export class BookmarkService implements IBookmarkService {
       bookmarks: result.items.map(BookmarkDtoMapper.toDto),
       pagination: result.pagination,
     };
+  }
+
+  async getBookmarkQuizzesByUser(userId: string): Promise<BookmarkQuizListDto> {
+    const { quizzes, total } = await this.bookmarkRepository.countByQuiz(
+      userId,
+      MAX_BOOKMARK_QUIZZES,
+    );
+    return { quizzes: quizzes.map(({ slug, title, count }) => ({ slug, title, count })), total };
   }
 
   async createBookmark(

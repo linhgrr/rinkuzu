@@ -118,6 +118,43 @@ describe('GET /api/bookmarks', () => {
     });
   });
 
+  it('returns an empty list with totalItems 0, not 404, for a quiz slug with no bookmarks', async () => {
+    const emptyPagination = {
+      currentPage: 1,
+      totalPages: 0,
+      totalItems: 0,
+      itemsPerPage: 10,
+      hasNextPage: false,
+      hasPrevPage: false,
+    };
+    getBookmarksByUserMock.mockResolvedValueOnce({ bookmarks: [], pagination: emptyPagination });
+
+    const response = await GET(
+      request('http://localhost/api/bookmarks?quizSlug=never-bookmarked'),
+      routeContext,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      data: { bookmarks: [], pagination: { totalItems: 0 } },
+    });
+  });
+
+  it('scopes a quiz slug filter to the session user, never a user id from the query', async () => {
+    await GET(
+      request('http://localhost/api/bookmarks?quizSlug=algebra&userId=user-2'),
+      routeContext,
+    );
+
+    expect(getBookmarksByUserMock).toHaveBeenCalledOnce();
+    expect(getBookmarksByUserMock).toHaveBeenCalledWith('user-1', {
+      page: 1,
+      limit: 10,
+      quizSlug: 'algebra',
+    });
+  });
+
   it('maps unexpected fetch failures to a safe 500 without leaking internals', async () => {
     getBookmarksByUserMock.mockRejectedValueOnce(new Error('db down'));
 

@@ -68,6 +68,13 @@ export interface UserAttemptListDto {
 
 export type AttemptQuestionDetailDto = QuizQuestionReview;
 
+/** The result page's "next quiz" link (RIN-914); `quick` opens its quick round (RIN-1177). */
+interface AttemptNextQuizDto {
+  slug: string;
+  title: string;
+  quick?: boolean;
+}
+
 export interface AttemptDetailDto {
   id: string;
   score: number;
@@ -88,8 +95,8 @@ export interface AttemptDetailDto {
   };
   /** Questions answered wrong or left blank in this attempt. */
   missedCount: number;
-  /** Next allowlisted starter quiz in the learner's locale they have not attempted, or null. */
-  nextQuiz: { slug: string; title: string; quick?: boolean } | null;
+  /** Next eligible starter quiz in the learner's locale they have not attempted, or null. */
+  nextQuiz: AttemptNextQuizDto | null;
   /** Retry-missed attempt only: the source attempt id. */
   retryOfAttemptId?: string;
   /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */

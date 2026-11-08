@@ -72,7 +72,7 @@ function StarterRow({ item, total, busy, controller, onUnmark }: StarterRowProps
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         <Button
           size="sm"
           variant="outline"
@@ -91,18 +91,21 @@ function StarterRow({ item, total, busy, controller, onUnmark }: StarterRowProps
         >
           <HiOutlineArrowDown className="size-4" aria-hidden="true" />
         </Button>
-        <Select
-          value={item.locale}
-          aria-label={t('localeFor', { title })}
-          disabled={busy}
-          className="bg-surface"
-          onChange={(event) =>
-            void controller.setLocale(item.id, event.target.value as AdminStarterQuizLocale)
-          }
-        >
-          <option value="vi">{t('localeVi')}</option>
-          <option value="en">{t('localeEn')}</option>
-        </Select>
+        <div className="w-36 shrink-0">
+          <Select
+            value={item.locale}
+            selectSize="sm"
+            aria-label={t('localeFor', { title })}
+            disabled={busy}
+            className="bg-surface"
+            onChange={(event) =>
+              void controller.setLocale(item.id, event.target.value as AdminStarterQuizLocale)
+            }
+          >
+            <option value="vi">{t('localeVi')}</option>
+            <option value="en">{t('localeEn')}</option>
+          </Select>
+        </div>
         <Button
           size="sm"
           variant="outline"

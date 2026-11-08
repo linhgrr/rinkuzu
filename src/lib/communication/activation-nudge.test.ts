@@ -102,6 +102,16 @@ vi.mock('@/lib/adaptive/activation-events', () => ({
 }));
 vi.mock('@/lib/analytics/server', () => ({ captureServerEvent: state.capture }));
 vi.mock('@/models/Quiz', () => ({ default: {} }));
+const starters = vi.hoisted(() => ({
+  list: vi.fn(),
+  candidates: vi.fn(),
+}));
+vi.mock('@/repositories/DashboardRepository', () => ({
+  DashboardRepository: class {
+    listStarterQuizEntries = starters.list;
+    findStarterQuizCandidates = starters.candidates;
+  },
+}));
 vi.mock('@/models/User', () => ({
   default: {
     find: vi.fn(() => query(state.users)),
@@ -300,6 +310,26 @@ describe('activation nudge click (RIN-1000)', () => {
   const STARTER_EN =
     'https://www.rinkuzu.app/en/quiz/how-to-remember-what-you-study-7-question-starter-quiz-093947?entry=activation_email&utm_source=email&utm_campaign=activation_nudge';
 
+  beforeEach(() => {
+    starters.list.mockResolvedValue([
+      { quizId: 'fake-quiz-vi', locale: 'vi', order: 1 },
+      { quizId: 'fake-quiz-en', locale: 'en', order: 2 },
+    ]);
+    starters.candidates.mockResolvedValue(
+      [
+        ['fake-quiz-vi', 'cach-ghi-nho-nhung-gi-ban-hoc-quiz-khoi-dong-7-cau-096007'],
+        ['fake-quiz-en', 'how-to-remember-what-you-study-7-question-starter-quiz-093947'],
+      ].map(([quizId, slug]) => ({
+        quizId,
+        slug,
+        title: 'Fake starter',
+        visibility: 'public',
+        questionCount: 7,
+        isPremium: false,
+      })),
+    );
+  });
+
   async function sentRow(): Promise<string> {
     await sweepActivationNudges(NOW);
     Object.assign(theRow(), { status: 'completed' });
@@ -320,6 +350,14 @@ describe('activation nudge click (RIN-1000)', () => {
     expect(state.capture).toHaveBeenCalledWith('activation_email_clicked', LEARNER_ID.toString(), {
       locale: 'en',
     });
+  });
+
+  it('lands on the dashboard when the starter read fails', async () => {
+    starters.list.mockRejectedValue(new Error('db down'));
+
+    await expect(recordActivationClick('', 'en', NOW)).resolves.toBe(
+      'https://www.rinkuzu.app/en/dashboard?entry=activation_email&utm_source=email&utm_campaign=activation_nudge',
+    );
   });
 
   it('redirects a forged, expired or empty token to the starter and records nothing', async () => {

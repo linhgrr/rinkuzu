@@ -2,6 +2,7 @@ import type {
   BookmarkListDto,
   BookmarkListQueryDto,
   BookmarkDto,
+  BookmarkQuizListDto,
   CreateBookmarkRequestDto,
 } from '@/dtos/bookmark';
 import type { DeleteResultDto } from '@/dtos/common';
@@ -13,6 +14,8 @@ export interface BookmarkOwner {
 
 export interface IBookmarkService {
   getBookmarksByUser(userId: string, options?: BookmarkListQueryDto): Promise<BookmarkListDto>;
+
+  getBookmarkQuizzesByUser(userId: string): Promise<BookmarkQuizListDto>;
 
   createBookmark(
     owner: BookmarkOwner,

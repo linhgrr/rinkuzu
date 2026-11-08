@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createHeadingSlugger } from '@/lib/slug';
-import { STARTER_QUIZ_ALLOWLIST } from '@/services/dashboard/starter-quizzes';
+import { STARTER_QUIZ_SEED } from '../../scripts/migrate-starter-quizzes.mjs';
 import { EXPECTED_TITLE, NEW_SLUG, OLD_SLUG } from '../../scripts/reslug-vi-starter-quiz.mjs';
 
 describe('reslug-vi-starter-quiz constants', () => {
@@ -11,8 +11,8 @@ describe('reslug-vi-starter-quiz constants', () => {
     expect(NEW_SLUG).toBe('cach-ghi-nho-nhung-gi-ban-hoc-quiz-khoi-dong-7-cau-096007');
   });
 
-  it('points the dashboard starter block at the new slug', () => {
-    const slugs = STARTER_QUIZ_ALLOWLIST.map((entry) => entry.slug);
+  it('seeds the starter list with the new slug', () => {
+    const slugs = STARTER_QUIZ_SEED.map((entry) => entry.slug);
     expect(slugs).toContain(NEW_SLUG);
     expect(slugs).not.toContain(OLD_SLUG);
   });

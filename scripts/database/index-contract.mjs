@@ -429,6 +429,10 @@ export const INDEX_CONTRACT = Object.freeze([
     },
   ),
 
+  // Admin-curated starter quizzes (RIN-1177): a handful of rows, read in order.
+  required('starter-quizzes.quiz', 'starterquizzes', { quiz: 1 }, { unique: true }),
+  required('starter-quizzes.order', 'starterquizzes', { order: 1 }),
+
   // Premium quiz submissions, reviews, credits, and protected play sessions
   required('premium-submissions.author-recent', 'premiumquizsubmissions', {
     author: 1,

@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getLandingStarterSlug, redirectMock } = vi.hoisted(() => ({
-  getLandingStarterSlug: vi.fn(),
+const { getLandingStarterHref, redirectMock } = vi.hoisted(() => ({
+  getLandingStarterHref: vi.fn(),
   redirectMock: vi.fn((target: { href: string; locale: string }): never => {
     throw new Error(`redirect:${target.locale}:${target.href}`);
   }),
 }));
 
 vi.mock('@/i18n/navigation', () => ({ redirect: redirectMock }));
-vi.mock('@/lib/dashboard-factory', () => ({ getLandingStarterSlug }));
+vi.mock('@/lib/dashboard-factory', () => ({ getLandingStarterHref }));
 
 import TryPage from './page';
 
@@ -22,16 +22,16 @@ describe('/try play-first landing redirect (RIN-1178)', () => {
   });
 
   it('opens the starter for the page locale with entry=landing', async () => {
-    getLandingStarterSlug.mockResolvedValue('fake-vi-starter');
+    getLandingStarterHref.mockResolvedValue('/quiz/fake-vi-starter?entry=landing');
 
     await expect(renderTry('vi')).rejects.toThrow(
       'redirect:vi:/quiz/fake-vi-starter?entry=landing',
     );
-    expect(getLandingStarterSlug).toHaveBeenCalledWith('vi');
+    expect(getLandingStarterHref).toHaveBeenCalledWith('vi');
   });
 
   it('falls back to the public quiz list when no starter is eligible', async () => {
-    getLandingStarterSlug.mockResolvedValue(null);
+    getLandingStarterHref.mockResolvedValue(null);
 
     await expect(renderTry('en')).rejects.toThrow('redirect:en:/quizzes');
   });

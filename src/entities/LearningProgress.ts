@@ -9,6 +9,13 @@ export interface LibraryQuizAuthor {
   avatar?: string;
 }
 
+/** Library size per status over one folder scope, before any search or status filter. */
+export interface LibraryQuizCounts {
+  all: number;
+  inProgress: number;
+  complete: number;
+}
+
 export interface LibraryQuiz {
   id: string;
   title: string;

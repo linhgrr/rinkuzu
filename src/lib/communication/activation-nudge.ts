@@ -6,7 +6,9 @@ import { fetchAdaptiveActivationEvents } from '@/lib/adaptive/activation-events'
 import { captureServerEvent } from '@/lib/analytics/server';
 import { logger } from '@/lib/logger';
 import { ActivationNudgeRepository } from '@/repositories/ActivationNudgeRepository';
-import { STARTER_QUIZ_ALLOWLIST } from '@/services/dashboard/starter-quizzes';
+import type { StarterQuizDto } from '@/dtos/dashboard';
+import { DashboardRepository } from '@/repositories/DashboardRepository';
+import { loadStarterQuizzes } from '@/services/dashboard/starter-quizzes';
 import {
   ACTIVATION_NUDGE_CAMPAIGN,
   activationClickToken,
@@ -180,6 +182,19 @@ export async function recordActivationEmailSent(item: {
   if (!sent) logger.info({ event: 'activation_email_sent' }, 'Server analytics event not recorded');
 }
 
+/** The eligible starters; none (so the CTA lands on the dashboard) when the read fails. */
+async function eligibleStarterQuizzes(): Promise<StarterQuizDto[]> {
+  try {
+    return (await loadStarterQuizzes(new DashboardRepository())).starterQuizzes;
+  } catch (error) {
+    logger.warn(
+      { operation: 'activation-click', errorName: error instanceof Error ? error.name : 'unknown' },
+      'Starter quizzes unavailable; activation click lands on the dashboard',
+    );
+    return [];
+  }
+}
+
 /**
  * A click on the email's CTA (RIN-1000): stamps `clickedAt` on the learner's
  * sent nudge row the first time and emits `activation_email_clicked`, then
@@ -196,7 +211,7 @@ export async function recordActivationClick(
   const destination = activationNudgeCtaUrl({
     siteUrl: siteUrl(),
     locale,
-    allowlist: STARTER_QUIZ_ALLOWLIST,
+    starters: await eligibleStarterQuizzes(),
   });
   try {
     const verified = verifyActivationClickToken(

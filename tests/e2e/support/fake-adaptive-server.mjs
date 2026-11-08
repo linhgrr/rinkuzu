@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { HEADERS_TIMEOUT_MS, KEEP_ALIVE_TIMEOUT_MS } from './connection-timeouts.mjs';
+import { handleFakeAskRinRequest } from './fake-ask-rin.mjs';
 import { handleFakeLlmControlRequest, handleFakeLlmSettingsRequest } from './fake-llm-settings.mjs';
 import { handleFakePersonalLearningRequest } from './fake-personal-learning.mjs';
 
@@ -170,6 +171,9 @@ async function handleAdaptiveRequest(request, response, url) {
     return;
   }
   if (handleFakePersonalLearningRequest({ request, response, sendError, sendOk, url })) return;
+  if (await handleFakeAskRinRequest({ readJsonBody, request, response, sendError, sendOk, url })) {
+    return;
+  }
 
   if (request.method === 'GET' && url.pathname === '/api/ready') {
     sendOk(response, {

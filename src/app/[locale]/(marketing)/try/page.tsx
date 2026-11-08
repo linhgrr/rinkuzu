@@ -1,7 +1,6 @@
 import { redirect } from '@/i18n/navigation';
-import { getLandingStarterSlug } from '@/lib/dashboard-factory';
+import { getLandingStarterHref } from '@/lib/dashboard-factory';
 import { ROUTES } from '@/shared/constants/routes';
-import { LANDING_ENTRY } from '@/shared/constants/starter-quiz';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +12,6 @@ export const dynamic = 'force-dynamic';
  */
 export default async function TryPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const slug = await getLandingStarterSlug(locale);
-  const href = slug ? `${ROUTES.QUIZ.VIEW(slug)}?entry=${LANDING_ENTRY}` : ROUTES.QUIZZES;
+  const href = (await getLandingStarterHref(locale)) ?? ROUTES.QUIZZES;
   return redirect({ href, locale });
 }

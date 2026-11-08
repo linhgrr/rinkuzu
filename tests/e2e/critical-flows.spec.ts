@@ -3,7 +3,6 @@ import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { createE2EUserEmail } from './support/fixture-identifiers';
-import { STARTER_QUIZ_ALLOWLIST } from '../../src/services/dashboard/starter-quizzes';
 import { skipPostSignInStarter } from './support/post-signin';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
@@ -148,14 +147,16 @@ const E2E_STARTER_QUIZ = {
   authorEmail: 'e2e-starter-author@example.com',
   question: 'Which option opens the starter quiz?',
   title: 'E2E Starter Quiz',
+  /** The English seed row of scripts/migrate-starter-quizzes.mjs (RIN-1181). */
+  slug: 'how-to-remember-what-you-study-7-question-starter-quiz-093947',
 } as const;
 
 // The specs run on /en, where the dashboard, /start and the activation email
 // all pick the English starter once it exists. Seeding another one would make
-// the pick depend on which spec ran first (RIN-1000).
+// the pick depend on which spec ran first (RIN-1000). Starters live in the
+// `starterquizzes` collection, keyed on the quiz id (RIN-1181).
 async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
-  const slug = STARTER_QUIZ_ALLOWLIST.find((entry) => entry.locale === 'en')?.slug;
-  if (!slug) throw new Error('Starter quiz allowlist has no English starter');
+  const slug = E2E_STARTER_QUIZ.slug;
   await db.collection('users').updateOne(
     { _id: E2E_STARTER_QUIZ.author },
     {
@@ -190,6 +191,18 @@ async function ensureStarterQuiz(db: Db, now: Date): Promise<string> {
         updatedAt: now,
         visibility: 'public',
       },
+    },
+    { upsert: true },
+  );
+  const quiz = await db
+    .collection<{ _id: ObjectId }>('quizzes')
+    .findOne({ slug }, { projection: { _id: 1 } });
+  if (!quiz) throw new Error('E2E starter quiz was not seeded');
+  await db.collection('starterquizzes').updateOne(
+    { quiz: quiz._id },
+    {
+      $setOnInsert: { createdAt: now, locale: 'en', order: 2, quiz: quiz._id },
+      $set: { updatedAt: now },
     },
     { upsert: true },
   );
@@ -656,6 +669,65 @@ test.describe('production critical paths', () => {
     });
   });
 
+  // RIN-1202: the real /api/ask-rin-chan/agent route validates the client's AG-UI body with a
+  // strict schema before it proxies to the adaptive API, so a field the client starts sending
+  // turns every question into a 400. No page.route here: the run goes through the proxy to the
+  // fake adaptive server, which streams the event order of rinkuzu-ai-api's assistant/agui.py.
+  test('streams an Ask Rin-chan reply through the real proxy route @critical-ask-rin', async ({
+    page,
+  }, testInfo) => {
+    // Sign-in, a played quiz and a streamed run: past the 30 s default under parallel load.
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      await login(page, fixture.regular);
+      await page.goto(`/en/quiz/${fixture.quizSlug}`);
+      await chooseOption(page, 'This answer is intentionally incorrect');
+      const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+      if (await desktopSubmit.isVisible()) {
+        await desktopSubmit.click();
+      } else {
+        await page.getByRole('button', { name: /finish \(1\/1 answered\)/i }).click();
+      }
+      await page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}/result\\?attemptId=`));
+
+      // The empty state also flashes before the history load starts, and the load replaces the
+      // thread when it lands: wait for it first, or the question is sent and then wiped.
+      const historyLoaded = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname.startsWith('/api/ask-rin-chan/conversations/') &&
+          response.request().method() === 'GET',
+      );
+      await page.getByRole('button', { name: 'Ask Rin-chan', exact: true }).click();
+      await historyLoaded;
+      const panel = page.getByRole('dialog');
+      await expect(
+        panel.getByRole('heading', { name: "Let's work through this together" }),
+      ).toBeVisible();
+
+      const question = `Why is option two wrong? ${fixture.runId}`;
+      await panel.getByRole('textbox', { name: 'Ask a question...' }).fill(question);
+      const [agentResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname === '/api/ask-rin-chan/agent' &&
+            response.request().method() === 'POST',
+        ),
+        panel.getByRole('button', { name: 'Send', exact: true }).click(),
+      ]);
+      // On a rejection, name the schema issue: it is the client field the proxy now refuses.
+      const rejection = agentResponse.ok() ? '' : await agentResponse.text();
+      expect(agentResponse.status(), rejection).toBe(200);
+      expect(agentResponse.headers()['content-type']).toContain('text/event-stream');
+
+      await expect(
+        panel.getByText(`Rin-chan read your question: "${question}". Start from the stem.`),
+      ).toBeVisible();
+      await expect(panel.getByRole('button', { name: 'Stop generating' })).toHaveCount(0);
+      await expect(panel.getByRole('alert')).toHaveCount(0);
+      await expect(panel.getByRole('button', { name: 'Retry', exact: true })).toHaveCount(0);
+    });
+  });
+
   test('saves a signed-out result to the learner who signs in after it @critical-quiz-guest-claim', async ({
     page,
   }, testInfo) => {
@@ -716,6 +788,20 @@ test.describe('production critical paths', () => {
         await page.goto('/en/history');
         await expect(page).toHaveURL(/\/en\/history(?:[/?#]|$)/);
         await expect(page.getByText('Production Critical Quiz').first()).toBeVisible();
+
+        // RIN-1204: all-attempts stats and the result filter. The one claimed attempt scored
+        // 100, so "Needs work" is empty and "Show all" brings it back.
+        await expect(page.getByText('Average score')).toBeVisible();
+        await expect(page.getByText('100%').first()).toBeVisible();
+        const resultFilter = page.getByRole('group', { name: 'Filter attempts by result' });
+        await resultFilter.getByRole('button', { name: 'Needs work', exact: true }).click();
+        await expect(page.getByText('No attempts need work. Nice.')).toBeVisible();
+        await expect(page.getByText('Production Critical Quiz')).toHaveCount(0);
+        await page.getByRole('button', { name: 'Show all', exact: true }).click();
+        await expect(page.getByText('Production Critical Quiz').first()).toBeVisible();
+        await expect(
+          resultFilter.getByRole('button', { name: 'All', exact: true }),
+        ).toHaveAttribute('aria-pressed', 'true');
       } finally {
         await fixture.db.collection('auth_rate_limits').deleteMany({
           key: {

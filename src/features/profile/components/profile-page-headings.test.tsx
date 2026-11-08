@@ -120,11 +120,17 @@ const quiz = {
   ownedByMe: true,
 };
 
+const historySummary = { totalAttempts: 3, averageScore: 67, needsWorkCount: 1 };
+
 // RIN-1200: the visible page title is the page's h1 in every state, so heading
 // navigation starts at the top and the h1 never flickers in and out.
 describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () => {
   it('history: h1 while loading, then in the empty state', async () => {
-    fetchHistoryMock.mockResolvedValue({ attempts: [], pagination: emptyPagination });
+    fetchHistoryMock.mockResolvedValue({
+      attempts: [],
+      pagination: emptyPagination,
+      summary: { totalAttempts: 0, averageScore: null, needsWorkCount: 0 },
+    });
     render(<ProfileHistory />);
     expectHeadingOutline('profile.quizHistory');
 
@@ -148,10 +154,24 @@ describe('profile list pages: one h1, no skipped heading levels (RIN-1200)', () 
         },
       ],
       pagination: { ...emptyPagination, total: 1, totalPages: 1 },
+      summary: historySummary,
     });
     render(<ProfileHistory />);
 
     await screen.findByText('Fake chemistry quiz');
+    expectHeadingOutline('profile.quizHistory');
+    await expectAxeHeadingRulesClean();
+  });
+
+  it('history: h1 when a filter matches no attempt', async () => {
+    fetchHistoryMock.mockResolvedValue({
+      attempts: [],
+      pagination: emptyPagination,
+      summary: historySummary,
+    });
+    render(<ProfileHistory />);
+
+    await screen.findByText('profile.historyEmptyNeedsWork');
     expectHeadingOutline('profile.quizHistory');
     await expectAxeHeadingRulesClean();
   });

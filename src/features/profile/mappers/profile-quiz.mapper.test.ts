@@ -40,6 +40,7 @@ describe('toProfileQuizLibraryViewModel', () => {
           hasNextPage: false,
           hasPrevPage: false,
         },
+        counts: { all: 1, inProgress: 0, complete: 1 },
       }),
     ).toEqual({
       quizzes: [

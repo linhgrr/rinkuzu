@@ -22,7 +22,7 @@ export interface AttemptDetailViewModel {
     questionCount: number;
   };
   missedCount: number;
-  nextQuiz: { slug: string; title: string } | null;
+  nextQuiz: { slug: string; title: string; quick?: boolean } | null;
   retryOfAttemptId?: string;
   /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
   questionIndices?: number[];

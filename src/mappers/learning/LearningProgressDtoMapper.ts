@@ -1,5 +1,6 @@
 import type {
   LibraryQuiz,
+  LibraryQuizCounts,
   QuestionReviewProgress,
   StreakFreezePurchaseResult,
   SubmitReviewOutcome,
@@ -20,10 +21,15 @@ function optionalDateOrNull(date: Date | null | undefined, fieldName: string): s
 }
 
 export class LearningProgressDtoMapper {
-  static toLibraryListDto(quizzes: LibraryQuiz[], pagination: PaginationMeta): LibraryListDto {
+  static toLibraryListDto(
+    quizzes: LibraryQuiz[],
+    pagination: PaginationMeta,
+    counts: LibraryQuizCounts,
+  ): LibraryListDto {
     return {
       quizzes: quizzes.map(LearningProgressDtoMapper.toLibraryQuizDto),
       pagination,
+      counts: { all: counts.all, inProgress: counts.inProgress, complete: counts.complete },
     };
   }
 

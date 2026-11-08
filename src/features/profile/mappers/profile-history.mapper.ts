@@ -31,5 +31,10 @@ export function toProfileHistoryViewModel(
   return {
     attempts: dto.attempts.map((attempt) => toProfileHistoryAttemptViewModel(attempt, locale)),
     pagination: dto.pagination,
+    summary: {
+      totalAttempts: dto.summary.totalAttempts,
+      averageScore: dto.summary.averageScore === null ? null : Math.round(dto.summary.averageScore),
+      needsWorkCount: dto.summary.needsWorkCount,
+    },
   };
 }

@@ -16,6 +16,12 @@ export default defineConfig({
     testTimeout: 20_000,
     environment: 'node',
     include: ['tests/quality/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['node_modules/**', '.next/**', 'tests/quality/eslint-global-ignores.test.ts'],
+    // Cold-ESLint tests run once, serially, in vitest.quality-eslint.config.ts (RIN-1210).
+    exclude: [
+      'node_modules/**',
+      '.next/**',
+      'tests/quality/eslint-global-ignores.test.ts',
+      'tests/quality/eslint-api-error-layer.test.ts',
+    ],
   },
 });

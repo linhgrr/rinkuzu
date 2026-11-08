@@ -8,11 +8,27 @@ export type BookmarkListOptions = RepositoryPaginationOptions & {
   quizSlug?: string;
 };
 
+/** One quiz the user has bookmarked questions from, with how many. */
+interface BookmarkQuizCount {
+  slug: string;
+  title: string;
+  count: number;
+}
+
+export interface BookmarkQuizCounts {
+  /** Most bookmarks first, then slug; at most `limit` entries. */
+  quizzes: BookmarkQuizCount[];
+  /** Every bookmark of the user, including quizzes beyond `limit`. */
+  total: number;
+}
+
 export interface IBookmarkRepository {
   findByUserId(
     userId: string,
     options: BookmarkListOptions,
   ): Promise<PaginatedRepositoryResult<Bookmark>>;
+
+  countByQuiz(userId: string, limit: number): Promise<BookmarkQuizCounts>;
 
   create(bookmarkData: CreateBookmarkData): Promise<Bookmark>;
 

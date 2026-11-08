@@ -81,6 +81,17 @@ describe('ResultActions (RIN-917)', () => {
     expect(primary).toHaveAttribute('href', '/quiz/starter-en');
   });
 
+  it('opens a long next quiz as a quick round', () => {
+    render(
+      <ResultActions
+        {...baseProps}
+        missedCount={0}
+        nextQuiz={{ slug: 'starter-long', title: 'Long', quick: true }}
+      />,
+    );
+    expect(primaryLinks()[0]).toHaveAttribute('href', '/quiz/starter-long?mode=quick');
+  });
+
   it('promotes Back Home to primary when nothing was missed and there is no next quiz', () => {
     render(<ResultActions {...baseProps} missedCount={0} nextQuiz={null} />);
     const [primary, ...others] = primaryLinks();

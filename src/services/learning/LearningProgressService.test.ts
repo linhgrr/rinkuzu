@@ -82,22 +82,7 @@ function userProgress(overrides: Partial<UserLearningProgress> = {}): UserLearni
 }
 
 class LearningProgressRepositoryStub implements ILearningProgressRepository {
-  listLibraryQuizzes = vi.fn<
-    (
-      userId: string,
-      options: { folder?: string | null; page: number; limit: number },
-    ) => Promise<{
-      items: LibraryQuiz[];
-      pagination: {
-        currentPage: number;
-        totalPages: number;
-        totalItems: number;
-        itemsPerPage: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-      };
-    }>
-  >();
+  listLibraryQuizzes = vi.fn<ILearningProgressRepository['listLibraryQuizzes']>();
   listDueQuestions =
     vi.fn<(userId: string, now: Date, limit: number) => Promise<QuestionReviewProgress[]>>();
   findQuestionProgress =
@@ -184,6 +169,7 @@ describe('LearningProgressService', () => {
         hasNextPage: true,
         hasPrevPage: false,
       },
+      counts: { all: 2, inProgress: 1, complete: 1 },
     });
 
     const result = await service.listLibrary(userId, { folder: 'folder-a', page: 1, limit: 1 });
@@ -225,6 +211,7 @@ describe('LearningProgressService', () => {
         hasNextPage: false,
         hasPrevPage: false,
       },
+      counts: { all: 0, inProgress: 0, complete: 0 },
     });
 
     await service.listLibrary(userId, { folder: undefined, page: 1, limit: 10 });
@@ -233,6 +220,40 @@ describe('LearningProgressService', () => {
       page: 1,
       limit: 10,
     });
+  });
+
+  it('forwards status and search filters and returns whole-library counts', async () => {
+    repository.listLibraryQuizzes.mockResolvedValue({
+      items: [],
+      pagination: {
+        currentPage: 2,
+        totalPages: 2,
+        totalItems: 30,
+        itemsPerPage: 24,
+        hasNextPage: false,
+        hasPrevPage: true,
+      },
+      counts: { all: 130, inProgress: 5, complete: 100 },
+    });
+
+    const result = await service.listLibrary(userId, {
+      folder: null,
+      page: 2,
+      limit: 24,
+      status: 'complete',
+      q: 'kanji',
+    });
+
+    expect(repository.listLibraryQuizzes).toHaveBeenCalledWith(userId, {
+      folder: null,
+      page: 2,
+      limit: 24,
+      status: 'complete',
+      q: 'kanji',
+    });
+    if (!result.success) throw new Error(result.error);
+    expect(result.data.counts).toEqual({ all: 130, inProgress: 5, complete: 100 });
+    expect(result.data.pagination).toMatchObject({ totalItems: 30, currentPage: 2 });
   });
 
   it('returns due review questions as DTOs', async () => {

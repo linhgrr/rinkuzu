@@ -3,22 +3,37 @@ import { Types } from 'mongoose';
 import AttemptModel from '@/models/Attempt';
 import PremiumQuizSubmissionModel from '@/models/PremiumQuizSubmission';
 import QuizModel from '@/models/Quiz';
+import StarterQuizModel from '@/models/StarterQuiz';
 import QuestionProgress from '@/models/QuestionProgress';
 import QuizProgress from '@/models/QuizProgress';
 import UserProgress from '@/models/UserProgress';
 import type {
   DashboardInProgressQuizRecord,
-  DashboardStarterQuizCandidateRecord,
   DashboardUserProgressRecord,
   IDashboardRepository,
 } from '@/interfaces/repositories/IDashboardRepository';
+import type {
+  IStarterQuizReadRepository,
+  StarterQuizCandidateRecord,
+  StarterQuizEntryRecord,
+} from '@/interfaces/repositories/IStarterQuizReadRepository';
 import type {
   DashboardProgressPersistenceRecord,
   DashboardUserProgressPersistenceRecord,
 } from '@/repositories/types/DashboardPersistence';
 import { DashboardPersistenceMapper } from '@/repositories/mappers/DashboardPersistenceMapper';
 
-export class DashboardRepository implements IDashboardRepository {
+interface StarterQuizEntryPersistence {
+  quiz: Types.ObjectId;
+  locale: string;
+  order: number;
+}
+
+type StarterQuizCandidatePersistence = Omit<StarterQuizCandidateRecord, 'quizId'> & {
+  _id: Types.ObjectId;
+};
+
+export class DashboardRepository implements IDashboardRepository, IStarterQuizReadRepository {
   async findUserProgress(userId: string): Promise<DashboardUserProgressRecord | null> {
     await connectDB();
     const projection =
@@ -92,14 +107,31 @@ export class DashboardRepository implements IDashboardRepository {
     return (await QuizModel.exists({ author: userId })) !== null;
   }
 
-  async findStarterQuizCandidates(slugs: string[]): Promise<DashboardStarterQuizCandidateRecord[]> {
-    if (slugs.length === 0) return [];
+  async listStarterQuizEntries(): Promise<StarterQuizEntryRecord[]> {
     await connectDB();
-    // One round trip on the unique slug index. Question bodies never leave the
+    // A handful of admin-curated rows, read in order on the { order: 1 } index.
+    const rows = await StarterQuizModel.find({}, { _id: 0, quiz: 1, locale: 1, order: 1 })
+      .sort({ order: 1 })
+      .lean<StarterQuizEntryPersistence[]>()
+      .exec();
+    return rows.map((row) => ({
+      quizId: row.quiz.toString(),
+      locale: row.locale,
+      order: row.order,
+    }));
+  }
+
+  async findStarterQuizCandidates(quizIds: string[]): Promise<StarterQuizCandidateRecord[]> {
+    const ids = quizIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+    if (ids.length === 0) return [];
+    await connectDB();
+    // One round trip on _id. Question bodies never leave the
     // database: only their count is projected. The lookup mirrors the premium
     // gate on /quiz/[slug] (an active, approved publication of this quiz).
-    return QuizModel.aggregate<DashboardStarterQuizCandidateRecord>([
-      { $match: { slug: { $in: slugs } } },
+    const rows = await QuizModel.aggregate<StarterQuizCandidatePersistence>([
+      { $match: { _id: { $in: ids } } },
       {
         $lookup: {
           from: PremiumQuizSubmissionModel.collection.collectionName,
@@ -111,7 +143,7 @@ export class DashboardRepository implements IDashboardRepository {
       },
       {
         $project: {
-          _id: 0,
+          _id: 1,
           slug: 1,
           title: 1,
           visibility: 1,
@@ -120,5 +152,6 @@ export class DashboardRepository implements IDashboardRepository {
         },
       },
     ]);
+    return rows.map(({ _id, ...candidate }) => ({ quizId: _id.toString(), ...candidate }));
   }
 }

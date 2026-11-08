@@ -6,14 +6,14 @@ import UserProgress from '@/models/UserProgress';
 import type {
   ILearningProgressRepository,
   LibraryQuizListOptions,
+  LibraryQuizPage,
   ReviewProgressMutation,
   ReviewProgressTransactionResult,
 } from '@/interfaces/repositories/ILearningProgressRepository';
-import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import type {
-  LibraryQuiz,
   QuestionReviewProgress,
   QuestionReviewProgressDraft,
+  LibraryQuizCounts,
   UserLearningProgress,
   StreakFreezePurchaseOptions,
   StreakFreezePurchaseResult,
@@ -25,6 +25,7 @@ import type {
   UserProgressPersistenceRecord,
 } from '@/repositories/types/LearningProgressPersistence';
 import { buildPaginationMeta } from '@/lib/pagination';
+import { escapeRegExp } from '@/lib/escape-regexp';
 import {
   retainRecentReviewHistory,
   retainRecentWeeklyActivity,
@@ -40,7 +41,39 @@ type LibraryQuizFacetMeta = {
 type LibraryQuizFacetResult = {
   items: LibraryQuizAggregateRecord[];
   meta: LibraryQuizFacetMeta[];
+  counts?: LibraryQuizCounts[];
 };
+
+const EMPTY_LIBRARY_COUNTS: LibraryQuizCounts = { all: 0, inProgress: 0, complete: 0 };
+
+// Mirrors resolveQuizLibraryActivity: any progress wins, else any attempt is complete.
+const HAS_PROGRESS = { $ne: [{ $ifNull: ['$lastProgressAt', null] }, null] };
+const HAS_ATTEMPT = { $ne: [{ $ifNull: ['$lastAttemptAt', null] }, null] };
+
+const LIBRARY_COUNTS_STAGE = {
+  $group: {
+    _id: null,
+    all: { $sum: 1 },
+    inProgress: { $sum: { $cond: [HAS_PROGRESS, 1, 0] } },
+    complete: { $sum: { $cond: [{ $and: [{ $not: [HAS_PROGRESS] }, HAS_ATTEMPT] }, 1, 0] } },
+  },
+};
+
+type LibraryMatchStage = { $match: Record<string, unknown> };
+
+/** Status and title-search stages; applied to the page and its total, never to the counts. */
+function libraryFilterStages(options: LibraryQuizListOptions): LibraryMatchStage[] {
+  const stages: LibraryMatchStage[] = [];
+  if (options.status === 'in_progress') {
+    stages.push({ $match: { lastProgressAt: { $ne: null } } });
+  } else if (options.status === 'complete') {
+    stages.push({ $match: { lastProgressAt: null, lastAttemptAt: { $ne: null } } });
+  }
+  if (options.q !== undefined) {
+    stages.push({ $match: { title: { $regex: escapeRegExp(options.q), $options: 'i' } } });
+  }
+  return stages;
+}
 
 function questionProgressUpdate(
   progress: QuestionReviewProgressDraft,
@@ -93,17 +126,19 @@ export class LearningProgressRepository implements ILearningProgressRepository {
   async listLibraryQuizzes(
     userId: string,
     options: LibraryQuizListOptions,
-  ): Promise<PaginatedRepositoryResult<LibraryQuiz>> {
+  ): Promise<LibraryQuizPage> {
     await connectDB();
     if (!Types.ObjectId.isValid(userId)) {
       return {
         items: [],
         pagination: buildPaginationMeta(options.page, options.limit, 0),
+        counts: EMPTY_LIBRARY_COUNTS,
       };
     }
 
     const userObjectId = new Types.ObjectId(userId);
     const skip = (options.page - 1) * options.limit;
+    const filterStages = libraryFilterStages(options);
 
     const folderMatch =
       options.folder === undefined
@@ -255,6 +290,7 @@ export class LearningProgressRepository implements ILearningProgressRepository {
       {
         $facet: {
           items: [
+            ...filterStages,
             { $skip: skip },
             { $limit: options.limit },
             {
@@ -280,13 +316,15 @@ export class LearningProgressRepository implements ILearningProgressRepository {
               },
             },
           ],
-          meta: [{ $count: 'totalItems' }],
+          meta: [...filterStages, { $count: 'totalItems' }],
+          counts: [LIBRARY_COUNTS_STAGE],
         },
       },
     ]);
 
     const items = result?.items ?? [];
     const totalItems = result?.meta[0]?.totalItems ?? 0;
+    const counts = result?.counts?.[0];
 
     return {
       items: items.map((quiz) =>
@@ -298,6 +336,9 @@ export class LearningProgressRepository implements ILearningProgressRepository {
         }),
       ),
       pagination: buildPaginationMeta(options.page, options.limit, totalItems),
+      counts: counts
+        ? { all: counts.all, inProgress: counts.inProgress, complete: counts.complete }
+        : EMPTY_LIBRARY_COUNTS,
     };
   }
 

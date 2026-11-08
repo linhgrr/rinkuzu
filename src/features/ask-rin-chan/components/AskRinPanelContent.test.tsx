@@ -47,6 +47,7 @@ const RUN_FAILED = 'adaptiveLearning.chatbot.errorRunFailed';
 const PLACEHOLDER = 'adaptiveLearning.chatbot.placeholder';
 const SEND = 'adaptiveLearning.chatbot.send';
 const RETRY = 'adaptiveLearning.chatbot.retryMessage';
+const EMPTY_TITLE = 'adaptiveLearning.chatbot.emptyTitle';
 // The first render in a worker is cold and can take over 1 s under gate contention.
 const SLOW = { timeout: 5_000 };
 
@@ -158,6 +159,46 @@ describe('AskRinPanelContent run states', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('streams a full answer in the event sequence the API sends (RIN-1195)', async () => {
+    const run = queueSseRun();
+    await openPanelAndAsk('Why is it 4?');
+
+    const [, init] = mocks.fetchAskRinAgent.mock.calls[0] ?? [];
+    const body = JSON.parse(String((init as RequestInit).body));
+    expect(body).toMatchObject({
+      threadId: 'ctx-test-1',
+      protocolVersion: '1.0',
+      forwardedProps: { exerciseContextToken: 'fake-context-token' },
+    });
+
+    // Same events, fields and order as rinkuzu-ai-api's assistant/agui.py.
+    await act(async () => {
+      startAssistantMessage(run, 'run-1');
+      run.send({
+        type: 'STATE_SNAPSHOT',
+        snapshot: { conversationId: 'conv-1', exerciseContextId: 'ctx-test-1' },
+      });
+      run.send({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'assistant-run-1', delta: 'Two plus ' });
+      run.send({
+        type: 'TEXT_MESSAGE_CONTENT',
+        messageId: 'assistant-run-1',
+        delta: 'two is four.',
+      });
+      run.send({ type: 'TEXT_MESSAGE_END', messageId: 'assistant-run-1' });
+      run.send({
+        type: 'RUN_FINISHED',
+        threadId: 'ctx-test-1',
+        runId: 'run-1',
+        result: { conversationId: 'conv-1' },
+      });
+      run.close();
+    });
+
+    expect(await screen.findByText('Two plus two is four.', {}, SLOW)).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText(THINKING)).toBeNull(), SLOW);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('removes the thinking bubble and shows only the error card when the stream reports RUN_ERROR', async () => {
     const run = queueSseRun();
     await openPanelAndAsk('Why is it 4?');
@@ -236,6 +277,88 @@ describe('AskRinPanelContent run states', () => {
     await screen.findByText(THINKING, {}, SLOW);
 
     expect(screen.queryByRole('button', { name: RETRY })).toBeNull();
+  });
+
+  it('keeps a question sent while the history is still loading (RIN-1207)', async () => {
+    let releaseHistory!: (conversation: unknown) => void;
+    mocks.getAskRinConversation.mockReturnValueOnce(
+      new Promise((resolve) => {
+        releaseHistory = resolve;
+      }),
+    );
+    const run = queueSseRun();
+    render(<AskRinPanelContent isOpen onClose={() => undefined} context={QUIZ_CONTEXT} />);
+    const input = await screen.findByLabelText(PLACEHOLDER, {}, SLOW);
+    await waitFor(() => expect(mocks.getAskRinConversation).toHaveBeenCalledTimes(1), SLOW);
+
+    // A learner on a slow network types and sends before the history response lands.
+    fireEvent.change(input, { target: { value: 'Why is it 4?' } });
+    // The runtime holds the send until the history import finishes (assistant-ui 0.15).
+    await waitFor(
+      () => expect((screen.getByLabelText(SEND) as HTMLButtonElement).disabled).toBe(false),
+      SLOW,
+    );
+    fireEvent.click(screen.getByLabelText(SEND));
+    expect(screen.getByLabelText('common.loading')).toBeTruthy();
+
+    await act(async () =>
+      releaseHistory({
+        messages: [
+          { messageId: 'history-user-1', role: 'user', content: 'Earlier question' },
+          { messageId: 'history-assistant-1', role: 'assistant', content: 'Earlier answer' },
+        ],
+      }),
+    );
+
+    expect(await screen.findByText('Earlier answer', {}, SLOW)).toBeTruthy();
+    expect(
+      await screen.findByText('Why is it 4?', { ignore: 'textarea, script, style' }, SLOW),
+    ).toBeTruthy();
+    await act(async () => startAssistantMessage(run, 'run-1'));
+    expect(await screen.findByText(THINKING, {}, SLOW)).toBeTruthy();
+    const body = JSON.parse(String(mocks.fetchAskRinAgent.mock.calls[0]?.[1]?.body)) as {
+      messages: { role: string; content: string }[];
+    };
+    // History first, the pending question after it.
+    expect(body.messages.map((message) => message.content)).toEqual([
+      'Earlier question',
+      'Earlier answer',
+      'Why is it 4?',
+    ]);
+  });
+
+  it('never shows the empty state before the history has loaded (RIN-1207)', async () => {
+    let releaseHistory!: (conversation: unknown) => void;
+    mocks.getAskRinConversation.mockReturnValueOnce(
+      new Promise((resolve) => {
+        releaseHistory = resolve;
+      }),
+    );
+    // Record every node ever inserted: a one-commit flash is replaced before any assertion.
+    const inserted: string[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        record.addedNodes.forEach((node) => inserted.push(node.textContent ?? ''));
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    render(<AskRinPanelContent isOpen onClose={() => undefined} context={QUIZ_CONTEXT} />);
+    await screen.findByLabelText(PLACEHOLDER, {}, SLOW);
+    await waitFor(() => expect(mocks.getAskRinConversation).toHaveBeenCalledTimes(1), SLOW);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const insertedWhileLoading = [
+      ...inserted,
+      ...observer
+        .takeRecords()
+        .flatMap((record) => [...record.addedNodes].map((node) => node.textContent ?? '')),
+    ];
+
+    expect(insertedWhileLoading.some((text) => text.includes(EMPTY_TITLE))).toBe(false);
+    expect(screen.getByLabelText('common.loading')).toBeTruthy();
+
+    await act(async () => releaseHistory({ messages: [] }));
+    observer.disconnect();
+    expect(await screen.findByText(EMPTY_TITLE, {}, SLOW)).toBeTruthy();
   });
 
   it('shows neither the bubble nor an error after the learner stops the answer', async () => {

@@ -64,7 +64,11 @@ async function expectSingleExploreCta(emptyTitle: string) {
 
 describe('empty state CTA (RIN-691)', () => {
   it('history: one "Explore quizzes" link to /explore', async () => {
-    fetchHistoryMock.mockResolvedValue({ attempts: [], pagination: emptyPagination });
+    fetchHistoryMock.mockResolvedValue({
+      attempts: [],
+      pagination: emptyPagination,
+      summary: { totalAttempts: 0, averageScore: null, needsWorkCount: 0 },
+    });
 
     render(<ProfileHistory />);
 

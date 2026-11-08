@@ -78,10 +78,11 @@ describe('parseMutationShardCount', () => {
 });
 
 describe('mutationShardPaths', () => {
-  it('names report and incremental file per shard under reports/mutation/shards', () => {
+  it('names report, incremental file and meta per shard under reports/mutation/shards', () => {
     expect(mutationShardPaths(2, 4)).toEqual({
       reportRelative: 'reports/mutation/shards/2-of-4.mutation.json',
       incrementalRelative: 'reports/mutation/shards/2-of-4.incremental.json',
+      metaRelative: 'reports/mutation/shards/2-of-4.meta.json',
     });
   });
 });

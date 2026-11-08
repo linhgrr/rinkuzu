@@ -143,6 +143,21 @@ export interface QuizMetadataDto extends QuizListItemDto {
   contentLocale: 'vi' | 'en';
 }
 
+/** A link to another indexable public quiz on a quiz landing (RIN-1241 C12). */
+export interface RelatedQuizDto {
+  slug: string;
+  title: string;
+  questionCount: number;
+}
+
+export interface RelatedQuizzesQueryDto {
+  /** The quiz on the page; never linked to itself. */
+  excludeSlug: string;
+  /** Only quizzes written in this language (RIN-1241 D14). */
+  contentLocale: 'vi' | 'en';
+  limit: number;
+}
+
 /** An indexable public quiz (RIN-1241 D13), listed once at its content-locale URL. */
 export interface PublicQuizSitemapEntryDto {
   slug: string;

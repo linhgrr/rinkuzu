@@ -7,9 +7,11 @@ const {
   resolveSlugAlias,
   getCatalogMetadataBySlug,
   getQuizMetadataBySlug,
+  getRelatedPublicQuizzes,
   permanentRedirectMock,
   requestHeaders,
 } = vi.hoisted(() => ({
+  getRelatedPublicQuizzes: vi.fn(),
   getQuizMetadataBySlug: vi.fn(),
   requestHeaders: { current: new Headers() },
   getCurrentSession: vi.fn(),
@@ -31,6 +33,7 @@ vi.mock('@/lib/quiz-factory', () => ({
     getRetryQuizForPlay,
     resolveSlugAlias,
     getQuizMetadataBySlug,
+    getRelatedPublicQuizzes,
   }),
 }));
 vi.mock('@/lib/premium-quiz-factory', () => ({
@@ -39,7 +42,11 @@ vi.mock('@/lib/premium-quiz-factory', () => ({
 vi.mock('@/features/quiz/mappers/quiz-play.mapper', () => ({
   toQuizPlayViewModel: (quiz: unknown) => quiz,
 }));
-vi.mock('@/components/seo/QuizPageSchema', () => ({ QuizPageSchema: () => null }));
+vi.mock('@/components/seo/QuizPageSchema', () => ({
+  QuizPageSchema: () => null,
+  QuizBreadcrumbSchema: () => null,
+}));
+vi.mock('@/features/quiz/components/landing/QuizLanding', () => ({ QuizLanding: () => null }));
 vi.mock('./QuizPlayerClient', () => ({ default: () => null }));
 vi.mock('./PremiumQuizPlayerClient', () => ({ default: () => null }));
 vi.mock('@/features/quiz/components/PremiumQuizSignInPrompt', () => ({
@@ -52,6 +59,15 @@ import QuizPlayerPage, { generateMetadata } from './page';
 import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
+import { QuizLanding } from '@/features/quiz/components/landing/QuizLanding';
+
+/** Every element in a rendered tree, depth first. */
+function elementsOf(node: ReactNode): ReactElement<Record<string, unknown>>[] {
+  if (Array.isArray(node)) return node.flatMap(elementsOf);
+  if (!node || typeof node !== 'object' || !('props' in node)) return [];
+  const element = node as ReactElement<{ children?: ReactNode }>;
+  return [element as ReactElement<Record<string, unknown>>, ...elementsOf(element.props.children)];
+}
 
 const OLD_SLUG = 'cch-ghi-nh-quiz-096007';
 const NEW_SLUG = 'cach-ghi-nho-quiz-096007';
@@ -178,13 +194,7 @@ describe('QuizPlayerPage structured data author (RIN-840)', () => {
       },
     });
     const page = (await renderPage(NEW_SLUG)) as ReactElement<{ children: ReactNode }>;
-    const publicPart = (page.props.children as ReactNode[])[0] as ReactElement<{
-      children: ReactNode[];
-    }>;
-    const schema = publicPart.props.children.find(
-      (child): child is ReactElement<Record<string, unknown>> =>
-        (child as ReactElement | null)?.type === QuizPageSchema,
-    );
+    const schema = elementsOf(page).find((child) => child.type === QuizPageSchema);
     expect(schema).toBeDefined();
     return schema?.props ?? {};
   }
@@ -344,5 +354,102 @@ describe('QuizPlayerPage metadata (RIN-1180)', () => {
     expect(image.searchParams.get('count')).toBe('30');
     expect(image.searchParams.get('quick')).toBe('1');
     expect(metadata.openGraph?.url).toMatch(new RegExp(`/vi/quiz/${NEW_SLUG}$`, 'u'));
+  });
+});
+
+// RIN-1241 / RIN-1247: the server landing for an indexable public quiz.
+describe('QuizPlayerPage landing (RIN-1247)', () => {
+  const quiz = {
+    id: 'quiz-1',
+    slug: NEW_SLUG,
+    title: 'Sinh học 10',
+    visibility: 'public',
+    questionCount: 20,
+    author: { id: 'owner-1', displayName: 'Cô Lan' },
+    questions: [],
+    createdAt: '2026-11-01T00:00:00.000Z',
+    updatedAt: '2026-11-01T00:00:00.000Z',
+  };
+  const metadata = {
+    visibility: 'public',
+    ownerIndexable: true,
+    questionCount: 20,
+    leadQuestionTexts: ['Tế bào là gì?'],
+    contentLocale: 'vi',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCatalogMetadataBySlug.mockResolvedValue(null);
+    getCurrentSession.mockResolvedValue(null);
+    getQuizForPlay.mockResolvedValue({ success: true, data: quiz });
+    getQuizMetadataBySlug.mockResolvedValue(metadata);
+    getRelatedPublicQuizzes.mockResolvedValue([
+      { slug: 'hoa-hoc', title: 'Hóa học', questionCount: 12 },
+    ]);
+  });
+
+  async function landingOf(searchParams: Record<string, string> = {}) {
+    const page = await renderPage(NEW_SLUG, searchParams);
+    const landing = elementsOf(page).find((child) => child.type === QuizLanding);
+    const player = elementsOf(page).find((child) => child.type === QuizPlayerClient);
+    return { landing, player };
+  }
+
+  it('shows a guest the landing, not the player, with same-language related quizzes', async () => {
+    const { landing, player } = await landingOf();
+
+    expect(player).toBeUndefined();
+    expect(landing?.props).toMatchObject({ locale: 'vi', signedIn: false });
+    expect(getRelatedPublicQuizzes).toHaveBeenCalledWith({
+      excludeSlug: NEW_SLUG,
+      contentLocale: 'vi',
+      limit: 6,
+    });
+  });
+
+  it('shows a signed-in non-owner the landing with the short labels', async () => {
+    getCurrentSession.mockResolvedValue({ user: { id: 'learner-1', role: 'user' } });
+
+    const { landing } = await landingOf();
+
+    expect(landing?.props).toMatchObject({ signedIn: true });
+  });
+
+  it('gives the owner the player as before', async () => {
+    getCurrentSession.mockResolvedValue({ user: { id: 'owner-1', role: 'user' } });
+
+    const { landing, player } = await landingOf();
+
+    expect(landing).toBeUndefined();
+    expect(player).toBeDefined();
+  });
+
+  it.each([{ mode: 'quick' }, { entry: 'quiz_landing' }, { retryOf: 'x' }])(
+    'skips the landing when the URL has %j',
+    async (searchParams) => {
+      const { landing, player } = await landingOf(searchParams);
+
+      expect(landing).toBeUndefined();
+      expect(player).toBeDefined();
+    },
+  );
+
+  it('skips the landing for a quiz that is not indexable', async () => {
+    getQuizMetadataBySlug.mockResolvedValue({ ...metadata, ownerIndexable: false });
+
+    const { landing, player } = await landingOf();
+
+    expect(landing).toBeUndefined();
+    expect(player).toBeDefined();
+    expect(getRelatedPublicQuizzes).not.toHaveBeenCalled();
+  });
+
+  it('still renders the landing when the related query fails', async () => {
+    getRelatedPublicQuizzes.mockRejectedValue(new Error('db down'));
+
+    const { landing } = await landingOf();
+
+    expect(landing).toBeDefined();
   });
 });

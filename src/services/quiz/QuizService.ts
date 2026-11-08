@@ -7,6 +7,8 @@ import type {
   QuizDetailDto,
   QuizListDto,
   PublicQuizSitemapEntryDto,
+  RelatedQuizDto,
+  RelatedQuizzesQueryDto,
   QuizListOptionsDto,
   QuizMetadataDto,
   QuizPlayDetailDto,
@@ -102,6 +104,10 @@ export class QuizService implements IQuizService {
 
   async getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]> {
     return this.adminService.getPublicSitemapQuizzes(limit);
+  }
+
+  async getRelatedPublicQuizzes(query: RelatedQuizzesQueryDto): Promise<RelatedQuizDto[]> {
+    return this.adminService.getRelatedPublicQuizzes(query);
   }
 
   async getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null> {

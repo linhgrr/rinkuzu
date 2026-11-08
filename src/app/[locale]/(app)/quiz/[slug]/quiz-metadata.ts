@@ -17,7 +17,10 @@ type QuizMetadataInput = {
 };
 
 /** The layout and the page both build this metadata; one lookup per request. */
-const loadQuizMetadata = cache((slug: string) => getQuizService().getQuizMetadataBySlug(slug));
+/** Shared by `generateMetadata` and the page in one request (React `cache`). */
+export const loadQuizMetadata = cache((slug: string) =>
+  getQuizService().getQuizMetadataBySlug(slug),
+);
 
 type QuizCardFacts = { visibility: string; questionCount: number };
 

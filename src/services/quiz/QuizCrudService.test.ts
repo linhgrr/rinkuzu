@@ -171,6 +171,23 @@ describe('QuizCrudService', () => {
       });
     });
 
+    // RIN-1241 D14: the content locale comes from the title and the first questions.
+    it('detects the content locale from the first question texts', async () => {
+      const quizRepository = createQuizRepository({
+        findMetadataBySlug: vi.fn().mockResolvedValue({
+          quiz: { ...quizSummary, title: 'chuong 1 ktpm' },
+          owner: null,
+          leadQuestionTexts: ['Kiểm thử phần mềm là gì?'],
+        }),
+      });
+      const service = new QuizCrudService(quizRepository);
+
+      await expect(service.getQuizMetadataBySlug('chuong-1-ktpm')).resolves.toMatchObject({
+        contentLocale: 'vi',
+        leadQuestionTexts: ['Kiểm thử phần mềm là gì?'],
+      });
+    });
+
     it('returns null when the summary query misses', async () => {
       const quizRepository = createQuizRepository({
         findMetadataBySlug: vi.fn().mockResolvedValue(null),

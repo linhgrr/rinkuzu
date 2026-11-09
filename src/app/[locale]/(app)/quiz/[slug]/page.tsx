@@ -90,6 +90,18 @@ async function loadQuizTopic(quizId: string, locale: string): Promise<QuizTopic>
     });
 }
 
+/** Who opens the "Report" dialog (RIN-1344): the owner gets no link, a signed-in email is shown. */
+function reportViewer(
+  session: Awaited<ReturnType<typeof getCurrentSession>>,
+  authorId: string | undefined,
+): { viewerEmail: string | null; ownedByViewer: boolean } {
+  const viewerId = session?.user?.id;
+  return {
+    viewerEmail: session?.user?.email ?? null,
+    ownedByViewer: Boolean(viewerId && authorId === viewerId),
+  };
+}
+
 interface LandingRequest {
   slug: string;
   locale: string;
@@ -270,8 +282,7 @@ export default async function QuizPlayerPage({ params, searchParams }: QuizPageP
           locale={locale}
           landing={landing}
           signedIn={Boolean(session?.user)}
-          viewerEmail={session?.user?.email ?? null}
-          ownedByViewer={Boolean(session?.user?.id && quiz.author?.id === session.user.id)}
+          {...reportViewer(session, quiz.author?.id)}
         />
       </>
     );

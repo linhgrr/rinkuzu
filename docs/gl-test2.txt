@@ -1,0 +1,1 @@
+const api_key = "k3Jd9sLq2VxP7mZt4RwY8nBc6HfA1uGe9sXq"; // gitleaks:allow

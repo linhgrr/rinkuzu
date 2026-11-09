@@ -35,6 +35,7 @@ describe('AuthAccountRepository guest claim hashes', () => {
       passwordHash: 'fake-password-hash',
       verificationTokenHash: `verify-${stamp}`,
       verificationExpires: new Date(Date.now() + 60_000),
+      signupOrigin: { signupLocale: 'en', signupCountry: null },
       guestClaimHashes: ['a'.repeat(64), 'b'.repeat(64)],
     });
     expect(account).not.toBeNull();
@@ -59,6 +60,7 @@ describe('AuthAccountRepository guest claim hashes', () => {
       passwordHash: 'fake-password-hash',
       verificationTokenHash: `verify-none-${stamp}`,
       verificationExpires: new Date(Date.now() + 60_000),
+      signupOrigin: { signupLocale: 'en', signupCountry: null },
     });
 
     const verified = await repo.verifyEmail(`verify-none-${stamp}`, new Date());

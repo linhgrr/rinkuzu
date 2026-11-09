@@ -8,6 +8,7 @@ import {
   loadBlogPosts,
   parseFrontmatter,
 } from './content';
+import { blogFrontmatterSchema } from './schema';
 
 const fixtureRoot = (name: string): string => path.join(__dirname, '__fixtures__', name);
 
@@ -91,7 +92,56 @@ describe('content/blog', () => {
     }
   });
 
+  it('gives every table a delimiter row with as many cells as its header (RIN-1281)', () => {
+    // GFM renders a table whose delimiter row has a different cell count as raw "|" text.
+    const cells = (row: string): number =>
+      row
+        .trim()
+        .replace(/^\||\|$/g, '')
+        .split('|').length;
+    const offenders: string[] = [];
+    for (const post of getAllBlogPosts()) {
+      const lines = post.content.split(/\r?\n/);
+      lines.forEach((line, index) => {
+        const header = lines[index - 1];
+        if (!/^\s*\|?\s*:?-{3,}/.test(line) || header === undefined) return;
+        if (cells(line) !== cells(header)) offenders.push(`${post.locale}/${post.slug}: ${header}`);
+      });
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
   it('returns undefined for an unknown slug', () => {
     expect(getBlogPostBySlug('en', 'no-such-post-slug')).toBeUndefined();
+  });
+});
+
+// RIN-1331: optional `tags` drive the related-posts block.
+describe('blogFrontmatterSchema tags', () => {
+  const base = {
+    title: 'T',
+    description: 'D',
+    date: '2026-01-15',
+    category: 'Guides',
+    readTimeMinutes: 5,
+    heroImage: '/h.jpg',
+    heroImageAlt: 'A',
+    locale: 'en',
+    author: 'rinkuzu-team',
+  };
+
+  it('is optional and trims each tag', () => {
+    expect(blogFrontmatterSchema.parse(base).tags).toBeUndefined();
+    expect(blogFrontmatterSchema.parse({ ...base, tags: [' pdf ', 'quiz'] }).tags).toEqual([
+      'pdf',
+      'quiz',
+    ]);
+  });
+
+  it('rejects empty tags and more than eight', () => {
+    expect(blogFrontmatterSchema.safeParse({ ...base, tags: ['pdf', '  '] }).success).toBe(false);
+    const nine = Array.from({ length: 9 }, (_, index) => `tag-${index}`);
+    expect(blogFrontmatterSchema.safeParse({ ...base, tags: nine }).success).toBe(false);
   });
 });

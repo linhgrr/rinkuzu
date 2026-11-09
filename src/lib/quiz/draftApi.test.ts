@@ -82,6 +82,23 @@ describe('QuizDraftMapper', () => {
     expect(draft).not.toHaveProperty('submitted_quiz_id');
   });
 
+  // RIN-1272: the API sends naive UTC timestamps; without a Z the browser reads them as local.
+  it('marks naive API timestamps as UTC and keeps offset-bearing ones as sent', () => {
+    const draft = QuizDraftMapper.toViewModel({
+      ...transportDraft,
+      created_at: '2026-11-08T20:03:00',
+      updated_at: '2026-11-08T20:06:00.123456',
+      expires_at: '2026-11-09T03:06:00+07:00',
+    });
+
+    expect(draft.createdAt).toBe('2026-11-08T20:03:00Z');
+    expect(draft.updatedAt).toBe('2026-11-08T20:06:00.123456Z');
+    expect(draft.expiresAt).toBe('2026-11-09T03:06:00+07:00');
+    expect(
+      QuizDraftMapper.toViewModel({ ...transportDraft, expires_at: null }).expiresAt,
+    ).toBeNull();
+  });
+
   it('maps nullable API answer indexes to the frontend entity shape', () => {
     const draft = QuizDraftMapper.toViewModel(transportDraft);
 

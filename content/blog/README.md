@@ -42,6 +42,12 @@ Optional fields override copy that otherwise falls back to a required field:
 | `wordCount`              | omitted              | Article JSON-LD `wordCount`.               |
 | `timeRequiredMinutes`    | omitted              | Article JSON-LD `timeRequired` (`PT<n>M`). |
 
+`tags` (optional, up to 8 non-empty strings, e.g. `["personalized-learning", "pdf"]`)
+picks the related posts shown under each article: posts in the same locale that
+share a tag (compared case-insensitively) or the `category`, most shared tags
+first, then same category, then newest; at most 3. A post that shares neither
+shows no related block. Give a translation the same tags as its `en` post.
+
 A missing or invalid required field fails validation (and the build) rather
 than rendering a broken page — see `src/lib/blog/content.test.ts`.
 

@@ -122,7 +122,7 @@ function outboxItem(overrides: Record<string, unknown> = {}) {
     kind: 'feedback_invitation',
     entityType: 'feedback_conversation',
     entityId: { toString: () => CONVERSATION_ID },
-    to: 'hantram3012@gmail.com',
+    to: 'learner@example.com',
     from: ENVIRONMENT['FEEDBACK_MAIL_FROM'],
     replyTo: LEGACY_REPLY_TO,
     subject: 'Bạn thấy trải nghiệm RinKuzu thế nào?',
@@ -249,7 +249,7 @@ describe('communication outbox delivery', () => {
     }
   });
 
-  it('claims review emails unless the kill switch is off (RIN-915)', async () => {
+  it('claims review emails unless the kill switch is off, for both touches (RIN-915, RIN-1304)', async () => {
     await runCommunicationWorker(5);
     expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).not.toHaveProperty('kind');
 
@@ -258,7 +258,7 @@ describe('communication outbox delivery', () => {
       mocks.outbox.findOneAndUpdate.mockClear();
       await runCommunicationWorker(5);
       expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).toMatchObject({
-        kind: { $nin: ['review_reminder'] },
+        kind: { $nin: ['review_reminder', 'review_reminder_d5'] },
       });
     } finally {
       vi.unstubAllEnvs();
@@ -451,14 +451,14 @@ describe('communication outbox delivery', () => {
   it('redacts recipient addresses and token-shaped strings from the stored error', async () => {
     queueOne(outboxItem());
     mocks.sendCommunicationEmail.mockRejectedValue(
-      new Error(`Invalid reply_to hantram3012@gmail.com token ${COMPACT_TOKEN}`),
+      new Error(`Invalid reply_to learner@example.com token ${COMPACT_TOKEN}`),
     );
 
     await runCommunicationWorker();
 
     const failure = outboxUpdateFor((update) => update['$set']?.['status'] === 'pending');
     const lastError = String(failure?.[1]['$set']['lastError']);
-    expect(lastError).not.toContain('hantram3012');
+    expect(lastError).not.toContain('learner');
     expect(lastError).not.toContain(COMPACT_TOKEN);
     expect(lastError).toContain('[email]');
   });

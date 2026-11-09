@@ -2,6 +2,7 @@ import type {
   SubscriptionPageViewModel,
   SubscriptionPlanViewModel,
 } from '@/features/subscription/types/subscription-page-view-model';
+import { sortPlansByPrice } from '@/features/subscription/lib/plan-order';
 
 export interface SubscriptionPageState {
   status: 'loading' | 'ready' | 'error';
@@ -40,7 +41,7 @@ export function subscriptionPageReducer(
       return {
         ...state,
         status: 'ready',
-        plans: action.value.plans,
+        plans: sortPlansByPrice(action.value.plans),
         currentSubscription: action.value.currentSubscription,
         isPremium: action.value.isPremium,
       };

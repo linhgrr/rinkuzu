@@ -157,13 +157,23 @@ export type QuizQuestionDto = QuizQuestionInputDto & {
 
 export type PlayableQuizQuestionDto = QuizQuestionDisplay;
 
+/** Owner/admin view of the personal-data check (RIN-1338); never on public DTOs. */
+interface QuizContentFlagsDto {
+  personalData: boolean;
+  kinds: string[];
+}
+
 export interface QuizDetailDto extends QuizListItemDto {
   questions: QuizQuestionDto[];
   pdfUrl?: string;
   tags?: string[];
+  contentFlags?: QuizContentFlagsDto;
 }
 
-export interface QuizPlayDetailDto extends Omit<QuizDetailDto, 'questions'> {
+export interface QuizPlayDetailDto extends Omit<
+  QuizDetailDto,
+  'questions' | 'pdfUrl' | 'contentFlags'
+> {
   questions: PlayableQuizQuestionDto[];
   /** Present on a retry-missed session: `questions[i]` is quiz question `questionIndices[i]`. */
   retry?: { ofAttemptId: string; questionIndices: number[] };

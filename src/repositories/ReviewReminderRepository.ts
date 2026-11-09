@@ -4,13 +4,19 @@ import connectDB from '@/lib/mongoose';
 import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import Attempt from '@/models/Attempt';
 import { EmailOutbox, MarketingConsentEvent, MarketingPreference } from '@/models/Communication';
+import type { OutboxKind } from '@/models/Communication';
 import Quiz from '@/models/Quiz';
 import User from '@/models/User';
 
+/** Both review touches: d2 (RIN-915) and the day-5 email (RIN-1304). */
+const REVIEW_KINDS: OutboxKind[] = ['review_reminder', 'review_reminder_d5'];
+/** The cap allows two review emails in 7 days, so counting stops at two. */
+const CAP_COUNT_LIMIT = 2;
+
 /**
- * Persistence for the opt-in 2-day review email (RIN-915): the
- * `study_reminders` preference and consent events, `review_reminder` outbox
- * rows, and the facts the send-time eligibility check reads. Every query is
+ * Persistence for the opt-in review emails (RIN-915, RIN-1304): the
+ * `study_reminders` preference and consent events, `review_reminder` and
+ * `review_reminder_d5` outbox rows, and the facts the send-time eligibility check reads. Every query is
  * per learner and served by an index: `Attempt {user, takenAt}`,
  * `EmailOutbox {dedupeKey}` and `{userId, kind, updatedAt}`,
  * `MarketingPreference {userId}`.
@@ -30,6 +36,8 @@ interface ReminderRecipient {
   role?: string;
   disable?: number;
   isTestAccount?: boolean;
+  /** The account's UI locale (RIN-1263), used when the opt-in stored none. */
+  locale?: string | null;
 }
 
 interface ReminderPreference {
@@ -51,8 +59,11 @@ export interface ReminderSendFacts {
   user: ReminderRecipient | null;
   preference: ReminderPreference | null;
   laterAttempt: boolean;
-  sentInLastWeek: boolean;
+  /** Other completed review emails (both touches) since `capSince`, counted up to 2. */
+  sentInLastWeek: number;
   quiz: ReminderQuiz | null;
+  /** Opt-in page locale, else the account's UI locale (RIN-1263); null when neither is set. */
+  locale: string | null;
 }
 
 interface ReminderRowState {
@@ -84,6 +95,7 @@ export interface ReminderSendFactsQuery {
 }
 
 export interface PendingReminderRow {
+  kind: 'review_reminder' | 'review_reminder_d5';
   dedupeKey: string;
   attemptId: Types.ObjectId;
   userId: Types.ObjectId;
@@ -208,14 +220,14 @@ export class ReviewReminderRepository {
         { dedupeKey: row.dedupeKey, status: { $in: ['pending', 'canceled'] } },
         {
           $set: {
-            kind: 'review_reminder',
+            kind: row.kind,
             entityType: 'attempt',
             entityId: row.attemptId,
             userId: row.userId,
             to: row.to,
             from: row.from,
             replyTo: null,
-            subject: 'review_reminder',
+            subject: row.kind,
             html: row.body,
             text: row.body,
             status: 'pending',
@@ -239,7 +251,7 @@ export class ReviewReminderRepository {
 
   async cancelPending(userId: Types.ObjectId, reason: string): Promise<number> {
     const result = await EmailOutbox.updateMany(
-      { userId, kind: 'review_reminder', status: 'pending' },
+      { userId, kind: { $in: REVIEW_KINDS }, status: 'pending' },
       { $set: { status: 'canceled', lastError: reason } },
     );
     return result.modifiedCount;
@@ -249,27 +261,31 @@ export class ReviewReminderRepository {
     const { userId } = input.attempt;
     const [user, preference, laterAttempt, sentInLastWeek, quiz] = await Promise.all([
       User.findById(userId)
-        .select('email role disable isTestAccount')
+        .select('email role disable isTestAccount locale')
         .lean<ReminderRecipient | null>(),
       MarketingPreference.findOne({ userId })
         .select('studyReminders locale')
         .lean<ReminderPreference | null>(),
       this.hasLaterAttempt(userId, input.attempt.takenAt),
-      EmailOutbox.exists({
-        userId,
-        kind: 'review_reminder',
-        status: 'completed',
-        updatedAt: { $gte: input.capSince },
-        _id: { $ne: input.outboxId },
-      }),
+      EmailOutbox.countDocuments(
+        {
+          userId,
+          kind: { $in: REVIEW_KINDS },
+          status: 'completed',
+          updatedAt: { $gte: input.capSince },
+          _id: { $ne: input.outboxId },
+        },
+        { limit: CAP_COUNT_LIMIT },
+      ),
       Quiz.findById(input.attempt.quizId).select('slug title').lean<ReminderQuiz | null>(),
     ]);
     return {
       user,
       preference,
       laterAttempt,
-      sentInLastWeek: sentInLastWeek !== null,
+      sentInLastWeek,
       quiz,
+      locale: preference?.locale ?? user?.locale ?? null,
     };
   }
 }

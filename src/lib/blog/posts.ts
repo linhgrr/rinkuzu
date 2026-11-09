@@ -1,4 +1,4 @@
-import type { Locale } from '@/i18n/config';
+import { locales, type Locale } from '@/i18n/config';
 import { getBlogAuthor } from './authors';
 import { getAllBlogPosts, getBlogPostBySlug, getBlogPostsByLocale, type BlogPost } from './content';
 
@@ -53,6 +53,14 @@ export const getBlogArticleSlugs = (): string[] => [
 ];
 
 /**
+ * Locales whose `/<locale>/blog/<slug>` renders an article, in {@link locales}
+ * order. A listing-only translation counts, since its page falls back to the
+ * source article; a post with no source-locale body exists only in its own.
+ */
+export const getBlogArticleLocales = (slug: string): Locale[] =>
+  locales.filter((locale) => getBlogArticle(locale, slug) !== undefined);
+
+/**
  * Neighbours of an article among the articles in its locale, newest first:
  * `previous` is the next newer post and `next` the next older one.
  */
@@ -64,8 +72,51 @@ export const getAdjacentBlogArticles = (
   return { previous: articles[index - 1], next: articles[index + 1] };
 };
 
-/** A blog route for the sitemap, dated by the newest post behind it (`YYYY-MM-DD`). */
-type BlogSitemapRoute = { path: string; lastModified: string };
+const RELATED_POSTS_LIMIT = 3;
+
+const tagsOf = (post: BlogPost): Set<string> =>
+  new Set((post.tags ?? []).map((tag) => tag.toLowerCase()));
+
+type RelatedCandidate = { post: BlogPost; sharedTags: number; sameCategory: boolean };
+
+const byRelevance = (a: RelatedCandidate, b: RelatedCandidate): number =>
+  b.sharedTags - a.sharedTags ||
+  Number(b.sameCategory) - Number(a.sameCategory) ||
+  byNewestFirst(a.post, b.post);
+
+/**
+ * Posts related to `post` in its own locale (RIN-1331): a candidate shares at
+ * least one tag or the category, and has an article page (its own body or the
+ * English one). Most shared tags first, then same category, then newest; never
+ * the post itself. Pass the locale's listing post, so a `vi` page gets `vi` cards.
+ */
+export const getRelatedBlogArticles = (
+  post: BlogPost,
+  limit: number = RELATED_POSTS_LIMIT,
+): BlogPost[] => {
+  const tags = tagsOf(post);
+  return getBlogPostsByLocale(post.locale)
+    .filter(
+      (candidate) =>
+        candidate.slug !== post.slug && getBlogArticle(candidate.locale, candidate.slug),
+    )
+    .map((candidate) => ({
+      post: candidate,
+      sharedTags: [...tagsOf(candidate)].filter((tag) => tags.has(tag)).length,
+      sameCategory: candidate.category === post.category,
+    }))
+    .filter(({ sharedTags, sameCategory }) => sharedTags > 0 || sameCategory)
+    .sort(byRelevance)
+    .slice(0, limit)
+    .map((candidate) => candidate.post);
+};
+
+/**
+ * A blog route for the sitemap, dated by the newest post behind it (`YYYY-MM-DD`).
+ * `locales` limits an article to the locales it exists in; without it the route
+ * exists in every locale.
+ */
+type BlogSitemapRoute = { path: string; lastModified: string; locales?: Locale[] };
 
 const newestDate = (posts: BlogPost[]): string =>
   posts.reduce((newest, post) => (post.date > newest ? post.date : newest), '');
@@ -80,6 +131,7 @@ export const getBlogSitemapRoutes = (): BlogSitemapRoute[] => {
   const articles = getBlogArticleSlugs().map((slug) => ({
     path: `/blog/${slug}`,
     lastModified: newestDate(posts.filter((post) => post.slug === slug)),
+    locales: getBlogArticleLocales(slug),
   }));
   const authors = getBlogAuthorSlugs()
     .filter((author) => getBlogAuthor(author))

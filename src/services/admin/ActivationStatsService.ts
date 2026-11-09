@@ -1,9 +1,17 @@
-import type { AdminActivationStatsDto, AdminActivationWeekDto } from '@/dtos/admin-stats';
+import type {
+  AdminActivationBreakdownDto,
+  AdminActivationStatsDto,
+  AdminActivationWeekDto,
+} from '@/dtos/admin-stats';
 import { adminActivationStatsSchema } from '@/dtos/admin-stats';
 import type {
   ActivationEmailWeekRecord,
   IActivationEmailStatsRepository,
 } from '@/interfaces/repositories/IActivationEmailStatsRepository';
+import type {
+  ActivationSegmentBy,
+  IActivationSegmentStatsRepository,
+} from '@/interfaces/repositories/IActivationSegmentStatsRepository';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type {
   AdminActivationAggregates,
@@ -15,6 +23,7 @@ import type {
 } from '@/interfaces/repositories/IAdminStatsRepository';
 import { DAY_MS, trailingIsoWeeks } from '@/lib/analytics/iso-week';
 import { logger } from '@/lib/logger';
+import { buildActivationBreakdown } from '@/services/admin/activation-breakdown';
 import type { ServiceResult } from '@/interfaces/services/types';
 
 const ACTIVATION_STATS_CACHE_TTL_MS = 10 * 60_000;
@@ -88,9 +97,9 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
     'Top 10 public blog post slugs (?post=, with entry=blog) by activated signups of the week whose first qualifying attempt came from that post, most first, ties by slug. A blog entry without a valid post counts in activatedByEntry.blog only.',
 };
 
-interface CacheEntry {
+interface CacheEntry<T = AdminActivationStatsDto> {
   expiresAt: number;
-  value: AdminActivationStatsDto;
+  value: T;
 }
 
 /** Path B events for `[from, to)`; rejects when the API cannot answer. */
@@ -102,6 +111,7 @@ type AdaptiveActivationEventsReader = (
 
 export interface ActivationStatsServiceDeps {
   stats: Pick<IAdminStatsRepository, 'getActivationAggregates'>;
+  segments: IActivationSegmentStatsRepository;
   activationEmail: IActivationEmailStatsRepository;
   audit: IAdminAuditRepository;
   adaptiveEvents: AdaptiveActivationEventsReader;
@@ -115,6 +125,8 @@ interface AdaptiveEventsRead {
 
 export class ActivationStatsService {
   private readonly cache = new Map<number, CacheEntry>();
+  /** Keyed `<by>:<weeks>`: a breakdown never answers another `by` or the default. */
+  private readonly breakdownCache = new Map<string, CacheEntry<AdminActivationBreakdownDto>>();
   private readonly now: () => Date;
 
   constructor(private readonly deps: ActivationStatsServiceDeps) {
@@ -126,17 +138,7 @@ export class ActivationStatsService {
     actor: ActivationStatsActor,
   ): Promise<ServiceResult<AdminActivationStatsDto>> {
     try {
-      const actorId = actor.kind === 'admin' ? actor.userId : ANALYTICS_SERVICE_ACTOR_ID;
-      // One entry per call, cached or not: the audit trail records reads,
-      // not database work.
-      await this.deps.audit.record({
-        actorId,
-        actorEmail: actor.kind === 'admin' ? actor.email : ANALYTICS_SERVICE_ACTOR,
-        action: ACTIVATION_STATS_AUDIT_ACTION,
-        entityType: 'stats',
-        entityId: 'activation',
-        details: { weeks: String(weeks) },
-      });
+      const actorId = await this.recordRead(actor, { weeks: String(weeks) });
 
       const nowMs = this.now().getTime();
       const cached = this.cache.get(weeks);
@@ -153,6 +155,71 @@ export class ActivationStatsService {
       logger.error({ error }, 'Get weekly activation stats error');
       return { success: false, error: 'Failed to get activation statistics', statusCode: 500 };
     }
+  }
+
+  /** `?by=locale|country` (RIN-1268): signups and activated per week and segment. */
+  async getActivationBreakdown(
+    weeks: number,
+    by: ActivationSegmentBy,
+    actor: ActivationStatsActor,
+  ): Promise<ServiceResult<AdminActivationBreakdownDto>> {
+    try {
+      const actorId = await this.recordRead(actor, { weeks: String(weeks), by });
+
+      const nowMs = this.now().getTime();
+      const key = `${by}:${weeks}`;
+      const cached = this.breakdownCache.get(key);
+      if (cached && cached.expiresAt > nowMs) return { success: true, data: cached.value };
+
+      const now = new Date(nowMs);
+      const windows = trailingIsoWeeks(now, weeks);
+      const from = windows[0]?.start;
+      const to = windows[windows.length - 1]?.endExclusive;
+      if (!from || !to) throw new Error('weeks must be at least 1');
+      const adaptive = await this.readAdaptiveEvents(
+        from,
+        new Date(to.getTime() + ADAPTIVE_EVENTS_TAIL_MS),
+        actorId,
+      );
+      const records = await this.deps.segments.getActivationSegments(from, to, by, adaptive.events);
+      const value = buildActivationBreakdown({
+        by,
+        windows,
+        records,
+        now,
+        adaptive: adaptive.status,
+      });
+      if (adaptive.status === 'ok') {
+        this.breakdownCache.set(key, {
+          expiresAt: nowMs + ACTIVATION_STATS_CACHE_TTL_MS,
+          value,
+        });
+      }
+      return { success: true, data: value };
+    } catch (error) {
+      logger.error({ error }, 'Get activation breakdown error');
+      return { success: false, error: 'Failed to get activation statistics', statusCode: 500 };
+    }
+  }
+
+  /**
+   * One audit entry per call, cached or not: the audit trail records reads,
+   * not database work. Returns the actor id the adaptive API is called with.
+   */
+  private async recordRead(
+    actor: ActivationStatsActor,
+    details: Record<string, string>,
+  ): Promise<string> {
+    const actorId = actor.kind === 'admin' ? actor.userId : ANALYTICS_SERVICE_ACTOR_ID;
+    await this.deps.audit.record({
+      actorId,
+      actorEmail: actor.kind === 'admin' ? actor.email : ANALYTICS_SERVICE_ACTOR,
+      action: ACTIVATION_STATS_AUDIT_ACTION,
+      entityType: 'stats',
+      entityId: 'activation',
+      details,
+    });
+    return actorId;
   }
 
   private async readAdaptiveEvents(

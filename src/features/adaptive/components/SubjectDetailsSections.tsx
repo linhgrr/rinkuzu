@@ -70,6 +70,7 @@ interface SubjectStatCardProps {
   icon: typeof HiOutlineCollection;
   label: string;
   value: number | string;
+  caption?: string | undefined;
 }
 
 interface SubjectDetailsTabsProps {
@@ -83,8 +84,53 @@ interface SubjectDetailsTabContentProps {
   historyDetail: SessionHistoryDetail | null;
   historyLoading: boolean;
   sessionId: string;
+  status: SessionStatus | null;
   t: TranslateFn;
 }
+
+/** The API's mastery numbers are model predictions, so they are non-zero before any answer. */
+function measuredStats(status: SessionStatus, t: TranslateFn) {
+  if (status.total_answered === 0) {
+    const caption = t('stats.afterFirstExercise');
+    return { accuracy: '—', mastery: '—', correct: '0', caption };
+  }
+  return {
+    accuracy: `${Math.round(status.accuracy * 100)}%`,
+    mastery: `${Math.round(status.avg_mastery * 100)}%`,
+    correct: `${status.total_correct}/${status.total_answered}`,
+    caption: undefined,
+  };
+}
+
+const SubjectStatCards = ({ status, t }: { status: SessionStatus; t: TranslateFn }) => {
+  const stats = measuredStats(status, t);
+  return (
+    <div className="relative mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <SubjectStatCard
+        icon={HiOutlineCollection}
+        label={t('stats.concepts')}
+        value={status.total_concepts}
+      />
+      <SubjectStatCard
+        icon={HiOutlineCheckCircle}
+        label={t('stats.accuracyRate')}
+        value={stats.accuracy}
+        caption={stats.caption}
+      />
+      <SubjectStatCard
+        icon={HiOutlineTrendingUp}
+        label={t('stats.averageMastery')}
+        value={stats.mastery}
+        caption={stats.caption}
+      />
+      <SubjectStatCard
+        icon={HiOutlineAcademicCap}
+        label={t('stats.correctTotal')}
+        value={stats.correct}
+      />
+    </div>
+  );
+};
 
 export const SubjectDetailsBackButton = ({ onClick, t }: SubjectDetailsBackButtonProps) => (
   <div>
@@ -167,28 +213,7 @@ export const SubjectDetailsHero = ({
     )}
 
     {status ? (
-      <div className="relative mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <SubjectStatCard
-          icon={HiOutlineCollection}
-          label={t('stats.concepts')}
-          value={status.total_concepts}
-        />
-        <SubjectStatCard
-          icon={HiOutlineCheckCircle}
-          label={t('stats.accuracyRate')}
-          value={`${Math.round(status.accuracy * 100)}%`}
-        />
-        <SubjectStatCard
-          icon={HiOutlineTrendingUp}
-          label={t('stats.averageMastery')}
-          value={`${Math.round(status.avg_mastery * 100)}%`}
-        />
-        <SubjectStatCard
-          icon={HiOutlineAcademicCap}
-          label={t('stats.correctTotal')}
-          value={`${status.total_correct}/${status.total_answered}`}
-        />
-      </div>
+      <SubjectStatCards status={status} t={t} />
     ) : loading ? (
       <div className="relative mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, idx) => (
@@ -205,13 +230,14 @@ export const SubjectDetailsHero = ({
   </Card>
 );
 
-const SubjectStatCard = ({ icon: Icon, label, value }: SubjectStatCardProps) => (
-  <div className="rounded-xl border border-line bg-surface-warm px-5 py-4">
+const SubjectStatCard = ({ icon: Icon, label, value, caption }: SubjectStatCardProps) => (
+  <div data-stat-card className="rounded-xl border border-line bg-surface-warm px-5 py-4">
     <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-neutral-500">
       <Icon className="size-3.5" />
       {label}
     </div>
-    <div className="text-2xl font-mono text-neutral-900">{value}</div>
+    <div className="whitespace-nowrap text-2xl font-mono text-neutral-900">{value}</div>
+    {caption ? <p className="mt-1 text-xs leading-snug text-neutral-500">{caption}</p> : null}
   </div>
 );
 
@@ -235,6 +261,7 @@ export const SubjectDetailsTabContent = ({
   historyDetail,
   historyLoading,
   sessionId,
+  status,
   t,
 }: SubjectDetailsTabContentProps) => (
   <div
@@ -243,8 +270,16 @@ export const SubjectDetailsTabContent = ({
     id={`tabpanel-${activeTab}`}
     aria-labelledby={`tab-${activeTab}`}
   >
-    {activeTab === 'graph' && <KnowledgeGraph sessionId={sessionId} />}
-    {activeTab === 'mastery' && <MasteryMatrix sessionId={sessionId} filterActiveOnly />}
+    {activeTab === 'graph' && (
+      <KnowledgeGraph sessionId={sessionId} answeredCount={status?.total_answered} />
+    )}
+    {activeTab === 'mastery' && (
+      <MasteryMatrix
+        sessionId={sessionId}
+        filterActiveOnly
+        answeredCount={status?.total_answered}
+      />
+    )}
     {activeTab === 'history' &&
       (historyLoading ? (
         <PanelBlockSkeleton label={t('history.loading')} />

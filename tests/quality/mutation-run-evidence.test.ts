@@ -1470,9 +1470,10 @@ describe('workflow and package mutation:gate wiring', () => {
     expect(pkg.scripts['test:mutation']).toBe('npm run mutation:gate -- --mode full');
     const workflow = readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
     expect(workflow).toContain('node scripts/run-mutation-gate.mjs --mode full');
-    expect(workflow).toContain('node scripts/run-mutation-gate.mjs --mode changed --base-ref');
-    expect(workflow).toMatch(
-      /0000000000000000000000000000000000000000[\s\S]*node scripts\/run-mutation-gate\.mjs --mode full/,
+    // The campaign runs only on the weekly schedule and manual dispatch, always full.
+    expect(workflow).not.toContain('--mode changed');
+    expect(workflow).toContain(
+      "if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}",
     );
     expect(workflow).not.toMatch(/npm run mutation:gate/);
     expect(workflow).not.toMatch(/git rev-parse HEAD\^/);

@@ -20,7 +20,7 @@ export const POST = withAuth(async (req, { userId, session }) => {
   try {
     const body = await parseJsonBody(req, adaptivePipelineProcessRequestSchema);
     if (!body.ok) return body.response;
-    const { s3Key: clientS3Key, filename, subject_id, page_batch_size } = body.data;
+    const { s3Key: clientS3Key, filename, subject_id, page_batch_size, locale } = body.data;
 
     // Fail closed: never sign or forward a client key outside the auth user's namespace.
     const ownedKey = resolveOwnedAdaptivePipelineS3Key(clientS3Key, userId);
@@ -47,6 +47,7 @@ export const POST = withAuth(async (req, { userId, session }) => {
       filename,
       source_s3_key: s3Key,
       ...(subject_id ? { subject_id } : {}),
+      ...(locale ? { locale } : {}),
       page_batch_size,
       min_confidence: 0.6,
       apply_reduction: true,

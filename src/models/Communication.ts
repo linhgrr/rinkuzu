@@ -49,6 +49,8 @@ const OUTBOX_KINDS = [
   'feedback_reply',
   'feedback_reminder',
   'review_reminder',
+  /** Final day-5 review touch (RIN-1304); its own kind so d2 rows stay as they are. */
+  'review_reminder_d5',
   /** One per account for its lifetime, 24 h after signup (RIN-999). */
   'activation_nudge',
 ] as const;

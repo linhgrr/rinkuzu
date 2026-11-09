@@ -76,6 +76,17 @@ describe('LearningProgressDtoMapper', () => {
     expect(JSON.stringify(dto.author)).not.toMatch(/"email"/);
   });
 
+  it('gives the source pdfUrl to the quiz owner only, not to other learners (RIN-1340)', () => {
+    expect(
+      LearningProgressDtoMapper.toLibraryQuizDto(libraryQuiz({ ownedByMe: true })),
+    ).toHaveProperty('pdfUrl', 'https://example.test/source.pdf');
+    const otherLearnerDto = LearningProgressDtoMapper.toLibraryQuizDto(
+      libraryQuiz({ ownedByMe: false }),
+    );
+    expect(otherLearnerDto).not.toHaveProperty('pdfUrl');
+    expect(JSON.stringify(otherLearnerDto)).not.toContain('source.pdf');
+  });
+
   it('maps due review questions with id and serialized dates', () => {
     const dto = LearningProgressDtoMapper.toDueQuestionDto(dueQuestion());
 

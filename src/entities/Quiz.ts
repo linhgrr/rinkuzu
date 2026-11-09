@@ -29,6 +29,25 @@ export type QuizQuestion = QuizQuestionContent & { id: string };
 
 export type QuizVisibility = 'public' | 'personal';
 
+/**
+ * Personal-data check of the quiz texts (RIN-1338). `kinds` holds kind names
+ * only, never matched values. An admin clear (`clearedBy`/`clearedAt`) keeps
+ * `kinds` as they were at clear time.
+ */
+export interface QuizContentFlags {
+  personalData: boolean;
+  kinds: string[];
+  checkedAt: Date;
+  clearedBy?: string;
+  clearedAt?: Date;
+}
+
+/** Keeps a public quiz out of the index while a report is open (RIN-1343). */
+interface QuizIndexHold {
+  reason: 'reported';
+  since: Date;
+}
+
 export interface Quiz {
   id: string;
   title: string;
@@ -44,6 +63,8 @@ export interface Quiz {
   tags?: string[];
   sourceDraftId?: string;
   questionCount?: number;
+  contentFlags?: QuizContentFlags;
+  indexHold?: QuizIndexHold;
   createdAt: Date;
   updatedAt: Date;
 }

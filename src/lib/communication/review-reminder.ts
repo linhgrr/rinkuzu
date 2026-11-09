@@ -7,10 +7,11 @@ import { CommunicationError, digest, requiredObjectId, siteUrl } from './interna
 import { communicationEnvironment } from './resend';
 import {
   evaluateReviewReminder,
-  REVIEW_REMINDER_CAMPAIGN,
   REVIEW_REMINDER_CAP_MS,
-  REVIEW_REMINDER_QA_CAMPAIGN,
+  REVIEW_REMINDER_KIND,
   reviewReminderAvailableAt,
+  reviewReminderCampaign,
+  reviewReminderTouch,
   reviewReminderDedupeKey,
   reviewReminderQaRecipients,
   reviewRetryUrl,
@@ -20,14 +21,15 @@ import {
   type UnsubscribeCampaign,
   verifyUnsubscribeToken,
   type ReviewReminderCancelReason,
+  type ReviewReminderTouch,
 } from './review-reminder-policy';
 import { renderReviewReminder, type ReviewReminderLocale } from './templates';
 
 /**
- * Kill switch for review emails. On by default now that the one-click
+ * Kill switch for review emails, both touches (d2 and d5). On by default now that the one-click
  * unsubscribe page and its RFC 8058 POST handler are live (RIN-915 part 2);
  * `REVIEW_REMINDER_SENDING_ENABLED=false` stops the worker claiming
- * `review_reminder` rows. Rows held back past their send window are later
+ * `review_reminder` and `review_reminder_d5` rows. Rows held back past their send window are later
  * canceled (`too_late`), never sent days late.
  */
 export function reviewReminderSendingEnabled(
@@ -50,9 +52,10 @@ function ipHash(ip: string | null): string | null {
 }
 
 /**
- * Result-page opt-in (AC3/AC4): records consent, then schedules one email
- * 48 h after the attempt. Idempotent per attempt; a second opt-in in the same
- * 7-day bucket re-points the pending row at the newer attempt.
+ * Result-page opt-in (AC3/AC4): records consent, then schedules the d2 email
+ * 48 h after the attempt and the final d5 touch at 120 h (RIN-1304).
+ * Idempotent per attempt; a second opt-in in the same 7-day bucket re-points
+ * both pending rows at the newer attempt.
  */
 export async function optInReviewReminder(input: {
   userId: string;
@@ -92,15 +95,26 @@ export async function optInReviewReminder(input: {
     });
   }
 
-  const outcome = await repository.upsertPending({
-    dedupeKey: reviewReminderDedupeKey(userId.toString(), availableAt),
+  const row = {
     attemptId: attempt.id,
     userId,
     to: input.email,
     from: communicationEnvironment('SUPPORT_MAIL_FROM'),
     body: DEFERRED_BODY,
-    availableAt,
-  });
+  };
+  const scheduleTouch = (touch: ReviewReminderTouch, at: Date) =>
+    repository.upsertPending({
+      ...row,
+      kind: REVIEW_REMINDER_KIND[touch],
+      dedupeKey: reviewReminderDedupeKey(userId.toString(), availableAt, touch),
+      availableAt: at,
+    });
+  const outcome = await scheduleTouch('d2', availableAt);
+  // d5 is scheduled whether or not d2 could be: a capped d2 still gets the final touch.
+  const d5At =
+    reviewReminderAvailableAt({ takenAt: attempt.takenAt, email: input.email, now, touch: 'd5' }) ??
+    availableAt;
+  const d5Outcome = await scheduleTouch('d5', d5At);
   if (outcome === 'scheduled') {
     return { optedIn: true, status: 'scheduled', scheduledFor: availableAt.toISOString() };
   }
@@ -111,6 +125,9 @@ export async function optInReviewReminder(input: {
       status: 'scheduled',
       scheduledFor: outcome.conflict.availableAt.toISOString(),
     };
+  }
+  if (d5Outcome === 'scheduled') {
+    return { optedIn: true, status: 'scheduled', scheduledFor: d5At.toISOString() };
   }
   return { optedIn: true, status: 'capped', scheduledFor: null };
 }
@@ -231,9 +248,10 @@ function reminderLocale(value: string | null | undefined): ReviewReminderLocale 
  * answers.
  */
 export async function prepareReviewReminder(
-  item: { _id: Types.ObjectId; entityId: Types.ObjectId; availableAt: Date },
+  item: { _id: Types.ObjectId; kind: string; entityId: Types.ObjectId; availableAt: Date },
   now: Date = new Date(),
 ): Promise<ReviewReminderPreparation> {
+  const touch = reviewReminderTouch(item.kind);
   const attempt = await repository.findAttempt(item.entityId);
   const userId = attempt?.userId;
   if (!attempt || !userId) return { decision: 'cancel', reason: 'attempt_missing' };
@@ -254,10 +272,11 @@ export async function prepareReviewReminder(
   if (verdict.decision !== 'send') return verdict;
   if (!facts.quiz) return { decision: 'cancel', reason: 'quiz_missing' };
 
-  const locale = reminderLocale(facts.preference?.locale);
+  const locale = reminderLocale(facts.locale);
   const site = siteUrl();
   const token = unsubscribeToken(userId.toString(), communicationEnvironment('AUTH_SECRET'));
   const rendered = await renderReviewReminder({
+    touch,
     locale,
     quizTitle: facts.quiz.title,
     missedCount: Math.max(0, attempt.totalQuestions - attempt.correctAnswers),
@@ -266,6 +285,7 @@ export async function prepareReviewReminder(
       locale,
       slug: facts.quiz.slug,
       attemptId: attempt.id.toString(),
+      touch,
     }),
     unsubscribeUrl: unsubscribePageUrl(site, locale, token),
   });
@@ -273,12 +293,7 @@ export async function prepareReviewReminder(
     decision: 'send',
     mail: {
       ...rendered,
-      tags: [
-        {
-          name: 'campaign',
-          value: verdict.qa ? REVIEW_REMINDER_QA_CAMPAIGN : REVIEW_REMINDER_CAMPAIGN,
-        },
-      ],
+      tags: [{ name: 'campaign', value: reviewReminderCampaign(touch, verdict.qa) }],
       headers: {
         // No unsubscribe mailbox exists, so the header carries the HTTPS URL only.
         'List-Unsubscribe': `<${oneClickUnsubscribeUrl(site, token)}>`,

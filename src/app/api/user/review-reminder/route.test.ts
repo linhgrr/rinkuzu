@@ -1,16 +1,20 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, optInMock, optOutMock, statusMock, snoozeMock } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  optInMock: vi.fn(),
-  optOutMock: vi.fn(),
-  statusMock: vi.fn(),
-  snoozeMock: vi.fn(),
-}));
+const { authMock, optInMock, adaptiveOptInMock, optOutMock, statusMock, snoozeMock } = vi.hoisted(
+  () => ({
+    authMock: vi.fn(),
+    optInMock: vi.fn(),
+    adaptiveOptInMock: vi.fn(),
+    optOutMock: vi.fn(),
+    statusMock: vi.fn(),
+    snoozeMock: vi.fn(),
+  }),
+);
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/communication/review-reminder', () => ({
+  optInAdaptiveReviewReminder: adaptiveOptInMock,
   optInReviewReminder: optInMock,
   optOutReviewReminder: optOutMock,
   reviewReminderStatus: statusMock,
@@ -40,6 +44,7 @@ describe('/api/user/review-reminder', () => {
       user: { id: 'user-1', email: 'learner@gmail.com', role: 'user' },
     });
     optInMock.mockResolvedValue({ optedIn: true, status: 'scheduled', scheduledFor: 'x' });
+    adaptiveOptInMock.mockResolvedValue({ optedIn: true, status: 'scheduled', scheduledFor: 'y' });
     optOutMock.mockResolvedValue({ optedIn: false });
     statusMock.mockResolvedValue({ optedIn: true, snoozedUntil: null, eligible: true });
     snoozeMock.mockResolvedValue({ snoozedUntil: '2026-11-16T10:00:00.000Z' });
@@ -60,7 +65,57 @@ describe('/api/user/review-reminder', () => {
       userId: 'user-1',
       email: 'learner@gmail.com',
       attemptId: ATTEMPT_ID,
+      path: 'quiz',
     });
+  });
+
+  it('GET ?path=adaptive reports the adaptive end-screen status (RIN-1364)', async () => {
+    const response = await GET(
+      new NextRequest('http://localhost/api/user/review-reminder?path=adaptive'),
+      routeContext,
+    );
+    expect(response.status).toBe(200);
+    expect(statusMock).toHaveBeenCalledWith({
+      userId: 'user-1',
+      email: 'learner@gmail.com',
+      attemptId: undefined,
+      path: 'adaptive',
+    });
+  });
+
+  it('POST path:adaptive opts in on the latest completion, with no client timestamps', async () => {
+    const response = await POST(request('POST', { path: 'adaptive', locale: 'en' }), routeContext);
+    expect(response.status).toBe(200);
+    expect(adaptiveOptInMock).toHaveBeenCalledWith({
+      userId: 'user-1',
+      email: 'learner@gmail.com',
+      locale: 'en',
+      ip: null,
+    });
+    expect(optInMock).not.toHaveBeenCalled();
+  });
+
+  it('POST path:adaptive rejects a client-sent anchor', async () => {
+    const response = await POST(
+      request('POST', { path: 'adaptive', completedAt: '2026-11-01T00:00:00Z' }),
+      routeContext,
+    );
+    expect(response.status).toBe(400);
+    expect(adaptiveOptInMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'POST optIn:false',
+      () => POST(request('POST', { path: 'adaptive', optIn: false }), routeContext),
+    ],
+    ['DELETE', () => DELETE(request('DELETE', { path: 'adaptive' }), routeContext)],
+  ])('%s on the adaptive screen un-ticks it with its own source', async (_label, call) => {
+    expect((await call()).status).toBe(200);
+    expect(optOutMock).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1', source: 'adaptive_end_review' }),
+    );
+    expect(adaptiveOptInMock).not.toHaveBeenCalled();
   });
 
   it('GET rejects an invalid attempt id', async () => {

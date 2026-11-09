@@ -40,6 +40,8 @@ const CONSENT_SOURCES = [
   'unsubscribe',
   'admin_suppression',
   'result_page_review',
+  /** Opt-in on the adaptive (Path B) end screen (RIN-1364). */
+  'adaptive_end_review',
 ] as const;
 type ConsentSource = (typeof CONSENT_SOURCES)[number];
 
@@ -56,7 +58,14 @@ const OUTBOX_KINDS = [
 ] as const;
 export type OutboxKind = (typeof OUTBOX_KINDS)[number];
 
-const OUTBOX_ENTITY_TYPES = ['support_ticket', 'feedback_conversation', 'attempt', 'user'] as const;
+const OUTBOX_ENTITY_TYPES = [
+  'support_ticket',
+  'feedback_conversation',
+  'attempt',
+  'user',
+  /** Path B review email (RIN-1364): `entityId` is the learner, the anchor fields name the completion. */
+  'adaptive_completion',
+] as const;
 export type OutboxEntityType = (typeof OUTBOX_ENTITY_TYPES)[number];
 
 const CAMPAIGN_STATUSES = [
@@ -289,6 +298,14 @@ interface EmailOutboxDocument extends Document {
   locale?: string | null;
   /** First tracked CTA click of an activation nudge (RIN-1000); set once. */
   clickedAt?: Date | null;
+  /**
+   * Review emails (RIN-1364): the due time the send window is measured from, so a
+   * retry that moves `availableAt` never stretches the window. Null on older rows.
+   */
+  dueAt?: Date | null;
+  /** Path B review email: the adaptive completion it follows (`completed_at`, session id). */
+  anchorAt?: Date | null;
+  anchorDocumentId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -615,6 +632,9 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     trigger: { type: String, enum: ['24h', 'backfill', null], default: null },
     locale: { type: String, default: null, maxlength: 8 },
     clickedAt: { type: Date, default: null },
+    dueAt: { type: Date, default: null },
+    anchorAt: { type: Date, default: null },
+    anchorDocumentId: { type: String, default: null, maxlength: 128 },
   },
   { timestamps: true, versionKey: false },
 );

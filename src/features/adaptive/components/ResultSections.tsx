@@ -9,6 +9,7 @@ import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from 'react-icons/hi
 import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
 import type { SubmitResult, Exercise, TranslateFn } from '@/features/adaptive/types/learning';
 import styles from './LearningViewport.module.css';
+import { AdaptiveReviewPrompt } from './AdaptiveReviewPrompt';
 import { ResultCorrectAnswer, ResultLearnerAnswer } from './ResultAnswers';
 
 type ResultEmptyStateProps = {
@@ -270,6 +271,9 @@ export const ResultContent = ({
             <p className="mt-1 text-xs text-neutral-500">
               {t('result.sessionCompleteDescription', { count: result.step })}
             </p>
+            <div className="mt-4 empty:hidden">
+              <AdaptiveReviewPrompt />
+            </div>
           </div>
         ) : null}
       </div>

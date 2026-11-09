@@ -491,7 +491,8 @@
     "statsTotal": "Tổng",
     "statsAccuracy": "Độ chính xác",
     "sessionCompleteTitle": "Hoàn tất phiên học!",
-    "sessionCompleteDescription": "Bạn đã hoàn thành {count} bài tập. Rất tốt!"
+    "sessionCompleteDescription": "Bạn đã hoàn thành {count} bài tập. Rất tốt!",
+    "reviewPromptQuestion": "Bạn muốn được nhắc ôn lại những gì vừa học sau 2 ngày không?"
   },
   "subjectDetails": {
     "backToDashboard": "Quay về bảng điều khiển",

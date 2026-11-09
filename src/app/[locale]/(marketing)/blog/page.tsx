@@ -2,6 +2,7 @@ import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { buildLocalizedMetadata } from '@/lib/seo';
+import { BLOG_FEED_PATH, blogFeedAlternates } from '@/lib/blog/feed';
 import {
   blogImageAt,
   formatBlogDate,
@@ -23,6 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildLocalizedMetadata({
     locale,
     path: '/blog',
+    alternateTypes: blogFeedAlternates(toBlogLocale(locale)),
     title: isVi
       ? 'Blog RinKuzu — Học cá nhân hóa, AI giáo dục và đồ thị kiến thức'
       : 'RinKuzu Blog — Personalized Learning, AI in Education & Knowledge Graphs',
@@ -58,6 +60,17 @@ export default async function BlogIndexPage({ params }: Props) {
               ? 'Kiến thức thực tiễn về học cá nhân hóa, AI trong giáo dục, đồ thị kiến thức và cách biến PDF bài giảng thành lộ trình luyện tập cá nhân hóa.'
               : 'Insights on personalized learning, AI in education, knowledge graphs, and turning PDF lectures into personalized practice journeys.'}
           </p>
+          {/* A plain anchor: the feed is a route handler, not a page to prefetch (RIN-1330). */}
+          <a
+            href={`/${blogLocale}${BLOG_FEED_PATH}`}
+            type="application/rss+xml"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-brand-trust hover:underline"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+              <path d="M6.18 15.64a2.18 2.18 0 1 1 0 4.36 2.18 2.18 0 0 1 0-4.36ZM4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44Zm0 5.66A9.9 9.9 0 0 1 13.9 20h-2.83A7.07 7.07 0 0 0 4 12.93V10.1Z" />
+            </svg>
+            {isVi ? 'Theo dõi qua RSS' : 'Subscribe via RSS'}
+          </a>
         </div>
       </header>
 

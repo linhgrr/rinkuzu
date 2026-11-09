@@ -172,5 +172,12 @@
   "guestSaveWithGoogle": "Lưu kết quả với Google",
   "guestSaveSignInEmail": "Đăng nhập bằng email",
   "guestSaveCreateAccount": "Tạo tài khoản",
-  "guestReviewUnavailable": "Chúng tôi không mở được phần xem lại trên thiết bị này. Điểm của bạn vẫn được giữ ở trên."
+  "guestReviewUnavailable": "Chúng tôi không mở được phần xem lại trên thiết bị này. Điểm của bạn vẫn được giữ ở trên.",
+  "pdfViewer": {
+    "title": "Tài liệu PDF",
+    "openInNewTab": "Mở tab mới",
+    "close": "Đóng PDF",
+    "loading": "Đang tải PDF",
+    "frameTitle": "Trình xem PDF"
+  }
 }

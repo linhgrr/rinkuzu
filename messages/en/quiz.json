@@ -172,5 +172,12 @@
   "guestSaveWithGoogle": "Save with Google",
   "guestSaveSignInEmail": "Sign in with email",
   "guestSaveCreateAccount": "Create an account",
-  "guestReviewUnavailable": "We can't open the question review on this device. Your score is still shown above."
+  "guestReviewUnavailable": "We can't open the question review on this device. Your score is still shown above.",
+  "pdfViewer": {
+    "title": "PDF reference",
+    "openInNewTab": "Open in new tab",
+    "close": "Close PDF",
+    "loading": "Loading PDF",
+    "frameTitle": "PDF viewer"
+  }
 }

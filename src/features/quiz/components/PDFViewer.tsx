@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { PdfPanelSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
@@ -22,6 +23,7 @@ export default function PDFViewer({
   pdfUrl,
   showHeader = true,
 }: PDFViewerProps) {
+  const t = useTranslations('quiz.pdfViewer');
   // Prefer inline source if provided; otherwise use the original PDF URL.
   const source = pdfDataUrl || pdfUrl || null;
   const displayUrl = source?.includes('#')
@@ -34,7 +36,7 @@ export default function PDFViewer({
     <div className="h-full flex flex-col">
       {showHeader && (
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-neutral-900">PDF Reference</h3>
+          <h3 className="font-semibold text-neutral-900">{t('title')}</h3>
           <div className="flex gap-2">
             <Button
               onClick={() => pdfUrl && openInNewTabSafely(pdfUrl)}
@@ -42,9 +44,9 @@ export default function PDFViewer({
               variant="outline"
               disabled={!pdfUrl}
             >
-              Mở tab mới
+              {t('openInNewTab')}
             </Button>
-            <Button onClick={onClose} size="sm" variant="ghost">
+            <Button onClick={onClose} size="sm" variant="ghost" aria-label={t('close')}>
               ✕
             </Button>
           </div>
@@ -54,7 +56,7 @@ export default function PDFViewer({
         {displayUrl ? (
           <PDFViewerFrame key={displayUrl} displayUrl={displayUrl} />
         ) : (
-          <PdfPanelSkeleton label="Loading PDF" />
+          <PdfPanelSkeleton label={t('loading')} />
         )}
       </div>
     </div>
@@ -62,19 +64,20 @@ export default function PDFViewer({
 }
 
 function PDFViewerFrame({ displayUrl }: PDFViewerFrameProps) {
+  const t = useTranslations('quiz.pdfViewer');
   const [isLoading, setIsLoading] = useState(true);
 
   return (
     <>
       {isLoading ? (
         <div className="absolute inset-0 z-10 bg-neutral-100">
-          <PdfPanelSkeleton label="Loading PDF" />
+          <PdfPanelSkeleton label={t('loading')} />
         </div>
       ) : null}
       <iframe
         src={displayUrl}
         className="h-full w-full border-0"
-        title="PDF Viewer"
+        title={t('frameTitle')}
         sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
         onLoad={() => setIsLoading(false)}
       />

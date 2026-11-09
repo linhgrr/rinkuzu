@@ -59,8 +59,34 @@ vi.mock('@/features/folders/components/FolderSelector', () => ({
   FolderSelector: () => null,
 }));
 vi.mock('@/features/quiz/components/QuizMetaForm', () => ({
-  default: ({ title, onTitleChange }: { title: string; onTitleChange: (v: string) => void }) => (
-    <input aria-label="quizTitle" value={title} onChange={(e) => onTitleChange(e.target.value)} />
+  default: ({
+    title,
+    onTitleChange,
+    notice,
+  }: {
+    title: string;
+    onTitleChange: (v: string) => void;
+    notice?: React.ReactNode;
+  }) => (
+    <>
+      <input aria-label="quizTitle" value={title} onChange={(e) => onTitleChange(e.target.value)} />
+      {notice}
+    </>
+  ),
+}));
+// The notice's own copy and Terms link are covered with real messages in
+// PublicQuizNotice.test.tsx; here only its variant and placement matter.
+vi.mock('@/features/quiz/components/PublicQuizNotice', () => ({
+  PublicQuizNotice: ({
+    variant,
+    showPremiumPointer,
+  }: {
+    variant: string;
+    showPremiumPointer?: boolean;
+  }) => (
+    <p data-testid="public-quiz-notice" data-variant={variant}>
+      {showPremiumPointer ? 'notice+pointer' : 'notice'}
+    </p>
   ),
 }));
 
@@ -181,5 +207,36 @@ describe('MobileCreateQuizPage file and submit errors', () => {
     // RIN-1082: the app h1 style (profile, checkout, quiz player).
     expect(headings[0]).toHaveClass('text-2xl', 'font-semibold', 'text-ink');
     expect(headings[0]?.className).toBe(desktopClass);
+  });
+});
+
+// RIN-1339 (spec RIN-1336 Part 1): the learner reads that the quiz goes public
+// before the submit button, on both PDF create screens, with no new control.
+describe('public-quiz notice on the PDF create screens', () => {
+  function expectBefore(first: HTMLElement, second: HTMLElement) {
+    expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  }
+
+  it('desktop: full notice with the Premium pointer, above submit, no new input', async () => {
+    const { container } = render(<CreateQuizPage />);
+    const inputsBefore = container.querySelectorAll('input').length;
+
+    const notice = screen.getByTestId('public-quiz-notice');
+    expect(notice).toHaveAttribute('data-variant', 'full');
+    expect(notice).toHaveTextContent('notice+pointer');
+    expectBefore(notice, screen.getByRole('button', { name: /createQuizBackground/ }));
+    expect(container.querySelectorAll('input')).toHaveLength(inputsBefore);
+  });
+
+  it('mobile: full notice without a Premium pointer (no Premium checkbox there), above submit', async () => {
+    const { container } = render(<MobileCreateQuizPage />);
+    pick(container, pdfFile());
+    const submit = await screen.findByRole('button', { name: /createQuiz/ });
+
+    const notice = screen.getByTestId('public-quiz-notice');
+    expect(notice).toHaveAttribute('data-variant', 'full');
+    expect(notice).toHaveTextContent(/^notice$/);
+    expectBefore(notice, submit);
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 });

@@ -12,10 +12,12 @@ export async function fetchReviewEmailStats(
   );
   return {
     opensTracked: dto.opensTracked,
-    weeks: dto.weeks.map(({ isoWeek, sent, opened, unsubscribed, optIns }) => ({
+    weeks: dto.weeks.map(({ isoWeek, sent, opened, sentD5, openedD5, unsubscribed, optIns }) => ({
       isoWeek,
       sent,
       opened,
+      sentD5,
+      openedD5,
       unsubscribed,
       optIns,
     })),

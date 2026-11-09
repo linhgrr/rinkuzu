@@ -7,17 +7,39 @@ import {
 import { ACCOUNT_DISABLE_DISABLED } from '@/shared/constants/account-disable';
 
 /**
- * Pure rules for the opt-in 2-day review email (RIN-911 / RIN-915): timing,
- * the weekly cap key, send-time eligibility and the unsubscribe token. No
- * database access, so every rule is table-testable with a fake clock.
+ * Pure rules for the opt-in review emails (RIN-911 / RIN-915): the day-2
+ * email and the final day-5 touch (RIN-1304). Timing, the 7-day bucket keys,
+ * send-time eligibility and the unsubscribe token. No database access, so
+ * every rule is table-testable with a fake clock.
  */
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 
+/** `d2` is the 48 h email (RIN-911); `d5` the final touch 120 h after the attempt (RIN-1304). */
+export type ReviewReminderTouch = 'd2' | 'd5';
+export const REVIEW_REMINDER_KINDS = ['review_reminder', 'review_reminder_d5'] as const;
+export type ReviewReminderKind = (typeof REVIEW_REMINDER_KINDS)[number];
+
 const REVIEW_REMINDER_DELAY_MS = 48 * HOUR_MS;
-/** A learner gets at most one review email per 7 days. */
+const TOUCH_DELAY_MS: Record<ReviewReminderTouch, number> = {
+  d2: REVIEW_REMINDER_DELAY_MS,
+  d5: 120 * HOUR_MS,
+};
+/** Outbox kind of each touch; d2 keeps the RIN-915 kind so existing rows stay valid. */
+export const REVIEW_REMINDER_KIND: Record<ReviewReminderTouch, ReviewReminderKind> = {
+  d2: 'review_reminder',
+  d5: 'review_reminder_d5',
+};
+
+export function reviewReminderTouch(kind: string): ReviewReminderTouch {
+  return kind === REVIEW_REMINDER_KIND.d5 ? 'd5' : 'd2';
+}
+
+/** The rolling window of the cap: at most `REVIEW_REMINDER_WEEKLY_LIMIT` review emails in it. */
 export const REVIEW_REMINDER_CAP_MS = 7 * DAY_MS;
+/** d2 + d5: a third review email inside 7 days is canceled `weekly_cap` (RIN-1304). */
+const REVIEW_REMINDER_WEEKLY_LIMIT = 2;
 /** The spec allows ±2 h, so an opt-in later than 46 h after the attempt is refused. */
 const REVIEW_REMINDER_LATEST_OPT_IN_MS = REVIEW_REMINDER_DELAY_MS - 2 * HOUR_MS;
 /**
@@ -27,8 +49,15 @@ const REVIEW_REMINDER_LATEST_OPT_IN_MS = REVIEW_REMINDER_DELAY_MS - 2 * HOUR_MS;
  */
 const REVIEW_REMINDER_SEND_WINDOW_MS = 2 * HOUR_MS;
 export const REVIEW_REMINDER_CAMPAIGN = 'w1-review';
-/** QA sends carry their own campaign tag so they never count in admin aggregates. */
-export const REVIEW_REMINDER_QA_CAMPAIGN = 'w1-review-qa';
+export const REVIEW_REMINDER_D5_CAMPAIGN = 'w1-review-d5';
+/**
+ * Campaign tag (and `utm_campaign`) of each touch. QA sends carry their own
+ * tag (`w1-review-qa`, `w1-review-d5-qa`) so they never count in admin aggregates.
+ */
+export function reviewReminderCampaign(touch: ReviewReminderTouch, qa = false): string {
+  const campaign = touch === 'd5' ? REVIEW_REMINDER_D5_CAMPAIGN : REVIEW_REMINDER_CAMPAIGN;
+  return qa ? `${campaign}-qa` : campaign;
+}
 const REVIEW_REMINDER_TOPIC = 'study_reminders';
 
 /**
@@ -62,29 +91,38 @@ function isReviewReminderQaRecipient(email: string, env: Environment = process.e
 }
 
 /**
- * Delay between the attempt and the email: 48 h, or for a QA recipient only,
- * `REVIEW_EMAIL_QA_DELAY_MINUTES` when it is a positive number.
+ * Delay between the attempt and the email: 48 h (d2) or 120 h (d5). For a QA
+ * recipient only, `REVIEW_EMAIL_QA_DELAY_MINUTES` (when a positive number)
+ * replaces the d2 delay and scales d5 by the same factor (x 2.5).
  */
-function reviewReminderDelayMs(email: string, env: Environment = process.env): number {
-  if (!isReviewReminderQaRecipient(email, env)) return REVIEW_REMINDER_DELAY_MS;
+function reviewReminderDelayMs(
+  email: string,
+  env: Environment,
+  touch: ReviewReminderTouch,
+): number {
+  const delay = TOUCH_DELAY_MS[touch];
+  if (!isReviewReminderQaRecipient(email, env)) return delay;
   const minutes = Number(env['REVIEW_EMAIL_QA_DELAY_MINUTES']?.trim() ?? '');
   return Number.isFinite(minutes) && minutes > 0
-    ? Math.min(minutes * 60_000, REVIEW_REMINDER_DELAY_MS)
-    : REVIEW_REMINDER_DELAY_MS;
+    ? Math.min((minutes * 60_000 * delay) / REVIEW_REMINDER_DELAY_MS, delay)
+    : delay;
 }
 
 /**
- * When the email for an attempt becomes due, or `null` when the opt-in comes
- * too late to send it on time (only QA recipients may send right away).
+ * When a touch for an attempt becomes due, or `null` when the opt-in comes
+ * too late to send the d2 email on time (only QA recipients may send right
+ * away). The opt-in deadline is d2's for both touches.
  */
 export function reviewReminderAvailableAt(input: {
   takenAt: Date;
   email: string;
   now: Date;
   env?: Environment;
+  touch?: ReviewReminderTouch;
 }): Date | null {
   const env = input.env ?? process.env;
-  const due = input.takenAt.getTime() + reviewReminderDelayMs(input.email, env);
+  const due =
+    input.takenAt.getTime() + reviewReminderDelayMs(input.email, env, input.touch ?? 'd2');
   if (isReviewReminderQaRecipient(input.email, env)) {
     return new Date(Math.max(due, input.now.getTime()));
   }
@@ -95,11 +133,18 @@ export function reviewReminderAvailableAt(input: {
 }
 
 /**
- * One outbox row per learner per 7-day bucket. The send-time cap below covers
- * two buckets that fall closer than 7 days apart.
+ * One outbox row per learner, touch and 7-day bucket. Both touches take the
+ * bucket of the d2 due time, so a newer opt-in in the same bucket re-points
+ * the d5 row with the d2 row. The send-time cap below covers two buckets that
+ * fall closer than 7 days apart.
  */
-export function reviewReminderDedupeKey(userId: string, availableAt: Date): string {
-  return `review_reminder/${userId}/${Math.floor(availableAt.getTime() / REVIEW_REMINDER_CAP_MS)}`;
+export function reviewReminderDedupeKey(
+  userId: string,
+  d2AvailableAt: Date,
+  touch: ReviewReminderTouch = 'd2',
+): string {
+  const bucket = Math.floor(d2AvailableAt.getTime() / REVIEW_REMINDER_CAP_MS);
+  return `${REVIEW_REMINDER_KIND[touch]}/${userId}/${bucket}`;
 }
 
 export type ReviewReminderCancelReason =
@@ -121,8 +166,8 @@ export interface ReviewReminderFacts {
   optedIn: boolean;
   /** Another attempt by this learner after the opted-in one. */
   laterAttempt: boolean;
-  /** Another review email was sent to this learner in the last 7 days. */
-  sentInLastWeek: boolean;
+  /** Other review emails (either touch) sent to this learner in the last 7 days. */
+  sentInLastWeek: number;
   qaRecipients: ReadonlySet<string>;
 }
 
@@ -148,7 +193,8 @@ export function evaluateReviewReminder(facts: ReviewReminderFacts): ReviewRemind
   }
   if (!facts.optedIn) return { decision: 'cancel', reason: 'opted_out' };
   if (facts.laterAttempt) return { decision: 'cancel', reason: 'later_attempt' };
-  if (facts.sentInLastWeek) return { decision: 'cancel', reason: 'weekly_cap' };
+  if (facts.sentInLastWeek >= REVIEW_REMINDER_WEEKLY_LIMIT)
+    return { decision: 'cancel', reason: 'weekly_cap' };
   const qa = facts.qaRecipients.has(user.email.trim().toLowerCase());
   if (!qa && isAnalyticsExcludedAccount(user)) {
     return { decision: 'cancel', reason: 'excluded_account' };
@@ -194,6 +240,7 @@ export function reviewRetryUrl(input: {
   locale: string;
   slug: string;
   attemptId: string;
+  touch?: ReviewReminderTouch;
 }): string {
   const url = new URL(
     `/${encodeURIComponent(input.locale)}/quiz/${encodeURIComponent(input.slug)}`,
@@ -201,7 +248,7 @@ export function reviewRetryUrl(input: {
   );
   url.searchParams.set('retryOf', input.attemptId);
   url.searchParams.set('utm_source', 'email');
-  url.searchParams.set('utm_campaign', REVIEW_REMINDER_CAMPAIGN);
+  url.searchParams.set('utm_campaign', reviewReminderCampaign(input.touch ?? 'd2'));
   return url.toString();
 }
 

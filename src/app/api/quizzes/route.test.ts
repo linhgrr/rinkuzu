@@ -6,14 +6,14 @@ import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 const {
   assertCanContributeMock,
   authMock,
-  createPremiumSubmissionMock,
+  submitSavedQuizMock,
   createQuizMock,
   getQuizzesMock,
   loggerErrorMock,
 } = vi.hoisted(() => ({
   assertCanContributeMock: vi.fn(),
   authMock: vi.fn(),
-  createPremiumSubmissionMock: vi.fn(),
+  submitSavedQuizMock: vi.fn(),
   createQuizMock: vi.fn(),
   getQuizzesMock: vi.fn(),
   loggerErrorMock: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('@/lib/quiz-factory', () => ({
 vi.mock('@/lib/premium-quiz-factory', () => ({
   getPremiumQuizService: () => ({
     assertCanContribute: assertCanContributeMock,
-    createSubmission: createPremiumSubmissionMock,
+    submitSavedQuiz: submitSavedQuizMock,
   }),
 }));
 
@@ -117,7 +117,7 @@ describe('GET /api/quizzes', () => {
   it('applies mine, unfiled folder, and personal visibility for authenticated users', async () => {
     authMock.mockResolvedValue(session());
     assertCanContributeMock.mockResolvedValue(undefined);
-    createPremiumSubmissionMock.mockResolvedValue({ id: 'premium-submission-1' });
+    submitSavedQuizMock.mockResolvedValue({ id: 'premium-submission-1' });
 
     const response = await GET(
       listRequest(
@@ -236,7 +236,53 @@ describe('POST /api/quizzes', () => {
 
     expect(response.status).toBe(403);
     expect(createQuizMock).not.toHaveBeenCalled();
-    expect(createPremiumSubmissionMock).not.toHaveBeenCalled();
+    expect(submitSavedQuizMock).not.toHaveBeenCalled();
+  });
+
+  it('submits the saved quiz to Premium through the compensating helper (RIN-1347)', async () => {
+    createQuizMock.mockResolvedValueOnce({ id: 'quiz-1', slug: 'algebra' });
+    submitSavedQuizMock.mockResolvedValueOnce({ id: 'premium-submission-1' });
+
+    const response = await POST(
+      createRequest({ ...validCreateBody, submitToPremium: true, rightsAttested: true }),
+      { params: Promise.resolve({}) },
+    );
+
+    expect(response.status).toBe(201);
+    expect(submitSavedQuizMock).toHaveBeenCalledWith('507f191e810c19729de860eb', {
+      quizId: 'quiz-1',
+      rightsAttested: true,
+    });
+  });
+
+  it('says the quiz was saved as public when the Premium submission fails (RIN-1347)', async () => {
+    const { PremiumQuizError, PremiumSubmissionFailedError } =
+      await import('@/entities/PremiumQuizError');
+    createQuizMock.mockResolvedValue({ id: 'quiz-1', slug: 'algebra' });
+    submitSavedQuizMock
+      .mockRejectedValueOnce(new PremiumSubmissionFailedError('quiz-1', new Error('db down')))
+      .mockRejectedValueOnce(
+        new PremiumSubmissionFailedError(
+          'quiz-1',
+          new PremiumQuizError('invalid_state', 'Premium quiz assets could not be secured'),
+        ),
+      );
+    const body = { ...validCreateBody, submitToPremium: true, rightsAttested: true };
+
+    const infrastructure = await POST(createRequest(body), { params: Promise.resolve({}) });
+    const refusal = await POST(createRequest(body), { params: Promise.resolve({}) });
+
+    expect(infrastructure.status).toBe(502);
+    await expect(infrastructure.json()).resolves.toMatchObject({
+      error: {
+        code: 'premium_submission_failed',
+        meta: { reason: 'internal_error', visibility: 'public', quizId: 'quiz-1' },
+      },
+    });
+    expect(refusal.status).toBe(409);
+    await expect(refusal.json()).resolves.toMatchObject({
+      error: { code: 'premium_submission_failed', meta: { reason: 'invalid_state' } },
+    });
   });
 
   it('maps premium and validation creation errors, then unexpected failures', async () => {

@@ -3,6 +3,7 @@ import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type {
   IPremiumQuizRepository,
+  IPremiumSubmissionRecoveryRepository,
   AdminCreditGrantResult,
   CreditLedgerListResult,
   CreatePremiumSubmissionData,
@@ -29,7 +30,8 @@ import type {
   DecidePremiumSubmissionRequestDto,
   PremiumReviewCallbackRequestDto,
 } from '@/dtos/premium-quiz';
-import { PremiumQuizError } from '@/entities/PremiumQuizError';
+import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
+import { logger } from '@/lib/logger';
 import { getAuthorId } from '@/services/quiz/quiz-helpers';
 import { can, resolveEntitlements } from '@/lib/entitlements';
 import { env } from '@/lib/env';
@@ -308,6 +310,7 @@ export class PremiumQuizService {
     private readonly quizRepository: IQuizRepository,
     private readonly premiumRepository: IPremiumQuizRepository,
     private readonly attemptRepository: IQuizAttemptProgressRepository,
+    private readonly submissionRecovery?: IPremiumSubmissionRecoveryRepository,
   ) {}
 
   async assertCanContribute(userId: string): Promise<void> {
@@ -369,6 +372,35 @@ export class PremiumQuizService {
       ...(input.sourceObjectKey === undefined ? {} : { sourceObjectKey: input.sourceObjectKey }),
     };
     return this.premiumRepository.createSubmission(data);
+  }
+
+  /**
+   * RIN-1347: submits a quiz the caller has just saved as `personal`. When the
+   * submission fails, the quiz goes back to public (unless an older submission
+   * still holds it private) and a `premium_submission_failed` error says so;
+   * otherwise the original error is rethrown unchanged. Storage copies cannot
+   * join a Mongo transaction, so this compensates instead.
+   */
+  async submitSavedQuiz(
+    userId: string,
+    input: CreatePremiumSubmissionInput,
+  ): Promise<PremiumQuizSubmission> {
+    try {
+      return await this.createSubmission(userId, input);
+    } catch (error) {
+      if (!(await this.restorePublic(input.quizId))) throw error;
+      throw new PremiumSubmissionFailedError(input.quizId, error);
+    }
+  }
+
+  private async restorePublic(quizId: string): Promise<boolean> {
+    if (!this.submissionRecovery) return false;
+    try {
+      return await this.submissionRecovery.restorePublicAfterFailedSubmission(quizId);
+    } catch (error) {
+      logger.error({ error, quizId }, 'Premium submission failed and the quiz stayed private');
+      return false;
+    }
   }
 
   async listMine(

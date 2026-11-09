@@ -17,6 +17,7 @@ import type {
   AdminCreditGrantResult,
   CreditLedgerListResult,
   IPremiumQuizRepository,
+  IPremiumSubmissionRecoveryRepository,
   IPremiumSubmissionWithdrawalRepository,
   MakeQuizPublicResult,
   PremiumCatalogListOptions,
@@ -116,6 +117,37 @@ async function loadSubmission(
   return query.lean<PremiumQuizSubmissionPersistenceRecord>();
 }
 
+/** The admin's last visibility change on the quiz hid it on purpose (RIN-557). */
+async function adminHidQuiz(sourceQuiz: Types.ObjectId, session: ClientSession): Promise<boolean> {
+  const lastVisibilityChange = await AdminActionAudit.findOne({
+    entityType: 'quiz',
+    entityId: sourceQuiz.toHexString(),
+    action: 'quiz.visibility.changed',
+  })
+    .sort({ createdAt: -1 })
+    .select('details')
+    .session(session)
+    .lean<VisibilityChangeAuditProjection>();
+  return lastVisibilityChange?.details?.to === 'personal';
+}
+
+/**
+ * Sets a `personal` quiz `public` unless an admin hid it; true when it flipped.
+ * Shared by the reject decision and the failed-submission recovery (RIN-1347).
+ */
+async function makePrivateQuizPublicUnlessAdminHid(
+  sourceQuiz: Types.ObjectId,
+  session: ClientSession,
+): Promise<boolean> {
+  if (await adminHidQuiz(sourceQuiz, session)) return false;
+  const result = await QuizModel.updateOne(
+    { _id: sourceQuiz, visibility: 'personal' },
+    { $set: { visibility: 'public' } },
+    { session },
+  );
+  return result.modifiedCount === 1;
+}
+
 /**
  * A rejected Premium submission hands its quiz back to the public catalog
  * (Founder, 2026-11-09: there is no private quiz). The quiz stays `personal`
@@ -141,23 +173,7 @@ async function publishRejectedQuiz(
   }).session(session);
   if (publication) return false;
 
-  const lastVisibilityChange = await AdminActionAudit.findOne({
-    entityType: 'quiz',
-    entityId: sourceQuiz.toHexString(),
-    action: 'quiz.visibility.changed',
-  })
-    .sort({ createdAt: -1 })
-    .select('details')
-    .session(session)
-    .lean<VisibilityChangeAuditProjection>();
-  if (lastVisibilityChange?.details?.to === 'personal') return false;
-
-  const result = await QuizModel.updateOne(
-    { _id: sourceQuiz, visibility: 'personal' },
-    { $set: { visibility: 'public' } },
-    { session },
-  );
-  return result.modifiedCount === 1;
+  return makePrivateQuizPublicUnlessAdminHid(sourceQuiz, session);
 }
 
 /**
@@ -182,7 +198,10 @@ async function assertQuizStillPrivate(
 }
 
 export class PremiumQuizRepository
-  implements IPremiumQuizRepository, IPremiumSubmissionWithdrawalRepository
+  implements
+    IPremiumQuizRepository,
+    IPremiumSubmissionWithdrawalRepository,
+    IPremiumSubmissionRecoveryRepository
 {
   async isVerifiedUser(userId: string): Promise<boolean> {
     if (!Types.ObjectId.isValid(userId)) return false;
@@ -775,6 +794,30 @@ export class PremiumQuizRepository
       }, TRANSACTION_OPTIONS);
       if (!result) throw new PremiumQuizError('conflict', 'Withdrawal transaction did not commit');
       return result;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  async restorePublicAfterFailedSubmission(quizId: string): Promise<boolean> {
+    await connectDB();
+    const sourceQuiz = objectId(quizId, 'Quiz');
+    const session = await mongoose.startSession();
+    try {
+      const restored = await session.withTransaction(async (): Promise<boolean> => {
+        // A re-submit that fails while an older submission is under review or
+        // on sale leaves the quiz private for that submission.
+        const liveSubmission = await PremiumQuizSubmissionModel.exists({
+          sourceQuiz,
+          $or: [
+            { status: { $in: ['pending', 'changes_requested'] } },
+            { status: 'approved', active: true },
+          ],
+        }).session(session);
+        if (liveSubmission) return false;
+        return makePrivateQuizPublicUnlessAdminHid(sourceQuiz, session);
+      }, TRANSACTION_OPTIONS);
+      return restored === true;
     } finally {
       await session.endSession();
     }

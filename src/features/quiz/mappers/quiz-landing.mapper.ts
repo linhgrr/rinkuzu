@@ -9,7 +9,7 @@ import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
 import { isQuickRoundEligible } from '@/shared/constants/quick-round';
 
 /** The landing previews this many leading questions (RIN-1241 C8). */
-export const QUIZ_LANDING_PREVIEW_SIZE = 5;
+const QUIZ_LANDING_PREVIEW_SIZE = 5;
 
 const OPTION_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 

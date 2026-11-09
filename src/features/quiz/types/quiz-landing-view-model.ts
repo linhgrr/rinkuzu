@@ -13,7 +13,7 @@ export interface QuizLandingPreviewQuestion {
   image?: string;
 }
 
-export interface QuizLandingRelatedQuiz {
+interface QuizLandingRelatedQuiz {
   slug: string;
   title: string;
   questionCount: number;

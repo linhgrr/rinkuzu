@@ -7,7 +7,9 @@ export type DisplayedPersonalDataKind = (typeof PERSONAL_DATA_KIND_DISPLAY_ORDER
  * The stored kinds the UI can name, in display order. Unknown kinds (a newer
  * detector than this client) are dropped rather than shown raw.
  */
-export function toDisplayedPersonalDataKinds(kinds: readonly string[]): DisplayedPersonalDataKind[] {
+export function toDisplayedPersonalDataKinds(
+  kinds: readonly string[],
+): DisplayedPersonalDataKind[] {
   const present = new Set(kinds);
   return PERSONAL_DATA_KIND_DISPLAY_ORDER.filter((kind) => present.has(kind));
 }

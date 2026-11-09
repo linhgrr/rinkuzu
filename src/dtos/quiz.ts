@@ -163,7 +163,7 @@ export interface QuizDetailDto extends QuizListItemDto {
   tags?: string[];
 }
 
-export interface QuizPlayDetailDto extends Omit<QuizDetailDto, 'questions'> {
+export interface QuizPlayDetailDto extends Omit<QuizDetailDto, 'questions' | 'pdfUrl'> {
   questions: PlayableQuizQuestionDto[];
   /** Present on a retry-missed session: `questions[i]` is quiz question `questionIndices[i]`. */
   retry?: { ofAttemptId: string; questionIndices: number[] };

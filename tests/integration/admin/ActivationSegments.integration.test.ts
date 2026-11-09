@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import mongoose, { Types } from 'mongoose';
 
+import { ActivationSegmentStatsRepository } from '@/repositories/ActivationSegmentStatsRepository';
 import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
 import { integrationDatabaseUri } from '../../setup/integration-db';
 
@@ -100,7 +101,7 @@ describe('activation segments integration', () => {
   }
 
   it('splits the cohort by signup locale, null for accounts without one', async () => {
-    const rows = await new AdminStatsRepository().getActivationSegments(
+    const rows = await new ActivationSegmentStatsRepository().getActivationSegments(
       W10,
       END,
       'locale',
@@ -115,10 +116,9 @@ describe('activation segments integration', () => {
   });
 
   it('splits the cohort by signup country and sums to the default cohort rows', async () => {
-    const repository = new AdminStatsRepository();
     const [rows, aggregates] = await Promise.all([
-      repository.getActivationSegments(W10, END, 'country', adaptive()),
-      repository.getActivationAggregates(W10, END, adaptive()),
+      new ActivationSegmentStatsRepository().getActivationSegments(W10, END, 'country', adaptive()),
+      new AdminStatsRepository().getActivationAggregates(W10, END, adaptive()),
     ]);
     expect(byWeek(rows)).toEqual([
       { weekStart: W10.toISOString(), segment: null, signups: 2, activated: 2 },

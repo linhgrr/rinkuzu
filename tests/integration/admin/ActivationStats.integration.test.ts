@@ -6,6 +6,7 @@ import type { AdminAdaptiveLearnerEvents } from '@/interfaces/repositories/IAdmi
 import { AdminAuditRepository } from '@/repositories/AdminAuditRepository';
 import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
 import { ActivationEmailStatsRepository } from '@/repositories/ActivationEmailStatsRepository';
+import { ActivationSegmentStatsRepository } from '@/repositories/ActivationSegmentStatsRepository';
 import { ActivationStatsService } from '@/services/admin/ActivationStatsService';
 import { integrationDatabaseUri } from '../../setup/integration-db';
 
@@ -389,7 +390,7 @@ describe('activation stats integration', () => {
     const adaptiveReader = vi.fn().mockResolvedValue(adaptiveEvents());
     const service = new ActivationStatsService({
       stats: new AdminStatsRepository(),
-      segments: new AdminStatsRepository(),
+      segments: new ActivationSegmentStatsRepository(),
       activationEmail: new ActivationEmailStatsRepository(),
       audit: new AdminAuditRepository(),
       adaptiveEvents: adaptiveReader,

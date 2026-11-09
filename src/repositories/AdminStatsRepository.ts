@@ -8,11 +8,6 @@ import type {
   AdminStatsScoreBucket,
   IAdminStatsRepository,
 } from '@/interfaces/repositories/IAdminStatsRepository';
-import type {
-  ActivationSegmentBy,
-  ActivationSegmentWeekRecord,
-  IActivationSegmentStatsRepository,
-} from '@/interfaces/repositories/IActivationSegmentStatsRepository';
 import { Types, type PipelineStage } from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import AttemptModel from '@/models/Attempt';
@@ -38,11 +33,8 @@ import {
   utcWeekStart,
 } from '@/repositories/pipelines/activation-stages';
 import {
-  SEGMENT_FIELDS,
   segmentStages,
-  toSegmentWeekRecord,
   type ActivationSegmentField,
-  type SegmentCohortAggregate,
 } from '@/repositories/pipelines/activation-segments';
 import {
   type ActivationEntryRef,
@@ -142,9 +134,7 @@ function toPathCounts(row: ActivationPathAggregate): AdminActivationPathCounts {
   return { quiz: row.byQuiz, adaptive: row.byAdaptive, both: row.byBoth };
 }
 
-export class AdminStatsRepository
-  implements IAdminStatsRepository, IActivationSegmentStatsRepository
-{
+export class AdminStatsRepository implements IAdminStatsRepository {
   async getDailyActivity(since: Date): Promise<AdminStatsDailyActivity> {
     await connectDB();
 
@@ -206,20 +196,6 @@ export class AdminStatsRepository
     }));
   }
 
-  async getActivationSegments(
-    from: Date,
-    to: Date,
-    by: ActivationSegmentBy,
-    adaptive: readonly AdminAdaptiveLearnerEvents[] = [],
-  ): Promise<ActivationSegmentWeekRecord[]> {
-    await connectDB();
-    const learners = await AdminStatsRepository.adaptiveLearnerRows(adaptive);
-    const rows = await UserModel.aggregate<SegmentCohortAggregate>(
-      AdminStatsRepository.cohortPipeline(from, to, learners, SEGMENT_FIELDS[by]),
-    ).allowDiskUse(true);
-    return rows.map(toSegmentWeekRecord);
-  }
-
   async getActivationAggregates(
     from: Date,
     to: Date,
@@ -263,7 +239,7 @@ export class AdminStatsRepository
    * existing, non-excluded user (the same `LEARNER_FILTER` as signups). Ids
    * with no web user, and excluded accounts, are dropped before any count.
    */
-  private static async adaptiveLearnerRows(
+  static async adaptiveLearnerRows(
     adaptive: readonly AdminAdaptiveLearnerEvents[],
   ): Promise<AdaptiveLearnerRow[]> {
     const candidates = adaptive.filter((events) => OBJECT_ID_HEX.test(events.userId));

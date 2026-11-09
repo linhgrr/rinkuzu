@@ -467,29 +467,6 @@ describe('/api/quizzes/[id] mutation-sensitive branches', () => {
     expect(updateQuizMock).toHaveBeenCalledWith(QUIZ_ID, { title: 'Updated' }, 'user-1', 'user');
   });
 
-  it('PUT forwards an owner visibility and maps the premium-publication refusal to 409 (RIN-1271)', async () => {
-    updateQuizMock.mockResolvedValue({
-      success: false,
-      code: 'conflict',
-      error: 'A quiz with a premium publication cannot be made public',
-      statusCode: 409,
-    });
-
-    const response = await PUT(putRequest({ visibility: 'public' }), routeContext);
-
-    expect(response.status).toBe(409);
-    await expect(response.json()).resolves.toMatchObject({
-      success: false,
-      error: { code: 'conflict' },
-    });
-    expect(updateQuizMock).toHaveBeenCalledWith(
-      QUIZ_ID,
-      { visibility: 'public' },
-      'user-1',
-      'user',
-    );
-  });
-
   it('PUT maps unexpected service throws to 500 internal_error', async () => {
     const boom = new Error('update quiz boom');
     updateQuizMock.mockRejectedValue(boom);

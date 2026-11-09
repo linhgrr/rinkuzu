@@ -42,7 +42,8 @@
     "correct": "Correct",
     "total": "Total",
     "concepts": "Concepts",
-    "correctTotal": "Correct/Total"
+    "correctTotal": "Correct/Total",
+    "afterFirstExercise": "After your first exercise"
   },
   "activeLearningPaths": "Active Learning Paths",
   "currentTopic": "Current Topic:",
@@ -340,7 +341,7 @@
       "rankingPrerequisites": "Ranking prerequisites...",
       "verifyingRelationsWithAI": "Verifying relations with AI...",
       "buildingKnowledgeGraph": "Building knowledge graph...",
-      "optimizingDAG": "Optimizing DAG structure...",
+      "optimizingDAG": "Organizing concepts into a learning path...",
       "completed": "Ready to learn!",
       "failed": "Processing failed",
       "processing": "Processing..."

@@ -143,6 +143,7 @@ type ConceptNodeProps = {
     label: string;
     status: string;
     mastery: number;
+    showMastery?: boolean;
     direction: 'TB' | 'LR';
     compact?: boolean;
     nodeWidth?: number;
@@ -193,6 +194,41 @@ describe('KnowledgeGraph readability (RIN-1010)', () => {
     const label = screen.getByTitle(longName);
     expect(label.textContent).not.toBe(longName);
     expect(label.textContent?.endsWith('…')).toBe(true);
+  });
+});
+
+describe('KnowledgeGraph before the first answer (RIN-1274)', () => {
+  function nodeData() {
+    const nodes = reactFlowProps.current?.['nodes'] as Array<{ data: { showMastery: boolean } }>;
+    return nodes.map((node) => node.data.showMastery);
+  }
+
+  it('hides predicted node mastery when nothing has been answered', () => {
+    render(<KnowledgeGraph sessionId="session-1" answeredCount={0} />);
+    expect(nodeData().every((show) => show === false)).toBe(true);
+
+    renderConceptNode({
+      label: 'Fresh concept',
+      status: 'available',
+      mastery: 0.84,
+      showMastery: false,
+      direction: 'TB',
+    });
+    expect(screen.queryByText('84%')).toBeNull();
+  });
+
+  it('shows node mastery once the learner has answered', () => {
+    render(<KnowledgeGraph sessionId="session-1" answeredCount={3} />);
+    expect(nodeData().every((show) => show === true)).toBe(true);
+
+    renderConceptNode({
+      label: 'Practised concept',
+      status: 'available',
+      mastery: 0.84,
+      showMastery: true,
+      direction: 'TB',
+    });
+    expect(screen.getByText('84%')).toBeInTheDocument();
   });
 });
 

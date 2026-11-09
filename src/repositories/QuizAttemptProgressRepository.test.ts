@@ -233,6 +233,22 @@ describe('QuizAttemptProgressRepository', () => {
     expect(modelMocks.attemptCreate).not.toHaveBeenCalled();
   });
 
+  it('stores entry and post outside the idempotency digest (RIN-1256)', async () => {
+    await new QuizAttemptProgressRepository().recordSubmittedAttempt({
+      ...submission,
+      entry: 'blog',
+      post: 'on-thi-toeic',
+    });
+    await new QuizAttemptProgressRepository().recordSubmittedAttempt(submission);
+
+    const [withEntry, without] = modelMocks.attemptCreate.mock.calls.map((call) => call[0]?.[0]);
+    expect(withEntry).toMatchObject({ entry: 'blog', post: 'on-thi-toeic' });
+    expect(without).not.toHaveProperty('entry');
+    expect(without).not.toHaveProperty('post');
+    // A resubmit of the same answers is the same submission, whatever its entry.
+    expect(withEntry?.submissionDigest).toBe(without?.submissionDigest);
+  });
+
   describe('claimGuestAttempts (RIN-1028)', () => {
     const userId = '507f191e810c19729de860ec';
     const now = new Date('2026-11-06T01:00:00.000Z');

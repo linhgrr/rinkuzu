@@ -30,7 +30,10 @@ export interface NudgeLearner {
   disable: number | null;
   isTestAccount: boolean | null;
   createdAt: Date;
-  /** `MarketingPreference.locale`, the only locale an account stores. */
+  /**
+   * `MarketingPreference.locale` (set on an opt-in), else `User.locale` (the
+   * signup or sign-in page, RIN-1263); null when neither is known.
+   */
   locale: string | null;
 }
 
@@ -61,9 +64,10 @@ interface UserRecord {
   disable?: number;
   isTestAccount?: boolean;
   createdAt: Date;
+  locale?: string | null;
 }
 
-const USER_FIELDS = '_id email name role disable isTestAccount createdAt';
+const USER_FIELDS = '_id email name role disable isTestAccount createdAt locale';
 /** Body stored at enqueue time; the real email is rendered at send time. */
 const DEFERRED_BODY = 'Rendered at send time (activation_nudge).';
 
@@ -86,7 +90,7 @@ export class ActivationNudgeRepository {
       disable: user.disable ?? null,
       isTestAccount: user.isTestAccount ?? null,
       createdAt: user.createdAt,
-      locale: locales.get(user._id.toString()) ?? null,
+      locale: locales.get(user._id.toString()) ?? user.locale ?? null,
     }));
   }
 

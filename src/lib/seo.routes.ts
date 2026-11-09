@@ -13,9 +13,7 @@ export const INDEXABLE_STATIC_PUBLIC_ROUTES = [
   '/contact',
   '/blog',
   '/blog/authors',
-  '/blog/authors/rinkuzu-team',
-  '/blog/ai-powered-quiz-generation-guide',
-  '/blog/knowledge-graphs-adaptive-learning-pdfs',
+  // Blog post and author routes come from content/blog (getBlogSitemapRoutes, RIN-406).
 ] as const;
 
 export const PRIVATE_ROUTE_PREFIXES = [

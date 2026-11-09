@@ -19,6 +19,7 @@ import type {
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { Session } from 'next-auth';
+import type { QuizEntryAttribution } from '@/shared/constants/starter-quiz';
 
 export interface IQuizService {
   getQuizzes(options: QuizListOptionsDto): Promise<QuizListDto>;
@@ -100,6 +101,8 @@ export interface IQuizService {
     guestClaimToken?: string,
     /** Quick round (RIN-936): the quiz question index of each answer, in play order. */
     quickQuestionIndices?: number[],
+    /** RIN-1256: the already-resolved entry point, stored on the attempt. */
+    attribution?: QuizEntryAttribution,
   ): Promise<ServiceResult<QuizAttemptResultDto>>;
 
   getQuizDiscussions(

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { serializeDate, serializeOptionalDate, toUtcDateKey } from '@/lib/date-serialization';
+import {
+  assumeUtcWhenNoOffset,
+  serializeDate,
+  serializeOptionalDate,
+  toUtcDateKey,
+} from '@/lib/date-serialization';
 
 describe('date serialization', () => {
   it('serializes valid dates as ISO 8601', () => {
@@ -24,5 +29,29 @@ describe('date serialization', () => {
     expect(() => toUtcDateKey(new Date('invalid'), 'updatedAt')).toThrow(
       'updatedAt must be a valid Date',
     );
+  });
+});
+
+// RIN-1272: the adaptive API sends UTC date-times without an offset, which Date reads as local.
+describe('assumeUtcWhenNoOffset', () => {
+  it.each([
+    ['2026-11-08T20:06:00', '2026-11-08T20:06:00Z'],
+    ['2026-11-08T20:06', '2026-11-08T20:06Z'],
+    ['2026-11-08T20:06:00.123456', '2026-11-08T20:06:00.123456Z'],
+  ])('marks the naive date-time %s as UTC', (input, expected) => {
+    expect(assumeUtcWhenNoOffset(input)).toBe(expected);
+    expect(new Date(assumeUtcWhenNoOffset(input)).getUTCHours()).toBe(20);
+  });
+
+  it.each([
+    '2026-11-08T20:06:00Z',
+    '2026-11-08T20:06:00.000Z',
+    '2026-11-09T03:06:00+07:00',
+    '2026-11-08T15:06:00-0500',
+    '2026-11-08',
+    'not a date',
+    '',
+  ])('leaves %j unchanged', (input) => {
+    expect(assumeUtcWhenNoOffset(input)).toBe(input);
   });
 });

@@ -23,6 +23,7 @@ function toSubscriptionPlanViewModel(
 
 function toCurrentSubscriptionViewModel(
   status: SubscriptionStatusResponseDto,
+  locale: string,
 ): CurrentSubscriptionViewModel | null {
   if (!status.subscription) return null;
 
@@ -30,7 +31,7 @@ function toCurrentSubscriptionViewModel(
   return {
     plan: status.subscription.plan,
     ...(endDate !== undefined && { endDate }),
-    endDateLabel: endDate ? formatDate(endDate, { locale: 'vi-VN' }) : '-',
+    endDateLabel: endDate ? formatDate(endDate, { locale }) : '-',
     isActive: status.subscription.isActive,
     ...(status.subscription.status !== undefined && { status: status.subscription.status }),
   };
@@ -39,10 +40,12 @@ function toCurrentSubscriptionViewModel(
 export function toSubscriptionPageViewModel(
   plans: SubscriptionPlansResponseDto,
   status: SubscriptionStatusResponseDto,
+  /** Active app locale; the end date follows it (RIN-1265). */
+  locale: string,
 ): SubscriptionPageViewModel {
   return {
     plans: plans.plans.map(toSubscriptionPlanViewModel),
-    currentSubscription: toCurrentSubscriptionViewModel(status),
+    currentSubscription: toCurrentSubscriptionViewModel(status, locale),
     isPremium: status.isPremium,
   };
 }

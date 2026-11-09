@@ -928,6 +928,23 @@
             }
           },
           {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["en", "vi"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Locale"
+            }
+          },
+          {
             "name": "x-user-id",
             "in": "header",
             "required": true,

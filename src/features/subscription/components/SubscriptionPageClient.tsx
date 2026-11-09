@@ -1,7 +1,7 @@
 'use client';
 
 import { type Dispatch, useEffect, useReducer } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -19,11 +19,15 @@ import {
   PREMIUM_PRICING_FEATURE_KEYS,
 } from '@/features/subscription/constants/pricing-features';
 import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
+import { capturePaywallEvent, usePaywallEventOnMount } from '@/lib/analytics/paywall';
 
-async function loadSubscriptionPage(dispatch: Dispatch<SubscriptionPageAction>): Promise<void> {
+async function loadSubscriptionPage(
+  dispatch: Dispatch<SubscriptionPageAction>,
+  locale: string,
+): Promise<void> {
   dispatch({ type: 'loadStart' });
   try {
-    const viewModel = await fetchSubscriptionPageViewModel();
+    const viewModel = await fetchSubscriptionPageViewModel(locale);
     dispatch({ type: 'loadSuccess', value: viewModel });
   } catch (error) {
     console.error('Error loading subscription data:', error);
@@ -35,6 +39,7 @@ export function SubscriptionPageClient() {
   const t = useTranslations('subscription');
   const tPricing = useTranslations('pricing');
   const router = useRouter();
+  const locale = useLocale();
   const [state, dispatch] = useReducer(subscriptionPageReducer, initialSubscriptionPageState);
   const freeFeatures = FREE_PRICING_FEATURE_KEYS.map((key) => tPricing(`free.features.${key}`));
   const premiumFeatures = PREMIUM_PRICING_FEATURE_KEYS.map((key) =>
@@ -42,10 +47,12 @@ export function SubscriptionPageClient() {
   );
 
   useEffect(() => {
-    void loadSubscriptionPage(dispatch);
-  }, []);
+    void loadSubscriptionPage(dispatch, locale);
+  }, [locale]);
+  usePaywallEventOnMount('pricing_viewed', { locale, plan: null, source: 'subscription_page' });
 
   const handlePurchase = (plan: SubscriptionPlanViewModel): void => {
+    capturePaywallEvent('upgrade_clicked', { locale, plan: plan.id, source: 'subscription_page' });
     router.push(`/checkout?plan=${encodeURIComponent(plan.id)}`);
   };
 
@@ -64,7 +71,9 @@ export function SubscriptionPageClient() {
             <Card className="p-4 md:p-6">
               <h2 className="text-lg md:text-xl font-semibold text-ink mb-2">{t('errorTitle')}</h2>
               <p className="text-sm md:text-base text-ink-muted mb-4 md:mb-6">{t('loadError')}</p>
-              <Button onClick={() => void loadSubscriptionPage(dispatch)}>{t('retry')}</Button>
+              <Button onClick={() => void loadSubscriptionPage(dispatch, locale)}>
+                {t('retry')}
+              </Button>
             </Card>
           </div>
         </div>

@@ -9,18 +9,32 @@
  * (`applySessionUser` / `clearSessionUser`) are intentionally real modules
  * imported transitively by production `src/auth.ts`.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authenticateCredentialsMock, authenticateGoogleMock, findSessionUserMock, nextAuthConfig } =
-  vi.hoisted(() => {
-    const nextAuthConfig: { current: Record<string, unknown> | null } = { current: null };
-    return {
-      authenticateCredentialsMock: vi.fn(),
-      authenticateGoogleMock: vi.fn(),
-      findSessionUserMock: vi.fn(),
-      nextAuthConfig,
-    };
-  });
+const {
+  authenticateCredentialsMock,
+  authenticateGoogleMock,
+  findSessionUserMock,
+  rememberSignInLocaleMock,
+  signInRepository,
+  nextAuthConfig,
+  mockEnv,
+} = vi.hoisted(() => {
+  const nextAuthConfig: { current: Record<string, unknown> | null } = { current: null };
+  const findSessionUserMock = vi.fn();
+  return {
+    authenticateCredentialsMock: vi.fn(),
+    authenticateGoogleMock: vi.fn(),
+    findSessionUserMock,
+    rememberSignInLocaleMock: vi.fn(),
+    signInRepository: { findSessionUser: findSessionUserMock },
+    nextAuthConfig,
+    mockEnv: {
+      AUTH_GOOGLE_ID: 'google-client-id' as string | undefined,
+      AUTH_GOOGLE_SECRET: 'google-client-secret' as string | undefined,
+    },
+  };
+});
 
 vi.mock('next-auth', () => ({
   default: (config: Record<string, unknown>) => {
@@ -54,12 +68,7 @@ vi.mock('@/auth.config', () => ({
   },
 }));
 
-vi.mock('@/lib/env', () => ({
-  env: {
-    AUTH_GOOGLE_ID: 'google-client-id',
-    AUTH_GOOGLE_SECRET: 'google-client-secret',
-  },
-}));
+vi.mock('@/lib/env', () => ({ env: mockEnv }));
 
 vi.mock('@/lib/audit', () => ({
   extractRequestContext: () => ({ ip: null, userAgent: null }),
@@ -70,9 +79,11 @@ vi.mock('@/lib/auth-sign-in-factory', () => ({
     authenticateCredentials: authenticateCredentialsMock,
     authenticateGoogle: authenticateGoogleMock,
   }),
-  getAuthSignInRepository: () => ({
-    findSessionUser: findSessionUserMock,
-  }),
+  getAuthSignInRepository: () => signInRepository,
+}));
+
+vi.mock('@/lib/auth/remember-sign-in-locale', () => ({
+  rememberSignInLocale: rememberSignInLocaleMock,
 }));
 
 vi.mock('@/lib/integrations/auth-audit', () => ({
@@ -168,6 +179,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
     authenticateCredentialsMock.mockReset();
     authenticateGoogleMock.mockReset();
     findSessionUserMock.mockReset();
+    rememberSignInLocaleMock.mockReset();
   });
 
   it('rejects Google profiles without a nonempty sub', async () => {
@@ -225,6 +237,11 @@ describe('production Auth.js config (src/auth.ts)', () => {
     });
     // Must not prefer Auth core UUID shape as the Mongo subject.
     expect(profile['id']).not.toBe(profile['dbUserId']);
+    // RIN-1263: the Mongo account gets the request locale (callback cookie) if it has none.
+    expect(rememberSignInLocaleMock).toHaveBeenCalledWith(
+      signInRepository,
+      '507f191e810c19729de860ea',
+    );
   });
 
   it('signIn requires dbUserId + authVersion for Google and accepts credentials', async () => {
@@ -464,6 +481,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
       {
         email: 'cred@example.com',
         password: 'Password1!',
+        locale: 'en',
       },
       new Request('https://www.rinkuzu.app/api/auth/callback/credentials', {
         method: 'POST',
@@ -476,6 +494,8 @@ describe('production Auth.js config (src/auth.ts)', () => {
       authVersion: 7,
       passwordChangedAt: 50,
     });
+    // RIN-1263: the login form's locale is stored on an account with none yet.
+    expect(rememberSignInLocaleMock).toHaveBeenCalledWith(signInRepository, 'mongo-cred-9', 'en');
   });
 
   it('credentials authorize rejects missing credentials before calling the service', async () => {
@@ -508,5 +528,24 @@ describe('production Auth.js config (src/auth.ts)', () => {
         }),
       ),
     ).rejects.toMatchObject({ code: 'invalid_credentials' });
+    expect(rememberSignInLocaleMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('production Auth.js config without Google credentials', () => {
+  afterEach(async () => {
+    mockEnv.AUTH_GOOGLE_ID = 'google-client-id';
+    mockEnv.AUTH_GOOGLE_SECRET = 'google-client-secret';
+    vi.resetModules();
+    await import('@/auth');
+  });
+
+  it('installs only the credentials provider when Google is not configured', async () => {
+    mockEnv.AUTH_GOOGLE_ID = undefined;
+    mockEnv.AUTH_GOOGLE_SECRET = undefined;
+    vi.resetModules();
+    await import('@/auth');
+
+    expect(capturedConfig().providers.map((provider) => provider.id)).toEqual(['credentials']);
   });
 });

@@ -229,6 +229,28 @@ describe('POST /api/adaptive/pipeline/process', () => {
     });
   });
 
+  it('forwards a valid UI locale and omits it when absent', async () => {
+    await POST(request({ s3Key: OWNED_KEY, filename: 'source.pdf', locale: 'en' }), routeContext);
+    await POST(request({ s3Key: OWNED_KEY, filename: 'source.pdf' }), routeContext);
+
+    const bodies = proxyAdaptiveRequestMock.mock.calls.map(
+      (call) => JSON.parse((call[3] as { body: string }).body) as Record<string, unknown>,
+    );
+    expect(bodies[0]).toMatchObject({ locale: 'en' });
+    expect(bodies[1]).not.toHaveProperty('locale');
+  });
+
+  it('rejects an unsupported locale without signing or proxying', async () => {
+    const response = await POST(
+      request({ s3Key: OWNED_KEY, filename: 'source.pdf', locale: 'fr' }),
+      routeContext,
+    );
+
+    expect(response.status).toBe(400);
+    expect(getSignedUrlMock).not.toHaveBeenCalled();
+    expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
+  });
+
   it('maps unexpected failures to a safe 500 without leaving the proxy path half-open', async () => {
     getSignedUrlMock.mockRejectedValue(new Error('sign failed'));
 

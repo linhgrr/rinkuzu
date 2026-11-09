@@ -32,6 +32,8 @@ export async function submitQuizAttemptViewModel({
   retryOfAttemptId,
   guestClaimToken,
   questionIndices,
+  entry,
+  post,
 }: SubmitQuizAttemptInput): Promise<QuizAttemptResultViewModel> {
   const encodedSlug = routePathSegment(slug);
   const dto = await fetchApiData<QuizAttemptResultDto>(`/api/quiz/${encodedSlug}/attempt`, {
@@ -43,6 +45,8 @@ export async function submitQuizAttemptViewModel({
       ...(retryOfAttemptId ? { retryOfAttemptId } : {}),
       ...(guestClaimToken ? { guestClaimToken } : {}),
       ...(questionIndices ? { mode: 'quick', questionIndices } : {}),
+      ...(entry ? { entry } : {}),
+      ...(post ? { post } : {}),
     }),
   });
   return toQuizAttemptResultViewModel(dto);

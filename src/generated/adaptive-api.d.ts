@@ -5746,6 +5746,7 @@ export interface operations {
     parameters: {
       query?: {
         max_steps?: number;
+        locale?: ('en' | 'vi') | null;
       };
       header: {
         'x-user-id': string;

@@ -11,12 +11,46 @@ export const ACTIVATION_EMAIL_ENTRY = 'activation_email';
 /** The homepage play-first button opens a guest starter quiz via `/try` with this entry (RIN-1178). */
 export const LANDING_ENTRY = 'landing';
 
-/** `?entry=` values the quiz player forwards on `quiz_started`/`quiz_completed`; anything else is dropped. */
+/** A blog post's quiz CTA opens the quiz with this entry and `?post=<slug>` (RIN-1242). */
+export const BLOG_ENTRY = 'blog';
+
+/**
+ * `?entry=` values the quiz player forwards on `quiz_started`/`quiz_completed`
+ * and the attempt API stores on the attempt (RIN-1256); anything else is dropped.
+ */
 export const TRACKED_QUIZ_ENTRIES: readonly string[] = [
   POST_SIGNIN_STARTER_ENTRY,
   ACTIVATION_EMAIL_ENTRY,
   LANDING_ENTRY,
+  BLOG_ENTRY,
 ];
+
+/** A public blog post slug as `?post=` carries it; anything else is dropped (RIN-1242). */
+export const BLOG_POST_SLUG_PATTERN = /^[a-z0-9-]{1,80}$/;
+
+/**
+ * The one post-slug check, shared with the blog CTA (RIN-1242 B2) and `/try`.
+ * @public
+ */
+export function isBlogPostSlug(value: unknown): value is string {
+  return typeof value === 'string' && BLOG_POST_SLUG_PATTERN.test(value);
+}
+
+/** Where a quiz attempt started; both fields are absent for an untracked entry. */
+export interface QuizEntryAttribution {
+  entry?: string;
+  /** Only with `entry: 'blog'`. */
+  post?: string;
+}
+
+/**
+ * Keeps a tracked `entry`, and a well-formed `post` only next to `entry=blog`.
+ * Untrusted input is dropped field by field, never rejected.
+ */
+export function resolveQuizEntryAttribution(entry: unknown, post: unknown): QuizEntryAttribution {
+  if (typeof entry !== 'string' || !TRACKED_QUIZ_ENTRIES.includes(entry)) return {};
+  return entry === BLOG_ENTRY && isBlogPostSlug(post) ? { entry, post } : { entry };
+}
 
 export const STARTER_SKIPPED_COOKIE = 'rk_starter_skipped';
 

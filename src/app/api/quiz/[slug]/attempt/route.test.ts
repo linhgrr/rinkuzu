@@ -114,6 +114,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
     );
   });
 
@@ -129,6 +130,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [1],
       idempotencyKey,
       { user: { email: 'session-only@example.com', role: 'user' } },
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -150,10 +152,43 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       undefined,
       TOKEN,
       undefined,
+      undefined,
     );
     await expect(response.json()).resolves.toMatchObject({
       success: true,
       data: { attemptId: 'attempt-1', score: 100 },
+    });
+  });
+
+  describe('entry attribution (RIN-1256)', () => {
+    const guest = { answers: [0], idempotencyKey, guestClaimToken: TOKEN };
+    const attributionOf = async (body: Record<string, unknown>) => {
+      submitQuizAttemptMock.mockClear();
+      const response = await POST(request({ ...guest, ...body }), routeContext);
+      expect(response.status).toBe(200);
+      return submitQuizAttemptMock.mock.calls[0]?.[7];
+    };
+
+    it('passes a tracked entry and a blog post to the service, guest attempts included', async () => {
+      await expect(attributionOf({ entry: 'blog', post: 'on-thi-toeic' })).resolves.toEqual({
+        entry: 'blog',
+        post: 'on-thi-toeic',
+      });
+      await expect(attributionOf({ entry: 'landing' })).resolves.toEqual({ entry: 'landing' });
+    });
+
+    it('drops an unknown entry without failing the submit', async () => {
+      await expect(attributionOf({ entry: 'newsletter', post: 'x' })).resolves.toBeUndefined();
+    });
+
+    it('drops a malformed post, or a post without entry=blog', async () => {
+      for (const post of ['Uppercase', '../x', 'a'.repeat(81)]) {
+        await expect(attributionOf({ entry: 'blog', post })).resolves.toEqual({ entry: 'blog' });
+      }
+      await expect(attributionOf({ entry: 'landing', post: 'ok-post' })).resolves.toEqual({
+        entry: 'landing',
+      });
+      await expect(attributionOf({ post: 'ok-post' })).resolves.toBeUndefined();
     });
   });
 
@@ -171,6 +206,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       [1],
       idempotencyKey,
       session,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -202,6 +238,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       undefined,
       undefined,
       questionIndices,
+      undefined,
     );
     expect(unpaired.status).toBe(400);
     await expect(unpaired.json()).resolves.toMatchObject({
@@ -264,6 +301,7 @@ describe('POST /api/quiz/[slug]/attempt', () => {
         null,
         undefined,
         guestClaimToken,
+        undefined,
         undefined,
       );
     });

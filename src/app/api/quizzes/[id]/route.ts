@@ -53,6 +53,11 @@ export const PUT = createQuizIdRoute({
       const input = await parseJsonBody(request, updateQuizRequestSchema);
       if (!input.ok) return input.response;
       const quizService = getQuizService();
+      const premiumService = getPremiumQuizService();
+      // Refuse before the save sets the quiz private (RIN-1347).
+      if (input.data.submitToPremium === true) {
+        await premiumService.assertCanContribute(userId);
+      }
 
       const result = await quizService.updateQuiz(quizId, input.data, userId, session.user.role);
 
@@ -61,7 +66,7 @@ export const PUT = createQuizIdRoute({
       }
 
       if (input.data.submitToPremium === true) {
-        await getPremiumQuizService().createSubmission(userId, {
+        await premiumService.submitSavedQuiz(userId, {
           quizId,
           rightsAttested: true,
         });

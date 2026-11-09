@@ -99,7 +99,7 @@ const quiz = {
   ],
 };
 
-function renderPlayer(entry?: string | null, post?: string) {
+function renderPlayer(entry?: string | null, post?: string, topic?: string) {
   return render(
     <QuizPlayerClient
       initialErrorCode={null}
@@ -108,6 +108,7 @@ function renderPlayer(entry?: string | null, post?: string) {
       slug="fake-starter"
       {...(entry === undefined ? {} : { entry })}
       {...(post === undefined ? {} : { post })}
+      {...(topic === undefined ? {} : { topic })}
     />,
   );
 }
@@ -220,6 +221,34 @@ describe('QuizPlayerClient post-sign-in starter entry (RIN-913)', () => {
     expect(
       JSON.parse(window.sessionStorage.getItem('rinkuzu_quiz_first_touch_v1') ?? '{}'),
     ).toEqual({ entry: 'blog', post: 'on-thi-jlpt' });
+  });
+
+  it('forwards entry=hub and its topic on both events, the submit and the result URL (RIN-1417)', async () => {
+    renderPlayer('hub', undefined, 'tieng-anh-lop-10');
+
+    await waitFor(() =>
+      expect(captureAnalyticsEvent).toHaveBeenCalledWith(
+        'quiz_started',
+        expect.objectContaining({ entry: 'hub', topic: 'tieng-anh-lop-10' }),
+      ),
+    );
+    expect(await completeQuiz()).toMatchObject({ entry: 'hub', topic: 'tieng-anh-lop-10' });
+    expect(submission.attribution).toEqual({ entry: 'hub', topic: 'tieng-anh-lop-10' });
+    expect(router.push).toHaveBeenCalledWith(
+      '/quiz/fake-starter/result?attemptId=attempt-1&score=80&entry=hub&topic=tieng-anh-lop-10',
+    );
+    expect(
+      JSON.parse(window.sessionStorage.getItem('rinkuzu_quiz_first_touch_v1') ?? '{}'),
+    ).toEqual({ entry: 'hub', topic: 'tieng-anh-lop-10' });
+  });
+
+  it('drops a malformed hub topic but keeps entry=hub (RIN-1417)', async () => {
+    renderPlayer('hub', undefined, 'Not A Slug!');
+
+    const completed = await completeQuiz();
+    expect(completed).toMatchObject({ entry: 'hub' });
+    expect(completed).not.toHaveProperty('topic');
+    expect(submission.attribution).toEqual({ entry: 'hub' });
   });
 
   it.each([

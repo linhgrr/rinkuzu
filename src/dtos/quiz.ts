@@ -275,11 +275,13 @@ export const submitQuizAttemptRequestSchema = z
     /** Quick round only: `answers[i]` answers quiz question `questionIndices[i]` (play order). */
     questionIndices: z.array(z.number().int().min(0)).optional(),
     /**
-     * RIN-1256: where the attempt started (`?entry=`, and `?post=` with `entry=blog`).
+     * RIN-1256: where the attempt started (`?entry=`, `?post=` with `entry=blog`,
+     * `?topic=` with `entry=hub` since RIN-1417).
      * Any string is accepted; the route keeps only tracked values and drops the rest.
      */
     entry: z.string().optional(),
     post: z.string().optional(),
+    topic: z.string().optional(),
   })
   .superRefine((body, ctx) => {
     // The quiz-dependent checks (size threshold, index range) run in the service.

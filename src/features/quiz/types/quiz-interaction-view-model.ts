@@ -49,6 +49,8 @@ export interface SubmitQuizAttemptInput {
   entry?: string;
   /** Blog post slug, only with `entry: 'blog'`. */
   post?: string;
+  /** Hub topic slug, only with `entry: 'hub'` (RIN-1417). */
+  topic?: string;
 }
 
 export interface AddQuizDiscussionCommentInput {

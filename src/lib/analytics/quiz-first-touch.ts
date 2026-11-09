@@ -23,8 +23,8 @@ export function readQuizFirstTouch(): QuizEntryAttribution {
   try {
     const raw = sessionStore()?.getItem(QUIZ_FIRST_TOUCH_STORAGE_KEY);
     if (!raw) return {};
-    const parsed = JSON.parse(raw) as { entry?: unknown; post?: unknown } | null;
-    return resolveQuizEntryAttribution(parsed?.entry, parsed?.post);
+    const parsed = JSON.parse(raw) as { entry?: unknown; post?: unknown; topic?: unknown } | null;
+    return resolveQuizEntryAttribution(parsed?.entry, parsed?.post, parsed?.topic);
   } catch {
     return {};
   }
@@ -32,7 +32,11 @@ export function readQuizFirstTouch(): QuizEntryAttribution {
 
 /** Keeps a tracked entry as the session's first touch unless one is already stored. */
 export function rememberQuizFirstTouch(attribution: QuizEntryAttribution): void {
-  const resolved = resolveQuizEntryAttribution(attribution.entry, attribution.post);
+  const resolved = resolveQuizEntryAttribution(
+    attribution.entry,
+    attribution.post,
+    attribution.topic,
+  );
   if (resolved.entry === undefined || readQuizFirstTouch().entry !== undefined) return;
   try {
     sessionStore()?.setItem(QUIZ_FIRST_TOUCH_STORAGE_KEY, JSON.stringify(resolved));

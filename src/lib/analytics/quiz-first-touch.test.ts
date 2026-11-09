@@ -45,6 +45,14 @@ describe('quiz first touch (RIN-1242)', () => {
     expect(readQuizFirstTouch()).toEqual({ entry: 'landing' });
   });
 
+  it('keeps a hub topic next to entry=hub, so signup_completed carries it (RIN-1417)', async () => {
+    const { rememberQuizFirstTouch, readQuizFirstTouch } = await loadModules();
+
+    rememberQuizFirstTouch({ entry: 'hub', topic: 'tieng-anh-lop-10' });
+
+    expect(readQuizFirstTouch()).toEqual({ entry: 'hub', topic: 'tieng-anh-lop-10' });
+  });
+
   it('drops an invalid post but keeps the blog entry', async () => {
     const { rememberQuizFirstTouch, readQuizFirstTouch } = await loadModules();
 

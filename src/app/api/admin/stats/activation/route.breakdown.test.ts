@@ -86,6 +86,7 @@ function makeService() {
               landing: 1,
               post_signin_starter: 1,
               activation_email: 0,
+              hub: 0,
               none: 1,
             },
             blogPosts: [{ post: 'fake-post', activated: 1 }],

@@ -1,3 +1,5 @@
+import { QUIZ_TOPIC_SLUG_PATTERN } from '@/shared/constants/quiz-topic';
+
 /**
  * Post-sign-in starter quiz (RIN-913). `/start` sends a new learner to
  * `/quiz/<starter>?entry=post_signin_starter`; the player shows an intro with
@@ -14,7 +16,7 @@ export const LANDING_ENTRY = 'landing';
 /** CTAs on a public quiz's landing view start the player with this entry (RIN-1241 E17). */
 export const QUIZ_LANDING_ENTRY = 'quiz_landing';
 
-/** Links from a subject hub page to a quiz carry this entry (RIN-1241 E17, hub in part 4). */
+/** Links from a topic hub page to a quiz carry this entry and `?topic=<hub slug>` (RIN-1241 E17). */
 export const HUB_ENTRY = 'hub';
 
 /** A blog post's quiz CTA opens the quiz with this entry and `?post=<slug>` (RIN-1242). */
@@ -44,20 +46,34 @@ export function isBlogPostSlug(value: unknown): value is string {
   return typeof value === 'string' && BLOG_POST_SLUG_PATTERN.test(value);
 }
 
-/** Where a quiz attempt started; both fields are absent for an untracked entry. */
+/** A topic hub slug as `?topic=` carries it; anything else is dropped (RIN-1417). */
+function isHubTopicSlug(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= 80 && QUIZ_TOPIC_SLUG_PATTERN.test(value);
+}
+
+/** Where a quiz attempt started; every field is absent for an untracked entry. */
 export interface QuizEntryAttribution {
   entry?: string;
   /** Only with `entry: 'blog'`. */
   post?: string;
+  /** Only with `entry: 'hub'`: the hub's topic slug (RIN-1417). */
+  topic?: string;
 }
 
 /**
- * Keeps a tracked `entry`, and a well-formed `post` only next to `entry=blog`.
- * Untrusted input is dropped field by field, never rejected.
+ * Keeps a tracked `entry`, a well-formed `post` only next to `entry=blog` and a
+ * well-formed `topic` only next to `entry=hub`. Untrusted input is dropped field by
+ * field, never rejected.
  */
-export function resolveQuizEntryAttribution(entry: unknown, post: unknown): QuizEntryAttribution {
+export function resolveQuizEntryAttribution(
+  entry: unknown,
+  post: unknown,
+  topic?: unknown,
+): QuizEntryAttribution {
   if (typeof entry !== 'string' || !TRACKED_QUIZ_ENTRIES.includes(entry)) return {};
-  return entry === BLOG_ENTRY && isBlogPostSlug(post) ? { entry, post } : { entry };
+  if (entry === BLOG_ENTRY && isBlogPostSlug(post)) return { entry, post };
+  if (entry === HUB_ENTRY && isHubTopicSlug(topic)) return { entry, topic };
+  return { entry };
 }
 
 export const STARTER_SKIPPED_COOKIE = 'rk_starter_skipped';

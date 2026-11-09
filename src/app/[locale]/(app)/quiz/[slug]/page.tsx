@@ -250,6 +250,7 @@ export default async function QuizPlayerPage({ params, searchParams }: QuizPageP
         slug={slug}
         entry={firstValue(query['entry'])}
         post={firstValue(query['post'])}
+        topic={firstValue(query['topic'])}
         mode={firstValue(query['mode'])}
         // The first question is server-rendered from this seed and layout guess (RIN-1032).
         shuffleSeed={randomInt(2 ** 31)}

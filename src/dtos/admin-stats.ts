@@ -199,6 +199,7 @@ const activationEntryCountsSchema = z
     landing: countSchema,
     post_signin_starter: countSchema,
     activation_email: countSchema,
+    hub: countSchema,
     none: countSchema,
   })
   .strict();

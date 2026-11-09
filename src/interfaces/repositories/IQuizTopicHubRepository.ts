@@ -23,6 +23,8 @@ export interface QuizTopicHubQuizRecord {
 export interface IQuizTopicHubRepository {
   /** The published topic with this slug, or null. */
   findPublishedTopicBySlug(slug: string): Promise<QuizTopicRecord | null>;
+  /** The published topic this quiz is assigned to, or null (a quiz has at most one). */
+  findPublishedTopicByQuizId(quizId: string): Promise<QuizTopicRecord | null>;
   /** Published topics, sorted by `order`. */
   listPublishedTopics(): Promise<QuizTopicRecord[]>;
   /** Assignments of these topics, sorted by topic, then `order`. */

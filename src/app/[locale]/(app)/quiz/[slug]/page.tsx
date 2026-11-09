@@ -20,6 +20,12 @@ import { toQuizLandingViewModel } from '@/features/quiz/mappers/quiz-landing.map
 import type { QuizLandingViewModel } from '@/features/quiz/types/quiz-landing-view-model';
 import { buildQuizSeoDescription, isQuizIndexable } from '@/lib/seo/quiz-indexability';
 import { logger } from '@/lib/logger';
+import { getQuizTopicHubService } from '@/lib/quiz-topic-hub-factory';
+import { TOPIC_HUB_LOCALE, topicHubPath } from '@/lib/seo/topic-hub';
+
+type QuizTopic = Awaited<
+  ReturnType<ReturnType<typeof getQuizTopicHubService>['getQuizTopicContext']>
+>;
 
 export const dynamic = 'force-dynamic';
 
@@ -70,9 +76,25 @@ async function loadQuizForPlay(
 /** Related quiz links on the landing (RIN-1241 C12). */
 const RELATED_QUIZ_LIMIT = 6;
 
+/**
+ * The quiz's published topic and its other indexable quizzes (RIN-1241 C11/C12).
+ * Hubs exist in Vietnamese only. A failed read drops the topic, never the page.
+ */
+async function loadQuizTopic(quizId: string, locale: string): Promise<QuizTopic> {
+  if (locale !== TOPIC_HUB_LOCALE) return null;
+  return getQuizTopicHubService()
+    .getQuizTopicContext(quizId, RELATED_QUIZ_LIMIT)
+    .catch((error: unknown) => {
+      logger.error({ error, quizId }, 'topic of the quiz page failed');
+      return null;
+    });
+}
+
 interface LandingRequest {
   slug: string;
+  locale: string;
   quiz: QuizPlayViewModel;
+  topic: QuizTopic;
   query: QuizPageSearchParams;
   viewerId: string | undefined;
   authorName: string | undefined;
@@ -85,7 +107,9 @@ interface LandingRequest {
  */
 async function loadQuizLanding({
   slug,
+  locale,
   quiz,
+  topic,
   query,
   viewerId,
   authorName,
@@ -97,17 +121,21 @@ async function loadQuizLanding({
   const metadata = await loadQuizMetadata(slug);
   if (!metadata || !isQuizIndexable(metadata)) return null;
 
-  const related = await getQuizService()
-    .getRelatedPublicQuizzes({
-      excludeSlug: slug,
-      contentLocale: metadata.contentLocale,
-      limit: RELATED_QUIZ_LIMIT,
-    })
-    .catch((error: unknown) => {
-      // The links are extra; the landing still renders without them.
-      logger.error({ error, slug }, 'related quizzes for the quiz landing failed');
-      return [];
-    });
+  // C12: same-topic quizzes first; a quiz without other topic quizzes gets recent ones.
+  const sameTopic = topic && topic.quizzes.length > 0 ? topic.quizzes : null;
+  const related =
+    sameTopic ??
+    (await getQuizService()
+      .getRelatedPublicQuizzes({
+        excludeSlug: slug,
+        contentLocale: metadata.contentLocale,
+        limit: RELATED_QUIZ_LIMIT,
+      })
+      .catch((error: unknown) => {
+        // The links are extra; the landing still renders without them.
+        logger.error({ error, slug }, 'related quizzes for the quiz landing failed');
+        return [];
+      }));
   return toQuizLandingViewModel({
     slug,
     quiz,
@@ -120,6 +148,8 @@ async function loadQuizLanding({
     }),
     authorName: authorName ?? null,
     related,
+    relatedSameTopic: sameTopic !== null,
+    topic: topic ? { name: topic.name, href: `/${locale}${topicHubPath(topic.slug)}` } : null,
   });
 }
 
@@ -200,9 +230,12 @@ export default async function QuizPlayerPage({ params, searchParams }: QuizPageP
       ? `Luyện tập ${quiz.questionCount} câu hỏi trong quiz ${quiz.title} trên RinKuzu.`
       : `Practice ${quiz.questionCount} questions in ${quiz.title} on RinKuzu.`;
 
+  const topic = quiz.visibility === 'public' ? await loadQuizTopic(quiz.id, locale) : null;
   const landing = await loadQuizLanding({
     slug,
+    locale,
     quiz,
+    topic,
     query,
     viewerId: session?.user?.id,
     authorName: schemaAuthorName,
@@ -216,10 +249,16 @@ export default async function QuizPlayerPage({ params, searchParams }: QuizPageP
           quizTitle={quiz.title}
           {...(quiz.description ? { quizDescription: quiz.description } : {})}
           {...(schemaAuthorName ? { authorName: schemaAuthorName } : {})}
+          {...(topic ? { topicName: topic.name } : {})}
           createdAt={quiz.createdAt}
           updatedAt={quiz.updatedAt}
         />
-        <QuizBreadcrumbSchema locale={locale} quizSlug={slug} quizTitle={quiz.title} />
+        <QuizBreadcrumbSchema
+          locale={locale}
+          quizSlug={slug}
+          quizTitle={quiz.title}
+          {...(topic ? { topic: { name: topic.name, path: topicHubPath(topic.slug) } } : {})}
+        />
       </>
     ) : null;
 

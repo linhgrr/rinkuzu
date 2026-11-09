@@ -20,6 +20,8 @@ interface QuizLandingInput {
   description: string;
   authorName: string | null;
   related: readonly RelatedQuizDto[];
+  relatedSameTopic?: boolean;
+  topic?: QuizLandingViewModel['topic'];
 }
 
 /**
@@ -54,6 +56,8 @@ export function toQuizLandingViewModel({
   description,
   authorName,
   related,
+  relatedSameTopic = false,
+  topic = null,
 }: QuizLandingInput): QuizLandingViewModel {
   return {
     slug,
@@ -68,5 +72,7 @@ export function toQuizLandingViewModel({
       title,
       questionCount,
     })),
+    relatedSameTopic,
+    topic,
   };
 }

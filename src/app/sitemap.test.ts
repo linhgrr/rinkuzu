@@ -224,6 +224,8 @@ describe('sitemap', () => {
         visibility: 'public',
         authorId: 'learner-1',
         questionCount: 10,
+        personalDataFlagged: false,
+        indexHold: false,
         createdAt: new Date('2026-11-01T00:00:00.000Z'),
       }));
 

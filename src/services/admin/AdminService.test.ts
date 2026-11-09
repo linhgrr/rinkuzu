@@ -332,6 +332,69 @@ describe('AdminService report and stats contracts', () => {
     });
   });
 
+  // RIN-1341: a quiz deleted between the question edit and the re-check has nothing to flag.
+  it('skips the personal-data re-check when the quiz is gone after the edit', async () => {
+    const quizId = '507f191e810c19729de860fb';
+    const questionId = '507f191e810c19729de860fc';
+    const reportRepository = createReportRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: 'report-gone',
+        quizId,
+        questionId,
+        quizTitle: 'Algebra',
+        quizSlug: 'algebra',
+        reporterEmail: 'learner@example.com',
+        reporterName: 'Learner',
+        content: 'Typo',
+        status: 'pending',
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+    });
+    const update = vi.fn().mockResolvedValue(null);
+    const quizRepository = createQuizRepository({
+      findById: vi
+        .fn()
+        .mockResolvedValueOnce({
+          id: quizId,
+          title: 'Algebra',
+          slug: 'algebra',
+          author: '507f191e810c19729de860fd',
+          questions: [
+            {
+              id: questionId,
+              question: '2 + 2 = ?',
+              options: ['3', '4'],
+              type: 'single',
+              correctIndex: 1,
+            },
+          ],
+          visibility: 'public',
+          createdAt: new Date('2026-07-01T00:00:00Z'),
+          updatedAt: new Date('2026-07-01T00:00:00Z'),
+        })
+        .mockResolvedValue(null),
+      updateQuestionById: vi.fn().mockResolvedValue(true),
+      update,
+    });
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      quizRepository,
+      createAttemptRepository(),
+    );
+
+    const result = await service.updateReportedQuestion('report-gone', {
+      question: '2 + 2 = ?',
+      options: ['3', '4'],
+      type: 'single',
+      correctIndex: 1,
+    });
+
+    expect(result.success).toBe(true);
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('blocks inline editing for legacy reports without a question id', async () => {
     const reportRepository = createReportRepository({
       findById: vi.fn().mockResolvedValue({

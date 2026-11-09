@@ -13,6 +13,7 @@ import type {
   UpdateQuizRequestDto,
 } from '@/dtos/quiz';
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
+import { detectQuizContentLocale } from '@/lib/seo/quiz-indexability';
 import type { DeleteResultDto } from '@/dtos/common';
 import type { ServiceFailure, ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
@@ -167,9 +168,12 @@ export class QuizCrudService {
   async getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null> {
     const record = await this.quizRepository.findMetadataBySlug(slug);
     if (!record) return null;
+    const leadQuestionTexts = [...(record.leadQuestionTexts ?? [])];
     return {
       ...QuizListDtoMapper.toListItem(record.quiz),
       ownerIndexable: record.owner === null || !isNonIndexableQuizOwner(record.owner),
+      leadQuestionTexts,
+      contentLocale: detectQuizContentLocale(record.quiz.title, leadQuestionTexts),
     };
   }
 

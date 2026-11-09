@@ -32,6 +32,12 @@ import {
   unionDocuments,
   utcWeekStart,
 } from '@/repositories/pipelines/activation-stages';
+import {
+  type ActivationEntryRef,
+  ENTRY_WEEK_ACCUMULATORS,
+  firstEntryRefIn,
+  toEntryWeek,
+} from '@/repositories/pipelines/activation-entry';
 
 interface DailyCountAggregate {
   _id: string;
@@ -60,6 +66,7 @@ interface CohortAggregate extends ActivationPathAggregate {
   byClaimedGuest: number;
   w1Retained: number;
   returnedWeek1: number;
+  entryRefs: (ActivationEntryRef | null)[];
 }
 
 interface FirstCompletionAggregate extends ActivationPathAggregate {
@@ -219,6 +226,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
         learners: row.learners,
         activatedBy: toPathCounts(row),
       })),
+      cohortEntries: cohorts.map((row) => toEntryWeek(row._id, row.entryRefs)),
     };
   }
 
@@ -331,6 +339,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
           _id: '$uid',
           signupAt: { $max: '$signupAt' },
           takenAts: { $push: '$takenAt' },
+          attemptRefs: { $push: '$attemptRef' },
           ...FUNNEL_GROUP_FIELDS,
           quizAts: { $push: '$quizAt' },
           completedAts: { $push: '$completedAt' },
@@ -345,6 +354,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
           byAdaptive: anyDateIn('$completedAts', signupAt, day7),
           authored: anyDateIn('$quizAts', signupAt, day7),
           uploaded: anyDateIn('$uploadedAts', signupAt, day7),
+          entryRef: firstEntryRefIn(signupAt, day7),
           returned: {
             $or: [anyDateIn('$takenAts', day7, day14), anyDateIn('$completedAts', day7, day14)],
           },
@@ -365,6 +375,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
           ...pathCountAccumulators('$byQuiz', '$byAdaptive'),
           w1Retained: { $sum: { $cond: [{ $and: ['$activated', '$returned'] }, 1, 0] } },
           ...FUNNEL_WEEK_ACCUMULATORS,
+          ...ENTRY_WEEK_ACCUMULATORS,
         },
       },
       { $sort: { _id: 1 } },

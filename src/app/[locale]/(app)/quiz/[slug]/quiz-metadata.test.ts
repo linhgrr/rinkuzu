@@ -26,6 +26,8 @@ function quizMetadata(overrides: Record<string, unknown>) {
     createdAt: '2026-11-01T00:00:00.000Z',
     updatedAt: '2026-11-01T00:00:00.000Z',
     ownerIndexable: true,
+    leadQuestionTexts: ['What do chloroplasts do?'],
+    contentLocale: 'en',
     ...overrides,
   };
 }
@@ -50,22 +52,101 @@ describe('quiz robots metadata', () => {
     });
   });
 
-  // RIN-840: QA and company accounts' public quizzes stay out of search.
-  it('marks a public quiz of a test or company owner noindex, nofollow', async () => {
+  // RIN-840: QA and company accounts' public quizzes stay out of search, but
+  // the page still passes its links on (RIN-1241 D13).
+  it('marks a public quiz of a test or company owner noindex, follow', async () => {
     getQuizMetadataBySlug.mockResolvedValue(quizMetadata({ ownerIndexable: false }));
 
     const metadata = await metadataFor('photosynthesis-qa-w45-retest-000001');
 
-    expect(metadata.robots).toMatchObject({ index: false, follow: false });
-    expect(metadata.title).toBe('Biology basics | RinKuzu');
+    expect(metadata.robots).toMatchObject({ index: false, follow: true });
   });
 
-  it('keeps a personal quiz noindex', async () => {
-    getQuizMetadataBySlug.mockResolvedValue(quizMetadata({ visibility: 'personal' }));
+  // RIN-1241 D13: fewer than 5 questions is too thin to index.
+  it('marks a public quiz with fewer than 5 questions noindex, follow', async () => {
+    getQuizMetadataBySlug.mockResolvedValue(quizMetadata({ questionCount: 4 }));
 
     await expect(metadataFor('biology-basics')).resolves.toMatchObject({
-      robots: { index: false, follow: false },
+      robots: { index: false, follow: true },
     });
+  });
+
+  it('keeps a personal quiz noindex, nofollow', async () => {
+    getQuizMetadataBySlug.mockResolvedValue(quizMetadata({ visibility: 'personal' }));
+
+    const metadata = await metadataFor('biology-basics');
+
+    expect(metadata.robots).toMatchObject({ index: false, follow: false });
+    expect(metadata.title).toBe('Biology basics | RinKuzu');
+    expect(metadata.alternates?.canonical).toBe(`${siteUrl.origin}/en/quiz/biology-basics`);
+  });
+});
+
+// RIN-1241 D14: one locale per quiz.
+describe('quiz canonical per locale', () => {
+  beforeEach(() => {
+    getQuizMetadataBySlug.mockReset();
+  });
+
+  const viQuiz = quizMetadata({
+    title: 'Chương 1 KTPM',
+    description: '',
+    slug: 'chuong-1-ktpm',
+    contentLocale: 'vi',
+    leadQuestionTexts: ['Kiểm thử phần mềm là gì?'],
+  });
+
+  it('indexes the content-locale page with a self canonical and no hreflang pair', async () => {
+    getQuizMetadataBySlug.mockResolvedValue(viQuiz);
+
+    const metadata = await metadataFor('chuong-1-ktpm', { locale: 'vi' });
+
+    expect(metadata.robots).toMatchObject({ index: true, follow: true });
+    expect(metadata.alternates?.canonical).toBe(`${siteUrl.origin}/vi/quiz/chuong-1-ktpm`);
+    expect(metadata.alternates?.languages).toBeUndefined();
+  });
+
+  it('points the other-locale page at the content-locale URL, noindex, follow', async () => {
+    getQuizMetadataBySlug.mockResolvedValue(viQuiz);
+
+    const metadata = await metadataFor('chuong-1-ktpm', { locale: 'en' });
+
+    expect(metadata.robots).toMatchObject({ index: false, follow: true });
+    expect(metadata.alternates?.canonical).toBe(`${siteUrl.origin}/vi/quiz/chuong-1-ktpm`);
+    expect(metadata.openGraph?.url).toBe(`${siteUrl.origin}/vi/quiz/chuong-1-ktpm`);
+    expect(metadata.alternates?.languages).toBeUndefined();
+  });
+
+  it('writes the title and description in the quiz language on either page', async () => {
+    getQuizMetadataBySlug.mockResolvedValue(viQuiz);
+
+    for (const locale of ['vi', 'en']) {
+      const metadata = await metadataFor('chuong-1-ktpm', { locale });
+
+      expect(metadata.title).toBe('Chương 1 KTPM – 10 câu trắc nghiệm có đáp án | RinKuzu');
+      expect(metadata.description).toBe(
+        'Đề trắc nghiệm Chương 1 KTPM: 10 câu hỏi có đáp án và giải thích. Câu 1: Kiểm thử phần mềm là gì?',
+      );
+    }
+  });
+
+  it('keeps an owner description of 50+ characters', async () => {
+    const description = 'Cells, chloroplasts and photosynthesis for grade 10 biology revision.';
+    getQuizMetadataBySlug.mockResolvedValue(quizMetadata({ description }));
+
+    const metadata = await metadataFor('biology-basics');
+
+    expect(metadata.title).toBe('Biology basics – 10 quiz questions with answers | RinKuzu');
+    expect(metadata.description).toBe(description);
+  });
+
+  it('drops the hreflang pair on the not-found default too', async () => {
+    getQuizMetadataBySlug.mockResolvedValue(null);
+
+    const metadata = await metadataFor('premium-biology');
+
+    expect(metadata.alternates?.languages).toBeUndefined();
+    expect(metadata.robots).toMatchObject({ index: false, follow: false });
   });
 });
 

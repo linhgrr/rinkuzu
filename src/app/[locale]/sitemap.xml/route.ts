@@ -8,8 +8,6 @@
  */
 
 import type { MetadataRoute } from 'next';
-import { defaultLocale, locales } from '@/i18n/config';
-import { canonicalFor } from '@/lib/seo';
 import { toUtcDateKey } from '@/lib/date-serialization';
 import { buildPublicSitemapEntries } from '@/lib/public-sitemap';
 
@@ -21,24 +19,16 @@ function getRequiredLastModifiedDate(entry: MetadataRoute.Sitemap[number]): Date
   return entry.lastModified instanceof Date ? entry.lastModified : new Date(entry.lastModified);
 }
 
-function buildHreflangXml(path: string): string {
-  const links = [
-    ...locales.map((locale) => ({
-      language: locale,
-      url: canonicalFor(locale, path),
-    })),
-    {
-      language: 'x-default',
-      url: canonicalFor(defaultLocale, path),
-    },
-  ];
-
-  return links
+/** The entry's own hreflang links; a quiz has none (one locale, RIN-1241 D14). */
+function buildHreflangXml(entry: MetadataRoute.Sitemap[number]): string {
+  const languages = entry.alternates?.languages ?? {};
+  return Object.entries(languages)
     .map(
-      ({ language, url }) =>
-        `    <xhtml:link rel="alternate" hreflang="${language}" href="${url}" />`,
+      ([language, url]) =>
+        `
+    <xhtml:link rel="alternate" hreflang="${language}" href="${String(url)}" />`,
     )
-    .join('\n');
+    .join('');
 }
 
 export async function GET(): Promise<Response> {
@@ -50,8 +40,7 @@ export async function GET(): Promise<Response> {
 ${entries
   .map(
     (e) => `  <url>
-    <loc>${e.url}</loc>
-${buildHreflangXml(new URL(e.url).pathname.replace(/^\/(?:vi|en)(?=\/|$)/, '') || '/')}
+    <loc>${e.url}</loc>${buildHreflangXml(e)}
     <lastmod>${toUtcDateKey(getRequiredLastModifiedDate(e), 'sitemap.lastModified')}</lastmod>
   </url>`,
   )

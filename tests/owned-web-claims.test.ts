@@ -26,8 +26,12 @@ const ownedWebSources = [
   'src/app/llms.txt/route.ts',
   'src/app/[locale]/(marketing)/about/page.tsx',
   'src/app/[locale]/(marketing)/blog/page.tsx',
-  'src/app/[locale]/(marketing)/blog/ai-powered-quiz-generation-guide/page.tsx',
-  'src/app/[locale]/(marketing)/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx',
+  'src/app/[locale]/(marketing)/blog/[slug]/page.tsx',
+  // Blog posts live in content/blog since RIN-404.
+  'content/blog/en/ai-powered-quiz-generation-guide.mdx',
+  'content/blog/en/knowledge-graphs-adaptive-learning-pdfs.mdx',
+  'content/blog/vi/ai-powered-quiz-generation-guide.mdx',
+  'content/blog/vi/knowledge-graphs-adaptive-learning-pdfs.mdx',
   'src/app/[locale]/(marketing)/faq/page.tsx',
 ];
 

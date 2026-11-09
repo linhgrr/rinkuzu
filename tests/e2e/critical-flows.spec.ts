@@ -359,6 +359,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       }),
       db.collection('questionprogresses').deleteMany({ userId: { $in: userIdStrings } }),
       db.collection('userprogresses').deleteMany({ userId: { $in: userIdStrings } }),
+      db.collection('marketingpreferences').deleteMany({ userId: { $in: userIds } }),
       db.collection('auditlogs').deleteMany({
         $or: [{ userId: { $in: userIds } }, { email: { $in: emails } }],
       }),
@@ -844,8 +845,29 @@ test.describe('production critical paths', () => {
       expect(source).toMatchObject({ score: 0, totalQuestions: 1 });
       const sourceId = String(source?._id);
 
-      // AC2: the primary action and the opt-in render with the result.
-      await expect(page.getByLabel('Email me a 2-minute review in 2 days')).not.toBeChecked();
+      // AC2: the primary action and the explicit review choice render with the result
+      // (RIN-1362). "No thanks" hides it for 7 days, stored server-side, no consent event.
+      const remind = page.getByRole('button', { name: 'Remind me in 2 days', exact: true });
+      const decline = page.getByRole('button', { name: 'No thanks', exact: true });
+      await expect(remind).toBeVisible();
+      await expect(decline).toBeVisible();
+      await expect(remind).not.toBeFocused();
+      await decline.click();
+      await expect(decline).toBeHidden();
+      await expect
+        .poll(async () => {
+          const preference = await fixture.db
+            .collection('marketingpreferences')
+            .findOne({ userId: fixture.regular.id });
+          const until = preference?.['reviewPromptSnoozedUntil'] as Date | undefined;
+          return until ? Math.round((until.getTime() - Date.now()) / 86_400_000) : null;
+        })
+        .toBe(7);
+      expect(
+        await fixture.db
+          .collection('marketingconsentevents')
+          .countDocuments({ userId: fixture.regular.id }),
+      ).toBe(0);
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}\\?retryOf=${sourceId}`)),
         page.getByRole('link', { name: 'Retry the 1 you missed', exact: true }).click(),

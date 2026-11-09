@@ -17,12 +17,18 @@ export interface QuizResultPageDataViewModel {
   bookmarks: QuizResultBookmarkLookup;
 }
 
-/** Result-page review-email tick or untick (RIN-917). */
-export interface SaveReviewReminderInput {
-  attemptId: string;
-  optIn: boolean;
-  locale: 'vi' | 'en';
+/** What the review prompt shows for one attempt (RIN-1362, `GET /api/user/review-reminder`). */
+export interface ReviewReminderPromptStatus {
+  optedIn: boolean;
+  /** ISO time; set only while "No thanks" still hides the prompt. */
+  snoozedUntil: string | null;
+  eligible: boolean;
 }
+
+/** Outcome of "Remind me": the email's send time, or the weekly cap already used. */
+export type ReviewReminderOptInOutcome =
+  | { status: 'scheduled'; scheduledFor: string }
+  | { status: 'capped'; scheduledFor: null };
 
 export interface QuizResultBookmarkMutationViewModel {
   id: string;

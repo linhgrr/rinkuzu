@@ -37,6 +37,11 @@ interface ReminderPreference {
   locale?: string | null;
 }
 
+interface ReminderPromptPreference {
+  optedIn: boolean;
+  snoozedUntil: Date | null;
+}
+
 interface ReminderQuiz {
   slug: string;
   title: string;
@@ -116,12 +121,27 @@ export class ReviewReminderRepository {
     };
   }
 
-  /** True when `studyReminders` is ticked for the learner. */
-  async isOptedIn(userId: Types.ObjectId): Promise<boolean> {
-    const preference = await MarketingPreference.findOne({ userId }, { studyReminders: 1 }).lean<{
-      studyReminders?: boolean;
-    } | null>();
-    return preference?.studyReminders === true;
+  /** Whether `studyReminders` is ticked and until when the result-page prompt is snoozed. */
+  async promptPreference(userId: Types.ObjectId): Promise<ReminderPromptPreference> {
+    await connectDB();
+    const preference = await MarketingPreference.findOne(
+      { userId },
+      { studyReminders: 1, reviewPromptSnoozedUntil: 1 },
+    ).lean<{ studyReminders?: boolean; reviewPromptSnoozedUntil?: Date | null } | null>();
+    return {
+      optedIn: preference?.studyReminders === true,
+      snoozedUntil: preference?.reviewPromptSnoozedUntil ?? null,
+    };
+  }
+
+  /** Result-page "No thanks" (RIN-1362): hides the prompt until `until`; consent is untouched. */
+  async snoozePrompt(userId: Types.ObjectId, until: Date): Promise<void> {
+    await connectDB();
+    await MarketingPreference.updateOne(
+      { userId },
+      { $set: { reviewPromptSnoozedUntil: until } },
+      { upsert: true },
+    );
   }
 
   /** Ticks `studyReminders`; true when it was already ticked before this write. */

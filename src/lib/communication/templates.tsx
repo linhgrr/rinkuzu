@@ -17,6 +17,7 @@ import {
 } from '@react-email/components';
 import type { ReactNode } from 'react';
 import type { CampaignBlockInput } from '@/dtos/communication';
+import { ADAPTIVE_REVIEW_COPY } from './review-reminder-adaptive-copy';
 
 export interface RenderedCommunicationMail {
   html: string;
@@ -350,15 +351,18 @@ const REVIEW_REMINDER_D5_COPY: Record<ReviewReminderLocale, ReviewReminderCopy> 
 export async function renderReviewReminder(input: {
   /** `d2` (default) or the final day-5 touch (RIN-1304). */
   touch?: 'd2' | 'd5';
+  /** `adaptive`: Path B, the title is a document and the count is due concepts (RIN-1364). */
+  path?: 'quiz' | 'adaptive';
   locale: ReviewReminderLocale;
   quizTitle: string;
   missedCount: number;
   retryUrl: string;
   unsubscribeUrl: string;
 }): Promise<RenderedCommunicationMail & { subject: string }> {
-  const copy = (input.touch === 'd5' ? REVIEW_REMINDER_D5_COPY : REVIEW_REMINDER_COPY)[
-    input.locale
-  ];
+  const copy =
+    input.path === 'adaptive'
+      ? ADAPTIVE_REVIEW_COPY[input.touch ?? 'd2'][input.locale]
+      : (input.touch === 'd5' ? REVIEW_REMINDER_D5_COPY : REVIEW_REMINDER_COPY)[input.locale];
   const subject = copy.subject(input.quizTitle, input.missedCount).slice(0, 200);
   const mail = await renderElement(
     <MailFrame

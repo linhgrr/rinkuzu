@@ -1,11 +1,10 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { Card, Badge } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Input';
@@ -14,26 +13,28 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { AdminReportsPageSkeleton } from '@/features/admin/components/AdminLoadingSkeletons';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { AdminPageShell } from '@/features/admin/components/AdminPageShell';
-import { ROUTES } from '@/shared/constants/routes';
 import {
   deleteAdminReport,
   fetchAdminReportViewModels,
+  hideAdminReportedQuiz,
   updateAdminReportStatus,
 } from '@/features/admin/reports/api/admin-reports-api';
 import type {
   AdminReportFilterViewModel,
+  AdminReportListViewModel,
+  AdminReportReasonFilterViewModel,
   AdminReportStatusViewModel,
   AdminReportViewModel,
 } from '@/features/admin/reports/types/admin-reports-view-model';
 import { ReportedQuestionEditor } from '@/features/admin/reports/components/ReportedQuestionEditor';
-import { QuestionContent } from '@/components/ui/QuestionContent';
 import {
-  HiOutlineEye,
-  HiOutlinePencil,
-  HiOutlineTrash,
-  HiOutlineCheck,
-  HiOutlineX,
-} from 'react-icons/hi';
+  PendingIndexHoldCount,
+  ReportCardItem,
+  ReportReasonBadges,
+  ReportReasonFilterBar,
+  StatusBadge,
+} from '@/features/admin/reports/components/AdminReportCard';
+import { HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
 import { useReloadSettled } from '@/features/admin/hooks/useReloadSettled';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
@@ -47,17 +48,22 @@ interface AdminReportsState {
   /** Bumped by Retry to rerun the load effect for the same filter. */
   reloadToken: number;
   reports: AdminReportViewModel[];
+  pendingIndexHoldCount: number;
   statusFilter: AdminReportFilterViewModel;
+  reasonFilter: AdminReportReasonFilterViewModel;
   selectedReport: AdminReportViewModel | null;
   adminNotes: string;
   updating: boolean;
   reportToDelete: AdminReportViewModel | null;
   deleting: boolean;
+  /** Quiz-page report whose quiz the admin is about to hide (RIN-1344). */
+  reportToHide: AdminReportViewModel | null;
+  hiding: boolean;
 }
 
 type AdminReportsAction =
   | { type: 'patch'; value: Partial<AdminReportsState> }
-  | { type: 'loadSuccess'; value: AdminReportViewModel[] };
+  | { type: 'loadSuccess'; value: AdminReportListViewModel };
 
 const REPORT_FILTERS: AdminReportFilterViewModel[] = ['all', 'pending', 'resolved', 'dismissed'];
 
@@ -66,23 +72,21 @@ const initialState: AdminReportsState = {
   loadError: null,
   reloadToken: 0,
   reports: [],
+  pendingIndexHoldCount: 0,
   statusFilter: 'all',
+  reasonFilter: 'all',
   selectedReport: null,
   adminNotes: '',
   updating: false,
   reportToDelete: null,
   deleting: false,
+  reportToHide: null,
+  hiding: false,
 };
 
 interface ReportFilterBarProps {
   statusFilter: AdminReportFilterViewModel;
   onChange: (status: AdminReportFilterViewModel) => void;
-}
-
-interface ReportCardItemProps {
-  report: AdminReportViewModel;
-  onReview: (report: AdminReportViewModel) => void;
-  onDelete: (report: AdminReportViewModel) => void;
 }
 
 interface ReportReviewModalProps {
@@ -103,26 +107,21 @@ function adminReportsReducer(
     case 'patch':
       return { ...state, ...action.value };
     case 'loadSuccess':
-      return { ...state, status: 'ready', loadError: null, reports: action.value };
+      return {
+        ...state,
+        status: 'ready',
+        loadError: null,
+        reports: action.value.reports,
+        pendingIndexHoldCount: action.value.pendingIndexHoldCount,
+      };
     default:
       return state;
   }
 }
 
-function getStatusBadge(status: AdminReportStatusViewModel) {
-  switch (status) {
-    case 'pending':
-      return <Badge variant="warning">{status}</Badge>;
-    case 'resolved':
-      return <Badge variant="success">{status}</Badge>;
-    case 'dismissed':
-      return <Badge variant="default">{status}</Badge>;
-  }
-}
-
 function ReportFilterBar({ statusFilter, onChange }: ReportFilterBarProps) {
   return (
-    <div className="mb-6 flex flex-wrap gap-2">
+    <div className="mb-3 flex flex-wrap gap-2">
       {REPORT_FILTERS.map((status) => (
         <Button
           key={status}
@@ -134,89 +133,6 @@ function ReportFilterBar({ statusFilter, onChange }: ReportFilterBarProps) {
         </Button>
       ))}
     </div>
-  );
-}
-
-function ReportCardItem({ report, onReview, onDelete }: ReportCardItemProps) {
-  return (
-    <Card className="transition-shadow hover:shadow-md">
-      <div className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="mb-2 flex items-center gap-3">
-              <h3 className="text-lg font-semibold text-neutral-900">{report.quizTitle}</h3>
-              {getStatusBadge(report.status)}
-              {report.questionSnapshot ? (
-                <Badge variant="info">Question {report.questionSnapshot.index + 1}</Badge>
-              ) : (
-                <Badge variant="default">Legacy quiz report</Badge>
-              )}
-            </div>
-
-            <div className="mb-3 text-sm text-neutral-600">
-              <div className="mb-1 flex items-center gap-4">
-                <span>
-                  <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
-                </span>
-                <span>
-                  <strong>Date:</strong> {report.createdAtLabel}
-                </span>
-              </div>
-            </div>
-
-            <div className="mb-4 rounded-lg bg-neutral-50 p-3">
-              <p className="whitespace-pre-wrap text-sm text-neutral-700">{report.content}</p>
-            </div>
-
-            {report.questionSnapshot ? (
-              <div className="mb-4 border-l-2 border-brand-action pl-3">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Reported question snapshot
-                </p>
-                <QuestionContent
-                  content={report.questionSnapshot.question}
-                  className="line-clamp-2 text-sm text-neutral-800"
-                />
-              </div>
-            ) : null}
-
-            {report.adminNotes ? (
-              <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3">
-                <p className="mb-1 text-sm font-medium text-green-800">Admin Notes:</p>
-                <p className="whitespace-pre-wrap text-sm text-green-700">{report.adminNotes}</p>
-              </div>
-            ) : null}
-
-            {report.resolvedAt && report.resolvedBy ? (
-              <div className="text-xs text-neutral-500">
-                Resolved by {report.resolvedBy} on {report.resolvedAtLabel}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="ml-4 flex flex-col gap-2">
-            <Button variant="primary" size="sm" onClick={() => onReview(report)}>
-              <HiOutlineEye className="mr-1 size-4" /> Review
-            </Button>
-
-            <Link href={ROUTES.EDIT.QUIZ(report.quizId)}>
-              <Button variant="outline" size="sm" className="w-full">
-                <HiOutlinePencil className="mr-1 size-4" /> Edit Quiz
-              </Button>
-            </Link>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDelete(report)}
-              className="border-red-200 text-red-600 hover:bg-red-50"
-            >
-              <HiOutlineTrash className="mr-1 size-4" /> Delete
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
   );
 }
 
@@ -243,8 +159,9 @@ function ReportReviewModal({
               <div>
                 <strong>Date:</strong> {report.createdAtLabel}
               </div>
-              <div>
-                <strong>Status:</strong> {getStatusBadge(report.status)}
+              <div className="flex flex-wrap items-center gap-2">
+                <strong>Status:</strong> <StatusBadge status={report.status} />
+                <ReportReasonBadges report={report} />
               </div>
             </div>
 
@@ -321,14 +238,17 @@ export function AdminReportsPageClient() {
   const [state, dispatch] = useReducer(adminReportsReducer, initialState);
   const { waitForReload, settleReload } = useReloadSettled();
 
+  const { statusFilter, reasonFilter } = state;
+
   useEffect(() => {
+    const filters = { status: statusFilter, reason: reasonFilter };
     const controller = new AbortController();
     // Set by the cleanup: a newer filter (or unmount) owns the list now.
     let cancelled = false;
 
     async function loadReports() {
       try {
-        const reports = await fetchAdminReportViewModels(state.statusFilter, controller.signal);
+        const reports = await fetchAdminReportViewModels(filters, controller.signal);
         if (cancelled) return;
         dispatch({ type: 'loadSuccess', value: reports });
       } catch (error) {
@@ -346,7 +266,7 @@ export function AdminReportsPageClient() {
       cancelled = true;
       controller.abort();
     };
-  }, [state.statusFilter, state.reloadToken, settleReload]);
+  }, [statusFilter, reasonFilter, state.reloadToken, settleReload]);
 
   const openReportModal = (report: AdminReportViewModel) => {
     dispatch({
@@ -372,7 +292,10 @@ export function AdminReportsPageClient() {
         status,
         adminNotes: state.adminNotes.trim(),
       });
-      const reports = await fetchAdminReportViewModels(state.statusFilter);
+      const reports = await fetchAdminReportViewModels({
+        status: statusFilter,
+        reason: reasonFilter,
+      });
       dispatch({ type: 'loadSuccess', value: reports });
       closeReportModal();
       dispatch({ type: 'patch', value: { updating: false } });
@@ -387,7 +310,10 @@ export function AdminReportsPageClient() {
     try {
       dispatch({ type: 'patch', value: { deleting: true } });
       await deleteAdminReport(reportId);
-      const reports = await fetchAdminReportViewModels(state.statusFilter);
+      const reports = await fetchAdminReportViewModels({
+        status: statusFilter,
+        reason: reasonFilter,
+      });
       dispatch({ type: 'loadSuccess', value: reports });
       if (state.selectedReport?.id === reportId) {
         closeReportModal();
@@ -397,6 +323,26 @@ export function AdminReportsPageClient() {
       console.error('Error deleting report:', error);
       toast.error(describeError(error));
       dispatch({ type: 'patch', value: { deleting: false } });
+    }
+  };
+
+  const confirmHideQuiz = async () => {
+    const report = state.reportToHide;
+    if (!report) return;
+    dispatch({ type: 'patch', value: { hiding: true } });
+    try {
+      await hideAdminReportedQuiz(report.id, report.adminNotesInput.trim());
+      toast.success(`Hid "${report.quizTitle}" and resolved the report`);
+      dispatch({ type: 'patch', value: { reportToHide: null, hiding: false } });
+      const reports = await fetchAdminReportViewModels({
+        status: statusFilter,
+        reason: reasonFilter,
+      });
+      dispatch({ type: 'loadSuccess', value: reports });
+    } catch (error) {
+      console.error('Error hiding reported quiz:', error);
+      toast.error(describeError(error));
+      dispatch({ type: 'patch', value: { hiding: false } });
     }
   };
 
@@ -420,10 +366,17 @@ export function AdminReportsPageClient() {
               title={tAdmin('quizReports')}
               description={tAdmin('reportsDescription')}
             />
+            {state.loadError ? null : <PendingIndexHoldCount count={state.pendingIndexHoldCount} />}
             {state.loadError ? null : (
               <ReportFilterBar
                 statusFilter={state.statusFilter}
                 onChange={(status) => dispatch({ type: 'patch', value: { statusFilter: status } })}
+              />
+            )}
+            {state.loadError ? null : (
+              <ReportReasonFilterBar
+                reasonFilter={state.reasonFilter}
+                onChange={(reason) => dispatch({ type: 'patch', value: { reasonFilter: reason } })}
               />
             )}
 
@@ -452,6 +405,9 @@ export function AdminReportsPageClient() {
                     onDelete={(value) =>
                       dispatch({ type: 'patch', value: { reportToDelete: value } })
                     }
+                    onHideQuiz={(value) =>
+                      dispatch({ type: 'patch', value: { reportToHide: value } })
+                    }
                   />
                 ))
               )}
@@ -479,6 +435,17 @@ export function AdminReportsPageClient() {
         isLoading={state.deleting}
         onCancel={() => dispatch({ type: 'patch', value: { reportToDelete: null } })}
         onConfirm={confirmDeleteReport}
+      />
+
+      <ConfirmModal
+        isOpen={!!state.reportToHide}
+        title="Hide quiz"
+        message={`Hide "${state.reportToHide?.quizTitle ?? ''}" from everyone and resolve this report? The quiz stays in the database and can be shown again from the quiz admin.`}
+        confirmText="Hide quiz"
+        confirmVariant="destructive"
+        isLoading={state.hiding}
+        onCancel={() => dispatch({ type: 'patch', value: { reportToHide: null } })}
+        onConfirm={confirmHideQuiz}
       />
     </AdminPageShell>
   );

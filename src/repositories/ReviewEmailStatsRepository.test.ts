@@ -34,6 +34,7 @@ function evaluate(expression: unknown, event: Record<string, unknown>): unknown 
   const [operator, raw] = Object.entries(expression)[0] ?? [];
   const args = (raw as unknown[]).map((arg) => evaluate(arg, event));
   if (operator === '$and') return args.every(Boolean);
+  if (operator === '$or') return args.some(Boolean);
   if (operator === '$eq') return args[0] === args[1];
   if (operator === '$ne') return args[0] !== args[1];
   if (operator === '$ifNull') return args[0] ?? args[1];
@@ -115,6 +116,19 @@ describe('ReviewEmailStatsRepository', () => {
     expect(counted({ ...unsubscribe, campaign: null })).toBe(true);
     expect(counted({ ...unsubscribe, campaign: 'activation_nudge' })).toBe(false);
     expect(counted({ action: 'opt_out', source: 'result_page_review' })).toBe(false);
+  });
+
+  it('counts opt-ins from both review prompts, quiz and adaptive (RIN-1364)', async () => {
+    await new ReviewEmailStatsRepository().getWeeklyCounts(FROM, TO, QA);
+
+    const [consentPipeline] = mocks.consentAggregate.mock.calls[0] ?? [];
+    const condition = consentPipeline[1].$group.optIns.$sum.$cond[0];
+    const counted = (event: Record<string, unknown>) => evaluate(condition, event) === true;
+
+    expect(counted({ action: 'opt_in', source: 'result_page_review' })).toBe(true);
+    expect(counted({ action: 'opt_in', source: 'adaptive_end_review' })).toBe(true);
+    expect(counted({ action: 'opt_in', source: 'settings' })).toBe(false);
+    expect(counted({ action: 'opt_out', source: 'adaptive_end_review' })).toBe(false);
   });
 
   it('reports opens as tracked once any open webhook is on record', async () => {

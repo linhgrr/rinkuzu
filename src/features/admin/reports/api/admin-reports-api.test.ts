@@ -12,6 +12,7 @@ import {
   deleteAdminReport,
   fetchAdminReportViewModels,
   fetchAdminReportedQuestion,
+  hideAdminReportedQuiz,
   updateAdminReportedQuestion,
   updateAdminReportStatus,
 } from '@/features/admin/reports/api/admin-reports-api';
@@ -34,18 +35,51 @@ describe('admin-reports-api', () => {
     fetchApiDataMock.mockReset();
   });
 
-  it('lists reports with optional status filter and abort signal', async () => {
+  it('lists reports with optional status and reason filters and abort signal', async () => {
     const signal = new AbortController().signal;
-    fetchApiDataMock.mockResolvedValue({ reports: [reportDto] });
+    fetchApiDataMock.mockResolvedValue({ reports: [reportDto], pendingIndexHoldCount: 3 });
 
-    await expect(fetchAdminReportViewModels('all', signal)).resolves.toEqual([
-      expect.objectContaining({ id: 'report-1', status: 'pending', adminNotesInput: '' }),
-    ]);
+    await expect(
+      fetchAdminReportViewModels({ status: 'all', reason: 'all' }, signal),
+    ).resolves.toEqual({
+      reports: [
+        expect.objectContaining({ id: 'report-1', status: 'pending', adminNotesInput: '' }),
+      ],
+      pendingIndexHoldCount: 3,
+    });
     expect(fetchApiDataMock).toHaveBeenCalledWith('/api/admin/reports?', { signal });
 
-    fetchApiDataMock.mockResolvedValueOnce({ reports: [] });
-    await fetchAdminReportViewModels('resolved');
-    expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/admin/reports?status=resolved', {});
+    fetchApiDataMock.mockResolvedValueOnce({ reports: [], pendingIndexHoldCount: 0 });
+    await fetchAdminReportViewModels({ status: 'resolved', reason: 'copyright' });
+    expect(fetchApiDataMock).toHaveBeenLastCalledWith(
+      '/api/admin/reports?status=resolved&reason=copyright',
+      {},
+    );
+  });
+
+  it('maps reason and source of quiz-page reports (RIN-1344)', async () => {
+    fetchApiDataMock.mockResolvedValue({
+      reports: [{ ...reportDto, reason: 'personal_data', source: 'quiz_page' }],
+      pendingIndexHoldCount: 1,
+    });
+    const list = await fetchAdminReportViewModels({ status: 'all', reason: 'all' });
+    expect(list.reports[0]).toMatchObject({ reason: 'personal_data', source: 'quiz_page' });
+  });
+
+  it('hides the reported quiz with optional admin notes (RIN-1344)', async () => {
+    fetchApiDataMock.mockResolvedValue({ message: 'ok' });
+    await hideAdminReportedQuiz('report-1', 'Copyrighted textbook');
+    expect(fetchApiDataMock).toHaveBeenCalledWith('/api/admin/reports/report-1/hide-quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminNotes: 'Copyrighted textbook' }),
+    });
+
+    await hideAdminReportedQuiz('report-1', '');
+    expect(fetchApiDataMock).toHaveBeenLastCalledWith(
+      '/api/admin/reports/report-1/hide-quiz',
+      expect.objectContaining({ body: '{}' }),
+    );
   });
 
   it('updates report status and deletes reports by id', async () => {

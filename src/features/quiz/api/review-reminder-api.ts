@@ -33,3 +33,17 @@ export function optInReviewReminder(
 export async function snoozeReviewReminderPrompt(attemptId: string): Promise<void> {
   await postReviewReminder<unknown>({ attemptId, action: 'snooze' });
 }
+
+/**
+ * Adaptive end screen (Path B, RIN-1364): the server anchors on the learner's
+ * latest adaptive completion, so the browser sends no id and no timestamp.
+ */
+export const adaptiveReviewReminderApi = {
+  loadStatus: (): Promise<ReviewReminderPromptStatus> =>
+    fetchApiData<ReviewReminderPromptStatus>(`${REVIEW_REMINDER_URL}?path=adaptive`),
+  optIn: (locale: 'vi' | 'en'): Promise<ReviewReminderOptInOutcome> =>
+    postReviewReminder<ReviewReminderOptInOutcome>({ path: 'adaptive', locale, optIn: true }),
+  snooze: async (): Promise<void> => {
+    await postReviewReminder<unknown>({ path: 'adaptive', action: 'snooze' });
+  },
+};

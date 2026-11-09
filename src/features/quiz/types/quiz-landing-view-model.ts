@@ -19,6 +19,13 @@ interface QuizLandingRelatedQuiz {
   questionCount: number;
 }
 
+/** The quiz's topic hub (RIN-1249): the link back under the related block. */
+interface QuizLandingTopic {
+  name: string;
+  /** Locale-prefixed hub path, e.g. `/vi/explore/sinh-hoc`. */
+  href: string;
+}
+
 export interface QuizLandingViewModel {
   slug: string;
   title: string;
@@ -28,4 +35,7 @@ export interface QuizLandingViewModel {
   quickRoundEligible: boolean;
   previewQuestions: QuizLandingPreviewQuestion[];
   related: QuizLandingRelatedQuiz[];
+  /** True when `related` lists quizzes of the same topic (C12), not recent ones. */
+  relatedSameTopic: boolean;
+  topic: QuizLandingTopic | null;
 }

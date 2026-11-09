@@ -38,7 +38,16 @@ function query<T>(result: T) {
   return chain;
 }
 
+const adaptive = vi.hoisted(() => {
+  class Unavailable extends Error {}
+  return { fetch: vi.fn(), Unavailable };
+});
+
 vi.mock('server-only', () => ({}));
+vi.mock('@/lib/adaptive/review-facts', () => ({
+  fetchAdaptiveReviewFacts: adaptive.fetch,
+  AdaptiveReviewFactsUnavailableError: adaptive.Unavailable,
+}));
 vi.mock('@/lib/mongoose', () => ({ default: vi.fn() }));
 vi.mock('@/lib/public-env', () => ({
   publicEnv: { NEXT_PUBLIC_SITE_URL: 'https://www.rinkuzu.app/' },
@@ -61,6 +70,7 @@ vi.mock('@/models/Communication', () => ({
 }));
 
 import {
+  optInAdaptiveReviewReminder,
   optInReviewReminder,
   optOutReviewReminder,
   prepareReviewReminder,
@@ -344,6 +354,7 @@ describe('review reminder send-time preparation (AC5)', () => {
     );
     mocks.preference.findOne.mockReturnValue(query({ studyReminders: true, locale: 'en' }));
     mocks.quiz.findById.mockReturnValue(query({ slug: 'cell-biology', title: 'Cell biology' }));
+    adaptive.fetch.mockResolvedValue({ latestCompletion: null, completionsAfter: [] });
   });
 
   it('renders a tagged email with RFC 8058 headers and no answers', async () => {
@@ -484,6 +495,266 @@ describe('review reminder send-time preparation (AC5)', () => {
       decision: 'cancel',
       reason: 'opted_out',
     });
+  });
+});
+
+describe('Path B: adaptive end-screen review emails (RIN-1364)', () => {
+  const COMPLETED_AT = new Date('2026-11-03T08:00:00.000Z');
+  const completion = {
+    completedAt: COMPLETED_AT,
+    documentId: 'session-1',
+    documentTitle: 'Biology notes.pdf',
+    dueCount: 2,
+  };
+  const due = new Date(COMPLETED_AT.getTime() + 48 * HOUR);
+  const pathBItem = {
+    _id: new Types.ObjectId(OUTBOX_ID),
+    kind: 'review_reminder',
+    entityType: 'adaptive_completion',
+    entityId: new Types.ObjectId(USER_ID),
+    availableAt: due,
+    dueAt: due,
+    anchorAt: COMPLETED_AT,
+    anchorDocumentId: 'session-1',
+  };
+
+  function optInB(now = new Date(COMPLETED_AT.getTime() + HOUR)) {
+    return optInAdaptiveReviewReminder({
+      userId: USER_ID,
+      email: 'learner@gmail.com',
+      locale: 'en',
+      ip: '203.0.113.7',
+      now,
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    adaptive.fetch.mockResolvedValue({ latestCompletion: completion, completionsAfter: [] });
+    mocks.attempt.findById.mockReturnValue(query(attemptDoc()));
+    mocks.attempt.exists.mockResolvedValue(null);
+    mocks.preference.findOneAndUpdate.mockReturnValue(query(null));
+    mocks.preference.updateOne.mockResolvedValue({ modifiedCount: 1 });
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true, locale: 'en' }));
+    mocks.outbox.updateOne.mockResolvedValue({ upsertedCount: 1 });
+    mocks.outbox.countDocuments.mockResolvedValue(0);
+    mocks.user.findById.mockReturnValue(
+      query({ email: 'learner@gmail.com', role: 'user', disable: 0, isTestAccount: false }),
+    );
+    mocks.quiz.findById.mockReturnValue(query({ slug: 'cell-biology', title: 'Cell biology' }));
+  });
+
+  it('opt-in schedules d2 + d5 from the latest completion, anchored on the row', async () => {
+    await expect(optInB()).resolves.toEqual({
+      optedIn: true,
+      status: 'scheduled',
+      scheduledFor: due.toISOString(),
+    });
+
+    expect(adaptive.fetch).toHaveBeenCalledWith(USER_ID, undefined);
+    expect(mocks.consentEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'opt_in', source: 'adaptive_end_review' }),
+    );
+    const [filter, update] = mocks.outbox.updateOne.mock.calls[0] ?? [];
+    // The same bucket keys as Path A: one learner never holds two pairs in a bucket.
+    expect(filter.dedupeKey).toMatch(new RegExp(`^review_reminder/${USER_ID}/\\d+$`, 'u'));
+    expect(update.$set).toMatchObject({
+      kind: 'review_reminder',
+      entityType: 'adaptive_completion',
+      entityId: new Types.ObjectId(USER_ID),
+      anchorAt: COMPLETED_AT,
+      anchorDocumentId: 'session-1',
+      availableAt: due,
+      dueAt: due,
+    });
+    const [, d5Update] = mocks.outbox.updateOne.mock.calls[1] ?? [];
+    expect(d5Update.$set).toMatchObject({
+      kind: 'review_reminder_d5',
+      entityType: 'adaptive_completion',
+      availableAt: new Date(COMPLETED_AT.getTime() + 120 * HOUR),
+    });
+  });
+
+  it('a Path A opt-in in the same bucket re-points the rows and clears the anchor', async () => {
+    await optInReviewReminder({
+      userId: USER_ID,
+      email: 'learner@gmail.com',
+      attemptId: ATTEMPT_ID,
+      locale: 'en',
+      ip: null,
+      now: new Date(TAKEN_AT.getTime() + HOUR),
+    });
+
+    const [, update] = mocks.outbox.updateOne.mock.calls[0] ?? [];
+    expect(update.$set).toMatchObject({
+      entityType: 'attempt',
+      entityId: new Types.ObjectId(ATTEMPT_ID),
+      anchorAt: null,
+      anchorDocumentId: null,
+    });
+  });
+
+  it.each([
+    ['older than 46 h', () => undefined, 47 * HOUR],
+    [
+      'followed by a quiz attempt',
+      () => mocks.attempt.exists.mockResolvedValue({ _id: new Types.ObjectId() }),
+      HOUR,
+    ],
+    [
+      'missing',
+      () => adaptive.fetch.mockResolvedValue({ latestCompletion: null, completionsAfter: [] }),
+      HOUR,
+    ],
+  ])('refuses a completion %s with no consent recorded', async (_label, arrange, age) => {
+    arrange();
+
+    await expect(optInB(new Date(COMPLETED_AT.getTime() + age))).rejects.toMatchObject({
+      code: 'completion_too_old',
+      status: 409,
+    });
+    expect(mocks.preference.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(mocks.consentEvent.create).not.toHaveBeenCalled();
+    expect(mocks.outbox.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('answers 503 and writes nothing when the API is unavailable at opt-in', async () => {
+    adaptive.fetch.mockRejectedValue(new adaptive.Unavailable('status 504'));
+
+    await expect(optInB()).rejects.toMatchObject({ code: 'adaptive_unavailable', status: 503 });
+    expect(mocks.consentEvent.create).not.toHaveBeenCalled();
+    expect(mocks.outbox.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('the prompt status is eligible on a fresh completion and not when the API is down', async () => {
+    const status = () =>
+      reviewReminderStatus({
+        userId: USER_ID,
+        email: 'learner@gmail.com',
+        path: 'adaptive',
+        now: new Date(COMPLETED_AT.getTime() + HOUR),
+      });
+    mocks.preference.findOne.mockReturnValue(query(null));
+
+    await expect(status()).resolves.toEqual({ optedIn: false, snoozedUntil: null, eligible: true });
+    adaptive.fetch.mockRejectedValue(new adaptive.Unavailable('status 504'));
+    await expect(status()).resolves.toMatchObject({ eligible: false });
+    expect(mocks.attempt.findById).not.toHaveBeenCalled();
+  });
+
+  it('sends the document title, due count and adaptive link, asking the API after the anchor', async () => {
+    const prepared = await prepareReviewReminder(pathBItem, due);
+
+    expect(adaptive.fetch).toHaveBeenCalledWith(USER_ID, COMPLETED_AT);
+    expect(mocks.attempt.findById).not.toHaveBeenCalled();
+    expect(mocks.attempt.exists).toHaveBeenCalledWith({
+      user: new Types.ObjectId(USER_ID),
+      takenAt: { $gt: COMPLETED_AT },
+    });
+    expect(prepared.decision).toBe('send');
+    if (prepared.decision !== 'send') return;
+    expect(prepared.mail.tags).toEqual([{ name: 'campaign', value: 'w1-review' }]);
+    expect(prepared.mail.subject).toBe('Review the 2 concepts to firm up in “Biology notes.pdf”');
+    expect(prepared.mail.text).toContain(
+      'https://www.rinkuzu.app/en/adaptive/subject/session-1?utm_source=email&utm_campaign=w1-review',
+    );
+    expect(prepared.mail.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+  });
+
+  it('sends d5 with its campaign and falls back to the dashboard without a session', async () => {
+    const d5 = new Date(COMPLETED_AT.getTime() + 120 * HOUR);
+    adaptive.fetch.mockResolvedValue({
+      latestCompletion: { ...completion, documentId: null, documentTitle: null },
+      completionsAfter: [],
+    });
+
+    const prepared = await prepareReviewReminder(
+      {
+        ...pathBItem,
+        kind: 'review_reminder_d5',
+        availableAt: d5,
+        dueAt: d5,
+        anchorDocumentId: null,
+      },
+      d5,
+    );
+
+    expect(prepared.decision).toBe('send');
+    if (prepared.decision !== 'send') return;
+    expect(prepared.mail.tags).toEqual([{ name: 'campaign', value: 'w1-review-d5' }]);
+    expect(prepared.mail.subject).toBe('2 concepts in “your document” are due for review');
+    expect(prepared.mail.text).toContain(
+      'https://www.rinkuzu.app/en/adaptive?utm_source=email&utm_campaign=w1-review-d5',
+    );
+  });
+
+  it('a later adaptive completion cancels a pending Path B row', async () => {
+    adaptive.fetch.mockResolvedValue({
+      latestCompletion: completion,
+      completionsAfter: [new Date(COMPLETED_AT.getTime() + 5 * HOUR)],
+    });
+
+    await expect(prepareReviewReminder(pathBItem, due)).resolves.toEqual({
+      decision: 'cancel',
+      reason: 'later_completion',
+    });
+  });
+
+  it('a later quiz attempt cancels a Path B row', async () => {
+    mocks.attempt.exists.mockResolvedValue({ _id: new Types.ObjectId() });
+
+    await expect(prepareReviewReminder(pathBItem, due)).resolves.toEqual({
+      decision: 'cancel',
+      reason: 'later_attempt',
+    });
+  });
+
+  it('a later adaptive completion cancels a Path A row', async () => {
+    adaptive.fetch.mockResolvedValue({
+      latestCompletion: completion,
+      completionsAfter: [new Date(TAKEN_AT.getTime() + HOUR)],
+    });
+    const pathAItem = {
+      _id: new Types.ObjectId(OUTBOX_ID),
+      kind: 'review_reminder',
+      entityId: new Types.ObjectId(ATTEMPT_ID),
+      availableAt: new Date(TAKEN_AT.getTime() + 48 * HOUR),
+    };
+
+    await expect(prepareReviewReminder(pathAItem, pathAItem.availableAt)).resolves.toEqual({
+      decision: 'cancel',
+      reason: 'later_completion',
+    });
+    expect(adaptive.fetch).toHaveBeenCalledWith(USER_ID, TAKEN_AT);
+  });
+
+  it('cancels when the API no longer reports the completion', async () => {
+    adaptive.fetch.mockResolvedValue({ latestCompletion: null, completionsAfter: [] });
+
+    await expect(prepareReviewReminder(pathBItem, due)).resolves.toEqual({
+      decision: 'cancel',
+      reason: 'completion_missing',
+    });
+  });
+
+  it('API down at send time: retries in 10 min inside the window, then too_late', async () => {
+    adaptive.fetch.mockRejectedValue(new adaptive.Unavailable('status 504'));
+
+    await expect(prepareReviewReminder(pathBItem, due)).resolves.toEqual({
+      decision: 'retry',
+      availableAt: new Date(due.getTime() + 10 * 60_000),
+    });
+    // A retried row keeps its due time, so the window does not move with it.
+    const late = new Date(due.getTime() + 2 * HOUR + 1);
+    await expect(prepareReviewReminder({ ...pathBItem, availableAt: late }, late)).resolves.toEqual(
+      { decision: 'cancel', reason: 'too_late' },
+    );
+  });
+
+  it('rethrows an unexpected client error instead of hiding it', async () => {
+    adaptive.fetch.mockRejectedValue(new TypeError('bug'));
+
+    await expect(prepareReviewReminder(pathBItem, due)).rejects.toThrow('bug');
   });
 });
 

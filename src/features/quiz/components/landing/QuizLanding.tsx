@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Card';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { cn } from '@/lib/utils';
+import { ReportQuizPageLink } from '@/features/quiz/components/ReportQuizPageLink';
 import { QUIZ_LANDING_ENTRY } from '@/shared/constants/starter-quiz';
 import type {
   QuizLandingPreviewQuestion,
@@ -16,6 +17,10 @@ interface QuizLandingProps {
   landing: QuizLandingViewModel;
   /** A signed-in viewer gets the labels without "no account needed". */
   signedIn: boolean;
+  /** Signed-in viewer's email, shown read-only in the report dialog (RIN-1344). */
+  viewerEmail?: string | null;
+  /** The owner gets no "Report" link on their own quiz. */
+  ownedByViewer?: boolean;
 }
 
 /** A question longer than this is clamped to 6 lines in the preview. */
@@ -87,7 +92,13 @@ function PreviewQuestion({ question, numberLabel, imageAlt }: PreviewQuestionPro
  * without answers, and links to other quizzes. Every CTA is a plain link, so a
  * guest reaches question 1 without JavaScript or a sign-in.
  */
-export async function QuizLanding({ locale, landing, signedIn }: QuizLandingProps) {
+export async function QuizLanding({
+  locale,
+  landing,
+  signedIn,
+  viewerEmail = null,
+  ownedByViewer = false,
+}: QuizLandingProps) {
   const [t, tQuiz] = await Promise.all([
     getTranslations({ locale, namespace: 'quiz.landing' }),
     getTranslations({ locale, namespace: 'quiz' }),
@@ -162,30 +173,51 @@ export async function QuizLanding({ locale, landing, signedIn }: QuizLandingProp
         </div>
       </section>
 
-      {landing.related.length > 0 ? (
+      {landing.related.length > 0 || landing.topic ? (
         <section aria-labelledby="quiz-landing-related-title" className="space-y-4">
           <h2 id="quiz-landing-related-title" className="text-lg font-semibold text-ink">
-            {t('relatedTitle')}
+            {/* The block shows with no links only for a topic: then it is the hub link. */}
+            {landing.relatedSameTopic || landing.related.length === 0
+              ? t('relatedTopicTitle')
+              : t('relatedTitle')}
           </h2>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {landing.related.map((quiz) => (
-              <li key={quiz.slug} className="min-w-0">
-                <a
-                  href={quizHref(locale, quiz.slug)}
-                  className="block h-full rounded-xl border border-secondary-2 bg-surface-blue p-4"
-                >
-                  <span className="line-clamp-2 break-words font-medium text-ink">
-                    {quiz.title}
-                  </span>
-                  <span className="mt-1 block text-sm text-ink/40">
-                    {t('relatedCount', { count: quiz.questionCount })}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
+          {landing.related.length > 0 ? (
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {landing.related.map((quiz) => (
+                <li key={quiz.slug} className="min-w-0">
+                  <a
+                    href={quizHref(locale, quiz.slug)}
+                    className="block h-full rounded-xl border border-secondary-2 bg-surface-blue p-4"
+                  >
+                    <span className="line-clamp-2 break-words font-medium text-ink">
+                      {quiz.title}
+                    </span>
+                    <span className="mt-1 block text-sm text-ink/40">
+                      {t('relatedCount', { count: quiz.questionCount })}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {landing.topic ? (
+            <a
+              href={landing.topic.href}
+              className="inline-flex min-h-11 items-center text-sm font-medium text-accent hover:underline"
+            >
+              {t('topicHubLink', { topic: landing.topic.name })}
+            </a>
+          ) : null}
         </section>
       ) : null}
+
+      <footer className="flex justify-end border-t border-line pt-2">
+        <ReportQuizPageLink
+          slug={landing.slug}
+          viewerEmail={viewerEmail}
+          ownedByViewer={ownedByViewer}
+        />
+      </footer>
     </div>
   );
 }

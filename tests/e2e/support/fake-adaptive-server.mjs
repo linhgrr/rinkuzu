@@ -266,6 +266,22 @@ async function handleAdaptiveRequest(request, response, url) {
     return;
   }
 
+  // Path B review facts (RIN-1361/RIN-1364): every learner completed a document an hour ago.
+  const reviewFactsMatch = url.pathname.match(/^\/api\/admin\/review-reminder\/adaptive\/([^/]+)$/);
+  if (request.method === 'GET' && reviewFactsMatch) {
+    sendOk(response, {
+      latest_completion: {
+        completed_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        document_id: 'e2e-review-session',
+        job_id: 'e2e-review-job',
+        document_title: 'E2E notes.pdf',
+        due_count: 2,
+      },
+      completions_after: [],
+    });
+    return;
+  }
+
   const createSessionMatch = url.pathname.match(/^\/api\/pipeline\/jobs\/([^/]+)\/create-session$/);
   if (request.method === 'POST' && createSessionMatch) {
     if (!state || createSessionMatch[1] !== state.jobId || state.status !== 'completed') {

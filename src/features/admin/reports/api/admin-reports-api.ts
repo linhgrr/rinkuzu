@@ -11,26 +11,41 @@ import {
   toAdminReportedQuestionViewModel,
 } from '@/features/admin/reports/mappers/admin-reports.mapper';
 import type {
-  AdminReportFilterViewModel,
+  AdminReportListFilters,
+  AdminReportListViewModel,
   AdminReportedQuestionViewModel,
   AdminReportedQuestionUpdateInput,
   AdminReportStatusUpdateInput,
-  AdminReportViewModel,
 } from '@/features/admin/reports/types/admin-reports-view-model';
 
 export async function fetchAdminReportViewModels(
-  statusFilter: AdminReportFilterViewModel,
+  { status, reason }: AdminReportListFilters,
   signal?: AbortSignal,
-): Promise<AdminReportViewModel[]> {
+): Promise<AdminReportListViewModel> {
   const params = new URLSearchParams();
-  if (statusFilter !== 'all') {
-    params.append('status', statusFilter);
+  if (status !== 'all') {
+    params.append('status', status);
+  }
+  if (reason !== 'all') {
+    params.append('reason', reason);
   }
 
   const data = await fetchApiData<AdminReportListDto>(`/api/admin/reports?${params}`, {
     ...(signal !== undefined ? { signal } : {}),
   });
-  return toAdminReportViewModels(data.reports);
+  return {
+    reports: toAdminReportViewModels(data.reports),
+    pendingIndexHoldCount: data.pendingIndexHoldCount,
+  };
+}
+
+/** Hides the reported quiz (audited) and resolves the report (RIN-1343 C1). */
+export async function hideAdminReportedQuiz(reportId: string, adminNotes: string): Promise<void> {
+  await fetchApiData<unknown>(`/api/admin/reports/${reportId}/hide-quiz`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(adminNotes ? { adminNotes } : {}),
+  });
 }
 
 export async function updateAdminReportStatus({

@@ -491,7 +491,8 @@
     "statsTotal": "Total",
     "statsAccuracy": "Accuracy",
     "sessionCompleteTitle": "Session Complete!",
-    "sessionCompleteDescription": "You've completed all {count} exercises. Great work!"
+    "sessionCompleteDescription": "You've completed all {count} exercises. Great work!",
+    "reviewPromptQuestion": "Want a reminder in 2 days to review what you just studied?"
   },
   "subjectDetails": {
     "backToDashboard": "Back to Dashboard",

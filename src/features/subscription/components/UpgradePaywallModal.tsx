@@ -9,6 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { fetchSubscriptionPageViewModel } from '@/features/subscription/api/subscription-page-api';
 import type { SubscriptionPlanViewModel } from '@/features/subscription/types/subscription-page-view-model';
 import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
+import { sortPlansByPrice } from '@/features/subscription/lib/plan-order';
 import { formatVndCurrency } from '@/lib/formatters';
 import { capturePaywallEvent } from '@/lib/analytics/paywall';
 
@@ -49,10 +50,10 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
     if (!isOpen) return;
 
     let active = true;
-    void fetchSubscriptionPageViewModel()
+    void fetchSubscriptionPageViewModel(locale)
       .then((viewModel) => {
         if (!active) return;
-        const validPlans = viewModel.plans.filter(
+        const validPlans = sortPlansByPrice(viewModel.plans).filter(
           (plan) => plan.price > 0 && plan.calculatedMonths > 0,
         );
         setPlansState({ status: 'ready', plans: validPlans, isPremium: viewModel.isPremium });
@@ -64,7 +65,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
     return () => {
       active = false;
     };
-  }, [isOpen, reloadKey]);
+  }, [isOpen, locale, reloadKey]);
 
   const bestMonthlyPrice = useMemo(() => {
     if (plansState.status !== 'ready' || plansState.plans.length < 2) return null;

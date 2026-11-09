@@ -27,11 +27,25 @@ const SAMPLE: BlogPost = {
   content: '## First section\n\nBody text.\n',
 };
 
+// RIN-1312: a Vietnamese article with no English file, and a Vietnamese listing-only
+// translation (no body) of an English article. Fake content.
+const VI_ONLY: BlogPost = {
+  ...SAMPLE,
+  slug: 'bai-viet-chi-tieng-viet',
+  title: 'Bài viết chỉ có tiếng Việt',
+  locale: 'vi',
+  content: '## Phần một\n\nNội dung.\n',
+};
+const VI_LISTING_ONLY: BlogPost = { ...SAMPLE, locale: 'vi', content: '' };
+
+const { POSTS } = vi.hoisted(() => ({ POSTS: [] as BlogPost[] }));
+POSTS.push(SAMPLE, VI_ONLY, VI_LISTING_ONLY);
+
 vi.mock('@/lib/blog/content', () => ({
-  getAllBlogPosts: () => [SAMPLE],
-  getBlogPostsByLocale: (locale: string) => (locale === SAMPLE.locale ? [SAMPLE] : []),
+  getAllBlogPosts: () => POSTS,
+  getBlogPostsByLocale: (locale: string) => POSTS.filter((post) => post.locale === locale),
   getBlogPostBySlug: (locale: string, slug: string) =>
-    locale === SAMPLE.locale && slug === SAMPLE.slug ? SAMPLE : undefined,
+    POSTS.find((post) => post.locale === locale && post.slug === slug),
 }));
 vi.mock('@/lib/public-quiz-sitemap', () => ({ loadPublicQuizSitemapEntries: async () => [] }));
 vi.mock('next/navigation', async (importOriginal) => ({
@@ -61,6 +75,69 @@ describe('blog SEO derived from content frontmatter', () => {
         vi: canonicalFor('vi', `/blog/${SAMPLE.slug}`),
       });
       expect(byUrl.get(canonicalFor(locale, `/blog/authors/${SAMPLE.author}`))).toBeTruthy();
+    }
+  });
+
+  it('lists a vi-only article only under /vi, with vi and x-default alternates (RIN-1312)', async () => {
+    const entries = await buildPublicSitemapEntries('test');
+    const byUrl = new Map(entries.map((entry) => [entry.url, entry]));
+    const path = `/blog/${VI_ONLY.slug}`;
+
+    expect(byUrl.has(canonicalFor('en', path))).toBe(false);
+    expect(byUrl.get(canonicalFor('vi', path))?.alternates?.languages).toEqual({
+      vi: canonicalFor('vi', path),
+      'x-default': canonicalFor('vi', path),
+    });
+  });
+
+  it('keeps both locales, alternates and x-default for an article that exists in both (RIN-1312)', async () => {
+    const entries = await buildPublicSitemapEntries('test');
+    const path = `/blog/${SAMPLE.slug}`;
+    const both = {
+      vi: canonicalFor('vi', path),
+      en: canonicalFor('en', path),
+      'x-default': canonicalFor('vi', path),
+    };
+    const articleEntries = entries.filter((entry) => entry.url.endsWith(path));
+
+    expect(articleEntries).toEqual([
+      {
+        url: canonicalFor('en', path),
+        lastModified: expect.any(Date),
+        alternates: { languages: both },
+      },
+      {
+        url: canonicalFor('vi', path),
+        lastModified: expect.any(Date),
+        alternates: { languages: both },
+      },
+    ]);
+  });
+
+  it('gives a vi-only article no en hreflang alternate in its metadata (RIN-1312)', async () => {
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ locale: 'vi', slug: VI_ONLY.slug }),
+    });
+    const path = `/blog/${VI_ONLY.slug}`;
+
+    expect(metadata.alternates?.languages).toEqual({
+      vi: canonicalFor('vi', path),
+      'x-default': canonicalFor('vi', path),
+    });
+    expect(
+      await generateMetadata({ params: Promise.resolve({ locale: 'en', slug: VI_ONLY.slug }) }),
+    ).toEqual({});
+  });
+
+  it('keeps every hreflang alternate for an article in both locales (RIN-1312)', async () => {
+    const path = `/blog/${SAMPLE.slug}`;
+    for (const locale of ['en', 'vi']) {
+      const metadata = await generateMetadata({ params: params(locale) });
+      expect(metadata.alternates?.languages).toEqual({
+        vi: canonicalFor('vi', path),
+        en: canonicalFor('en', path),
+        'x-default': canonicalFor('vi', path),
+      });
     }
   });
 

@@ -399,3 +399,23 @@ describe('activation nudge click (RIN-1000)', () => {
     expect(state.capture).not.toHaveBeenCalled();
   });
 });
+
+describe('activation nudge locale (RIN-1263)', () => {
+  it('sends the en copy to an account that signed up on /en', async () => {
+    state.users = [learner({ locale: 'en' })];
+
+    await sweepActivationNudges(NOW);
+    const row = theRow();
+    expect(row.locale).toBe('en');
+    const prepared = await prepareActivationNudge({ ...row, entityId: row.userId }, NOW);
+
+    expect(prepared.decision).toBe('send');
+    if (prepared.decision !== 'send') return;
+    expect(prepared.mail.subject).toBe('Your 2-minute quiz is ready');
+  });
+
+  it('keeps vi for an account with no stored locale', async () => {
+    await sweepActivationNudges(NOW);
+    expect(theRow().locale).toBe('vi');
+  });
+});

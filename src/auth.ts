@@ -6,6 +6,8 @@ import authConfig from '@/auth.config';
 import { extractRequestContext } from '@/lib/audit';
 import { getAuthSignInRepository, getAuthSignInService } from '@/lib/auth-sign-in-factory';
 import { selectAuthDbUserId } from '@/lib/auth/auth-db-identity';
+import { rememberSignInLocale } from '@/lib/auth/remember-sign-in-locale';
+import { rememberGoogleSignupOrigin } from '@/lib/auth/remember-signup-origin';
 import { applySessionUser, clearSessionUser } from '@/lib/auth/session-projection';
 import { env } from '@/lib/env';
 import { AuthAuditAdapter } from '@/lib/integrations/auth-audit';
@@ -123,6 +125,8 @@ const providers = [
     credentials: {
       email: { label: 'Email', type: 'email' },
       password: { label: 'Password', type: 'password' },
+      // The login page's UI locale, stored on an account with none yet (RIN-1263).
+      locale: { label: 'Locale', type: 'text' },
     },
     async authorize(credentials, request) {
       const parsed = loginSchema.safeParse({
@@ -136,6 +140,8 @@ const providers = [
       const context = extractRequestContext(request);
       const result = await getAuthSignInService().authenticateCredentials(parsed.data, context);
       if (!result.success) throw toCredentialsSignInError(result);
+      // `credentials` is defined here: the schema above rejected a missing email.
+      await rememberSignInLocale(getAuthSignInRepository(), result.user.id, credentials['locale']);
 
       // Credentials: repository user.id is the durable Mongo id (Auth.js keeps it).
       return {
@@ -176,6 +182,12 @@ const providers = [
 
             if (!result.success) {
               throw new Error('Google authentication rejected');
+            }
+            // The page locale rides in the Auth.js callback-url cookie (`/en/...`).
+            await rememberSignInLocale(getAuthSignInRepository(), result.user.id);
+            // Signup origin is written once, on the sign-in that created the account (RIN-1268).
+            if (result.isNewAccount) {
+              await rememberGoogleSignupOrigin(getAuthSignInRepository(), result.user.id);
             }
 
             // Auth core overwrites `id` with randomUUID and uses the returned id as

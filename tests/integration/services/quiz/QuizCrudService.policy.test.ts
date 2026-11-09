@@ -28,7 +28,7 @@ describe('QuizCrudService Premium source publication policy', () => {
   };
 
   const request = {
-    title: 'Saved privately',
+    title: 'Published immediately',
     folderId: null,
     questions: [
       {
@@ -61,15 +61,12 @@ describe('QuizCrudService Premium source publication policy', () => {
     );
   });
 
-  it('creates an ordinary quiz as private (personal) unless the owner asks for public (RIN-1271)', async () => {
-    const service = new QuizCrudService(quizRepository);
-    await service.createQuiz('user-1', request);
-    await service.createQuiz('user-1', { ...request, visibility: 'public' });
+  it('creates an ordinary quiz as public', async () => {
+    await new QuizCrudService(quizRepository).createQuiz('user-1', request);
 
-    expect(quizRepository.create.mock.calls.map(([data]) => data.visibility)).toEqual([
-      'personal',
-      'public',
-    ]);
+    expect(quizRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ visibility: 'public' }),
+    );
   });
 
   it('creates a Premium contribution as a personal source without a subscription gate', async () => {

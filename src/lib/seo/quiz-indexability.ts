@@ -22,16 +22,22 @@ const MIN_OWNER_DESCRIPTION_LENGTH = 50;
 const DESCRIPTION_TITLE_MAX_LENGTH = 60;
 
 /**
- * D14 threshold: the title plus the first questions must hold at least this many
- * letters that only Vietnamese uses. Accents shared with French or Spanish
- * (é, à, ô, ...) do not count, so "Café" or "résumé" never flips an English quiz;
- * one stray Vietnamese name (a single letter such as "ễ") does not either. Two
- * is enough: "Chương" alone has ư and ơ, and a Vietnamese question has several.
+ * D14 thresholds: letters that only Vietnamese uses. Accents shared with French
+ * or Spanish (é, à, ô, ...) do not count, so "Café" or "résumé" never flips an
+ * English quiz. In the title one such letter is enough (RIN-1294: "Nhật ngành"
+ * has only ậ, and its Japanese questions add no Latin letters). Across the title
+ * plus the first questions it takes two, so one stray Vietnamese name in a
+ * question (a single letter such as "ễ") does not flip an English quiz; "Chương"
+ * alone has ư and ơ, and a Vietnamese question has several.
  */
+const MIN_VIETNAMESE_LETTERS_IN_TITLE = 1;
 const MIN_VIETNAMESE_LETTERS = 2;
 
 /** Letters with a breve, horn, đ, dot below, hook above, or a stacked tone mark. */
 const VIETNAMESE_ONLY_LETTERS = /[ăằắặẳẵầấậẩẫạảđẹẻẽềếệểễịỉĩọỏồốộổỗơờớợởỡụủũưừứựửữỳỵỷỹ]/gu;
+
+/** Any Latin-script letter, with or without diacritics. */
+const LATIN_LETTER = /\p{Script=Latin}/u;
 
 export interface QuizIndexabilityInput {
   visibility: string;
@@ -52,9 +58,17 @@ export function detectQuizContentLocale(
   title: string,
   firstQuestionTexts: readonly string[],
 ): QuizContentLocale {
-  const text = [title, ...firstQuestionTexts].join(' ').normalize('NFC').toLowerCase();
-  const vietnameseLetters = text.match(VIETNAMESE_ONLY_LETTERS)?.length ?? 0;
-  return vietnameseLetters >= MIN_VIETNAMESE_LETTERS ? 'vi' : 'en';
+  const titleLetters = countVietnameseLetters(title);
+  if (titleLetters >= MIN_VIETNAMESE_LETTERS_IN_TITLE) return 'vi';
+  const questions = firstQuestionTexts.join(' ');
+  if (titleLetters + countVietnameseLetters(questions) >= MIN_VIETNAMESE_LETTERS) return 'vi';
+  // No Latin text at all (a Japanese-only set such as "情報セキュリティ(1)"): our
+  // audience is Vietnamese, so English stays only for Latin text (RIN-1294).
+  return LATIN_LETTER.test(`${title} ${questions}`) ? 'en' : 'vi';
+}
+
+function countVietnameseLetters(text: string): number {
+  return text.normalize('NFC').toLowerCase().match(VIETNAMESE_ONLY_LETTERS)?.length ?? 0;
 }
 
 /** Cuts `text` to `maxLength` (ellipsis included), at a word boundary when one is near. */

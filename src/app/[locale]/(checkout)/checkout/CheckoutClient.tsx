@@ -34,6 +34,7 @@ import {
   isUnavailablePlan,
   type QuoteFailure,
 } from './CheckoutEmptyState';
+import { VietnamOnlyPaymentNote } from './VietnamOnlyPaymentNote';
 
 type CheckoutStatusKey =
   | 'status.fulfilled'
@@ -344,6 +345,7 @@ function CheckoutContent({ planId, orderId, hasProviderCallback }: CheckoutClien
               </span>
             </span>
           </div>
+          <VietnamOnlyPaymentNote />
         </fieldset>
 
         <div className="mt-8">

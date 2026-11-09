@@ -33,6 +33,7 @@
       "adaptiveExercises": "Tạo tối đa 500 bài tập cá nhân hóa mỗi ngày"
     }
   },
+  "vietnamOnlyPaymentNote": "Hiện chỉ nhận thanh toán bằng VND qua ứng dụng ngân hàng Việt Nam. Bạn thanh toán từ nước ngoài? <support>Liên hệ hỗ trợ</support>.",
   "faqHeading": "Câu hỏi về giá",
   "faqs": [
     {

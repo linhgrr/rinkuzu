@@ -91,6 +91,50 @@ describe('review reminder email (RIN-915)', () => {
   });
 });
 
+describe('day-5 review email (RIN-1304)', () => {
+  const retryUrl =
+    'https://www.rinkuzu.app/en/quiz/cell-biology?retryOf=6a8ed209f04328ac17443d91&utm_source=email&utm_campaign=w1-review-d5';
+  const unsubscribeUrl = 'https://www.rinkuzu.app/en/unsubscribe?t=token';
+
+  it.each([
+    ['vi', '3 câu trong “Cell biology” đã đến lúc ôn lại', '3 câu bạn chưa đúng trong bài'],
+    ['en', '3 questions in “Cell biology” are due for review', 'The 3 questions you missed in'],
+  ] as const)(
+    'renders the %s email: title, count, one retry link',
+    async (locale, subject, intro) => {
+      const mail = await renderReviewReminder({
+        touch: 'd5',
+        locale,
+        quizTitle: 'Cell biology',
+        missedCount: 3,
+        retryUrl,
+        unsubscribeUrl,
+      });
+      expect(mail.subject).toBe(subject);
+      expect(mail.text).toContain(intro);
+      expect(mail.html).toContain(`lang="${locale}"`);
+      expect(mail.html.split(retryUrl.replaceAll('&', '&amp;')).length - 1).toBe(1);
+      expect(mail.html).toContain('utm_campaign=w1-review-d5');
+      expect(mail.html).toContain(unsubscribeUrl);
+      expect(mail.text).toMatch(/At most two emails a week|Mỗi tuần tối đa hai email/u);
+      expect(`${mail.subject}
+${mail.text}`).not.toMatch(/adaptive|thích ứng|answer|đáp án/iu);
+    },
+  );
+
+  it('agrees in number for one question', async () => {
+    const mail = await renderReviewReminder({
+      touch: 'd5',
+      locale: 'en',
+      quizTitle: 'Biology',
+      missedCount: 1,
+      retryUrl,
+      unsubscribeUrl,
+    });
+    expect(mail.subject).toBe('1 question in “Biology” is due for review');
+  });
+});
+
 describe('communication email templates', () => {
   const preferencesUrl = 'https://rinkuzu.app/feedback/preferences?token=abc';
 

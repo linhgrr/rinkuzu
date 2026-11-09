@@ -5,8 +5,12 @@
 export interface ReviewEmailSendWeek {
   /** Monday 00:00 UTC of the ISO week. */
   readonly weekStart: Date;
+  /** Day-2 email (RIN-911). */
   readonly sent: number;
   readonly opened: number;
+  /** Final day-5 touch (RIN-1304). */
+  readonly sentD5: number;
+  readonly openedD5: number;
 }
 
 export interface ReviewEmailConsentWeek {

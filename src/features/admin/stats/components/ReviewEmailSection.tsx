@@ -20,19 +20,29 @@ function isAbort(error: unknown): boolean {
 }
 
 function hasAnyCount(week: ReviewEmailWeekViewModel): boolean {
-  return week.sent + (week.opened ?? 0) + week.unsubscribed + week.optIns > 0;
+  return week.sent + week.sentD5 + week.unsubscribed + week.optIns > 0;
+}
+
+function OpenedCell({ opened, t }: { opened: number | null; t: TranslateFn }) {
+  return (
+    <td className="py-2 text-right tabular-nums">
+      {opened === null ? t('reviewEmailNotTracked') : opened.toLocaleString()}
+    </td>
+  );
 }
 
 function ReviewEmailTable({ stats, t }: { stats: ReviewEmailStatsViewModel; t: TranslateFn }) {
   const newestFirst = [...stats.weeks].reverse();
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[440px] text-sm">
+      <table className="w-full min-w-[600px] text-sm">
         <thead>
           <tr className="text-left text-neutral-500">
             <th className="py-2">{t('reviewEmailWeek')}</th>
             <th className="py-2 text-right">{t('reviewEmailSent')}</th>
             <th className="py-2 text-right">{t('reviewEmailOpened')}</th>
+            <th className="py-2 text-right">{t('reviewEmailSentD5')}</th>
+            <th className="py-2 text-right">{t('reviewEmailOpenedD5')}</th>
             <th className="py-2 text-right">{t('reviewEmailUnsubscribed')}</th>
             <th className="py-2 text-right">{t('reviewEmailOptIns')}</th>
           </tr>
@@ -42,9 +52,9 @@ function ReviewEmailTable({ stats, t }: { stats: ReviewEmailStatsViewModel; t: T
             <tr key={week.isoWeek} className="border-t border-line/50">
               <td className="py-2 font-medium">{week.isoWeek}</td>
               <td className="py-2 text-right tabular-nums">{week.sent.toLocaleString()}</td>
-              <td className="py-2 text-right tabular-nums">
-                {week.opened === null ? t('reviewEmailNotTracked') : week.opened.toLocaleString()}
-              </td>
+              <OpenedCell opened={week.opened} t={t} />
+              <td className="py-2 text-right tabular-nums">{week.sentD5.toLocaleString()}</td>
+              <OpenedCell opened={week.openedD5} t={t} />
               <td className="py-2 text-right tabular-nums">{week.unsubscribed.toLocaleString()}</td>
               <td className="py-2 text-right tabular-nums">{week.optIns.toLocaleString()}</td>
             </tr>
@@ -70,8 +80,9 @@ function ReviewEmailBody({ stats, t }: { stats: ReviewEmailStatsViewModel; t: Tr
 }
 
 /**
- * Week-1 review email panel (RIN-916): weekly sends, opens, unsubscribes and
- * opt-ins. Aggregate-only: nothing here identifies a learner or an email.
+ * Week-1 review email panel (RIN-916): weekly sends and opens of the day-2
+ * and day-5 emails (RIN-1304), unsubscribes and opt-ins. Aggregate-only:
+ * nothing here identifies a learner or an email.
  */
 export function ReviewEmailSection() {
   const t = useTranslations('admin') as TranslateFn;

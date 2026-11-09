@@ -89,7 +89,10 @@ export default async function TopicHubPage({ params }: Props) {
           <h1 className="break-words font-home text-2xl font-semibold text-ink sm:text-3xl">
             {t('h1', { name: hub.name })}
           </h1>
-          <Badge variant="purple">{t('count', { count: hub.quizzes.length })}</Badge>
+          {/* An empty hub says so below; "0 bộ câu hỏi" adds nothing (RIN-1404). */}
+          {hub.quizzes.length > 0 ? (
+            <Badge variant="purple">{t('count', { count: hub.quizzes.length })}</Badge>
+          ) : null}
         </header>
 
         <MarkdownRenderer

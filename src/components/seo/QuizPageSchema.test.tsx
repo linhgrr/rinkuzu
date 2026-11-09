@@ -80,4 +80,49 @@ describe('QuizBreadcrumbSchema', () => {
     expect(schema.itemListElement[1]?.item).toMatch(/^https?:\/\/[^/]+\/vi\/explore$/);
     expect(schema.itemListElement[2]?.item).toMatch(/\/vi\/quiz\/giai-tich-1$/);
   });
+
+  it('inserts the topic step before the quiz when the quiz has a topic (RIN-1249)', () => {
+    const html = renderToStaticMarkup(
+      <QuizBreadcrumbSchema
+        locale="vi"
+        quizSlug="giai-tich-1"
+        quizTitle="Giải tích 1"
+        topic={{ name: 'Toán cao cấp', path: '/explore/toan-cao-cap' }}
+      />,
+    );
+    const json = html.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '');
+    const schema = JSON.parse(json) as {
+      itemListElement: { position: number; name: string; item: string }[];
+    };
+
+    expect(schema.itemListElement.map(({ position, name }) => [position, name])).toEqual([
+      [1, 'Trang chủ'],
+      [2, 'Khám phá'],
+      [3, 'Toán cao cấp'],
+      [4, 'Giải tích 1'],
+    ]);
+    expect(schema.itemListElement[2]?.item).toMatch(/\/vi\/explore\/toan-cao-cap$/);
+  });
+});
+
+describe('QuizPageSchema about (RIN-1249)', () => {
+  function quizJson(topicName?: string): Record<string, unknown> {
+    const html = renderToStaticMarkup(
+      <QuizPageSchema
+        locale="vi"
+        quizSlug="giai-tich-1"
+        quizTitle="Giải tích 1"
+        {...(topicName ? { topicName } : {})}
+      />,
+    );
+    return JSON.parse(html.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')) as Record<
+      string,
+      unknown
+    >;
+  }
+
+  it('names the topic as about, and leaves about out without a topic', () => {
+    expect(quizJson('Toán cao cấp')['about']).toEqual({ '@type': 'Thing', name: 'Toán cao cấp' });
+    expect(quizJson()).not.toHaveProperty('about');
+  });
 });

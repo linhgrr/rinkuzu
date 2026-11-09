@@ -162,28 +162,41 @@ export async function QuizLanding({ locale, landing, signedIn }: QuizLandingProp
         </div>
       </section>
 
-      {landing.related.length > 0 ? (
+      {landing.related.length > 0 || landing.topic ? (
         <section aria-labelledby="quiz-landing-related-title" className="space-y-4">
           <h2 id="quiz-landing-related-title" className="text-lg font-semibold text-ink">
-            {t('relatedTitle')}
+            {/* The block shows with no links only for a topic: then it is the hub link. */}
+            {landing.relatedSameTopic || landing.related.length === 0
+              ? t('relatedTopicTitle')
+              : t('relatedTitle')}
           </h2>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {landing.related.map((quiz) => (
-              <li key={quiz.slug} className="min-w-0">
-                <a
-                  href={quizHref(locale, quiz.slug)}
-                  className="block h-full rounded-xl border border-secondary-2 bg-surface-blue p-4"
-                >
-                  <span className="line-clamp-2 break-words font-medium text-ink">
-                    {quiz.title}
-                  </span>
-                  <span className="mt-1 block text-sm text-ink/40">
-                    {t('relatedCount', { count: quiz.questionCount })}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
+          {landing.related.length > 0 ? (
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {landing.related.map((quiz) => (
+                <li key={quiz.slug} className="min-w-0">
+                  <a
+                    href={quizHref(locale, quiz.slug)}
+                    className="block h-full rounded-xl border border-secondary-2 bg-surface-blue p-4"
+                  >
+                    <span className="line-clamp-2 break-words font-medium text-ink">
+                      {quiz.title}
+                    </span>
+                    <span className="mt-1 block text-sm text-ink/40">
+                      {t('relatedCount', { count: quiz.questionCount })}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {landing.topic ? (
+            <a
+              href={landing.topic.href}
+              className="inline-flex min-h-11 items-center text-sm font-medium text-accent hover:underline"
+            >
+              {t('topicHubLink', { topic: landing.topic.name })}
+            </a>
+          ) : null}
         </section>
       ) : null}
     </div>

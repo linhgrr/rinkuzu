@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 const { fetchQuizMock } = vi.hoisted(() => ({ fetchQuizMock: vi.fn() }));
 const translate = vi.hoisted(() => (key: string) => key);
+// Stable across renders: the load effect lists the error helper as a dependency, so a
+// fresh function per render reloads the quiz and the page drops back to its skeleton.
+const describeError = vi.hoisted(() => (_error: unknown, fallback: string) => fallback);
+const showErrorToast = vi.hoisted(() => () => undefined);
 
 vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
 vi.mock('next-auth/react', () => ({
@@ -16,8 +20,8 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 vi.mock('@/lib/routing/useRequiredRouteParam', () => ({ useRequiredRouteParam: () => 'quiz-1' }));
 vi.mock('@/lib/api/use-api-error', () => ({
-  useApiErrorMessage: () => (_error: unknown, fallback: string) => fallback,
-  useApiErrorToast: () => () => undefined,
+  useApiErrorMessage: () => describeError,
+  useApiErrorToast: () => showErrorToast,
 }));
 vi.mock('@/features/quiz/api/quiz-edit-api', () => ({
   fetchQuizEditViewModel: fetchQuizMock,

@@ -751,7 +751,7 @@
   },
   "quizTopics": {
     "title": "Chủ đề",
-    "description": "Mỗi chủ đề là một trang /vi/explore/<slug> gom các quiz công khai. Trang chỉ được Google lập chỉ mục khi đã xuất bản, có phần giới thiệu 120–400 từ và ít nhất 3 quiz đủ điều kiện.",
+    "description": "Mỗi chủ đề là một trang /vi/explore/[slug] gom các quiz công khai. Trang chỉ được Google lập chỉ mục khi đã xuất bản, có phần giới thiệu 120–400 từ và ít nhất 3 quiz đủ điều kiện.",
     "listLabel": "Chủ đề theo thứ tự",
     "create": "Tạo chủ đề",
     "emptyTitle": "Chưa có chủ đề nào",

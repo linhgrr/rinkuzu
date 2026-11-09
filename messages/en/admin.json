@@ -751,7 +751,7 @@
   },
   "quizTopics": {
     "title": "Topics",
-    "description": "Each topic is a /vi/explore/<slug> page that groups public quizzes. Google indexes it only once it is published, has a 120–400 word intro and at least 3 eligible quizzes.",
+    "description": "Each topic is a /vi/explore/[slug] page that groups public quizzes. Google indexes it only once it is published, has a 120–400 word intro and at least 3 eligible quizzes.",
     "listLabel": "Topics in order",
     "create": "New topic",
     "emptyTitle": "No topics yet",

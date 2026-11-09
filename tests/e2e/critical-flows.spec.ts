@@ -1036,11 +1036,17 @@ test.describe('production critical paths', () => {
       let attemptId = '';
       await recordAnalyticsEvents(page);
       try {
+        // RIN-1283: the fonts use display: optional, so whether Vina Sans lands within its
+        // ~100 ms block period was a race under load, and its wider fallback wraps the hero
+        // h1 to 3 lines. Pin the slower case: no webfont, so the hero CTA (not the
+        // bottom-CTA copy) must be wholly in the first screen with the fallback font.
+        await page.route(/\/_next\/static\/media\/.+\.woff2$/, (route) => route.abort());
         await page.goto('/en');
         const playFirst = page
-          .getByRole('link', { name: 'Try a 2-minute quiz, no account' })
-          .first();
-        await expect(playFirst).toBeInViewport();
+          .locator('#landing-main-content > section')
+          .first()
+          .getByRole('link', { name: 'Try a 2-minute quiz, no account' });
+        await expect(playFirst).toBeInViewport({ ratio: 1 });
         await expect
           .poll(() =>
             playFirst.evaluate((node) =>

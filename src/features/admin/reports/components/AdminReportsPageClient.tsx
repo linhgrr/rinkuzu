@@ -32,7 +32,7 @@ import {
   ReportCardItem,
   ReportReasonBadges,
   ReportReasonFilterBar,
-  getStatusBadge,
+  StatusBadge,
 } from '@/features/admin/reports/components/AdminReportCard';
 import { HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
 import { useReloadSettled } from '@/features/admin/hooks/useReloadSettled';
@@ -160,7 +160,7 @@ function ReportReviewModal({
                 <strong>Date:</strong> {report.createdAtLabel}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <strong>Status:</strong> {getStatusBadge(report.status)}
+                <strong>Status:</strong> <StatusBadge status={report.status} />
                 <ReportReasonBadges report={report} />
               </div>
             </div>

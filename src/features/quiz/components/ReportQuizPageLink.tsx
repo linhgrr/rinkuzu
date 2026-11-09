@@ -127,7 +127,7 @@ export function ReportQuizPageLink({ slug, viewerEmail, ownedByViewer }: ReportQ
                     type="radio"
                     value={reason}
                     className="size-4 accent-[var(--color-accent)]"
-                    aria-required="true"
+                    required
                     {...register('reason')}
                   />
                   {t(`reasons.${reason}`)}
@@ -190,7 +190,7 @@ export function ReportQuizPageLink({ slug, viewerEmail, ownedByViewer }: ReportQ
             </div>
 
             {/* Honeypot: off-screen and out of the tab order, so only a bot fills it. */}
-            <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
+            <div aria-hidden="true" className="sr-only">
               <label htmlFor="report-quiz-website">Website</label>
               <input
                 id="report-quiz-website"

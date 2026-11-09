@@ -22,7 +22,7 @@ const REASON_LABELS: Record<Exclude<AdminReportReasonFilterViewModel, 'all'>, st
 
 const REASON_FILTERS: AdminReportReasonFilterViewModel[] = ['all', ...REPORT_REASONS];
 
-export function getStatusBadge(status: AdminReportStatusViewModel) {
+export function StatusBadge({ status }: { status: AdminReportStatusViewModel }) {
   switch (status) {
     case 'pending':
       return <Badge variant="warning">{status}</Badge>;
@@ -61,7 +61,7 @@ export function ReportReasonFilterBar({ reasonFilter, onChange }: ReportReasonFi
           variant={reasonFilter === reason ? 'gradient' : 'outline'}
           aria-pressed={reasonFilter === reason}
           onClick={() => onChange(reason)}
-          className="min-h-[40px] px-4"
+          className="min-h-10 px-4"
         >
           {reason === 'all' ? 'All reasons' : REASON_LABELS[reason]}
         </Button>
@@ -102,7 +102,7 @@ export function ReportCardItem({ report, onReview, onDelete, onHideQuiz }: Repor
               <h3 className="break-words text-lg font-semibold text-neutral-900">
                 {report.quizTitle}
               </h3>
-              {getStatusBadge(report.status)}
+              <StatusBadge status={report.status} />
               <ReportReasonBadges report={report} />
               {report.questionSnapshot ? (
                 <Badge variant="info">Question {report.questionSnapshot.index + 1}</Badge>

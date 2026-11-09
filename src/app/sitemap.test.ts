@@ -29,6 +29,7 @@ vi.mock('@/lib/quiz-topic-hub-factory', async () => {
   const hubRepository: IQuizTopicHubRepository = {
     findPublishedTopicBySlug: async (slug) =>
       hubData.topics.find((topic) => topic.slug === slug && topic.published) ?? null,
+    findPublishedTopicByQuizId: async () => null,
     listPublishedTopics: async () => hubData.topics.filter((topic) => topic.published),
     listAssignmentsByTopicIds: async (ids) =>
       hubData.assignments.filter((assignment) => ids.includes(assignment.topicId)),

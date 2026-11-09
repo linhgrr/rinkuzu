@@ -9,6 +9,8 @@ interface QuizPageSchemaProps {
   /** The author's real name; without one RinKuzu is the author (RIN-840). */
   authorName?: string;
   categoryName?: string;
+  /** The quiz's topic hub name (RIN-1241 C11), as `about`. */
+  topicName?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -20,6 +22,7 @@ export function QuizPageSchema({
   quizDescription,
   authorName,
   categoryName,
+  topicName,
   createdAt,
   updatedAt,
 }: QuizPageSchemaProps) {
@@ -41,6 +44,7 @@ export function QuizPageSchema({
     learningResourceType: 'Quiz',
     educationalUse: 'Practice',
     isAccessibleForFree: true,
+    ...(topicName ? { about: { '@type': 'Thing', name: topicName } } : {}),
     ...(createdAt ? { dateCreated: createdAt } : {}),
     ...(updatedAt ? { dateModified: updatedAt } : {}),
     author: personName
@@ -66,17 +70,22 @@ interface QuizBreadcrumbSchemaProps {
   locale: string;
   quizSlug: string;
   quizTitle: string;
+  /** The quiz's topic hub: name and unprefixed path, e.g. `/explore/sinh-hoc` (RIN-1249). */
+  topic?: { name: string; path: string };
 }
 
-/**
- * Home › Explore › quiz (RIN-1241 C11). The topic step comes with the subject
- * hubs (RIN-1249).
- */
-export function QuizBreadcrumbSchema({ locale, quizSlug, quizTitle }: QuizBreadcrumbSchemaProps) {
+/** Home › Explore › {topic} › quiz (RIN-1241 C11); the topic step only when the quiz has one. */
+export function QuizBreadcrumbSchema({
+  locale,
+  quizSlug,
+  quizTitle,
+  topic,
+}: QuizBreadcrumbSchemaProps) {
   const isVietnamese = locale === 'vi';
   const steps = [
     { name: isVietnamese ? 'Trang chủ' : 'Home', path: '/' },
     { name: isVietnamese ? 'Khám phá' : 'Explore', path: '/explore' },
+    ...(topic ? [topic] : []),
     { name: quizTitle, path: `/quiz/${quizSlug}` },
   ];
   const breadcrumbSchema = {

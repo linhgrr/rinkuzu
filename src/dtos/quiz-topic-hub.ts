@@ -18,6 +18,13 @@ export interface QuizTopicHubDto {
   indexable: boolean;
 }
 
+/** A quiz's published topic and the other indexable quizzes in it (quiz page, C11/C12). */
+export interface QuizTopicContextDto {
+  slug: string;
+  name: string;
+  quizzes: QuizTopicHubQuizDto[];
+}
+
 /** An indexable hub, for the sitemap and the hub index. */
 export interface QuizTopicHubSummaryDto {
   slug: string;

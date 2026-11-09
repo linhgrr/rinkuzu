@@ -44,7 +44,8 @@ const nextConfig = {
   },
   serverExternalPackages: ['pdf-lib'],
   outputFileTracingIncludes: {
-    '/*': ['./messages/**/*'],
+    // content/blog: blog routes read their posts at render time (src/lib/blog/content.ts).
+    '/*': ['./messages/**/*', './content/blog/**/*.mdx'],
   },
   async redirects() {
     return [

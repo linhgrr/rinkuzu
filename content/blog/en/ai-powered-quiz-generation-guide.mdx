@@ -1,107 +1,25 @@
-import { Link } from '@/i18n/navigation';
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
-import { ShareButtons } from '@/components/blog/ShareButtons';
-import { TableOfContents } from '@/components/blog/TableOfContents';
-import { extractHeadingsFromMarkdown } from '@/lib/blog-utils';
-import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+---
+title: "How AI Transforms PDF Learning into Personalized Quizzes"
+description: "Discover how RinKuzu uses large language models, knowledge graphs, and Bayesian Knowledge Tracing to extract concepts from lecture PDFs and generate personalized quiz questions that adapt to each learner's mastery level."
+date: 2026-03-27
+category: "AI in Education"
+readTimeMinutes: 8
+heroImage: "https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80"
+heroImageAlt: "Open textbook with highlighted notes beside a laptop showing an AI learning interface"
+locale: en
+author: "rinkuzu-team"
+summary: "Discover how RinKuzu turns PDF lectures into personalized quiz journeys."
+lede: "Discover how RinKuzu's ALSS system, SAINT-Bloom, Dueling DQN, and Gemini, turns supported PDF lecture material into personalized quiz practice."
+seoDescription: "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice."
+articleReadTimeMinutes: 9
+breadcrumbLabel: "AI & PDFs"
+navLabel: "How AI Transforms PDF Learning"
+ctaTitle: "Start your adaptive journey today"
+ctaBody: "Upload your first PDF and see the ALSS pipeline in action. Join students mastering complex topics with RinKuzu."
+wordCount: 1350
+timeRequiredMinutes: 9
+---
 
-type Props = { params: Promise<{ locale: string }> };
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await params;
-  const base = buildLocalizedMetadata({
-    locale,
-    path: '/blog/ai-powered-quiz-generation-guide',
-    title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
-    description:
-      "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
-    imagePath: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
-  });
-  return {
-    ...base,
-    openGraph: {
-      ...base.openGraph,
-      title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
-      description:
-        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
-      type: 'article',
-      publishedTime: '2026-03-27T00:00:00.000Z',
-      modifiedTime: '2026-03-27T00:00:00.000Z',
-      authors: [canonicalFor(locale, '/blog/authors/rinkuzu-team')],
-      images: [
-        {
-          url: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
-          width: 1200,
-          height: 630,
-          alt: 'Open textbook with highlighted notes beside a laptop showing an AI learning interface',
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: 'How AI Transforms PDF Learning into Personalized Quizzes | RinKuzu',
-      description:
-        "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
-      images: ['https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80'],
-    },
-  };
-}
-
-const articleSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  name: 'How AI Transforms PDF Learning into Personalized Quizzes',
-  headline: 'How AI Transforms PDF Learning into Personalized Quizzes',
-  description:
-    "Discover how RinKuzu's ALSS system turns supported PDF lecture material into personalized quiz practice.",
-  url: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
-  datePublished: '2026-03-27',
-  dateModified: '2026-03-27',
-  author: {
-    '@type': 'Person',
-    name: 'RinKuzu Team',
-    url: `${siteUrl.origin}/blog/authors/rinkuzu-team`,
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: 'RinKuzu',
-    url: siteUrl.origin,
-    logo: `${siteUrl.origin}/icons/icon-512x512.png`,
-  },
-  mainEntityOfPage: {
-    '@type': 'WebPage',
-    url: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
-  },
-  image: {
-    '@type': 'ImageObject',
-    url: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
-    width: 1200,
-    height: 630,
-  },
-  wordCount: 1350,
-  timeRequired: 'PT9M',
-};
-
-const breadcrumbSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl.origin },
-    { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl.origin}/blog` },
-    {
-      '@type': 'ListItem',
-      position: 3,
-      name: 'How AI Transforms PDF Learning into Personalized Quizzes',
-      item: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
-    },
-  ],
-};
-
-const postContent = `
 ## The Static Learning Problem
 Every student has a folder of lecture notes, textbooks, and handouts — rich content that contains the knowledge they need to master a subject. Yet most of that material sits passive, read once and forgotten. The challenge isn't access to information; it's that static documents can't adapt to the reader. A 300-page textbook treats every student the same way, whether they're seeing the material for the first time or reviewing for an exam.
 
@@ -197,145 +115,3 @@ Start with supported PDF material and create a personalized practice session.
 5. **Clement, B., Roy, D., Oudeyer, P.-Y., & Lopes, M. (2015).** Multi-Armed Bandits for Intelligent Tutoring Systems. *arXiv preprint arXiv:1310.3174*. [https://arxiv.org/abs/1310.3174](https://arxiv.org/abs/1310.3174)
 
 6. **Van de Broeck, G., & Gybels, J. (2019).** Dueling Buffer: A Practical Dueling Bandits Algorithm for Online Learning. *Proceedings of the AAAI Conference on Artificial Intelligence, 33*(01), 330–336. [https://doi.org/10.1609/aaai.v33i01.3301330](https://doi.org/10.1609/aaai.v33i01.3301330)
-`;
-
-export default async function BlogPost({ params }: Props) {
-  const { locale } = await params;
-  const postUrl = canonicalFor(locale, '/blog/ai-powered-quiz-generation-guide');
-  const postTitle = 'How AI Transforms PDF Learning into Personalized Quizzes';
-  const headings = extractHeadingsFromMarkdown(postContent);
-
-  return (
-    <article className="min-h-screen bg-white">
-      <ReadingProgressBar />
-      <JsonLd id="article-schema" data={articleSchema} />
-      <JsonLd id="breadcrumb-schema" data={breadcrumbSchema} />
-
-      {/* Hero */}
-      <header className="bg-[var(--bg-section)] border-b border-neutral-100">
-        <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
-          <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
-            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
-              Home
-            </Link>
-            <span>/</span>
-            <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">
-              Blog
-            </Link>
-            <span>/</span>
-            <span className="text-[var(--text-primary)]">AI & PDFs</span>
-          </nav>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-3 py-1 rounded-full">
-              AI in Education
-            </span>
-            <span className="text-xs text-[var(--text-muted)]">March 27, 2026 · 9 min read</span>
-          </div>
-          <h1 className="text-3xl md:text-5xl font-semibold text-[var(--text-primary)] leading-tight mb-6">
-            {postTitle}
-          </h1>
-          <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
-            Discover how RinKuzu&apos;s ALSS system, SAINT-Bloom, Dueling DQN, and Gemini, turns
-            supported PDF lecture material into personalized quiz practice.
-          </p>
-          <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
-            <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
-              RK
-            </div>
-            <div>
-              <Link
-                href="/blog/authors/rinkuzu-team"
-                className="text-sm font-semibold text-[var(--text-primary)] hover:text-brand-trust transition-colors"
-              >
-                RinKuzu Team
-              </Link>
-              <p className="text-xs text-[var(--text-muted)]">AI Learning Platform</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Article body: centered content, ToC fixed to the right */}
-      <div className="max-w-7xl mx-auto px-6 py-12 relative">
-        {/* Hero image */}
-        <div className="mb-12 max-w-3xl mx-auto">
-          <div className="rounded-3xl overflow-hidden shadow-[10px_25px_100px_0px_rgba(0,43,107,0.15)] ring-1 ring-black/5">
-            <Image
-              src="https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80"
-              alt="Open textbook with highlighted notes beside a laptop showing an AI learning interface"
-              width={900}
-              height={500}
-              className="w-full object-cover aspect-[16/9]"
-              priority
-            />
-          </div>
-        </div>
-
-        {/* Article content — centered */}
-        <div className="max-w-3xl mx-auto">
-          <MarkdownRenderer content={postContent} headingIds />
-
-          <ShareButtons url={postUrl} title={postTitle} />
-
-          {/* CTA */}
-          <div className="mt-16 bg-gradient-to-br from-[var(--text-primary)] to-[#2d2d2f] rounded-[2rem] p-10 text-white relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 size-64 bg-green-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 size-64 bg-green-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
-            <div className="relative z-10 text-center max-w-xl mx-auto">
-              <h3 className="text-2xl md:text-3xl font-semibold mb-4">
-                Start your adaptive journey today
-              </h3>
-              <p className="text-neutral-300 text-lg mb-8">
-                Upload your first PDF and see the ALSS pipeline in action. Join students mastering
-                complex topics with RinKuzu.
-              </p>
-              <Link
-                href="/register?next=/adaptive/upload"
-                className="inline-flex items-center justify-center rounded-full bg-brand-trust px-10 py-4 font-bold text-white shadow-lg shadow-green-500/20 transition-[background-color,transform] hover:scale-105 hover:bg-brand-trust-hover active:scale-95"
-              >
-                Get Started Free
-              </Link>
-              <p className="mt-4 text-xs text-neutral-400">
-                No credit card required · Free plan available
-              </p>
-              <p className="mt-2 text-sm text-neutral-300">
-                Questions about uploads or plans?{' '}
-                <Link href="/faq" className="underline hover:text-white">
-                  Read the FAQ
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          {/* Post navigation */}
-          <div className="mt-16 pt-10 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-6">
-            <div className="flex flex-col gap-1 w-full sm:w-auto">
-              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
-                Previous
-              </span>
-              <span className="text-neutral-300">No previous post</span>
-            </div>
-            <Link
-              href="/blog/knowledge-graphs-adaptive-learning-pdfs"
-              className="flex flex-col gap-1 text-right group w-full sm:w-auto"
-            >
-              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
-                Next Article
-              </span>
-              <span className="text-[var(--text-primary)] font-bold group-hover:text-brand-trust transition-colors">
-                Knowledge Graphs & Bloom&apos;s Taxonomy →
-              </span>
-            </Link>
-          </div>
-        </div>
-
-        {/* Table of Contents — right, fixed to container edge */}
-        <aside className="hidden xl:block absolute right-6 top-12 w-56 flex-shrink-0">
-          <div className="sticky top-24">
-            <TableOfContents headings={headings} />
-          </div>
-        </aside>
-      </div>
-    </article>
-  );
-}

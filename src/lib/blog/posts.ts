@@ -22,6 +22,8 @@ const utcDateKey = (now: Date): string => now.toISOString().slice(0, 10);
  * `draft`, or its `date` is after today (UTC). Every list, the sitemap and the
  * post route go through it; pages revalidate hourly, so a scheduled post
  * appears on its date without a deploy.
+ *
+ * @public The RSS feed (RIN-1259 part B) filters with it too.
  */
 export const isPublished = (post: BlogPost, now: Date = new Date()): boolean =>
   post.draft !== true && post.date <= utcDateKey(now);

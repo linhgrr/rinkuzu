@@ -9,7 +9,7 @@
  * Fenced code blocks and inline code spans are exempt: a post may show code.
  */
 
-export type UnsafeBodyConstruct = { line: number; reason: string };
+type UnsafeBodyConstruct = { line: number; reason: string };
 
 const ALLOWED_URL_SCHEMES = new Set(['http', 'https', 'mailto']);
 

@@ -497,6 +497,7 @@
     "backToDashboard": "Quay về bảng điều khiển",
     "tabsLabel": "C?c ch? ?? xem m?n h?c",
     "summary": "{concepts} khái niệm • {accuracy}% chính xác",
+    "summaryNoAnswers": "{concepts} khái niệm • Chưa làm bài tập nào",
     "summaryFallback": "Sơ đồ kiến thức và bản đồ độ thành thạo",
     "startLearning": "Bắt đầu học",
     "sessionNotReady": "Lộ trình học này vẫn đang hoàn tất thiết lập. Vui lòng thử bắt đầu lại sau ít phút.",

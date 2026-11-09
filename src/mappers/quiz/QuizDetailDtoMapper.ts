@@ -31,7 +31,16 @@ function toDetailBase(quiz: Quiz) {
 
 export class QuizDetailDtoMapper {
   static toDetail(quiz: Quiz): QuizDetailDto {
-    return { ...toDetailBase(quiz), questions: quiz.questions.map(toQuizQuestionDto) };
+    return {
+      ...toDetailBase(quiz),
+      questions: quiz.questions.map(toQuizQuestionDto),
+      ...(quiz.contentFlags !== undefined && {
+        contentFlags: {
+          personalData: quiz.contentFlags.personalData,
+          kinds: [...quiz.contentFlags.kinds],
+        },
+      }),
+    };
   }
 
   static toPlayDetail(quiz: Quiz): QuizPlayDetailDto {

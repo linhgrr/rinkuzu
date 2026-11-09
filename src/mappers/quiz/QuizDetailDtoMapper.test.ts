@@ -74,6 +74,27 @@ describe('QuizDetailDtoMapper', () => {
     expect(JSON.stringify(dto.author)).not.toMatch(/"email"/);
   });
 
+  it('gives the owner/admin detail the flag and kinds only, and the play DTO neither (RIN-1338)', () => {
+    const flagged: Quiz = {
+      ...quiz,
+      contentFlags: {
+        personalData: true,
+        kinds: ['email'],
+        checkedAt: new Date('2026-11-09T00:00:00Z'),
+        clearedBy: '507f191e810c19729de860ff',
+      },
+      indexHold: { reason: 'reported', since: new Date('2026-11-09T00:00:00Z') },
+    };
+
+    const detail = QuizDetailDtoMapper.toDetail(flagged);
+    expect(detail.contentFlags).toEqual({ personalData: true, kinds: ['email'] });
+    expect(detail).not.toHaveProperty('indexHold');
+
+    const play = QuizDetailDtoMapper.toPlayDetail(flagged);
+    expect(play).not.toHaveProperty('contentFlags');
+    expect(play).not.toHaveProperty('indexHold');
+  });
+
   it('removes correct answers from the play DTO', () => {
     const dto = QuizDetailDtoMapper.toPlayDetail(quiz);
 

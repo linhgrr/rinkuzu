@@ -3,7 +3,7 @@ import {
   type QuizAccessRecord,
   type UpdateQuizData,
 } from '@/interfaces/repositories/IQuizRepository';
-import type { Quiz, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
+import type { Quiz, QuizContentFlags, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import type {
@@ -25,6 +25,7 @@ import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
+import { resolveQuizContentFlags } from '@/lib/quiz/personal-data';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
@@ -110,6 +111,13 @@ export class QuizCrudService {
     }
 
     const baseSlug = generateSlug(title);
+    const quizQuestions = questions.map(toQuizQuestionContent);
+    // RIN-1338: kind names only; matched values are never stored or logged.
+    const contentFlags = resolveQuizContentFlags(
+      { title, description, questions: quizQuestions },
+      undefined,
+      new Date(),
+    );
 
     for (let attempt = 0; attempt < MAX_SLUG_CREATE_ATTEMPTS; attempt += 1) {
       const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt}`;
@@ -121,8 +129,9 @@ export class QuizCrudService {
           slug,
           author: userId,
           folder: folderId ?? null,
-          questions: questions.map(toQuizQuestionContent),
+          questions: quizQuestions,
           visibility: resolveRequestedVisibility(quizData) ?? 'personal',
+          contentFlags,
           ...(pdfUrl !== undefined && { pdfUrl }),
           ...(sourceDraftId !== undefined && { sourceDraftId }),
         });
@@ -254,6 +263,10 @@ export class QuizCrudService {
         ...(visibility !== undefined && { visibility }),
         ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
       };
+      const contentCheck = await this.recheckContentFlags(id, updateData);
+      if (!contentCheck.success) return contentCheck;
+      if (contentCheck.data) updateData.contentFlags = contentCheck.data;
+
       const updatedQuiz = await this.quizRepository.update(id, updateData);
 
       if (!updatedQuiz) {
@@ -276,6 +289,37 @@ export class QuizCrudService {
         statusCode: 500,
       };
     }
+  }
+
+  /**
+   * RIN-1338: re-runs the personal-data check when an edit touches the title,
+   * description or questions, merging the unchanged texts from the stored quiz.
+   * Returns no flags when the edit leaves the texts alone.
+   */
+  private async recheckContentFlags(
+    id: string,
+    updateData: UpdateQuizData,
+  ): Promise<ServiceResult<QuizContentFlags | null>> {
+    const { title, description, questions } = updateData;
+    if (title === undefined && description === undefined && questions === undefined) {
+      return { success: true, data: null };
+    }
+
+    const current = await this.quizRepository.findById(id);
+    if (!current) {
+      return { success: false, error: 'Quiz not found', statusCode: 404 };
+    }
+
+    const contentFlags = resolveQuizContentFlags(
+      {
+        title: title ?? current.title,
+        description: description ?? current.description,
+        questions: questions ?? current.questions,
+      },
+      current.contentFlags,
+      new Date(),
+    );
+    return { success: true, data: contentFlags };
   }
 
   /**

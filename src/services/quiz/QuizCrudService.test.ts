@@ -469,6 +469,7 @@ describe('QuizCrudService', () => {
           .mockResolvedValueOnce(null)
           .mockResolvedValueOnce(access)
           .mockResolvedValue(access),
+        findById: vi.fn().mockResolvedValue(createQuizEntity()),
         update: vi.fn().mockResolvedValue(updated),
       });
       const service = new QuizCrudService(quizRepository);
@@ -546,6 +547,7 @@ describe('QuizCrudService', () => {
       const access = { id: quizId, author: authorId, visibility: 'personal' };
       const quizRepository = createQuizRepository({
         findAccessById: vi.fn().mockResolvedValue(access),
+        findById: vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'personal' })),
         update: vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'personal' })),
       });
       const service = new QuizCrudService(quizRepository);
@@ -628,6 +630,164 @@ describe('QuizCrudService', () => {
         statusCode: 500,
         error: 'Failed to update quiz',
       });
+    });
+  });
+
+  describe('personal-data flags (RIN-1338)', () => {
+    // Fake data only.
+    const personalQuestion = {
+      question: 'Họ và tên: Nguyễn Văn An, MSSV: 20201234. 2 + 2?',
+      options: ['3', '4'],
+      type: 'single' as const,
+      correctIndex: 1,
+    };
+    const adminId = '507f191e810c19729de860ff';
+    const clearedAt = new Date('2026-11-01T00:00:00Z');
+
+    function updateRepository(stored: Quiz) {
+      return createQuizRepository({
+        findAccessById: vi
+          .fn()
+          .mockResolvedValue({ id: quizId, author: authorId, visibility: 'public' }),
+        findById: vi.fn().mockResolvedValue(stored),
+        update: vi.fn().mockResolvedValue(stored),
+      });
+    }
+
+    it('stores the flag on create, kinds only', async () => {
+      const quizRepository = createQuizRepository({
+        create: vi.fn().mockResolvedValue(createQuizEntity()),
+      });
+      await new QuizCrudService(quizRepository).createQuiz(authorId, {
+        ...createRequest,
+        description: 'Liên hệ an@example.com',
+        questions: [personalQuestion],
+      });
+
+      const contentFlags = vi.mocked(quizRepository.create).mock.calls[0]?.[0].contentFlags;
+      expect(contentFlags).toEqual({
+        personalData: true,
+        kinds: ['email', 'id_number', 'labelled_name'],
+        checkedAt: expect.any(Date),
+      });
+      expect(JSON.stringify(contentFlags)).not.toMatch(/example|20201234|Nguyễn/);
+    });
+
+    it('stores an unset flag on a clean draft submit and a set flag on a personal one', async () => {
+      const quizRepository = createQuizRepository({
+        findBySourceDraftId: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(createQuizEntity()),
+      });
+      const service = new QuizCrudService(quizRepository);
+
+      await service.createQuizFromDraft(authorId, 'draft-1', createRequest);
+      await service.createQuizFromDraft(authorId, 'draft-2', {
+        ...createRequest,
+        questions: [personalQuestion],
+      });
+
+      const calls = vi.mocked(quizRepository.create).mock.calls;
+      expect(calls[0]?.[0]).toMatchObject({
+        sourceDraftId: 'draft-1',
+        contentFlags: { personalData: false, kinds: [], checkedAt: expect.any(Date) },
+      });
+      expect(calls[1]?.[0]).toMatchObject({
+        sourceDraftId: 'draft-2',
+        contentFlags: { personalData: true, kinds: ['id_number', 'labelled_name'] },
+      });
+    });
+
+    it('unflags when an edit removes the data', async () => {
+      const quizRepository = updateRepository(
+        createQuizEntity({
+          contentFlags: { personalData: true, kinds: ['labelled_name'], checkedAt: clearedAt },
+        }),
+      );
+
+      await expect(
+        new QuizCrudService(quizRepository).updateQuiz(
+          quizId,
+          { questions: createRequest.questions },
+          authorId,
+        ),
+      ).resolves.toMatchObject({ success: true });
+
+      expect(vi.mocked(quizRepository.update).mock.calls[0]?.[1].contentFlags).toEqual({
+        personalData: false,
+        kinds: [],
+        checkedAt: expect.any(Date),
+      });
+    });
+
+    it('checks a title-only edit against the stored questions', async () => {
+      const quizRepository = updateRepository(
+        createQuizEntity({
+          questions: [{ id: 'q1', ...personalQuestion }],
+        }),
+      );
+
+      await new QuizCrudService(quizRepository).updateQuiz(
+        quizId,
+        { title: 'Đề của 0912345678' },
+        authorId,
+      );
+
+      expect(vi.mocked(quizRepository.update).mock.calls[0]?.[1].contentFlags).toMatchObject({
+        personalData: true,
+        kinds: ['phone', 'id_number', 'labelled_name'],
+      });
+    });
+
+    it('keeps an admin clear while no new kind appears, and drops it on a new kind', async () => {
+      const cleared = {
+        personalData: false,
+        kinds: ['id_number', 'labelled_name'],
+        checkedAt: clearedAt,
+        clearedBy: adminId,
+        clearedAt,
+      };
+      const quizRepository = updateRepository(createQuizEntity({ contentFlags: cleared }));
+      const service = new QuizCrudService(quizRepository);
+
+      await service.updateQuiz(quizId, { questions: [personalQuestion] }, authorId);
+      await service.updateQuiz(
+        quizId,
+        { questions: [personalQuestion], description: 'Gửi an@example.com' },
+        authorId,
+      );
+
+      const calls = vi.mocked(quizRepository.update).mock.calls;
+      expect(calls[0]?.[1].contentFlags).toEqual({ ...cleared, checkedAt: expect.any(Date) });
+      expect(calls[1]?.[1].contentFlags).toEqual({
+        personalData: true,
+        kinds: ['email', 'id_number', 'labelled_name'],
+        checkedAt: expect.any(Date),
+      });
+    });
+
+    it('skips the check when an edit leaves the texts alone', async () => {
+      const quizRepository = updateRepository(createQuizEntity());
+
+      await new QuizCrudService(quizRepository).updateQuiz(
+        quizId,
+        { pdfUrl: 'https://example.com/a.pdf' },
+        authorId,
+      );
+
+      expect(quizRepository.findById).not.toHaveBeenCalled();
+      expect(vi.mocked(quizRepository.update).mock.calls[0]?.[1]).not.toHaveProperty(
+        'contentFlags',
+      );
+    });
+
+    it('returns 404 when the quiz disappears before the check', async () => {
+      const quizRepository = updateRepository(createQuizEntity());
+      quizRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        new QuizCrudService(quizRepository).updateQuiz(quizId, { title: 'X' }, authorId),
+      ).resolves.toMatchObject({ success: false, statusCode: 404 });
+      expect(quizRepository.update).not.toHaveBeenCalled();
     });
   });
 

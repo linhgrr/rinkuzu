@@ -103,12 +103,45 @@ describe('AdminReportsPageClient reasons and hide (RIN-1344)', () => {
     expect(within(quizCard).getByText('Copyright')).toBeInTheDocument();
     expect(within(quizCard).getByText('Quiz page')).toBeInTheDocument();
     expect(within(quizCard).getByRole('button', { name: 'Hide quiz' })).toBeInTheDocument();
+    expect(within(quizCard).getByText('reader@example.com', { exact: false })).toHaveTextContent(
+      'Reporter: Reader (reader@example.com)',
+    );
 
     const questionCard = screen
       .getByRole('heading', { name: 'Chemistry 10' })
       .closest('div.p-6') as HTMLElement;
     expect(within(questionCard).getByText('Question 3')).toBeInTheDocument();
     expect(within(questionCard).queryByRole('button', { name: 'Hide quiz' })).toBeNull();
+  });
+
+  it('labels a signed-out reporter as anonymous', async () => {
+    mocks.fetchReports.mockResolvedValue({
+      reports: [
+        fakeReport({
+          reason: 'offensive',
+          source: 'quiz_page',
+          reporterEmail: '',
+          reporterName: '',
+        }),
+        fakeReport({
+          id: 'report-3',
+          quizTitle: 'Maths',
+          reporterName: 'Named guest',
+          reporterEmail: '',
+        }),
+        fakeReport({
+          id: 'report-2',
+          quizTitle: 'Physics',
+          reporterName: '',
+          reporterEmail: 'x@example.com',
+        }),
+      ],
+      pendingIndexHoldCount: 0,
+    });
+    render(<AdminReportsPageClient />);
+    expect(await screen.findByText('Anonymous')).toBeInTheDocument();
+    expect(screen.getByText('x@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Named guest')).toBeInTheDocument();
   });
 
   it('filters by reason', async () => {

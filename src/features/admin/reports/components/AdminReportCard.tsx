@@ -85,6 +85,14 @@ export function PendingIndexHoldCount({ count }: { count: number }) {
   );
 }
 
+/** Quiz-page reports may come from a signed-out visitor with no name or email. */
+function reporterLabel({ reporterName, reporterEmail }: AdminReportViewModel): string {
+  if (!reporterEmail) return reporterName || 'Anonymous';
+  return reporterName && reporterName !== reporterEmail
+    ? `${reporterName} (${reporterEmail})`
+    : reporterEmail;
+}
+
 interface ReportCardItemProps {
   report: AdminReportViewModel;
   onReview: (report: AdminReportViewModel) => void;
@@ -114,7 +122,7 @@ export function ReportCardItem({ report, onReview, onDelete, onHideQuiz }: Repor
             <div className="mb-3 text-sm text-neutral-600">
               <div className="mb-1 flex flex-wrap items-center gap-x-4">
                 <span className="break-all">
-                  <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
+                  <strong>Reporter:</strong> {reporterLabel(report)}
                 </span>
                 <span>
                   <strong>Date:</strong> {report.createdAtLabel}

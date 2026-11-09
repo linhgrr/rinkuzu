@@ -171,7 +171,13 @@ describe('AuthAccountService', () => {
     repository.createPending.mockResolvedValue(identity);
 
     const result = await service.register(
-      { email: identity.email, password: 'password', displayName: 'Rin' },
+      {
+        email: identity.email,
+        password: 'password',
+        displayName: 'Rin',
+        locale: 'en',
+        signupCountry: 'US',
+      },
       context,
     );
 
@@ -184,6 +190,8 @@ describe('AuthAccountService', () => {
         email: identity.email,
         passwordHash: 'hashed-password:password',
         displayName: 'Rin',
+        locale: 'en',
+        signupOrigin: { signupLocale: 'en', signupCountry: 'US' },
         verificationTokenHash: 'token-hash',
       }),
     );
@@ -191,6 +199,17 @@ describe('AuthAccountService', () => {
     await scheduler.runAll();
     expect(notifier.sendVerificationEmail).toHaveBeenCalledWith(identity.email, 'raw-token');
     expect(audit.record).toHaveBeenCalledTimes(2);
+  });
+
+  it('records a vi signup with no country when the request names neither (RIN-1268)', async () => {
+    repository.findByEmail.mockResolvedValue(null);
+    repository.createPending.mockResolvedValue(identity);
+
+    await service.register({ email: identity.email, password: 'password' }, context);
+
+    expect(repository.createPending).toHaveBeenCalledWith(
+      expect.objectContaining({ signupOrigin: { signupLocale: 'vi', signupCountry: null } }),
+    );
   });
 
   it('forwards the sign-up callbackUrl to the verification email', async () => {

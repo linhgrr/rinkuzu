@@ -12,7 +12,11 @@ export const GET = withAnalyticsReadOrAdmin(async (req, actor) => {
   if (!query.ok) return query.response;
 
   try {
-    const result = await getActivationStatsService().getWeeklyActivation(query.data.weeks, actor);
+    const { weeks, by } = query.data;
+    const service = getActivationStatsService();
+    const result = by
+      ? await service.getActivationBreakdown(weeks, by, actor)
+      : await service.getWeeklyActivation(weeks, actor);
     if (!result.success) {
       return apiErr('internal_error', result.error, result.statusCode);
     }

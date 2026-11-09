@@ -154,6 +154,13 @@ async function handleControlRequest(request, response, pathname) {
     return;
   }
 
+  // The UI locales the BFF forwarded upstream, so a spec can check the web passes them (RIN-1267).
+  if (request.method === 'POST' && pathname === '/__e2e/locales') {
+    const state = statesByUserId.get(body.userId);
+    sendOk(response, state?.forwardedLocales ?? {});
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/__e2e/reset') {
     statesByUserId.delete(body.userId);
     sendOk(response, { reset: true });
@@ -207,6 +214,7 @@ async function handleAdaptiveRequest(request, response, url) {
       sessionId: `e2e-session-${userId}`,
       status: 'extracting',
       subjectId: body.subject_id,
+      forwardedLocales: { process: body.locale ?? null },
     };
     statesByUserId.set(userId, state);
     sendOk(response, {
@@ -264,6 +272,7 @@ async function handleAdaptiveRequest(request, response, url) {
       sendError(response, 409, 'conflict', 'Pipeline job is not ready');
       return;
     }
+    state.forwardedLocales.createSession = url.searchParams.get('locale');
     sendOk(response, {
       session_id: state.sessionId,
       n_concepts: 4,

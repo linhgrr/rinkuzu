@@ -42,7 +42,8 @@
     "correct": "Đúng",
     "total": "Tổng số",
     "concepts": "Khái niệm",
-    "correctTotal": "Đúng/Tổng số"
+    "correctTotal": "Đúng/Tổng số",
+    "afterFirstExercise": "Sau bài tập đầu tiên"
   },
   "activeLearningPaths": "Lộ trình học đang hoạt động",
   "currentTopic": "Chủ đề hiện tại:",
@@ -341,7 +342,7 @@
       "rankingPrerequisites": "Đang xếp hạng tiên quyết",
       "verifyingRelationsWithAI": "Đang xác minh quan hệ bằng AI",
       "buildingKnowledgeGraph": "Đang xây dựng sơ đồ kiến thức",
-      "optimizingDAG": "Đang tối ưu hóa cấu trúc",
+      "optimizingDAG": "Đang sắp xếp lộ trình học",
       "completed": "Đã hoàn thành",
       "failed": "Thất bại"
     },
@@ -494,8 +495,9 @@
   },
   "subjectDetails": {
     "backToDashboard": "Quay về bảng điều khiển",
-    "tabsLabel": "C?c ch? ?? xem m?n h?c",
+    "tabsLabel": "Các chế độ xem môn học",
     "summary": "{concepts} khái niệm • {accuracy}% chính xác",
+    "summaryNoAnswers": "{concepts} khái niệm • Chưa làm bài tập nào",
     "summaryFallback": "Sơ đồ kiến thức và bản đồ độ thành thạo",
     "startLearning": "Bắt đầu học",
     "sessionNotReady": "Lộ trình học này vẫn đang hoàn tất thiết lập. Vui lòng thử bắt đầu lại sau ít phút.",

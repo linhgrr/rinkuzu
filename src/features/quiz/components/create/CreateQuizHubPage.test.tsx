@@ -22,8 +22,9 @@ vi.mock('next/image', () => ({
 }));
 
 const translate = (key: string) => key;
+const intlLocale = vi.hoisted(() => ({ current: 'vi' }));
 vi.mock('next-intl', () => ({
-  useLocale: () => 'vi',
+  useLocale: () => intlLocale.current,
   useTranslations: () => translate,
 }));
 
@@ -190,5 +191,39 @@ describe('CreateQuizHubPage', () => {
     expect(notices[0]?.previousElementSibling).toBe(
       screen.getByRole('region', { name: 'chooseMethod' }),
     );
+  });
+
+  // RIN-1272: the list was pinned to Asia/Ho_Chi_Minh, so a learner abroad saw Vietnam time.
+  it.each([
+    ['UTC', 'Nov 8, 2026, 8:06 PM'],
+    ['Asia/Ho_Chi_Minh', 'Nov 9, 2026, 3:06 AM'],
+    ['America/New_York', 'Nov 8, 2026, 3:06 PM'],
+  ])('shows the draft update time in the viewer zone %s', (zone, label) => {
+    const previous = {
+      drafts: swrDrafts.current,
+      locale: intlLocale.current,
+      tz: process.env['TZ'],
+    };
+    swrDrafts.current = [
+      {
+        ...LONG_DRAFT_BASE,
+        id: 'draft-tz',
+        title: 'Timed draft',
+        status: 'drafting',
+        updatedAt: '2026-11-08T20:06:00Z',
+      },
+    ];
+    intlLocale.current = 'en';
+    process.env['TZ'] = zone;
+    try {
+      render(<CreateQuizHubPage />);
+
+      expect(screen.getByText(label)).toBeInTheDocument();
+    } finally {
+      swrDrafts.current = previous.drafts;
+      intlLocale.current = previous.locale;
+      if (previous.tz === undefined) delete process.env['TZ'];
+      else process.env['TZ'] = previous.tz;
+    }
   });
 });

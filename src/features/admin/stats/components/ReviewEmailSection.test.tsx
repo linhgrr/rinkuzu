@@ -23,6 +23,8 @@ function week(isoWeek: string, counts: Partial<ReviewEmailWeekViewModel> = {}) {
     isoWeek,
     sent: 0,
     opened: 0,
+    sentD5: 0,
+    openedD5: 0,
     unsubscribed: 0,
     optIns: 0,
     ...counts,
@@ -34,7 +36,7 @@ function stats(overrides: Partial<ReviewEmailStatsViewModel> = {}): ReviewEmailS
     opensTracked: true,
     weeks: [
       week('2026-W44', { optIns: 3 }),
-      week('2026-W45', { sent: 4, opened: 2, unsubscribed: 1, optIns: 5 }),
+      week('2026-W45', { sent: 4, opened: 2, sentD5: 3, openedD5: 1, unsubscribed: 1, optIns: 5 }),
     ],
     ...overrides,
   };
@@ -60,14 +62,17 @@ describe('ReviewEmailSection', () => {
     expect(screen.getByRole('status', { name: 'reviewEmailLoading' })).toBeInTheDocument();
     const rows = within(await screen.findByRole('table')).getAllByRole('row');
     expect(rows).toHaveLength(3);
-    expect(cells(rows[1])).toEqual(['2026-W45', '4', '2', '1', '5']);
+    expect(cells(rows[1])).toEqual(['2026-W45', '4', '2', '3', '1', '1', '5']);
     expect(cells(rows[2])[0]).toBe('2026-W44');
     expect(screen.queryByText('reviewEmailOpensNotTracked')).not.toBeInTheDocument();
   });
 
   it('says opens are not tracked when open tracking is off', async () => {
     fetchStatsMock.mockResolvedValue(
-      stats({ opensTracked: false, weeks: [week('2026-W45', { sent: 4, opened: null })] }),
+      stats({
+        opensTracked: false,
+        weeks: [week('2026-W45', { sent: 4, opened: null, sentD5: 2, openedD5: null })],
+      }),
     );
 
     render(<ReviewEmailSection />);
@@ -75,6 +80,16 @@ describe('ReviewEmailSection', () => {
     expect(await screen.findByText('reviewEmailOpensNotTracked')).toBeInTheDocument();
     const [, row] = within(screen.getByRole('table')).getAllByRole('row');
     expect(cells(row)[2]).toBe('reviewEmailNotTracked');
+    expect(cells(row)[4]).toBe('reviewEmailNotTracked');
+  });
+
+  it('shows a week where only day-5 emails went out (RIN-1304)', async () => {
+    fetchStatsMock.mockResolvedValue(stats({ weeks: [week('2026-W45', { sentD5: 2 })] }));
+
+    render(<ReviewEmailSection />);
+
+    const [, row] = within(await screen.findByRole('table')).getAllByRole('row');
+    expect(cells(row)).toEqual(['2026-W45', '0', '0', '2', '0', '0', '0']);
   });
 
   it('shows the empty state when no week has any count', async () => {

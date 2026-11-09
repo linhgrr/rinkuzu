@@ -326,7 +326,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         data: {
           quizId: QUIZ_ID,
           slug: 'existing-slug',
-          warnings: ['Quiz nên có ít nhất 5 câu hỏi'],
+          warnings: ['too_few_questions'],
         },
       });
     });
@@ -432,7 +432,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         data: {
           quizId: QUIZ_ID,
           slug: 'arithmetic',
-          warnings: ['Quiz nên có ít nhất 5 câu hỏi'],
+          warnings: ['too_few_questions'],
         },
       });
     });

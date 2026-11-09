@@ -75,4 +75,34 @@ describe('POST /api/adaptive/pipeline/jobs/[jobId]/retry', () => {
     expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
     expect(invalidateCacheMock).not.toHaveBeenCalled();
   });
+
+  it('forwards a valid UI locale to the API as a query param', async () => {
+    const enRequest = new NextRequest(
+      'http://localhost/api/adaptive/pipeline/jobs/job-1/retry?locale=en',
+      { method: 'POST' },
+    );
+
+    const response = await POST(enRequest, { params: Promise.resolve({ jobId: 'job-1' }) });
+
+    expect(response.status).toBe(204);
+    expect(proxyAdaptiveRequestMock).toHaveBeenCalledWith(
+      enRequest,
+      '/pipeline/jobs/job-1/retry?locale=en',
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it('rejects an unsupported locale without proxying', async () => {
+    const badRequest = new NextRequest(
+      'http://localhost/api/adaptive/pipeline/jobs/job-1/retry?locale=fr',
+      { method: 'POST' },
+    );
+
+    const response = await POST(badRequest, { params: Promise.resolve({ jobId: 'job-1' }) });
+
+    expect(response.status).toBe(400);
+    expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
+    expect(reconcileMock).not.toHaveBeenCalled();
+  });
 });

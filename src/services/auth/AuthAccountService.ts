@@ -7,6 +7,7 @@ import type {
   VerificationResendResultDto,
 } from '@/dtos/auth';
 import type { AuthRequestContext } from '@/entities/AuthAccount';
+import { defaultLocale } from '@/i18n/config';
 import type { IAuthAccountRepository } from '@/interfaces/repositories/IAuthAccountRepository';
 import type { IAuthAccountService } from '@/interfaces/services/IAuthAccountService';
 import type { AuthAuditIdentity, IAuthAudit } from '@/interfaces/services/IAuthAudit';
@@ -67,6 +68,11 @@ export class AuthAccountService implements IAuthAccountService {
         email: input.email,
         passwordHash,
         ...(input.displayName ? { displayName: input.displayName } : {}),
+        ...(input.locale ? { locale: input.locale } : {}),
+        signupOrigin: {
+          signupLocale: input.locale ?? defaultLocale,
+          signupCountry: input.signupCountry ?? null,
+        },
         verificationTokenHash: verification.hash,
         verificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
       });

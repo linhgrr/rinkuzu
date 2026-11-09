@@ -97,12 +97,16 @@ function QuizLinkCard({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-x-4">
-          <code className="flex-1 rounded bg-neutral-100 px-3 py-2 text-sm">{shareUrl}</code>
+        {/* RIN-1322: the link is one long word; min-w-0 + break-all let it wrap inside the
+            card, and on phones the Copy button moves below it instead of off-screen. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-x-4">
+          <code className="min-w-0 flex-1 rounded bg-neutral-100 px-3 py-2 text-sm break-all">
+            {shareUrl}
+          </code>
           <Button
             size="sm"
             variant="secondary"
-            className="flex items-center gap-2"
+            className="flex shrink-0 items-center gap-2 self-start sm:self-auto"
             onClick={() => {
               void copyToClipboard(shareUrl).then((ok) => {
                 if (ok) toast.success(copiedLabel);

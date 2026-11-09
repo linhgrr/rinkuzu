@@ -30,6 +30,9 @@ import {
 import { useReloadSettled } from '@/features/admin/hooks/useReloadSettled';
 import { AdminStarterQuizzesPanel } from '@/features/admin/quizzes/components/AdminStarterQuizzesPanel';
 import { MarkStarterButton } from '@/features/admin/quizzes/components/MarkStarterDialog';
+import { AdminQuizTopicsPanel } from '@/features/admin/quizzes/components/AdminQuizTopicsPanel';
+import { AssignTopicButton } from '@/features/admin/quizzes/components/QuizTopicDialogs';
+import { useAdminQuizTopics } from '@/features/admin/quizzes/hooks/useAdminQuizTopics';
 import { useAdminStarterQuizzes } from '@/features/admin/quizzes/hooks/useAdminStarterQuizzes';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 import { ROUTES } from '@/shared/constants/routes';
@@ -169,6 +172,7 @@ export function AdminQuizzesPageClient() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { waitForReload, settleReload } = useReloadSettled();
   const starters = useAdminStarterQuizzes();
+  const topics = useAdminQuizTopics();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -310,6 +314,7 @@ export function AdminQuizzesPageClient() {
       </header>
 
       <AdminStarterQuizzesPanel controller={starters} />
+      <AdminQuizTopicsPanel controller={topics} />
 
       {state.loadError ? (
         <ErrorState
@@ -412,6 +417,7 @@ export function AdminQuizzesPageClient() {
                         {quiz.visibility === 'public' ? t('quizMakePrivate') : t('quizMakePublic')}
                       </Button>
                       <MarkStarterButton quiz={quiz} controller={starters} />
+                      <AssignTopicButton quiz={quiz} controller={topics} />
                       <Button
                         size="sm"
                         variant="outline"

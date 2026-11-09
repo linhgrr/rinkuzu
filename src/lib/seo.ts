@@ -24,12 +24,21 @@ export function canonicalFor(locale: string, path: string): string {
   return `${siteUrl.origin}${normalized}`;
 }
 
-function languageAlternates(path: string): Record<string, string> {
+/**
+ * hreflang map for `path` across `pageLocales` (every locale by default), plus
+ * `x-default` when the default locale is one of them (RIN-1312).
+ */
+export function languageAlternates(
+  path: string,
+  pageLocales: readonly string[] = locales,
+): Record<string, string> {
   const map: Record<string, string> = {};
   for (const locale of locales) {
-    map[locale] = canonicalFor(locale, path);
+    if (pageLocales.includes(locale)) map[locale] = canonicalFor(locale, path);
   }
-  map['x-default'] = canonicalFor(defaultLocale, path);
+  if (pageLocales.includes(defaultLocale)) {
+    map['x-default'] = canonicalFor(defaultLocale, path);
+  }
   return map;
 }
 
@@ -55,6 +64,8 @@ type LocalizedMetadataInput = {
   languageAlternates?: boolean;
   /** Title on the `/og` card when it differs from the `<title>` (RIN-1241). */
   ogImageTitle?: string;
+  /** Locales the page exists in, when not all of them (vi-only blog posts, RIN-1312). */
+  alternateLocales?: readonly string[];
 };
 
 export function buildLocalizedMetadata({
@@ -68,6 +79,7 @@ export function buildLocalizedMetadata({
   canonicalLocale,
   languageAlternates: withLanguageAlternates = true,
   ogImageTitle,
+  alternateLocales,
 }: LocalizedMetadataInput): Metadata {
   const canonical = canonicalFor(canonicalLocale ?? locale, path);
   // Default to the dynamic 1200x630 OG endpoint so social previews render at the
@@ -80,7 +92,7 @@ export function buildLocalizedMetadata({
     description,
     alternates: {
       canonical,
-      ...(withLanguageAlternates ? { languages: languageAlternates(path) } : {}),
+      ...(withLanguageAlternates ? { languages: languageAlternates(path, alternateLocales) } : {}),
     },
     openGraph: {
       type: 'website',

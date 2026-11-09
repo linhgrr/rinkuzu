@@ -166,10 +166,12 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
 
   const summary = !status
     ? t('subjectDetails.summaryFallback')
-    : t('subjectDetails.summary', {
-        concepts: status.total_concepts,
-        accuracy: Math.round(status.accuracy * 100),
-      });
+    : status.total_answered === 0
+      ? t('subjectDetails.summaryNoAnswers', { concepts: status.total_concepts })
+      : t('subjectDetails.summary', {
+          concepts: status.total_concepts,
+          accuracy: Math.round(status.accuracy * 100),
+        });
 
   const handleBackToDashboard = () => {
     router.push(ADAPTIVE_ROUTES.dashboard);

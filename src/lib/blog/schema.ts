@@ -21,6 +21,12 @@ export const blogFrontmatterSchema = z.object({
   heroImageAlt: z.string().trim().min(1, 'heroImageAlt is required'),
   locale: z.enum(locales, { message: `locale must be one of: ${locales.join(', ')}` }),
   author: z.string().trim().min(1, 'author is required'),
+  /**
+   * `true` keeps the post off every list, the sitemap and its own route
+   * (default `false`). A `date` in the future does the same until that day
+   * (UTC); see `isPublished` in `./posts.ts`.
+   */
+  draft: z.boolean().optional(),
 
   // Optional presentation overrides. Each one falls back to a required field
   // above, so a new post needs none of them; they keep the hand-authored copy

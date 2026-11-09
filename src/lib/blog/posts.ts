@@ -14,53 +14,83 @@ export const toBlogLocale = (locale: string): Locale => (locale === 'vi' ? 'vi' 
 
 const hasBody = (post: BlogPost): boolean => post.content.trim().length > 0;
 
+/** `YYYY-MM-DD` of `now` in UTC, comparable with frontmatter `date`. */
+const utcDateKey = (now: Date): string => now.toISOString().slice(0, 10);
+
+/**
+ * The single publication rule (RIN-1329): a post is live unless it is a
+ * `draft`, or its `date` is after today (UTC). Every list, the sitemap and the
+ * post route go through it; pages revalidate hourly, so a scheduled post
+ * appears on its date without a deploy.
+ */
+export const isPublished = (post: BlogPost, now: Date = new Date()): boolean =>
+  post.draft !== true && post.date <= utcDateKey(now);
+
+const published = (posts: BlogPost[], now: Date): BlogPost[] =>
+  posts.filter((post) => isPublished(post, now));
+
+const publishedPost = (post: BlogPost | undefined, now: Date): BlogPost | undefined =>
+  post && isPublished(post, now) ? post : undefined;
+
 const byNewestFirst = (a: BlogPost, b: BlogPost): number =>
   b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug);
 
-/** Posts listed on `/<locale>/blog`, newest first. */
-export const getBlogIndexPosts = (locale: Locale): BlogPost[] =>
-  [...getBlogPostsByLocale(locale)].sort(byNewestFirst);
+/** Published posts listed on `/<locale>/blog`, newest first. */
+export const getBlogIndexPosts = (locale: Locale, now: Date = new Date()): BlogPost[] =>
+  published(getBlogPostsByLocale(locale), now).sort(byNewestFirst);
 
-/** Posts by one author on `/<locale>/blog/authors/<author>`, newest first. */
-export const getBlogPostsByAuthor = (locale: Locale, author: string): BlogPost[] =>
-  getBlogIndexPosts(locale).filter((post) => post.author === author);
+/** Published posts by one author on `/<locale>/blog/authors/<author>`, newest first. */
+export const getBlogPostsByAuthor = (
+  locale: Locale,
+  author: string,
+  now: Date = new Date(),
+): BlogPost[] => getBlogIndexPosts(locale, now).filter((post) => post.author === author);
 
-/** Slugs of every author who has at least one post. */
-export const getBlogAuthorSlugs = (): string[] => [
-  ...new Set(getAllBlogPosts().map((post) => post.author)),
+/** Slugs of every author who has at least one published post. */
+export const getBlogAuthorSlugs = (now: Date = new Date()): string[] => [
+  ...new Set(published(getAllBlogPosts(), now).map((post) => post.author)),
 ];
 
 /**
- * The article rendered at `/<locale>/blog/<slug>`: the locale's own post when
- * it has a body, otherwise the post from {@link ARTICLE_SOURCE_LOCALE}.
+ * The article rendered at `/<locale>/blog/<slug>`: the locale's own published
+ * post when it has a body, otherwise the published post from
+ * {@link ARTICLE_SOURCE_LOCALE}.
  */
-export const getBlogArticle = (locale: Locale, slug: string): BlogPost | undefined => {
-  const localized = getBlogPostBySlug(locale, slug);
+export const getBlogArticle = (
+  locale: Locale,
+  slug: string,
+  now: Date = new Date(),
+): BlogPost | undefined => {
+  const localized = publishedPost(getBlogPostBySlug(locale, slug), now);
   if (localized && hasBody(localized)) {
     return localized;
   }
-  const source = getBlogPostBySlug(ARTICLE_SOURCE_LOCALE, slug);
+  const source = publishedPost(getBlogPostBySlug(ARTICLE_SOURCE_LOCALE, slug), now);
   return source && hasBody(source) ? source : undefined;
 };
 
-/** Every slug that has an article page, for `generateStaticParams`. */
-export const getBlogArticleSlugs = (): string[] => [
+/** Every slug that has a published article page, for `generateStaticParams`. */
+export const getBlogArticleSlugs = (now: Date = new Date()): string[] => [
   ...new Set(
-    getAllBlogPosts()
+    published(getAllBlogPosts(), now)
       .filter(hasBody)
       .map((post) => post.slug),
   ),
 ];
 
 /**
- * Neighbours of an article among the articles in its locale, newest first:
- * `previous` is the next newer post and `next` the next older one.
+ * Neighbours of an article among the published articles in its locale, newest
+ * first: `previous` is the next newer post and `next` the next older one.
  */
 export const getAdjacentBlogArticles = (
   article: BlogPost,
+  now: Date = new Date(),
 ): { previous: BlogPost | undefined; next: BlogPost | undefined } => {
-  const articles = getBlogPostsByLocale(article.locale).filter(hasBody).sort(byNewestFirst);
+  const articles = getBlogIndexPosts(article.locale, now).filter(hasBody);
   const index = articles.findIndex((post) => post.slug === article.slug);
+  if (index === -1) {
+    return { previous: undefined, next: undefined };
+  }
   return { previous: articles[index - 1], next: articles[index + 1] };
 };
 
@@ -71,17 +101,17 @@ const newestDate = (posts: BlogPost[]): string =>
   posts.reduce((newest, post) => (post.date > newest ? post.date : newest), '');
 
 /**
- * Article and author routes for the sitemap, derived from content/blog: one per
- * article slug and one per author with a profile, so a new post needs no
- * hand-written sitemap entry.
+ * Article and author routes for the sitemap, derived from the published posts
+ * in content/blog: one per article slug and one per author with a profile, so
+ * a new post needs no hand-written sitemap entry.
  */
-export const getBlogSitemapRoutes = (): BlogSitemapRoute[] => {
-  const posts = getAllBlogPosts();
-  const articles = getBlogArticleSlugs().map((slug) => ({
+export const getBlogSitemapRoutes = (now: Date = new Date()): BlogSitemapRoute[] => {
+  const posts = published(getAllBlogPosts(), now);
+  const articles = getBlogArticleSlugs(now).map((slug) => ({
     path: `/blog/${slug}`,
     lastModified: newestDate(posts.filter((post) => post.slug === slug)),
   }));
-  const authors = getBlogAuthorSlugs()
+  const authors = getBlogAuthorSlugs(now)
     .filter((author) => getBlogAuthor(author))
     .map((author) => ({
       path: `/blog/authors/${author}`,

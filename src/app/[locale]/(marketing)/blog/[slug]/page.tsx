@@ -22,6 +22,11 @@ import { getBlogAuthor } from '@/lib/blog/authors';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
+// Re-render at most hourly (ISR) so a post scheduled by a future `date` goes
+// live on that day without a deploy, while crawlers still get a cached static
+// page (RIN-1329, `isPublished` in src/lib/blog/posts.ts).
+export const revalidate = 3600;
+
 const DEFAULT_CTA_TITLE = 'Turn your PDF into personalized practice';
 const DEFAULT_CTA_BODY = 'Upload a PDF and RinKuzu builds a personalized quiz from it, free.';
 const OG_IMAGE_WIDTH = 1200;

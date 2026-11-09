@@ -46,6 +46,8 @@ const nextConfig = {
   outputFileTracingIncludes: {
     // content/blog: blog routes read their posts at render time (src/lib/blog/content.ts).
     '/*': ['./messages/**/*', './content/blog/**/*.mdx'],
+    // The blog share-image route reads its font at render time (RIN-1330).
+    '/[locale]/blog/[slug]/og.png': ['./assets/fonts/BeVietnamPro-Bold.ttf'],
   },
   async redirects() {
     return [

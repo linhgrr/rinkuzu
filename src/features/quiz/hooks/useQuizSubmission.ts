@@ -5,6 +5,7 @@ import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction
 import { addGuestClaim, createGuestClaimToken } from '@/features/quiz/lib/guest-claims';
 import { withPending } from '@/lib/async/with-pending';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
+import type { QuizEntryAttribution } from '@/shared/constants/starter-quiz';
 
 interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestion[] }> {
   slug: string;
@@ -16,6 +17,8 @@ interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestio
   retryOfAttemptId?: string;
   /** Quick round (RIN-933): the quiz question index played at each answer position. */
   questionIndices?: number[];
+  /** Tracked entry point (RIN-1242), stored on the attempt by the API (RIN-1256). */
+  attribution?: QuizEntryAttribution;
   onSubmitSuccess: (attemptId: string, score: number) => void | Promise<void>;
   onSubmitStart?: () => void;
   /** Receives the thrown value; the caller turns it into localized copy (RIN-753). */
@@ -38,6 +41,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
   sessionEmail,
   retryOfAttemptId,
   questionIndices,
+  attribution,
   onSubmitSuccess,
   onSubmitStart,
   onSubmitError,
@@ -77,6 +81,8 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
       ...(pending.guestClaimToken ? { guestClaimToken: pending.guestClaimToken } : {}),
       ...(retryOfAttemptId ? { retryOfAttemptId } : {}),
       ...(questionIndices ? { questionIndices } : {}),
+      ...(attribution?.entry ? { entry: attribution.entry } : {}),
+      ...(attribution?.post ? { post: attribution.post } : {}),
     });
 
     if (pending.guestClaimToken) {

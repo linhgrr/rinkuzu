@@ -1,30 +1,22 @@
 import type { MetadataRoute } from 'next';
 import { defaultLocale, locales } from '@/i18n/config';
+import { getBlogSitemapRoutes } from '@/lib/blog/posts';
 import { serializeDate } from '@/lib/date-serialization';
 import { loadPublicQuizSitemapEntries } from '@/lib/public-quiz-sitemap';
-import { canonicalFor } from '@/lib/seo';
+import { canonicalFor, languageAlternates } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
-
-function buildLanguageAlternates(path: string): Record<string, string> {
-  const languages = Object.fromEntries(
-    locales.map((locale) => [locale, canonicalFor(locale, path)]),
-  );
-  return {
-    ...languages,
-    'x-default': canonicalFor(defaultLocale, path),
-  };
-}
 
 function toEntry(
   locale: string,
   path: string,
   lastModified = new Date(),
+  pageLocales: readonly string[] = locales,
 ): MetadataRoute.Sitemap[number] {
   return {
     url: canonicalFor(locale, path),
     lastModified,
     alternates: {
-      languages: buildLanguageAlternates(path),
+      languages: languageAlternates(path, pageLocales),
     },
   };
 }
@@ -59,6 +51,15 @@ export async function buildPublicSitemapEntries(
   for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
     for (const locale of locales) {
       pushEntry(toEntry(locale, route));
+    }
+  }
+
+  for (const route of getBlogSitemapRoutes()) {
+    const lastModified = new Date(`${route.lastModified}T00:00:00.000Z`);
+    // An article is listed only in the locales it renders in (RIN-1312).
+    const routeLocales = route.locales ?? locales;
+    for (const locale of routeLocales) {
+      pushEntry(toEntry(locale, route.path, lastModified, routeLocales));
     }
   }
 

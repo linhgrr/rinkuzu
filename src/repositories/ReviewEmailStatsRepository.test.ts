@@ -35,6 +35,7 @@ function evaluate(expression: unknown, event: Record<string, unknown>): unknown 
   const args = (raw as unknown[]).map((arg) => evaluate(arg, event));
   if (operator === '$and') return args.every(Boolean);
   if (operator === '$eq') return args[0] === args[1];
+  if (operator === '$ne') return args[0] !== args[1];
   if (operator === '$ifNull') return args[0] ?? args[1];
   throw new Error(`unsupported operator ${operator}`);
 }
@@ -43,7 +44,9 @@ describe('ReviewEmailStatsRepository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.excludedUserIds.mockResolvedValue(EXCLUDED);
-    mocks.outboxAggregate.mockResolvedValue([{ _id: FROM, sent: 3, opened: 1 }]);
+    mocks.outboxAggregate.mockResolvedValue([
+      { _id: FROM, sent: 3, opened: 1, sentD5: 2, openedD5: 1 },
+    ]);
     mocks.consentAggregate.mockResolvedValue([{ _id: FROM, optIns: 2, unsubscribed: 1 }]);
     mocks.webhookExists.mockResolvedValue(null);
   });
@@ -57,7 +60,7 @@ describe('ReviewEmailStatsRepository', () => {
       $match: {
         status: 'completed',
         availableAt: { $gte: FROM, $lt: TO },
-        kind: 'review_reminder',
+        kind: { $in: ['review_reminder', 'review_reminder_d5'] },
         userId: { $nin: EXCLUDED },
         to: { $nin: QA },
       },
@@ -71,10 +74,33 @@ describe('ReviewEmailStatsRepository', () => {
       },
     });
     expect(counts).toEqual({
-      sends: [{ weekStart: FROM, sent: 3, opened: 1 }],
+      sends: [{ weekStart: FROM, sent: 3, opened: 1, sentD5: 2, openedD5: 1 }],
       consents: [{ weekStart: FROM, optIns: 2, unsubscribed: 1 }],
       opensTracked: false,
     });
+  });
+
+  it('splits sends and opens into the day-2 and day-5 emails (RIN-1304)', async () => {
+    await new ReviewEmailStatsRepository().getWeeklyCounts(FROM, TO, QA);
+
+    const [outboxPipeline] = mocks.outboxAggregate.mock.calls[0] ?? [];
+    const group = outboxPipeline[1].$group;
+    const count = (field: string, row: Record<string, unknown>) =>
+      evaluate(group[field].$sum.$cond[0], row) === true ? 1 : 0;
+    const rows = [
+      { kind: 'review_reminder', openedAt: new Date() },
+      { kind: 'review_reminder', openedAt: null },
+      { kind: 'review_reminder_d5', openedAt: new Date() },
+      { kind: 'review_reminder_d5' },
+      { kind: 'review_reminder_d5', openedAt: null },
+    ];
+    const total = (field: string) => rows.reduce((sum, row) => sum + count(field, row), 0);
+    expect({
+      sent: total('sent'),
+      opened: total('opened'),
+      sentD5: total('sentD5'),
+      openedD5: total('openedD5'),
+    }).toEqual({ sent: 2, opened: 1, sentD5: 3, openedD5: 1 });
   });
 
   it('counts review-email unsubscribes only, not activation-nudge ones (RIN-1044)', async () => {

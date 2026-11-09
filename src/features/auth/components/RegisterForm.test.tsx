@@ -107,7 +107,8 @@ describe('RegisterForm Google sign-up analytics', () => {
 });
 
 describe('RegisterForm callbackUrl', () => {
-  const credentials = { email: 'learner@example.com', password: 'Str0ng-Passw0rd!' };
+  // Every form in this block renders on /vi, so the signup stores `vi` (RIN-1263).
+  const credentials = { email: 'learner@example.com', password: 'Str0ng-Passw0rd!', locale: 'vi' };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -259,5 +260,17 @@ describe('RegisterForm server errors', () => {
     await submit();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('registrationMethodMismatch');
+  });
+
+  it('sends the en page locale with the signup (RIN-1263)', async () => {
+    registerAccountMock.mockResolvedValue({ message: 'check your inbox' });
+
+    await submit();
+
+    expect(registerAccountMock).toHaveBeenCalledWith({
+      email: 'learner@example.com',
+      password: 'Str0ng-Passw0rd!',
+      locale: 'en',
+    });
   });
 });

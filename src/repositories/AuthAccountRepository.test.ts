@@ -145,6 +145,8 @@ describe('AuthAccountRepository', () => {
         verificationTokenHash: 'verify-hash',
         verificationExpires: now,
         displayName: 'User',
+        locale: 'en',
+        signupOrigin: { signupLocale: 'en', signupCountry: 'SG' },
       }),
     ).resolves.toMatchObject({ email: 'user@example.com' });
     expect(mocks.create).toHaveBeenCalledWith({
@@ -156,6 +158,9 @@ describe('AuthAccountRepository', () => {
       disabledAt: null,
       disabledBy: null,
       displayName: 'User',
+      locale: 'en',
+      signupLocale: 'en',
+      signupCountry: 'SG',
       emailVerificationTokenHash: 'verify-hash',
       emailVerificationExpires: now,
     });
@@ -166,6 +171,7 @@ describe('AuthAccountRepository', () => {
         passwordHash: 'hash',
         verificationTokenHash: 'verify-hash',
         verificationExpires: now,
+        signupOrigin: { signupLocale: 'vi', signupCountry: null },
       }),
     ).resolves.toBeNull();
   });
@@ -313,6 +319,7 @@ describe('AuthAccountRepository', () => {
       passwordHash: 'hash',
       verificationTokenHash: 'verify-hash',
       verificationExpires: now,
+      signupOrigin: { signupLocale: 'vi', signupCountry: null },
     });
     expect(mocks.create).toHaveBeenCalledWith({
       email: 'user@example.com',
@@ -322,6 +329,8 @@ describe('AuthAccountRepository', () => {
       authVersion: 0,
       disabledAt: null,
       disabledBy: null,
+      signupLocale: 'vi',
+      signupCountry: null,
       emailVerificationTokenHash: 'verify-hash',
       emailVerificationExpires: now,
     });
@@ -334,6 +343,7 @@ describe('AuthAccountRepository', () => {
         passwordHash: 'hash',
         verificationTokenHash: 'verify-hash',
         verificationExpires: now,
+        signupOrigin: { signupLocale: 'vi', signupCountry: null },
       }),
     ).rejects.toThrow('write concern failed');
   });
@@ -643,6 +653,43 @@ describe('AuthAccountRepository', () => {
       }),
     ).resolves.toBeNull();
     expect(mocks.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(mocks.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('stores a locale only on an account that has none (RIN-1263)', async () => {
+    const repository = new AuthAccountRepository();
+    mocks.updateOne.mockResolvedValue({ modifiedCount: 1 });
+
+    await repository.rememberLocaleIfMissing(accountId, 'en');
+    expect(mocks.updateOne).toHaveBeenCalledWith(
+      { _id: new Types.ObjectId(accountId), locale: null },
+      { $set: { locale: 'en' } },
+    );
+
+    mocks.updateOne.mockClear();
+    await repository.rememberLocaleIfMissing('invalid-id', 'vi');
+    expect(mocks.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('records a signup origin only on an account that has none (RIN-1268)', async () => {
+    mocks.updateOne.mockResolvedValue({ matchedCount: 1 });
+    const repository = new AuthAccountRepository();
+    const accountId = '507f191e810c19729de860ea';
+
+    await repository.recordSignupOriginIfMissing(accountId, {
+      signupLocale: 'en',
+      signupCountry: null,
+    });
+    expect(mocks.updateOne).toHaveBeenCalledWith(
+      { _id: new Types.ObjectId(accountId), signupLocale: null },
+      { $set: { signupLocale: 'en', signupCountry: null } },
+    );
+
+    mocks.updateOne.mockClear();
+    await repository.recordSignupOriginIfMissing('invalid-id', {
+      signupLocale: 'vi',
+      signupCountry: 'VN',
+    });
     expect(mocks.updateOne).not.toHaveBeenCalled();
   });
 

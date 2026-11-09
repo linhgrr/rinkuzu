@@ -4,7 +4,7 @@
 
 This report preserves the baseline evidence gathered before cutover work. The 2026-08-25 implementation removed the duplicate runtime authorities and generation-prefixed first-party routes from both repositories. Production data deletion and deployment remain a coordinated maintenance action; neither has been executed as part of this report.
 
-The latest read-only production audit found one deliberate entitlement disagreement: `hantram3012@gmail.com` has a canonical paid/fulfilled `Plus` grant ending 2026-09-22 and a later admin-created legacy `Eco Plus` snapshot ending 2027-02-24. The owner approved discarding the legacy snapshot and will issue a new canonical admin grant later. The cutover migration requires an explicit mismatch-discard flag and cannot silently choose between them.
+The latest read-only production audit found one deliberate entitlement disagreement: one Plus customer has a canonical paid/fulfilled `Plus` grant ending 2026-09-22 and a later admin-created legacy `Eco Plus` snapshot ending 2027-02-24. The owner approved discarding the legacy snapshot and will issue a new canonical admin grant later. The cutover migration requires an explicit mismatch-discard flag and cannot silently choose between them.
 
 The source-of-truth decisions are normative in `docs/architecture/source-of-truth-registry.md`.
 
@@ -261,7 +261,7 @@ No compatibility alias is retained. Rollback is a full application release rollb
 
 The owner approved deleting legacy subscription data and discarding the identified `Eco Plus` snapshot on 2026-08-25. The Web cutover was deployed to production at commit `f5ae49ce`, then migration checksum `0edda77cc6fbd41360665cb9eda95c94e5831c0d4ad5639fe025236032d42567` was applied.
 
-- The canonical `Plus` entitlement for `hantram3012@gmail.com` was retained; its conflicting embedded `Eco Plus` snapshot was removed.
+- The canonical `Plus` entitlement for that Plus customer was retained; its conflicting embedded `Eco Plus` snapshot was removed.
 - `users.subscription`, `questionprogresses.isBookmarked`, and `quizzes.folder` now have zero remaining fields.
 - `subscriptions` and `premiumreviewjobs` were deleted rather than archived.
 - Valid folder placement was moved to `folderquizzes`; canonical bookmarks were preserved.

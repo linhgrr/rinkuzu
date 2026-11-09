@@ -7,6 +7,8 @@ import CreditWalletModel from '@/models/CreditWallet';
 import CreditLedgerModel from '@/models/CreditLedger';
 import PremiumQuizAccessGrant from '@/models/PremiumQuizAccessGrant';
 import PremiumPlaySessionModel from '@/models/PremiumPlaySession';
+import QuizModel from '@/models/Quiz';
+import { AdminActionAudit } from '@/models/Communication';
 import type { PremiumQuizSubmissionDocument } from '@/models/PremiumQuizSubmission';
 import type {
   CreatePremiumSessionData,
@@ -63,6 +65,14 @@ interface PremiumCatalogProjection {
   snapshot: PremiumCatalogSnapshotProjection;
 }
 
+interface VisibilityChangeDetails {
+  to?: string;
+}
+
+interface VisibilityChangeAuditProjection {
+  details?: VisibilityChangeDetails;
+}
+
 function objectId(value: string, label: string): Types.ObjectId {
   if (!Types.ObjectId.isValid(value)) {
     throw new PremiumQuizError('not_found', `${label} not found`);
@@ -102,6 +112,50 @@ async function loadSubmission(
   const query = PremiumQuizSubmissionModel.findById(id);
   if (session) query.session(session);
   return query.lean<PremiumQuizSubmissionPersistenceRecord>();
+}
+
+/**
+ * A rejected Premium submission hands its quiz back to the public catalog
+ * (Founder, 2026-11-09: there is no private quiz). The quiz stays `personal`
+ * when an admin hid it on purpose (RIN-557), when an earlier version is still
+ * published behind the paywall, or when a newer submission is waiting for
+ * review. Runs inside the decision transaction, so both writes land or neither.
+ */
+async function publishRejectedQuiz(
+  record: PremiumQuizSubmissionPersistenceRecord,
+  session: ClientSession,
+): Promise<boolean> {
+  const sourceQuiz = new Types.ObjectId(String(record.sourceQuiz));
+  const newerSubmission = await PremiumQuizSubmissionModel.exists({
+    sourceQuiz,
+    version: { $gt: record.version },
+  }).session(session);
+  if (newerSubmission) return false;
+
+  const publication = await PremiumQuizSubmissionModel.exists({
+    sourceQuiz,
+    status: 'approved',
+    active: true,
+  }).session(session);
+  if (publication) return false;
+
+  const lastVisibilityChange = await AdminActionAudit.findOne({
+    entityType: 'quiz',
+    entityId: sourceQuiz.toHexString(),
+    action: 'quiz.visibility.changed',
+  })
+    .sort({ createdAt: -1 })
+    .select('details')
+    .session(session)
+    .lean<VisibilityChangeAuditProjection>();
+  if (lastVisibilityChange?.details?.to === 'personal') return false;
+
+  const result = await QuizModel.updateOne(
+    { _id: sourceQuiz, visibility: 'personal' },
+    { $set: { visibility: 'public' } },
+    { session },
+  );
+  return result.modifiedCount === 1;
 }
 
 export class PremiumQuizRepository implements IPremiumQuizRepository {
@@ -294,10 +348,13 @@ export class PremiumQuizRepository implements IPremiumQuizRepository {
             { new: true, session },
           ).lean<PremiumQuizSubmissionPersistenceRecord>();
           if (!updated) throw new PremiumQuizError('conflict', 'Submission changed concurrently');
+          const quizMadePublic =
+            data.decision === 'reject' ? await publishRejectedQuiz(record, session) : false;
           return {
             submission: PremiumQuizPersistenceMapper.toSubmission(updated),
             awardedCredits: 0,
             rewardLocked: false,
+            quizMadePublic,
           };
         }
 

@@ -73,3 +73,27 @@ describe('QuestionDiscussion errors (RIN-753)', () => {
     expect(screen.queryByText(/10\.0\.0\.1/)).not.toBeInTheDocument();
   });
 });
+
+describe('QuestionDiscussion dates (RIN-1265)', () => {
+  it('formats comment dates in the active locale (en), not vi-VN', async () => {
+    fetchDiscussionsMock.mockResolvedValueOnce([
+      {
+        questionIndex: 0,
+        comments: [
+          {
+            id: 'c1',
+            author: { id: null, name: 'Fake Learner' },
+            content: 'Fake comment',
+            createdAt: '2026-07-02T00:00:00.000Z',
+          },
+        ],
+      },
+    ]);
+
+    renderDiscussion();
+
+    expect(await screen.findByText('Fake comment')).toBeInTheDocument();
+    // en-US month-first with AM/PM; vi-VN would render "07:00 02/07/2026".
+    expect(screen.getByText('07/02/2026, 07:00 AM')).toBeInTheDocument();
+  });
+});

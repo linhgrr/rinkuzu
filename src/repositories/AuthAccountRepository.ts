@@ -9,13 +9,17 @@ import type {
   FailedLoginAttemptState,
 } from '@/entities/AuthAccount';
 import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
+import type { Locale } from '@/i18n/config';
 import type {
   CreatePendingAccountData,
+  IAccountLocaleRepository,
   IAuthAccountRepository,
   VerifiedEmailAccount,
   IAuthSignInRepository,
+  ISignupOriginRepository,
   FailedLoginPolicy,
   ResolvedGoogleAccount,
+  SignupOrigin,
   SuccessfulLoginData,
   VerifiedGoogleAccountData,
 } from '@/interfaces/repositories/IAuthAccountRepository';
@@ -53,7 +57,13 @@ function buildGoogleProfileUpdates(data: VerifiedGoogleAccountData): GoogleProfi
   };
 }
 
-export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignInRepository {
+export class AuthAccountRepository
+  implements
+    IAuthAccountRepository,
+    IAuthSignInRepository,
+    IAccountLocaleRepository,
+    ISignupOriginRepository
+{
   async findByEmail(email: string): Promise<AuthAccountSecurityState | null> {
     await connectDB();
     const record = await User.findOne({ email, ...ACTIVE_ACCOUNT_FILTER })
@@ -74,6 +84,9 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         disabledAt: null,
         disabledBy: null,
         ...(data.displayName ? { displayName: data.displayName } : {}),
+        ...(data.locale ? { locale: data.locale } : {}),
+        signupLocale: data.signupOrigin.signupLocale,
+        signupCountry: data.signupOrigin.signupCountry,
         emailVerificationTokenHash: data.verificationTokenHash,
         emailVerificationExpires: data.verificationExpires,
         ...(data.guestClaimHashes?.length ? { guestClaimHashes: data.guestClaimHashes } : {}),
@@ -412,5 +425,25 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
       }
       throw error;
     }
+  }
+
+  /** `_id` lookup; matches only an account with no locale yet, so it never overwrites one. */
+  async rememberLocaleIfMissing(accountId: string, locale: Locale): Promise<void> {
+    if (!Types.ObjectId.isValid(accountId)) return;
+    await connectDB();
+    await User.updateOne(
+      { _id: new Types.ObjectId(accountId), locale: null },
+      { $set: { locale } },
+    );
+  }
+
+  /** Matches only an account with no signup origin yet: set once, never overwritten. */
+  async recordSignupOriginIfMissing(accountId: string, origin: SignupOrigin): Promise<void> {
+    if (!Types.ObjectId.isValid(accountId)) return;
+    await connectDB();
+    await User.updateOne(
+      { _id: new Types.ObjectId(accountId), signupLocale: null },
+      { $set: { signupLocale: origin.signupLocale, signupCountry: origin.signupCountry } },
+    );
   }
 }

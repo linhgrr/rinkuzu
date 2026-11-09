@@ -1,0 +1,134 @@
+---
+title: "How Personalized Quiz Difficulty Actually Works"
+description: "A worked example of how RinKuzu picks the concept and Bloom level of each exercise from your PDF, and how your answers move quiz difficulty up or down."
+date: 2026-11-09
+category: "Learning Science"
+readTimeMinutes: 7
+heroImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1200&q=80"
+heroImageAlt: "Student writing study notes by hand at a wooden desk beside a notebook and a cup of coffee"
+locale: en
+author: "rinkuzu-team"
+summary: "Follow one small PDF through one practice session to see how RinKuzu chooses each exercise and how your answers move its difficulty."
+lede: "One small PDF, one practice session: a step-by-step look at how RinKuzu decides what to ask next and how hard to make it."
+twitterDescription: "How personalized quiz difficulty works, shown with one small PDF and one practice session."
+breadcrumbLabel: "Quiz Difficulty"
+navLabel: "How Personalized Quiz Difficulty Works"
+ctaTitle: "Try it with your own PDF"
+ctaBody: "Upload a PDF and see how RinKuzu maps its concepts and picks your first exercise, free."
+wordCount: 1453
+timeRequiredMinutes: 9
+---
+
+## Two Questions Behind Every Exercise
+
+When people hear "AI quiz difficulty", they usually picture a single slider: easy, medium, hard. RinKuzu does not work with one slider. Every exercise in a personalized session answers two separate questions:
+
+1. **Which concept?** One idea from your document, such as "conditional probability".
+2. **Which Bloom level?** How deeply you are asked to work with that idea, from Remember and Understand up through Apply, Analyze, Evaluate and Create.
+
+Difficulty is the combination of the two. A Remember question on an advanced concept can be easier than an Analyze question on a basic one.
+
+This article follows one small PDF through one session to show how both choices are made and how they change as you answer. If you want the background on prerequisite graphs and Bloom's six levels themselves, our [guide to knowledge graphs and Bloom's taxonomy](/en/blog/knowledge-graphs-adaptive-learning-pdfs) covers that. Here we stay with the mechanics.
+
+## Step 1: Turning the PDF into a Concept Map
+
+Personalized learning from a PDF starts before the first question. When you upload a document, RinKuzu reads the PDF, splits it into chunks, extracts concepts with AI, merges duplicate concepts, ranks likely prerequisites, verifies those relations with AI and builds a knowledge graph. The processing screen shows each stage, and the concept map fills in as soon as the first concepts are found.
+
+For our example, imagine a short handout called "Introduction to Probability". After processing, its graph might look like this:
+
+- **Sample space** → **Events** → **Probability of an event**
+- **Probability of an event** → **Conditional probability**
+- **Conditional probability** → **Independence** and **Bayes' theorem**
+
+An arrow means "comes before". This map is what every later decision is checked against. The concept names are our illustration; the real graph depends on what your document contains.
+
+## Step 2: The Rules That Decide What Can Be Asked
+
+Before any model gets a say, a few plain rules narrow the options. They are checked again after every answer.
+
+### Rule 1: Prerequisites gate concepts
+
+A concept stays locked until the concepts upstream of it are mastered at the Apply level. Being able to recall a prerequisite is not enough; you need to have shown you can use it. "Upstream" includes indirect prerequisites: Bayes' theorem waits on conditional probability, and also on everything conditional probability depends on.
+
+### Rule 2: Bloom levels open one at a time
+
+Within a concept, a higher level opens only after the level below it is mastered. You will not get an Analyze question on Events while your Understand level on Events is still shaky. Not every concept is practiced at all six levels, so some concepts stop short of Create.
+
+### Rule 3: Mastered pairs step aside
+
+Once a concept and level pair is mastered, it normally drops out of the running, so the session does not keep asking what you already know.
+
+### Then a model picks from what is left
+
+The rules leave a short list of allowed concept and level pairs. A trained model scores that list and picks one. That is the AI part of the choice, but it only ever chooses among options the rules allow.
+
+An exercise is then generated for that concept at that level. It can take several forms: multiple choice, true/false, fill in the blank, select all correct answers, ordering, matching, or short answer.
+
+## A Worked Example: One Session on Probability Basics
+
+Here is how a first session on the probability handout could unfold. The sequence is invented for illustration. In particular, how far one answer moves your mastery estimate is decided by the model, not by a fixed count of correct answers.
+
+### The opening
+
+At the start, nothing is mastered. Sample space is the only concept without prerequisites, so it is the only unlocked concept, and only its lowest level is open. The first exercise is therefore a Remember question on Sample space.
+
+Because it sits at one of the two lowest Bloom levels, the session can open with a short theory review of the concept before the question itself.
+
+### The session, step by step
+
+| Step | Concept | Bloom level | Format | Answer | What changes |
+|---|---|---|---|---|---|
+| 1 | Sample space | Remember | Multiple choice | Correct | Remember estimate rises |
+| 2 | Sample space | Remember | True/false | Correct | Remember mastered; Understand opens |
+| 3 | Sample space | Understand | Matching | Correct | Understand estimate rises |
+| 4 | Sample space | Understand | Multiple choice | Correct | Understand mastered; Apply opens |
+| 5 | Sample space | Apply | Fill in the blank | Wrong | Apply estimate stays below the line; nothing new opens |
+| 6 | Sample space | Apply | Short answer | Correct | Apply estimate rises |
+| 7 | Sample space | Apply | Multiple choice | Correct | Apply mastered; Events unlocks; Analyze opens on Sample space |
+| 8 | Events | Remember | Multiple choice | Correct | Events starts at the bottom level |
+
+### What the wrong answer did
+
+Step 5 is the interesting one. Say the question asked how many outcomes there are when two dice are rolled, and the answer given was 12 instead of 36.
+
+After you submit, the result screen shows whether you were right, the correct answer and an explanation. It also shows a mastery update for that concept at that Bloom level, your average mastery and the step number. If the explanation does not land, you can ask Rin-chan, the in-app AI tutor, to walk through it differently.
+
+Behind the scenes, the Apply estimate for Sample space did not cross the mastery line, so Events stayed locked. The session did not jump ahead to new material. It stayed on the level where the gap showed up, and steps 6 and 7 tested it again with different questions. That is most of what personalized difficulty is for: spending your practice time where your answers say the gap is.
+
+### Unlocking the next concept
+
+After step 7, two kinds of options are on the table: a new concept (Events at Remember) and a harder level on the old one (Sample space at Analyze). The rules allow both, and the model chooses. In our example it starts Events.
+
+Notice that "harder" is not a straight line here. Moving to Events resets the Bloom level to Remember, but the concept itself is further along the map. Either way, the next step covers ground you have not yet mastered.
+
+## How Difficulty Moves Down as Well as Up
+
+Mastery is an estimate, not a badge, and the rules are checked again after every answer. So difficulty is not a one-way ratchet.
+
+If later answers pull the estimate for a level back below the mastery line, that level is back in play, and the levels above it close until it recovers. The same applies to concepts: if a prerequisite's Apply-level estimate slips, the concepts that depend on it can lock again.
+
+In practice, struggling at a higher level does not just mark you as failing there. If your answers lower the estimate for the level or concept underneath, that foundation is back on the list, and the harder work waits until it recovers.
+
+## Where You Can See This in the App
+
+You do not have to take any of this on trust. The subject view shows the state behind these decisions:
+
+- **Knowledge Graph.** Each concept is marked Locked, Available, In Progress or Mastered. The expanded view lets you follow prerequisite relationships from left to right.
+- **Concept details.** Clicking a node shows the concept's definition, its overall mastery, a Bloom level breakdown, its prerequisites with their mastery, and the concepts it unlocks.
+- **Mastery Matrix.** A grid of concepts against the six Bloom levels. Cells at 75% or above are marked Mastered, so you can see at a glance where your frontier is.
+- **Exercise screen.** Every exercise shows its Bloom level and the concept it is testing.
+
+## What This Approach Does Not Do
+
+No system like this is perfect, and it helps to know where the edges are.
+
+- **It is only as good as the map.** If concept extraction misses an idea or a prerequisite link is wrong, the gating follows the wrong map. Clear, text-based PDFs tend to produce the cleanest graphs.
+- **Mastery is an estimate.** It is inferred from your answers, so a lucky guess or a careless slip moves it. The re-checking described above limits the damage, but it does not remove it.
+- **Higher levels are harder to measure.** Evaluate and Create questions are harder to check automatically than recall questions, and no quiz fully captures original thinking.
+- **It decides the order, not the effort.** The session can point you at a gap. Closing it is still your work.
+
+## Where to Go from Here
+
+The short version: your PDF becomes a map of concepts, a few rules decide which concept and Bloom level are open to you, a model picks among them, and every answer redraws that boundary.
+
+If you have questions about supported files, plans, languages or privacy, the [FAQ](/en/faq) covers the common ones.

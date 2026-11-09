@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const AUTH_SECRET = 'test-auth-secret-at-least-32-characters';
 const REPLY_DOMAIN = 'feedback.rinkuzu.app';
 const CONVERSATION_ID = '6a8ed209f04328ac17443d91';
-const USER_EMAIL = 'hantram3012@gmail.com';
+const USER_EMAIL = 'learner@example.com';
 
 const ENVIRONMENT: Record<string, string> = {
   AUTH_SECRET,
@@ -290,10 +290,20 @@ describe('review email opens (RIN-916)', () => {
 
     expect(mocks.outbox.updateOne).toHaveBeenCalledTimes(1);
     expect(mocks.outbox.updateOne).toHaveBeenCalledWith(
-      { externalEmailId: 're_review_1', kind: 'review_reminder', openedAt: null },
+      {
+        externalEmailId: 're_review_1',
+        kind: { $in: ['review_reminder', 'review_reminder_d5'] },
+        openedAt: null,
+      },
       { $set: { openedAt: expect.any(Date) } },
       { timestamps: false },
     );
+  });
+
+  it('marks the first open of a w1-review-d5 email too (RIN-1304)', async () => {
+    await processResendWebhook('evt-open-d5', 'digest', openedEvent({ campaign: 'w1-review-d5' }));
+
+    expect(mocks.outbox.updateOne).toHaveBeenCalledTimes(1);
   });
 
   it('does not count a replayed open webhook again', async () => {
@@ -307,6 +317,11 @@ describe('review email opens (RIN-916)', () => {
 
   it('ignores opens of QA sends and untagged mail', async () => {
     await processResendWebhook('evt-open-qa', 'digest', openedEvent({ campaign: 'w1-review-qa' }));
+    await processResendWebhook(
+      'evt-open-d5-qa',
+      'digest',
+      openedEvent({ campaign: 'w1-review-d5-qa' }),
+    );
     await processResendWebhook('evt-open-none', 'digest', openedEvent(null));
 
     expect(mocks.outbox.updateOne).not.toHaveBeenCalled();

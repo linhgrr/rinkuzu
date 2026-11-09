@@ -155,6 +155,7 @@ function RegisterFormContent({ locale, googleEnabled = false, onSwitchMode }: Re
         password: values.password,
         ...(forwardedCallback ? { callbackUrl: forwardedCallback } : {}),
         ...(guestClaimTokens.length > 0 ? { guestClaimTokens } : {}),
+        locale,
       });
       // Localized copy, not the server's English meta.message (RIN-756).
       setServerSuccess(t('checkEmailMessage'));

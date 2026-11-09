@@ -104,4 +104,23 @@ describe('POST /api/adaptive/pipeline/jobs/[jobId]/create-session', () => {
       },
     );
   });
+
+  it('forwards a valid UI locale with max_steps', async () => {
+    await POST(request('job-22', '?max_steps=50&locale=vi'), context('job-22'));
+
+    expect(proxyAdaptiveRequestMock).toHaveBeenCalledWith(
+      expect.any(NextRequest),
+      '/pipeline/jobs/job-22/create-session?max_steps=50&locale=vi',
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it('rejects an unsupported locale before proxying', async () => {
+    const response = await POST(request('job-22', '?locale=fr'), context('job-22'));
+
+    expect(response.status).toBe(400);
+    expect(proxyAdaptiveRequestMock).not.toHaveBeenCalled();
+    expect(invalidateCacheMock).not.toHaveBeenCalled();
+  });
 });

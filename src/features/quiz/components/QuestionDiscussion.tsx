@@ -2,7 +2,7 @@
 
 import { useEffect, useReducer } from 'react';
 import { useSession } from 'next-auth/react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -90,6 +90,7 @@ export function QuestionDiscussion({
 }: QuestionDiscussionProps) {
   const { data: session } = useSession();
   const t = useTranslations('discussion');
+  const locale = useLocale();
   const describeError = useApiErrorMessage();
   const [state, dispatch] = useReducer(questionDiscussionReducer, initialState);
 
@@ -305,7 +306,7 @@ export function QuestionDiscussion({
                       nameClassName="text-xs font-medium text-neutral-900"
                     />
                     <span className="text-xs text-neutral-500 flex-shrink-0">
-                      {formatDateTime(comment.createdAt)}
+                      {formatDateTime(comment.createdAt, { locale })}
                     </span>
                   </div>
                   <p className="text-xs text-neutral-700 leading-relaxed mt-1">{comment.content}</p>

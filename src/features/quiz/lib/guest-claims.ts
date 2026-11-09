@@ -4,7 +4,6 @@
  * The token never goes to analytics, logs or URLs.
  */
 
-import { z } from 'zod';
 import { GUEST_CLAIM_PENDING_COOKIE } from '@/shared/constants/starter-quiz';
 
 /** @public Tests and the e2e read the raw entry. */
@@ -32,15 +31,20 @@ export function createGuestClaimToken(): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-const guestClaimSchema = z.object({
-  attemptId: z.string(),
-  token: z.string(),
-  quizSlug: z.string(),
-  takenAt: z.number(),
-});
-
+/**
+ * Plain guard instead of a zod schema: this module loads with the app layout (via
+ * GuestAttemptClaimer), and one zod import put all of zod in every app route first-load
+ * JS (RIN-1370).
+ */
 function isGuestClaim(value: unknown): value is GuestClaim {
-  return guestClaimSchema.safeParse(value).success;
+  if (typeof value !== 'object' || value === null) return false;
+  const entry = value as Record<keyof GuestClaim, unknown>;
+  return (
+    typeof entry.attemptId === 'string' &&
+    typeof entry.token === 'string' &&
+    typeof entry.quizSlug === 'string' &&
+    typeof entry.takenAt === 'number'
+  );
 }
 
 function getStorage(): Storage | null {

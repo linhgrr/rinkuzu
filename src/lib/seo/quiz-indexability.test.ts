@@ -64,6 +64,37 @@ describe('detectQuizContentLocale (RIN-1241 D14)', () => {
   it('reads đ as Vietnamese', () => {
     expect(detectQuizContentLocale('Đề cương đại số', [])).toBe('vi');
   });
+
+  it('reads a title with one Vietnamese-only letter as vi when the questions are Japanese (RIN-1294)', () => {
+    expect(
+      detectQuizContentLocale('Nhật ngành 2 FULL (Form K67)', [
+        '次のうち、情報セキュリティの三要素に含まれないものはどれか。',
+        'ファイアウォールの主な役割は何か。',
+      ]),
+    ).toBe('vi');
+  });
+
+  it('reads a quiz without any Latin letters as vi (RIN-1294)', () => {
+    expect(
+      detectQuizContentLocale('情報セキュリティ(1)', [
+        '次のうち、情報セキュリティの三要素に含まれないものはどれか。',
+        '公開鍵暗号方式で、送信者が暗号化に使う鍵はどれか。',
+      ]),
+    ).toBe('vi');
+  });
+
+  it('keeps an English title en when one question names a Vietnamese person (RIN-1294)', () => {
+    expect(
+      detectQuizContentLocale('Intro to AI', [
+        'Which model did Nguyễn train first?',
+        'What is a neural network?',
+      ]),
+    ).toBe('en');
+  });
+
+  it('keeps a title with only loanword accents en (RIN-1294)', () => {
+    expect(detectQuizContentLocale('Café résumé tips', [])).toBe('en');
+  });
 });
 
 describe('buildQuizSeoTitle (RIN-1241 C10)', () => {

@@ -163,6 +163,41 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(document.body.innerHTML).not.toContain(FAKE_TOKEN);
   });
 
+  it('keeps entry=blog and its post in the save card callbacks (RIN-1242)', async () => {
+    searchParams.value = new URLSearchParams(
+      'attemptId=attempt-1&score=80&entry=blog&post=on-thi-jlpt',
+    );
+
+    render(<QuizResultPageClient />);
+
+    const blogPath = `${RESULT_PATH}&entry=blog&post=on-thi-jlpt`;
+    await screen.findByRole('region', { name: 'guestSaveTitle' });
+    fireEvent.click(screen.getByRole('button', { name: 'guestSaveWithGoogle' }));
+    expect(signInMock).toHaveBeenCalledWith('google', { callbackUrl: `/en${blogPath}` });
+    expect(screen.getByRole('link', { name: 'guestSaveSignInEmail' })).toHaveAttribute(
+      'href',
+      `/login?callbackUrl=${encodeURIComponent(blogPath)}`,
+    );
+    expect(screen.getByRole('link', { name: 'guestSaveCreateAccount' })).toHaveAttribute(
+      'href',
+      `/register?callbackUrl=${encodeURIComponent(blogPath)}`,
+    );
+  });
+
+  it('drops an untracked entry or a malformed post from the save card callbacks', async () => {
+    searchParams.value = new URLSearchParams(
+      'attemptId=attempt-1&score=80&entry=newsletter&post=Bad%20Slug',
+    );
+
+    render(<QuizResultPageClient />);
+
+    await screen.findByRole('region', { name: 'guestSaveTitle' });
+    expect(screen.getByRole('link', { name: 'guestSaveCreateAccount' })).toHaveAttribute(
+      'href',
+      `/register?callbackUrl=${encodeURIComponent(RESULT_PATH)}`,
+    );
+  });
+
   it.each([
     [true, 1],
     [false, 0],

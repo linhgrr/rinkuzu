@@ -197,6 +197,7 @@ describe('AuthAccountService mutation coverage', () => {
       expect(repository.createPending).toHaveBeenCalledWith({
         email: identity.email,
         passwordHash: 'hashed-password:password12',
+        signupOrigin: { signupLocale: 'vi', signupCountry: null },
         verificationTokenHash: 'token-hash',
         verificationExpires: new Date(now + VERIFICATION_TTL_MS),
       });

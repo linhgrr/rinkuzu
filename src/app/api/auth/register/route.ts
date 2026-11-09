@@ -5,6 +5,8 @@ import { extractRequestContext } from '@/lib/audit';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
 import { getAuthAccountService } from '@/lib/auth-account-factory';
 import { parseJsonBody } from '@/lib/api/validated';
+import { resolveAccountLocale } from '@/lib/auth/account-locale';
+import { SIGNUP_COUNTRY_HEADER, signupCountryOf } from '@/lib/auth/signup-origin';
 
 const authAccountService = getAuthAccountService();
 const neutralMessage =
@@ -18,6 +20,13 @@ export async function POST(request: NextRequest) {
   const rate = await checkAuthRateLimit('register_ip', context.ip || 'unknown');
   if (!rate.allowed) return rateLimitResponse(rate);
 
+  // The form sends its page locale; older clients fall back to the posting page.
+  const locale = resolveAccountLocale({
+    explicit: input.data.locale,
+    referer: request.headers.get('referer'),
+    cookies: request.cookies,
+  });
+  const signupCountry = signupCountryOf(request.headers.get(SIGNUP_COUNTRY_HEADER));
   const result = await authAccountService.register(
     {
       email: input.data.email,
@@ -27,6 +36,8 @@ export async function POST(request: NextRequest) {
       ...(input.data.guestClaimTokens?.length
         ? { guestClaimTokens: input.data.guestClaimTokens }
         : {}),
+      ...(locale ? { locale } : {}),
+      ...(signupCountry ? { signupCountry } : {}),
     },
     context,
   );

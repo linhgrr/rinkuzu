@@ -504,6 +504,48 @@ describe('QuizCrudService', () => {
       ).resolves.toMatchObject({ success: true });
     });
 
+    it('refuses submitToPremium: false (make public) while a Premium publication is active', async () => {
+      const access = { id: quizId, author: authorId, visibility: 'personal' };
+      const update = vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'public' }));
+      const quizRepository = createQuizRepository({
+        findAccessById: vi.fn().mockResolvedValue(access),
+        update,
+      });
+      const findActivePublicationByQuizId = vi
+        .fn()
+        .mockResolvedValueOnce({ id: 'pub-1' })
+        .mockResolvedValueOnce(null);
+      const service = new QuizCrudService(quizRepository, undefined, {
+        findActivePublicationByQuizId,
+      });
+
+      await expect(
+        service.updateQuiz(quizId, { submitToPremium: false }, authorId),
+      ).resolves.toMatchObject({ success: false, statusCode: 409, code: 'conflict' });
+      expect(update).not.toHaveBeenCalled();
+
+      await expect(
+        service.updateQuiz(quizId, { submitToPremium: false }, authorId),
+      ).resolves.toMatchObject({ success: true });
+      expect(update).toHaveBeenCalledWith(
+        quizId,
+        expect.objectContaining({ visibility: 'public' }),
+      );
+    });
+
+    it('fails closed when the publication lookup is not wired', async () => {
+      const quizRepository = createQuizRepository({
+        findAccessById: vi.fn().mockResolvedValue({ id: quizId, author: authorId }),
+      });
+      await expect(
+        new QuizCrudService(quizRepository).updateQuiz(
+          quizId,
+          { submitToPremium: false },
+          authorId,
+        ),
+      ).resolves.toMatchObject({ success: false, statusCode: 500 });
+    });
+
     it('returns 404 when update races to a missing quiz and 500 on unexpected errors', async () => {
       const access = { id: quizId, author: authorId, visibility: 'public' };
       const quizRepository = createQuizRepository({

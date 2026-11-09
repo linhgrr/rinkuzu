@@ -38,6 +38,10 @@ import { QuestionOptionsPreview } from '@/features/quiz/components/shared/Questi
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuestionType } from '@/shared/constants/question-type';
 import { ROUTES } from '@/shared/constants/routes';
+import {
+  resolveQuizEntryAttribution,
+  type QuizEntryAttribution,
+} from '@/shared/constants/starter-quiz';
 
 type QuizResultQuestion = QuizResultQuestionViewModel;
 type QuizResult = QuizResultViewModel;
@@ -683,10 +687,18 @@ function keepsGuestScore(reader: ResultReader, attemptId: string | null, error: 
   return error !== null && describeApiError(error).kind === 'not_found';
 }
 
-function guestResultPath(encodedSlug: string, attemptId: string | null, score: number | null) {
+function guestResultPath(
+  encodedSlug: string,
+  attemptId: string | null,
+  score: number | null,
+  attribution: QuizEntryAttribution,
+) {
   const params = new URLSearchParams();
   if (attemptId) params.set('attemptId', attemptId);
   if (score !== null) params.set('score', String(score));
+  // The quiz's entry/post survive sign-in so the blog funnel stays attributed (RIN-1242).
+  if (attribution.entry) params.set('entry', attribution.entry);
+  if (attribution.post) params.set('post', attribution.post);
   return `${ROUTES.QUIZ.RESULT(encodedSlug)}?${params.toString()}`;
 }
 
@@ -771,7 +783,12 @@ function QuizResultContent() {
   }
 
   // Where sign-in comes back to; never carries the email or the token.
-  const resultPath = guestResultPath(encodedSlug, attemptId, urlScore ?? result?.score ?? null);
+  const resultPath = guestResultPath(
+    encodedSlug,
+    attemptId,
+    urlScore ?? result?.score ?? null,
+    resolveQuizEntryAttribution(get('entry'), get('post')),
+  );
 
   const holdsGuestScore =
     (state.error !== null || !result) &&

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { locales } from '@/i18n/config';
 import { canonicalizeEmail, EMAIL_MAX_LENGTH } from '@/shared/email/canonical-email';
 import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 
@@ -54,6 +55,8 @@ export const registerSchema = z.object({
   callbackUrl: z.string().max(512).optional(),
   // Guest results to attach when the email is verified, in any browser (RIN-1310).
   guestClaimTokens: z.array(guestClaimTokenSchema).max(REGISTER_GUEST_CLAIM_MAX_TOKENS).optional(),
+  // UI locale of the signup page (RIN-1263). An unknown value is dropped, never a 400.
+  locale: z.enum(locales).optional().catch(undefined),
 });
 
 export const forgotPasswordSchema = z.object({

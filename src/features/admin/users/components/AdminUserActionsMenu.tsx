@@ -120,13 +120,13 @@ export function AdminUserActionsMenu({
             href={`/admin/support?userId=${encodeURIComponent(user.id)}`}
             className={`${ITEM_CLASS} text-neutral-800`}
           >
-            Hỗ trợ
+            {t('userActionSupport')}
           </Link>
           <Link
             href={`/admin/feedback?userId=${encodeURIComponent(user.id)}`}
             className={`${ITEM_CLASS} text-neutral-800`}
           >
-            Mời phản hồi
+            {t('userActionRequestFeedback')}
           </Link>
           <MenuItem disabled={busy} tone="text-amber-700" onSelect={select(onOpenCreditModal)}>
             <HiOutlinePlusCircle className="size-4" aria-hidden="true" />

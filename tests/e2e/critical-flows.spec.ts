@@ -1311,6 +1311,13 @@ test.describe('production critical paths', () => {
       );
       await expect(page.getByRole('heading', { name: subjectName })).toBeVisible();
       await expect(page.getByText('4', { exact: true }).first()).toBeVisible();
+
+      // The English UI asks the API for English material on upload and session start (RIN-1267).
+      const forwarded = await request.post('http://127.0.0.1:8000/__e2e/locales', {
+        data: { userId: fixture.regular.id.toHexString() },
+        headers: { 'x-e2e-control-token': E2E_CONTROL_TOKEN },
+      });
+      expect((await forwarded.json()).data).toEqual({ process: 'en', createSession: 'en' });
     });
   });
 

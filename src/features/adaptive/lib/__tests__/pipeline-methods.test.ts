@@ -13,6 +13,7 @@ import {
   getConceptDetail,
   submitAnswer,
   uploadPdf,
+  createSessionFromPipeline,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 
 function okJson(data: unknown): Response {
@@ -106,6 +107,50 @@ describe('pipeline lifecycle methods', () => {
     const presignedRequest = JSON.parse(String(spy.mock.calls[0]?.[1]?.body));
     expect(spy.mock.calls[0]?.[0]).toBe('/api/storage/presigned-url');
     expect(presignedRequest.purpose).toBe('adaptive');
+  });
+
+  it('sends the page locale on process, create-session and retry', async () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'en' } });
+    const spy = vi
+      .fn()
+      .mockResolvedValueOnce(
+        okJson({
+          uploadUrl: 'https://storage.test/upload',
+          uploadFields: { key: 'k1' },
+          s3Key: 'k1',
+        }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(
+        okJson({ job_id: 'job-1', status: 'queued', status_url: '/s', message: 'queued' }),
+      )
+      .mockResolvedValueOnce(okJson({ session_id: 's1', job_id: 'job-1' }))
+      .mockResolvedValueOnce(
+        okJson({ job_id: 'job-1', status: 'queued', status_url: '/s', retry_count: 1 }),
+      );
+    vi.stubGlobal('fetch', spy);
+
+    await uploadPdf(new File(['%PDF-1.7'], 'subject.pdf', { type: 'application/pdf' }), 'Math');
+    await createSessionFromPipeline('job-1', 50);
+    await retryPipelineJob('job-1');
+
+    expect(JSON.parse(String(spy.mock.calls[2]?.[1]?.body))).toMatchObject({ locale: 'en' });
+    expect(spy.mock.calls[3]?.[0]).toBe(
+      '/api/adaptive/pipeline/jobs/job-1/create-session?max_steps=50&locale=en',
+    );
+    expect(spy.mock.calls[4]?.[0]).toBe('/api/adaptive/pipeline/jobs/job-1/retry?locale=en');
+  });
+
+  it('sends no locale when the page language is not a supported UI locale', async () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'fr' } });
+    const spy = vi.fn().mockResolvedValue(okJson({ session_id: 's1', job_id: 'job-1' }));
+    vi.stubGlobal('fetch', spy);
+
+    await createSessionFromPipeline('job-1', 50);
+
+    expect(spy.mock.calls[0]?.[0]).toBe(
+      '/api/adaptive/pipeline/jobs/job-1/create-session?max_steps=50',
+    );
   });
 
   it('getSubjects normalizes raw subject status to the pipeline status contract', async () => {

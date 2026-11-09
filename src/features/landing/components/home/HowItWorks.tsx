@@ -1,12 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
-import { loadMotionFeatures } from './motion-features';
 import { imgGroup8 } from './constants';
 import { Reveal } from './Reveal';
-
-const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 const englishCards = [
   {
@@ -33,7 +29,6 @@ interface HowItWorksCardProps {
 }
 
 export default function HowItWorks({ locale }: { locale: string }) {
-  const reduce = useReducedMotion();
   const isVi = locale === 'vi';
   const cards = isVi
     ? [
@@ -97,20 +92,17 @@ export default function HowItWorks({ locale }: { locale: string }) {
         </div>
 
         <div className="grid w-full grid-cols-1 items-start gap-8 xl:grid-cols-3 2xl:gap-24">
-          <LazyMotion features={loadMotionFeatures}>
-            {cards.map((c, i) => (
-              <m.div
-                key={c.num}
-                className="flex w-full justify-center"
-                initial={reduce ? false : { opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.4 }}
-                transition={{ duration: 0.6, delay: i * 0.2, ease: EASE_OUT }}
-              >
-                <Card {...c} />
-              </m.div>
-            ))}
-          </LazyMotion>
+          {cards.map((c, i) => (
+            <Reveal
+              key={c.num}
+              className="flex w-full justify-center"
+              y={40}
+              amount={0.4}
+              delay={i * 0.2}
+            >
+              <Card {...c} />
+            </Reveal>
+          ))}
         </div>
       </div>
     </div>

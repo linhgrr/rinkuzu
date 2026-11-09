@@ -12,6 +12,7 @@ import {
   getBlogAuthorSlugs,
   getBlogIndexPosts,
   getBlogSitemapRoutes,
+  isPublished,
   toBlogLocale,
 } from './posts';
 
@@ -61,7 +62,8 @@ describe('blog post queries', () => {
     for (const slug of getBlogAuthorSlugs()) {
       expect(getBlogAuthor(slug)).toBeDefined();
     }
-    for (const post of getAllBlogPosts()) {
+    // Drafts and scheduled posts have no article until they publish (RIN-1329).
+    for (const post of getAllBlogPosts().filter((p) => isPublished(p))) {
       expect(getBlogArticle(post.locale, post.slug)).toBeDefined();
     }
   });

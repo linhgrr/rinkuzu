@@ -3,6 +3,7 @@ import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import type { Locale } from '@/i18n/config';
 import { locales } from '@/i18n/config';
+import { findUnsafeBodyConstruct } from './body-safety';
 import { blogFrontmatterSchema, type BlogFrontmatter } from './schema';
 
 /**
@@ -14,6 +15,9 @@ import { blogFrontmatterSchema, type BlogFrontmatter } from './schema';
  * - Each file's frontmatter must satisfy {@link blogFrontmatterSchema}; a
  *   missing or invalid required field throws so the build fails loudly
  *   instead of rendering a broken page.
+ * - The body is plain Markdown, never compiled as MDX: imports, `{expressions}`,
+ *   HTML/JSX tags and non-http(s)/mailto link schemes outside code throw
+ *   (see `./body-safety.ts`).
  */
 export type BlogPost = BlogFrontmatter & {
   slug: string;
@@ -60,6 +64,19 @@ const listMdxFiles = (dir: string): string[] => {
     .map((entry) => entry.name);
 };
 
+/** Throws with `<file>:<line>` when the body holds code rather than content. */
+const assertBodyIsContent = (raw: string, body: string, filePath: string): void => {
+  const unsafe = findUnsafeBodyConstruct(body);
+  if (!unsafe) {
+    return;
+  }
+  const frontmatterLines = raw.slice(0, raw.length - body.length).split('\n').length - 1;
+  throw new BlogContentError(
+    `${filePath}:${frontmatterLines + unsafe.line}: ${unsafe.reason} is not allowed in a blog body; ` +
+      'posts are plain Markdown (see content/blog/README.md)',
+  );
+};
+
 const parsePostFile = (locale: Locale, filePath: string, slug: string): BlogPost => {
   const raw = fs.readFileSync(filePath, 'utf8');
   const { data, content } = parseFrontmatter(raw, filePath);
@@ -83,6 +100,8 @@ const parsePostFile = (locale: Locale, filePath: string, slug: string): BlogPost
       `Invalid slug "${slug}" derived from ${filePath}; slugs must be lowercase and hyphen-separated`,
     );
   }
+
+  assertBodyIsContent(raw, content, filePath);
 
   return { ...frontmatter, slug, content };
 };

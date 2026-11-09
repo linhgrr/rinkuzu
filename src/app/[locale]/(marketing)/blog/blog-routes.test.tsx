@@ -2,9 +2,16 @@ import { render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import BlogIndexPage from './page';
-import BlogPostPage, { generateStaticParams as postParams } from './[slug]/page';
-import AuthorPage, { generateStaticParams as authorParams } from './authors/[slug]/page';
+import BlogIndexPage, { revalidate as indexRevalidate } from './page';
+import BlogPostPage, {
+  generateStaticParams as postParams,
+  revalidate as postRevalidate,
+} from './[slug]/page';
+import AuthorPage, {
+  generateStaticParams as authorParams,
+  revalidate as authorRevalidate,
+} from './authors/[slug]/page';
+import { revalidate as sitemapRevalidate } from '@/app/sitemap';
 import { blogMessages } from '../../../../../tests/helpers/blog-intl-mock';
 
 // RIN-404: the blog index, post and author routes render from content/blog, and the two
@@ -141,5 +148,13 @@ describe('blog routes from content/blog', () => {
     expect(articles).toHaveLength(2);
     expect(within(articles[0]?.closest('a') as HTMLElement).getByText(/2026/)).toBeInTheDocument();
     expect(articles[0]?.closest('a')).toHaveAttribute('href', `/${locale}/blog/${AI_GUIDE}`);
+  });
+
+  // A post scheduled by a future `date` must go live without a deploy (RIN-1329):
+  // every route that lists or renders posts re-renders at least hourly.
+  it('revalidates the blog routes and the sitemap hourly', () => {
+    expect([indexRevalidate, postRevalidate, authorRevalidate, sitemapRevalidate]).toEqual([
+      3600, 3600, 3600, 3600,
+    ]);
   });
 });

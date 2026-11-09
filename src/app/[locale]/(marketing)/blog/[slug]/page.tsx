@@ -27,6 +27,11 @@ import { RelatedPosts } from './RelatedPosts';
 type Props = { params: Promise<{ locale: string; slug: string }> };
 type BlogTranslator = Awaited<ReturnType<typeof getTranslations<'blog'>>>;
 
+// Re-render at most hourly (ISR) so a post scheduled by a future `date` goes
+// live on that day without a deploy, while crawlers still get a cached static
+// page (RIN-1329, `isPublished` in src/lib/blog/posts.ts).
+export const revalidate = 3600;
+
 const SHARE_NETWORKS = ['Twitter', 'LinkedIn', 'Facebook'] as const;
 const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;

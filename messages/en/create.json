@@ -61,6 +61,11 @@
   "searchSelectCategory": "Search and select a category",
   "premiumQuiz": "Submit to the Premium Quiz catalog",
   "premiumQuizDescription": "The quiz will be checked for duplicates and reviewed manually. Approved submissions can earn 1–5 credits used to unlock Premium quizzes.",
+  "publicNotice": {
+    "full": "Quizzes you create are shared publicly in the Rinkuzu library and may appear on Google. Don't include other people's personal data (names, phone numbers, student or ID numbers). See the <terms>Terms</terms>.",
+    "premiumPointer": "Want it in the Premium catalog instead of the free library? Choose <b>{premiumLabel}</b> below.",
+    "short": "Quizzes you create are shared publicly. <terms>Terms</terms>"
+  },
   "premiumVerificationRequired": "Verify your email before submitting to Quiz Premium.",
   "verifyEmailCta": "Verify email",
   "premiumRightsLabel": "I confirm that I have the right to share this document and content",
@@ -172,6 +177,15 @@
   "accessDeniedDescription": "You do not have permission to edit this quiz.",
   "readOnlyTitle": "Read Only",
   "readOnlyDescription": "You do not have permission to edit this quiz. Only its author or an administrator can make changes.",
+  "personalDataNotice": {
+    "text": "This quiz may contain personal data ({kinds}), so it won't appear on Google. Remove it so people can find the quiz.",
+    "kinds": {
+      "phone": "phone",
+      "email": "email",
+      "id_number": "ID numbers",
+      "labelled_name": "names"
+    }
+  },
   "quizLink": "Quiz Link",
   "quizLinkDescription": "Share this link with your students",
   "copyLink": "Copy",

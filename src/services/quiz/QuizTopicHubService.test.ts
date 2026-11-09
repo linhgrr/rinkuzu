@@ -239,6 +239,18 @@ describe('QuizTopicHubService.listIndexableTopics', () => {
     expect(calls).toEqual({ quizLookups: 1, ownerLookups: 1 });
   });
 
+  it('dates a hub by its topic edit when that is newer than every quiz (D15)', async () => {
+    const { service } = buildService({
+      topics: [topic({ updatedAt: new Date('2026-11-09T08:00:00.000Z') })],
+      assignments: assign('topic-sinh', ['s1', 's2', 's3']),
+      quizzes: [quiz('s1'), quiz('s2'), quiz('s3')],
+    });
+
+    const [hub] = await service.listIndexableTopics();
+
+    expect(hub?.lastModified).toBe('2026-11-09T08:00:00.000Z');
+  });
+
   it('returns an empty list when nothing is published', async () => {
     const { service, calls } = buildService({
       topics: [topic({ published: false })],

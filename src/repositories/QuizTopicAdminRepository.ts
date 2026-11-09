@@ -23,6 +23,7 @@ export interface QuizTopicPersistence {
   intro?: string;
   order: number;
   published?: boolean;
+  updatedAt?: Date;
 }
 
 interface QuizTopicAssignmentPersistence {
@@ -45,6 +46,7 @@ export const TOPIC_PROJECTION = {
   intro: 1,
   order: 1,
   published: 1,
+  updatedAt: 1,
 };
 const ASSIGNMENT_PROJECTION = { _id: 1, quizId: 1, topicId: 1, order: 1 };
 
@@ -61,6 +63,7 @@ export function toTopicRecord(row: QuizTopicPersistence): QuizTopicRecord {
     intro: row.intro ?? '',
     order: row.order,
     published: row.published ?? false,
+    ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
   };
 }
 

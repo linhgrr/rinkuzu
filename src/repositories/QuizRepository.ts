@@ -306,8 +306,9 @@ async function mapQuizWithOwnerPlacement(record: QuizPersistenceRecord): Promise
 }
 
 function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenceRecord> {
-  const { excludeAuthor, ...rest } = filter;
+  const { excludeAuthor, personalDataFlagged, ...rest } = filter;
   const normalizedFilter: FilterQuery<QuizPersistenceRecord> = { ...rest };
+  if (personalDataFlagged) normalizedFilter['contentFlags.personalData'] = true;
 
   if (
     typeof normalizedFilter.folder === 'string' &&

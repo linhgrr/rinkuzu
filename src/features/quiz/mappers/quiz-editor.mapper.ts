@@ -29,5 +29,8 @@ export function toQuizEditViewModel(dto: QuizDetailDto): QuizEditViewModel {
   return {
     ...toQuizDetailBaseViewModel(dto),
     questions: dto.questions.map(toEditorQuestion),
+    ...(dto.contentFlags?.personalData === true && {
+      personalDataKinds: [...dto.contentFlags.kinds],
+    }),
   };
 }

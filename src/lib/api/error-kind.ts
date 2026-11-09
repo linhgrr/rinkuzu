@@ -70,6 +70,7 @@ export const CODE_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   campaign_not_prepared: 'errors.api.codes.campaignNotPrepared',
   last_active_admin: 'errors.api.codes.lastActiveAdmin',
   premium_published: 'errors.api.codes.premiumPublished',
+  premium_submission_failed: 'errors.api.codes.premiumSubmissionFailed',
   admin_invariant_unavailable: 'errors.api.codes.adminInvariantUnavailable',
   ocr_key_decrypt_failed: 'errors.api.codes.ocrKeyDecryptFailed',
   ocr_request_error: 'errors.api.codes.ocrRequestError',
@@ -142,6 +143,7 @@ const CODES_BY_KIND: Partial<Record<ApiErrorKind, readonly string[]>> = {
     'llm_call_failed',
     'llm_route_exhausted',
     'ask_rin_run_failed',
+    'premium_submission_failed',
   ],
   aborted: ['request_aborted'],
 };

@@ -66,8 +66,9 @@ export class QuizAdminService {
 
   async listAdminQuizzes(query: AdminQuizListQueryDto): Promise<ServiceResult<AdminQuizListDto>> {
     try {
-      const { search, visibility, page, limit } = query;
+      const { search, visibility, flag, page, limit } = query;
       const filter: QuizFindFilter = {};
+      if (flag === 'personal_data') filter.personalDataFlagged = true;
 
       if (visibility !== 'all') {
         filter.visibility = visibility;

@@ -1,6 +1,7 @@
 import type {
   AdminQuizDetailDto,
   AdminQuizListDto,
+  AdminQuizPersonalDataFlagClearDto,
   AdminQuizVisibilityChangeDto,
 } from '@/dtos/admin-quiz';
 import type { AdminStarterQuizListDto } from '@/dtos/admin-starter-quiz';
@@ -27,6 +28,7 @@ export async function fetchAdminQuizListViewModel({
   limit,
   search,
   visibility,
+  flag,
   signal,
 }: AdminQuizListQueryInput): Promise<AdminQuizListViewModel> {
   const params = new URLSearchParams({
@@ -36,6 +38,7 @@ export async function fetchAdminQuizListViewModel({
 
   if (search) params.set('search', search);
   if (visibility !== 'all') params.set('visibility', visibility);
+  if (flag !== 'all') params.set('flag', flag);
 
   const data = await fetchApiData<AdminQuizListDto>(`/api/admin/quizzes?${params}`, { signal });
   return toAdminQuizListViewModel(data);
@@ -61,6 +64,16 @@ export async function setAdminQuizVisibility(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ visibility }),
   });
+}
+
+/** Admin Clear flag for the personal-data check; audited server-side (RIN-1342). */
+export async function clearAdminQuizPersonalDataFlag(
+  quizId: string,
+): Promise<AdminQuizPersonalDataFlagClearDto> {
+  return fetchApiData<AdminQuizPersonalDataFlagClearDto>(
+    `/api/admin/quizzes/${quizId}/clear-personal-data-flag`,
+    { method: 'POST' },
+  );
 }
 
 const STARTER_QUIZZES_PATH = '/api/admin/starter-quizzes';

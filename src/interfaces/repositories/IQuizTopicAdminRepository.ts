@@ -9,6 +9,8 @@ export interface QuizTopicRecord {
   intro: string;
   order: number;
   published: boolean;
+  /** Last edit of the topic itself; a hub's sitemap date counts it (RIN-1249, spec D15). */
+  updatedAt?: Date;
 }
 
 export interface QuizTopicInsertInput {

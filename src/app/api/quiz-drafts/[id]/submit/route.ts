@@ -81,7 +81,7 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
       );
       if (existing.success && existing.data) {
         if (submitToPremium) {
-          await premiumService.createSubmission(userId, {
+          await premiumService.submitSavedQuiz(userId, {
             quizId: existingDraft.submittedQuizId,
             rightsAttested: true,
             ...(existingDraft.pdf.fileHash
@@ -116,7 +116,7 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
       if (!retainedDraft || !retainedDraft.pdf.retainedForPremium || !retainedDraft.pdf.s3Key) {
         throw new QuizDraftSynchronizationError(id, quizId);
       }
-      await premiumService.createSubmission(userId, {
+      await premiumService.submitSavedQuiz(userId, {
         quizId,
         rightsAttested: true,
         sourceObjectKey: retainedDraft.pdf.s3Key,

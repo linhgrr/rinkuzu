@@ -170,7 +170,10 @@ export interface QuizDetailDto extends QuizListItemDto {
   contentFlags?: QuizContentFlagsDto;
 }
 
-export interface QuizPlayDetailDto extends Omit<QuizDetailDto, 'questions' | 'contentFlags'> {
+export interface QuizPlayDetailDto extends Omit<
+  QuizDetailDto,
+  'questions' | 'pdfUrl' | 'contentFlags'
+> {
   questions: PlayableQuizQuestionDto[];
   /** Present on a retry-missed session: `questions[i]` is quiz question `questionIndices[i]`. */
   retry?: { ofAttemptId: string; questionIndices: number[] };

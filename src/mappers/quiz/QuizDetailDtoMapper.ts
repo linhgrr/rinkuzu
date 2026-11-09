@@ -22,7 +22,6 @@ function toDetailBase(quiz: Quiz) {
     folder: quiz.folder ?? null,
     visibility: quiz.visibility,
     questionCount: quiz.questionCount ?? quiz.questions.length,
-    ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
     ...(quiz.tags !== undefined && { tags: quiz.tags }),
     createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),
     updatedAt: serializeDate(quiz.updatedAt, 'quiz.updatedAt'),
@@ -30,9 +29,11 @@ function toDetailBase(quiz: Quiz) {
 }
 
 export class QuizDetailDtoMapper {
+  /** Owner/admin view (GET /api/quizzes/[id]): the only DTO that carries the source `pdfUrl`. */
   static toDetail(quiz: Quiz): QuizDetailDto {
     return {
       ...toDetailBase(quiz),
+      ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
       questions: quiz.questions.map(toQuizQuestionDto),
       ...(quiz.contentFlags !== undefined && {
         contentFlags: {
@@ -43,6 +44,7 @@ export class QuizDetailDtoMapper {
     };
   }
 
+  /** Anyone with read access (public quizzes): never carries the source `pdfUrl` (RIN-1340). */
   static toPlayDetail(quiz: Quiz): QuizPlayDetailDto {
     return { ...toDetailBase(quiz), questions: quiz.questions.map(toPlayableQuestionDto) };
   }

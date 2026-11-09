@@ -89,9 +89,11 @@ describe('QuizDetailDtoMapper', () => {
     const detail = QuizDetailDtoMapper.toDetail(flagged);
     expect(detail.contentFlags).toEqual({ personalData: true, kinds: ['email'] });
     expect(detail).not.toHaveProperty('indexHold');
+    expect(detail.pdfUrl).toBe('https://example.com/source.pdf');
 
     const play = QuizDetailDtoMapper.toPlayDetail(flagged);
     expect(play).not.toHaveProperty('contentFlags');
+    expect(play).not.toHaveProperty('pdfUrl');
     expect(play).not.toHaveProperty('indexHold');
   });
 
@@ -106,6 +108,18 @@ describe('QuizDetailDtoMapper', () => {
     });
     expect(dto.questions[0]).not.toHaveProperty('correctIndex');
     expect(dto.questions[0]).not.toHaveProperty('correctIndexes');
+  });
+
+  it('keeps the source pdfUrl only on the owner/admin detail DTO, never on the play DTO (RIN-1340)', () => {
+    expect(QuizDetailDtoMapper.toDetail(quiz)).toHaveProperty(
+      'pdfUrl',
+      'https://example.com/source.pdf',
+    );
+    expect(QuizDetailDtoMapper.toPlayDetail(quiz)).not.toHaveProperty('pdfUrl');
+    expect(QuizDetailDtoMapper.toRetryPlayDetail(quiz, 'attempt-1', [0])).not.toHaveProperty(
+      'pdfUrl',
+    );
+    expect(JSON.stringify(QuizDetailDtoMapper.toPlayDetail(quiz))).not.toContain('source.pdf');
   });
 
   it('omits absent optional fields instead of serializing undefined values', () => {

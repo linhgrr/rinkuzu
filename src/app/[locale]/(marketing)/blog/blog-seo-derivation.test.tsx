@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 import type { BlogPost } from '@/lib/blog/content';
 import { buildPublicSitemapEntries } from '@/lib/public-sitemap';
-import { canonicalFor } from '@/lib/seo';
+import { canonicalFor, siteUrl } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 import BlogPostPage, { generateMetadata } from './[slug]/page';
 
@@ -159,8 +159,36 @@ describe('blog SEO derived from content frontmatter', () => {
     expect(metadata.openGraph).toMatchObject({
       type: 'article',
       publishedTime: `${SAMPLE.date}T00:00:00.000Z`,
-      images: [expect.objectContaining({ url: SAMPLE.heroImage, alt: SAMPLE.heroImageAlt })],
+      images: [
+        expect.objectContaining({
+          url: canonicalFor('en', `/blog/${SAMPLE.slug}/og.png`),
+          width: 1200,
+          height: 630,
+          alt: `${SAMPLE.title} | RinKuzu`,
+        }),
+      ],
     });
+  });
+
+  it('shares the generated card of the page locale when the post has no ogImage (RIN-1330)', async () => {
+    const metadata = await generateMetadata({ params: params('vi') });
+    const card = canonicalFor('vi', `/blog/${SAMPLE.slug}/og.png`);
+
+    expect(metadata.openGraph?.images).toEqual([expect.objectContaining({ url: card })]);
+    expect(metadata.twitter).toMatchObject({ card: 'summary_large_image', images: [card] });
+  });
+
+  it('shares the frontmatter ogImage instead of the generated card (RIN-1330)', async () => {
+    SAMPLE.ogImage = '/images/blog/sample-share.png';
+    try {
+      const metadata = await generateMetadata({ params: params('en') });
+      const image = new URL('/images/blog/sample-share.png', siteUrl).toString();
+
+      expect(metadata.openGraph?.images).toEqual([expect.objectContaining({ url: image })]);
+      expect(metadata.twitter).toMatchObject({ card: 'summary_large_image', images: [image] });
+    } finally {
+      delete SAMPLE.ogImage;
+    }
   });
 
   it('renders Article JSON-LD from frontmatter', async () => {

@@ -51,6 +51,12 @@ export const blogFrontmatterSchema = z.object({
   /** Article JSON-LD `wordCount` and `timeRequired` (omitted when absent). */
   wordCount: positiveInt.optional(),
   timeRequiredMinutes: positiveInt.optional(),
+  /**
+   * Share image (1200x630) for Open Graph and X cards: an absolute URL or a
+   * site path. Without it the post gets a generated card with its title and
+   * category (`/<locale>/blog/<slug>/og.png`, RIN-1330).
+   */
+  ogImage: optionalText,
   /** Topics for the related-posts block, compared case-insensitively (RIN-1331). */
   tags: z.array(z.string().trim().min(1, 'tags must not be empty')).max(8).optional(),
 });

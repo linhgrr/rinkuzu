@@ -40,6 +40,13 @@ export function generateStaticParams(): Array<{ slug: string }> {
   return getBlogArticleSlugs().map((slug) => ({ slug }));
 }
 
+/**
+ * Share image of a post: its frontmatter `ogImage`, or else the card generated
+ * at `/<locale>/blog/<slug>/og.png` with its title and category (RIN-1330).
+ */
+const shareImageUrl = (locale: string, article: BlogPost): string =>
+  new URL(article.ogImage ?? `/${locale}/blog/${article.slug}/og.png`, siteUrl).toString();
+
 const resolveArticle = async (params: Props['params']) => {
   const { locale, slug } = await params;
   const blogLocale = toBlogLocale(locale);
@@ -55,12 +62,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${article.title} | RinKuzu`;
   const description = article.seoDescription ?? article.description;
   const publishedTime = `${article.date}T00:00:00.000Z`;
+  const shareImage = shareImageUrl(locale, article);
   const base = buildLocalizedMetadata({
     locale,
     path,
     title,
     description,
-    imagePath: article.heroImage,
+    imagePath: shareImage,
     alternateLocales: getBlogArticleLocales(article.slug),
   });
   return {
@@ -73,20 +81,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime,
       modifiedTime: publishedTime,
       authors: [canonicalFor(locale, `/blog/authors/${article.author}`)],
-      images: [
-        {
-          url: article.heroImage,
-          width: OG_IMAGE_WIDTH,
-          height: OG_IMAGE_HEIGHT,
-          alt: article.heroImageAlt,
-        },
-      ],
+      images: [{ url: shareImage, width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, alt: title }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description: article.twitterDescription ?? description,
-      images: [article.heroImage],
+      images: [shareImage],
     },
   };
 }

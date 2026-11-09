@@ -153,6 +153,24 @@ describe('RegisterForm callbackUrl', () => {
     });
   });
 
+  // RIN-1310: the verification link may open in another browser, so the guest
+  // result's claim token goes to the server with the sign-up.
+  it('sends the guest claim tokens this browser holds with the sign-up', async () => {
+    const { addGuestClaim } = await import('@/features/quiz/lib/guest-claims');
+    const token = 'A'.repeat(43);
+    addGuestClaim({ attemptId: 'attempt-1', token, quizSlug: 'nhap-mon-ai', takenAt: Date.now() });
+    try {
+      await renderVi();
+      await submitValidForm();
+      expect(registerAccountMock).toHaveBeenCalledWith({
+        ...credentials,
+        guestClaimTokens: [token],
+      });
+    } finally {
+      window.localStorage.clear();
+    }
+  });
+
   it('hands the safe callback to the in-shell switch to sign-in', async () => {
     navigationMock.search = 'callbackUrl=%2Fvi%2Fquiz%2Fnhap-mon-ai';
     const onSwitchMode = vi.fn();

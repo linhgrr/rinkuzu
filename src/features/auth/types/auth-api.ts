@@ -11,6 +11,7 @@ export interface RegisterAccountInput {
   email: string;
   password: string;
   callbackUrl?: string;
+  guestClaimTokens?: string[];
   /** Page locale, stored on the account for emails (RIN-1263). */
   locale?: string;
 }

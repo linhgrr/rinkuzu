@@ -14,6 +14,7 @@ import type {
   CreatePendingAccountData,
   IAccountLocaleRepository,
   IAuthAccountRepository,
+  VerifiedEmailAccount,
   IAuthSignInRepository,
   ISignupOriginRepository,
   FailedLoginPolicy,
@@ -88,6 +89,7 @@ export class AuthAccountRepository
         signupCountry: data.signupOrigin.signupCountry,
         emailVerificationTokenHash: data.verificationTokenHash,
         emailVerificationExpires: data.verificationExpires,
+        ...(data.guestClaimHashes?.length ? { guestClaimHashes: data.guestClaimHashes } : {}),
       });
       return AuthAccountPersistenceMapper.toIdentity({
         _id: user._id,
@@ -101,7 +103,7 @@ export class AuthAccountRepository
     }
   }
 
-  async verifyEmail(tokenHash: string, now: Date): Promise<AuthAccountIdentity | null> {
+  async verifyEmail(tokenHash: string, now: Date): Promise<VerifiedEmailAccount | null> {
     await connectDB();
     const record = await User.findOneAndUpdate(
       {
@@ -114,13 +116,19 @@ export class AuthAccountRepository
         $unset: {
           emailVerificationTokenHash: 1,
           emailVerificationExpires: 1,
+          guestClaimHashes: 1,
         },
       },
-      { new: true },
+      // The pre-image: it still holds the guest claim hashes this update removes (RIN-1310).
+      { new: false },
     )
-      .select('email role')
+      .select('email role guestClaimHashes')
       .lean<AuthAccountPersistenceRecord>();
-    return record ? AuthAccountPersistenceMapper.toIdentity(record) : null;
+    if (!record) return null;
+    const identity = AuthAccountPersistenceMapper.toIdentity(record);
+    return record.guestClaimHashes?.length
+      ? { ...identity, guestClaimHashes: record.guestClaimHashes }
+      : identity;
   }
 
   async issuePasswordResetToken(

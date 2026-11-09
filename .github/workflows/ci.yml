@@ -684,10 +684,34 @@ jobs:
       # --config is passed explicitly rather than relying on gitleaks finding
       # .gitleaks.toml by itself: a silently missing config would drop the two
       # repository-specific rules and turn this gate green for the wrong reason.
+      # On a pull request the checked-out tree is the PR's own merge commit, so
+      # its config and ignore file are attacker-controlled: a PR could add its
+      # own fingerprint to .gitleaksignore or a `gitleaks:allow` comment. Read
+      # both from the base commit instead, and ignore inline allow comments.
+      # A missing base config falls back to the default rules, never to no scan.
       - name: Scan all reachable repository history
-        run: >-
-          "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1
-          --config .gitleaks.toml --log-opts='--all' .
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            trusted="${RUNNER_TEMP}/gitleaks-base"
+            mkdir -p "$trusted"
+            git cat-file -e "${BASE_SHA}^{commit}"
+            if ! git show "${BASE_SHA}:.gitleaks.toml" > "$trusted/.gitleaks.toml" 2>/dev/null; then
+              printf '[extend]\nuseDefault = true\n' > "$trusted/.gitleaks.toml"
+            fi
+            git show "${BASE_SHA}:.gitleaksignore" > "$trusted/.gitleaksignore" 2>/dev/null || : > "$trusted/.gitleaksignore"
+            # gitleaks also loads <source>/.gitleaksignore (the PR's own file, with
+            # global file:rule:line entries). This job only scans, so drop it.
+            rm -f -- .gitleaksignore
+            "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1 --ignore-gitleaks-allow \
+              --config "$trusted/.gitleaks.toml" --gitleaks-ignore-path "$trusted/.gitleaksignore" \
+              --log-opts='--all' .
+          else
+            "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1 \
+              --config .gitleaks.toml --log-opts='--all' .
+          fi
 
   codeql:
     name: CodeQL (${{ matrix.language }})
@@ -757,10 +781,14 @@ jobs:
         env:
           REQUIRED_RESULTS: ${{ toJSON(needs) }}
           EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           node - <<'NODE'
           const results = JSON.parse(process.env.REQUIRED_RESULTS);
           const eventName = process.env.EVENT_NAME;
+          // The cutover guard reads this line to check that a green run was
+          // tested on the current master head.
+          if (eventName === 'pull_request') console.log(`tested-base=${process.env.BASE_SHA}`);
           const EXPECTED_JOBS = 17;
 
           // Two campaigns are deferred because their fixed cost makes them unfit

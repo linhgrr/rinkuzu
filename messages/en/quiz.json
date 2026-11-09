@@ -173,6 +173,18 @@
   "guestSaveSignInEmail": "Sign in with email",
   "guestSaveCreateAccount": "Create an account",
   "guestReviewUnavailable": "We can't open the question review on this device. Your score is still shown above.",
+  "landing": {
+    "cta": "Play now – no account needed",
+    "ctaSignedIn": "Play now",
+    "quickHint": "10 questions, about 3 minutes",
+    "previewTitle": "Preview of the first {count} questions",
+    "previewMore": "{count} more questions",
+    "previewCta": "See the answers and keep going – no account needed",
+    "previewCtaSignedIn": "See the answers and keep going",
+    "questionNumber": "Question {number}",
+    "relatedTitle": "More quizzes on RinKuzu",
+    "relatedCount": "{count} questions"
+  },
   "pdfViewer": {
     "title": "PDF reference",
     "openInNewTab": "Open in new tab",

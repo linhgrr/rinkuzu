@@ -1,4 +1,8 @@
-import { IQuizRepository, type QuizFindFilter } from '@/interfaces/repositories/IQuizRepository';
+import {
+  IQuizRepository,
+  type PublicQuizSitemapRecord,
+  type QuizFindFilter,
+} from '@/interfaces/repositories/IQuizRepository';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
@@ -10,13 +14,22 @@ import type {
   AdminQuizVisibilityChangeDto,
 } from '@/dtos/admin-quiz';
 import type { DeleteResultDto } from '@/dtos/common';
-import type { PublicQuizSitemapEntryDto, QuizListDto, QuizListOptionsDto } from '@/dtos/quiz';
+import type {
+  PublicQuizSitemapEntryDto,
+  QuizListDto,
+  QuizListOptionsDto,
+  RelatedQuizDto,
+  RelatedQuizzesQueryDto,
+} from '@/dtos/quiz';
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import { detectQuizContentLocale, isQuizIndexable } from '@/lib/seo/quiz-indexability';
 import { logger } from '@/lib/logger';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
+
+/** Newest indexable quizzes read to find related ones in the same language. */
+const RELATED_QUIZ_WINDOW = 40;
 
 function escapeRegexLiteral(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -235,25 +248,56 @@ export class QuizAdminService {
    * carries its content locale, the one URL the sitemap lists (D14).
    */
   async getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]> {
+    const rows = await this.findIndexablePublicRows(limit);
+    return rows.map((row) => ({
+      slug: row.slug,
+      contentLocale: detectQuizContentLocale(row.title, row.leadQuestionTexts),
+      createdAt: row.createdAt.toISOString(),
+      ...(row.updatedAt ? { updatedAt: row.updatedAt.toISOString() } : {}),
+    }));
+  }
+
+  /**
+   * Up to `limit` of the newest indexable public quizzes in `contentLocale`,
+   * other than `excludeSlug`, for the quiz landing (RIN-1241 C12, no-topic
+   * variant). Reads a small window of the sitemap query (same index, projection)
+   * and keeps the quizzes written in the same language.
+   */
+  async getRelatedPublicQuizzes({
+    excludeSlug,
+    contentLocale,
+    limit,
+  }: RelatedQuizzesQueryDto): Promise<RelatedQuizDto[]> {
+    const rows = await this.findIndexablePublicRows(RELATED_QUIZ_WINDOW);
+    const related: RelatedQuizDto[] = [];
+    for (const row of rows) {
+      if (related.length >= limit) break;
+      if (row.slug === excludeSlug) continue;
+      if (detectQuizContentLocale(row.title, row.leadQuestionTexts) !== contentLocale) continue;
+      related.push({ slug: row.slug, title: row.title, questionCount: row.questionCount });
+    }
+    return related;
+  }
+
+  /**
+   * Newest indexable public quizzes (RIN-1241 D13): owners that are test or
+   * company accounts (RIN-840) and quizzes under 5 questions are excluded in the
+   * query, so the limit counts only indexable quizzes.
+   */
+  private async findIndexablePublicRows(limit: number): Promise<PublicQuizSitemapRecord[]> {
     const candidates = await this.quizRepository.findNonIndexableOwnerCandidates();
-    const excludeAuthorIds = candidates
-      .filter((owner) => isNonIndexableQuizOwner(owner))
-      .map((owner) => owner.id);
+    const excludeAuthorIds: string[] = [];
+    for (const owner of candidates) {
+      if (isNonIndexableQuizOwner(owner)) excludeAuthorIds.push(owner.id);
+    }
     const rows = await this.quizRepository.findPublicSitemapEntries({ excludeAuthorIds, limit });
-    return rows
-      .filter((row) =>
-        isQuizIndexable({
-          visibility: 'public',
-          ownerIndexable: true,
-          questionCount: row.questionCount,
-        }),
-      )
-      .map((row) => ({
-        slug: row.slug,
-        contentLocale: detectQuizContentLocale(row.title, row.leadQuestionTexts),
-        createdAt: row.createdAt.toISOString(),
-        ...(row.updatedAt ? { updatedAt: row.updatedAt.toISOString() } : {}),
-      }));
+    return rows.filter((row) =>
+      isQuizIndexable({
+        visibility: 'public',
+        ownerIndexable: true,
+        questionCount: row.questionCount,
+      }),
+    );
   }
 
   async getQuizzes(options: QuizListOptionsDto): Promise<QuizListDto> {

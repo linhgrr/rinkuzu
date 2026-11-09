@@ -154,6 +154,21 @@ describe('topic hub page (B3, B7)', () => {
     });
   });
 
+  it('counts every quiz in the badge and the title but lists only the first 30', async () => {
+    getTopicWithIndexableQuizzes.mockResolvedValue(hub(31));
+    const { container } = await renderHub();
+
+    expect(screen.getByText('31 bộ câu hỏi')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /^Chơi ngay: / })).toHaveLength(30);
+    const data = JSON.parse(
+      container.querySelector('script#topic-hub-schema')?.textContent ?? '{}',
+    ) as { '@graph': Array<{ itemListElement: unknown[] }> };
+    expect(data['@graph'][1]?.itemListElement).toHaveLength(30);
+
+    const metadata = await generateMetadata(params());
+    expect(String(metadata.title)).toContain('31 bộ câu hỏi');
+  });
+
   it('shows the empty block for a hub with no quizzes', async () => {
     getTopicWithIndexableQuizzes.mockResolvedValue(hub(0));
     await renderHub();

@@ -7,6 +7,8 @@ import type {
   QuizDetailDto,
   QuizListDto,
   PublicQuizSitemapEntryDto,
+  RelatedQuizDto,
+  RelatedQuizzesQueryDto,
   QuizListOptionsDto,
   QuizMetadataDto,
   QuizPlayDetailDto,
@@ -40,6 +42,9 @@ export interface IQuizService {
 
   /** Public quizzes for the sitemap, minus test/company-owned ones (RIN-840). */
   getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]>;
+
+  /** Newest indexable public quizzes in a language, for the quiz landing (RIN-1241 C12). */
+  getRelatedPublicQuizzes(query: RelatedQuizzesQueryDto): Promise<RelatedQuizDto[]>;
 
   /** Page metadata; `ownerIndexable` is server-only (RIN-840). */
   getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null>;

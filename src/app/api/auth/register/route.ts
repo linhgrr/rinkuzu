@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
       password: input.data.password,
       ...(input.data.displayName ? { displayName: input.data.displayName } : {}),
       ...(input.data.callbackUrl ? { callbackUrl: input.data.callbackUrl } : {}),
+      ...(input.data.guestClaimTokens?.length
+        ? { guestClaimTokens: input.data.guestClaimTokens }
+        : {}),
       ...(locale ? { locale } : {}),
       ...(signupCountry ? { signupCountry } : {}),
     },

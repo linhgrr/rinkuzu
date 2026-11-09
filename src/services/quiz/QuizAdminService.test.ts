@@ -342,4 +342,65 @@ describe('QuizAdminService', () => {
       expect(repository.update).not.toHaveBeenCalled();
     });
   });
+  // RIN-1241 C12: the landing links only indexable quizzes in its own language, never itself.
+  describe('getRelatedPublicQuizzes', () => {
+    function row(slug: string, title: string, questionCount = 12) {
+      return {
+        slug,
+        title,
+        questionCount,
+        leadQuestionTexts: [],
+        createdAt: new Date('2026-11-01T00:00:00Z'),
+      };
+    }
+
+    it('keeps same-language indexable quizzes, minus the page quiz, up to the limit', async () => {
+      const findPublicSitemapEntries = vi
+        .fn()
+        .mockResolvedValue([
+          row('current', 'Chương 1 Lịch sử Đảng'),
+          row('thin', 'Chương 2 Lịch sử Đảng', 4),
+          row('english', 'Biology basics'),
+          row('a', 'Chương 3 Lịch sử Đảng', 20),
+          row('b', 'Chương 4 Triết học'),
+          row('c', 'Chương 5 Kinh tế chính trị'),
+        ]);
+      const repository = createRepository({
+        findNonIndexableOwnerCandidates: vi
+          .fn()
+          .mockResolvedValue([
+            { id: '507f191e810c19729de860ff', email: null, isTestAccount: true },
+          ]),
+        findPublicSitemapEntries,
+      });
+      const service = new QuizAdminService(repository);
+
+      const related = await service.getRelatedPublicQuizzes({
+        excludeSlug: 'current',
+        contentLocale: 'vi',
+        limit: 2,
+      });
+
+      expect(related).toEqual([
+        { slug: 'a', title: 'Chương 3 Lịch sử Đảng', questionCount: 20 },
+        { slug: 'b', title: 'Chương 4 Triết học', questionCount: 12 },
+      ]);
+      expect(findPublicSitemapEntries).toHaveBeenCalledWith({
+        excludeAuthorIds: ['507f191e810c19729de860ff'],
+        limit: 40,
+      });
+    });
+
+    it('returns nothing when no other quiz qualifies', async () => {
+      const repository = createRepository({
+        findNonIndexableOwnerCandidates: vi.fn().mockResolvedValue([]),
+        findPublicSitemapEntries: vi.fn().mockResolvedValue([row('current', 'Biology basics')]),
+      });
+      const service = new QuizAdminService(repository);
+
+      await expect(
+        service.getRelatedPublicQuizzes({ excludeSlug: 'current', contentLocale: 'en', limit: 6 }),
+      ).resolves.toEqual([]);
+    });
+  });
 });

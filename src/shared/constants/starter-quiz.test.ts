@@ -6,13 +6,14 @@ import {
 } from '@/shared/constants/starter-quiz';
 
 describe('quiz entry attribution (RIN-1256)', () => {
-  it('tracks blog and hub next to the earlier entries', () => {
+  it('tracks quiz landing, hub and blog next to the earlier entries', () => {
     expect(TRACKED_QUIZ_ENTRIES).toEqual([
       'post_signin_starter',
       'activation_email',
       'landing',
-      'blog',
+      'quiz_landing',
       'hub',
+      'blog',
     ]);
   });
 

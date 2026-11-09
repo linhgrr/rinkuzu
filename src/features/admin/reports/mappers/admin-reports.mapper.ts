@@ -15,6 +15,8 @@ function formatReportDateLabel(value: string | undefined): string {
 function toAdminReportViewModel(report: AdminReportDto): AdminReportViewModel {
   return {
     ...copyReportCoreFields(report),
+    ...(report.reason !== undefined && { reason: report.reason }),
+    ...(report.source !== undefined && { source: report.source }),
     createdAt: report.createdAt,
     createdAtLabel: formatReportDateLabel(report.createdAt),
     updatedAt: report.updatedAt,

@@ -42,6 +42,7 @@ vi.mock('@/features/admin/promotions/api/admin-promotions-api', () => ({
 vi.mock('@/features/admin/reports/api/admin-reports-api', () => ({
   fetchAdminReportViewModels: (...args: unknown[]) => mocks.fetchReports(...args),
   deleteAdminReport: vi.fn(),
+  hideAdminReportedQuiz: vi.fn(),
   updateAdminReportStatus: vi.fn(),
 }));
 vi.mock('@/features/admin/premium-submissions/api/premium-submissions-api', () => ({
@@ -211,7 +212,7 @@ describe('admin list Retry stays pending until the refetch settles (RIN-1166)', 
     await expectPendingRetry(user, 'noReportsTitle');
     expect(screen.getByRole('heading', { level: 1, name: 'quizReports' })).toBeInTheDocument();
 
-    reload.resolve([]);
+    reload.resolve({ reports: [], pendingIndexHoldCount: 0 });
 
     expect(await screen.findByText('noReportsTitle')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -234,7 +235,9 @@ describe('admin lists that used to fail silently (RIN-1159)', () => {
 
   it('reports: ErrorState instead of the empty state, Retry recovers', async () => {
     const user = userEvent.setup();
-    mocks.fetchReports.mockRejectedValueOnce(serverError).mockResolvedValue([]);
+    mocks.fetchReports
+      .mockRejectedValueOnce(serverError)
+      .mockResolvedValue({ reports: [], pendingIndexHoldCount: 0 });
     renderFresh(<AdminReportsPageClient />);
 
     expectLoadError(await screen.findByRole('alert'));

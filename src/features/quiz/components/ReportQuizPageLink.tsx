@@ -15,7 +15,7 @@ import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { REPORT_REASONS } from '@/shared/constants/report-reason';
 
 /** The dialog caps details below the API's 2000 so the counter stays readable (RIN-1336). */
-export const REPORT_DETAILS_MAX_LENGTH = 1000;
+const REPORT_DETAILS_MAX_LENGTH = 1000;
 
 const reportSchema = z.object({
   reason: z.enum(REPORT_REASONS),

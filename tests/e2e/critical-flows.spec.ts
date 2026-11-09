@@ -1771,6 +1771,68 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('filters flagged quizzes and clears a personal-data flag with an audit entry @critical-admin-quiz-personal-data-flag', async ({
+    page,
+    request,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const quizHexId = fixture.quizId.toHexString();
+      const title = `E2E Personal Data ${fixture.runId}`;
+      await fixture.db.collection('quizzes').updateOne(
+        { _id: fixture.quizId },
+        {
+          $set: {
+            title,
+            contentFlags: { personalData: true, kinds: ['phone'], checkedAt: new Date() },
+          },
+        },
+      );
+
+      // A plain user may not clear a flag (RIN-1342); the cookie-less context is anonymous.
+      const anonymousClear = await request.post(
+        `/api/admin/quizzes/${quizHexId}/clear-personal-data-flag`,
+        { headers: { 'Sec-Fetch-Site': 'same-origin' } },
+      );
+      expect(anonymousClear.status()).toBe(401);
+
+      await login(page, fixture.admin);
+      await page.goto('/en/admin/quizzes');
+      await expect(page.getByRole('heading', { name: 'Quiz Management' })).toBeVisible();
+      await page.getByLabel('Content flag').selectOption('personal_data');
+      const search = page.getByLabel('Search quizzes...');
+      await search.fill(title);
+      await search.press('Enter');
+      const row = page.locator('article').filter({ hasText: title });
+      await expect(row).toHaveCount(1);
+      await expect(row).toContainText('Personal data: phone');
+
+      await row.getByRole('button', { name: 'Clear flag', exact: true }).click();
+      const confirm = page.getByRole('dialog');
+      await expect(confirm).toContainText(title);
+      await confirm.getByRole('button', { name: 'Clear flag', exact: true }).click();
+      await expect(row.getByRole('button', { name: 'Clear flag', exact: true })).toHaveCount(0);
+      await expect(row).not.toContainText('Personal data:');
+
+      const cleared = await fixture.db.collection('quizzes').findOne({ _id: fixture.quizId });
+      expect(cleared?.['contentFlags']).toMatchObject({ personalData: false, kinds: ['phone'] });
+      expect(String(cleared?.['contentFlags']?.['clearedBy'])).toBe(fixture.admin.id.toHexString());
+
+      const audits = await fixture.db
+        .collection('adminactionaudits')
+        .find({ entityType: 'quiz', entityId: quizHexId })
+        .toArray();
+      expect(
+        audits.map((audit) => ({ action: audit['action'], details: audit['details'] })),
+      ).toEqual([
+        {
+          action: 'quiz.personal_data_flag.cleared',
+          details: { slug: fixture.quizSlug, kinds: 'phone' },
+        },
+      ]);
+    });
+  });
+
   test('marks, moves and unmarks a starter quiz from the admin quizzes page @critical-admin-starter-quizzes', async ({
     page,
   }, testInfo) => {

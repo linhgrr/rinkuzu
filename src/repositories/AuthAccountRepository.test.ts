@@ -141,6 +141,7 @@ describe('AuthAccountRepository', () => {
         verificationTokenHash: 'verify-hash',
         verificationExpires: now,
         displayName: 'User',
+        locale: 'en',
       }),
     ).resolves.toMatchObject({ email: 'user@example.com' });
     expect(mocks.create).toHaveBeenCalledWith({
@@ -152,6 +153,7 @@ describe('AuthAccountRepository', () => {
       disabledAt: null,
       disabledBy: null,
       displayName: 'User',
+      locale: 'en',
       emailVerificationTokenHash: 'verify-hash',
       emailVerificationExpires: now,
     });
@@ -639,6 +641,21 @@ describe('AuthAccountRepository', () => {
       }),
     ).resolves.toBeNull();
     expect(mocks.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(mocks.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('stores a locale only on an account that has none (RIN-1263)', async () => {
+    const repository = new AuthAccountRepository();
+    mocks.updateOne.mockResolvedValue({ modifiedCount: 1 });
+
+    await repository.rememberLocaleIfMissing(accountId, 'en');
+    expect(mocks.updateOne).toHaveBeenCalledWith(
+      { _id: new Types.ObjectId(accountId), locale: null },
+      { $set: { locale: 'en' } },
+    );
+
+    mocks.updateOne.mockClear();
+    await repository.rememberLocaleIfMissing('invalid-id', 'vi');
     expect(mocks.updateOne).not.toHaveBeenCalled();
   });
 

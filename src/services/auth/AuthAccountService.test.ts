@@ -171,7 +171,7 @@ describe('AuthAccountService', () => {
     repository.createPending.mockResolvedValue(identity);
 
     const result = await service.register(
-      { email: identity.email, password: 'password', displayName: 'Rin' },
+      { email: identity.email, password: 'password', displayName: 'Rin', locale: 'en' },
       context,
     );
 
@@ -184,6 +184,7 @@ describe('AuthAccountService', () => {
         email: identity.email,
         passwordHash: 'hashed-password:password',
         displayName: 'Rin',
+        locale: 'en',
         verificationTokenHash: 'token-hash',
       }),
     );

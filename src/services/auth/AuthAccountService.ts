@@ -67,6 +67,7 @@ export class AuthAccountService implements IAuthAccountService {
         email: input.email,
         passwordHash,
         ...(input.displayName ? { displayName: input.displayName } : {}),
+        ...(input.locale ? { locale: input.locale } : {}),
         verificationTokenHash: verification.hash,
         verificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
       });

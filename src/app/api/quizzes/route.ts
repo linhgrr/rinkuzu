@@ -61,7 +61,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
     const quiz = await quizService.createQuiz(userId, input.data);
 
     if (input.data.submitToPremium) {
-      await premiumService.createSubmission(userId, {
+      await premiumService.submitSavedQuiz(userId, {
         quizId: quiz.id,
         rightsAttested: true,
       });

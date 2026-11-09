@@ -8,7 +8,11 @@ const {
   deleteQuizMock,
   getSignedPDFUrlMock,
   loggerErrorMock,
+  assertCanContributeMock,
+  submitSavedQuizMock,
 } = vi.hoisted(() => ({
+  assertCanContributeMock: vi.fn(),
+  submitSavedQuizMock: vi.fn(),
   authMock: vi.fn(),
   getQuizByIdMock: vi.fn(),
   updateQuizMock: vi.fn(),
@@ -26,6 +30,12 @@ vi.mock('@/lib/quiz-factory', () => ({
     deleteQuiz: deleteQuizMock,
   }),
 }));
+vi.mock('@/lib/premium-quiz-factory', () => ({
+  getPremiumQuizService: () => ({
+    assertCanContribute: assertCanContributeMock,
+    submitSavedQuiz: submitSavedQuizMock,
+  }),
+}));
 vi.mock('@/lib/s3', () => ({
   BUCKET_NAME: 'test-bucket',
   getSignedPDFUrl: getSignedPDFUrlMock,
@@ -33,6 +43,7 @@ vi.mock('@/lib/s3', () => ({
 
 import { createQuizIdRoute } from '@/app/api/quizzes/[id]/quiz-id-route';
 import { DELETE, GET, PUT } from '@/app/api/quizzes/[id]/route';
+import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
 
 const QUIZ_ID = '507f1f77bcf86cd799439011';
 const request = new NextRequest(`http://localhost/api/quizzes/${QUIZ_ID}`);
@@ -218,6 +229,75 @@ describe('/api/quizzes/[id] handlers', () => {
     await expect(response.json()).resolves.toMatchObject({
       success: true,
       data: { id: QUIZ_ID, title: 'Updated' },
+    });
+  });
+
+  describe('PUT with Premium ticked (RIN-1347)', () => {
+    function premiumPut() {
+      return new NextRequest(`http://localhost/api/quizzes/${QUIZ_ID}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Updated', submitToPremium: true, rightsAttested: true }),
+      });
+    }
+
+    beforeEach(() => {
+      assertCanContributeMock.mockResolvedValue(undefined);
+      updateQuizMock.mockResolvedValue({ success: true, data: { id: QUIZ_ID, title: 'Updated' } });
+    });
+
+    it('submits the saved quiz through the compensating helper', async () => {
+      submitSavedQuizMock.mockResolvedValue({ id: 'submission-1' });
+
+      const response = await PUT(premiumPut(), routeContext);
+
+      expect(response.status).toBe(200);
+      expect(submitSavedQuizMock).toHaveBeenCalledWith('user-1', {
+        quizId: QUIZ_ID,
+        rightsAttested: true,
+      });
+    });
+
+    it('refuses an unverified owner before saving the quiz private', async () => {
+      assertCanContributeMock.mockRejectedValueOnce(
+        new PremiumQuizError('email_verification_required', 'Verify your email'),
+      );
+
+      const response = await PUT(premiumPut(), routeContext);
+
+      expect(response.status).toBe(403);
+      expect(updateQuizMock).not.toHaveBeenCalled();
+      expect(submitSavedQuizMock).not.toHaveBeenCalled();
+    });
+
+    it('says the quiz was saved as public when the submission fails after the save', async () => {
+      submitSavedQuizMock.mockRejectedValueOnce(
+        new PremiumSubmissionFailedError(QUIZ_ID, new Error('storage copy failed')),
+      );
+
+      const response = await PUT(premiumPut(), routeContext);
+
+      expect(response.status).toBe(502);
+      await expect(response.json()).resolves.toMatchObject({
+        success: false,
+        error: {
+          code: 'premium_submission_failed',
+          meta: { reason: 'internal_error', visibility: 'public', quizId: QUIZ_ID },
+        },
+      });
+    });
+
+    it('keeps the original error when an older submission holds the quiz private', async () => {
+      submitSavedQuizMock.mockRejectedValueOnce(
+        new PremiumQuizError('invalid_state', 'Premium quiz assets could not be secured'),
+      );
+
+      const response = await PUT(premiumPut(), routeContext);
+
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toMatchObject({
+        error: { code: 'conflict', meta: { reason: 'invalid_state' } },
+      });
     });
   });
 

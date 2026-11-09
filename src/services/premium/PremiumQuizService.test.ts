@@ -2,14 +2,19 @@ import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import type { Quiz } from '@/entities/Quiz';
 import type { PremiumPlaySession, PremiumQuizSubmission } from '@/entities/PremiumQuiz';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
+import type {
+  IPremiumQuizRepository,
+  IPremiumSubmissionRecoveryRepository,
+} from '@/interfaces/repositories/IPremiumQuizRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
-import { PremiumQuizError } from '@/entities/PremiumQuizError';
+import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
 import { PremiumQuizService } from '@/services/premium/PremiumQuizService';
 
 const entitlementMocks = vi.hoisted(() => ({
   resolveEntitlements: vi.fn(),
 }));
+
+vi.mock('@/lib/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
 
 vi.mock('@/lib/entitlements', () => ({
   resolveEntitlements: entitlementMocks.resolveEntitlements,
@@ -516,5 +521,104 @@ describe('PremiumQuizService', () => {
         idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       }),
     );
+  });
+});
+
+describe('PremiumQuizService.submitSavedQuiz (RIN-1347)', () => {
+  const ownerId = '507f191e810c19729de860eb';
+
+  function setupWithRecovery() {
+    const base = setup();
+    const recovery: Mocked<IPremiumSubmissionRecoveryRepository> = {
+      restorePublicAfterFailedSubmission: vi.fn(),
+    };
+    const service = new PremiumQuizService(
+      base.quizRepository,
+      base.premiumRepository,
+      base.attemptRepository,
+      recovery,
+    );
+    const source = quiz();
+    base.premiumRepository.isVerifiedUser.mockResolvedValue(true);
+    base.quizRepository.findById.mockResolvedValue(source);
+    base.premiumRepository.findDuplicateCandidates.mockResolvedValue([]);
+    return { ...base, service, recovery, source };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns the pending submission and leaves the quiz private on success', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    premiumRepository.createSubmission.mockResolvedValue(publication(source));
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).resolves.toMatchObject({ sourceQuizId: source.id });
+    expect(recovery.restorePublicAfterFailedSubmission).not.toHaveBeenCalled();
+  });
+
+  it('sets the quiz back to public and reports premium_submission_failed', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    premiumRepository.createSubmission.mockRejectedValue(new Error('db write failed'));
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(true);
+
+    const error = await service
+      .submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true })
+      .catch((caught: unknown) => caught);
+
+    expect(recovery.restorePublicAfterFailedSubmission).toHaveBeenCalledWith(source.id);
+    expect(error).toBeInstanceOf(PremiumSubmissionFailedError);
+    expect(error).toMatchObject({
+      code: 'premium_submission_failed',
+      causeCode: null,
+      quizId: source.id,
+    });
+  });
+
+  it('keeps the Premium refusal as the cause', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    premiumRepository.findDuplicateCandidates.mockRejectedValue(
+      new PremiumQuizError('invalid_state', 'Premium quiz assets could not be secured'),
+    );
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(true);
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).rejects.toMatchObject({ code: 'premium_submission_failed', causeCode: 'invalid_state' });
+  });
+
+  it('rethrows the original error when an older submission keeps the quiz private', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    const original = new Error('db write failed');
+    premiumRepository.createSubmission.mockRejectedValue(original);
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(false);
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).rejects.toBe(original);
+  });
+
+  it('rethrows the original error when the flip itself fails', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    const original = new Error('db write failed');
+    premiumRepository.createSubmission.mockRejectedValue(original);
+    recovery.restorePublicAfterFailedSubmission.mockRejectedValue(new Error('still down'));
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).rejects.toBe(original);
+  });
+
+  it('rethrows the original error when no recovery repository is wired', async () => {
+    const { premiumRepository, quizRepository, attemptRepository, source } = setupWithRecovery();
+    const service = new PremiumQuizService(quizRepository, premiumRepository, attemptRepository);
+    const original = new Error('db write failed');
+    premiumRepository.createSubmission.mockRejectedValue(original);
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).rejects.toBe(original);
   });
 });

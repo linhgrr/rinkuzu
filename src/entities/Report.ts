@@ -1,4 +1,5 @@
 import type { ReportStatus } from '@/shared/constants/report-status';
+import type { ReportReason, ReportSource } from '@/shared/constants/report-reason';
 import type { QuestionType } from '@/shared/constants/question-type';
 
 /**
@@ -31,6 +32,8 @@ export interface Report {
   reporterEmail: string;
   reporterName: string;
   content: string;
+  reason?: ReportReason;
+  source?: ReportSource;
   status: ReportStatus;
   createdAt: Date;
   updatedAt: Date;

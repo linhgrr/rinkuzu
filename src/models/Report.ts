@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { REPORT_STATUSES } from '@/shared/constants/report-status';
+import { REPORT_REASONS, REPORT_SOURCES } from '@/shared/constants/report-reason';
 import type { ReportPersistenceFields } from '@/repositories/types/ReportPersistence';
 
 type ReportDocument = ReportPersistenceFields;
@@ -18,6 +19,10 @@ const reportQuestionSnapshotSchema = new mongoose.Schema(
   },
   { _id: false },
 );
+
+function requiredUnlessQuizPage(this: ReportDocument): boolean {
+  return this.source !== 'quiz_page';
+}
 
 const reportSchema = new mongoose.Schema<ReportDocument>(
   {
@@ -39,18 +44,30 @@ const reportSchema = new mongoose.Schema<ReportDocument>(
     questionSnapshot: {
       type: reportQuestionSnapshotSchema,
     },
+    // Required unless the report came from the anonymous quiz-page flow (RIN-1343).
     reporterEmail: {
       type: String,
-      required: true,
+      required: requiredUnlessQuizPage,
     },
     reporterName: {
       type: String,
-      required: true,
+      required: requiredUnlessQuizPage,
     },
     content: {
       type: String,
-      required: true,
+      required: requiredUnlessQuizPage,
       maxlength: 2000,
+    },
+    reason: {
+      type: String,
+      enum: REPORT_REASONS,
+    },
+    source: {
+      type: String,
+      enum: REPORT_SOURCES,
+    },
+    ipHash: {
+      type: String,
     },
     status: {
       type: String,
@@ -77,6 +94,9 @@ reportSchema.pre('validate', function validateQuestionContext() {
       'questionId',
       'Question-level reports require both questionId and questionSnapshot',
     );
+  }
+  if (this.source === 'quiz_page' && (this.questionId || !this.reason)) {
+    this.invalidate('reason', 'Quiz-page reports require a reason and no question');
   }
 });
 

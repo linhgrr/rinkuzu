@@ -2,7 +2,9 @@ import connectDB from '@/lib/mongoose';
 import Report from '@/models/Report';
 import { buildPaginationMeta } from '@/lib/pagination';
 import type {
+  CreateQuizPageReportData,
   CreateReportData,
+  IQuizPageReportRepository,
   IReportRepository,
   ReportFindOptions,
   UpdateReportData,
@@ -16,7 +18,7 @@ interface ReportQuery {
   status?: string;
 }
 
-export class ReportRepository implements IReportRepository {
+export class ReportRepository implements IReportRepository, IQuizPageReportRepository {
   async findById(id: string): Promise<ReportEntity | null> {
     await connectDB();
     const record = await Report.findById(id).lean<ReportPersistenceRecord>();
@@ -53,6 +55,17 @@ export class ReportRepository implements IReportRepository {
   async create(reportData: CreateReportData): Promise<ReportEntity> {
     await connectDB();
     const document = await Report.create(reportData);
+    const record: ReportPersistenceRecord = document.toObject();
+    return ReportPersistenceMapper.toEntity(record);
+  }
+
+  async createQuizPageReport(reportData: CreateQuizPageReportData): Promise<ReportEntity> {
+    await connectDB();
+    const document = await Report.create({
+      ...reportData,
+      source: 'quiz_page',
+      status: 'pending',
+    });
     const record: ReportPersistenceRecord = document.toObject();
     return ReportPersistenceMapper.toEntity(record);
   }

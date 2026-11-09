@@ -1,5 +1,6 @@
 import type { Report } from '@/entities/Report';
 import type { ReportStatus } from '@/shared/constants/report-status';
+import type { ReportReason } from '@/shared/constants/report-reason';
 import type { ReportQuestionSnapshotPersistence } from '@/repositories/types/ReportPersistence';
 import type {
   PaginatedRepositoryResult,
@@ -43,4 +44,20 @@ export interface IReportRepository {
   update(id: string, reportData: UpdateReportData): Promise<Report | null>;
 
   delete(id: string): Promise<boolean>;
+}
+
+/** A report filed from the quiz page, signed in or not (RIN-1343). */
+export interface CreateQuizPageReportData {
+  quizId: string;
+  quizTitle: string;
+  quizSlug: string;
+  reason: ReportReason;
+  content?: string;
+  reporterEmail?: string;
+  reporterName?: string;
+  ipHash: string;
+}
+
+export interface IQuizPageReportRepository {
+  createQuizPageReport(reportData: CreateQuizPageReportData): Promise<Report>;
 }

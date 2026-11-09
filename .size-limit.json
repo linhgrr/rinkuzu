@@ -24,7 +24,7 @@
     {
       "name": "public-discovery",
       "limit": "340 KiB",
-      "patterns": ["^/\\[locale\\]/(?:explore|quizzes)$"]
+      "patterns": ["^/\\[locale\\]/(?:explore(?:/\\[topic\\])?|quizzes)$"]
     },
     {
       "name": "dashboard-admin",

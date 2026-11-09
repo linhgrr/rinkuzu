@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/navigation';
-import { Suspense } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
@@ -144,7 +144,12 @@ function AdaptiveResults({
   );
 }
 
-function ExploreContent() {
+interface ExplorePageClientProps {
+  /** Server-rendered topic hub links (RIN-1249 B6), shown under the h1; null hides them. */
+  hubLinks?: ReactNode;
+}
+
+function ExploreContent({ hubLinks }: ExplorePageClientProps) {
   const t = useTranslations('explore');
   const tAdaptive = useTranslations('adaptiveLearning');
   const tAdaptiveDashboard = useTranslations('adaptiveLearning.dashboard');
@@ -273,6 +278,7 @@ function ExploreContent() {
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 pb-24 pt-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1340px]">
         <h1 className="font-home text-2xl font-semibold text-ink sm:text-3xl">{t('pageTitle')}</h1>
+        {hubLinks}
 
         <div className="lg:hidden">
           <ExploreSearchInput
@@ -427,11 +433,12 @@ function ExploreContent() {
   );
 }
 
-function ExploreFallback() {
+function ExploreFallback({ hubLinks }: ExplorePageClientProps) {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1340px] space-y-6">
         <div className="h-9 w-56 rounded-md skeleton-shimmer" />
+        {hubLinks}
         <div className="h-12 max-w-3xl rounded-xl skeleton-shimmer" />
         <QuizGridSkeleton count={6} />
       </div>
@@ -439,10 +446,10 @@ function ExploreFallback() {
   );
 }
 
-export function ExplorePageClient() {
+export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = {}) {
   return (
-    <Suspense fallback={<ExploreFallback />}>
-      <ExploreContent />
+    <Suspense fallback={<ExploreFallback hubLinks={hubLinks} />}>
+      <ExploreContent hubLinks={hubLinks} />
     </Suspense>
   );
 }

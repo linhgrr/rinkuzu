@@ -10,6 +10,7 @@ import {
 import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 import { QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
+import { REPORT_REASONS } from '@/shared/constants/report-reason';
 import type { QuizQuestionDisplay, QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';
 
 const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
@@ -30,6 +31,17 @@ export const quizListQuerySchema = z.strictObject({
 export const reportQuizRequestSchema = z.strictObject({
   questionId: objectIdSchema,
   content: z.string().trim().min(1, 'Report content is required').max(2000),
+});
+
+/**
+ * The quiz-level "Report this quiz" form (RIN-1343): open to anyone. `website`
+ * is a honeypot that people never see; a filled one is accepted and dropped.
+ */
+export const reportQuizPageRequestSchema = z.strictObject({
+  reason: z.enum(REPORT_REASONS),
+  details: z.string().trim().max(2000).optional(),
+  email: z.string().trim().max(254).pipe(z.email()).optional(),
+  website: z.string().max(500).optional(),
 });
 
 /**

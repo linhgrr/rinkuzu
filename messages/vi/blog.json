@@ -8,6 +8,11 @@
     "faqPrompt": "Có thắc mắc về việc tải tài liệu hoặc các gói?",
     "faqLink": "Xem câu hỏi thường gặp"
   },
+  "tryQuiz": {
+    "heading": "Tự kiểm tra kiến thức về chủ đề này",
+    "meta": "10 câu · không cần đăng ký",
+    "button": "Làm bài ngay"
+  },
   "share": {
     "label": "Chia sẻ bài viết:",
     "shareOn": "Chia sẻ lên {network}",

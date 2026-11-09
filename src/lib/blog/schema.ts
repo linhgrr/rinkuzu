@@ -1,8 +1,35 @@
 import { z } from 'zod';
 import { locales } from '@/i18n/config';
+import { BLOG_POST_SLUG_PATTERN } from '@/shared/constants/starter-quiz';
 
 const optionalText = z.string().trim().min(1).optional();
 const positiveInt = z.number().int().positive();
+
+/** Longest `quiz.teaser`, and of a `<TryQuiz teaser="..." />` override (RIN-1258). */
+const TRY_QUIZ_TEASER_MAX = 140;
+
+/**
+ * The post's "try this quiz" card (RIN-1258, spec RIN-1242). Its presence turns
+ * the card on; `slug` picks a public quiz (else `/try` opens the locale's
+ * starter) and `teaser` is one line of card copy.
+ */
+const quizBlockSchema = z
+  .object({
+    slug: z
+      .string()
+      .regex(
+        BLOG_POST_SLUG_PATTERN,
+        'quiz.slug must be a quiz slug: lowercase letters, numbers and hyphens, at most 80',
+      )
+      .optional(),
+    teaser: z
+      .string()
+      .trim()
+      .min(1, 'quiz.teaser must not be empty')
+      .max(TRY_QUIZ_TEASER_MAX, `quiz.teaser must be at most ${TRY_QUIZ_TEASER_MAX} characters`)
+      .optional(),
+  })
+  .strict();
 
 /**
  * Frontmatter contract for `content/blog/<locale>/<slug>.mdx`.
@@ -53,6 +80,8 @@ export const blogFrontmatterSchema = z.object({
   timeRequiredMinutes: positiveInt.optional(),
   /** Topics for the related-posts block, compared case-insensitively (RIN-1331). */
   tags: z.array(z.string().trim().min(1, 'tags must not be empty')).max(8).optional(),
+  /** "Try this quiz" card; `<TryQuiz />` places it in the body, else it follows the body. */
+  quiz: quizBlockSchema.optional(),
 });
 
 export type BlogFrontmatter = z.infer<typeof blogFrontmatterSchema>;

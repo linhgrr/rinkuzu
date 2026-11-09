@@ -132,7 +132,10 @@ describe('blog routes from content/blog', () => {
   ])('lists the posts newest first on /$locale/blog', async ({ locale, titles, meta }) => {
     renderIn(locale, await BlogIndexPage({ params: Promise.resolve({ locale }) }));
 
-    const cards = screen.getAllByRole('heading', { level: 2 });
+    // Post cards are links; the quiz card above them (RIN-1258) is not.
+    const cards = screen
+      .getAllByRole('heading', { level: 2 })
+      .filter((heading) => heading.closest('a'));
     expect(cards.map((card) => card.textContent)).toEqual(titles);
     expect(screen.getByText(meta)).toBeInTheDocument();
     expect(cards[1]?.closest('a')).toHaveAttribute('href', `/${locale}/blog/${KNOWLEDGE_GRAPHS}`);

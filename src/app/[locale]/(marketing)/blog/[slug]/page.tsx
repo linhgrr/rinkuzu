@@ -2,6 +2,7 @@ import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import Image from 'next/image';
+import { Fragment } from 'react';
 import { notFound } from 'next/navigation';
 import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -22,6 +23,8 @@ import {
   toBlogLocale,
 } from '@/lib/blog/posts';
 import { getBlogAuthor } from '@/lib/blog/authors';
+import { hasInlineTryQuiz, splitBlogBody } from '@/lib/blog/try-quiz-marker';
+import { TryQuizCard, type TryQuizCardLabels } from '@/features/landing/components/TryQuizCard';
 import { RelatedPosts } from './RelatedPosts';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -190,6 +193,48 @@ function PostNavigation({ article, t }: { article: BlogPost; t: BlogTranslator }
   );
 }
 
+/**
+ * The body with its quiz cards (RIN-1258): one at each `<TryQuiz />` line, else one
+ * after the body when the frontmatter has a `quiz` block, else none.
+ */
+function ArticleBody({
+  article,
+  locale,
+  labels,
+}: {
+  article: BlogPost;
+  locale: string;
+  labels: TryQuizCardLabels;
+}) {
+  const segments = splitBlogBody(article.content);
+  const card = (position: 'blog_inline' | 'blog_end', teaser: string | undefined) => (
+    <div className="my-12">
+      <TryQuizCard
+        labels={labels}
+        position={position}
+        locale={locale}
+        post={article.slug}
+        quiz={article.quiz?.slug}
+        teaser={teaser}
+      />
+    </div>
+  );
+  return (
+    <>
+      {segments.map((segment, index) =>
+        segment.kind === 'markdown' ? (
+          <MarkdownRenderer key={index} content={segment.content} headingIds />
+        ) : (
+          <Fragment key={index}>
+            {card('blog_inline', segment.teaser ?? article.quiz?.teaser)}
+          </Fragment>
+        ),
+      )}
+      {article.quiz && !hasInlineTryQuiz(segments) ? card('blog_end', article.quiz.teaser) : null}
+    </>
+  );
+}
+
 export default async function BlogPostPage({ params }: Props) {
   const { locale, blogLocale, article } = await resolveArticle(params);
   if (!article) notFound();
@@ -206,6 +251,11 @@ export default async function BlogPostPage({ params }: Props) {
   const headings = extractHeadingsFromMarkdown(article.content);
   const readTime = article.articleReadTimeMinutes ?? article.readTimeMinutes;
   const t = await getTranslations({ locale, namespace: 'blog' });
+  const tryQuizLabels = {
+    heading: t('tryQuiz.heading'),
+    meta: t('tryQuiz.meta'),
+    button: t('tryQuiz.button'),
+  };
   const shareLabels = {
     label: t('share.label'),
     copyLink: t('share.copyLink'),
@@ -290,7 +340,7 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* Article content — centered */}
         <div className="max-w-3xl mx-auto">
-          <MarkdownRenderer content={article.content} headingIds />
+          <ArticleBody article={article} locale={locale} labels={tryQuizLabels} />
 
           <ShareButtons url={postUrl} title={article.title} labels={shareLabels} />
 

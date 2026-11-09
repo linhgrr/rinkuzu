@@ -13,6 +13,7 @@ import type {
   IDashboardRepository,
 } from '@/interfaces/repositories/IDashboardRepository';
 import type {
+  IQuizCandidateBySlugRepository,
   IStarterQuizReadRepository,
   StarterQuizCandidateRecord,
   StarterQuizEntryRecord,
@@ -33,7 +34,9 @@ type StarterQuizCandidatePersistence = Omit<StarterQuizCandidateRecord, 'quizId'
   _id: Types.ObjectId;
 };
 
-export class DashboardRepository implements IDashboardRepository, IStarterQuizReadRepository {
+export class DashboardRepository
+  implements IDashboardRepository, IStarterQuizReadRepository, IQuizCandidateBySlugRepository
+{
   async findUserProgress(userId: string): Promise<DashboardUserProgressRecord | null> {
     await connectDB();
     const projection =
@@ -126,12 +129,29 @@ export class DashboardRepository implements IDashboardRepository, IStarterQuizRe
       .filter((id) => Types.ObjectId.isValid(id))
       .map((id) => new Types.ObjectId(id));
     if (ids.length === 0) return [];
+    return this.aggregateQuizCandidates({ _id: { $in: ids } });
+  }
+
+  /**
+   * The blog card's quiz (RIN-1258): same eligibility fields, looked up by its
+   * slug or a former one (RIN-624), so a renamed quiz still opens.
+   */
+  async findQuizCandidateBySlug(slug: string): Promise<StarterQuizCandidateRecord | null> {
+    const [candidate] = await this.aggregateQuizCandidates({
+      $or: [{ slug }, { slugAliases: slug }],
+    });
+    return candidate ?? null;
+  }
+
+  private async aggregateQuizCandidates(
+    match: Record<string, unknown>,
+  ): Promise<StarterQuizCandidateRecord[]> {
     await connectDB();
-    // One round trip on _id. Question bodies never leave the
+    // One round trip. Question bodies never leave the
     // database: only their count is projected. The lookup mirrors the premium
     // gate on /quiz/[slug] (an active, approved publication of this quiz).
     const rows = await QuizModel.aggregate<StarterQuizCandidatePersistence>([
-      { $match: { _id: { $in: ids } } },
+      { $match: match },
       {
         $lookup: {
           from: PremiumQuizSubmissionModel.collection.collectionName,

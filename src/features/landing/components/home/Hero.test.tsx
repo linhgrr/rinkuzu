@@ -67,6 +67,30 @@ describe('landing hero calls to action', () => {
   });
 });
 
+/**
+ * RIN-1295: a fixed 70px base clipped 'GENERATOR' to 'GENERATO' at 375 (scrollWidth 381 >
+ * clientWidth 311). Below `sm` the size follows the viewport so the longest word fits; the
+ * `sm`/`md`/`xl` sizes stay as they were.
+ */
+describe('landing hero title size (RIN-1295)', () => {
+  it.each(['en', 'vi'])('scales the %s h1 with the viewport below sm', (locale) => {
+    render(<Hero locale={locale} />);
+
+    const classes = screen.getByRole('heading', { level: 1 }).className.split(/\s+/);
+    expect(classes).toContain('text-[length:clamp(32px,calc(16vw_-_10px),70px)]');
+    expect(classes).not.toContain('text-[70px]');
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        'sm:text-[90px]',
+        'md:text-[120px]',
+        'xl:text-[144px]',
+        'min-[1800px]:text-[164px]',
+      ]),
+    );
+    expect(classes.some((name) => /^break-|overflow-wrap/.test(name))).toBe(false);
+  });
+});
+
 describe('landing bottom calls to action (RIN-1178)', () => {
   it('offers the play-first starter quiz before upload to signed-out visitors', () => {
     render(<BottomCta locale="vi" />);

@@ -144,6 +144,7 @@ export function PremiumSubmissionsPageClient() {
             <option value="changes_requested">{t('premiumStatusChanges')}</option>
             <option value="approved">{t('premiumStatusApproved')}</option>
             <option value="rejected">{t('premiumStatusRejected')}</option>
+            <option value="withdrawn">{t('premiumStatusWithdrawn')}</option>
           </Select>
         </div>
       </header>

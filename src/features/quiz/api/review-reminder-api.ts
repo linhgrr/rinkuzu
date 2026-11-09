@@ -1,4 +1,5 @@
 import type {
+  ReviewReminderOptInInput,
   ReviewReminderOptInOutcome,
   ReviewReminderPromptStatus,
 } from '@/features/quiz/types/quiz-result-page-view-model';
@@ -22,10 +23,9 @@ export function fetchReviewReminderStatus(attemptId: string): Promise<ReviewRemi
 }
 
 /** "Remind me in 2 days": records consent and schedules the email (idempotent per attempt). */
-export function optInReviewReminder(input: {
-  attemptId: string;
-  locale: 'vi' | 'en';
-}): Promise<ReviewReminderOptInOutcome> {
+export function optInReviewReminder(
+  input: ReviewReminderOptInInput,
+): Promise<ReviewReminderOptInOutcome> {
   return postReviewReminder<ReviewReminderOptInOutcome>({ ...input, optIn: true });
 }
 

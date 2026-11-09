@@ -116,7 +116,7 @@ export async function optInReviewReminder(input: {
 }
 
 /** "No thanks" on the result-page prompt hides it for 7 days on every device (RIN-1362). */
-export const REVIEW_PROMPT_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+const REVIEW_PROMPT_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface ReviewReminderPromptStatus {
   /** `study_reminders` is ticked. */
@@ -156,10 +156,10 @@ export async function reviewReminderStatus(input: {
     repository.promptPreference(userId),
     attemptEligible(userId, input.attemptId, input.email, now),
   ]);
-  const snoozed = preference.snoozedUntil && preference.snoozedUntil.getTime() > now.getTime();
+  const until = preference.snoozedUntil;
   return {
     optedIn: preference.optedIn,
-    snoozedUntil: snoozed ? preference.snoozedUntil.toISOString() : null,
+    snoozedUntil: until && until.getTime() > now.getTime() ? until.toISOString() : null,
     eligible,
   };
 }

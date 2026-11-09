@@ -25,6 +25,12 @@ export interface ReviewReminderPromptStatus {
   eligible: boolean;
 }
 
+/** "Remind me" request for one attempt (RIN-1362). */
+export interface ReviewReminderOptInInput {
+  attemptId: string;
+  locale: 'vi' | 'en';
+}
+
 /** Outcome of "Remind me": the email's send time, or the weekly cap already used. */
 export type ReviewReminderOptInOutcome =
   | { status: 'scheduled'; scheduledFor: string }

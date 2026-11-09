@@ -65,6 +65,8 @@ import {
   optOutReviewReminder,
   prepareReviewReminder,
   reviewReminderSendingEnabled,
+  reviewReminderStatus,
+  snoozeReviewReminderPrompt,
   unsubscribeLinkState,
   unsubscribeWithToken,
 } from './review-reminder';
@@ -226,6 +228,99 @@ describe('review reminder consent (AC3/AC4)', () => {
       },
       { $set: { status: 'canceled', lastError: 'opted_out' } },
     );
+  });
+});
+
+describe('review reminder prompt status and snooze (RIN-1362)', () => {
+  const DAY = 24 * HOUR;
+
+  function status(now: Date, attemptId: string | null = ATTEMPT_ID) {
+    return reviewReminderStatus({ userId: USER_ID, email: 'learner@gmail.com', attemptId, now });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.attempt.findById.mockReturnValue(query(attemptDoc()));
+    mocks.attempt.exists.mockResolvedValue(null);
+    mocks.preference.findOne.mockReturnValue(query(null));
+    mocks.preference.updateOne.mockResolvedValue({ modifiedCount: 1 });
+  });
+
+  it('offers the prompt for a fresh attempt with missed questions', async () => {
+    await expect(status(new Date(TAKEN_AT.getTime() + HOUR))).resolves.toEqual({
+      optedIn: false,
+      snoozedUntil: null,
+      eligible: true,
+    });
+  });
+
+  it('checks the latest-attempt rule the sender uses and offers the prompt on the latest one', async () => {
+    await expect(status(new Date(TAKEN_AT.getTime() + HOUR))).resolves.toMatchObject({
+      eligible: true,
+    });
+    expect(mocks.attempt.exists).toHaveBeenCalledWith({
+      user: new Types.ObjectId(USER_ID),
+      takenAt: { $gt: TAKEN_AT },
+    });
+  });
+
+  it('is not eligible for an older attempt once a later one exists (the email would be canceled)', async () => {
+    mocks.attempt.exists.mockResolvedValue({ _id: new Types.ObjectId() });
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true }));
+    await expect(status(new Date(TAKEN_AT.getTime() + HOUR))).resolves.toEqual({
+      optedIn: true,
+      snoozedUntil: null,
+      eligible: false,
+    });
+  });
+
+  it('reports an existing opt-in', async () => {
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true }));
+    await expect(status(new Date(TAKEN_AT.getTime() + HOUR))).resolves.toMatchObject({
+      optedIn: true,
+      eligible: true,
+    });
+  });
+
+  it.each([
+    ['too old (47 h)', () => attemptDoc(), 47 * HOUR],
+    ['zero missed', () => ({ ...attemptDoc(), correctAnswers: 10 }), HOUR],
+    ["someone else's", () => attemptDoc(OTHER_USER_ID), HOUR],
+  ])('is not eligible for an attempt that is %s', async (_label, doc, age) => {
+    mocks.attempt.findById.mockReturnValue(query(doc()));
+    await expect(status(new Date(TAKEN_AT.getTime() + age))).resolves.toMatchObject({
+      eligible: false,
+    });
+  });
+
+  it('is not eligible without an attempt id', async () => {
+    await expect(status(new Date(TAKEN_AT.getTime() + HOUR), null)).resolves.toMatchObject({
+      eligible: false,
+    });
+    expect(mocks.attempt.findById).not.toHaveBeenCalled();
+  });
+
+  it('"No thanks" hides the prompt until +7 d and records no consent event', async () => {
+    const snoozedAt = new Date(TAKEN_AT.getTime() + HOUR);
+    const result = await snoozeReviewReminderPrompt({ userId: USER_ID, now: snoozedAt });
+
+    const until = new Date(snoozedAt.getTime() + 7 * DAY);
+    expect(result).toEqual({ snoozedUntil: until.toISOString() });
+    expect(mocks.preference.updateOne).toHaveBeenCalledWith(
+      { userId: new Types.ObjectId(USER_ID) },
+      { $set: { reviewPromptSnoozedUntil: until } },
+      { upsert: true },
+    );
+    expect(mocks.consentEvent.create).not.toHaveBeenCalled();
+    expect(mocks.preference.findOneAndUpdate).not.toHaveBeenCalled();
+
+    mocks.preference.findOne.mockReturnValue(query({ reviewPromptSnoozedUntil: until }));
+    await expect(
+      status(new Date(snoozedAt.getTime() + 6 * DAY + 23 * HOUR)),
+    ).resolves.toMatchObject({ snoozedUntil: until.toISOString() });
+    await expect(status(new Date(snoozedAt.getTime() + 7 * DAY))).resolves.toMatchObject({
+      snoozedUntil: null,
+    });
   });
 });
 

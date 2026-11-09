@@ -101,11 +101,22 @@ export const marketingPreferenceSchema = z.strictObject({
   source: z.enum(['settings', 'prompt']).default('settings'),
 });
 
-/** Result-page review-email tick (RIN-915). `optIn: false` un-ticks it. */
+const attemptIdSchema = z.string().regex(/^[a-f0-9]{24}$/u, 'Invalid attempt id');
+
+/**
+ * Result-page review-email choice (RIN-915, RIN-1362). `optIn: false` un-ticks it;
+ * `action: 'snooze'` is "No thanks" (hides the prompt for 7 days, no consent change).
+ */
 export const reviewReminderRequestSchema = z.strictObject({
-  attemptId: z.string().regex(/^[a-f0-9]{24}$/u, 'Invalid attempt id'),
+  attemptId: attemptIdSchema,
   optIn: z.boolean().default(true),
   locale: z.enum(['vi', 'en']).default('vi'),
+  action: z.literal('snooze').optional(),
+});
+
+/** `GET ?attemptId=`: the prompt status for that attempt (RIN-1362). */
+export const reviewReminderStatusQuerySchema = z.object({
+  attemptId: attemptIdSchema.optional(),
 });
 
 const headingBlockSchema = z.strictObject({

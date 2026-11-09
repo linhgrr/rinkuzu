@@ -1,5 +1,6 @@
 import type { QuizDraftTransportDto } from '@/dtos/quiz-draft';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
+import { assumeUtcWhenNoOffset } from '@/lib/date-serialization';
 
 export class QuizDraftMapper {
   static toViewModel(draft: QuizDraftTransportDto): QuizDraft {
@@ -46,9 +47,9 @@ export class QuizDraftMapper {
       error: draft.error,
       errorCode: draft.error_code ?? null,
       submittedQuizId: draft.submitted_quiz_id,
-      createdAt: draft.created_at,
-      updatedAt: draft.updated_at,
-      expiresAt: draft.expires_at,
+      createdAt: assumeUtcWhenNoOffset(draft.created_at),
+      updatedAt: assumeUtcWhenNoOffset(draft.updated_at),
+      expiresAt: draft.expires_at === null ? null : assumeUtcWhenNoOffset(draft.expires_at),
     };
   }
 }

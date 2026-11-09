@@ -39,7 +39,7 @@ export interface ReviewReminderItem {
 }
 
 /** What the email follows: a quiz attempt (Path A) or an adaptive completion (Path B). */
-export type ReminderSubject =
+type ReminderSubject =
   | {
       path: 'quiz';
       userId: Types.ObjectId;
@@ -136,7 +136,7 @@ export function reminderContent(
  * attempt came after it (that attempt would cancel the email, and re-pointing
  * the bucket at this older anchor would drop the attempt's own email).
  */
-export type AdaptiveCompletionEligibility =
+type AdaptiveCompletionEligibility =
   | { status: 'eligible'; completion: AdaptiveCompletion }
   | { status: 'ineligible' }
   | { status: 'unavailable' };

@@ -2,6 +2,7 @@ import 'server-only';
 
 import { z } from 'zod';
 
+import { instantSchema } from './activation-events';
 import { proxyAdaptiveRequest } from './proxy';
 
 /**
@@ -16,13 +17,6 @@ const TARGET_PREFIX = '/admin/review-reminder/adaptive';
 const REVIEW_FACTS_TIMEOUT_MS = 2_000;
 /** The service actor: no admin is reading anything. */
 const SERVICE_ACTOR_ID = '000000000000000000000000';
-
-// An instant with a zone designator, or a naive one the API means as UTC.
-const ZONED_INSTANT = /(?:Z|[+-]\d{2}:?\d{2})$/i;
-const instantSchema = z
-  .string()
-  .transform((value) => new Date(ZONED_INSTANT.test(value) ? value : `${value}Z`))
-  .refine((date) => !Number.isNaN(date.getTime()), 'invalid instant');
 
 const completionSchema = z.object({
   completed_at: instantSchema,

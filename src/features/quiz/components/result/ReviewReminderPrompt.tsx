@@ -18,6 +18,8 @@ export interface ReviewReminderPromptActions {
 
 interface ReviewReminderPromptProps extends ReviewReminderPromptActions {
   missedCount: number;
+  /** Replaces the missed-questions line (the adaptive end screen has no question count). */
+  question?: string;
   /** Runs after a tap on "Remind me" succeeds (analytics), not for an automatic re-schedule. */
   onOptIn?: () => void;
 }
@@ -64,6 +66,7 @@ function weekdayName(iso: string, locale: string): string {
  */
 export function ReviewReminderPrompt({
   missedCount,
+  question,
   loadStatus,
   optIn,
   snooze,
@@ -126,7 +129,7 @@ export function ReviewReminderPrompt({
       {view.kind === 'ask' ? (
         <>
           <p id={questionId} className="text-sm text-ink">
-            {t('question', { count: missedCount })}
+            {question ?? t('question', { count: missedCount })}
           </p>
           <div
             role="group"

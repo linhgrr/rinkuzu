@@ -62,7 +62,7 @@ function ipHash(ip: string | null): string | null {
 }
 
 /** Where the opt-in came from and what the rows anchor on. */
-export interface ReviewPairSource {
+interface ReviewPairSource {
   consentSource: 'result_page_review' | 'adaptive_end_review';
   /** The attempt's `takenAt` or the adaptive completion's `completed_at`. */
   anchoredAt: Date;
@@ -80,14 +80,35 @@ export interface ReviewPairSource {
  * pending rows at the newer anchor (RIN-1364). Nothing is written when the
  * anchor is too old.
  */
-export async function scheduleReviewReminderPair(
-  input: {
-    userId: Types.ObjectId;
-    email: string;
-    locale: ReviewReminderLocale;
-    ip: string | null;
-    now: Date;
-  },
+/** What both opt-in routes receive from the signed-in request. */
+interface ReviewOptInInput {
+  userId: string;
+  email: string;
+  locale: ReviewReminderLocale;
+  ip: string | null;
+  now?: Date;
+}
+
+interface ReviewOptInContext {
+  userId: Types.ObjectId;
+  email: string;
+  locale: ReviewReminderLocale;
+  ip: string | null;
+  now: Date;
+}
+
+function optInContext(input: ReviewOptInInput): ReviewOptInContext {
+  return {
+    userId: requiredObjectId(input.userId, 'user id'),
+    email: input.email,
+    locale: input.locale,
+    ip: input.ip,
+    now: input.now ?? new Date(),
+  };
+}
+
+async function scheduleReviewReminderPair(
+  input: ReviewOptInContext,
   source: ReviewPairSource,
 ): Promise<ReviewReminderOptInResult> {
   const { userId, now } = input;
@@ -163,32 +184,23 @@ export async function scheduleReviewReminderPair(
  * Idempotent per attempt; a second opt-in in the same 7-day bucket re-points
  * both pending rows at the newer attempt.
  */
-export async function optInReviewReminder(input: {
-  userId: string;
-  email: string;
-  attemptId: string;
-  locale: ReviewReminderLocale;
-  ip: string | null;
-  now?: Date;
-}): Promise<ReviewReminderOptInResult> {
-  const now = input.now ?? new Date();
-  const userId = requiredObjectId(input.userId, 'user id');
+export async function optInReviewReminder(
+  input: ReviewOptInInput & { attemptId: string },
+): Promise<ReviewReminderOptInResult> {
+  const context = optInContext(input);
   const attempt = await repository.findAttempt(requiredObjectId(input.attemptId, 'attempt id'));
   // Someone else's attempt answers like a missing one: no existence oracle.
-  if (!attempt?.userId?.equals(userId)) {
+  if (!attempt?.userId?.equals(context.userId)) {
     throw new CommunicationError('not_found', 'Attempt not found', 404);
   }
-  return scheduleReviewReminderPair(
-    { userId, email: input.email, locale: input.locale, ip: input.ip, now },
-    {
-      consentSource: 'result_page_review',
-      anchoredAt: attempt.takenAt,
-      entityType: 'attempt',
-      entityId: attempt.id,
-      anchor: null,
-      tooOldCode: 'attempt_too_old',
-    },
-  );
+  return scheduleReviewReminderPair(context, {
+    consentSource: 'result_page_review',
+    anchoredAt: attempt.takenAt,
+    entityType: 'attempt',
+    entityId: attempt.id,
+    anchor: null,
+    tooOldCode: 'attempt_too_old',
+  });
 }
 
 /**
@@ -197,16 +209,15 @@ export async function optInReviewReminder(input: {
  * timestamps. A completion older than 46 h (or followed by a quiz attempt) is
  * refused before any consent is recorded.
  */
-export async function optInAdaptiveReviewReminder(input: {
-  userId: string;
-  email: string;
-  locale: ReviewReminderLocale;
-  ip: string | null;
-  now?: Date;
-}): Promise<ReviewReminderOptInResult> {
-  const now = input.now ?? new Date();
-  const userId = requiredObjectId(input.userId, 'user id');
-  const eligibility = await adaptiveCompletionEligibility(userId, input.email, now);
+export async function optInAdaptiveReviewReminder(
+  input: ReviewOptInInput,
+): Promise<ReviewReminderOptInResult> {
+  const context = optInContext(input);
+  const eligibility = await adaptiveCompletionEligibility(
+    context.userId,
+    context.email,
+    context.now,
+  );
   if (eligibility.status === 'unavailable') {
     throw new CommunicationError('adaptive_unavailable', 'Please try again in a moment', 503);
   }
@@ -218,17 +229,14 @@ export async function optInAdaptiveReviewReminder(input: {
     );
   }
   const { completion } = eligibility;
-  return scheduleReviewReminderPair(
-    { userId, email: input.email, locale: input.locale, ip: input.ip, now },
-    {
-      consentSource: 'adaptive_end_review',
-      anchoredAt: completion.completedAt,
-      entityType: 'adaptive_completion',
-      entityId: userId,
-      anchor: { at: completion.completedAt, documentId: completion.documentId },
-      tooOldCode: 'completion_too_old',
-    },
-  );
+  return scheduleReviewReminderPair(context, {
+    consentSource: 'adaptive_end_review',
+    anchoredAt: completion.completedAt,
+    entityType: 'adaptive_completion',
+    entityId: context.userId,
+    anchor: { at: completion.completedAt, documentId: completion.documentId },
+    tooOldCode: 'completion_too_old',
+  });
 }
 
 /** "No thanks" on the result-page prompt hides it for 7 days on every device (RIN-1362). */

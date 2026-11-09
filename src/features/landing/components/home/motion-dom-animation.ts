@@ -1,2 +1,6 @@
-// Re-export only domAnimation so the async chunk tree-shakes the rest of framer-motion.
-export { domAnimation as default } from 'framer-motion';
+import { domAnimation } from 'framer-motion';
+
+/** Only domAnimation, so the async chunk tree-shakes the rest of framer-motion (RIN-1370). */
+const motionDomAnimation = domAnimation;
+
+export default motionDomAnimation;

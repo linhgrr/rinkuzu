@@ -139,6 +139,36 @@ describe('AdminReportModerationService', () => {
       expect(result).toMatchObject({ success: false, statusCode: 500 });
       expect(reports.update).not.toHaveBeenCalled();
     });
+
+    it('returns 500 when the report lookup throws', async () => {
+      reports.findById.mockRejectedValueOnce(new Error('db down'));
+
+      const result = await service.hideReportedQuiz('report-1', actor);
+
+      expect(result).toEqual({ success: false, error: 'Failed to hide quiz', statusCode: 500 });
+      expect(quizVisibility.setAdminQuizVisibility).not.toHaveBeenCalled();
+    });
+
+    it('stamps the resolution with the system clock when no clock is injected', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(now);
+      try {
+        const withSystemClock = new AdminReportModerationService({
+          reports,
+          indexHold,
+          quizVisibility,
+        });
+
+        await withSystemClock.hideReportedQuiz('report-1', actor);
+
+        expect(reports.update).toHaveBeenCalledWith('report-1', {
+          status: 'resolved',
+          resolution: { resolvedAt: now, resolvedBy: 'admin@example.com' },
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   it('counts pending hold reports across quizzes', async () => {

@@ -60,7 +60,7 @@ function TopicForm({ editor, controller }: TopicFormProps) {
         minLength={2}
         maxLength={80}
         hint={t('slugHint', { slug: slug || 'kinh-te-vi-mo' })}
-        error={slug && !slugValid ? t('slugInvalid') : undefined}
+        {...(slug && !slugValid ? { error: t('slugInvalid') } : {})}
         onChange={(event) => setSlug(event.target.value.toLowerCase())}
       />
       <label className="block text-sm font-semibold text-ink">

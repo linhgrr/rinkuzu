@@ -46,9 +46,10 @@ interface State {
   assignError: string;
 }
 
+type Settled<T> = { ok: true; value: T } | { ok: false; error: unknown };
+
 type Action =
-  | { type: 'loaded'; items: readonly AdminQuizTopicViewModel[] }
-  | { type: 'loadFailed'; error: unknown }
+  | { type: 'listLoaded'; result: Settled<readonly AdminQuizTopicViewModel[]> }
   | { type: 'reload' }
   | { type: 'pending'; pendingId: string | null }
   | { type: 'listSettled'; items: readonly AdminQuizTopicViewModel[] }
@@ -77,10 +78,10 @@ const initialState: State = {
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'loaded':
-      return { ...state, items: action.items, loading: false, loadError: null };
-    case 'loadFailed':
-      return { ...state, loading: false, loadError: action.error };
+    case 'listLoaded':
+      return action.result.ok
+        ? { ...state, loading: false, loadError: null, items: action.result.value }
+        : { ...state, loading: false, loadError: action.result.error };
     case 'reload':
       return { ...state, reloadToken: state.reloadToken + 1 };
     case 'pending':
@@ -115,8 +116,6 @@ function reducer(state: State, action: Action): State {
       return state;
   }
 }
-
-type Settled<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
 async function settle<T>(request: () => Promise<T>): Promise<Settled<T>> {
   try {
@@ -155,28 +154,24 @@ export interface AdminQuizTopicsController {
 
 /** The `/admin/quizzes` topic panel: list, edit, publish, and each topic's quizzes (RIN-1248). */
 export function useAdminQuizTopics(): AdminQuizTopicsController {
-  const t = useTranslations('admin.quizTopics');
-  const describeError = useAdminApiErrorMessage();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { waitForReload, settleReload } = useReloadSettled();
+  const t = useTranslations('admin.quizTopics');
+  const describeError = useAdminApiErrorMessage();
 
   useEffect(() => {
-    const controller = new AbortController();
-    let cancelled = false;
-    async function load() {
-      const result = await settle(() => fetchAdminQuizTopics(controller.signal));
-      if (cancelled) return;
-      dispatch(
-        result.ok
-          ? { type: 'loaded', items: result.value }
-          : { type: 'loadFailed', error: result.error },
-      );
+    const abort = new AbortController();
+    let stale = false;
+    async function loadTopics() {
+      const result = await settle(() => fetchAdminQuizTopics(abort.signal));
+      if (stale) return;
+      dispatch({ type: 'listLoaded', result });
       settleReload();
     }
-    void load();
+    void loadTopics();
     return () => {
-      cancelled = true;
-      controller.abort();
+      stale = true;
+      abort.abort();
     };
   }, [state.reloadToken, settleReload]);
 

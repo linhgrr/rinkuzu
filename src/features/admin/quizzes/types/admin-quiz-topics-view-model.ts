@@ -33,6 +33,14 @@ export interface AdminQuizTopicFormInput {
   intro: string;
 }
 
+/** A PATCH: edited fields, or `published` alone to publish or unpublish. */
+export interface AdminQuizTopicUpdateInput {
+  slug?: string;
+  name?: string;
+  intro?: string;
+  published?: boolean;
+}
+
 export interface AdminQuizTopicAssignInput {
   topicId: string;
   quizId: string;

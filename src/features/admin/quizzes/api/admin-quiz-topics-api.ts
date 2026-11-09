@@ -8,6 +8,7 @@ import type {
   AdminQuizTopicAssignInput,
   AdminQuizTopicDetailViewModel,
   AdminQuizTopicFormInput,
+  AdminQuizTopicUpdateInput,
   AdminQuizTopicViewModel,
 } from '@/features/admin/quizzes/types/admin-quiz-topics-view-model';
 
@@ -46,7 +47,7 @@ export async function createQuizTopic(
 /** Edit, publish or unpublish a topic; resolves to the new list. */
 export async function updateQuizTopic(
   topicId: string,
-  input: Partial<AdminQuizTopicFormInput> & { published?: boolean },
+  input: AdminQuizTopicUpdateInput,
 ): Promise<AdminQuizTopicViewModel[]> {
   return requestTopics(`${TOPICS_PATH}/${topicId}`, {
     method: 'PATCH',

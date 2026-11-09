@@ -83,11 +83,29 @@ describe('landing hero title size (RIN-1295)', () => {
       expect.arrayContaining([
         'sm:text-[90px]',
         'md:text-[120px]',
-        'xl:text-[144px]',
+        'xl:text-[length:clamp(112px,calc(30vh_-_96px),144px)]',
         'min-[1800px]:text-[164px]',
       ]),
     );
     expect(classes.some((name) => /^break-|overflow-wrap/.test(name))).toBe(false);
+  });
+});
+
+/**
+ * RIN-1283: fonts use display: optional, so a late Vina Sans leaves the xl h1 in its wider
+ * fallback (3 lines). With the fixed 254px gap and 144px title the play-first CTA sat at
+ * y 835 on 1280x720. Below about 870px tall the gap and title now shrink with the viewport
+ * height; taller screens keep 254px / 144px. Geometry is checked in critical-flows.spec.ts.
+ */
+describe('landing hero fits short desktop viewports (RIN-1283)', () => {
+  it('scales the xl title gap and size with the viewport height, capped at the design values', () => {
+    render(<Hero locale="en" />);
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading.className.split(/\s+/)).not.toContain('xl:text-[144px]');
+    const titleBlock = heading.parentElement?.className.split(/\s+/) ?? [];
+    expect(titleBlock).toContain('xl:mt-[clamp(104px,calc(100vh_-_616px),254px)]');
+    expect(titleBlock).not.toContain('xl:mt-[254px]');
   });
 });
 

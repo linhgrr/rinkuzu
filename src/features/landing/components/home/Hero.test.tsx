@@ -49,9 +49,9 @@ describe('landing hero calls to action', () => {
         '/register?next=/adaptive/upload',
         '/register?next=/adaptive',
       ]);
-      expect(links[0]).toHaveClass('bg-[#ff541b]');
+      expect(links[0]).toHaveClass('bg-brand-action-strong');
       expect(links[1]).toHaveClass('border');
-      expect(links[1]).not.toHaveClass('bg-[#ff541b]');
+      expect(links[1]).not.toHaveClass('bg-brand-action-strong');
       expect(links[0]?.querySelector('.whitespace-nowrap')).toBeNull();
     },
   );
@@ -85,5 +85,39 @@ describe('landing bottom calls to action (RIN-1178)', () => {
     expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
       ['Upload PDF', '/adaptive/upload'],
     ]);
+  });
+});
+
+/**
+ * RIN-1286: white on the bright brand orange (#ff541b) is 3.21:1 and failed Lighthouse
+ * color-contrast. A white CTA label needs the --brand-action-strong fill (5.18:1).
+ */
+describe('landing CTA label contrast (RIN-1286)', () => {
+  const hasWhiteLabel = (link: HTMLElement) =>
+    link.classList.contains('text-white') || link.querySelector('.text-white') !== null;
+
+  it.each([
+    ['guest hero', () => render(<Hero locale="en" />)],
+    ['member hero', () => render(<Hero isAuthenticated locale="vi" />)],
+    ['guest bottom', () => render(<BottomCta locale="en" />)],
+    ['member bottom', () => render(<BottomCta isAuthenticated locale="vi" />)],
+  ])('never pairs a white label with the bright orange fill in the %s CTAs', (_name, mount) => {
+    mount();
+
+    for (const link of screen.getAllByRole('link')) {
+      if (hasWhiteLabel(link)) {
+        expect(link.className.split(/\s+/)).not.toContain('bg-[#ff541b]');
+      }
+    }
+  });
+
+  it('gives the white-labelled bottom CTA its own strong fill on the orange section', () => {
+    render(<BottomCta locale="en" />);
+
+    const whiteLabelled = screen.getAllByRole('link').filter(hasWhiteLabel);
+    expect(whiteLabelled.map((link) => link.textContent)).toEqual(['Upload PDF']);
+    for (const link of whiteLabelled) {
+      expect(link).toHaveClass('bg-brand-action-strong');
+    }
   });
 });

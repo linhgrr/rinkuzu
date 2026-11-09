@@ -9,16 +9,18 @@ import { ShareButtons } from '@/components/blog/ShareButtons';
 import { TableOfContents } from '@/components/blog/TableOfContents';
 import { extractHeadingsFromMarkdown } from '@/lib/blog-utils';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
-import type { BlogPost } from '@/lib/blog/content';
+import { getBlogPostBySlug, type BlogPost } from '@/lib/blog/content';
 import {
   formatBlogDate,
   formatReadTime,
   getAdjacentBlogArticles,
   getBlogArticle,
   getBlogArticleSlugs,
+  getRelatedBlogArticles,
   toBlogLocale,
 } from '@/lib/blog/posts';
 import { getBlogAuthor } from '@/lib/blog/authors';
+import { RelatedPosts } from './RelatedPosts';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -33,8 +35,9 @@ export function generateStaticParams(): Array<{ slug: string }> {
 
 const resolveArticle = async (params: Props['params']) => {
   const { locale, slug } = await params;
-  const article = getBlogArticle(toBlogLocale(locale), slug);
-  return { locale, article };
+  const blogLocale = toBlogLocale(locale);
+  const article = getBlogArticle(blogLocale, slug);
+  return { locale, blogLocale, article };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -178,8 +181,14 @@ function PostNavigation({ article }: { article: BlogPost }) {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const { locale, article } = await resolveArticle(params);
+  const { locale, blogLocale, article } = await resolveArticle(params);
   if (!article) notFound();
+
+  // A listing-only translation renders the English article; its related cards
+  // still come from the route locale's own listing (RIN-1331).
+  const relatedPosts = getRelatedBlogArticles(
+    getBlogPostBySlug(blogLocale, article.slug) ?? article,
+  );
 
   const author = getBlogAuthor(article.author);
   const authorName = author?.name ?? article.author;
@@ -278,7 +287,7 @@ export default async function BlogPostPage({ params }: Props) {
                 href="/register?next=/adaptive/upload"
                 className="inline-flex items-center justify-center rounded-full bg-brand-trust px-10 py-4 font-bold text-white shadow-lg shadow-green-500/20 transition-[background-color,transform] hover:scale-105 hover:bg-brand-trust-hover active:scale-95"
               >
-                Get Started Free
+                {blogLocale === 'vi' ? 'Bắt đầu miễn phí' : 'Get Started Free'}
               </Link>
               <p className="mt-4 text-xs text-neutral-400">
                 No credit card required · Free plan available
@@ -291,6 +300,8 @@ export default async function BlogPostPage({ params }: Props) {
               </p>
             </div>
           </div>
+
+          <RelatedPosts posts={relatedPosts} locale={blogLocale} />
 
           <PostNavigation article={article} />
         </div>

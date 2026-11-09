@@ -64,6 +64,45 @@ export const getAdjacentBlogArticles = (
   return { previous: articles[index - 1], next: articles[index + 1] };
 };
 
+const RELATED_POSTS_LIMIT = 3;
+
+const tagsOf = (post: BlogPost): Set<string> =>
+  new Set((post.tags ?? []).map((tag) => tag.toLowerCase()));
+
+type RelatedCandidate = { post: BlogPost; sharedTags: number; sameCategory: boolean };
+
+const byRelevance = (a: RelatedCandidate, b: RelatedCandidate): number =>
+  b.sharedTags - a.sharedTags ||
+  Number(b.sameCategory) - Number(a.sameCategory) ||
+  byNewestFirst(a.post, b.post);
+
+/**
+ * Posts related to `post` in its own locale (RIN-1331): a candidate shares at
+ * least one tag or the category, and has an article page (its own body or the
+ * English one). Most shared tags first, then same category, then newest; never
+ * the post itself. Pass the locale's listing post, so a `vi` page gets `vi` cards.
+ */
+export const getRelatedBlogArticles = (
+  post: BlogPost,
+  limit: number = RELATED_POSTS_LIMIT,
+): BlogPost[] => {
+  const tags = tagsOf(post);
+  return getBlogPostsByLocale(post.locale)
+    .filter(
+      (candidate) =>
+        candidate.slug !== post.slug && getBlogArticle(candidate.locale, candidate.slug),
+    )
+    .map((candidate) => ({
+      post: candidate,
+      sharedTags: [...tagsOf(candidate)].filter((tag) => tags.has(tag)).length,
+      sameCategory: candidate.category === post.category,
+    }))
+    .filter(({ sharedTags, sameCategory }) => sharedTags > 0 || sameCategory)
+    .sort(byRelevance)
+    .slice(0, limit)
+    .map((candidate) => candidate.post);
+};
+
 /** A blog route for the sitemap, dated by the newest post behind it (`YYYY-MM-DD`). */
 type BlogSitemapRoute = { path: string; lastModified: string };
 

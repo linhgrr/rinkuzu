@@ -41,4 +41,25 @@ describe('quiz entry attribution (RIN-1256)', () => {
   it('drops a post when the entry is not blog', () => {
     expect(resolveQuizEntryAttribution('landing', 'some-post')).toEqual({ entry: 'landing' });
   });
+  it('keeps a well-formed hub topic next to entry=hub only (RIN-1417)', () => {
+    expect(resolveQuizEntryAttribution('hub', undefined, 'tieng-anh-lop-10')).toEqual({
+      entry: 'hub',
+      topic: 'tieng-anh-lop-10',
+    });
+    for (const topic of ['Upper', '-x', 'a--b', 'a b', '', 'a'.repeat(81), 7]) {
+      expect(resolveQuizEntryAttribution('hub', undefined, topic)).toEqual({ entry: 'hub' });
+    }
+    expect(resolveQuizEntryAttribution('blog', 'p', 'tieng-anh')).toEqual({
+      entry: 'blog',
+      post: 'p',
+    });
+    expect(resolveQuizEntryAttribution('hub', 'some-post', 'toan')).toEqual({
+      entry: 'hub',
+      topic: 'toan',
+    });
+    expect(resolveQuizEntryAttribution('hub', undefined, 'a'.repeat(80))).toEqual({
+      entry: 'hub',
+      topic: 'a'.repeat(80),
+    });
+  });
 });

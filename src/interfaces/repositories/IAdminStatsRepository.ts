@@ -87,6 +87,8 @@ export interface AdminActivationEntryCounts {
   landing: number;
   post_signin_starter: number;
   activation_email: number;
+  /** A topic hub card (`entry=hub`, RIN-1417). */
+  hub: number;
   none: number;
 }
 

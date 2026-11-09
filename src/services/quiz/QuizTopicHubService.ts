@@ -1,4 +1,5 @@
 import type {
+  QuizTopicContextDto,
   QuizTopicHubDto,
   QuizTopicHubQuizDto,
   QuizTopicHubSummaryDto,
@@ -20,6 +21,7 @@ export interface QuizTopicHubDeps {
 }
 
 interface IndexableQuiz {
+  quizId: string;
   dto: QuizTopicHubQuizDto;
   lastModified: Date;
 }
@@ -50,6 +52,21 @@ export class QuizTopicHubService {
         indexableQuizCount: quizzes.length,
       }),
     };
+  }
+
+  /**
+   * The quiz page's topic (RIN-1241 C11/C12): the quiz's published topic and up to
+   * `limit` other indexable quizzes of it, in hub order. Null without a published topic.
+   */
+  async getQuizTopicContext(quizId: string, limit: number): Promise<QuizTopicContextDto | null> {
+    const topic = await this.deps.hubRepository.findPublishedTopicByQuizId(quizId);
+    if (!topic) return null;
+    const quizzesByTopic = await this.loadIndexableQuizzes([topic]);
+    const quizzes = (quizzesByTopic.get(topic.id) ?? [])
+      .filter((entry) => entry.quizId !== quizId)
+      .slice(0, limit)
+      .map(({ dto }) => dto);
+    return { slug: topic.slug, name: topic.name, quizzes };
   }
 
   /** Published topics that pass `isTopicIndexable`, in admin order. */
@@ -123,12 +140,15 @@ function isHubQuizIndexable(
     visibility: quiz.visibility,
     ownerIndexable: quiz.authorId === null || !excludedOwnerIds.has(quiz.authorId),
     questionCount: quiz.questionCount,
+    personalDataFlagged: quiz.personalDataFlagged,
+    indexHold: quiz.indexHold,
   });
 }
 
 function toIndexableQuiz(quiz: QuizTopicHubQuizRecord): IndexableQuiz {
   const lastModified = quiz.updatedAt ?? quiz.createdAt;
   return {
+    quizId: quiz.id,
     dto: {
       slug: quiz.slug,
       title: quiz.title,

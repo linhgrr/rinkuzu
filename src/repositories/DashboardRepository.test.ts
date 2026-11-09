@@ -169,6 +169,8 @@ describe('DashboardRepository starter quiz lookups', () => {
         visibility: 'public',
         questionCount: 3,
         isPremium: false,
+        personalDataFlagged: false,
+        indexHold: false,
       },
     ]);
     const repository = new DashboardRepository();
@@ -183,6 +185,8 @@ describe('DashboardRepository starter quiz lookups', () => {
         visibility: 'public',
         questionCount: 3,
         isPremium: false,
+        personalDataFlagged: false,
+        indexHold: false,
       },
     ]);
 
@@ -205,6 +209,8 @@ describe('DashboardRepository starter quiz lookups', () => {
       'visibility',
       'questionCount',
       'isPremium',
+      'personalDataFlagged',
+      'indexHold',
     ]);
     expect(projection).not.toHaveProperty('questions');
   });

@@ -23,6 +23,7 @@ import type {
   DashboardUserProgressPersistenceRecord,
 } from '@/repositories/types/DashboardPersistence';
 import { DashboardPersistenceMapper } from '@/repositories/mappers/DashboardPersistenceMapper';
+import { QUIZ_INDEX_BLOCK_PROJECTION } from '@/repositories/quiz-index-filter';
 
 interface StarterQuizEntryPersistence {
   quiz: Types.ObjectId;
@@ -169,6 +170,7 @@ export class DashboardRepository
           visibility: 1,
           questionCount: { $size: { $ifNull: ['$questions', []] } },
           isPremium: { $gt: [{ $size: '$premiumPublications' }, 0] },
+          ...QUIZ_INDEX_BLOCK_PROJECTION,
         },
       },
     ]);

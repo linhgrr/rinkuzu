@@ -558,6 +558,12 @@ describe('QuizPlayService progress operations', () => {
       }),
     );
     assertOk(await service.submitQuizAttempt('quiz', [1], key, session));
+    assertOk(
+      await service.submitQuizAttempt('quiz', [1], key, session, undefined, undefined, undefined, {
+        entry: 'hub',
+        topic: 'tieng-anh-lop-10',
+      }),
+    );
 
     const recorded = vi
       .mocked(attemptProgressRepository.recordSubmittedAttempt)
@@ -567,6 +573,10 @@ describe('QuizPlayService progress operations', () => {
     expect(recorded[1]).not.toHaveProperty('post');
     expect(recorded[2]).not.toHaveProperty('entry');
     expect(recorded[2]).not.toHaveProperty('post');
+    expect(recorded[2]).not.toHaveProperty('topic');
+    // RIN-1417: a hub card's topic slug rides along; nothing about the learner.
+    expect(recorded[3]).toMatchObject({ userId, entry: 'hub', topic: 'tieng-anh-lop-10' });
+    expect(recorded[3]).not.toHaveProperty('post');
   });
 
   it('resolves session email to a user id and returns 404 when unknown', async () => {

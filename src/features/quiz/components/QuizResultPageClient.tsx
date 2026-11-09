@@ -696,9 +696,10 @@ function guestResultPath(
   const params = new URLSearchParams();
   if (attemptId) params.set('attemptId', attemptId);
   if (score !== null) params.set('score', String(score));
-  // The quiz's entry/post survive sign-in so the blog funnel stays attributed (RIN-1242).
+  // The quiz's entry/post/topic survive sign-in so blog and hub funnels stay attributed.
   if (attribution.entry) params.set('entry', attribution.entry);
   if (attribution.post) params.set('post', attribution.post);
+  if (attribution.topic) params.set('topic', attribution.topic);
   return `${ROUTES.QUIZ.RESULT(encodedSlug)}?${params.toString()}`;
 }
 
@@ -787,7 +788,7 @@ function QuizResultContent() {
     encodedSlug,
     attemptId,
     urlScore ?? result?.score ?? null,
-    resolveQuizEntryAttribution(get('entry'), get('post')),
+    resolveQuizEntryAttribution(get('entry'), get('post'), get('topic')),
   );
 
   const holdsGuestScore =

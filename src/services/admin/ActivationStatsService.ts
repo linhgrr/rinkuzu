@@ -44,6 +44,7 @@ const NO_ENTRY: AdminActivationEntryCounts = {
   landing: 0,
   post_signin_starter: 0,
   activation_email: 0,
+  hub: 0,
   none: 0,
 };
 
@@ -92,7 +93,7 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
   activationEmail:
     'One-time activation nudge emails (RIN-999), bucketed by the UTC ISO week they were sent in (the worker slot of the delivery the provider accepted), not by signup week. sent: delivered nudges of non-excluded learners. clicked: sends whose CTA click was recorded (0 until click tracking ships). activatedWithin7d: sends followed by a completed quiz attempt or adaptive completion in [send, send + 7 days); final 7 days after the week ends. byTrigger splits each count by what enqueued the email: 24h (the sweep 24 h after signup) or backfill; the totals are their sums.',
   activatedByEntry:
-    'Split of activated by the entry point of the first qualifying attempt (the earliest completed quiz attempt within 7 days of signup), as the quiz link carried it (?entry=, stored on the attempt since RIN-1256): blog, landing (homepage play-first), post_signin_starter, activation_email. none: no tracked entry, which covers attempts before RIN-1256, untracked links, and learners activated by an adaptive completion only. The five add up to activated. A claimed guest attempt keeps its entry.',
+    'Split of activated by the entry point of the first qualifying attempt (the earliest completed quiz attempt within 7 days of signup), as the quiz link carried it (?entry=, stored on the attempt since RIN-1256): blog, landing (homepage play-first), post_signin_starter, activation_email, hub (a topic hub card, since RIN-1417; the topic slug of the hub is stored on the attempt as topic). none: no tracked entry, which covers attempts before RIN-1256, untracked links, and learners activated by an adaptive completion only. The six add up to activated. A claimed guest attempt keeps its entry.',
   blogPosts:
     'Top 10 public blog post slugs (?post=, with entry=blog) by activated signups of the week whose first qualifying attempt came from that post, most first, ties by slug. A blog entry without a valid post counts in activatedByEntry.blog only.',
 };

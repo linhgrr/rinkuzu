@@ -6,10 +6,14 @@ import { QuizAttemptProgressRepository } from '@/repositories/QuizAttemptProgres
 let premiumQuizService: PremiumQuizService | undefined;
 
 export function getPremiumQuizService(): PremiumQuizService {
-  premiumQuizService ??= new PremiumQuizService(
-    new QuizRepository(),
-    new PremiumQuizRepository(),
-    new QuizAttemptProgressRepository(),
-  );
+  if (!premiumQuizService) {
+    const premiumRepository = new PremiumQuizRepository();
+    premiumQuizService = new PremiumQuizService(
+      new QuizRepository(),
+      premiumRepository,
+      new QuizAttemptProgressRepository(),
+      premiumRepository,
+    );
+  }
   return premiumQuizService;
 }

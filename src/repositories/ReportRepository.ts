@@ -1,8 +1,12 @@
 import connectDB from '@/lib/mongoose';
 import Report from '@/models/Report';
+import { INDEX_HOLD_REPORT_REASONS } from '@/shared/constants/report-reason';
 import { buildPaginationMeta } from '@/lib/pagination';
 import type {
+  CreateQuizPageReportData,
   CreateReportData,
+  IIndexHoldReportRepository,
+  IQuizPageReportRepository,
   IReportRepository,
   ReportFindOptions,
   UpdateReportData,
@@ -14,9 +18,14 @@ import type { ReportPersistenceRecord } from '@/repositories/types/ReportPersist
 
 interface ReportQuery {
   status?: string;
+  reason?: string;
 }
 
-export class ReportRepository implements IReportRepository {
+const INDEX_HOLD_REASONS: string[] = [...INDEX_HOLD_REPORT_REASONS];
+
+export class ReportRepository
+  implements IReportRepository, IQuizPageReportRepository, IIndexHoldReportRepository
+{
   async findById(id: string): Promise<ReportEntity | null> {
     await connectDB();
     const record = await Report.findById(id).lean<ReportPersistenceRecord>();
@@ -34,13 +43,25 @@ export class ReportRepository implements IReportRepository {
     if (options.status) {
       query.status = options.status;
     }
+    if (options.reason) {
+      query.reason = options.reason;
+    }
 
+    // The rank is computed, so this sorts the filtered set in memory. The
+    // collection holds hundreds of reports, well inside the 100 MB sort limit.
     const [records, totalItems] = await Promise.all([
-      Report.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean<ReportPersistenceRecord[]>(),
+      Report.aggregate<ReportPersistenceRecord>([
+        { $match: query },
+        {
+          $addFields: {
+            holdRank: { $cond: [{ $in: ['$reason', INDEX_HOLD_REASONS] }, 0, 1] },
+          },
+        },
+        { $sort: { holdRank: 1, createdAt: -1, _id: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        { $project: { holdRank: 0, ipHash: 0 } },
+      ]),
       Report.countDocuments(query),
     ]);
 
@@ -55,6 +76,26 @@ export class ReportRepository implements IReportRepository {
     const document = await Report.create(reportData);
     const record: ReportPersistenceRecord = document.toObject();
     return ReportPersistenceMapper.toEntity(record);
+  }
+
+  async createQuizPageReport(reportData: CreateQuizPageReportData): Promise<ReportEntity> {
+    await connectDB();
+    const document = await Report.create({
+      ...reportData,
+      source: 'quiz_page',
+      status: 'pending',
+    });
+    const record: ReportPersistenceRecord = document.toObject();
+    return ReportPersistenceMapper.toEntity(record);
+  }
+
+  async countPendingIndexHoldReports(quizId?: string): Promise<number> {
+    await connectDB();
+    return Report.countDocuments({
+      status: 'pending',
+      reason: { $in: INDEX_HOLD_REASONS },
+      ...(quizId === undefined ? {} : { quizId }),
+    });
   }
 
   async update(id: string, reportData: UpdateReportData): Promise<ReportEntity | null> {

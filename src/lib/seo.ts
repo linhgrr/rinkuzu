@@ -66,6 +66,8 @@ type LocalizedMetadataInput = {
   ogImageTitle?: string;
   /** Locales the page exists in, when not all of them (vi-only blog posts, RIN-1312). */
   alternateLocales?: readonly string[];
+  /** `alternates.types` links, e.g. the blog's RSS feed (RIN-1330). */
+  alternateTypes?: Readonly<Record<string, string>>;
 };
 
 export function buildLocalizedMetadata({
@@ -80,6 +82,7 @@ export function buildLocalizedMetadata({
   languageAlternates: withLanguageAlternates = true,
   ogImageTitle,
   alternateLocales,
+  alternateTypes,
 }: LocalizedMetadataInput): Metadata {
   const canonical = canonicalFor(canonicalLocale ?? locale, path);
   // Default to the dynamic 1200x630 OG endpoint so social previews render at the
@@ -93,6 +96,7 @@ export function buildLocalizedMetadata({
     alternates: {
       canonical,
       ...(withLanguageAlternates ? { languages: languageAlternates(path, alternateLocales) } : {}),
+      ...(alternateTypes ? { types: { ...alternateTypes } } : {}),
     },
     openGraph: {
       type: 'website',

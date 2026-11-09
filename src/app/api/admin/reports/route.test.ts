@@ -74,7 +74,12 @@ describe('GET /api/admin/reports', () => {
 
     const ok = await GET(request('?page=1&limit=20&status=pending'), routeContext);
     expect(ok.status).toBe(200);
-    expect(getReportsMock).toHaveBeenCalledWith({ page: 1, limit: 20, status: 'pending' });
+    expect(getReportsMock).toHaveBeenCalledWith({
+      page: 1,
+      limit: 20,
+      status: 'pending',
+      reason: 'all',
+    });
 
     const fail = await GET(request(), routeContext);
     expect(fail.status).toBe(503);

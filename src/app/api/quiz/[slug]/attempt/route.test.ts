@@ -190,6 +190,19 @@ describe('POST /api/quiz/[slug]/attempt', () => {
       });
       await expect(attributionOf({ post: 'ok-post' })).resolves.toBeUndefined();
     });
+
+    it('passes a hub topic slug next to entry=hub only, dropping a malformed one (RIN-1417)', async () => {
+      await expect(attributionOf({ entry: 'hub', topic: 'tieng-anh-lop-10' })).resolves.toEqual({
+        entry: 'hub',
+        topic: 'tieng-anh-lop-10',
+      });
+      for (const topic of ['Upper', 'a b', 'a'.repeat(81)]) {
+        await expect(attributionOf({ entry: 'hub', topic })).resolves.toEqual({ entry: 'hub' });
+      }
+      await expect(attributionOf({ entry: 'landing', topic: 'toan' })).resolves.toEqual({
+        entry: 'landing',
+      });
+    });
   });
 
   it('uses the authenticated session without requiring body userEmail', async () => {

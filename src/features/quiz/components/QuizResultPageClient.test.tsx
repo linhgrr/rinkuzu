@@ -184,6 +184,21 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     );
   });
 
+  it('keeps entry=hub and its topic in the save card callbacks (RIN-1417)', async () => {
+    searchParams.value = new URLSearchParams(
+      'attemptId=attempt-1&score=80&entry=hub&topic=tieng-anh-lop-10',
+    );
+
+    render(<QuizResultPageClient />);
+
+    const hubPath = `${RESULT_PATH}&entry=hub&topic=tieng-anh-lop-10`;
+    await screen.findByRole('region', { name: 'guestSaveTitle' });
+    expect(screen.getByRole('link', { name: 'guestSaveCreateAccount' })).toHaveAttribute(
+      'href',
+      `/register?callbackUrl=${encodeURIComponent(hubPath)}`,
+    );
+  });
+
   it('drops an untracked entry or a malformed post from the save card callbacks', async () => {
     searchParams.value = new URLSearchParams(
       'attemptId=attempt-1&score=80&entry=newsletter&post=Bad%20Slug',

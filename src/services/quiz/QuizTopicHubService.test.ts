@@ -33,6 +33,8 @@ function quiz(id: string, overrides: Partial<QuizTopicHubQuizRecord> = {}): Quiz
     visibility: 'public',
     authorId: 'author-real',
     questionCount: 10,
+    personalDataFlagged: false,
+    indexHold: false,
     createdAt: new Date('2026-10-01T00:00:00.000Z'),
     ...overrides,
   };
@@ -59,6 +61,10 @@ function buildService(data: FakeData) {
   const hubRepository: IQuizTopicHubRepository = {
     findPublishedTopicBySlug: async (slug) =>
       data.topics.find((t) => t.slug === slug && t.published) ?? null,
+    findPublishedTopicByQuizId: async (quizId) => {
+      const topicId = data.assignments.find((a) => a.quizId === quizId)?.topicId;
+      return data.topics.find((t) => t.id === topicId && t.published) ?? null;
+    },
     listPublishedTopics: async () =>
       data.topics.filter((t) => t.published).sort((a, b) => a.order - b.order),
     listAssignmentsByTopicIds: async (topicIds) =>
@@ -140,6 +146,24 @@ describe('QuizTopicHubService.getTopicWithIndexableQuizzes', () => {
 
     expect(hub?.quizzes.map(({ slug }) => slug)).toEqual(['de-ok1', 'de-ok2']);
     expect(hub?.indexable).toBe(false);
+  });
+
+  // RIN-1341: flagged or held quizzes stay playable but never appear on a hub.
+  it('drops quizzes flagged for personal data or under a report hold', async () => {
+    const { service } = buildService({
+      topics: [topic()],
+      assignments: assign('topic-sinh', ['ok1', 'flagged', 'held']),
+      quizzes: [
+        quiz('ok1'),
+        quiz('flagged', { personalDataFlagged: true }),
+        quiz('held', { indexHold: true }),
+      ],
+      owners: [],
+    });
+
+    const hub = await service.getTopicWithIndexableQuizzes('sinh-hoc');
+
+    expect(hub?.quizzes.map(({ slug }) => slug)).toEqual(['de-ok1']);
   });
 
   it('is not indexable when the intro is too short, even with enough quizzes', async () => {
@@ -239,6 +263,51 @@ describe('QuizTopicHubService.listIndexableTopics', () => {
     });
 
     await expect(service.listIndexableTopics()).resolves.toEqual([]);
+    expect(calls).toEqual({ quizLookups: 0, ownerLookups: 0 });
+  });
+});
+
+describe('QuizTopicHubService.getQuizTopicContext', () => {
+  it('returns the topic and its other indexable quizzes in hub order, capped', async () => {
+    const { service } = buildService({
+      topics: [topic()],
+      assignments: assign('topic-sinh', ['q1', 'q2', 'q3', 'q4', 'q5']),
+      quizzes: [quiz('q1'), quiz('q2', { questionCount: 3 }), quiz('q3'), quiz('q4'), quiz('q5')],
+    });
+
+    await expect(service.getQuizTopicContext('q3', 2)).resolves.toEqual({
+      slug: 'sinh-hoc',
+      name: 'Sinh học',
+      quizzes: [
+        expect.objectContaining({ slug: 'de-q1' }),
+        expect.objectContaining({ slug: 'de-q4' }),
+      ],
+    });
+  });
+
+  it('keeps the topic when the quiz is the only indexable one in it', async () => {
+    const { service } = buildService({
+      topics: [topic()],
+      assignments: assign('topic-sinh', ['q1']),
+      quizzes: [quiz('q1')],
+    });
+
+    await expect(service.getQuizTopicContext('q1', 6)).resolves.toEqual({
+      slug: 'sinh-hoc',
+      name: 'Sinh học',
+      quizzes: [],
+    });
+  });
+
+  it('returns null for a quiz without a published topic', async () => {
+    const { service, calls } = buildService({
+      topics: [topic({ published: false })],
+      assignments: assign('topic-sinh', ['q1']),
+      quizzes: [quiz('q1')],
+    });
+
+    await expect(service.getQuizTopicContext('q1', 6)).resolves.toBeNull();
+    await expect(service.getQuizTopicContext('q-none', 6)).resolves.toBeNull();
     expect(calls).toEqual({ quizLookups: 0, ownerLookups: 0 });
   });
 });

@@ -4,11 +4,18 @@ import {
   buildQuizSeoDescription,
   buildQuizSeoTitle,
   detectQuizContentLocale,
+  isQuizContentIndexable,
   isQuizIndexable,
 } from './quiz-indexability';
 
 describe('isQuizIndexable (RIN-1241 D13)', () => {
-  const indexable = { visibility: 'public', ownerIndexable: true, questionCount: 5 } as const;
+  const indexable = {
+    visibility: 'public',
+    ownerIndexable: true,
+    questionCount: 5,
+    personalDataFlagged: false,
+    indexHold: false,
+  } as const;
 
   it('indexes a public quiz of an indexable owner with at least 5 questions', () => {
     expect(MIN_INDEXABLE_QUESTION_COUNT).toBe(5);
@@ -27,6 +34,22 @@ describe('isQuizIndexable (RIN-1241 D13)', () => {
 
   it('keeps a personal quiz out of search', () => {
     expect(isQuizIndexable({ ...indexable, visibility: 'personal' })).toBe(false);
+  });
+
+  it('keeps a quiz flagged for personal data out of search (RIN-1341)', () => {
+    expect(isQuizIndexable({ ...indexable, personalDataFlagged: true })).toBe(false);
+  });
+
+  it('keeps a quiz under a report hold out of search (RIN-1341)', () => {
+    expect(isQuizIndexable({ ...indexable, indexHold: true })).toBe(false);
+  });
+});
+
+describe('isQuizContentIndexable (RIN-1341)', () => {
+  it('passes only content with neither a flag nor a hold', () => {
+    expect(isQuizContentIndexable({ personalDataFlagged: false, indexHold: false })).toBe(true);
+    expect(isQuizContentIndexable({ personalDataFlagged: true, indexHold: false })).toBe(false);
+    expect(isQuizContentIndexable({ personalDataFlagged: false, indexHold: true })).toBe(false);
   });
 });
 

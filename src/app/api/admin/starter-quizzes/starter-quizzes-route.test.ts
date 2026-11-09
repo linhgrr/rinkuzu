@@ -89,6 +89,8 @@ function candidate(
     visibility: 'public',
     questionCount: 8,
     isPremium: false,
+    personalDataFlagged: false,
+    indexHold: false,
     ...overrides,
   };
 }

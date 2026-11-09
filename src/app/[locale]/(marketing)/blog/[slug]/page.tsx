@@ -25,6 +25,7 @@ import {
 import { getBlogAuthor } from '@/lib/blog/authors';
 import { hasInlineTryQuiz, splitBlogBody } from '@/lib/blog/try-quiz-marker';
 import { TryQuizCard, type TryQuizCardLabels } from '@/features/landing/components/TryQuizCard';
+import { blogFeedAlternates } from '@/lib/blog/feed';
 import { RelatedPosts } from './RelatedPosts';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -51,7 +52,7 @@ const resolveArticle = async (params: Props['params']) => {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale, article } = await resolveArticle(params);
+  const { locale, blogLocale, article } = await resolveArticle(params);
   if (!article) return {};
 
   const path = `/blog/${article.slug}`;
@@ -65,6 +66,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     imagePath: article.heroImage,
     alternateLocales: getBlogArticleLocales(article.slug),
+    alternateTypes: blogFeedAlternates(blogLocale),
   });
   return {
     ...base,

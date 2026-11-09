@@ -34,6 +34,7 @@ vi.mock('./content', () => ({
 const {
   getAdjacentBlogArticles,
   getBlogArticle,
+  getBlogArticleLocales,
   getBlogArticleSlugs,
   getBlogAuthorSlugs,
   getBlogIndexPosts,
@@ -89,14 +90,21 @@ describe('blog queries skip unpublished posts', () => {
 
   it('keeps drafts and scheduled posts out of the sitemap and author dates', () => {
     expect(getBlogSitemapRoutes(NOW)).toEqual([
-      { path: '/blog/live-post', lastModified: '2026-11-01' },
-      { path: '/blog/today-post', lastModified: '2026-11-09' },
+      { path: '/blog/live-post', lastModified: '2026-11-01', locales: ['vi', 'en'] },
+      { path: '/blog/today-post', lastModified: '2026-11-09', locales: ['vi', 'en'] },
       { path: '/blog/authors/rinkuzu-team', lastModified: '2026-11-09' },
     ]);
     expect(getBlogSitemapRoutes(NEXT_DAY)).toContainEqual({
       path: '/blog/scheduled-post',
       lastModified: '2026-11-10',
+      locales: ['vi', 'en'],
     });
+  });
+
+  it('lists hreflang locales only once the article is published', () => {
+    expect(getBlogArticleLocales('scheduled-post', NOW)).toEqual([]);
+    expect(getBlogArticleLocales('scheduled-post', NEXT_DAY)).toEqual(['vi', 'en']);
+    expect(getBlogArticleLocales('draft-post', NEXT_DAY)).toEqual([]);
   });
 
   it('drops an author whose only posts are unpublished', () => {

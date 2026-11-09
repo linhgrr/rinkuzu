@@ -77,7 +77,6 @@ export interface AdminReportListDto {
 }
 
 export type AdminReportListQueryDto = z.infer<typeof adminReportListQuerySchema>;
-export type HideReportedQuizRequestDto = z.infer<typeof hideReportedQuizRequestSchema>;
 export type UpdateAdminReportRequestDto = z.infer<typeof updateAdminReportRequestSchema>;
 export type UpdateAdminReportedQuestionRequestDto = z.infer<
   typeof updateAdminReportedQuestionRequestSchema

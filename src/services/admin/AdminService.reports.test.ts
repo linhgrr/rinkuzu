@@ -17,7 +17,13 @@ describe('AdminService report moderation wiring', () => {
   const findAll = vi.fn();
   const findById = vi.fn();
   const update = vi.fn();
-  const reportRepository = { findAll, findById, update } as unknown as IReportRepository;
+  const reportRepository: IReportRepository = {
+    findAll,
+    findById,
+    update,
+    create: vi.fn(),
+    delete: vi.fn(),
+  };
   const moderation = {
     countPendingIndexHold: vi.fn<() => Promise<number>>(),
     syncIndexHold: vi.fn(),

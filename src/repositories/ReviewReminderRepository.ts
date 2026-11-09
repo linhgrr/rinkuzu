@@ -121,6 +121,16 @@ export class ReviewReminderRepository {
     };
   }
 
+  /**
+   * Whether the learner has an attempt after `takenAt`. The sender cancels a
+   * review email for such an attempt (`later_attempt`), so the result-page
+   * prompt uses the same rule (RIN-1362).
+   */
+  async hasLaterAttempt(userId: Types.ObjectId, takenAt: Date): Promise<boolean> {
+    await connectDB();
+    return (await Attempt.exists({ user: userId, takenAt: { $gt: takenAt } })) !== null;
+  }
+
   /** Whether `studyReminders` is ticked and until when the result-page prompt is snoozed. */
   async promptPreference(userId: Types.ObjectId): Promise<ReminderPromptPreference> {
     await connectDB();
@@ -244,7 +254,7 @@ export class ReviewReminderRepository {
       MarketingPreference.findOne({ userId })
         .select('studyReminders locale')
         .lean<ReminderPreference | null>(),
-      Attempt.exists({ user: userId, takenAt: { $gt: input.attempt.takenAt } }),
+      this.hasLaterAttempt(userId, input.attempt.takenAt),
       EmailOutbox.exists({
         userId,
         kind: 'review_reminder',
@@ -257,7 +267,7 @@ export class ReviewReminderRepository {
     return {
       user,
       preference,
-      laterAttempt: laterAttempt !== null,
+      laterAttempt,
       sentInLastWeek: sentInLastWeek !== null,
       quiz,
     };

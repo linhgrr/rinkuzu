@@ -123,7 +123,10 @@ export interface ReviewReminderPromptStatus {
   optedIn: boolean;
   /** Set only while the prompt is snoozed (in the future). */
   snoozedUntil: string | null;
-  /** The attempt is the learner's own, has missed questions and is still in the opt-in window. */
+  /**
+   * The attempt is the learner's own and latest, has missed questions and is
+   * still in the opt-in window.
+   */
   eligible: boolean;
 }
 
@@ -137,7 +140,10 @@ async function attemptEligible(
   const attempt = await repository.findAttempt(requiredObjectId(attemptId, 'attempt id'));
   if (!attempt?.userId?.equals(userId)) return false;
   if (attempt.totalQuestions - attempt.correctAnswers <= 0) return false;
-  return reviewReminderAvailableAt({ takenAt: attempt.takenAt, email, now }) !== null;
+  if (reviewReminderAvailableAt({ takenAt: attempt.takenAt, email, now }) === null) return false;
+  // An older attempt's email would be canceled at send time (`later_attempt`),
+  // and re-pointing the pending row at it would drop the newer one's email.
+  return !(await repository.hasLaterAttempt(userId, attempt.takenAt));
 }
 
 /**

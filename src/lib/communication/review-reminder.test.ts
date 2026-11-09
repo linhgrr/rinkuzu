@@ -208,6 +208,7 @@ describe('review reminder prompt status and snooze (RIN-1362)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.attempt.findById.mockReturnValue(query(attemptDoc()));
+    mocks.attempt.exists.mockResolvedValue(null);
     mocks.preference.findOne.mockReturnValue(query(null));
     mocks.preference.updateOne.mockResolvedValue({ modifiedCount: 1 });
   });
@@ -217,6 +218,26 @@ describe('review reminder prompt status and snooze (RIN-1362)', () => {
       optedIn: false,
       snoozedUntil: null,
       eligible: true,
+    });
+  });
+
+  it('checks the latest-attempt rule the sender uses and offers the prompt on the latest one', async () => {
+    await expect(status(new Date(TAKEN_AT.getTime() + HOUR))).resolves.toMatchObject({
+      eligible: true,
+    });
+    expect(mocks.attempt.exists).toHaveBeenCalledWith({
+      user: new Types.ObjectId(USER_ID),
+      takenAt: { $gt: TAKEN_AT },
+    });
+  });
+
+  it('is not eligible for an older attempt once a later one exists (the email would be canceled)', async () => {
+    mocks.attempt.exists.mockResolvedValue({ _id: new Types.ObjectId() });
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true }));
+    await expect(status(new Date(TAKEN_AT.getTime() + HOUR))).resolves.toEqual({
+      optedIn: true,
+      snoozedUntil: null,
+      eligible: false,
     });
   });
 

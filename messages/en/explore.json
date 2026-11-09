@@ -43,5 +43,22 @@
       "subtitle": "Explore public quizzes shared by the RinKuzu community",
       "empty": "No public quizzes match your search."
     }
+  },
+  "hub": {
+    "metaTitle": "{name} quiz with answers – {count} quiz sets | RinKuzu",
+    "h1": "{name} quiz with answers",
+    "count": "{count} quiz sets",
+    "listHeading": "Choose a quiz set",
+    "questions": "{count} questions",
+    "play": "Play now",
+    "playAria": "Play now: {title}",
+    "more": "Explore more quizzes",
+    "emptyTitle": "No quiz sets for this topic yet",
+    "emptyText": "Check back later or explore other quizzes.",
+    "emptyCta": "Explore quizzes",
+    "breadcrumbLabel": "Breadcrumb",
+    "breadcrumbHome": "Home",
+    "breadcrumbExplore": "Explore",
+    "linksHeading": "Quiz sets by subject"
   }
 }

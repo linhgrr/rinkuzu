@@ -15,7 +15,7 @@ export const LANDING_ENTRY = 'landing';
 export const QUIZ_LANDING_ENTRY = 'quiz_landing';
 
 /** Links from a subject hub page to a quiz carry this entry (RIN-1241 E17, hub in part 4). */
-const HUB_ENTRY = 'hub';
+export const HUB_ENTRY = 'hub';
 
 /** A blog post's quiz CTA opens the quiz with this entry and `?post=<slug>` (RIN-1242). */
 export const BLOG_ENTRY = 'blog';

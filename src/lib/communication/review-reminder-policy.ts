@@ -154,6 +154,10 @@ export type ReviewReminderCancelReason =
   | 'account_disabled'
   | 'opted_out'
   | 'later_attempt'
+  /** An adaptive completion after the anchor, on either path (RIN-1364). */
+  | 'later_completion'
+  /** Path B: the API no longer reports the completion the email follows. */
+  | 'completion_missing'
   | 'weekly_cap'
   | 'excluded_account'
   | 'too_late';
@@ -232,6 +236,29 @@ export function verifyUnsubscribeToken(
   const actual = Buffer.from(signature);
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
   return { userId, topic };
+}
+
+/**
+ * A send that could not check the adaptive API (timeout, non-2xx) is retried
+ * this much later, inside the ±2 h window measured from the row's due time;
+ * past the window it is canceled `too_late` (RIN-1364). Never sent blind.
+ */
+export const REVIEW_REMINDER_RETRY_MS = 10 * 60_000;
+
+/** Path B button: the adaptive document, else the adaptive dashboard (RIN-1364). */
+export function adaptiveReviewUrl(input: {
+  siteUrl: string;
+  locale: string;
+  documentId: string | null;
+  touch: ReviewReminderTouch;
+}): string {
+  const path = input.documentId
+    ? `/adaptive/subject/${encodeURIComponent(input.documentId)}`
+    : '/adaptive';
+  const url = new URL(`/${encodeURIComponent(input.locale)}${path}`, input.siteUrl);
+  url.searchParams.set('utm_source', 'email');
+  url.searchParams.set('utm_campaign', reviewReminderCampaign(input.touch));
+  return url.toString();
 }
 
 /** Link target of the email button (the retry session ships in RIN-911's web issue). */

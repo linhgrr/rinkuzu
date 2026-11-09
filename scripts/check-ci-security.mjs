@@ -348,6 +348,10 @@ for (const file of workflows) {
         scripts.includes('git show "${BASE_SHA}:.gitleaks.toml"'),
       'Gitleaks on pull_request must read its config and ignore file from the base SHA and ignore gitleaks:allow',
     ],
+    [
+      /rm -f -- \.gitleaksignore[\s\S]*gitleaks" git[\s\S]*--gitleaks-ignore-path/.test(scripts),
+      "Gitleaks on pull_request must delete the PR's own .gitleaksignore before scanning",
+    ],
   ];
   for (const [satisfied, message] of requirements) {
     if (!satisfied) fail(file, secretScanLine, message);

@@ -713,6 +713,9 @@ jobs:
               printf '[extend]\nuseDefault = true\n' > "$trusted/.gitleaks.toml"
             fi
             git show "${BASE_SHA}:.gitleaksignore" > "$trusted/.gitleaksignore" 2>/dev/null || : > "$trusted/.gitleaksignore"
+            # gitleaks also loads <source>/.gitleaksignore (the PR's own file, with
+            # global file:rule:line entries). This job only scans, so drop it.
+            rm -f -- .gitleaksignore
             "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1 --ignore-gitleaks-allow \
               --config "$trusted/.gitleaks.toml" --gitleaks-ignore-path "$trusted/.gitleaksignore" \
               --log-opts='--all' .

@@ -3,6 +3,7 @@ import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAudi
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
 
 interface PersonalDataFlagActor {
   id: string;
@@ -44,7 +45,7 @@ export class QuizPersonalDataFlagService {
 
       const flags = quiz.contentFlags;
       if (flags?.personalData !== true) {
-        return { success: true, data: { id: quiz.id, slug: quiz.slug, cleared: false } };
+        return { success: true, data: AdminQuizDtoMapper.toPersonalDataFlagClear(quiz, false) };
       }
 
       await this.quizRepository.update(quiz.id, {
@@ -75,7 +76,7 @@ export class QuizPersonalDataFlagService {
         return CLEAR_FAILED;
       }
 
-      return { success: true, data: { id: quiz.id, slug: quiz.slug, cleared: true } };
+      return { success: true, data: AdminQuizDtoMapper.toPersonalDataFlagClear(quiz, true) };
     } catch (error) {
       logger.error({ error, quizId: id }, 'Clear personal-data flag error');
       return CLEAR_FAILED;

@@ -3,6 +3,7 @@ import type {
   AdminQuizDetailDto,
   AdminQuizListDto,
   AdminQuizListItemDto,
+  AdminQuizPersonalDataFlagClearDto,
   AdminQuizVisibilityChangeDto,
 } from '@/dtos/admin-quiz';
 import type { PaginationMeta } from '@/dtos/common';
@@ -69,5 +70,13 @@ export class AdminQuizDtoMapper {
     changed: boolean,
   ): AdminQuizVisibilityChangeDto {
     return { id: quiz.id, slug: quiz.slug, visibility, changed };
+  }
+
+  /** Result of an admin Clear flag (RIN-1342). */
+  static toPersonalDataFlagClear(
+    quiz: Pick<Quiz, 'id' | 'slug'>,
+    cleared: boolean,
+  ): AdminQuizPersonalDataFlagClearDto {
+    return { id: quiz.id, slug: quiz.slug, cleared };
   }
 }

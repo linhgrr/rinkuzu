@@ -68,6 +68,21 @@ describe('quiz mapper optional fields', () => {
       expect(result).not.toHaveProperty('tags');
       expect(result.questions[0]).not.toHaveProperty('questionImage');
     }
+    expect(editor).not.toHaveProperty('personalDataKinds');
+
+    // RIN-1342: the owner notice reads kinds only from an uncleared flag.
+    const flagged = toQuizEditViewModel({
+      ...base,
+      questions: [],
+      contentFlags: { personalData: true, kinds: ['phone'] },
+    });
+    const cleared = toQuizEditViewModel({
+      ...base,
+      questions: [],
+      contentFlags: { personalData: false, kinds: ['phone'] },
+    });
+    expect(flagged.personalDataKinds).toEqual(['phone']);
+    expect(cleared).not.toHaveProperty('personalDataKinds');
   });
 
   it('omits an absent discussion update timestamp', () => {

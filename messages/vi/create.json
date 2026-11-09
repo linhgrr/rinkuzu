@@ -177,6 +177,15 @@
   "accessDeniedDescription": "Bạn không có quyền chỉnh sửa quiz này.",
   "readOnlyTitle": "Chỉ xem",
   "readOnlyDescription": "Bạn không có quyền chỉnh sửa quiz này. Chỉ tác giả hoặc quản trị viên mới được thay đổi.",
+  "personalDataNotice": {
+    "text": "Quiz này có thể chứa thông tin cá nhân ({kinds}) nên sẽ không hiển thị trên Google. Hãy xóa thông tin đó để quiz được tìm thấy.",
+    "kinds": {
+      "phone": "số điện thoại",
+      "email": "email",
+      "id_number": "mã số",
+      "labelled_name": "họ tên"
+    }
+  },
   "quizLink": "Liên kết quiz",
   "quizLinkDescription": "Chia sẻ liên kết này với học viên",
   "copyLink": "Sao chép",

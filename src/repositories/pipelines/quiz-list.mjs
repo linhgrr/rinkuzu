@@ -39,6 +39,7 @@ function buildCompactQuizProjectionStages(populateAuthor) {
       createdAt: 1,
       updatedAt: 1,
       folder: 1,
+      contentFlags: 1,
       questionCount: { $size: { $ifNull: ['$questions', []] } },
       questions: { $literal: [] },
     },

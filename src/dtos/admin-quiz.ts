@@ -10,6 +10,8 @@ export const adminQuizListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(12),
   search: z.string().trim().max(200).optional(),
   visibility: adminQuizVisibilitySchema.default('all'),
+  /** `personal_data`: only quizzes with an uncleared personal-data flag (RIN-1342). */
+  flag: z.enum(['personal_data']).optional(),
 });
 
 export const adminQuizIdParamsSchema = z.object({
@@ -41,6 +43,8 @@ export interface AdminQuizListItemDto {
   folder?: string | null;
   visibility: 'public' | 'personal';
   questionCount: number;
+  /** Kinds of an uncleared personal-data flag (RIN-1342); kind names only, never values. */
+  personalDataKinds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -62,6 +66,14 @@ export interface AdminQuizVisibilityChangeDto {
   visibility: 'public' | 'personal';
   /** False when the quiz already had the requested visibility (no write, no audit). */
   changed: boolean;
+}
+
+/** `POST /api/admin/quizzes/[id]/clear-personal-data-flag` (RIN-1342). */
+export interface AdminQuizPersonalDataFlagClearDto {
+  id: string;
+  slug: string;
+  /** False when the quiz had no uncleared flag (no write, no audit). */
+  cleared: boolean;
 }
 
 export type AdminQuizVisibilityBodyDto = z.infer<typeof adminQuizVisibilityBodySchema>;

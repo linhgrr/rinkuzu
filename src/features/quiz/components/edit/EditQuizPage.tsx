@@ -14,6 +14,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizWorkspacePageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { QuizEditorWorkspace } from '@/features/quiz/components/editor/QuizEditorWorkspace';
 import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
+import { PersonalDataNotice } from '@/features/quiz/components/edit/PersonalDataNotice';
 import { HiOutlineClipboardCopy, HiOutlineInformationCircle } from 'react-icons/hi';
 import { fetchQuizEditViewModel, updateQuizEditViewModel } from '@/features/quiz/api/quiz-edit-api';
 import { deleteQuizById } from '@/features/quiz/api/quiz-api';
@@ -215,7 +216,16 @@ export function EditQuizPage() {
           canEdit={canEdit}
           showPremiumToggle={canEdit}
           premiumEligible={session?.user?.emailVerified === true}
-          metaNotice={<PublicQuizNotice variant="short" />}
+          metaNotice={
+            canEdit && quiz.personalDataKinds !== undefined ? (
+              <div className="space-y-2">
+                <PersonalDataNotice kinds={quiz.personalDataKinds} />
+                <PublicQuizNotice variant="short" />
+              </div>
+            ) : (
+              <PublicQuizNotice variant="short" />
+            )
+          }
           {...(canEdit
             ? {
                 premiumAttestation: {

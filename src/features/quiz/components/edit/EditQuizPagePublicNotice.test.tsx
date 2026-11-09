@@ -61,13 +61,11 @@ describe('EditQuizPage public-quiz notice', () => {
     render(<EditQuizPage />);
 
     const premium = await screen.findByRole('checkbox', { name: /premiumQuiz/ });
-    const notices = screen.getAllByTestId('public-quiz-notice');
-    expect(notices).toHaveLength(1);
-    expect(notices[0]).toHaveAttribute('data-variant', 'short');
-    expect(notices[0]).toHaveTextContent(/^notice$/);
-    expect(
-      notices[0]!.compareDocumentPosition(premium) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(screen.getAllByTestId('public-quiz-notice')).toHaveLength(1);
+    const notice = screen.getByTestId('public-quiz-notice');
+    expect(notice).toHaveAttribute('data-variant', 'short');
+    expect(notice).toHaveTextContent(/^notice$/);
+    expect(notice.compareDocumentPosition(premium) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getAllByRole('checkbox')).toHaveLength(1);
   });
 });

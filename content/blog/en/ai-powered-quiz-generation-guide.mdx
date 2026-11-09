@@ -15,7 +15,7 @@ seoDescription: "Discover how RinKuzu's ALSS system turns supported PDF lecture 
 articleReadTimeMinutes: 9
 breadcrumbLabel: "AI & PDFs"
 navLabel: "How AI Transforms PDF Learning"
-ctaTitle: "Start your adaptive journey today"
+ctaTitle: "Start your personalized journey today"
 ctaBody: "Upload your first PDF and see the ALSS pipeline in action. Join students mastering complex topics with RinKuzu."
 wordCount: 1350
 timeRequiredMinutes: 9
@@ -24,7 +24,7 @@ timeRequiredMinutes: 9
 ## The Static Learning Problem
 Every student has a folder of lecture notes, textbooks, and handouts — rich content that contains the knowledge they need to master a subject. Yet most of that material sits passive, read once and forgotten. The challenge isn't access to information; it's that static documents can't adapt to the reader. A 300-page textbook treats every student the same way, whether they're seeing the material for the first time or reviewing for an exam.
 
-RinKuzu combines spaced repetition, active recall, and adaptive difficulty in a practice flow. It turns supported PDF material into a personalized practice session.
+RinKuzu combines spaced repetition, active recall, and personalized difficulty in a practice flow. It turns supported PDF material into a personalized practice session.
 
 ## From PDF to Knowledge Graph: The Content Processor Pipeline
 Before a single practice question is generated, RinKuzu's Content Processor transforms the raw PDF into a structured, machine-readable knowledge representation. This pipeline runs once per document and consists of seven steps:
@@ -35,7 +35,7 @@ Before a single practice question is generated, RinKuzu's Content Processor tran
 4. **Embedding Generation**: Each extracted concept is encoded using SentenceTransformer (all-MiniLM-L6-v2), producing a 384-dimensional embedding vector for semantic similarity comparison.
 5. **Concept Merging**: Two rounds of deduplication run: (1) name-based merge groups concepts with identical or near-identical names; (2) embedding-based merge uses cosine similarity (threshold: 0.85) to detect semantic duplicates. In practice, this reduces raw concept counts by ~27%.
 6. **Prerequisite Relation Verification (PRS)**: Raw prerequisite relations from step 3 are verified using the Prerequisite Ranking Score (PRS) algorithm — based on the Reference Distance hypothesis: if a concept's definition has high semantic similarity to another concept's name, a prerequisite relationship is likely. PRS > τ (default τ=0.65) passes a pair to LLM for final validation. Pairs below threshold are rejected. This two-stage approach achieves a 50% acceptance rate on LectureBank benchmark while maintaining reasonable precision.
-7. **Knowledge Graph Construction**: Verified prerequisite pairs form directed edges in a DAG. Transitive reduction removes redundant edges, ensuring the graph has minimal edges while preserving all prerequisite relationships. The result: a directed, acyclic prerequisite graph ready for adaptive curriculum planning.
+7. **Knowledge Graph Construction**: Verified prerequisite pairs form directed edges in a DAG. Transitive reduction removes redundant edges, ensuring the graph has minimal edges while preserving all prerequisite relationships. The result: a directed, acyclic prerequisite graph ready for personalized curriculum planning.
 
 ## SAINT-Bloom: Multi-Level Knowledge Tracing
 Once the knowledge graph is built, RinKuzu needs to track each learner's mastery state across all concepts and cognitive levels. This is handled by **SAINT-Bloom** — a variant of the Separated Self-Attentional Neural Knowledge Tracing model (Choi et al., 2020) extended to model mastery at each Bloom's Taxonomy level independently.
@@ -65,11 +65,11 @@ Before action selection, four filters block invalid actions:
 
 The agent was trained over 500,000 timesteps on a SAINT-based student simulator, achieving Reward 58.45 and Normalized Learning Gain 0.774 — outperforming Random, Sequential, Greedy, and Q-matrix baselines.
 
-## Gemini 2.0 Flash: Adaptive Exercise Generation & Evaluation
+## Gemini 2.0 Flash: Personalized Exercise Generation & Evaluation
 When D3QN selects action a* = (concept, Bloom_level), RinKuzu retrieves the concept's metadata (name, definition, formulas, examples) from the Concept Registry and calls **Gemini 2.0 Flash** to generate a tailored practice question.
 
 | Level | Focus |
-|---|---|---|
+|---|---|
 | 1. Remember | Recall definitions, formulas, facts |
 | 2. Understand | Explain in own words, summarize, distinguish |
 | 3. Apply | Use formulas in new situations, calculate |
@@ -83,8 +83,8 @@ Gemini outputs structured exercises with five fields: QUESTION, TYPE (multiple_c
 
 **Answer evaluation**: After the learner submits a response, a separate Gemini call evaluates correctness and provides targeted Vietnamese-language feedback. A deterministic string-match fallback is available when Gemini is unavailable.
 
-## The Complete Adaptive Loop: How It All Connects
-The seven-step adaptive loop runs continuously throughout each practice session:
+## The Complete Personalized Loop: How It All Connects
+The seven-step personalized loop runs continuously throughout each practice session:
 
 1. **State Representation**: Current learner's SAINT-Bloom hidden state + mastery vector + progress scalars
 2. **D3QN Decision**: ε-greedy action selection with four-layer masking → outputs (concept_id, Bloom_level)
@@ -96,7 +96,7 @@ The seven-step adaptive loop runs continuously throughout each practice session:
 
 This closed loop means the system gets smarter with every interaction. Correct answers increase P(correct) for that (concept, Bloom) pair; incorrect answers decrease it. D3QN observes the updated mastery and dynamically rebalances — either staying to deepen understanding or moving to address weaker areas.
 
-## Experience the Adaptive Loop Yourself
+## Experience the Personalized Loop Yourself
 The best way to understand this architecture is to experience it. Upload any lecture PDF — calculus, biology, economics, or physics — and watch RinKuzu build the knowledge graph, initialize your mastery state, and generate the first personalized practice question.
 
 Your session will be shaped by your own knowledge graph, your own SAINT-Bloom state, and your own pace. No two learners take the same path through the same material.

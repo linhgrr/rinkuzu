@@ -6,6 +6,7 @@ import {
   MAX_QUESTION_TEXT_LENGTH,
   MAX_QUESTIONS_PER_QUIZ,
   MIN_OPTION_COUNT,
+  getQuestionListWarnings,
   questionListSchema,
 } from '@/lib/validation/question';
 
@@ -175,5 +176,12 @@ describe('questionListSchema input-size ceilings', () => {
     expect(tooManyOptions.error?.issues).toEqual(
       expect.arrayContaining([expect.objectContaining({ message: 'Too many options' })]),
     );
+  });
+});
+
+describe('getQuestionListWarnings', () => {
+  it('returns a language-neutral code below 5 questions, never Vietnamese copy (RIN-1265)', () => {
+    expect(getQuestionListWarnings(4)).toEqual(['too_few_questions']);
+    expect(getQuestionListWarnings(5)).toEqual([]);
   });
 });

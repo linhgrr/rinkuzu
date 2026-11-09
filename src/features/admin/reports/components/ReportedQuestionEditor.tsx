@@ -14,7 +14,6 @@ import type {
   AdminReportedQuestionViewModel,
   AdminReportViewModel,
 } from '@/features/admin/reports/types/admin-reports-view-model';
-import { quizQuestionInputSchema } from '@/lib/validation/question';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 interface ReportedQuestionEditorProps {
@@ -142,6 +141,8 @@ function LinkedReportedQuestionEditor({ reportId, questionId }: LinkedReportedQu
   }
 
   const save = async () => {
+    // Loaded on save so zod stays out of the /admin/reports first-load JS (RIN-1370).
+    const { quizQuestionInputSchema } = await import('@/lib/validation/question');
     const parsed = quizQuestionInputSchema.safeParse(draft);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? 'Please check the question fields');

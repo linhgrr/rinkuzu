@@ -18,7 +18,8 @@
   "paymentMethod": {
     "title": "Phương thức thanh toán",
     "bankQr": "Chuyển khoản ngân hàng qua mã QR",
-    "bankQrDescription": "Dùng được với các ứng dụng ngân hàng tại Việt Nam."
+    "bankQrDescription": "Dùng được với các ứng dụng ngân hàng tại Việt Nam.",
+    "vietnamOnlyNote": "Hiện chỉ nhận thanh toán bằng VND qua ứng dụng ngân hàng Việt Nam. Bạn thanh toán từ nước ngoài? <support>Liên hệ hỗ trợ</support>."
   },
   "promo": {
     "prompt": "Bạn có mã ưu đãi?",

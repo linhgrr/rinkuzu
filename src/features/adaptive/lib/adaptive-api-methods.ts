@@ -37,6 +37,7 @@ import type { components } from '@/generated/adaptive-api';
 import type { PresignedUploadUrlResponseDto } from '@/dtos/storage';
 import { shouldCleanupPendingPdfUpload } from '@/lib/pdf';
 import { buildPresignedPostBody } from '@/lib/storage/presigned-upload';
+import { locales, type Locale } from '@/i18n/config';
 
 import {
   timedFetch,
@@ -509,6 +510,22 @@ export async function checkApiHealth(): Promise<boolean> {
 
 // --- Pipeline API ---
 
+/**
+ * The UI locale the page renders in: the [locale] layout sets `<html lang>` from next-intl.
+ * The API decides the content language from the document and only uses this to break ties
+ * and fill in legacy subjects (RIN-1262), so it is omitted when unknown (server, tests).
+ */
+function currentUiLocale(): Locale | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const lang = document.documentElement.lang;
+  return locales.find((locale) => locale === lang);
+}
+
+function uiLocaleQuery(): Record<string, Locale> {
+  const locale = currentUiLocale();
+  return locale ? { locale } : {};
+}
+
 export async function uploadPdf(
   file: File,
   subjectId?: string,
@@ -559,6 +576,7 @@ export async function uploadPdf(
         filename: file.name,
         subject_id: subjectId,
         page_batch_size: pageBatchSize,
+        ...uiLocaleQuery(),
       }),
       timeoutMs: PIPELINE_PROCESS_TIMEOUT_MS,
     });
@@ -588,7 +606,7 @@ export async function createSessionFromPipeline(
   maxSteps: number = 9999,
 ): Promise<PipelineSessionResponse> {
   return apiFetch<PipelineSessionResponse>(
-    `/api/adaptive/pipeline/jobs/${jobId}/create-session?max_steps=${maxSteps}`,
+    `/api/adaptive/pipeline/jobs/${jobId}/create-session?${new URLSearchParams({ max_steps: String(maxSteps), ...uiLocaleQuery() })}`,
     { method: 'POST', timeoutMs: PIPELINE_CREATE_SESSION_TIMEOUT_MS },
   );
 }
@@ -674,7 +692,8 @@ export async function listPipelineJobs(limit = 50): Promise<PipelineJobListItem[
 }
 
 export async function retryPipelineJob(jobId: string): Promise<PipelineJobRetryResponse> {
-  return apiFetch(`/api/adaptive/pipeline/jobs/${jobId}/retry`, {
+  const query = new URLSearchParams(uiLocaleQuery()).toString();
+  return apiFetch(`/api/adaptive/pipeline/jobs/${jobId}/retry${query ? `?${query}` : ''}`, {
     method: 'POST',
     timeoutMs: PIPELINE_CREATE_SESSION_TIMEOUT_MS,
   });

@@ -18,7 +18,8 @@
   "paymentMethod": {
     "title": "Payment method",
     "bankQr": "Bank transfer via QR code",
-    "bankQrDescription": "Available through Vietnamese banking apps."
+    "bankQrDescription": "Available through Vietnamese banking apps.",
+    "vietnamOnlyNote": "Payments are in VND through Vietnamese banking apps for now. Paying from outside Vietnam? <support>Contact support</support>."
   },
   "promo": {
     "prompt": "Have a promo code?",

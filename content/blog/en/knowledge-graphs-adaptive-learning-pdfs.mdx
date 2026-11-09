@@ -53,7 +53,7 @@ The result is a visual map of your course that reveals exactly what you need to 
 
 Consider two students preparing for the same exam. Student A has a strong foundation in limits and derivatives but weak integration skills. Student B has strong integration skills but weak foundational algebra.
 
-A static quiz bank gives both students the same questions. An adaptive system powered by knowledge graphs gives each student what they actually need.
+A static quiz bank gives both students the same questions. A personalized system powered by knowledge graphs gives each student what they actually need.
 
 In RinKuzu's Dueling DQN agent, prerequisite relationships are enforced by a hard prerequisite filter in the four-layer action masking system. A concept is entirely blocked from selection if any prerequisite has max Bloom mastery below 0.75. This is not a soft suggestion — it's a hard constraint. No practice question on Integration by Parts will appear until Derivatives and basic algebra are sufficiently mastered.
 
@@ -115,7 +115,7 @@ RinKuzu's Dueling DQN agent selects questions based on both dimensions simultane
 
 ## The Research Behind RinKuzu's Approach
 
-RinKuzu's adaptive learning architecture draws on a body of educational research spanning cognitive science, machine learning, and learning analytics.
+RinKuzu's personalized learning architecture draws on a body of educational research spanning cognitive science, machine learning, and learning analytics.
 
 **Knowledge graphs in education** have roots in the field of Intelligent Tutoring Systems (ITS), dating back to ITS tutors like ANDES (for physics) and Cognitive Tutors (based on ACT-R theory). RinKuzu's Content Processor extracts a concept structure from supported PDF material using large language models.
 
@@ -144,7 +144,7 @@ Despite these limitations, the combination of knowledge graphs + Bloom's Taxonom
 RinKuzu's architecture points toward several exciting directions:
 
 - **Concept chaining**: linking related concepts across different documents, so studying a calculus PDF automatically surfaces relevant physics prerequisites
-- **Learner modeling diversity**: moving beyond single-learner models to group-level adaptive sequencing for classroom use
+- **Learner modeling diversity**: moving beyond single-learner models to group-level personalized sequencing for classroom use
 - **Open知识图谱**: communities building shared knowledge graphs for canonical subjects — imagine a shared prerequisite graph for "University Calculus" that every RinKuzu user contributes to and benefits from
 - **Multimodal inputs**: extending beyond PDFs to lecture videos, slide decks, and hand-written notes
 
@@ -152,7 +152,7 @@ These are ambitious goals. But the foundation is solid: a knowledge graph extrac
 
 ## Experience It Yourself
 
-Upload supported PDF lecture material and use RinKuzu to build a knowledge graph and generate adaptive practice questions across Bloom levels.
+Upload supported PDF lecture material and use RinKuzu to build a knowledge graph and generate personalized practice questions across Bloom levels.
 
 Start with supported PDF material and create a personalized practice session.
 

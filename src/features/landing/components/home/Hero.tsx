@@ -118,7 +118,7 @@ export default function Hero({ isAuthenticated = false, locale }: HeroProps) {
         {/* Main Title - Responsive text sizing */}
         <div className="mt-24 w-full xl:mt-[254px] min-[1800px]:w-[1090px]">
           <h1
-            className="font-system text-left text-[70px] leading-[0.9] text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:font-vina-sans xl:text-[144px] min-[1800px]:text-[164px]"
+            className="font-system text-left text-[length:clamp(32px,calc(16vw_-_10px),70px)] leading-[0.9] text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:font-vina-sans xl:text-[144px] min-[1800px]:text-[164px]"
             style={{ filter: 'drop-shadow(4px 4px 0px #542607)' }}
           >
             {isVi ? 'TẠO QUIZ AI TỪ PDF' : 'AI QUIZ GENERATOR FROM PDF'}

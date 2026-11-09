@@ -4,6 +4,8 @@ export interface RegisterAccountDto {
   displayName?: string;
   /** Same-origin path to return to after the user verifies and signs in. */
   callbackUrl?: string;
+  /** Guest claim tokens this browser holds, so verifying elsewhere still saves the result. */
+  guestClaimTokens?: string[];
 }
 
 export interface RegisterAccountResponseDto {

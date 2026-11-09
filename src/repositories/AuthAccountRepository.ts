@@ -12,6 +12,7 @@ import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import type {
   CreatePendingAccountData,
   IAuthAccountRepository,
+  VerifiedEmailAccount,
   IAuthSignInRepository,
   FailedLoginPolicy,
   ResolvedGoogleAccount,
@@ -75,6 +76,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         ...(data.displayName ? { displayName: data.displayName } : {}),
         emailVerificationTokenHash: data.verificationTokenHash,
         emailVerificationExpires: data.verificationExpires,
+        ...(data.guestClaimHashes?.length ? { guestClaimHashes: data.guestClaimHashes } : {}),
       });
       return AuthAccountPersistenceMapper.toIdentity({
         _id: user._id,
@@ -88,7 +90,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
     }
   }
 
-  async verifyEmail(tokenHash: string, now: Date): Promise<AuthAccountIdentity | null> {
+  async verifyEmail(tokenHash: string, now: Date): Promise<VerifiedEmailAccount | null> {
     await connectDB();
     const record = await User.findOneAndUpdate(
       {
@@ -101,13 +103,19 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         $unset: {
           emailVerificationTokenHash: 1,
           emailVerificationExpires: 1,
+          guestClaimHashes: 1,
         },
       },
-      { new: true },
+      // The pre-image: it still holds the guest claim hashes this update removes (RIN-1310).
+      { new: false },
     )
-      .select('email role')
+      .select('email role guestClaimHashes')
       .lean<AuthAccountPersistenceRecord>();
-    return record ? AuthAccountPersistenceMapper.toIdentity(record) : null;
+    if (!record) return null;
+    const identity = AuthAccountPersistenceMapper.toIdentity(record);
+    return record.guestClaimHashes?.length
+      ? { ...identity, guestClaimHashes: record.guestClaimHashes }
+      : identity;
   }
 
   async issuePasswordResetToken(

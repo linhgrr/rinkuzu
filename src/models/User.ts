@@ -31,6 +31,8 @@ interface UserDocument extends Document {
   emailVerified?: Date | null;
   emailVerificationTokenHash?: string | null;
   emailVerificationExpires?: Date | null;
+  /** Guest claim token hashes from sign-up; claimed and removed at verification (RIN-1310). */
+  guestClaimHashes?: string[];
 
   // Password reset
   passwordResetTokenHash?: string | null;
@@ -107,6 +109,7 @@ const UserSchema = new Schema<UserDocument>({
   emailVerified: { type: Date, default: null },
   emailVerificationTokenHash: { type: String, default: null },
   emailVerificationExpires: { type: Date, default: null },
+  guestClaimHashes: { type: [String], default: undefined, select: false },
 
   passwordResetTokenHash: { type: String, default: null },
   passwordResetExpires: { type: Date, default: null },

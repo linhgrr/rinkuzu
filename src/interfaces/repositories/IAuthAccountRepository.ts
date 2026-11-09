@@ -12,6 +12,13 @@ export interface CreatePendingAccountData {
   displayName?: string;
   verificationTokenHash: string;
   verificationExpires: Date;
+  /** SHA-256 hashes of the guest claim tokens the browser held at sign-up (RIN-1310). */
+  guestClaimHashes?: string[];
+}
+
+export interface VerifiedEmailAccount extends AuthAccountIdentity {
+  /** Guest claim token hashes stored at sign-up, removed by this verification. */
+  guestClaimHashes?: string[];
 }
 
 export interface FailedLoginPolicy {
@@ -48,7 +55,7 @@ export interface IAuthAccountRepository {
 
   createPending(data: CreatePendingAccountData): Promise<AuthAccountIdentity | null>;
 
-  verifyEmail(tokenHash: string, now: Date): Promise<AuthAccountIdentity | null>;
+  verifyEmail(tokenHash: string, now: Date): Promise<VerifiedEmailAccount | null>;
 
   issuePasswordResetToken(email: string, tokenHash: string, expiresAt: Date): Promise<boolean>;
 

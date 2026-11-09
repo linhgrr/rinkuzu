@@ -11,4 +11,5 @@ export interface RegisterAccountInput {
   email: string;
   password: string;
   callbackUrl?: string;
+  guestClaimTokens?: string[];
 }

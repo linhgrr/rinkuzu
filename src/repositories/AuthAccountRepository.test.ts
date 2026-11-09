@@ -78,11 +78,15 @@ describe('AuthAccountRepository', () => {
         $unset: {
           emailVerificationTokenHash: 1,
           emailVerificationExpires: 1,
+          guestClaimHashes: 1,
         },
       }),
-      { new: true },
+      // The pre-image still carries the guest claim hashes the update removes (RIN-1310).
+      { new: false },
     );
-    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith('email role');
+    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith(
+      'email role guestClaimHashes',
+    );
   });
 
   it('matches password-reset tokens through the partial-index type contract', async () => {

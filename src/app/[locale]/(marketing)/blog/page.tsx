@@ -2,6 +2,13 @@ import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { buildLocalizedMetadata } from '@/lib/seo';
+import {
+  blogImageAt,
+  formatBlogDate,
+  formatReadTime,
+  getBlogIndexPosts,
+  toBlogLocale,
+} from '@/lib/blog/posts';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -20,62 +27,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-const englishPosts = [
-  {
-    slug: 'ai-powered-quiz-generation-guide',
-    title: 'How AI Transforms PDF Learning into Personalized Quizzes',
-    description:
-      "Discover how RinKuzu uses large language models, knowledge graphs, and Bayesian Knowledge Tracing to extract concepts from lecture PDFs and generate personalized quiz questions that adapt to each learner's mastery level.",
-    date: 'March 27, 2026',
-    dateIso: '2026-03-27',
-    readTime: '8 min read',
-    category: 'AI in Education',
-    image: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=800&q=80',
-    imageAlt:
-      'Open textbook with highlighted notes beside a laptop showing an AI learning interface',
-  },
-  {
-    slug: 'knowledge-graphs-adaptive-learning-pdfs',
-    title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
-    description:
-      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
-    date: 'March 20, 2026',
-    dateIso: '2026-03-20',
-    readTime: '10 min read',
-    category: 'Learning Science',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
-    imageAlt:
-      'Abstract knowledge graph network visualization representing interconnected learning concepts',
-  },
-];
-
-const vietnamesePosts = [
-  {
-    ...englishPosts[0],
-    title: 'AI biến tài liệu PDF thành quiz cá nhân hóa như thế nào?',
-    description:
-      'Tìm hiểu cách RinKuzu trích xuất khái niệm từ PDF bài giảng, tạo câu hỏi luyện tập và điều chỉnh nội dung theo mức độ nắm vững của người học.',
-    date: '27 tháng 3, 2026',
-    readTime: '8 phút đọc',
-    category: 'AI trong giáo dục',
-    imageAlt: 'Giáo trình mở có ghi chú bên cạnh máy tính hiển thị giao diện học tập bằng AI',
-  },
-  {
-    ...englishPosts[1],
-    title: 'Đồ thị kiến thức và phân loại Bloom: Hướng dẫn toàn diện',
-    description:
-      'Tìm hiểu cách quan hệ tiên quyết giữa các khái niệm kết hợp với sáu cấp độ nhận thức Bloom để tạo lộ trình luyện tập từ tài liệu PDF.',
-    date: '20 tháng 3, 2026',
-    readTime: '10 phút đọc',
-    category: 'Khoa học học tập',
-    imageAlt: 'Minh họa mạng lưới đồ thị kiến thức gồm các khái niệm học tập liên kết',
-  },
-];
-
 export default async function BlogIndexPage({ params }: Props) {
   const { locale } = await params;
   const isVi = locale === 'vi';
-  const posts = isVi ? vietnamesePosts : englishPosts;
+  const blogLocale = toBlogLocale(locale);
+  const posts = getBlogIndexPosts(blogLocale);
 
   return (
     <article className="min-h-screen bg-white">
@@ -111,8 +67,8 @@ export default async function BlogIndexPage({ params }: Props) {
             {/* Thumbnail */}
             <div className="relative aspect-[16/7] overflow-hidden bg-neutral-50">
               <Image
-                src={post.image}
-                alt={post.imageAlt}
+                src={blogImageAt(post.heroImage, 800)}
+                alt={post.heroImageAlt}
                 fill
                 // The first thumbnail is the LCP element (RIN-683): load it eagerly at high
                 // priority; the cards below stay lazy.
@@ -130,7 +86,8 @@ export default async function BlogIndexPage({ params }: Props) {
                   {post.category}
                 </span>
                 <span className="text-xs text-[var(--text-muted)]">
-                  {post.date} · {post.readTime}
+                  {formatBlogDate(post.date, blogLocale)} ·{' '}
+                  {formatReadTime(post.readTimeMinutes, blogLocale)}
                 </span>
               </div>
               <h2 className="text-xl md:text-2xl font-semibold text-[var(--text-primary)] mb-3 group-hover:text-brand-trust transition-colors leading-snug">

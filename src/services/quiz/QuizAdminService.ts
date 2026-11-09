@@ -282,8 +282,8 @@ export class QuizAdminService {
 
   /**
    * Newest indexable public quizzes (RIN-1241 D13): owners that are test or
-   * company accounts (RIN-840) and quizzes under 5 questions are excluded in the
-   * query, so the limit counts only indexable quizzes.
+   * company accounts (RIN-840), quizzes under 5 questions and quizzes with a
+   * personal-data flag or a report hold (RIN-1341) are excluded in the query, so the limit counts only indexable quizzes.
    */
   private async findIndexablePublicRows(limit: number): Promise<PublicQuizSitemapRecord[]> {
     const candidates = await this.quizRepository.findNonIndexableOwnerCandidates();
@@ -297,6 +297,9 @@ export class QuizAdminService {
         visibility: 'public',
         ownerIndexable: true,
         questionCount: row.questionCount,
+        // Flagged and held quizzes are excluded in the query (RIN-1341).
+        personalDataFlagged: false,
+        indexHold: false,
       }),
     );
   }

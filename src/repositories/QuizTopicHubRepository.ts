@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongoose';
 import QuizModel from '@/models/Quiz';
 import QuizTopicModel from '@/models/QuizTopic';
 import QuizTopicAssignmentModel from '@/models/QuizTopicAssignment';
+import { QUIZ_INDEX_BLOCK_PROJECTION } from '@/repositories/quiz-index-filter';
 import {
   TOPIC_PROJECTION,
   toTopicRecord,
@@ -31,6 +32,8 @@ interface HubQuizPersistence {
   visibility: string;
   author?: Types.ObjectId | null;
   questionCount: number;
+  personalDataFlagged: boolean;
+  indexHold: boolean;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -100,6 +103,7 @@ export class QuizTopicHubRepository implements IQuizTopicHubRepository {
           createdAt: 1,
           updatedAt: 1,
           questionCount: { $size: { $ifNull: ['$questions', []] } },
+          ...QUIZ_INDEX_BLOCK_PROJECTION,
         },
       },
     ]);
@@ -110,6 +114,8 @@ export class QuizTopicHubRepository implements IQuizTopicHubRepository {
       visibility: row.visibility,
       authorId: row.author ? row.author.toString() : null,
       questionCount: row.questionCount,
+      personalDataFlagged: row.personalDataFlagged,
+      indexHold: row.indexHold,
       createdAt: row.createdAt,
       ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
     }));

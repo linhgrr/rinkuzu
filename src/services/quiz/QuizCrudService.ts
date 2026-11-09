@@ -26,7 +26,7 @@ import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
-import { resolveQuizContentFlags } from '@/lib/quiz/personal-data';
+import { isPersonalDataFlagged, resolveQuizContentFlags } from '@/lib/quiz/personal-data';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
@@ -186,6 +186,8 @@ export class QuizCrudService {
     return {
       ...QuizListDtoMapper.toListItem(record.quiz),
       ownerIndexable: record.owner === null || !isNonIndexableQuizOwner(record.owner),
+      personalDataFlagged: isPersonalDataFlagged(record.quiz.contentFlags),
+      indexHold: record.quiz.indexHold !== undefined,
       leadQuestionTexts,
       contentLocale: detectQuizContentLocale(record.quiz.title, leadQuestionTexts),
     };

@@ -33,6 +33,8 @@ function quiz(id: string, overrides: Partial<QuizTopicHubQuizRecord> = {}): Quiz
     visibility: 'public',
     authorId: 'author-real',
     questionCount: 10,
+    personalDataFlagged: false,
+    indexHold: false,
     createdAt: new Date('2026-10-01T00:00:00.000Z'),
     ...overrides,
   };
@@ -140,6 +142,24 @@ describe('QuizTopicHubService.getTopicWithIndexableQuizzes', () => {
 
     expect(hub?.quizzes.map(({ slug }) => slug)).toEqual(['de-ok1', 'de-ok2']);
     expect(hub?.indexable).toBe(false);
+  });
+
+  // RIN-1341: flagged or held quizzes stay playable but never appear on a hub.
+  it('drops quizzes flagged for personal data or under a report hold', async () => {
+    const { service } = buildService({
+      topics: [topic()],
+      assignments: assign('topic-sinh', ['ok1', 'flagged', 'held']),
+      quizzes: [
+        quiz('ok1'),
+        quiz('flagged', { personalDataFlagged: true }),
+        quiz('held', { indexHold: true }),
+      ],
+      owners: [],
+    });
+
+    const hub = await service.getTopicWithIndexableQuizzes('sinh-hoc');
+
+    expect(hub?.quizzes.map(({ slug }) => slug)).toEqual(['de-ok1']);
   });
 
   it('is not indexable when the intro is too short, even with enough quizzes', async () => {

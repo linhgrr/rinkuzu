@@ -44,14 +44,31 @@ export interface QuizIndexabilityInput {
   /** False for quizzes of test or company accounts (RIN-840). Server-only. */
   ownerIndexable: boolean;
   questionCount: number;
+  /** Personal data detected and no admin clear in force (RIN-1338). Server-only. */
+  personalDataFlagged: boolean;
+  /** A report holds the quiz out of the index (RIN-1343). Server-only. */
+  indexHold: boolean;
 }
 
-export function isQuizIndexable({
-  visibility,
-  ownerIndexable,
-  questionCount,
-}: QuizIndexabilityInput): boolean {
-  return visibility === 'public' && ownerIndexable && questionCount >= MIN_INDEXABLE_QUESTION_COUNT;
+/**
+ * RIN-1341: a quiz's content may be indexed only when it carries no
+ * personal-data flag and no report hold. The quiz stays playable and
+ * shareable at its URL either way. Also gates the starter lists.
+ */
+export function isQuizContentIndexable({
+  personalDataFlagged,
+  indexHold,
+}: Pick<QuizIndexabilityInput, 'personalDataFlagged' | 'indexHold'>): boolean {
+  return !personalDataFlagged && !indexHold;
+}
+
+export function isQuizIndexable(input: QuizIndexabilityInput): boolean {
+  return (
+    input.visibility === 'public' &&
+    input.ownerIndexable &&
+    input.questionCount >= MIN_INDEXABLE_QUESTION_COUNT &&
+    isQuizContentIndexable(input)
+  );
 }
 
 export function detectQuizContentLocale(

@@ -14,7 +14,8 @@ import type {
   QuizTopicRecord,
 } from '@/interfaces/repositories/IQuizTopicAdminRepository';
 
-interface QuizTopicPersistence {
+/** A stored topic as read with `TOPIC_PROJECTION` (shared with `QuizTopicHubRepository`). */
+export interface QuizTopicPersistence {
   _id: Types.ObjectId;
   slug: string;
   locale: QuizTopicLocale;
@@ -36,14 +37,22 @@ interface TopicCountPersistence {
   count: number;
 }
 
-const TOPIC_PROJECTION = { _id: 1, slug: 1, locale: 1, name: 1, intro: 1, order: 1, published: 1 };
+export const TOPIC_PROJECTION = {
+  _id: 1,
+  slug: 1,
+  locale: 1,
+  name: 1,
+  intro: 1,
+  order: 1,
+  published: 1,
+};
 const ASSIGNMENT_PROJECTION = { _id: 1, quizId: 1, topicId: 1, order: 1 };
 
 function toObjectIdOrNull(id: string): Types.ObjectId | null {
   return Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : null;
 }
 
-function toTopicRecord(row: QuizTopicPersistence): QuizTopicRecord {
+export function toTopicRecord(row: QuizTopicPersistence): QuizTopicRecord {
   return {
     id: row._id.toString(),
     slug: row.slug,

@@ -494,7 +494,7 @@
   },
   "subjectDetails": {
     "backToDashboard": "Quay về bảng điều khiển",
-    "tabsLabel": "C?c ch? ?? xem m?n h?c",
+    "tabsLabel": "Các chế độ xem môn học",
     "summary": "{concepts} khái niệm • {accuracy}% chính xác",
     "summaryFallback": "Sơ đồ kiến thức và bản đồ độ thành thạo",
     "startLearning": "Bắt đầu học",

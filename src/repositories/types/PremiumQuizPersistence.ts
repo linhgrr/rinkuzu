@@ -1,3 +1,4 @@
+import type { PREMIUM_SUBMISSION_STATUSES } from '@/entities/PremiumQuiz';
 import type { PremiumPlaySessionFields } from '@/models/PremiumPlaySession';
 import type { MongoIdLike } from '@/types/mongo';
 import type { QuizQuestionPersistenceRecord } from '@/repositories/types/QuizPersistence';
@@ -57,7 +58,7 @@ export interface PremiumQuizSubmissionPersistenceRecord {
   sourceQuiz: MongoIdLike;
   author: MongoIdLike;
   version: number;
-  status: 'pending' | 'changes_requested' | 'rejected' | 'approved';
+  status: (typeof PREMIUM_SUBMISSION_STATUSES)[number];
   sourceType: 'pdf' | 'manual';
   rightsAttested: boolean;
   snapshot: PremiumSnapshotPersistenceRecord;

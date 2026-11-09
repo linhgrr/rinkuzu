@@ -72,6 +72,7 @@
   "premiumStatus_changes_requested": "Changes requested",
   "premiumStatus_rejected": "Not approved",
   "premiumStatus_approved": "Approved for Quiz Premium",
+  "premiumStatus_withdrawn": "Withdrawn from Premium",
   "noQuizzesYet": "No quizzes yet",
   "noQuizzesMessage": "Create your first quiz to get started",
   "createFirstQuiz": "Create First Quiz",

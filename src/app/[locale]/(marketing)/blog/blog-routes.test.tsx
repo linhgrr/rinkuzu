@@ -21,6 +21,25 @@ vi.mock('@/components/blog/ShareButtons', () => ({ ShareButtons: () => null }));
 vi.mock('@/components/blog/TableOfContents', () => ({ TableOfContents: () => null }));
 vi.mock('@/components/ui/MarkdownRenderer', () => ({ MarkdownRenderer: () => null }));
 
+// Pin the content source to the two migrated posts, so publishing a new post (a
+// content-file-only PR, RIN-406) does not change the lists and neighbours asserted here.
+vi.mock('@/lib/blog/content', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/blog/content')>();
+  const migrated = new Set([
+    'ai-powered-quiz-generation-guide',
+    'knowledge-graphs-adaptive-learning-pdfs',
+  ]);
+  const getAllBlogPosts = () => actual.getAllBlogPosts().filter((post) => migrated.has(post.slug));
+  return {
+    ...actual,
+    getAllBlogPosts,
+    getBlogPostsByLocale: (locale: string) =>
+      getAllBlogPosts().filter((post) => post.locale === locale),
+    getBlogPostBySlug: (locale: string, slug: string) =>
+      getAllBlogPosts().find((post) => post.locale === locale && post.slug === slug),
+  };
+});
+
 const AI_GUIDE = 'ai-powered-quiz-generation-guide';
 const KNOWLEDGE_GRAPHS = 'knowledge-graphs-adaptive-learning-pdfs';
 

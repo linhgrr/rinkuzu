@@ -116,11 +116,11 @@ describe('AdminUsersPage credit action', () => {
     render(<AdminUsersPage />);
     openFirstActionsMenu();
 
-    expect(screen.getByRole('link', { name: 'Hỗ trợ' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'userActionSupport' })).toHaveAttribute(
       'href',
       `/admin/support?userId=${user.id}`,
     );
-    expect(screen.getByRole('link', { name: 'Mời phản hồi' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'userActionRequestFeedback' })).toHaveAttribute(
       'href',
       `/admin/feedback?userId=${user.id}`,
     );

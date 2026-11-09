@@ -43,6 +43,8 @@ import styles from './KnowledgeGraphLayout.module.css';
 
 interface KnowledgeGraphProps {
   sessionId?: string;
+  /** Exercises answered in this session; at 0 node mastery is only a model prediction. */
+  answeredCount?: number | undefined;
 }
 
 interface SelectedConceptState {
@@ -102,6 +104,7 @@ interface ConceptNodeData extends Record<string, unknown> {
   label: string;
   status: KnowledgeNode['status'];
   mastery: number;
+  showMastery: boolean;
   direction: GraphDirection;
   /** Phone layout: fixed narrow width that matches the dagre layout (RIN-1116). */
   compact?: boolean;
@@ -149,7 +152,7 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
 
         {isLocked ? (
           <Lock aria-hidden className="size-3 text-neutral-500" strokeWidth={2.25} />
-        ) : (
+        ) : !data.showMastery ? null : (
           <div className="flex items-center gap-1.5">
             {showDot && <div className="size-1.5 rounded-full bg-white" style={{ opacity }} />}
             <span
@@ -228,8 +231,10 @@ function GraphFlow({
   direction,
   onNodeClick,
   preventPageScroll,
+  showMastery,
 }: {
   graphData: KnowledgeGraphData | null;
+  showMastery: boolean;
   direction: GraphDirection;
   onNodeClick: (nodeId: string) => void;
   preventPageScroll: boolean;
@@ -250,6 +255,7 @@ function GraphFlow({
         label: n.name,
         status: n.status,
         mastery: n.mastery,
+        showMastery,
         direction,
         compact: layout.compact,
         nodeWidth: layout.nodeWidth,
@@ -358,6 +364,7 @@ interface KnowledgeGraphViewportProps {
   title: string;
   clickNodeHint: string;
   expandLabel: string;
+  showMastery: boolean;
 }
 
 function KnowledgeGraphViewport({
@@ -372,6 +379,7 @@ function KnowledgeGraphViewport({
   title,
   clickNodeHint,
   expandLabel,
+  showMastery,
 }: KnowledgeGraphViewportProps) {
   const isExpanded = mode === 'expanded';
 
@@ -428,6 +436,7 @@ function KnowledgeGraphViewport({
               direction={isExpanded ? 'LR' : 'TB'}
               onNodeClick={onNodeSelect}
               preventPageScroll={isExpanded}
+              showMastery={showMastery}
             />
           </ReactFlowProvider>
         ) : null}
@@ -451,7 +460,7 @@ function KnowledgeGraphViewport({
   );
 }
 
-export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
+export default function KnowledgeGraph({ sessionId, answeredCount }: KnowledgeGraphProps) {
   const t = useTranslations('adaptiveLearning');
   const {
     data: graphData,
@@ -577,6 +586,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
         title={t('knowledgeGraph.title')}
         clickNodeHint={t('knowledgeGraph.clickNodeHint')}
         expandLabel={t('knowledgeGraph.expand')}
+        showMastery={answeredCount !== 0}
       />
 
       <Modal
@@ -597,6 +607,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
             title={t('knowledgeGraph.title')}
             clickNodeHint={t('knowledgeGraph.clickNodeHint')}
             expandLabel={t('knowledgeGraph.expand')}
+            showMastery={answeredCount !== 0}
           />
         </div>
       </Modal>

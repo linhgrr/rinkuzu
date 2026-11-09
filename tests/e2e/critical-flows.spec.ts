@@ -1047,6 +1047,83 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('lets a signed-out visitor report a public quiz from its page @critical-quiz-report', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1344: the quiz-level "Report" dialog on the landing of an indexable public quiz.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const reportSlug = `${fixture.quizSlug}-report`;
+      const now = new Date();
+      await fixture.db.collection('quizzes').insertOne({
+        _id: new ObjectId(),
+        _e2eRun: fixture.runId,
+        // An owner outside the test accounts keeps the quiz indexable, so the landing shows.
+        author: new ObjectId(),
+        createdAt: now,
+        questions: Array.from({ length: 6 }, (_, index) => ({
+          _id: new ObjectId(),
+          correctIndex: 0,
+          options: [`Report fixture answer ${index + 1}`, `Other answer ${index + 1}`],
+          question: `Report fixture question ${index + 1}?`,
+          type: 'single',
+        })),
+        slug: reportSlug,
+        title: 'Production Report Quiz',
+        updatedAt: now,
+        visibility: 'public',
+      });
+
+      // The report POST is mocked: the flow under test is the dialog, and the
+      // route's rate limit and storage have their own tests (RIN-1343).
+      const reportBodies: unknown[] = [];
+      let reportStatus = 201;
+      await page.route(`**/api/quiz/${reportSlug}/report`, async (route) => {
+        reportBodies.push(route.request().postDataJSON());
+        await route.fulfill(
+          reportStatus === 201
+            ? { status: 201, json: { success: true, data: { reportId: 'fake-report' } } }
+            : {
+                status: 429,
+                json: {
+                  success: false,
+                  error: { code: 'rate_limit_exceeded', message: 'Too many reports.' },
+                },
+              },
+        );
+      });
+
+      await page.goto(`/en/quiz/${reportSlug}`);
+      const reportLink = page.getByRole('button', { name: 'Report', exact: true });
+      await reportLink.scrollIntoViewIfNeeded();
+      await reportLink.click();
+
+      const dialog = page.getByRole('dialog', { name: 'Report this quiz' });
+      await expect(dialog).toBeVisible();
+      const submit = dialog.getByRole('button', { name: 'Send report' });
+      await expect(submit).toBeDisabled();
+
+      await dialog.getByRole('radio', { name: 'Copyright' }).check();
+      await dialog.getByLabel('Details (optional)').fill('Copied from a textbook');
+      await dialog.getByLabel('Email to reply to (optional)').fill('not-an-email');
+      await expect(dialog.getByText('Enter a valid email address.')).toBeVisible();
+      await expect(submit).toBeDisabled();
+      await dialog.getByLabel('Email to reply to (optional)').fill('reader@example.com');
+
+      reportStatus = 429;
+      await submit.click();
+      await expect(dialog.getByRole('alert')).toHaveText('Too many reports, try again later.');
+
+      reportStatus = 201;
+      await submit.click();
+      await expect(dialog.getByRole('status')).toHaveText("Thanks, we'll review it.");
+      expect(reportBodies.at(-1)).toEqual({
+        reason: 'copyright',
+        details: 'Copied from a textbook',
+        email: 'reader@example.com',
+      });
+    });
+  });
+
   test('plays the starter from the homepage as a guest and claims it on sign-up @critical-quiz-landing', async ({
     page,
   }, testInfo) => {

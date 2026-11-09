@@ -35,6 +35,12 @@ export class QuizDetailDtoMapper {
       ...toDetailBase(quiz),
       ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
       questions: quiz.questions.map(toQuizQuestionDto),
+      ...(quiz.contentFlags !== undefined && {
+        contentFlags: {
+          personalData: quiz.contentFlags.personalData,
+          kinds: [...quiz.contentFlags.kinds],
+        },
+      }),
     };
   }
 

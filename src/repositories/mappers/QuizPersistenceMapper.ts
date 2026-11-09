@@ -1,8 +1,9 @@
-import type { Quiz, QuizAuthorPreview, QuizQuestion } from '@/entities/Quiz';
+import type { Quiz, QuizAuthorPreview, QuizContentFlags, QuizQuestion } from '@/entities/Quiz';
 import { serializeId } from '@/lib/mongo-id';
 import type { MongoIdLike } from '@/types/mongo';
 import type {
   QuizAuthorPersistenceRecord,
+  QuizContentFlagsPersistenceRecord,
   QuizPersistenceRecord,
   QuizQuestionPersistenceRecord,
 } from '@/repositories/types/QuizPersistence';
@@ -48,6 +49,18 @@ function toQuestion(question: QuizQuestionPersistenceRecord, index: number): Qui
   throw new TypeError(`quiz.questions[${index}].type has invalid discriminator: ${String(type)}`);
 }
 
+function toContentFlags(record: QuizContentFlagsPersistenceRecord): QuizContentFlags {
+  return {
+    personalData: record.personalData,
+    kinds: [...(record.kinds ?? [])],
+    checkedAt: record.checkedAt,
+    ...(record.clearedBy == null
+      ? {}
+      : { clearedBy: serializeId(record.clearedBy, 'quiz.contentFlags.clearedBy') }),
+    ...(record.clearedAt == null ? {} : { clearedAt: record.clearedAt }),
+  };
+}
+
 export class QuizPersistenceMapper {
   static toQuestionEntity(record: QuizQuestionPersistenceRecord, index: number): QuizQuestion {
     return toQuestion(record, index);
@@ -70,6 +83,10 @@ export class QuizPersistenceMapper {
       ...(record.tags === undefined ? {} : { tags: record.tags }),
       ...(record.sourceDraftId === undefined ? {} : { sourceDraftId: record.sourceDraftId }),
       ...(record.questionCount === undefined ? {} : { questionCount: record.questionCount }),
+      ...(record.contentFlags == null ? {} : { contentFlags: toContentFlags(record.contentFlags) }),
+      ...(record.indexHold == null
+        ? {}
+        : { indexHold: { reason: record.indexHold.reason, since: record.indexHold.since } }),
     };
   }
 }

@@ -2,6 +2,39 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 import { QuizQuestionSchema, type QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
 import { MAX_QUESTIONS_PER_QUIZ } from '@/lib/validation/question';
 
+/** Personal-data check (RIN-1338): kind names only, never matched values. */
+interface QuizContentFlagsDocument {
+  personalData: boolean;
+  kinds: string[];
+  checkedAt: Date;
+  clearedBy?: Types.ObjectId;
+  clearedAt?: Date;
+}
+
+interface QuizIndexHoldDocument {
+  reason: 'reported';
+  since: Date;
+}
+
+const QuizContentFlagsSchema = new Schema<QuizContentFlagsDocument>(
+  {
+    personalData: { type: Boolean, required: true },
+    kinds: { type: [String], default: [] },
+    checkedAt: { type: Date, required: true },
+    clearedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    clearedAt: { type: Date },
+  },
+  { _id: false },
+);
+
+const QuizIndexHoldSchema = new Schema<QuizIndexHoldDocument>(
+  {
+    reason: { type: String, enum: ['reported'], required: true },
+    since: { type: Date, required: true },
+  },
+  { _id: false },
+);
+
 interface QuizDocument extends Document {
   title: string;
   description?: string;
@@ -12,6 +45,8 @@ interface QuizDocument extends Document {
   visibility: 'public' | 'personal';
   pdfUrl?: string; // S3 URL for source PDF
   sourceDraftId?: string;
+  contentFlags?: QuizContentFlagsDocument;
+  indexHold?: QuizIndexHoldDocument;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,6 +104,16 @@ const QuizSchema = new Schema<QuizDocument>(
     sourceDraftId: {
       type: String,
       trim: true,
+    },
+    // RIN-1338: no defaults, so quizzes saved before the check stay without the field.
+    contentFlags: {
+      type: QuizContentFlagsSchema,
+      default: undefined,
+    },
+    // Set and cleared by the report flow (RIN-1343), read by indexing (RIN-1341).
+    indexHold: {
+      type: QuizIndexHoldSchema,
+      default: undefined,
     },
   },
   {

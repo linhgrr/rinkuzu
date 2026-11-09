@@ -3,6 +3,7 @@ import {
   renderActivationNudge,
   renderCampaign,
   renderFeedbackInvitation,
+  renderPremiumReject,
   renderReviewReminder,
 } from './templates';
 
@@ -188,4 +189,61 @@ describe('communication email templates', () => {
     expect(mail.text).toContain('{{{RESEND_UNSUBSCRIBE_URL}}}');
     expect(mail.html).not.toContain('<script');
   });
+});
+
+describe('Premium reject email (RIN-1348)', () => {
+  const editUrl = 'https://www.rinkuzu.app/en/edit/6a8ed209f04328ac17443d91';
+
+  it.each([
+    [
+      'vi',
+      'Bài quiz “Cell biology” chưa được nhận vào Premium',
+      'Giờ bài quiz đã công khai: ai cũng có thể tìm và làm bài.',
+      'Bạn có thể sửa và gửi lại vào Premium. Trong lúc chờ duyệt, bài quiz sẽ ở chế độ riêng tư.',
+      'Ghi chú của người duyệt:',
+    ],
+    [
+      'en',
+      'Your quiz “Cell biology” was not accepted into Premium',
+      'It is now public: anyone can find and play it.',
+      'You can edit it and submit it to Premium again. While it waits for review, it is private again.',
+      'Reviewer note:',
+    ],
+  ] as const)(
+    'renders the %s email with the note, the public line and one edit link',
+    async (locale, subject, publicLine, resubmit, noteLabel) => {
+      const mail = await renderPremiumReject({
+        locale,
+        quizTitle: 'Cell biology',
+        reviewerNote: 'Questions 3 and <b>5</b> copy the textbook.',
+        quizMadePublic: true,
+        editUrl,
+      });
+      expect(mail.subject).toBe(subject);
+      expect(mail.html).toContain(`lang="${locale}"`);
+      expect(mail.text).toContain('Cell biology');
+      expect(mail.text).toContain(publicLine);
+      expect(mail.text).toContain(resubmit);
+      expect(mail.text).toContain(noteLabel);
+      expect(mail.html).toContain('Questions 3 and &lt;b&gt;5&lt;/b&gt; copy the textbook.');
+      expect(mail.html).not.toContain('<b>5</b>');
+      expect(mail.html.match(/<a /gu)).toHaveLength(1);
+      expect(mail.html).toContain(editUrl);
+    },
+  );
+
+  it.each(['vi', 'en'] as const)(
+    'leaves out the note and the public line when there are none (%s)',
+    async (locale) => {
+      const mail = await renderPremiumReject({
+        locale,
+        quizTitle: 'Cell biology',
+        quizMadePublic: false,
+        editUrl,
+      });
+      expect(mail.text).not.toMatch(/Reviewer note|Ghi chú của người duyệt/u);
+      expect(mail.text).not.toMatch(/now public|đã công khai/u);
+      expect(mail.text).toMatch(/submit it to Premium again|gửi lại vào Premium/u);
+    },
+  );
 });

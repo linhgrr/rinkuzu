@@ -46,6 +46,7 @@ export function PremiumSubmissionsPageClient() {
   const [overrideReason, setOverrideReason] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const {
     data,
@@ -90,6 +91,7 @@ export function PremiumSubmissionsPageClient() {
     if (!selected) return;
     setBusy(`decision:${selected.id}`);
     setError('');
+    setNotice('');
     try {
       const result = await decidePremiumSubmission(selected.id, {
         decision,
@@ -104,6 +106,12 @@ export function PremiumSubmissionsPageClient() {
       );
       setNote('');
       setOverrideReason('');
+      // A reject makes the quiz public unless it cannot be (RIN-1337); say which (RIN-1348).
+      if (decision === 'reject') {
+        setNotice(
+          t(result.quizMadePublic ? 'premiumReviewRejectedPublic' : 'premiumReviewRejectedPrivate'),
+        );
+      }
     } catch (decisionError) {
       setError(describeError(decisionError, t('premiumReviewDecisionError')));
     } finally {
@@ -150,6 +158,11 @@ export function PremiumSubmissionsPageClient() {
       </header>
 
       {error ? <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
+      {notice ? (
+        <p role="status" className="mt-5 rounded-xl bg-success-surface p-4 text-sm text-green-800">
+          {notice}
+        </p>
+      ) : null}
 
       {/* A failed load replaces the queue: an empty queue would read as "nothing to review" (RIN-1159). */}
       {loadError ? (
@@ -355,6 +368,7 @@ export function PremiumSubmissionsPageClient() {
                       {t('premiumReviewReject')}
                     </Button>
                   </div>
+                  <p className="text-xs text-ink-muted">{t('premiumReviewRejectNote')}</p>
                 </section>
               ) : null}
             </SurfaceCard>

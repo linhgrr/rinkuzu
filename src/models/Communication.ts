@@ -53,10 +53,18 @@ const OUTBOX_KINDS = [
   'review_reminder_d5',
   /** One per account for its lifetime, 24 h after signup (RIN-999). */
   'activation_nudge',
+  /** One per rejected Premium submission, to its author (RIN-1348). */
+  'premium_decision',
 ] as const;
 export type OutboxKind = (typeof OUTBOX_KINDS)[number];
 
-const OUTBOX_ENTITY_TYPES = ['support_ticket', 'feedback_conversation', 'attempt', 'user'] as const;
+const OUTBOX_ENTITY_TYPES = [
+  'support_ticket',
+  'feedback_conversation',
+  'attempt',
+  'user',
+  'premium_submission',
+] as const;
 export type OutboxEntityType = (typeof OUTBOX_ENTITY_TYPES)[number];
 
 const CAMPAIGN_STATUSES = [

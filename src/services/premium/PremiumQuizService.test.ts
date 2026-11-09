@@ -6,9 +6,16 @@ import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQ
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import { PremiumQuizError } from '@/entities/PremiumQuizError';
 import { PremiumQuizService } from '@/services/premium/PremiumQuizService';
+import type { IPremiumDecisionNotifier } from '@/interfaces/services/IPremiumDecisionNotifier';
 
 const entitlementMocks = vi.hoisted(() => ({
   resolveEntitlements: vi.fn(),
+}));
+
+const loggerMocks = vi.hoisted(() => ({ warn: vi.fn() }));
+
+vi.mock('@/lib/logger', () => ({
+  logger: { warn: loggerMocks.warn, info: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@/lib/entitlements', () => ({
@@ -139,8 +146,10 @@ function setup() {
   const attemptRepository: Mocked<IQuizAttemptProgressRepository> = {
     recordSubmittedAttempt: vi.fn(),
   };
+  const notifier: Mocked<IPremiumDecisionNotifier> = { queueRejectEmail: vi.fn() };
   return {
-    service: new PremiumQuizService(quizRepository, premiumRepository, attemptRepository),
+    service: new PremiumQuizService(quizRepository, premiumRepository, attemptRepository, notifier),
+    notifier,
     quizRepository,
     premiumRepository,
     attemptRepository,
@@ -516,5 +525,81 @@ describe('PremiumQuizService', () => {
         idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       }),
     );
+  });
+
+  describe("decide: the author's reject email (RIN-1348)", () => {
+    const decided = (status: PremiumQuizSubmission['status']) => ({
+      submission: { ...publication(), status, reviewerNote: 'Too close to the textbook.' },
+      awardedCredits: 0,
+      rewardLocked: false,
+      quizMadePublic: true,
+    });
+
+    it('queues the email after a reject with whether the quiz went public', async () => {
+      const { service, premiumRepository, notifier } = setup();
+      const result = decided('rejected');
+      premiumRepository.decide.mockResolvedValue(result);
+
+      await expect(
+        service.decide('507f191e810c19729de860ef', result.submission.id, {
+          decision: 'reject',
+          credits: 0,
+          note: 'Too close to the textbook.',
+        }),
+      ).resolves.toBe(result);
+
+      expect(notifier.queueRejectEmail).toHaveBeenCalledTimes(1);
+      expect(notifier.queueRejectEmail).toHaveBeenCalledWith({
+        submission: result.submission,
+        quizMadePublic: true,
+      });
+    });
+
+    it.each([
+      ['approve', 'approved'],
+      ['request_changes', 'changes_requested'],
+    ] as const)('queues nothing on %s', async (decision, status) => {
+      const { service, premiumRepository, notifier } = setup();
+      premiumRepository.decide.mockResolvedValue({ ...decided(status), quizMadePublic: false });
+
+      await service.decide('507f191e810c19729de860ef', publication().id, {
+        decision,
+        credits: decision === 'approve' ? 3 : 0,
+      });
+
+      expect(notifier.queueRejectEmail).not.toHaveBeenCalled();
+    });
+
+    it('keeps the decision when the email cannot be queued, and logs it', async () => {
+      const { service, premiumRepository, notifier } = setup();
+      const result = decided('rejected');
+      premiumRepository.decide.mockResolvedValue(result);
+      notifier.queueRejectEmail.mockRejectedValue(new Error('outbox down'));
+
+      await expect(
+        service.decide('507f191e810c19729de860ef', result.submission.id, {
+          decision: 'reject',
+          credits: 0,
+        }),
+      ).resolves.toBe(result);
+
+      expect(loggerMocks.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ submissionId: result.submission.id, errorName: 'Error' }),
+        expect.any(String),
+      );
+    });
+
+    it('queues nothing when the decision itself fails', async () => {
+      const { service, premiumRepository, notifier } = setup();
+      premiumRepository.decide.mockRejectedValue(new PremiumQuizError('conflict', 'changed'));
+
+      await expect(
+        service.decide('507f191e810c19729de860ef', publication().id, {
+          decision: 'reject',
+          credits: 0,
+        }),
+      ).rejects.toMatchObject({ code: 'conflict' });
+      expect(notifier.queueRejectEmail).not.toHaveBeenCalled();
+    });
   });
 });

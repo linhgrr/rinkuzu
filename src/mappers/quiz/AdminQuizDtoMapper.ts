@@ -46,6 +46,9 @@ export class AdminQuizDtoMapper {
       ...(quiz.folder !== undefined && { folder: quiz.folder }),
       visibility: quiz.visibility,
       questionCount: quiz.questionCount ?? quiz.questions.length,
+      ...(quiz.contentFlags?.personalData === true && {
+        personalDataKinds: [...quiz.contentFlags.kinds],
+      }),
       createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),
       updatedAt: serializeDate(quiz.updatedAt, 'quiz.updatedAt'),
     };

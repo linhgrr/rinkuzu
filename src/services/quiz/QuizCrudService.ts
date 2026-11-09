@@ -5,7 +5,7 @@ import {
 } from '@/interfaces/repositories/IQuizRepository';
 import type { Quiz, QuizContentFlags, QuizQuestionContent } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
-import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
+import type { IPremiumSubmissionWithdrawalRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import type {
   CreateQuizRequestDto,
   QuizDetailDto,
@@ -40,13 +40,31 @@ function toQuizQuestionContent(
     : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
 }
 
-type PremiumPublicationLookup = Pick<IPremiumQuizRepository, 'findActivePublicationByQuizId'>;
+/**
+ * RIN-1346: unticking Premium makes the quiz public and withdraws its open
+ * submissions in one transaction, so nothing left in the admin queue can sell
+ * a free quiz. Mirrors the admin rule (QuizAdminService.setQuizVisibility): a
+ * quiz on sale in Premium stays private.
+ */
+async function makePublicWithdrawingSubmissions(
+  withdrawal: IPremiumSubmissionWithdrawalRepository,
+  id: string,
+): Promise<ServiceFailure | null> {
+  const result = await withdrawal.makeQuizPublicAndWithdrawSubmissions(id);
+  if (result.outcome === 'made_public') return null;
+  return {
+    success: false,
+    code: 'premium_published',
+    error: 'This quiz is on sale in Premium. Ask support to remove it from Premium first.',
+    statusCode: 409,
+  };
+}
 
 export class QuizCrudService {
   constructor(
     private quizRepository: IQuizRepository,
     private folderRepository?: IFolderRepository,
-    private premiumPublications?: PremiumPublicationLookup,
+    private premiumWithdrawal?: IPremiumSubmissionWithdrawalRepository,
   ) {}
 
   async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<QuizDetailDto> {
@@ -234,9 +252,11 @@ export class QuizCrudService {
         }
       }
 
-      if (quizData.submitToPremium === false) {
-        const refusal = await this.refuseWhilePublished(id);
-        if (refusal) return refusal;
+      const makesPublic = quizData.submitToPremium === false;
+      const withdrawal = this.premiumWithdrawal;
+      if (makesPublic && !withdrawal) {
+        logger.error('Quiz visibility change is not wired with the Premium withdrawal');
+        return { success: false, error: 'Failed to update quiz', statusCode: 500 };
       }
 
       const updateData: UpdateQuizData = {
@@ -254,6 +274,11 @@ export class QuizCrudService {
       const contentCheck = await this.recheckContentFlags(id, updateData);
       if (!contentCheck.success) return contentCheck;
       if (contentCheck.data) updateData.contentFlags = contentCheck.data;
+
+      if (makesPublic && withdrawal) {
+        const refusal = await makePublicWithdrawingSubmissions(withdrawal, id);
+        if (refusal) return refusal;
+      }
 
       const updatedQuiz = await this.quizRepository.update(id, updateData);
 
@@ -308,26 +333,6 @@ export class QuizCrudService {
       new Date(),
     );
     return { success: true, data: contentFlags };
-  }
-
-  /**
-   * Mirrors the admin rule (QuizAdminService.setQuizVisibility): a quiz with an
-   * active Premium publication cannot be made public. Fails closed when the
-   * lookup is not wired.
-   */
-  private async refuseWhilePublished(id: string): Promise<ServiceFailure | null> {
-    if (!this.premiumPublications) {
-      logger.error('Quiz visibility change is not wired with the Premium publication lookup');
-      return { success: false, error: 'Failed to update quiz', statusCode: 500 };
-    }
-    const publication = await this.premiumPublications.findActivePublicationByQuizId(id);
-    if (!publication) return null;
-    return {
-      success: false,
-      code: 'conflict',
-      error: 'A quiz with a premium publication cannot be made public',
-      statusCode: 409,
-    };
   }
 
   async deleteQuiz(

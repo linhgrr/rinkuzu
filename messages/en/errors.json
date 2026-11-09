@@ -97,6 +97,8 @@
       "campaignNotPrepared": "Prepare the campaign audience before sending.",
       "lastActiveAdminTitle": "Last active admin",
       "lastActiveAdmin": "At least one active admin must remain. Promote another admin first.",
+      "premiumPublishedTitle": "On sale in Premium",
+      "premiumPublished": "This quiz is on sale in Premium. Ask support to remove it from Premium first.",
       "adminInvariantUnavailableTitle": "Admin check unavailable",
       "adminInvariantUnavailable": "We couldn't confirm that another admin stays active. Try again in a few minutes.",
       "ocrKeyDecryptFailedTitle": "OCR key unusable",

@@ -180,6 +180,7 @@
   "premiumStatusChanges": "Changes requested",
   "premiumStatusApproved": "Approved",
   "premiumStatusRejected": "Rejected",
+  "premiumStatusWithdrawn": "Withdrawn",
   "quizManagementDescription": "Manage every quiz across the platform",
   "searchQuizzes": "Search quizzes...",
   "allVisibility": "All visibility",

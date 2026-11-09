@@ -120,7 +120,7 @@ export default async function TopicHubPage({ params }: Props) {
                     <Link
                       href={topicHubPlayHref(quiz, hub.slug)}
                       aria-label={t('playAria', { title: quiz.title })}
-                      className="btn btn-secondary min-h-11 w-full sm:w-auto"
+                      className="btn btn-secondary min-h-11 w-full sm:w-auto sm:self-start"
                     >
                       {t('play')}
                     </Link>

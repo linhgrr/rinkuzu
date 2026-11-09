@@ -31,7 +31,7 @@ function service(counts: ReviewEmailWeeklyCounts | Error, qaEmails = ['qa@fake.t
 describe('ReviewEmailStatsService', () => {
   it('fills every ISO week, oldest first, and passes the QA recipients to exclude', async () => {
     const { service: subject, getWeeklyCounts } = service({
-      sends: [{ weekStart: W45, sent: 4, opened: 2 }],
+      sends: [{ weekStart: W45, sent: 4, opened: 2, sentD5: 3, openedD5: 1 }],
       consents: [{ weekStart: W44, optIns: 3, unsubscribed: 1 }],
       opensTracked: true,
     });
@@ -52,6 +52,8 @@ describe('ReviewEmailStatsService', () => {
         end: '2026-11-01T23:59:59.999Z',
         sent: 0,
         opened: 0,
+        sentD5: 0,
+        openedD5: 0,
         unsubscribed: 1,
         optIns: 3,
       },
@@ -61,6 +63,8 @@ describe('ReviewEmailStatsService', () => {
         end: '2026-11-08T23:59:59.999Z',
         sent: 4,
         opened: 2,
+        sentD5: 3,
+        openedD5: 1,
         unsubscribed: 0,
         optIns: 0,
       },
@@ -69,7 +73,7 @@ describe('ReviewEmailStatsService', () => {
 
   it('reports opens as null when open tracking is off', async () => {
     const { service: subject } = service({
-      sends: [{ weekStart: W45, sent: 4, opened: 0 }],
+      sends: [{ weekStart: W45, sent: 4, opened: 0, sentD5: 2, openedD5: 0 }],
       consents: [],
       opensTracked: false,
     });
@@ -78,6 +82,7 @@ describe('ReviewEmailStatsService', () => {
 
     expect(result.success && result.data.opensTracked).toBe(false);
     expect(result.success && result.data.weeks[0]?.opened).toBeNull();
+    expect(result.success && result.data.weeks[0]?.openedD5).toBeNull();
   });
 
   it('uses the system clock when no clock is injected', async () => {

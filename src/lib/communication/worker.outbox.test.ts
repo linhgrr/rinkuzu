@@ -249,7 +249,7 @@ describe('communication outbox delivery', () => {
     }
   });
 
-  it('claims review emails unless the kill switch is off (RIN-915)', async () => {
+  it('claims review emails unless the kill switch is off, for both touches (RIN-915, RIN-1304)', async () => {
     await runCommunicationWorker(5);
     expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).not.toHaveProperty('kind');
 
@@ -258,7 +258,7 @@ describe('communication outbox delivery', () => {
       mocks.outbox.findOneAndUpdate.mockClear();
       await runCommunicationWorker(5);
       expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).toMatchObject({
-        kind: { $nin: ['review_reminder'] },
+        kind: { $nin: ['review_reminder', 'review_reminder_d5'] },
       });
     } finally {
       vi.unstubAllEnvs();

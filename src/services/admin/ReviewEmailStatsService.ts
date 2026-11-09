@@ -48,6 +48,8 @@ export class ReviewEmailStatsService {
             end: new Date(window.endExclusive.getTime() - 1).toISOString(),
             sent: send?.sent ?? 0,
             opened: counts.opensTracked ? (send?.opened ?? 0) : null,
+            sentD5: send?.sentD5 ?? 0,
+            openedD5: counts.opensTracked ? (send?.openedD5 ?? 0) : null,
             unsubscribed: consent?.unsubscribed ?? 0,
             optIns: consent?.optIns ?? 0,
           };

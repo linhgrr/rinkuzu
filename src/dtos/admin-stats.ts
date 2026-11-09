@@ -296,6 +296,9 @@ const adminReviewEmailWeekSchema = z
     sent: countSchema,
     // null when Resend open tracking is off: no open was ever reported.
     opened: countSchema.nullable(),
+    // Final day-5 touch (RIN-1304); sent/opened above are the day-2 email.
+    sentD5: countSchema,
+    openedD5: countSchema.nullable(),
     unsubscribed: countSchema,
     optIns: countSchema,
   })

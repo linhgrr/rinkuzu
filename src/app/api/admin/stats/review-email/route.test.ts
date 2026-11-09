@@ -29,6 +29,8 @@ const STATS = {
       end: '2026-11-08T23:59:59.999Z',
       sent: 4,
       opened: 2,
+      sentD5: 3,
+      openedD5: 1,
       unsubscribed: 1,
       optIns: 3,
     },

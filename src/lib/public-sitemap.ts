@@ -1,23 +1,17 @@
 import type { MetadataRoute } from 'next';
-import { defaultLocale, locales, type Locale } from '@/i18n/config';
+import { defaultLocale, locales } from '@/i18n/config';
 import { serializeDate } from '@/lib/date-serialization';
 import { loadPublicQuizSitemapEntries } from '@/lib/public-quiz-sitemap';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 
-function buildLanguageAlternates(
-  path: string,
-  pathLocales: readonly Locale[],
-): Record<string, string> {
+function buildLanguageAlternates(path: string): Record<string, string> {
   const languages = Object.fromEntries(
-    pathLocales.map((locale) => [locale, canonicalFor(locale, path)]),
+    locales.map((locale) => [locale, canonicalFor(locale, path)]),
   );
-  const xDefault = pathLocales.includes(defaultLocale)
-    ? defaultLocale
-    : (pathLocales[0] ?? defaultLocale);
   return {
     ...languages,
-    'x-default': canonicalFor(xDefault, path),
+    'x-default': canonicalFor(defaultLocale, path),
   };
 }
 
@@ -25,15 +19,23 @@ function toEntry(
   locale: string,
   path: string,
   lastModified = new Date(),
-  pathLocales: readonly Locale[] = locales,
 ): MetadataRoute.Sitemap[number] {
   return {
     url: canonicalFor(locale, path),
     lastModified,
     alternates: {
-      languages: buildLanguageAlternates(path, pathLocales),
+      languages: buildLanguageAlternates(path),
     },
   };
+}
+
+/** A quiz exists in one language: one URL, no hreflang pair (RIN-1241 D14). */
+function toQuizEntry(
+  locale: string,
+  path: string,
+  lastModified: Date,
+): MetadataRoute.Sitemap[number] {
+  return { url: canonicalFor(locale, path), lastModified };
 }
 
 function toRequiredSitemapDate(value: Date | string, fieldName: string): Date {
@@ -62,11 +64,13 @@ export async function buildPublicSitemapEntries(
 
   const publicQuizzes = await loadPublicQuizSitemapEntries(errorMessage);
   for (const quiz of publicQuizzes) {
-    // A Vietnamese quiz is listed under /vi only (RIN-1265).
-    const lastModified = toRequiredSitemapDate(quiz.lastModified, 'quiz.updatedAt');
-    for (const locale of quiz.locales) {
-      pushEntry(toEntry(locale, quiz.path, lastModified, quiz.locales));
-    }
+    pushEntry(
+      toQuizEntry(
+        quiz.locale,
+        quiz.path,
+        toRequiredSitemapDate(quiz.lastModified, 'quiz.updatedAt'),
+      ),
+    );
   }
 
   entries.sort((a, b) => {

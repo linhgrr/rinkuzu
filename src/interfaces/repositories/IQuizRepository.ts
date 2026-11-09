@@ -47,13 +47,16 @@ export interface QuizOwnerIndexingRecord {
 export interface QuizMetadataRecord {
   quiz: Quiz;
   owner: QuizOwnerIndexingRecord | null;
+  /** Texts of the first (up to 3) questions, for the content locale (RIN-1241). */
+  leadQuestionTexts?: readonly string[];
 }
 
 export interface PublicQuizSitemapRecord {
   slug: string;
-  /** Title and description tell the quiz's language (RIN-1265). */
   title: string;
-  description?: string;
+  questionCount: number;
+  /** Texts of the first (up to 3) questions, for the content locale (RIN-1241). */
+  leadQuestionTexts: readonly string[];
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -103,7 +106,10 @@ export interface IQuizRepository {
    */
   findNonIndexableOwnerCandidates(): Promise<QuizOwnerIndexingRecord[]>;
 
-  /** Newest public quizzes, slug and dates only, minus the excluded owners. */
+  /**
+   * Newest public quizzes with at least 5 questions, minus the excluded owners:
+   * slug, dates, title, question count and the first question texts only.
+   */
   findPublicSitemapEntries(query: PublicQuizSitemapQuery): Promise<PublicQuizSitemapRecord[]>;
 
   findIdBySlug(slug: string): Promise<string | null>;

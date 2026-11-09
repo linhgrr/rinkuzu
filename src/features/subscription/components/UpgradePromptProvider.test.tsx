@@ -6,12 +6,17 @@ import { ApiResponseError } from '@/lib/api/client';
 import { reportApiError } from '@/lib/api/error-events';
 import { UpgradePromptProvider } from './UpgradePromptProvider';
 
-const { pushMock, toastInfoMock } = vi.hoisted(() => ({
+const { pushMock, toastInfoMock, captureMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   toastInfoMock: vi.fn(),
+  captureMock: vi.fn(),
 }));
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
+vi.mock('next-intl', () => ({
+  useLocale: () => 'en',
+  useTranslations: () => (key: string) => key,
+}));
+vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: captureMock }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: pushMock }) }));
 vi.mock('sonner', () => ({ toast: { info: toastInfoMock } }));
 vi.mock('@/features/subscription/components/UpgradePaywallModal', () => ({
@@ -115,5 +120,51 @@ describe('UpgradePromptProvider', () => {
     });
 
     expect(screen.getByRole('region', { name: 'limitReachedTitle' })).toBeTruthy();
+  });
+});
+
+describe('UpgradePromptProvider pricing_viewed (RIN-1269)', () => {
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  const quotaError = () =>
+    new ApiResponseError({
+      message: 'Usage quota exceeded',
+      status: 429,
+      payload: null,
+      code: 'quota_exceeded',
+      meta: { tier: 'free', upgradeEligible: true },
+    });
+
+  it('fires once when the modal opens, not on render or on a repeat error while open', () => {
+    render(<UpgradePromptProvider>content</UpgradePromptProvider>);
+    expect(captureMock).not.toHaveBeenCalled();
+
+    act(() => {
+      reportApiError(quotaError());
+      reportApiError(quotaError());
+    });
+
+    expect(captureMock).toHaveBeenCalledTimes(1);
+    expect(captureMock).toHaveBeenCalledWith('pricing_viewed', {
+      locale: 'en',
+      plan: null,
+      source: 'upgrade_modal',
+    });
+  });
+
+  it('does not fire when the learner dismissed the modal for good', () => {
+    localStorage.setItem('rinkuzu-upgrade-prompt-dismissed', '1');
+    render(<UpgradePromptProvider>content</UpgradePromptProvider>);
+
+    act(() => {
+      reportApiError(quotaError());
+    });
+
+    expect(toastInfoMock).toHaveBeenCalledTimes(1);
+    expect(captureMock).not.toHaveBeenCalled();
   });
 });

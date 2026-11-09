@@ -1,107 +1,24 @@
-import { Link } from '@/i18n/navigation';
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
-import { ShareButtons } from '@/components/blog/ShareButtons';
-import { TableOfContents } from '@/components/blog/TableOfContents';
-import { extractHeadingsFromMarkdown } from '@/lib/blog-utils';
-import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+---
+title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide"
+description: "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material."
+date: 2026-03-20
+category: "Learning Science"
+readTimeMinutes: 10
+heroImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80"
+heroImageAlt: "Abstract knowledge graph network visualization representing interconnected learning concepts"
+locale: en
+author: "rinkuzu-team"
+summary: "Learn how prerequisite knowledge graphs and Bloom's six cognitive levels shape a personalized practice path for PDF documents."
+lede: "Learn how prerequisite graphs combined with Bloom's six cognitive levels create a personalized practice path from supported PDF material."
+twitterDescription: "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure a personalized practice path."
+breadcrumbLabel: "Knowledge Graphs"
+navLabel: "Knowledge Graphs & Bloom's Taxonomy"
+ctaTitle: "See Knowledge Graphs in Action"
+ctaBody: "Upload a PDF and watch RinKuzu build a knowledge graph and a personalized quiz from it, free."
+wordCount: 1900
+timeRequiredMinutes: 14
+---
 
-type Props = { params: Promise<{ locale: string }> };
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await params;
-  const base = buildLocalizedMetadata({
-    locale,
-    path: '/blog/knowledge-graphs-adaptive-learning-pdfs',
-    title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
-    description:
-      "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
-    imagePath: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80',
-  });
-  return {
-    ...base,
-    openGraph: {
-      ...base.openGraph,
-      title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
-      description:
-        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
-      type: 'article',
-      publishedTime: '2026-03-20T00:00:00.000Z',
-      modifiedTime: '2026-03-20T00:00:00.000Z',
-      authors: [canonicalFor(locale, '/blog/authors/rinkuzu-team')],
-      images: [
-        {
-          url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80',
-          width: 1200,
-          height: 630,
-          alt: 'Abstract knowledge graph network visualization representing interconnected learning concepts',
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
-      description:
-        "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure a personalized practice path.",
-      images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80'],
-    },
-  };
-}
-
-const articleSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  name: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
-  headline: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
-  description:
-    "Learn how prerequisite knowledge graphs and Bloom's cognitive levels can structure personalized practice from supported PDF material.",
-  url: `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`,
-  datePublished: '2026-03-20',
-  dateModified: '2026-03-20',
-  author: {
-    '@type': 'Person',
-    name: 'RinKuzu Team',
-    url: `${siteUrl.origin}/blog/authors/rinkuzu-team`,
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: 'RinKuzu',
-    url: siteUrl.origin,
-    logo: `${siteUrl.origin}/icons/icon-512x512.png`,
-  },
-  mainEntityOfPage: {
-    '@type': 'WebPage',
-    url: `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`,
-  },
-  image: {
-    '@type': 'ImageObject',
-    url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80',
-    width: 1200,
-    height: 630,
-  },
-  wordCount: 1900,
-  timeRequired: 'PT14M',
-};
-
-const breadcrumbSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl.origin },
-    { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl.origin}/blog` },
-    {
-      '@type': 'ListItem',
-      position: 3,
-      name: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide",
-      item: `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`,
-    },
-  ],
-};
-
-const markdownContent = `
 ## Why Learning Structure Matters
 
 Every subject has an inherent structure — a web of concepts that build on each other. Calculus requires understanding functions before derivatives, derivatives before integrals, integrals before differential equations. Biology requires knowing cell structure before understanding organ systems. Learning these subjects effectively means respecting this structure.
@@ -251,145 +168,3 @@ Start with supported PDF material and create a personalized practice session.
 5. **Clement, B., Roy, D., Oudeyer, P.-Y., & Lopes, M. (2015).** Multi-Armed Bandits for Intelligent Tutoring Systems. *arXiv preprint arXiv:1310.3174*. [https://arxiv.org/abs/1310.3174](https://arxiv.org/abs/1310.3174)
 
 6. **Van den Broeck, G., & Gybels, J. (2019).** First Acquaintance: Dueling Bandits in Online Learning. *Proceedings of the AAAI Conference on Artificial Intelligence, 33*(01), 330–336. [https://doi.org/10.1609/aaai.v33i01.3301330](https://doi.org/10.1609/aaai.v33i01.3301330)
-`;
-
-export default async function BlogPost({ params }: Props) {
-  const { locale } = await params;
-  const postUrl = canonicalFor(locale, '/blog/knowledge-graphs-adaptive-learning-pdfs');
-  const postTitle = "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide";
-  const headings = extractHeadingsFromMarkdown(markdownContent);
-
-  return (
-    <article className="min-h-screen bg-white">
-      <ReadingProgressBar />
-      <JsonLd id="article-schema" data={articleSchema} />
-      <JsonLd id="breadcrumb-schema" data={breadcrumbSchema} />
-
-      {/* Hero */}
-      <header className="bg-[var(--bg-section)] border-b border-neutral-100">
-        <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
-          <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
-            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
-              Home
-            </Link>
-            <span>/</span>
-            <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">
-              Blog
-            </Link>
-            <span>/</span>
-            <span className="text-[var(--text-primary)]">Knowledge Graphs</span>
-          </nav>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-3 py-1 rounded-full">
-              Learning Science
-            </span>
-            <span className="text-xs text-[var(--text-muted)]">March 20, 2026 · 10 min read</span>
-          </div>
-          <h1 className="text-3xl md:text-5xl font-semibold text-[var(--text-primary)] leading-tight mb-6">
-            {postTitle}
-          </h1>
-          <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
-            Learn how prerequisite graphs combined with Bloom&apos;s six cognitive levels create a
-            personalized practice path from supported PDF material.
-          </p>
-          <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
-            <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
-              RK
-            </div>
-            <div>
-              <Link
-                href="/blog/authors/rinkuzu-team"
-                className="text-sm font-semibold text-[var(--text-primary)] hover:text-brand-trust transition-colors"
-              >
-                RinKuzu Team
-              </Link>
-              <p className="text-xs text-[var(--text-muted)]">AI Learning Platform</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Article body: centered content, ToC fixed to the right */}
-      <div className="max-w-7xl mx-auto px-6 py-12 relative">
-        {/* Hero image */}
-        <div className="mb-12 max-w-3xl mx-auto">
-          <div className="rounded-3xl overflow-hidden shadow-[10px_25px_100px_0px_rgba(0,43,107,0.15)] ring-1 ring-black/5">
-            <Image
-              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80"
-              alt="Abstract knowledge graph network visualization representing interconnected learning concepts"
-              width={900}
-              height={500}
-              className="w-full object-cover aspect-[16/9]"
-              priority
-            />
-          </div>
-        </div>
-
-        {/* Article content — centered */}
-        <div className="max-w-3xl mx-auto">
-          <MarkdownRenderer content={markdownContent} headingIds />
-
-          <ShareButtons url={postUrl} title={postTitle} />
-
-          {/* CTA */}
-          <div className="mt-16 bg-gradient-to-br from-[var(--text-primary)] to-[#2d2d2f] rounded-[2rem] p-10 text-white relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 size-64 bg-green-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 size-64 bg-green-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
-            <div className="relative z-10 text-center max-w-xl mx-auto">
-              <h3 className="text-2xl md:text-3xl font-semibold mb-4">
-                See Knowledge Graphs in Action
-              </h3>
-              <p className="text-neutral-300 text-lg mb-8">
-                Upload a PDF and watch RinKuzu build a knowledge graph and a personalized quiz from
-                it, free.
-              </p>
-              <Link
-                href="/register?next=/adaptive/upload"
-                className="inline-flex items-center justify-center rounded-full bg-brand-trust px-10 py-4 font-bold text-white shadow-lg shadow-green-500/20 transition-[background-color,transform] hover:scale-105 hover:bg-brand-trust-hover active:scale-95"
-              >
-                Get Started Free
-              </Link>
-              <p className="mt-4 text-xs text-neutral-400">
-                No credit card required · Free plan available
-              </p>
-              <p className="mt-2 text-sm text-neutral-300">
-                Questions about uploads or plans?{' '}
-                <Link href="/faq" className="underline hover:text-white">
-                  Read the FAQ
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          {/* Post navigation */}
-          <div className="mt-16 pt-10 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-6">
-            <Link
-              href="/blog/ai-powered-quiz-generation-guide"
-              className="flex flex-col gap-1 text-left group w-full sm:w-auto"
-            >
-              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
-                Previous
-              </span>
-              <span className="text-[var(--text-primary)] font-bold group-hover:text-brand-trust transition-colors">
-                ← How AI Transforms PDF Learning
-              </span>
-            </Link>
-            <div className="flex flex-col gap-1 text-right w-full sm:w-auto">
-              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
-                Next
-              </span>
-              <span className="text-neutral-300">More articles coming soon</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Table of Contents — right, fixed to container edge */}
-        <aside className="hidden xl:block absolute right-6 top-12 w-56 flex-shrink-0">
-          <div className="sticky top-24">
-            <TableOfContents headings={headings} />
-          </div>
-        </aside>
-      </div>
-    </article>
-  );
-}

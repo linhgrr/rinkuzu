@@ -19,6 +19,7 @@ import {
   PREMIUM_PRICING_FEATURE_KEYS,
 } from '@/features/subscription/constants/pricing-features';
 import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
+import { capturePaywallEvent, usePaywallEventOnMount } from '@/lib/analytics/paywall';
 
 async function loadSubscriptionPage(
   dispatch: Dispatch<SubscriptionPageAction>,
@@ -37,8 +38,8 @@ async function loadSubscriptionPage(
 export function SubscriptionPageClient() {
   const t = useTranslations('subscription');
   const tPricing = useTranslations('pricing');
-  const locale = useLocale();
   const router = useRouter();
+  const locale = useLocale();
   const [state, dispatch] = useReducer(subscriptionPageReducer, initialSubscriptionPageState);
   const freeFeatures = FREE_PRICING_FEATURE_KEYS.map((key) => tPricing(`free.features.${key}`));
   const premiumFeatures = PREMIUM_PRICING_FEATURE_KEYS.map((key) =>
@@ -48,8 +49,10 @@ export function SubscriptionPageClient() {
   useEffect(() => {
     void loadSubscriptionPage(dispatch, locale);
   }, [locale]);
+  usePaywallEventOnMount('pricing_viewed', { locale, plan: null, source: 'subscription_page' });
 
   const handlePurchase = (plan: SubscriptionPlanViewModel): void => {
+    capturePaywallEvent('upgrade_clicked', { locale, plan: plan.id, source: 'subscription_page' });
     router.push(`/checkout?plan=${encodeURIComponent(plan.id)}`);
   };
 

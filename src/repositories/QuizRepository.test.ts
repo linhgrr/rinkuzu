@@ -497,19 +497,16 @@ describe('QuizRepository indexing reads (RIN-840)', () => {
     expect(filter).toMatchObject({ email: { $nin: [...PUBLIC_CATALOG_OWNER_EMAILS] } });
   });
 
-  it('excludes owners in the sitemap query so the limit counts indexable quizzes', async () => {
-    const exec = vi.fn().mockResolvedValue([
+  it('filters owners and thin quizzes in the sitemap query so the limit counts indexable quizzes', async () => {
+    quizModelMocks.aggregate.mockResolvedValue([
       {
         slug: 'algebra-basics',
-        title: 'Algebra basics',
-        description: 'Linear equations',
+        title: 'Algebra Basics',
+        questionCount: 12,
+        leadQuestionTexts: ['What is x?', null],
         createdAt: new Date('2026-07-01T00:00:00.000Z'),
       },
     ]);
-    const chain = { sort: vi.fn(), limit: vi.fn(), lean: vi.fn(() => ({ exec })) };
-    chain.sort.mockReturnValue(chain);
-    chain.limit.mockReturnValue(chain);
-    quizModelMocks.find.mockReturnValue(chain);
     const repository = new QuizRepository();
 
     await expect(
@@ -517,17 +514,45 @@ describe('QuizRepository indexing reads (RIN-840)', () => {
     ).resolves.toEqual([
       {
         slug: 'algebra-basics',
-        title: 'Algebra basics',
-        description: 'Linear equations',
+        title: 'Algebra Basics',
+        questionCount: 12,
+        leadQuestionTexts: ['What is x?'],
         createdAt: new Date('2026-07-01T00:00:00.000Z'),
       },
     ]);
-    // Title and description tell the quiz's language for the sitemap (RIN-1265).
-    expect(quizModelMocks.find).toHaveBeenCalledWith(
-      { visibility: 'public', author: { $nin: [ownerId] } },
-      { _id: 0, slug: 1, title: 1, description: 1, createdAt: 1, updatedAt: 1 },
-    );
-    expect(chain.sort).toHaveBeenCalledWith({ createdAt: -1 });
-    expect(chain.limit).toHaveBeenCalledWith(5000);
+    const pipeline = quizModelMocks.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[];
+    expect(pipeline.slice(0, 3)).toEqual([
+      {
+        $match: {
+          visibility: 'public',
+          'questions.4': { $exists: true },
+          author: { $nin: [ownerId] },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      { $limit: 5000 },
+    ]);
+    // Only the size and the first question texts, never the whole questions.
+    const projection = (pipeline[3] as { $project: Record<string, unknown> }).$project;
+    expect(projection).toMatchObject({ _id: 0, slug: 1, title: 1, createdAt: 1, updatedAt: 1 });
+    expect(projection).not.toHaveProperty('questions');
+    expect(JSON.stringify(projection['leadQuestionTexts'])).toContain('$slice');
+  });
+
+  it('returns the first question texts with the page metadata', async () => {
+    quizModelMocks.aggregate.mockResolvedValue([
+      {
+        ...quizListRecord,
+        author: { _id: ownerId },
+        ownerIndexing: {},
+        leadQuestionTexts: ['Kiểm thử là gì?', 'Mục tiêu?'],
+      },
+    ]);
+    const repository = new QuizRepository();
+
+    const record = await repository.findMetadataBySlug('algebra-basics');
+
+    expect(record?.leadQuestionTexts).toEqual(['Kiểm thử là gì?', 'Mục tiêu?']);
+    expect(record?.quiz).not.toHaveProperty('leadQuestionTexts');
   });
 });

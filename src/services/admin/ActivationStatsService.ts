@@ -7,6 +7,7 @@ import type {
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type {
   AdminActivationAggregates,
+  AdminActivationEntryCounts,
   AdminActivationCohortPathCounts,
   AdminActivationPathCounts,
   AdminAdaptiveLearnerEvents,
@@ -29,6 +30,13 @@ const ANALYTICS_SERVICE_ACTOR_ID = '000000000000000000000000';
 const ADAPTIVE_EVENTS_TAIL_MS = 14 * DAY_MS;
 const NO_PATH: AdminActivationPathCounts = { quiz: 0, adaptive: 0, both: 0 };
 const NO_COHORT_PATH: AdminActivationCohortPathCounts = { ...NO_PATH, claimedGuest: 0 };
+const NO_ENTRY: AdminActivationEntryCounts = {
+  blog: 0,
+  landing: 0,
+  post_signin_starter: 0,
+  activation_email: 0,
+  none: 0,
+};
 
 type AdaptiveSourceStatus = AdminActivationStatsDto['sources']['adaptive'];
 type ActivationEmailWeekDto = AdminActivationStatsDto['activationEmail']['weeks'][number];
@@ -74,6 +82,10 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
     'Unsubmitted in-progress quiz attempts are not counted as material. A learner whose session is still live comes back without signing in again, so they count in returnedWeek1 only if they also attempt or complete. Adaptive learners with 1-4 answers and no completion are not visible to the web (Path B reports completions only), so they are missing from startedQuiz. Sign-in events are kept 180 days.',
   activationEmail:
     'One-time activation nudge emails (RIN-999), bucketed by the UTC ISO week they were sent in (the worker slot of the delivery the provider accepted), not by signup week. sent: delivered nudges of non-excluded learners. clicked: sends whose CTA click was recorded (0 until click tracking ships). activatedWithin7d: sends followed by a completed quiz attempt or adaptive completion in [send, send + 7 days); final 7 days after the week ends. byTrigger splits each count by what enqueued the email: 24h (the sweep 24 h after signup) or backfill; the totals are their sums.',
+  activatedByEntry:
+    'Split of activated by the entry point of the first qualifying attempt (the earliest completed quiz attempt within 7 days of signup), as the quiz link carried it (?entry=, stored on the attempt since RIN-1256): blog, landing (homepage play-first), post_signin_starter, activation_email. none: no tracked entry, which covers attempts before RIN-1256, untracked links, and learners activated by an adaptive completion only. The five add up to activated. A claimed guest attempt keeps its entry.',
+  blogPosts:
+    'Top 10 public blog post slugs (?post=, with entry=blog) by activated signups of the week whose first qualifying attempt came from that post, most first, ties by slug. A blog entry without a valid post counts in activatedByEntry.blog only.',
 };
 
 interface CacheEntry {
@@ -201,6 +213,7 @@ function buildActivationWeeks(
 ): AdminActivationWeekDto[] {
   const cohorts = new Map(aggregates.cohorts.map((row) => [row.weekStart.getTime(), row]));
   const firsts = new Map(aggregates.firstAttempts.map((row) => [row.weekStart.getTime(), row]));
+  const entries = new Map(aggregates.cohortEntries.map((row) => [row.weekStart.getTime(), row]));
 
   return windows.map((window) => {
     const key = window.start.getTime();
@@ -228,6 +241,8 @@ function buildActivationWeeks(
           : Math.round((w1Retained / activated) * 10_000) / 10_000,
       returnedWeek1: returnFinal ? (cohort?.returnedWeek1 ?? 0) : null,
       complete: final,
+      activatedByEntry: entries.get(key)?.activatedByEntry ?? NO_ENTRY,
+      blogPosts: entries.get(key)?.blogPosts ?? [],
     };
   });
 }

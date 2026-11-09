@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { getQuizService } from '@/lib/quiz-factory';
-import { detectContentLocale } from '@/lib/content-locale';
 import { buildLocalizedMetadata } from '@/lib/seo';
+import {
+  buildQuizSeoDescription,
+  buildQuizSeoTitle,
+  isQuizIndexable,
+} from '@/lib/seo/quiz-indexability';
 import { isQuickRoundEligible } from '@/shared/constants/quick-round';
 
 type QuizMetadataInput = {
@@ -16,6 +20,9 @@ type QuizMetadataInput = {
 const loadQuizMetadata = cache((slug: string) => getQuizService().getQuizMetadataBySlug(slug));
 
 type QuizCardFacts = { visibility: string; questionCount: number };
+
+/** The service's page metadata for a quiz that exists. */
+type QuizMetadata = NonNullable<Awaited<ReturnType<typeof loadQuizMetadata>>>;
 
 /**
  * Only public quizzes show their size on the share card (RIN-1180); a quick link
@@ -32,6 +39,41 @@ function ogImageParamsFor(
     count: String(quiz.questionCount),
     lang: locale === 'en' ? 'en' : 'vi',
     ...(mode === 'quick' && isQuickRoundEligible(quiz.questionCount) ? { quick: '1' } : {}),
+  };
+}
+
+/**
+ * RIN-1241 D13/D14: a quiz is indexed once, on the page in its own language,
+ * when it is public, its owner is indexable (RIN-840) and it has 5+ questions.
+ * A public quiz that is not indexable still passes link equity (`follow`).
+ */
+function robotsFor(quiz: QuizMetadata, locale: string): { index: boolean; follow: boolean } {
+  if (quiz.visibility !== 'public') return { index: false, follow: false };
+  const index = isQuizIndexable(quiz) && locale === quiz.contentLocale;
+  return { index, follow: true };
+}
+
+/** Search title and description in the quiz's own language (RIN-1241 C10). */
+function searchTextFor(quiz: QuizMetadata, locale: string) {
+  if (quiz.visibility !== 'public') {
+    return {
+      title: `${quiz.title} | RinKuzu`,
+      description:
+        quiz.description ||
+        (locale === 'vi'
+          ? 'Luyện tập quiz trên RinKuzu với lời giải rõ ràng và kết quả chi tiết.'
+          : 'Practice reviewed quizzes on RinKuzu with clear explanations and detailed results.'),
+    };
+  }
+  return {
+    title: buildQuizSeoTitle(quiz.title, quiz.questionCount, quiz.contentLocale),
+    description: buildQuizSeoDescription({
+      title: quiz.title,
+      description: quiz.description ?? null,
+      questionCount: quiz.questionCount,
+      firstQuestionText: quiz.leadQuestionTexts[0] ?? null,
+      locale: quiz.contentLocale,
+    }),
   };
 }
 
@@ -52,6 +94,7 @@ export async function buildQuizMetadata({
       index: false,
       follow: false,
     },
+    languageAlternates: false,
   });
 
   try {
@@ -60,24 +103,19 @@ export async function buildQuizMetadata({
       return defaultMetadata;
     }
 
-    // Public quizzes of test or company accounts stay out of search (RIN-840).
-    const isIndexable = quiz.visibility === 'public' && quiz.ownerIndexable;
     const ogImageParams = ogImageParamsFor(quiz, locale, mode);
+    const isPublic = quiz.visibility === 'public';
     return buildLocalizedMetadata({
       locale,
       path: `/quiz/${slug}`,
-      title: `${quiz.title} | RinKuzu`,
-      description:
-        quiz.description ||
-        (locale === 'vi'
-          ? 'Luyện tập quiz trên RinKuzu với lời giải rõ ràng và kết quả chi tiết.'
-          : 'Practice reviewed quizzes on RinKuzu with clear explanations and detailed results.'),
+      ...searchTextFor(quiz, locale),
+      // The share card keeps the short title; it already shows the count (RIN-1180).
+      ogImageTitle: `${quiz.title} | RinKuzu`,
       ...(ogImageParams ? { ogImageParams } : {}),
-      contentLocale: detectContentLocale(quiz.title, quiz.description),
-      robots: {
-        index: isIndexable,
-        follow: isIndexable,
-      },
+      robots: robotsFor(quiz, locale),
+      // One URL per quiz: the other-locale page points at the content-locale one.
+      ...(isPublic ? { canonicalLocale: quiz.contentLocale } : {}),
+      languageAlternates: false,
     });
   } catch (error) {
     console.error('quiz metadata generation failed', error);

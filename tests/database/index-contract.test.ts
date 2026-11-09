@@ -35,6 +35,8 @@ import FolderQuiz from '@/models/FolderQuiz';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
 import QuizProgress from '@/models/QuizProgress';
+import QuizTopic from '@/models/QuizTopic';
+import QuizTopicAssignment from '@/models/QuizTopicAssignment';
 import CreditLedger from '@/models/CreditLedger';
 import CreditWallet from '@/models/CreditWallet';
 import PremiumPlaySession from '@/models/PremiumPlaySession';
@@ -77,6 +79,8 @@ const MODELS = {
   premiumquizsubmissions: PremiumQuizSubmission,
   quizzes: Quiz,
   quizprogresses: QuizProgress,
+  quiztopics: QuizTopic,
+  quiztopicassignments: QuizTopicAssignment,
   reports: Report,
   starterquizzes: StarterQuiz,
   users: User,

@@ -35,6 +35,7 @@ import type {
   QuizPersistenceRecord,
 } from '@/repositories/types/QuizPersistence';
 import { serializeId } from '@/lib/mongo-id';
+import { MIN_INDEXABLE_QUESTION_COUNT } from '@/lib/seo/quiz-indexability';
 import {
   ANALYTICS_EXCLUDED_EMAILS,
   ANALYTICS_TEST_EMAIL_PATTERN,
@@ -140,11 +141,42 @@ const QUIZ_SUMMARY_PROJECTION = {
 } satisfies PipelineStage.Project['$project'];
 
 /**
+ * Number of leading question texts read for the content locale and the
+ * generated description (RIN-1241); never the whole question array.
+ */
+const LEAD_QUESTION_TEXT_COUNT = 3;
+
+interface LeadQuestionSliceExpression {
+  $slice: [unknown, number];
+}
+
+interface LeadQuestionMapExpression {
+  input: LeadQuestionSliceExpression;
+  as: string;
+  in: string;
+}
+
+interface LeadQuestionTextsExpression {
+  $map: LeadQuestionMapExpression;
+}
+
+function leadQuestionTextsExpression(): LeadQuestionTextsExpression {
+  return {
+    $map: {
+      input: { $slice: [{ $ifNull: ['$questions', []] }, LEAD_QUESTION_TEXT_COUNT] },
+      as: 'question',
+      in: '$$question.question',
+    },
+  };
+}
+
+/**
  * Summary plus the owner's indexing fields under a separate key, so the email
  * never enters the `author` preview that is mapped into DTOs (RIN-840).
  */
 const QUIZ_METADATA_PROJECTION = {
   ...QUIZ_SUMMARY_PROJECTION,
+  leadQuestionTexts: leadQuestionTextsExpression(),
   ownerIndexing: {
     email: { $first: '$authorDoc.email' },
     isTestAccount: { $first: '$authorDoc.isTestAccount' },
@@ -296,6 +328,15 @@ function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenc
   return normalizedFilter;
 }
 
+interface PublicQuizSitemapPersistenceRow {
+  slug: string;
+  title?: string;
+  questionCount: number;
+  leadQuestionTexts?: unknown[];
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
 export class QuizRepository implements IQuizRepository, IDashboardQuizRepository {
   async findById(id: string): Promise<Quiz | null> {
     await connectDB();
@@ -334,11 +375,14 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
       QUIZ_METADATA_PROJECTION,
     );
     if (!record) return null;
-    const { ownerIndexing, ...quizRecord } = record;
+    const { ownerIndexing, leadQuestionTexts, ...quizRecord } = record;
     const quiz = QuizPersistenceMapper.toEntity(quizRecord);
     const ownerId = typeof quiz.author === 'string' ? quiz.author : quiz.author.id;
     return {
       quiz,
+      leadQuestionTexts: (leadQuestionTexts ?? []).filter(
+        (text): text is string => typeof text === 'string',
+      ),
       owner: ownerIndexing
         ? {
             id: ownerId,
@@ -381,23 +425,37 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     const excluded = excludeAuthorIds
       .filter((id) => Types.ObjectId.isValid(id))
       .map((id) => new Types.ObjectId(id));
-    const rows = await QuizModel.find(
+    const rows = await QuizModel.aggregate<PublicQuizSitemapPersistenceRow>([
       {
-        visibility: 'public',
-        ...(excluded.length > 0 ? { author: { $nin: excluded } } : {}),
+        $match: {
+          visibility: 'public',
+          // At least MIN_INDEXABLE_QUESTION_COUNT questions (RIN-1241 D13), so the
+          // limit counts only quizzes the sitemap keeps.
+          [`questions.${MIN_INDEXABLE_QUESTION_COUNT - 1}`]: { $exists: true },
+          ...(excluded.length > 0 ? { author: { $nin: excluded } } : {}),
+        },
       },
-      { _id: 0, slug: 1, title: 1, description: 1, createdAt: 1, updatedAt: 1 },
-    )
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean<
-        { slug: string; title: string; description?: string; createdAt: Date; updatedAt?: Date }[]
-      >()
-      .exec();
+      { $sort: { createdAt: -1 } },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 0,
+          slug: 1,
+          title: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          questionCount: { $size: { $ifNull: ['$questions', []] } },
+          leadQuestionTexts: leadQuestionTextsExpression(),
+        },
+      },
+    ]);
     return rows.map((row) => ({
       slug: row.slug,
-      title: row.title,
-      ...(row.description ? { description: row.description } : {}),
+      title: row.title ?? '',
+      questionCount: row.questionCount,
+      leadQuestionTexts: (row.leadQuestionTexts ?? []).filter(
+        (text): text is string => typeof text === 'string',
+      ),
       createdAt: row.createdAt,
       ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
     }));

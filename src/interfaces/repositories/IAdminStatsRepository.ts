@@ -78,9 +78,36 @@ export interface AdminAdaptiveLearnerEvents {
   succeededUploads: Date[];
 }
 
+/**
+ * Activated signups by the entry of their first qualifying attempt (RIN-1256).
+ * `none`: no tracked entry (older attempts, untracked links, adaptive-only learners).
+ */
+export interface AdminActivationEntryCounts {
+  blog: number;
+  landing: number;
+  post_signin_starter: number;
+  activation_email: number;
+  none: number;
+}
+
+/** A public blog post slug and its activated signups. */
+interface AdminActivationBlogPostCount {
+  post: string;
+  activated: number;
+}
+
+/** Per signup week, like the cohorts; only weeks that have a cohort row. */
+export interface AdminActivationEntryWeekRecord {
+  weekStart: Date;
+  activatedByEntry: AdminActivationEntryCounts;
+  /** Top 10 public blog post slugs by activated signups, most first, then by slug. */
+  blogPosts: AdminActivationBlogPostCount[];
+}
+
 export interface AdminActivationAggregates {
   cohorts: AdminActivationCohortRecord[];
   firstAttempts: AdminFirstAttemptWeekRecord[];
+  cohortEntries: AdminActivationEntryWeekRecord[];
 }
 
 /**

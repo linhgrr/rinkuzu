@@ -6,10 +6,13 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UpgradePaywallModal } from './UpgradePaywallModal';
 
-const { fetchSubscriptionPageMock, routerPushMock } = vi.hoisted(() => ({
+const { fetchSubscriptionPageMock, routerPushMock, captureMock } = vi.hoisted(() => ({
   fetchSubscriptionPageMock: vi.fn(),
   routerPushMock: vi.fn(),
+  captureMock: vi.fn(),
 }));
+
+vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: captureMock }));
 
 vi.mock('next-intl', () => ({
   useLocale: () => 'en',
@@ -90,6 +93,13 @@ describe('UpgradePaywallModal', () => {
       }),
     );
     expect(routerPushMock).toHaveBeenCalledWith('/checkout?plan=eco-plus-six-months');
+    // RIN-1269: the plan CTA is an upgrade click from the modal; opening it is not.
+    expect(captureMock).toHaveBeenCalledTimes(1);
+    expect(captureMock).toHaveBeenCalledWith('upgrade_clicked', {
+      locale: 'en',
+      plan: 'eco-plus-six-months',
+      source: 'upgrade_modal',
+    });
   });
 
   it('does not offer another purchase when Premium became active in another tab', async () => {

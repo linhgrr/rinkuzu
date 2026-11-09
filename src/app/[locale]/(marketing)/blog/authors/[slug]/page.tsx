@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getBlogAuthor, type BlogAuthor } from '@/lib/blog/authors';
+import { blogFeedAlternates } from '@/lib/blog/feed';
 import {
   formatBlogDate,
   getBlogAuthorSlugs,
@@ -32,6 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildLocalizedMetadata({
     locale,
     path: `/blog/authors/${slug}`,
+    alternateTypes: blogFeedAlternates(toBlogLocale(locale)),
     title:
       locale === 'vi'
         ? `${author.name} — Tác giả tại Blog RinKuzu`

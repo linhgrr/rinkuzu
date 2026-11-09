@@ -147,6 +147,20 @@ describe('POST /api/auth/register', () => {
     expect(registerMock.mock.calls[2]?.[0]).not.toHaveProperty('locale');
   });
 
+  it('passes the edge country of the signup request (RIN-1268)', async () => {
+    await POST(request(validBody, { 'x-vercel-ip-country': 'JP' }));
+    expect(registerMock.mock.calls[0]?.[0]).toMatchObject({ signupCountry: 'JP' });
+  });
+
+  it('passes no country when the header is missing, unknown or malformed', async () => {
+    await POST(request(validBody));
+    await POST(request(validBody, { 'x-vercel-ip-country': 'XX' }));
+    await POST(request(validBody, { 'x-vercel-ip-country': 'jp' }));
+    for (const call of registerMock.mock.calls) {
+      expect(call[0]).not.toHaveProperty('signupCountry');
+    }
+  });
+
   it('falls back to unknown when the request has no IP', async () => {
     extractRequestContextMock.mockReturnValue({ ip: null, userAgent: null });
 

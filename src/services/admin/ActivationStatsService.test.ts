@@ -106,8 +106,10 @@ function setup(now = NOW) {
   };
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
   const adaptiveEvents = vi.fn().mockResolvedValue(ADAPTIVE_EVENTS);
+  const segments = { getActivationSegments: vi.fn().mockResolvedValue([]) };
   const service = new ActivationStatsService({
     stats,
+    segments,
     activationEmail,
     audit,
     adaptiveEvents,

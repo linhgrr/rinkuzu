@@ -1449,7 +1449,7 @@ test.describe('production critical paths', () => {
     });
   });
 
-  test('offers the 2-day review on the adaptive end screen and schedules Path B emails @critical-adaptive', async ({
+  test('offers the 2-day review on the adaptive end screen to a signed-in learner @critical-adaptive', async ({
     page,
   }, testInfo) => {
     await withDatabaseFixture(testInfo, async (fixture) => {
@@ -1498,23 +1498,26 @@ test.describe('production critical paths', () => {
       await expect(
         page.getByText('Want a reminder in 2 days to review what you just studied?'),
       ).toBeVisible();
-      await page.getByRole('button', { name: 'Remind me in 2 days', exact: true }).click();
-      await expect(page.getByText(/^We'll send your review on /u)).toBeVisible();
-
-      const rows = await fixture.db
-        .collection('emailoutboxes')
-        .find({ userId: fixture.regular.id, entityType: 'adaptive_completion' })
-        .sort({ availableAt: 1 })
-        .toArray();
-      expect(rows.map((row) => row['kind'])).toEqual(['review_reminder', 'review_reminder_d5']);
-      expect(rows[0]).toMatchObject({ status: 'pending', anchorDocumentId: 'e2e-review-session' });
+      // "Remind me" needs SUPPORT_MAIL_FROM, which the e2e environment lacks; the opt-in
+      // rows are covered by unit tests. "No thanks" snoozes the prompt with no consent event.
+      const remind = page.getByRole('button', { name: 'Remind me in 2 days', exact: true });
+      const decline = page.getByRole('button', { name: 'No thanks', exact: true });
+      await expect(remind).toBeVisible();
+      await decline.click();
+      await expect(decline).toBeHidden();
+      await expect
+        .poll(async () => {
+          const preference = await fixture.db
+            .collection('marketingpreferences')
+            .findOne({ userId: fixture.regular.id });
+          return preference?.['reviewPromptSnoozedUntil'] instanceof Date;
+        })
+        .toBe(true);
       expect(
-        await fixture.db.collection('marketingconsentevents').countDocuments({
-          userId: fixture.regular.id,
-          action: 'opt_in',
-          source: 'adaptive_end_review',
-        }),
-      ).toBe(1);
+        await fixture.db
+          .collection('marketingconsentevents')
+          .countDocuments({ userId: fixture.regular.id }),
+      ).toBe(0);
     });
   });
 

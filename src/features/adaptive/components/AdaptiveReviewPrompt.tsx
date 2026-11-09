@@ -23,6 +23,7 @@ export function AdaptiveReviewPrompt() {
     <ReviewReminderPrompt
       missedCount={0}
       question={t('reviewPromptQuestion')}
+      stacked
       loadStatus={adaptiveReviewReminderApi.loadStatus}
       optIn={() => adaptiveReviewReminderApi.optIn(locale)}
       snooze={adaptiveReviewReminderApi.snooze}

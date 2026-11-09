@@ -20,6 +20,8 @@ interface ReviewReminderPromptProps extends ReviewReminderPromptActions {
   missedCount: number;
   /** Replaces the missed-questions line (the adaptive end screen has no question count). */
   question?: string;
+  /** One button per row at every width, for a narrow column (the adaptive end screen). */
+  stacked?: boolean;
   /** Runs after a tap on "Remind me" succeeds (analytics), not for an automatic re-schedule. */
   onOptIn?: () => void;
 }
@@ -67,6 +69,7 @@ function weekdayName(iso: string, locale: string): string {
 export function ReviewReminderPrompt({
   missedCount,
   question,
+  stacked = false,
   loadStatus,
   optIn,
   snooze,
@@ -134,7 +137,11 @@ export function ReviewReminderPrompt({
           <div
             role="group"
             aria-labelledby={questionId}
-            className="grid w-full grid-cols-1 gap-3 min-[400px]:grid-cols-2"
+            className={
+              stacked
+                ? 'grid w-full grid-cols-1 gap-3'
+                : 'grid w-full grid-cols-1 gap-3 min-[400px]:grid-cols-2'
+            }
           >
             <Button
               variant="secondary"

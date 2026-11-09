@@ -37,6 +37,8 @@ describe('AdaptiveReviewPrompt (RIN-1364)', () => {
 
     expect(await screen.findByText('reviewPromptQuestion')).toBeInTheDocument();
     expect(fetchApiData).toHaveBeenCalledWith('/api/user/review-reminder?path=adaptive');
+    // The end-screen card is a narrow column: one button per row at every width.
+    expect(screen.getByRole('group').className).not.toContain('grid-cols-2');
     fireEvent.click(screen.getByRole('button', { name: 'remind' }));
 
     await waitFor(() => expect(capture).toHaveBeenCalledOnce());

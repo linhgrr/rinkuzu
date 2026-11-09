@@ -48,6 +48,7 @@ vi.mock('@/lib/blog/content', () => ({
     POSTS.find((post) => post.locale === locale && post.slug === slug),
 }));
 vi.mock('@/lib/public-quiz-sitemap', () => ({ loadPublicQuizSitemapEntries: async () => [] }));
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/next-intl-server'));
 vi.mock('next/navigation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/navigation')>()),
   usePathname: () => '/blog',

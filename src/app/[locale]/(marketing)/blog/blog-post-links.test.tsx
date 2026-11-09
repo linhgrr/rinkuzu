@@ -7,6 +7,7 @@ import BlogPostPage, { generateMetadata } from './[slug]/page';
 // RIN-504 AC3/AC5: each post links back to the FAQ and the upload CTA on its locale,
 // and og:url matches the locale-prefixed canonical instead of a redirecting bare path.
 
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/next-intl-server'));
 vi.mock('next/navigation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/navigation')>()),
   usePathname: () => '/blog',

@@ -1,0 +1,33 @@
+{
+  "article": {
+    "breadcrumb": {
+      "home": "Home",
+      "blog": "Blog"
+    },
+    "cta": {
+      "title": "Turn your PDF into personalized practice",
+      "body": "Upload a PDF and RinKuzu builds a personalized quiz from it, free.",
+      "button": "Get Started Free",
+      "note": "No credit card required · Free plan available",
+      "faqPrompt": "Questions about uploads or plans?",
+      "faqLink": "Read the FAQ"
+    },
+    "nav": {
+      "previous": "Previous",
+      "noPrevious": "No previous post",
+      "nextArticle": "Next Article",
+      "next": "Next",
+      "comingSoon": "More articles coming soon"
+    },
+    "share": {
+      "label": "Share this post:",
+      "shareOn": "Share on {network}",
+      "copyLink": "Copy link",
+      "copied": "Link copied to clipboard",
+      "copyFailed": "Failed to copy link"
+    },
+    "toc": {
+      "title": "Table of Contents"
+    }
+  }
+}

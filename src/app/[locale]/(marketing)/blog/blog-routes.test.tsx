@@ -9,6 +9,7 @@ import AuthorPage, { generateStaticParams as authorParams } from './authors/[slu
 // RIN-404: the blog index, post and author routes render from content/blog, and the two
 // posts migrated from hand-written routes stay at their URLs with the same copy.
 
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/next-intl-server'));
 vi.mock('next/navigation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/navigation')>()),
   usePathname: () => '/blog',
@@ -79,7 +80,10 @@ describe('blog routes from content/blog', () => {
       expect(
         screen.getByRole('link', { name: /Knowledge Graphs & Bloom's Taxonomy →/ }),
       ).toHaveAttribute('href', `/${locale}/blog/${KNOWLEDGE_GRAPHS}`);
-      expect(screen.getByText('No previous post')).toBeInTheDocument();
+      // The English body falls back on /vi; the page chrome follows the route (RIN-1391).
+      expect(
+        screen.getByText(locale === 'vi' ? 'Chưa có bài trước' : 'No previous post'),
+      ).toBeInTheDocument();
     },
   );
 

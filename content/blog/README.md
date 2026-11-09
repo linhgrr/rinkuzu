@@ -42,6 +42,8 @@ Optional fields override copy that otherwise falls back to a required field:
 | `wordCount`              | omitted              | Article JSON-LD `wordCount`.               |
 | `timeRequiredMinutes`    | omitted              | Article JSON-LD `timeRequired` (`PT<n>M`). |
 
+The default CTA, like the rest of the article page UI, is localized in `messages/<locale>/blog.json`.
+
 `tags` (optional, up to 8 non-empty strings, e.g. `["personalized-learning", "pdf"]`)
 picks the related posts shown under each article: posts in the same locale that
 share a tag (compared case-insensitively) or the `category`, most shared tags

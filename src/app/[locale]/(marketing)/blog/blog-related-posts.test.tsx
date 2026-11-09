@@ -6,6 +6,7 @@ import BlogPostPage from './[slug]/page';
 
 // RIN-1331: related posts sit between the single product CTA and prev/next.
 
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/next-intl-server'));
 vi.mock('next/navigation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/navigation')>()),
   usePathname: () => '/blog',

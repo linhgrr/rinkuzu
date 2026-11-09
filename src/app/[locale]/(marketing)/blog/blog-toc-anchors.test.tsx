@@ -6,6 +6,7 @@ import BlogPostPage from './[slug]/page';
 // RIN-640: every TOC entry must point at a rendered heading, otherwise the
 // click and the scroll-spy highlight both do nothing.
 
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/next-intl-server'));
 vi.mock('next/navigation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/navigation')>()),
   usePathname: () => '/blog',

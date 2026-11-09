@@ -1,7 +1,8 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadMotionFeatures } from './motion-features';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -16,7 +17,7 @@ interface RevealProps {
 export function Reveal({ children, delay = 0, y = 24, className }: RevealProps) {
   const reduce = useReducedMotion();
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadMotionFeatures}>
       <m.div
         className={className}
         initial={reduce ? false : { opacity: 0, y }}

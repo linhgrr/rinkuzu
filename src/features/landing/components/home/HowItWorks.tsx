@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadMotionFeatures } from './motion-features';
 import { imgGroup8 } from './constants';
 import { Reveal } from './Reveal';
 
@@ -96,7 +97,7 @@ export default function HowItWorks({ locale }: { locale: string }) {
         </div>
 
         <div className="grid w-full grid-cols-1 items-start gap-8 xl:grid-cols-3 2xl:gap-24">
-          <LazyMotion features={domAnimation}>
+          <LazyMotion features={loadMotionFeatures}>
             {cards.map((c, i) => (
               <m.div
                 key={c.num}

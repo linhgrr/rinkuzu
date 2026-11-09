@@ -3,7 +3,7 @@ import { toAttemptDetailViewModel } from '@/features/profile/mappers/attempt-det
 import type { AttemptDetailViewModel } from '@/features/profile/types/attempt-detail-view-model';
 import { fetchApiData } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
-import { GUEST_CLAIM_TOKEN_HEADER } from '@/lib/validation/guest-claim-token';
+import { GUEST_CLAIM_TOKEN_HEADER } from '@/lib/validation/guest-claim-token-header';
 
 export type FetchAttemptDetailOptions = {
   /** Legacy guest-email attempts (before RIN-912). */

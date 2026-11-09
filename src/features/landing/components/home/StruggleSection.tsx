@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadMotionFeatures } from './motion-features';
 import { imgGroup1, imgSolarDocumentAddBold, imgTablerClockFilled } from './constants';
 import { Reveal } from './Reveal';
 
@@ -20,7 +21,7 @@ export default function StruggleSection({ locale }: { locale: string }) {
           transition: { duration: 0.6, delay, ease: EASE_OUT },
         };
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadMotionFeatures}>
       <div className="relative w-full max-w-[1303px] mx-auto flex flex-col gap-16 md:gap-[128px] items-center z-10 px-4 md:px-0">
         {/* Title */}
         <Reveal className="font-unbounded font-extrabold text-center text-white w-full">

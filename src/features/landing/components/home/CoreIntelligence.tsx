@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadMotionFeatures } from './motion-features';
 import {
   imgChatGptImageApr22026At121506Am1,
   imgGroup9,
@@ -26,7 +27,7 @@ export default function CoreIntelligence({ locale }: { locale: string }) {
           transition: { duration: 0.55, delay, ease: EASE_OUT },
         };
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadMotionFeatures}>
       <div className="relative z-10 mx-auto flex w-full max-w-[1728px] flex-col items-center justify-between gap-16 px-4 2xl:flex-row 2xl:gap-0 2xl:px-0">
         {/* Left Content - Text & Features */}
         <div className="flex w-full shrink-0 flex-col gap-12 2xl:w-[959px] 2xl:gap-[96px]">

@@ -1130,6 +1130,8 @@ test.describe('production critical paths', () => {
   }, testInfo) => {
     // RIN-1310: the guest's claim token lives in browser A; the email is verified and the
     // learner signs in from browser B. The server claims the attempt at verification.
+    // Guest quiz, sign-up, verification and sign-in in two contexts: longer than 30 s.
+    testInfo.setTimeout(90_000);
     await withDatabaseFixture(testInfo, async (fixture) => {
       const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
       const email = `e2e-xbrowser-${randomUUID().slice(0, 12)}@example.com`;
@@ -1176,12 +1178,12 @@ test.describe('production critical paths', () => {
         await otherPage.goto(`/en/login?callbackUrl=${encodeURIComponent(resultPath)}`);
         await otherPage.getByLabel('Email Address').fill(email);
         await otherPage.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
-        await Promise.all([
-          otherPage.waitForURL(
-            new RegExp(`/en/quiz/${starterSlug}/result\?attemptId=${attemptId}`),
-          ),
-          otherPage.getByRole('button', { name: 'Sign In', exact: true }).click(),
-        ]);
+        await otherPage.getByRole('button', { name: 'Sign In', exact: true }).click();
+        // A soft navigation after sign-in: no load event for waitForURL to wait on.
+        await expect(otherPage).toHaveURL(
+          new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=${attemptId}`),
+          { timeout: 20_000 },
+        );
         const user = await fixture.db.collection('users').findOne({ email });
         const attempt = await fixture.db
           .collection('attempts')

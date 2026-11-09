@@ -24,6 +24,7 @@ Playwright is configured in `playwright.config.ts`.
   - `@critical-admin`: admin route/API access and a persisted role mutation
   - `@critical-admin-learner-lookup`: anonymous (401 / login redirect) and non-admin (403 / dashboard redirect) are denied the lookup page and both lookup APIs; admin finds a learner by email and opens the read-only drill-down; every allowlisted field renders, nothing else does, and exactly one view is audited
   - `@critical-admin-quiz-visibility`: admin makes a public quiz private (anonymous play 401, gone from the public list), the change is audited, and the same row makes it public again
+  - `@critical-admin-quiz-personal-data-flag`: admin filters `/admin/quizzes` to personal-data-flagged quizzes, sees the kinds badge, clears the flag after confirming (badge and button gone, `contentFlags.clearedBy` set) and one `quiz.personal_data_flag.cleared` audit entry is written; the anonymous clear call gets 401
   - `@critical-admin-disable`: admin disable/restore, authVersion session revocation, disabled/active filters, fresh login after restore
   - `@critical-admin-test-account`: anonymous (401) and non-admin (403) callers are refused the test-account route; admin marks a user as a test account in `/admin/users` (badge shown), clears it again, and both changes are audited with the actor
 - `admin-personal-learning.spec.ts`

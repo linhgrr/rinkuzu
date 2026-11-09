@@ -4,7 +4,8 @@ export type PremiumSubmissionStatusViewModel =
   | 'pending'
   | 'changes_requested'
   | 'rejected'
-  | 'approved';
+  | 'approved'
+  | 'withdrawn';
 
 interface PremiumQuestionViewModel {
   id: string;

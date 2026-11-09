@@ -505,7 +505,7 @@ describe('QuizCrudService', () => {
       ).resolves.toMatchObject({ success: true });
     });
 
-    it('refuses submitToPremium: false (make public) while a Premium publication is active', async () => {
+    it('unticking Premium withdraws open submissions, then saves the quiz public (RIN-1346)', async () => {
       const access = { id: quizId, author: authorId, visibility: 'personal' };
       const update = vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'public' }));
       const quizRepository = createQuizRepository({
@@ -513,29 +513,71 @@ describe('QuizCrudService', () => {
         findById: vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'personal' })),
         update,
       });
-      const findActivePublicationByQuizId = vi
+      const makeQuizPublicAndWithdrawSubmissions = vi
         .fn()
-        .mockResolvedValueOnce({ id: 'pub-1' })
-        .mockResolvedValueOnce(null);
+        .mockResolvedValue({ outcome: 'made_public', withdrawnSubmissions: 1 });
       const service = new QuizCrudService(quizRepository, undefined, {
-        findActivePublicationByQuizId,
+        makeQuizPublicAndWithdrawSubmissions,
       });
 
       await expect(
-        service.updateQuiz(quizId, { submitToPremium: false }, authorId),
-      ).resolves.toMatchObject({ success: false, statusCode: 409, code: 'conflict' });
-      expect(update).not.toHaveBeenCalled();
-
-      await expect(
-        service.updateQuiz(quizId, { submitToPremium: false }, authorId),
+        service.updateQuiz(quizId, { title: 'Renamed', submitToPremium: false }, authorId),
       ).resolves.toMatchObject({ success: true });
+      expect(makeQuizPublicAndWithdrawSubmissions).toHaveBeenCalledWith(quizId);
       expect(update).toHaveBeenCalledWith(
         quizId,
-        expect.objectContaining({ visibility: 'public' }),
+        expect.objectContaining({ title: 'Renamed', visibility: 'public' }),
+      );
+      expect(makeQuizPublicAndWithdrawSubmissions.mock.invocationCallOrder[0]).toBeLessThan(
+        update.mock.invocationCallOrder[0] ?? 0,
       );
     });
 
-    it('fails closed when the publication lookup is not wired', async () => {
+    it('refuses the untick with 409 premium_published while the quiz is on sale (RIN-1346)', async () => {
+      const update = vi.fn();
+      const quizRepository = createQuizRepository({
+        findAccessById: vi
+          .fn()
+          .mockResolvedValue({ id: quizId, author: authorId, visibility: 'personal' }),
+        findById: vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'personal' })),
+        update,
+      });
+      const service = new QuizCrudService(quizRepository, undefined, {
+        makeQuizPublicAndWithdrawSubmissions: vi
+          .fn()
+          .mockResolvedValue({ outcome: 'premium_published' }),
+      });
+
+      await expect(
+        service.updateQuiz(quizId, { title: 'Renamed', submitToPremium: false }, authorId),
+      ).resolves.toMatchObject({
+        success: false,
+        statusCode: 409,
+        code: 'premium_published',
+        error: 'This quiz is on sale in Premium. Ask support to remove it from Premium first.',
+      });
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it('leaves Premium submissions alone when the edit does not untick Premium', async () => {
+      const makeQuizPublicAndWithdrawSubmissions = vi.fn();
+      const quizRepository = createQuizRepository({
+        findAccessById: vi
+          .fn()
+          .mockResolvedValue({ id: quizId, author: authorId, visibility: 'personal' }),
+        update: vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'personal' })),
+      });
+      const service = new QuizCrudService(quizRepository, undefined, {
+        makeQuizPublicAndWithdrawSubmissions,
+      });
+
+      await service.updateQuiz(quizId, { submitToPremium: true }, authorId);
+      await service.updateQuiz(quizId, { folder: null }, authorId);
+
+      expect(makeQuizPublicAndWithdrawSubmissions).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when the Premium withdrawal is not wired', async () => {
       const quizRepository = createQuizRepository({
         findAccessById: vi.fn().mockResolvedValue({ id: quizId, author: authorId }),
       });

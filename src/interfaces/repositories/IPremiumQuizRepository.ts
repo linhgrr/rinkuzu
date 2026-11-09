@@ -152,6 +152,27 @@ export interface UpdatePremiumProgressData {
 
 type PremiumSessionSubmissionClaim = 'claimed' | 'replay' | 'conflict' | 'expired';
 
+/**
+ * RIN-1346: outcome of an owner unticking Premium. `premium_published` means an
+ * approved publication is on sale, so nothing was written.
+ */
+export type MakeQuizPublicResult =
+  | { outcome: 'made_public'; withdrawnSubmissions: number }
+  | { outcome: 'premium_published' };
+
+/**
+ * RIN-1346: kept apart from IPremiumQuizRepository so the quiz editor depends on
+ * this one write only.
+ */
+export interface IPremiumSubmissionWithdrawalRepository {
+  /**
+   * In one transaction: refuses while the quiz has an active approved
+   * publication; otherwise sets the quiz `public` and marks its `pending` and
+   * `changes_requested` submissions `withdrawn` and inactive.
+   */
+  makeQuizPublicAndWithdrawSubmissions(quizId: string): Promise<MakeQuizPublicResult>;
+}
+
 export interface IPremiumQuizRepository {
   isVerifiedUser(userId: string): Promise<boolean>;
   createSubmission(data: CreatePremiumSubmissionData): Promise<PremiumQuizSubmission>;

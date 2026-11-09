@@ -1,0 +1,37 @@
+---
+title: A Fixture Post
+description: Fixture for the body safety check.
+date: 2026-01-15
+category: Guides
+readTimeMinutes: 3
+heroImage: /images/blog/valid-post.jpg
+heroImageAlt: A laptop showing a quiz dashboard
+locale: en
+author: rinkuzu-team
+---
+
+## Markdown that looks like code but is not
+
+| Construct | Example |
+| --------- | ------- |
+| Expression | `{props.value}` |
+| Tag | `<div>` |
+
+Inline `import x from 'y'` and `<Foo />` are code spans. An escaped \{ brace and \<b\> tag render literally.
+
+Visit <https://www.rinkuzu.app>, write to <hello@example.com>, [read the FAQ](/en/faq), [email us](mailto:hello@example.com) or [see the docs](https://example.com/docs?a=1#b). Note that 2 < 3 and 5 > 4.
+
+```tsx
+import { Quiz } from '@/components/Quiz';
+export const meta = { title: 'x' };
+
+<Quiz id={42} onDone={() => alert('hi')} />
+<script>alert(1)</script>
+[bad](javascript:alert(1))
+```
+
+~~~
+{expression}
+~~~
+
+[ref]: https://example.com/reference

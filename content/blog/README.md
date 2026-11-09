@@ -41,6 +41,7 @@ Optional fields override copy that otherwise falls back to a required field:
 | `ctaTitle`, `ctaBody`    | a generic upload CTA | Call to action below the article.          |
 | `wordCount`              | omitted              | Article JSON-LD `wordCount`.               |
 | `timeRequiredMinutes`    | omitted              | Article JSON-LD `timeRequired` (`PT<n>M`). |
+| `draft`                  | `false`              | `true` hides the post everywhere (below).  |
 
 `tags` (optional, up to 8 non-empty strings, e.g. `["personalized-learning", "pdf"]`)
 picks the related posts shown under each article: posts in the same locale that
@@ -50,6 +51,48 @@ shows no related block. Give a translation the same tags as its `en` post.
 
 A missing or invalid required field fails validation (and the build) rather
 than rendering a broken page — see `src/lib/blog/content.test.ts`.
+
+## The body is Markdown, not code
+
+Posts are data. The body is rendered by react-markdown (GFM, raw HTML skipped)
+in `src/components/ui/MarkdownRenderer.tsx`; it is **never compiled as MDX**,
+so there is no MDX runtime and no component allowlist to maintain. The `.mdx`
+extension is kept only for editor highlighting.
+
+Loading posts (`src/lib/blog/body-safety.ts`, called from
+`src/lib/blog/content.ts`) fails with `BlogContentError: <file>:<line>: ...`
+when the body contains, **outside fenced code blocks and inline code**:
+
+- an `import` or `export` statement line;
+- a JSX/MDX expression: any `{` or `}` (write `\{` and `\}` to show a brace);
+- a raw HTML or JSX tag: `<div>`, `</span>`, `<Foo />`, `<script>`, `<!-- -->`
+  (write `\<` to show a literal `<` before a letter);
+- a link, image, reference or autolink URL whose scheme is not `http`, `https`
+  or `mailto`. Relative links (`/en/faq`, `#section`) are fine.
+
+Everything else is fine: headings, lists, emphasis, GFM tables and task lists,
+images, links, `<https://...>` autolinks, and any of the constructs above inside
+a code block or code span. The check runs in
+`src/lib/blog/content.test.ts` (it loads the real `content/blog` tree), so a PR
+that adds such a post turns the `test:unit` step of `local/ci` red, and
+`next build` fails on it too.
+
+## Drafts and scheduled posts
+
+`isPublished` in `src/lib/blog/posts.ts` decides, for every list, the author
+pages, previous/next links, the sitemap and the post route:
+
+- `draft: true` keeps the post out of all of them, and its URL is a 404, in
+  every environment (dev, preview and production alike; there is no draft
+  preview mode). To check a draft locally, set `draft: false` in your working
+  copy and run `next dev`; do not commit that.
+- A `date` after today (UTC) works like a draft until that day. The blog pages
+  and `sitemap.xml` are statically cached and re-rendered at most hourly
+  (`export const revalidate = 3600`, ISR), so the post appears within an hour
+  of 00:00 UTC on its date, with no new deploy.
+
+The file is still validated (frontmatter and body) while it is a draft or
+scheduled, so a broken draft fails CI just like a published post.
 
 ## Publishing a new post
 

@@ -5,6 +5,8 @@ export const PREMIUM_SUBMISSION_STATUSES = [
   'changes_requested',
   'rejected',
   'approved',
+  // RIN-1346: the owner unticked Premium before a decision. Kept, never deleted.
+  'withdrawn',
 ] as const;
 
 type PremiumSubmissionStatus = (typeof PREMIUM_SUBMISSION_STATUSES)[number];

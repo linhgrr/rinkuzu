@@ -45,6 +45,11 @@ interface ReminderPreference {
   locale?: string | null;
 }
 
+interface ReminderPromptPreference {
+  optedIn: boolean;
+  snoozedUntil: Date | null;
+}
+
 interface ReminderQuiz {
   slug: string;
   title: string;
@@ -128,12 +133,37 @@ export class ReviewReminderRepository {
     };
   }
 
-  /** True when `studyReminders` is ticked for the learner. */
-  async isOptedIn(userId: Types.ObjectId): Promise<boolean> {
-    const preference = await MarketingPreference.findOne({ userId }, { studyReminders: 1 }).lean<{
-      studyReminders?: boolean;
-    } | null>();
-    return preference?.studyReminders === true;
+  /**
+   * Whether the learner has an attempt after `takenAt`. The sender cancels a
+   * review email for such an attempt (`later_attempt`), so the result-page
+   * prompt uses the same rule (RIN-1362).
+   */
+  async hasLaterAttempt(userId: Types.ObjectId, takenAt: Date): Promise<boolean> {
+    await connectDB();
+    return (await Attempt.exists({ user: userId, takenAt: { $gt: takenAt } })) !== null;
+  }
+
+  /** Whether `studyReminders` is ticked and until when the result-page prompt is snoozed. */
+  async promptPreference(userId: Types.ObjectId): Promise<ReminderPromptPreference> {
+    await connectDB();
+    const preference = await MarketingPreference.findOne(
+      { userId },
+      { studyReminders: 1, reviewPromptSnoozedUntil: 1 },
+    ).lean<{ studyReminders?: boolean; reviewPromptSnoozedUntil?: Date | null } | null>();
+    return {
+      optedIn: preference?.studyReminders === true,
+      snoozedUntil: preference?.reviewPromptSnoozedUntil ?? null,
+    };
+  }
+
+  /** Result-page "No thanks" (RIN-1362): hides the prompt until `until`; consent is untouched. */
+  async snoozePrompt(userId: Types.ObjectId, until: Date): Promise<void> {
+    await connectDB();
+    await MarketingPreference.updateOne(
+      { userId },
+      { $set: { reviewPromptSnoozedUntil: until } },
+      { upsert: true },
+    );
   }
 
   /** Ticks `studyReminders`; true when it was already ticked before this write. */
@@ -236,7 +266,7 @@ export class ReviewReminderRepository {
       MarketingPreference.findOne({ userId })
         .select('studyReminders locale')
         .lean<ReminderPreference | null>(),
-      Attempt.exists({ user: userId, takenAt: { $gt: input.attempt.takenAt } }),
+      this.hasLaterAttempt(userId, input.attempt.takenAt),
       EmailOutbox.countDocuments(
         {
           userId,
@@ -252,7 +282,7 @@ export class ReviewReminderRepository {
     return {
       user,
       preference,
-      laterAttempt: laterAttempt !== null,
+      laterAttempt,
       sentInLastWeek,
       quiz,
       locale: preference?.locale ?? user?.locale ?? null,

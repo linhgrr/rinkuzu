@@ -45,4 +45,22 @@ describe('QuizCard', () => {
     expect(screen.getByRole('button', { name: 'deleteQuiz' })).toHaveClass('text-error');
     expect((await axe(container)).violations).toEqual([]);
   });
+
+  it('labels a submission the owner withdrew from Premium (RIN-1346)', () => {
+    render(
+      <QuizCard
+        quizId="quiz-id"
+        quiz={{
+          title: 'Withdrawn quiz',
+          slug: 'withdrawn-quiz',
+          author: { displayName: 'RinKuzu learner' },
+          visibility: 'public',
+          questionCount: 4,
+          premiumSubmissionStatus: 'withdrawn',
+        }}
+      />,
+    );
+
+    expect(screen.getByText('premiumStatus_withdrawn')).toBeInTheDocument();
+  });
 });

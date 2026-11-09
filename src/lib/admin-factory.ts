@@ -11,9 +11,23 @@ import { UserTestAccountRepository } from '@/repositories/UserTestAccountReposit
 import { AdminTestAccountService } from '@/services/admin/AdminTestAccountService';
 import { ActivationStatsService } from '@/services/admin/ActivationStatsService';
 import { AdminService } from '@/services/admin/AdminService';
+import { AdminReportModerationService } from '@/services/admin/AdminReportModerationService';
+import { QuizIndexHoldRepository } from '@/repositories/QuizIndexHoldRepository';
+import { getAdminQuizService } from '@/lib/admin-quiz-factory';
 import { ReviewEmailStatsService } from '@/services/admin/ReviewEmailStatsService';
 import { ReviewEmailStatsRepository } from '@/repositories/ReviewEmailStatsRepository';
 import { reviewReminderQaRecipients } from '@/lib/communication/review-reminder-policy';
+
+let adminReportModerationService: AdminReportModerationService | undefined;
+
+export function getAdminReportModerationService(): AdminReportModerationService {
+  adminReportModerationService ??= new AdminReportModerationService({
+    reports: new ReportRepository(),
+    indexHold: new QuizIndexHoldRepository(),
+    quizVisibility: getAdminQuizService(),
+  });
+  return adminReportModerationService;
+}
 
 let adminService: AdminService | undefined;
 
@@ -24,6 +38,7 @@ export function getAdminService(): AdminService {
     new QuizRepository(),
     new AttemptRepository(),
     new AdminStatsRepository(),
+    getAdminReportModerationService(),
   );
   return adminService;
 }

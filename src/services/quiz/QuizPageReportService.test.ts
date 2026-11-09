@@ -89,17 +89,23 @@ describe('QuizPageReportService', () => {
     );
   });
 
-  it.each(['copyright', 'personal_data'] as const)('puts the quiz on hold for %s', async (reason) => {
-    await service.report('algebra', { reason, ipHash: 'h1' });
+  it.each(['copyright', 'personal_data'] as const)(
+    'puts the quiz on hold for %s',
+    async (reason) => {
+      await service.report('algebra', { reason, ipHash: 'h1' });
 
-    expect(holdForReport).toHaveBeenCalledWith('507f191e810c19729de860ea', now);
-  });
+      expect(holdForReport).toHaveBeenCalledWith('507f191e810c19729de860ea', now);
+    },
+  );
 
-  it.each(['wrong_content', 'offensive'] as const)('does not hold the quiz for %s', async (reason) => {
-    await service.report('algebra', { reason, ipHash: 'h1' });
+  it.each(['wrong_content', 'offensive'] as const)(
+    'does not hold the quiz for %s',
+    async (reason) => {
+      await service.report('algebra', { reason, ipHash: 'h1' });
 
-    expect(holdForReport).not.toHaveBeenCalled();
-  });
+      expect(holdForReport).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     ['missing', null],

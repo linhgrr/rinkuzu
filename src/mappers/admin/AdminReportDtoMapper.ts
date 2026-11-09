@@ -14,10 +14,15 @@ export class AdminReportDtoMapper {
     return toReportQuestionSnapshot(question, index);
   }
 
-  static toListDto(reports: Report[], pagination: PaginationMeta): AdminReportListDto {
+  static toListDto(
+    reports: Report[],
+    pagination: PaginationMeta,
+    pendingIndexHoldCount = 0,
+  ): AdminReportListDto {
     return {
       reports: reports.map(AdminReportDtoMapper.toDto),
       pagination,
+      pendingIndexHoldCount,
     };
   }
 
@@ -26,6 +31,8 @@ export class AdminReportDtoMapper {
 
     return {
       ...copyReportCoreFields(report),
+      ...(report.reason !== undefined && { reason: report.reason }),
+      ...(report.source !== undefined && { source: report.source }),
       createdAt: serializeDate(report.createdAt, 'report.createdAt'),
       updatedAt: serializeDate(report.updatedAt, 'report.updatedAt'),
       ...(resolvedAt !== undefined && { resolvedAt }),

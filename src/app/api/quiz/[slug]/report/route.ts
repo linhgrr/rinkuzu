@@ -71,9 +71,7 @@ const reportQuizPage = withOptionalAuth<{ slug: string }>(async (request, { para
 });
 
 function isPerQuestionBody(body: unknown): boolean {
-  return (
-    typeof body === 'object' && body !== null && ('questionId' in body || 'content' in body)
-  );
+  return typeof body === 'object' && body !== null && ('questionId' in body || 'content' in body);
 }
 
 type RouteContext = { params: Promise<{ slug: string }> };
@@ -83,5 +81,7 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
     .clone()
     .json()
     .catch(() => null);
-  return isPerQuestionBody(body) ? reportQuestion(request, context) : reportQuizPage(request, context);
+  return isPerQuestionBody(body)
+    ? reportQuestion(request, context)
+    : reportQuizPage(request, context);
 }

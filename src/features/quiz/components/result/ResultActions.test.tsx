@@ -1,14 +1,15 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ResultActions } from './ResultActions';
 
-const { fetchOptedInMock, saveMock, captureMock } = vi.hoisted(() => ({
-  fetchOptedInMock: vi.fn(),
-  saveMock: vi.fn(),
+const { statusMock, optInMock, snoozeMock, captureMock } = vi.hoisted(() => ({
+  statusMock: vi.fn(),
+  optInMock: vi.fn(),
+  snoozeMock: vi.fn(),
   captureMock: vi.fn(),
 }));
 
@@ -28,8 +29,9 @@ const translate = Object.assign(
 vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
 
 vi.mock('@/features/quiz/api/review-reminder-api', () => ({
-  fetchReviewReminderOptedIn: (...args: unknown[]) => fetchOptedInMock(...args),
-  saveReviewReminder: (...args: unknown[]) => saveMock(...args),
+  fetchReviewReminderStatus: (...args: unknown[]) => statusMock(...args),
+  optInReviewReminder: (...args: unknown[]) => optInMock(...args),
+  snoozeReviewReminderPrompt: (...args: unknown[]) => snoozeMock(...args),
 }));
 vi.mock('@/lib/analytics/client', () => ({
   captureAnalyticsEvent: (...args: unknown[]) => captureMock(...args),
@@ -52,8 +54,9 @@ function primaryLinks() {
 describe('ResultActions (RIN-917)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchOptedInMock.mockResolvedValue(false);
-    saveMock.mockResolvedValue(undefined);
+    statusMock.mockResolvedValue({ optedIn: false, snoozedUntil: null, eligible: true });
+    optInMock.mockResolvedValue({ status: 'scheduled', scheduledFor: '2026-11-11T12:00:00.000Z' });
+    snoozeMock.mockResolvedValue(undefined);
   });
 
   it('makes "Retry the N you missed" the only primary, linking to the retry session', async () => {
@@ -70,7 +73,7 @@ describe('ResultActions (RIN-917)', () => {
       campaign: 'w1-review',
       missed_count: 3,
     });
-    await waitFor(() => expect(fetchOptedInMock).toHaveBeenCalled());
+    await waitFor(() => expect(statusMock).toHaveBeenCalled());
   });
 
   it('offers "Try another quiz" when nothing was missed', () => {
@@ -100,89 +103,60 @@ describe('ResultActions (RIN-917)', () => {
     expect(screen.getAllByRole('link', { name: 'backHome' })).toHaveLength(1);
   });
 
-  it('shows a guest neither retry nor the checkbox (the page shows the save-result card)', () => {
+  it('shows a guest neither retry nor the review prompt (the page shows the save-result card)', () => {
     render(<ResultActions {...baseProps} viewer="guest" />);
     expect(screen.queryByText(/retryMissed/)).not.toBeInTheDocument();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'backHome' })).toHaveLength(1);
-    expect(fetchOptedInMock).not.toHaveBeenCalled();
+    expect(statusMock).not.toHaveBeenCalled();
   });
 
-  it('hides retry and the checkbox on a content-locked result', () => {
+  it('hides retry and the review prompt on a content-locked result', () => {
     render(<ResultActions {...baseProps} contentLocked />);
     expect(screen.queryByText(/retryMissed/)).not.toBeInTheDocument();
+    expect(statusMock).not.toHaveBeenCalled();
+  });
+
+  it('offers the explicit review choice bound to this attempt and sends nothing on render', async () => {
+    render(<ResultActions {...baseProps} />);
+    expect(await screen.findByRole('button', { name: 'remind' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'decline' })).toBeInTheDocument();
+    expect(statusMock).toHaveBeenCalledWith(ATTEMPT_ID);
+    expect(optInMock).not.toHaveBeenCalled();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
-  it('starts unticked and sends nothing until the learner ticks it', async () => {
+  it('"Remind me" opts in with the page locale and records the opt-in event', async () => {
     render(<ResultActions {...baseProps} />);
-    const checkbox = screen.getByRole('checkbox', { name: 'reviewEmail' });
-    await waitFor(() => expect(fetchOptedInMock).toHaveBeenCalled());
-    expect(checkbox).not.toBeChecked();
-    expect(saveMock).not.toHaveBeenCalled();
-  });
-
-  it('shows saving then saved, and records the opt-in event', async () => {
-    let resolveSave: () => void = () => undefined;
-    saveMock.mockReturnValueOnce(
-      new Promise<void>((resolve) => {
-        resolveSave = resolve;
+    fireEvent.click(await screen.findByRole('button', { name: 'remind' }));
+    await waitFor(() =>
+      expect(captureMock).toHaveBeenCalledWith('review_email_opt_in', {
+        campaign: 'w1-review',
+        missed_count: 3,
       }),
     );
-    render(<ResultActions {...baseProps} />);
-    const checkbox = screen.getByRole('checkbox', { name: 'reviewEmail' });
-
-    fireEvent.click(checkbox);
-    expect(checkbox).toBeChecked();
-    expect(checkbox).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('saving');
-    expect(saveMock).toHaveBeenCalledWith({ attemptId: ATTEMPT_ID, optIn: true, locale: 'en' });
-
-    await act(async () => resolveSave());
-    expect(screen.getByRole('status')).toHaveTextContent('savedOn');
-    expect(checkbox).toBeEnabled();
-    expect(captureMock).toHaveBeenCalledWith('review_email_opt_in', {
-      campaign: 'w1-review',
-      missed_count: 3,
-    });
+    expect(optInMock).toHaveBeenCalledWith({ attemptId: ATTEMPT_ID, locale: 'en' });
   });
 
-  it('reverts on error and retries the same choice', async () => {
-    saveMock.mockRejectedValueOnce(new Error('offline'));
+  it('"No thanks" snoozes the prompt for this learner', async () => {
     render(<ResultActions {...baseProps} />);
-    const checkbox = screen.getByRole('checkbox', { name: 'reviewEmail' });
-
-    fireEvent.click(checkbox);
-    expect(await screen.findByText('saveError')).toBeInTheDocument();
-    expect(checkbox).not.toBeChecked();
-
-    fireEvent.click(screen.getByRole('button', { name: 'tryAgain' }));
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('savedOn'));
-    expect(checkbox).toBeChecked();
-    expect(saveMock).toHaveBeenLastCalledWith({
-      attemptId: ATTEMPT_ID,
-      optIn: true,
-      locale: 'en',
-    });
+    fireEvent.click(await screen.findByRole('button', { name: 'decline' }));
+    await waitFor(() => expect(snoozeMock).toHaveBeenCalledWith(ATTEMPT_ID));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'decline' })).not.toBeInTheDocument(),
+    );
   });
 
-  it('shows the box ticked on revisit and un-ticks it', async () => {
-    fetchOptedInMock.mockResolvedValue(true);
-    render(<ResultActions {...baseProps} />);
-    const checkbox = screen.getByRole('checkbox', { name: 'reviewEmail' });
-    await waitFor(() => expect(checkbox).toBeChecked());
-
-    fireEvent.click(checkbox);
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('savedOff'));
-    expect(saveMock).toHaveBeenCalledWith({ attemptId: ATTEMPT_ID, optIn: false, locale: 'en' });
-    expect(captureMock).not.toHaveBeenCalledWith('review_email_opt_in', expect.anything());
+  it('shows no prompt when nothing was missed', () => {
+    render(<ResultActions {...baseProps} missedCount={0} />);
+    expect(statusMock).not.toHaveBeenCalled();
   });
 });
 
 describe('ResultActions on a quick round (RIN-933)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchOptedInMock.mockResolvedValue(false);
+    statusMock.mockResolvedValue({ optedIn: false, snoozedUntil: null, eligible: true });
   });
 
   function linkNames() {
@@ -237,7 +211,7 @@ describe('ResultActions share button (RIN-1179)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchOptedInMock.mockResolvedValue(false);
+    statusMock.mockResolvedValue({ optedIn: false, snoozedUntil: null, eligible: true });
   });
 
   it.each([

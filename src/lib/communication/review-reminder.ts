@@ -132,11 +132,70 @@ export async function optInReviewReminder(input: {
   return { optedIn: true, status: 'capped', scheduledFor: null };
 }
 
-/** Whether the learner currently has `study_reminders` ticked (result-page revisit). */
+/** "No thanks" on the result-page prompt hides it for 7 days on every device (RIN-1362). */
+const REVIEW_PROMPT_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+
+export interface ReviewReminderPromptStatus {
+  /** `study_reminders` is ticked. */
+  optedIn: boolean;
+  /** Set only while the prompt is snoozed (in the future). */
+  snoozedUntil: string | null;
+  /**
+   * The attempt is the learner's own and latest, has missed questions and is
+   * still in the opt-in window.
+   */
+  eligible: boolean;
+}
+
+async function attemptEligible(
+  userId: Types.ObjectId,
+  attemptId: string | null | undefined,
+  email: string,
+  now: Date,
+): Promise<boolean> {
+  if (!attemptId) return false;
+  const attempt = await repository.findAttempt(requiredObjectId(attemptId, 'attempt id'));
+  if (!attempt?.userId?.equals(userId)) return false;
+  if (attempt.totalQuestions - attempt.correctAnswers <= 0) return false;
+  if (reviewReminderAvailableAt({ takenAt: attempt.takenAt, email, now }) === null) return false;
+  // An older attempt's email would be canceled at send time (`later_attempt`),
+  // and re-pointing the pending row at it would drop the newer one's email.
+  return !(await repository.hasLaterAttempt(userId, attempt.takenAt));
+}
+
+/**
+ * What the result-page review prompt shows (RIN-1362): opted in, snoozed by
+ * "No thanks", and whether this attempt can still get a 2-day email.
+ */
 export async function reviewReminderStatus(input: {
   userId: string;
-}): Promise<{ optedIn: boolean }> {
-  return { optedIn: await repository.isOptedIn(requiredObjectId(input.userId, 'user id')) };
+  email: string;
+  attemptId?: string | null | undefined;
+  now?: Date;
+}): Promise<ReviewReminderPromptStatus> {
+  const now = input.now ?? new Date();
+  const userId = requiredObjectId(input.userId, 'user id');
+  const [preference, eligible] = await Promise.all([
+    repository.promptPreference(userId),
+    attemptEligible(userId, input.attemptId, input.email, now),
+  ]);
+  const until = preference.snoozedUntil;
+  return {
+    optedIn: preference.optedIn,
+    snoozedUntil: until && until.getTime() > now.getTime() ? until.toISOString() : null,
+    eligible,
+  };
+}
+
+/** "No thanks": hides the prompt until now + 7 days. Not a consent change, so no consent event. */
+export async function snoozeReviewReminderPrompt(input: {
+  userId: string;
+  now?: Date;
+}): Promise<{ snoozedUntil: string }> {
+  const now = input.now ?? new Date();
+  const until = new Date(now.getTime() + REVIEW_PROMPT_SNOOZE_MS);
+  await repository.snoozePrompt(requiredObjectId(input.userId, 'user id'), until);
+  return { snoozedUntil: until.toISOString() };
 }
 
 /**

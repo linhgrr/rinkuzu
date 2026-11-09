@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server';
-import { reviewReminderRequestSchema } from '@/dtos/communication';
+import { reviewReminderRequestSchema, reviewReminderStatusQuerySchema } from '@/dtos/communication';
 import { withAuth } from '@/lib/api/auth';
 import { apiOk } from '@/lib/api/response';
-import { parseJsonBody } from '@/lib/api/validated';
+import { parseJsonBody, parseSearchParams } from '@/lib/api/validated';
 import { extractRequestContext } from '@/lib/audit';
 import {
   assertCommunicationMutationRequest,
@@ -12,17 +12,21 @@ import {
   optInReviewReminder,
   optOutReviewReminder,
   reviewReminderStatus,
+  snoozeReviewReminderPrompt,
 } from '@/lib/communication/review-reminder';
 
 /**
- * Result-page opt-in to the 2-day review email (RIN-911 AC3/AC4).
- * `POST { attemptId, optIn?, locale? }`: `optIn: false` un-ticks it.
+ * Result-page opt-in to the 2-day review email (RIN-911 AC3/AC4, RIN-1362).
+ * `POST { attemptId, optIn?, locale? }`: `optIn: false` un-ticks it;
+ * `POST { attemptId, action: 'snooze' }` is "No thanks" (prompt hidden 7 days).
  * `DELETE { attemptId }` un-ticks it too.
- * `GET` reports `{ optedIn }` so a revisited result page shows the box ticked (RIN-917).
+ * `GET ?attemptId=` reports `{ optedIn, snoozedUntil, eligible }` for the prompt.
  */
-export const GET = withAuth(async (_request: NextRequest, { userId }) => {
+export const GET = withAuth(async (request: NextRequest, { userId, email }) => {
   try {
-    return apiOk(await reviewReminderStatus({ userId }));
+    const query = parseSearchParams(request, reviewReminderStatusQuerySchema);
+    if (!query.ok) return query.response;
+    return apiOk(await reviewReminderStatus({ userId, email, attemptId: query.data.attemptId }));
   } catch (error) {
     return communicationHttpError(error, 'review-reminder-status');
   }
@@ -33,6 +37,9 @@ export const POST = withAuth(async (request: NextRequest, { userId, email }) => 
     assertCommunicationMutationRequest(request);
     const input = await parseJsonBody(request, reviewReminderRequestSchema);
     if (!input.ok) return input.response;
+    if (input.data.action === 'snooze') {
+      return apiOk(await snoozeReviewReminderPrompt({ userId }));
+    }
     const { ip } = extractRequestContext(request);
     if (!input.data.optIn) {
       return apiOk(await optOutReviewReminder({ userId, source: 'result_page_review', ip }));

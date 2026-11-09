@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, optInMock, optOutMock, statusMock } = vi.hoisted(() => ({
+const { authMock, optInMock, optOutMock, statusMock, snoozeMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   optInMock: vi.fn(),
   optOutMock: vi.fn(),
   statusMock: vi.fn(),
+  snoozeMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
@@ -13,6 +14,7 @@ vi.mock('@/lib/communication/review-reminder', () => ({
   optInReviewReminder: optInMock,
   optOutReviewReminder: optOutMock,
   reviewReminderStatus: statusMock,
+  snoozeReviewReminderPrompt: snoozeMock,
 }));
 
 import { DELETE, GET, POST } from '@/app/api/user/review-reminder/route';
@@ -39,17 +41,47 @@ describe('/api/user/review-reminder', () => {
     });
     optInMock.mockResolvedValue({ optedIn: true, status: 'scheduled', scheduledFor: 'x' });
     optOutMock.mockResolvedValue({ optedIn: false });
-    statusMock.mockResolvedValue({ optedIn: true });
+    statusMock.mockResolvedValue({ optedIn: true, snoozedUntil: null, eligible: true });
+    snoozeMock.mockResolvedValue({ snoozedUntil: '2026-11-16T10:00:00.000Z' });
   });
 
-  it('GET reports whether the session user is opted in (RIN-917 revisit)', async () => {
+  it('GET reports the prompt status for the attempt (RIN-1362)', async () => {
     const response = await GET(
-      new NextRequest('http://localhost/api/user/review-reminder'),
+      new NextRequest(`http://localhost/api/user/review-reminder?attemptId=${ATTEMPT_ID}`),
       routeContext,
     );
     expect(response.status).toBe(200);
-    expect((await response.json()).data).toEqual({ optedIn: true });
-    expect(statusMock).toHaveBeenCalledWith({ userId: 'user-1' });
+    expect((await response.json()).data).toEqual({
+      optedIn: true,
+      snoozedUntil: null,
+      eligible: true,
+    });
+    expect(statusMock).toHaveBeenCalledWith({
+      userId: 'user-1',
+      email: 'learner@gmail.com',
+      attemptId: ATTEMPT_ID,
+    });
+  });
+
+  it('GET rejects an invalid attempt id', async () => {
+    const response = await GET(
+      new NextRequest('http://localhost/api/user/review-reminder?attemptId=nope'),
+      routeContext,
+    );
+    expect(response.status).toBe(400);
+    expect(statusMock).not.toHaveBeenCalled();
+  });
+
+  it('POST action:snooze snoozes the prompt and changes no consent (RIN-1362)', async () => {
+    const response = await POST(
+      request('POST', { attemptId: ATTEMPT_ID, action: 'snooze' }),
+      routeContext,
+    );
+    expect(response.status).toBe(200);
+    expect((await response.json()).data).toEqual({ snoozedUntil: '2026-11-16T10:00:00.000Z' });
+    expect(snoozeMock).toHaveBeenCalledWith({ userId: 'user-1' });
+    expect(optInMock).not.toHaveBeenCalled();
+    expect(optOutMock).not.toHaveBeenCalled();
   });
 
   it('GET requires a signed-in learner', async () => {

@@ -177,6 +177,15 @@
   "accessDeniedDescription": "You do not have permission to edit this quiz.",
   "readOnlyTitle": "Read Only",
   "readOnlyDescription": "You do not have permission to edit this quiz. Only its author or an administrator can make changes.",
+  "personalDataNotice": {
+    "text": "This quiz may contain personal data ({kinds}), so it won't appear on Google. Remove it so people can find the quiz.",
+    "kinds": {
+      "phone": "phone",
+      "email": "email",
+      "id_number": "ID numbers",
+      "labelled_name": "names"
+    }
+  },
   "quizLink": "Quiz Link",
   "quizLinkDescription": "Share this link with your students",
   "copyLink": "Copy",

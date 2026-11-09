@@ -1449,6 +1449,75 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('offers the 2-day review on the adaptive end screen and schedules Path B emails @critical-adaptive', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const sessionId = `e2e-review-${fixture.runId}`;
+      const outcome = {
+        version: 1,
+        result: {
+          is_correct: true,
+          correct_option: 'A',
+          explanation: 'Fake explanation.',
+          concept_name: 'Fake concept',
+          bloom_level: 1,
+          mastery_after: 0.6,
+          avg_mastery: 0.5,
+          step: 5,
+          session_completed: true,
+          stats: { total_correct: 4, total_answered: 5, accuracy: 0.8 },
+        },
+        exercise: {
+          id: 'e2e-exercise-5',
+          exercise_id: 'e2e-exercise-5',
+          concept_name: 'Fake concept',
+          concept_idx: 0,
+          bloom_level: 1,
+          bloom_label: 'Remember',
+          exercise_type: 'mcq',
+          question: 'Fake question?',
+          options: { A: 'Fake answer', B: 'Other fake answer' },
+          items: [],
+          pairs: [],
+          right_items: [],
+          step: 5,
+          max_steps: 5,
+        },
+        answer: { type: 'mcq', selection: 'A' },
+      };
+      await login(page, fixture.regular);
+      await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [
+        `al_session_outcome:v1:${sessionId}`,
+        JSON.stringify(outcome),
+      ] as const);
+      await page.goto(`/en/adaptive/result/${sessionId}`);
+
+      // The fake API reports a completion an hour ago, so the prompt shows (RIN-1364).
+      await expect(page.getByText('Session Complete!')).toBeVisible();
+      await expect(
+        page.getByText('Want a reminder in 2 days to review what you just studied?'),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Remind me in 2 days', exact: true }).click();
+      await expect(page.getByText(/^We'll send your review on /u)).toBeVisible();
+
+      const rows = await fixture.db
+        .collection('emailoutboxes')
+        .find({ userId: fixture.regular.id, entityType: 'adaptive_completion' })
+        .sort({ availableAt: 1 })
+        .toArray();
+      expect(rows.map((row) => row['kind'])).toEqual(['review_reminder', 'review_reminder_d5']);
+      expect(rows[0]).toMatchObject({ status: 'pending', anchorDocumentId: 'e2e-review-session' });
+      expect(
+        await fixture.db.collection('marketingconsentevents').countDocuments({
+          userId: fixture.regular.id,
+          action: 'opt_in',
+          source: 'adaptive_end_review',
+        }),
+      ).toBe(1);
+    });
+  });
+
   test('shows a not-found state for an unknown learning session @critical-adaptive', async ({
     page,
   }, testInfo) => {

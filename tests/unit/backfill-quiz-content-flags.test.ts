@@ -7,7 +7,7 @@ import {
 } from '../../scripts/backfill-quiz-content-flags.mjs';
 
 // Fake data only: no value below belongs to a real person.
-type FakeQuiz = Record<string, unknown> & { _id: ObjectId };
+type FakeQuiz = Record<string, unknown> & { _id: ObjectId; visibility: string };
 
 interface UpdateOne {
   updateOne: {
@@ -86,7 +86,7 @@ function fakeDb(docs: FakeQuiz[], beforeWrite: () => void = () => {}) {
       return { matchedCount, modifiedCount };
     },
   };
-  return { db: { collection: () => collection } as never, finds };
+  return { db: { collection: () => collection }, finds };
 }
 
 describe('backfill-quiz-content-flags (RIN-1341)', () => {

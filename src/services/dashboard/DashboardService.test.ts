@@ -37,6 +37,8 @@ function candidate(
     visibility: 'public',
     questionCount: 7,
     isPremium: false,
+    personalDataFlagged: false,
+    indexHold: false,
     ...extra,
   };
 }

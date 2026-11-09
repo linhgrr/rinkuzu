@@ -118,7 +118,7 @@ function count(counts, flags) {
 
 /**
  * Runs the backfill over the public quizzes of `db`.
- * @param {import('mongodb').Db} db
+ * @param {{ collection(name: string): any }} db a `Db`, or a fake with `find` and `bulkWrite`
  * @param {{ apply: boolean, resolveFlags: (quiz: any, previous: any, now: Date) => any, now?: Date }} options
  */
 export async function backfillQuizContentFlags(db, { apply, resolveFlags, now = new Date() }) {

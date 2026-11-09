@@ -40,6 +40,7 @@ const {
   getBlogIndexPosts,
   getBlogPostsByAuthor,
   getBlogSitemapRoutes,
+  getRelatedBlogArticles,
   isPublished,
 } = await import('./posts');
 
@@ -105,6 +106,14 @@ describe('blog queries skip unpublished posts', () => {
     expect(getBlogArticleLocales('scheduled-post', NOW)).toEqual([]);
     expect(getBlogArticleLocales('scheduled-post', NEXT_DAY)).toEqual(['vi', 'en']);
     expect(getBlogArticleLocales('draft-post', NEXT_DAY)).toEqual([]);
+  });
+
+  it('leaves drafts and scheduled posts out of related posts until their day', () => {
+    expect(slugs(getRelatedBlogArticles(LIVE, 3, NOW))).toEqual(['today-post']);
+    expect(slugs(getRelatedBlogArticles(LIVE, 3, NEXT_DAY))).toEqual([
+      'scheduled-post',
+      'today-post',
+    ]);
   });
 
   it('drops an author whose only posts are unpublished', () => {

@@ -5,13 +5,21 @@ import { headers } from 'next/headers';
 import { permanentRedirect } from 'next/navigation';
 import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
-import type { QuizPlayAuthorViewModel } from '@/features/quiz/types/quiz-play-view-model';
-import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
+import type {
+  QuizPlayAuthorViewModel,
+  QuizPlayViewModel,
+} from '@/features/quiz/types/quiz-play-view-model';
+import { QuizBreadcrumbSchema, QuizPageSchema } from '@/components/seo/QuizPageSchema';
 import QuizPlayerClient from './QuizPlayerClient';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
-import { buildQuizMetadata } from './quiz-metadata';
+import { buildQuizMetadata, loadQuizMetadata } from './quiz-metadata';
+import { QuizLanding } from '@/features/quiz/components/landing/QuizLanding';
+import { toQuizLandingViewModel } from '@/features/quiz/mappers/quiz-landing.mapper';
+import type { QuizLandingViewModel } from '@/features/quiz/types/quiz-landing-view-model';
+import { buildQuizSeoDescription, isQuizIndexable } from '@/lib/seo/quiz-indexability';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,6 +65,62 @@ async function loadQuizForPlay(
     if (retry.success) return retry;
   }
   return quizService.getQuizForPlay(slug, session?.user?.role, userId);
+}
+
+/** Related quiz links on the landing (RIN-1241 C12). */
+const RELATED_QUIZ_LIMIT = 6;
+
+interface LandingRequest {
+  slug: string;
+  quiz: QuizPlayViewModel;
+  query: QuizPageSearchParams;
+  viewerId: string | undefined;
+  authorName: string | undefined;
+}
+
+/**
+ * The landing view (RIN-1241, Designer spec on RIN-1247) shows for an indexable
+ * public quiz opened without `mode`, `entry` or `retryOf`, to anyone but its
+ * owner. Everyone else gets the player exactly as before.
+ */
+async function loadQuizLanding({
+  slug,
+  quiz,
+  query,
+  viewerId,
+  authorName,
+}: LandingRequest): Promise<QuizLandingViewModel | null> {
+  if (quiz.visibility !== 'public') return null;
+  if (query['mode'] !== undefined || query['entry'] !== undefined) return null;
+  if (query['retryOf'] !== undefined) return null;
+  if (viewerId && quiz.author?.id === viewerId) return null;
+  const metadata = await loadQuizMetadata(slug);
+  if (!metadata || !isQuizIndexable(metadata)) return null;
+
+  const related = await getQuizService()
+    .getRelatedPublicQuizzes({
+      excludeSlug: slug,
+      contentLocale: metadata.contentLocale,
+      limit: RELATED_QUIZ_LIMIT,
+    })
+    .catch((error: unknown) => {
+      // The links are extra; the landing still renders without them.
+      logger.error({ error, slug }, 'related quizzes for the quiz landing failed');
+      return [];
+    });
+  return toQuizLandingViewModel({
+    slug,
+    quiz,
+    description: buildQuizSeoDescription({
+      title: quiz.title,
+      description: quiz.description ?? null,
+      questionCount: quiz.questionCount,
+      firstQuestionText: metadata.leadQuestionTexts[0] ?? null,
+      locale: metadata.contentLocale,
+    }),
+    authorName: authorName ?? null,
+    related,
+  });
 }
 
 type QuizPageProps = {
@@ -136,6 +200,38 @@ export default async function QuizPlayerPage({ params, searchParams }: QuizPageP
       ? `Luyện tập ${quiz.questionCount} câu hỏi trong quiz ${quiz.title} trên RinKuzu.`
       : `Practice ${quiz.questionCount} questions in ${quiz.title} on RinKuzu.`;
 
+  const landing = await loadQuizLanding({
+    slug,
+    quiz,
+    query,
+    viewerId: session?.user?.id,
+    authorName: schemaAuthorName,
+  });
+  const schema =
+    quiz.visibility === 'public' ? (
+      <>
+        <QuizPageSchema
+          locale={locale}
+          quizSlug={slug}
+          quizTitle={quiz.title}
+          {...(quiz.description ? { quizDescription: quiz.description } : {})}
+          {...(schemaAuthorName ? { authorName: schemaAuthorName } : {})}
+          createdAt={quiz.createdAt}
+          updatedAt={quiz.updatedAt}
+        />
+        <QuizBreadcrumbSchema locale={locale} quizSlug={slug} quizTitle={quiz.title} />
+      </>
+    ) : null;
+
+  if (landing) {
+    return (
+      <>
+        {schema}
+        <QuizLanding locale={locale} landing={landing} signedIn={Boolean(session?.user)} />
+      </>
+    );
+  }
+
   return (
     <>
       {quiz.visibility === 'public' ? (
@@ -144,15 +240,7 @@ export default async function QuizPlayerPage({ params, searchParams }: QuizPageP
             <h1 id="quiz-page-title">{quiz.title}</h1>
             <p>{quiz.description || fallbackDescription}</p>
           </section>
-          <QuizPageSchema
-            locale={locale}
-            quizSlug={slug}
-            quizTitle={quiz.title}
-            {...(quiz.description ? { quizDescription: quiz.description } : {})}
-            {...(schemaAuthorName ? { authorName: schemaAuthorName } : {})}
-            createdAt={quiz.createdAt}
-            updatedAt={quiz.updatedAt}
-          />
+          {schema}
         </>
       ) : null}
       <QuizPlayerClient

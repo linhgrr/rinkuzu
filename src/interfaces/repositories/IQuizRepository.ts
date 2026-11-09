@@ -1,4 +1,4 @@
-import type { Quiz, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
+import type { Quiz, QuizContentFlags, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
 import type {
   CountBuckets,
   CountBucketThresholds,
@@ -78,12 +78,20 @@ export interface CreateQuizData {
   pdfUrl?: string;
   tags?: string[];
   sourceDraftId?: string;
+  contentFlags?: QuizContentFlags;
 }
 
 export type UpdateQuizData = Partial<
   Pick<
     CreateQuizData,
-    'title' | 'description' | 'folder' | 'questions' | 'visibility' | 'pdfUrl' | 'tags'
+    | 'title'
+    | 'description'
+    | 'folder'
+    | 'questions'
+    | 'visibility'
+    | 'pdfUrl'
+    | 'tags'
+    | 'contentFlags'
   >
 >;
 

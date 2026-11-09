@@ -143,6 +143,21 @@ export interface QuizMetadataDto extends QuizListItemDto {
   contentLocale: 'vi' | 'en';
 }
 
+/** A link to another indexable public quiz on a quiz landing (RIN-1241 C12). */
+export interface RelatedQuizDto {
+  slug: string;
+  title: string;
+  questionCount: number;
+}
+
+export interface RelatedQuizzesQueryDto {
+  /** The quiz on the page; never linked to itself. */
+  excludeSlug: string;
+  /** Only quizzes written in this language (RIN-1241 D14). */
+  contentLocale: 'vi' | 'en';
+  limit: number;
+}
+
 /** An indexable public quiz (RIN-1241 D13), listed once at its content-locale URL. */
 export interface PublicQuizSitemapEntryDto {
   slug: string;
@@ -157,13 +172,23 @@ export type QuizQuestionDto = QuizQuestionInputDto & {
 
 export type PlayableQuizQuestionDto = QuizQuestionDisplay;
 
+/** Owner/admin view of the personal-data check (RIN-1338); never on public DTOs. */
+interface QuizContentFlagsDto {
+  personalData: boolean;
+  kinds: string[];
+}
+
 export interface QuizDetailDto extends QuizListItemDto {
   questions: QuizQuestionDto[];
   pdfUrl?: string;
   tags?: string[];
+  contentFlags?: QuizContentFlagsDto;
 }
 
-export interface QuizPlayDetailDto extends Omit<QuizDetailDto, 'questions' | 'pdfUrl'> {
+export interface QuizPlayDetailDto extends Omit<
+  QuizDetailDto,
+  'questions' | 'pdfUrl' | 'contentFlags'
+> {
   questions: PlayableQuizQuestionDto[];
   /** Present on a retry-missed session: `questions[i]` is quiz question `questionIndices[i]`. */
   retry?: { ofAttemptId: string; questionIndices: number[] };

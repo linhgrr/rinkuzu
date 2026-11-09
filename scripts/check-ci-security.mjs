@@ -339,6 +339,19 @@ for (const file of workflows) {
       /gitleaks" git[\s\S]*--config \.gitleaks\.toml/.test(scripts),
       'Gitleaks must run with the repository config (.gitleaks.toml)',
     ],
+    // On a pull request the tree is the PR's own merge commit: config and
+    // ignore file must come from the base commit and inline allows must be off.
+    [
+      scripts.includes('--ignore-gitleaks-allow') &&
+        scripts.includes('--gitleaks-ignore-path') &&
+        scripts.includes('git show "${BASE_SHA}:.gitleaksignore"') &&
+        scripts.includes('git show "${BASE_SHA}:.gitleaks.toml"'),
+      'Gitleaks on pull_request must read its config and ignore file from the base SHA and ignore gitleaks:allow',
+    ],
+    [
+      /rm -f -- \.gitleaksignore[\s\S]*gitleaks" git[\s\S]*--gitleaks-ignore-path/.test(scripts),
+      "Gitleaks on pull_request must delete the PR's own .gitleaksignore before scanning",
+    ],
   ];
   for (const [satisfied, message] of requirements) {
     if (!satisfied) fail(file, secretScanLine, message);

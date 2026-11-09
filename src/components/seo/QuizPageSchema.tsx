@@ -61,3 +61,34 @@ export function QuizPageSchema({
 
   return <JsonLd id="quiz-schema" data={quizSchema} />;
 }
+
+interface QuizBreadcrumbSchemaProps {
+  locale: string;
+  quizSlug: string;
+  quizTitle: string;
+}
+
+/**
+ * Home › Explore › quiz (RIN-1241 C11). The topic step comes with the subject
+ * hubs (RIN-1249).
+ */
+export function QuizBreadcrumbSchema({ locale, quizSlug, quizTitle }: QuizBreadcrumbSchemaProps) {
+  const isVietnamese = locale === 'vi';
+  const steps = [
+    { name: isVietnamese ? 'Trang chủ' : 'Home', path: '/' },
+    { name: isVietnamese ? 'Khám phá' : 'Explore', path: '/explore' },
+    { name: quizTitle, path: `/quiz/${quizSlug}` },
+  ];
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: steps.map((step, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: step.name,
+      item: canonicalFor(locale, step.path),
+    })),
+  };
+
+  return <JsonLd id="quiz-breadcrumb-schema" data={breadcrumbSchema} />;
+}

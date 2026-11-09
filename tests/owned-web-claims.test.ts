@@ -24,6 +24,8 @@ const forbiddenOwnedWebClaims = [
 const ownedWebSources = [
   'messages/en/landing.json',
   'messages/vi/landing.json',
+  'messages/en/blog.json',
+  'messages/vi/blog.json',
   'src/app/llms.txt/route.ts',
   'src/app/[locale]/(marketing)/about/page.tsx',
   'src/app/[locale]/(marketing)/blog/page.tsx',

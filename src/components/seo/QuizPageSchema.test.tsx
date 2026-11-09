@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { QuizPageSchema } from './QuizPageSchema';
+import { QuizBreadcrumbSchema, QuizPageSchema } from './QuizPageSchema';
 
 describe('QuizPageSchema', () => {
   it('renders truthful quiz structured data without fabricated ratings or credits', () => {
@@ -57,4 +57,27 @@ describe('QuizPageSchema', () => {
       expect(html).not.toContain('"@type":"Person"');
     },
   );
+});
+
+// RIN-1241 C11: Trang chủ › Khám phá › quiz, with absolute canonical URLs.
+describe('QuizBreadcrumbSchema', () => {
+  it('lists home, explore and the quiz in order', () => {
+    const html = renderToStaticMarkup(
+      <QuizBreadcrumbSchema locale="vi" quizSlug="giai-tich-1" quizTitle="Giải tích 1" />,
+    );
+    const json = html.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '');
+    const schema = JSON.parse(json) as {
+      '@type': string;
+      itemListElement: { position: number; name: string; item: string }[];
+    };
+
+    expect(schema['@type']).toBe('BreadcrumbList');
+    expect(schema.itemListElement.map(({ position, name }) => [position, name])).toEqual([
+      [1, 'Trang chủ'],
+      [2, 'Khám phá'],
+      [3, 'Giải tích 1'],
+    ]);
+    expect(schema.itemListElement[1]?.item).toMatch(/^https?:\/\/[^/]+\/vi\/explore$/);
+    expect(schema.itemListElement[2]?.item).toMatch(/\/vi\/quiz\/giai-tich-1$/);
+  });
 });

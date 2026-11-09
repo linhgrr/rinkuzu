@@ -1,0 +1,28 @@
+{
+  "breadcrumbHome": "Trang chủ",
+  "cta": {
+    "title": "Biến tài liệu PDF thành bài luyện tập cá nhân hóa",
+    "body": "Tải lên một tệp PDF, RinKuzu tạo bộ quiz cá nhân hóa từ chính tài liệu đó, miễn phí.",
+    "button": "Bắt đầu miễn phí",
+    "reassurance": "Không cần thẻ tín dụng · Có gói miễn phí",
+    "faqPrompt": "Có thắc mắc về việc tải tài liệu hoặc các gói?",
+    "faqLink": "Xem câu hỏi thường gặp"
+  },
+  "share": {
+    "label": "Chia sẻ bài viết:",
+    "shareOn": "Chia sẻ lên {network}",
+    "copyLink": "Sao chép liên kết",
+    "copied": "Đã sao chép liên kết",
+    "copyFailed": "Không thể sao chép liên kết"
+  },
+  "toc": {
+    "heading": "Mục lục"
+  },
+  "nav": {
+    "previous": "Bài trước",
+    "noPrevious": "Chưa có bài trước",
+    "nextArticle": "Bài tiếp theo",
+    "next": "Bài tiếp theo",
+    "moreSoon": "Sắp có thêm bài viết"
+  }
+}

@@ -1123,6 +1123,102 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('claims a guest result when the verification link opens in another browser @critical-quiz-guest-claim-cross-browser', async ({
+    page,
+    browser,
+    baseURL,
+  }, testInfo) => {
+    // RIN-1310: the guest's claim token lives in browser A; the email is verified and the
+    // learner signs in from browser B. The server claims the attempt at verification.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      const email = `e2e-xbrowser-${randomUUID().slice(0, 12)}@example.com`;
+      const origin = new URL(baseURL ?? 'http://localhost:3000').origin;
+      let attemptId = '';
+      // A fresh context shares nothing with the guest's: no storage, no cookies.
+      const other = await browser.newContext({ baseURL: origin });
+      try {
+        await page.goto(`/en/quiz/${starterSlug}`);
+        await submitStarterQuiz(page, starterSlug);
+        const resultUrl = new URL(page.url());
+        attemptId = resultUrl.searchParams.get('attemptId') ?? '';
+
+        await page.getByRole('link', { name: 'Create an account' }).first().click();
+        await page.waitForURL(/\/en\/register\?callbackUrl=/);
+        await page.getByLabel('Email Address').fill(email);
+        await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await page.getByLabel('Confirm password').fill(E2E_PASSWORD);
+        await page.getByRole('checkbox').check();
+        await page.getByRole('button', { name: 'Create Account', exact: true }).click();
+        await expect(page.getByText('Check your email')).toBeVisible();
+
+        // The raw token only exists in the email: pin a known one on the pending account.
+        const verificationToken = randomUUID().replace(/-/g, '').repeat(2);
+        await fixture.db.collection('users').updateOne(
+          { email },
+          {
+            $set: {
+              emailVerificationTokenHash: createHash('sha256')
+                .update(verificationToken, 'utf8')
+                .digest('hex'),
+            },
+          },
+        );
+
+        const otherPage = await other.newPage();
+        const verified = await otherPage.request.post('/api/auth/verify-email', {
+          data: { token: verificationToken },
+          headers: { origin },
+        });
+        expect(verified.status()).toBe(200);
+
+        const resultPath = `${resultUrl.pathname.replace(/^\/en/, '')}${resultUrl.search}`;
+        await otherPage.goto(`/en/login?callbackUrl=${encodeURIComponent(resultPath)}`);
+        await otherPage.getByLabel('Email Address').fill(email);
+        await otherPage.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await Promise.all([
+          otherPage.waitForURL(
+            new RegExp(`/en/quiz/${starterSlug}/result\?attemptId=${attemptId}`),
+          ),
+          otherPage.getByRole('button', { name: 'Sign In', exact: true }).click(),
+        ]);
+        const user = await fixture.db.collection('users').findOne({ email });
+        const attempt = await fixture.db
+          .collection('attempts')
+          .findOne({ _id: new ObjectId(attemptId) });
+        expect(attempt?.['user']?.toString()).toBe(String(user?.['_id']));
+        await expect(otherPage.getByRole('link', { name: 'Redo' }).first()).toBeVisible();
+        await expect(otherPage.getByText("We couldn't find this")).toHaveCount(0);
+        await expect(otherPage.getByText(/can't open the question review/)).toHaveCount(0);
+      } finally {
+        await other.close();
+        const created = await fixture.db.collection('users').findOne({ email });
+        const ownedAttempts = [
+          ...(ObjectId.isValid(attemptId) ? [{ _id: new ObjectId(attemptId) }] : []),
+          ...(created ? [{ user: created['_id'] }] : []),
+        ];
+        await Promise.all([
+          ownedAttempts.length > 0
+            ? fixture.db.collection('attempts').deleteMany({ $or: ownedAttempts })
+            : Promise.resolve(),
+          fixture.db.collection('auditlogs').deleteMany({ email }),
+          fixture.db.collection('auth_rate_limits').deleteMany({
+            key: {
+              $in: [
+                ...ownedCredentialsRateLimitKeys([email]),
+                ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
+              ],
+            },
+          }),
+          fixture.db
+            .collection('auth_rate_limits')
+            .deleteMany({ key: /^auth:(?:register_ip|verify_email_ip):/ }),
+        ]);
+        await fixture.db.collection('users').deleteMany({ email });
+      }
+    });
+  });
+
   test('points a new learner from the dashboard to a starter quiz @critical-starter', async ({
     page,
   }, testInfo) => {

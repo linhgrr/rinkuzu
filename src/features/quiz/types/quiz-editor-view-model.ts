@@ -49,6 +49,8 @@ export interface QuizEditViewModel {
   pdfUrl?: string;
   tags?: string[];
   questions: QuizEditorQuestionViewModel[];
+  /** Kinds of an uncleared personal-data flag (RIN-1342); absent when not flagged. */
+  personalDataKinds?: string[];
 }
 
 export interface UpdateQuizEditInput {

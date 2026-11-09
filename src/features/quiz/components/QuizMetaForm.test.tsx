@@ -120,4 +120,30 @@ describe('QuizMetaForm', () => {
       '/check-email',
     );
   });
+
+  // RIN-1339: the public-quiz notice sits right above the Premium choice, so
+  // its "choose Submit to Premium below" pointer is true, and adds no input.
+  it('renders the notice slot directly above the Premium checkbox', () => {
+    render(
+      <QuizMetaForm
+        title="Quiz"
+        onTitleChange={vi.fn()}
+        description=""
+        onDescriptionChange={vi.fn()}
+        selectedFolderId={null}
+        onFolderChange={vi.fn()}
+        labels={labels}
+        submitToPremium={false}
+        onPremiumChange={vi.fn()}
+        notice={<p data-testid="public-notice">Quizzes are public.</p>}
+      />,
+    );
+
+    const notice = screen.getByTestId('public-notice');
+    const checkbox = screen.getByRole('checkbox', { name: /Premium quiz/ });
+    expect(
+      notice.compareDocumentPosition(checkbox) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+  });
 });

@@ -359,6 +359,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       }),
       db.collection('questionprogresses').deleteMany({ userId: { $in: userIdStrings } }),
       db.collection('userprogresses').deleteMany({ userId: { $in: userIdStrings } }),
+      db.collection('marketingpreferences').deleteMany({ userId: { $in: userIds } }),
       db.collection('auditlogs').deleteMany({
         $or: [{ userId: { $in: userIds } }, { email: { $in: emails } }],
       }),
@@ -844,8 +845,29 @@ test.describe('production critical paths', () => {
       expect(source).toMatchObject({ score: 0, totalQuestions: 1 });
       const sourceId = String(source?._id);
 
-      // AC2: the primary action and the opt-in render with the result.
-      await expect(page.getByLabel('Email me a 2-minute review in 2 days')).not.toBeChecked();
+      // AC2: the primary action and the explicit review choice render with the result
+      // (RIN-1362). "No thanks" hides it for 7 days, stored server-side, no consent event.
+      const remind = page.getByRole('button', { name: 'Remind me in 2 days', exact: true });
+      const decline = page.getByRole('button', { name: 'No thanks', exact: true });
+      await expect(remind).toBeVisible();
+      await expect(decline).toBeVisible();
+      await expect(remind).not.toBeFocused();
+      await decline.click();
+      await expect(decline).toBeHidden();
+      await expect
+        .poll(async () => {
+          const preference = await fixture.db
+            .collection('marketingpreferences')
+            .findOne({ userId: fixture.regular.id });
+          const until = preference?.['reviewPromptSnoozedUntil'] as Date | undefined;
+          return until ? Math.round((until.getTime() - Date.now()) / 86_400_000) : null;
+        })
+        .toBe(7);
+      expect(
+        await fixture.db
+          .collection('marketingconsentevents')
+          .countDocuments({ userId: fixture.regular.id }),
+      ).toBe(0);
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}\\?retryOf=${sourceId}`)),
         page.getByRole('link', { name: 'Retry the 1 you missed', exact: true }).click(),
@@ -1744,6 +1766,68 @@ test.describe('production critical paths', () => {
           action: 'quiz.visibility.changed',
           actorId: fixture.admin.id.toHexString(),
           details: { slug: fixture.quizSlug, from: 'personal', to: 'public' },
+        },
+      ]);
+    });
+  });
+
+  test('filters flagged quizzes and clears a personal-data flag with an audit entry @critical-admin-quiz-personal-data-flag', async ({
+    page,
+    request,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const quizHexId = fixture.quizId.toHexString();
+      const title = `E2E Personal Data ${fixture.runId}`;
+      await fixture.db.collection('quizzes').updateOne(
+        { _id: fixture.quizId },
+        {
+          $set: {
+            title,
+            contentFlags: { personalData: true, kinds: ['phone'], checkedAt: new Date() },
+          },
+        },
+      );
+
+      // A plain user may not clear a flag (RIN-1342); the cookie-less context is anonymous.
+      const anonymousClear = await request.post(
+        `/api/admin/quizzes/${quizHexId}/clear-personal-data-flag`,
+        { headers: { 'Sec-Fetch-Site': 'same-origin' } },
+      );
+      expect(anonymousClear.status()).toBe(401);
+
+      await login(page, fixture.admin);
+      await page.goto('/en/admin/quizzes');
+      await expect(page.getByRole('heading', { name: 'Quiz Management' })).toBeVisible();
+      await page.getByLabel('Content flag').selectOption('personal_data');
+      const search = page.getByLabel('Search quizzes...');
+      await search.fill(title);
+      await search.press('Enter');
+      const row = page.locator('article').filter({ hasText: title });
+      await expect(row).toHaveCount(1);
+      await expect(row).toContainText('Personal data: phone');
+
+      await row.getByRole('button', { name: 'Clear flag', exact: true }).click();
+      const confirm = page.getByRole('dialog');
+      await expect(confirm).toContainText(title);
+      await confirm.getByRole('button', { name: 'Clear flag', exact: true }).click();
+      await expect(row.getByRole('button', { name: 'Clear flag', exact: true })).toHaveCount(0);
+      await expect(row).not.toContainText('Personal data:');
+
+      const cleared = await fixture.db.collection('quizzes').findOne({ _id: fixture.quizId });
+      expect(cleared?.['contentFlags']).toMatchObject({ personalData: false, kinds: ['phone'] });
+      expect(String(cleared?.['contentFlags']?.['clearedBy'])).toBe(fixture.admin.id.toHexString());
+
+      const audits = await fixture.db
+        .collection('adminactionaudits')
+        .find({ entityType: 'quiz', entityId: quizHexId })
+        .toArray();
+      expect(
+        audits.map((audit) => ({ action: audit['action'], details: audit['details'] })),
+      ).toEqual([
+        {
+          action: 'quiz.personal_data_flag.cleared',
+          details: { slug: fixture.quizSlug, kinds: 'phone' },
         },
       ]);
     });

@@ -17,6 +17,8 @@ import type {
   AdminCreditGrantResult,
   CreditLedgerListResult,
   IPremiumQuizRepository,
+  IPremiumSubmissionWithdrawalRepository,
+  MakeQuizPublicResult,
   PremiumCatalogListOptions,
   PremiumCatalogListResult,
   PremiumDecisionData,
@@ -158,7 +160,30 @@ async function publishRejectedQuiz(
   return result.modifiedCount === 1;
 }
 
-export class PremiumQuizRepository implements IPremiumQuizRepository {
+/**
+ * RIN-1346: approve publishes the quiz behind the paywall, so the source quiz
+ * must still be private. Read with the decision session, so an untick that
+ * commits first makes the approve abort instead of selling a public quiz.
+ */
+async function assertQuizStillPrivate(
+  record: PremiumQuizSubmissionPersistenceRecord,
+  session: ClientSession,
+): Promise<void> {
+  const quiz = await QuizModel.findById(record.sourceQuiz)
+    .select('visibility')
+    .session(session)
+    .lean<{ visibility?: string }>();
+  if (quiz?.visibility !== 'personal') {
+    throw new PremiumQuizError(
+      'invalid_state',
+      'The quiz is no longer private; it cannot be published',
+    );
+  }
+}
+
+export class PremiumQuizRepository
+  implements IPremiumQuizRepository, IPremiumSubmissionWithdrawalRepository
+{
   async isVerifiedUser(userId: string): Promise<boolean> {
     if (!Types.ObjectId.isValid(userId)) return false;
     await connectDB();
@@ -331,6 +356,10 @@ export class PremiumQuizRepository implements IPremiumQuizRepository {
           };
         }
 
+        if (record.status === 'withdrawn') {
+          throw new PremiumQuizError('invalid_state', 'The owner withdrew this submission');
+        }
+
         const now = new Date();
         if (data.decision !== 'approve') {
           const status = data.decision === 'reject' ? 'rejected' : 'changes_requested';
@@ -366,6 +395,7 @@ export class PremiumQuizRepository implements IPremiumQuizRepository {
             'A current AI review or an explicit override reason is required',
           );
         }
+        await assertQuizStillPrivate(record, session);
 
         const priorRewardFilter: FilterQuery<PremiumQuizSubmissionDocument> = {
           _id: { $ne: submissionId },
@@ -714,6 +744,40 @@ export class PremiumQuizRepository implements IPremiumQuizRepository {
       active: true,
     }).lean<PremiumQuizSubmissionPersistenceRecord>();
     return record ? PremiumQuizPersistenceMapper.toSubmission(record) : null;
+  }
+
+  async makeQuizPublicAndWithdrawSubmissions(quizId: string): Promise<MakeQuizPublicResult> {
+    await connectDB();
+    const sourceQuiz = objectId(quizId, 'Quiz');
+    const session = await mongoose.startSession();
+    try {
+      // Return the callback's result: withTransaction retries on a transient
+      // error, and a captured outer variable keeps the losing attempt's value.
+      const result = await session.withTransaction(async (): Promise<MakeQuizPublicResult> => {
+        const publication = await PremiumQuizSubmissionModel.exists({
+          sourceQuiz,
+          status: 'approved',
+          active: true,
+        }).session(session);
+        if (publication) return { outcome: 'premium_published' };
+
+        await QuizModel.updateOne(
+          { _id: sourceQuiz },
+          { $set: { visibility: 'public' } },
+          { session },
+        );
+        const withdrawn = await PremiumQuizSubmissionModel.updateMany(
+          { sourceQuiz, status: { $in: ['pending', 'changes_requested'] } },
+          { $set: { status: 'withdrawn', active: false } },
+          { session },
+        );
+        return { outcome: 'made_public', withdrawnSubmissions: withdrawn.modifiedCount };
+      }, TRANSACTION_OPTIONS);
+      if (!result) throw new PremiumQuizError('conflict', 'Withdrawal transaction did not commit');
+      return result;
+    } finally {
+      await session.endSession();
+    }
   }
 
   async findActivePublicationBySlug(slug: string): Promise<PremiumQuizSubmission | null> {

@@ -164,6 +164,8 @@ interface MarketingPreferenceDocument extends Document {
   /** Opt-in to the 2-day review email (RIN-915). */
   studyReminders: boolean;
   studyRemindersOptedInAt?: Date | null;
+  /** Result-page "No thanks" (RIN-1362): the review prompt stays hidden until then. Not consent. */
+  reviewPromptSnoozedUntil?: Date | null;
   locale?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -442,6 +444,7 @@ const MarketingPreferenceSchema = new Schema<MarketingPreferenceDocument>(
     promotions: { type: Boolean, required: true, default: false },
     studyReminders: { type: Boolean, required: true, default: false },
     studyRemindersOptedInAt: { type: Date, default: null },
+    reviewPromptSnoozedUntil: { type: Date, default: null },
     locale: { type: String, default: null },
   },
   { timestamps: true, versionKey: false },

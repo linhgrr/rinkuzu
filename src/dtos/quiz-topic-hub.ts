@@ -24,6 +24,6 @@ export interface QuizTopicHubSummaryDto {
   locale: 'vi';
   name: string;
   indexableQuizCount: number;
-  /** ISO date of the newest change among its indexable quizzes. */
+  /** ISO date of the newest change to the topic or one of its indexable quizzes (D15). */
   lastModified: string;
 }

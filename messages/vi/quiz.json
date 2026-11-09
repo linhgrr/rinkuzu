@@ -150,15 +150,17 @@
     "another": "{count} câu khác",
     "fullQuiz": "Làm toàn bộ bài"
   },
+  "reviewPrompt": {
+    "question": "Bạn muốn ôn lại {count} câu đã sai sau 2 ngày không?",
+    "remind": "Nhắc tôi sau 2 ngày",
+    "decline": "Không, cảm ơn",
+    "scheduled": "Chúng tôi sẽ gửi bài ôn tập vào {weekday}.",
+    "capped": "Bạn đã có một email ôn tập trong tuần này.",
+    "saveError": "Không lưu được, thử lại nhé."
+  },
   "resultActions": {
     "retryMissed": "Làm lại {count} câu bạn sai",
     "tryAnother": "Thử một đề khác",
-    "reviewEmail": "Gửi email ôn tập 2 phút cho tôi sau 2 ngày",
-    "saving": "Đang lưu…",
-    "savedOn": "Đã bật. Bạn có thể tắt bất cứ lúc nào.",
-    "savedOff": "Đã tắt email nhắc.",
-    "saveError": "Không lưu được. Thử lại nhé.",
-    "tryAgain": "Thử lại",
     "retryOfMissed": "Làm lại câu sai",
     "retryPill": "Làm lại câu sai · {count} câu",
     "share": "Gửi cho bạn cùng lớp",

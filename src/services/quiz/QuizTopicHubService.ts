@@ -65,7 +65,11 @@ export class QuizTopicHubService {
         indexableQuizCount: quizzes.length,
       });
       if (!indexable) return [];
-      const newest = Math.max(...quizzes.map(({ lastModified }) => lastModified.getTime()));
+      // Spec D15: the newest change of the topic itself or of one of its quizzes.
+      const newest = Math.max(
+        ...quizzes.map(({ lastModified }) => lastModified.getTime()),
+        topic.updatedAt?.getTime() ?? 0,
+      );
       return [
         {
           slug: topic.slug,

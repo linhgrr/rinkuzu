@@ -14,7 +14,7 @@ export interface QuizCardQuiz {
   author: UserIdentity | null;
   visibility: 'public' | 'personal';
   questionCount: number;
-  premiumSubmissionStatus?: 'pending' | 'changes_requested' | 'rejected' | 'approved';
+  premiumSubmissionStatus?: 'pending' | 'changes_requested' | 'rejected' | 'approved' | 'withdrawn';
   awardedCredits?: number;
 }
 

@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
   ShareResultButton,
   type QuizShareTarget,
 } from '@/features/quiz/components/result/ShareResultButton';
+import { ReviewReminderPrompt } from '@/features/quiz/components/result/ReviewReminderPrompt';
 import {
-  fetchReviewReminderOptedIn,
-  saveReviewReminder,
+  fetchReviewReminderStatus,
+  optInReviewReminder,
+  snoozeReviewReminderPrompt,
 } from '@/features/quiz/api/review-reminder-api';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
@@ -56,8 +56,8 @@ function choosePrimary(
 /**
  * Result-page actions (RIN-917, Designer spec on the issue): exactly one primary
  * button ("Retry the N you missed", "Try another quiz", or Back Home), the
- * outline secondaries, and the opt-in review-email checkbox for signed-in learners.
- * Guests get no retry or checkbox; the page shows them the RIN-912 save-result card.
+ * outline secondaries, and the explicit 2-day review choice for signed-in learners
+ * (RIN-1362). Guests get neither; the page shows them the RIN-912 save-result card.
  */
 export function ResultActions({
   attemptId,
@@ -150,7 +150,9 @@ export function ResultActions({
       {share && !contentLocked ? (
         <ShareResultButton share={share} isGuest={viewer === 'guest'} />
       ) : null}
-      {canPersonalize ? <ReviewEmailOptIn attemptId={attemptId} missedCount={missedCount} /> : null}
+      {canPersonalize && missedCount > 0 ? (
+        <ResultReviewPrompt attemptId={attemptId} missedCount={missedCount} />
+      ) : null}
     </div>
   );
 }
@@ -178,83 +180,27 @@ function QuickRoundSecondaries({
   );
 }
 
-type SavePhase = 'idle' | 'saving' | 'saved' | 'error';
-
-function ReviewEmailOptIn({ attemptId, missedCount }: { attemptId: string; missedCount: number }) {
-  const t = useTranslations('quiz.resultActions');
+/** The review prompt bound to this attempt, source `result_page_review` (RIN-1362). */
+function ResultReviewPrompt({
+  attemptId,
+  missedCount,
+}: {
+  attemptId: string;
+  missedCount: number;
+}) {
   const locale = useLocale() === 'en' ? 'en' : 'vi';
-  const [checked, setChecked] = useState(false);
-  const [phase, setPhase] = useState<SavePhase>('idle');
-  const [pendingValue, setPendingValue] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    // Revisit: show the box ticked when the learner already opted in. A failed
-    // read leaves it unticked; ticking again is idempotent on the server.
-    fetchReviewReminderOptedIn()
-      .then((optedIn) => {
-        if (active && optedIn) setChecked(true);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const save = async (optIn: boolean) => {
-    const previous = !optIn;
-    setChecked(optIn);
-    setPendingValue(optIn);
-    setPhase('saving');
-    try {
-      await saveReviewReminder({ attemptId, optIn, locale });
-      setPhase('saved');
-      if (optIn) {
+  return (
+    <ReviewReminderPrompt
+      missedCount={missedCount}
+      loadStatus={() => fetchReviewReminderStatus(attemptId)}
+      optIn={() => optInReviewReminder({ attemptId, locale })}
+      snooze={() => snoozeReviewReminderPrompt(attemptId)}
+      onOptIn={() =>
         captureAnalyticsEvent('review_email_opt_in', {
           campaign: REVIEW_CAMPAIGN,
           missed_count: missedCount,
-        });
+        })
       }
-    } catch {
-      setChecked(previous);
-      setPhase('error');
-    }
-  };
-
-  let status: React.ReactNode = null;
-  if (phase === 'saving') status = t('saving');
-  if (phase === 'saved') status = pendingValue ? t('savedOn') : t('savedOff');
-  if (phase === 'error') {
-    status = (
-      <span className="text-error">
-        {t('saveError')}{' '}
-        <Button
-          variant="link"
-          className="font-medium text-error"
-          onClick={() => pendingValue !== null && void save(pendingValue)}
-        >
-          {t('tryAgain')}
-        </Button>
-      </span>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink">
-        <input
-          type="checkbox"
-          className="size-5 shrink-0 accent-[var(--brand-trust)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
-          checked={checked}
-          disabled={phase === 'saving'}
-          aria-busy={phase === 'saving'}
-          onChange={(event) => void save(event.target.checked)}
-        />
-        {t('reviewEmail')}
-      </label>
-      <p role="status" aria-live="polite" className="min-h-5 text-center text-sm text-neutral-600">
-        {status}
-      </p>
-    </div>
+    />
   );
 }

@@ -8,6 +8,7 @@ import { logger } from '@/lib/logger';
 interface AdminReportIdRouteContext {
   request: NextRequest;
   id: string;
+  userId: string;
   email: string;
 }
 
@@ -29,7 +30,12 @@ export function createAdminReportIdRoute(options: AdminReportIdRouteOptions) {
         );
       }
 
-      return await options.handle({ request, id: params.data.id, email: context.email });
+      return await options.handle({
+        request,
+        id: params.data.id,
+        userId: context.userId,
+        email: context.email,
+      });
     } catch (error: unknown) {
       logger.error({ error }, options.logMessage);
       return apiErr('internal_error', options.publicErrorMessage, 500);

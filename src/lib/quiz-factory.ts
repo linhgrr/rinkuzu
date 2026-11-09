@@ -8,6 +8,8 @@ import { QuizRepository } from '@/repositories/QuizRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
 import { UserRepository } from '@/repositories/UserRepository';
 import { QuizService } from '@/services/quiz/QuizService';
+import { QuizPageReportService } from '@/services/quiz/QuizPageReportService';
+import { QuizIndexHoldRepository } from '@/repositories/QuizIndexHoldRepository';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
 
 let quizService: QuizService | undefined;
@@ -26,4 +28,15 @@ export function getQuizService(): QuizService {
     new PremiumQuizRepository(),
   );
   return quizService;
+}
+
+let quizPageReportService: QuizPageReportService | undefined;
+
+export function getQuizPageReportService(): QuizPageReportService {
+  quizPageReportService ??= new QuizPageReportService(
+    new QuizRepository(),
+    new ReportRepository(),
+    new QuizIndexHoldRepository(),
+  );
+  return quizPageReportService;
 }

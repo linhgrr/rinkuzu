@@ -431,10 +431,10 @@ describe('AdminService mutation coverage', () => {
       });
       const service = createService({ report: reportRepository });
 
-      await service.getReports({ page: 1, limit: 20, status: 'all' });
+      await service.getReports({ page: 1, limit: 20, status: 'all', reason: 'all' });
       expect(reportRepository.findAll).toHaveBeenCalledWith({ page: 1, limit: 20 });
 
-      await service.getReports({ page: 1, limit: 20, status: 'resolved' });
+      await service.getReports({ page: 1, limit: 20, status: 'resolved', reason: 'all' });
       expect(reportRepository.findAll).toHaveBeenLastCalledWith({
         page: 1,
         limit: 20,
@@ -448,7 +448,9 @@ describe('AdminService mutation coverage', () => {
       });
       const service = createService({ report: reportRepository });
 
-      await expect(service.getReports({ page: 1, limit: 20, status: 'pending' })).resolves.toEqual({
+      await expect(
+        service.getReports({ page: 1, limit: 20, status: 'pending', reason: 'all' }),
+      ).resolves.toEqual({
         success: false,
         error: 'Failed to get reports',
         statusCode: 500,

@@ -114,7 +114,12 @@ describe('AdminService report and stats contracts', () => {
       createAttemptRepository(),
     );
 
-    const result = await service.getReports({ page: 1, limit: 20, status: 'pending' });
+    const result = await service.getReports({
+      page: 1,
+      limit: 20,
+      status: 'pending',
+      reason: 'all',
+    });
 
     expect(reportRepository.findAll).toHaveBeenCalledWith({
       page: 1,
@@ -122,6 +127,7 @@ describe('AdminService report and stats contracts', () => {
       status: 'pending',
     });
     expect(result.success).toBe(true);
+    if (result.success) expect(result.data.pendingIndexHoldCount).toBe(0);
     if (!result.success) return;
     expect(result.data.reports[0]).toMatchObject({
       id: '507f191e810c19729de860ea',

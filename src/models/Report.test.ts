@@ -39,3 +39,32 @@ describe('Report model question context', () => {
     ).rejects.toThrow('Question-level reports require both questionId and questionSnapshot');
   });
 });
+
+describe('Report model quiz-page reports (RIN-1343)', () => {
+  const quizPage = {
+    quizId: '507f191e810c19729de860ea',
+    quizTitle: 'Algebra',
+    quizSlug: 'algebra',
+    status: 'pending' as const,
+    source: 'quiz_page' as const,
+    reason: 'copyright' as const,
+  };
+
+  it('accepts an anonymous quiz-page report without email, name or content', async () => {
+    await expect(new Report(quizPage).validate()).resolves.toBeUndefined();
+  });
+
+  it('keeps email, name and content required for per-question reports', async () => {
+    const { reporterEmail: _e, reporterName: _n, content: _c, ...withoutReporter } = base;
+    const error = await new Report(withoutReporter).validate().catch((caught: unknown) => caught);
+    expect(String(error)).toMatch(/reporterEmail/);
+    expect(String(error)).toMatch(/reporterName/);
+    expect(String(error)).toMatch(/content/);
+  });
+
+  it('rejects a quiz-page report without a reason or with an unknown one', async () => {
+    const { reason: _r, ...withoutReason } = quizPage;
+    await expect(new Report(withoutReason).validate()).rejects.toThrow('require a reason');
+    await expect(new Report({ ...quizPage, reason: 'spam' }).validate()).rejects.toThrow();
+  });
+});

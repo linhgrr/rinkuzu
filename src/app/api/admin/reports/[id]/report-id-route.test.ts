@@ -49,6 +49,7 @@ describe('createAdminReportIdRoute', () => {
     expect(handle).toHaveBeenCalledWith({
       request,
       id: '507f1f77bcf86cd799439011',
+      userId: 'admin-1',
       email: 'admin@example.com',
     });
   });

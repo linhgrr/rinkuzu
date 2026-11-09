@@ -3,7 +3,7 @@ import {
   type QuizAccessRecord,
   type UpdateQuizData,
 } from '@/interfaces/repositories/IQuizRepository';
-import type { Quiz, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
+import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import type {
@@ -15,7 +15,8 @@ import type {
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import { detectQuizContentLocale } from '@/lib/seo/quiz-indexability';
 import type { DeleteResultDto } from '@/dtos/common';
-import type { ServiceFailure, ServiceResult } from '@/interfaces/services/types';
+import type { ServiceFailure } from '@/interfaces/services/types';
+import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
 import { getAuthorId } from './quiz-helpers';
 import { logger } from '@/lib/logger';
@@ -36,20 +37,6 @@ function toQuizQuestionContent(
   return question.type === 'single'
     ? { ...base, type: 'single', correctIndex: question.correctIndex }
     : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
-}
-
-/** The visibility fields shared by the create, update and draft-submit requests. */
-interface VisibilityRequest {
-  submitToPremium?: boolean | undefined;
-  visibility?: QuizVisibility | undefined;
-}
-
-/**
- * RIN-1271: a learner's quiz is private (`personal`) unless the owner asks for
- * `public`; a Premium submission is always `personal`.
- */
-function resolveRequestedVisibility(request: VisibilityRequest): QuizVisibility | undefined {
-  return request.submitToPremium === true ? 'personal' : request.visibility;
 }
 
 type PremiumPublicationLookup = Pick<IPremiumQuizRepository, 'findActivePublicationByQuizId'>;
@@ -100,7 +87,7 @@ export class QuizCrudService {
     quizData: CreateQuizRequestDto,
     sourceDraftId?: string,
   ): Promise<Quiz> {
-    const { title, description, folderId, questions, pdfUrl } = quizData;
+    const { title, description, folderId, questions, submitToPremium, pdfUrl } = quizData;
 
     if (folderId) {
       const ownsFolder = await this.folderRepository?.existsOwnedById(folderId, userId);
@@ -122,7 +109,7 @@ export class QuizCrudService {
           author: userId,
           folder: folderId ?? null,
           questions: questions.map(toQuizQuestionContent),
-          visibility: resolveRequestedVisibility(quizData) ?? 'personal',
+          visibility: submitToPremium ? 'personal' : 'public',
           ...(pdfUrl !== undefined && { pdfUrl }),
           ...(sourceDraftId !== undefined && { sourceDraftId }),
         });
@@ -238,8 +225,7 @@ export class QuizCrudService {
         }
       }
 
-      const visibility = resolveRequestedVisibility(quizData);
-      if (visibility === 'public') {
+      if (quizData.submitToPremium === false) {
         const refusal = await this.refuseWhilePublished(id);
         if (refusal) return refusal;
       }
@@ -251,7 +237,9 @@ export class QuizCrudService {
         ...(quizData.questions !== undefined && {
           questions: quizData.questions.map(toQuizQuestionContent),
         }),
-        ...(visibility !== undefined && { visibility }),
+        ...(quizData.submitToPremium !== undefined && {
+          visibility: quizData.submitToPremium ? ('personal' as const) : ('public' as const),
+        }),
         ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
       };
       const updatedQuiz = await this.quizRepository.update(id, updateData);

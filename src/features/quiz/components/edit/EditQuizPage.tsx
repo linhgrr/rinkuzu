@@ -203,9 +203,7 @@ export function EditQuizPage() {
             title: quiz.title,
             ...(quiz.description !== undefined ? { description: quiz.description } : {}),
             selectedFolderId: quiz.folder,
-            // RIN-1271: private no longer means "submitted to Premium", so the
-            // Premium checkbox starts unticked and a save never resubmits.
-            submitToPremium: false,
+            submitToPremium: quiz.visibility === 'personal',
             questions: quiz.questions,
           }}
           {...(quiz.pdfUrl !== undefined ? { pdfUrl: quiz.pdfUrl } : {})}

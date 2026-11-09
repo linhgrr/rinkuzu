@@ -15,6 +15,7 @@ import {
   formatReadTime,
   getAdjacentBlogArticles,
   getBlogArticle,
+  getBlogArticleLocales,
   getBlogArticleSlugs,
   toBlogLocale,
 } from '@/lib/blog/posts';
@@ -56,6 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     imagePath: article.heroImage,
+    alternateLocales: getBlogArticleLocales(article.slug),
   });
   return {
     ...base,

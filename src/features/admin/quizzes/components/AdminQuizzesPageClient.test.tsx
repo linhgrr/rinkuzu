@@ -22,6 +22,13 @@ vi.mock('@/i18n/navigation', () => ({
     </a>
   ),
 }));
+// The topic panel (RIN-1248) loads with the page; its own tests live beside it.
+vi.mock('@/features/admin/quizzes/api/admin-quiz-topics-api', () => ({
+  fetchAdminQuizTopics: () => Promise.resolve([]),
+}));
+vi.mock('@/features/admin/quizzes/components/AdminQuizTopicsPanel', () => ({
+  AdminQuizTopicsPanel: () => null,
+}));
 vi.mock('@/features/quiz/components/QuizPreviewModal', () => ({ QuizPreviewModal: () => null }));
 vi.mock('@/features/admin/quizzes/api/admin-quizzes-api', () => ({
   fetchAdminQuizListViewModel: (...args: unknown[]) => fetchListMock(...args),

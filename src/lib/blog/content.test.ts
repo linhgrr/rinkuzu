@@ -112,6 +112,26 @@ describe('content/blog', () => {
     }
   });
 
+  it('gives every table a delimiter row with as many cells as its header (RIN-1281)', () => {
+    // GFM renders a table whose delimiter row has a different cell count as raw "|" text.
+    const cells = (row: string): number =>
+      row
+        .trim()
+        .replace(/^\||\|$/g, '')
+        .split('|').length;
+    const offenders: string[] = [];
+    for (const post of getAllBlogPosts()) {
+      const lines = post.content.split(/\r?\n/);
+      lines.forEach((line, index) => {
+        const header = lines[index - 1];
+        if (!/^\s*\|?\s*:?-{3,}/.test(line) || header === undefined) return;
+        if (cells(line) !== cells(header)) offenders.push(`${post.locale}/${post.slug}: ${header}`);
+      });
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
   it('returns undefined for an unknown slug', () => {
     expect(getBlogPostBySlug('en', 'no-such-post-slug')).toBeUndefined();
   });

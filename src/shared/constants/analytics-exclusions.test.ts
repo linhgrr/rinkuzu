@@ -29,17 +29,24 @@ describe('analytics excluded emails', () => {
   });
 
   // Company-owned accounts that must never count as learners
-  // (RIN-554 content, RIN-553 QA, RIN-629 ops/admin, RIN-665 W45 QA re-runs
-  // and the Founder's test signup).
+  // (RIN-554 content, RIN-553 QA, RIN-629 ops/admin, RIN-665 W45 QA re-runs).
   it.each([
     'rinkuzu-content@fldubai.com',
     'rinkuzu-qa-w45@fldubai.com',
     'rinkuzu-ops@fldubai.com',
     'rinkuzu-qa-w45b@fldubai.com',
     'rinkuzu-qa-w45c@fldubai.com',
-    'nk.toan@shirokumapower.com',
   ])('excludes the company account %s', (email) => {
     expect(ANALYTICS_EXCLUDED_EMAILS).toContain(email);
+  });
+
+  // The list is a constant in a public repository: it may only name
+  // company-domain accounts. Anyone else (the Founder's own test signups
+  // included) is excluded with the admin-set `isTestAccount` flag (RIN-1353).
+  it('holds only company-domain addresses', () => {
+    for (const email of ANALYTICS_EXCLUDED_EMAILS) {
+      expect(COMPANY_TEST_EMAIL_PATTERN.test(email)).toBe(true);
+    }
   });
 
   // Exact addresses only: a domain-wide exclusion would hide real learners

@@ -12,6 +12,8 @@ import styles from './MasteryMatrixLayout.module.css';
 interface MasteryMatrixProps {
   sessionId: string;
   filterActiveOnly?: boolean;
+  /** Exercises answered in this session; 0 means every value is a prediction, not a measurement. */
+  answeredCount?: number | undefined;
 }
 
 const BLOOM_COLORS = [
@@ -65,7 +67,11 @@ function getAverage(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: MasteryMatrixProps) {
+export default function MasteryMatrix({
+  sessionId,
+  filterActiveOnly = false,
+  answeredCount,
+}: MasteryMatrixProps) {
   const t = useTranslations('adaptiveLearning');
   const { data: matrixData, isLoading: matrixLoading } = useMasteryMatrix(sessionId);
   const { data: graphData, isLoading: graphLoading } = useKnowledgeGraph(
@@ -138,7 +144,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
     return <PanelBlockSkeleton label={t('masteryMatrix.loading')} />;
   }
 
-  if (!data || data.matrix.length === 0 || displayMatrix.length === 0) {
+  if (answeredCount === 0 || !data || displayMatrix.length === 0) {
     return (
       <div
         className={`${styles['emptyState']} flex w-full flex-col items-center justify-center gap-3 rounded-md border border-line bg-neutral-50`}

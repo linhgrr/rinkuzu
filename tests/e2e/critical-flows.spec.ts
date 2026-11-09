@@ -1036,11 +1036,17 @@ test.describe('production critical paths', () => {
       let attemptId = '';
       await recordAnalyticsEvents(page);
       try {
+        // RIN-1283: the fonts use display: optional, so whether Vina Sans lands within its
+        // ~100 ms block period was a race under load, and its wider fallback wraps the hero
+        // h1 to 3 lines. Pin the slower case: no webfont, so the hero CTA (not the
+        // bottom-CTA copy) must be wholly in the first screen with the fallback font.
+        await page.route(/\/_next\/static\/media\/.+\.woff2$/, (route) => route.abort());
         await page.goto('/en');
         const playFirst = page
-          .getByRole('link', { name: 'Try a 2-minute quiz, no account' })
-          .first();
-        await expect(playFirst).toBeInViewport();
+          .locator('#landing-main-content > section')
+          .first()
+          .getByRole('link', { name: 'Try a 2-minute quiz, no account' });
+        await expect(playFirst).toBeInViewport({ ratio: 1 });
         await expect
           .poll(() =>
             playFirst.evaluate((node) =>
@@ -1080,6 +1086,8 @@ test.describe('production critical paths', () => {
           .findOneAndUpdate({ email }, { $set: { emailVerified: new Date() } });
         const userId = created?.['_id'];
         expect(userId).toBeInstanceOf(ObjectId);
+        // RIN-1263: a signup on /en stores `en`, so the activation nudge is in English.
+        expect(created?.['locale']).toBe('en');
 
         const resultPath = `${resultUrl.pathname.replace(/^\/en/, '')}${resultUrl.search}`;
         await page.goto(`/en/login?callbackUrl=${encodeURIComponent(resultPath)}`);
@@ -1311,6 +1319,13 @@ test.describe('production critical paths', () => {
       );
       await expect(page.getByRole('heading', { name: subjectName })).toBeVisible();
       await expect(page.getByText('4', { exact: true }).first()).toBeVisible();
+
+      // The English UI asks the API for English material on upload and session start (RIN-1267).
+      const forwarded = await request.post('http://127.0.0.1:8000/__e2e/locales', {
+        data: { userId: fixture.regular.id.toHexString() },
+        headers: { 'x-e2e-control-token': E2E_CONTROL_TOKEN },
+      });
+      expect((await forwarded.json()).data).toEqual({ process: 'en', createSession: 'en' });
     });
   });
 

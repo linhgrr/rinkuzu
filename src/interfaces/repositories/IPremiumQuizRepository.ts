@@ -75,6 +75,8 @@ export interface PremiumDecisionResult {
   submission: PremiumQuizSubmission;
   awardedCredits: number;
   rewardLocked: boolean;
+  /** Set on reject: whether the decision moved the source quiz to `public`. */
+  quizMadePublic?: boolean;
 }
 
 export interface PremiumReviewRequestData {

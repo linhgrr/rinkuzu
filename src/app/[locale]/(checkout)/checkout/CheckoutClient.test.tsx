@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   verifyOrder: vi.fn(),
   capture: vi.fn(),
+  locale: 'en',
 }));
 
 vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: mocks.capture }));
@@ -62,7 +63,15 @@ vi.mock('next-intl', () => {
     }
     return copy[key] ?? key;
   };
-  return { useLocale: () => 'en', useTranslations: () => t };
+  t.rich = (key: string, values: Record<string, (chunks: string) => React.ReactNode>) =>
+    key === 'paymentMethod.vietnamOnlyNote'
+      ? [
+          'Payments are in VND through Vietnamese banking apps for now. Paying from outside Vietnam? ',
+          values['support']?.('Contact support'),
+          '.',
+        ]
+      : key;
+  return { useLocale: () => mocks.locale, useTranslations: () => t };
 });
 
 vi.mock('@/i18n/navigation', () => ({
@@ -198,6 +207,37 @@ describe('CheckoutClient purchase review', () => {
 
 // RIN-1015: `/checkout?plan=<unknown>` left an empty summary card, a terms
 // checkbox, and a toast that vanished. It now gets a body state with a way out.
+describe('CheckoutClient Vietnam-only payment note (RIN-1277)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.quote.mockResolvedValue(quote);
+  });
+
+  afterEach(() => {
+    cleanup();
+    mocks.locale = 'en';
+  });
+
+  it('tells /en learners that payment is VND-only and links to support', async () => {
+    render(<CheckoutClient planId="premium-monthly" orderId={null} hasProviderCallback={false} />);
+
+    await screen.findByRole('heading', { name: 'Review and pay' });
+    expect(screen.getByText(/Payments are in VND through Vietnamese banking apps/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')).toBe(
+      '/support',
+    );
+  });
+
+  it('adds nothing on /vi', async () => {
+    mocks.locale = 'vi';
+    render(<CheckoutClient planId="premium-monthly" orderId={null} hasProviderCallback={false} />);
+
+    await screen.findByRole('heading', { name: 'Review and pay' });
+    expect(screen.queryByText(/Payments are in VND/)).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Contact support' })).toBeNull();
+  });
+});
+
 describe('CheckoutClient quote failure', () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -29,6 +29,7 @@ describe('toSubscriptionPageViewModel', () => {
           status: 'completed',
         },
       },
+      'vi',
     );
 
     expect(result).toEqual({
@@ -65,6 +66,7 @@ describe('toSubscriptionPageViewModel', () => {
           isActive: false,
         },
       },
+      'en',
     );
 
     expect(result.currentSubscription).toEqual({
@@ -72,5 +74,22 @@ describe('toSubscriptionPageViewModel', () => {
       endDateLabel: '-',
       isActive: false,
     });
+  });
+
+  it('formats the plan end date in the active locale, en-US on /en (RIN-1265)', () => {
+    const result = toSubscriptionPageViewModel(
+      { plans: [], meta: { durationFormat: 'ISO8601', supportedDurations: [] } },
+      {
+        isPremium: true,
+        subscription: {
+          plan: { id: 'premium', name: 'Premium' },
+          isActive: true,
+          endDate: '2026-08-02T00:00:00.000Z',
+        },
+      },
+      'en',
+    );
+
+    expect(result.currentSubscription?.endDateLabel).toBe('08/02/2026');
   });
 });

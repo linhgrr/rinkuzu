@@ -7,6 +7,7 @@ import {
   formatReadTime,
   getAdjacentBlogArticles,
   getBlogArticle,
+  getBlogArticleLocales,
   getBlogArticleSlugs,
   getBlogAuthorSlugs,
   getBlogIndexPosts,
@@ -70,10 +71,23 @@ describe('blog post queries', () => {
   it('derives sitemap routes for every article and author from content/blog (RIN-406)', () => {
     expect(getBlogSitemapRoutes()).toEqual(
       expect.arrayContaining([
-        { path: '/blog/ai-powered-quiz-generation-guide', lastModified: '2026-03-27' },
-        { path: '/blog/knowledge-graphs-adaptive-learning-pdfs', lastModified: '2026-03-20' },
+        {
+          path: '/blog/ai-powered-quiz-generation-guide',
+          lastModified: '2026-03-27',
+          locales: ['vi', 'en'],
+        },
+        {
+          path: '/blog/knowledge-graphs-adaptive-learning-pdfs',
+          lastModified: '2026-03-20',
+          locales: ['vi', 'en'],
+        },
         { path: '/blog/authors/rinkuzu-team', lastModified: expect.any(String) },
       ]),
     );
+  });
+
+  it('lists the locales an article resolves in; a vi listing-only file counts for vi (RIN-1312)', () => {
+    expect(getBlogArticleLocales('ai-powered-quiz-generation-guide')).toEqual(['vi', 'en']);
+    expect(getBlogArticleLocales('no-such-post')).toEqual([]);
   });
 });

@@ -15,6 +15,7 @@ import {
   PREMIUM_PRICING_FEATURE_KEYS,
 } from '@/features/subscription/constants/pricing-features';
 import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
+import { sortPlansByPrice } from '@/features/subscription/lib/plan-order';
 import {
   PricingPlanCtaLink,
   PricingViewTracker,
@@ -53,7 +54,7 @@ export default async function PricingPage({ params }: Props) {
   const registerHref = ROUTES.REGISTER;
   const subscriptionHref = ROUTES.SUBSCRIPTION;
 
-  const premiumPlans = (await loadPremiumPlans()).sort((a, b) => a.price - b.price);
+  const premiumPlans = sortPlansByPrice(await loadPremiumPlans());
   const lowestPrice = premiumPlans[0]?.price ?? null;
 
   const freeFeatures = FREE_PRICING_FEATURE_KEYS.map((key) => t(`free.features.${key}`));
@@ -145,6 +146,21 @@ export default async function PricingPage({ params }: Props) {
               </Card>
             ))}
           </div>
+          {/* PayOS takes VND from Vietnamese banks only; warn overseas /en learners (RIN-1277). */}
+          {locale === 'en' && (
+            <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-6 text-[var(--text-muted)]">
+              {t.rich('vietnamOnlyPaymentNote', {
+                support: (chunks) => (
+                  <Link
+                    href={ROUTES.SUPPORT}
+                    className="font-medium text-[var(--text-primary)] underline underline-offset-2"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
+          )}
         </div>
       </section>
 

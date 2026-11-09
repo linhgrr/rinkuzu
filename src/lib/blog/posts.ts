@@ -1,4 +1,4 @@
-import type { Locale } from '@/i18n/config';
+import { locales, type Locale } from '@/i18n/config';
 import { getBlogAuthor } from './authors';
 import { getAllBlogPosts, getBlogPostBySlug, getBlogPostsByLocale, type BlogPost } from './content';
 
@@ -81,6 +81,16 @@ export const getBlogArticleSlugs = (now: Date = new Date()): string[] => [
 ];
 
 /**
+/**
+ * Locales whose `/<locale>/blog/<slug>` renders a published article, in
+ * {@link locales} order. A listing-only translation counts, since its page
+ * falls back to the source article; a post with no source-locale body exists
+ * only in its own.
+ */
+export const getBlogArticleLocales = (slug: string, now: Date = new Date()): Locale[] =>
+  locales.filter((locale) => getBlogArticle(locale, slug, now) !== undefined);
+
+/**
  * Neighbours of an article among the published articles in its locale, newest
  * first: `previous` is the next newer post and `next` the next older one.
  */
@@ -96,8 +106,12 @@ export const getAdjacentBlogArticles = (
   return { previous: articles[index - 1], next: articles[index + 1] };
 };
 
-/** A blog route for the sitemap, dated by the newest post behind it (`YYYY-MM-DD`). */
-type BlogSitemapRoute = { path: string; lastModified: string };
+/**
+ * A blog route for the sitemap, dated by the newest post behind it (`YYYY-MM-DD`).
+ * `locales` limits an article to the locales it exists in; without it the route
+ * exists in every locale.
+ */
+type BlogSitemapRoute = { path: string; lastModified: string; locales?: Locale[] };
 
 const newestDate = (posts: BlogPost[]): string =>
   posts.reduce((newest, post) => (post.date > newest ? post.date : newest), '');
@@ -112,6 +126,7 @@ export const getBlogSitemapRoutes = (now: Date = new Date()): BlogSitemapRoute[]
   const articles = getBlogArticleSlugs(now).map((slug) => ({
     path: `/blog/${slug}`,
     lastModified: newestDate(posts.filter((post) => post.slug === slug)),
+    locales: getBlogArticleLocales(slug, now),
   }));
   const authors = getBlogAuthorSlugs(now)
     .filter((author) => getBlogAuthor(author))

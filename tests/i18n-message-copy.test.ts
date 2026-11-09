@@ -106,6 +106,17 @@ describe('i18n message copy', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('has no "?" between letters in Vietnamese copy, the trace of a lossy encoding (RIN-1327)', () => {
+    const offenders: string[] = [];
+    for (const file of namespaceFiles('vi')) {
+      for (const [key, value] of flatten(readMessages('vi', file))) {
+        if (/\p{L}\?\p{L}/u.test(value)) offenders.push(`vi/${file} ${key}: ${value}`);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
   it('gives the needs-work state one name on the badge, filter and stat card (RIN-1222)', () => {
     // The badge (history rows, quiz result) may use title case; the words must match.
     for (const locale of locales) {

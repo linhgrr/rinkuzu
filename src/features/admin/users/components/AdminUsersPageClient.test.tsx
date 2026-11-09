@@ -274,8 +274,8 @@ describe('AdminUsersPageClient row layout (RIN-1021)', () => {
     if (!panel) throw new Error('Actions panel not rendered');
     const items = Array.from(panel.querySelectorAll('a, button'), (item) => item.textContent);
     expect(items).toEqual([
-      'Hỗ trợ',
-      'Mời phản hồi',
+      'userActionSupport',
+      'userActionRequestFeedback',
       'addCredit',
       'markTestAccount',
       'addSubscription',
@@ -284,7 +284,7 @@ describe('AdminUsersPageClient row layout (RIN-1021)', () => {
     ]);
 
     await user.tab();
-    expect(within(panel).getByRole('link', { name: 'Hỗ trợ' })).toHaveFocus();
+    expect(within(panel).getByRole('link', { name: 'userActionSupport' })).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveFocus();

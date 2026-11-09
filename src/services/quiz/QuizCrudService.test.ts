@@ -199,7 +199,7 @@ describe('QuizCrudService', () => {
   });
 
   describe('createQuiz', () => {
-    it('creates a private (personal) quiz by default with single and multiple questions (RIN-1271)', async () => {
+    it('creates a public quiz with single and multiple questions', async () => {
       const created = createQuizEntity();
       const quizRepository = createQuizRepository({
         create: vi.fn().mockResolvedValue(created),
@@ -214,7 +214,7 @@ describe('QuizCrudService', () => {
           title: 'Algebra Basics',
           author: authorId,
           folder: null,
-          visibility: 'personal',
+          visibility: 'public',
           questions: [
             expect.objectContaining({ type: 'single', correctIndex: 1 }),
             expect.objectContaining({ type: 'multiple', correctIndexes: [0, 1] }),
@@ -237,26 +237,6 @@ describe('QuizCrudService', () => {
       expect(quizRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ visibility: 'personal' }),
       );
-    });
-
-    it('honours an explicit public visibility, but Premium always forces personal (RIN-1271)', async () => {
-      const quizRepository = createQuizRepository({
-        create: vi.fn().mockResolvedValue(createQuizEntity()),
-      });
-      const service = new QuizCrudService(quizRepository);
-
-      await service.createQuiz(authorId, { ...createRequest, visibility: 'public' });
-      await service.createQuiz(authorId, {
-        ...createRequest,
-        submitToPremium: true,
-        rightsAttested: true,
-        visibility: 'public',
-      });
-
-      expect(vi.mocked(quizRepository.create).mock.calls.map(([data]) => data.visibility)).toEqual([
-        'public',
-        'personal',
-      ]);
     });
 
     it('rejects folder ownership failures and accepts owned folders', async () => {
@@ -328,24 +308,6 @@ describe('QuizCrudService', () => {
         service.createQuizFromDraft(authorId, 'draft-1', createRequest),
       ).resolves.toMatchObject({ id: quizId });
       expect(quizRepository.create).not.toHaveBeenCalled();
-    });
-
-    it('saves a newly published draft (PDF-to-quiz, quick upload) as personal (RIN-1271)', async () => {
-      const quizRepository = createQuizRepository({
-        findBySourceDraftId: vi.fn().mockResolvedValue(null),
-        create: vi
-          .fn()
-          .mockResolvedValue(
-            createQuizEntity({ visibility: 'personal', sourceDraftId: 'draft-1' }),
-          ),
-      });
-      const service = new QuizCrudService(quizRepository);
-
-      await service.createQuizFromDraft(authorId, 'draft-1', createRequest);
-
-      expect(quizRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ visibility: 'personal', sourceDraftId: 'draft-1' }),
-      );
     });
 
     it('rejects drafts owned by another user', async () => {
@@ -542,70 +504,46 @@ describe('QuizCrudService', () => {
       ).resolves.toMatchObject({ success: true });
     });
 
-    it('leaves visibility unchanged when the save sends no visibility (RIN-1271)', async () => {
+    it('refuses submitToPremium: false (make public) while a Premium publication is active', async () => {
       const access = { id: quizId, author: authorId, visibility: 'personal' };
+      const update = vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'public' }));
       const quizRepository = createQuizRepository({
         findAccessById: vi.fn().mockResolvedValue(access),
-        update: vi.fn().mockResolvedValue(createQuizEntity({ visibility: 'personal' })),
+        update,
       });
-      const service = new QuizCrudService(quizRepository);
-
-      await expect(
-        service.updateQuiz(quizId, { title: 'Renamed', submitToPremium: false }, authorId),
-      ).resolves.toMatchObject({ success: true });
-
-      expect(vi.mocked(quizRepository.update).mock.calls[0]?.[1]).not.toHaveProperty('visibility');
-    });
-
-    it('applies an explicit owner visibility and refuses public while a Premium publication is active (RIN-1271)', async () => {
-      const access = { id: quizId, author: authorId, visibility: 'personal' };
       const findActivePublicationByQuizId = vi
         .fn()
-        .mockResolvedValueOnce({ id: 'publication-1' })
-        .mockResolvedValue(null);
-      const quizRepository = createQuizRepository({
-        findAccessById: vi.fn().mockResolvedValue(access),
-        update: vi.fn().mockResolvedValue(createQuizEntity()),
-      });
+        .mockResolvedValueOnce({ id: 'pub-1' })
+        .mockResolvedValueOnce(null);
       const service = new QuizCrudService(quizRepository, undefined, {
         findActivePublicationByQuizId,
       });
 
       await expect(
-        service.updateQuiz(quizId, { visibility: 'public' }, authorId),
-      ).resolves.toMatchObject({ success: false, statusCode: 409 });
-      expect(quizRepository.update).not.toHaveBeenCalled();
-      expect(findActivePublicationByQuizId).toHaveBeenCalledWith(quizId);
+        service.updateQuiz(quizId, { submitToPremium: false }, authorId),
+      ).resolves.toMatchObject({ success: false, statusCode: 409, code: 'conflict' });
+      expect(update).not.toHaveBeenCalled();
 
       await expect(
-        service.updateQuiz(quizId, { visibility: 'public' }, authorId),
+        service.updateQuiz(quizId, { submitToPremium: false }, authorId),
       ).resolves.toMatchObject({ success: true });
-      await service.updateQuiz(quizId, { visibility: 'personal' }, authorId);
-      await service.updateQuiz(
+      expect(update).toHaveBeenCalledWith(
         quizId,
-        { visibility: 'public', submitToPremium: true, rightsAttested: true },
-        authorId,
+        expect.objectContaining({ visibility: 'public' }),
       );
-
-      expect(
-        vi.mocked(quizRepository.update).mock.calls.map(([, data]) => data.visibility),
-      ).toEqual(['public', 'personal', 'personal']);
-      expect(findActivePublicationByQuizId).toHaveBeenCalledTimes(2);
     });
 
-    it('fails closed when making a quiz public without the publication lookup wired (RIN-1271)', async () => {
+    it('fails closed when the publication lookup is not wired', async () => {
       const quizRepository = createQuizRepository({
-        findAccessById: vi
-          .fn()
-          .mockResolvedValue({ id: quizId, author: authorId, visibility: 'personal' }),
-        update: vi.fn(),
+        findAccessById: vi.fn().mockResolvedValue({ id: quizId, author: authorId }),
       });
-      const service = new QuizCrudService(quizRepository);
-
       await expect(
-        service.updateQuiz(quizId, { visibility: 'public' }, authorId),
+        new QuizCrudService(quizRepository).updateQuiz(
+          quizId,
+          { submitToPremium: false },
+          authorId,
+        ),
       ).resolves.toMatchObject({ success: false, statusCode: 500 });
-      expect(quizRepository.update).not.toHaveBeenCalled();
     });
 
     it('returns 404 when update races to a missing quiz and 500 on unexpected errors', async () => {

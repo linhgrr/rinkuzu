@@ -87,6 +87,49 @@ describe('SubscriptionPage plan comparison', () => {
     expect(screen.getByText('pricing:premium.features.premiumCatalog')).toBeTruthy();
   });
 
+  // RIN-1277: same order as /pricing and the paywall, cheapest first, and the
+  // "popular" badge sits on the cheapest plan as it does on /pricing.
+  it('lists paid plans cheapest first whatever order the API returns', async () => {
+    fetchSubscriptionPageMock.mockResolvedValue({
+      plans: [
+        {
+          id: 'yearly',
+          name: 'Plus 12M',
+          price: 399000,
+          priceLabel: '399.000 ₫',
+          calculatedMonths: 12,
+        },
+        {
+          id: 'monthly',
+          name: 'Plus 1M',
+          price: 49000,
+          priceLabel: '49.000 ₫',
+          calculatedMonths: 1,
+        },
+        {
+          id: 'half',
+          name: 'Plus 6M',
+          price: 239000,
+          priceLabel: '239.000 ₫',
+          calculatedMonths: 6,
+        },
+      ],
+      currentSubscription: null,
+      isPremium: false,
+    });
+
+    render(<SubscriptionPage />);
+
+    await screen.findByRole('heading', { name: 'Plus 1M' });
+    const headings = screen
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent);
+    expect(headings).toEqual(['pricing:free.name', 'Plus 1M', 'Plus 6M', 'Plus 12M']);
+    expect(
+      screen.getByTestId('plan-card-monthly').textContent?.includes('subscription:popular'),
+    ).toBe(true);
+  });
+
   it('offers an extension to an active Premium user instead of blocking the card', async () => {
     fetchSubscriptionPageMock.mockResolvedValue({
       plans: [

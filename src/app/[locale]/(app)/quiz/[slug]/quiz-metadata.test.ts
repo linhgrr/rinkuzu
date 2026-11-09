@@ -26,6 +26,8 @@ function quizMetadata(overrides: Record<string, unknown>) {
     createdAt: '2026-11-01T00:00:00.000Z',
     updatedAt: '2026-11-01T00:00:00.000Z',
     ownerIndexable: true,
+    personalDataFlagged: false,
+    indexHold: false,
     leadQuestionTexts: ['What do chloroplasts do?'],
     contentLocale: 'en',
     ...overrides,
@@ -70,6 +72,19 @@ describe('quiz robots metadata', () => {
       robots: { index: false, follow: true },
     });
   });
+
+  // RIN-1341: flagged or held quizzes stay playable but out of search; clearing
+  // the flag or the hold indexes them again on the next request (no cache).
+  it.each([{ personalDataFlagged: true }, { indexHold: true }])(
+    'marks a public quiz with %o noindex, follow',
+    async (block) => {
+      getQuizMetadataBySlug.mockResolvedValue(quizMetadata(block));
+
+      await expect(metadataFor('biology-basics')).resolves.toMatchObject({
+        robots: { index: false, follow: true },
+      });
+    },
+  );
 
   it('keeps a personal quiz noindex, nofollow', async () => {
     getQuizMetadataBySlug.mockResolvedValue(quizMetadata({ visibility: 'personal' }));

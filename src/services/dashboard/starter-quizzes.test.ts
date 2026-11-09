@@ -14,6 +14,8 @@ function candidate(
     visibility: 'public',
     questionCount: 10,
     isPremium: false,
+    personalDataFlagged: false,
+    indexHold: false,
     ...overrides,
   };
 }
@@ -73,6 +75,25 @@ describe('resolveStarterQuizzes', () => {
       { quizId: 'fake-premium', reason: 'premium' },
       { quizId: 'fake-empty', reason: 'empty' },
     ]);
+  });
+
+  // RIN-1341: the landing, dashboard and nudge starters never promote a quiz
+  // flagged for personal data or under a report hold.
+  it('leaves out flagged and held starters', async () => {
+    const result = await resolveStarterQuizzes({
+      entries: [
+        entry('fake-flagged', 'vi', 1),
+        entry('fake-held', 'vi', 2),
+        entry('fake-ok', 'vi', 3),
+      ],
+      candidates: [
+        candidate({ quizId: 'fake-flagged', personalDataFlagged: true }),
+        candidate({ quizId: 'fake-held', indexHold: true }),
+        candidate({ quizId: 'fake-ok' }),
+      ],
+    });
+
+    expect(result.starterQuizzes.map(({ slug }) => slug)).toEqual(['slug-fake-ok']);
   });
 
   it('returns no starters when every entry is dropped', async () => {

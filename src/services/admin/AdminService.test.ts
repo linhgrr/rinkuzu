@@ -270,6 +270,68 @@ describe('AdminService report and stats contracts', () => {
     expect(updateQuestionById).toHaveBeenCalledWith(quizId, questionId, input);
   });
 
+  // RIN-1341: an admin edit that adds personal data flags the quiz like an owner edit.
+  it('re-runs the personal-data check after an admin question edit', async () => {
+    const quizId = '507f191e810c19729de860eb';
+    const questionId = '507f191e810c19729de860ec';
+    const reportRepository = createReportRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: 'report-phone',
+        quizId,
+        questionId,
+        quizTitle: 'Algebra',
+        quizSlug: 'algebra',
+        reporterEmail: 'learner@example.com',
+        reporterName: 'Learner',
+        content: 'Typo',
+        status: 'pending',
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+    });
+    const storedQuiz = (question: string) => ({
+      id: quizId,
+      title: 'Algebra',
+      slug: 'algebra',
+      author: '507f191e810c19729de860ed',
+      questions: [
+        { id: questionId, question, options: ['3', '4'], type: 'single', correctIndex: 1 },
+      ],
+      visibility: 'public',
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    // Fake number: not anyone's phone.
+    const edited = 'Call 0912 345 678 for the answer: 2 + 2 = ?';
+    const update = vi.fn().mockResolvedValue(null);
+    const quizRepository = createQuizRepository({
+      findById: vi
+        .fn()
+        .mockResolvedValueOnce(storedQuiz('2 + 2 = ?'))
+        .mockResolvedValue(storedQuiz(edited)),
+      updateQuestionById: vi.fn().mockResolvedValue(true),
+      update,
+    });
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      quizRepository,
+      createAttemptRepository(),
+    );
+
+    const result = await service.updateReportedQuestion('report-phone', {
+      question: edited,
+      options: ['3', '4'],
+      type: 'single',
+      correctIndex: 1,
+    });
+
+    expect(result.success).toBe(true);
+    expect(update).toHaveBeenCalledWith(quizId, {
+      contentFlags: { personalData: true, kinds: ['phone'], checkedAt: expect.any(Date) },
+    });
+  });
+
   it('blocks inline editing for legacy reports without a question id', async () => {
     const reportRepository = createReportRepository({
       findById: vi.fn().mockResolvedValue({

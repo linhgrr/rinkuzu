@@ -34,6 +34,7 @@ import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository
 import type { IAdminStatsRepository } from '@/interfaces/repositories/IAdminStatsRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { resolveQuizContentFlags } from '@/lib/quiz/personal-data';
 import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
 import { AdminReportDtoMapper } from '@/mappers/admin/AdminReportDtoMapper';
 import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
@@ -311,6 +312,18 @@ export class AdminService implements IAdminService {
     }
   }
 
+  /**
+   * RIN-1341: an admin edit of one question re-runs the personal-data check,
+   * as an owner edit does; an admin clear in force stays (`previous`). A
+   * failure here fails the request, and retrying the edit is idempotent.
+   */
+  private async recheckQuizContentFlags(quizId: string): Promise<void> {
+    const quiz = await this.quizRepository.findById(quizId);
+    if (!quiz) return;
+    const contentFlags = resolveQuizContentFlags(quiz, quiz.contentFlags, new Date());
+    await this.quizRepository.update(quizId, { contentFlags });
+  }
+
   async updateReportedQuestion(
     reportId: string,
     input: UpdateAdminReportedQuestionRequestDto,
@@ -360,6 +373,7 @@ export class AdminService implements IAdminService {
           statusCode: 409,
         };
       }
+      await this.recheckQuizContentFlags(context.quizId);
 
       return {
         success: true,

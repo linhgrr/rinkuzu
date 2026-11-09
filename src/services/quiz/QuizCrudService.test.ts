@@ -160,6 +160,49 @@ describe('QuizCrudService', () => {
       expect(JSON.stringify(metadata)).not.toContain(owner.email);
     });
 
+    // RIN-1341: the stored flag and hold reach the page's indexing rule.
+    it.each([
+      { contentFlags: undefined, indexHold: undefined, flagged: false, held: false },
+      {
+        contentFlags: { personalData: true, kinds: ['phone'], checkedAt: new Date() },
+        indexHold: { reason: 'reported' as const, since: new Date() },
+        flagged: true,
+        held: true,
+      },
+      {
+        contentFlags: {
+          personalData: false,
+          kinds: ['phone'],
+          checkedAt: new Date(),
+          clearedBy: authorId,
+          clearedAt: new Date(),
+        },
+        indexHold: undefined,
+        flagged: false,
+        held: false,
+      },
+    ])(
+      'reports personalDataFlagged $flagged and indexHold $held',
+      async ({ contentFlags, indexHold, flagged, held }) => {
+        const quizRepository = createQuizRepository({
+          findMetadataBySlug: vi.fn().mockResolvedValue({
+            quiz: {
+              ...quizSummary,
+              ...(contentFlags ? { contentFlags } : {}),
+              ...(indexHold ? { indexHold } : {}),
+            },
+            owner: null,
+          }),
+        });
+        const service = new QuizCrudService(quizRepository);
+
+        const metadata = await service.getQuizMetadataBySlug('algebra-basics');
+
+        expect(metadata).toMatchObject({ personalDataFlagged: flagged, indexHold: held });
+        expect(JSON.stringify(metadata)).not.toContain('kinds');
+      },
+    );
+
     it('keeps a quiz with an unknown owner indexable', async () => {
       const quizRepository = createQuizRepository({
         findMetadataBySlug: vi.fn().mockResolvedValue({ quiz: quizSummary, owner: null }),

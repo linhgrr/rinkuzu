@@ -166,6 +166,16 @@ export function collectQuizTexts(quiz: QuizTextSource): string[] {
 }
 
 /**
+ * True when the stored flags mark personal data and no admin clear is in force
+ * (RIN-1341). Quizzes never checked (no `contentFlags`) are not flagged.
+ */
+export function isPersonalDataFlagged(
+  flags: Pick<QuizContentFlags, 'personalData' | 'clearedBy'> | undefined,
+): boolean {
+  return flags?.personalData === true && flags.clearedBy === undefined;
+}
+
+/**
  * Re-checks the quiz texts on save. An admin clear (`clearedBy`/`clearedAt`)
  * stays in force, with the kinds recorded at clear time, until the content
  * holds a kind that was not in those kinds.

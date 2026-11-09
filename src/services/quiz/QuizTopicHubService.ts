@@ -119,6 +119,8 @@ function isHubQuizIndexable(
     visibility: quiz.visibility,
     ownerIndexable: quiz.authorId === null || !excludedOwnerIds.has(quiz.authorId),
     questionCount: quiz.questionCount,
+    personalDataFlagged: quiz.personalDataFlagged,
+    indexHold: quiz.indexHold,
   });
 }
 

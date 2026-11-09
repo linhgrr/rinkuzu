@@ -137,6 +137,10 @@ export interface QuizListItemDto {
  */
 export interface QuizMetadataDto extends QuizListItemDto {
   ownerIndexable: boolean;
+  /** Personal data flagged with no admin clear in force (RIN-1341). Server-only. */
+  personalDataFlagged: boolean;
+  /** Under a report hold (RIN-1341). Server-only. */
+  indexHold: boolean;
   /** Texts of the first (up to 3) questions, for the generated description (RIN-1241). */
   leadQuestionTexts: string[];
   /** The one language the quiz is written in; its page there is canonical (RIN-1241 D14). */

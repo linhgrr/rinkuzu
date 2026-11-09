@@ -12,5 +12,28 @@
   "describeClearly": "Mô tả vấn đề rõ ràng và cụ thể",
   "submitting": "Đang gửi...",
   "submitReport": "Gửi báo cáo",
-  "failedToSubmit": "Không thể gửi báo cáo"
+  "failedToSubmit": "Không thể gửi báo cáo",
+  "quizPage": {
+    "link": "Báo cáo",
+    "title": "Báo cáo quiz này",
+    "reasonLabel": "Lý do",
+    "reasons": {
+      "copyright": "Vi phạm bản quyền",
+      "personal_data": "Chứa thông tin cá nhân",
+      "wrong_content": "Nội dung sai",
+      "offensive": "Nội dung phản cảm"
+    },
+    "detailsLabel": "Chi tiết (không bắt buộc)",
+    "detailsCount": "{count}/{max}",
+    "emailLabel": "Email để chúng tôi phản hồi (không bắt buộc)",
+    "emailHint": "Chúng tôi chỉ dùng email này để phản hồi về báo cáo.",
+    "emailInvalid": "Nhập địa chỉ email hợp lệ.",
+    "submit": "Gửi báo cáo",
+    "sending": "Đang gửi…",
+    "cancel": "Hủy",
+    "close": "Đóng",
+    "thanks": "Cảm ơn, chúng tôi sẽ xem xét.",
+    "rateLimited": "Bạn đã gửi quá nhiều báo cáo, thử lại sau.",
+    "failed": "Không gửi được báo cáo. Hãy thử lại."
+  }
 }

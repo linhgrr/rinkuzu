@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Card';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { cn } from '@/lib/utils';
+import { ReportQuizPageLink } from '@/features/quiz/components/ReportQuizPageLink';
 import { QUIZ_LANDING_ENTRY } from '@/shared/constants/starter-quiz';
 import type {
   QuizLandingPreviewQuestion,
@@ -16,6 +17,10 @@ interface QuizLandingProps {
   landing: QuizLandingViewModel;
   /** A signed-in viewer gets the labels without "no account needed". */
   signedIn: boolean;
+  /** Signed-in viewer's email, shown read-only in the report dialog (RIN-1344). */
+  viewerEmail?: string | null;
+  /** The owner gets no "Report" link on their own quiz. */
+  ownedByViewer?: boolean;
 }
 
 /** A question longer than this is clamped to 6 lines in the preview. */
@@ -87,7 +92,13 @@ function PreviewQuestion({ question, numberLabel, imageAlt }: PreviewQuestionPro
  * without answers, and links to other quizzes. Every CTA is a plain link, so a
  * guest reaches question 1 without JavaScript or a sign-in.
  */
-export async function QuizLanding({ locale, landing, signedIn }: QuizLandingProps) {
+export async function QuizLanding({
+  locale,
+  landing,
+  signedIn,
+  viewerEmail = null,
+  ownedByViewer = false,
+}: QuizLandingProps) {
   const [t, tQuiz] = await Promise.all([
     getTranslations({ locale, namespace: 'quiz.landing' }),
     getTranslations({ locale, namespace: 'quiz' }),
@@ -199,6 +210,14 @@ export async function QuizLanding({ locale, landing, signedIn }: QuizLandingProp
           ) : null}
         </section>
       ) : null}
+
+      <footer className="flex justify-end border-t border-line pt-2">
+        <ReportQuizPageLink
+          slug={landing.slug}
+          viewerEmail={viewerEmail}
+          ownedByViewer={ownedByViewer}
+        />
+      </footer>
     </div>
   );
 }

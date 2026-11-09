@@ -266,7 +266,13 @@ export default async function QuizPlayerPage({ params, searchParams }: QuizPageP
     return (
       <>
         {schema}
-        <QuizLanding locale={locale} landing={landing} signedIn={Boolean(session?.user)} />
+        <QuizLanding
+          locale={locale}
+          landing={landing}
+          signedIn={Boolean(session?.user)}
+          viewerEmail={session?.user?.email ?? null}
+          ownedByViewer={Boolean(session?.user?.id && quiz.author?.id === session.user.id)}
+        />
       </>
     );
   }

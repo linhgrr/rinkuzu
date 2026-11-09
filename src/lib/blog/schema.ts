@@ -45,6 +45,8 @@ export const blogFrontmatterSchema = z.object({
   /** Article JSON-LD `wordCount` and `timeRequired` (omitted when absent). */
   wordCount: positiveInt.optional(),
   timeRequiredMinutes: positiveInt.optional(),
+  /** Topics for the related-posts block, compared case-insensitively (RIN-1331). */
+  tags: z.array(z.string().trim().min(1, 'tags must not be empty')).max(8).optional(),
 });
 
 export type BlogFrontmatter = z.infer<typeof blogFrontmatterSchema>;

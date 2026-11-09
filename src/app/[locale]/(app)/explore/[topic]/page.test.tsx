@@ -181,5 +181,6 @@ describe('topic hub page (B3, B7)', () => {
       '/vi/explore',
     );
     expect(screen.queryByRole('link', { name: /^Chơi ngay/ })).toBeNull();
+    expect(screen.queryByText('0 bộ câu hỏi')).toBeNull();
   });
 });

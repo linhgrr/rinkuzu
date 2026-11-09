@@ -185,6 +185,8 @@
     "previewCtaSignedIn": "See the answers and keep going",
     "questionNumber": "Question {number}",
     "relatedTitle": "More quizzes on RinKuzu",
+    "relatedTopicTitle": "Quizzes on the same topic",
+    "topicHubLink": "See all {topic} quizzes",
     "relatedCount": "{count} questions"
   },
   "pdfViewer": {

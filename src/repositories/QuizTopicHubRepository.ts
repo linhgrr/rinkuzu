@@ -55,6 +55,26 @@ export class QuizTopicHubRepository implements IQuizTopicHubRepository {
     return row ? toTopicRecord(row) : null;
   }
 
+  async findPublishedTopicByQuizId(quizId: string): Promise<QuizTopicRecord | null> {
+    if (!Types.ObjectId.isValid(quizId)) return null;
+    await connectDB();
+    // Unique `quizId` index, then the topic by `_id`: two point reads.
+    const assignment = await QuizTopicAssignmentModel.findOne(
+      { quizId: new Types.ObjectId(quizId) },
+      { topicId: 1 },
+    )
+      .lean<Pick<HubAssignmentPersistence, 'topicId'>>()
+      .exec();
+    if (!assignment) return null;
+    const row = await QuizTopicModel.findOne(
+      { _id: assignment.topicId, published: true },
+      TOPIC_PROJECTION,
+    )
+      .lean<QuizTopicPersistence>()
+      .exec();
+    return row ? toTopicRecord(row) : null;
+  }
+
   async listPublishedTopics(): Promise<QuizTopicRecord[]> {
     await connectDB();
     const rows = await QuizTopicModel.find({ published: true }, TOPIC_PROJECTION)

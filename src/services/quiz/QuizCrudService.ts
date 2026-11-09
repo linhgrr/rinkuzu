@@ -5,6 +5,7 @@ import {
 } from '@/interfaces/repositories/IQuizRepository';
 import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
+import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import type {
   CreateQuizRequestDto,
   QuizDetailDto,
@@ -12,7 +13,9 @@ import type {
   UpdateQuizRequestDto,
 } from '@/dtos/quiz';
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
+import { detectQuizContentLocale } from '@/lib/seo/quiz-indexability';
 import type { DeleteResultDto } from '@/dtos/common';
+import type { ServiceFailure } from '@/interfaces/services/types';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
 import { getAuthorId } from './quiz-helpers';
@@ -36,10 +39,13 @@ function toQuizQuestionContent(
     : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
 }
 
+type PremiumPublicationLookup = Pick<IPremiumQuizRepository, 'findActivePublicationByQuizId'>;
+
 export class QuizCrudService {
   constructor(
     private quizRepository: IQuizRepository,
     private folderRepository?: IFolderRepository,
+    private premiumPublications?: PremiumPublicationLookup,
   ) {}
 
   async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<QuizDetailDto> {
@@ -149,9 +155,12 @@ export class QuizCrudService {
   async getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null> {
     const record = await this.quizRepository.findMetadataBySlug(slug);
     if (!record) return null;
+    const leadQuestionTexts = [...(record.leadQuestionTexts ?? [])];
     return {
       ...QuizListDtoMapper.toListItem(record.quiz),
       ownerIndexable: record.owner === null || !isNonIndexableQuizOwner(record.owner),
+      leadQuestionTexts,
+      contentLocale: detectQuizContentLocale(record.quiz.title, leadQuestionTexts),
     };
   }
 
@@ -216,6 +225,11 @@ export class QuizCrudService {
         }
       }
 
+      if (quizData.submitToPremium === false) {
+        const refusal = await this.refuseWhilePublished(id);
+        if (refusal) return refusal;
+      }
+
       const updateData: UpdateQuizData = {
         ...(quizData.title !== undefined && { title: quizData.title }),
         ...(quizData.description !== undefined && { description: quizData.description }),
@@ -250,6 +264,26 @@ export class QuizCrudService {
         statusCode: 500,
       };
     }
+  }
+
+  /**
+   * Mirrors the admin rule (QuizAdminService.setQuizVisibility): a quiz with an
+   * active Premium publication cannot be made public. Fails closed when the
+   * lookup is not wired.
+   */
+  private async refuseWhilePublished(id: string): Promise<ServiceFailure | null> {
+    if (!this.premiumPublications) {
+      logger.error('Quiz visibility change is not wired with the Premium publication lookup');
+      return { success: false, error: 'Failed to update quiz', statusCode: 500 };
+    }
+    const publication = await this.premiumPublications.findActivePublicationByQuizId(id);
+    if (!publication) return null;
+    return {
+      success: false,
+      code: 'conflict',
+      error: 'A quiz with a premium publication cannot be made public',
+      statusCode: 409,
+    };
   }
 
   async deleteQuiz(

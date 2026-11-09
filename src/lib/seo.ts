@@ -24,12 +24,21 @@ export function canonicalFor(locale: string, path: string): string {
   return `${siteUrl.origin}${normalized}`;
 }
 
-function languageAlternates(path: string): Record<string, string> {
+/**
+ * hreflang map for `path` across `pageLocales` (every locale by default), plus
+ * `x-default` when the default locale is one of them (RIN-1312).
+ */
+export function languageAlternates(
+  path: string,
+  pageLocales: readonly string[] = locales,
+): Record<string, string> {
   const map: Record<string, string> = {};
   for (const locale of locales) {
-    map[locale] = canonicalFor(locale, path);
+    if (pageLocales.includes(locale)) map[locale] = canonicalFor(locale, path);
   }
-  map['x-default'] = canonicalFor(defaultLocale, path);
+  if (pageLocales.includes(defaultLocale)) {
+    map['x-default'] = canonicalFor(defaultLocale, path);
+  }
   return map;
 }
 
@@ -49,6 +58,14 @@ type LocalizedMetadataInput = {
   /** Extra `/og` query params after the title (e.g. a quiz's question count, RIN-1180). */
   ogImageParams?: Readonly<Record<string, string>>;
   robots?: Metadata['robots'];
+  /** Locale of the canonical URL when it differs from the page locale (RIN-1241). */
+  canonicalLocale?: Locale | string;
+  /** False for one-language pages (quizzes): no hreflang pair (RIN-1241 D14). */
+  languageAlternates?: boolean;
+  /** Title on the `/og` card when it differs from the `<title>` (RIN-1241). */
+  ogImageTitle?: string;
+  /** Locales the page exists in, when not all of them (vi-only blog posts, RIN-1312). */
+  alternateLocales?: readonly string[];
 };
 
 export function buildLocalizedMetadata({
@@ -59,11 +76,15 @@ export function buildLocalizedMetadata({
   imagePath,
   ogImageParams,
   robots,
+  canonicalLocale,
+  languageAlternates: withLanguageAlternates = true,
+  ogImageTitle,
+  alternateLocales,
 }: LocalizedMetadataInput): Metadata {
-  const canonical = canonicalFor(locale, path);
+  const canonical = canonicalFor(canonicalLocale ?? locale, path);
   // Default to the dynamic 1200x630 OG endpoint so social previews render at the
   // correct aspect ratio. Square icons (icon-512x512.png) get letterboxed/cropped.
-  const resolvedImagePath = imagePath ?? defaultOgImagePath(title, ogImageParams);
+  const resolvedImagePath = imagePath ?? defaultOgImagePath(ogImageTitle ?? title, ogImageParams);
   const imageUrl = new URL(resolvedImagePath, siteUrl).toString();
 
   return {
@@ -71,7 +92,7 @@ export function buildLocalizedMetadata({
     description,
     alternates: {
       canonical,
-      languages: languageAlternates(path),
+      ...(withLanguageAlternates ? { languages: languageAlternates(path, alternateLocales) } : {}),
     },
     openGraph: {
       type: 'website',

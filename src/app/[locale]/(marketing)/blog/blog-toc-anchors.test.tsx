@@ -1,9 +1,7 @@
-import type { ReactElement } from 'react';
 import { render, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import AiGuidePost from './ai-powered-quiz-generation-guide/page';
-import KnowledgeGraphsPost from './knowledge-graphs-adaptive-learning-pdfs/page';
+import BlogPostPage from './[slug]/page';
 
 // RIN-640: every TOC entry must point at a rendered heading, otherwise the
 // click and the scroll-spy highlight both do nothing.
@@ -18,11 +16,9 @@ vi.mock('next/image', () => ({ default: () => null }));
 vi.mock('@/components/blog/ReadingProgressBar', () => ({ ReadingProgressBar: () => null }));
 vi.mock('@/components/blog/ShareButtons', () => ({ ShareButtons: () => null }));
 
-type PostPage = (props: { params: Promise<{ locale: string }> }) => Promise<ReactElement>;
-
-const posts: Array<{ slug: string; Page: PostPage }> = [
-  { slug: 'ai-powered-quiz-generation-guide', Page: AiGuidePost },
-  { slug: 'knowledge-graphs-adaptive-learning-pdfs', Page: KnowledgeGraphsPost },
+const posts = [
+  { slug: 'ai-powered-quiz-generation-guide' },
+  { slug: 'knowledge-graphs-adaptive-learning-pdfs' },
 ];
 
 const observed: Element[] = [];
@@ -49,10 +45,10 @@ afterEach(() => {
 });
 
 describe('blog table of contents anchors', () => {
-  it.each(posts)('$slug: every TOC entry targets a rendered heading', async ({ Page }) => {
+  it.each(posts)('$slug: every TOC entry targets a rendered heading', async ({ slug }) => {
     const { container } = render(
       <NextIntlClientProvider locale="en" messages={{}}>
-        {await Page({ params: Promise.resolve({ locale: 'en' }) })}
+        {await BlogPostPage({ params: Promise.resolve({ locale: 'en', slug }) })}
       </NextIntlClientProvider>,
     );
 

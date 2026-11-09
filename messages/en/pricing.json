@@ -33,6 +33,7 @@
       "adaptiveExercises": "Up to 500 personalized exercises per day"
     }
   },
+  "vietnamOnlyPaymentNote": "Payments are in VND through Vietnamese banking apps for now. Paying from outside Vietnam? <support>Contact support</support>.",
   "faqHeading": "Pricing Questions",
   "faqs": [
     {

@@ -137,10 +137,16 @@ export interface QuizListItemDto {
  */
 export interface QuizMetadataDto extends QuizListItemDto {
   ownerIndexable: boolean;
+  /** Texts of the first (up to 3) questions, for the generated description (RIN-1241). */
+  leadQuestionTexts: string[];
+  /** The one language the quiz is written in; its page there is canonical (RIN-1241 D14). */
+  contentLocale: 'vi' | 'en';
 }
 
+/** An indexable public quiz (RIN-1241 D13), listed once at its content-locale URL. */
 export interface PublicQuizSitemapEntryDto {
   slug: string;
+  contentLocale: 'vi' | 'en';
   createdAt: string;
   updatedAt?: string;
 }
@@ -231,6 +237,12 @@ export const submitQuizAttemptRequestSchema = z
     mode: z.enum(['quick', 'full']).optional(),
     /** Quick round only: `answers[i]` answers quiz question `questionIndices[i]` (play order). */
     questionIndices: z.array(z.number().int().min(0)).optional(),
+    /**
+     * RIN-1256: where the attempt started (`?entry=`, and `?post=` with `entry=blog`).
+     * Any string is accepted; the route keeps only tracked values and drops the rest.
+     */
+    entry: z.string().optional(),
+    post: z.string().optional(),
   })
   .superRefine((body, ctx) => {
     // The quiz-dependent checks (size threshold, index range) run in the service.

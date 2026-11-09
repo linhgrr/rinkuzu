@@ -54,4 +54,6 @@ interface QuizOwnerIndexingPersistenceRecord {
 
 export interface QuizMetadataPersistenceRecord extends QuizPersistenceRecord {
   ownerIndexing?: QuizOwnerIndexingPersistenceRecord;
+  /** Texts of the first questions (RIN-1241); entries may be missing in old data. */
+  leadQuestionTexts?: unknown[];
 }

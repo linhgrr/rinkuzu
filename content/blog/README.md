@@ -27,9 +27,67 @@ Each file needs a YAML frontmatter block validated by
 | `locale`          | `"en" \| "vi"`        | Must match the parent directory.      |
 | `author`          | string                | Author slug, e.g. `rinkuzu-team`.     |
 
+Optional fields override copy that otherwise falls back to a required field:
+
+| Field                    | Falls back to        | Used for                                   |
+| ------------------------ | -------------------- | ------------------------------------------ |
+| `summary`                | `description`        | Card text on the author page.              |
+| `lede`                   | `description`        | Subtitle under the article title.          |
+| `seoDescription`         | `description`        | Meta, Open Graph and JSON-LD description.  |
+| `twitterDescription`     | SEO description      | Twitter card description.                  |
+| `articleReadTimeMinutes` | `readTimeMinutes`    | Read time on the article page.             |
+| `breadcrumbLabel`        | `title`              | Last breadcrumb item on the article page.  |
+| `navLabel`               | `title`              | Previous/next links on neighbouring posts. |
+| `ctaTitle`, `ctaBody`    | a generic upload CTA | Call to action below the article.          |
+| `wordCount`              | omitted              | Article JSON-LD `wordCount`.               |
+| `timeRequiredMinutes`    | omitted              | Article JSON-LD `timeRequired` (`PT<n>M`). |
+
 A missing or invalid required field fails validation (and the build) rather
 than rendering a broken page — see `src/lib/blog/content.test.ts`.
 
-This directory currently ships without any `.mdx` posts; wiring it into
-routing/SEO and migrating the existing hand-authored articles are tracked in
-follow-up issues (RIN-222).
+## Publishing a new post
+
+A standard post is a content-file-only PR: no route, component, sitemap or
+SEO code changes.
+
+1. Add `content/blog/en/<slug>.mdx` with the required frontmatter and the
+   article body in plain Markdown (`##`/`###` headings build the table of
+   contents). Link to other pages with locale-prefixed paths, for example
+   `/en/faq`: links in the body are plain anchors and skip the locale router.
+2. Add `content/blog/vi/<slug>.mdx` with Vietnamese frontmatter. Leave the body
+   empty for a listing-only translation (see below), or add one to publish a
+   translated article.
+3. Run `npx vitest run --config vitest.node.config.ts src/lib/blog` to validate
+   the frontmatter, then open a PR labelled `type:ui` so QA checks the preview.
+
+Everything else is derived from the frontmatter when the site builds:
+
+- the index, article and author pages (`src/app/[locale]/(marketing)/blog`);
+- `<title>`, meta description, canonical, hreflang, Open Graph and Twitter
+  tags (`generateMetadata` in `blog/[slug]/page.tsx`, via
+  `buildLocalizedMetadata`);
+- Article and BreadcrumbList JSON-LD (same file);
+- sitemap entries for the article and its author, dated by `date`
+  (`getBlogSitemapRoutes` in `src/lib/blog/posts.ts`, read by
+  `src/lib/public-sitemap.ts`).
+
+Product copy says **personalized** (en) and **cá nhân hóa** (vi), never
+"adaptive" or "thích ứng".
+
+A new author needs a profile in `src/lib/blog/authors.ts` (code change);
+until then the author page and its sitemap entry are skipped.
+
+## Routing
+
+- `/<locale>/blog` lists the locale's posts, newest first.
+- `/<locale>/blog/<slug>` is pre-rendered for every slug that has a body
+  (`generateStaticParams` in `src/app/[locale]/(marketing)/blog/[slug]/page.tsx`).
+- `/<locale>/blog/authors/<author>` lists that author's posts; the author
+  profile itself lives in `src/lib/blog/authors.ts`.
+
+**Listing-only translations.** A `vi` file with frontmatter but no body
+localizes the index and author cards, and its article page shows the `en`
+article. Add a body to publish a translated article.
+
+**Formatting.** `.mdx` files are excluded from Prettier, which rewrites
+Markdown (tables, emphasis, spacing) and would change published pages.

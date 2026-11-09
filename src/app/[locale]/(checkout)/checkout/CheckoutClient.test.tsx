@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
 
+import { StrictMode } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,7 +15,11 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   push: vi.fn(),
   verifyOrder: vi.fn(),
+  capture: vi.fn(),
+  locale: 'en',
 }));
+
+vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: mocks.capture }));
 
 const copy: Record<string, string> = {
   loading: 'Loading checkout…',
@@ -58,7 +63,15 @@ vi.mock('next-intl', () => {
     }
     return copy[key] ?? key;
   };
-  return { useTranslations: () => t };
+  t.rich = (key: string, values: Record<string, (chunks: string) => React.ReactNode>) =>
+    key === 'paymentMethod.vietnamOnlyNote'
+      ? [
+          'Payments are in VND through Vietnamese banking apps for now. Paying from outside Vietnam? ',
+          values['support']?.('Contact support'),
+          '.',
+        ]
+      : key;
+  return { useLocale: () => mocks.locale, useTranslations: () => t };
 });
 
 vi.mock('@/i18n/navigation', () => ({
@@ -194,6 +207,37 @@ describe('CheckoutClient purchase review', () => {
 
 // RIN-1015: `/checkout?plan=<unknown>` left an empty summary card, a terms
 // checkbox, and a toast that vanished. It now gets a body state with a way out.
+describe('CheckoutClient Vietnam-only payment note (RIN-1277)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.quote.mockResolvedValue(quote);
+  });
+
+  afterEach(() => {
+    cleanup();
+    mocks.locale = 'en';
+  });
+
+  it('tells /en learners that payment is VND-only and links to support', async () => {
+    render(<CheckoutClient planId="premium-monthly" orderId={null} hasProviderCallback={false} />);
+
+    await screen.findByRole('heading', { name: 'Review and pay' });
+    expect(screen.getByText(/Payments are in VND through Vietnamese banking apps/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')).toBe(
+      '/support',
+    );
+  });
+
+  it('adds nothing on /vi', async () => {
+    mocks.locale = 'vi';
+    render(<CheckoutClient planId="premium-monthly" orderId={null} hasProviderCallback={false} />);
+
+    await screen.findByRole('heading', { name: 'Review and pay' });
+    expect(screen.queryByText(/Payments are in VND/)).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Contact support' })).toBeNull();
+  });
+});
+
 describe('CheckoutClient quote failure', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -234,5 +278,50 @@ describe('CheckoutClient quote failure', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByRole('heading', { name: 'Review and pay' })).toBeTruthy();
     expect(mocks.quote).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('CheckoutClient checkout_started (RIN-1269)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.quote.mockResolvedValue(quote);
+  });
+
+  afterEach(cleanup);
+
+  it('fires once per mount with the plan, even under the strict-mode double effect', async () => {
+    const { rerender } = render(
+      <StrictMode>
+        <CheckoutClient planId="premium-monthly" orderId={null} hasProviderCallback={false} />
+      </StrictMode>,
+    );
+    await screen.findByRole('heading', { name: 'Review and pay' });
+    rerender(
+      <StrictMode>
+        <CheckoutClient planId="premium-monthly" orderId={null} hasProviderCallback={false} />
+      </StrictMode>,
+    );
+
+    expect(mocks.capture).toHaveBeenCalledTimes(1);
+    expect(mocks.capture).toHaveBeenCalledWith('checkout_started', {
+      locale: 'en',
+      plan: 'premium-monthly',
+      source: 'checkout',
+    });
+  });
+
+  it('does not fire without a plan or when returning to an existing order', () => {
+    mocks.getOrder.mockReturnValue(new Promise(() => undefined));
+    render(<CheckoutClient planId={null} orderId={null} hasProviderCallback={false} />);
+    cleanup();
+    render(
+      <CheckoutClient
+        planId="premium-monthly"
+        orderId="order-fake-1"
+        hasProviderCallback={false}
+      />,
+    );
+
+    expect(mocks.capture).not.toHaveBeenCalled();
   });
 });

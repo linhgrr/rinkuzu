@@ -9,8 +9,10 @@ import type {
   FailedLoginAttemptState,
 } from '@/entities/AuthAccount';
 import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
+import type { Locale } from '@/i18n/config';
 import type {
   CreatePendingAccountData,
+  IAccountLocaleRepository,
   IAuthAccountRepository,
   IAuthSignInRepository,
   FailedLoginPolicy,
@@ -52,7 +54,9 @@ function buildGoogleProfileUpdates(data: VerifiedGoogleAccountData): GoogleProfi
   };
 }
 
-export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignInRepository {
+export class AuthAccountRepository
+  implements IAuthAccountRepository, IAuthSignInRepository, IAccountLocaleRepository
+{
   async findByEmail(email: string): Promise<AuthAccountSecurityState | null> {
     await connectDB();
     const record = await User.findOne({ email, ...ACTIVE_ACCOUNT_FILTER })
@@ -73,6 +77,7 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
         disabledAt: null,
         disabledBy: null,
         ...(data.displayName ? { displayName: data.displayName } : {}),
+        ...(data.locale ? { locale: data.locale } : {}),
         emailVerificationTokenHash: data.verificationTokenHash,
         emailVerificationExpires: data.verificationExpires,
       });
@@ -404,5 +409,15 @@ export class AuthAccountRepository implements IAuthAccountRepository, IAuthSignI
       }
       throw error;
     }
+  }
+
+  /** `_id` lookup; matches only an account with no locale yet, so it never overwrites one. */
+  async rememberLocaleIfMissing(accountId: string, locale: Locale): Promise<void> {
+    if (!Types.ObjectId.isValid(accountId)) return;
+    await connectDB();
+    await User.updateOne(
+      { _id: new Types.ObjectId(accountId), locale: null },
+      { $set: { locale } },
+    );
   }
 }

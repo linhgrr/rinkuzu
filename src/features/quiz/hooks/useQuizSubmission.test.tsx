@@ -109,6 +109,37 @@ describe('useQuizSubmission', () => {
     );
   });
 
+  it.each([undefined, 'learner@example.test'])(
+    'sends entry and post with the attempt (session %s, RIN-1242)',
+    async (sessionEmail) => {
+      submitAttemptMock.mockResolvedValueOnce({
+        attemptId: 'attempt-1',
+        score: 100,
+        correctAnswers: 1,
+        totalQuestions: 1,
+      });
+      const { result } = renderHook(() =>
+        useQuizSubmission({
+          slug: 'architecture',
+          quiz: { questions: [{ type: 'single' }] },
+          userAnswers: [1],
+          ...(sessionEmail ? { sessionEmail } : {}),
+          attribution: { entry: 'blog', post: 'on-thi-jlpt' },
+          onSubmitSuccess: vi.fn(),
+          onSubmitError: vi.fn(),
+          mapAnswersToOriginalOrder: (_quiz, mappedAnswers) => mappedAnswers,
+          isQuestionAnswered: (_question, answer) => answer !== -1,
+        }),
+      );
+
+      await act(async () => expect(await result.current.completeSubmit()).toBe(true));
+
+      expect(submitAttemptMock).toHaveBeenCalledWith(
+        expect.objectContaining({ entry: 'blog', post: 'on-thi-jlpt' }),
+      );
+    },
+  );
+
   it('sends a guest claim token, no email, reuses it on retry and stores it (RIN-912)', async () => {
     submitAttemptMock.mockRejectedValueOnce(new Error('temporary')).mockResolvedValueOnce({
       attemptId: 'attempt-1',

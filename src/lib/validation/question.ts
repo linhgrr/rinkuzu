@@ -125,6 +125,11 @@ export const questionListSchema = z
   .min(1, 'At least one question is required')
   .max(MAX_QUESTIONS_PER_QUIZ, 'Too many questions');
 
+/**
+ * Language-neutral warning codes for the submit response. The API has no
+ * request locale, so it returns a code a client can translate, never copy
+ * (RIN-1265: the old Vietnamese sentence leaked into English responses).
+ */
 export function getQuestionListWarnings(questionCount: number): string[] {
-  return questionCount < 5 ? ['Quiz nên có ít nhất 5 câu hỏi'] : [];
+  return questionCount < 5 ? ['too_few_questions'] : [];
 }

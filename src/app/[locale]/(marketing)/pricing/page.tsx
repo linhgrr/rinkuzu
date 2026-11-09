@@ -15,6 +15,11 @@ import {
   PREMIUM_PRICING_FEATURE_KEYS,
 } from '@/features/subscription/constants/pricing-features';
 import { formatPlanDuration } from '@/features/subscription/lib/plan-duration';
+import { sortPlansByPrice } from '@/features/subscription/lib/plan-order';
+import {
+  PricingPlanCtaLink,
+  PricingViewTracker,
+} from '@/features/subscription/components/PricingPaywallTracking';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -49,7 +54,7 @@ export default async function PricingPage({ params }: Props) {
   const registerHref = ROUTES.REGISTER;
   const subscriptionHref = ROUTES.SUBSCRIPTION;
 
-  const premiumPlans = (await loadPremiumPlans()).sort((a, b) => a.price - b.price);
+  const premiumPlans = sortPlansByPrice(await loadPremiumPlans());
   const lowestPrice = premiumPlans[0]?.price ?? null;
 
   const freeFeatures = FREE_PRICING_FEATURE_KEYS.map((key) => t(`free.features.${key}`));
@@ -63,6 +68,7 @@ export default async function PricingPage({ params }: Props) {
     <main className="min-h-screen bg-white">
       <JsonLd id="pricing-schema" data={pricingSchema} />
       <JsonLd id="pricing-faq-schema" data={faqSchema} />
+      <PricingViewTracker />
 
       <section className="bg-[var(--bg-section)] py-20 text-center">
         <div className="max-w-2xl mx-auto px-6">
@@ -129,16 +135,32 @@ export default async function PricingPage({ params }: Props) {
                       </li>
                     ))}
                   </ul>
-                  <Link
+                  <PricingPlanCtaLink
                     href={subscriptionHref}
+                    planId={plan.id}
                     className="mt-6 inline-block w-full rounded-full bg-brand-action-strong px-6 py-2.5 text-center font-semibold text-white transition-colors hover:bg-brand-action-strong-hover"
                   >
                     {t('premium.cta')}
-                  </Link>
+                  </PricingPlanCtaLink>
                 </CardContent>
               </Card>
             ))}
           </div>
+          {/* PayOS takes VND from Vietnamese banks only; warn overseas /en learners (RIN-1277). */}
+          {locale === 'en' && (
+            <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-6 text-[var(--text-muted)]">
+              {t.rich('vietnamOnlyPaymentNote', {
+                support: (chunks) => (
+                  <Link
+                    href={ROUTES.SUPPORT}
+                    className="font-medium text-[var(--text-primary)] underline underline-offset-2"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
+          )}
         </div>
       </section>
 

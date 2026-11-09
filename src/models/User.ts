@@ -28,6 +28,8 @@ interface UserDocument extends Document {
   signupLocale?: Locale;
   /** ISO-3166 alpha-2 country of the signup request, set once at creation; null = not known. */
   signupCountry?: string | null;
+  /** UI locale of signup, else of the first sign-in that knew one (RIN-1263). Absent = unknown. */
+  locale?: Locale;
   /** Monotonic session generation; increments on login and real disable/restore. */
   authVersion: number;
   authIdentities?: Array<{ provider: string; subject: string }>;
@@ -99,6 +101,7 @@ const UserSchema = new Schema<UserDocument>({
   // Analytics only (RIN-1268): no default, so accounts created before stay absent.
   signupLocale: { type: String, enum: locales, required: false },
   signupCountry: { type: String, match: /^[A-Z]{2}$/, required: false },
+  locale: { type: String, enum: locales, required: false },
   authVersion: {
     type: Number,
     required: true,

@@ -113,6 +113,8 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         password: values.password,
         redirect: false,
         callbackUrl,
+        // Stored once on an account with no locale yet, for its emails (RIN-1263).
+        locale,
       });
 
       const code = result?.code ?? result?.error;

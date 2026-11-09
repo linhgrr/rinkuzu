@@ -1080,6 +1080,8 @@ test.describe('production critical paths', () => {
           .findOneAndUpdate({ email }, { $set: { emailVerified: new Date() } });
         const userId = created?.['_id'];
         expect(userId).toBeInstanceOf(ObjectId);
+        // RIN-1263: a signup on /en stores `en`, so the activation nudge is in English.
+        expect(created?.['locale']).toBe('en');
 
         const resultPath = `${resultUrl.pathname.replace(/^\/en/, '')}${resultUrl.search}`;
         await page.goto(`/en/login?callbackUrl=${encodeURIComponent(resultPath)}`);

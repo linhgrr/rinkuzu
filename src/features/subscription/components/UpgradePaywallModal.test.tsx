@@ -6,12 +6,16 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UpgradePaywallModal } from './UpgradePaywallModal';
 
-const { fetchSubscriptionPageMock, routerPushMock } = vi.hoisted(() => ({
+const { fetchSubscriptionPageMock, routerPushMock, captureMock } = vi.hoisted(() => ({
   fetchSubscriptionPageMock: vi.fn(),
   routerPushMock: vi.fn(),
+  captureMock: vi.fn(),
 }));
 
+vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: captureMock }));
+
 vi.mock('next-intl', () => ({
+  useLocale: () => 'en',
   useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) =>
     `${namespace}:${key}${values ? `:${JSON.stringify(values)}` : ''}`,
 }));
@@ -89,6 +93,44 @@ describe('UpgradePaywallModal', () => {
       }),
     );
     expect(routerPushMock).toHaveBeenCalledWith('/checkout?plan=eco-plus-six-months');
+    // RIN-1269: the plan CTA is an upgrade click from the modal; opening it is not.
+    expect(captureMock).toHaveBeenCalledTimes(1);
+    expect(captureMock).toHaveBeenCalledWith('upgrade_clicked', {
+      locale: 'en',
+      plan: 'eco-plus-six-months',
+      source: 'upgrade_modal',
+    });
+  });
+
+  // RIN-1277: same order as /pricing and /subscription, cheapest first.
+  it('lists plans cheapest first whatever order the API returns', async () => {
+    fetchSubscriptionPageMock.mockResolvedValue({
+      plans: [
+        {
+          id: 'half',
+          name: 'Plus 6M',
+          price: 239_000,
+          priceLabel: '239.000 ₫',
+          calculatedMonths: 6,
+        },
+        {
+          id: 'monthly',
+          name: 'Plus 1M',
+          price: 49_000,
+          priceLabel: '49.000 ₫',
+          calculatedMonths: 1,
+        },
+      ],
+      currentSubscription: null,
+      isPremium: false,
+    });
+
+    render(<UpgradePaywallModal isOpen kind="quota" onClose={vi.fn()} />);
+
+    await screen.findByText('Plus 1M');
+    expect(
+      screen.getAllByRole('heading', { level: 4 }).map((heading) => heading.textContent),
+    ).toEqual(['Plus 1M', 'Plus 6M']);
   });
 
   it('does not offer another purchase when Premium became active in another tab', async () => {

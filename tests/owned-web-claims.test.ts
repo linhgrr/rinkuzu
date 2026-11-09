@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 type LandingMessages = {
@@ -26,8 +27,13 @@ const ownedWebSources = [
   'src/app/llms.txt/route.ts',
   'src/app/[locale]/(marketing)/about/page.tsx',
   'src/app/[locale]/(marketing)/blog/page.tsx',
-  'src/app/[locale]/(marketing)/blog/ai-powered-quiz-generation-guide/page.tsx',
-  'src/app/[locale]/(marketing)/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx',
+  'src/app/[locale]/(marketing)/blog/[slug]/page.tsx',
+  // Blog posts live in content/blog since RIN-404; every post is checked, so a new
+  // post needs no change here (RIN-406).
+  ...fs
+    .readdirSync('content/blog', { recursive: true, encoding: 'utf8' })
+    .filter((file) => file.endsWith('.mdx'))
+    .map((file) => path.join('content/blog', file)),
   'src/app/[locale]/(marketing)/faq/page.tsx',
 ];
 

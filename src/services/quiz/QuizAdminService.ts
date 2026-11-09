@@ -12,6 +12,7 @@ import type {
 import type { DeleteResultDto } from '@/dtos/common';
 import type { PublicQuizSitemapEntryDto, QuizListDto, QuizListOptionsDto } from '@/dtos/quiz';
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
+import { detectQuizContentLocale, isQuizIndexable } from '@/lib/seo/quiz-indexability';
 import { logger } from '@/lib/logger';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
@@ -228,9 +229,10 @@ export class QuizAdminService {
   }
 
   /**
-   * Newest public quizzes for the sitemap, minus quizzes owned by test or
-   * company accounts (RIN-840). The owners are excluded in the query, so the
-   * limit counts only indexable quizzes.
+   * Newest indexable public quizzes for the sitemap (RIN-1241 D13): owners that
+   * are test or company accounts (RIN-840) and quizzes under 5 questions are
+   * excluded in the query, so the limit counts only indexable quizzes. Each
+   * carries its content locale, the one URL the sitemap lists (D14).
    */
   async getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]> {
     const candidates = await this.quizRepository.findNonIndexableOwnerCandidates();
@@ -238,11 +240,20 @@ export class QuizAdminService {
       .filter((owner) => isNonIndexableQuizOwner(owner))
       .map((owner) => owner.id);
     const rows = await this.quizRepository.findPublicSitemapEntries({ excludeAuthorIds, limit });
-    return rows.map((row) => ({
-      slug: row.slug,
-      createdAt: row.createdAt.toISOString(),
-      ...(row.updatedAt ? { updatedAt: row.updatedAt.toISOString() } : {}),
-    }));
+    return rows
+      .filter((row) =>
+        isQuizIndexable({
+          visibility: 'public',
+          ownerIndexable: true,
+          questionCount: row.questionCount,
+        }),
+      )
+      .map((row) => ({
+        slug: row.slug,
+        contentLocale: detectQuizContentLocale(row.title, row.leadQuestionTexts),
+        createdAt: row.createdAt.toISOString(),
+        ...(row.updatedAt ? { updatedAt: row.updatedAt.toISOString() } : {}),
+      }));
   }
 
   async getQuizzes(options: QuizListOptionsDto): Promise<QuizListDto> {

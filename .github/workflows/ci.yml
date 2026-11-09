@@ -695,10 +695,31 @@ jobs:
       # --config is passed explicitly rather than relying on gitleaks finding
       # .gitleaks.toml by itself: a silently missing config would drop the two
       # repository-specific rules and turn this gate green for the wrong reason.
+      # On a pull request the checked-out tree is the PR's own merge commit, so
+      # its config and ignore file are attacker-controlled: a PR could add its
+      # own fingerprint to .gitleaksignore or a `gitleaks:allow` comment. Read
+      # both from the base commit instead, and ignore inline allow comments.
+      # A missing base config falls back to the default rules, never to no scan.
       - name: Scan all reachable repository history
-        run: >-
-          "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1
-          --config .gitleaks.toml --log-opts='--all' .
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            trusted="${RUNNER_TEMP}/gitleaks-base"
+            mkdir -p "$trusted"
+            git cat-file -e "${BASE_SHA}^{commit}"
+            if ! git show "${BASE_SHA}:.gitleaks.toml" > "$trusted/.gitleaks.toml" 2>/dev/null; then
+              printf '[extend]\nuseDefault = true\n' > "$trusted/.gitleaks.toml"
+            fi
+            git show "${BASE_SHA}:.gitleaksignore" > "$trusted/.gitleaksignore" 2>/dev/null || : > "$trusted/.gitleaksignore"
+            "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1 --ignore-gitleaks-allow \
+              --config "$trusted/.gitleaks.toml" --gitleaks-ignore-path "$trusted/.gitleaksignore" \
+              --log-opts='--all' .
+          else
+            "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1 \
+              --config .gitleaks.toml --log-opts='--all' .
+          fi
 
   codeql:
     name: CodeQL (${{ matrix.language }})

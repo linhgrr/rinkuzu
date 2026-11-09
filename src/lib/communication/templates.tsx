@@ -30,7 +30,7 @@ interface MailFrameProps {
   footer?: ReactNode;
 }
 
-function MailFrame({ preview, children, footer, lang = 'vi' }: MailFrameProps) {
+export function MailFrame({ preview, children, footer, lang = 'vi' }: MailFrameProps) {
   return (
     <Html lang={lang}>
       <Head />
@@ -61,6 +61,16 @@ function MailFrame({ preview, children, footer, lang = 'vi' }: MailFrameProps) {
     </Html>
   );
 }
+
+/** Shared transactional styles, for templates kept in their own files (RIN-1348). */
+export const MAIL_BODY_TEXT = { color: '#403832', fontSize: '15px', lineHeight: '24px' } as const;
+export const MAIL_FOOTER_TEXT = { color: '#736b63', fontSize: '12px', lineHeight: '18px' } as const;
+export const MAIL_BUTTON = {
+  backgroundColor: '#9a5c32',
+  borderRadius: '8px',
+  color: '#fff',
+  padding: '12px 20px',
+} as const;
 
 const CONVERSATION_TEXT = { color: '#222222', fontSize: '15px', lineHeight: '24px' } as const;
 const CONVERSATION_FOOTNOTE = { color: '#666666', fontSize: '13px', lineHeight: '20px' } as const;
@@ -103,7 +113,9 @@ function FeedbackPreferencesNote({ url, lead }: { url: string; lead: string }) {
   );
 }
 
-async function renderElement(element: React.ReactElement): Promise<RenderedCommunicationMail> {
+export async function renderElement(
+  element: React.ReactElement,
+): Promise<RenderedCommunicationMail> {
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
   return { html, text };
 }
@@ -450,88 +462,4 @@ export async function renderActivationNudge(input: {
     </MailFrame>,
   );
   return { ...mail, subject: copy.subject };
-}
-
-interface PremiumRejectCopy {
-  subject: (title: string) => string;
-  intro: (title: string) => string;
-  noteLabel: string;
-  madePublic: string;
-  resubmit: string;
-  button: string;
-  footer: string;
-}
-
-/**
- * Copy for the Premium reject email (RIN-1348). The only data is the quiz
- * title and the reviewer's note; no other learner data.
- */
-const PREMIUM_REJECT_COPY: Record<ReviewReminderLocale, PremiumRejectCopy> = {
-  vi: {
-    subject: (title) => `Bài quiz “${title}” chưa được nhận vào Premium`,
-    intro: (title) => `Bài quiz “${title}” của bạn chưa được nhận vào Premium.`,
-    noteLabel: 'Ghi chú của người duyệt:',
-    madePublic: 'Giờ bài quiz đã công khai: ai cũng có thể tìm và làm bài.',
-    resubmit:
-      'Bạn có thể sửa và gửi lại vào Premium. Trong lúc chờ duyệt, bài quiz sẽ ở chế độ riêng tư.',
-    button: 'Sửa bài quiz',
-    footer: 'Bạn nhận email này vì đã gửi một bài quiz vào Premium trên Rinkuzu.',
-  },
-  en: {
-    subject: (title) => `Your quiz “${title}” was not accepted into Premium`,
-    intro: (title) => `Your quiz “${title}” was not accepted into Premium.`,
-    noteLabel: 'Reviewer note:',
-    madePublic: 'It is now public: anyone can find and play it.',
-    resubmit:
-      'You can edit it and submit it to Premium again. While it waits for review, it is private again.',
-    button: 'Edit the quiz',
-    footer: 'You get this email because you submitted a quiz to Rinkuzu Premium.',
-  },
-};
-
-const MAIL_BODY_TEXT = { color: '#403832', fontSize: '15px', lineHeight: '24px' } as const;
-
-export async function renderPremiumReject(input: {
-  locale: ReviewReminderLocale;
-  quizTitle: string;
-  reviewerNote?: string;
-  quizMadePublic: boolean;
-  editUrl: string;
-}): Promise<RenderedCommunicationMail & { subject: string }> {
-  const copy = PREMIUM_REJECT_COPY[input.locale];
-  const note = input.reviewerNote?.trim();
-  const mail = await renderElement(
-    <MailFrame
-      lang={input.locale}
-      preview={copy.intro(input.quizTitle)}
-      footer={
-        <Text style={{ color: '#736b63', fontSize: '12px', lineHeight: '18px' }}>
-          {copy.footer}
-        </Text>
-      }
-    >
-      <Text style={{ ...MAIL_BODY_TEXT, fontWeight: 700 }}>{copy.intro(input.quizTitle)}</Text>
-      {note ? (
-        <Text style={{ ...MAIL_BODY_TEXT, whiteSpace: 'pre-line' }}>
-          {copy.noteLabel} {note}
-        </Text>
-      ) : null}
-      {input.quizMadePublic ? <Text style={MAIL_BODY_TEXT}>{copy.madePublic}</Text> : null}
-      <Text style={MAIL_BODY_TEXT}>{copy.resubmit}</Text>
-      <Section style={{ margin: '22px 0' }}>
-        <Button
-          href={input.editUrl}
-          style={{
-            backgroundColor: '#9a5c32',
-            borderRadius: '8px',
-            color: '#fff',
-            padding: '12px 20px',
-          }}
-        >
-          {copy.button}
-        </Button>
-      </Section>
-    </MailFrame>,
-  );
-  return { ...mail, subject: copy.subject(input.quizTitle).slice(0, 200) };
 }

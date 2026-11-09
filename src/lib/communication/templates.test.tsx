@@ -3,9 +3,9 @@ import {
   renderActivationNudge,
   renderCampaign,
   renderFeedbackInvitation,
-  renderPremiumReject,
   renderReviewReminder,
 } from './templates';
+import { renderPremiumReject } from './premium-reject-template';
 
 describe('activation nudge email (RIN-999)', () => {
   const ctaUrl =

@@ -13,7 +13,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { activationNudgeLocale } from './activation-nudge-policy';
 import { queueMail, requiredObjectId, siteUrl } from './internal';
 import { communicationEnvironment } from './resend';
-import { renderPremiumReject } from './templates';
+import { renderPremiumReject } from './premium-reject-template';
 
 /** The author's email and locale (MarketingPreference, else User), as the nudge reads them. */
 export interface PremiumRejectRecipients {

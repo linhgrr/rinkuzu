@@ -9,7 +9,7 @@
  * (`applySessionUser` / `clearSessionUser`) are intentionally real modules
  * imported transitively by production `src/auth.ts`.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   authenticateCredentialsMock,
@@ -18,6 +18,7 @@ const {
   rememberSignInLocaleMock,
   signInRepository,
   nextAuthConfig,
+  mockEnv,
 } = vi.hoisted(() => {
   const nextAuthConfig: { current: Record<string, unknown> | null } = { current: null };
   const findSessionUserMock = vi.fn();
@@ -28,6 +29,10 @@ const {
     rememberSignInLocaleMock: vi.fn(),
     signInRepository: { findSessionUser: findSessionUserMock },
     nextAuthConfig,
+    mockEnv: {
+      AUTH_GOOGLE_ID: 'google-client-id' as string | undefined,
+      AUTH_GOOGLE_SECRET: 'google-client-secret' as string | undefined,
+    },
   };
 });
 
@@ -63,12 +68,7 @@ vi.mock('@/auth.config', () => ({
   },
 }));
 
-vi.mock('@/lib/env', () => ({
-  env: {
-    AUTH_GOOGLE_ID: 'google-client-id',
-    AUTH_GOOGLE_SECRET: 'google-client-secret',
-  },
-}));
+vi.mock('@/lib/env', () => ({ env: mockEnv }));
 
 vi.mock('@/lib/audit', () => ({
   extractRequestContext: () => ({ ip: null, userAgent: null }),
@@ -529,5 +529,23 @@ describe('production Auth.js config (src/auth.ts)', () => {
       ),
     ).rejects.toMatchObject({ code: 'invalid_credentials' });
     expect(rememberSignInLocaleMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('production Auth.js config without Google credentials', () => {
+  afterEach(async () => {
+    mockEnv.AUTH_GOOGLE_ID = 'google-client-id';
+    mockEnv.AUTH_GOOGLE_SECRET = 'google-client-secret';
+    vi.resetModules();
+    await import('@/auth');
+  });
+
+  it('installs only the credentials provider when Google is not configured', async () => {
+    mockEnv.AUTH_GOOGLE_ID = undefined;
+    mockEnv.AUTH_GOOGLE_SECRET = undefined;
+    vi.resetModules();
+    await import('@/auth');
+
+    expect(capturedConfig().providers.map((provider) => provider.id)).toEqual(['credentials']);
   });
 });

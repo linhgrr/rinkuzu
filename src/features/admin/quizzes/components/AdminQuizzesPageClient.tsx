@@ -12,15 +12,14 @@ import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
-import { UserAvatar } from '@/components/user/UserAvatar';
-import { getUserDisplayName } from '@/components/user/user-identity';
 import type {
-  AdminQuizAuthorViewModel,
-  AdminQuizDetailViewModel,
   AdminQuizListItemViewModel,
-  AdminQuizzesPaginationViewModel,
   AdminQuizVisibilityViewModel,
 } from '@/features/admin/quizzes/types/admin-quizzes-view-model';
+import {
+  adminQuizzesPageReducer,
+  initialAdminQuizzesPageState,
+} from '@/features/admin/quizzes/components/admin-quizzes-page-state';
 import {
   deleteAdminQuiz,
   fetchAdminQuizDetailViewModel,
@@ -28,6 +27,12 @@ import {
   setAdminQuizVisibility,
 } from '@/features/admin/quizzes/api/admin-quizzes-api';
 import { useReloadSettled } from '@/features/admin/hooks/useReloadSettled';
+import { AdminQuizAuthorLink } from '@/features/admin/quizzes/components/AdminQuizAuthorLink';
+import {
+  ClearPersonalDataFlagButton,
+  PersonalDataFlagBadge,
+  PersonalDataFlagFilter,
+} from '@/features/admin/quizzes/components/PersonalDataFlag';
 import { AdminStarterQuizzesPanel } from '@/features/admin/quizzes/components/AdminStarterQuizzesPanel';
 import { MarkStarterButton } from '@/features/admin/quizzes/components/MarkStarterDialog';
 import { AdminQuizTopicsPanel } from '@/features/admin/quizzes/components/AdminQuizTopicsPanel';
@@ -45,131 +50,10 @@ import {
   HiOutlineTrash,
 } from 'react-icons/hi';
 
-interface State {
-  quizzes: AdminQuizListItemViewModel[];
-  pagination: AdminQuizzesPaginationViewModel;
-  loading: boolean;
-  error: string;
-  /**
-   * A failed list load: replaces the filters, the stats and the list with ErrorState and Retry
-   * (RIN-1022). Kept while a retry runs, so Retry stays pending with no skeleton flash (RIN-1166).
-   */
-  loadError: unknown;
-  reloadToken: number;
-  searchInput: string;
-  appliedSearch: string;
-  visibility: AdminQuizVisibilityViewModel;
-  page: number;
-  previewQuiz: AdminQuizDetailViewModel | null;
-  previewingQuizId: string | null;
-  quizToDelete: AdminQuizListItemViewModel | null;
-  deletingQuizId: string | null;
-  quizToToggle: AdminQuizListItemViewModel | null;
-  togglingQuizId: string | null;
-}
-
-type Action =
-  | { type: 'patch'; value: Partial<State> }
-  | {
-      type: 'loaded';
-      quizzes: AdminQuizListItemViewModel[];
-      pagination: AdminQuizzesPaginationViewModel;
-    }
-  | { type: 'removed'; quizId: string }
-  | { type: 'visibilityChanged'; quizId: string; visibility: 'public' | 'personal' };
-
-const initialState: State = {
-  quizzes: [],
-  pagination: {
-    page: 1,
-    totalPages: 0,
-    total: 0,
-    limit: 12,
-    hasNextPage: false,
-    hasPrevPage: false,
-  },
-  loading: true,
-  error: '',
-  loadError: null,
-  reloadToken: 0,
-  searchInput: '',
-  appliedSearch: '',
-  visibility: 'all',
-  page: 1,
-  previewQuiz: null,
-  previewingQuizId: null,
-  quizToDelete: null,
-  deletingQuizId: null,
-  quizToToggle: null,
-  togglingQuizId: null,
-};
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'patch':
-      return { ...state, ...action.value };
-    case 'loaded':
-      return {
-        ...state,
-        quizzes: action.quizzes,
-        pagination: action.pagination,
-        loading: false,
-        error: '',
-        loadError: null,
-      };
-    case 'removed':
-      return {
-        ...state,
-        quizzes: state.quizzes.filter((quiz) => quiz.id !== action.quizId),
-        quizToDelete: null,
-        deletingQuizId: null,
-        pagination: {
-          ...state.pagination,
-          total: Math.max(0, state.pagination.total - 1),
-        },
-      };
-    case 'visibilityChanged':
-      return {
-        ...state,
-        quizzes: state.quizzes.map((quiz) =>
-          quiz.id === action.quizId
-            ? { ...quiz, visibility: action.visibility, visibilityLabelKey: action.visibility }
-            : quiz,
-        ),
-        quizToToggle: null,
-        togglingQuizId: null,
-      };
-    default:
-      return state;
-  }
-}
-
-interface AdminQuizAuthorLinkProps {
-  author: AdminQuizAuthorViewModel;
-}
-
-function AdminQuizAuthorLink({ author }: AdminQuizAuthorLinkProps) {
-  const content = (
-    <>
-      <UserAvatar user={author} size={24} />
-      <span className="truncate">{getUserDisplayName(author)}</span>
-    </>
-  );
-
-  return (
-    <Link
-      href={ROUTES.USER.PROFILE(author.id)}
-      className="inline-flex min-w-0 max-w-[220px] items-center gap-2 rounded-full transition hover:text-brand-trust"
-    >
-      {content}
-    </Link>
-  );
-}
-
 export function AdminQuizzesPageClient() {
   const t = useTranslations('admin');
   const describeError = useAdminApiErrorMessage();
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(adminQuizzesPageReducer, initialAdminQuizzesPageState);
   const { waitForReload, settleReload } = useReloadSettled();
   const starters = useAdminStarterQuizzes();
   const topics = useAdminQuizTopics();
@@ -186,6 +70,7 @@ export function AdminQuizzesPageClient() {
           limit: 12,
           search: state.appliedSearch,
           visibility: state.visibility,
+          flag: state.flag,
           signal: controller.signal,
         });
         if (cancelled) return;
@@ -204,7 +89,14 @@ export function AdminQuizzesPageClient() {
       cancelled = true;
       controller.abort();
     };
-  }, [state.page, state.appliedSearch, state.visibility, state.reloadToken, settleReload]);
+  }, [
+    state.page,
+    state.appliedSearch,
+    state.visibility,
+    state.flag,
+    state.reloadToken,
+    settleReload,
+  ]);
 
   const pageStats = {
     public: state.quizzes.filter((quiz) => quiz.visibility === 'public').length,
@@ -309,6 +201,10 @@ export function AdminQuizzesPageClient() {
               <option value="public">{t('publicQuizzes')}</option>
               <option value="personal">{t('personalQuizzes')}</option>
             </Select>
+            <PersonalDataFlagFilter
+              value={state.flag}
+              onChange={(flag) => dispatch({ type: 'patch', value: { flag, page: 1 } })}
+            />
           </div>
         )}
       </header>
@@ -379,6 +275,9 @@ export function AdminQuizzesPageClient() {
                             t('public')
                           )}
                         </span>
+                        {quiz.personalDataKinds ? (
+                          <PersonalDataFlagBadge kinds={quiz.personalDataKinds} />
+                        ) : null}
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/55">
                         <AdminQuizAuthorLink author={quiz.author} />
@@ -387,7 +286,7 @@ export function AdminQuizzesPageClient() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 lg:max-w-xl lg:justify-end">
                       <Button
                         size="sm"
                         variant="outline"
@@ -416,6 +315,13 @@ export function AdminQuizzesPageClient() {
                         )}
                         {quiz.visibility === 'public' ? t('quizMakePrivate') : t('quizMakePublic')}
                       </Button>
+                      {quiz.personalDataKinds ? (
+                        <ClearPersonalDataFlagButton
+                          quiz={quiz}
+                          onCleared={(quizId) => dispatch({ type: 'flagCleared', quizId })}
+                          onError={(error) => dispatch({ type: 'patch', value: { error } })}
+                        />
+                      ) : null}
                       <MarkStarterButton quiz={quiz} controller={starters} />
                       <AssignTopicButton quiz={quiz} controller={topics} />
                       <Button

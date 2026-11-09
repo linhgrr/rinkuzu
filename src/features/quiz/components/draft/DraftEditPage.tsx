@@ -7,6 +7,7 @@ import useSWR from 'swr';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
 import { QuizEditorWorkspace } from '@/features/quiz/components/editor/QuizEditorWorkspace';
+import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 import { Button } from '@/components/ui/Button';
 import { useQuizDraftAutosave } from '@/features/quiz/hooks/useQuizDraftAutosave';
 import { toEditorQuestions } from '@/features/quiz/lib/question-editor-mutations';
@@ -69,6 +70,7 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
       pdfLayout="flush"
       canEdit
       showPremiumToggle
+      metaNotice={<PublicQuizNotice variant="full" showPremiumPointer />}
       premiumEligible={session?.user?.emailVerified === true}
       premiumAttestation={{ checked: rightsAttested, onChange: setRightsAttested }}
       requireQuestions

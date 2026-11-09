@@ -26,6 +26,8 @@ vi.mock('@/features/quiz/api/quiz-edit-api', () => ({
   updateQuizEditViewModel: vi.fn(),
 }));
 vi.mock('@/features/quiz/api/quiz-api', () => ({ deleteQuizById: vi.fn() }));
+// RIN-1339: the notice's copy is tested with real messages in PublicQuizNotice.test.tsx.
+vi.mock('@/features/quiz/components/PublicQuizNotice', () => ({ PublicQuizNotice: () => null }));
 
 import { EditQuizPage } from './EditQuizPage';
 

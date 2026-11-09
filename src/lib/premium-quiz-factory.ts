@@ -18,11 +18,15 @@ const rejectMailNotifier: IPremiumDecisionNotifier = {
 };
 
 export function getPremiumQuizService(): PremiumQuizService {
-  premiumQuizService ??= new PremiumQuizService(
-    new QuizRepository(),
-    new PremiumQuizRepository(),
-    new QuizAttemptProgressRepository(),
-    rejectMailNotifier,
-  );
+  if (!premiumQuizService) {
+    const premiumRepository = new PremiumQuizRepository();
+    premiumQuizService = new PremiumQuizService(
+      new QuizRepository(),
+      premiumRepository,
+      new QuizAttemptProgressRepository(),
+      premiumRepository,
+      rejectMailNotifier,
+    );
+  }
   return premiumQuizService;
 }

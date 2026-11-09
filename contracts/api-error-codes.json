@@ -17,6 +17,7 @@
     "admin_invariant_unavailable": "Admin invariant unavailable",
     "last_active_admin": "At least one active admin is required",
     "premium_published": "The quiz is on sale in Premium",
+    "premium_submission_failed": "The quiz was saved as public; the Premium submission failed",
     "not_found": "Resource not found",
     "conflict": "Conflict",
     "request_aborted": "Request aborted",

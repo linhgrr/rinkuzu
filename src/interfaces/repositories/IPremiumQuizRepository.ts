@@ -173,6 +173,19 @@ export interface IPremiumSubmissionWithdrawalRepository {
   makeQuizPublicAndWithdrawSubmissions(quizId: string): Promise<MakeQuizPublicResult>;
 }
 
+/**
+ * RIN-1347: undoes the `personal` save when a Premium submission fails after it,
+ * so the quiz is not left private with nothing under review.
+ */
+export interface IPremiumSubmissionRecoveryRepository {
+  /**
+   * Sets the quiz back to `public` when it is still `personal`, has no
+   * `pending`, `changes_requested` or active approved submission, and was not
+   * hidden by an admin. Returns whether the quiz was flipped.
+   */
+  restorePublicAfterFailedSubmission(quizId: string): Promise<boolean>;
+}
+
 export interface IPremiumQuizRepository {
   isVerifiedUser(userId: string): Promise<boolean>;
   createSubmission(data: CreatePremiumSubmissionData): Promise<PremiumQuizSubmission>;

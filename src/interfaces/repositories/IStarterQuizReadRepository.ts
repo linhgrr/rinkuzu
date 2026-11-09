@@ -13,6 +13,10 @@ export interface StarterQuizCandidateRecord {
   visibility: string;
   questionCount: number;
   isPremium: boolean;
+  /** Personal data flagged with no admin clear in force (RIN-1341). */
+  personalDataFlagged: boolean;
+  /** Under a report hold (RIN-1341). */
+  indexHold: boolean;
 }
 
 export interface IStarterQuizReadRepository {

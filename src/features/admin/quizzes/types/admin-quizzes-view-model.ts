@@ -2,6 +2,9 @@ import type { QuizPreviewQuestionViewModel } from '@/features/quiz/types/quiz-pr
 
 export type AdminQuizVisibilityViewModel = 'all' | 'public' | 'personal';
 
+/** `personal_data`: only quizzes with an uncleared personal-data flag (RIN-1342). */
+export type AdminQuizFlagFilterViewModel = 'all' | 'personal_data';
+
 export interface AdminQuizAuthorViewModel {
   id: string;
   email?: string;
@@ -20,6 +23,8 @@ export interface AdminQuizListItemViewModel {
   visibility: 'public' | 'personal';
   visibilityLabelKey: 'public' | 'personal';
   questionCount: number;
+  /** Kinds of an uncleared personal-data flag (RIN-1342); kind names only. */
+  personalDataKinds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -49,5 +54,6 @@ export interface AdminQuizListQueryInput {
   limit: number;
   search: string;
   visibility: AdminQuizVisibilityViewModel;
+  flag: AdminQuizFlagFilterViewModel;
   signal: AbortSignal;
 }

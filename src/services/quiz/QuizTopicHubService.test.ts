@@ -33,6 +33,8 @@ function quiz(id: string, overrides: Partial<QuizTopicHubQuizRecord> = {}): Quiz
     visibility: 'public',
     authorId: 'author-real',
     questionCount: 10,
+    personalDataFlagged: false,
+    indexHold: false,
     createdAt: new Date('2026-10-01T00:00:00.000Z'),
     ...overrides,
   };
@@ -142,6 +144,24 @@ describe('QuizTopicHubService.getTopicWithIndexableQuizzes', () => {
     expect(hub?.indexable).toBe(false);
   });
 
+  // RIN-1341: flagged or held quizzes stay playable but never appear on a hub.
+  it('drops quizzes flagged for personal data or under a report hold', async () => {
+    const { service } = buildService({
+      topics: [topic()],
+      assignments: assign('topic-sinh', ['ok1', 'flagged', 'held']),
+      quizzes: [
+        quiz('ok1'),
+        quiz('flagged', { personalDataFlagged: true }),
+        quiz('held', { indexHold: true }),
+      ],
+      owners: [],
+    });
+
+    const hub = await service.getTopicWithIndexableQuizzes('sinh-hoc');
+
+    expect(hub?.quizzes.map(({ slug }) => slug)).toEqual(['de-ok1']);
+  });
+
   it('is not indexable when the intro is too short, even with enough quizzes', async () => {
     const { service } = buildService({
       topics: [topic({ intro: 'Ngắn quá.' })],
@@ -217,6 +237,18 @@ describe('QuizTopicHubService.listIndexableTopics', () => {
     ]);
     // One batched quiz query and one owner query for every topic together.
     expect(calls).toEqual({ quizLookups: 1, ownerLookups: 1 });
+  });
+
+  it('dates a hub by its topic edit when that is newer than every quiz (D15)', async () => {
+    const { service } = buildService({
+      topics: [topic({ updatedAt: new Date('2026-11-09T08:00:00.000Z') })],
+      assignments: assign('topic-sinh', ['s1', 's2', 's3']),
+      quizzes: [quiz('s1'), quiz('s2'), quiz('s3')],
+    });
+
+    const [hub] = await service.listIndexableTopics();
+
+    expect(hub?.lastModified).toBe('2026-11-09T08:00:00.000Z');
   });
 
   it('returns an empty list when nothing is published', async () => {

@@ -15,7 +15,7 @@ const at = (iso: string) => new Date(iso);
 const plus = (date: Date, ms: number) => new Date(date.getTime() + ms);
 
 /**
- * RIN-1256: the entry point stored on attempts (guest ones included), kept by a
+ * RIN-1256 (hub: RIN-1417): the entry point stored on attempts (guest ones included), kept by a
  * claim, and the activated-by-entry split of the signup week. One UTC ISO week,
  * Monday 2100-05-03, far from other suites.
  */
@@ -25,7 +25,7 @@ describe('activation by entry point', () => {
   const weekEnd = at('2100-05-10T00:00:00.000Z');
   const signupAt = at('2100-05-04T08:00:00.000Z');
   const quizId = new Types.ObjectId();
-  const keys = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const;
+  const keys = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9'] as const;
   const ids = Object.fromEntries(keys.map((key) => [key, new Types.ObjectId()])) as Record<
     (typeof keys)[number],
     Types.ObjectId
@@ -35,7 +35,7 @@ describe('activation by entry point', () => {
   function attempt(
     key: (typeof keys)[number],
     takenAt: Date,
-    attribution: { entry?: string; post?: string } = {},
+    attribution: { entry?: string; post?: string; topic?: string } = {},
   ) {
     return {
       _integrationRun: runId,
@@ -122,6 +122,16 @@ describe('activation by entry point', () => {
     expect(
       await db.collection('attempts').findOne({ _id: new Types.ObjectId(blogGuest.id) }),
     ).toMatchObject({ entry: 'blog', post: 'on-thi-toeic' });
+    // RIN-1417: a hub card's topic slug persists next to entry=hub.
+    const hubGuest = await repository.recordSubmittedAttempt(
+      submission(randomBytes(32).toString('base64url'), plus(signupAt, -HOUR), {
+        entry: 'hub',
+        topic: 'tieng-anh-lop-10',
+      }),
+    );
+    expect(
+      await db.collection('attempts').findOne({ _id: new Types.ObjectId(hubGuest.id) }),
+    ).toMatchObject({ entry: 'hub', topic: 'tieng-anh-lop-10' });
 
     // P8 claims the activation-email guest attempt right after signup.
     const claimedAt = plus(signupAt, 30 * 60_000);
@@ -148,6 +158,8 @@ describe('activation by entry point', () => {
       attempt('p5', plus(signupAt, 4 * HOUR)),
       // P6: from the blog but on day 7 exactly → not activated, not counted.
       attempt('p6', plus(signupAt, 7 * DAY), { entry: 'blog', post: 'post-c' }),
+      // P9: first attempt from a topic hub card → hub (RIN-1417).
+      attempt('p9', plus(signupAt, 5 * HOUR), { entry: 'hub', topic: 'tieng-anh-lop-10' }),
     ]);
     // P7: activated by an adaptive completion only → none.
     const adaptive = [
@@ -166,7 +178,7 @@ describe('activation by entry point', () => {
     );
 
     expect(aggregates.cohorts).toEqual([
-      expect.objectContaining({ weekStart, signups: 8, activated: 7 }),
+      expect.objectContaining({ weekStart, signups: 9, activated: 8 }),
     ]);
     expect(aggregates.cohortEntries).toEqual([
       {
@@ -176,6 +188,7 @@ describe('activation by entry point', () => {
           landing: 1,
           post_signin_starter: 0,
           activation_email: 1,
+          hub: 1,
           none: 2,
         },
         blogPosts: [

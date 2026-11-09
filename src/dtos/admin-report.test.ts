@@ -15,12 +15,15 @@ describe('admin report controller schemas', () => {
         page: '2',
         limit: '25',
         status: 'resolved',
+        reason: 'personal_data',
       }),
     ).toEqual({
       page: 2,
       limit: 25,
       status: 'resolved',
+      reason: 'personal_data',
     });
+    expect(adminReportListQuerySchema.safeParse({ reason: 'spam' }).success).toBe(false);
   });
 
   it('defaults list query pagination and status', () => {
@@ -28,6 +31,7 @@ describe('admin report controller schemas', () => {
       page: 1,
       limit: 20,
       status: 'all',
+      reason: 'all',
     });
   });
 

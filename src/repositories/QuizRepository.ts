@@ -50,6 +50,7 @@ import {
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
 import { buildCompactQuizPipeline } from '@/repositories/pipelines/quiz-list.mjs';
 import { buildPaginatedCreatorStatsPipeline } from '@/repositories/pipelines/creator-stats.mjs';
+import { INDEXABLE_QUIZ_CONTENT_MATCH } from '@/repositories/quiz-index-filter';
 import { deleteOwnedPdfUrlsBestEffort, getQuizPdfObjectPrefix } from '@/lib/s3';
 
 interface QuizListAggregateMeta {
@@ -177,6 +178,9 @@ function leadQuestionTextsExpression(): LeadQuestionTextsExpression {
 const QUIZ_METADATA_PROJECTION = {
   ...QUIZ_SUMMARY_PROJECTION,
   leadQuestionTexts: leadQuestionTextsExpression(),
+  // The RIN-1341 indexing inputs; server-only, never mapped into the author preview.
+  contentFlags: 1,
+  indexHold: 1,
   ownerIndexing: {
     email: { $first: '$authorDoc.email' },
     isTestAccount: { $first: '$authorDoc.isTestAccount' },
@@ -302,8 +306,9 @@ async function mapQuizWithOwnerPlacement(record: QuizPersistenceRecord): Promise
 }
 
 function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenceRecord> {
-  const { excludeAuthor, ...rest } = filter;
+  const { excludeAuthor, personalDataFlagged, ...rest } = filter;
   const normalizedFilter: FilterQuery<QuizPersistenceRecord> = { ...rest };
+  if (personalDataFlagged) normalizedFilter['contentFlags.personalData'] = true;
 
   if (
     typeof normalizedFilter.folder === 'string' &&
@@ -433,6 +438,8 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
           // limit counts only quizzes the sitemap keeps.
           [`questions.${MIN_INDEXABLE_QUESTION_COUNT - 1}`]: { $exists: true },
           ...(excluded.length > 0 ? { author: { $nin: excluded } } : {}),
+          // No personal-data flag in force and no report hold (RIN-1341).
+          ...INDEXABLE_QUIZ_CONTENT_MATCH,
         },
       },
       { $sort: { createdAt: -1 } },

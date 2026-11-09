@@ -67,6 +67,7 @@ function setup(now = NOW) {
             landing: 1,
             post_signin_starter: 0,
             activation_email: 0,
+            hub: 0,
             none: 1,
           },
           blogPosts: [
@@ -165,6 +166,7 @@ describe('ActivationStatsService', () => {
         landing: 1,
         post_signin_starter: 0,
         activation_email: 0,
+        hub: 0,
         none: 1,
       },
       blogPosts: [
@@ -190,6 +192,7 @@ describe('ActivationStatsService', () => {
         landing: 0,
         post_signin_starter: 0,
         activation_email: 0,
+        hub: 0,
         none: 0,
       },
       blogPosts: [],
@@ -384,6 +387,7 @@ describe('ActivationStatsService', () => {
           expect(Object.keys(value as object).sort()).toEqual([
             'activation_email',
             'blog',
+            'hub',
             'landing',
             'none',
             'post_signin_starter',

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collectQuizTexts,
   detectPersonalData,
+  isPersonalDataFlagged,
   resolveQuizContentFlags,
   type QuizTextSource,
 } from '@/lib/quiz/personal-data';
@@ -164,5 +165,34 @@ describe('resolveQuizContentFlags', () => {
       kinds: ['email', 'phone'],
       checkedAt: now,
     });
+  });
+});
+
+describe('isPersonalDataFlagged (RIN-1341)', () => {
+  const checkedAt = new Date('2026-11-01T00:00:00Z');
+
+  it('is false for a quiz never checked or checked clean', () => {
+    expect(isPersonalDataFlagged(undefined)).toBe(false);
+    expect(isPersonalDataFlagged({ personalData: false })).toBe(false);
+  });
+
+  it('is true for a flag with no admin clear', () => {
+    expect(isPersonalDataFlagged({ personalData: true })).toBe(true);
+  });
+
+  it('is false while an admin clear is in force', () => {
+    const cleared = resolveQuizContentFlags(
+      { title: 'Mail me at learner@example.com', questions: [] },
+      {
+        personalData: true,
+        kinds: ['email'],
+        checkedAt,
+        clearedBy: '507f191e810c19729de860ea',
+        clearedAt: checkedAt,
+      },
+      checkedAt,
+    );
+    expect(isPersonalDataFlagged(cleared)).toBe(false);
+    expect(isPersonalDataFlagged({ personalData: true, clearedBy: 'admin-id' })).toBe(false);
   });
 });

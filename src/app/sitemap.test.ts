@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { findNonIndexableOwnerCandidates, findPublicSitemapEntries, loggerError } = vi.hoisted(
-  () => ({
+const { findNonIndexableOwnerCandidates, findPublicSitemapEntries, loggerError, hubData } =
+  vi.hoisted(() => ({
     findNonIndexableOwnerCandidates: vi.fn<IQuizRepository['findNonIndexableOwnerCandidates']>(),
     findPublicSitemapEntries: vi.fn<IQuizRepository['findPublicSitemapEntries']>(),
     loggerError: vi.fn(),
-  }),
-);
+    hubData: {
+      topics: [] as QuizTopicRecord[],
+      assignments: [] as QuizTopicAssignmentRecord[],
+      quizzes: [] as QuizTopicHubQuizRecord[],
+    },
+  }));
 
 // The real service applies the owner rule; only persistence is faked.
 vi.mock('@/lib/quiz-factory', async () => {
@@ -19,6 +23,24 @@ vi.mock('@/lib/quiz-factory', async () => {
   return { getQuizService: () => service };
 });
 
+// Topic hubs (RIN-1249): the real service applies B5, persistence is faked.
+vi.mock('@/lib/quiz-topic-hub-factory', async () => {
+  const { QuizTopicHubService } = await import('@/services/quiz/QuizTopicHubService');
+  const hubRepository: IQuizTopicHubRepository = {
+    findPublishedTopicBySlug: async (slug) =>
+      hubData.topics.find((topic) => topic.slug === slug && topic.published) ?? null,
+    listPublishedTopics: async () => hubData.topics.filter((topic) => topic.published),
+    listAssignmentsByTopicIds: async (ids) =>
+      hubData.assignments.filter((assignment) => ids.includes(assignment.topicId)),
+    findPublicQuizzesByIds: async (ids) => hubData.quizzes.filter((quiz) => ids.includes(quiz.id)),
+  };
+  const service = new QuizTopicHubService({
+    hubRepository,
+    ownerRepository: { findNonIndexableOwnerCandidates },
+  });
+  return { getQuizTopicHubService: () => service };
+});
+
 vi.mock('@/lib/logger', () => ({
   logger: { error: loggerError },
 }));
@@ -27,6 +49,14 @@ import type {
   IQuizRepository,
   PublicQuizSitemapQuery,
 } from '@/interfaces/repositories/IQuizRepository';
+import type {
+  QuizTopicAssignmentRecord,
+  QuizTopicRecord,
+} from '@/interfaces/repositories/IQuizTopicAdminRepository';
+import type {
+  IQuizTopicHubRepository,
+  QuizTopicHubQuizRecord,
+} from '@/interfaces/repositories/IQuizTopicHubRepository';
 import { PUBLIC_CATALOG_OWNER_EMAILS } from '@/shared/constants/analytics-exclusions';
 import sitemap from './sitemap';
 import { GET as localeSitemapGET } from './[locale]/sitemap.xml/route';
@@ -63,6 +93,9 @@ describe('sitemap', () => {
     findNonIndexableOwnerCandidates.mockReset().mockResolvedValue([]);
     findPublicSitemapEntries.mockReset();
     loggerError.mockReset();
+    hubData.topics = [];
+    hubData.assignments = [];
+    hubData.quizzes = [];
   });
 
   it('lists only the canonical quiz slug, never a former slug alias', async () => {
@@ -157,6 +190,58 @@ describe('sitemap', () => {
     for (const block of quizUrlBlocks) expect(block).not.toContain('hreflang');
     // Static pages keep their hreflang pair.
     expect(xml).toMatch(/hreflang="x-default"/);
+  });
+
+  // RIN-1249 B5/D15: only hubs that pass `isTopicIndexable`, one vi URL each,
+  // dated by the newest change of the topic or its quizzes.
+  it('lists eligible topic hubs only, without hreflang', async () => {
+    serveQuizzes([]);
+    const intro = Array.from({ length: 130 }, (_, i) => `từ${i}`).join(' ');
+    const topic = (id: string, slug: string, updatedAt?: Date): QuizTopicRecord => ({
+      id,
+      slug,
+      locale: 'vi',
+      name: slug,
+      intro,
+      order: 1,
+      published: true,
+      ...(updatedAt ? { updatedAt } : {}),
+    });
+    hubData.topics = [
+      topic('t-sinh', 'sinh-hoc', new Date('2026-11-08T00:00:00.000Z')),
+      topic('t-toan', 'toan'),
+    ];
+    const ids = { 't-sinh': ['s1', 's2', 's3'], 't-toan': ['m1', 'm2'] };
+    hubData.assignments = Object.entries(ids).flatMap(([topicId, quizIds]) =>
+      quizIds.map((quizId, index) => ({ id: `a-${quizId}`, topicId, quizId, order: index })),
+    );
+    hubData.quizzes = Object.values(ids)
+      .flat()
+      .map((id) => ({
+        id,
+        slug: `de-${id}`,
+        title: `Đề ${id}`,
+        visibility: 'public',
+        authorId: 'learner-1',
+        questionCount: 10,
+        personalDataFlagged: false,
+        indexHold: false,
+        createdAt: new Date('2026-11-01T00:00:00.000Z'),
+      }));
+
+    const hubEntries = (await sitemap()).filter((entry) => entry.url.includes('/explore/'));
+    const xml = await (await localeSitemapGET()).text();
+
+    expect(hubEntries).toEqual([
+      {
+        url: expect.stringMatching(/\/vi\/explore\/sinh-hoc$/),
+        lastModified: new Date('2026-11-08T00:00:00.000Z'),
+      },
+    ]);
+    expect(xml).toContain('/vi/explore/sinh-hoc');
+    expect(xml).not.toContain('/explore/toan');
+    expect(xml).not.toContain('/en/explore/sinh-hoc');
+    expect(loggerError).not.toHaveBeenCalled();
   });
 
   it('returns static routes when dynamic quiz generation is unavailable', async () => {

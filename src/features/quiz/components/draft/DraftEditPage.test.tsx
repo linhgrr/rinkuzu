@@ -8,7 +8,12 @@ import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { DraftEditPage } from './DraftEditPage';
 
 vi.mock('next-auth/react', () => ({ useSession: () => ({ data: null }) }));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
+    <a href={href}>{children}</a>
+  ),
+}));
 vi.mock('@/features/quiz/hooks/useQuizDraftAutosave', () => {
   const autosave = {
     status: 'idle',
@@ -24,13 +29,16 @@ vi.mock('@/features/quiz/hooks/useQuizDraftAutosave', () => {
 vi.mock('@/features/quiz/components/editor/QuizEditorWorkspace', () => ({
   QuizEditorWorkspace: ({
     labels,
+    metaNotice,
   }: {
     labels: { pageTitle: string; metaTitle: string; metaDescription: string };
+    metaNotice?: React.ReactNode;
   }) => (
     <section>
       <h1>{labels.pageTitle}</h1>
       <h2>{labels.metaTitle}</h2>
       <p>{labels.metaDescription}</p>
+      <div data-testid="meta-notice">{metaNotice}</div>
     </section>
   ),
 }));
@@ -93,5 +101,24 @@ describe('DraftEditPage copy', () => {
     expect(
       screen.getByText('Add questions and answers. Your changes save automatically.'),
     ).toBeInTheDocument();
+  });
+});
+
+// RIN-1339 (spec RIN-1336 Part 1, AC 2): before publish, the manual editor says
+// the quiz goes public and points to the Premium checkbox by its own label.
+describe('DraftEditPage public-quiz notice', () => {
+  it('passes the full notice and Premium pointer into the meta form', () => {
+    renderDraft('manual');
+    const notice = screen.getByTestId('meta-notice');
+
+    expect(notice).toHaveTextContent(
+      'Quizzes you create are shared publicly in the Rinkuzu library and may appear on Google.',
+    );
+    expect(notice).toHaveTextContent(`Choose ${enCreate.premiumQuiz} below.`);
+    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute(
+      'href',
+      '/terms#public-quizzes',
+    );
+    expect(notice.querySelector('input, button')).toBeNull();
   });
 });

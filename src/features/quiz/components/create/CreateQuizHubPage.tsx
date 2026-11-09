@@ -20,6 +20,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { createManualQuizDraft, deleteQuizDraft, listQuizDrafts } from '@/lib/quiz/draftApi';
 import { ROUTES } from '@/shared/constants/routes';
+import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 
 export function CreateQuizHubPage() {
   const t = useTranslations('create');
@@ -154,6 +155,7 @@ export function CreateQuizHubPage() {
             </CardContent>
           </Card>
         </section>
+        <PublicQuizNotice variant="short" className="mt-3" />
 
         <section className="mt-10" aria-labelledby="quiz-drafts-title">
           <h2 id="quiz-drafts-title" className="text-2xl font-semibold text-neutral-950">

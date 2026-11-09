@@ -61,6 +61,11 @@
   "searchSelectCategory": "Tìm kiếm và chọn danh mục",
   "premiumQuiz": "Gửi vào kho Quiz Premium",
   "premiumQuizDescription": "Quiz sẽ được kiểm tra trùng và duyệt thủ công. Bài được duyệt có thể nhận 1–5 credit để mở khóa Quiz Premium.",
+  "publicNotice": {
+    "full": "Quiz bạn tạo sẽ được chia sẻ công khai trong kho quiz Rinkuzu và có thể xuất hiện trên Google. Đừng đưa vào thông tin cá nhân của người khác (tên, số điện thoại, mã số sinh viên, CCCD). Xem <terms>Điều khoản</terms>.",
+    "premiumPointer": "Muốn đưa quiz vào kho Premium thay vì kho miễn phí? Chọn <b>{premiumLabel}</b> bên dưới.",
+    "short": "Quiz tạo ra sẽ được chia sẻ công khai. <terms>Điều khoản</terms>"
+  },
   "premiumVerificationRequired": "Hãy xác minh email trước khi gửi vào kho Quiz Premium.",
   "verifyEmailCta": "Xác minh email",
   "premiumRightsLabel": "Tôi xác nhận mình có quyền chia sẻ tài liệu và nội dung này",

@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizWorkspacePageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { QuizEditorWorkspace } from '@/features/quiz/components/editor/QuizEditorWorkspace';
+import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 import { HiOutlineClipboardCopy, HiOutlineInformationCircle } from 'react-icons/hi';
 import { fetchQuizEditViewModel, updateQuizEditViewModel } from '@/features/quiz/api/quiz-edit-api';
 import { deleteQuizById } from '@/features/quiz/api/quiz-api';
@@ -212,6 +213,7 @@ export function EditQuizPage() {
           canEdit={canEdit}
           showPremiumToggle={canEdit}
           premiumEligible={session?.user?.emailVerified === true}
+          metaNotice={<PublicQuizNotice variant="short" />}
           {...(canEdit
             ? {
                 premiumAttestation: {

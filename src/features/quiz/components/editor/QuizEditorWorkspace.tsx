@@ -100,6 +100,8 @@ type QuizEditorWorkspaceProps = {
   isDeleting?: boolean;
   footerExtra?: ReactNode;
   metaExtra?: ReactNode;
+  /** Rendered inside the meta form, right above the Premium choice (RIN-1339). */
+  metaNotice?: ReactNode;
   banner?: ReactNode;
   headerExtra?: ReactNode;
   onChange?: (payload: QuizEditorWorkspaceSubmitPayload) => void;
@@ -164,6 +166,7 @@ export function QuizEditorWorkspace({
   isDeleting = false,
   footerExtra,
   metaExtra,
+  metaNotice,
   banner,
   headerExtra,
   onChange,
@@ -357,6 +360,7 @@ export function QuizEditorWorkspace({
                       }
                     : {})}
                   disabled={!canEdit || state.isSubmitting}
+                  notice={metaNotice}
                 />
                 {metaExtra}
               </CardContent>

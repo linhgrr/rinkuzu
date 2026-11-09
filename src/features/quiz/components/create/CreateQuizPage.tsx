@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/Card';
 import { PdfPanelSkeleton, RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
+import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
@@ -439,6 +440,12 @@ function CreateQuizFormCard({
                   }
                 : {})}
               premiumCheckboxId="submitToPremiumUpload"
+              notice={
+                <PublicQuizNotice
+                  variant="full"
+                  showPremiumPointer={privacyControl !== undefined}
+                />
+              }
               aiPrompt={aiPrompt}
               onAiPromptChange={onAiPromptChange}
               disabled={extracting}

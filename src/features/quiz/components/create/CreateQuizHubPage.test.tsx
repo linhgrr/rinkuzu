@@ -59,6 +59,13 @@ vi.mock('sonner', () => ({
   toast: { error: vi.fn() },
 }));
 
+// Copy and Terms link are tested with real messages in PublicQuizNotice.test.tsx.
+vi.mock('@/features/quiz/components/PublicQuizNotice', () => ({
+  PublicQuizNotice: ({ variant }: { variant: string }) => (
+    <p data-testid="public-quiz-notice" data-variant={variant} />
+  ),
+}));
+
 vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
@@ -171,5 +178,17 @@ describe('CreateQuizHubPage', () => {
     } finally {
       swrDrafts.current = previous;
     }
+  });
+
+  // RIN-1339 (spec RIN-1336 Part 1, AC 3): one short line under the method cards.
+  it('shows the short public-quiz notice right under the creation choices', () => {
+    render(<CreateQuizHubPage />);
+
+    const notices = screen.getAllByTestId('public-quiz-notice');
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toHaveAttribute('data-variant', 'short');
+    expect(notices[0]?.previousElementSibling).toBe(
+      screen.getByRole('region', { name: 'chooseMethod' }),
+    );
   });
 });

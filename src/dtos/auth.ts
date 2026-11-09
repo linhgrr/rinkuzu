@@ -6,6 +6,8 @@ export interface RegisterAccountDto {
   callbackUrl?: string;
   /** UI locale of the signup page (`vi` | `en`), stored on the account (RIN-1263). */
   locale?: 'vi' | 'en';
+  /** Edge country of the signup request, already sanitised to ISO alpha-2 (RIN-1268). */
+  signupCountry?: string;
 }
 
 export interface RegisterAccountResponseDto {

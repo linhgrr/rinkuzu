@@ -28,7 +28,8 @@ const W44 = new Date('2026-10-26T00:00:00.000Z');
 const W45 = new Date('2026-11-02T00:00:00.000Z');
 
 /**
- * The default response captured from the route before RIN-1268 changed it,
+ * The default response captured from master's route (after RIN-1256, before
+ * RIN-1268 changed anything),
  * for these fake aggregates at NOW. Re-stringified so the file's layout does
  * not matter; key order is kept, so the comparison is byte-for-byte.
  */
@@ -75,6 +76,19 @@ function makeService() {
             weekStart: W45,
             learners: 5,
             activatedBy: { quiz: 3, adaptive: 2, both: 0 },
+          },
+        ],
+        cohortEntries: [
+          {
+            weekStart: W44,
+            activatedByEntry: {
+              blog: 1,
+              landing: 1,
+              post_signin_starter: 1,
+              activation_email: 0,
+              none: 1,
+            },
+            blogPosts: [{ post: 'fake-post', activated: 1 }],
           },
         ],
       }),

@@ -25,7 +25,7 @@ const informationWeCollectSections = [
   },
   {
     title: '1.2 Uploaded Learning Materials',
-    body: `When you upload PDF documents for quiz generation, we process and store: the content of uploaded PDFs, extracted text, and structured metadata (chapter titles, page count, file name, upload timestamp). Uploaded PDFs are stored securely and are accessible only to you and, if you choose to share quizzes publicly, to other platform users. You retain full ownership of content you upload.`,
+    body: `When you upload PDF documents for quiz generation, we process and store: the content of uploaded PDFs, extracted text, and structured metadata (chapter titles, page count, file name, upload timestamp). Uploaded PDFs are stored securely and are accessible only to you; quizzes generated from your PDFs are public, as described in Terms §6.4; the PDF file itself is not published. You retain full ownership of content you upload.`,
   },
   {
     title: '1.3 Learning Activity Data',
@@ -164,7 +164,7 @@ function VietnamesePrivacyPage() {
       title: '1. Thông tin chúng tôi thu thập',
       paragraphs: [
         'Khi bạn đăng ký, RinKuzu nhận họ tên, email, mật khẩu đã băm và thông tin hồ sơ tùy chọn. Nếu đăng nhập qua nhà cung cấp OAuth, chúng tôi nhận tên và email do nhà cung cấp đó gửi.',
-        'Khi bạn tải PDF lên, chúng tôi xử lý nội dung tài liệu, văn bản trích xuất, tên tệp, số trang và thời điểm tải lên. Bạn vẫn giữ quyền sở hữu tài liệu của mình.',
+        'Khi bạn tải PDF lên, chúng tôi xử lý nội dung tài liệu, văn bản trích xuất, tên tệp, số trang và thời điểm tải lên. Quiz tạo từ PDF của bạn được công khai theo Điều khoản mục 6; bản thân tệp PDF không được công khai. Bạn vẫn giữ quyền sở hữu tài liệu của mình.',
         'RinKuzu lưu câu trả lời, độ chính xác, thời gian làm bài, tiến độ theo khái niệm và gợi ý học tập để cá nhân hóa phiên luyện tập.',
         'Khi bạn đồng ý với cookie phân tích, chúng tôi có thể thu thập loại trình duyệt, thiết bị, trang đã xem, nguồn truy cập, sự kiện sản phẩm và nhật ký lỗi. Nội dung PDF, mật khẩu và nội dung câu trả lời không được gửi tới dịch vụ phân tích.',
       ],
@@ -235,7 +235,7 @@ function VietnamesePrivacyPage() {
     <main className="mx-auto max-w-4xl space-y-8 px-6 py-12 text-neutral-700">
       <header>
         <h1 className="mb-2 text-3xl font-semibold text-neutral-900">Chính sách quyền riêng tư</h1>
-        <p className="text-sm text-neutral-500">Cập nhật lần cuối: 27 tháng 3, 2026</p>
+        <p className="text-sm text-neutral-500">Cập nhật lần cuối: 9 tháng 11, 2026</p>
       </header>
       <p>
         Chính sách này giải thích cách Đại học Bách khoa Hà Nội, vận hành dưới tên RinKuzu, xử lý dữ
@@ -508,7 +508,7 @@ export default async function PrivacyPage({ params }: Props) {
     <section className="mx-auto max-w-4xl space-y-10 px-6 py-16">
       <header>
         <h1 className="mb-2 text-3xl font-semibold text-neutral-900">Privacy Policy</h1>
-        <p className="text-sm text-neutral-500">Last updated: March 27, 2026</p>
+        <p className="text-sm text-neutral-500">Last updated: November 9, 2026</p>
       </header>
 
       <p className="leading-relaxed text-neutral-700">

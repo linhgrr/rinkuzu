@@ -5,11 +5,14 @@ import type {
   AuthLoginAccount,
   FailedLoginAttemptState,
 } from '@/entities/AuthAccount';
+import type { Locale } from '@/i18n/config';
 
 export interface CreatePendingAccountData {
   email: string;
   passwordHash: string;
   displayName?: string;
+  /** UI locale the signup came from; omitted when the request did not say. */
+  locale?: Locale;
   verificationTokenHash: string;
   verificationExpires: Date;
 }
@@ -88,4 +91,9 @@ export interface IAuthSignInRepository {
   resolveVerifiedGoogleAccount(
     data: VerifiedGoogleAccountData,
   ): Promise<ResolvedGoogleAccount | null>;
+}
+
+/** Records an account's UI locale once; a stored locale is never overwritten (RIN-1263). */
+export interface IAccountLocaleRepository {
+  rememberLocaleIfMissing(accountId: string, locale: Locale): Promise<void>;
 }

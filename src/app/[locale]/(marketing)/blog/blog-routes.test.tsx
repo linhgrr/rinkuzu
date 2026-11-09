@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import BlogIndexPage from './page';
 import BlogPostPage, { generateStaticParams as postParams } from './[slug]/page';
 import AuthorPage, { generateStaticParams as authorParams } from './authors/[slug]/page';
+import { blogMessages } from '../../../../../tests/helpers/blog-intl-mock';
 
 // RIN-404: the blog index, post and author routes render from content/blog, and the two
 // posts migrated from hand-written routes stay at their URLs with the same copy.
@@ -16,6 +17,7 @@ vi.mock('next/navigation', async (importOriginal) => ({
   useParams: () => ({}),
 }));
 vi.mock('next/image', () => ({ default: () => null }));
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/blog-intl-mock'));
 vi.mock('@/components/blog/ReadingProgressBar', () => ({ ReadingProgressBar: () => null }));
 vi.mock('@/components/blog/ShareButtons', () => ({ ShareButtons: () => null }));
 vi.mock('@/components/blog/TableOfContents', () => ({ TableOfContents: () => null }));
@@ -58,7 +60,7 @@ describe('blog routes from content/blog', () => {
     expect(authorParams()).toEqual([{ slug: 'rinkuzu-team' }]);
   });
 
-  it.each(['en', 'vi'])(
+  it.each(['en', 'vi'] as const)(
     'renders the AI guide article on /%s from its frontmatter',
     async (locale) => {
       renderIn(locale, await BlogPostPage({ params: Promise.resolve({ locale, slug: AI_GUIDE }) }));
@@ -79,7 +81,7 @@ describe('blog routes from content/blog', () => {
       expect(
         screen.getByRole('link', { name: /Knowledge Graphs & Bloom's Taxonomy →/ }),
       ).toHaveAttribute('href', `/${locale}/blog/${KNOWLEDGE_GRAPHS}`);
-      expect(screen.getByText('No previous post')).toBeInTheDocument();
+      expect(screen.getByText(blogMessages[locale].nav.noPrevious)).toBeInTheDocument();
     },
   );
 

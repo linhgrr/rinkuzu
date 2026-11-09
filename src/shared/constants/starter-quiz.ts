@@ -14,6 +14,9 @@ export const LANDING_ENTRY = 'landing';
 /** A blog post's quiz CTA opens the quiz with this entry and `?post=<slug>` (RIN-1242). */
 export const BLOG_ENTRY = 'blog';
 
+/** "Chơi ngay" on a topic hub opens the quiz with this entry and `?topic=<slug>` (RIN-1249). */
+export const HUB_ENTRY = 'hub';
+
 /**
  * `?entry=` values the quiz player forwards on `quiz_started`/`quiz_completed`
  * and the attempt API stores on the attempt (RIN-1256); anything else is dropped.
@@ -23,6 +26,7 @@ export const TRACKED_QUIZ_ENTRIES: readonly string[] = [
   ACTIVATION_EMAIL_ENTRY,
   LANDING_ENTRY,
   BLOG_ENTRY,
+  HUB_ENTRY,
 ];
 
 /** A public blog post slug as `?post=` carries it; anything else is dropped (RIN-1242). */

@@ -5,6 +5,7 @@ import { serializeDate } from '@/lib/date-serialization';
 import { loadPublicQuizSitemapEntries } from '@/lib/public-quiz-sitemap';
 import { canonicalFor, languageAlternates } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
+import { loadIndexableTopicHubs, topicHubPath } from '@/lib/seo/topic-hub';
 
 function toEntry(
   locale: string,
@@ -21,8 +22,8 @@ function toEntry(
   };
 }
 
-/** A quiz exists in one language: one URL, no hreflang pair (RIN-1241 D14). */
-function toQuizEntry(
+/** A quiz or a topic hub exists in one language: one URL, no hreflang pair (RIN-1241 D14). */
+function toSingleLocaleEntry(
   locale: string,
   path: string,
   lastModified: Date,
@@ -66,10 +67,22 @@ export async function buildPublicSitemapEntries(
   const publicQuizzes = await loadPublicQuizSitemapEntries(errorMessage);
   for (const quiz of publicQuizzes) {
     pushEntry(
-      toQuizEntry(
+      toSingleLocaleEntry(
         quiz.locale,
         quiz.path,
         toRequiredSitemapDate(quiz.lastModified, 'quiz.updatedAt'),
+      ),
+    );
+  }
+
+  // Hubs that pass `isTopicIndexable` only (RIN-1249, spec B5/D15).
+  const hubs = await loadIndexableTopicHubs(errorMessage);
+  for (const hub of hubs) {
+    pushEntry(
+      toSingleLocaleEntry(
+        hub.locale,
+        topicHubPath(hub.slug),
+        toRequiredSitemapDate(hub.lastModified, 'topic.lastModified'),
       ),
     );
   }

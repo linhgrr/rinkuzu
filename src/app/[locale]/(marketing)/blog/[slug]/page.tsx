@@ -1,11 +1,12 @@
 import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
-import { ShareButtons } from '@/components/blog/ShareButtons';
+import { ShareButtons, type ShareLabels } from '@/components/blog/ShareButtons';
 import { TableOfContents } from '@/components/blog/TableOfContents';
 import { extractHeadingsFromMarkdown } from '@/lib/blog-utils';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
@@ -24,9 +25,9 @@ import { getBlogAuthor } from '@/lib/blog/authors';
 import { RelatedPosts } from './RelatedPosts';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
+type BlogTranslator = Awaited<ReturnType<typeof getTranslations<'blog'>>>;
 
-const DEFAULT_CTA_TITLE = 'Turn your PDF into personalized practice';
-const DEFAULT_CTA_BODY = 'Upload a PDF and RinKuzu builds a personalized quiz from it, free.';
+const SHARE_NETWORKS = ['Twitter', 'LinkedIn', 'Facebook'] as const;
 const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;
 
@@ -136,7 +137,7 @@ function buildBreadcrumbSchema(article: BlogPost) {
   };
 }
 
-function PostNavigation({ article }: { article: BlogPost }) {
+function PostNavigation({ article, t }: { article: BlogPost; t: BlogTranslator }) {
   const { previous, next } = getAdjacentBlogArticles(article);
   return (
     <div className="mt-16 pt-10 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-6">
@@ -146,7 +147,7 @@ function PostNavigation({ article }: { article: BlogPost }) {
           className="flex flex-col gap-1 text-left group w-full sm:w-auto"
         >
           <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
-            Previous
+            {t('nav.previous')}
           </span>
           <span className="text-[var(--text-primary)] font-bold group-hover:text-brand-trust transition-colors">
             ← {previous.navLabel ?? previous.title}
@@ -155,9 +156,9 @@ function PostNavigation({ article }: { article: BlogPost }) {
       ) : (
         <div className="flex flex-col gap-1 w-full sm:w-auto">
           <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
-            Previous
+            {t('nav.previous')}
           </span>
-          <span className="text-neutral-300">No previous post</span>
+          <span className="text-neutral-300">{t('nav.noPrevious')}</span>
         </div>
       )}
       {next ? (
@@ -166,7 +167,7 @@ function PostNavigation({ article }: { article: BlogPost }) {
           className="flex flex-col gap-1 text-right group w-full sm:w-auto"
         >
           <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
-            Next Article
+            {t('nav.nextArticle')}
           </span>
           <span className="text-[var(--text-primary)] font-bold group-hover:text-brand-trust transition-colors">
             {next.navLabel ?? next.title} →
@@ -174,8 +175,10 @@ function PostNavigation({ article }: { article: BlogPost }) {
         </Link>
       ) : (
         <div className="flex flex-col gap-1 text-right w-full sm:w-auto">
-          <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">Next</span>
-          <span className="text-neutral-300">More articles coming soon</span>
+          <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
+            {t('nav.next')}
+          </span>
+          <span className="text-neutral-300">{t('nav.moreSoon')}</span>
         </div>
       )}
     </div>
@@ -197,6 +200,16 @@ export default async function BlogPostPage({ params }: Props) {
   const postUrl = canonicalFor(locale, `/blog/${article.slug}`);
   const headings = extractHeadingsFromMarkdown(article.content);
   const readTime = article.articleReadTimeMinutes ?? article.readTimeMinutes;
+  const t = await getTranslations({ locale, namespace: 'blog' });
+  const shareLabels = {
+    label: t('share.label'),
+    copyLink: t('share.copyLink'),
+    copied: t('share.copied'),
+    copyFailed: t('share.copyFailed'),
+    shareOn: Object.fromEntries(
+      SHARE_NETWORKS.map((network) => [network, t('share.shareOn', { network })]),
+    ) as ShareLabels['shareOn'],
+  };
 
   return (
     <article className="min-h-screen bg-white">
@@ -209,7 +222,7 @@ export default async function BlogPostPage({ params }: Props) {
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
           <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
             <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
-              Home
+              {t('breadcrumbHome')}
             </Link>
             <span>/</span>
             <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">
@@ -274,7 +287,7 @@ export default async function BlogPostPage({ params }: Props) {
         <div className="max-w-3xl mx-auto">
           <MarkdownRenderer content={article.content} headingIds />
 
-          <ShareButtons url={postUrl} title={article.title} />
+          <ShareButtons url={postUrl} title={article.title} labels={shareLabels} />
 
           {/* CTA */}
           <div className="mt-16 bg-gradient-to-br from-[var(--text-primary)] to-[#2d2d2f] rounded-[2rem] p-10 text-white relative overflow-hidden shadow-xl">
@@ -282,22 +295,20 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="absolute bottom-0 left-0 size-64 bg-green-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
             <div className="relative z-10 text-center max-w-xl mx-auto">
               <h3 className="text-2xl md:text-3xl font-semibold mb-4">
-                {article.ctaTitle ?? DEFAULT_CTA_TITLE}
+                {article.ctaTitle ?? t('cta.title')}
               </h3>
-              <p className="text-neutral-300 text-lg mb-8">{article.ctaBody ?? DEFAULT_CTA_BODY}</p>
+              <p className="text-neutral-300 text-lg mb-8">{article.ctaBody ?? t('cta.body')}</p>
               <Link
                 href="/register?next=/adaptive/upload"
                 className="inline-flex items-center justify-center rounded-full bg-brand-trust px-10 py-4 font-bold text-white shadow-lg shadow-green-500/20 transition-[background-color,transform] hover:scale-105 hover:bg-brand-trust-hover active:scale-95"
               >
-                {blogLocale === 'vi' ? 'Bắt đầu miễn phí' : 'Get Started Free'}
+                {t('cta.button')}
               </Link>
-              <p className="mt-4 text-xs text-neutral-400">
-                No credit card required · Free plan available
-              </p>
+              <p className="mt-4 text-xs text-neutral-400">{t('cta.reassurance')}</p>
               <p className="mt-2 text-sm text-neutral-300">
-                Questions about uploads or plans?{' '}
+                {t('cta.faqPrompt')}{' '}
                 <Link href="/faq" className="underline hover:text-white">
-                  Read the FAQ
+                  {t('cta.faqLink')}
                 </Link>
               </p>
             </div>
@@ -305,13 +316,13 @@ export default async function BlogPostPage({ params }: Props) {
 
           <RelatedPosts posts={relatedPosts} locale={blogLocale} />
 
-          <PostNavigation article={article} />
+          <PostNavigation article={article} t={t} />
         </div>
 
         {/* Table of Contents — right, fixed to container edge */}
         <aside className="hidden xl:block absolute right-6 top-12 w-56 flex-shrink-0">
           <div className="sticky top-24">
-            <TableOfContents headings={headings} />
+            <TableOfContents headings={headings} title={t('toc.heading')} />
           </div>
         </aside>
       </div>

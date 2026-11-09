@@ -3,8 +3,9 @@ import {
   type QuizAccessRecord,
   type UpdateQuizData,
 } from '@/interfaces/repositories/IQuizRepository';
-import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
+import type { Quiz, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
+import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import type {
   CreateQuizRequestDto,
   QuizDetailDto,
@@ -14,7 +15,7 @@ import type {
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import { detectQuizContentLocale } from '@/lib/seo/quiz-indexability';
 import type { DeleteResultDto } from '@/dtos/common';
-import { ServiceResult } from '@/interfaces/services/types';
+import type { ServiceFailure, ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
 import { getAuthorId } from './quiz-helpers';
 import { logger } from '@/lib/logger';
@@ -37,10 +38,27 @@ function toQuizQuestionContent(
     : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
 }
 
+/** The visibility fields shared by the create, update and draft-submit requests. */
+interface VisibilityRequest {
+  submitToPremium?: boolean | undefined;
+  visibility?: QuizVisibility | undefined;
+}
+
+/**
+ * RIN-1271: a learner's quiz is private (`personal`) unless the owner asks for
+ * `public`; a Premium submission is always `personal`.
+ */
+function resolveRequestedVisibility(request: VisibilityRequest): QuizVisibility | undefined {
+  return request.submitToPremium === true ? 'personal' : request.visibility;
+}
+
+type PremiumPublicationLookup = Pick<IPremiumQuizRepository, 'findActivePublicationByQuizId'>;
+
 export class QuizCrudService {
   constructor(
     private quizRepository: IQuizRepository,
     private folderRepository?: IFolderRepository,
+    private premiumPublications?: PremiumPublicationLookup,
   ) {}
 
   async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<QuizDetailDto> {
@@ -82,7 +100,7 @@ export class QuizCrudService {
     quizData: CreateQuizRequestDto,
     sourceDraftId?: string,
   ): Promise<Quiz> {
-    const { title, description, folderId, questions, submitToPremium, pdfUrl } = quizData;
+    const { title, description, folderId, questions, pdfUrl } = quizData;
 
     if (folderId) {
       const ownsFolder = await this.folderRepository?.existsOwnedById(folderId, userId);
@@ -104,7 +122,7 @@ export class QuizCrudService {
           author: userId,
           folder: folderId ?? null,
           questions: questions.map(toQuizQuestionContent),
-          visibility: submitToPremium ? 'personal' : 'public',
+          visibility: resolveRequestedVisibility(quizData) ?? 'personal',
           ...(pdfUrl !== undefined && { pdfUrl }),
           ...(sourceDraftId !== undefined && { sourceDraftId }),
         });
@@ -220,6 +238,12 @@ export class QuizCrudService {
         }
       }
 
+      const visibility = resolveRequestedVisibility(quizData);
+      if (visibility === 'public') {
+        const refusal = await this.refuseWhilePublished(id);
+        if (refusal) return refusal;
+      }
+
       const updateData: UpdateQuizData = {
         ...(quizData.title !== undefined && { title: quizData.title }),
         ...(quizData.description !== undefined && { description: quizData.description }),
@@ -227,9 +251,7 @@ export class QuizCrudService {
         ...(quizData.questions !== undefined && {
           questions: quizData.questions.map(toQuizQuestionContent),
         }),
-        ...(quizData.submitToPremium !== undefined && {
-          visibility: quizData.submitToPremium ? ('personal' as const) : ('public' as const),
-        }),
+        ...(visibility !== undefined && { visibility }),
         ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
       };
       const updatedQuiz = await this.quizRepository.update(id, updateData);
@@ -254,6 +276,26 @@ export class QuizCrudService {
         statusCode: 500,
       };
     }
+  }
+
+  /**
+   * Mirrors the admin rule (QuizAdminService.setQuizVisibility): a quiz with an
+   * active Premium publication cannot be made public. Fails closed when the
+   * lookup is not wired.
+   */
+  private async refuseWhilePublished(id: string): Promise<ServiceFailure | null> {
+    if (!this.premiumPublications) {
+      logger.error('Quiz visibility change is not wired with the Premium publication lookup');
+      return { success: false, error: 'Failed to update quiz', statusCode: 500 };
+    }
+    const publication = await this.premiumPublications.findActivePublicationByQuizId(id);
+    if (!publication) return null;
+    return {
+      success: false,
+      code: 'conflict',
+      error: 'A quiz with a premium publication cannot be made public',
+      statusCode: 409,
+    };
   }
 
   async deleteQuiz(

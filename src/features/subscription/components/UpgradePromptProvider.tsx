@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { isPremiumLimitError } from '@/features/subscription/lib/limit-error';
 import { subscribeToApiErrors } from '@/lib/api/error-events';
+import { capturePaywallEvent } from '@/lib/analytics/paywall';
 import {
   UpgradePaywallModal,
   type UpgradePromptKind,
@@ -31,11 +32,16 @@ function isDismissed(): boolean {
 export function UpgradePromptProvider({ children }: { children: ReactNode }) {
   const t = useTranslations('premium');
   const { push } = useRouter();
+  const locale = useLocale();
   const [modalOpen, setModalOpen] = useState(false);
+  // Mirrors `modalOpen` for the error listener, so a second limit error while
+  // the modal is up does not count as another open (RIN-1269).
+  const modalOpenRef = useRef(false);
   const [promptKind, setPromptKind] = useState<UpgradePromptKind>('quota');
 
   useEffect(() => {
     const goToBilling = () => {
+      modalOpenRef.current = false;
       setModalOpen(false);
       push('/subscription');
     };
@@ -53,13 +59,17 @@ export function UpgradePromptProvider({ children }: { children: ReactNode }) {
 
       setPromptKind(error.code === 'quota_exceeded' ? 'quota' : 'feature');
       setModalOpen(true);
+      if (modalOpenRef.current) return;
+      modalOpenRef.current = true;
+      capturePaywallEvent('pricing_viewed', { locale, plan: null, source: 'upgrade_modal' });
     });
-  }, [push, t]);
+  }, [locale, push, t]);
 
   const closeModal = (suppressFuture: boolean) => {
     if (suppressFuture && typeof window !== 'undefined') {
       window.localStorage.setItem(DISMISS_KEY, '1');
     }
+    modalOpenRef.current = false;
     setModalOpen(false);
   };
 

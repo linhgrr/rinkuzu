@@ -31,4 +31,10 @@ export type AnalyticsEventName =
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
   | 'guest_attempt_claimed'
   /** Homepage CTA click (RIN-1178); props only `cta`, `position` and `locale`. */
-  | 'landing_cta_clicked';
+  | 'landing_cta_clicked'
+  /** Paywall funnel (RIN-1269); props only `locale`, `plan` (plan id or null) and `source`. */
+  | 'pricing_viewed'
+  | 'upgrade_clicked'
+  | 'checkout_started'
+  /** Server side, once per new checkout order (RIN-1269); anonymous, props `locale`, `plan`, `country`. */
+  | 'checkout_started_server';
